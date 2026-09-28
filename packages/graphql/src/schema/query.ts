@@ -42,6 +42,7 @@ import {
 } from './adaptivePracticeQuiz.js'
 import {
   AdaptiveCohortResultsRef,
+  AdaptiveParticipantElementType,
   AdaptivePracticeQuizAttemptStateRef,
   AdaptiveStudentResultRef,
 } from './adaptivePracticeQuizRuntime.js'
@@ -244,6 +245,7 @@ export const Query = builder.queryType({
         AdaptivePracticeQuizSetupPreviewType,
         PracticeQuizPublicationPreviewType,
         AdaptiveCohortResultsRef,
+        AdaptiveParticipantElementType,
         AdaptivePracticeQuizAttemptStateRef,
         AdaptiveStudentResultRef,
         CompetenceTree,

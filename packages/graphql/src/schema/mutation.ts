@@ -1247,6 +1247,10 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Element,
         args: {
+          initialCompetenceTreeAssignments: t.arg({
+            type: [CompetenceTreeElementAssignmentCreateInput],
+            required: false,
+          }),
           initialCompetenceTreeAssignment: t.arg({
             type: CompetenceTreeElementAssignmentCreateInput,
             required: false,
@@ -1284,17 +1288,20 @@ export const Mutation = builder.mutationType({
 
           const {
             initialCompetenceTreeAssignment,
+            initialCompetenceTreeAssignments,
             creationRequestId,
             ...elementInput
           } = args
           if (
             initialCompetenceTreeAssignment != null ||
+            (initialCompetenceTreeAssignments?.length ?? 0) > 0 ||
             creationRequestId != null
           ) {
             return await AdaptiveElementService.manipulateElementWithInitialCompetenceTreeAssignment(
               {
                 elementInput,
                 initialCompetenceTreeAssignment,
+                initialCompetenceTreeAssignments,
                 creationRequestId,
               },
               ctx
@@ -1311,6 +1318,10 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Element,
         args: {
+          initialCompetenceTreeAssignments: t.arg({
+            type: [CompetenceTreeElementAssignmentCreateInput],
+            required: false,
+          }),
           initialCompetenceTreeAssignment: t.arg({
             type: CompetenceTreeElementAssignmentCreateInput,
             required: false,
@@ -1347,6 +1358,7 @@ export const Mutation = builder.mutationType({
 
           const {
             initialCompetenceTreeAssignment,
+            initialCompetenceTreeAssignments,
             creationRequestId,
             ...elementInput
           } = args
@@ -1356,12 +1368,14 @@ export const Mutation = builder.mutationType({
           }
           if (
             initialCompetenceTreeAssignment != null ||
+            (initialCompetenceTreeAssignments?.length ?? 0) > 0 ||
             creationRequestId != null
           ) {
             return await AdaptiveElementService.manipulateElementWithInitialCompetenceTreeAssignment(
               {
                 elementInput: numericalElementInput,
                 initialCompetenceTreeAssignment,
+                initialCompetenceTreeAssignments,
                 creationRequestId,
               },
               ctx
@@ -1378,6 +1392,10 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Element,
         args: {
+          initialCompetenceTreeAssignments: t.arg({
+            type: [CompetenceTreeElementAssignmentCreateInput],
+            required: false,
+          }),
           initialCompetenceTreeAssignment: t.arg({
             type: CompetenceTreeElementAssignmentCreateInput,
             required: false,
@@ -1414,6 +1432,7 @@ export const Mutation = builder.mutationType({
 
           const {
             initialCompetenceTreeAssignment,
+            initialCompetenceTreeAssignments,
             creationRequestId,
             ...elementInput
           } = args
@@ -1423,12 +1442,14 @@ export const Mutation = builder.mutationType({
           }
           if (
             initialCompetenceTreeAssignment != null ||
+            (initialCompetenceTreeAssignments?.length ?? 0) > 0 ||
             creationRequestId != null
           ) {
             return await AdaptiveElementService.manipulateElementWithInitialCompetenceTreeAssignment(
               {
                 elementInput: freeTextElementInput,
                 initialCompetenceTreeAssignment,
+                initialCompetenceTreeAssignments,
                 creationRequestId,
               },
               ctx

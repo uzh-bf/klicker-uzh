@@ -6,6 +6,7 @@ import {
   updateElementAutosaveFormValues,
 } from '@klicker-uzh/adaptive-manage-ui/source/components/elements/manipulation/adaptive/elementAutosave.ts'
 import { refreshElementListBestEffort } from '@klicker-uzh/adaptive-manage-ui/source/components/elements/manipulation/adaptive/elementSubmission.ts'
+import { toPendingAdaptiveMapping } from '@klicker-uzh/adaptive-manage-ui/source/components/elements/manipulation/adaptive/types.ts'
 import {
   CreateAnswerCollectionDocument,
   ElementType,
@@ -13,18 +14,19 @@ import {
   GetSingleElementDocument,
   GetUserTagsDocument,
   ManipulateCaseStudyQuestionDocument,
-  ManipulateChoicesQuestionDocument,
+  ManipulateChoicesQuestionWithTreeAssignmentsDocument,
   ManipulateContentElementDocument,
   ManipulateFlashcardElementDocument,
-  ManipulateFreeTextQuestionDocument,
-  ManipulateNumericalQuestionDocument,
+  ManipulateFreeTextQuestionWithTreeAssignmentsDocument,
+  ManipulateNumericalQuestionWithTreeAssignmentsDocument,
   ManipulateSelectionQuestionDocument,
   UpdateElementInstancesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ELEMENT_CREATION_AUTOSAVE_KEY } from '@lib/elementCreationRecovery'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { useRouter } from 'next/router'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import type React from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import ElementEditForm from './ElementEditForm'
 import {
   createInlineCaseStudyCollection,
@@ -37,7 +39,7 @@ import {
   prepareNumericalArgs,
   prepareSelectionArgs,
 } from './helpers'
-import { ElementFormTypes } from './types'
+import type { ElementFormTypes } from './types'
 import useElementFormInitialValues from './useElementFormInitialValues'
 
 export enum ElementEditMode {
@@ -110,13 +112,13 @@ function ElementEditModal({
     ManipulateFlashcardElementDocument
   )
   const [manipulateChoicesQuestion] = useMutation(
-    ManipulateChoicesQuestionDocument
+    ManipulateChoicesQuestionWithTreeAssignmentsDocument
   )
   const [manipulateNumericalQuestion] = useMutation(
-    ManipulateNumericalQuestionDocument
+    ManipulateNumericalQuestionWithTreeAssignmentsDocument
   )
   const [manipulateFreeTextQuestion] = useMutation(
-    ManipulateFreeTextQuestionDocument
+    ManipulateFreeTextQuestionWithTreeAssignmentsDocument
   )
   const [manipulateSelectionQuestion] = useMutation(
     ManipulateSelectionQuestionDocument
@@ -242,15 +244,21 @@ function ElementEditModal({
       onSubmitElement={async (values, pendingMapping, creationRequestId) => {
         const submissionElementId = elementId
         const submissionIsDuplication = isDuplication
-        const initialCompetenceTreeAssignment = pendingMapping
-          ? {
-              treeId: pendingMapping.treeId,
-              ...pendingMapping.assignment,
-            }
+        const initialCompetenceTreeAssignments = pendingMapping
+          ? pendingMapping.map((mapping) => {
+              const complete = toPendingAdaptiveMapping(
+                mapping.treeId,
+                mapping.assignment
+              )
+              if (!complete)
+                throw new Error('Incomplete competence-tree assignment')
+              return { treeId: complete.treeId, ...complete.assignment }
+            })
           : undefined
-        const adaptiveCreationRequestId = initialCompetenceTreeAssignment
-          ? creationRequestId
-          : undefined
+        const adaptiveCreationRequestId =
+          initialCompetenceTreeAssignments?.length
+            ? creationRequestId
+            : undefined
         let savedElementId: number | null = null
 
         switch (values.type) {
@@ -306,7 +314,7 @@ function ElementEditModal({
             const result = await manipulateChoicesQuestion({
               variables: {
                 ...args,
-                initialCompetenceTreeAssignment,
+                initialCompetenceTreeAssignments,
                 creationRequestId: adaptiveCreationRequestId,
               },
               refetchQueries: [{ query: GetUserTagsDocument }],
@@ -330,7 +338,7 @@ function ElementEditModal({
             const result = await manipulateNumericalQuestion({
               variables: {
                 ...args,
-                initialCompetenceTreeAssignment,
+                initialCompetenceTreeAssignments,
                 creationRequestId: adaptiveCreationRequestId,
               },
               refetchQueries: [{ query: GetUserTagsDocument }],
@@ -354,7 +362,7 @@ function ElementEditModal({
             const result = await manipulateFreeTextQuestion({
               variables: {
                 ...args,
-                initialCompetenceTreeAssignment,
+                initialCompetenceTreeAssignments,
                 creationRequestId: adaptiveCreationRequestId,
               },
               refetchQueries: [{ query: GetUserTagsDocument }],

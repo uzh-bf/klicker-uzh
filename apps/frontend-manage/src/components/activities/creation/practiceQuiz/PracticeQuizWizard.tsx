@@ -10,7 +10,7 @@ import {
 import { asAdaptiveTranslator } from '@klicker-uzh/adaptive-manage-ui/source/components/activities/creation/practiceQuiz/adaptiveReadinessIssue.ts'
 import {
   AdaptivePracticeQuizPreset,
-  AdaptivePracticeQuizPreviewDocument,
+  QAdaptivePracticeQuizPreviewWithRuntimeLimitsDocument,
   AdaptivePracticeQuizPreviewQuery,
   CreatePracticeQuizDocument,
   EditPracticeQuizDocument,
@@ -145,7 +145,7 @@ function PracticeQuizWizard({
     loading: adaptivePreviewLoading,
     error: adaptivePreviewError,
     refetch: refetchAdaptivePreview,
-  } = useQuery(AdaptivePracticeQuizPreviewDocument, {
+  } = useQuery(QAdaptivePracticeQuizPreviewWithRuntimeLimitsDocument, {
     variables: { id: initialValues?.id! },
     skip: !shouldLoadAdaptivePreview,
     fetchPolicy: 'network-only',
@@ -215,6 +215,9 @@ function PracticeQuizWizard({
         /^[0-9]+$/,
         t('manage.activityWizard.practiceQuizValidResetDays')
       ),
+  })
+
+  const adaptiveSetupValidationSchema = yup.object().shape({
     adaptiveConfig: yup.object().shape({
       totalQuestionCap: requiredNumber()
         .integer(t('manage.activityWizard.adaptive.validation.integer'))
@@ -266,11 +269,10 @@ function PracticeQuizWizard({
               t('manage.activityWizard.adaptive.validation.discriminationMax')
             ),
       }),
-    }),
-  })
-
-  const adaptiveSetupValidationSchema = yup.object().shape({
-    adaptiveConfig: yup.object().shape({
+      timeLimitMinutes: optionalNumber().moreThan(
+        0,
+        t('manage.activityWizard.adaptive.validation.positive')
+      ),
       competenceTreeId: yup
         .string()
         .required(t('manage.activityWizard.adaptive.validation.treeRequired')),

@@ -364,6 +364,7 @@ enum AdaptiveNodeKind {
 
 type AdaptivePracticeQuizAssignment {
   a: Float!
+  additionalLeafNodeIds: [Int!]!
   available: Boolean!
   b: Float!
   c: Float!
@@ -389,6 +390,7 @@ type AdaptivePracticeQuizAttemptState {
   attemptId: String!
   canStartNewAttempt: Boolean!
   completedAt: Date
+  deadlineAt: Date
   elapsedSeconds: Int
   maximumQuestions: Int!
   nextAttemptAvailableAt: Date
@@ -401,12 +403,22 @@ type AdaptivePracticeQuizAttemptState {
   status: AdaptivePracticeQuizAttemptStatus!
   stopReason: AdaptivePracticeQuizStopReason
   submittedResponseFeedback: AdaptivePracticeQuizSubmittedResponseFeedback
+  timeLimitSeconds: Int
 }
 
 enum AdaptivePracticeQuizAttemptStatus {
   ABANDONED
   COMPLETED
   IN_PROGRESS
+}
+
+type AdaptivePracticeQuizBoxPlot {
+  count: Int!
+  max: Float!
+  median: Float!
+  min: Float!
+  q1: Float!
+  q3: Float!
 }
 
 type AdaptivePracticeQuizChoice {
@@ -458,6 +470,7 @@ type AdaptivePracticeQuizConfig {
   preset: AdaptivePracticeQuizPreset!
   scaleVersionId: String
   showTimer: Boolean!
+  timeLimitSeconds: Int
   topInformationRatio: Float!
   totalQuestionCap: Int!
 }
@@ -473,6 +486,7 @@ input AdaptivePracticeQuizConfigInput {
   researchSettings: AdaptivePracticeQuizResearchSettingsInput
   scaleVersionId: String
   showTimer: Boolean
+  timeLimitSeconds: Int
   totalQuestionCap: Int
 }
 
@@ -532,6 +546,7 @@ type AdaptivePracticeQuizLevelBand {
 
 type AdaptivePracticeQuizLevelBucket {
   count: Int!
+  determinedCount: Int!
   levelLabel: String!
   levelOrder: Int!
 }
@@ -584,12 +599,14 @@ type AdaptivePracticeQuizNumericalOptions {
 }
 
 type AdaptivePracticeQuizPilotMetrics {
+  completionTimeBoxPlot: AdaptivePracticeQuizBoxPlot
   durationMissingDetected: Boolean
   medianElapsedSeconds: Float
   medianQuestionCount: Float
   nearBoundaryRate: Float
   p95ElapsedSeconds: Float
   p95QuestionCount: Float
+  questionCountBoxPlot: AdaptivePracticeQuizBoxPlot
   responseCountMismatchDetected: Boolean
   suppressed: Boolean!
   suppressions: [AdaptivePracticeQuizPrivacySuppression!]!
@@ -710,6 +727,7 @@ type AdaptivePracticeQuizResult {
   competenceProfile: [AdaptivePracticeQuizResultNode!]!
   completedAt: Date!
   confidence: AdaptiveResultConfidence!
+  isPlacementPilot: Boolean!
   leadingLevelLabels: [String!]!
   levelBands: [AdaptivePracticeQuizLevelBand!]!
   levelInterpretation: AdaptiveLevelMappingRule!
@@ -783,6 +801,7 @@ enum AdaptivePracticeQuizStopReason {
   INSUFFICIENT_DATA
   NODE_QUESTION_CAP
   POOL_EXHAUSTED
+  TIME_LIMIT
   TOTAL_QUESTION_CAP
 }
 
@@ -801,6 +820,8 @@ type AdaptivePracticeQuizTrajectoryPoint {
 }
 
 type AdaptivePracticeQuizTree {
+  defaultTimeLimitSeconds: Int
+  defaultTotalQuestionCap: Int!
   description: String
   displayName: String!
   id: String!
@@ -1665,6 +1686,8 @@ type CompetenceTree {
   courseLinks: [CompetenceTreeCourse!]!
   createdAt: Date!
   defaultDiscrimination: Float!
+  defaultTimeLimitSeconds: Int
+  defaultTotalQuestionCap: Int!
   description: String
   displayName: String!
   draftAdaptiveQuizCount: Int!
@@ -1690,6 +1713,7 @@ type CompetenceTree {
 
 type CompetenceTreeAssignment {
   a: Float!
+  additionalLeafNodeIds: [Int!]!
   b: Float!
   c: Float!
   choiceCount: Int
@@ -1706,6 +1730,7 @@ type CompetenceTreeAssignment {
 }
 
 input CompetenceTreeAssignmentInput {
+  additionalLeafKeys: [String!]
   discrimination: Float
   elementId: Int!
   enablePercentInput: Boolean!
@@ -1773,6 +1798,7 @@ input CompetenceTreeCoverageInput {
 }
 
 input CompetenceTreeElementAssignmentCreateInput {
+  additionalLeafNodeIds: [Int!]
   discrimination: Float
   enablePercentInput: Boolean!
   enabled: Boolean!
@@ -1782,6 +1808,7 @@ input CompetenceTreeElementAssignmentCreateInput {
 }
 
 input CompetenceTreeElementAssignmentUpdateInput {
+  additionalLeafNodeIds: [Int!]
   discrimination: Float
   enablePercentInput: Boolean!
   enabled: Boolean!
@@ -1793,6 +1820,8 @@ input CompetenceTreeInput {
   assignments: [CompetenceTreeAssignmentInput!]!
   coverages: [CompetenceTreeCoverageInput!]!
   defaultDiscrimination: Float
+  defaultTimeLimitSeconds: Int
+  defaultTotalQuestionCap: Int
   description: String
   displayName: String!
   levelMappingRule: AdaptiveLevelMappingRule
@@ -1820,6 +1849,8 @@ input CompetenceTreeLevelInput {
 }
 
 input CompetenceTreeMetadataInput {
+  defaultTimeLimitSeconds: Int
+  defaultTotalQuestionCap: Int
   description: String
   displayName: String!
   name: String!
@@ -1913,6 +1944,8 @@ type CompetenceTreeSummary {
   courseLinks: [CompetenceTreeCourse!]!
   createdAt: Date!
   defaultDiscrimination: Float!
+  defaultTimeLimitSeconds: Int
+  defaultTotalQuestionCap: Int!
   description: String
   displayName: String!
   draftAdaptiveQuizCount: Int!
@@ -3784,11 +3817,11 @@ type Mutation {
   logoutTemporaryParticipant(liveQuizId: String!): Boolean
   logoutUser: ID
   manipulateCaseStudyQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsCaseStudyInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
-  manipulateChoicesQuestion(basePoints: Boolean, content: String, creationRequestId: String, explanation: String, id: Int, initialCompetenceTreeAssignment: CompetenceTreeElementAssignmentCreateInput, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!], type: ElementType!): Element
+  manipulateChoicesQuestion(basePoints: Boolean, content: String, creationRequestId: String, explanation: String, id: Int, initialCompetenceTreeAssignment: CompetenceTreeElementAssignmentCreateInput, initialCompetenceTreeAssignments: [CompetenceTreeElementAssignmentCreateInput!], name: String, options: OptionsChoicesInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!], type: ElementType!): Element
   manipulateContentElement(basePoints: Boolean, content: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateFlashcardElement(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
-  manipulateFreeTextQuestion(basePoints: Boolean, content: String, creationRequestId: String, explanation: String, id: Int, initialCompetenceTreeAssignment: CompetenceTreeElementAssignmentCreateInput, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
-  manipulateNumericalQuestion(basePoints: Boolean, content: String, creationRequestId: String, explanation: String, id: Int, initialCompetenceTreeAssignment: CompetenceTreeElementAssignmentCreateInput, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
+  manipulateFreeTextQuestion(basePoints: Boolean, content: String, creationRequestId: String, explanation: String, id: Int, initialCompetenceTreeAssignment: CompetenceTreeElementAssignmentCreateInput, initialCompetenceTreeAssignments: [CompetenceTreeElementAssignmentCreateInput!], name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
+  manipulateNumericalQuestion(basePoints: Boolean, content: String, creationRequestId: String, explanation: String, id: Int, initialCompetenceTreeAssignment: CompetenceTreeElementAssignmentCreateInput, initialCompetenceTreeAssignments: [CompetenceTreeElementAssignmentCreateInput!], name: String, options: OptionsNumericalInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateSelectionQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsSelectionInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manualRandomGroupAssignments(courseId: String!): [ParticipantGroup!]
   markMicroLearningCompleted(courseId: String!, id: String!): Participation
@@ -4373,6 +4406,7 @@ type Query {
   adaptiveCalibrationExportRequest(requestId: String!): AdaptiveCalibrationExportRequest!
   adaptivePracticeQuizAttemptState(practiceQuizId: String!): AdaptivePracticeQuizAttemptState
   adaptivePracticeQuizCohortResults(practiceQuizId: String!): AdaptivePracticeQuizCohortResults
+  adaptivePracticeQuizItemPreview(poolItemId: Int!, practiceQuizId: String!): AdaptivePracticeQuizServedItem
   adaptivePracticeQuizPreview(id: String!): AdaptivePracticeQuizPreview
   adaptivePracticeQuizResult(attemptId: String!): AdaptivePracticeQuizResult!
   adaptivePracticeQuizSetupPreview(courseId: String!, input: AdaptivePracticeQuizConfigInput!): AdaptivePracticeQuizSetupPreview

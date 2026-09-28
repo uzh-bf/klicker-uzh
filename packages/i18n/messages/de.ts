@@ -1,5 +1,5 @@
 import adaptive from '@klicker-uzh/adaptive-i18n/messages/de'
-import { mergeAdaptiveMessages } from './mergeAdaptiveMessages.ts'
+import { mergeAdaptiveMessages } from '#merge-adaptive-messages'
 
 const baseMessages = {
   chat: {

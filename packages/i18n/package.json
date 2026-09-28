@@ -25,5 +25,8 @@
   "type": "module",
   "dependencies": {
     "@klicker-uzh/adaptive-i18n": "workspace:*"
+  },
+  "imports": {
+    "#merge-adaptive-messages": "./messages/mergeAdaptiveMessages.ts"
   }
 }

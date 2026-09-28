@@ -8,7 +8,7 @@ import {
   updateElementAutosaveFormValues,
   updatePendingMapping,
 } from '@klicker-uzh/adaptive-manage-ui/source/components/elements/manipulation/adaptive/elementAutosave.ts'
-import type { PendingAdaptiveMapping } from '@klicker-uzh/adaptive-manage-ui/source/components/elements/manipulation/adaptive/types.ts'
+import type { PendingAdaptiveMappingDraft } from '@klicker-uzh/adaptive-manage-ui/source/components/elements/manipulation/adaptive/types.ts'
 import {
   type ElementData,
   type ElementStatus,
@@ -64,6 +64,7 @@ import useValidationSchema from './useValidationSchema'
 function ElementEditForm({
   isTemplate = false,
   inputsDisabled = false,
+  enableAdaptiveMapping = true,
   templateId,
   preserveDraftOnDismiss = false,
   tagInput,
@@ -92,6 +93,7 @@ function ElementEditForm({
 }: {
   // flag to disable inputs (edit mode and read permissions)
   inputsDisabled?: boolean
+  enableAdaptiveMapping?: boolean
   // flag to highlight template mode
   isTemplate?: boolean
   templateId?: string
@@ -113,7 +115,7 @@ function ElementEditForm({
   onAutoSavePayloadChange?: (payload: ElementAutosavePayload | null) => void
   onSubmitElement: (
     values: ElementFormTypes & { status: ElementStatus },
-    pendingMapping: PendingAdaptiveMapping | null,
+    pendingMapping: PendingAdaptiveMappingDraft[] | null,
     creationRequestId: string
   ) => Promise<number | boolean | null>
   setAutoSavedElement: Dispatch<SetStateAction<ElementFormTypes>>
@@ -142,10 +144,10 @@ function ElementEditForm({
   const [activeTab, setActiveTab] = useState('preview')
   const [discardChangesOpen, setDiscardChangesOpen] = useState(false)
   const [secondaryActionLoading, setSecondaryActionLoading] = useState(false)
-  const [pendingMapping, setPendingMapping] =
-    useState<PendingAdaptiveMapping | null>(
-      autoSavePayload?.pendingMapping ?? null
-    )
+  const [adaptiveMappingValid, setAdaptiveMappingValid] = useState(true)
+  const [pendingMapping, setPendingMapping] = useState<
+    PendingAdaptiveMappingDraft[] | null
+  >(autoSavePayload?.pendingMapping ?? null)
   const [adaptiveSubmissionError, setAdaptiveSubmissionError] = useState<
     string | null
   >(null)
@@ -312,6 +314,7 @@ function ElementEditForm({
             initialValues={initialValues}
             validationSchema={questionManipulationSchema}
             onSubmit={async (values, { setSubmitting }) => {
+              if (!adaptiveMappingValid) return
               setSubmitting(true)
               setAdaptiveSubmissionError(null)
               const submissionPayload = updatePendingMapping(
@@ -403,37 +406,6 @@ function ElementEditForm({
                         values={values}
                         isSubmitting={isSubmitting}
                       />
-                      {!isTemplate ? (
-                        <AdaptiveElementMapping
-                          elementId={elementId}
-                          elementType={values.type}
-                          choiceCount={
-                            values.type === ElementType.Sc ||
-                            values.type === ElementType.Mc ||
-                            values.type === ElementType.Kprim
-                              ? values.options.choices.length
-                              : undefined
-                          }
-                          editMode={mode === ElementEditMode.EDIT}
-                          inputsDisabled={inputsDisabled}
-                          formDirty={dirty}
-                          pendingMapping={pendingMapping}
-                          submissionError={adaptiveSubmissionError}
-                          onPendingMappingChange={(mapping) => {
-                            setAdaptiveSubmissionError(null)
-                            setPendingMapping(mapping)
-                            const payload = updatePendingMapping(
-                              updateElementAutosaveFormValues(
-                                autoSavePayload ??
-                                  createElementAutosavePayload(values),
-                                values
-                              ),
-                              mapping
-                            )
-                            onAutoSavePayloadChange?.(payload)
-                          }}
-                        />
-                      ) : null}
                       <ElementContentInput
                         disabled={elementInputsDisabled}
                         values={values}
@@ -544,6 +516,39 @@ function ElementEditForm({
                           }}
                         />
                       )}
+
+                      {!isTemplate && enableAdaptiveMapping ? (
+                        <AdaptiveElementMapping
+                          elementId={elementId}
+                          elementType={values.type}
+                          choiceCount={
+                            values.type === ElementType.Sc ||
+                            values.type === ElementType.Mc ||
+                            values.type === ElementType.Kprim
+                              ? values.options.choices.length
+                              : undefined
+                          }
+                          editMode={mode === ElementEditMode.EDIT}
+                          inputsDisabled={inputsDisabled}
+                          formDirty={dirty}
+                          pendingMapping={pendingMapping}
+                          onValidityChange={setAdaptiveMappingValid}
+                          submissionError={adaptiveSubmissionError}
+                          onPendingMappingChange={(mapping) => {
+                            setAdaptiveSubmissionError(null)
+                            setPendingMapping(mapping)
+                            const payload = updatePendingMapping(
+                              updateElementAutosaveFormValues(
+                                autoSavePayload ??
+                                  createElementAutosavePayload(values),
+                                values
+                              ),
+                              mapping
+                            )
+                            onAutoSavePayloadChange?.(payload)
+                          }}
+                        />
+                      ) : null}
                     </Form>
 
                     {Object.keys(errors).length !== 0 && (
@@ -666,7 +671,11 @@ function ElementEditForm({
                     <Button
                       primary
                       onClick={() => submitForm()}
-                      disabled={!isValid || secondaryActionLoading}
+                      disabled={
+                        !isValid ||
+                        !adaptiveMappingValid ||
+                        secondaryActionLoading
+                      }
                       loading={isSubmitting}
                       data={{ cy: submitDataCy ?? 'save-new-question' }}
                     >

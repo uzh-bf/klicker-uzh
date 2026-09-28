@@ -268,17 +268,6 @@ function PracticeQuizSettingsStep({
                         data={{ cy: 'adaptive-preset' }}
                         className={{ root: 'w-full' }}
                       />
-                      <FormikNumberField
-                        required
-                        name="adaptiveConfig.totalQuestionCap"
-                        label={t(
-                          'manage.activityWizard.adaptive.settings.totalQuestionCap'
-                        )}
-                        min={1}
-                        max={1000}
-                        precision={0}
-                        data={{ cy: 'adaptive-total-question-cap' }}
-                      />
                       <div className="flex items-end pb-1">
                         <FormikSwitchField
                           name="adaptiveConfig.showTimer"
@@ -290,31 +279,6 @@ function PracticeQuizSettingsStep({
                       </div>
                     </div>
 
-                    <div className="border-uzh-grey-80 mt-4 border-t pt-3">
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <FormikNumberField
-                          name="adaptiveConfig.perLeafQuestionCap"
-                          label={t(
-                            'manage.activityWizard.adaptive.settings.perLeafQuestionCap'
-                          )}
-                          min={1}
-                          max={1000}
-                          precision={0}
-                          data={{ cy: 'adaptive-per-leaf-question-cap' }}
-                        />
-                        <FormikNumberField
-                          required
-                          name="adaptiveConfig.minQuestionsPerLeaf"
-                          label={t(
-                            'manage.activityWizard.adaptive.settings.minQuestionsPerLeaf'
-                          )}
-                          min={1}
-                          max={1000}
-                          precision={0}
-                          data={{ cy: 'adaptive-min-questions-per-leaf' }}
-                        />
-                      </div>
-                    </div>
                     {values.adaptiveConfig.preset ===
                     AdaptivePracticeQuizPreset.Research ? (
                       <UserNotification
