@@ -5,6 +5,45 @@ import { type VideoFrame, VIDEO_FORMATS } from '@/src/lib/sources/videoFrames'
 
 const DIGEST = /^[a-f0-9]{64}$/
 
+export type VideoByteRange = {
+  end: number
+  partial: boolean
+  start: number
+}
+
+/** Parse one HTTP byte range. Multiple and malformed ranges fail closed. */
+export function parseVideoByteRange(
+  header: string | null,
+  size: number
+): VideoByteRange | undefined {
+  if (!Number.isSafeInteger(size) || size <= 0) return undefined
+  if (!header) return { start: 0, end: size - 1, partial: false }
+
+  const explicit = /^bytes=(\d+)-(\d*)$/.exec(header)
+  if (explicit) {
+    const start = Number(explicit[1])
+    const requestedEnd = explicit[2] ? Number(explicit[2]) : size - 1
+    const end = Math.min(requestedEnd, size - 1)
+    if (
+      Number.isSafeInteger(start) &&
+      Number.isSafeInteger(end) &&
+      start >= 0 &&
+      end >= start &&
+      start < size
+    )
+      return { start, end, partial: true }
+    return undefined
+  }
+
+  const suffix = /^bytes=-(\d+)$/.exec(header)
+  if (!suffix) return undefined
+  const requestedLength = Number(suffix[1])
+  if (!Number.isSafeInteger(requestedLength) || requestedLength <= 0)
+    return undefined
+  const length = Math.min(requestedLength, size)
+  return { start: size - length, end: size - 1, partial: true }
+}
+
 export function videoObjectKey(frame: VideoFrame) {
   if (!DIGEST.test(frame.video_sha256))
     throw new Error('Invalid video reference')

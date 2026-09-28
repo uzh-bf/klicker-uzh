@@ -9,6 +9,7 @@ import {
   videoFrameStoreConfigured,
 } from '../src/lib/server/videoFrameStore'
 import {
+  parseVideoByteRange,
   readLocalVideo,
   signedVideoPlaybackUrl,
   videoObjectKey,
@@ -291,5 +292,31 @@ describe('video frame selection', () => {
         delete process.env.CHAT_VIDEO_BLOB_CONTAINER
       else process.env.CHAT_VIDEO_BLOB_CONTAINER = previous.container
     }
+  })
+
+  it('parses explicit and suffix byte ranges without falling back silently', () => {
+    expect(parseVideoByteRange(null, 1000)).toEqual({
+      start: 0,
+      end: 999,
+      partial: false,
+    })
+    expect(parseVideoByteRange('bytes=100-199', 1000)).toEqual({
+      start: 100,
+      end: 199,
+      partial: true,
+    })
+    expect(parseVideoByteRange('bytes=-200', 1000)).toEqual({
+      start: 800,
+      end: 999,
+      partial: true,
+    })
+    expect(parseVideoByteRange('bytes=-2000', 1000)).toEqual({
+      start: 0,
+      end: 999,
+      partial: true,
+    })
+    expect(parseVideoByteRange('bytes=100-50', 1000)).toBeUndefined()
+    expect(parseVideoByteRange('bytes=0-1,4-5', 1000)).toBeUndefined()
+    expect(parseVideoByteRange('items=0-5', 1000)).toBeUndefined()
   })
 })

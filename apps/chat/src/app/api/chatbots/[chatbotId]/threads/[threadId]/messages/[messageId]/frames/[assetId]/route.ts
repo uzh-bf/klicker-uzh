@@ -1,11 +1,8 @@
-import { prisma } from '@klicker-uzh/prisma'
 import { type NextRequest, NextResponse } from 'next/server'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
-import { resolveEffectiveMCPConfigurations } from '@/src/lib/server/effectiveChatModes'
 import { readVideoFrame } from '@/src/lib/server/videoFrameStore'
-import type { ChatSourcePart } from '@/src/lib/sources/normalizeSources'
-import { selectedVideoFrames } from '@/src/lib/sources/videoFrames'
-import { resolveMcpScope } from '@/src/services/mcpScope'
+import { resolveAuthorizedVideoFrame } from '@/src/lib/server/videoMessageFrame'
+import { videoAssetIdSchema } from '@/src/lib/sources/videoFrames'
 
 export async function GET(
   req: NextRequest,
@@ -32,35 +29,16 @@ export async function GET(
       { error: 'Video frame unavailable' },
       { status: 404, headers }
     )
-  if (!/^[a-f0-9]{64}$/.test(assetId)) return missing()
+  if (!videoAssetIdSchema.safeParse(assetId).success) return missing()
   try {
-    const message = await prisma.chatMessage.findFirst({
-      where: {
-        id: messageId,
-        threadId,
-        role: 'assistant',
-        thread: { participantId: auth.participantId, chatbotId },
-      },
-      select: { content: true, chatMode: true },
+    const frame = await resolveAuthorizedVideoFrame({
+      assetId,
+      chatbotId,
+      messageId,
+      participantId: auth.participantId,
+      threadId,
     })
-    if (!message || !Array.isArray(message.content)) return missing()
-    const frame = selectedVideoFrames(message.content as ChatSourcePart[]).find(
-      (item) => item.asset_id === assetId
-    )
     if (!frame) return missing()
-    const chatbot = await prisma.chatbot.findUnique({
-      where: { id: chatbotId },
-      select: { mcpConfigurations: { include: { mcpServer: true } } },
-    })
-    const configs = (chatbot?.mcpConfigurations ?? []).filter(
-      (config) => config.isEnabled !== false
-    )
-    const kbIds = resolveMcpScope(
-      configs,
-      message.chatMode ?? 'tutor',
-      resolveEffectiveMCPConfigurations(configs, message.chatMode ?? 'tutor')
-    )
-    if (!kbIds?.includes(frame.kb_id)) return missing()
     const bytes = await readVideoFrame(frame)
     return new NextResponse(new Uint8Array(bytes), {
       headers: {
