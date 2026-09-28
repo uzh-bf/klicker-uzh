@@ -21,7 +21,10 @@ import {
   it,
   vi,
 } from 'vitest'
-import { processAssessmentResponse } from '../src/processors/assessmentProcessor.js'
+import {
+  processAssessmentResponse,
+  resolveTriggeringHatchetEventId,
+} from '../src/processors/assessmentProcessor.js'
 
 const USER_ID = '10000000-0000-4000-8000-000000000001'
 const COURSE_ID = '10000000-0000-4000-8000-000000000002'
@@ -261,6 +264,64 @@ describe.runIf(runDatabaseTests)(
       expect(
         events.every((event) => event.participantId === PARTICIPANT_ID)
       ).toBe(true)
+    })
+
+    it('persists a covered submission using the real Hatchet receipt resolver', async () => {
+      const testHarness = harness()
+      const workflowRunId = '10000000-0000-4000-8000-000000000007'
+      const list = vi.fn(
+        async (
+          query: Parameters<ProcessorContext['v1']['events']['list']>[0]
+        ) => ({
+          rows:
+            query?.workflowIds === undefined &&
+            query?.additionalMetadata?.includes(`submissionId:${SUBMISSION_ID}`)
+              ? [
+                  {
+                    metadata: { id: 'another-resend-event' },
+                    triggeredRuns: [{ workflowRunId: 'another-run' }],
+                  },
+                  {
+                    metadata: { id: HATCHET_EVENT_ID },
+                    triggeredRuns: [{ workflowRunId }],
+                  },
+                ]
+              : [],
+        })
+      )
+      const context = {
+        ...testHarness.context,
+        additionalMetadata: () => ({ submissionId: SUBMISSION_ID }),
+        workflowRunId: () => workflowRunId,
+        v1: { events: { push: testHarness.push, list } },
+      } as unknown as ProcessorContext
+
+      const result = await processAssessmentResponse(command(), context, {
+        ...testHarness.dependencies,
+        resolveHatchetEventId: resolveTriggeringHatchetEventId,
+      })
+
+      expect(result.status).toBe(200)
+      expect(
+        await prisma.liveQuizResponse.count({
+          where: { submissionId: SUBMISSION_ID },
+        })
+      ).toBe(1)
+      const events = await prisma.assessmentAuditOutboxEvent.findMany({
+        where: { liveQuizId: LIVE_QUIZ_ID },
+        orderBy: { eventType: 'asc' },
+      })
+      expect(events.map(({ eventType }) => eventType)).toEqual([
+        'SUBMISSION_PERSISTED',
+        'SUBMISSION_SCORED',
+        'SUBMISSION_SERVER_ACCEPTED',
+        'SUBMISSION_VALIDATED',
+      ])
+      for (const event of events) {
+        expect(JSON.parse(event.canonicalEnvelope).hatchetEventId).toBe(
+          HATCHET_EVENT_ID
+        )
+      }
     })
 
     it('preserves submission processing without audit provenance outside coverage', async () => {

@@ -124,7 +124,16 @@ successful submission. No raw answer, correlation token, cookie, or transport
 error is written to application logs.
 
 The response processor resolves the triggering Hatchet event through the
-workflow-run association exposed by Hatchet. It never substitutes the workflow
+workflow-run association exposed by Hatchet. It lists assessment events using
+the server-stamped `submissionId` metadata, scans all matching pages, and selects
+the event whose `triggeredRuns` contains the exact workflow run ID. Hatchet's
+[`workflowIds` event-list filter](https://github.com/hatchet-dev/hatchet/blob/v0.101.0/pkg/repository/sqlcv1/olap.sql#L1853-L1877)
+targets workflow definitions, despite the pinned
+SDK's misleading description; passing a run ID excludes the triggering event.
+Resends share submission metadata, so that metadata alone is not sufficient to
+identify the event. The lookup does not filter by event key because Hatchet may
+namespace pushed keys. Missing associations remain retryable and ambiguous matches
+fail rather than inventing provenance. It never substitutes the workflow
 run ID for the event ID. This provenance lookup occurs only after the quiz is
 confirmed as covered, so deliberately uncovered quizzes retain their existing
 processing path without an audit-only dependency. For covered assessments it
