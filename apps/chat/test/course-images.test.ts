@@ -156,6 +156,43 @@ describe('course image selection', () => {
     ).toEqual({ status: 'unavailable' })
     expect(read).toHaveBeenCalledTimes(1)
   })
+  it('keeps later targeted search results selectable when the registry is full', async () => {
+    const broad = structuredClone(fixture)
+    const asset = broad.sources[0].chunks[0].visual_assets.assets[0]
+    broad.sources[0].chunks[0].visual_assets.assets = Array.from(
+      { length: 30 },
+      (_, index) => ({
+        ...asset,
+        asset_id: index.toString(16).padStart(64, '0'),
+      })
+    )
+    const targeted = structuredClone(fixture)
+    const targetedId = 'f'.repeat(64)
+    targeted.sources[0].chunks[0].visual_assets.assets = [
+      { ...asset, asset_id: targetedId },
+    ]
+    const search = vi
+      .fn()
+      .mockResolvedValueOnce(broad)
+      .mockResolvedValueOnce(targeted)
+    const tools = withCourseImageTool(
+      {
+        KB_doc_query: tool({
+          inputSchema: z.object({ query: z.string() }),
+          execute: search,
+        }),
+      },
+      [candidate.kb_id],
+      vi.fn().mockResolvedValue(Buffer.from('png'))
+    )
+
+    await call(tools, 'KB_doc_query', { query: 'broad topic' })
+    await call(tools, 'KB_doc_query', { query: 'targeted figure' })
+
+    expect(
+      await call(tools, 'show_course_image', { asset_id: targetedId })
+    ).toMatchObject({ status: 'selected' })
+  })
   it('reports missing images without exposing filesystem errors', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const tools = withCourseImageTool(
