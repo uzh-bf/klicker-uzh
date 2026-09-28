@@ -67,20 +67,34 @@ export async function resolveTriggeringHatchetEventId(
   }
   const workflowRunId = ctx.workflowRunId()
   for (let attempt = 0; attempt < 3; attempt++) {
-    const events = await ctx.v1.events.list({
-      limit: 10,
-      workflowIds: [workflowRunId],
-    })
-    const candidates = (events.rows ?? []).filter((event) =>
-      event.triggeredRuns?.some((run) => run.workflowRunId === workflowRunId)
-    )
-    if (candidates.length === 1) {
-      const eventId = candidates[0]?.metadata.id
-      if (typeof eventId === 'string' && eventId !== '') return eventId
+    const candidateIds = new Set<string>()
+    const pageSize = 100
+    for (let offset = 0; ; offset += pageSize) {
+      // Hatchet's workflowIds filters definitions, not workflow run IDs.
+      // Resends share submission metadata, so still match the exact run below.
+      const events = await ctx.v1.events.list({
+        limit: pageSize,
+        offset,
+        additionalMetadata: [`submissionId:${message.submissionId}`],
+      })
+      const rows = events.rows ?? []
+      for (const event of rows) {
+        if (
+          event.triggeredRuns?.some(
+            (run) => run.workflowRunId === workflowRunId
+          ) &&
+          typeof event.metadata.id === 'string' &&
+          event.metadata.id !== ''
+        ) {
+          candidateIds.add(event.metadata.id)
+        }
+      }
+      if (candidateIds.size > 1) {
+        throw new Error('Hatchet workflow run has multiple triggering events')
+      }
+      if (rows.length < pageSize) break
     }
-    if (candidates.length > 1) {
-      throw new Error('Hatchet workflow run has multiple triggering events')
-    }
+    if (candidateIds.size === 1) return [...candidateIds][0]!
     await sleep(50 * (attempt + 1))
   }
   throw new Error('Hatchet triggering event is not yet available')
