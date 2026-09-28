@@ -121,19 +121,25 @@ export function selectedVideoFrames(
 ): VideoFrame[] {
   const found = new Map<string, VideoFrame>()
   for (const part of parts) {
-    if (
-      part.type !== 'tool-call' ||
-      part.toolName !== VIDEO_FRAME_TOOL ||
-      part.isError
-    )
-      continue
-    const result = record(part.result)
-    if (result?.status !== 'selected') continue
-    const parsed = videoFrameSchema.safeParse(result.frame)
-    if (parsed.success && found.size < 3)
-      found.set(parsed.data.asset_id, parsed.data)
+    const frame = selectedVideoFrame(part)
+    if (frame && found.size < 3) found.set(frame.asset_id, frame)
   }
   return [...found.values()]
+}
+
+export function selectedVideoFrame(
+  part: ChatSourcePart
+): VideoFrame | undefined {
+  if (
+    part.type !== 'tool-call' ||
+    part.toolName !== VIDEO_FRAME_TOOL ||
+    part.isError
+  )
+    return undefined
+  const result = record(part.result)
+  if (result?.status !== 'selected') return undefined
+  const parsed = videoFrameSchema.safeParse(result.frame)
+  return parsed.success ? parsed.data : undefined
 }
 
 export function isVideoSearchTool(name: string) {

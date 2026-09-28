@@ -13,9 +13,12 @@ import { CheckIcon, CopyIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import {
   type ComponentProps,
+  createContext,
   type FC,
   memo,
+  type ReactNode,
   useCallback,
+  useContext,
   useState,
 } from 'react'
 import rehypeKatex from 'rehype-katex'
@@ -37,12 +40,39 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 // Stable module-scope reference: recreating this array on every render would
 // defeat `MarkdownTextPrimitive`'s own memoization of the parsed tree.
-const remarkPlugins = [remarkGfm, remarkMath, remarkCitationMarkers]
+function remarkFirstParagraphAnchor() {
+  return (tree: {
+    children?: Array<{
+      type?: string
+      data?: { hProperties?: Record<string, unknown> }
+    }>
+  }) => {
+    const paragraph = tree.children?.find((node) => node.type === 'paragraph')
+    if (!paragraph) return
+    paragraph.data ??= {}
+    paragraph.data.hProperties = {
+      ...paragraph.data.hProperties,
+      'data-inline-media-anchor': 'true',
+    }
+  }
+}
+
+const remarkPlugins = [
+  remarkGfm,
+  remarkMath,
+  remarkCitationMarkers,
+  remarkFirstParagraphAnchor,
+]
 const rehypePlugins: NonNullable<
   ComponentProps<typeof MarkdownTextPrimitive>['rehypePlugins']
 > = [[rehypeKatex, { trust: false }]]
+const AfterFirstParagraphContext = createContext<ReactNode>(null)
 
-const MarkdownTextImpl = () => {
+const MarkdownTextImpl = ({
+  afterFirstParagraph,
+}: {
+  afterFirstParagraph?: ReactNode
+}) => {
   const { text, status } = useMessagePartText()
   const isRunning = status.type === 'running'
   const { hasMathOpener } = inspectStreamingMath(text)
@@ -53,14 +83,16 @@ const MarkdownTextImpl = () => {
   )
 
   return (
-    <MarkdownTextPrimitive
-      remarkPlugins={remarkPlugins}
-      rehypePlugins={rehypePlugins}
-      preprocess={preprocess}
-      smooth={isRunning && !hasMathOpener}
-      className="aui-md"
-      components={defaultComponents}
-    />
+    <AfterFirstParagraphContext.Provider value={afterFirstParagraph ?? null}>
+      <MarkdownTextPrimitive
+        remarkPlugins={remarkPlugins}
+        rehypePlugins={rehypePlugins}
+        preprocess={preprocess}
+        smooth={isRunning && !hasMathOpener}
+        className="aui-md"
+        components={defaultComponents}
+      />
+    </AfterFirstParagraphContext.Provider>
   )
 }
 
@@ -173,12 +205,26 @@ const defaultComponents = memoizeMarkdownComponents({
       )}
     />
   ),
-  p: ({ className, ...props }) => (
-    <p
-      className={cn('mb-5 mt-5 leading-7 first:mt-0 last:mb-0', className)}
-      {...props}
-    />
-  ),
+  p: function Paragraph({ className, ...props }) {
+    const afterFirstParagraph = useContext(AfterFirstParagraphContext)
+    const anchorProps = props as typeof props & {
+      'data-inline-media-anchor'?: string
+    }
+    const isInlineMediaAnchor =
+      anchorProps['data-inline-media-anchor'] === 'true'
+    const paragraphProps = { ...anchorProps }
+    delete paragraphProps['data-inline-media-anchor']
+
+    return (
+      <>
+        <p
+          className={cn('mb-5 mt-5 leading-7 first:mt-0 last:mb-0', className)}
+          {...paragraphProps}
+        />
+        {isInlineMediaAnchor ? afterFirstParagraph : null}
+      </>
+    )
+  },
   a: ({ className, children, href, ...props }) => {
     const citationIndex = parseCitationHref(href)
     if (citationIndex !== null) return <CitationChip index={citationIndex} />

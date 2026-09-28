@@ -28,9 +28,16 @@ import {
   normalizeCustomMathTags,
 } from '@/src/components/markdown-text'
 import { formatReasoningEffort } from '@/src/lib/config/reasoning'
+import type { ChatSourcePart } from '@/src/lib/sources/normalizeSources'
+import {
+  selectedVideoFrame,
+  selectedVideoFrames,
+  VIDEO_FRAME_TOOL,
+} from '@/src/lib/sources/videoFrames'
 import { resolveDisclosureOpen } from './message-parts-state'
 import { useHasAvailableChatMode } from './mode-options-context'
 import { ToolFallback } from './tool-fallback'
+import { InlineVideoFrame } from './video-frames-section'
 
 type MessageWithCustomMetadata = {
   metadata?: {
@@ -239,6 +246,11 @@ const ChatStoppedPart: FC = () => {
 }
 
 export const AssistantMessageParts: FC = () => {
+  const content = useAuiState((state) => state.message.content)
+  const sourceParts = content as unknown as readonly ChatSourcePart[]
+  const videoFrames = selectedVideoFrames(sourceParts)
+  const firstText = content.find((part) => part.type === 'text')
+
   return (
     <MessagePrimitive.GroupedParts
       indicator="never"
@@ -258,7 +270,14 @@ export const AssistantMessageParts: FC = () => {
               </div>
             )
           case 'group-tool':
-            return part.indices.length <= 1 ? (
+            return part.indices.length <= 1 ||
+              part.indices.some((index) => {
+                const contentPart = content[index]
+                return (
+                  contentPart?.type === 'tool-call' &&
+                  contentPart.toolName === VIDEO_FRAME_TOOL
+                )
+              }) ? (
               children
             ) : (
               <ToolGroup
@@ -269,10 +288,27 @@ export const AssistantMessageParts: FC = () => {
               </ToolGroup>
             )
           case 'text':
-            return <MarkdownText />
+            return (
+              <MarkdownText
+                afterFirstParagraph={
+                  part.text === firstText?.text && videoFrames.length > 0 ? (
+                    <>
+                      {videoFrames.map((frame) => (
+                        <InlineVideoFrame key={frame.asset_id} frame={frame} />
+                      ))}
+                    </>
+                  ) : undefined
+                }
+              />
+            )
           case 'reasoning':
             return <ReasoningPart {...part} />
           case 'tool-call':
+            if (part.toolName === VIDEO_FRAME_TOOL) {
+              const frame = selectedVideoFrame(part as ChatSourcePart)
+              if (frame)
+                return firstText ? null : <InlineVideoFrame frame={frame} />
+            }
             return (
               <div className="focus-visible:ring-ring rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2">
                 {part.toolUI ?? <ToolFallback {...part} />}

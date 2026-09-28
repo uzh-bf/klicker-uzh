@@ -10,6 +10,7 @@ import {
 } from '../src/lib/server/videoPlaybackStore'
 import { withVideoFrameTool } from '../src/lib/server/videoFrameTools'
 import {
+  selectedVideoFrame,
   selectedVideoFrames,
   videoFrameCandidates,
 } from '../src/lib/sources/videoFrames'
@@ -85,6 +86,13 @@ describe('video frame selection', () => {
     expect(selectedVideoFrames(JSON.parse(JSON.stringify(parts)))).toEqual([
       candidate,
     ])
+    expect(selectedVideoFrame(parts[0]!)).toEqual(candidate)
+    expect(
+      selectedVideoFrame({
+        ...parts[0]!,
+        result: { status: 'unavailable' },
+      })
+    ).toBeUndefined()
     expect(
       selectedVideoFrames([
         { type: 'tool-call', toolName: 'KB_doc_query', result: fixture },

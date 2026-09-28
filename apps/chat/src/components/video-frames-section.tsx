@@ -84,6 +84,21 @@ export function VideoFrameCard({
   )
 }
 
+export function InlineVideoFrame({ frame }: { frame: VideoFrame }) {
+  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const threadId = useChatStore((state) => state.activeThreadId)
+  const messageId = useAuiState((state) => state.message.id)
+  if (!chatbotId || !threadId) return null
+
+  return (
+    <VideoFrameCard
+      frame={frame}
+      frameSrc={`/api/chatbots/${chatbotId}/threads/${threadId}/messages/${messageId}/frames/${frame.asset_id}`}
+      videoSrc={`/api/chatbots/${chatbotId}/threads/${threadId}/messages/${messageId}/videos/${frame.asset_id}`}
+    />
+  )
+}
+
 export function VideoFramesSection() {
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const threadId = useChatStore((state) => state.activeThreadId)
