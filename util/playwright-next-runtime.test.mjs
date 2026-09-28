@@ -176,3 +176,26 @@ test('local fixture images do not change production output or normal production 
     else process.env.KLICKER_PLAYWRIGHT_FIXTURES = previous
   }
 })
+
+test('production browser fixtures submit responses to the local response API', () => {
+  const result = spawnSync(
+    'bash',
+    [
+      fileURLToPath(new URL('./_with_local_test_origins.sh', import.meta.url)),
+      process.execPath,
+      '-e',
+      'process.stdout.write(process.env.NEXT_PUBLIC_ADD_RESPONSE_URL)',
+    ],
+    {
+      env: {
+        ...process.env,
+        NODE_ENV: 'production',
+        NEXT_PUBLIC_ADD_RESPONSE_URL:
+          'https://response-api.example.invalid/AddResponse',
+      },
+      encoding: 'utf8',
+    }
+  )
+  assert.equal(result.status, 0, result.stderr)
+  assert.equal(result.stdout, 'http://127.0.0.1:7078/AddResponse')
+})

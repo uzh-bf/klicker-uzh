@@ -136,6 +136,10 @@ independent evidence.
 - Simplification/self-review: shared helper replaces five divergent commands;
   traced dependencies and worker assets survive relocation; no test assertions
   removed or weakened. Approximate substantive delta: 350 lines, excluding plan.
-- CI and final AI review: pending publication of the extended patch.
+- First production CI run: artifact build and five browser shards passed;
+  answer-submission failures exposed an implicit `.env.test` response API URL.
+  Export `NEXT_PUBLIC_ADD_RESPONSE_URL` through the existing local-origin wrapper
+  and protect that subprocess contract. Repeat the full suite on the correction.
+  Final AI review was clean on the first parity commit.
 - Required delivery: updated PR #6311 with exact-head passing CI and final review.
 - Runtime: isolated workspace `rs-leaderboard-react-runtime`; stop after checks.
