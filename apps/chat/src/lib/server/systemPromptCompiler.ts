@@ -16,8 +16,9 @@ export type SystemPromptCompilationContext = {
   toolNames: readonly string[]
   standardModeConfig?: unknown
   /**
-   * The chatbot's live custom modes. Callers pass the live column, never the
-   * revision snapshot, which prefers a pending draft over the approved value.
+   * The custom modes the calling surface should compile. Participant routes
+   * pass the live column; owner preview passes the saved revision so it
+   * reviews the exact configuration awaiting approval.
    */
   customModeConfig?: unknown
 }

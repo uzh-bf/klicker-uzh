@@ -740,9 +740,10 @@ describe('POST owner preview chat', () => {
         customModeConfig: chatbot.customModeConfig,
       }
     )
-    expect(modeOptions[approvedCustomMode.key]).toBe(
-      approvedCustomMode.description
-    )
+    expect(modeOptions[approvedCustomMode.key]).toEqual({
+      description: approvedCustomMode.description,
+      name: approvedCustomMode.name,
+    })
 
     setRequestOptions({ selectedMode: approvedCustomMode.key })
     const response = await POST(request(), {
@@ -750,6 +751,76 @@ describe('POST owner preview chat', () => {
     })
 
     expect(response.status).toBe(200)
+    expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
+      { tutor: 'Tutor instructions' },
+      approvedCustomMode.key,
+      {
+        courseDisplayName: 'Test Course',
+        customModeConfig: { modes: [approvedCustomMode] },
+        toolNames: ['KB_doc_query'],
+        standardModeConfig: defaultStandardModeConfig,
+      }
+    )
+  })
+
+  it('previews a draft custom mode through the saved revision even when the live config is empty', async () => {
+    const chatbot = createChatbot({
+      mcpConfigurations: [
+        {
+          allowedTools: ['doc_query'],
+          chatMode: 'tutor',
+          isEnabled: true,
+          parameters: {
+            kb_id: originalKbId,
+            required: true,
+            toolAlias: 'doc_query',
+          },
+          priority: 1,
+          mcpServer: {
+            authSecret: null,
+            authType: 'scope_token',
+            chatbotIdHeader: null,
+            id: 'kb-server',
+            isActive: true,
+            name: 'KB',
+            parameters: {},
+            passChatbotId: false,
+            url: 'http://kb.test/mcp',
+          },
+        },
+      ],
+      draftConfig: {
+        ...createApprovedCustomModeChatbot(),
+        customModeConfig: { modes: [approvedCustomMode] },
+      },
+    })
+    mocks.findChatbot.mockResolvedValue(chatbot)
+
+    const modeOptions = resolveEffectiveChatModeOptions(
+      chatbot.systemPrompts,
+      chatbot.mcpConfigurations as ChatModeMCPConfiguration[],
+      chatbot.standardModeConfig,
+      {
+        allowUnapprovedModes: true,
+        customModeConfig: (chatbot.draftConfig as Record<string, unknown>)
+          .customModeConfig,
+      }
+    )
+    expect(modeOptions[approvedCustomMode.key]).toEqual({
+      description: approvedCustomMode.description,
+      name: approvedCustomMode.name,
+    })
+
+    setRequestOptions({ selectedMode: approvedCustomMode.key })
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ kbIds: [originalKbId] })
+    )
     expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
       { tutor: 'Tutor instructions' },
       approvedCustomMode.key,

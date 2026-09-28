@@ -30,6 +30,7 @@ import {
 import { REQUIRED_MCP_UNAVAILABLE_CODE } from '@/src/lib/server/mcpRuntimePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import { withOwnerPreviewAuth } from '@/src/lib/server/ownerPreviewAuth'
+import { resolveOwnerPreviewModeConfiguration } from '@/src/lib/server/previewAuthoringConfig'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
@@ -167,7 +168,7 @@ export async function POST(
     chatbot.standardModeConfig,
     {
       allowUnapprovedModes: true,
-      customModeConfig: chatbot.customModeConfig,
+      customModeConfig: resolveOwnerPreviewModeConfiguration(chatbot),
     }
   )
   const selectedMode = resolveRequestedChatMode(
@@ -331,7 +332,9 @@ export async function POST(
         courseDisplayName: chatbot.course.displayName,
         toolNames,
         standardModeConfig: chatbot.standardModeConfig,
-        customModeConfig: chatbot.customModeConfig,
+        // Owner preview is an authoring surface, so it compiles the saved
+        // revision's custom modes rather than the currently approved set.
+        customModeConfig: resolveOwnerPreviewModeConfiguration(chatbot),
       }
     )
 

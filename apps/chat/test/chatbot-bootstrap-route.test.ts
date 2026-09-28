@@ -48,7 +48,7 @@ describe('chatbot bootstrap route', () => {
     const payload = await response.json()
     expect(Object.keys(payload)).toEqual(['modelSelection', 'modeOptions'])
     expect(payload.modelSelection).toBe(true)
-    expect(typeof payload.modeOptions.tutor).toBe('string')
+    expect(typeof payload.modeOptions.tutor.description).toBe('string')
     expect(JSON.stringify(payload)).not.toContain('private prompt')
     expect(mocks.getChatbotOr404.mock.calls[0]?.[1]).toMatchObject({
       standardModeConfig: true,
@@ -92,10 +92,12 @@ describe('chatbot bootstrap route', () => {
 
     const payload = await response.json()
     expect(payload.modeOptions).toEqual({
-      explainer: expect.any(String),
-      tutor: expect.any(String),
-      'cm_0d1f2c3b-4a59-4e6f-8b7a-9c8d7e6f5a4b':
-        'Practises ethical reasoning in a role play.',
+      explainer: expect.objectContaining({ description: expect.any(String) }),
+      tutor: expect.objectContaining({ description: expect.any(String) }),
+      'cm_0d1f2c3b-4a59-4e6f-8b7a-9c8d7e6f5a4b': {
+        description: 'Practises ethical reasoning in a role play.',
+        name: 'Ethik-Rollenspiel',
+      },
     })
     expect(payload.modeOptions['Draft-Mode']).toBeUndefined()
     expect(JSON.stringify(payload)).not.toContain('drafted prompt')
@@ -127,7 +129,9 @@ describe('chatbot bootstrap route', () => {
     const payload = await response.json()
     expect(payload).toMatchObject({
       modeOptions: {
-        explainer: expect.any(String),
+        explainer: expect.objectContaining({
+          description: expect.any(String),
+        }),
       },
     })
     expect(payload.modeOptions.tutor).toBeUndefined()

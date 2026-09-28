@@ -10,7 +10,10 @@ import { FlaskConicalIcon, PlusIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ModelOption } from '@/src/lib/config/models'
-import { resolveSelectedMode } from '@/src/lib/config/modes'
+import {
+  type ChatModeOptions,
+  resolveSelectedMode,
+} from '@/src/lib/config/modes'
 import {
   formatReasoningEffort,
   type ReasoningEffort,
@@ -27,7 +30,7 @@ type OwnerPreviewAssistantProps = {
     id: string
     name: string
   }
-  initialModeOptions: Record<string, string>
+  initialModeOptions: ChatModeOptions
   manageUrl: string
   modelSelection: boolean
   modelOptions: ModelOption[]
@@ -365,7 +368,7 @@ function OwnerPreviewConversation({
   chatbot: OwnerPreviewAssistantProps['chatbot']
   conversation: PreviewConversation
   effectiveMode: string
-  initialModeOptions: Record<string, string>
+  initialModeOptions: ChatModeOptions
 }) {
   const transport = useMemo(
     () =>
