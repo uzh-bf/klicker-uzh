@@ -645,6 +645,7 @@ frontendControl:
       memory: 512Mi
 
 backendGraphql:
+  adaptiveQuizShowSolutions: false
   betaSavedGroupId: grp_2CeKcuxYw3c567fSV7CPPQ
   priorityClassName: production-workload
 
