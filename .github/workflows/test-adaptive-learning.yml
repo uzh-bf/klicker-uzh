@@ -46,7 +46,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Rehearse adaptive IRT v2 migrations
-        run: pnpm --filter @klicker-uzh/prisma verify:adaptive-irt-v2-migration
+      - name: Rehearse initial adaptive migration
+        run: pnpm --filter @klicker-uzh/prisma verify:adaptive-migration
         env:
           DATABASE_URL: postgresql://klicker:${{ github.run_id }}@localhost:5432/klicker-prod

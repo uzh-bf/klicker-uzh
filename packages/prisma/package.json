@@ -70,8 +70,7 @@
     "prisma:studio:qa": "../../util/_run_with_infisical.sh --env stg pnpm run prisma:studio:raw",
     "prisma:studio:raw": "prisma studio",
     "test:disposable": "tsx --test test/disposableDatabase.test.ts test/disposable-prisma.test.ts",
-    "verify:adaptive-irt-v2-migration": "tsx src/scripts/verifyAdaptiveIrtV2Migration.ts",
-    "verify:adaptive-migration": "tsx src/scripts/verifyAdaptivePhase10Migration.ts"
+    "verify:adaptive-migration": "tsx src/scripts/verifyAdaptiveMigration.ts"
   },
   "engines": {
     "node": "=24"

@@ -31,6 +31,24 @@ preserved. Docker may compose an equivalent build-only schema directory by
 copying the four package fragments into the image; it must not overlay tracked
 host source.
 
-Migration verifiers must require `KLICKER_HOST_ROOT`, compose the host schema,
-and read `composed.migrations`. They must never read the package's historical
-migrations directory directly. Composition performs no database work.
+## First shared deployment
+
+The single `20260929000000_adaptive_learning` migration creates the final
+adaptive schema after the host migrations. It replaces 28 development-only
+migrations that were applied only to local test databases. Intermediate adaptive
+backfills and their fixtures are intentionally omitted; existing non-adaptive
+host rows are preserved. Future deployed migrations must remain immutable.
+
+Run `pnpm --filter @klicker-uzh/prisma verify:adaptive-migration` against an
+explicit disposable local PostgreSQL admin URL. The verifier reads the host
+history and bootstrap separately to test clean installation, preservation of
+existing host rows/defaults, database guards, and complete transaction rollback.
+It creates and drops only its uniquely named rehearsal databases.
+
+A local database using the old development history must not run migrate deploy
+with this new history. Keep its matching old checkout for demo review, or rebuild
+a disposable database with the new migrations. Do not reset a seeded demo or
+rewrite its `_prisma_migrations` entries as part of this change. An old generated
+`.adaptive-schema` directory will be rejected by the composition ownership guard;
+inspect it for locally authored migrations before discarding that generated
+output and recomposing.

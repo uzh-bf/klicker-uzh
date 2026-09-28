@@ -52,8 +52,9 @@ Rollup transform.
 
 `packages/prisma/prisma.config.ts` composes host schema files with
 `packages/adaptive-persistence` into an ignored sibling `.adaptive-schema`
-directory. Composition does not access the database. Applied migration names and
-SQL bytes must remain unchanged. Collisions and unknown generated migrations
+directory. Composition does not access the database. The initial adaptive
+bootstrap replaces local-only development history; no shared deployment had
+applied it. Once deployed, migration names and SQL bytes must remain unchanged. Collisions and unknown generated migrations
 fail instead of deleting files.
 
 Promote newly generated host migrations into the host source migration directory

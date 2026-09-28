@@ -4,5 +4,5 @@ process.env.KLICKER_HOST_ROOT ??= fileURLToPath(
   new URL('../../../../', import.meta.url)
 )
 await import(
-  '@klicker-uzh/adaptive-persistence/scripts/verifyAdaptivePhase10Migration'
+  '@klicker-uzh/adaptive-persistence/scripts/verifyAdaptiveMigration'
 )
