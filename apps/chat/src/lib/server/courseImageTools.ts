@@ -24,6 +24,9 @@ export function withCourseImageTool(
   kbIds: readonly string[],
   readImage: (image: CourseImage) => Promise<unknown>
 ): ToolSet {
+  if (Object.hasOwn(tools, COURSE_IMAGE_TOOL)) {
+    throw new Error(`Tool name conflict: ${COURSE_IMAGE_TOOL}`)
+  }
   const candidates = new Map<string, CourseImage>()
   const selected = new Set<string>()
   const wrapped: ToolSet = { ...tools }
