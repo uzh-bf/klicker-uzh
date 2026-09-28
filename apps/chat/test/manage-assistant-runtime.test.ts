@@ -28,9 +28,9 @@ function model(
   }
 }
 
-// Both deployed registries lead with the ADVANCED "auto" entry, followed by the
-// BASE fallback. The two orderings below mirror the stg/prd shape while
-// disagreeing on position so the resolution cannot pass by ordering alone.
+// A non-fallback entry may lead the registry ahead of the BASE fallback. The
+// two orderings below disagree on position so the resolution cannot pass by
+// ordering alone.
 const stgOrdering: ChatModelConfig[] = [
   model({ id: 'auto', fallback: false, usageClass: 'ADVANCED' }),
   model({ id: CHAT_BASE_MODEL_ID, fallback: true, usageClass: 'BASE' }),

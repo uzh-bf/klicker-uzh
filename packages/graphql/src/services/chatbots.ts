@@ -2043,6 +2043,23 @@ type CreateChatbotArgs = {
   courseId: string
 }
 
+// New chatbots start on GPT-6 Luna, the BASE default model. A registry without
+// it, such as the local development default, keeps the single-Auto default.
+const NEW_CHATBOT_MODEL_ID = 'gpt-6-luna'
+
+export function getNewChatbotModelId(
+  registry: readonly ChatModelCapability[]
+): string | null {
+  const preferred = registry.find((model) => model.id === NEW_CHATBOT_MODEL_ID)
+  if (preferred?.usageClass === 'BASE' && !preferred.fallback) {
+    return preferred.id
+  }
+  const auto = registry.find((model) => model.id === 'auto')
+  return auto && getChatModelAutoPolicyIssues(registry).length === 0
+    ? auto.id
+    : null
+}
+
 export async function createChatbot(
   args: CreateChatbotArgs,
   ctx: ContextWithUser
@@ -2061,12 +2078,10 @@ export async function createChatbot(
     throw chatbotError('Chatbot name must not be empty', 'BAD_USER_INPUT')
   }
 
-  const modelRegistry = getChatModelRegistry()
-  const autoPolicyIssues = getChatModelAutoPolicyIssues(modelRegistry)
-  const auto = modelRegistry.find((model) => model.id === 'auto')
-  if (autoPolicyIssues.length > 0 || !auto) {
+  const defaultModelId = getNewChatbotModelId(getChatModelRegistry())
+  if (!defaultModelId) {
     throw new GraphQLError(
-      'Chatbot defaults require exactly one valid non-reasoning ADVANCED Auto model'
+      'Chatbot defaults require a BASE GPT-6 Luna model or exactly one valid Auto model'
     )
   }
 
@@ -2077,7 +2092,7 @@ export async function createChatbot(
       avatar: args.avatar ?? null,
       status: DB.ChatbotStatus.DRAFT,
       modelSelection: false,
-      allowedModelIds: [auto.id],
+      allowedModelIds: [defaultModelId],
       allowedReasoningEffortsByModel: Prisma.DbNull,
       // New chatbots start with the participant map off (lecturer opts in).
       knowledgeGraphVisible: false,

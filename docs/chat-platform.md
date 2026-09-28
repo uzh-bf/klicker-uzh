@@ -286,15 +286,19 @@ Three properties matter when debugging it:
 
 Every registry entry carries an explicit `usageClass` (`BASE` or `ADVANCED`),
 the server-derived classification of the model lane ([ADR 0020](./adr/0020-two-tier-chatbot-approval.md)).
-`auto` is invariantly `ADVANCED` (both consumers reject any other class for
-it). GPT-5.6 Luna is the only `BASE` model and the participant-credit fallback;
-every other current model is `ADVANCED`. Both consumers reject external
-registries that violate that invariant.
+GPT-5.6 Luna must be a `BASE` model and the participant-credit fallback; both
+consumers reject external registries that violate that invariant. Other models
+may also be `BASE`. The deployed registries classify GPT-6 Luna (the automatic
+primary), `auto`, and GPT-5.6 Luna as `BASE`, because Luna and Sol are cheap
+enough that the auto-router needs no cost center, while directly selected
+GPT-6 Sol and GPT-5.6 Sol stay `ADVANCED`.
 External registry JSON that omits `usageClass` normalizes to `ADVANCED` —
 conservative, because a missing class must never imply base usage.
 
-New chatbots use a fixed Auto policy by default: the owner projection contains
-one effective `auto` model and no reasoning entries. The strict owner-only
+New chatbots use a fixed GPT-6 Luna policy by default: the owner projection
+contains one effective `gpt-6-luna` model and no reasoning entries. A registry
+without that BASE model, such as the local development default, keeps a single
+`auto` model instead. The strict owner-only
 `saveChatbotRevision` mutation uses its `modelPolicy` section to require exactly
 one active model for fixed mode, one supported reasoning effort when that model
 supports reasoning, and at least one active model plus valid reasoning entries
@@ -371,12 +375,10 @@ base-budget backfill and cohort evidence exist for it.
 Enforcement does not control class admission. Whether or not the switch is on,
 the participant and preview routes admit a candidate only when its usage class
 is entitled: the account-level AI approval opens the cost-free base class, and a
-cost-carrying advanced class additionally needs a non-blank cost center. A
-BASE-only account therefore cannot use its automatic default while staging
-keeps an ADVANCED automatic primary such as Auto. The activation step must
-validate a usable path for those owners, either by selecting a base-entitled
-model as the chatbot's or environment's automatic primary or by adding a cost
-center so the owner's entitled class can serve the automatic model.
+cost-carrying advanced class additionally needs a non-blank cost center. Both
+deployed automatic primaries (GPT-6 Luna) are `BASE`, so an approved account
+without a cost center keeps its automatic default; only directly selected Sol
+models need the cost center.
 
 An account with no configured base budget receives the default
 `DEFAULT_BASE_CHAT_BUDGET_CREDITS` (`packages/util/src/chatUsage.ts`) for the
@@ -404,9 +406,6 @@ Cutover order for one environment:
    `chat.accountUsageEnforcementEnabled: true`, and confirm the running pods
    carry both variables. That values change is reviewed separately from the
    release, so a newly promoted release can ship with both switches disabled.
-   For BASE-only owners whose automatic primary is advanced, first select a
-   base-entitled automatic primary or add the owner's cost center; otherwise
-   those owners lose their usable automatic default even with the backfill.
 4. Exercise one participant turn on a budgeted account and confirm the class
    counter increments, the answer persists, and no `CHAT_MODEL_UNAVAILABLE_*`
    appears for the cohort.
