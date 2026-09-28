@@ -1,0 +1,5 @@
+query AdaptivePracticeQuizPreview($id: String!) {
+  adaptivePracticeQuizPreview(id: $id) {
+    ...AdaptivePracticeQuizPreviewData
+  }
+}

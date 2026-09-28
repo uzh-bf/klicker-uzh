@@ -1,0 +1,13 @@
+query PracticeQuizPublicationPreview($id: String!) {
+  practiceQuizPublicationPreview(id: $id) {
+    mode
+    canSchedule
+    readiness {
+      ...AdaptivePracticeQuizReadinessData
+    }
+    rootNodes {
+      id
+      name
+    }
+  }
+}

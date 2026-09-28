@@ -314,5 +314,5 @@
   }
 }
 
-@source "../../../external/catalyst/packages/adaptive-manage-ui/src";
-@source "../../../external/catalyst/packages/adaptive-pwa-ui/src";
+@source "../../../packages/adaptive-manage-ui/src";
+@source "../../../packages/adaptive-pwa-ui/src";

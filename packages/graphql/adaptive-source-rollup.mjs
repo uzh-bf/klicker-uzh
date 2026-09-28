@@ -3,13 +3,13 @@ import { dirname, resolve } from 'node:path'
 import ts from 'typescript'
 
 const sourceDirectories = [
-  '/external/catalyst/packages/adaptive-server/',
-  '/external/catalyst/packages/adaptive-persistence/',
+  '/packages/adaptive-server/',
+  '/packages/adaptive-persistence/',
 ]
 const isSourceFile = (id) =>
   sourceDirectories.some((directory) => id.includes(directory))
 
-export function isCatalystSource(id) {
+export function isAdaptiveSource(id) {
   return (
     id.startsWith('@klicker-uzh/adaptive-server/') ||
     id.startsWith('@klicker-uzh/adaptive-persistence/') ||
@@ -20,9 +20,9 @@ export function isCatalystSource(id) {
 // Host tsc checks these source-package imports. Rollup also needs to emit their
 // runtime code: TypeScript treats node_modules workspace links as external
 // libraries and only emits the host's own source files.
-export function catalystSource() {
+export function adaptiveSource() {
   return {
-    name: 'catalyst-source',
+    name: 'adaptive-source',
     resolveId(specifier, importer) {
       if (!importer || !isSourceFile(importer) || !specifier.startsWith('.'))
         return null

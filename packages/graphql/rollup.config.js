@@ -2,7 +2,7 @@ import { nodeResolve } from '@rollup/plugin-node-resolve'
 import typescript from '@rollup/plugin-typescript'
 import { defineConfig } from 'rollup'
 import copy from 'rollup-plugin-copy'
-import { catalystSource, isCatalystSource } from './catalyst-source-rollup.mjs'
+import { adaptiveSource, isAdaptiveSource } from './adaptive-source-rollup.mjs'
 
 const config = defineConfig([
   {
@@ -25,7 +25,7 @@ const config = defineConfig([
     },
     plugins: [
       nodeResolve(),
-      catalystSource(),
+      adaptiveSource(),
       typescript({
         tsconfig: './tsconfig.json',
         compilerOptions: {
@@ -41,7 +41,7 @@ const config = defineConfig([
       }),
     ],
     external: (id) =>
-      !isCatalystSource(id) &&
+      !isAdaptiveSource(id) &&
       (/^@klicker-uzh\//.test(id) || /node_modules/.test(id)), // Exclude node_modules and workspace packages
   },
 ])

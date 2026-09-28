@@ -1,9 +1,12 @@
 ---
 type: Integration Guide
 title: Adaptive Learning Operations
-description: Adaptive learning is owned by Catalyst and integrated through pinned workspace packages.
+description: Public adaptive feature ownership and private calculation service integration.
 ---
 
-# Adaptive learning
+# Adaptive Learning Operations
 
-The feature source and its runbook live in the pinned Catalyst checkout at [external/catalyst/docs/project/adaptive-learning/reference/adaptive-learning-operations.md](../external/catalyst/docs/project/adaptive-learning/reference/adaptive-learning-operations.md). See [the integration guide](adaptive-catalyst-integration.md) for checkout, build, and verification requirements.
+Klicker owns the adaptive UI, database, permissions and orchestration in
+`packages/adaptive-*`. Catalyst provides the authenticated calculation service.
+See [the integration guide](adaptive-catalyst-integration.md) for the service
+boundary, configuration, migration ownership and required verification.

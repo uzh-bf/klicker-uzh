@@ -7,7 +7,7 @@ const config: CodegenConfig = {
   // schema: 'src/graphql/schema.graphql',
   documents: [
     'src/graphql/ops/**/*.graphql',
-    '../../external/catalyst/packages/adaptive-server/src/graphql/ops/**/*.graphql',
+    '../adaptive-server/src/graphql/ops/**/*.graphql',
   ],
   generates: {
     './src/ops.ts': {

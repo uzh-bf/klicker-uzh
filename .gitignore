@@ -115,3 +115,6 @@ evaluation/config.local.json
 packages/prisma/src/prisma/.adaptive-schema/
 
 apps/analytics/prisma/.adaptive-schema/
+
+# Optional private engine checkout; never part of the public build or history.
+/external/catalyst/

@@ -3,7 +3,6 @@
   "version": "3.4.0-alpha.4",
   "license": "AGPL-3.0",
   "devDependencies": {
-    "@klicker-uzh/adaptive-learning": "workspace:*",
     "@klicker-uzh/adaptive-persistence": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/transactional": "workspace:*",
@@ -81,5 +80,9 @@
   "exports": {
     "./adaptive-seed-host-types": "./src/adaptive-seed-host-types.ts"
   },
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@klicker-uzh/adaptive-client": "workspace:*",
+    "@klicker-uzh/adaptive-contract": "workspace:*"
+  }
 }

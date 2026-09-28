@@ -1,0 +1,9 @@
+mutation MCreateCompetenceTreeWithRuntimeDefaults(
+  $input: CompetenceTreeInput!
+) {
+  createCompetenceTree(input: $input) {
+    ...CompetenceTreeData
+    defaultTotalQuestionCap
+    defaultTimeLimitSeconds
+  }
+}

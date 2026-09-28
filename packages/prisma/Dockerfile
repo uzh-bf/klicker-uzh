@@ -47,8 +47,8 @@ COPY packages/prisma/prisma.migrator.config.ts ./prisma.config.ts
 # Only the schema folder is needed; it contains datasource + models + the migrations/
 # directory that `migrate deploy` applies. No generated client, no app code required.
 COPY packages/prisma/src/prisma/schema ./src/prisma/schema
-COPY external/catalyst/packages/adaptive-persistence/src/prisma/schema/*.prisma ./src/prisma/schema/
-COPY external/catalyst/packages/adaptive-persistence/src/prisma/schema/migrations ./src/prisma/schema/migrations
+COPY packages/adaptive-persistence/src/prisma/schema/*.prisma ./src/prisma/schema/
+COPY packages/adaptive-persistence/src/prisma/schema/migrations ./src/prisma/schema/migrations
 
 RUN addgroup -S nodejs -g 1001 && adduser -S -G nodejs -u 1001 prisma
 USER prisma

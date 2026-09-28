@@ -1,0 +1,87 @@
+fragment AdaptivePracticeQuizReadinessData on AdaptivePracticeQuizReadiness {
+  ready
+  errors {
+    code
+    message
+    parameters {
+      nodeName
+      elementName
+      field
+      minimumValue
+      maximumValue
+      targetItemCount
+      enabledAssignmentCount
+      requiredQuestionCount
+      availableItemCount
+      effectiveQuestionCap
+      totalQuestionCap
+      classifiableLevelCount
+      levelCount
+      estimatedDurationMinutes
+      secondsPerItem
+      assignmentId
+      nodeId
+      scaleVersionId
+      calibrationStatus
+      elementVersion
+    }
+    path
+    nodeId
+    leafNodeId
+    levelId
+    assignmentId
+  }
+  warnings {
+    code
+    message
+    parameters {
+      nodeName
+      elementName
+      field
+      minimumValue
+      maximumValue
+      targetItemCount
+      enabledAssignmentCount
+      requiredQuestionCount
+      availableItemCount
+      effectiveQuestionCap
+      totalQuestionCap
+      classifiableLevelCount
+      levelCount
+      estimatedDurationMinutes
+      secondsPerItem
+      assignmentId
+      nodeId
+      scaleVersionId
+      calibrationStatus
+      elementVersion
+    }
+    path
+    nodeId
+    leafNodeId
+    levelId
+    assignmentId
+  }
+  coverages {
+    coverageId
+    leafNodeId
+    levelId
+    targetItemCount
+    enabledAssignmentCount
+    ready
+  }
+  rootReachability {
+    nodeId
+    availableItemCount
+    allocatedQuestionCount
+    minimumReachableStandardError
+    classifiableLevelCount
+    levelCount
+    allLevelsPotentiallyClassifiable
+  }
+  enabledRootCount
+  enabledLeafCount
+  enabledAssignmentCount
+  expectedQuestionCount
+  estimatedDurationMinutes
+}

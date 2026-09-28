@@ -1,0 +1,6 @@
+mutation ActivateCompetenceTreeScaleVersion($scaleVersionId: String!) {
+  activateCompetenceTreeScaleVersion(scaleVersionId: $scaleVersionId) {
+    id
+    status
+  }
+}

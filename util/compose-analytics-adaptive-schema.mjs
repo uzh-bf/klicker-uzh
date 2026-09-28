@@ -1,6 +1,6 @@
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { composeAdaptivePrismaSchema } from '../external/catalyst/packages/adaptive-persistence/src/compose.mjs'
+import { composeAdaptivePrismaSchema } from '../packages/adaptive-persistence/src/compose.mjs'
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
 const composed = composeAdaptivePrismaSchema({

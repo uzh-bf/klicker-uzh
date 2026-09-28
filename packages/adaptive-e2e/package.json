@@ -1,0 +1,17 @@
+{
+  "name": "@klicker-uzh/adaptive-e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0",
+  "exports": {
+    "./tests/*": "./tests/*.ts",
+    "./util/*": "./util/*.ts"
+  },
+  "peerDependencies": {
+    "@playwright/test": "^1.58.0",
+    "@klicker-uzh/playwright": "workspace:*",
+    "@klicker-uzh/prisma": "workspace:*",
+    "axe-core": "^4.11.4"
+  }
+}

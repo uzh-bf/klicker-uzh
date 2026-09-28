@@ -1,0 +1,220 @@
+// LEGACY standalone adaptive assessment schema.
+// New adaptive learning work targets competence trees and PracticeQuizMode.ADAPTIVE
+// in competence.prisma / quiz.prisma. Do not expose these models through new
+// GraphQL or UI surfaces; remove them after the no-data or migration decision.
+
+enum AdaptiveAssessmentAttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+model AdaptiveAssessment {
+  id String @id @default(uuid()) @db.Uuid
+
+  name        String
+  displayName String
+  description String?
+  status      PublicationStatus @default(DRAFT)
+  isDeleted   Boolean           @default(false)
+
+  thetaMin               Float @default(-3)
+  thetaMax               Float @default(3)
+  discrimination         Float @default(1.5)
+  standardErrorThreshold Float @default(0.4)
+  questionThreshold      Int   @default(50)
+  topInformationRatio    Float @default(0.8)
+
+  showTimer           Boolean @default(true)
+  showCompetenceNames Boolean @default(true)
+  showFinalResult     Boolean @default(true)
+  showSolutions       Boolean @default(false)
+
+  levels         AdaptiveAssessmentLevel[]
+  competences    AdaptiveAssessmentCompetence[]
+  subCompetences AdaptiveAssessmentSubCompetence[]
+  elements       AdaptiveAssessmentElement[]
+  attempts       AdaptiveAssessmentAttempt[]
+  resultMessages AdaptiveAssessmentResultMessage[]
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courseId])
+  @@index([ownerId])
+  @@index([status])
+}
+
+model AdaptiveAssessmentLevel {
+  id Int @id @default(autoincrement())
+
+  label String
+  order Int
+
+  assessment   AdaptiveAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  assessmentId String             @db.Uuid
+
+  elements       AdaptiveAssessmentElement[]
+  resultMessages AdaptiveAssessmentResultMessage[]
+
+  @@unique([assessmentId, label])
+  @@unique([assessmentId, order])
+}
+
+model AdaptiveAssessmentCompetence {
+  id Int @id @default(autoincrement())
+
+  name                   String
+  tagName                String?
+  enabled                Boolean @default(true)
+  order                  Int
+  weight                 Float   @default(1)
+  questionThreshold      Int?
+  standardErrorThreshold Float?
+
+  assessment   AdaptiveAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  assessmentId String             @db.Uuid
+
+  subCompetences AdaptiveAssessmentSubCompetence[]
+  elements       AdaptiveAssessmentElement[]
+
+  @@unique([assessmentId, name])
+  @@unique([assessmentId, order])
+}
+
+model AdaptiveAssessmentSubCompetence {
+  id Int @id @default(autoincrement())
+
+  name                   String
+  tagName                String?
+  enabled                Boolean @default(true)
+  order                  Int
+  questionThreshold      Int?
+  standardErrorThreshold Float?
+
+  assessment   AdaptiveAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  assessmentId String             @db.Uuid
+
+  competence   AdaptiveAssessmentCompetence @relation(fields: [competenceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  competenceId Int
+
+  elements AdaptiveAssessmentElement[]
+
+  @@unique([assessmentId, competenceId, name])
+  @@unique([assessmentId, competenceId, order])
+}
+
+model AdaptiveAssessmentElement {
+  id Int @id @default(autoincrement())
+
+  enabled        Boolean @default(true)
+  exposure       Int     @default(0)
+  discrimination Float?
+
+  assessment   AdaptiveAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  assessmentId String             @db.Uuid
+
+  element   Element @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementId Int
+
+  competence   AdaptiveAssessmentCompetence @relation(fields: [competenceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  competenceId Int
+
+  subCompetence   AdaptiveAssessmentSubCompetence @relation(fields: [subCompetenceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  subCompetenceId Int
+
+  level   AdaptiveAssessmentLevel @relation(fields: [levelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  levelId Int
+
+  responses AdaptiveAssessmentResponse[]
+
+  @@unique([assessmentId, elementId, competenceId, subCompetenceId, levelId])
+  @@index([elementId])
+  @@index([assessmentId, enabled])
+}
+
+model AdaptiveAssessmentAttempt {
+  id String @id @default(uuid()) @db.Uuid
+
+  status               AdaptiveAssessmentAttemptStatus @default(IN_PROGRESS)
+  currentTheta         Float                           @default(0)
+  currentStandardError Float?
+  finalTheta           Float?
+  finalStandardError   Float?
+  finalLevelLabel      String?
+  elapsedSeconds       Int?
+  thetaHistory         Json?
+  standardErrorHistory Json?
+
+  assessment   AdaptiveAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  assessmentId String             @db.Uuid
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participationId Int
+
+  responses AdaptiveAssessmentResponse[]
+
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([assessmentId, participantId, status])
+  @@index([participationId])
+}
+
+model AdaptiveAssessmentResponse {
+  id Int @id @default(autoincrement())
+
+  order              Int
+  response           Json
+  correct            Boolean
+  thetaBefore        Float
+  thetaAfter         Float
+  standardErrorAfter Float
+  elapsedSeconds     Int?
+
+  attempt   AdaptiveAssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  attemptId String                    @db.Uuid
+
+  adaptiveElement   AdaptiveAssessmentElement @relation(fields: [adaptiveElementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  adaptiveElementId Int
+
+  element   Element @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementId Int
+
+  createdAt DateTime @default(now())
+
+  @@unique([attemptId, order])
+  @@index([attemptId])
+  @@index([adaptiveElementId])
+  @@index([elementId])
+}
+
+model AdaptiveAssessmentResultMessage {
+  id Int @id @default(autoincrement())
+
+  order      Int
+  message    String
+  minTheta   Float?
+  maxTheta   Float?
+  isFallback Boolean @default(false)
+
+  assessment   AdaptiveAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  assessmentId String             @db.Uuid
+
+  level   AdaptiveAssessmentLevel? @relation(fields: [levelId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  levelId Int?
+
+  @@unique([assessmentId, order])
+  @@index([assessmentId, isFallback])
+}

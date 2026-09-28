@@ -1,0 +1,34 @@
+{
+  "name": "@klicker-uzh/adaptive-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0",
+  "exports": {
+    "./services/*": "./src/services/*.ts",
+    "./schema/*": "./src/schema/*.ts",
+    "./ops/*": "./src/graphql/ops/*",
+    "./package.json": "./package.json",
+    "./test/*": "./test/*.ts"
+  },
+  "peerDependencies": {
+    "@klicker-uzh/adaptive-client": "workspace:*",
+    "@klicker-uzh/graphql": "workspace:*",
+    "@klicker-uzh/prisma": "workspace:*",
+    "@klicker-uzh/types": "workspace:*",
+    "@klicker-uzh/grading": "workspace:*",
+    "@klicker-uzh/util": "workspace:*",
+    "@azure/storage-blob": "^12.25.0",
+    "graphql": "^16.11.0",
+    "zod": "^3.25.76",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@hatchet-dev/typescript-sdk": "^1.9.4",
+    "@klicker-uzh/adaptive-contract": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "3.2.4"
+  },
+  "scripts": {
+    "test:standalone": "vitest run test/adaptivePracticeQuizPrivacy.test.ts"
+  }
+}

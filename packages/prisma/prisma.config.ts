@@ -1,6 +1,6 @@
-// Compose the pinned Catalyst persistence fragments before Prisma commands.
+// Compose the host-owned adaptive persistence fragments before Prisma commands.
 import { defineConfig } from 'prisma/config'
-import { composeAdaptivePrismaSchema } from '../../external/catalyst/packages/adaptive-persistence/src/compose.mjs'
+import { composeAdaptivePrismaSchema } from '../adaptive-persistence/src/compose.mjs'
 
 const composed = composeAdaptivePrismaSchema({
   schemaDirectory: 'src/prisma/schema',

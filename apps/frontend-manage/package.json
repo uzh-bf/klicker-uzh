@@ -17,7 +17,6 @@
     "@fullcalendar/react": "6.1.20",
     "@fullcalendar/timegrid": "6.1.20",
     "@klicker-uzh/adaptive-i18n": "workspace:*",
-    "@klicker-uzh/adaptive-learning": "workspace:*",
     "@klicker-uzh/adaptive-manage-ui": "workspace:*",
     "@klicker-uzh/feature-flags": "workspace:*",
     "@klicker-uzh/graphql": "workspace:*",
@@ -69,7 +68,8 @@
     "slate-history": "0.109.0",
     "slate-react": "0.110.2",
     "tailwind-merge": "3.3.1",
-    "yup": "1.6.1"
+    "yup": "1.6.1",
+    "@klicker-uzh/adaptive-contract": "workspace:*"
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "~0.1.1",

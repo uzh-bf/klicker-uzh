@@ -931,13 +931,13 @@ importers:
         version: 6.1.20(@fullcalendar/core@6.1.20)
       '@klicker-uzh/adaptive-i18n':
         specifier: workspace:*
-        version: link:../../external/catalyst/packages/adaptive-i18n
-      '@klicker-uzh/adaptive-learning':
+        version: link:../../packages/adaptive-i18n
+      '@klicker-uzh/adaptive-contract':
         specifier: workspace:*
-        version: link:../../external/catalyst/packages/adaptive-learning
+        version: link:../../packages/adaptive-contract
       '@klicker-uzh/adaptive-manage-ui':
         specifier: workspace:*
-        version: link:../../external/catalyst/packages/adaptive-manage-ui
+        version: link:../../packages/adaptive-manage-ui
       '@klicker-uzh/feature-flags':
         specifier: workspace:*
         version: link:../../packages/feature-flags
@@ -1199,13 +1199,13 @@ importers:
         version: 0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.2.8)
       '@klicker-uzh/adaptive-i18n':
         specifier: workspace:*
-        version: link:../../external/catalyst/packages/adaptive-i18n
-      '@klicker-uzh/adaptive-learning':
+        version: link:../../packages/adaptive-i18n
+      '@klicker-uzh/adaptive-contract':
         specifier: workspace:*
-        version: link:../../external/catalyst/packages/adaptive-learning
+        version: link:../../packages/adaptive-contract
       '@klicker-uzh/adaptive-pwa-ui':
         specifier: workspace:*
-        version: link:../../external/catalyst/packages/adaptive-pwa-ui
+        version: link:../../packages/adaptive-pwa-ui
       '@klicker-uzh/graphql':
         specifier: workspace:*
         version: link:../../packages/graphql
@@ -1794,17 +1794,36 @@ importers:
         specifier: 3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.51.2)(tsx@4.19.4)(yaml@2.9.0)
 
-  external/catalyst/packages/adaptive-e2e:
+  packages/adaptive-client:
     dependencies:
-      '@klicker-uzh/adaptive-learning':
-        specifier: workspace:*
-        version: link:../adaptive-learning
+      zod:
+        specifier: 3.25.76
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.12.4
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
+
+  packages/adaptive-contract:
+    devDependencies:
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.12.4
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
+
+  packages/adaptive-e2e:
+    dependencies:
       '@klicker-uzh/playwright':
         specifier: workspace:*
-        version: link:../../../../playwright
+        version: link:../../playwright
       '@klicker-uzh/prisma':
         specifier: workspace:*
-        version: link:../../../../packages/prisma
+        version: link:../prisma
       '@playwright/test':
         specifier: ^1.58.0
         version: 1.58.2
@@ -1812,46 +1831,13 @@ importers:
         specifier: ^4.11.4
         version: 4.11.4
 
-  external/catalyst/packages/adaptive-i18n:
+  packages/adaptive-i18n:
     devDependencies:
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
 
-  external/catalyst/packages/adaptive-learning:
-    devDependencies:
-      '@rollup/plugin-node-resolve':
-        specifier: ~15.3.1
-        version: 15.3.1(rollup@4.34.9)
-      '@rollup/plugin-typescript':
-        specifier: ~12.1.4
-        version: 12.1.4(rollup@4.34.9)(tslib@2.8.1)(typescript@6.0.3)
-      '@types/node':
-        specifier: ^24.10.1
-        version: 24.13.3
-      cross-env:
-        specifier: ~7.0.3
-        version: 7.0.3
-      npm-run-all:
-        specifier: ~4.1.5
-        version: 4.1.5
-      prettier:
-        specifier: ~3.3.3
-        version: 3.3.3
-      rollup:
-        specifier: ~4.34.9
-        version: 4.34.9
-      tslib:
-        specifier: ~2.8.1
-        version: 2.8.1
-      typescript:
-        specifier: ~6.0.3
-        version: 6.0.3
-      vitest:
-        specifier: 3.2.4
-        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.51.2)(tsx@4.19.4)(yaml@2.9.0)
-
-  external/catalyst/packages/adaptive-manage-ui:
+  packages/adaptive-manage-ui:
     dependencies:
       '@apollo/client':
         specifier: ^3.13.8
@@ -1862,15 +1848,15 @@ importers:
       '@fortawesome/react-fontawesome':
         specifier: ^0.2.2
         version: 0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.2.8)
-      '@klicker-uzh/adaptive-learning':
+      '@klicker-uzh/adaptive-contract':
         specifier: workspace:*
-        version: link:../adaptive-learning
+        version: link:../../packages/adaptive-contract
       '@klicker-uzh/graphql':
         specifier: workspace:*
-        version: link:../../../../packages/graphql
+        version: link:../graphql
       '@klicker-uzh/shared-components':
         specifier: workspace:*
-        version: link:../../../../packages/shared-components
+        version: link:../shared-components
       '@uzh-bf/design-system':
         specifier: 4.1.8
         version: 4.1.8(@fortawesome/fontawesome-svg-core@6.7.2)(@fortawesome/free-regular-svg-icons@6.7.2)(@fortawesome/free-solid-svg-icons@6.7.2)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.2.8))(@tailwindcss/postcss@4.3.3)(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.20)(formik@2.4.9(@types/react@19.2.18)(react@19.2.8))(lucide-react@0.522.0(react@19.2.8))(postcss@8.5.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(tailwind-merge@3.3.1)(tailwindcss-animate@1.0.7(tailwindcss@4.3.3))(tailwindcss-radix@4.0.2(tailwindcss@4.3.3))(tailwindcss@4.3.3)(tw-animate-css@1.3.7)(yup@1.6.1)
@@ -1909,26 +1895,29 @@ importers:
         specifier: 3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.51.2)(tsx@4.19.4)(yaml@2.9.0)
 
-  external/catalyst/packages/adaptive-persistence:
+  packages/adaptive-persistence:
     dependencies:
       '@klicker-uzh/prisma':
         specifier: workspace:*
-        version: link:../../../../packages/prisma
+        version: link:../prisma
       '@klicker-uzh/prisma-data':
         specifier: workspace:*
-        version: link:../../../../packages/prisma-data
+        version: link:../prisma-data
       '@klicker-uzh/util':
         specifier: workspace:*
-        version: link:../../../../packages/util
+        version: link:../util
       pg:
         specifier: ^8.16.3
         version: 8.16.3
     devDependencies:
-      '@klicker-uzh/adaptive-learning':
+      "@klicker-uzh/adaptive-client":
         specifier: workspace:*
-        version: link:../adaptive-learning
+        version: link:../adaptive-client
+      "@klicker-uzh/adaptive-contract":
+        specifier: workspace:*
+        version: link:../adaptive-contract
 
-  external/catalyst/packages/adaptive-pwa-ui:
+  packages/adaptive-pwa-ui:
     dependencies:
       '@apollo/client':
         specifier: ^3.13.8
@@ -1939,18 +1928,18 @@ importers:
       '@fortawesome/react-fontawesome':
         specifier: ^0.2.2
         version: 0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.2.8)
-      '@klicker-uzh/adaptive-learning':
+      '@klicker-uzh/adaptive-contract':
         specifier: workspace:*
-        version: link:../adaptive-learning
+        version: link:../../packages/adaptive-contract
       '@klicker-uzh/graphql':
         specifier: workspace:*
-        version: link:../../../../packages/graphql
+        version: link:../graphql
       '@klicker-uzh/markdown':
         specifier: workspace:*
-        version: link:../../../../packages/markdown
+        version: link:../markdown
       '@klicker-uzh/shared-components':
         specifier: workspace:*
-        version: link:../../../../packages/shared-components
+        version: link:../shared-components
       '@uzh-bf/design-system':
         specifier: 4.1.8
         version: 4.1.8(@fortawesome/fontawesome-svg-core@6.7.2)(@fortawesome/free-regular-svg-icons@6.7.2)(@fortawesome/free-solid-svg-icons@6.7.2)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.2.8))(@tailwindcss/postcss@4.3.3)(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.20)(formik@2.4.9(@types/react@19.2.18)(react@19.2.8))(lucide-react@0.522.0(react@19.2.8))(postcss@8.5.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(tailwind-merge@3.3.1)(tailwindcss-animate@1.0.7(tailwindcss@4.3.3))(tailwindcss-radix@4.0.2(tailwindcss@4.3.3))(tailwindcss@4.3.3)(tw-animate-css@1.3.7)(yup@1.6.1)
@@ -1970,42 +1959,45 @@ importers:
         specifier: ^3.0.2
         version: 3.0.2(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react-is@18.3.1)(react@19.2.8)(redux@5.0.1)
     devDependencies:
-      vitest:
-        specifier: 3.2.4
-        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.51.2)(tsx@4.19.4)(yaml@2.9.0)
       '@types/react':
         specifier: ^19.2.18
         version: 19.2.18
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.51.2)(tsx@4.19.4)(yaml@2.9.0)
 
-  external/catalyst/packages/adaptive-server:
+  packages/adaptive-server:
     dependencies:
+      '@klicker-uzh/adaptive-contract':
+        specifier: workspace:*
+        version: link:../adaptive-contract
       '@azure/storage-blob':
         specifier: ^12.25.0
         version: 12.25.0
       '@hatchet-dev/typescript-sdk':
         specifier: ^1.9.4
         version: 1.9.4
-      '@klicker-uzh/adaptive-learning':
+      '@klicker-uzh/adaptive-client':
         specifier: workspace:*
-        version: link:../adaptive-learning
+        version: link:../adaptive-client
       '@klicker-uzh/grading':
         specifier: workspace:*
-        version: link:../../../../packages/grading
+        version: link:../grading
       '@klicker-uzh/graphql':
         specifier: workspace:*
-        version: link:../../../../packages/graphql
+        version: link:../graphql
       '@klicker-uzh/prisma':
         specifier: workspace:*
-        version: link:../../../../packages/prisma
+        version: link:../prisma
       '@klicker-uzh/types':
         specifier: workspace:*
-        version: link:../../../../packages/types
+        version: link:../types
       '@klicker-uzh/util':
         specifier: workspace:*
-        version: link:../../../../packages/util
+        version: link:../util
       '@prisma/adapter-pg':
         specifier: ^7.8.0
         version: 7.8.0
@@ -2207,6 +2199,9 @@ importers:
 
   packages/graphql:
     dependencies:
+      '@klicker-uzh/adaptive-contract':
+        specifier: workspace:*
+        version: link:../adaptive-contract
       '@azure/service-bus':
         specifier: 7.9.5
         version: 7.9.5
@@ -2219,15 +2214,15 @@ importers:
       '@hatchet-dev/typescript-sdk':
         specifier: 1.9.4
         version: 1.9.4
-      '@klicker-uzh/adaptive-learning':
+      '@klicker-uzh/adaptive-client':
         specifier: workspace:*
-        version: link:../../external/catalyst/packages/adaptive-learning
+        version: link:../adaptive-client
       '@klicker-uzh/adaptive-persistence':
         specifier: workspace:*
-        version: link:../../external/catalyst/packages/adaptive-persistence
+        version: link:../adaptive-persistence
       '@klicker-uzh/adaptive-server':
         specifier: workspace:*
-        version: link:../../external/catalyst/packages/adaptive-server
+        version: link:../adaptive-server
       '@klicker-uzh/audit':
         specifier: workspace:*
         version: link:../audit
@@ -2523,7 +2518,7 @@ importers:
     dependencies:
       '@klicker-uzh/adaptive-i18n':
         specifier: workspace:*
-        version: link:../../external/catalyst/packages/adaptive-i18n
+        version: link:../adaptive-i18n
       next-intl:
         specifier: ^4.13.7
         version: 4.13.7(@swc/helpers@0.5.23)(next@16.3.4(@babel/core@7.28.6)(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(@types/node@24.12.4)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)(typescript@6.0.3)
@@ -2799,7 +2794,7 @@ importers:
     devDependencies:
       '@klicker-uzh/adaptive-persistence':
         specifier: workspace:*
-        version: link:../../external/catalyst/packages/adaptive-persistence
+        version: link:../adaptive-persistence
       '@pothos/plugin-prisma':
         specifier: ~4.10.0
         version: 4.10.0(@pothos/core@4.3.0(graphql@16.11.0))(@prisma/client@7.8.0(prisma@7.8.0(@types/node@24.13.3)(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(magicast@0.3.5)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3))(typescript@6.0.3))(graphql@16.11.0)(typescript@6.0.3)
@@ -2845,12 +2840,9 @@ importers:
 
   packages/prisma-data:
     devDependencies:
-      '@klicker-uzh/adaptive-learning':
-        specifier: workspace:*
-        version: link:../../external/catalyst/packages/adaptive-learning
       '@klicker-uzh/adaptive-persistence':
         specifier: workspace:*
-        version: link:../../external/catalyst/packages/adaptive-persistence
+        version: link:../adaptive-persistence
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../prisma
@@ -2950,6 +2942,13 @@ importers:
       xml2js:
         specifier: ~0.6.2
         version: 0.6.2
+    dependencies:
+      "@klicker-uzh/adaptive-client":
+        specifier: workspace:*
+        version: link:../adaptive-client
+      "@klicker-uzh/adaptive-contract":
+        specifier: workspace:*
+        version: link:../adaptive-contract
 
   packages/shared-components:
     dependencies:
@@ -3247,7 +3246,7 @@ importers:
     devDependencies:
       '@klicker-uzh/adaptive-e2e':
         specifier: workspace:*
-        version: link:../external/catalyst/packages/adaptive-e2e
+        version: link:../packages/adaptive-e2e
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../packages/prisma

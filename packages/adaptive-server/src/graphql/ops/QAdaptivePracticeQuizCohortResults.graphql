@@ -1,0 +1,82 @@
+query QAdaptivePracticeQuizCohortResults($practiceQuizId: String!) {
+  adaptivePracticeQuizCohortResults(practiceQuizId: $practiceQuizId) {
+    practiceQuizId
+    competenceTreeId
+    cohortSize
+    suppressed
+    attemptSummary {
+      suppressed
+      suppressions {
+        field
+        reason
+      }
+      classified
+      betweenLevels
+      insufficientEvidence
+      poolLimited
+      researchOnly
+      capped
+      poolExhausted
+      stoppedInsufficientData
+      insufficientData
+      nearBoundary
+    }
+    pilotMetrics {
+      suppressed
+      suppressions {
+        field
+        reason
+      }
+      medianQuestionCount
+      p95QuestionCount
+      medianElapsedSeconds
+      p95ElapsedSeconds
+      nearBoundaryRate
+      responseCountMismatchDetected
+      durationMissingDetected
+    }
+    itemDiagnostics {
+      poolItemId
+      elementName
+      elementType
+      nodeNamePath
+      levelLabel
+      suppressed
+      suppressions {
+        field
+        reason
+      }
+      responseCount
+      exposureRate
+      observedCorrectRate
+      expectedCorrectRate
+      residual
+      highExposure
+      misfitFlag
+    }
+    distributions {
+      nodeId
+      parentNodeId
+      nodeName
+      nodeKind
+      depth
+      order
+      suppressed
+      suppressions {
+        field
+        reason
+      }
+      insufficientDataCount
+      classifiedCount
+      betweenLevelsCount
+      insufficientEvidenceCount
+      poolLimitedCount
+      researchOnlyCount
+      buckets {
+        levelLabel
+        levelOrder
+        count
+      }
+    }
+  }
+}
