@@ -59,6 +59,8 @@ production mode. The shared-components `check` script runs them before TypeScrip
 so normal repository checks catch this dependency mismatch independently of the
 Playwright bundler.
 
-This guard protects the reproduced React identity failure. It does not turn the
-Turbopack E2E suite into production Webpack coverage; bundle-specific failures
-still require a browser check against a production build.
+The guard protects the reproduced React identity failure. The accompanying
+[Playwright build alignment](../../testing.md#playwright-production-frontend-artifacts)
+also makes the required browser suite use each frontend's production build and
+standalone runtime, including generated service-worker assets. The historical
+Turbopack test path described above no longer defines CI frontend acceptance.
