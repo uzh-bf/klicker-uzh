@@ -5,13 +5,27 @@ import Image from 'next/image'
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { courseImagePlacements } from '@/src/lib/markdown/remarkCourseImages'
 import {
   type CourseImage,
   selectedCourseImages,
 } from '@/src/lib/sources/courseImages'
-import { courseImagePlacements } from '@/src/lib/markdown/remarkCourseImages'
 import type { ChatSourcePart } from '@/src/lib/sources/normalizeSources'
 import { useChatStore } from '@/src/stores/chatStore'
+
+function courseImageSrc({
+  chatbotId,
+  threadId,
+  messageId,
+  assetId,
+}: {
+  chatbotId: string
+  threadId: string
+  messageId: string
+  assetId: string
+}) {
+  return `/api/chatbots/${chatbotId}/threads/${threadId}/messages/${messageId}/images/${assetId}`
+}
 
 export function CourseImageCard({
   image,
@@ -60,8 +74,8 @@ export function CourseImageCard({
         />
       )}
       <figcaption className="mt-2 text-xs text-muted-foreground">
-        {image.captions?.map((entry, index) => (
-          <p key={`${entry.ref}-${index}`}>{entry.text}</p>
+        {image.captions?.map((entry) => (
+          <p key={entry.ref}>{entry.text}</p>
         ))}
         <p className={caption ? 'mt-1' : undefined}>{label}</p>
       </figcaption>
@@ -74,7 +88,7 @@ export function InlineCourseImage({ assetId }: { assetId: string }) {
   const threadId = useChatStore((state) => state.activeThreadId)
   const message = useAuiState((state) => state.message)
   const image = selectedCourseImages(
-    message.content as readonly ChatSourcePart[]
+    (message.content ?? []) as readonly ChatSourcePart[]
   ).find((candidate) => candidate.asset_id === assetId)
   // The image endpoint authorizes against the persisted assistant message.
   if (
@@ -88,7 +102,12 @@ export function InlineCourseImage({ assetId }: { assetId: string }) {
   return (
     <CourseImageCard
       image={image}
-      src={`/api/chatbots/${chatbotId}/threads/${threadId}/messages/${message.id}/images/${image.asset_id}`}
+      src={courseImageSrc({
+        chatbotId,
+        threadId,
+        messageId: message.id,
+        assetId: image.asset_id,
+      })}
     />
   )
 }
@@ -97,14 +116,17 @@ export function CourseImagesSection() {
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const threadId = useChatStore((state) => state.activeThreadId)
   const message = useAuiState((state) => state.message)
+  const content = (message.content ?? []) as readonly ChatSourcePart[]
   const placements = new Set(
-    message.content.flatMap((part) =>
-      part.type === 'text' ? courseImagePlacements(part.text) : []
+    content.flatMap((part) =>
+      part.type === 'text' && typeof part.text === 'string'
+        ? courseImagePlacements(part.text)
+        : []
     )
   )
-  const images = selectedCourseImages(
-    message.content as readonly ChatSourcePart[]
-  ).filter((image) => !placements.has(image.asset_id))
+  const images = selectedCourseImages(content).filter(
+    (image) => !placements.has(image.asset_id)
+  )
   if (!chatbotId || !threadId || images.length === 0) return null
   return (
     <div>
@@ -112,7 +134,12 @@ export function CourseImagesSection() {
         <CourseImageCard
           key={`${message.id}-${image.asset_id}`}
           image={image}
-          src={`/api/chatbots/${chatbotId}/threads/${threadId}/messages/${message.id}/images/${image.asset_id}`}
+          src={courseImageSrc({
+            chatbotId,
+            threadId,
+            messageId: message.id,
+            assetId: image.asset_id,
+          })}
         />
       ))}
     </div>

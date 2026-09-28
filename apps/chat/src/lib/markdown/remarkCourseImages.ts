@@ -25,11 +25,11 @@ export function courseImagePlacements(text: string): string[] {
       fence = { char: delimiter[0]!, length: delimiter.length }
       continue
     }
-    const match = /^\[course-image:([a-f0-9]{64})\]$/.exec(line)
+    const match = /^ {0,3}\[course-image:([a-f0-9]{64})\]$/.exec(line)
     if (
       match &&
-      (i === 0 || lines[i - 1] === '') &&
-      (i === lines.length - 1 || lines[i + 1] === '')
+      (i === 0 || lines[i - 1]!.trim() === '') &&
+      (i === lines.length - 1 || lines[i + 1]!.trim() === '')
     )
       ids.push(match[1]!)
   }
