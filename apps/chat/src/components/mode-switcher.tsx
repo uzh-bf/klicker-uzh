@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import {
+  type ChatModeOptions,
   formatModeLabel,
   getModeDescription,
   resolveSelectedMode,
@@ -37,7 +38,7 @@ export function ModeSwitcher({
   modeOptions: modeOptionsOverride,
   testIdPrefix = 'chat-mode',
 }: {
-  modeOptions?: Record<string, string>
+  modeOptions?: ChatModeOptions
   testIdPrefix?: string
 } = {}) {
   const t = useTranslations()
@@ -51,7 +52,11 @@ export function ModeSwitcher({
   // Nothing to switch between when a chatbot exposes a single mode.
   if (modeKeys.length <= 1) return null
 
-  const selectedLabel = formatModeLabel(t, effectiveSelectedMode)
+  const selectedLabel = formatModeLabel(
+    t,
+    effectiveSelectedMode,
+    modeOptions
+  )
 
   return (
     <SelectPrimitive.Root
@@ -90,7 +95,7 @@ export function ModeSwitcher({
         >
           <SelectPrimitive.Viewport className="p-1.5">
             {modeKeys.map((mode) => {
-              const label = formatModeLabel(t, mode)
+              const label = formatModeLabel(t, mode, modeOptions)
               const description = getModeDescription(t, mode, modeOptions)
               const descriptionId = `${testIdPrefix}-description-${mode}`
 

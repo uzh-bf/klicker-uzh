@@ -104,18 +104,19 @@ type EffectiveMCPConfiguration<T extends ChatModeMCPConfiguration> = Omit<
   Pick<ChatModeMCPConfiguration, 'allowedTools' | 'chatMode'>
 
 function narrowInheritedBinding<T extends ChatModeMCPConfiguration>(
-  config: T
+  config: T,
+  targetMode: string
 ): EffectiveMCPConfiguration<T> {
-  // Required alias bindings keep their sole raw tool name. Optional Tutor
-  // bindings expose only doc_query when inherited by Quizzer.
+  // Required alias bindings keep their sole raw tool name. Optional bindings
+  // expose only doc_query when inherited by another mode.
   if (hasRequiredDocQueryAlias(config)) {
-    return { ...config, chatMode: 'quizzer' }
+    return { ...config, chatMode: targetMode }
   }
 
   return {
     ...config,
     allowedTools: ['doc_query'],
-    chatMode: 'quizzer',
+    chatMode: targetMode,
   }
 }
 
@@ -128,12 +129,47 @@ function sortByPriority<T extends ChatModeMCPConfiguration>(configs: T[]): T[] {
 export function resolveEffectiveMCPConfigurations<
   T extends ChatModeMCPConfiguration,
 >(configs: readonly T[], selectedMode: string): EffectiveMCPConfiguration<T>[] {
-  if (selectedMode !== 'quizzer') {
+  if (selectedMode !== 'quizzer' && isTypedStandardMode(selectedMode)) {
     return sortByPriority(
       configs.filter(
         (config) => config.chatMode === selectedMode && isEnabled(config)
       )
     )
+  }
+
+  if (selectedMode !== 'quizzer') {
+    // Custom modes inherit only a required doc-query binding, re-tagged to
+    // the custom mode key so the scope assertion sees one binding per mode.
+    const exactByServer = new Map<string, T>()
+
+    for (const config of configs) {
+      if (config.chatMode !== selectedMode || !isEnabled(config)) continue
+      const serverId = getServerId(config)
+      if (serverId) exactByServer.set(serverId, config)
+    }
+
+    const resolved: EffectiveMCPConfiguration<T>[] = Array.from(
+      exactByServer.values()
+    ).map((config) => ({ ...config, chatMode: selectedMode }))
+
+    for (const sourceMode of ['tutor', 'explainer'] as const) {
+      for (const config of configs) {
+        if (
+          config.chatMode !== sourceMode ||
+          !isEnabled(config) ||
+          !isRequired(config) ||
+          !hasRequiredDocQueryAlias(config)
+        ) {
+          continue
+        }
+
+        const serverId = getServerId(config)
+        if (!serverId || exactByServer.has(serverId)) continue
+        resolved.push(narrowInheritedBinding(config, selectedMode))
+      }
+    }
+
+    return sortByPriority(resolved)
   }
 
   const exactByServer = new Map<string, T>()
@@ -164,14 +200,14 @@ export function resolveEffectiveMCPConfigurations<
 
     const serverId = getServerId(config)
     if (!serverId || exactByServer.has(serverId)) continue
-    resolved.push(narrowInheritedBinding(config))
+    resolved.push(narrowInheritedBinding(config, 'quizzer'))
   }
 
   return sortByPriority(resolved)
 }
 
 export function resolveRequestedChatMode(
-  modeOptions: Record<string, string>,
+  modeOptions: Record<string, unknown>,
   requestedMode: string
 ): string {
   if (Object.hasOwn(modeOptions, requestedMode)) return requestedMode
@@ -251,12 +287,22 @@ function getCustomModeDescription(mode: ChatbotCustomMode): string {
   return mode.description ?? mode.name
 }
 
+function getCustomModeOption(mode: ChatbotCustomMode): {
+  description: string
+  name?: string
+} {
+  return {
+    description: getCustomModeDescription(mode),
+    name: mode.name,
+  }
+}
+
 export function resolveEffectiveChatModeOptions(
   systemPrompts: unknown,
   mcpConfigurations: readonly ChatModeMCPConfiguration[],
   standardModeConfig: unknown = null,
   options: EffectiveChatModeOptions = {}
-): Record<string, string> {
+): Record<string, { description: string; name?: string }> {
   const storedPrompts = asRecord(systemPrompts)
   const standardModes = Object.keys(DEFAULT_PROMPT)
   const customModesByKey = getApprovedCustomModesByKey(options.customModeConfig)
@@ -270,7 +316,8 @@ export function resolveEffectiveChatModeOptions(
   const hasRequiredMCP = mcpConfigurations.some(
     (config) => isEnabled(config) && isRequired(config)
   )
-  const modeOptions: Record<string, string> = {}
+  const modeOptions: Record<string, { description: string; name?: string }> =
+    {}
 
   for (const mode of candidates) {
     if (mode.trim().length === 0) continue
@@ -294,8 +341,8 @@ export function resolveEffectiveChatModeOptions(
     }
 
     modeOptions[mode] = customMode
-      ? getCustomModeDescription(customMode)
-      : getModeDescription(systemPrompts, mode)
+      ? getCustomModeOption(customMode)
+      : { description: getModeDescription(systemPrompts, mode) }
   }
 
   return modeOptions
