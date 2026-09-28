@@ -93,12 +93,13 @@ export function InlineVideoFrame({ frame }: { frame: VideoFrame }) {
   const threadId = useChatStore((state) => state.activeThreadId)
   const messageId = useAuiState((state) => state.message.id)
   if (!chatbotId || !threadId) return null
+  const assetBase = `/api/chatbots/${chatbotId}/threads/${threadId}/messages/${messageId}`
 
   return (
     <VideoFrameCard
       frame={frame}
-      frameSrc={`/api/chatbots/${chatbotId}/threads/${threadId}/messages/${messageId}/frames/${frame.asset_id}`}
-      videoSrc={`/api/chatbots/${chatbotId}/threads/${threadId}/messages/${messageId}/videos/${frame.asset_id}`}
+      frameSrc={`${assetBase}/frames/${frame.asset_id}`}
+      videoSrc={`${assetBase}/videos/${frame.asset_id}`}
     />
   )
 }

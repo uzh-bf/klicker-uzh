@@ -7,17 +7,31 @@ import {
 import type { ChatSource } from './types'
 
 export const VIDEO_FRAME_TOOL = 'show_video_frame'
-const MAX_VIDEO_FRAME_CANDIDATES = 30
-const MAX_VIDEO_FRAMES_PER_RESPONSE = 3
-const digest = z.string().regex(/^[a-f0-9]{64}$/)
-const VIDEO_FORMATS = {
+export const MAX_VIDEO_FRAME_CANDIDATES = 30
+export const MAX_VIDEO_FRAMES_PER_RESPONSE = 3
+const MAX_VIDEO_SOURCES_SCANNED = 20
+const MAX_VIDEO_CHUNKS_PER_SOURCE = 30
+const MAX_VIDEO_ASSETS_PER_CHUNK = 10
+export const videoAssetIdSchema = z.string().regex(/^[a-f0-9]{64}$/)
+const digest = videoAssetIdSchema
+export const VIDEO_FORMATS = {
   mp4: 'video/mp4',
   webm: 'video/webm',
   m4v: 'video/x-m4v',
   mov: 'video/quicktime',
 } as const
-const videoExtension = z.enum(Object.keys(VIDEO_FORMATS) as [keyof typeof VIDEO_FORMATS, ...(keyof typeof VIDEO_FORMATS)[]])
-const videoMimeType = z.enum(Object.values(VIDEO_FORMATS) as [(typeof VIDEO_FORMATS)[keyof typeof VIDEO_FORMATS], ...((typeof VIDEO_FORMATS)[keyof typeof VIDEO_FORMATS])[]])
+const videoExtension = z.enum(
+  Object.keys(VIDEO_FORMATS) as [
+    keyof typeof VIDEO_FORMATS,
+    ...(keyof typeof VIDEO_FORMATS)[],
+  ]
+)
+const videoMimeType = z.enum(
+  Object.values(VIDEO_FORMATS) as [
+    (typeof VIDEO_FORMATS)[keyof typeof VIDEO_FORMATS],
+    ...(typeof VIDEO_FORMATS)[keyof typeof VIDEO_FORMATS][],
+  ]
+)
 
 export const videoFrameSchema = z
   .object({
@@ -48,8 +62,7 @@ export const videoFrameSchema = z
     message: 'video asset must match the cited source video',
   })
   .refine(
-    (frame) =>
-      VIDEO_FORMATS[frame.video_extension] === frame.video_mime_type,
+    (frame) => VIDEO_FORMATS[frame.video_extension] === frame.video_mime_type,
     { message: 'video format is inconsistent' }
   )
   .refine(
@@ -75,7 +88,7 @@ export function videoFrameCandidates(raw: unknown): VideoFrame[] {
   for (const rawSource of (Array.isArray(payload.sources)
     ? payload.sources
     : []
-  ).slice(0, 20)) {
+  ).slice(0, MAX_VIDEO_SOURCES_SCANNED)) {
     const source = record(rawSource)
     if (!source || String(source.source_type).toLowerCase() !== 'video')
       continue
@@ -86,7 +99,7 @@ export function videoFrameCandidates(raw: unknown): VideoFrame[] {
     for (const rawChunk of (Array.isArray(source.chunks)
       ? source.chunks
       : []
-    ).slice(0, 30)) {
+    ).slice(0, MAX_VIDEO_CHUNKS_PER_SOURCE)) {
       const chunk = record(rawChunk)
       const envelope = record(chunk?.video_frames)
       const video = record(envelope?.video)
@@ -98,7 +111,10 @@ export function videoFrameCandidates(raw: unknown): VideoFrame[] {
         !Array.isArray(envelope.assets)
       )
         continue
-      for (const rawAsset of envelope.assets.slice(0, 10)) {
+      for (const rawAsset of envelope.assets.slice(
+        0,
+        MAX_VIDEO_ASSETS_PER_CHUNK
+      )) {
         const asset = record(rawAsset)
         if (!asset) continue
         const parsed = videoFrameSchema.safeParse({

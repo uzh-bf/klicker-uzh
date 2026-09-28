@@ -1,12 +1,15 @@
 import { realpath, stat } from 'node:fs/promises'
 import path from 'node:path'
-import type { VideoFrame } from '@/src/lib/sources/videoFrames'
+import { getBlobStorageAccountUrl } from '@klicker-uzh/util'
+import { type VideoFrame, VIDEO_FORMATS } from '@/src/lib/sources/videoFrames'
 
 const DIGEST = /^[a-f0-9]{64}$/
 
 export function videoObjectKey(frame: VideoFrame) {
   if (!DIGEST.test(frame.video_sha256))
     throw new Error('Invalid video reference')
+  if (!(frame.video_extension in VIDEO_FORMATS))
+    throw new Error('Invalid video extension')
   return `e1/v1/videos/sha256/${frame.video_sha256.slice(0, 2)}/${frame.video_sha256.slice(2, 4)}/${frame.video_sha256}.${frame.video_extension}`
 }
 
@@ -22,6 +25,10 @@ export async function signedVideoPlaybackUrl(frame: VideoFrame) {
     StorageSharedKeyCredential,
   } = await import('@azure/storage-blob')
   const credential = new StorageSharedKeyCredential(account, accessKey)
+  const accountUrl = getBlobStorageAccountUrl(
+    account,
+    process.env.BLOB_STORAGE_ACCOUNT_URL
+  )
   const now = Date.now()
   const blobName = videoObjectKey(frame)
   const query = generateBlobSASQueryParameters(
@@ -36,7 +43,7 @@ export async function signedVideoPlaybackUrl(frame: VideoFrame) {
     },
     credential
   ).toString()
-  return `https://${account}.blob.core.windows.net/${encodeURIComponent(container)}/${blobName}?${query}`
+  return `${accountUrl}/${encodeURIComponent(container)}/${blobName}?${query}`
 }
 
 /** Local fixture adapter used by the checked-in chatbot demo. */

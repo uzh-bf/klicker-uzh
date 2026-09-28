@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { readFile, realpath, stat } from 'node:fs/promises'
 import path from 'node:path'
+import { getBlobStorageAccountUrl } from '@klicker-uzh/util'
 import { z } from 'zod'
 import type { VideoFrame } from '@/src/lib/sources/videoFrames'
 
@@ -79,7 +80,7 @@ async function readBlobObject(key: string, limit: number) {
   )
   const credential = new StorageSharedKeyCredential(account, accessKey)
   const blob = new BlobServiceClient(
-    `https://${account}.blob.core.windows.net`,
+    getBlobStorageAccountUrl(account, process.env.BLOB_STORAGE_ACCOUNT_URL),
     credential
   )
     .getContainerClient(container)

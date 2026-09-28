@@ -97,10 +97,8 @@ export async function GET(
       },
     })
   } catch (error) {
-    console.warn('[chat] video playback unavailable', {
-      errorType: error instanceof Error ? error.constructor.name : typeof error,
-      errorMessage: error instanceof Error ? error.message : 'unknown',
-    })
+    // Keep the client response non-enumerable while retaining the full server-side stack.
+    console.error('[chat] video playback failed', error)
     return missing()
   }
 }

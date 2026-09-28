@@ -249,7 +249,9 @@ export const AssistantMessageParts: FC = () => {
   const content = useAuiState((state) => state.message.content)
   const sourceParts = content as readonly ChatSourcePart[]
   const videoFrames = selectedVideoFrames(sourceParts)
-  const firstText = content.find((part) => part.type === 'text')
+  const firstText = content.find(
+    (part) => part.type === 'text' && part.text.trim().length > 0
+  )
 
   return (
     <MessagePrimitive.GroupedParts
@@ -271,13 +273,14 @@ export const AssistantMessageParts: FC = () => {
             )
           case 'group-tool':
             return part.indices.length <= 1 ||
-              part.indices.some((index) => {
-                const contentPart = content[index]
-                return (
-                  contentPart?.type === 'tool-call' &&
-                  contentPart.toolName === VIDEO_FRAME_TOOL
-                )
-              }) ? (
+              (!firstText &&
+                part.indices.some((index) => {
+                  const contentPart = content[index]
+                  return (
+                    contentPart?.type === 'tool-call' &&
+                    contentPart.toolName === VIDEO_FRAME_TOOL
+                  )
+                })) ? (
               children
             ) : (
               <ToolGroup

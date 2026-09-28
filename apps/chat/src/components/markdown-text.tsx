@@ -12,9 +12,11 @@ import {
 import { CheckIcon, CopyIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import {
+  cloneElement,
   type ComponentProps,
   createContext,
   type FC,
+  isValidElement,
   memo,
   type ReactNode,
   useCallback,
@@ -50,9 +52,14 @@ function remarkFirstParagraphAnchor() {
     const anchor =
       tree.children?.find((node) => node.type === 'paragraph') ??
       tree.children?.find((node) =>
-        ['heading', 'blockquote', 'list', 'table', 'code', 'thematicBreak'].includes(
-          node.type ?? ''
-        )
+        [
+          'heading',
+          'blockquote',
+          'list',
+          'table',
+          'code',
+          'thematicBreak',
+        ].includes(node.type ?? '')
       )
     if (!anchor) return
     anchor.data ??= {}
@@ -75,17 +82,15 @@ const rehypePlugins: NonNullable<
 const AfterFirstParagraphContext = createContext<ReactNode>(null)
 
 type InlineMediaAnchorAttribute = {
-  'data-inline-media-anchor'?: string
+  'data-inline-media-anchor'?: string | boolean
 }
 
 function splitInlineMediaAnchor<T extends object>(props: T) {
-  const {
-    'data-inline-media-anchor': marker,
-    ...elementProps
-  } = props as T & InlineMediaAnchorAttribute
+  const { 'data-inline-media-anchor': marker, ...elementProps } = props as T &
+    InlineMediaAnchorAttribute
   return {
     elementProps: elementProps as Omit<T, keyof InlineMediaAnchorAttribute>,
-    isAnchor: marker === 'true',
+    isAnchor: marker === 'true' || marker === true,
   }
 }
 
@@ -401,6 +406,16 @@ const defaultComponents = memoizeMarkdownComponents({
   ),
   pre: ({ className, ...props }) => {
     const { elementProps, isAnchor } = splitInlineMediaAnchor(props)
+    const { children: preChildren, ...preProps } = elementProps
+    const codeChild = isValidElement<InlineMediaAnchorAttribute>(preChildren)
+      ? preChildren
+      : undefined
+    const codeIsAnchor =
+      codeChild?.props['data-inline-media-anchor'] === 'true' ||
+      codeChild?.props['data-inline-media-anchor'] === true
+    const children = codeIsAnchor
+      ? cloneElement(codeChild, { 'data-inline-media-anchor': undefined })
+      : preChildren
     return (
       <>
         <pre
@@ -408,9 +423,11 @@ const defaultComponents = memoizeMarkdownComponents({
             'overflow-x-auto rounded-b-lg bg-black p-4 text-white',
             className
           )}
-          {...elementProps}
-        />
-        <InlineMediaAfter anchor={isAnchor} />
+          {...preProps}
+        >
+          {children}
+        </pre>
+        <InlineMediaAfter anchor={isAnchor || codeIsAnchor} />
       </>
     )
   },

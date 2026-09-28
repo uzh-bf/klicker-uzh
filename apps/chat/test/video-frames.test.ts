@@ -10,6 +10,7 @@ import {
 } from '../src/lib/server/videoFrameStore'
 import {
   readLocalVideo,
+  signedVideoPlaybackUrl,
   videoObjectKey,
 } from '../src/lib/server/videoPlaybackStore'
 import { withVideoFrameTool } from '../src/lib/server/videoFrameTools'
@@ -244,6 +245,9 @@ describe('video frame selection', () => {
 
   it('resolves the cited recording from the content-addressed video projection', async () => {
     expect(videoObjectKey(candidate)).toContain(candidate.video_sha256)
+    expect(() =>
+      videoObjectKey({ ...candidate, video_extension: 'avi' as 'mp4' })
+    ).toThrow('extension')
     const previous = process.env.CHAT_VIDEO_FRAME_STORE_PATH
     process.env.CHAT_VIDEO_FRAME_STORE_PATH = root
     try {
@@ -254,6 +258,38 @@ describe('video frame selection', () => {
     } finally {
       if (previous === undefined) delete process.env.CHAT_VIDEO_FRAME_STORE_PATH
       else process.env.CHAT_VIDEO_FRAME_STORE_PATH = previous
+    }
+  })
+
+  it('uses the configured Blob endpoint for signed playback', async () => {
+    const previous = {
+      account: process.env.BLOB_STORAGE_ACCOUNT_NAME,
+      accountUrl: process.env.BLOB_STORAGE_ACCOUNT_URL,
+      accessKey: process.env.BLOB_STORAGE_ACCESS_KEY,
+      container: process.env.CHAT_VIDEO_BLOB_CONTAINER,
+    }
+    process.env.BLOB_STORAGE_ACCOUNT_NAME = 'devstoreaccount1'
+    process.env.BLOB_STORAGE_ACCOUNT_URL =
+      'http://localhost:10000/devstoreaccount1'
+    process.env.BLOB_STORAGE_ACCESS_KEY = Buffer.alloc(32).toString('base64')
+    process.env.CHAT_VIDEO_BLOB_CONTAINER = 'course-media'
+    try {
+      await expect(signedVideoPlaybackUrl(candidate)).resolves.toMatch(
+        /^http:\/\/localhost:10000\/devstoreaccount1\/course-media\//
+      )
+    } finally {
+      if (previous.account === undefined)
+        delete process.env.BLOB_STORAGE_ACCOUNT_NAME
+      else process.env.BLOB_STORAGE_ACCOUNT_NAME = previous.account
+      if (previous.accountUrl === undefined)
+        delete process.env.BLOB_STORAGE_ACCOUNT_URL
+      else process.env.BLOB_STORAGE_ACCOUNT_URL = previous.accountUrl
+      if (previous.accessKey === undefined)
+        delete process.env.BLOB_STORAGE_ACCESS_KEY
+      else process.env.BLOB_STORAGE_ACCESS_KEY = previous.accessKey
+      if (previous.container === undefined)
+        delete process.env.CHAT_VIDEO_BLOB_CONTAINER
+      else process.env.CHAT_VIDEO_BLOB_CONTAINER = previous.container
     }
   })
 })
