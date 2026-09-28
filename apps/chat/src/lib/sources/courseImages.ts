@@ -6,6 +6,14 @@ import {
 } from './normalizeSources'
 
 export const COURSE_IMAGE_TOOL = 'show_course_image'
+/** Bounds the untrusted document-result envelope and persisted selections. */
+export const COURSE_IMAGE_LIMITS = {
+  sources: 20,
+  chunksPerSource: 30,
+  assetsPerChunk: 30,
+  candidates: 30,
+  selectionsPerResponse: 3,
+} as const
 const digest = z.string().regex(/^[a-f0-9]{64}$/)
 const courseImageCaptionSchema = z.object({
   ref: z
@@ -52,7 +60,7 @@ export function courseImageCandidates(raw: unknown): CourseImage[] {
   for (const rawSource of (Array.isArray(payload.sources)
     ? payload.sources
     : []
-  ).slice(0, 20)) {
+  ).slice(0, COURSE_IMAGE_LIMITS.sources)) {
     const source = record(rawSource)
     if (!source) continue
     const title = [
@@ -65,7 +73,7 @@ export function courseImageCandidates(raw: unknown): CourseImage[] {
     for (const rawChunk of (Array.isArray(source.chunks)
       ? source.chunks
       : []
-    ).slice(0, 30)) {
+    ).slice(0, COURSE_IMAGE_LIMITS.chunksPerSource)) {
       const chunk = record(rawChunk)
       const envelope = record(chunk?.visual_assets)
       if (!chunk || envelope?.version !== 1 || !Array.isArray(envelope.assets))
@@ -79,7 +87,10 @@ export function courseImageCandidates(raw: unknown): CourseImage[] {
         end < start
       )
         continue
-      for (const rawAsset of envelope.assets.slice(0, 30)) {
+      for (const rawAsset of envelope.assets.slice(
+        0,
+        COURSE_IMAGE_LIMITS.assetsPerChunk
+      )) {
         const asset = record(rawAsset)
         if (!asset) continue
         const parsed = courseImageSchema.safeParse({
@@ -94,7 +105,8 @@ export function courseImageCandidates(raw: unknown): CourseImage[] {
           image.physical_page_number > end
         )
           continue
-        if (found.size < 30) found.set(image.asset_id, image)
+        if (found.size < COURSE_IMAGE_LIMITS.candidates)
+          found.set(image.asset_id, image)
       }
     }
   }
@@ -115,7 +127,10 @@ export function selectedCourseImages(
     const result = record(part.result)
     if (result?.status !== 'selected') continue
     const parsed = courseImageSchema.safeParse(result.image)
-    if (parsed.success && found.size < 3)
+    if (
+      parsed.success &&
+      found.size < COURSE_IMAGE_LIMITS.selectionsPerResponse
+    )
       found.set(parsed.data.asset_id, parsed.data)
   }
   return [...found.values()]

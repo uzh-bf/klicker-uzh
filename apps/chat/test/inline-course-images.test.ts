@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import type { MarkdownAstNode } from '../src/lib/markdown/remarkCitationMarkers'
 import {
   courseImageMarker,
   courseImagePlacements,
   remarkCourseImages,
 } from '../src/lib/markdown/remarkCourseImages'
-import type { MarkdownAstNode } from '../src/lib/markdown/remarkCitationMarkers'
 
 const id = 'a'.repeat(64)
 const marker = courseImageMarker(id)
@@ -37,6 +37,9 @@ describe('inline course image placement', () => {
     expect(
       courseImagePlacements(`Before\n\n${marker}\n\nAfter\n\n${marker}`)
     ).toEqual([id])
+    expect(courseImagePlacements(`Before\n \n   ${marker}\n\t\nAfter`)).toEqual(
+      [id]
+    )
   })
   it('keeps code, nested blocks, inline mentions and incomplete markers out of placement', () => {
     for (const text of [

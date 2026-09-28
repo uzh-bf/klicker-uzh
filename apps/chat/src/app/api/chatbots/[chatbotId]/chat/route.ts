@@ -38,7 +38,10 @@ import {
   courseImageStoreConfigured,
   readCourseImage,
 } from '@/src/lib/server/courseImageStore'
-import { withCourseImageTool } from '@/src/lib/server/courseImageTools'
+import {
+  canRegisterCourseImageTool,
+  withCourseImageTool,
+} from '@/src/lib/server/courseImageTools'
 import {
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
@@ -1391,7 +1394,10 @@ export async function POST(
       ...responseExampleTools,
       ...studentPracticeTools,
     }
-    if (courseImageStoreConfigured()) {
+    if (
+      courseImageStoreConfigured() &&
+      canRegisterCourseImageTool(chatTools, scopedKbIds ?? [])
+    ) {
       chatTools = withCourseImageTool(
         chatTools,
         scopedKbIds ?? [],

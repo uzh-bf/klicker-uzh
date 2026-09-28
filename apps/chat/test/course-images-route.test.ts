@@ -108,3 +108,15 @@ it('does not serve an unselected candidate', async () => {
   expect((await GET(req, { params })).status).toBe(404)
   expect(mocks.read).not.toHaveBeenCalled()
 })
+it('logs storage failures while keeping the response sanitized', async () => {
+  const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+  mocks.read.mockRejectedValue(new Error('/private/secret'))
+  const response = await GET(req, { params })
+  expect(response.status).toBe(404)
+  expect(await response.json()).toEqual({ error: 'Course image unavailable' })
+  expect(consoleError).toHaveBeenCalledWith(
+    'Failed to serve authorized course image',
+    expect.any(Error)
+  )
+  consoleError.mockRestore()
+})

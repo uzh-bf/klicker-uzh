@@ -5,7 +5,10 @@ import { type ToolSet, tool } from 'ai'
 import { describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { readCourseImage } from '../src/lib/server/courseImageStore'
-import { withCourseImageTool } from '../src/lib/server/courseImageTools'
+import {
+  canRegisterCourseImageTool,
+  withCourseImageTool,
+} from '../src/lib/server/courseImageTools'
 import {
   courseImageCandidates,
   selectedCourseImages,
@@ -38,6 +41,13 @@ function searchTools(result: unknown = fixture): ToolSet {
 }
 
 describe('course image selection', () => {
+  it('registers only with scoped knowledge and a document search tool', () => {
+    expect(canRegisterCourseImageTool(searchTools(), [candidate.kb_id])).toBe(
+      true
+    )
+    expect(canRegisterCourseImageTool(searchTools(), [])).toBe(false)
+    expect(canRegisterCourseImageTool({}, [candidate.kb_id])).toBe(false)
+  })
   it('preserves text-only and illustrated search results in their original order', async () => {
     const result = structuredClone(fixture)
     const textOnly = {
@@ -161,6 +171,7 @@ describe('course image selection', () => {
     expect(read).toHaveBeenCalledTimes(1)
   })
   it('reports missing images without exposing filesystem errors', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const tools = withCourseImageTool(
       searchTools(),
       [candidate.kb_id],
@@ -172,6 +183,11 @@ describe('course image selection', () => {
     expect(
       await call(tools, 'show_course_image', { asset_id: candidate.asset_id })
     ).toEqual({ status: 'unavailable' })
+    expect(consoleError).toHaveBeenCalledWith(
+      'Failed to read selected course image',
+      expect.any(Error)
+    )
+    consoleError.mockRestore()
   })
   it('renders only selected results, including persisted JSON round trips', () => {
     const parts = [
@@ -208,6 +224,11 @@ describe('course image selection', () => {
     ).rejects.toThrow('manifest')
     await expect(
       readCourseImage({ ...candidate, image_sha256: '../secret' }, root)
+    ).rejects.toThrow()
+  })
+  it('rejects structurally invalid manifest and payload JSON', async () => {
+    await expect(
+      readCourseImage({ ...candidate, manifest_sha256: '0'.repeat(64) }, root)
     ).rejects.toThrow()
   })
 })
