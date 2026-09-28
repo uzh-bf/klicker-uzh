@@ -2,6 +2,7 @@ export default {
   chat: {
     courseImages: {
       expand: 'Expand image',
+      expandLabel: 'Expand image: {label}',
       closeViewer: 'Close image viewer',
       zoomIn: 'Zoom in',
       zoomOut: 'Zoom out',

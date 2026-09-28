@@ -34,7 +34,7 @@ export function CourseImageViewer({
         <button
           type="button"
           data-cy="course-image-expand"
-          aria-label={t('expand')}
+          aria-label={t('expandLabel', { label })}
           className="block w-full cursor-zoom-in rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           {children}
@@ -45,7 +45,7 @@ export function CourseImageViewer({
           <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70" />
           <Dialog.Content
             data-cy="course-image-viewer"
-            className="fixed inset-0 z-50 flex h-dvh flex-col bg-background text-foreground sm:inset-3 sm:h-[calc(100dvh-1.5rem)] sm:rounded-xl"
+            className="fixed inset-0 z-50 flex h-dvh flex-col bg-background pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] text-foreground sm:inset-3 sm:h-[calc(100dvh-1.5rem)] sm:rounded-xl sm:p-0"
           >
             <div className="flex shrink-0 items-center justify-between gap-3 border-b px-4 py-2">
               <Dialog.Title className="min-w-0 truncate text-sm font-medium">
