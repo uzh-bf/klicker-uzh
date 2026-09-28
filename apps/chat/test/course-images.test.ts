@@ -98,6 +98,11 @@ describe('course image selection', () => {
     broken.sources[0].chunks[0].page_end = 2
     delete broken.sources[0].chunks[0].visual_assets.manifest_sha256
     expect(courseImageCandidates(broken)).toEqual([])
+    for (const malformedPage of [true, '2', [2], { value: 2 }]) {
+      const malformed = structuredClone(fixture)
+      malformed.sources[0].chunks[0].page_end = malformedPage
+      expect(courseImageCandidates(malformed)).toEqual([])
+    }
   })
   it('requires current-turn evidence and allowed KB before opening storage', async () => {
     const read = vi.fn().mockResolvedValue(Buffer.from('png'))
@@ -106,6 +111,14 @@ describe('course image selection', () => {
       await call(tools, 'show_course_image', { asset_id: candidate.asset_id })
     ).toEqual({ status: 'unavailable' })
     await call(tools, 'KB_doc_query', { query: 'diagram' })
+    expect(
+      await call(tools, 'show_course_image', { asset_id: candidate.asset_id })
+    ).toEqual({
+      status: 'selected',
+      image: candidate,
+      reason: 'The retrieved passage identifies the requested figure.',
+    })
+    expect(read).toHaveBeenCalledTimes(1)
     expect(
       await call(tools, 'show_course_image', { asset_id: candidate.asset_id })
     ).toEqual({
