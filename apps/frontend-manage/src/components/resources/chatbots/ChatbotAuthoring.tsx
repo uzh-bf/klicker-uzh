@@ -139,7 +139,8 @@ function getCustomModeInputs(
 type CustomModeTranslate = (
   key:
     | 'manage.resources.chatbotCustomModesLimit'
-    | 'manage.resources.chatbotCustomModesDuplicate',
+    | 'manage.resources.chatbotCustomModesDuplicate'
+    | 'manage.resources.chatbotCustomModeNameRequired',
   options: { count: number }
 ) => string
 
@@ -156,7 +157,11 @@ function getCustomModeValidationError(
   const names = new Set<string>()
   for (const mode of values.modes) {
     const name = mode.name.trim().toLowerCase()
-    if (name.length === 0) continue
+    if (name.length === 0) {
+      return translate('manage.resources.chatbotCustomModeNameRequired', {
+        count: CHATBOT_CUSTOM_MODE_MAX_COUNT,
+      })
+    }
     if (names.has(name)) {
       return translate('manage.resources.chatbotCustomModesDuplicate', {
         count: CHATBOT_CUSTOM_MODE_MAX_COUNT,
@@ -439,7 +444,6 @@ function CustomModesEditor({
         </UserNotification>
       ) : (
         <Formik<CustomModeFormValues>
-          enableReinitialize
           validateOnMount
           initialValues={initialValues}
           validate={(values) => {

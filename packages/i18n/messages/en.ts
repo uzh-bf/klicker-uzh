@@ -4997,6 +4997,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotCustomModesCount: '{count} of {max} custom modes used',
       chatbotCustomMode: 'Custom mode {number}',
       chatbotCustomModeName: 'Mode name',
+      chatbotCustomModeNameRequired: 'Each custom mode needs a name.',
       chatbotCustomModeDescription: 'Short description',
       chatbotCustomModePersonaText: 'Persona and instructions',
       chatbotCustomModePersonaPlaceholder:
