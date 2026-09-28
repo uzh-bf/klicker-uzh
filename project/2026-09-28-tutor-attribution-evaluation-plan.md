@@ -3,8 +3,8 @@
 Status: approved scope and reviewed execution details. User approval: “proceed
 accordingly” after the improvement map. Target `v3`; branch
 `rs/tutor-e2e-validation`; baseline `cde7e4274757893a698a6c762a18e4e877a131c0`.
-No PR yet. Main session owns integration and the terminal condition in standard
-execution mode.
+Draft [PR #6319](https://github.com/uzh-bf/klicker-uzh/pull/6319). Main session
+owns integration and the terminal condition in standard execution mode.
 
 ## Outcome and boundary
 
@@ -154,8 +154,10 @@ not a visible UI change; no screenshot-gallery product delta is introduced.
   stopped: seven containers exited, source mount matched, zero task routes.
 - Review: planning approved after three rounds. Simplifier reductions integrated.
   Slice review's usage/identity fixes pass regression tests and a real canary;
-  surgical recheck passed. Independent semantic assessment confirmed rejection. Final review and
-  draft PR delivery remain; no PR yet.
+  surgical recheck passed. Independent semantic assessment confirmed rejection. Integrated final review passed with no findings through the configured continuity
+  fallback. Draft PR #6319 is published; remote
+  automatic code review is blocked by provider authentication before reviewing
+  any files. Exact-head CI and final-review status remain visible on the PR.
 - Packaging: one coherent evaluation capability; substantive size is approximately 2,550 added/deleted lines, mostly
   protocol checks and test fixtures; project artifacts are excluded. The
   harness, corpus and runner are one independently usable and reviewable unit. No prompt delta, UI delta, new dependency,

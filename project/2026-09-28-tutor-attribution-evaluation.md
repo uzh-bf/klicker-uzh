@@ -209,8 +209,12 @@ duplicate budget guard and repeated test scaffolding without removing assertions
 
 Root build passed all 23 tasks after stopping the owned dev process and
 preserving conflicting generated dev types outside compiler inputs. Slice review
-confirmed both accounting and retrieval-identity fixes. Independent semantic assessment confirmed rejection. Integrated final review,
-draft PR publication and exact-head CI are in progress. The exact task runtime is stopped: seven owned containers
+confirmed both accounting and retrieval-identity fixes. Independent semantic assessment confirmed rejection. Draft [PR #6319](https://github.com/uzh-bf/klicker-uzh/pull/6319) contains the
+package. Integrated final review passed with no findings through
+the configured continuity fallback. GitHub automatic code review
+failed on provider authentication before reviewing any files; this is a delivery
+blocker, not a code-review pass. See the PR for current exact-head CI and
+final-review status. The exact task runtime is stopped: seven owned containers
 exited, the app mount matches the task checkout, and its routes are absent.
 Volumes and worktree are retained. No merge or
 deployment is part of this package.
