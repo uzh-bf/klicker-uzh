@@ -1970,6 +1970,9 @@ importers:
         specifier: ^3.0.2
         version: 3.0.2(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react-is@18.3.1)(react@19.2.8)(redux@5.0.1)
     devDependencies:
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.51.2)(tsx@4.19.4)(yaml@2.9.0)
       '@types/react':
         specifier: ^19.2.18
         version: 19.2.18
