@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { readCourseImage } from '../src/lib/server/courseImageStore'
 import { withCourseImageTool } from '../src/lib/server/courseImageTools'
 import {
+  COURSE_IMAGE_TOOL,
   courseImageCandidates,
   selectedCourseImages,
 } from '../src/lib/sources/courseImages'
@@ -37,6 +38,22 @@ function searchTools(result: unknown = fixture): ToolSet {
 }
 
 describe('course image selection', () => {
+  it('rejects a reserved tool-name collision without replacing the existing tool', () => {
+    const existing = tool({
+      inputSchema: z.object({}),
+      execute: async () => ({ status: 'existing' }),
+    })
+    const tools = {
+      ...searchTools(),
+      [COURSE_IMAGE_TOOL]: existing,
+    }
+
+    expect(() =>
+      withCourseImageTool(tools, [candidate.kb_id], vi.fn())
+    ).toThrow(`Tool name conflict: ${COURSE_IMAGE_TOOL}`)
+    expect(tools[COURSE_IMAGE_TOOL]).toBe(existing)
+  })
+
   it('preserves text-only and illustrated search results in their original order', async () => {
     const result = structuredClone(fixture)
     const textOnly = {
