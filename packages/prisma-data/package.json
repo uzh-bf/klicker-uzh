@@ -4,6 +4,7 @@
   "license": "AGPL-3.0",
   "devDependencies": {
     "@klicker-uzh/adaptive-learning": "workspace:*",
+    "@klicker-uzh/adaptive-persistence": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/transactional": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
@@ -36,8 +37,7 @@
     "typescript": "~6.0.3",
     "uuid": "~10.0.0",
     "vitest": "3.2.4",
-    "xml2js": "~0.6.2",
-    "@klicker-uzh/adaptive-persistence": "workspace:*"
+    "xml2js": "~0.6.2"
   },
   "scripts": {
     "check": "run-s --npm-path pnpm check:data check:scripts",
@@ -78,8 +78,8 @@
   "volta": {
     "extends": "../../package.json"
   },
-  "type": "module",
   "exports": {
     "./adaptive-seed-host-types": "./src/adaptive-seed-host-types.ts"
-  }
+  },
+  "type": "module"
 }

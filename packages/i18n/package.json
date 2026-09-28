@@ -7,6 +7,9 @@
     "request.ts",
     "messages/"
   ],
+  "dependencies": {
+    "@klicker-uzh/adaptive-i18n": "workspace:*"
+  },
   "devDependencies": {
     "next": "~16.3.4",
     "react": "~19.2.8",
@@ -22,11 +25,8 @@
   "volta": {
     "extends": "../../package.json"
   },
-  "type": "module",
-  "dependencies": {
-    "@klicker-uzh/adaptive-i18n": "workspace:*"
-  },
   "imports": {
     "#merge-adaptive-messages": "./messages/mergeAdaptiveMessages.ts"
-  }
+  },
+  "type": "module"
 }

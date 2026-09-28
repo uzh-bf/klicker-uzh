@@ -16,8 +16,10 @@
     "@fullcalendar/interaction": "6.1.20",
     "@fullcalendar/react": "6.1.20",
     "@fullcalendar/timegrid": "6.1.20",
-    "@klicker-uzh/feature-flags": "workspace:*",
+    "@klicker-uzh/adaptive-i18n": "workspace:*",
     "@klicker-uzh/adaptive-learning": "workspace:*",
+    "@klicker-uzh/adaptive-manage-ui": "workspace:*",
+    "@klicker-uzh/feature-flags": "workspace:*",
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/i18n": "workspace:*",
     "@klicker-uzh/kb-management": "workspace:*",
@@ -67,9 +69,7 @@
     "slate-history": "0.109.0",
     "slate-react": "0.110.2",
     "tailwind-merge": "3.3.1",
-    "yup": "1.6.1",
-    "@klicker-uzh/adaptive-manage-ui": "workspace:*",
-    "@klicker-uzh/adaptive-i18n": "workspace:*"
+    "yup": "1.6.1"
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "~0.1.1",
@@ -108,9 +108,9 @@
     "lint": "eslint .",
     "start": "next start --port 3002",
     "start:test": "cross-env NODE_ENV=test pnpm start",
-    "test:run": "pnpm run test:host && pnpm run test:adaptive",
+    "test:adaptive": "vitest run test/adaptivePracticeQuizForm.test.ts test/itemBankMap.test.ts test/navigationGuard.test.ts test/treeHelpers.test.ts",
     "test:host": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test test/chatbotOwnerPreviewAccess.test.ts test/chatbotOwnerPreviewUrl.test.ts test/elementGenerationDesignEvidence.test.ts test/elementGenerationObjectiveSource.test.ts test/elementGenerationSlotFailures.test.ts test/generatedTagSelection.test.ts test/manageAssistantConfig.test.ts test/manageAssistantContext.test.ts test/manageAssistantFrameState.test.ts test/manageAssistantPanelSize.test.ts test/manageElementCreatedMessage.test.ts",
-    "test:adaptive": "vitest run test/adaptivePracticeQuizForm.test.ts test/itemBankMap.test.ts test/navigationGuard.test.ts test/treeHelpers.test.ts"
+    "test:run": "pnpm run test:host && pnpm run test:adaptive"
   },
   "engines": {
     "node": "=24"
