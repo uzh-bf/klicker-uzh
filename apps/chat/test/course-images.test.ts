@@ -136,6 +136,7 @@ describe('course image selection', () => {
     expect(read).toHaveBeenCalledTimes(1)
   })
   it('reports missing images without exposing filesystem errors', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const tools = withCourseImageTool(
       searchTools(),
       [candidate.kb_id],
@@ -147,6 +148,11 @@ describe('course image selection', () => {
     expect(
       await call(tools, 'show_course_image', { asset_id: candidate.asset_id })
     ).toEqual({ status: 'unavailable' })
+    expect(consoleError).toHaveBeenCalledWith(
+      'Failed to read selected course image',
+      expect.any(Error)
+    )
+    consoleError.mockRestore()
   })
   it('renders only selected results, including persisted JSON round trips', () => {
     const parts = [
@@ -183,6 +189,11 @@ describe('course image selection', () => {
     ).rejects.toThrow('manifest')
     await expect(
       readCourseImage({ ...candidate, image_sha256: '../secret' }, root)
+    ).rejects.toThrow()
+  })
+  it('rejects structurally invalid manifest and payload JSON', async () => {
+    await expect(
+      readCourseImage({ ...candidate, manifest_sha256: '0'.repeat(64) }, root)
     ).rejects.toThrow()
   })
 })

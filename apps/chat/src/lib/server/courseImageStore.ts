@@ -5,6 +5,13 @@ import { BlobServiceClient } from '@azure/storage-blob'
 import type { CourseImage } from '@/src/lib/sources/courseImages'
 
 const DIGEST = /^[a-f0-9]{64}$/
+
+function record(value: unknown): Record<string, unknown> | undefined {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined
+}
+
 export function courseImageStoreConfigured() {
   return Boolean(
     process.env.CHAT_COURSE_IMAGE_STORE_PATH ||
@@ -71,35 +78,46 @@ export async function readCourseImage(
       throw new Error('Image artifact integrity failed')
     return bytes
   }
-  const manifest = JSON.parse(
-    (
-      await object('manifests', image.manifest_sha256, 'json', 2_000_000)
-    ).toString()
+  const manifest = record(
+    JSON.parse(
+      (
+        await object('manifests', image.manifest_sha256, 'json', 2_000_000)
+      ).toString()
+    )
   )
+  const manifestImages = record(manifest?.images)
   if (
+    !manifest ||
+    !manifestImages ||
+    typeof manifest.payload_sha256 !== 'string' ||
     manifest.source_sha256 !== image.source_content_hash ||
     manifest.extraction_options_hash !== image.extraction_options_hash ||
-    !Object.values(manifest.images ?? {}).includes(image.image_sha256)
+    !Object.values(manifestImages).includes(image.image_sha256)
   )
     throw new Error('Image manifest mismatch')
-  const payload = JSON.parse(
-    (
-      await object('payloads', manifest.payload_sha256, 'json', 10_000_000)
-    ).toString()
+  const payload = record(
+    JSON.parse(
+      (
+        await object('payloads', manifest.payload_sha256, 'json', 10_000_000)
+      ).toString()
+    )
   )
-  const assets = payload.visual_assets?.assets
+  if (!payload) throw new Error('Image payload mismatch')
+  const assets = record(payload.visual_assets)?.assets
   if (
     !Array.isArray(assets) ||
-    !assets.some(
-      (asset) =>
-        asset.asset_id === image.asset_id &&
+    !assets.some((value) => {
+      const asset = record(value)
+      return (
+        asset?.asset_id === image.asset_id &&
         asset.image_sha256 === image.image_sha256 &&
         asset.physical_page_number === image.physical_page_number &&
         (asset.logical_page_number ?? undefined) ===
           image.logical_page_number &&
         asset.width_px === image.width_px &&
         asset.height_px === image.height_px
-    )
+      )
+    })
   )
     throw new Error('Image occurrence mismatch')
   const bytes = await object('images', image.image_sha256, 'png', 10_000_000)
