@@ -1,6 +1,13 @@
 export default {
   chat: {
     courseImages: {
+      expand: 'Bild vergrößern',
+      closeViewer: 'Bildansicht schließen',
+      zoomIn: 'Vergrößern',
+      zoomOut: 'Verkleinern',
+      zoomLevel: 'Zoomstufe relativ zum eingepassten Bild',
+      fitImage: 'Bild einpassen',
+      panHint: 'Zum Erkunden des vergrößerten Bildes scrollen oder wischen.',
       source: '{title} · Seite {page}',
       unavailable: 'Dieses Kursbild ist derzeit nicht verfügbar.',
       retry: 'Bild erneut laden',

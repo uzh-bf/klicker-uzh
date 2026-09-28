@@ -12,6 +12,7 @@ import {
 } from '@/src/lib/sources/courseImages'
 import type { ChatSourcePart } from '@/src/lib/sources/normalizeSources'
 import { useChatStore } from '@/src/stores/chatStore'
+import { CourseImageViewer } from './course-image-viewer'
 
 function courseImageSrc({
   chatbotId,
@@ -81,16 +82,25 @@ export function CourseImageCard({
           </button>
         </div>
       ) : (
-        <Image
-          key={attempt}
+        <CourseImageViewer
           src={src}
           alt={caption || label}
+          label={label}
+          caption={caption}
           width={image.width_px}
           height={image.height_px}
-          unoptimized
-          onError={() => setFailed(true)}
-          className="h-auto w-full object-contain"
-        />
+        >
+          <Image
+            key={attempt}
+            src={src}
+            alt={caption || label}
+            width={image.width_px}
+            height={image.height_px}
+            unoptimized
+            onError={() => setFailed(true)}
+            className="h-auto w-full object-contain"
+          />
+        </CourseImageViewer>
       )}
       <figcaption className="mt-2 text-xs text-muted-foreground">
         {image.captions?.map((entry) => (
