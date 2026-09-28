@@ -98,25 +98,25 @@ Freeze case IDs, target assessment turns and rubric dimensions in the corpus. Al
 
 ## Test portfolio
 
-| Obligation | Existing protection | Change and primary seam |
-| --- | --- | --- |
-| Actual history/parent chain and persisted answers | Single-turn adapter tests; mocked browser branch tests | extend existing: adapter tests with synthetic HTTP server and multi-turn ancestry checks; real trajectory run proves integration. |
-| Fail closed on incomplete stream, wrong mode/model, invalid inputs and missing retrieval | Adapter validation and single-turn checks | extend existing: only missing trajectory cases in existing test file. |
-| Assistance attribution and preserved teaching behavior | Exposed prompt comparison and manual live receipts | add new: scenario corpus and manual per-output rubric; never assert prompt wording or seed prose. |
-| Auto interaction and reload | Prior live smoke, existing browser mechanics | none for new automated UI tests: reuse unaffected mechanics; exercise accepted candidate in the actual browser. |
+| Obligation                                                                               | Existing protection                                    | Change and primary seam                                                                                                           |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| Actual history/parent chain and persisted answers                                        | Single-turn adapter tests; mocked browser branch tests | extend existing: adapter tests with synthetic HTTP server and multi-turn ancestry checks; real trajectory run proves integration. |
+| Fail closed on incomplete stream, wrong mode/model, invalid inputs and missing retrieval | Adapter validation and single-turn checks              | extend existing: only missing trajectory cases in existing test file.                                                             |
+| Assistance attribution and preserved teaching behavior                                   | Exposed prompt comparison and manual live receipts     | add new: scenario corpus and manual per-output rubric; never assert prompt wording or seed prose.                                 |
+| Auto interaction and reload                                                              | Prior live smoke, existing browser mechanics           | none for new automated UI tests: reuse unaffected mechanics; exercise accepted candidate in the actual browser.                   |
 
 ## Delegation map and slices
 
 Each independently useful outcome has one owner. The commit packaging below does
 not transfer ownership between these outcomes.
 
-| Outcome | Sole owner | Dependency | Acceptance |
-| --- | --- | --- | --- |
-| Harness implementation | Native executor, harness scope | Reviewed plan | Focused Vitest contract checks pass |
-| Corpus authoring | Native executor, corpus scope | Frozen candidate | 12 synthetic cases and 32 turns, fixed groups and rubrics |
-| Corpus validation/freeze | Main | Corpus authoring | Validate schema/counts and record hashes without reading reserved inputs |
-| Experiment and prompt decision | Main | Harness plus corpus validation/freeze | Comparable coverage and declared retain/reject gate |
-| Delivery and runtime shutdown | Main | Accepted experiment disposition, including rejection | Reviewed draft PR, reported CI, exact runtime stopped |
+| Outcome                        | Sole owner                     | Dependency                                           | Acceptance                                                               |
+| ------------------------------ | ------------------------------ | ---------------------------------------------------- | ------------------------------------------------------------------------ |
+| Harness implementation         | Native executor, harness scope | Reviewed plan                                        | Focused Vitest contract checks pass                                      |
+| Corpus authoring               | Native executor, corpus scope  | Frozen candidate                                     | 12 synthetic cases and 32 turns, fixed groups and rubrics                |
+| Corpus validation/freeze       | Main                           | Corpus authoring                                     | Validate schema/counts and record hashes without reading reserved inputs |
+| Experiment and prompt decision | Main                           | Harness plus corpus validation/freeze                | Comparable coverage and declared retain/reject gate                      |
+| Delivery and runtime shutdown  | Main                           | Accepted experiment disposition, including rejection | Reviewed draft PR, reported CI, exact runtime stopped                    |
 
 1. **Trajectory harness.** Native executor exclusively owns
    `apps/chat/scripts/klicker-evaluation-target.mjs`, existing
@@ -144,10 +144,22 @@ not a visible UI change; no screenshot-gallery product delta is introduced.
 
 ## Progress
 
-- Complete: approved map, refreshed clean baseline, isolated runtime resume begun.
-- Active: plan hardening and harness seam mapping.
-- Remaining: harness, frozen experiment, acceptance decision, final verification,
-  review and draft delivery. Required terminal: draft PR with results and explicit
-  limitations, exact task runtime stopped.
-- Source tests/model experiments: not yet run for this package.
-- Planning review: APPROVED after three rounds; accepted budget/accounting, holdout separation, ancestry/stream proof, scoring and owner-clarity corrections. Review receipt: ignored project/_local/reviews/2026-09-28-tutor-attribution-plan-hardening.md.
+- Complete: harness and frozen 12-case corpus; 128 comparison turns; baseline
+  retained after candidate rejection; two extra protocol canaries within the
+  160-turn ceiling. Total usage: 130 submissions, 0.248203 application credits.
+- Verification: 26 focused tests pass; repository container typecheck/lint/policy
+  checks pass; host Playwright infrastructure checks pass (39 and 84); focused
+  Opengrep reports no findings. Root build passed 23/23 tasks after preserving generated dev types that
+  collided with production types; no application source repair. Exact runtime
+  stopped: seven containers exited, source mount matched, zero task routes.
+- Review: planning approved after three rounds. Simplifier reductions integrated.
+  Slice review's usage/identity fixes pass regression tests and a real canary;
+  surgical recheck passed. Independent semantic assessment confirmed rejection. Final review and
+  draft PR delivery remain; no PR yet.
+- Packaging: one coherent evaluation capability; substantive size is approximately 2,550 added/deleted lines, mostly
+  protocol checks and test fixtures; project artifacts are excluded. The
+  harness, corpus and runner are one independently usable and reviewable unit. No prompt delta, UI delta, new dependency,
+  schema change, deployment or merge. Existing runtime runbook receives the
+  cache/build lesson under the same package.
+- Required terminal: reviewed draft PR with results and explicit limitations,
+  reported exact-head CI, and exact task runtime stopped with data retained.

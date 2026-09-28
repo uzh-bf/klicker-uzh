@@ -287,7 +287,8 @@ uses the same local target directly, without extending its single-message HTTP
 API. It follows actual persisted replies and parent IDs across a trajectory,
 checks streamed text against saved text, and requires successful `KB_doc_query`
 completion on the first turn. Follow-up turns may use existing context; any
-emitted retrieval must still complete. `evaluation/data/trajectories/tutor-attribution.json` contains
+emitted retrieval must still complete with matching call IDs in stream and
+persistence. Disagreement between streamed and saved credits stops the run. `evaluation/data/trajectories/tutor-attribution.json` contains
 synthetic English/German scenarios and behavioral rubrics. These rubrics need
 assessment of meaning; exact response wording is not a test contract.
 
@@ -309,7 +310,9 @@ node apps/chat/scripts/run-tutor-trajectories.mjs \
 Use a new output path for each arm and the same budget file across the whole
 experiment. Receipts contain visible synthetic turns and allowlisted metadata;
 they exclude credentials, reasoning and raw tool payloads. Keep them outside
-Git. A transport, persistence, accounting or evidence failure is an incomplete
+Git. The ledger marks each submission as uncertain before sending it and clears
+that flag only after usage is accounted for. Run arms sequentially with one ledger
+owner; concurrent runs are unsupported. A transport, persistence, accounting or evidence failure is an incomplete
 evaluation, never a behavioral pass. Re-running a stopped or uncertain request
 requires an explicit experiment decision; the runner does not retry it.
 
