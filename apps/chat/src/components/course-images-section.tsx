@@ -1,11 +1,14 @@
 'use client'
 
-import { useAuiState } from '@assistant-ui/react'
+import { useAui, useAuiState } from '@assistant-ui/react'
 import Image from 'next/image'
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import { courseImagePlacements } from '@/src/lib/markdown/remarkCourseImages'
+import {
+  courseImagePlacements,
+  firstCourseImagePlacementIndex,
+} from '@/src/lib/markdown/remarkCourseImages'
 import {
   type CourseImage,
   selectedCourseImages,
@@ -103,14 +106,29 @@ export function CourseImageCard({
 }
 
 export function InlineCourseImage({ assetId }: { assetId: string }) {
+  const aui = useAui()
   const context = usePersistedCourseImageContext()
+  const partIndex =
+    aui.part.source === 'message' && aui.part.query.type === 'index'
+      ? aui.part.query.index
+      : -1
+  const firstPlacementIndex = context
+    ? firstCourseImagePlacementIndex(
+        context.content.map((part) =>
+          part.type === 'text' && typeof part.text === 'string'
+            ? part.text
+            : null
+        ),
+        assetId
+      )
+    : -1
   const image = context
     ? selectedCourseImages(context.content).find(
         (candidate) => candidate.asset_id === assetId
       )
     : undefined
   // The image endpoint authorizes against the persisted assistant message.
-  if (!image || !context) return null
+  if (!image || !context || partIndex !== firstPlacementIndex) return null
   return (
     <CourseImageCard
       image={image}

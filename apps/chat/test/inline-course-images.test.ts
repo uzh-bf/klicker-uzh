@@ -3,6 +3,7 @@ import type { MarkdownAstNode } from '../src/lib/markdown/remarkCitationMarkers'
 import {
   courseImageMarker,
   courseImagePlacements,
+  firstCourseImagePlacementIndex,
   remarkCourseImages,
 } from '../src/lib/markdown/remarkCourseImages'
 
@@ -40,6 +41,8 @@ describe('inline course image placement', () => {
     expect(courseImagePlacements(`Before\n \n   ${marker}\n\t\nAfter`)).toEqual(
       [id]
     )
+    expect(courseImagePlacements(`${marker}  `)).toEqual([id])
+    expect(courseImagePlacements(`${marker}\t`)).toEqual([id])
   })
   it('keeps code, nested blocks, inline mentions and incomplete markers out of placement', () => {
     for (const text of [
@@ -48,6 +51,7 @@ describe('inline course image placement', () => {
       `    ${marker}`,
       `> ${marker}`,
       `- list item\n\n  ${marker}`,
+      `- outer item\n  - nested item\n\n   ${marker}`,
       `Mention ${marker}`,
       '[course-image:abc',
     ]) {
@@ -69,5 +73,13 @@ describe('inline course image placement', () => {
     expect(
       courseImagePlacements('[course-image:https://example.com/image.png]')
     ).toEqual([])
+  })
+  it('selects only the first placement across message text parts', () => {
+    expect(
+      firstCourseImagePlacementIndex(
+        ['Before', `First\n\n${marker}`, null, `Second\n\n${marker}`],
+        id
+      )
+    ).toBe(1)
   })
 })
