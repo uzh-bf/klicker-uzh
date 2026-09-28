@@ -1,5 +1,6 @@
+import { O_NOFOLLOW, O_RDONLY } from 'node:constants'
 import { createHash } from 'node:crypto'
-import { readFile, realpath, stat } from 'node:fs/promises'
+import { open, realpath } from 'node:fs/promises'
 import path from 'node:path'
 import { BlobServiceClient } from '@azure/storage-blob'
 import type { CourseImage } from '@/src/lib/sources/courseImages'
@@ -70,9 +71,15 @@ export async function readCourseImage(
       )
       if (!filename.startsWith(base + path.sep))
         throw new Error('Invalid image path')
-      if ((await stat(filename)).size > limit)
-        throw new Error('Image artifact exceeds size limit')
-      bytes = await readFile(filename)
+      const file = await open(filename, O_RDONLY | O_NOFOLLOW)
+      try {
+        const metadata = await file.stat()
+        if (!metadata.isFile() || metadata.size > limit)
+          throw new Error('Image artifact exceeds size limit')
+        bytes = await file.readFile()
+      } finally {
+        await file.close()
+      }
     } else {
       const connectionString = projectionConnectionString()
       const container = projectionContainer()
