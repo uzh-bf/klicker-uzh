@@ -2065,9 +2065,6 @@ importers:
       eslint:
         specifier: ~9.30.1
         version: 9.30.1(jiti@2.7.0)
-      exceljs:
-        specifier: ~4.4.0
-        version: 4.4.0
       graphql-codegen-persisted-query-ids:
         specifier: ~0.2.0
         version: 0.2.0
