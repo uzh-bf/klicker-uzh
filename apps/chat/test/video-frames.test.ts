@@ -12,6 +12,7 @@ import { withVideoFrameTool } from '../src/lib/server/videoFrameTools'
 import {
   selectedVideoFrame,
   selectedVideoFrames,
+  sourceForVideoFrame,
   videoFrameCandidates,
 } from '../src/lib/sources/videoFrames'
 
@@ -98,6 +99,35 @@ describe('video frame selection', () => {
         { type: 'tool-call', toolName: 'KB_doc_query', result: fixture },
       ])
     ).toEqual([])
+  })
+
+  it('links a selected frame to its matching timestamped source', () => {
+    const sources = [
+      {
+        id: 'matching',
+        index: 1,
+        type: 'video' as const,
+        title: candidate.title,
+        startSec: candidate.start_sec,
+        endSec: candidate.end_sec,
+      },
+      {
+        id: 'other-range',
+        index: 2,
+        type: 'video' as const,
+        title: candidate.title,
+        startSec: 0,
+        endSec: candidate.start_sec,
+      },
+    ]
+
+    expect(sourceForVideoFrame(candidate, sources)?.index).toBe(1)
+    expect(
+      sourceForVideoFrame(
+        { ...candidate, title: 'Different recording' },
+        sources
+      )
+    ).toBeUndefined()
   })
 
   it('resolves the authoritative JPEG occurrence and verifies its hash', async () => {

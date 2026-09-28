@@ -8,9 +8,12 @@ import { useState } from 'react'
 import type { ChatSourcePart } from '@/src/lib/sources/normalizeSources'
 import {
   selectedVideoFrames,
+  sourceForVideoFrame,
   type VideoFrame,
 } from '@/src/lib/sources/videoFrames'
 import { useChatStore } from '@/src/stores/chatStore'
+import { CitationChip } from './citation-chip'
+import { useMessageSourcesContext } from './message-sources-context'
 
 function timestamp(totalSeconds: number) {
   const safe = Math.max(0, Math.floor(totalSeconds))
@@ -32,8 +35,10 @@ export function VideoFrameCard({
   videoSrc: string
 }) {
   const t = useTranslations('chat.videoFrames')
+  const { sources } = useMessageSourcesContext()
   const [failed, setFailed] = useState(false)
   const [attempt, setAttempt] = useState(0)
+  const source = sourceForVideoFrame(frame, sources)
   const label = t('source', {
     title: frame.title,
     timestamp: timestamp(frame.timestamp_sec),
@@ -77,8 +82,9 @@ export function VideoFrameCard({
           />
         </video>
       )}
-      <figcaption className="border-border border-t px-3 py-2 text-sm text-muted-foreground">
-        {label}
+      <figcaption className="border-border flex items-center gap-1 border-t px-3 py-2 text-sm text-muted-foreground">
+        {source && <CitationChip index={source.index} />}
+        <span>{label}</span>
       </figcaption>
     </figure>
   )

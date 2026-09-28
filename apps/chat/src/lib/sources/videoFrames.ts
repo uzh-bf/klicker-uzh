@@ -4,6 +4,7 @@ import {
   isDocQueryToolName,
   parseDocQueryPayload,
 } from './normalizeSources'
+import type { ChatSource } from './types'
 
 export const VIDEO_FRAME_TOOL = 'show_video_frame'
 const digest = z.string().regex(/^[a-f0-9]{64}$/)
@@ -140,6 +141,21 @@ export function selectedVideoFrame(
   if (result?.status !== 'selected') return undefined
   const parsed = videoFrameSchema.safeParse(result.frame)
   return parsed.success ? parsed.data : undefined
+}
+
+export function sourceForVideoFrame(
+  frame: VideoFrame,
+  sources: readonly ChatSource[]
+): ChatSource | undefined {
+  return sources.find(
+    (source) =>
+      source.type === 'video' &&
+      source.title === frame.title &&
+      source.startSec !== undefined &&
+      source.endSec !== undefined &&
+      Math.abs(source.startSec - frame.start_sec) < 0.001 &&
+      Math.abs(source.endSec - frame.end_sec) < 0.001
+  )
 }
 
 export function isVideoSearchTool(name: string) {
