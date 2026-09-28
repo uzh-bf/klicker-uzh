@@ -189,16 +189,6 @@ export async function writeBudgetLedger(filePath, ledger) {
 // Refuses to start any new request once a recorded uncertainty leaves the true
 // spend unknown, the submitted-turn cap is reached, or the soft credit ceiling
 // is already met.
-function assertBudgetAllowsTurn(ledger) {
-  if (ledger.uncertain) throw evaluationError('budget_uncertain')
-  if (ledger.submittedTurns + 1 > ledger.maxSubmittedTurns) {
-    throw evaluationError('budget_turns_exhausted')
-  }
-  if (ledger.creditsUsed >= ledger.maxApplicationCredits) {
-    throw evaluationError('budget_credits_exhausted')
-  }
-}
-
 export function assertBudgetCanStart(ledger) {
   if (ledger.uncertain) throw evaluationError('budget_uncertain')
   if (ledger.submittedTurns >= ledger.maxSubmittedTurns) {
@@ -323,7 +313,7 @@ export async function runTutorTrajectories({
             beforeTurn: async ({ caseId, turn }) => {
               currentCase = caseId
               currentTurn = turn
-              assertBudgetAllowsTurn(ledger)
+              assertBudgetCanStart(ledger)
               // Count the request and mark the spend unknown before it leaves
               // the process: a crash or transport failure here must refuse
               // every later call instead of assuming the turn was free.
@@ -368,6 +358,7 @@ export async function runTutorTrajectories({
       )
     }
 
+    summary.recordedAt = new Date().toISOString()
     summary.status = stopCode ? 'stopped' : 'completed'
     summary.stopCode = stopCode
     summary.submittedTurns = ledger.submittedTurns

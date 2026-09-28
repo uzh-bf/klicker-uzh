@@ -1255,11 +1255,59 @@ test('runner validates corpus and shared budget before any network effect', asyn
   }
 })
 
-test('runner writes one verified receipt per turn and keeps the ledger honest', async () => {
+// Runner scenarios share one lifecycle: a scratch directory with corpus,
+// budget and output paths, a scripted fetch replacement, cleanup, and JSONL
+// receipt reads. Each scenario keeps its own inputs and assertions.
+async function withRunnerScenario(
+  { cases, budget = null, arm = 'baseline', fetchImpl },
+  body
+) {
   const directory = await mkdtemp(join(tmpdir(), 'klicker-tutor-run-'))
-  const corpusPath = join(directory, 'corpus.json')
-  const budgetPath = join(directory, 'budget.json')
-  const outputPath = join(directory, 'output.jsonl')
+  const paths = {
+    corpus: join(directory, 'corpus.json'),
+    budget: join(directory, 'budget.json'),
+    output: join(directory, 'output.jsonl'),
+    secondOutput: join(directory, 'output-2.jsonl'),
+  }
+  const argvFor = (output = paths.output, runArm = arm) => [
+    '--corpus',
+    paths.corpus,
+    '--output',
+    output,
+    '--arm',
+    runArm,
+    '--budget-file',
+    paths.budget,
+    '--repeats',
+    '1',
+  ]
+  const readReceipts = async () =>
+    (await readFile(paths.output, 'utf8'))
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line))
+
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = fetchImpl
+  try {
+    await writeFile(paths.corpus, JSON.stringify({ version: 1, cases }))
+    if (budget !== null) {
+      await writeFile(paths.budget, JSON.stringify(budget))
+    }
+    await body({
+      argv: argvFor(),
+      argvFor,
+      env: trajectoryEnv(),
+      paths,
+      readReceipts,
+    })
+  } finally {
+    globalThis.fetch = originalFetch
+    await rm(directory, { recursive: true, force: true })
+  }
+}
+
+test('runner writes one verified receipt per turn and keeps the ledger honest', async () => {
   const progress = []
   const app = syntheticChatFetch({
     turnConfig: ({ turn }) => ({
@@ -1267,265 +1315,173 @@ test('runner writes one verified receipt per turn and keeps the ledger honest', 
       creditsUsed: 0.5,
     }),
   })
-  const originalFetch = globalThis.fetch
-  globalThis.fetch = app.fetchImpl
-
-  const argv = [
-    '--corpus',
-    corpusPath,
-    '--output',
-    outputPath,
-    '--arm',
-    'baseline',
-    '--budget-file',
-    budgetPath,
-    '--repeats',
-    '1',
-  ]
-
-  try {
-    await writeFile(
-      corpusPath,
-      JSON.stringify({
-        version: 1,
-        cases: [
-          trajectoryCase({
-            turns: [
-              { message: 'Synthetic question one' },
-              { repeatPrevious: true, suffix: ' Synthetic suffix.' },
-            ],
-          }),
-        ],
+  await withRunnerScenario(
+    {
+      fetchImpl: app.fetchImpl,
+      cases: [
+        trajectoryCase({
+          turns: [
+            { message: 'Synthetic question one' },
+            { repeatPrevious: true, suffix: ' Synthetic suffix.' },
+          ],
+        }),
+      ],
+      // The planned canary warmup already counted one submitted turn.
+      budget: budgetLedger({ submittedTurns: 1, creditsUsed: 0.25 }),
+    },
+    async ({ argv, env, paths, readReceipts }) => {
+      const summary = await runTutorTrajectories({
+        argv,
+        env,
+        log: (line) => progress.push(line),
       })
-    )
-    // The planned canary warmup already counted one submitted turn.
-    await writeFile(
-      budgetPath,
-      JSON.stringify(budgetLedger({ submittedTurns: 1, creditsUsed: 0.25 }))
-    )
 
-    const summary = await runTutorTrajectories({
-      argv,
-      env: trajectoryEnv(),
-      log: (line) => progress.push(line),
-    })
+      assert.equal(summary.status, 'completed')
+      assert.equal(summary.stopCode, null)
+      assert.equal(summary.completedTurns, 2)
+      assert.equal(summary.runSubmittedTurns, 2)
+      assert.equal(summary.submittedTurns, 3)
+      assert.equal(summary.creditsUsed, 1.25)
+      assert.equal(summary.uncertain, false)
+      assert.equal(summary.model, 'gpt-5.6-luna')
+      assert.deepEqual(
+        JSON.parse(await readFile(paths.budget, 'utf8')),
+        budgetLedger({ submittedTurns: 3, creditsUsed: 1.25 })
+      )
 
-    assert.equal(summary.status, 'completed')
-    assert.equal(summary.stopCode, null)
-    assert.equal(summary.completedTurns, 2)
-    assert.equal(summary.runSubmittedTurns, 2)
-    assert.equal(summary.submittedTurns, 3)
-    assert.equal(summary.creditsUsed, 1.25)
-    assert.equal(summary.uncertain, false)
-    assert.equal(summary.model, 'gpt-5.6-luna')
-    assert.deepEqual(
-      JSON.parse(await readFile(budgetPath, 'utf8')),
-      budgetLedger({ submittedTurns: 3, creditsUsed: 1.25 })
-    )
+      const lines = await readReceipts()
+      assert.deepEqual(
+        lines.map((line) => line.type),
+        ['turn', 'turn', 'summary']
+      )
+      assert.equal(lines[0].userText, 'Synthetic question one')
+      assert.equal(lines[0].assistantText, 'Synthetic answer 1.')
+      assert.equal(lines[0].repeat, 0)
+      assert.equal(lines[1].userText, 'Synthetic answer 1. Synthetic suffix.')
+      assert.equal(lines[1].assistantText, 'Synthetic answer 2.')
+      assert.equal(lines[1].parentId, lines[0].assistantMessageId)
+      assert.equal(lines[2].status, 'completed')
+      assert.equal(JSON.stringify(lines).includes('private reasoning'), false)
+      assert.equal(JSON.stringify(lines).includes('participant_token'), false)
 
-    const lines = (await readFile(outputPath, 'utf8'))
-      .trim()
-      .split('\n')
-      .map((line) => JSON.parse(line))
-    assert.deepEqual(
-      lines.map((line) => line.type),
-      ['turn', 'turn', 'summary']
-    )
-    assert.equal(lines[0].userText, 'Synthetic question one')
-    assert.equal(lines[0].assistantText, 'Synthetic answer 1.')
-    assert.equal(lines[0].repeat, 0)
-    assert.equal(lines[1].userText, 'Synthetic answer 1. Synthetic suffix.')
-    assert.equal(lines[1].assistantText, 'Synthetic answer 2.')
-    assert.equal(lines[1].parentId, lines[0].assistantMessageId)
-    assert.equal(lines[2].status, 'completed')
-    assert.equal(JSON.stringify(lines).includes('private reasoning'), false)
-    assert.equal(JSON.stringify(lines).includes('participant_token'), false)
+      assert.equal(progress.length, 2)
+      assert.equal(
+        progress.every(
+          (line) =>
+            line.startsWith('klicker-tutor-trajectories ') &&
+            !line.includes('Synthetic answer')
+        ),
+        true
+      )
 
-    assert.equal(progress.length, 2)
-    assert.equal(
-      progress.every(
-        (line) =>
-          line.startsWith('klicker-tutor-trajectories ') &&
-          !line.includes('Synthetic answer')
-      ),
-      true
-    )
-
-    await assert.rejects(
-      runTutorTrajectories({ argv, env: trajectoryEnv(), log: () => {} }),
-      { code: 'output_exists' }
-    )
-  } finally {
-    globalThis.fetch = originalFetch
-    await rm(directory, { recursive: true, force: true })
-  }
+      await assert.rejects(runTutorTrajectories({ argv, env, log: () => {} }), {
+        code: 'output_exists',
+      })
+    }
+  )
 })
 
 test('runner stops on unaccounted credits and refuses every later call', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'klicker-tutor-run-'))
-  const corpusPath = join(directory, 'corpus.json')
-  const budgetPath = join(directory, 'budget.json')
-  const outputPath = join(directory, 'output.jsonl')
-  const secondOutputPath = join(directory, 'output-2.jsonl')
   const app = syntheticChatFetch({
     turnConfig: () => ({ creditsAccounted: false }),
   })
-  const originalFetch = globalThis.fetch
-  globalThis.fetch = app.fetchImpl
-
-  try {
-    await writeFile(
-      corpusPath,
-      JSON.stringify({
-        version: 1,
-        cases: [
-          trajectoryCase({
-            turns: [
-              { message: 'Synthetic question one' },
-              { message: 'Synthetic question two' },
-            ],
-          }),
-        ],
-      })
-    )
-
-    const summary = await runTutorTrajectories({
-      argv: [
-        '--corpus',
-        corpusPath,
-        '--output',
-        outputPath,
-        '--arm',
-        'candidate',
-        '--budget-file',
-        budgetPath,
-        '--repeats',
-        '1',
+  await withRunnerScenario(
+    {
+      fetchImpl: app.fetchImpl,
+      arm: 'candidate',
+      cases: [
+        trajectoryCase({
+          turns: [
+            { message: 'Synthetic question one' },
+            { message: 'Synthetic question two' },
+          ],
+        }),
       ],
-      env: trajectoryEnv(),
-      log: () => {},
-    })
-
-    assert.equal(summary.status, 'stopped')
-    assert.equal(summary.stopCode, 'credits_unaccounted')
-    assert.equal(summary.completedTurns, 1)
-    assert.equal(summary.runSubmittedTurns, 1)
-    assert.equal(summary.uncertain, true)
-    assert.deepEqual(
-      JSON.parse(await readFile(budgetPath, 'utf8')),
-      budgetLedger({ submittedTurns: 1, uncertain: true })
-    )
-
-    const lines = (await readFile(outputPath, 'utf8'))
-      .trim()
-      .split('\n')
-      .map((line) => JSON.parse(line))
-    assert.deepEqual(
-      lines.map((line) => line.type),
-      ['turn', 'error', 'summary']
-    )
-    assert.equal(lines[1].code, 'credits_unaccounted')
-    assert.equal(lines[1].turn, 1)
-    assert.equal(JSON.stringify(lines).includes('errorText'), false)
-
-    const callsBefore = app.calls.length
-    await assert.rejects(
-      runTutorTrajectories({
-        argv: [
-          '--corpus',
-          corpusPath,
-          '--output',
-          secondOutputPath,
-          '--arm',
-          'auto',
-          '--budget-file',
-          budgetPath,
-          '--repeats',
-          '1',
-        ],
-        env: trajectoryEnv(),
+    },
+    async ({ argv, argvFor, env, paths, readReceipts }) => {
+      const summary = await runTutorTrajectories({
+        argv,
+        env,
         log: () => {},
-      }),
-      { code: 'budget_uncertain' }
-    )
-    assert.equal(app.calls.length, callsBefore)
-    await assert.rejects(readFile(secondOutputPath, 'utf8'), { code: 'ENOENT' })
-  } finally {
-    globalThis.fetch = originalFetch
-    await rm(directory, { recursive: true, force: true })
-  }
+      })
+
+      assert.equal(summary.status, 'stopped')
+      assert.equal(summary.stopCode, 'credits_unaccounted')
+      assert.equal(summary.completedTurns, 1)
+      assert.equal(summary.runSubmittedTurns, 1)
+      assert.equal(summary.uncertain, true)
+      assert.deepEqual(
+        JSON.parse(await readFile(paths.budget, 'utf8')),
+        budgetLedger({ submittedTurns: 1, uncertain: true })
+      )
+
+      const lines = await readReceipts()
+      assert.deepEqual(
+        lines.map((line) => line.type),
+        ['turn', 'error', 'summary']
+      )
+      assert.equal(lines[1].code, 'credits_unaccounted')
+      assert.equal(lines[1].turn, 1)
+      assert.equal(JSON.stringify(lines).includes('errorText'), false)
+
+      const callsBefore = app.calls.length
+      await assert.rejects(
+        runTutorTrajectories({
+          argv: argvFor(paths.secondOutput, 'auto'),
+          env,
+          log: () => {},
+        }),
+        { code: 'budget_uncertain' }
+      )
+      assert.equal(app.calls.length, callsBefore)
+      await assert.rejects(readFile(paths.secondOutput, 'utf8'), {
+        code: 'ENOENT',
+      })
+    }
+  )
 })
 
 test('runner lets the crossing request finish and then stops at the credit ceiling', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'klicker-tutor-run-'))
-  const corpusPath = join(directory, 'corpus.json')
-  const budgetPath = join(directory, 'budget.json')
-  const outputPath = join(directory, 'output.jsonl')
   const app = syntheticChatFetch({
     turnConfig: () => ({ creditsUsed: 0.5 }),
   })
-  const originalFetch = globalThis.fetch
-  globalThis.fetch = app.fetchImpl
-
-  try {
-    await writeFile(
-      corpusPath,
-      JSON.stringify({
-        version: 1,
-        cases: [
-          trajectoryCase({
-            turns: [
-              { message: 'Synthetic question one' },
-              { message: 'Synthetic question two' },
-            ],
-          }),
-        ],
-      })
-    )
-    await writeFile(
-      budgetPath,
-      JSON.stringify(budgetLedger({ creditsUsed: 2.9 }))
-    )
-
-    const summary = await runTutorTrajectories({
-      argv: [
-        '--corpus',
-        corpusPath,
-        '--output',
-        outputPath,
-        '--arm',
-        'baseline',
-        '--budget-file',
-        budgetPath,
-        '--repeats',
-        '1',
+  await withRunnerScenario(
+    {
+      fetchImpl: app.fetchImpl,
+      cases: [
+        trajectoryCase({
+          turns: [
+            { message: 'Synthetic question one' },
+            { message: 'Synthetic question two' },
+          ],
+        }),
       ],
-      env: trajectoryEnv(),
-      log: () => {},
-    })
+      budget: budgetLedger({ creditsUsed: 2.9 }),
+    },
+    async ({ argv, env, paths, readReceipts }) => {
+      const summary = await runTutorTrajectories({
+        argv,
+        env,
+        log: () => {},
+      })
 
-    assert.equal(summary.status, 'stopped')
-    assert.equal(summary.stopCode, 'budget_credits_exhausted')
-    assert.equal(summary.completedTurns, 1)
-    assert.equal(summary.runSubmittedTurns, 1)
-    assert.equal(summary.creditsUsed, 3.4)
+      assert.equal(summary.status, 'stopped')
+      assert.equal(summary.stopCode, 'budget_credits_exhausted')
+      assert.equal(summary.completedTurns, 1)
+      assert.equal(summary.runSubmittedTurns, 1)
+      assert.equal(summary.creditsUsed, 3.4)
 
-    const lines = (await readFile(outputPath, 'utf8'))
-      .trim()
-      .split('\n')
-      .map((line) => JSON.parse(line))
-    assert.deepEqual(
-      lines.map((line) => line.type),
-      ['turn', 'error', 'summary']
-    )
-    assert.deepEqual(
-      JSON.parse(await readFile(budgetPath, 'utf8')),
-      budgetLedger({ submittedTurns: 1, creditsUsed: 3.4 })
-    )
-  } finally {
-    globalThis.fetch = originalFetch
-    await rm(directory, { recursive: true, force: true })
-  }
+      const lines = await readReceipts()
+      assert.deepEqual(
+        lines.map((line) => line.type),
+        ['turn', 'error', 'summary']
+      )
+      assert.deepEqual(
+        JSON.parse(await readFile(paths.budget, 'utf8')),
+        budgetLedger({ submittedTurns: 1, creditsUsed: 3.4 })
+      )
+    }
+  )
 })
 
 test('runner rejects overlapping corpus, output and budget paths', async () => {
@@ -1582,80 +1538,56 @@ test('runner rejects overlapping corpus, output and budget paths', async () => {
 })
 
 test('runner keeps a failed request uncertain so a restart cannot spend again', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'klicker-tutor-run-'))
-  const corpusPath = join(directory, 'corpus.json')
-  const budgetPath = join(directory, 'budget.json')
-  const outputPath = join(directory, 'output.jsonl')
-  const secondOutputPath = join(directory, 'output-2.jsonl')
   const app = syntheticChatFetch()
-  const originalFetch = globalThis.fetch
-  globalThis.fetch = async (url, options) => {
-    if (String(url).endsWith('/chat')) {
-      throw new Error('synthetic transport failure')
-    }
-    return app.fetchImpl(url, options)
-  }
-
-  const argvFor = (output) => [
-    '--corpus',
-    corpusPath,
-    '--output',
-    output,
-    '--arm',
-    'baseline',
-    '--budget-file',
-    budgetPath,
-    '--repeats',
-    '1',
-  ]
-
-  try {
-    await writeFile(
-      corpusPath,
-      JSON.stringify({ version: 1, cases: [trajectoryCase()] })
-    )
-
-    const summary = await runTutorTrajectories({
-      argv: argvFor(outputPath),
-      env: trajectoryEnv(),
-      log: () => {},
-    })
-
-    assert.equal(summary.status, 'stopped')
-    assert.equal(summary.stopCode, 'request_failed')
-    assert.equal(summary.completedTurns, 0)
-    assert.equal(summary.runSubmittedTurns, 1)
-    assert.equal(summary.uncertain, true)
-    assert.deepEqual(
-      JSON.parse(await readFile(budgetPath, 'utf8')),
-      budgetLedger({ submittedTurns: 1, uncertain: true })
-    )
-
-    const lines = (await readFile(outputPath, 'utf8'))
-      .trim()
-      .split('\n')
-      .map((line) => JSON.parse(line))
-    assert.deepEqual(
-      lines.map((line) => line.type),
-      ['error', 'summary']
-    )
-    assert.equal(lines[0].code, 'request_failed')
-
-    const callsBefore = app.calls.length
-    await assert.rejects(
-      runTutorTrajectories({
-        argv: argvFor(secondOutputPath),
-        env: trajectoryEnv(),
+  await withRunnerScenario(
+    {
+      fetchImpl: async (url, options) => {
+        if (String(url).endsWith('/chat')) {
+          throw new Error('synthetic transport failure')
+        }
+        return app.fetchImpl(url, options)
+      },
+      cases: [trajectoryCase()],
+    },
+    async ({ argv, argvFor, env, paths, readReceipts }) => {
+      const summary = await runTutorTrajectories({
+        argv,
+        env,
         log: () => {},
-      }),
-      { code: 'budget_uncertain' }
-    )
-    assert.equal(app.calls.length, callsBefore)
-    await assert.rejects(readFile(secondOutputPath, 'utf8'), { code: 'ENOENT' })
-  } finally {
-    globalThis.fetch = originalFetch
-    await rm(directory, { recursive: true, force: true })
-  }
+      })
+
+      assert.equal(summary.status, 'stopped')
+      assert.equal(summary.stopCode, 'request_failed')
+      assert.equal(summary.completedTurns, 0)
+      assert.equal(summary.runSubmittedTurns, 1)
+      assert.equal(summary.uncertain, true)
+      assert.deepEqual(
+        JSON.parse(await readFile(paths.budget, 'utf8')),
+        budgetLedger({ submittedTurns: 1, uncertain: true })
+      )
+
+      const lines = await readReceipts()
+      assert.deepEqual(
+        lines.map((line) => line.type),
+        ['error', 'summary']
+      )
+      assert.equal(lines[0].code, 'request_failed')
+
+      const callsBefore = app.calls.length
+      await assert.rejects(
+        runTutorTrajectories({
+          argv: argvFor(paths.secondOutput),
+          env,
+          log: () => {},
+        }),
+        { code: 'budget_uncertain' }
+      )
+      assert.equal(app.calls.length, callsBefore)
+      await assert.rejects(readFile(paths.secondOutput, 'utf8'), {
+        code: 'ENOENT',
+      })
+    }
+  )
 })
 
 test('trajectory accepts a pause without fresh retrieval after a grounded first turn', async () => {
