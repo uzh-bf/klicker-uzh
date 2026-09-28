@@ -98,7 +98,7 @@
   },
   "scripts": {
     "build": "next build --webpack",
-    "build:test": "cross-env NODE_ENV=test next build --turbopack",
+    "build:test": "node ../../util/playwright-next-runtime.mjs build",
     "check": "next typegen && tsc --noEmit -p tsconfig.check.json",
     "dev": "cross-env NODE_ENV=development next dev --turbopack --port 3002",
     "dev:assessment": "pnpm run dev",
@@ -107,7 +107,7 @@
     "dev:test": "cross-env NODE_ENV=test next dev --turbopack --port 3002",
     "lint": "eslint .",
     "start": "next start --port 3002",
-    "start:test": "cross-env NODE_ENV=test pnpm start",
+    "start:test": "node ../../util/playwright-next-runtime.mjs start 3002",
     "test:adaptive": "vitest run test/adaptivePracticeQuizForm.test.ts test/itemBankMap.test.ts test/navigationGuard.test.ts test/treeHelpers.test.ts",
     "test:host": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test test/chatbotOwnerPreviewAccess.test.ts test/chatbotOwnerPreviewUrl.test.ts test/elementGenerationDesignEvidence.test.ts test/elementGenerationObjectiveSource.test.ts test/elementGenerationSlotFailures.test.ts test/generatedTagSelection.test.ts test/manageAssistantConfig.test.ts test/manageAssistantContext.test.ts test/manageAssistantFrameState.test.ts test/manageAssistantPanelSize.test.ts test/manageElementCreatedMessage.test.ts",
     "test:run": "pnpm run test:host && pnpm run test:adaptive"

@@ -467,7 +467,26 @@ Logging tests capture Pino destinations directly; they never send records to Lok
 
 Check-only configs must state their no-output role with `noEmit`. When they extend a declaration-emitting config, `noEmit` alone does not disable declaration portability analysis: GraphQL and Prisma therefore also set `declaration: false` and `declarationMap: false`. Incremental checks use `tsconfig.check.tsbuildinfo` rather than overwriting the emitting compiler's state. The full compiler-role matrix lives in [Getting Started](./getting-started.md#toolchain-verified-2026-07-07).
 
-For framework upgrades, run both bundler paths: `pnpm run build:test` must exercise Turbopack in all five Next apps, while `pnpm run build` must exercise production Turbopack for auth/chat and production Webpack for control/manage/PWA. All five Next builds use their canonical `tsconfig.json`; the three PWA apps reserve `tsconfig.check.json` for raw package checks that must exclude stale development validators. Inspect `.next/standalone` for all five apps and the service worker, Workbox, and custom worker outputs for control/manage/PWA. Treat configuration inspection as **config-derived**; call the artifacts verified only when the command, date, and tested SHA are recorded.
+For framework upgrades, `pnpm run build:test` delegates to each Next app's canonical production build with `NODE_ENV=production`: Turbopack for auth/chat and Webpack for control/manage/PWA. `start:test` serves the resulting standalone server, not a development server or a test-mode Next build. All five Next builds use their canonical `tsconfig.json`; the three PWA apps reserve `tsconfig.check.json` for raw package checks that must exclude stale development validators. Inspect `.next/standalone` for all five apps and the service worker, Workbox, and custom worker outputs for control/manage/PWA. Treat configuration inspection as **config-derived**; call the artifacts verified only when the command, date, and tested SHA are recorded.
+
+### Playwright production frontend artifacts
+
+`util/playwright-next-runtime.mjs` packages each standalone server, `.next/static`,
+and generated public assets into `.next/playwright-runtime.tar`. The existing
+trusted CI archive carries this file even though it excludes `.next/standalone`.
+Each shard extracts it into a fresh temporary directory, verifies its app, build
+command and build ID, and starts `server.js` with `NODE_ENV=production`. Missing
+or inconsistent artifacts fail startup; there is no development fallback. The
+receipt in the build and startup logs identifies the artifact actually served.
+
+The scoped `KLICKER_PLAYWRIGHT_FIXTURES=1` setting enables only local image
+optimization and the existing synthetic GrowthBook proxy. It does not disable
+PWA plugins, service workers, production optimizations, or standalone output.
+Backend test mode still owns synthetic feature flags, coverage instrumentation,
+and arbitrary GraphQL operations used by the harness. CI frontend parity does
+not imply that these backend fixtures or the deployed image digest are identical
+to production. Local `playwright:host` uses the development runtime for fast
+iteration; required CI and explicit production browser checks provide acceptance.
 
 ## Local recovery regression checks
 
