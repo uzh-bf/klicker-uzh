@@ -170,6 +170,8 @@ Cleanup dialogs:
 
 ## CI Notes
 
+- Frontend `build:test` delegates to the canonical production build and `start:test` runs its relocated standalone server, both with `NODE_ENV=production`. Keep `.next/playwright-runtime.tar` inside the trusted artifact transfer: it preserves dependencies and generated public/service-worker assets. Startup rejects missing or inconsistent artifacts. `KLICKER_PLAYWRIGHT_FIXTURES` enables only the local image and synthetic feature-flag proxy settings; backend fixtures retain their separate test mode. Local host runs remain a development loop and do not substitute for this production CI proof.
+
 - For Chromium-only CI, run with `--project=chromium`.
 - The Firefox/WebKit projects are an opt-in release gate. Against the
   production-built test stack, run:
