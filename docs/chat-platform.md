@@ -282,6 +282,42 @@ the target process. The committed KB_doc_query canary proves synthetic
 transport and persistence only; it must not be reported as FineCo quality or
 replace an authorized EXPERT_df_fineco_expert binding.
 
+For assistance-attribution checks, `apps/chat/scripts/run-tutor-trajectories.mjs`
+uses the same local target directly, without extending its single-message HTTP
+API. It follows actual persisted replies and parent IDs across a trajectory,
+checks streamed text against saved text, and requires successful `KB_doc_query`
+completion on the first turn. Follow-up turns may use existing context; any
+emitted retrieval must still complete. `evaluation/data/trajectories/tutor-attribution.json` contains
+synthetic English/German scenarios and behavioral rubrics. These rubrics need
+assessment of meaning; exact response wording is not a test contract.
+
+Run the script on the host against the exact routed synthetic runtime. Supply
+`KLICKER_EVAL_API_ORIGIN`, `KLICKER_EVAL_CHAT_ORIGIN`,
+`KLICKER_EVAL_PARTICIPANT_USERNAME`, and `KLICKER_EVAL_PARTICIPANT_PASSWORD` through
+the existing local evaluation environment. Trust the local CA through
+`NODE_EXTRA_CA_CERTS` when using HTTPS; do not disable certificate verification.
+The default model is the fixed `gpt-5.6-luna` selection. Test `auto` separately
+through `KLICKER_EVAL_MODEL_ID`; it is not a controlled fixed-model comparison.
+
+```sh
+node apps/chat/scripts/run-tutor-trajectories.mjs \
+  --corpus evaluation/data/trajectories/tutor-attribution.json \
+  --output project/_local/tutor-baseline.jsonl --arm baseline --repeats 2 \
+  --budget-file project/_local/tutor-budget.json
+```
+
+Use a new output path for each arm and the same budget file across the whole
+experiment. Receipts contain visible synthetic turns and allowlisted metadata;
+they exclude credentials, reasoning and raw tool payloads. Keep them outside
+Git. A transport, persistence, accounting or evidence failure is an incomplete
+evaluation, never a behavioral pass. Re-running a stopped or uncertain request
+requires an explicit experiment decision; the runner does not retry it.
+
+Freeze candidate, corpus and rubric before comparing outputs. Evaluate support
+qualification separately from answer correctness and checkpoint timing. A small
+synthetic pass does not establish learning effectiveness, production retrieval
+quality or unaided work outside the visible conversation.
+
 Local LiteLLM enables `LITELLM_REASONING_AUTO_SUMMARY` for the Responses path.
 That maps each routed alias's fixed `reasoning_effort` to a visible summary
 without adding a request-level effort that would flatten Auto's Luna/Sol tier

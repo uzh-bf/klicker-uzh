@@ -45,7 +45,7 @@ repeats the previous visible assistant answer; never expose test-control
 annotations in the learner message. Persist only sanitized visible output and
 IDs, not cookies, credentials or reasoning. Validate the trajectory before any
 network effect; fail on bad mode/model, missing parents, incomplete streams or
-missing expected retrieval, rather than counting a partial run as a pass. Before advancing, verify persisted parent links for the entire active chain, equality between streamed visible text and persisted text, and a completed non-error `KB_doc_query` output on each designated turn. Allowlist receipts to case/turn IDs, parent IDs, modes/models, timestamps, visible user/assistant text, tool completion status, source reference/title metadata and credit usage. Exclude reasoning, headers, raw tool arguments/results and raw error bodies.
+missing expected retrieval, rather than counting a partial run as a pass. Before advancing, verify persisted parent links for the entire active chain, equality between streamed visible text and persisted text, and a completed non-error `KB_doc_query` output on the first turn of each trajectory. Later turns may use the existing context without fresh retrieval; any emitted retrieval must still complete and agree between stream and persistence. Allowlist receipts to case/turn IDs, parent IDs, modes/models, timestamps, visible user/assistant text, tool completion status, source reference/title metadata and credit usage. Exclude reasoning, headers, raw tool arguments/results and raw error bodies.
 
 The private evaluation framework is uninitialized in this checkout. The existing
 public adapter is the smallest usable seam and stays compatible with it. No new
