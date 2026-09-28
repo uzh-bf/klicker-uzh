@@ -1,67 +1,99 @@
 BEGIN;
 
 -- Hand-written data transition: the Prisma migration tool can express the new
--- column but not the per-entry conversion of the legacy JSON shape. The
--- transition is additive and idempotent: it only fills "customModeConfig" for
--- PUBLISHED chatbots that have none, and seeds the matching field into a saved
--- authoring revision when that revision object lacks it. The legacy
--- "systemPrompts" values are intentionally never rewritten, because messages,
--- response examples, and MCP bindings still reference their keys.
-UPDATE "Chatbot"
-SET "customModeConfig" = jsonb_build_object(
+-- column but not the per-entry conversion of the legacy JSON shape. It carries
+-- every legacy custom mode that the previous runtime offered to participants
+-- into "customModeConfig", for chatbots in every status: any non-built-in
+-- "systemPrompts" key with a non-blank name that is not explicitly disabled.
+-- The transition is additive and idempotent: it only fills "customModeConfig"
+-- where it is still NULL, and seeds the matching field into a saved authoring
+-- revision that lacks it. The legacy "systemPrompts" values are intentionally
+-- never rewritten, because messages, response examples, and MCP bindings still
+-- reference their keys.
+--
+-- Converted values satisfy the stored-mode reader, which otherwise drops an
+-- entry: names are single-line, at most 60 characters, unique ignoring case,
+-- and never a reserved built-in name; descriptions are single-line and at most
+-- 160 characters. A legacy prompt longer than the 1000-character persona limit
+-- is left out of "personaText", so the runtime keeps compiling the full legacy
+-- prompt from "systemPrompts" instead of a truncated copy.
+WITH "legacy" AS (
+  SELECT
+    "c"."id" AS "chatbotId",
+    "entry"."key",
+    "entry"."value",
+    left(
+      btrim(regexp_replace(initcap("entry"."key"), '\s+', ' ', 'g')),
+      60
+    ) AS "baseName"
+  FROM "Chatbot" AS "c"
+  CROSS JOIN LATERAL jsonb_each("c"."systemPrompts") AS "entry"("key", "value")
+  WHERE "c"."customModeConfig" IS NULL
+    AND jsonb_typeof("c"."systemPrompts") = 'object'
+    AND "entry"."key" NOT IN ('tutor', 'explainer', 'quizzer')
+    AND btrim("entry"."key") <> ''
+    AND ("entry"."value"->'enabled') IS DISTINCT FROM 'false'::jsonb
+),
+"ranked" AS (
+  SELECT
+    "legacy".*,
+    row_number() OVER (
+      PARTITION BY "chatbotId", lower("baseName")
+      ORDER BY "key"
+    ) AS "nameRank"
+  FROM "legacy"
+),
+"converted" AS (
+  SELECT
+    "chatbotId",
+    "key",
+    CASE
+      WHEN "nameRank" = 1
+        AND lower("baseName") NOT IN ('tutor', 'explainer', 'quizzer')
+      THEN "baseName"
+      ELSE left("baseName", 54) || ' (' || ("nameRank" + 1) || ')'
+    END AS "name",
+    CASE
+      WHEN jsonb_typeof("value") = 'object'
+        AND jsonb_typeof("value"->'description') = 'string'
+      THEN NULLIF(
+        left(
+          btrim(regexp_replace("value"->>'description', '\s+', ' ', 'g')),
+          160
+        ),
+        ''
+      )
+    END AS "description",
+    CASE
+      WHEN jsonb_typeof("value") = 'object'
+        AND jsonb_typeof("value"->'prompt') = 'string'
+        AND length(btrim("value"->>'prompt')) BETWEEN 1 AND 1000
+      THEN btrim(replace(replace("value"->>'prompt', E'\r\n', E'\n'), E'\r', E'\n'))
+    END AS "personaText"
+  FROM "ranked"
+),
+"configs" AS (
+  SELECT
+    "chatbotId",
+    jsonb_build_object(
       'modes',
-      COALESCE((
-        SELECT jsonb_agg(
-          jsonb_build_object(
-            'key', "entry"."key",
-            'name', left(initcap("entry"."key"), 60),
-            'description',
-              left(
-                COALESCE(
-                  NULLIF("entry"."value"->>'description', ''),
-                  'Imported from the previous custom mode configuration.'
-                ),
-                160
-              ),
-            'personaText', left("entry"."value"->>'prompt', 1000)
-          )
-          ORDER BY "entry"."key"
+      jsonb_agg(
+        jsonb_build_object(
+          'key', "key",
+          'name', "name",
+          'description', "description",
+          'personaText', "personaText"
         )
-        FROM (
-          SELECT "entry"."key", "entry"."value"
-          FROM jsonb_each(
-            CASE
-              WHEN jsonb_typeof("systemPrompts") = 'object'
-              THEN "systemPrompts"
-              ELSE '{}'::jsonb
-            END
-          ) AS "entry"("key", "value")
-          WHERE "entry"."key" NOT IN ('tutor', 'explainer', 'quizzer')
-            AND jsonb_typeof("entry"."value") = 'object'
-            AND ("entry"."value"->>'enabled') IS DISTINCT FROM 'false'
-            AND COALESCE(left("entry"."value"->>'prompt', 1000), '') <> ''
-          ORDER BY "entry"."key"
-          LIMIT 5
-        ) AS "entry"("key", "value")
-      ), '[]'::jsonb)
-    )
-WHERE "status" = 'PUBLISHED'
-  AND "customModeConfig" IS NULL
-  AND jsonb_typeof("systemPrompts") = 'object'
-  AND EXISTS (
-    SELECT 1
-    FROM jsonb_each(
-      CASE
-        WHEN jsonb_typeof("systemPrompts") = 'object'
-        THEN "systemPrompts"
-        ELSE '{}'::jsonb
-      END
-    ) AS "entry"("key", "value")
-    WHERE "entry"."key" NOT IN ('tutor', 'explainer', 'quizzer')
-      AND jsonb_typeof("entry"."value") = 'object'
-      AND ("entry"."value"->>'enabled') IS DISTINCT FROM 'false'
-      AND COALESCE(left("entry"."value"->>'prompt', 1000), '') <> ''
-  );
+        ORDER BY "key"
+      )
+    ) AS "config"
+  FROM "converted"
+  GROUP BY "chatbotId"
+)
+UPDATE "Chatbot"
+SET "customModeConfig" = "configs"."config"
+FROM "configs"
+WHERE "Chatbot"."id" = "configs"."chatbotId";
 
 UPDATE "Chatbot"
 SET "draftConfig" = jsonb_set(
