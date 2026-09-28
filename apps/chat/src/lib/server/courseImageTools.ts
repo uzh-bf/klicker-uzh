@@ -1,6 +1,7 @@
 import { type ToolSet, tool } from 'ai'
 import { z } from 'zod'
 import {
+  COURSE_IMAGE_LIMITS,
   COURSE_IMAGE_TOOL,
   type CourseImage,
   courseImageCandidates,
@@ -28,7 +29,8 @@ export function withCourseImageTool(
         for (const image of courseImageCandidates(result)) {
           if (
             kbIds.includes(image.kb_id) &&
-            (candidates.has(image.asset_id) || candidates.size < 30)
+            (candidates.has(image.asset_id) ||
+              candidates.size < COURSE_IMAGE_LIMITS.candidates)
           ) {
             candidates.set(image.asset_id, image)
             hasUsableCandidates = true
@@ -63,12 +65,17 @@ export function withCourseImageTool(
       onDecisionPendingChange?.(false)
       if (asset_id === null) return { status: 'skipped' as const, reason }
       const image = candidates.get(asset_id)
-      if (!image || (!selected.has(asset_id) && selected.size >= 3))
+      if (
+        !image ||
+        (!selected.has(asset_id) &&
+          selected.size >= COURSE_IMAGE_LIMITS.selectionsPerResponse)
+      )
         return { status: 'unavailable' as const }
       selected.add(asset_id)
       try {
         await readImage(image)
-      } catch {
+      } catch (error) {
+        console.error('Failed to read selected course image', error)
         selected.delete(asset_id)
         return { status: 'unavailable' as const }
       }

@@ -81,7 +81,8 @@ export async function GET(
         'Content-Disposition': 'inline',
       },
     })
-  } catch {
+  } catch (error) {
+    console.error('Failed to serve authorized course image', error)
     return missing()
   }
 }
