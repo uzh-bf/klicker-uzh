@@ -18,6 +18,119 @@ import {
   parseArguments,
   runTutorTrajectories,
 } from '../scripts/run-tutor-trajectories.mjs'
+import {
+  calculateTutorReference,
+  compareTutorNumericClaim,
+} from '../scripts/tutor-numeric-reference.mjs'
+
+test('numerical references use annual compounding and decimal returns', () => {
+  assert.ok(
+    Math.abs(
+      calculateTutorReference('presentValue', {
+        amount: 1210,
+        rate: 0.1,
+        years: 2,
+      }) - 1000
+    ) < 1e-10
+  )
+  assert.equal(
+    calculateTutorReference('futureValue', {
+      amount: 100,
+      rate: 0.05,
+      years: 1,
+    }),
+    105
+  )
+  assert.equal(
+    calculateTutorReference('presentValue', {
+      amount: -100,
+      rate: 0,
+      years: 0,
+    }),
+    -100
+  )
+  assert.ok(
+    Math.abs(
+      calculateTutorReference('capm', {
+        riskFreeRate: 0.02,
+        beta: 1.5,
+        marketReturn: 0.06,
+      }) - 0.08
+    ) < 1e-12
+  )
+})
+
+test('coupon bond cash-flow sum agrees with an independent annuity formula', () => {
+  for (const yieldRate of [0, 0.04, -0.02]) {
+    const years = 3
+    const faceValue = 1000
+    const couponRate = 0.05
+    const discount = (1 + yieldRate) ** -years
+    const annuity = yieldRate === 0 ? years : (1 - discount) / yieldRate
+    const closedForm = faceValue * (couponRate * annuity + discount)
+    const actual = calculateTutorReference('couponBond', {
+      faceValue,
+      couponRate,
+      yieldRate,
+      years,
+    })
+    assert.ok(Math.abs(actual - closedForm) < 1e-9)
+  }
+})
+
+test('numerical comparison separates missing evidence, rounding and errors', () => {
+  const reference = {
+    formula: 'couponBond',
+    inputs: { faceValue: 1000, couponRate: 0.05, yieldRate: 0.04, years: 3 },
+    tolerance: 0.01,
+  }
+  assert.equal(
+    compareTutorNumericClaim({ ...reference, claim: 1027.75 }).status,
+    'pass'
+  )
+  assert.equal(
+    compareTutorNumericClaim({ ...reference, claim: 1020 }).status,
+    'fail'
+  )
+  assert.equal(
+    compareTutorNumericClaim({ ...reference, claim: null }).status,
+    'unassessed'
+  )
+  assert.equal(compareTutorNumericClaim(reference).status, 'unassessed')
+  for (const claim of [NaN, Infinity, '1027.75']) {
+    assert.throws(() => compareTutorNumericClaim({ ...reference, claim }))
+  }
+  for (const tolerance of [-1, NaN, Infinity]) {
+    assert.throws(() =>
+      compareTutorNumericClaim({ ...reference, tolerance, claim: 1027.75 })
+    )
+  }
+})
+
+test('numerical references reject unsupported or ambiguous inputs', () => {
+  const valid = { amount: 100, rate: 0.05, years: 2 }
+  for (const inputs of [
+    null,
+    { ...valid, rate: -1 },
+    { ...valid, amount: Infinity },
+    { ...valid, years: 1.5 },
+    { ...valid, years: -1 },
+    { ...valid, years: 1001 },
+    { ...valid, frequency: 2 },
+    { ...valid, amount: 1e308, rate: 10 },
+  ]) {
+    assert.throws(() => calculateTutorReference('futureValue', inputs))
+  }
+  assert.throws(() => calculateTutorReference('unknown', valid))
+  assert.throws(() =>
+    calculateTutorReference('couponBond', {
+      faceValue: 1000,
+      couponRate: 0.05,
+      yieldRate: 0.04,
+      years: 0,
+    })
+  )
+})
 
 test('frontmatter projection contains only target-safe question metadata', () => {
   const metadata = parseGroundTruthFrontmatter(
