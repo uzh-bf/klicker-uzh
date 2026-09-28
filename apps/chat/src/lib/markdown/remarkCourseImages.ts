@@ -13,7 +13,10 @@ function isNestedListPlacement(
     const line = lines[i]!
     if (line.trim() === '') continue
     const listMarker = /^( {0,3})(?:[-+*]|\d+[.)])[ \t]+/.exec(line)
-    if (listMarker) return markerIndent >= listMarker[0].length
+    if (listMarker) {
+      if (markerIndent >= listMarker[0].length) return true
+      continue
+    }
     if (!line.startsWith(' ')) return false
   }
   return false
@@ -41,7 +44,7 @@ export function courseImagePlacements(text: string): string[] {
       fence = { char: delimiter[0]!, length: delimiter.length }
       continue
     }
-    const match = /^( {0,3})\[course-image:([a-f0-9]{64})\]$/.exec(line)
+    const match = /^( {0,3})\[course-image:([a-f0-9]{64})\][ \t]*$/.exec(line)
     if (
       match &&
       !isNestedListPlacement(lines, i, match[1]!.length) &&
@@ -53,6 +56,16 @@ export function courseImagePlacements(text: string): string[] {
   return [...new Set(ids)]
 }
 
+export function firstCourseImagePlacementIndex(
+  texts: readonly (string | null | undefined)[],
+  assetId: string
+): number {
+  return texts.findIndex(
+    (text) =>
+      typeof text === 'string' && courseImagePlacements(text).includes(assetId)
+  )
+}
+
 export function remarkCourseImages() {
   return (tree: MarkdownAstNode) => {
     const seen = new Set<string>()
@@ -60,7 +73,9 @@ export function remarkCourseImages() {
       if (node.type !== 'paragraph' || node.children?.length !== 1) continue
       const child = node.children[0]!
       if (child.type !== 'text') continue
-      const match = /^\[course-image:([a-f0-9]{64})\]$/.exec(child.value ?? '')
+      const match = /^\[course-image:([a-f0-9]{64})\][ \t]*$/.exec(
+        child.value ?? ''
+      )
       if (!match) continue
       const assetId = match[1]!
       node.data = {
