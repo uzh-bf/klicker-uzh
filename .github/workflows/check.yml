@@ -187,6 +187,7 @@ jobs:
             .github/scripts/sonar-coverage-transport.test.cjs \
             .github/scripts/image-scan-receipt.test.cjs \
             .github/scripts/image-input-fingerprint.test.cjs \
+            .github/scripts/stg-image-reuse-ancestry.test.cjs \
             .github/scripts/release-image-manifest.test.cjs \
             .github/scripts/deploy-parity.test.cjs \
             .github/scripts/doc-query-token-ownership.test.cjs

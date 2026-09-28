@@ -543,6 +543,15 @@ alongside its branch tag. A SHA-shaped tag is still mutable registry metadata,
 so the publish-once guard is load-bearing: an existing SHA tag is never rebuilt,
 and its canonical registry digest is recorded before the build is skipped.
 
+Input fingerprints can match across unrelated branches, especially after a
+squash merge. Before adopting a fingerprint digest, the producer reads its OCI
+revision and checks that it equals or is an ancestor of the candidate commit.
+A diverged or newer image triggers a build; missing provenance or an unavailable
+registry/comparison API fails the job. The promoter independently enforces the
+same ancestry rule. Once an invalid adoption has already published a full-SHA
+tag, land the producer fix as a new commit to obtain a fresh candidate and tags;
+rerunning the old candidate does not repair its immutable publication.
+
 `.github/workflows/deploy-stg-promote.yml` is a trusted default-branch
 `workflow_run` controller. It checks out only `github.workflow_sha`, executes
 only the promoter script from that checkout, and treats candidate workflow
