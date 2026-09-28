@@ -107,7 +107,6 @@ model Participant {
   invitations                     ParticipantInvitation[]
   pointCorrections                PointCorrection[]
   individualPointCorrections      PointCorrection[]                @relation("PointCorrectionParticipants")
-  adaptiveAssessmentAttempts      AdaptiveAssessmentAttempt[]
   adaptivePracticeQuizAttempts    AdaptivePracticeQuizAttempt[]
   verificationRecords             VerifiableCredential[]
 
@@ -216,7 +215,6 @@ model Participation {
   subscriptions           PushSubscription[]
   completedMicroLearnings String[]
   bookmarkedElementStacks ElementStack[]
-  adaptiveAssessmentAttempts   AdaptiveAssessmentAttempt[]
   adaptivePracticeQuizAttempts AdaptivePracticeQuizAttempt[]
 
   createdAt DateTime @default(now())

@@ -144,7 +144,6 @@ model User {
   elementGenerationReviews     ElementGenerationReview[] @relation("ElementGenerationReviewReviewer")
   incompleteElementGenerations ElementGenerationBuild[] @relation("ElementGenerationIncompletePublisher")
   revokedVerificationRecords VerifiableCredential[] @relation("RevokedVerifiableCredentials")
-  adaptiveAssessments             AdaptiveAssessment[]
   competenceTrees                 CompetenceTree[]
   linkedCompetenceTreeCourses     CompetenceTreeCourse[]                    @relation("CompetenceTreeCourseLinkedBy")
   adaptiveScaleVersionsCreated    CompetenceTreeScaleVersion[]              @relation("CompetenceTreeScaleVersionCreatedBy")

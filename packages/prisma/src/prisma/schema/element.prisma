@@ -50,8 +50,6 @@ model Element {
 
   elementInstances ElementInstance[]
   feedbacks        ElementFeedback[]
-  adaptiveAssessmentElements  AdaptiveAssessmentElement[]
-  adaptiveAssessmentResponses AdaptiveAssessmentResponse[]
   competenceTreeAssignments   CompetenceTreeElementAssignment[]
   adaptiveItemCalibrations    AdaptiveItemCalibration[]
 

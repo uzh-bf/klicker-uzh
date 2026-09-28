@@ -28,16 +28,18 @@ point it at the returned schema directory. Omit `migrationsDirectory` for this
 schema-only mode; it returns `migrations: undefined`. Its `py.prisma` remains
 a host source fragment, so its generator settings and relative paths are
 preserved. Docker may compose an equivalent build-only schema directory by
-copying the four package fragments into the image; it must not overlay tracked
+copying the package fragments into the image; it must not overlay tracked
 host source.
 
 ## First shared deployment
 
 The single `20260929000000_adaptive_learning` migration creates the final
 adaptive schema after the host migrations. It replaces 28 development-only
-migrations that were applied only to local test databases. Intermediate adaptive
-backfills and their fixtures are intentionally omitted; existing non-adaptive
-host rows are preserved. Future deployed migrations must remain immutable.
+migrations that were applied only to local test databases. The obsolete standalone
+`AdaptiveAssessment` model is excluded; adaptive practice quizzes use competence
+trees and their own attempt/response records. Intermediate adaptive backfills and
+their fixtures are intentionally omitted; existing non-adaptive host rows are
+preserved. Future deployed migrations must remain immutable.
 
 Run `pnpm --filter @klicker-uzh/prisma verify:adaptive-migration` against an
 explicit disposable local PostgreSQL admin URL. The verifier reads the host

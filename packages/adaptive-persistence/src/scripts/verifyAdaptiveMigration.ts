@@ -159,6 +159,16 @@ async function hostRows(db: Client) {
 }
 
 async function verifyCleanReplay(client: Client) {
+  const legacyTables = await client.query(`
+    SELECT tablename FROM pg_tables
+    WHERE schemaname = current_schema() AND tablename LIKE 'AdaptiveAssessment%'
+  `)
+  assert.equal(
+    legacyTables.rowCount,
+    0,
+    'Obsolete standalone assessment tables must not be created'
+  )
+
   const pilotConstraint = await client.query<{ convalidated: boolean }>(`
     SELECT convalidated FROM pg_constraint
     WHERE conname = 'pqap_placement_stopping_policy_check'
