@@ -1620,3 +1620,35 @@ test('trajectory accepts a pause without fresh retrieval after a grounded first 
     globalThis.fetch = originalFetch
   }
 })
+
+test('trajectory rejects disagreement in accounting or retrieval call identity', async () => {
+  const originalFetch = globalThis.fetch
+  for (const [streamId, streamCredits, code] of [
+    ['tool-1', 0, 'credits_mismatch'],
+    ['different-call', 0.25, 'trajectory_tool_identity_mismatch'],
+  ]) {
+    globalThis.fetch = syntheticChatFetch({
+      turnConfig: () => ({
+        stream: [
+          { type: 'start' },
+          {
+            type: 'tool-input-start',
+            toolCallId: streamId,
+            toolName: EXPECTED_DOC_QUERY_TOOL,
+          },
+          { type: 'tool-output-available', toolCallId: streamId, output: {} },
+          { type: 'text-delta', delta: 'Synthetic answer 1.' },
+          { type: 'finish', messageMetadata: { creditsUsed: streamCredits } },
+        ],
+      }),
+    }).fetchImpl
+    try {
+      await assert.rejects(
+        createTrajectoryTarget().runTrajectory(trajectoryCase()),
+        { code }
+      )
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  }
+})

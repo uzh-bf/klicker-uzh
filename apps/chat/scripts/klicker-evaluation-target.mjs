@@ -794,6 +794,35 @@ function verifyTrajectoryTurn({ messages, chain, mode, modelId, stream }) {
   }
 
   const extracted = extractTrajectoryTurn(persistedAssistant, requireRetrieval)
+  const streamedCalls = (stream?.toolCalls ?? []).filter(
+    (call) => call.toolName === EXPECTED_DOC_QUERY_TOOL
+  )
+  const persistedCalls = (persistedAssistant.content ?? []).filter(
+    (part) =>
+      part?.type === 'tool-call' && part.toolName === EXPECTED_DOC_QUERY_TOOL
+  )
+  const streamedIds = streamedCalls.map((call) => call.toolCallId).sort()
+  const persistedIds = persistedCalls.map((part) => part.toolCallId).sort()
+  if (
+    streamedCalls.some(
+      (call) => !call.output || typeof call.toolCallId !== 'string'
+    ) ||
+    persistedCalls.some((part) => typeof part.toolCallId !== 'string') ||
+    new Set(streamedIds).size !== streamedIds.length ||
+    JSON.stringify(streamedIds) !== JSON.stringify(persistedIds)
+  ) {
+    throw evaluationError('trajectory_tool_identity_mismatch')
+  }
+  const streamCredits = finiteCredits(stream?.creditsUsed)
+  const persistedCredits = finiteCredits(persistedAssistant.creditsUsed)
+  if (
+    streamCredits !== null &&
+    persistedCredits !== null &&
+    streamCredits !== persistedCredits
+  ) {
+    throw evaluationError('credits_mismatch')
+  }
+
   if (streamToolCompleted && extracted.toolStatus === 'not_called') {
     throw evaluationError('trajectory_tool_missing')
   }
