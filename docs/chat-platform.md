@@ -363,15 +363,20 @@ back. `chat.accountUsageEnforcementEnabled`
 pre-provider budget rejection. With enforcement off, a request whose account has
 no configured usage row is served and simply records nothing; with enforcement
 on, the same request fails closed with `403` and the class-specific
-`CHAT_MODEL_UNAVAILABLE_*` code. `deploy/env-uzh-stg/values.yaml` carries the
-activation values and `deploy/env-uzh-prd/values.yaml` keeps both switches inert.
+`CHAT_MODEL_UNAVAILABLE_*` code. Both `deploy/env-uzh-stg/values.yaml` and
+`deploy/env-uzh-prd/values.yaml` ship the switches disabled. Activation is a
+separate reviewed values change, applied per environment only after the
+base-budget backfill and cohort evidence exist for it.
 
 Enforcement does not control class admission. Whether or not the switch is on,
 the participant and preview routes admit a candidate only when its usage class
 is entitled: the account-level AI approval opens the cost-free base class, and a
-cost-carrying advanced class additionally needs a non-blank cost center. An
-account without a cost center therefore cannot reach an advanced model, such as
-the automatic default, even while enforcement is off.
+cost-carrying advanced class additionally needs a non-blank cost center. A
+BASE-only account therefore cannot use its automatic default while staging
+keeps an ADVANCED automatic primary such as Auto. The activation step must
+validate a usable path for those owners, either by selecting a base-entitled
+model as the chatbot's or environment's automatic primary or by adding a cost
+center so the owner's entitled class can serve the automatic model.
 
 An account with no configured base budget receives the default
 `DEFAULT_BASE_CHAT_BUDGET_CREDITS` (`packages/util/src/chatUsage.ts`) for the
@@ -395,7 +400,13 @@ Cutover order for one environment:
    `getChatAccountUsage` reports a positive base budget for them. Set an explicit
    budget through `setChatAccountUsageBudgets` where the default is not the
    intended allowance.
-3. Promote the release and confirm the running pods carry both variables.
+3. Promote a values change that sets `chat.lifecycleWritersEnabled: true` and
+   `chat.accountUsageEnforcementEnabled: true`, and confirm the running pods
+   carry both variables. That values change is reviewed separately from the
+   release, so a newly promoted release can ship with both switches disabled.
+   For BASE-only owners whose automatic primary is advanced, first select a
+   base-entitled automatic primary or add the owner's cost center; otherwise
+   those owners lose their usable automatic default even with the backfill.
 4. Exercise one participant turn on a budgeted account and confirm the class
    counter increments, the answer persists, and no `CHAT_MODEL_UNAVAILABLE_*`
    appears for the cohort.

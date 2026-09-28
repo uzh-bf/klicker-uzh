@@ -210,12 +210,13 @@ chat:
   # Account usage has two independent switches: lifecycle writes record attempt
   # markers and credit counters, and enforcement rejects a participant request
   # before the provider call when the selected class has no available budget.
-  # STG carries the cutover values, so the base-budget backfill must have run in
-  # this environment before the release that first carries them is promoted.
+  # STG ships both switches disabled. The release that carries them stays
+  # deployable without usage data; each switch is activated separately only
+  # after the base-budget backfill and cohort evidence for this environment.
   # Order, rollback, and partial-failure recovery: docs/chat-platform.md,
   # "Account usage activation".
-  lifecycleWritersEnabled: true
-  accountUsageEnforcementEnabled: true
+  lifecycleWritersEnabled: false
+  accountUsageEnforcementEnabled: false
 
   automaticModels:
     primaryId: auto
