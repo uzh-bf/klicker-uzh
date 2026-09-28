@@ -50,6 +50,7 @@ export async function readCourseImage(
   image: CourseImage,
   root = process.env.CHAT_COURSE_IMAGE_STORE_PATH
 ): Promise<Buffer> {
+  const base = root ? await realpath(root) : undefined
   async function object(
     kind: string,
     hash: string,
@@ -58,12 +59,12 @@ export async function readCourseImage(
   ) {
     if (!DIGEST.test(hash)) throw new Error('Invalid image reference')
     let bytes: Buffer
-    if (root) {
-      const base = await realpath(root)
+    if (base) {
       const filename = await realpath(
         path.join(base, projectionObjectPath(kind, hash, extension))
       )
-      if (!filename.startsWith(base + path.sep))
+      const relative = path.relative(base, filename)
+      if (relative.startsWith('..') || path.isAbsolute(relative))
         throw new Error('Invalid image path')
       const file = await open(filename, O_RDONLY | O_NOFOLLOW)
       try {

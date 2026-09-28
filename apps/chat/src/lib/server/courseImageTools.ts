@@ -28,13 +28,15 @@ export function withCourseImageTool(
       execute: async (input, options) => {
         const result = await execute(input, options)
         for (const image of courseImageCandidates(result)) {
-          if (
-            kbIds.includes(image.kb_id) &&
-            (candidates.has(image.asset_id) ||
-              candidates.size < COURSE_IMAGE_LIMITS.candidates)
-          ) {
-            candidates.set(image.asset_id, image)
+          if (!kbIds.includes(image.kb_id)) continue
+          if (candidates.has(image.asset_id)) candidates.delete(image.asset_id)
+          while (candidates.size >= COURSE_IMAGE_LIMITS.candidates) {
+            const oldest = candidates.keys().find((id) => !selected.has(id))
+            if (!oldest) break
+            candidates.delete(oldest)
           }
+          if (candidates.size < COURSE_IMAGE_LIMITS.candidates)
+            candidates.set(image.asset_id, image)
         }
         return result
       },
