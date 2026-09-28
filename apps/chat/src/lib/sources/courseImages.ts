@@ -28,8 +28,8 @@ const boundedCleanString = (max: number) =>
     .min(1)
     .max(max)
     .refine(
-      (value) => value === value.trim() && !value.includes('\0'),
-      'expected trimmed text without NUL'
+      (value) => value === value.trim() && !/\p{C}/u.test(value),
+      'expected trimmed text without control characters'
     )
 const courseImageDescriptionSchema = z.object({
   version: z.literal(1),

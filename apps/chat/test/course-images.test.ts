@@ -117,6 +117,10 @@ describe('course image selection', () => {
       },
       {
         ...candidate.description,
+        text: `Hidden\u200bseparator`,
+      },
+      {
+        ...candidate.description,
         text: ` ${candidate.description!.text}`,
       },
     ]) {
