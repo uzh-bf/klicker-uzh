@@ -141,16 +141,22 @@ export function resolveEffectiveMCPConfigurations<
     // Custom modes inherit only a required doc-query binding, re-tagged to
     // the custom mode key so the scope assertion sees one binding per mode.
     const exactByServer = new Map<string, T>()
+    const exactWithoutServer: T[] = []
 
     for (const config of configs) {
       if (config.chatMode !== selectedMode || !isEnabled(config)) continue
       const serverId = getServerId(config)
-      if (serverId) exactByServer.set(serverId, config)
+      if (serverId) {
+        exactByServer.set(serverId, config)
+      } else {
+        exactWithoutServer.push(config)
+      }
     }
 
-    const resolved: EffectiveMCPConfiguration<T>[] = Array.from(
-      exactByServer.values()
-    ).map((config) => ({ ...config, chatMode: selectedMode }))
+    const resolved: EffectiveMCPConfiguration<T>[] = [
+      ...exactWithoutServer,
+      ...Array.from(exactByServer.values()),
+    ].map((config) => ({ ...config, chatMode: selectedMode }))
 
     for (const sourceMode of ['tutor', 'explainer'] as const) {
       for (const config of configs) {
@@ -165,6 +171,7 @@ export function resolveEffectiveMCPConfigurations<
 
         const serverId = getServerId(config)
         if (!serverId || exactByServer.has(serverId)) continue
+        exactByServer.set(serverId, config)
         resolved.push(narrowInheritedBinding(config, selectedMode))
       }
     }
@@ -316,8 +323,7 @@ export function resolveEffectiveChatModeOptions(
   const hasRequiredMCP = mcpConfigurations.some(
     (config) => isEnabled(config) && isRequired(config)
   )
-  const modeOptions: Record<string, { description: string; name?: string }> =
-    {}
+  const modeOptions: Record<string, { description: string; name?: string }> = {}
 
   for (const mode of candidates) {
     if (mode.trim().length === 0) continue

@@ -9,20 +9,23 @@ import {
 
 function parseModes(
   modes: Array<Record<string, unknown>>,
-  existing: Parameters<typeof parseChatbotCustomModeConfigInput>[1] = null
+  existing: Parameters<typeof parseChatbotCustomModeConfigInput>[1]
 ) {
   return parseChatbotCustomModeConfigInput({ modes }, existing)
 }
 
 describe('chatbot custom mode configuration', () => {
   it('mints a server-side key and canonicalizes bounded fields', () => {
-    const config = parseModes([
-      {
-        name: '  Interview coach  ',
-        description: '  Practices interview questions  ',
-        personaText: '  You are an interview coach.\r\nStay encouraging.  ',
-      },
-    ])
+    const config = parseModes(
+      [
+        {
+          name: '  Interview coach  ',
+          description: '  Practices interview questions  ',
+          personaText: '  You are an interview coach.\r\nStay encouraging.  ',
+        },
+      ],
+      null
+    )
 
     expect(config.modes).toHaveLength(1)
     const [mode] = config.modes
@@ -36,19 +39,23 @@ describe('chatbot custom mode configuration', () => {
 
   it('rejects over-long names, descriptions, and persona text', () => {
     expect(() =>
-      parseModes([
-        { name: 'x'.repeat(CHATBOT_CUSTOM_MODE_NAME_MAX_LENGTH + 1) },
-      ])
+      parseModes(
+        [{ name: 'x'.repeat(CHATBOT_CUSTOM_MODE_NAME_MAX_LENGTH + 1) }],
+        null
+      )
     ).toThrow(`name must be at most ${CHATBOT_CUSTOM_MODE_NAME_MAX_LENGTH}`)
     expect(() =>
-      parseModes([
-        {
-          name: 'Mode',
-          description: 'x'.repeat(
-            CHATBOT_CUSTOM_MODE_DESCRIPTION_MAX_LENGTH + 1
-          ),
-        },
-      ])
+      parseModes(
+        [
+          {
+            name: 'Mode',
+            description: 'x'.repeat(
+              CHATBOT_CUSTOM_MODE_DESCRIPTION_MAX_LENGTH + 1
+            ),
+          },
+        ],
+        null
+      )
     ).toThrow(
       `description must be at most ${CHATBOT_CUSTOM_MODE_DESCRIPTION_MAX_LENGTH}`
     )
@@ -67,27 +74,29 @@ describe('chatbot custom mode configuration', () => {
   it('rejects more than five modes per chatbot', () => {
     expect(() =>
       parseModes(
-        Array.from({ length: 6 }, (_, index) => ({ name: `Mode ${index}` }))
+        Array.from({ length: 6 }, (_, index) => ({ name: `Mode ${index}` })),
+        null
       )
     ).toThrow('at most 5 custom modes are supported')
     expect(
       parseModes(
-        Array.from({ length: 5 }, (_, index) => ({ name: `Mode ${index}` }))
+        Array.from({ length: 5 }, (_, index) => ({ name: `Mode ${index}` })),
+        null
       ).modes
     ).toHaveLength(5)
   })
 
   it('rejects names colliding with the standard modes or with each other', () => {
-    expect(() => parseModes([{ name: 'Tutor' }])).toThrow(
+    expect(() => parseModes([{ name: 'Tutor' }], null)).toThrow(
       'Mode name "Tutor" is reserved'
     )
     expect(() =>
-      parseModes([{ name: 'Interview' }, { name: ' interview ' }])
+      parseModes([{ name: 'Interview' }, { name: ' interview ' }], null)
     ).toThrow('Mode name "interview" is used more than once')
   })
 
   it('keeps a stored key stable across a rename', () => {
-    const saved = parseModes([{ name: 'Interview coach' }])
+    const saved = parseModes([{ name: 'Interview coach' }], null)
     const renamed = parseModes(
       [{ key: saved.modes[0]?.key, name: 'Hiring panel' }],
       saved
@@ -98,7 +107,7 @@ describe('chatbot custom mode configuration', () => {
   })
 
   it('assigns a fresh key to an unknown or forged key', () => {
-    const saved = parseModes([{ name: 'Interview coach' }])
+    const saved = parseModes([{ name: 'Interview coach' }], null)
     const forged = parseModes(
       [{ key: 'cm_forged', name: 'Interview coach' }],
       saved

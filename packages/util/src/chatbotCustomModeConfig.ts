@@ -107,7 +107,7 @@ function assertUniqueNames(modes: ChatbotCustomMode[]): void {
  */
 export function parseChatbotCustomModeConfigInput(
   value: ChatbotCustomModeConfigInput | unknown,
-  existing: ChatbotCustomModeConfig | null = null
+  existing: ChatbotCustomModeConfig | null
 ): ChatbotCustomModeConfig {
   if (!isRecord(value) || !Array.isArray(value.modes)) {
     throw new Error('modes must be an array')

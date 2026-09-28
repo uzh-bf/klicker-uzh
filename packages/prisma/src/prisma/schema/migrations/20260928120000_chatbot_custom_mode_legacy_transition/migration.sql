@@ -29,7 +29,13 @@ SET "customModeConfig" = jsonb_build_object(
         )
         FROM (
           SELECT "entry"."key", "entry"."value"
-          FROM jsonb_each("systemPrompts") AS "entry"("key", "value")
+          FROM jsonb_each(
+            CASE
+              WHEN jsonb_typeof("systemPrompts") = 'object'
+              THEN "systemPrompts"
+              ELSE '{}'::jsonb
+            END
+          ) AS "entry"("key", "value")
           WHERE "entry"."key" NOT IN ('tutor', 'explainer', 'quizzer')
             AND jsonb_typeof("entry"."value") = 'object'
             AND ("entry"."value"->>'enabled') IS DISTINCT FROM 'false'
@@ -44,7 +50,13 @@ WHERE "status" = 'PUBLISHED'
   AND jsonb_typeof("systemPrompts") = 'object'
   AND EXISTS (
     SELECT 1
-    FROM jsonb_each("systemPrompts") AS "entry"("key", "value")
+    FROM jsonb_each(
+      CASE
+        WHEN jsonb_typeof("systemPrompts") = 'object'
+        THEN "systemPrompts"
+        ELSE '{}'::jsonb
+      END
+    ) AS "entry"("key", "value")
     WHERE "entry"."key" NOT IN ('tutor', 'explainer', 'quizzer')
       AND jsonb_typeof("entry"."value") = 'object'
       AND ("entry"."value"->>'enabled') IS DISTINCT FROM 'false'

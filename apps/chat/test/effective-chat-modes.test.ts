@@ -578,4 +578,46 @@ describe('effective chatbot modes', () => {
       []
     )
   })
+
+  test('inherits a shared document-query server only once for a custom mode', () => {
+    const configurations = [
+      config({
+        allowedTools: ['course_video_expert'],
+        chatMode: 'tutor',
+        parameters: { required: true, toolAlias: 'doc_query' },
+        serverId: 'course',
+      }),
+      config({
+        allowedTools: ['course_outline_expert'],
+        chatMode: 'explainer',
+        parameters: { required: true, toolAlias: 'doc_query' },
+        serverId: 'course',
+      }),
+    ]
+
+    expect(
+      resolveEffectiveMCPConfigurations(configurations, 'cm_custom')
+    ).toHaveLength(1)
+  })
+
+  test('keeps an exact server-less custom binding', () => {
+    const configurations = [
+      {
+        allowedTools: ['doc_query'],
+        chatMode: 'cm_custom',
+        isEnabled: true,
+        priority: 1,
+      },
+    ]
+
+    expect(
+      resolveEffectiveMCPConfigurations(configurations, 'cm_custom')
+    ).toEqual([
+      expect.objectContaining({
+        allowedTools: ['doc_query'],
+        chatMode: 'cm_custom',
+        priority: 1,
+      }),
+    ])
+  })
 })
