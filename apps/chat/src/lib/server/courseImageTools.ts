@@ -60,11 +60,10 @@ export function withCourseImageTool(
     execute: async ({ asset_id, reason }) => {
       if (asset_id === null) return { status: 'skipped' as const, reason }
       const image = candidates.get(asset_id)
-      if (
-        !image ||
-        (!selected.has(asset_id) &&
-          selected.size >= COURSE_IMAGE_LIMITS.selectionsPerResponse)
-      )
+      if (!image) return { status: 'unavailable' as const }
+      if (selected.has(asset_id))
+        return { status: 'selected' as const, image, reason }
+      if (selected.size >= COURSE_IMAGE_LIMITS.selectionsPerResponse)
         return { status: 'unavailable' as const }
       selected.add(asset_id)
       try {
