@@ -4,7 +4,10 @@ import { type ToolSet, tool } from 'ai'
 import { describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { readCourseImage } from '../src/lib/server/courseImageStore'
-import { withCourseImageTool } from '../src/lib/server/courseImageTools'
+import {
+  canRegisterCourseImageTool,
+  withCourseImageTool,
+} from '../src/lib/server/courseImageTools'
 import {
   courseImageCandidates,
   selectedCourseImages,
@@ -37,6 +40,13 @@ function searchTools(result: unknown = fixture): ToolSet {
 }
 
 describe('course image selection', () => {
+  it('registers only with scoped knowledge and a document search tool', () => {
+    expect(canRegisterCourseImageTool(searchTools(), [candidate.kb_id])).toBe(
+      true
+    )
+    expect(canRegisterCourseImageTool(searchTools(), [])).toBe(false)
+    expect(canRegisterCourseImageTool({}, [candidate.kb_id])).toBe(false)
+  })
   it('preserves text-only and illustrated search results in their original order', async () => {
     const result = structuredClone(fixture)
     const textOnly = {

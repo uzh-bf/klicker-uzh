@@ -8,6 +8,16 @@ import {
   isCourseSearchTool,
 } from '@/src/lib/sources/courseImages'
 
+export function canRegisterCourseImageTool(
+  tools: ToolSet,
+  kbIds: readonly string[]
+): boolean {
+  return (
+    kbIds.length > 0 &&
+    Object.keys(tools).some((name) => isCourseSearchTool(name))
+  )
+}
+
 /** Request-local registry. Client messages and model-provided hashes never grant access. */
 export function withCourseImageTool(
   tools: ToolSet,

@@ -69,7 +69,7 @@ export function CourseImagesSection() {
   const threadId = useChatStore((state) => state.activeThreadId)
   const message = useAuiState((state) => state.message)
   const images = selectedCourseImages(
-    message.content as readonly ChatSourcePart[]
+    (message.content ?? []) as readonly ChatSourcePart[]
   )
   if (!chatbotId || !threadId || images.length === 0) return null
   return (
