@@ -5,6 +5,7 @@ import {
   readAzureAuditStorageConfig,
 } from '../azure/credential.js'
 import { AzureTableAuditReader } from '../azure/table-reader.js'
+import { AzureAuditManifestStore } from '../sealing/manifest.js'
 import {
   buildAuditExport,
   serializeAuditExport,
@@ -119,6 +120,20 @@ async function main() {
   const reader = new AzureTableAuditReader(clients.tables)
   if (args.command === 'verify') {
     const evidence = await reader.verifyEvent(args.eventId!)
+    const report = await buildAuditExport({
+      reader,
+      manifests: new AzureAuditManifestStore(clients.blobs.manifests),
+      liveQuizId: evidence.envelope.scope.liveQuizId,
+      lifecycleEpoch: evidence.envelope.scope.lifecycleEpoch,
+    })
+    const sealStatus =
+      report.verification.sealStatus === 'INVALID'
+        ? 'INVALID'
+        : report.manifests?.some(({ manifest }) =>
+              manifest.events.some((event) => event.eventId === args.eventId)
+            )
+          ? 'SEALED'
+          : 'UNSEALED'
     process.stdout.write(
       `${JSON.stringify({
         eventId: evidence.envelope.eventId,
@@ -126,18 +141,22 @@ async function main() {
         eventType: evidence.envelope.eventType,
         recordedAt: evidence.envelope.recordedAt,
         status: evidence.status,
-        sealStatus: evidence.sealStatus,
+        sealStatus,
+        sealFailures: report.verification.sealFailures,
       })}\n`
     )
+    if (sealStatus === 'INVALID') process.exitCode = 1
     return
   }
 
   const document = await buildAuditExport({
     reader,
+    manifests: new AzureAuditManifestStore(clients.blobs.manifests),
     liveQuizId: args.liveQuizId!,
     lifecycleEpoch: args.lifecycleEpoch,
     participantId: args.participantId,
   })
+  if (document.verification.sealStatus === 'INVALID') process.exitCode = 1
   const outputPath = await writePrivateAtomicFile({
     outputPath: args.output!,
     content: serializeAuditExport(document),

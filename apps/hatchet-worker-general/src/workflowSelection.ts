@@ -12,6 +12,7 @@ const KB_GRAPH_WORKFLOW_KEYS = new Set(['buildKBGraph', 'monitorKBGraphBuilds'])
 const KB_MAINTENANCE_WORKFLOW_KEY = 'maintainKBResources'
 const AUDIT_WORKFLOWS_BY_ROLE = {
   dispatcher: ['dispatchAssessmentAuditOutbox', 'monitorAssessmentAudit'],
+  sealer: ['sealAssessmentAudit'],
 } as const
 const AUDIT_WORKFLOW_KEYS = new Set<string>(
   Object.values(AUDIT_WORKFLOWS_BY_ROLE).flat()

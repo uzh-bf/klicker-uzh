@@ -16,6 +16,11 @@ import type {
   BaselinePartPayload,
   BaselineRootPayload,
 } from '../contract/payloads/coverage.js'
+import type {
+  AuditManifestStore,
+  StoredAuditManifest,
+} from '../sealing/manifest.js'
+import { verifyManifestEvidence } from '../sealing/verify.js'
 
 export type BaselineReconstructionStatus =
   | 'COMPLETE'
@@ -69,7 +74,8 @@ export type AuditExportDocument = {
       | 'DURABLE_ROLLOUT_GAP'
       | 'NO_ROLLOUT_RECORD'
     participantStatus: 'NOT_FILTERED' | 'PRESENT' | 'NO_PARTICIPANT_RECORD'
-    sealStatus: 'UNSEALED'
+    sealStatus: 'UNSEALED' | 'PARTIALLY_SEALED' | 'SEALED' | 'INVALID'
+    sealFailures?: string[]
     eventCount: number
     participantEventCount: number
     lifecycleEpochs: number[]
@@ -78,6 +84,7 @@ export type AuditExportDocument = {
     limitations: string[]
   }
   events: VerifiedAuditEvidence['envelope'][]
+  manifests?: StoredAuditManifest[]
 }
 
 function verifyBaseline(
@@ -451,16 +458,69 @@ function exportStatuses(
 
 export async function buildAuditExport(input: {
   reader: Pick<AzureTableAuditReader, 'exportQuizWithFailures'>
+  manifests?: AuditManifestStore
   liveQuizId: string
   lifecycleEpoch?: number
   participantId?: string
   generatedAt?: Date
 }): Promise<AuditExportDocument> {
+  // Discover the immutable boundary first so concurrently arriving events do not
+  // appear in a manifest newer than the Table snapshot used for verification.
+  let manifests: StoredAuditManifest[] | undefined
+  let manifestFailure: string | undefined
+  if (input.manifests) {
+    try {
+      manifests = (await input.manifests.list(input.liveQuizId)).filter(
+        ({ manifest }) =>
+          input.lifecycleEpoch === undefined ||
+          manifest.lifecycleEpoch === input.lifecycleEpoch
+      )
+    } catch (error) {
+      manifestFailure = error instanceof Error ? error.message : String(error)
+    }
+  }
   const { verified, failures } = await input.reader.exportQuizWithFailures({
     liveQuizId: input.liveQuizId,
     lifecycleEpoch: input.lifecycleEpoch,
-    participantId: input.participantId,
+    participantId: input.manifests ? undefined : input.participantId,
   })
+  const selected =
+    input.participantId === undefined
+      ? verified
+      : verified.filter(
+          ({ envelope }) =>
+            envelope.scope.participantId === undefined ||
+            envelope.scope.participantId === input.participantId
+        )
+  const verification = exportStatuses(selected, input.participantId, failures)
+  if (input.manifests) {
+    try {
+      if (manifestFailure !== undefined) throw new Error(manifestFailure)
+      const sealed = verifyManifestEvidence(
+        manifests ?? [],
+        verified,
+        input.liveQuizId
+      )
+      const sealedCount = selected.filter((item) =>
+        sealed.has(item.envelope.eventId)
+      ).length
+      verification.sealStatus =
+        failures.length > 0
+          ? 'INVALID'
+          : selected.length > 0 && sealedCount === selected.length
+            ? 'SEALED'
+            : sealedCount > 0
+              ? 'PARTIALLY_SEALED'
+              : 'UNSEALED'
+    } catch (error) {
+      verification.sealStatus = 'INVALID'
+      verification.evidenceStatus = 'PARTIAL'
+      verification.coverageStatus = 'EVIDENCE_INCOMPLETE'
+      verification.sealFailures = [
+        error instanceof Error ? error.message : String(error),
+      ]
+    }
+  }
   return {
     format: 'KLICKER_ASSESSMENT_AUDIT_EXPORT',
     formatVersion: 1,
@@ -474,8 +534,9 @@ export async function buildAuditExport(input: {
         ? {}
         : { participantId: input.participantId }),
     },
-    verification: exportStatuses(verified, input.participantId, failures),
-    events: verified.map(({ envelope }) => envelope),
+    verification,
+    events: selected.map(({ envelope }) => envelope),
+    ...(manifests === undefined ? {} : { manifests }),
   }
 }
 

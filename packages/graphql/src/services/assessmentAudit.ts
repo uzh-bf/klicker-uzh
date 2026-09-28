@@ -1,14 +1,18 @@
 import { randomUUID } from 'node:crypto'
 import {
+  AzureAuditManifestStore,
   AzureTableAppendSink,
+  AzureTableAuditReader,
   collectAssessmentAuditMonitorSnapshot,
   createAzureAuditClients,
   dispatchAssessmentAuditOutbox,
   PrismaAuditMonitorRepository,
   PrismaAuditOutboxRepository,
+  PrismaAuditSealRepository,
   readAzureAuditStorageConfig,
   recordAssessmentAuditDispatcherSuccess,
   recordAssessmentAuditMonitorSuccess,
+  sealAssessmentAudit,
 } from '@klicker-uzh/audit'
 import type { HatchetHandlers } from '@klicker-uzh/types'
 
@@ -86,5 +90,24 @@ export const handleMonitorAssessmentAudit: HatchetHandlers['handleMonitorAssessm
       throw new Error('Assessment audit monitor detected a critical signal')
     }
     await executionCtx.logger.info(JSON.stringify(metadata))
+    return true
+  }
+
+export const handleSealAssessmentAudit: HatchetHandlers['handleSealAssessmentAudit'] =
+  async (_input, globalCtx, executionCtx) => {
+    const clients = getAuditClients()
+    const summary = await sealAssessmentAudit({
+      repository: new PrismaAuditSealRepository(globalCtx.prisma),
+      reader: new AzureTableAuditReader(clients.tables),
+      manifests: new AzureAuditManifestStore(clients.blobs.manifests),
+    })
+    await executionCtx.logger.info(
+      JSON.stringify({ operation: 'ASSESSMENT_AUDIT_SEAL', ...summary })
+    )
+    if (summary.failures.length > 0 || summary.deferredCount > 0) {
+      throw new Error(
+        `Audit sealing: ${summary.failures.length} failed assessments, ${summary.deferredCount} events deferred to the next run`
+      )
+    }
     return true
   }

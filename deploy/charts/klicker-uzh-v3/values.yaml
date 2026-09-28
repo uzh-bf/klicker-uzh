@@ -199,6 +199,10 @@ assessmentAudit:
   pilotLiveQuizIds: ''
   tableEndpoint: ''
   blobEndpoint: ''
+  sealer:
+    # Enable only after the separate identity passes Azure WORM/RBAC checks.
+    enabled: false
+    serviceAccountName: ''
   worker:
     replicaCount: 1
     serviceAccountName: ''

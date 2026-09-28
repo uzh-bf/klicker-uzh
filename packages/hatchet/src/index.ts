@@ -119,6 +119,20 @@ export function prepareHatchetTasks({
     },
   })
 
+  const sealAssessmentAudit = hatchet.task({
+    name: 'seal-assessment-audit',
+    retries: 0,
+    onCrons: ['*/5 * * * *'],
+    executionTimeout: '30m',
+    fn: async (_, executionContext) => ({
+      success: await handlers.handleSealAssessmentAudit(
+        {},
+        globalContext,
+        executionContext
+      ),
+    }),
+  })
+
   const monitorAssessmentAudit = hatchet.task({
     name: 'monitor-assessment-audit',
     retries: 0,
@@ -616,6 +630,7 @@ export function prepareHatchetTasks({
   const tasks = {
     dispatchAssessmentAuditOutbox,
     monitorAssessmentAudit,
+    sealAssessmentAudit,
     updateGroupAverageScores,
     runningRandomGroupAssignments,
     finalRandomGroupAssignments,
