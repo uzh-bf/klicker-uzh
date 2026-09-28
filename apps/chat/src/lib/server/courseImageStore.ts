@@ -5,6 +5,11 @@ import { BlobServiceClient } from '@azure/storage-blob'
 import type { CourseImage } from '@/src/lib/sources/courseImages'
 
 const DIGEST = /^[a-f0-9]{64}$/
+const PROJECTION_GENERATIONS = ['e6/v3', 'e5/v3', 'e4/v3'] as const
+const DEFAULT_PROJECTION_CONTAINER = 'doc-processing'
+const MANIFEST_SIZE_LIMIT = 2_000_000
+const PAYLOAD_SIZE_LIMIT = 10_000_000
+const IMAGE_SIZE_LIMIT = 10_000_000
 
 function record(value: unknown): Record<string, unknown> | undefined {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -30,7 +35,7 @@ function projectionContainer() {
   return (
     process.env.COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER ??
     process.env.DOC_PROCESSING_AZURE_STORAGE_CONTAINER ??
-    'doc-processing'
+    DEFAULT_PROJECTION_CONTAINER
   )
 }
 
@@ -48,7 +53,8 @@ export async function readCourseImage(
   image: CourseImage,
   root = process.env.CHAT_COURSE_IMAGE_STORE_PATH
 ): Promise<Buffer> {
-  let generation = 'e6/v3'
+  let generation: (typeof PROJECTION_GENERATIONS)[number] =
+    PROJECTION_GENERATIONS[0]
   async function object(
     kind: string,
     hash: string,
@@ -85,14 +91,14 @@ export async function readCourseImage(
     return bytes
   }
   let manifestBytes: Buffer | undefined
-  for (const candidate of ['e6/v3', 'e5/v3', 'e4/v3']) {
+  for (const candidate of PROJECTION_GENERATIONS) {
     generation = candidate
     try {
       manifestBytes = await object(
         'manifests',
         image.manifest_sha256,
         'json',
-        2_000_000
+        MANIFEST_SIZE_LIMIT
       )
       break
     } catch (error) {
@@ -118,7 +124,12 @@ export async function readCourseImage(
   const payload = record(
     JSON.parse(
       (
-        await object('payloads', manifest.payload_sha256, 'json', 10_000_000)
+        await object(
+          'payloads',
+          manifest.payload_sha256,
+          'json',
+          PAYLOAD_SIZE_LIMIT
+        )
       ).toString()
     )
   )
@@ -140,7 +151,12 @@ export async function readCourseImage(
     })
   )
     throw new Error('Image occurrence mismatch')
-  const bytes = await object('images', image.image_sha256, 'png', 10_000_000)
+  const bytes = await object(
+    'images',
+    image.image_sha256,
+    'png',
+    IMAGE_SIZE_LIMIT
+  )
   if (
     !bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
   )

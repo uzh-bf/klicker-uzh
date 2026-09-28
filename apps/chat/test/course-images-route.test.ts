@@ -95,6 +95,41 @@ it('revokes access when the chatbot no longer has the KB binding', async () => {
   expect((await GET(req, { params })).status).toBe(404)
   expect(mocks.read).not.toHaveBeenCalled()
 })
+it('uses all configurations to resolve mode inheritance while scoping enabled configurations', async () => {
+  const server = { id: 'server', name: 'KB' }
+  const enabled = {
+    id: 'enabled',
+    chatMode: 'tutor',
+    isEnabled: true,
+    allowedTools: ['doc_query'],
+    parameters: {},
+    mcpServer: server,
+  }
+  const disabled = {
+    id: 'disabled',
+    chatMode: 'quizzer',
+    isEnabled: false,
+    allowedTools: ['doc_query'],
+    parameters: {},
+    mcpServer: server,
+  }
+  mocks.message.mockResolvedValue({
+    chatMode: 'quizzer',
+    content: [
+      {
+        type: 'tool-call',
+        toolName: 'show_course_image',
+        result: { status: 'selected', image },
+      },
+    ],
+  })
+  mocks.chatbot.mockResolvedValue({
+    mcpConfigurations: [enabled, disabled],
+  })
+  const response = await GET(req, { params })
+  expect(response.status).toBe(200)
+  expect(mocks.scope).toHaveBeenCalledWith([enabled], 'quizzer', [])
+})
 it('revokes access when the selected resource version is no longer serving', async () => {
   mocks.resource.mockResolvedValue(null)
   expect((await GET(req, { params })).status).toBe(404)
