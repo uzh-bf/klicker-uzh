@@ -879,9 +879,6 @@ export async function POST(
       if (!selectParticipantFallback()) {
         return chatModelUnavailableResponse('BASE')
       }
-      if (!classAdmittedForSelectedModel()) {
-        return chatModelUnavailableResponse(selectedModelConfig.usageClass)
-      }
       if (
         isChatAccountUsageEnforcementEnabled() &&
         !(await accountUsageAvailableForSelectedModel())
