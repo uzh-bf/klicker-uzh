@@ -13,8 +13,7 @@ const MAX_QUESTION_OUTPUT_PREFIX_LENGTH = 901
 const MAX_BUFFERED_ARTIFACT_BYTES = 10 * 1024 * 1024
 const HATCHET_RECOVERY_CLOCK_SKEW_MILLISECONDS = 5 * 60 * 1000
 
-export type QuestionWorkflowStartPayload = {
-  schema_version: 3
+type QuestionWorkflowStartPayloadBase = {
   question_build_id: string
   graph_version_id: string
   graph_manifest: {
@@ -38,6 +37,25 @@ export type QuestionWorkflowStartPayload = {
   // hash of every legacy build stays byte-identical.
   allow_partial_results?: boolean
 }
+
+export type QuestionWorkflowStartPayloadV3 =
+  QuestionWorkflowStartPayloadBase & {
+    schema_version: 3
+  }
+
+export type QuestionWorkflowStartPayloadV4 =
+  QuestionWorkflowStartPayloadBase & {
+    schema_version: 4
+    question_library_snapshot: {
+      container_name: string
+      blob_name: string
+      sha256: string
+    }
+  }
+
+export type QuestionWorkflowStartPayload =
+  | QuestionWorkflowStartPayloadV3
+  | QuestionWorkflowStartPayloadV4
 
 export type QuestionWorkflowReviewEvent = {
   key:

@@ -80,7 +80,7 @@ owns embeddings, similarity scoring, and warning production.
    requires explicit warning acknowledgement.
 
 The snapshot size has a configurable hard safety limit,
-`QUESTION_LIBRARY_COMPARISON_MAX_ELEMENTS`, initially `500`. Selection is by
+`KB_QUESTION_LIBRARY_COMPARISON_MAX_ELEMENTS`, initially `500`. Selection is by
 `updatedAt DESC, id DESC`. If eligible elements exceed the limit, the plan must
 also show `LIBRARY_COMPARISON_TRUNCATED`; the feature must not imply that the
 entire library was checked. Synthetic benchmarks at 100, 500, and 2,000
@@ -112,7 +112,8 @@ embedding index.
 - Extend MR !34's semantic-distinctness module with generated-vs-reference
   comparison rather than another all-pairs implementation.
 - Add a separate adjustable library threshold and bounded batch processing.
-- Emit structured overlap and truncation warnings without modifying questions.
+- Emit stable code-prefixed overlap and truncation warnings without modifying
+  questions.
 
 ## Review and PR structure
 
@@ -196,5 +197,21 @@ independent review and rollback.
   worktree. Confirmed `Element` ownership, `ElementInstance` placement semantics,
   the existing warning UI, immutable artifact flow, and the strict Hatchet
   payload boundary.
-- Next: review the MVP scope and contract with the supervisor before opening the
-  dependent worker and Klicker implementation MRs.
+- 2026-09-28: Implemented the worker follow-up on top of MR !34 and the separate
+  Klicker producer on `codex/library-question-similarity-plan`. The fixed
+  contract is payload v4 plus snapshot v1. Worker comparison is warning-only,
+  uses one shared embedding batch, reports strongest generated-to-library
+  matches, and surfaces snapshot truncation once. Klicker pins the owned,
+  recent-first snapshot before dispatch and maps the stable warning codes into
+  the existing acknowledgement gate.
+- Verification completed so far: worker focused suite `172 passed` (with an
+  earlier full `621 passed` run), Klicker focused suite `128 passed`, GraphQL
+  codegen/schema and TypeScript checks, shared-types and Prisma checks, and a
+  clean replay of the additive migration. Local delegated browser login and
+  `/elements/generate` reload passed; end-to-end semantic warning generation is
+  not locally proven because the seeded lecturer has AI generation disabled and
+  the companion worker is not deployed into the local runtime.
+- Next: commit both reviewable branches, open a worker MR stacked on !34 and a
+  separate Klicker PR to `v3-ai`, then obtain supervisor approval for compatible
+  staging deployment. Keep both rollout gates disabled until both revisions are
+  available.

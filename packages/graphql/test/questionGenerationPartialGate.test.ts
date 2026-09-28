@@ -80,6 +80,37 @@ describe('question-generation partial-result rollout gate', () => {
     )
   })
 
+  it('uses payload v4 only when an immutable library snapshot is present', () => {
+    const input = startPayloadInput()
+    const legacy = questionWorkflowStartPayload(input, {
+      allowPartialResults: false,
+    })
+    const withLibrary = questionWorkflowStartPayload(
+      {
+        ...input,
+        librarySnapshot: {
+          containerName: 'question-inputs',
+          blobName: `question-builds/${buildId}/library-snapshots/${'d'.repeat(64)}.json`,
+          sha256: 'd'.repeat(64),
+        },
+      },
+      { allowPartialResults: false }
+    )
+
+    expect(legacy.schema_version).toBe(3)
+    expect(withLibrary).toMatchObject({
+      schema_version: 4,
+      question_library_snapshot: {
+        container_name: 'question-inputs',
+        blob_name: `question-builds/${buildId}/library-snapshots/${'d'.repeat(64)}.json`,
+        sha256: 'd'.repeat(64),
+      },
+    })
+    expect(questionWorkflowStartManifestSha256(withLibrary)).not.toBe(
+      questionWorkflowStartManifestSha256(legacy)
+    )
+  })
+
   it('keeps the legacy start-manifest hash stable for a strict build', () => {
     const input = startPayloadInput()
     const payload = questionWorkflowStartPayload(input, {

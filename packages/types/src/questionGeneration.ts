@@ -4,6 +4,27 @@ export type QuestionGenerationArtifactRef = {
   sha256: string
 }
 
+export type QuestionLibrarySnapshotChoice = {
+  text: string
+  correct: boolean
+}
+
+export type QuestionLibrarySnapshotQuestion = {
+  element_id: number
+  version: number
+  element_type: QuestionGenerationItemType
+  name: string
+  stem: string
+  choices: QuestionLibrarySnapshotChoice[]
+}
+
+export type QuestionLibrarySnapshot = {
+  schema_version: 1
+  reference_count: number
+  truncated: boolean
+  questions: QuestionLibrarySnapshotQuestion[]
+}
+
 export type KBGraphSourceSnapshotItem = {
   resourceId: string
   title: string

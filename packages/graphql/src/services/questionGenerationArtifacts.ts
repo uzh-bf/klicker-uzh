@@ -2018,7 +2018,16 @@ export function parseQuestionGenerationPlan(
       )
     }
     for (const issue of question.verification_issues ?? []) {
-      result.push(warning('PIPELINE_VERIFICATION_WARNING', issue))
+      result.push(
+        warning(
+          issue.startsWith('LIBRARY_SEMANTIC_OVERLAP:')
+            ? 'LIBRARY_SEMANTIC_OVERLAP'
+            : issue.startsWith('LIBRARY_COMPARISON_TRUNCATED:')
+              ? 'LIBRARY_COMPARISON_TRUNCATED'
+              : 'PIPELINE_VERIFICATION_WARNING',
+          issue
+        )
+      )
     }
     return result
   })
