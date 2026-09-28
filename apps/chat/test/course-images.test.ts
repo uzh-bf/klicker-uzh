@@ -47,6 +47,12 @@ describe('course image selection', () => {
     )
     expect(canRegisterCourseImageTool(searchTools(), [])).toBe(false)
     expect(canRegisterCourseImageTool({}, [candidate.kb_id])).toBe(false)
+    expect(
+      canRegisterCourseImageTool(
+        { ...searchTools(), [COURSE_IMAGE_TOOL]: searchTools().KB_doc_query! },
+        [candidate.kb_id]
+      )
+    ).toBe(false)
   })
   it('rejects a reserved tool-name collision without replacing the existing tool', () => {
     const existing = tool({

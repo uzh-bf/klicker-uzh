@@ -14,6 +14,7 @@ export function canRegisterCourseImageTool(
 ): boolean {
   return (
     kbIds.length > 0 &&
+    !Object.hasOwn(tools, COURSE_IMAGE_TOOL) &&
     Object.keys(tools).some((name) => isCourseSearchTool(name))
   )
 }
