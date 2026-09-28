@@ -118,8 +118,9 @@ export function courseImageCandidates(raw: unknown): CourseImage[] {
       const envelope = record(chunk?.visual_assets)
       if (!chunk || envelope?.version !== 1 || !Array.isArray(envelope.assets))
         continue
-      const start = Number(chunk.page_start),
-        end = Number(chunk.page_end)
+      const start =
+          typeof chunk.page_start === 'number' ? chunk.page_start : Number.NaN,
+        end = typeof chunk.page_end === 'number' ? chunk.page_end : Number.NaN
       if (
         !Number.isInteger(start) ||
         !Number.isInteger(end) ||
