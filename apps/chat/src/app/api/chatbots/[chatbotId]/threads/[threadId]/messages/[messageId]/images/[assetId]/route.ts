@@ -52,13 +52,12 @@ export async function GET(
       where: { id: chatbotId },
       select: { mcpConfigurations: { include: { mcpServer: true } } },
     })
-    const configs = (chatbot?.mcpConfigurations ?? []).filter(
-      (config) => config.isEnabled !== false
-    )
+    const allConfigs = chatbot?.mcpConfigurations ?? []
+    const configs = allConfigs.filter((config) => config.isEnabled !== false)
     const kbIds = resolveMcpScope(
       configs,
       message.chatMode ?? 'tutor',
-      resolveEffectiveMCPConfigurations(configs, message.chatMode ?? 'tutor')
+      resolveEffectiveMCPConfigurations(allConfigs, message.chatMode ?? 'tutor')
     )
     if (!kbIds?.includes(image.kb_id)) return missing()
     const resource = await prisma.kBResource.findFirst({

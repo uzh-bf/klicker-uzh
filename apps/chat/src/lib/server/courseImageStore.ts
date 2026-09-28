@@ -5,6 +5,11 @@ import { BlobServiceClient } from '@azure/storage-blob'
 import type { CourseImage } from '@/src/lib/sources/courseImages'
 
 const DIGEST = /^[a-f0-9]{64}$/
+const PROJECTION_GENERATIONS = ['e4/v3'] as const
+const DEFAULT_PROJECTION_CONTAINER = 'doc-processing'
+const MANIFEST_SIZE_LIMIT = 2_000_000
+const PAYLOAD_SIZE_LIMIT = 10_000_000
+const IMAGE_SIZE_LIMIT = 10_000_000
 
 function record(value: unknown): Record<string, unknown> | undefined {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -30,12 +35,13 @@ function projectionContainer() {
   return (
     process.env.COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER ??
     process.env.DOC_PROCESSING_AZURE_STORAGE_CONTAINER ??
-    'doc-processing'
+    DEFAULT_PROJECTION_CONTAINER
   )
 }
 
 function projectionObjectPath(kind: string, hash: string, extension: string) {
-  return `e4/v3/${kind}/sha256/${hash.slice(0, 2)}/${hash.slice(2, 4)}/${hash}.${extension}`
+  const generation = PROJECTION_GENERATIONS[0]
+  return `${generation}/${kind}/sha256/${hash.slice(0, 2)}/${hash.slice(2, 4)}/${hash}.${extension}`
 }
 
 /** Read only verified processor projections from a server-configured mounted store. */
@@ -81,7 +87,12 @@ export async function readCourseImage(
   const manifest = record(
     JSON.parse(
       (
-        await object('manifests', image.manifest_sha256, 'json', 2_000_000)
+        await object(
+          'manifests',
+          image.manifest_sha256,
+          'json',
+          MANIFEST_SIZE_LIMIT
+        )
       ).toString()
     )
   )
@@ -98,7 +109,12 @@ export async function readCourseImage(
   const payload = record(
     JSON.parse(
       (
-        await object('payloads', manifest.payload_sha256, 'json', 10_000_000)
+        await object(
+          'payloads',
+          manifest.payload_sha256,
+          'json',
+          PAYLOAD_SIZE_LIMIT
+        )
       ).toString()
     )
   )
@@ -120,7 +136,12 @@ export async function readCourseImage(
     })
   )
     throw new Error('Image occurrence mismatch')
-  const bytes = await object('images', image.image_sha256, 'png', 10_000_000)
+  const bytes = await object(
+    'images',
+    image.image_sha256,
+    'png',
+    IMAGE_SIZE_LIMIT
+  )
   if (
     !bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
   )

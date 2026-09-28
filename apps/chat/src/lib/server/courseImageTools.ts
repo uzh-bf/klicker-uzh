@@ -22,8 +22,7 @@ export function canRegisterCourseImageTool(
 export function withCourseImageTool(
   tools: ToolSet,
   kbIds: readonly string[],
-  readImage: (image: CourseImage) => Promise<unknown>,
-  onDecisionPendingChange?: (pending: boolean) => void
+  readImage: (image: CourseImage) => Promise<unknown>
 ): ToolSet {
   const candidates = new Map<string, CourseImage>()
   const selected = new Set<string>()
@@ -35,7 +34,6 @@ export function withCourseImageTool(
       ...definition,
       execute: async (input, options) => {
         const result = await execute(input, options)
-        let hasUsableCandidates = false
         for (const image of courseImageCandidates(result)) {
           if (
             kbIds.includes(image.kb_id) &&
@@ -43,10 +41,8 @@ export function withCourseImageTool(
               candidates.size < COURSE_IMAGE_LIMITS.candidates)
           ) {
             candidates.set(image.asset_id, image)
-            hasUsableCandidates = true
           }
         }
-        if (hasUsableCandidates) onDecisionPendingChange?.(true)
         return result
       },
     }
@@ -72,7 +68,6 @@ export function withCourseImageTool(
         ),
     }),
     execute: async ({ asset_id, reason }) => {
-      onDecisionPendingChange?.(false)
       if (asset_id === null) return { status: 'skipped' as const, reason }
       const image = candidates.get(asset_id)
       if (
