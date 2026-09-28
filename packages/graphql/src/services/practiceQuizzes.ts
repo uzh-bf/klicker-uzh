@@ -966,10 +966,14 @@ async function deleteScheduledPracticeQuizTask(
   try {
     await ctx.hatchet.scheduled.delete(taskId)
   } catch (error) {
-    console.error(
-      'Failed to delete scheduled practice quiz task:',
-      { practiceQuizId },
-      error
+    ctx.log.warn(
+      {
+        event: 'hatchet.schedule.delete_failed',
+        task: 'practice-quiz-publish',
+        practiceQuizId,
+        err: error,
+      },
+      'Hatchet scheduled task deletion failed'
     )
   }
 }
