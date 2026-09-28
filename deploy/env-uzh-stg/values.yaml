@@ -609,6 +609,7 @@ frontendControl:
       memory: 200Mi
 
 backendGraphql:
+  adaptiveQuizShowSolutions: true
   betaSavedGroupId: grp_2CeKcuxYw3c567fSV7CPPQ
   priorityClassName: staging-workload
   podAnnotations:

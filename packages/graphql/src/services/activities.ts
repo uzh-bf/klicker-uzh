@@ -1525,6 +1525,18 @@ export async function getPracticeQuizDetails(
     where: { id, course: { deletionRequestedAt: null } },
     include: {
       owner: true,
+      adaptiveConfig: {
+        select: {
+          poolPublishedAt: true,
+          _count: { select: { publishedPool: true } },
+          competenceTree: {
+            select: {
+              displayName: true,
+              _count: { select: { elementAssignments: true } },
+            },
+          },
+        },
+      },
       _count: {
         select: {
           permissions: {
@@ -1603,6 +1615,15 @@ export async function getPracticeQuizDetails(
   const isActivityManager = practiceQuiz._count.permissions > 0
   return {
     ...practiceQuiz,
+    isAdaptive: practiceQuiz.mode === 'ADAPTIVE',
+    adaptiveTreeName:
+      practiceQuiz.adaptiveConfig?.competenceTree.displayName ?? null,
+    adaptivePoolPublished: practiceQuiz.adaptiveConfig?.poolPublishedAt != null,
+    adaptiveElementCount: practiceQuiz.adaptiveConfig
+      ? practiceQuiz.adaptiveConfig.poolPublishedAt
+        ? practiceQuiz.adaptiveConfig._count.publishedPool
+        : practiceQuiz.adaptiveConfig.competenceTree._count.elementAssignments
+      : null,
     isActivityReviewer: practiceQuiz.course._count.permissions > 0,
     isActivityManager,
     isPinProtected: false,

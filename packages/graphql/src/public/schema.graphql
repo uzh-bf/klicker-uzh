@@ -15,12 +15,16 @@ type Achievement {
 }
 
 type ActivityDetails {
+  adaptiveElementCount: Int
+  adaptivePoolPublished: Boolean
+  adaptiveTreeName: String
   arePointsAwarded: Boolean!
   courseId: String
   displayName: String!
   id: String!
   isActivityManager: Boolean!
   isActivityReviewer: Boolean!
+  isAdaptive: Boolean
   isAssessmentEnabled: Boolean!
   isGamificationEnabled: Boolean!
   isPinProtected: Boolean!
@@ -784,6 +788,7 @@ type AdaptivePracticeQuizServedItem {
   name: String!
   options: AdaptivePracticeQuizElementOptions!
   poolItemId: Int!
+  testingSolution: AdaptivePracticeQuizTestingSolution
   type: ElementType!
 }
 
@@ -809,6 +814,11 @@ type AdaptivePracticeQuizSubmittedResponseFeedback {
   correct: Boolean!
   feedback: [String!]!
   score: Float!
+}
+
+type AdaptivePracticeQuizTestingSolution {
+  answers: [String!]!
+  choiceIndices: [Int!]!
 }
 
 type AdaptivePracticeQuizTrajectoryPoint {

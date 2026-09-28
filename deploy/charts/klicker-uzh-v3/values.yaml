@@ -541,6 +541,7 @@ frontendControl:
   affinity: {}
 
 backendGraphql:
+  adaptiveQuizShowSolutions: false
   priorityClassName: production-workload
 
   knowledgeGraph:

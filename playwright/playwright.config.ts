@@ -69,8 +69,15 @@ export default defineConfig({
         // so it must not live in the shared `use` block. Firefox/WebKit get
         // their locale from the shared `locale: 'en-US'` alone.
         launchOptions: {
-          ...(chromiumExecutablePath ? { executablePath: chromiumExecutablePath } : {}),
-          args: ['--lang=en-US', ...(hostResolverRules ? [`--host-resolver-rules=${hostResolverRules}`] : [])],
+          ...(chromiumExecutablePath
+            ? { executablePath: chromiumExecutablePath }
+            : {}),
+          args: [
+            '--lang=en-US',
+            ...(hostResolverRules
+              ? [`--host-resolver-rules=${hostResolverRules}`]
+              : []),
+          ],
         },
       },
     },
