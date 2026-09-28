@@ -57,7 +57,7 @@
     "yup": "^1.6.1"
   },
   "scripts": {
-    "check": "tsc --noEmit"
+    "check": "node --test test/react-runtime.test.mjs && tsc --noEmit"
   },
   "engines": {
     "node": "=24"
