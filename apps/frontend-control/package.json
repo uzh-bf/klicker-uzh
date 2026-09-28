@@ -62,7 +62,7 @@
   },
   "scripts": {
     "build": "next build --webpack",
-    "build:test": "cross-env NODE_ENV=test next build --turbopack",
+    "build:test": "node ../../util/playwright-next-runtime.mjs build",
     "check": "next typegen && tsc --noEmit -p tsconfig.check.json",
     "dev": "cross-env NODE_ENV=development next dev --turbopack --port 3003",
     "dev:assessment": "pnpm run dev",
@@ -71,7 +71,7 @@
     "dev:test": "cross-env NODE_ENV=test next dev --turbopack --port 3003",
     "lint": "eslint .",
     "start": "next start --port 3003",
-    "start:test": "cross-env NODE_ENV=test pnpm start"
+    "start:test": "node ../../util/playwright-next-runtime.mjs start 3003"
   },
   "engines": {
     "node": "=24"
