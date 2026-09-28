@@ -3,6 +3,22 @@ import type { MarkdownAstNode } from './remarkCitationMarkers'
 export const courseImageMarker = (assetId: string) =>
   `[course-image:${assetId}]`
 
+function isNestedListPlacement(
+  lines: readonly string[],
+  index: number,
+  markerIndent: number
+): boolean {
+  if (markerIndent === 0) return false
+  for (let i = index - 1; i >= 0; i--) {
+    const line = lines[i]!
+    if (line.trim() === '') continue
+    const listMarker = /^( {0,3})(?:[-+*]|\d+[.)])[ \t]+/.exec(line)
+    if (listMarker) return markerIndent >= listMarker[0].length
+    if (!line.startsWith(' ')) return false
+  }
+  return false
+}
+
 // Only standalone, top-level paragraphs are placements. Code samples and
 // nested blocks remain literal. This same scanner drives the legacy fallback.
 export function courseImagePlacements(text: string): string[] {
@@ -25,13 +41,14 @@ export function courseImagePlacements(text: string): string[] {
       fence = { char: delimiter[0]!, length: delimiter.length }
       continue
     }
-    const match = /^ {0,3}\[course-image:([a-f0-9]{64})\]$/.exec(line)
+    const match = /^( {0,3})\[course-image:([a-f0-9]{64})\]$/.exec(line)
     if (
       match &&
+      !isNestedListPlacement(lines, i, match[1]!.length) &&
       (i === 0 || lines[i - 1]!.trim() === '') &&
       (i === lines.length - 1 || lines[i + 1]!.trim() === '')
     )
-      ids.push(match[1]!)
+      ids.push(match[2]!)
   }
   return [...new Set(ids)]
 }

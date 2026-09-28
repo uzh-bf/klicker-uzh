@@ -47,6 +47,7 @@ describe('inline course image placement', () => {
       `~~~\n\n${marker}\n\n~~~`,
       `    ${marker}`,
       `> ${marker}`,
+      `- list item\n\n  ${marker}`,
       `Mention ${marker}`,
       '[course-image:abc',
     ]) {

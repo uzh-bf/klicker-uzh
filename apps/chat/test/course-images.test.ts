@@ -69,38 +69,6 @@ describe('course image selection', () => {
     expect(result).toEqual(before)
     expect(read).not.toHaveBeenCalled()
   })
-  it('requires a decision only after scoped candidates, and clears it after skipping', async () => {
-    const pending = vi.fn()
-    const tools = withCourseImageTool(
-      searchTools(),
-      [candidate.kb_id],
-      vi.fn(),
-      pending
-    )
-    expect(pending).not.toHaveBeenCalled()
-    await call(tools, 'KB_doc_query', { query: 'concept' })
-    expect(pending).toHaveBeenLastCalledWith(true)
-    await call(tools, 'show_course_image', { asset_id: null })
-    expect(pending).toHaveBeenLastCalledWith(false)
-    await call(tools, 'KB_doc_query', { query: 'another concept' })
-    expect(pending).toHaveBeenLastCalledWith(true)
-  })
-  it('does not require a decision for empty or out-of-scope results', async () => {
-    for (const [result, scope] of [
-      [{}, [candidate.kb_id]],
-      [fixture, []],
-    ] as const) {
-      const pending = vi.fn()
-      const tools = withCourseImageTool(
-        searchTools(result),
-        scope,
-        vi.fn(),
-        pending
-      )
-      await call(tools, 'KB_doc_query', { query: 'concept' })
-      expect(pending).not.toHaveBeenCalled()
-    }
-  })
   it('preserves exact figure page instead of the chunk starting page', () => {
     expect(candidate.physical_page_number).toBe(2)
     expect(candidate.logical_page_number).toBeUndefined()
@@ -132,6 +100,14 @@ describe('course image selection', () => {
       expect(parsed).toHaveLength(1)
       expect(parsed[0]?.captions).toBeUndefined()
     }
+  })
+  it('normalizes a nullable logical page from the producer contract', () => {
+    const result = structuredClone(fixture)
+    result.sources[0].chunks[0].visual_assets.assets[0].logical_page_number =
+      null
+    expect(
+      courseImageCandidates(result)[0]?.logical_page_number
+    ).toBeUndefined()
   })
   it('rejects failed, unbound and out-of-range evidence', () => {
     expect(

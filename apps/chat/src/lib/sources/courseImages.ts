@@ -26,7 +26,12 @@ export const courseImageSchema = z.object({
   asset_id: digest,
   image_sha256: digest,
   physical_page_number: z.number().int().positive(),
-  logical_page_number: z.number().int().positive().optional(),
+  logical_page_number: z
+    .number()
+    .int()
+    .positive()
+    .nullish()
+    .transform((value) => value ?? undefined),
   width_px: z.number().int().positive().max(20000),
   height_px: z.number().int().positive().max(20000),
   mime_type: z.literal('image/png'),
