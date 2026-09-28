@@ -7,8 +7,25 @@ const DIGEST = /^[a-f0-9]{64}$/
 const MAX_MANIFEST_BYTES = 2_000_000
 const MAX_FRAME_BYTES = 15_000_000
 
-export function videoFrameStoreConfigured() {
-  return Boolean(process.env.CHAT_VIDEO_FRAME_STORE_PATH)
+type VideoFrameStoreEnvironment = Partial<
+  Pick<
+    NodeJS.ProcessEnv,
+    | 'CHAT_VIDEO_FRAME_STORE_PATH'
+    | 'CHAT_VIDEO_BLOB_CONTAINER'
+    | 'BLOB_STORAGE_ACCOUNT_NAME'
+    | 'BLOB_STORAGE_ACCESS_KEY'
+  >
+>
+
+export function videoFrameStoreConfigured(
+  env: VideoFrameStoreEnvironment = process.env as VideoFrameStoreEnvironment
+) {
+  return Boolean(
+    env.CHAT_VIDEO_FRAME_STORE_PATH ||
+      (env.CHAT_VIDEO_BLOB_CONTAINER &&
+        env.BLOB_STORAGE_ACCOUNT_NAME &&
+        env.BLOB_STORAGE_ACCESS_KEY)
+  )
 }
 
 function assertInside(base: string, candidate: string) {
@@ -16,50 +33,97 @@ function assertInside(base: string, candidate: string) {
     throw new Error('Invalid video frame path')
 }
 
+function objectKey(
+  kind: 'manifests' | 'frames',
+  hash: string,
+  extension: 'json' | 'jpg'
+) {
+  if (!DIGEST.test(hash)) throw new Error('Invalid video frame reference')
+  return `e1/v1/${kind}/sha256/${hash.slice(0, 2)}/${hash.slice(2, 4)}/${hash}.${extension}`
+}
+
+async function readLocalObject(root: string, key: string, limit: number) {
+  const base = await realpath(root)
+  const filename = await realpath(path.join(base, key))
+  assertInside(base, filename)
+  if ((await stat(filename)).size > limit)
+    throw new Error('Video frame artifact exceeds size limit')
+  return readFile(filename)
+}
+
+async function readBlobObject(key: string, limit: number) {
+  const account = process.env.BLOB_STORAGE_ACCOUNT_NAME
+  const accessKey = process.env.BLOB_STORAGE_ACCESS_KEY
+  const container = process.env.CHAT_VIDEO_BLOB_CONTAINER
+  if (!account || !accessKey || !container)
+    throw new Error('Video frame storage unavailable')
+
+  const { BlobServiceClient, StorageSharedKeyCredential } = await import(
+    '@azure/storage-blob'
+  )
+  const credential = new StorageSharedKeyCredential(account, accessKey)
+  const blob = new BlobServiceClient(
+    `https://${account}.blob.core.windows.net`,
+    credential
+  )
+    .getContainerClient(container)
+    .getBlobClient(key)
+  const properties = await blob.getProperties()
+  if (
+    properties.contentLength === undefined ||
+    properties.contentLength > limit
+  )
+    throw new Error('Video frame artifact exceeds size limit')
+
+  const response = await blob.download()
+  if (!response.readableStreamBody)
+    throw new Error('Video frame artifact download failed')
+  const chunks: Buffer[] = []
+  let size = 0
+  for await (const chunk of response.readableStreamBody) {
+    const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+    size += bytes.length
+    if (size > limit) throw new Error('Video frame artifact exceeds size limit')
+    chunks.push(bytes)
+  }
+  return Buffer.concat(chunks, size)
+}
+
+async function readObject(
+  root: string | undefined,
+  kind: 'manifests' | 'frames',
+  hash: string,
+  extension: 'json' | 'jpg',
+  limit: number,
+  blobReader: (key: string, limit: number) => Promise<Buffer>
+) {
+  const key = objectKey(kind, hash, extension)
+  const bytes = root
+    ? await readLocalObject(root, key, limit)
+    : await blobReader(key, limit)
+  if (
+    bytes.length > limit ||
+    createHash('sha256').update(bytes).digest('hex') !== hash
+  )
+    throw new Error('Video frame artifact integrity failed')
+  return bytes
+}
+
 /** Read one manifest-bound frame from a content-addressed Blob projection. */
 export async function readVideoFrame(
   frame: VideoFrame,
-  root = process.env.CHAT_VIDEO_FRAME_STORE_PATH
+  root = process.env.CHAT_VIDEO_FRAME_STORE_PATH,
+  blobReader = readBlobObject
 ): Promise<Buffer> {
-  if (!root) throw new Error('Video frame storage unavailable')
-  const base = await realpath(root)
-  async function object(
-    kind: 'manifests' | 'frames',
-    hash: string,
-    extension: 'json' | 'jpg',
-    limit: number
-  ) {
-    if (!DIGEST.test(hash)) throw new Error('Invalid video frame reference')
-    const filename = await realpath(
-      path.join(
-        base,
-        'e1/v1',
-        kind,
-        'sha256',
-        hash.slice(0, 2),
-        hash.slice(2, 4),
-        `${hash}.${extension}`
-      )
-    )
-    assertInside(base, filename)
-    if ((await stat(filename)).size > limit)
-      throw new Error('Video frame artifact exceeds size limit')
-    const bytes = await readFile(filename)
-    if (
-      bytes.length > limit ||
-      createHash('sha256').update(bytes).digest('hex') !== hash
-    )
-      throw new Error('Video frame artifact integrity failed')
-    return bytes
-  }
-
   const manifest = JSON.parse(
     (
-      await object(
+      await readObject(
+        root,
         'manifests',
         frame.manifest_sha256,
         'json',
-        MAX_MANIFEST_BYTES
+        MAX_MANIFEST_BYTES,
+        blobReader
       )
     ).toString()
   )
@@ -83,11 +147,13 @@ export async function readVideoFrame(
   )
     throw new Error('Video frame occurrence mismatch')
 
-  const bytes = await object(
+  const bytes = await readObject(
+    root,
     'frames',
     frame.frame_sha256,
     'jpg',
-    MAX_FRAME_BYTES
+    MAX_FRAME_BYTES,
+    blobReader
   )
   if (!bytes.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff])))
     throw new Error('Invalid JPEG')

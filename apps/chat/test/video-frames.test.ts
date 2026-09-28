@@ -1,9 +1,13 @@
+import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { type ToolSet, tool } from 'ai'
 import { describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
-import { readVideoFrame } from '../src/lib/server/videoFrameStore'
+import {
+  readVideoFrame,
+  videoFrameStoreConfigured,
+} from '../src/lib/server/videoFrameStore'
 import {
   readLocalVideo,
   videoObjectKey,
@@ -35,6 +39,25 @@ function searchTools(result: unknown = fixture): ToolSet {
 }
 
 describe('video frame selection', () => {
+  it('enables frame retrieval for either local fixtures or complete Blob configuration', () => {
+    expect(
+      videoFrameStoreConfigured({ CHAT_VIDEO_FRAME_STORE_PATH: root })
+    ).toBe(true)
+    expect(
+      videoFrameStoreConfigured({
+        CHAT_VIDEO_BLOB_CONTAINER: 'course-media',
+        BLOB_STORAGE_ACCOUNT_NAME: 'storage',
+        BLOB_STORAGE_ACCESS_KEY: 'secret',
+      })
+    ).toBe(true)
+    expect(
+      videoFrameStoreConfigured({
+        CHAT_VIDEO_BLOB_CONTAINER: 'course-media',
+        BLOB_STORAGE_ACCOUNT_NAME: 'storage',
+      })
+    ).toBe(false)
+  })
+
   it('preserves the representative frame and retrieved time range', () => {
     expect(candidate.timestamp_sec).toBe(50)
     expect(candidate.start_sec).toBe(42)
@@ -148,6 +171,60 @@ describe('video frame selection', () => {
     await expect(
       readVideoFrame({ ...candidate, manifest_sha256: 'a'.repeat(64) }, root)
     ).rejects.toThrow()
+  })
+
+  it('reads and verifies manifests and frames from the production Blob projection', async () => {
+    const frameBytes = await readFile(
+      path.join(
+        root,
+        'e1/v1/frames/sha256',
+        candidate.frame_sha256.slice(0, 2),
+        candidate.frame_sha256.slice(2, 4),
+        `${candidate.frame_sha256}.jpg`
+      )
+    )
+    const manifest = {
+      schema_version: 'video_frame_assets.v1',
+      source_video_sha256: candidate.source_video_sha256,
+      assets: [
+        {
+          asset_id: candidate.asset_id,
+          frame_sha256: candidate.frame_sha256,
+          visual_state_id: candidate.visual_state_id,
+          timestamp_sec: candidate.timestamp_sec,
+          width_px: candidate.width_px,
+          height_px: candidate.height_px,
+          mime_type: candidate.mime_type,
+        },
+      ],
+    }
+    const manifestBytes = Buffer.from(JSON.stringify(manifest))
+    const manifestSha256 = createHash('sha256')
+      .update(manifestBytes)
+      .digest('hex')
+    const objects = new Map([
+      [
+        `e1/v1/manifests/sha256/${manifestSha256.slice(0, 2)}/${manifestSha256.slice(2, 4)}/${manifestSha256}.json`,
+        manifestBytes,
+      ],
+      [
+        `e1/v1/frames/sha256/${candidate.frame_sha256.slice(0, 2)}/${candidate.frame_sha256.slice(2, 4)}/${candidate.frame_sha256}.jpg`,
+        frameBytes,
+      ],
+    ])
+    const requestedKeys: string[] = []
+    const blobReader = vi.fn(async (key: string) => {
+      requestedKeys.push(key)
+      return objects.get(key)!
+    })
+    await expect(
+      readVideoFrame(
+        { ...candidate, manifest_sha256: manifestSha256 },
+        undefined,
+        blobReader
+      )
+    ).resolves.toEqual(frameBytes)
+    expect(requestedKeys).toEqual([...objects.keys()])
   })
 
   it('resolves the cited recording from the content-addressed video projection', async () => {
