@@ -77,7 +77,8 @@ The in-code default registries (chat and backend) mirror the dev stack:
    staging and production registry values, docs, and this plan. The registry
    parity test requires staging and production to carry the same accounting
    policy and the hard-coded base ID, so production values cannot wait for
-   PR B. The change targets `v3-ai` directly; there is no separate `v3` PR.
+   PR B. The change targets `v3-ai` directly. A deploy-only PR to `v3`
+   (#6332) mirrors the `deploy/` values, because `v3` renders production.
 2. Release tag after PR A merges (withheld authority). Release images are
    tagged on `v3-ai`.
 3. PR B: production image tags only. It is prepared once the tag exists.
@@ -85,7 +86,7 @@ The in-code default registries (chat and backend) mirror the dev stack:
 
 Staging builds from `v3-audit` through the `v3-ai` → `v3-audit` promotion.
 Production renders `deploy/` from `v3`, so the production values reach
-production only through the regular `v3-ai` → `v3` promotion. The data
+production through #6332. The data
 migration runs through the PreSync migrator in both environments.
 
 ### Production rollout order (for PR B, withheld)
