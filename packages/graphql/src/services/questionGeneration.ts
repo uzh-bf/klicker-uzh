@@ -361,7 +361,7 @@ export function questionWorkflowStartPayload(
     : { ...common, schema_version: 3 as const }
 }
 
-function questionWorkflowPayload(
+export function questionWorkflowPayload(
   build: Pick<
     QuestionBuild,
     | 'id'
@@ -804,18 +804,7 @@ async function synchronizeLeasedBuild(
         // The provenance check recomputes the dispatched start-manifest hash,
         // so this payload must be built by the same function as the dispatch
         // payload above; otherwise the optional rollout-gated fields diverge.
-        const startPayload = questionWorkflowStartPayload({
-          buildId: build.id,
-          graphVersionId: build.sourceGraphBuild.id,
-          graphManifest,
-          storageName: build.sourceGraphBuild.graphBundleStorageName!,
-          blueprint,
-          output: {
-            containerName: runtime.questionOutputContainer,
-            blobPrefix: runtime.questionOutputPrefix,
-          },
-          language: configuration.language,
-        })
+        const startPayload = questionWorkflowPayload(build, runtime)
         v3Evidence = {
           graphVersionId: build.sourceGraphBuild.id,
           graphManifest,

@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   QUESTION_PARTIAL_RESULTS_ENABLED,
+  questionWorkflowPayload,
   questionWorkflowStartManifestSha256,
   questionWorkflowStartPayload,
 } from '../src/services/questionGeneration.js'
@@ -108,6 +109,41 @@ describe('question-generation partial-result rollout gate', () => {
     })
     expect(questionWorkflowStartManifestSha256(withLibrary)).not.toBe(
       questionWorkflowStartManifestSha256(legacy)
+    )
+  })
+
+  it('recomputes the exact dispatched v4 manifest from pinned build inputs', () => {
+    const input = startPayloadInput()
+    const librarySnapshot = {
+      containerName: 'question-inputs',
+      blobName: `question-builds/${buildId}/library-snapshots/${'d'.repeat(64)}.json`,
+      sha256: 'd'.repeat(64),
+    }
+    const dispatched = questionWorkflowStartPayload({
+      ...input,
+      librarySnapshot,
+    })
+    const recomputed = questionWorkflowPayload(
+      {
+        id: buildId,
+        blueprintArtifact: input.blueprint,
+        librarySnapshotArtifact: librarySnapshot,
+        configuration: { language: input.language },
+        sourceGraphBuild: {
+          id: graphBuildId,
+          graphManifestArtifact: input.graphManifest,
+          graphBundleStorageName: input.storageName,
+        },
+      } as never,
+      {
+        questionOutputContainer: input.output.containerName,
+        questionOutputPrefix: input.output.blobPrefix,
+      } as never
+    )
+
+    expect(recomputed).toEqual(dispatched)
+    expect(questionWorkflowStartManifestSha256(recomputed)).toBe(
+      questionWorkflowStartManifestSha256(dispatched)
     )
   })
 
