@@ -145,6 +145,7 @@ describe('question-library snapshot', () => {
   })
 
   it('skips malformed legacy elements without blocking generation', async () => {
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const malformed = element({ id: 43, options: { choices: [] } })
     const valid = element({ id: 42 })
     const { ctx } = context([malformed, valid])
@@ -162,6 +163,13 @@ describe('question-library snapshot', () => {
       truncated: true,
       questions: [{ element_id: 42 }],
     })
+    expect(warning).toHaveBeenCalledWith(
+      'event=question_library_snapshot_element_skipped element_id=%d version=%d reason=%s',
+      43,
+      3,
+      'Question-library choices must contain 1-100 entries'
+    )
+    warning.mockRestore()
   })
 
   it('truncates the snapshot to the runtime artifact byte limit', async () => {

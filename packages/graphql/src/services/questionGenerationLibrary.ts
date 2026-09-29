@@ -169,7 +169,15 @@ export async function createQuestionLibrarySnapshot(
     try {
       return [normalizeQuestionLibraryElement(element)]
     } catch (error) {
-      if (error instanceof QuestionGenerationServiceError) return []
+      if (error instanceof QuestionGenerationServiceError) {
+        console.warn(
+          'event=question_library_snapshot_element_skipped element_id=%d version=%d reason=%s',
+          element.id,
+          element.version,
+          error.message
+        )
+        return []
+      }
       throw error
     }
   })
@@ -203,9 +211,21 @@ export async function createQuestionLibrarySnapshot(
   const referenceCount = serializedQuestions.length
   const truncated = incompleteSelection || referenceCount < questions.length
   return Buffer.from(
-    `{"questions":[${serializedQuestions.join(',')}],"reference_count":${referenceCount},"schema_version":1,"truncated":${truncated}}\n`,
+    serializeQuestionLibrarySnapshot(
+      serializedQuestions.join(','),
+      referenceCount,
+      truncated
+    ),
     'utf8'
   )
+}
+
+function serializeQuestionLibrarySnapshot(
+  serializedQuestions: string,
+  referenceCount: number,
+  truncated: boolean
+): string {
+  return `{"questions":[${serializedQuestions}],"reference_count":${referenceCount},"schema_version":1,"truncated":${truncated}}\n`
 }
 
 function questionLibrarySnapshotByteLength(
@@ -215,7 +235,7 @@ function questionLibrarySnapshotByteLength(
 ): number {
   return (
     Buffer.byteLength(
-      `{"questions":[],"reference_count":${referenceCount},"schema_version":1,"truncated":${truncated}}\n`,
+      serializeQuestionLibrarySnapshot('', referenceCount, truncated),
       'utf8'
     ) + questionBytes
   )
