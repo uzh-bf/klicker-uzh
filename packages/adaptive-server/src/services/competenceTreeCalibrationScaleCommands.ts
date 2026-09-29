@@ -101,7 +101,8 @@ export async function createCompetenceTreeScaleVersion(
             label: level.label,
             lowerBound: level.lowerBound,
             itemDifficultyPrior: level.itemDifficultyPrior,
-            treeId: input.treeId,
+            // treeId comes from the parent scale version (composite FK);
+            // Prisma rejects it in nested level creates.
             sourceLevelId: level.sourceLevelId,
           })),
         },
