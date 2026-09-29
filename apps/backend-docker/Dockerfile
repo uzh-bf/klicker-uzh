@@ -73,6 +73,9 @@ COPY --from=builder /app/packages/grading/dist/ /app/packages/grading/dist/
 COPY --from=builder /app/packages/feature-flags/dist/ /app/packages/feature-flags/dist/
 COPY --from=builder /app/packages/doc-query-client/dist/ /app/packages/doc-query-client/dist/
 COPY --from=builder /app/packages/graphql/dist/ /app/packages/graphql/dist/
+# The GraphQL bundle imports these adaptive workspace packages at runtime.
+COPY --from=builder /app/packages/adaptive-contract/dist/ /app/packages/adaptive-contract/dist/
+COPY --from=builder /app/packages/adaptive-client/dist/ /app/packages/adaptive-client/dist/
 COPY --from=builder /app/packages/doc-query-client/dist/ /app/packages/doc-query-client/dist/
 COPY --from=builder /app/packages/knowledge-graph/dist/ /app/packages/knowledge-graph/dist/
 COPY --from=builder /app/packages/types/dist/ /app/packages/types/dist/
