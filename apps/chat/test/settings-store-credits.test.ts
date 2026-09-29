@@ -110,7 +110,7 @@ describe('settingsStore credits loading', () => {
       'fetch',
       vi.fn().mockResolvedValueOnce(
         creditsResponse(0, {
-          automaticModelId: 'gpt-5.6-luna',
+          automaticModelId: 'gpt-6-luna',
           availableModels: [
             {
               id: 'gpt-4.1',
@@ -122,8 +122,8 @@ describe('settingsStore credits loading', () => {
               supportsImageAttachments: true,
             },
             {
-              id: 'gpt-5.6-luna',
-              name: 'GPT-5.6 Luna',
+              id: 'gpt-6-luna',
+              name: 'GPT-6 Luna',
               description: 'base fallback',
               fallback: true,
               supportsReasoning: true,

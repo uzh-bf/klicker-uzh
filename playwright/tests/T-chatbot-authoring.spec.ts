@@ -493,19 +493,15 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(page.getByTestId('chatbot-fixed-model')).toContainText(
       'Auto Mode'
     )
-    await expect(
-      page.getByTestId('chatbot-reasoning-gpt-5.6-luna')
-    ).toHaveCount(0)
-    await selectOption(page, '[data-cy="chatbot-fixed-model"]', 'GPT-5.6 Luna')
-    await selectOption(
-      page,
-      '[data-cy="chatbot-reasoning-gpt-5.6-luna"]',
-      'high'
+    await expect(page.getByTestId('chatbot-reasoning-gpt-6-luna')).toHaveCount(
+      0
     )
+    await selectOption(page, '[data-cy="chatbot-fixed-model"]', 'GPT-6 Luna')
+    await selectOption(page, '[data-cy="chatbot-reasoning-gpt-6-luna"]', 'high')
     await page.getByTestId('chatbot-model-selection-switch').click()
-    await expect(page.getByTestId('chatbot-model-gpt-5.6-luna')).toBeChecked()
+    await expect(page.getByTestId('chatbot-model-gpt-6-luna')).toBeChecked()
     await expect(
-      page.getByTestId('chatbot-reasoning-gpt-5.6-luna-high')
+      page.getByTestId('chatbot-reasoning-gpt-6-luna-high')
     ).toBeChecked()
     await page.getByTestId('chatbot-model-auto').click()
     const advancedUrl = page.url()
@@ -571,15 +567,15 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       await expect(checkbox).toBeDisabled()
     }
     await expect(
-      page.getByTestId('chatbot-reasoning-gpt-5.6-luna-high')
+      page.getByTestId('chatbot-reasoning-gpt-6-luna-high')
     ).toBeDisabled()
     await expect
       .poll(() => modelPolicyVariables)
       .toMatchObject({
         modelSelection: true,
-        allowedModelIds: ['auto', 'gpt-5.6-luna'],
+        allowedModelIds: ['auto', 'gpt-6-luna'],
         allowedReasoningEffortsByModel: [
-          { modelId: 'gpt-5.6-luna', efforts: ['high'] },
+          { modelId: 'gpt-6-luna', efforts: ['high'] },
         ],
       })
     modelSettingsRequestGate.release()

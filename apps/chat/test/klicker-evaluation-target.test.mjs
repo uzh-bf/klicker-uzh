@@ -161,7 +161,7 @@ test('target uses participant gates and reads back one persisted turn', async ()
     if (requestUrl.endsWith('/chat') && method === 'POST') {
       const payload = JSON.parse(body)
       assistantMessageId = payload.assistantMessageId
-      assert.equal(payload.selectedModel, 'gpt-5.6-luna')
+      assert.equal(payload.selectedModel, 'gpt-6-luna')
       assert.equal(payload.selectedMode, 'tutor')
       assert.equal(payload.messages[0].content, 'What is CAPM?')
       assert.equal(body.includes(expectedAnswer), false)
@@ -187,7 +187,7 @@ test('target uses participant gates and reads back one persisted turn', async ()
           id: assistantMessageId,
           role: 'assistant',
           chatMode: 'tutor',
-          modelId: 'gpt-5.6-luna',
+          modelId: 'gpt-6-luna',
           content: [
             { type: 'reasoning', text: 'not exposed' },
             {
@@ -220,7 +220,7 @@ test('target uses participant gates and reads back one persisted turn', async ()
     })
     await target.initialize()
     const result = await target.complete({
-      model: 'gpt-5.6-luna',
+      model: 'gpt-6-luna',
       stream: false,
       messages: [{ role: 'user', content: 'What is CAPM?' }],
     })
@@ -422,7 +422,7 @@ test('canary requires its configured tool', async () => {
     id: 'assistant-1',
     role: 'assistant',
     chatMode: 'tutor',
-    modelId: 'gpt-5.6-luna',
+    modelId: 'gpt-6-luna',
     content: [
       { type: 'tool-call', toolName: 'KB_doc_query' },
       { type: 'text', text: 'KLICKER_LOCAL_MCP_OK' },
@@ -436,7 +436,7 @@ test('canary requires its configured tool', async () => {
     id: 'assistant-2',
     role: 'assistant',
     chatMode: 'tutor',
-    modelId: 'gpt-5.6-luna',
+    modelId: 'gpt-6-luna',
     content: [
       { type: 'tool-call', toolName: 'wrong_tool' },
       { type: 'text', text: 'KLICKER_LOCAL_MCP_OK' },
@@ -449,15 +449,15 @@ test('canary requires its configured tool', async () => {
 
 test('adapter requires bearer auth and exposes only the configured model', async () => {
   const target = {
-    modelId: 'gpt-5.6-luna',
+    modelId: 'gpt-6-luna',
     async complete(body) {
-      assert.equal(body.model, 'gpt-5.6-luna')
+      assert.equal(body.model, 'gpt-6-luna')
       return {
         source: 'canary',
         payload: {
           id: 'response-1',
           object: 'chat.completion',
-          model: 'gpt-5.6-luna',
+          model: 'gpt-6-luna',
           choices: [
             {
               index: 0,
@@ -485,7 +485,7 @@ test('adapter requires bearer auth and exposes only the configured model', async
       headers: { Authorization: 'Bearer test-key' },
     })
     assert.equal(models.status, 200)
-    assert.deepEqual((await models.json()).data[0].id, 'gpt-5.6-luna')
+    assert.deepEqual((await models.json()).data[0].id, 'gpt-6-luna')
 
     const completion = await fetch(`${baseUrl}/v1/chat/completions`, {
       method: 'POST',
@@ -494,7 +494,7 @@ test('adapter requires bearer auth and exposes only the configured model', async
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5.6-luna',
+        model: 'gpt-6-luna',
         stream: false,
         messages: [{ role: 'user', content: 'synthetic' }],
       }),

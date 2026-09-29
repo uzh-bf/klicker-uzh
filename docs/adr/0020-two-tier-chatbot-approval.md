@@ -52,7 +52,8 @@ remains a separate lifecycle decision; it does not serve as a usage funding or
 per-model approval.
 
 Usage is tracked in two explicit model classes. Registry entries are classified
-as `BASE` or `ADVANCED`. GPT-5.6 Luna is the only `BASE` model and the
+as `BASE` or `ADVANCED`. GPT-6 Luna (`gpt-6-luna`, which replaced
+`gpt-5.6-luna` on 2026-09-29) is the only `BASE` model and the
 participant-credit fallback. Every other current registry entry, including
 `Auto`, is `ADVANCED`. Exhausting participant credits intentionally replaces
 the selected entry with Luna and therefore meters that effective turn as
@@ -100,7 +101,7 @@ to the v3-ai workflow.
 - Post-publication edits to non-gated knobs (knowledge, standard-mode fields,
   and model choices within the account authorization) take effect
   without another approval; this bounded risk is accepted.
-- Both registry consumers reject configurations that do not make GPT-5.6 Luna
+- Both registry consumers reject configurations that do not make GPT-6 Luna
   the sole `BASE` model and participant-credit fallback. CI pins registry
   class, fallback, and accounting-rate parity across built-in, staging, and
   production declarations.
