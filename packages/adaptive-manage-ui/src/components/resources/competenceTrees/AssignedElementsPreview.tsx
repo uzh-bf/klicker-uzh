@@ -110,7 +110,7 @@ function AssignedElementsPreview({
                     aria-label={t('manage.competenceTree.assignElementLeaf', {
                       name: item.elementName,
                     })}
-                    className="min-w-0 max-w-full rounded border border-slate-300 p-2 text-sm"
+                    className="w-full rounded border border-slate-300 p-2 text-sm sm:w-auto sm:min-w-72"
                     disabled={disabled}
                     value={
                       leaves.some((leaf) => leaf.key === item.leafKey)
