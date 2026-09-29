@@ -314,7 +314,10 @@ export const test = base.extend<KlickerUZHFixtures>({
         .getByTestId('password-field')
         .fill(process.env.STUDENT_PASSWORD ?? STUDENT_PASSWORD)
       await page.getByTestId('submit-login').click()
-      await expect(page.getByTestId('homepage')).toBeVisible()
+      // Wait for the redirect away from the login page rather than for a
+      // specific destination: accounts without recorded data-use choices are
+      // routed to /account/data-use instead of the homepage.
+      await page.waitForURL((url) => !/\/login\/?$/.test(url.pathname))
     })
   },
 
