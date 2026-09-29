@@ -4,7 +4,7 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { RotateCcw, X, ZoomIn, ZoomOut } from 'lucide-react'
 import Image from 'next/image'
 import { useTranslations } from 'next-intl'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useLayoutEffect, useRef, useState } from 'react'
 
 const controlClass =
   'inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border px-3 hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-40'
@@ -89,15 +89,24 @@ function ZoomableFigure({
   const [zoom, setZoom] = useState(1)
   const [failed, setFailed] = useState(false)
   const [attempt, setAttempt] = useState(0)
-  useEffect(() => {
+  // The figure is sized from the measured viewport, so an unmeasured 0x0
+  // viewport paints a 1px figure that jumps to fit on the next frame. Measure
+  // before the first paint, then keep up with resizes: a ResizeObserver alone
+  // only reports after the browser has already painted the wrong size.
+  useLayoutEffect(() => {
     const element = viewport.current
     if (!element) return
-    const observer = new ResizeObserver(() => {
+    const measure = () => {
       setBounds({ width: element.clientWidth, height: element.clientHeight })
-    })
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
     observer.observe(element)
     return () => observer.disconnect()
   }, [])
+  // Nothing is drawn until the viewport has a real size, so a measurement that
+  // has not landed yet never shows a wrongly sized figure.
+  const measured = bounds.width > 0 && bounds.height > 0
   const fit = Math.min(bounds.width / width, bounds.height / height, 1)
   const displayWidth = Math.max(1, width * fit * zoom)
   const displayHeight = Math.max(1, height * fit * zoom)
@@ -166,7 +175,7 @@ function ZoomableFigure({
               {t('retry')}
             </button>
           </div>
-        ) : (
+        ) : measured ? (
           <div
             className="grid place-items-center"
             style={{
@@ -188,7 +197,7 @@ function ZoomableFigure({
               style={{ width: displayWidth, height: displayHeight }}
             />
           </div>
-        )}
+        ) : null}
       </section>
       <p className="shrink-0 px-4 py-1 text-center text-xs text-muted-foreground">
         {t('panHint')}
