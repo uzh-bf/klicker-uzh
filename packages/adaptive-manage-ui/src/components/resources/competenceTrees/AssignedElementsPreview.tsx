@@ -1,16 +1,33 @@
-import { faArrowUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
-import { Button, TextField } from '@uzh-bf/design-system'
+import {
+  faArrowUpRightFromSquare,
+  faTrashCan,
+} from '@fortawesome/free-solid-svg-icons'
+import { Button, Switch, TextField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import { getAssignmentLeaves, updateElementMapping } from './assignmentHelpers'
 import CompetenceTreePagination from './CompetenceTreePagination'
 import ElementPreview from './ElementPreview'
+import IconAction from './IconAction'
 import ItemParameters from './ItemParameters'
 import { getBreadcrumb } from './treeHelpers'
 import type { CompetenceTreeForm } from './types'
 
-function AssignedElementsPreview({ form }: { form: CompetenceTreeForm }) {
+// Without onChange the list is read-only (e.g. a structurally locked tree).
+// With it, each assignment can be moved to another leaf or level, switched
+// off, or removed; changes stay in the form until the tree is saved.
+function AssignedElementsPreview({
+  form,
+  onChange,
+  disabled = false,
+}: {
+  form: CompetenceTreeForm
+  onChange?: (form: CompetenceTreeForm) => void
+  disabled?: boolean
+}) {
   const t = useTranslations()
+  const leaves = getAssignmentLeaves(form)
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -87,11 +104,119 @@ function AssignedElementsPreview({ form }: { form: CompetenceTreeForm }) {
                     ?.label
                 }
               />
+              {onChange && (
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  <select
+                    aria-label={t('manage.competenceTree.assignElementLeaf', {
+                      name: item.elementName,
+                    })}
+                    className="min-w-0 max-w-full rounded border border-slate-300 p-2 text-sm"
+                    disabled={disabled}
+                    value={
+                      leaves.some((leaf) => leaf.key === item.leafKey)
+                        ? item.leafKey
+                        : ''
+                    }
+                    onChange={(event) =>
+                      onChange(
+                        updateElementMapping(form, item.key, {
+                          leafKey: event.target.value,
+                        })
+                      )
+                    }
+                    data-cy={`competence-tree-assigned-leaf-${item.elementId}`}
+                  >
+                    <option value="">
+                      {t('manage.competenceTree.chooseSubcompetence')}
+                    </option>
+                    {leaves.map((leaf) => (
+                      <option key={leaf.key} value={leaf.key}>
+                        {getBreadcrumb(form.nodes, leaf.key)}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    aria-label={t('manage.competenceTree.assignElementLevel', {
+                      name: item.elementName,
+                    })}
+                    className="rounded border border-slate-300 p-2 text-sm"
+                    disabled={disabled}
+                    value={
+                      form.levels.some((level) => level.key === item.levelKey)
+                        ? item.levelKey
+                        : ''
+                    }
+                    onChange={(event) =>
+                      onChange(
+                        updateElementMapping(form, item.key, {
+                          levelKey: event.target.value,
+                        })
+                      )
+                    }
+                    data-cy={`competence-tree-assigned-level-${item.elementId}`}
+                  >
+                    <option value="">
+                      {t('manage.competenceTree.chooseLevel')}
+                    </option>
+                    {form.levels.map((level) => (
+                      <option key={level.key} value={level.key}>
+                        {level.label}
+                      </option>
+                    ))}
+                  </select>
+                  <label
+                    htmlFor={`competence-tree-assigned-enabled-${item.elementId}`}
+                    className="sr-only"
+                  >
+                    {t('manage.competenceTree.assignmentEnabledLabel', {
+                      element: item.elementName,
+                    })}
+                  </label>
+                  <Switch
+                    id={`competence-tree-assigned-enabled-${item.elementId}`}
+                    checked={item.enabled}
+                    onCheckedChange={(enabled) =>
+                      onChange({
+                        ...form,
+                        assignments: form.assignments.map((candidate) =>
+                          candidate.key === item.key
+                            ? { ...candidate, enabled }
+                            : candidate
+                        ),
+                      })
+                    }
+                    disabled={disabled}
+                    size="sm"
+                    data={{
+                      cy: `competence-tree-assigned-enabled-${item.elementId}`,
+                    }}
+                  />
+                </div>
+              )}
             </div>
-            <ElementPreview
-              elementId={item.elementId}
-              name={item.elementName}
-            />
+            <div className="flex shrink-0 items-center gap-2">
+              <ElementPreview
+                elementId={item.elementId}
+                name={item.elementName}
+              />
+              {onChange && (
+                <IconAction
+                  icon={faTrashCan}
+                  label={t('manage.competenceTree.removeAssignment')}
+                  onClick={() =>
+                    onChange({
+                      ...form,
+                      assignments: form.assignments.filter(
+                        (candidate) => candidate.key !== item.key
+                      ),
+                    })
+                  }
+                  disabled={disabled}
+                  destructive
+                  dataCy={`competence-tree-assigned-remove-${item.elementId}`}
+                />
+              )}
+            </div>
           </li>
         ))}
       </ul>
