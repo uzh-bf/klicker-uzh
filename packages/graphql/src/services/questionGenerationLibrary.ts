@@ -1,7 +1,6 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   QuestionGenerationItemType,
-  QuestionLibrarySnapshot,
   QuestionLibrarySnapshotQuestion,
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
@@ -177,31 +176,47 @@ export async function createQuestionLibrarySnapshot(
   const incompleteSelection =
     elements.length > limit || questions.length !== selected.length
 
-  function serialize(questionCount: number): Buffer {
-    const snapshot: QuestionLibrarySnapshot = {
-      schema_version: 1,
-      reference_count: questionCount,
-      truncated: incompleteSelection || questionCount < questions.length,
-      questions: questions.slice(0, questionCount),
+  const serializedQuestions: string[] = []
+  let questionBytes = 0
+  for (const question of questions) {
+    const serialized = JSON.stringify(canonicalElementGenerationJson(question))
+    const candidateCount = serializedQuestions.length + 1
+    const candidateQuestionBytes =
+      questionBytes +
+      Buffer.byteLength(serialized, 'utf8') +
+      (serializedQuestions.length > 0 ? 1 : 0)
+    const candidateTruncated =
+      incompleteSelection || candidateCount < questions.length
+    if (
+      questionLibrarySnapshotByteLength(
+        candidateCount,
+        candidateQuestionBytes,
+        candidateTruncated
+      ) > MAX_BUFFERED_QUESTION_GENERATION_ARTIFACT_BYTES
+    ) {
+      break
     }
-    const canonical = canonicalElementGenerationJson(snapshot)
-    return Buffer.from(`${JSON.stringify(canonical, null, 2)}\n`, 'utf8')
+    serializedQuestions.push(serialized)
+    questionBytes = candidateQuestionBytes
   }
 
-  let lowerBound = 0
-  let upperBound = questions.length
-  let snapshotBytes = serialize(0)
-  while (lowerBound <= upperBound) {
-    const questionCount = Math.floor((lowerBound + upperBound) / 2)
-    const candidate = serialize(questionCount)
-    if (
-      candidate.byteLength <= MAX_BUFFERED_QUESTION_GENERATION_ARTIFACT_BYTES
-    ) {
-      snapshotBytes = candidate
-      lowerBound = questionCount + 1
-    } else {
-      upperBound = questionCount - 1
-    }
-  }
-  return snapshotBytes
+  const referenceCount = serializedQuestions.length
+  const truncated = incompleteSelection || referenceCount < questions.length
+  return Buffer.from(
+    `{"questions":[${serializedQuestions.join(',')}],"reference_count":${referenceCount},"schema_version":1,"truncated":${truncated}}\n`,
+    'utf8'
+  )
+}
+
+function questionLibrarySnapshotByteLength(
+  referenceCount: number,
+  questionBytes: number,
+  truncated: boolean
+): number {
+  return (
+    Buffer.byteLength(
+      `{"questions":[],"reference_count":${referenceCount},"schema_version":1,"truncated":${truncated}}\n`,
+      'utf8'
+    ) + questionBytes
+  )
 }
