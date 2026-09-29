@@ -1,21 +1,20 @@
 import { useLazyQuery, useMutation, useQuery } from '@apollo/client'
 import {
   faArrowLeft,
-  faGear,
   faCopy,
   faFloppyDisk,
+  faGear,
 } from '@fortawesome/free-solid-svg-icons'
 import {
-  QCompetenceTreeWithRuntimeDefaultsDocument,
-  MCreateCompetenceTreeWithRuntimeDefaultsDocument,
   DuplicateCompetenceTreeDocument,
+  MCreateCompetenceTreeWithRuntimeDefaultsDocument,
   MReplaceCompetenceTreeWithRuntimeDefaultsDocument,
   MUpdateCompetenceTreeMetadataWithRuntimeDefaultsDocument,
+  QCompetenceTreeWithRuntimeDefaultsDocument,
   UserProfileDocument,
   ValidateCompetenceTreeDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { useUnsavedChangesGuard } from '../../../lib/hooks/useUnsavedChangesGuard'
 import {
   Button,
   H2,
@@ -26,15 +25,16 @@ import {
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useUnsavedChangesGuard } from '../../../lib/hooks/useUnsavedChangesGuard'
 import AssignedElementsPreview from './AssignedElementsPreview'
-import TreeStructureOverview from './TreeStructureOverview'
-import { getEditorStepForSection, type EditorStep } from './wizardHelpers'
 import { hasUnmappedElements } from './assignmentHelpers'
 import CoverageMatrix from './CoverageMatrix'
+import ElementLibraryPicker from './ElementLibraryPicker'
 import HierarchyEditor from './HierarchyEditor'
 import LevelEditor from './LevelEditor'
 import MetadataEditor from './MetadataEditor'
 import ScaleVersionPanel from './ScaleVersionPanel'
+import TreeStructureOverview from './TreeStructureOverview'
 import {
   applyCompetenceTreeStructuralCommand,
   type CompetenceTreeStructuralCommand,
@@ -48,6 +48,7 @@ import {
   createDefaultCompetenceTreeForm,
 } from './types'
 import ValidationPanel from './ValidationPanel'
+import { type EditorStep, getEditorStepForSection } from './wizardHelpers'
 
 function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
   const t = useTranslations()
@@ -587,7 +588,28 @@ function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
           hidden={step !== 'questions'}
           data-cy="competence-tree-step-panel-questions"
         >
+          {!structureDisabled && (
+            <ElementLibraryPicker
+              form={form}
+              onChange={handleFormChange}
+              disabled={saving}
+            />
+          )}
           <AssignedElementsPreview form={form} />
+          {!structureDisabled && (
+            <div className="mt-5 flex justify-end">
+              <Button
+                primary
+                onClick={() => void handleSave()}
+                disabled={!canSubmit || saving || !isDirty}
+                loading={saving}
+                data={{ cy: 'competence-tree-save-assignments' }}
+              >
+                <Button.Icon icon={faFloppyDisk} loading={saving} />
+                <Button.Label>{t('manage.competenceTree.save')}</Button.Label>
+              </Button>
+            </div>
+          )}
         </div>
         <div
           hidden={step !== 'review'}

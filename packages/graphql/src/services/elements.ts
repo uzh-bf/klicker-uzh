@@ -339,6 +339,8 @@ export async function getUserElements(
           {
             element: { updatedAt: 'desc' as DB.Prisma.SortOrder },
           },
+          // Keep paginated library selections stable for otherwise equal items.
+          { element: { id: 'asc' as DB.Prisma.SortOrder } },
         ],
         take: numEntries ?? undefined,
         skip: offset ?? undefined,
