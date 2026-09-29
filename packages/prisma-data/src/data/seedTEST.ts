@@ -869,6 +869,15 @@ async function seedTest(prisma: Prisma.PrismaClient) {
 
   if (seedOptions['without-adaptive']) {
     console.log('Core test seed: adaptive quiz fixtures explicitly excluded.')
+  } else if (
+    !process.env.ADAPTIVE_ENGINE_URL ||
+    !process.env.ADAPTIVE_ENGINE_TOKEN
+  ) {
+    // Public PR CI has no adaptive engine; Playwright global setup rebuilds
+    // its own adaptive fixtures, so the seed stays usable without it.
+    console.warn(
+      'Adaptive quiz fixtures skipped: ADAPTIVE_ENGINE_URL and ADAPTIVE_ENGINE_TOKEN are not set.'
+    )
   } else {
     await seedAdaptivePracticeQuizV2(prisma, PARTICIPANT_IDS)
   }

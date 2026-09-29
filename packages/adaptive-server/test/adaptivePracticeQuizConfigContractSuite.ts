@@ -121,6 +121,7 @@ import {
   getSchemaFieldNames,
   quizInput,
 } from './adaptivePracticeQuizConfigTestSupport.js'
+import { itWithAdaptiveEngine } from './adaptiveEngineTestEnv.js'
 
 export function registerAdaptivePracticeQuizConfigContractTests() {
   let ownerCtx: ContextWithUser
@@ -207,174 +208,183 @@ export function registerAdaptivePracticeQuizConfigContractTests() {
     )
   })
 
-  it('keeps the standard path isolated while exposing safe adaptive participant metadata', async () => {
-    const course = await createCourse(owner.id)
-    const standard = await manipulatePracticeQuiz(
-      quizInput({ courseId: course.id, name: 'standard-quiz' }),
-      ownerCtx
-    )
-    const fixture = await createTreeFixture(course.id, ownerCtx)
-    const adaptive = await createAdaptiveQuiz({
-      courseId: course.id,
-      fixture,
-      ctx: ownerCtx,
-      name: 'adaptive-quiz',
-    })
-    await publishPracticeQuiz({ id: adaptive.id }, ownerCtx)
-    await prisma.permission.create({
-      data: {
-        userId: reader.id,
-        practiceQuizId: adaptive.id,
-        permissionLevel: PermissionLevel.READ,
-      },
-    })
-    await recomputeDerivedPermissions({ practiceQuizId: adaptive.id }, prisma)
-    await publishPracticeQuiz(
-      { id: standard.id, availableFrom: new Date(Date.now() + 60_000) },
-      ownerCtx
-    )
-    expect(scheduledTaskCreate).toHaveBeenCalledTimes(1)
-
-    const participant = await prisma.participant.create({
-      data: {
-        username: 'adaptive-hidden-participant',
-        password: 'not-used-in-service-test',
-      },
-    })
-    await prisma.participation.create({
-      data: {
-        courseId: course.id,
-        participantId: participant.id,
-        isActive: true,
-      },
-    })
-    const participantCtx = {
-      ...ownerCtx,
-      user: {
-        ...ownerCtx.user,
-        sub: participant.id,
-        role: UserRole.PARTICIPANT,
-      },
-    }
-    const unrelatedParticipant = await prisma.participant.create({
-      data: {
-        username: 'adaptive-unrelated-participant',
-        password: 'not-used-in-service-test',
-      },
-    })
-    const unrelatedParticipantCtx = {
-      ...ownerCtx,
-      user: {
-        ...ownerCtx.user,
-        sub: unrelatedParticipant.id,
-        role: UserRole.PARTICIPANT,
-      },
-    }
-    const publicCtx = { ...ownerCtx, user: undefined } as unknown as Context
-
-    expect(
-      await getCoursePublishedPracticeQuizzes({ courseId: course.id }, ownerCtx)
-    ).toEqual([expect.objectContaining({ id: adaptive.id })])
-    await expect(
-      getCoursePublishedPracticeQuizzes({ courseId: course.id }, readerCtx)
-    ).resolves.toEqual([expect.objectContaining({ id: adaptive.id })])
-    await expect(
-      getCoursePublishedPracticeQuizzes({ courseId: course.id }, participantCtx)
-    ).resolves.toEqual([expect.objectContaining({ id: adaptive.id })])
-    await expect(
-      getCoursePublishedPracticeQuizzes({ courseId: course.id }, publicCtx)
-    ).resolves.toEqual([])
-    await expect(
-      getCoursePublishedPracticeQuizzes(
-        { courseId: course.id },
-        unrelatedParticipantCtx
+  itWithAdaptiveEngine(
+    'keeps the standard path isolated while exposing safe adaptive participant metadata',
+    async () => {
+      const course = await createCourse(owner.id)
+      const standard = await manipulatePracticeQuiz(
+        quizInput({ courseId: course.id, name: 'standard-quiz' }),
+        ownerCtx
       )
-    ).resolves.toEqual([])
-    await expect(
-      getCoursePublishedPracticeQuizzes({ courseId: course.id }, outsiderCtx)
-    ).resolves.toEqual([])
-    await expect(getPracticeQuizList(participantCtx)).resolves.toEqual([
-      expect.objectContaining({
-        id: course.id,
-        practiceQuizzes: [expect.objectContaining({ id: adaptive.id })],
-      }),
-    ])
-    await expect(
-      getPracticeQuizData({ id: adaptive.id }, participantCtx)
-    ).resolves.toMatchObject({
-      id: adaptive.id,
-      mode: PracticeQuizMode.ADAPTIVE,
-      adaptiveMaximumQuestions: 50,
-      isPreview: false,
-      stacks: [],
-    })
-    await expect(
-      getPracticeQuizData({ id: adaptive.id }, ownerCtx)
-    ).resolves.toMatchObject({
-      id: adaptive.id,
-      isOwner: true,
-      isPreview: true,
-      stacks: [],
-    })
-    await expect(
-      getPracticeQuizData({ id: adaptive.id }, readerCtx)
-    ).resolves.toMatchObject({
-      id: adaptive.id,
-      isOwner: false,
-      isPreview: true,
-      stacks: [],
-    })
-    await expect(
-      getPracticeQuizData({ id: adaptive.id }, unrelatedParticipantCtx)
-    ).resolves.toBeNull()
-    await expect(
-      getPracticeQuizData({ id: adaptive.id }, outsiderCtx)
-    ).resolves.toBeNull()
-    await expect(
-      getPracticeQuizData({ id: adaptive.id }, publicCtx)
-    ).resolves.toBeNull()
-
-    const storedStandard = await prisma.practiceQuiz.findUniqueOrThrow({
-      where: { id: standard.id },
-    })
-    expect(storedStandard).toMatchObject({
-      mode: PracticeQuizMode.STANDARD,
-      status: PublicationStatus.SCHEDULED,
-      pointsMultiplier: 3,
-      isGamificationEnabled: false,
-    })
-
-    await updateCourseSettings(
-      {
-        id: course.id,
-        language: Locale.en,
-        isGamificationEnabled: true,
-      },
-      ownerCtx
-    )
-
-    const [updatedStandard, updatedAdaptive] = await Promise.all([
-      prisma.practiceQuiz.findUniqueOrThrow({ where: { id: standard.id } }),
-      prisma.practiceQuiz.findUniqueOrThrow({ where: { id: adaptive.id } }),
-    ])
-    expect(updatedStandard.isGamificationEnabled).toBe(true)
-    expect(updatedAdaptive).toMatchObject({
-      mode: PracticeQuizMode.ADAPTIVE,
-      pointsMultiplier: 0,
-      isGamificationEnabled: false,
-      isAssessmentEnabled: false,
-    })
-    await expect(
-      prisma.practiceQuiz.update({
-        where: { id: adaptive.id },
-        data: { isGamificationEnabled: true },
+      const fixture = await createTreeFixture(course.id, ownerCtx)
+      const adaptive = await createAdaptiveQuiz({
+        courseId: course.id,
+        fixture,
+        ctx: ownerCtx,
+        name: 'adaptive-quiz',
       })
-    ).rejects.toThrow()
-    await expect(
-      unpublishPracticeQuiz({ id: standard.id }, ownerCtx)
-    ).resolves.toMatchObject({ status: PublicationStatus.DRAFT })
-    expect(scheduledTaskDelete).toHaveBeenCalledWith(
-      storedStandard.scheduledPublicationTaskId
-    )
-  })
+      await publishPracticeQuiz({ id: adaptive.id }, ownerCtx)
+      await prisma.permission.create({
+        data: {
+          userId: reader.id,
+          practiceQuizId: adaptive.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+      })
+      await recomputeDerivedPermissions({ practiceQuizId: adaptive.id }, prisma)
+      await publishPracticeQuiz(
+        { id: standard.id, availableFrom: new Date(Date.now() + 60_000) },
+        ownerCtx
+      )
+      expect(scheduledTaskCreate).toHaveBeenCalledTimes(1)
+
+      const participant = await prisma.participant.create({
+        data: {
+          username: 'adaptive-hidden-participant',
+          password: 'not-used-in-service-test',
+        },
+      })
+      await prisma.participation.create({
+        data: {
+          courseId: course.id,
+          participantId: participant.id,
+          isActive: true,
+        },
+      })
+      const participantCtx = {
+        ...ownerCtx,
+        user: {
+          ...ownerCtx.user,
+          sub: participant.id,
+          role: UserRole.PARTICIPANT,
+        },
+      }
+      const unrelatedParticipant = await prisma.participant.create({
+        data: {
+          username: 'adaptive-unrelated-participant',
+          password: 'not-used-in-service-test',
+        },
+      })
+      const unrelatedParticipantCtx = {
+        ...ownerCtx,
+        user: {
+          ...ownerCtx.user,
+          sub: unrelatedParticipant.id,
+          role: UserRole.PARTICIPANT,
+        },
+      }
+      const publicCtx = { ...ownerCtx, user: undefined } as unknown as Context
+
+      expect(
+        await getCoursePublishedPracticeQuizzes(
+          { courseId: course.id },
+          ownerCtx
+        )
+      ).toEqual([expect.objectContaining({ id: adaptive.id })])
+      await expect(
+        getCoursePublishedPracticeQuizzes({ courseId: course.id }, readerCtx)
+      ).resolves.toEqual([expect.objectContaining({ id: adaptive.id })])
+      await expect(
+        getCoursePublishedPracticeQuizzes(
+          { courseId: course.id },
+          participantCtx
+        )
+      ).resolves.toEqual([expect.objectContaining({ id: adaptive.id })])
+      await expect(
+        getCoursePublishedPracticeQuizzes({ courseId: course.id }, publicCtx)
+      ).resolves.toEqual([])
+      await expect(
+        getCoursePublishedPracticeQuizzes(
+          { courseId: course.id },
+          unrelatedParticipantCtx
+        )
+      ).resolves.toEqual([])
+      await expect(
+        getCoursePublishedPracticeQuizzes({ courseId: course.id }, outsiderCtx)
+      ).resolves.toEqual([])
+      await expect(getPracticeQuizList(participantCtx)).resolves.toEqual([
+        expect.objectContaining({
+          id: course.id,
+          practiceQuizzes: [expect.objectContaining({ id: adaptive.id })],
+        }),
+      ])
+      await expect(
+        getPracticeQuizData({ id: adaptive.id }, participantCtx)
+      ).resolves.toMatchObject({
+        id: adaptive.id,
+        mode: PracticeQuizMode.ADAPTIVE,
+        adaptiveMaximumQuestions: 50,
+        isPreview: false,
+        stacks: [],
+      })
+      await expect(
+        getPracticeQuizData({ id: adaptive.id }, ownerCtx)
+      ).resolves.toMatchObject({
+        id: adaptive.id,
+        isOwner: true,
+        isPreview: true,
+        stacks: [],
+      })
+      await expect(
+        getPracticeQuizData({ id: adaptive.id }, readerCtx)
+      ).resolves.toMatchObject({
+        id: adaptive.id,
+        isOwner: false,
+        isPreview: true,
+        stacks: [],
+      })
+      await expect(
+        getPracticeQuizData({ id: adaptive.id }, unrelatedParticipantCtx)
+      ).resolves.toBeNull()
+      await expect(
+        getPracticeQuizData({ id: adaptive.id }, outsiderCtx)
+      ).resolves.toBeNull()
+      await expect(
+        getPracticeQuizData({ id: adaptive.id }, publicCtx)
+      ).resolves.toBeNull()
+
+      const storedStandard = await prisma.practiceQuiz.findUniqueOrThrow({
+        where: { id: standard.id },
+      })
+      expect(storedStandard).toMatchObject({
+        mode: PracticeQuizMode.STANDARD,
+        status: PublicationStatus.SCHEDULED,
+        pointsMultiplier: 3,
+        isGamificationEnabled: false,
+      })
+
+      await updateCourseSettings(
+        {
+          id: course.id,
+          language: Locale.en,
+          isGamificationEnabled: true,
+        },
+        ownerCtx
+      )
+
+      const [updatedStandard, updatedAdaptive] = await Promise.all([
+        prisma.practiceQuiz.findUniqueOrThrow({ where: { id: standard.id } }),
+        prisma.practiceQuiz.findUniqueOrThrow({ where: { id: adaptive.id } }),
+      ])
+      expect(updatedStandard.isGamificationEnabled).toBe(true)
+      expect(updatedAdaptive).toMatchObject({
+        mode: PracticeQuizMode.ADAPTIVE,
+        pointsMultiplier: 0,
+        isGamificationEnabled: false,
+        isAssessmentEnabled: false,
+      })
+      await expect(
+        prisma.practiceQuiz.update({
+          where: { id: adaptive.id },
+          data: { isGamificationEnabled: true },
+        })
+      ).rejects.toThrow()
+      await expect(
+        unpublishPracticeQuiz({ id: standard.id }, ownerCtx)
+      ).resolves.toMatchObject({ status: PublicationStatus.DRAFT })
+      expect(scheduledTaskDelete).toHaveBeenCalledWith(
+        storedStandard.scheduledPublicationTaskId
+      )
+    }
+  )
 }

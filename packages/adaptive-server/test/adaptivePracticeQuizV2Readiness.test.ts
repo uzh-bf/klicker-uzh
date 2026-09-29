@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { buildAdaptiveV2ConfigFingerprint } from '../src/services/adaptivePracticeQuizV2Fingerprint.js'
 import { assessAdaptiveV2Readiness } from '../src/services/adaptivePracticeQuizV2Readiness.js'
 import { resolveAdaptiveMeasurementSelection } from '../src/services/adaptivePracticeQuizV2Selection.js'
+import { itWithAdaptiveEngine } from './adaptiveEngineTestEnv.js'
 
 describe('adaptive IRT v2 selection and readiness', () => {
   it('keeps v1 as the default when no scale is selected', async () => {
@@ -62,37 +63,40 @@ describe('adaptive IRT v2 selection and readiness', () => {
     })
   })
 
-  it('fails closed on missing, stale, and flagged exact calibrations', async () => {
-    for (const [records, expectedCode] of [
-      [[], 'ADAPTIVE_V2_CALIBRATION_MISSING'],
-      [
-        [calibration({ elementVersion: 1 })],
-        'ADAPTIVE_V2_CALIBRATION_VERSION_MISMATCH',
-      ],
-      [
+  itWithAdaptiveEngine(
+    'fails closed on missing, stale, and flagged exact calibrations',
+    async () => {
+      for (const [records, expectedCode] of [
+        [[], 'ADAPTIVE_V2_CALIBRATION_MISSING'],
         [
-          calibration({
-            elementVersion: 2,
-            status: DB.AdaptiveItemCalibrationStatus.FLAGGED,
-          }),
+          [calibration({ elementVersion: 1 })],
+          'ADAPTIVE_V2_CALIBRATION_VERSION_MISMATCH',
         ],
-        'ADAPTIVE_V2_CALIBRATION_FLAGGED',
-      ],
-    ] as const) {
-      const assessment = await assessAdaptiveV2Readiness({
-        configId: 'config',
-        courseId: 'course',
-        scaleVersionId: 'scale',
-        preset: DB.AdaptivePracticeQuizPreset.DIAGNOSTIC,
-        prepared: prepared([{ id: 1, elementVersion: 2 }]),
-        prisma: readinessPrisma([...records]) as never,
-      })
-      expect(assessment.readiness.errors).toContainEqual(
-        expect.objectContaining({ code: expectedCode })
-      )
-      expect(assessment.readiness.ready).toBe(false)
+        [
+          [
+            calibration({
+              elementVersion: 2,
+              status: DB.AdaptiveItemCalibrationStatus.FLAGGED,
+            }),
+          ],
+          'ADAPTIVE_V2_CALIBRATION_FLAGGED',
+        ],
+      ] as const) {
+        const assessment = await assessAdaptiveV2Readiness({
+          configId: 'config',
+          courseId: 'course',
+          scaleVersionId: 'scale',
+          preset: DB.AdaptivePracticeQuizPreset.DIAGNOSTIC,
+          prepared: prepared([{ id: 1, elementVersion: 2 }]),
+          prisma: readinessPrisma([...records]) as never,
+        })
+        expect(assessment.readiness.errors).toContainEqual(
+          expect.objectContaining({ code: expectedCode })
+        )
+        expect(assessment.readiness.ready).toBe(false)
+      }
     }
-  })
+  )
 
   it.each([
     DB.AdaptiveItemCalibrationStatus.PROVISIONAL,
@@ -221,53 +225,56 @@ describe('adaptive IRT v2 selection and readiness', () => {
     )
   })
 
-  it('refuses approved evidence while no validation protocol is released', async () => {
-    const records = [calibration({ elementVersion: 2 })]
-    const config = adaptiveConfig()
-    const currentPrepared = prepared([{ id: 1, elementVersion: 2 }])
-    const baseline = await assessAdaptiveV2Readiness({
-      configId: 'config',
-      courseId: 'course',
-      scaleVersionId: 'scale',
-      preset: DB.AdaptivePracticeQuizPreset.DIAGNOSTIC,
-      prepared: currentPrepared,
-      prisma: readinessPrisma(records, { config }) as never,
-    })
-    const configFingerprint = buildAdaptiveV2ConfigFingerprint({
-      config,
-      prepared: currentPrepared,
-      scale: baseline.scale,
-      bankFingerprint: baseline.bankFingerprint,
-    })
-
-    const assessment = await assessAdaptiveV2Readiness({
-      configId: 'config',
-      courseId: 'course',
-      scaleVersionId: 'scale',
-      preset: DB.AdaptivePracticeQuizPreset.DIAGNOSTIC,
-      prepared: currentPrepared,
-      prisma: readinessPrisma(records, {
-        config,
-        validations: [
-          {
-            id: 'validation',
-            status: DB.AdaptiveEmpiricalValidationStatus.APPROVED,
-            bankFingerprint: baseline.bankFingerprint,
-            configFingerprint,
-          },
-        ],
-      }) as never,
-    })
-
-    expect(assessment.empiricalValidationId).toBeNull()
-    expect(assessment.readiness.errors).toContainEqual(
-      expect.objectContaining({
-        code: 'ADAPTIVE_V2_EMPIRICAL_VALIDATION_FAILED',
+  itWithAdaptiveEngine(
+    'refuses approved evidence while no validation protocol is released',
+    async () => {
+      const records = [calibration({ elementVersion: 2 })]
+      const config = adaptiveConfig()
+      const currentPrepared = prepared([{ id: 1, elementVersion: 2 }])
+      const baseline = await assessAdaptiveV2Readiness({
+        configId: 'config',
+        courseId: 'course',
+        scaleVersionId: 'scale',
+        preset: DB.AdaptivePracticeQuizPreset.DIAGNOSTIC,
+        prepared: currentPrepared,
+        prisma: readinessPrisma(records, { config }) as never,
       })
-    )
-  })
+      const configFingerprint = buildAdaptiveV2ConfigFingerprint({
+        config,
+        prepared: currentPrepared,
+        scale: baseline.scale,
+        bankFingerprint: baseline.bankFingerprint,
+      })
 
-  it.each([
+      const assessment = await assessAdaptiveV2Readiness({
+        configId: 'config',
+        courseId: 'course',
+        scaleVersionId: 'scale',
+        preset: DB.AdaptivePracticeQuizPreset.DIAGNOSTIC,
+        prepared: currentPrepared,
+        prisma: readinessPrisma(records, {
+          config,
+          validations: [
+            {
+              id: 'validation',
+              status: DB.AdaptiveEmpiricalValidationStatus.APPROVED,
+              bankFingerprint: baseline.bankFingerprint,
+              configFingerprint,
+            },
+          ],
+        }) as never,
+      })
+
+      expect(assessment.empiricalValidationId).toBeNull()
+      expect(assessment.readiness.errors).toContainEqual(
+        expect.objectContaining({
+          code: 'ADAPTIVE_V2_EMPIRICAL_VALIDATION_FAILED',
+        })
+      )
+    }
+  )
+
+  itWithAdaptiveEngine.each([
     [
       'node weights',
       adaptiveConfig(),
@@ -278,34 +285,37 @@ describe('adaptive IRT v2 selection and readiness', () => {
       adaptiveConfig({ totalQuestionCap: 13 }),
       prepared([{ id: 1, elementVersion: 2 }]),
     ],
-  ])('changes the validation fingerprint after changing %s', async (_, currentConfig, currentPrepared) => {
-    const records = [calibration({ elementVersion: 2 })]
-    const baselineConfig = adaptiveConfig()
-    const baselinePrepared = prepared([{ id: 1, elementVersion: 2 }])
-    const baseline = await assessAdaptiveV2Readiness({
-      configId: 'config',
-      courseId: 'course',
-      scaleVersionId: 'scale',
-      preset: DB.AdaptivePracticeQuizPreset.DIAGNOSTIC,
-      prepared: baselinePrepared,
-      prisma: readinessPrisma(records, { config: baselineConfig }) as never,
-    })
-    const configFingerprint = buildAdaptiveV2ConfigFingerprint({
-      config: baselineConfig,
-      prepared: baselinePrepared,
-      scale: baseline.scale,
-      bankFingerprint: baseline.bankFingerprint,
-    })
+  ])(
+    'changes the validation fingerprint after changing %s',
+    async (_, currentConfig, currentPrepared) => {
+      const records = [calibration({ elementVersion: 2 })]
+      const baselineConfig = adaptiveConfig()
+      const baselinePrepared = prepared([{ id: 1, elementVersion: 2 }])
+      const baseline = await assessAdaptiveV2Readiness({
+        configId: 'config',
+        courseId: 'course',
+        scaleVersionId: 'scale',
+        preset: DB.AdaptivePracticeQuizPreset.DIAGNOSTIC,
+        prepared: baselinePrepared,
+        prisma: readinessPrisma(records, { config: baselineConfig }) as never,
+      })
+      const configFingerprint = buildAdaptiveV2ConfigFingerprint({
+        config: baselineConfig,
+        prepared: baselinePrepared,
+        scale: baseline.scale,
+        bankFingerprint: baseline.bankFingerprint,
+      })
 
-    const currentFingerprint = buildAdaptiveV2ConfigFingerprint({
-      config: currentConfig,
-      prepared: currentPrepared,
-      scale: baseline.scale,
-      bankFingerprint: baseline.bankFingerprint,
-    })
+      const currentFingerprint = buildAdaptiveV2ConfigFingerprint({
+        config: currentConfig,
+        prepared: currentPrepared,
+        scale: baseline.scale,
+        bankFingerprint: baseline.bankFingerprint,
+      })
 
-    expect(currentFingerprint).not.toBe(configFingerprint)
-  })
+      expect(currentFingerprint).not.toBe(configFingerprint)
+    }
+  )
 })
 
 function selectionPrisma() {

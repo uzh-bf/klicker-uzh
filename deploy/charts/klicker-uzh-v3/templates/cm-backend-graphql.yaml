@@ -8,6 +8,10 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
 data:
   ADAPTIVE_QUIZ_SHOW_SOLUTIONS: {{ .Values.backendGraphql.adaptiveQuizShowSolutions | quote }}
+  {{- with .Values.backendGraphql.adaptiveEngine.url }}
+  # ADAPTIVE_ENGINE_TOKEN is provisioned in the backend secret.
+  ADAPTIVE_ENGINE_URL: {{ . | quote }}
+  {{- end }}
   {{- if .Values.assessmentAudit.enabled }}
   ASSESSMENT_AUDIT_ENVIRONMENT: {{ required "assessmentAudit.environment is required when assessment audit is enabled" .Values.assessmentAudit.environment | quote }}
   ASSESSMENT_AUDIT_ROLLOUT: {{ .Values.assessmentAudit.rollout | quote }}

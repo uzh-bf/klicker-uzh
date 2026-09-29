@@ -66,13 +66,25 @@ spec:
             periodSeconds: 5
             timeoutSeconds: 2
             failureThreshold: 3
-          {{- if .Values.backendGraphql.elementGeneration.enabled }}
+          {{- if or .Values.backendGraphql.elementGeneration.enabled .Values.backendGraphql.adaptiveEngine.url }}
           env:
+            {{- if .Values.backendGraphql.elementGeneration.enabled }}
             - name: KB_GENERATION_AZURE_STORAGE_CONNECTION_STRING
               valueFrom:
                 secretKeyRef:
                   name: {{ include "chart.fullname" . }}-secret-backend-graphql
                   key: KB_GENERATION_AZURE_STORAGE_CONNECTION_STRING
+            {{- end }}
+            {{- if .Values.backendGraphql.adaptiveEngine.url }}
+            # Adaptive calibration/validation jobs call the engine with the
+            # backend's token; the chart creates no secrets, so the key is only
+            # referenced once an engine URL is configured.
+            - name: ADAPTIVE_ENGINE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "chart.fullname" . }}-secret-backend-graphql
+                  key: ADAPTIVE_ENGINE_TOKEN
+            {{- end }}
           {{- end }}
           envFrom:
             - configMapRef:

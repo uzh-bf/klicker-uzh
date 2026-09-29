@@ -18,6 +18,10 @@ import {
   USER_ID_TEST4,
 } from '@klicker-uzh/playwright/adaptive-host/util/constants'
 import { test } from '@klicker-uzh/playwright/adaptive-host/util/fixtures'
+import {
+  ADAPTIVE_ENGINE_SKIP_REASON,
+  adaptiveEngineConfigured,
+} from '../util/adaptive-engine.js'
 
 const manageUrl = process.env.URL_MANAGE ?? 'http://manage.be06.localhost:3302'
 const studentUrl = process.env.URL_STUDENT ?? 'http://pwa.be06.localhost:3301'
@@ -47,6 +51,7 @@ const attemptStateFields = `
 
 test.describe('Adaptive PracticeQuiz release boundaries', () => {
   test.describe.configure({ timeout: 180_000 })
+  test.skip(!adaptiveEngineConfigured, ADAPTIVE_ENGINE_SKIP_REASON)
 
   test('does not enumerate adaptive metadata across owner or course boundaries', async ({
     page,

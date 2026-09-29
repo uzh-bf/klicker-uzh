@@ -542,6 +542,10 @@ frontendControl:
 
 backendGraphql:
   adaptiveQuizShowSolutions: false
+  # Private Catalyst calculation service. Leave empty until it is deployed;
+  # when set, ADAPTIVE_ENGINE_TOKEN must exist in the backend secret.
+  adaptiveEngine:
+    url: ''
   priorityClassName: production-workload
 
   knowledgeGraph:

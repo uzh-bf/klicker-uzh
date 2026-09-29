@@ -7,6 +7,7 @@ import {
   type PersistAdaptivePracticeQuizEstimatesInput,
 } from '../src/services/adaptivePracticeQuizRepository.js'
 import { createLegacyAdaptivePublicationFixture } from './adaptivePracticeQuizTestHelpers.js'
+import { itWithAdaptiveEngine } from './adaptiveEngineTestEnv.js'
 
 describe('adaptive practice quiz estimate repository', () => {
   beforeEach(cleanDatabase)
@@ -16,203 +17,214 @@ describe('adaptive practice quiz estimate repository', () => {
     await prisma.$disconnect()
   })
 
-  it('inserts and updates overall and node estimates without duplicates', async () => {
-    const fixture = await createFixture(2)
-    const baseInput = estimateInput(fixture)
-    const initial: PersistAdaptivePracticeQuizEstimatesInput = {
-      ...baseInput,
-      nodes: baseInput.nodes.map((estimate, index) =>
-        index === 1
-          ? {
-              ...estimate,
-              theta: null,
-              standardError: null,
-              responseCount: 0,
-              levelId: null,
-              stopReason: null,
-            }
-          : estimate
-      ),
-    }
+  itWithAdaptiveEngine(
+    'inserts and updates overall and node estimates without duplicates',
+    async () => {
+      const fixture = await createFixture(2)
+      const baseInput = estimateInput(fixture)
+      const initial: PersistAdaptivePracticeQuizEstimatesInput = {
+        ...baseInput,
+        nodes: baseInput.nodes.map((estimate, index) =>
+          index === 1
+            ? {
+                ...estimate,
+                theta: null,
+                standardError: null,
+                responseCount: 0,
+                levelId: null,
+                stopReason: null,
+              }
+            : estimate
+        ),
+      }
 
-    await prisma.$transaction((tx) =>
-      persistAdaptivePracticeQuizEstimates(initial, tx)
-    )
+      await prisma.$transaction((tx) =>
+        persistAdaptivePracticeQuizEstimates(initial, tx)
+      )
 
-    const inserted = await prisma.adaptivePracticeQuizEstimate.findMany({
-      where: { attemptId: fixture.attemptId },
-      orderBy: { id: 'asc' },
-    })
-    expect(inserted).toHaveLength(3)
-    expect(
-      inserted.filter(
-        ({ nodeKind, nodeId }) =>
-          nodeKind === DB.AdaptiveEstimateNodeKind.OVERALL && nodeId === null
-      )
-    ).toHaveLength(1)
-    expect(
-      persistedFields(
-        requireEstimate(inserted, DB.AdaptiveEstimateNodeKind.OVERALL, null)
-      )
-    ).toEqual({
-      attemptId: fixture.attemptId,
-      configId: fixture.configId,
-      competenceTreeId: fixture.competenceTreeId,
-      ...initial.overall,
-    })
-    expect(
-      persistedFields(
-        requireEstimate(
-          inserted,
-          initial.nodes[0]!.nodeKind,
-          initial.nodes[0]!.nodeId
+      const inserted = await prisma.adaptivePracticeQuizEstimate.findMany({
+        where: { attemptId: fixture.attemptId },
+        orderBy: { id: 'asc' },
+      })
+      expect(inserted).toHaveLength(3)
+      expect(
+        inserted.filter(
+          ({ nodeKind, nodeId }) =>
+            nodeKind === DB.AdaptiveEstimateNodeKind.OVERALL && nodeId === null
         )
-      )
-    ).toEqual({
-      attemptId: fixture.attemptId,
-      configId: fixture.configId,
-      competenceTreeId: fixture.competenceTreeId,
-      ...initial.nodes[0],
-    })
-    expect(
-      persistedFields(
-        requireEstimate(
-          inserted,
-          initial.nodes[1]!.nodeKind,
-          initial.nodes[1]!.nodeId
+      ).toHaveLength(1)
+      expect(
+        persistedFields(
+          requireEstimate(inserted, DB.AdaptiveEstimateNodeKind.OVERALL, null)
         )
-      )
-    ).toEqual({
-      attemptId: fixture.attemptId,
-      configId: fixture.configId,
-      competenceTreeId: fixture.competenceTreeId,
-      ...initial.nodes[1],
-    })
-
-    await prisma.adaptivePracticeQuizAttempt.update({
-      where: { id: fixture.attemptId },
-      data: {
-        stopReason: DB.AdaptivePracticeQuizStopReason.POOL_EXHAUSTED,
-      },
-    })
-    const updated: PersistAdaptivePracticeQuizEstimatesInput = {
-      ...initial,
-      overall: {
+      ).toEqual({
+        attemptId: fixture.attemptId,
+        configId: fixture.configId,
+        competenceTreeId: fixture.competenceTreeId,
         ...initial.overall,
-        theta: 0.75,
-        standardError: 0.45,
-        responseCount: 4,
-        stopReason: DB.AdaptivePracticeQuizStopReason.POOL_EXHAUSTED,
-      },
-      nodes: initial.nodes.map((estimate, index) => ({
-        ...estimate,
-        theta: index === 0 ? 0.6 : -0.25,
-        standardError: index === 0 ? 0.5 : 0.9,
-        responseCount: index + 2,
-        levelId: fixture.levelId,
-        stopReason:
-          index === 0
-            ? DB.AdaptivePracticeQuizStopReason.CLASSIFIED
-            : DB.AdaptivePracticeQuizStopReason.POOL_EXHAUSTED,
-      })),
+      })
+      expect(
+        persistedFields(
+          requireEstimate(
+            inserted,
+            initial.nodes[0]!.nodeKind,
+            initial.nodes[0]!.nodeId
+          )
+        )
+      ).toEqual({
+        attemptId: fixture.attemptId,
+        configId: fixture.configId,
+        competenceTreeId: fixture.competenceTreeId,
+        ...initial.nodes[0],
+      })
+      expect(
+        persistedFields(
+          requireEstimate(
+            inserted,
+            initial.nodes[1]!.nodeKind,
+            initial.nodes[1]!.nodeId
+          )
+        )
+      ).toEqual({
+        attemptId: fixture.attemptId,
+        configId: fixture.configId,
+        competenceTreeId: fixture.competenceTreeId,
+        ...initial.nodes[1],
+      })
+
+      await prisma.adaptivePracticeQuizAttempt.update({
+        where: { id: fixture.attemptId },
+        data: {
+          stopReason: DB.AdaptivePracticeQuizStopReason.POOL_EXHAUSTED,
+        },
+      })
+      const updated: PersistAdaptivePracticeQuizEstimatesInput = {
+        ...initial,
+        overall: {
+          ...initial.overall,
+          theta: 0.75,
+          standardError: 0.45,
+          responseCount: 4,
+          stopReason: DB.AdaptivePracticeQuizStopReason.POOL_EXHAUSTED,
+        },
+        nodes: initial.nodes.map((estimate, index) => ({
+          ...estimate,
+          theta: index === 0 ? 0.6 : -0.25,
+          standardError: index === 0 ? 0.5 : 0.9,
+          responseCount: index + 2,
+          levelId: fixture.levelId,
+          stopReason:
+            index === 0
+              ? DB.AdaptivePracticeQuizStopReason.CLASSIFIED
+              : DB.AdaptivePracticeQuizStopReason.POOL_EXHAUSTED,
+        })),
+      }
+
+      await prisma.$transaction((tx) =>
+        persistAdaptivePracticeQuizEstimates(updated, tx)
+      )
+
+      const persisted = await prisma.adaptivePracticeQuizEstimate.findMany({
+        where: { attemptId: fixture.attemptId },
+        orderBy: { id: 'asc' },
+      })
+      expect(persisted).toHaveLength(3)
+      expect(estimateIdsByIdentity(persisted)).toEqual(
+        estimateIdsByIdentity(inserted)
+      )
+      expect(
+        persistedFields(
+          requireEstimate(persisted, DB.AdaptiveEstimateNodeKind.OVERALL, null)
+        )
+      ).toEqual({
+        attemptId: fixture.attemptId,
+        configId: fixture.configId,
+        competenceTreeId: fixture.competenceTreeId,
+        ...updated.overall,
+      })
+      expect(
+        persistedFields(
+          requireEstimate(
+            persisted,
+            updated.nodes[0]!.nodeKind,
+            updated.nodes[0]!.nodeId
+          )
+        )
+      ).toEqual({
+        attemptId: fixture.attemptId,
+        configId: fixture.configId,
+        competenceTreeId: fixture.competenceTreeId,
+        ...updated.nodes[0],
+      })
+      expect(
+        persistedFields(
+          requireEstimate(
+            persisted,
+            updated.nodes[1]!.nodeKind,
+            updated.nodes[1]!.nodeId
+          )
+        )
+      ).toEqual({
+        attemptId: fixture.attemptId,
+        configId: fixture.configId,
+        competenceTreeId: fixture.competenceTreeId,
+        ...updated.nodes[1],
+      })
     }
+  )
 
-    await prisma.$transaction((tx) =>
-      persistAdaptivePracticeQuizEstimates(updated, tx)
-    )
+  itWithAdaptiveEngine(
+    'persists the 500-node guardrail in three statements',
+    async () => {
+      const fixture = await createFixture(500)
+      const input = estimateInput(fixture)
 
-    const persisted = await prisma.adaptivePracticeQuizEstimate.findMany({
-      where: { attemptId: fixture.attemptId },
-      orderBy: { id: 'asc' },
-    })
-    expect(persisted).toHaveLength(3)
-    expect(estimateIdsByIdentity(persisted)).toEqual(
-      estimateIdsByIdentity(inserted)
-    )
-    expect(
-      persistedFields(
-        requireEstimate(persisted, DB.AdaptiveEstimateNodeKind.OVERALL, null)
-      )
-    ).toEqual({
-      attemptId: fixture.attemptId,
-      configId: fixture.configId,
-      competenceTreeId: fixture.competenceTreeId,
-      ...updated.overall,
-    })
-    expect(
-      persistedFields(
-        requireEstimate(
-          persisted,
-          updated.nodes[0]!.nodeKind,
-          updated.nodes[0]!.nodeId
+      await prisma.$transaction(async (tx) => {
+        const executeRaw = vi.fn((query: DB.Prisma.Sql) =>
+          tx.$executeRaw(query)
         )
-      )
-    ).toEqual({
-      attemptId: fixture.attemptId,
-      configId: fixture.configId,
-      competenceTreeId: fixture.competenceTreeId,
-      ...updated.nodes[0],
-    })
-    expect(
-      persistedFields(
-        requireEstimate(
-          persisted,
-          updated.nodes[1]!.nodeKind,
-          updated.nodes[1]!.nodeId
-        )
-      )
-    ).toEqual({
-      attemptId: fixture.attemptId,
-      configId: fixture.configId,
-      competenceTreeId: fixture.competenceTreeId,
-      ...updated.nodes[1],
-    })
-  })
+        const countingTx = {
+          $executeRaw: executeRaw,
+        } as unknown as DB.Prisma.TransactionClient
 
-  it('persists the 500-node guardrail in three statements', async () => {
-    const fixture = await createFixture(500)
-    const input = estimateInput(fixture)
+        await persistAdaptivePracticeQuizEstimates(input, countingTx)
 
-    await prisma.$transaction(async (tx) => {
-      const executeRaw = vi.fn((query: DB.Prisma.Sql) => tx.$executeRaw(query))
-      const countingTx = {
-        $executeRaw: executeRaw,
-      } as unknown as DB.Prisma.TransactionClient
-
-      await persistAdaptivePracticeQuizEstimates(input, countingTx)
-
-      expect(executeRaw).toHaveBeenCalledTimes(3)
-    })
-
-    expect(
-      await prisma.adaptivePracticeQuizEstimate.count({
-        where: { attemptId: fixture.attemptId },
+        expect(executeRaw).toHaveBeenCalledTimes(3)
       })
-    ).toBe(501)
-  })
 
-  it('rolls every estimate back with the caller transaction', async () => {
-    const fixture = await createFixture(2)
-    const input = estimateInput(fixture)
+      expect(
+        await prisma.adaptivePracticeQuizEstimate.count({
+          where: { attemptId: fixture.attemptId },
+        })
+      ).toBe(501)
+    }
+  )
 
-    await expect(
-      prisma.$transaction(async (tx) => {
-        await persistAdaptivePracticeQuizEstimates(input, tx)
-        expect(
-          await tx.adaptivePracticeQuizEstimate.count({
-            where: { attemptId: fixture.attemptId },
-          })
-        ).toBe(3)
-        throw new Error('force repository rollback')
-      })
-    ).rejects.toThrow('force repository rollback')
+  itWithAdaptiveEngine(
+    'rolls every estimate back with the caller transaction',
+    async () => {
+      const fixture = await createFixture(2)
+      const input = estimateInput(fixture)
 
-    expect(
-      await prisma.adaptivePracticeQuizEstimate.count({
-        where: { attemptId: fixture.attemptId },
-      })
-    ).toBe(0)
-  })
+      await expect(
+        prisma.$transaction(async (tx) => {
+          await persistAdaptivePracticeQuizEstimates(input, tx)
+          expect(
+            await tx.adaptivePracticeQuizEstimate.count({
+              where: { attemptId: fixture.attemptId },
+            })
+          ).toBe(3)
+          throw new Error('force repository rollback')
+        })
+      ).rejects.toThrow('force repository rollback')
+
+      expect(
+        await prisma.adaptivePracticeQuizEstimate.count({
+          where: { attemptId: fixture.attemptId },
+        })
+      ).toBe(0)
+    }
+  )
 })
 
 async function cleanDatabase() {

@@ -40,6 +40,7 @@ import {
   testCleanup,
   testInitialization,
 } from '@klicker-uzh/adaptive-test-host/helpers'
+import { itWithAdaptiveEngine } from './adaptiveEngineTestEnv.js'
 
 function treeInput(elementId: number): CompetenceTreeInput {
   return {
@@ -979,150 +980,153 @@ describe('competence tree management', () => {
     ).rejects.toMatchObject({ extensions: { code: 'NOT_FOUND' } })
   })
 
-  it('locks structure after quiz use while allowing metadata and soft deletion', async () => {
-    const element = await createSingleChoiceElement(ownerCtx)
-    const tree = await createCompetenceTree(
-      { input: treeInput(element.id) },
-      ownerCtx
-    )
-    const course = await seedCourse({}, ownerCtx)
-    const quiz = await prisma.practiceQuiz.create({
-      data: {
-        name: 'adaptive-practice',
-        displayName: 'Adaptive practice',
-        ownerId: ownerCtx.user.sub,
-        courseId: course.id,
-      },
-    })
-    const config = await prisma.practiceQuizAdaptiveConfig.create({
-      data: {
-        practiceQuizId: quiz.id,
-        competenceTreeId: tree.id,
-      },
-    })
-
-    const participant = await prisma.participant.create({
-      data: {
-        username: 'adaptive-estimate-participant',
-        password: 'test-password',
-      },
-    })
-    const participation = await prisma.participation.create({
-      data: { courseId: course.id, participantId: participant.id },
-    })
-    const { publication } = await createLegacyAdaptivePublicationFixture({
-      configId: config.id,
-      publishedById: ownerCtx.user.sub,
-    })
-    const attempt = await prisma.adaptivePracticeQuizAttempt.create({
-      data: {
-        publicationId: publication.id,
-        scaleVersionId: publication.scaleVersionId,
-        measurementVersion: publication.measurementVersion,
-        estimatorImplementationVersion:
-          publication.estimatorImplementationVersion,
-        classificationPolicyVersion: publication.classificationPolicyVersion,
-        calibrationPolicyVersion: publication.calibrationPolicyVersion,
-        configId: config.id,
-        competenceTreeId: tree.id,
-        practiceQuizId: quiz.id,
-        courseId: course.id,
-        participantId: participant.id,
-        participationId: participation.id,
-        status: AdaptivePracticeQuizAttemptStatus.ABANDONED,
-        stopReason: AdaptivePracticeQuizStopReason.ABANDONED,
-        completedAt: new Date(),
-      },
-    })
-
-    await expect(
-      prisma.adaptivePracticeQuizEstimate.create({
+  itWithAdaptiveEngine(
+    'locks structure after quiz use while allowing metadata and soft deletion',
+    async () => {
+      const element = await createSingleChoiceElement(ownerCtx)
+      const tree = await createCompetenceTree(
+        { input: treeInput(element.id) },
+        ownerCtx
+      )
+      const course = await seedCourse({}, ownerCtx)
+      const quiz = await prisma.practiceQuiz.create({
         data: {
-          attemptId: attempt.id,
-          configId: config.id,
-          competenceTreeId: tree.id,
-          nodeKind: AdaptiveEstimateNodeKind.COMPETENCE,
-          nodeId: null,
-          theta: 0,
-          standardError: 1,
-          responseCount: 1,
+          name: 'adaptive-practice',
+          displayName: 'Adaptive practice',
+          ownerId: ownerCtx.user.sub,
+          courseId: course.id,
         },
       })
-    ).rejects.toBeTruthy()
-    await prisma.adaptivePracticeQuizEstimate.create({
-      data: {
-        attemptId: attempt.id,
+      const config = await prisma.practiceQuizAdaptiveConfig.create({
+        data: {
+          practiceQuizId: quiz.id,
+          competenceTreeId: tree.id,
+        },
+      })
+
+      const participant = await prisma.participant.create({
+        data: {
+          username: 'adaptive-estimate-participant',
+          password: 'test-password',
+        },
+      })
+      const participation = await prisma.participation.create({
+        data: { courseId: course.id, participantId: participant.id },
+      })
+      const { publication } = await createLegacyAdaptivePublicationFixture({
         configId: config.id,
-        competenceTreeId: tree.id,
-        nodeKind: AdaptiveEstimateNodeKind.OVERALL,
-        nodeId: null,
-        theta: 0,
-        standardError: 1,
-        responseCount: 1,
-      },
-    })
-    await expect(
-      prisma.adaptivePracticeQuizEstimate.create({
+        publishedById: ownerCtx.user.sub,
+      })
+      const attempt = await prisma.adaptivePracticeQuizAttempt.create({
+        data: {
+          publicationId: publication.id,
+          scaleVersionId: publication.scaleVersionId,
+          measurementVersion: publication.measurementVersion,
+          estimatorImplementationVersion:
+            publication.estimatorImplementationVersion,
+          classificationPolicyVersion: publication.classificationPolicyVersion,
+          calibrationPolicyVersion: publication.calibrationPolicyVersion,
+          configId: config.id,
+          competenceTreeId: tree.id,
+          practiceQuizId: quiz.id,
+          courseId: course.id,
+          participantId: participant.id,
+          participationId: participation.id,
+          status: AdaptivePracticeQuizAttemptStatus.ABANDONED,
+          stopReason: AdaptivePracticeQuizStopReason.ABANDONED,
+          completedAt: new Date(),
+        },
+      })
+
+      await expect(
+        prisma.adaptivePracticeQuizEstimate.create({
+          data: {
+            attemptId: attempt.id,
+            configId: config.id,
+            competenceTreeId: tree.id,
+            nodeKind: AdaptiveEstimateNodeKind.COMPETENCE,
+            nodeId: null,
+            theta: 0,
+            standardError: 1,
+            responseCount: 1,
+          },
+        })
+      ).rejects.toBeTruthy()
+      await prisma.adaptivePracticeQuizEstimate.create({
         data: {
           attemptId: attempt.id,
           configId: config.id,
           competenceTreeId: tree.id,
           nodeKind: AdaptiveEstimateNodeKind.OVERALL,
           nodeId: null,
-          theta: 0.1,
-          standardError: 0.9,
-          responseCount: 2,
+          theta: 0,
+          standardError: 1,
+          responseCount: 1,
         },
       })
-    ).rejects.toBeTruthy()
+      await expect(
+        prisma.adaptivePracticeQuizEstimate.create({
+          data: {
+            attemptId: attempt.id,
+            configId: config.id,
+            competenceTreeId: tree.id,
+            nodeKind: AdaptiveEstimateNodeKind.OVERALL,
+            nodeId: null,
+            theta: 0.1,
+            standardError: 0.9,
+            responseCount: 2,
+          },
+        })
+      ).rejects.toBeTruthy()
 
-    await expect(
-      replaceCompetenceTree(
-        { id: tree.id, input: treeInput(element.id) },
-        ownerCtx
-      )
-    ).rejects.toMatchObject({
-      extensions: { code: 'COMPETENCE_TREE_STRUCTURE_LOCKED' },
-    })
-    await expect(
-      updateCompetenceTreeElementAssignment(
+      await expect(
+        replaceCompetenceTree(
+          { id: tree.id, input: treeInput(element.id) },
+          ownerCtx
+        )
+      ).rejects.toMatchObject({
+        extensions: { code: 'COMPETENCE_TREE_STRUCTURE_LOCKED' },
+      })
+      await expect(
+        updateCompetenceTreeElementAssignment(
+          {
+            treeId: tree.id,
+            elementId: element.id,
+            assignment: {
+              leafNodeId: tree.elementAssignments[0]!.leafNodeId,
+              levelId: tree.elementAssignments[0]!.levelId,
+              enabled: true,
+              enablePercentInput: false,
+            },
+          },
+          ownerCtx
+        )
+      ).rejects.toMatchObject({
+        extensions: { code: 'COMPETENCE_TREE_STRUCTURE_LOCKED' },
+      })
+
+      const renamed = await updateCompetenceTreeMetadata(
         {
-          treeId: tree.id,
-          elementId: element.id,
-          assignment: {
-            leafNodeId: tree.elementAssignments[0]!.leafNodeId,
-            levelId: tree.elementAssignments[0]!.levelId,
-            enabled: true,
-            enablePercentInput: false,
+          id: tree.id,
+          input: {
+            name: 'renamed-tree',
+            displayName: 'Renamed tree',
+            description: null,
           },
         },
         ownerCtx
       )
-    ).rejects.toMatchObject({
-      extensions: { code: 'COMPETENCE_TREE_STRUCTURE_LOCKED' },
-    })
+      expect(renamed.displayName).toBe('Renamed tree')
+      expect(renamed.isStructurallyLocked).toBe(true)
 
-    const renamed = await updateCompetenceTreeMetadata(
-      {
-        id: tree.id,
-        input: {
-          name: 'renamed-tree',
-          displayName: 'Renamed tree',
-          description: null,
-        },
-      },
-      ownerCtx
-    )
-    expect(renamed.displayName).toBe('Renamed tree')
-    expect(renamed.isStructurallyLocked).toBe(true)
-
-    await expect(deleteCompetenceTree({ id: tree.id }, ownerCtx)).resolves.toBe(
-      true
-    )
-    expect(
-      await prisma.competenceTree.findUnique({ where: { id: tree.id } })
-    ).toMatchObject({ isDeleted: true })
-  })
+      await expect(
+        deleteCompetenceTree({ id: tree.id }, ownerCtx)
+      ).resolves.toBe(true)
+      expect(
+        await prisma.competenceTree.findUnique({ where: { id: tree.id } })
+      ).toMatchObject({ isDeleted: true })
+    }
+  )
 
   it('enforces same-tree hierarchy references in the database', async () => {
     const element = await createSingleChoiceElement(ownerCtx)

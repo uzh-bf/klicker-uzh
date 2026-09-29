@@ -15,6 +15,10 @@ import {
   fillEditorField,
 } from '@klicker-uzh/playwright/adaptive-host/util/fixtures/elements'
 import { statusLabels } from '@klicker-uzh/playwright/adaptive-host/util/messages'
+import {
+  ADAPTIVE_ENGINE_SKIP_REASON,
+  adaptiveEngineConfigured,
+} from '../util/adaptive-engine.js'
 
 const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
 const studentUrl = process.env.URL_STUDENT ?? URL_STUDENT
@@ -98,6 +102,7 @@ async function findQuiz() {
 
 test.describe('Adaptive PracticeQuiz production workflow', () => {
   test.describe.configure({ mode: 'serial', timeout: 180_000 })
+  test.skip(!adaptiveEngineConfigured, ADAPTIVE_ENGINE_SKIP_REASON)
 
   let originalRolloutStates: Array<{
     id: string

@@ -17,12 +17,17 @@ import {
 } from '@klicker-uzh/playwright/adaptive-host/util/constants'
 import { test } from '@klicker-uzh/playwright/adaptive-host/util/fixtures'
 import { selectOption } from '@klicker-uzh/playwright/adaptive-host/util/fixtures/activities'
+import {
+  ADAPTIVE_ENGINE_SKIP_REASON,
+  adaptiveEngineConfigured,
+} from '../util/adaptive-engine.js'
 
 const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
 const studentUrl = process.env.URL_STUDENT ?? URL_STUDENT
 
 test.describe('Adaptive PracticeQuiz IRT v2 evidence', () => {
   test.describe.configure({ timeout: 180_000 })
+  test.skip(!adaptiveEngineConfigured, ADAPTIVE_ENGINE_SKIP_REASON)
 
   test('authors and publishes a v2 Research quiz, then completes it without a proficiency result', async ({
     page,

@@ -80,11 +80,34 @@ uncertainty endpoints are remapped consistently for display; numerical level
 boundaries and classifications are unchanged. Equal visual spacing does not
 claim equal distances on the underlying ability scale.
 
-### CI seed profiles
+### CI seed profiles and engine-backed tests
 
-`seed:test` keeps the complete adaptive fixtures and requires a real configured
-engine. `seed:test:core` explicitly excludes adaptive quiz fixtures for unrelated
-service smoke tests such as lecturer MCP; it does not fabricate adaptive results.
-GraphQL adaptive integration tests continue to fail if their engine is unavailable.
-They must run against a provisioned service; public transport fixture tests alone
-are not a substitute for this integration coverage.
+The engine is private, so public pull-request CI runs without it. Tests that
+reach it are gated on `ADAPTIVE_ENGINE_URL` and `ADAPTIVE_ENGINE_TOKEN`:
+
+- GraphQL suites mark engine-dependent cases with `itWithAdaptiveEngine`
+  (`packages/adaptive-server/test/adaptiveEngineTestEnv.ts`); they are reported
+  as skipped, not passed, when the engine is absent. Transport and readiness
+  tests that fake the engine keep running.
+- `seed:test` seeds the adaptive quiz fixtures only when both variables are set
+  and otherwise logs that it skipped them. `seed:test:core` always excludes them
+  for unrelated service smoke tests such as lecturer MCP. Neither fabricates
+  adaptive results.
+- The adaptive Playwright specs in `packages/adaptive-e2e` skip unless the
+  runner sees `ADAPTIVE_ENGINE_URL` (the same URL the backend under test uses).
+
+Skipped PR runs are not integration coverage. Trusted `test-graphql` runs on
+pushes to `v3*` branches check out `uzh-bf/klicker-uzh-catalyst` (ref from the
+`CATALYST_REF` repository variable, default `main`) with the
+`CATALYST_REPO_TOKEN` secret, start the engine with a per-run token, and run the
+gated suites against it. Pull-request code never receives the Catalyst source
+or that secret. An engine-backed Playwright run is not wired yet; the shard
+action is pinned to `v3`.
+
+### Deployment configuration
+
+Set `backendGraphql.adaptiveEngine.url` in the environment values to render
+`ADAPTIVE_ENGINE_URL` for the backend and the general Hatchet worker. Store
+`ADAPTIVE_ENGINE_TOKEN` in the backend secret (provisioned outside the chart);
+the general worker references that key only when the URL is set, so an empty URL
+leaves existing releases unchanged.
