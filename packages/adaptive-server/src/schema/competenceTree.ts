@@ -29,7 +29,7 @@ export function createCompetenceTreeSchema(
   {
     ElementType,
   }: {
-    ElementType: (typeof import('@klicker-uzh/graphql/adaptive-schema-host-types'))['ElementType']
+    ElementType: typeof import('@klicker-uzh/graphql/adaptive-schema-host-types')['ElementType']
   }
 ) {
   const AdaptiveLevelMappingRule = builder.enumType(

@@ -64,7 +64,7 @@ export function adaptiveMutationFields(
     CompetenceTreeScaleLevelInput: ReturnType<
       typeof createCompetenceTreeCalibrationSchema
     >['CompetenceTreeScaleLevelInput']
-    Course: (typeof import('@klicker-uzh/graphql/adaptive-schema-host-types'))['Course']
+    Course: typeof import('@klicker-uzh/graphql/adaptive-schema-host-types')['Course']
   }
 ) {
   const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }

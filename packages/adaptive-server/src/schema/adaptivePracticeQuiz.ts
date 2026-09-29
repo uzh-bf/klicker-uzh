@@ -41,8 +41,8 @@ export function createAdaptivePracticeQuizSchema(
     AdaptiveNodeKind: ReturnType<
       typeof createCompetenceTreeSchema
     >['AdaptiveNodeKind']
-    ElementType: (typeof import('@klicker-uzh/graphql/adaptive-schema-host-types'))['ElementType']
-    PracticeQuizMode: (typeof import('@klicker-uzh/graphql/adaptive-schema-host-types'))['PracticeQuizMode']
+    ElementType: typeof import('@klicker-uzh/graphql/adaptive-schema-host-types')['ElementType']
+    PracticeQuizMode: typeof import('@klicker-uzh/graphql/adaptive-schema-host-types')['PracticeQuizMode']
   }
 ) {
   const AdaptivePracticeQuizPreset = builder.enumType(

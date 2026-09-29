@@ -2,7 +2,7 @@ import type { PrismaTransactionClient } from '@klicker-uzh/util'
 import * as DB from '@klicker-uzh/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { randomUUID } from 'node:crypto'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { performance } from 'node:perf_hooks'
@@ -82,7 +82,7 @@ async function main() {
   const runLabel = `adaptive-pq-benchmark-${runToken}`
   const outputDirectory =
     process.env.ADAPTIVE_BENCHMARK_OUTPUT_DIR ??
-    join(tmpdir(), `adaptive-practice-quiz-benchmark-${runToken}`)
+    (await mkdtemp(join(tmpdir(), 'adaptive-practice-quiz-benchmark-')))
   await mkdir(outputDirectory, { recursive: true })
 
   const adapter = new PrismaPg({ connectionString: databaseUrl })
@@ -685,7 +685,11 @@ function sanitizeArtifact(value: unknown, runLabel: string): unknown {
 }
 
 async function writeJson(path: string, value: unknown) {
-  await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
+  await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, {
+    encoding: 'utf8',
+    flag: 'wx',
+    mode: 0o600,
+  })
 }
 
 main().catch((error) => {

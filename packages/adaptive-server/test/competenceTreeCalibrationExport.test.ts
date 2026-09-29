@@ -245,21 +245,21 @@ describe('adaptive calibration export projection', () => {
     expect(projected).not.toHaveProperty('normalizedResponse')
   })
 
-  it.each([DB.ElementType.NUMERICAL, DB.ElementType.FREE_TEXT])(
-    'retains scored evidence without entered values for %s',
-    (elementType) => {
-      const projected = projectAdaptiveCalibrationExportRow({
-        row: sourceRow({ elementType, responseCategory: null }),
-        treeId,
-        datasetVersion,
-        hmacKey,
-      })
+  it.each([
+    DB.ElementType.NUMERICAL,
+    DB.ElementType.FREE_TEXT,
+  ])('retains scored evidence without entered values for %s', (elementType) => {
+    const projected = projectAdaptiveCalibrationExportRow({
+      row: sourceRow({ elementType, responseCategory: null }),
+      treeId,
+      datasetVersion,
+      hmacKey,
+    })
 
-      expect(projected.responseCategory).toBeNull()
-      expect(projected.score).toBe(1)
-      expect(projected.correct).toBe(true)
-    }
-  )
+    expect(projected.responseCategory).toBeNull()
+    expect(projected.score).toBe(1)
+    expect(projected.correct).toBe(true)
+  })
 
   it('rejects a raw response value that reaches the projection boundary', () => {
     expect(() =>

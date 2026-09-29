@@ -60,18 +60,21 @@ describe('adaptive calibration artifacts', () => {
     })
   })
 
-  it.each(['participantId', 'response', 'email', 'username', 'freeText'])(
-    'rejects the raw learner field %s at every strict import boundary',
-    (field) => {
-      const artifact = validCalibrationArtifact()
-      expect(
-        adaptiveCalibrationArtifactSchema.safeParse({
-          ...artifact,
-          calibrations: [{ ...artifact.calibrations[0], [field]: 'private' }],
-        }).success
-      ).toBe(false)
-    }
-  )
+  it.each([
+    'participantId',
+    'response',
+    'email',
+    'username',
+    'freeText',
+  ])('rejects the raw learner field %s at every strict import boundary', (field) => {
+    const artifact = validCalibrationArtifact()
+    expect(
+      adaptiveCalibrationArtifactSchema.safeParse({
+        ...artifact,
+        calibrations: [{ ...artifact.calibrations[0], [field]: 'private' }],
+      }).success
+    ).toBe(false)
+  })
 
   it('rejects non-finite, model-inconsistent, and duplicate calibrations', () => {
     const artifact = validCalibrationArtifact()

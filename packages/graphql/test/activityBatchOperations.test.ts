@@ -407,18 +407,32 @@ describe('Integration tests for batch operations on activities', () => {
   })
 
   it('uses the publication status as an atomic batch-deletion predicate', async () => {
-    const practiceQuizDelete = vi.fn().mockRejectedValue({ code: 'P2025' })
+    const practiceQuizDelete = vi.fn()
+    const lockedPracticeQuiz = {
+      id: 'practice-quiz-id',
+      courseId: 'course-id',
+      mode: 'STANDARD',
+      status: PublicationStatus.PUBLISHED,
+    }
+    const practiceQuizTransaction = {
+      $queryRaw: vi
+        .fn<
+          (
+            query: TemplateStringsArray,
+            ...values: unknown[]
+          ) => Promise<unknown[]>
+        >()
+        .mockResolvedValue([lockedPracticeQuiz]),
+      practiceQuiz: {
+        findUnique: vi.fn().mockResolvedValue({ courseId: 'course-id' }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(lockedPracticeQuiz),
+        delete: practiceQuizDelete,
+      },
+    }
     const practiceQuizCtx = {
+      user: { sub: 'user-id' },
       prisma: {
-        practiceQuiz: {
-          findUnique: vi.fn().mockResolvedValue({
-            id: 'practice-quiz-id',
-            status: PublicationStatus.SCHEDULED,
-            responses: [],
-            stacks: [],
-          }),
-          delete: practiceQuizDelete,
-        },
+        $transaction: vi.fn((callback) => callback(practiceQuizTransaction)),
       },
     } as unknown as ContextWithUser
 
@@ -474,9 +488,20 @@ describe('Integration tests for batch operations on activities', () => {
     const unpublishedStatuses = {
       in: [PublicationStatus.DRAFT, PublicationStatus.SCHEDULED],
     }
-    expect(practiceQuizDelete).toHaveBeenCalledWith({
-      where: { id: 'practice-quiz-id', status: unpublishedStatuses },
-    })
+    expect(practiceQuizDelete).not.toHaveBeenCalled()
+    const quizLockCall = practiceQuizTransaction.$queryRaw.mock.calls.findIndex(
+      ([query]) => String(query).includes('FROM "PracticeQuiz"')
+    )
+    expect(quizLockCall).toBeGreaterThanOrEqual(0)
+    expect(
+      String(practiceQuizTransaction.$queryRaw.mock.calls[quizLockCall]![0])
+    ).toContain('FOR UPDATE')
+    expect(
+      practiceQuizTransaction.$queryRaw.mock.invocationCallOrder[quizLockCall]
+    ).toBeLessThan(
+      practiceQuizTransaction.practiceQuiz.findUniqueOrThrow.mock
+        .invocationCallOrder[0]!
+    )
     expect(microLearningDelete).toHaveBeenCalledWith({
       where: { id: 'micro-learning-id', status: unpublishedStatuses },
     })

@@ -1,13 +1,16 @@
 import {
+  closeSync,
+  constants,
   cpSync,
   existsSync,
-  mkdtempSync,
+  fstatSync,
   mkdirSync,
+  mkdtempSync,
+  openSync,
   readdirSync,
   readFileSync,
   renameSync,
   rmSync,
-  statSync,
   writeFileSync,
 } from 'node:fs'
 import { basename, dirname, join, resolve } from 'node:path'
@@ -242,31 +245,39 @@ function assertOwnedOutput(
 }
 
 function directoriesMatch(left, right) {
-  const leftEntries = readdirSync(left).sort()
-  const rightEntries = readdirSync(right).sort()
-  if (leftEntries.length !== rightEntries.length) {
-    return false
-  }
+  const entries = (directory) =>
+    readdirSync(directory, { withFileTypes: true }).sort((a, b) =>
+      a.name.localeCompare(b.name)
+    )
+  const leftEntries = entries(left)
+  const rightEntries = entries(right)
+  if (leftEntries.length !== rightEntries.length) return false
   for (let index = 0; index < leftEntries.length; index += 1) {
-    if (leftEntries[index] !== rightEntries[index]) {
-      return false
-    }
-    const leftPath = join(left, leftEntries[index])
-    const rightPath = join(right, rightEntries[index])
-    const leftStat = statSync(leftPath)
-    const rightStat = statSync(rightPath)
-    if (leftStat.isDirectory() !== rightStat.isDirectory()) {
-      return false
-    }
-    if (leftStat.isDirectory()) {
-      if (!directoriesMatch(leftPath, rightPath)) {
+    const leftEntry = leftEntries[index]
+    const rightEntry = rightEntries[index]
+    if (leftEntry.name !== rightEntry.name) return false
+    const leftPath = join(left, leftEntry.name)
+    const rightPath = join(right, rightEntry.name)
+    if (leftEntry.isDirectory() && rightEntry.isDirectory()) {
+      if (!directoriesMatch(leftPath, rightPath)) return false
+    } else if (leftEntry.isFile() && rightEntry.isFile()) {
+      if (!readRegularFile(leftPath).equals(readRegularFile(rightPath)))
         return false
-      }
-    } else if (!readFileSync(leftPath).equals(readFileSync(rightPath))) {
+    } else {
       return false
     }
   }
   return true
+}
+
+function readRegularFile(path) {
+  const fd = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW)
+  try {
+    if (!fstatSync(fd).isFile()) throw new Error(`Not a regular file: ${path}`)
+    return readFileSync(fd)
+  } finally {
+    closeSync(fd)
+  }
 }
 
 function copyFiles(sourceDir, files, destinationDir) {

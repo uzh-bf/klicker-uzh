@@ -12,23 +12,24 @@ import {
 } from '../src/components/activities/creation/practiceQuiz/adaptivePracticeQuizForm'
 
 describe('adaptive practice quiz Manage form', () => {
-  test.each(['1.28', '1.645', '1.96'])(
-    'keeps the 50-question default and selected interval %s',
-    (classificationZ) => {
-      const config = createAdaptivePracticeQuizDefaultConfig()
-      expect(config.totalQuestionCap).toBe('50')
-      expect(
-        serializeAdaptivePracticeQuizConfig({
-          ...config,
-          competenceTreeId: 'tree-id',
-          classificationZ,
-        })
-      ).toMatchObject({
-        totalQuestionCap: 50,
-        classificationZ: Number(classificationZ),
+  test.each([
+    '1.28',
+    '1.645',
+    '1.96',
+  ])('keeps the 50-question default and selected interval %s', (classificationZ) => {
+    const config = createAdaptivePracticeQuizDefaultConfig()
+    expect(config.totalQuestionCap).toBe('50')
+    expect(
+      serializeAdaptivePracticeQuizConfig({
+        ...config,
+        competenceTreeId: 'tree-id',
+        classificationZ,
       })
-    }
-  )
+    ).toMatchObject({
+      totalQuestionCap: 50,
+      classificationZ: Number(classificationZ),
+    })
+  })
 
   test('serializes optional duration in seconds and preserves explicit unlimited time', () => {
     const config = {

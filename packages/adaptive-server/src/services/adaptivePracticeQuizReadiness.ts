@@ -5,6 +5,10 @@ import {
   MAX_DISCRIMINATION,
   MIN_PRODUCT_ITEMS_PER_COVERAGE_CELL,
 } from '@klicker-uzh/adaptive-contract'
+import {
+  hasValidAdaptiveItemParameters,
+  isUsableAdaptiveAssignment,
+} from './adaptivePracticeQuizItemReadiness.js'
 
 import {
   type AdaptiveBankAnalyzer,
@@ -685,26 +689,4 @@ export function validateAdaptiveSettings(
   }
 
   return errors
-}
-
-function isUsableAdaptiveAssignment(assignment: AdaptiveConfiguredAssignment) {
-  return (
-    assignment.available &&
-    assignment.controlledAnswerReady &&
-    hasValidAdaptiveItemParameters(assignment)
-  )
-}
-
-function hasValidAdaptiveItemParameters(
-  assignment: AdaptiveConfiguredAssignment
-) {
-  return (
-    Number.isFinite(assignment.discrimination) &&
-    assignment.discrimination > 0 &&
-    assignment.discrimination <= MAX_DISCRIMINATION &&
-    Number.isFinite(assignment.difficulty) &&
-    Number.isFinite(assignment.guessing) &&
-    assignment.guessing >= 0 &&
-    assignment.guessing < 1
-  )
 }

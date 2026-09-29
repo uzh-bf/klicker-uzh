@@ -229,72 +229,70 @@ function siblingsAtDepth(depth: number) {
 
 describe('applyCompetenceTreeStructuralCommand', () => {
   describe('move and reorder', () => {
-    test.each([1, 2, 3, 4, 5])(
-      'moves adjacent siblings without touching dependent state at depth %i',
-      (depth) => {
-        const preservedCoverage = coverage('sibling-1', levels[0].key, 8)
-        const preservedAssignment = assignment('sibling-1')
-        const orphanCoverage = coverage('missing-node', 'missing-level', 9)
-        const orphanAssignment = assignment('missing-node', 2, 'missing-level')
-        const treeForm = form(siblingsAtDepth(depth), {
-          coverages: [preservedCoverage, orphanCoverage],
-          assignments: [preservedAssignment, orphanAssignment],
-        })
-        const current = state(treeForm, 'sibling-1', {
-          leafKey: 'sibling-1',
-          levelKey: levels[0].key,
-        })
+    test.each([
+      1, 2, 3, 4, 5,
+    ])('moves adjacent siblings without touching dependent state at depth %i', (depth) => {
+      const preservedCoverage = coverage('sibling-1', levels[0].key, 8)
+      const preservedAssignment = assignment('sibling-1')
+      const orphanCoverage = coverage('missing-node', 'missing-level', 9)
+      const orphanAssignment = assignment('missing-node', 2, 'missing-level')
+      const treeForm = form(siblingsAtDepth(depth), {
+        coverages: [preservedCoverage, orphanCoverage],
+        assignments: [preservedAssignment, orphanAssignment],
+      })
+      const current = state(treeForm, 'sibling-1', {
+        leafKey: 'sibling-1',
+        levelKey: levels[0].key,
+      })
 
-        const next = applyCompetenceTreeStructuralCommand(current, {
-          type: 'move',
-          nodeKey: 'sibling-1',
-          direction: -1,
-        })
+      const next = applyCompetenceTreeStructuralCommand(current, {
+        type: 'move',
+        nodeKey: 'sibling-1',
+        direction: -1,
+      })
 
-        expect(
-          getChildren(
-            next.form.nodes,
-            depth === 1 ? null : `ancestor-${depth - 1}`
-          ).map((item) => item.key)
-        ).toStrictEqual(['sibling-1', 'sibling-0', 'sibling-2'])
-        expect(next.form.coverages).toBe(treeForm.coverages)
-        expect(next.form.assignments).toBe(treeForm.assignments)
-        expect(next.selectedNodeKey).toBe('sibling-1')
-        expect(next.selectedCell).toBe(current.selectedCell)
-        expect(next.validation).toBeNull()
-      }
-    )
+      expect(
+        getChildren(
+          next.form.nodes,
+          depth === 1 ? null : `ancestor-${depth - 1}`
+        ).map((item) => item.key)
+      ).toStrictEqual(['sibling-1', 'sibling-0', 'sibling-2'])
+      expect(next.form.coverages).toBe(treeForm.coverages)
+      expect(next.form.assignments).toBe(treeForm.assignments)
+      expect(next.selectedNodeKey).toBe('sibling-1')
+      expect(next.selectedCell).toBe(current.selectedCell)
+      expect(next.validation).toBeNull()
+    })
 
-    test.each([1, 2, 3, 4, 5])(
-      'reorders a sibling to an absolute position at depth %i',
-      (depth) => {
-        const treeForm = form(siblingsAtDepth(depth), {
-          coverages: [coverage('sibling-0', levels[0].key, 7)],
-          assignments: [assignment('sibling-0')],
-        })
-        const current = state(treeForm, 'sibling-0', {
-          leafKey: 'sibling-0',
-          levelKey: levels[0].key,
-        })
+    test.each([
+      1, 2, 3, 4, 5,
+    ])('reorders a sibling to an absolute position at depth %i', (depth) => {
+      const treeForm = form(siblingsAtDepth(depth), {
+        coverages: [coverage('sibling-0', levels[0].key, 7)],
+        assignments: [assignment('sibling-0')],
+      })
+      const current = state(treeForm, 'sibling-0', {
+        leafKey: 'sibling-0',
+        levelKey: levels[0].key,
+      })
 
-        const next = applyCompetenceTreeStructuralCommand(current, {
-          type: 'reorder',
-          nodeKey: 'sibling-0',
-          order: 2,
-        })
+      const next = applyCompetenceTreeStructuralCommand(current, {
+        type: 'reorder',
+        nodeKey: 'sibling-0',
+        order: 2,
+      })
 
-        expect(
-          getChildren(
-            next.form.nodes,
-            depth === 1 ? null : `ancestor-${depth - 1}`
-          ).map((item) => item.key)
-        ).toStrictEqual(['sibling-1', 'sibling-2', 'sibling-0'])
-        expect(next.form.coverages).toBe(treeForm.coverages)
-        expect(next.form.assignments).toBe(treeForm.assignments)
-        expect(next.selectedCell).toBe(current.selectedCell)
-        expect(next.validation).toBeNull()
-      }
-    )
+      expect(
+        getChildren(
+          next.form.nodes,
+          depth === 1 ? null : `ancestor-${depth - 1}`
+        ).map((item) => item.key)
+      ).toStrictEqual(['sibling-1', 'sibling-2', 'sibling-0'])
+      expect(next.form.coverages).toBe(treeForm.coverages)
+      expect(next.form.assignments).toBe(treeForm.assignments)
+      expect(next.selectedCell).toBe(current.selectedCell)
+      expect(next.validation).toBeNull()
+    })
   })
 
   describe('add root', () => {
@@ -332,43 +330,42 @@ describe('applyCompetenceTreeStructuralCommand', () => {
   })
 
   describe('add child', () => {
-    test.each([1, 2, 3, 4])(
-      'adds a default-covered child below a depth-%i leaf',
-      (depth) => {
-        const nodes = chain(depth)
-        const parentKey = nodes[nodes.length - 1].key
-        const treeForm = form(nodes, {
-          coverages: depth === 1 ? [] : defaultCoverages(parentKey),
-        })
-        const current = state(
-          treeForm,
-          parentKey,
-          depth === 1 ? null : { leafKey: parentKey, levelKey: levels[0].key }
-        )
+    test.each([
+      1, 2, 3, 4,
+    ])('adds a default-covered child below a depth-%i leaf', (depth) => {
+      const nodes = chain(depth)
+      const parentKey = nodes[nodes.length - 1].key
+      const treeForm = form(nodes, {
+        coverages: depth === 1 ? [] : defaultCoverages(parentKey),
+      })
+      const current = state(
+        treeForm,
+        parentKey,
+        depth === 1 ? null : { leafKey: parentKey, levelKey: levels[0].key }
+      )
 
-        const next = applyCompetenceTreeStructuralCommand(current, {
-          type: 'addChild',
-          parentKey,
-          name: 'New child',
-        })
+      const next = applyCompetenceTreeStructuralCommand(current, {
+        type: 'addChild',
+        parentKey,
+        name: 'New child',
+      })
 
-        expect(next.form.nodes).toHaveLength(nodes.length + 1)
-        expect(next.form.nodes.at(-1)).toMatchObject({
-          key: 'node:local:1',
-          parentKey,
-          kind: AdaptiveNodeKind.Subcompetence,
-          name: 'New child',
-          order: 0,
-        })
-        expect(next.form.coverages).toStrictEqual(
-          defaultCoverages('node:local:1')
-        )
-        expect(next.form.assignments).toBe(treeForm.assignments)
-        expect(next.selectedNodeKey).toBe('node:local:1')
-        expect(next.selectedCell).toBeNull()
-        expect(next.validation).toBeNull()
-      }
-    )
+      expect(next.form.nodes).toHaveLength(nodes.length + 1)
+      expect(next.form.nodes.at(-1)).toMatchObject({
+        key: 'node:local:1',
+        parentKey,
+        kind: AdaptiveNodeKind.Subcompetence,
+        name: 'New child',
+        order: 0,
+      })
+      expect(next.form.coverages).toStrictEqual(
+        defaultCoverages('node:local:1')
+      )
+      expect(next.form.assignments).toBe(treeForm.assignments)
+      expect(next.selectedNodeKey).toBe('node:local:1')
+      expect(next.selectedCell).toBeNull()
+      expect(next.validation).toBeNull()
+    })
 
     test('preserves existing leaf data when adding another child to an internal node', () => {
       const existingCoverage = coverage('existing', levels[0].key, 8)
@@ -437,48 +434,47 @@ describe('applyCompetenceTreeStructuralCommand', () => {
   })
 
   describe('reparent', () => {
-    test.each([1, 2, 3, 4])(
-      'moves a populated subtree below a default leaf at depth %i',
-      (targetDepth) => {
-        const targetNodes = chain(targetDepth, 'target')
-        const targetKey = targetNodes[targetNodes.length - 1].key
-        const sourceRoot = node('source-root', null, 1)
-        const movingNode = node('moving', sourceRoot.key)
-        const movingCoverage = coverage('moving', levels[0].key, 8)
-        const movingAssignment = assignment('moving')
-        const treeForm = form([...targetNodes, sourceRoot, movingNode], {
-          coverages: [
-            ...(targetDepth === 1 ? [] : defaultCoverages(targetKey)),
-            movingCoverage,
-          ],
-          assignments: [movingAssignment],
-        })
-        const current = state(treeForm, 'moving', {
-          leafKey: targetKey,
-          levelKey: levels[0].key,
-        })
+    test.each([
+      1, 2, 3, 4,
+    ])('moves a populated subtree below a default leaf at depth %i', (targetDepth) => {
+      const targetNodes = chain(targetDepth, 'target')
+      const targetKey = targetNodes[targetNodes.length - 1].key
+      const sourceRoot = node('source-root', null, 1)
+      const movingNode = node('moving', sourceRoot.key)
+      const movingCoverage = coverage('moving', levels[0].key, 8)
+      const movingAssignment = assignment('moving')
+      const treeForm = form([...targetNodes, sourceRoot, movingNode], {
+        coverages: [
+          ...(targetDepth === 1 ? [] : defaultCoverages(targetKey)),
+          movingCoverage,
+        ],
+        assignments: [movingAssignment],
+      })
+      const current = state(treeForm, 'moving', {
+        leafKey: targetKey,
+        levelKey: levels[0].key,
+      })
 
-        const next = applyCompetenceTreeStructuralCommand(current, {
-          type: 'reparent',
-          nodeKey: 'moving',
-          parentKey: targetKey,
-        })
+      const next = applyCompetenceTreeStructuralCommand(current, {
+        type: 'reparent',
+        nodeKey: 'moving',
+        parentKey: targetKey,
+      })
 
-        expect(
-          next.form.nodes.find((candidate) => candidate.key === 'moving')
-            ?.parentKey
-        ).toBe(targetKey)
-        expect(getNodeDepth(next.form.nodes, 'moving')).toBe(targetDepth + 1)
-        expect(next.form.coverages).toContain(movingCoverage)
-        expect(next.form.coverages).not.toEqual(
-          expect.arrayContaining(defaultCoverages(targetKey))
-        )
-        expect(next.form.assignments).toBe(treeForm.assignments)
-        expect(next.selectedNodeKey).toBe('moving')
-        expect(next.selectedCell).toBeNull()
-        expect(next.validation).toBeNull()
-      }
-    )
+      expect(
+        next.form.nodes.find((candidate) => candidate.key === 'moving')
+          ?.parentKey
+      ).toBe(targetKey)
+      expect(getNodeDepth(next.form.nodes, 'moving')).toBe(targetDepth + 1)
+      expect(next.form.coverages).toContain(movingCoverage)
+      expect(next.form.coverages).not.toEqual(
+        expect.arrayContaining(defaultCoverages(targetKey))
+      )
+      expect(next.form.assignments).toBe(treeForm.assignments)
+      expect(next.selectedNodeKey).toBe('moving')
+      expect(next.selectedCell).toBeNull()
+      expect(next.validation).toBeNull()
+    })
 
     test('adds visible defaults when the old subcompetence parent becomes a leaf', () => {
       const movingCoverage = coverage('moving', levels[0].key, 8)
@@ -578,47 +574,46 @@ describe('applyCompetenceTreeStructuralCommand', () => {
   })
 
   describe('duplicate', () => {
-    test.each([1, 2, 3, 4, 5])(
-      'duplicates coverage but not assignments for a branch at depth %i',
-      (depth) => {
-        const nodes = chain(depth)
-        const sourceKey = nodes[nodes.length - 1].key
-        const sourceCoverage = coverage(sourceKey, levels[0].key, 8)
-        const sourceAssignment = assignment(sourceKey)
-        const treeForm = form(nodes, {
-          coverages: [sourceCoverage],
-          assignments: [sourceAssignment],
-        })
+    test.each([
+      1, 2, 3, 4, 5,
+    ])('duplicates coverage but not assignments for a branch at depth %i', (depth) => {
+      const nodes = chain(depth)
+      const sourceKey = nodes[nodes.length - 1].key
+      const sourceCoverage = coverage(sourceKey, levels[0].key, 8)
+      const sourceAssignment = assignment(sourceKey)
+      const treeForm = form(nodes, {
+        coverages: [sourceCoverage],
+        assignments: [sourceAssignment],
+      })
 
-        const next = applyCompetenceTreeStructuralCommand(
-          state(treeForm, sourceKey, {
-            leafKey: sourceKey,
-            levelKey: levels[0].key,
-          }),
-          { type: 'duplicate', nodeKey: sourceKey }
-        )
-
-        expect(next.form.nodes.at(-1)).toMatchObject({
-          key: 'node:local:1',
-          parentKey: depth === 1 ? null : nodes[depth - 2].key,
-          kind:
-            depth === 1
-              ? AdaptiveNodeKind.Competence
-              : AdaptiveNodeKind.Subcompetence,
-        })
-        expect(next.form.coverages).toStrictEqual([
-          sourceCoverage,
-          { ...sourceCoverage, leafKey: 'node:local:1' },
-        ])
-        expect(next.form.assignments).toBe(treeForm.assignments)
-        expect(next.selectedNodeKey).toBe('node:local:1')
-        expect(next.selectedCell).toStrictEqual({
-          leafKey: 'node:local:1',
+      const next = applyCompetenceTreeStructuralCommand(
+        state(treeForm, sourceKey, {
+          leafKey: sourceKey,
           levelKey: levels[0].key,
-        })
-        expect(next.validation).toBeNull()
-      }
-    )
+        }),
+        { type: 'duplicate', nodeKey: sourceKey }
+      )
+
+      expect(next.form.nodes.at(-1)).toMatchObject({
+        key: 'node:local:1',
+        parentKey: depth === 1 ? null : nodes[depth - 2].key,
+        kind:
+          depth === 1
+            ? AdaptiveNodeKind.Competence
+            : AdaptiveNodeKind.Subcompetence,
+      })
+      expect(next.form.coverages).toStrictEqual([
+        sourceCoverage,
+        { ...sourceCoverage, leafKey: 'node:local:1' },
+      ])
+      expect(next.form.assignments).toBe(treeForm.assignments)
+      expect(next.selectedNodeKey).toBe('node:local:1')
+      expect(next.selectedCell).toStrictEqual({
+        leafKey: 'node:local:1',
+        levelKey: levels[0].key,
+      })
+      expect(next.validation).toBeNull()
+    })
 
     test('duplicates a complete branch with remapped parent keys', () => {
       const treeForm = form(
@@ -646,56 +641,55 @@ describe('applyCompetenceTreeStructuralCommand', () => {
   })
 
   describe('delete', () => {
-    test.each([1, 2, 3, 4, 5])(
-      'reconciles branch data and selection for a deletion at depth %i',
-      (depth) => {
-        const nodes =
-          depth === 1
-            ? [node('deleted', null, 0), node('remaining', null, 1)]
-            : chain(depth, 'deleted')
-        const deletedKey = depth === 1 ? 'deleted' : nodes[nodes.length - 1].key
-        const fallbackKey =
-          depth === 1 ? 'remaining' : nodes[nodes.length - 2].key
-        const orphanCoverage = coverage('orphan', 'missing-level', 9)
-        const orphanAssignment = assignment('orphan', 2, 'missing-level')
-        const treeForm = form(nodes, {
-          coverages: [coverage(deletedKey, levels[0].key, 8), orphanCoverage],
-          assignments: [assignment(deletedKey), orphanAssignment],
-        })
+    test.each([
+      1, 2, 3, 4, 5,
+    ])('reconciles branch data and selection for a deletion at depth %i', (depth) => {
+      const nodes =
+        depth === 1
+          ? [node('deleted', null, 0), node('remaining', null, 1)]
+          : chain(depth, 'deleted')
+      const deletedKey = depth === 1 ? 'deleted' : nodes[nodes.length - 1].key
+      const fallbackKey =
+        depth === 1 ? 'remaining' : nodes[nodes.length - 2].key
+      const orphanCoverage = coverage('orphan', 'missing-level', 9)
+      const orphanAssignment = assignment('orphan', 2, 'missing-level')
+      const treeForm = form(nodes, {
+        coverages: [coverage(deletedKey, levels[0].key, 8), orphanCoverage],
+        assignments: [assignment(deletedKey), orphanAssignment],
+      })
 
-        const next = applyCompetenceTreeStructuralCommand(
-          state(treeForm, deletedKey, {
-            leafKey: deletedKey,
-            levelKey: levels[0].key,
-          }),
-          { type: 'delete', nodeKey: deletedKey }
-        )
+      const next = applyCompetenceTreeStructuralCommand(
+        state(treeForm, deletedKey, {
+          leafKey: deletedKey,
+          levelKey: levels[0].key,
+        }),
+        { type: 'delete', nodeKey: deletedKey }
+      )
 
-        expect(next.form.nodes.some((item) => item.key === deletedKey)).toBe(
-          false
+      expect(next.form.nodes.some((item) => item.key === deletedKey)).toBe(
+        false
+      )
+      expect(next.form.coverages).toContain(orphanCoverage)
+      expect(next.form.assignments).toContain(orphanAssignment)
+      expect(
+        next.form.coverages.some((item) => item.leafKey === deletedKey)
+      ).toBe(false)
+      expect(
+        next.form.assignments.some((item) => item.leafKey === deletedKey)
+      ).toBe(false)
+      if (depth >= 3) {
+        expect(next.form.coverages).toEqual(
+          expect.arrayContaining(defaultCoverages(fallbackKey))
         )
-        expect(next.form.coverages).toContain(orphanCoverage)
-        expect(next.form.assignments).toContain(orphanAssignment)
+      } else {
         expect(
-          next.form.coverages.some((item) => item.leafKey === deletedKey)
+          next.form.coverages.some((item) => item.leafKey === fallbackKey)
         ).toBe(false)
-        expect(
-          next.form.assignments.some((item) => item.leafKey === deletedKey)
-        ).toBe(false)
-        if (depth >= 3) {
-          expect(next.form.coverages).toEqual(
-            expect.arrayContaining(defaultCoverages(fallbackKey))
-          )
-        } else {
-          expect(
-            next.form.coverages.some((item) => item.leafKey === fallbackKey)
-          ).toBe(false)
-        }
-        expect(next.selectedNodeKey).toBe(fallbackKey)
-        expect(next.selectedCell).toBeNull()
-        expect(next.validation).toBeNull()
       }
-    )
+      expect(next.selectedNodeKey).toBe(fallbackKey)
+      expect(next.selectedCell).toBeNull()
+      expect(next.validation).toBeNull()
+    })
   })
 
   test('keeps an assignment through a surviving additional leaf', () => {

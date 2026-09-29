@@ -100,9 +100,9 @@ jobs:
           DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test
           SHADOW_DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test_shadow
 
-      - name: Seed test data
+      - name: Seed core test data (no adaptive engine dependency)
         id: seed_db
-        run: pnpm --filter @klicker-uzh/prisma-data run seed:test
+        run: pnpm --filter @klicker-uzh/prisma-data run seed:test:core
         env:
           DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test
 

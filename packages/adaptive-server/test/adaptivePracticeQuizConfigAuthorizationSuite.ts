@@ -384,66 +384,66 @@ export function registerAdaptivePracticeQuizConfigAuthorizationTests() {
     ).toBe(0)
   })
 
-  it.each(['archive', 'delete'] as const)(
-    'serializes competence-tree %s with publication authorization',
-    async (stateChange) => {
-      const course = await createCourse(owner.id)
-      const fixture = await createTreeFixture(course.id, ownerCtx)
-      const quiz = await createAdaptiveQuiz({
-        courseId: course.id,
-        fixture,
-        ctx: ownerCtx,
-        name: `${stateChange}-tree-publication-adaptive-quiz`,
-      })
+  it.each([
+    'archive',
+    'delete',
+  ] as const)('serializes competence-tree %s with publication authorization', async (stateChange) => {
+    const course = await createCourse(owner.id)
+    const fixture = await createTreeFixture(course.id, ownerCtx)
+    const quiz = await createAdaptiveQuiz({
+      courseId: course.id,
+      fixture,
+      ctx: ownerCtx,
+      name: `${stateChange}-tree-publication-adaptive-quiz`,
+    })
 
-      let releasePublicationAuthorizationLock!: () => void
-      let markPublicationAuthorizationLocked!: () => void
-      const publicationAuthorizationLocked = new Promise<void>((resolve) => {
-        markPublicationAuthorizationLocked = resolve
-      })
-      const releasePublicationAuthorization = new Promise<void>((resolve) => {
-        releasePublicationAuthorizationLock = resolve
-      })
-      const publicationAuthorizationTransaction = prisma.$transaction(
-        async (tx) => {
-          await lockAdaptivePracticeQuizPublicationSources(quiz.id, tx)
-          markPublicationAuthorizationLocked()
-          await releasePublicationAuthorization
-        },
-        { timeout: 10_000 }
-      )
-      await publicationAuthorizationLocked
+    let releasePublicationAuthorizationLock!: () => void
+    let markPublicationAuthorizationLocked!: () => void
+    const publicationAuthorizationLocked = new Promise<void>((resolve) => {
+      markPublicationAuthorizationLocked = resolve
+    })
+    const releasePublicationAuthorization = new Promise<void>((resolve) => {
+      releasePublicationAuthorizationLock = resolve
+    })
+    const publicationAuthorizationTransaction = prisma.$transaction(
+      async (tx) => {
+        await lockAdaptivePracticeQuizPublicationSources(quiz.id, tx)
+        markPublicationAuthorizationLocked()
+        await releasePublicationAuthorization
+      },
+      { timeout: 10_000 }
+    )
+    await publicationAuthorizationLocked
 
-      const treeStateChange =
-        stateChange === 'archive'
-          ? archiveCompetenceTree({ id: fixture.treeId }, ownerCtx)
-          : deleteCompetenceTree({ id: fixture.treeId }, ownerCtx)
-      const stateChangeResult = await Promise.race([
-        treeStateChange.then(() => 'fulfilled'),
-        new Promise<'pending'>((resolve) =>
-          setTimeout(() => resolve('pending'), 100)
-        ),
-      ])
-      releasePublicationAuthorizationLock()
+    const treeStateChange =
+      stateChange === 'archive'
+        ? archiveCompetenceTree({ id: fixture.treeId }, ownerCtx)
+        : deleteCompetenceTree({ id: fixture.treeId }, ownerCtx)
+    const stateChangeResult = await Promise.race([
+      treeStateChange.then(() => 'fulfilled'),
+      new Promise<'pending'>((resolve) =>
+        setTimeout(() => resolve('pending'), 100)
+      ),
+    ])
+    releasePublicationAuthorizationLock()
 
-      await publicationAuthorizationTransaction
-      await expect(treeStateChange).resolves.toBe(true)
-      expect(stateChangeResult).toBe('pending')
-      await expect(
-        publishPracticeQuiz({ id: quiz.id }, ownerCtx)
-      ).rejects.toMatchObject({
-        extensions: { code: 'ADAPTIVE_COMPETENCE_TREE_UNAVAILABLE' },
+    await publicationAuthorizationTransaction
+    await expect(treeStateChange).resolves.toBe(true)
+    expect(stateChangeResult).toBe('pending')
+    await expect(
+      publishPracticeQuiz({ id: quiz.id }, ownerCtx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'ADAPTIVE_COMPETENCE_TREE_UNAVAILABLE' },
+    })
+    expect(
+      await prisma.practiceQuizAdaptivePoolItem.count({
+        where: { config: { practiceQuizId: quiz.id } },
       })
-      expect(
-        await prisma.practiceQuizAdaptivePoolItem.count({
-          where: { config: { practiceQuizId: quiz.id } },
-        })
-      ).toBe(0)
-      expect(
-        await prisma.practiceQuiz.findUniqueOrThrow({ where: { id: quiz.id } })
-      ).toMatchObject({ status: PublicationStatus.DRAFT })
-    }
-  )
+    ).toBe(0)
+    expect(
+      await prisma.practiceQuiz.findUniqueOrThrow({ where: { id: quiz.id } })
+    ).toMatchObject({ status: PublicationStatus.DRAFT })
+  })
 
   it('lets a quiz manager publish a linked tree without granting element access', async () => {
     const course = await createCourse(owner.id)

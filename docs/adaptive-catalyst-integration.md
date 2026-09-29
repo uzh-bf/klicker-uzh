@@ -79,3 +79,12 @@ The student charts present equally sized categorical level bands. Estimates and
 uncertainty endpoints are remapped consistently for display; numerical level
 boundaries and classifications are unchanged. Equal visual spacing does not
 claim equal distances on the underlying ability scale.
+
+### CI seed profiles
+
+`seed:test` keeps the complete adaptive fixtures and requires a real configured
+engine. `seed:test:core` explicitly excludes adaptive quiz fixtures for unrelated
+service smoke tests such as lecturer MCP; it does not fabricate adaptive results.
+GraphQL adaptive integration tests continue to fail if their engine is unavailable.
+They must run against a provisioned service; public transport fixture tests alone
+are not a substitute for this integration coverage.

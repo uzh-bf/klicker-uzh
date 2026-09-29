@@ -1,3 +1,4 @@
+import { parseArgs } from 'node:util'
 import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import * as Prisma from '@klicker-uzh/prisma/client'
 import { ActivityType, type ElementOptionsCaseStudy } from '@klicker-uzh/types'
@@ -43,6 +44,10 @@ import {
 } from './seedMCPServers.js'
 import { seedUsers } from './seedUsers.js'
 import { seedResponseExamples } from './seedResponseExamples.js'
+
+const { values: seedOptions } = parseArgs({
+  options: { 'without-adaptive': { type: 'boolean', default: false } },
+})
 
 // uuids for 50 participants
 export const PARTICIPANT_IDS = [
@@ -862,7 +867,11 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     })
   )
 
-  await seedAdaptivePracticeQuizV2(prisma, PARTICIPANT_IDS)
+  if (seedOptions['without-adaptive']) {
+    console.log('Core test seed: adaptive quiz fixtures explicitly excluded.')
+  } else {
+    await seedAdaptivePracticeQuizV2(prisma, PARTICIPANT_IDS)
+  }
 
   // add participants 30 to 35 to single groups
   const PARTICIPANT_GROUP_IDS_SINGLE = [

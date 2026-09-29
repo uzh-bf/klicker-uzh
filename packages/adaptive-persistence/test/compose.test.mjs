@@ -6,6 +6,7 @@ import {
   readFileSync,
   rmSync,
   statSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -264,6 +265,28 @@ test('accepts only a sibling explicit output directory', () => {
           adaptiveMigrationsDir: paths.adaptiveMigrationsDir,
         }),
       /outputDirectory must be a sibling/
+    )
+  } finally {
+    rmSync(paths.root, { recursive: true, force: true })
+  }
+})
+
+test('replaces a generated file symlink without modifying its target', () => {
+  const paths = fixture()
+  try {
+    const output = compose(paths)
+    const target = join(paths.root, 'outside-schema.prisma')
+    writeFileSync(target, 'outside content')
+    const generated = join(output.schema, 'course.prisma')
+    rmSync(generated)
+    symlinkSync(target, generated)
+
+    compose(paths)
+
+    assert.equal(readFileSync(target, 'utf8'), 'outside content')
+    assert.equal(
+      readFileSync(generated, 'utf8'),
+      'model Course { id String @id }\n'
     )
   } finally {
     rmSync(paths.root, { recursive: true, force: true })

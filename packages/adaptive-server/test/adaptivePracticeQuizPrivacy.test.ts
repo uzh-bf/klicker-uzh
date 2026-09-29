@@ -18,20 +18,21 @@ describe('adaptive practice quiz reporting availability', () => {
     { total: 10, positive: 9, released: true },
     { total: 15, positive: 5, released: true },
     { total: 15, positive: 10, released: true },
-  ])(
-    'releases=$released for binary partition $positive/$total',
-    ({ total, positive, released }) => {
-      const result = releaseAdaptiveBinaryMetric({
-        field: 'NEAR_BOUNDARY',
-        total,
-        positive,
-        value: positive,
-      })
+  ])('releases=$released for binary partition $positive/$total', ({
+    total,
+    positive,
+    released,
+  }) => {
+    const result = releaseAdaptiveBinaryMetric({
+      field: 'NEAR_BOUNDARY',
+      total,
+      positive,
+      value: positive,
+    })
 
-      expect(result.value === positive).toBe(released)
-      expect(result.suppression === null).toBe(released)
-    }
-  )
+    expect(result.value === positive).toBe(released)
+    expect(result.suppression === null).toBe(released)
+  })
 
   it('reports singleton values and complements for every cohort size from 0 to 15', () => {
     for (let total = 0; total <= 15; total++) {
@@ -72,20 +73,21 @@ describe('adaptive practice quiz reporting availability', () => {
     { total: 10, known: 5, released: true },
     { total: 10, known: 9, released: true },
     { total: 15, known: 10, released: true },
-  ])(
-    'reports available data with small known/missing source populations ($known/$total)',
-    ({ total, known, released }) => {
-      const result = releaseAdaptiveKnownMissingMetric({
-        field: 'DURATION_PERCENTILES',
-        total,
-        known,
-        value: 42,
-      })
+  ])('reports available data with small known/missing source populations ($known/$total)', ({
+    total,
+    known,
+    released,
+  }) => {
+    const result = releaseAdaptiveKnownMissingMetric({
+      field: 'DURATION_PERCENTILES',
+      total,
+      known,
+      value: 42,
+    })
 
-      expect(result.value === 42).toBe(released)
-      expect(result.suppression === null).toBe(released)
-    }
-  )
+    expect(result.value === 42).toBe(released)
+    expect(result.suppression === null).toBe(released)
+  })
 
   it('rejects malformed partitions instead of silently releasing them', () => {
     expect(() => decideAdaptivePrivacyPartition([5])).toThrow()
