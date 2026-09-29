@@ -31,15 +31,11 @@ export interface ChatModeOption {
 
 export type ChatModeOptions = Record<string, ChatModeOption>
 
-export function parseModeOptions(
-  value: unknown
-): ChatModeOptions | null {
+export function parseModeOptions(value: unknown): ChatModeOptions | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
 
   const entries: [string, ChatModeOption][] = []
-  if (
-    Object.entries(value).some(([mode]) => mode.trim().length === 0)
-  ) {
+  if (Object.entries(value).some(([mode]) => mode.trim().length === 0)) {
     return null
   }
 
@@ -62,10 +58,7 @@ export function parseModeOptions(
       return null
     }
 
-    entries.push([
-      mode,
-      entry as unknown as ChatModeOption,
-    ])
+    entries.push([mode, entry as unknown as ChatModeOption])
   }
 
   return Object.fromEntries(entries)
@@ -83,9 +76,7 @@ export function resolveSelectedMode(
     : firstMode
 }
 
-export function hasAvailableChatMode(
-  modeOptions: ChatModeOptions
-): boolean {
+export function hasAvailableChatMode(modeOptions: ChatModeOptions): boolean {
   return Object.keys(modeOptions).length > 0
 }
 

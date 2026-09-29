@@ -142,7 +142,8 @@ describe('effective chatbot modes', () => {
     })
 
     expect(modeOptions.tutor).toEqual({
-      description: 'Guides students with focused questions, hints, and feedback.',
+      description:
+        'Guides students with focused questions, hints, and feedback.',
     })
   })
 
@@ -504,23 +505,18 @@ describe('effective chatbot modes', () => {
       }),
     ])
     expect(
-      resolveEffectiveChatModeOptions(
-        null,
-        configurations,
-        null,
-        {
-          customModeConfig: {
-            modes: [
-              {
-                key: 'cm_custom',
-                name: 'Case coach',
-                description: 'Practises case discussions.',
-                personaText: 'Act as the case counterpart.',
-              },
-            ],
-          },
-        }
-      )
+      resolveEffectiveChatModeOptions(null, configurations, null, {
+        customModeConfig: {
+          modes: [
+            {
+              key: 'cm_custom',
+              name: 'Case coach',
+              description: 'Practises case discussions.',
+              personaText: 'Act as the case counterpart.',
+            },
+          ],
+        },
+      })
     ).toEqual({
       tutor: {
         description:
@@ -574,9 +570,9 @@ describe('effective chatbot modes', () => {
       }),
     ]
 
-    expect(resolveEffectiveMCPConfigurations(configurations, 'cm_custom')).toEqual(
-      []
-    )
+    expect(
+      resolveEffectiveMCPConfigurations(configurations, 'cm_custom')
+    ).toEqual([])
   })
 
   test('inherits a shared document-query server only once for a custom mode', () => {

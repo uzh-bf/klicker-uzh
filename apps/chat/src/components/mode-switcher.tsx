@@ -52,11 +52,7 @@ export function ModeSwitcher({
   // Nothing to switch between when a chatbot exposes a single mode.
   if (modeKeys.length <= 1) return null
 
-  const selectedLabel = formatModeLabel(
-    t,
-    effectiveSelectedMode,
-    modeOptions
-  )
+  const selectedLabel = formatModeLabel(t, effectiveSelectedMode, modeOptions)
 
   return (
     <SelectPrimitive.Root
