@@ -10,5 +10,6 @@
     "./messages/*": "./src/messages/*.ts",
     ".": "./src/index.ts"
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "type": "module"
 }
