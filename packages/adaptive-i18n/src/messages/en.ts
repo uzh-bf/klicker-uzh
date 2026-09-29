@@ -896,6 +896,17 @@ const messages = {
       assignElementLevel: 'Expected level for {name}',
       unmappedElements:
         'Choose a subcompetence and an expected level for every element before saving the tree. You can save an unfinished draft on this device. Elements belong to the lowest subcompetence; add a subcompetence beneath a new competence to assign elements to it.',
+      batchLimit:
+        'A tree supports up to 10,000 assignments. Narrow the filters or select a smaller batch.',
+      bulkDescription:
+        'Filter ready questions with sample solutions, select a page or all matches, and assign the batch to a subcompetence and level. Existing assignments are kept. Changing a filter clears the selection. Save the tree to apply your changes.',
+      selectPage: 'Select this page',
+      selectMatching: 'Select all matching elements',
+      clearSelection: 'Clear selection',
+      selectedCount: '{count} selected',
+      addSelected: 'Add selected elements',
+      batchAdded:
+        '{count} elements added. Save the tree to keep these assignments.',
       browseElements: 'Add existing elements',
       searchElements: 'Search elements by name or content',
       allTypes: 'All question types',
@@ -1057,7 +1068,7 @@ const messages = {
       assignedElements: 'Assigned elements',
       assignmentInactive: 'Inactive',
       assignFromLibrary:
-        'Assign and manage elements from the element library. This page previews the current assignments.',
+        'Review the current assignments here. Add batches above, or manage individual mappings in the element library.',
       openElementLibrary: 'Open element library',
       overallWeight: 'Overall weight',
       weightExplanation:

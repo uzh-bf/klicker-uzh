@@ -913,6 +913,17 @@ const messages = {
       assignElementLevel: 'Erwartetes Niveau für {name}',
       unmappedElements:
         'Wähle für jedes Element eine Teilkompetenz und ein erwartetes Niveau, bevor du den Baum speicherst. Einen unvollständigen Entwurf kannst du auf diesem Gerät speichern. Elemente gehören zur untersten Teilkompetenz. Füge einer neuen Kompetenz eine Teilkompetenz hinzu, um ihr Elemente zuzuordnen.',
+      batchLimit:
+        'Ein Baum unterstützt bis zu 10.000 Zuordnungen. Grenze die Filter ein oder wähle weniger Elemente aus.',
+      bulkDescription:
+        'Filtere bereite Fragen mit Musterlösung, wähle eine Seite oder alle Treffer und ordne die Auswahl einer Teilkompetenz und einer Stufe zu. Bestehende Zuordnungen bleiben erhalten. Ein Filterwechsel leert die Auswahl. Speichere den Baum, um die Änderungen zu übernehmen.',
+      selectPage: 'Diese Seite auswählen',
+      selectMatching: 'Alle passenden Elemente auswählen',
+      clearSelection: 'Auswahl aufheben',
+      selectedCount: '{count} ausgewählt',
+      addSelected: 'Ausgewählte Elemente hinzufügen',
+      batchAdded:
+        '{count} Elemente hinzugefügt. Speichere den Baum, um die Zuordnungen zu übernehmen.',
       browseElements: 'Vorhandene Elemente hinzufügen',
       searchElements: 'Elemente nach Name oder Inhalt suchen',
       allTypes: 'Alle Fragetypen',
@@ -1076,7 +1087,7 @@ const messages = {
       assignedElements: 'Zugeordnete Elemente',
       assignmentInactive: 'Inaktiv',
       assignFromLibrary:
-        'Elemente werden in der Elementbibliothek zugeordnet und verwaltet. Diese Seite zeigt die aktuellen Zuordnungen.',
+        'Hier siehst du die aktuellen Zuordnungen. Füge oben mehrere Elemente hinzu oder verwalte einzelne Zuordnungen in der Elementbibliothek.',
       openElementLibrary: 'Elementbibliothek öffnen',
       overallWeight: 'Gesamtgewicht',
       weightExplanation:
