@@ -12,6 +12,10 @@
     "@azure/storage-blob": "12.25.0",
     "@graphql-yoga/redis-event-target": "1.0.0",
     "@hatchet-dev/typescript-sdk": "1.9.4",
+    "@klicker-uzh/adaptive-client": "workspace:*",
+    "@klicker-uzh/adaptive-contract": "workspace:*",
+    "@klicker-uzh/adaptive-persistence": "workspace:*",
+    "@klicker-uzh/adaptive-server": "workspace:*",
     "@klicker-uzh/audit": "workspace:*",
     "@klicker-uzh/doc-query-client": "workspace:*",
     "@klicker-uzh/feature-flags": "workspace:*",
@@ -126,6 +130,20 @@
   },
   "volta": {
     "extends": "../../package.json"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./dist/ops": {
+      "types": "./dist/ops.d.ts",
+      "default": "./dist/ops.js"
+    },
+    "./adaptive-context-types": "./src/lib/context.ts",
+    "./adaptive-element-host-types": "./src/services/elements.ts",
+    "./adaptive-schema-host-types": "./src/adaptive-schema-host-types.ts",
+    "./*": "./*"
   },
   "type": "module"
 }

@@ -484,8 +484,9 @@ for (const environment of environments) {
     environment.name,
     // Enabling assessmentAudit adds the audit worker Deployment alongside the
     // 17 shared application ones. Retiring the media-policy worker leaves a
-    // single audit Deployment in staging.
-    { base: 17, stg: 18, prd: 17 }[environment.name]
+    // single audit Deployment in staging. Staging also runs the adaptive
+    // engine Deployment, which owns its replicas statically.
+    { base: 17, stg: 19, prd: 17 }[environment.name]
   )
   assertStaticLti(
     resources,

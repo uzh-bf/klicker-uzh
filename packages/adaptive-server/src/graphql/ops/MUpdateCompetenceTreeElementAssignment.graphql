@@ -1,0 +1,13 @@
+mutation UpdateCompetenceTreeElementAssignment(
+  $treeId: String!
+  $elementId: Int!
+  $assignment: CompetenceTreeElementAssignmentUpdateInput
+) {
+  updateCompetenceTreeElementAssignment(
+    treeId: $treeId
+    elementId: $elementId
+    assignment: $assignment
+  ) {
+    ...CompetenceTreeData
+  }
+}

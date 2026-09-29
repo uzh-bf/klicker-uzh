@@ -160,10 +160,11 @@ export default {
     'volta',
     'packageManager',
   ],
-  // source: [
-  //   'package.json',
-  //   'apps/*/package.json',
-  //   'packages/*/package.json',
-  //   'docs/package.json',
-  // ],
+  // Catalyst owns its manifest formatting in its own CI.
+  source: [
+    'package.json',
+    'apps/*/package.json',
+    'packages/*/package.json',
+    'playwright/package.json',
+  ],
 }

@@ -14,26 +14,13 @@ interface GradeQuestionChoicesArgs {
 }
 
 // compute the hamming distance between a string a and string b
-function hammingDistance({
-  responseCount,
-  response,
-  solution,
-}: GradeQuestionChoicesArgs) {
-  const baseArr = new Array(responseCount).fill(0)
-
-  const selectedChoiceIxs = response
-    .filter((choice) => choice.selected)
-    .map((choice) => choice.ix)
-  const responseArr = baseArr.map((_, ix) =>
-    selectedChoiceIxs.includes(ix) ? 1 : 0
+function hammingDistance({ response, solution }: GradeQuestionChoicesArgs) {
+  const solutionIndices = new Set(solution)
+  return response.reduce(
+    (distance, choice) =>
+      distance + (choice.selected === solutionIndices.has(choice.ix) ? 0 : 1),
+    0
   )
-  const solutionArr = baseArr.map((_, ix) => (solution.includes(ix) ? 1 : 0))
-
-  let distance = 0
-  for (let i = 0; i < responseArr.length; i++) {
-    if (responseArr[i] !== solutionArr[i]) distance++
-  }
-  return distance
 }
 
 export function gradeQuestionSC({
@@ -100,25 +87,43 @@ export function gradeQuestionNumerical({
   exactSolutions,
 }: GradeQuestionNumericalArgs): number | null {
   if (!solutionRanges?.length && !exactSolutions?.length) return null
+  if (!Number.isFinite(response)) return 0
 
   if (solutionRanges && solutionRanges.length > 0) {
     // TODO: maybe incorporate distance from ranges for partial credit?
     const definedSolutionRanges = solutionRanges.filter(({ min, max }) => {
-      return typeof min === 'number' || typeof max === 'number'
+      return (
+        (typeof min === 'number' && Number.isFinite(min)) ||
+        (typeof max === 'number' && Number.isFinite(max))
+      )
     })
 
     if (definedSolutionRanges.length === 0) return null
 
     const withinRanges = definedSolutionRanges.map(({ min, max }) => {
-      if (min && response < min - Number.EPSILON) return false
-      if (max && response > max + Number.EPSILON) return false
+      if (
+        typeof min === 'number' &&
+        Number.isFinite(min) &&
+        response < min - Number.EPSILON
+      )
+        return false
+      if (
+        typeof max === 'number' &&
+        Number.isFinite(max) &&
+        response > max + Number.EPSILON
+      )
+        return false
       return true
     })
 
     // if the response is within one of the solution ranges
     if (withinRanges.some((match) => match === true)) return 1
   } else if (exactSolutions && exactSolutions.length > 0) {
-    const solutionMatches = exactSolutions.map((solution) => {
+    const finiteSolutions = exactSolutions.filter((solution) =>
+      Number.isFinite(solution)
+    )
+    if (finiteSolutions.length === 0) return null
+    const solutionMatches = finiteSolutions.map((solution) => {
       const numericalSolution =
         typeof solution === 'number' ? solution : parseFloat(solution)
 

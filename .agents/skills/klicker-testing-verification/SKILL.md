@@ -22,6 +22,10 @@ Facts about the test landscape: [docs/testing.md](../../../docs/testing.md). Thi
 | Office Add-in source, build, or manifest                                          | Run its `check`, `lint`, `test`, `build:docs`, `verify:docs`, and `validate` scripts; use a stubbed Office API for browser UI checks and sideload the manifest in PowerPoint before release |
 | Prisma seed reconciliation                                                        | `pnpm --filter @klicker-uzh/prisma-data test` — Node test runner through the package's existing `tsx` toolchain                                                                             |
 
+Engine-backed adaptive GraphQL cases and adaptive Playwright specs skip unless
+`ADAPTIVE_ENGINE_URL`/`ADAPTIVE_ENGINE_TOKEN` point at a running Catalyst
+engine; see [the integration guide](../../../docs/adaptive-catalyst-integration.md).
+
 For the manage-list `All` page size, the focused browser evidence must cover
 the finite-to-All-to-50 state transition and explicit selection. A 200-record
 fixture is a bounded acceptance probe: verify the rendered count, batch-modal

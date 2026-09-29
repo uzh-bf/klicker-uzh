@@ -1,0 +1,33 @@
+{
+  "private": true,
+  "name": "@klicker-uzh/adaptive-pwa-ui",
+  "version": "0.1.0",
+  "license": "AGPL-3.0",
+  "devDependencies": {
+    "@types/react": "^19.2.18",
+    "typescript": "~6.0.3",
+    "vitest": "3.2.4"
+  },
+  "peerDependencies": {
+    "@apollo/client": "^3.13.8",
+    "@fortawesome/free-solid-svg-icons": "^6.7.2",
+    "@fortawesome/react-fontawesome": "^0.2.2",
+    "@klicker-uzh/adaptive-contract": "workspace:*",
+    "@klicker-uzh/graphql": "workspace:*",
+    "@klicker-uzh/markdown": "workspace:*",
+    "@klicker-uzh/shared-components": "workspace:*",
+    "@uzh-bf/design-system": "4.1.8",
+    "next": "^16.3.4",
+    "next-intl": "^4.13.7",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "recharts": "^3.0.2"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./components/*": "./src/components/*.tsx",
+    "./ports": "./src/ports.tsx",
+    "./source/*": "./src/*"
+  },
+  "sideEffects": false
+}

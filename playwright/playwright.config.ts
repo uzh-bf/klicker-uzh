@@ -5,6 +5,8 @@ assertPlaywrightHostBoundary()
 
 const isCI = !!process.env.CI
 const isReleaseMatrix = process.env.PLAYWRIGHT_RELEASE_MATRIX === 'true'
+const hostResolverRules = process.env.PLAYWRIGHT_HOST_RESOLVER_RULES
+const chromiumExecutablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
 
 // URL defaults mirror cypress.config.ts env block
 const baseURL =
@@ -67,7 +69,15 @@ export default defineConfig({
         // so it must not live in the shared `use` block. Firefox/WebKit get
         // their locale from the shared `locale: 'en-US'` alone.
         launchOptions: {
-          args: ['--lang=en-US'],
+          ...(chromiumExecutablePath
+            ? { executablePath: chromiumExecutablePath }
+            : {}),
+          args: [
+            '--lang=en-US',
+            ...(hostResolverRules
+              ? [`--host-resolver-rules=${hostResolverRules}`]
+              : []),
+          ],
         },
       },
     },

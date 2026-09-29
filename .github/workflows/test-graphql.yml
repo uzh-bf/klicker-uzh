@@ -37,7 +37,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(packages/audit/|packages/graphql/|packages/feature-flags/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|packages/logging/|apps/(backend-docker|hatchet-worker-general|hatchet-worker-response-processor|response-api)/|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|turbo\.json|tsconfig\.json|\.devcontainer/disposable-test-init\.sql$|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/|\.github/actions/setup-node-pnpm/|\.github/scripts/provision-disposable-postgres\.sh)'
+          pattern: '^(packages/adaptive-[^/]+/|packages/audit/|packages/graphql/|packages/feature-flags/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|packages/logging/|apps/(backend-docker|hatchet-worker-general|hatchet-worker-response-processor|response-api)/|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|turbo\.json|tsconfig\.json|\.devcontainer/disposable-test-init\.sql$|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/|\.github/actions/setup-node-pnpm/|\.github/scripts/provision-disposable-postgres\.sh)'
           prior-check-name: test-graphql-status
 
   test-graphql:
@@ -203,6 +203,59 @@ jobs:
         env:
           DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test
           SHADOW_DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test_shadow
+
+      # Engine-backed adaptive suites need the private Catalyst engine. Its
+      # source and the checkout token never reach pull-request code (see
+      # apps/adaptive-engine/README.md in Catalyst), so only trusted pushes
+      # start it; PR runs skip those suites via ADAPTIVE_ENGINE_URL being unset.
+      - name: Check adaptive engine access
+        id: adaptive_engine
+        if: ${{ github.event_name == 'push' && !cancelled() && steps.setup_db.outcome == 'success' }}
+        env:
+          CATALYST_REPO_TOKEN: ${{ secrets.CATALYST_REPO_TOKEN }}
+        run: |
+          if [[ -n "${CATALYST_REPO_TOKEN}" ]]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::CATALYST_REPO_TOKEN is not set; engine-backed adaptive tests will be skipped."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check out adaptive engine
+        if: ${{ steps.adaptive_engine.outputs.configured == 'true' }}
+        uses: actions/checkout@v4
+        with:
+          repository: uzh-bf/klicker-uzh-catalyst
+          ref: ${{ vars.CATALYST_REF || 'main' }}
+          path: external/catalyst
+          token: ${{ secrets.CATALYST_REPO_TOKEN }}
+          persist-credentials: false
+
+      - name: Start adaptive engine
+        if: ${{ steps.adaptive_engine.outputs.configured == 'true' }}
+        working-directory: external/catalyst
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm --filter '@klicker-uzh-catalyst/adaptive-engine...' run build
+
+          ADAPTIVE_ENGINE_TOKEN=$(openssl rand -hex 24)
+          echo "::add-mask::${ADAPTIVE_ENGINE_TOKEN}"
+          ADAPTIVE_ENGINE_TOKEN="${ADAPTIVE_ENGINE_TOKEN}" ADAPTIVE_ENGINE_PORT=3017 \
+            nohup pnpm --filter @klicker-uzh-catalyst/adaptive-engine start \
+            > "${RUNNER_TEMP}/adaptive-engine.log" 2>&1 &
+
+          for _ in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3017/healthz > /dev/null; then
+              echo "ADAPTIVE_ENGINE_URL=http://127.0.0.1:3017" >> "$GITHUB_ENV"
+              echo "ADAPTIVE_ENGINE_TOKEN=${ADAPTIVE_ENGINE_TOKEN}" >> "$GITHUB_ENV"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Adaptive engine did not become healthy" >&2
+          cat "${RUNNER_TEMP}/adaptive-engine.log" >&2
+          exit 1
 
       - name: Run assessment audit tests
         if: ${{ !cancelled() && steps.setup_db.outcome == 'success' }}

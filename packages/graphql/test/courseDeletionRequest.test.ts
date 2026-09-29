@@ -29,6 +29,10 @@ function executionContext(retryCount = 0) {
 
 function requestContext(course: Record<string, unknown>) {
   const transactionClient = {
+    $queryRaw: vi.fn().mockResolvedValue([{ id: 'course-id' }]),
+    practiceQuiz: { findMany: vi.fn().mockResolvedValue([]) },
+    adaptivePracticeQuizAttempt: { count: vi.fn().mockResolvedValue(0) },
+    adaptivePracticeQuizCohortSnapshot: { count: vi.fn().mockResolvedValue(0) },
     course: {
       findUnique: vi.fn().mockResolvedValue(course),
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),

@@ -1,7 +1,11 @@
 import {
+  AdaptiveAttemptSelectionPolicy,
+  AdaptiveLevelMappingRule,
+  AdaptivePracticeQuizPreset,
   ElementOrderType,
   ElementType,
   ParameterType,
+  PracticeQuizMode,
 } from '@klicker-uzh/graphql/dist/ops'
 import { H2, Workflow } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -94,6 +98,32 @@ export interface MicroLearningFormValues extends CommonFormValues {
 }
 
 export interface PracticeQuizFormValues extends CommonFormValues {
+  mode: PracticeQuizMode
+  adaptiveConfig: {
+    competenceTreeId?: string
+    scaleVersionId?: string
+    preset: AdaptivePracticeQuizPreset
+    totalQuestionCap: string
+    perLeafQuestionCap: string
+    minQuestionsPerLeaf: string
+    classificationZ: string
+    showTimer: boolean
+    attemptSelectionPolicy: AdaptiveAttemptSelectionPolicy
+    levelMappingRule: AdaptiveLevelMappingRule
+    topInformationRatio: string
+    defaultDiscrimination: string
+    nodeOverrides: Array<{
+      nodeId: number
+      enabled: boolean
+      weight: string
+      questionCap: string
+    }>
+    elementOverrides: Array<{
+      assignmentId: number
+      enabled: boolean
+      discrimination: string
+    }>
+  }
   stacks: ElementStackFormValues[]
   order: ElementOrderType
   resetTimeDays: string

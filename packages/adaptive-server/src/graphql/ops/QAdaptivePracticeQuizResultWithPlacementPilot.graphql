@@ -1,0 +1,37 @@
+query QAdaptivePracticeQuizResultWithPlacementPilot($attemptId: String!) {
+  adaptivePracticeQuizResult(attemptId: $attemptId) {
+    attemptId
+    isPlacementPilot
+    practiceQuizId
+    practiceQuizName
+    stopReason
+    answeredQuestions
+    completedAt
+    levelInterpretation
+    classification
+    levelLabel
+    leadingLevelLabels
+    classificationProbability
+    confidence
+    nearBoundary
+    position
+    lowerPosition
+    upperPosition
+    levelBands {
+      label
+      order
+      startPosition
+      endPosition
+    }
+    trajectory {
+      order
+      position
+      lowerPosition
+      upperPosition
+      levelLabel
+    }
+    competenceProfile {
+      ...FAdaptivePracticeQuizResultNodeLevel1
+    }
+  }
+}

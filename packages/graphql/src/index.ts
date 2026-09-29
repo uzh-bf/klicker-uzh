@@ -20,7 +20,10 @@ import builder from './builder.js'
 
 import './schema/achievement.js'
 import './schema/activities.js'
+import './schema/adaptivePracticeQuiz.js'
 import './schema/assessment.js'
+import './schema/competenceTree.js'
+import './schema/competenceTreeCalibration.js'
 import './schema/course.js'
 import './schema/element.js'
 import './schema/elementData.js'
@@ -55,6 +58,11 @@ import './schema/subscription.js'
 //   })
 // }
 
+import {
+  handleAdaptiveCalibrationExport,
+  handleAdaptiveCalibrationExportCleanup,
+} from '@klicker-uzh/adaptive-server/services/competenceTreeCalibrationExport'
+import { handleAdaptiveEmpiricalValidation } from '@klicker-uzh/adaptive-server/services/competenceTreeCalibrationValidationWorker'
 import {
   handleDispatchAssessmentAuditOutbox,
   handleMonitorAssessmentAudit,
@@ -94,6 +102,9 @@ export const schema = builder.toSchema({
 })
 
 export const handlers: HatchetHandlers = {
+  handleAdaptiveEmpiricalValidation,
+  handleAdaptiveCalibrationExport,
+  handleAdaptiveCalibrationExportCleanup,
   handleDispatchAssessmentAuditOutbox,
   handleMonitorAssessmentAudit,
   handleFinalRandomGroupAssignments,

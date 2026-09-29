@@ -28,7 +28,7 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { GetServerSidePropsContext } from 'next'
+import type { GetServerSidePropsContext } from 'next'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'

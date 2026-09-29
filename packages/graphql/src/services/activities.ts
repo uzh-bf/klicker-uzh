@@ -339,6 +339,20 @@ export async function getUserActivities(
     }),
     ctx.prisma.userActivities.count({ where: whereClause }),
   ])
+  const practiceQuizModes = new Map(
+    (
+      await ctx.prisma.practiceQuiz.findMany({
+        where: {
+          id: {
+            in: activitiesFromView
+              .filter(({ type }) => type === ActivityType.PRACTICE_QUIZ)
+              .map(({ id }) => id),
+          },
+        },
+        select: { id: true, mode: true },
+      })
+    ).map(({ id, mode }) => [id, mode])
+  )
 
   // map the fetched activities to the return type
   const activities = activitiesFromView.flatMap((activity) => {
@@ -365,6 +379,10 @@ export async function getUserActivities(
     return {
       ...activity,
       type: activity.type as ActivityType,
+      mode:
+        activity.type === ActivityType.PRACTICE_QUIZ
+          ? (practiceQuizModes.get(activity.id) ?? DB.PracticeQuizMode.STANDARD)
+          : null,
       derivedAccess: activity.derived,
       numSharedUsers: activity.numActivityPermissions,
       isOwner,
@@ -616,6 +634,7 @@ export async function applyActivityBatchOperations(
     ? await ctx.prisma.practiceQuiz.findMany({
         where: {
           id: { in: activityIds },
+          mode: DB.PracticeQuizMode.STANDARD,
           permissions: {
             some: {
               userId: ctx.user.sub,
@@ -1506,6 +1525,18 @@ export async function getPracticeQuizDetails(
     where: { id, course: { deletionRequestedAt: null } },
     include: {
       owner: true,
+      adaptiveConfig: {
+        select: {
+          poolPublishedAt: true,
+          _count: { select: { publishedPool: true } },
+          competenceTree: {
+            select: {
+              displayName: true,
+              _count: { select: { elementAssignments: true } },
+            },
+          },
+        },
+      },
       _count: {
         select: {
           permissions: {
@@ -1584,6 +1615,15 @@ export async function getPracticeQuizDetails(
   const isActivityManager = practiceQuiz._count.permissions > 0
   return {
     ...practiceQuiz,
+    isAdaptive: practiceQuiz.mode === 'ADAPTIVE',
+    adaptiveTreeName:
+      practiceQuiz.adaptiveConfig?.competenceTree.displayName ?? null,
+    adaptivePoolPublished: practiceQuiz.adaptiveConfig?.poolPublishedAt != null,
+    adaptiveElementCount: practiceQuiz.adaptiveConfig
+      ? practiceQuiz.adaptiveConfig.poolPublishedAt
+        ? practiceQuiz.adaptiveConfig._count.publishedPool
+        : practiceQuiz.adaptiveConfig.competenceTree._count.elementAssignments
+      : null,
     isActivityReviewer: practiceQuiz.course._count.permissions > 0,
     isActivityManager,
     isPinProtected: false,

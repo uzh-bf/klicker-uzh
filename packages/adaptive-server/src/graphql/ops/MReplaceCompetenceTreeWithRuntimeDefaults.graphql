@@ -1,0 +1,10 @@
+mutation MReplaceCompetenceTreeWithRuntimeDefaults(
+  $id: String!
+  $input: CompetenceTreeInput!
+) {
+  replaceCompetenceTree(id: $id, input: $input) {
+    ...CompetenceTreeData
+    defaultTotalQuestionCap
+    defaultTimeLimitSeconds
+  }
+}

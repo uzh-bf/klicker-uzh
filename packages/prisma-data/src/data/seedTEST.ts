@@ -1,3 +1,4 @@
+import { parseArgs } from 'node:util'
 import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import * as Prisma from '@klicker-uzh/prisma/client'
 import { ActivityType, type ElementOptionsCaseStudy } from '@klicker-uzh/types'
@@ -32,6 +33,7 @@ import {
 } from './helpers.js'
 import { seedAccounts } from './seedAccounts.js'
 import { seedAchievements } from './seedAchievements.js'
+import { seedAdaptivePracticeQuizV2 } from './seedAdaptiveLearning.js'
 import { seedChatbots } from './seedChatbots.js'
 import { seedCompetencyTree } from './seedCompetencyTree.js'
 import { seedEmailTemplates } from './seedEmailTemplates.js'
@@ -42,6 +44,10 @@ import {
 } from './seedMCPServers.js'
 import { seedUsers } from './seedUsers.js'
 import { seedResponseExamples } from './seedResponseExamples.js'
+
+const { values: seedOptions } = parseArgs({
+  options: { 'without-adaptive': { type: 'boolean', default: false } },
+})
 
 // uuids for 50 participants
 export const PARTICIPANT_IDS = [
@@ -257,6 +263,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       description: 'Das ist ein Testkurs. Hier wird getestet. Viel Spass!',
       isGamificationEnabled: true,
       isAssessmentEnabled: false,
+      isAdaptiveLearningEnabled: true,
       ownerId: USER_ID_TEST,
       color: '#016272',
       pinCode: 123456789,
@@ -859,6 +866,21 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       })
     })
   )
+
+  if (seedOptions['without-adaptive']) {
+    console.log('Core test seed: adaptive quiz fixtures explicitly excluded.')
+  } else if (
+    !process.env.ADAPTIVE_ENGINE_URL ||
+    !process.env.ADAPTIVE_ENGINE_TOKEN
+  ) {
+    // Public PR CI has no adaptive engine; Playwright global setup rebuilds
+    // its own adaptive fixtures, so the seed stays usable without it.
+    console.warn(
+      'Adaptive quiz fixtures skipped: ADAPTIVE_ENGINE_URL and ADAPTIVE_ENGINE_TOKEN are not set.'
+    )
+  } else {
+    await seedAdaptivePracticeQuizV2(prisma, PARTICIPANT_IDS)
+  }
 
   // add participants 30 to 35 to single groups
   const PARTICIPANT_GROUP_IDS_SINGLE = [

@@ -354,10 +354,22 @@ test('every target lists its own workspace dependency closure', () => {
   }
 })
 
+test('adaptive schema changes select the analytics image', () => {
+  const directory = completeTree()
+  const plan = planStagingImages({
+    changedFilesPath: changedFiles(directory, [
+      'packages/adaptive-persistence/src/prisma/schema/adaptive.prisma',
+    ]),
+    eventName: 'pull_request',
+    rootDirectory: directory,
+  })
+  assert.ok(plan.selected.includes('analytics-arm'))
+})
+
 test('target globs omit unrelated workspaces', () => {
   const directory = completeTree()
   // packages/word-cloud is bundled only by the frontend images, and
-  // packages/transactional only by chat. A change there must never wake the
+  // adaptive-manage-ui only by lecturer-facing images. Changes must not wake the
   // backend, worker, lti, olat-api or response-api images.
   const expectations = [
     [
@@ -365,7 +377,7 @@ test('target globs omit unrelated workspaces', () => {
       ['backend-docker-arm', 'olat-api-arm'],
     ],
     [
-      'packages/transactional/src/index.ts',
+      'packages/adaptive-manage-ui/src/index.ts',
       ['response-api-arm', 'hatchet-worker-general-arm'],
     ],
   ]

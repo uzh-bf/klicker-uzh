@@ -7,7 +7,11 @@ import builder from '../builder.js'
 import { ActivityType } from './analytics.js'
 import { Course, ICourse } from './course.js'
 import { ElementInstanceRef, IElementInstance } from './element.js'
-import { PublicationStatus, ReviewStatus } from './practiceQuiz.js'
+import {
+  PracticeQuizMode,
+  PublicationStatus,
+  ReviewStatus,
+} from './practiceQuiz.js'
 import { PermissionLevel, SharingType } from './sharing.js'
 import { LocaleType } from './user.js'
 
@@ -91,6 +95,7 @@ export interface IActivityInfo {
 
   type: ActivityTypeEnum
   status: DB.PublicationStatus
+  mode?: DB.PracticeQuizMode | null
 
   courseId?: string | null
   courseName?: string | null
@@ -137,6 +142,7 @@ export const ActivityInfo = builder.objectType(ActivityInfoRef, {
 
     type: t.expose('type', { type: ActivityType }),
     status: t.expose('status', { type: PublicationStatus }),
+    mode: t.expose('mode', { type: PracticeQuizMode, nullable: true }),
 
     courseId: t.exposeString('courseId', { nullable: true }),
     courseName: t.exposeString('courseName', { nullable: true }),
@@ -238,6 +244,10 @@ export const ReducedActivityInfo = builder.objectType(ReducedActivityInfoRef, {
 })
 
 export interface IActivityDetails {
+  isAdaptive?: boolean | null
+  adaptiveTreeName?: string | null
+  adaptiveElementCount?: number | null
+  adaptivePoolPublished?: boolean | null
   id: string
   name: string
   displayName: string
@@ -266,6 +276,14 @@ export const ActivityDetailsRef =
 export const ActivityDetails = builder.objectType(ActivityDetailsRef, {
   name: 'ActivityDetails',
   fields: (t) => ({
+    isAdaptive: t.exposeBoolean('isAdaptive', { nullable: true }),
+    adaptiveTreeName: t.exposeString('adaptiveTreeName', { nullable: true }),
+    adaptiveElementCount: t.exposeInt('adaptiveElementCount', {
+      nullable: true,
+    }),
+    adaptivePoolPublished: t.exposeBoolean('adaptivePoolPublished', {
+      nullable: true,
+    }),
     id: t.exposeString('id'),
     name: t.exposeString('name'),
     displayName: t.exposeString('displayName'),

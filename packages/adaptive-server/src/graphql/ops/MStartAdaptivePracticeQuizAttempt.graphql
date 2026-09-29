@@ -1,0 +1,5 @@
+mutation MStartAdaptivePracticeQuizAttempt($practiceQuizId: String!) {
+  startAdaptivePracticeQuizAttempt(practiceQuizId: $practiceQuizId) {
+    ...FAdaptivePracticeQuizAttemptState
+  }
+}

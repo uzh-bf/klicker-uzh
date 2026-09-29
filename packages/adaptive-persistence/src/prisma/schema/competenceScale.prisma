@@ -1,0 +1,226 @@
+model CompetenceTreeScaleVersion {
+  id String @id @default(uuid()) @db.Uuid
+
+  version                     Int
+  status                      AdaptiveScaleVersionStatus @default(DRAFT)
+  priorMean                   Float                      @default(0)
+  priorStandardDeviation      Float                      @default(1)
+  gridMin                     Float                      @default(-6)
+  gridMax                     Float                      @default(6)
+  gridStep                    Float                      @default(0.1)
+  classificationPolicyVersion Int                        @default(1)
+
+  tree   CompetenceTree @relation(fields: [treeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  treeId String         @db.Uuid
+
+  supersedesVersion    CompetenceTreeScaleVersion?  @relation("CompetenceTreeScaleVersionSupersession", fields: [supersedesVersionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  supersedesVersionId  String?                      @db.Uuid
+  supersededByVersions CompetenceTreeScaleVersion[] @relation("CompetenceTreeScaleVersionSupersession")
+
+  createdBy   User?   @relation("CompetenceTreeScaleVersionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdById String? @db.Uuid
+
+  levels               CompetenceTreeScaleLevel[]
+  approvals            CompetenceTreeScaleApproval[]
+  calibrations         AdaptiveItemCalibration[]
+  sourceScaleLinks     CompetenceTreeScaleLink[]                 @relation("CompetenceTreeScaleLinkFrom")
+  targetScaleLinks     CompetenceTreeScaleLink[]                 @relation("CompetenceTreeScaleLinkTo")
+  adaptiveConfigs      PracticeQuizAdaptiveConfig[]
+  publications         PracticeQuizAdaptivePublication[]
+  exportRequests       AdaptiveCalibrationExportRequest[]
+  empiricalValidations AdaptivePracticeQuizEmpiricalValidation[]
+  attempts             AdaptivePracticeQuizAttempt[]
+
+  submittedForReviewAt DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@unique([treeId, version], map: "ctsv_tree_version_key")
+  @@unique([treeId, id], map: "ctsv_tree_id_key")
+  @@index([treeId, status], map: "ctsv_tree_status_idx")
+  @@index([createdById], map: "ctsv_created_by_idx")
+}
+
+model CompetenceTreeScaleLevel {
+  id Int @id @default(autoincrement())
+
+  order               Int
+  label               String
+  lowerBound          Float?
+  itemDifficultyPrior Float
+
+  treeId String @db.Uuid
+
+  scaleVersion   CompetenceTreeScaleVersion @relation(fields: [treeId, scaleVersionId], references: [treeId, id], onDelete: Cascade, onUpdate: Cascade)
+  scaleVersionId String                     @db.Uuid
+
+  sourceLevel   CompetenceTreeLevel? @relation(fields: [treeId, sourceLevelId], references: [treeId, id], onDelete: Restrict, onUpdate: Cascade)
+  sourceLevelId Int?
+
+  finalAttempts AdaptivePracticeQuizAttempt[] @relation("AdaptivePracticeQuizAttemptFinalScaleLevel")
+
+  @@unique([scaleVersionId, order], map: "ctsl_scale_order_key")
+  @@unique([scaleVersionId, id], map: "ctsl_scale_id_key")
+  @@unique([treeId, scaleVersionId, id], map: "ctsl_tree_scale_id_key")
+  @@index([treeId, sourceLevelId], map: "ctsl_tree_source_level_idx")
+}
+
+model CompetenceTreeScaleApproval {
+  id String @id @default(uuid()) @db.Uuid
+
+  treeId String @db.Uuid
+
+  scaleVersion   CompetenceTreeScaleVersion @relation(fields: [treeId, scaleVersionId], references: [treeId, id], onDelete: Restrict, onUpdate: Cascade)
+  scaleVersionId String                     @db.Uuid
+
+  method              String
+  methodVersion       String
+  panelSize           Int
+  standardSettingDate DateTime
+
+  /// [PrismaAdaptiveCutRationale]
+  cutRationale Json
+
+  artifactChecksum String
+  artifactKey      String
+  decision         AdaptiveScaleVersionStatus?
+
+  submittedBy   User?   @relation("CompetenceTreeScaleApprovalSubmittedBy", fields: [submittedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  submittedById String? @db.Uuid
+
+  reviewer   User?   @relation("CompetenceTreeScaleApprovalReviewer", fields: [reviewerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  reviewerId String? @db.Uuid
+
+  reviewedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([treeId, scaleVersionId], map: "ctsa_tree_scale_idx")
+  @@index([submittedById], map: "ctsa_submitted_by_idx")
+  @@index([reviewerId], map: "ctsa_reviewer_idx")
+}
+
+model CompetenceTreeScaleLink {
+  id String @id @default(uuid()) @db.Uuid
+
+  status AdaptiveScaleLinkStatus @default(DRAFT)
+
+  tree   CompetenceTree @relation(fields: [treeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  treeId String         @db.Uuid
+
+  fromScaleVersion   CompetenceTreeScaleVersion @relation("CompetenceTreeScaleLinkFrom", fields: [treeId, fromScaleVersionId], references: [treeId, id], onDelete: Restrict, onUpdate: Cascade)
+  fromScaleVersionId String                     @db.Uuid
+
+  toScaleVersion   CompetenceTreeScaleVersion @relation("CompetenceTreeScaleLinkTo", fields: [treeId, toScaleVersionId], references: [treeId, id], onDelete: Restrict, onUpdate: Cascade)
+  toScaleVersionId String                     @db.Uuid
+
+  method                String
+  implementationVersion String
+
+  /// [PrismaAdaptiveScaleLinkMetrics]
+  fitMetrics Json
+
+  /// [PrismaAdaptiveScaleLinkMetrics]
+  uncertaintyMetrics Json
+
+  artifactChecksum String
+  artifactKey      String
+
+  createdBy   User?   @relation("CompetenceTreeScaleLinkCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdById String? @db.Uuid
+
+  reviewedBy   User?   @relation("CompetenceTreeScaleLinkReviewedBy", fields: [reviewedById], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  reviewedById String? @db.Uuid
+
+  anchors CompetenceTreeScaleLinkAnchor[]
+
+  submittedForReviewAt DateTime?
+  reviewedAt           DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@unique([treeId, fromScaleVersionId, toScaleVersionId], map: "ctslk_tree_versions_key")
+  @@index([createdById], map: "ctslk_created_by_idx")
+  @@index([reviewedById], map: "ctslk_reviewed_by_idx")
+}
+
+model CompetenceTreeScaleLinkAnchor {
+  id Int @id @default(autoincrement())
+
+  scaleLink   CompetenceTreeScaleLink @relation(fields: [scaleLinkId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  scaleLinkId String                  @db.Uuid
+
+  fromCalibration   AdaptiveItemCalibration @relation("CompetenceTreeScaleLinkAnchorFrom", fields: [fromCalibrationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  fromCalibrationId String                  @db.Uuid
+
+  toCalibration   AdaptiveItemCalibration @relation("CompetenceTreeScaleLinkAnchorTo", fields: [toCalibrationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  toCalibrationId String                  @db.Uuid
+
+  order Int
+
+  @@unique([scaleLinkId, order], map: "ctsla_link_order_key")
+  @@unique([scaleLinkId, fromCalibrationId], map: "ctsla_link_from_key")
+  @@unique([scaleLinkId, toCalibrationId], map: "ctsla_link_to_key")
+  @@index([fromCalibrationId], map: "ctsla_from_calibration_idx")
+  @@index([toCalibrationId], map: "ctsla_to_calibration_idx")
+}
+
+model AdaptiveItemCalibration {
+  id String @id @default(uuid()) @db.Uuid
+
+  version Int
+  model   AdaptiveItemModel
+  status  AdaptiveItemCalibrationStatus @default(PROVISIONAL)
+
+  discrimination Float
+  difficulty     Float
+  guessing       Float
+
+  /// [PrismaAdaptiveParameterUncertainty]
+  parameterUncertainty Json
+
+  responseCount    Int @default(0)
+  participantCount Int @default(0)
+
+  /// [PrismaAdaptiveCalibrationDiagnostics]
+  diagnostics Json
+
+  datasetVersion             String
+  datasetChecksum            String
+  calibrationJobId           String?
+  modelImplementationVersion String
+  elementContentChecksum     String
+
+  tree   CompetenceTree @relation(fields: [treeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  treeId String         @db.Uuid
+
+  scaleVersion   CompetenceTreeScaleVersion @relation(fields: [treeId, scaleVersionId], references: [treeId, id], onDelete: Restrict, onUpdate: Cascade)
+  scaleVersionId String                     @db.Uuid
+
+  assignment   CompetenceTreeElementAssignment @relation(fields: [treeId, assignmentId], references: [treeId, id], onDelete: Restrict, onUpdate: Cascade)
+  assignmentId Int
+
+  element        Element @relation(fields: [elementId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  elementId      Int
+  elementVersion Int
+
+  createdBy   User?   @relation("AdaptiveItemCalibrationCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdById String? @db.Uuid
+
+  approvedBy   User?     @relation("AdaptiveItemCalibrationApprovedBy", fields: [approvedById], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  approvedById String?   @db.Uuid
+  approvedAt   DateTime?
+
+  poolItems         PracticeQuizAdaptivePoolItem[]
+  sourceLinkAnchors CompetenceTreeScaleLinkAnchor[] @relation("CompetenceTreeScaleLinkAnchorFrom")
+  targetLinkAnchors CompetenceTreeScaleLinkAnchor[] @relation("CompetenceTreeScaleLinkAnchorTo")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([treeId, scaleVersionId, assignmentId, elementId, elementVersion, version], map: "aic_measurement_version_key")
+  @@unique([treeId, scaleVersionId, id], map: "aic_tree_scale_id_key")
+  @@unique([treeId, scaleVersionId, id, assignmentId, elementId, elementVersion], map: "aic_pool_identity_key")
+  @@index([assignmentId, elementId, elementVersion], map: "aic_assignment_element_version_idx")
+  @@index([scaleVersionId, status], map: "aic_scale_status_idx")
+  @@index([approvedById], map: "aic_approved_by_idx")
+}

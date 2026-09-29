@@ -396,6 +396,9 @@ function GeneratedDraftEditor({
       mode={ElementEditMode.EDIT}
       loading={false}
       inputsDisabled={savingDraft}
+      // Generated drafts use a specialized save API; assign mappings in the
+      // saved-library editor after keeping the element.
+      enableAdaptiveMapping={false}
       hasUnsavedChanges={hasUnsavedChanges}
       initialValues={readyValues}
       titleOverride={t('review.editTitle')}

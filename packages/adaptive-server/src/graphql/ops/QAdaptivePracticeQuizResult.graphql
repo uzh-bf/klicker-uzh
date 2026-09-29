@@ -1,0 +1,85 @@
+query QAdaptivePracticeQuizResult($attemptId: String!) {
+  adaptivePracticeQuizResult(attemptId: $attemptId) {
+    attemptId
+    practiceQuizId
+    practiceQuizName
+    stopReason
+    answeredQuestions
+    completedAt
+    levelInterpretation
+    classification
+    levelLabel
+    leadingLevelLabels
+    classificationProbability
+    confidence
+    nearBoundary
+    position
+    lowerPosition
+    upperPosition
+    levelBands {
+      label
+      order
+      startPosition
+      endPosition
+    }
+    trajectory {
+      order
+      position
+      lowerPosition
+      upperPosition
+      levelLabel
+    }
+    competenceProfile {
+      ...FAdaptivePracticeQuizResultNodeLevel1
+    }
+  }
+}
+
+fragment FAdaptivePracticeQuizResultNodeLevel1 on AdaptivePracticeQuizResultNode {
+  ...FAdaptivePracticeQuizResultNodeFields
+  children {
+    ...FAdaptivePracticeQuizResultNodeLevel2
+  }
+}
+
+fragment FAdaptivePracticeQuizResultNodeLevel2 on AdaptivePracticeQuizResultNode {
+  ...FAdaptivePracticeQuizResultNodeFields
+  children {
+    ...FAdaptivePracticeQuizResultNodeLevel3
+  }
+}
+
+fragment FAdaptivePracticeQuizResultNodeLevel3 on AdaptivePracticeQuizResultNode {
+  ...FAdaptivePracticeQuizResultNodeFields
+  children {
+    ...FAdaptivePracticeQuizResultNodeLevel4
+  }
+}
+
+fragment FAdaptivePracticeQuizResultNodeLevel4 on AdaptivePracticeQuizResultNode {
+  ...FAdaptivePracticeQuizResultNodeFields
+  children {
+    ...FAdaptivePracticeQuizResultNodeLevel5
+  }
+}
+
+fragment FAdaptivePracticeQuizResultNodeLevel5 on AdaptivePracticeQuizResultNode {
+  ...FAdaptivePracticeQuizResultNodeFields
+}
+
+fragment FAdaptivePracticeQuizResultNodeFields on AdaptivePracticeQuizResultNode {
+  id
+  name
+  kind
+  order
+  responseCount
+  classification
+  levelLabel
+  leadingLevelLabels
+  classificationProbability
+  confidence
+  nearBoundary
+  position
+  lowerPosition
+  upperPosition
+}

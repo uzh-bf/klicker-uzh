@@ -413,6 +413,22 @@ mcpStudent:
       cpu: 200m
       memory: 200Mi
 
+# Private Catalyst adaptive engine. Requires ADAPTIVE_ENGINE_TOKEN and
+# ADAPTIVE_ENGINE_DOCKER_AUTH in the Klicker Infisical stg environment and the
+# df-cloud ExternalSecrets that project them (backend secret + pull secret).
+adaptiveEngine:
+  enabled: true
+  priorityClassName: staging-workload
+  image:
+    tag: 5a8fbe279182a7218b86aa8aa5ee45023c5b4e4e-arm
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 1000m
+      memory: 1536Mi
+
 mcpLecturer:
   priorityClassName: staging-workload
 
@@ -609,6 +625,7 @@ frontendControl:
       memory: 200Mi
 
 backendGraphql:
+  adaptiveQuizShowSolutions: true
   betaSavedGroupId: grp_2CeKcuxYw3c567fSV7CPPQ
   priorityClassName: staging-workload
   podAnnotations:

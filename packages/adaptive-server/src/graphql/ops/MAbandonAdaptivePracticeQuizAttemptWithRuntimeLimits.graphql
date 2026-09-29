@@ -1,0 +1,7 @@
+mutation MAbandonAdaptivePracticeQuizAttemptWithRuntimeLimits(
+  $attemptId: String!
+) {
+  abandonAdaptivePracticeQuizAttempt(attemptId: $attemptId) {
+    ...FAdaptivePracticeQuizAttemptStateWithRuntimeLimits
+  }
+}

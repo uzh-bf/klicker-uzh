@@ -1,0 +1,6 @@
+mutation ApproveAdaptiveItemCalibration($calibrationId: String!) {
+  approveAdaptiveItemCalibration(calibrationId: $calibrationId) {
+    id
+    status
+  }
+}
