@@ -11,11 +11,14 @@ import {
 } from '@/src/lib/markdown/remarkCourseImages'
 import {
   type CourseImage,
+  matchCourseImageSource,
   selectedCourseImages,
 } from '@/src/lib/sources/courseImages'
 import type { ChatSourcePart } from '@/src/lib/sources/normalizeSources'
 import { useChatStore } from '@/src/stores/chatStore'
+import { CitationChip } from './citation-chip'
 import { CourseImageViewer } from './course-image-viewer'
+import { useMessageSourcesContext } from './message-sources-context'
 
 function courseImageSrc({
   chatbotId,
@@ -53,9 +56,11 @@ function usePersistedCourseImageContext() {
 export function CourseImageCard({
   image,
   src,
+  messageParts,
 }: {
   image: CourseImage
   src: string
+  messageParts: readonly ChatSourcePart[]
 }) {
   const t = useTranslations('chat.courseImages')
   const [failed, setFailed] = useState(false)
@@ -65,6 +70,11 @@ export function CourseImageCard({
     page: image.logical_page_number ?? image.physical_page_number,
   })
   const caption = image.captions?.map((value) => value.text).join(' ')
+  // The figure points at its own Sources card, matched on the identity of the
+  // retrieval record that carried the asset (see `matchCourseImageSource`).
+  // An unmatched or ambiguous figure shows no citation rather than a guess.
+  const { sources } = useMessageSourcesContext()
+  const citationSource = matchCourseImageSource(image, sources, messageParts)
   return (
     <figure
       data-cy="chat-course-image"
@@ -109,7 +119,15 @@ export function CourseImageCard({
         {image.captions?.map((entry) => (
           <p key={entry.ref}>{entry.text}</p>
         ))}
-        <p className={caption ? 'mt-1' : undefined}>{label}</p>
+        <p className={caption ? 'mt-1' : undefined}>
+          {label}
+          {citationSource && (
+            <>
+              {' '}
+              <CitationChip index={citationSource.index} />
+            </>
+          )}
+        </p>
       </figcaption>
     </figure>
   )
@@ -142,6 +160,7 @@ export function InlineCourseImage({ assetId }: { assetId: string }) {
   return (
     <CourseImageCard
       image={image}
+      messageParts={context.content}
       src={courseImageSrc({
         ...context,
         assetId: image.asset_id,
@@ -170,6 +189,7 @@ export function CourseImagesSection() {
         <CourseImageCard
           key={`${context.messageId}-${image.asset_id}`}
           image={image}
+          messageParts={context.content}
           src={courseImageSrc({
             ...context,
             assetId: image.asset_id,
