@@ -595,7 +595,11 @@ function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
               disabled={saving}
             />
           )}
-          <AssignedElementsPreview form={form} />
+          <AssignedElementsPreview
+            form={form}
+            onChange={structureDisabled ? undefined : handleFormChange}
+            disabled={saving}
+          />
           {!structureDisabled && (
             <div className="mt-5 flex justify-end">
               <Button
