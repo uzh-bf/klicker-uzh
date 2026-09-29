@@ -18,6 +18,7 @@ export function withVideoFrameTool(
 ): ToolSet {
   const candidates = new Map<string, VideoFrame>()
   const selected = new Set<string>()
+  const pendingReads = new Map<string, Promise<boolean>>()
   const wrapped: ToolSet = { ...tools }
   for (const [name, definition] of Object.entries(tools)) {
     if (!isVideoSearchTool(name) || !definition.execute) continue
@@ -45,19 +46,32 @@ export function withVideoFrameTool(
       const frame = candidates.get(asset_id)
       if (!frame) return { status: 'unavailable' as const }
       if (selected.has(asset_id)) return { status: 'selected' as const, frame }
-      if (selected.size >= MAX_VIDEO_FRAMES_PER_RESPONSE)
+      const pendingRead = pendingReads.get(asset_id)
+      if (pendingRead)
+        return (await pendingRead)
+          ? { status: 'selected' as const, frame }
+          : { status: 'unavailable' as const }
+      if (selected.size + pendingReads.size >= MAX_VIDEO_FRAMES_PER_RESPONSE)
         return { status: 'unavailable' as const }
-      selected.add(asset_id)
-      try {
-        await readFrame(frame)
-      } catch (error) {
-        console.error('[chat] video frame selection failed', {
-          assetId: asset_id,
-          error,
-        })
-        selected.delete(asset_id)
-        return { status: 'unavailable' as const }
-      }
+
+      const readPromise = (async () => {
+        try {
+          await readFrame(frame)
+          selected.add(asset_id)
+          return true
+        } catch (error) {
+          console.error('[chat] video frame selection failed', {
+            assetId: asset_id,
+            error,
+          })
+          return false
+        } finally {
+          pendingReads.delete(asset_id)
+        }
+      })()
+      pendingReads.set(asset_id, readPromise)
+
+      if (!(await readPromise)) return { status: 'unavailable' as const }
       return { status: 'selected' as const, frame }
     },
   })

@@ -105,6 +105,30 @@ describe('video frame selection', () => {
     expect(read).toHaveBeenCalledTimes(1)
   })
 
+  it('shares concurrent reads and only selects a frame after storage succeeds', async () => {
+    let rejectRead!: (error: Error) => void
+    const read = vi.fn(
+      () =>
+        new Promise((_resolve, reject) => {
+          rejectRead = reject
+        })
+    )
+    const tools = withVideoFrameTool(searchTools(), [candidate.kb_id], read)
+    await call(tools, 'KB_doc_query', { query: 'diagram in lecture' })
+
+    const first = call(tools, 'show_video_frame', {
+      asset_id: candidate.asset_id,
+    })
+    const second = call(tools, 'show_video_frame', {
+      asset_id: candidate.asset_id,
+    })
+    expect(read).toHaveBeenCalledTimes(1)
+
+    rejectRead(new Error('storage unavailable'))
+    await expect(first).resolves.toEqual({ status: 'unavailable' })
+    await expect(second).resolves.toEqual({ status: 'unavailable' })
+  })
+
   it('renders only explicitly selected persisted tool results', () => {
     const parts = [
       {
