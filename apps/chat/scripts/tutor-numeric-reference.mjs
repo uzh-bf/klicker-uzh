@@ -79,3 +79,57 @@ export function compareTutorNumericClaim({
     absoluteError,
   }
 }
+
+const NUMERIC_ASSESSMENT_FIELDS = new Set([
+  'caseId',
+  'turn',
+  'formula',
+  'inputs',
+  'unit',
+  'absoluteTolerance',
+  'studentAnswerCorrect',
+  'requiredAnswer',
+])
+
+// Checks a numerical sidecar against its validated trajectory corpus before any
+// model call: every obligation must name an existing case and one of that
+// case's assessment turns, and its reference value must be computable. Returns
+// the obligations with their expected values for later claim annotation.
+export function validateNumericSidecar(sidecar, corpus) {
+  if (
+    !sidecar ||
+    typeof sidecar !== 'object' ||
+    Array.isArray(sidecar) ||
+    sidecar.version !== 1 ||
+    Object.keys(sidecar).some(
+      (key) => key !== 'version' && key !== 'assessments'
+    ) ||
+    !Array.isArray(sidecar.assessments) ||
+    sidecar.assessments.length === 0
+  ) {
+    throw new Error('Invalid numerical sidecar')
+  }
+  const cases = new Map(corpus.cases.map((entry) => [entry.id, entry]))
+  return sidecar.assessments.map((entry) => {
+    if (
+      !entry ||
+      typeof entry !== 'object' ||
+      Object.keys(entry).some((key) => !NUMERIC_ASSESSMENT_FIELDS.has(key)) ||
+      !['CHF', 'decimal'].includes(entry.unit) ||
+      typeof entry.requiredAnswer !== 'boolean' ||
+      ![true, false, null].includes(entry.studentAnswerCorrect) ||
+      !Number.isFinite(entry.absoluteTolerance) ||
+      entry.absoluteTolerance < 0
+    ) {
+      throw new Error('Invalid numerical sidecar entry')
+    }
+    const caseDefinition = cases.get(entry.caseId)
+    if (!caseDefinition?.assessmentTurns.includes(entry.turn)) {
+      throw new Error('Numerical obligation has no matching assessment turn')
+    }
+    return {
+      ...entry,
+      expected: calculateTutorReference(entry.formula, entry.inputs),
+    }
+  })
+}

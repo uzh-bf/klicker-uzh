@@ -284,7 +284,8 @@ replace an authorized EXPERT_df_fineco_expert binding.
 
 For assistance-attribution checks, `apps/chat/scripts/run-tutor-trajectories.mjs`
 uses the same local target directly, without extending its single-message HTTP
-API. It follows actual persisted replies and parent IDs across a trajectory,
+API. The corpus schema, per-turn verification and trajectory driver live in
+`apps/chat/scripts/tutor-trajectory.mjs`; the target module keeps transport. It follows actual persisted replies and parent IDs across a trajectory,
 checks streamed text against saved text, and requires successful `KB_doc_query`
 completion on the first turn. Follow-up turns may use existing context; any
 emitted retrieval must still complete with matching call IDs in stream and
@@ -296,7 +297,8 @@ For the revised fixture and numerical checks, use
 `evaluation/data/trajectories/tutor-attribution-v2.json` with its
 `tutor-attribution-v2-numeric.json` sidecar. The sidecar binds numerical
 obligations to case IDs and one-based assessment turns without changing the
-strict trajectory schema. Annotate claims from visible responses, convert their
+strict trajectory schema. Pass it with `--numeric` so the runner rejects an
+obligation without a matching assessment turn before login. Annotate claims from visible responses, convert their
 units, then call `compareTutorNumericClaim` from
 `apps/chat/scripts/tutor-numeric-reference.mjs` with the formula, explicit
 inputs, numeric claim and the sidecar's absolute tolerance. Rates are decimal
@@ -321,13 +323,16 @@ through `KLICKER_EVAL_MODEL_ID`; it is not a controlled fixed-model comparison.
 
 ```sh
 node apps/chat/scripts/run-tutor-trajectories.mjs \
-  --corpus evaluation/data/trajectories/tutor-attribution.json \
+  --corpus evaluation/data/trajectories/tutor-attribution-v2.json \
+  --numeric evaluation/data/trajectories/tutor-attribution-v2-numeric.json \
   --output project/_local/tutor-baseline.jsonl --arm baseline --repeats 2 \
   --budget-file project/_local/tutor-budget.json
 ```
 
-Use a new output path for each arm and the same budget file across the whole
-experiment. Receipts contain visible synthetic turns and allowlisted metadata;
+`--arm` only labels receipts; it does not select a prompt. Apply the arm's
+templates and restart the chat process before each arm, then confirm the
+compiled prompt fingerprint. Use a new output path for each arm and the same
+budget file across the whole experiment. Receipts contain visible synthetic turns and allowlisted metadata;
 they exclude credentials, reasoning and raw tool payloads. Keep them outside
 Git. The ledger marks each submission as uncertain before sending it and clears
 that flag only after usage is accounted for. Run arms sequentially with one ledger

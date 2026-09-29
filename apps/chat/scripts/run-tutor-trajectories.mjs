@@ -13,10 +13,15 @@ import {
   DEFAULT_POLL_TIMEOUT_MS,
   DEFAULT_REQUEST_TIMEOUT_MS,
   evaluationError,
+  finiteCredits,
   KlickerEvaluationTarget,
+} from './klicker-evaluation-target.mjs'
+import { validateNumericSidecar } from './tutor-numeric-reference.mjs'
+import {
+  runTrajectory,
   TRAJECTORY_GROUPS,
   validateTrajectoryCorpus,
-} from './klicker-evaluation-target.mjs'
+} from './tutor-trajectory.mjs'
 
 // Experiment-wide limits shared by every arm through one budget file. The
 // ledger counts submitted requests before they leave the process and adds the
@@ -33,6 +38,7 @@ const VALUE_FLAGS = {
   '--repeats': 'repeats',
   '--budget-file': 'budgetFile',
   '--group': 'group',
+  '--numeric': 'numeric',
 }
 
 const BUDGET_LEDGER_FIELDS = new Set([
@@ -45,28 +51,23 @@ const BUDGET_LEDGER_FIELDS = new Set([
 ])
 
 const USAGE = [
-  'Usage: node apps/chat/scripts/run-tutor-trajectories.mjs --corpus <file> --output <file> --arm <baseline|candidate|auto> --budget-file <file> [--repeats <n>] [--group <development|reserved|control>]',
+  'Usage: node apps/chat/scripts/run-tutor-trajectories.mjs --corpus <file> --output <file> --arm <baseline|candidate|auto> --budget-file <file> [--repeats <n>] [--group <development|reserved|control>] [--numeric <sidecar>]',
   '',
   'Runs a frozen trajectory corpus against the local evaluation target and',
   'writes one sanitized JSONL receipt per verified turn. The output file is',
   'created exclusively and never overwritten. The shared budget ledger counts',
-  'submitted requests and actual credits across sequential arms.',
+  'submitted requests and actual credits across sequential arms. An optional',
+  'numerical sidecar is checked against the corpus before login.',
   '',
   'Credentials come from KLICKER_EVAL_API_ORIGIN, KLICKER_EVAL_CHAT_ORIGIN,',
   'KLICKER_EVAL_PARTICIPANT_USERNAME and KLICKER_EVAL_PARTICIPANT_PASSWORD;',
   'KLICKER_EVAL_MODEL_ID defaults to the fixed gpt-5.6-luna selection.',
 ].join('\n')
 
-function finiteCredits(value) {
-  return typeof value === 'number' && Number.isFinite(value) && value >= 0
-    ? value
-    : null
-}
-
 export function parseArguments(argv) {
   if (argv.includes('--help') || argv.includes('-h')) return { help: true }
 
-  const options = { repeats: 2, group: null, help: false }
+  const options = { repeats: 2, group: null, numeric: null, help: false }
   const seen = new Set()
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index]
@@ -113,6 +114,20 @@ export async function loadTrajectoryCorpus(filePath) {
     throw evaluationError('corpus_invalid_json')
   }
   return validateTrajectoryCorpus(parsed)
+}
+
+export async function loadNumericSidecar(filePath, corpus) {
+  let parsed
+  try {
+    parsed = JSON.parse(await readFile(filePath, 'utf8'))
+  } catch {
+    throw evaluationError('numeric_unreadable')
+  }
+  try {
+    return validateNumericSidecar(parsed, corpus)
+  } catch {
+    throw evaluationError('numeric_invalid')
+  }
 }
 
 export function createBudgetLedger() {
@@ -273,6 +288,9 @@ export async function runTutorTrajectories({
   }
 
   const corpus = await loadTrajectoryCorpus(corpusPath)
+  if (options.numeric !== null) {
+    await loadNumericSidecar(resolve(options.numeric), corpus)
+  }
   const cases = selectCases(corpus.cases, options.group)
   const target = createTrajectoryTarget(env)
   const ledger = await readBudgetLedger(budgetPath)
@@ -307,7 +325,7 @@ export async function runTutorTrajectories({
         for (let repeat = 0; repeat < options.repeats; repeat += 1) {
           currentCase = caseDefinition.id
           currentRepeat = repeat
-          await target.runTrajectory(caseDefinition, {
+          await runTrajectory(target, caseDefinition, {
             arm,
             repeat,
             beforeTurn: async ({ caseId, turn }) => {
