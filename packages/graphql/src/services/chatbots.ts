@@ -8,6 +8,8 @@ import type {
 } from '@klicker-uzh/types'
 import {
   CHAT_BASE_MODEL_ID,
+  CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH,
+  CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH,
   getChatModelAutoPolicyIssues,
   getChatModelBasePolicyIssues,
   normalizeChatbotCustomModeConfig,
@@ -1308,6 +1310,11 @@ export async function saveChatbotRevision(
   }
   const disclaimer = input.disclaimer
   await requireFeatureFlagAccess(ctx, 'ai-beta')
+  const personaMaxLength =
+    input.customModeConfig &&
+    (await isFeatureFlagEnabled(ctx, 'chatbot-long-custom-prompts'))
+      ? CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH
+      : CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH
   return await ctx.prisma.$transaction(async (tx) => {
     await lockChatbotRevision(tx, args.chatbotId)
     const chatbot = await readChatbotRevision(tx, args.chatbotId, ctx.user.sub)
@@ -1328,7 +1335,8 @@ export async function saveChatbotRevision(
         ...next,
         customModeConfig: parseRevisionCustomModeConfig(
           input.customModeConfig,
-          current.customModeConfig
+          current.customModeConfig,
+          personaMaxLength
         ),
       }
     }
@@ -1536,10 +1544,11 @@ function parseRevisionStandardModeConfig(
 
 function parseRevisionCustomModeConfig(
   input: ChatbotCustomModeConfigInput,
-  existing: ChatbotAuthoringRevision['customModeConfig']
+  existing: ChatbotAuthoringRevision['customModeConfig'],
+  personaMaxLength: number
 ) {
   try {
-    return parseChatbotCustomModeConfigInput(input, existing)
+    return parseChatbotCustomModeConfigInput(input, existing, personaMaxLength)
   } catch (error) {
     throw chatbotError(
       error instanceof Error

@@ -14,9 +14,10 @@ BEGIN;
 -- Converted values satisfy the stored-mode reader, which otherwise drops an
 -- entry: names are single-line, at most 60 characters, unique ignoring case,
 -- and never a reserved built-in name; descriptions are single-line and at most
--- 160 characters. A legacy prompt longer than the 1000-character persona limit
--- is left out of "personaText", so the runtime keeps compiling the full legacy
--- prompt from "systemPrompts" instead of a truncated copy.
+-- 160 characters. A legacy prompt becomes "personaText" up to the stored
+-- 100,000-character ceiling, so lecturers see and edit the prompt that runs. A
+-- longer prompt is left out of "personaText", so the runtime keeps compiling
+-- the full legacy prompt from "systemPrompts" instead of a truncated copy.
 WITH "legacy" AS (
   SELECT
     "c"."id" AS "chatbotId",
@@ -67,7 +68,7 @@ WITH "legacy" AS (
     CASE
       WHEN jsonb_typeof("value") = 'object'
         AND jsonb_typeof("value"->'prompt') = 'string'
-        AND length(btrim("value"->>'prompt')) BETWEEN 1 AND 1000
+        AND length(btrim("value"->>'prompt')) BETWEEN 1 AND 100000
       THEN btrim(replace(replace("value"->>'prompt', E'\r\n', E'\n'), E'\r', E'\n'))
     END AS "personaText"
   FROM "ranked"

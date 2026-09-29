@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   CHATBOT_CUSTOM_MODE_DESCRIPTION_MAX_LENGTH,
   CHATBOT_CUSTOM_MODE_NAME_MAX_LENGTH,
+  CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH,
   CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH,
   normalizeChatbotCustomModeConfig,
   parseChatbotCustomModeConfigInput,
@@ -68,6 +69,47 @@ describe('chatbot custom mode configuration', () => {
       ])
     ).toThrow(
       `personaText must be at most ${CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH}`
+    )
+  })
+
+  it('applies the extended persona limit only to new or edited text', () => {
+    const longPersona = 'x'.repeat(CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH + 1)
+    const stored = parseChatbotCustomModeConfigInput(
+      { modes: [{ name: 'Mode', personaText: longPersona }] },
+      null,
+      CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH
+    )
+    const key = stored.modes[0]?.key
+
+    expect(
+      parseModes([{ key, name: 'Renamed', personaText: longPersona }], stored)
+        .modes[0]?.personaText
+    ).toBe(longPersona)
+    expect(() =>
+      parseModes(
+        [{ key, name: 'Mode', personaText: `${longPersona}y` }],
+        stored
+      )
+    ).toThrow(
+      `personaText must be at most ${CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH}`
+    )
+    expect(() =>
+      parseChatbotCustomModeConfigInput(
+        {
+          modes: [
+            {
+              name: 'Mode',
+              personaText: 'x'.repeat(
+                CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH + 1
+              ),
+            },
+          ],
+        },
+        null,
+        CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH
+      )
+    ).toThrow(
+      `personaText must be at most ${CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH}`
     )
   })
 

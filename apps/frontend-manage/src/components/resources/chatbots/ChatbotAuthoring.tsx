@@ -1,4 +1,5 @@
 import { useMutation } from '@apollo/client'
+import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
   type ChatbotCustomModeInput,
   ChatbotStatus,
@@ -11,6 +12,7 @@ import {
   CHATBOT_CUSTOM_MODE_DESCRIPTION_MAX_LENGTH,
   CHATBOT_CUSTOM_MODE_MAX_COUNT,
   CHATBOT_CUSTOM_MODE_NAME_MAX_LENGTH,
+  CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH,
   CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH,
 } from '@klicker-uzh/util/chatbot-custom-mode-limits'
 import {
@@ -420,6 +422,10 @@ function CustomModesEditor({
   onRevisionConflict: () => void
 }) {
   const t = useTranslations()
+  const longPromptsEnabled = useFeatureFlag('chatbot-long-custom-prompts')
+  const personaMaxLength = longPromptsEnabled
+    ? CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH
+    : CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH
   const [saveRevision] = useMutation(MSaveChatbotRevisionDocument)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
@@ -579,7 +585,7 @@ function CustomModesEditor({
                           placeholder={t(
                             'manage.resources.chatbotCustomModePersonaPlaceholder'
                           )}
-                          maxLength={CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH}
+                          maxLength={personaMaxLength}
                           maxLengthUnit={t('shared.generic.characters')}
                           data={{
                             cy: `chatbot-custom-mode-persona-${index}`,

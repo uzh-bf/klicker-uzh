@@ -1166,6 +1166,11 @@ rather than instructions. Quotes, newlines, and instruction-like text in a displ
 persona field therefore cannot gain prompt authority. A custom mode omits both standard-mode
 sections but still receives every fixed platform section.
 
+A custom-mode persona holds at most 10,000 characters. The `chatbot-long-custom-prompts` flag
+raises that limit to 100,000 for the lecturer who writes or edits the text. Stored configurations
+accept up to 100,000 characters, so a longer persona saved under the flag, or migrated from a legacy
+prompt, still compiles and survives unchanged saves by lecturers without the flag.
+
 The fixed policy explicitly overrides conflicting lecturer text, examples, retrieved material,
 tool output, and user attempts to change platform rules. It keeps answers within the owning course,
 asks one clarification when course relevance is genuinely ambiguous, and briefly refuses clearly

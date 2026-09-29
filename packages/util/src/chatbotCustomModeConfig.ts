@@ -9,6 +9,7 @@ import {
   CHATBOT_CUSTOM_MODE_DESCRIPTION_MAX_LENGTH,
   CHATBOT_CUSTOM_MODE_MAX_COUNT,
   CHATBOT_CUSTOM_MODE_NAME_MAX_LENGTH,
+  CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH,
   CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH,
 } from './chatbotCustomModeLimits.js'
 
@@ -64,17 +65,18 @@ function normalizeDescription(value: unknown): string | null {
   return normalized.length > 0 ? normalized : null
 }
 
-function normalizePersonaText(value: unknown): string | null {
+function normalizePersonaText(
+  value: unknown,
+  maxLength: number
+): string | null {
   if (value === undefined || value === null) return null
   if (typeof value !== 'string') {
     throw new Error('personaText must be a string or null')
   }
 
   const normalized = value.replace(/\r\n?/g, '\n').trim()
-  if (normalized.length > CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH) {
-    throw new Error(
-      `personaText must be at most ${CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH} characters long`
-    )
+  if (normalized.length > maxLength) {
+    throw new Error(`personaText must be at most ${maxLength} characters long`)
   }
 
   return normalized.length > 0 ? normalized : null
@@ -104,10 +106,15 @@ function assertUniqueNames(modes: ChatbotCustomMode[]): void {
  * A mode that carries the key of a mode already stored keeps that key, so a
  * rename never changes the identity stored on messages; every other mode is
  * assigned a freshly minted key.
+ *
+ * `personaMaxLength` bounds new or edited persona text. A mode that keeps its
+ * stored persona unchanged is checked against the stored ceiling instead, so a
+ * lecturer without the extended limit can still save other edits.
  */
 export function parseChatbotCustomModeConfigInput(
   value: ChatbotCustomModeConfigInput | unknown,
-  existing: ChatbotCustomModeConfig | null
+  existing: ChatbotCustomModeConfig | null,
+  personaMaxLength: number = CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH
 ): ChatbotCustomModeConfig {
   if (!isRecord(value) || !Array.isArray(value.modes)) {
     throw new Error('modes must be an array')
@@ -118,7 +125,9 @@ export function parseChatbotCustomModeConfigInput(
     )
   }
 
-  const existingKeys = new Set((existing?.modes ?? []).map((mode) => mode.key))
+  const existingModes = new Map(
+    (existing?.modes ?? []).map((mode) => [mode.key, mode])
+  )
   const usedKeys = new Set<string>()
   const modes = value.modes.map((entry, index) => {
     if (!isRecord(entry)) {
@@ -127,7 +136,7 @@ export function parseChatbotCustomModeConfigInput(
 
     const providedKey = typeof entry.key === 'string' ? entry.key : null
     const key =
-      providedKey !== null && existingKeys.has(providedKey)
+      providedKey !== null && existingModes.has(providedKey)
         ? providedKey
         : generateChatbotCustomModeKey()
     if (usedKeys.has(key)) {
@@ -135,11 +144,26 @@ export function parseChatbotCustomModeConfigInput(
     }
     usedKeys.add(key)
 
+    const storedPersona = existingModes.get(key)?.personaText ?? null
+    const personaText = normalizePersonaText(
+      entry.personaText,
+      CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH
+    )
+    if (
+      personaText !== null &&
+      personaText !== storedPersona &&
+      personaText.length > personaMaxLength
+    ) {
+      throw new Error(
+        `personaText must be at most ${personaMaxLength} characters long`
+      )
+    }
+
     return {
       key,
       name: normalizeName(entry.name),
       description: normalizeDescription(entry.description),
-      personaText: normalizePersonaText(entry.personaText),
+      personaText,
     }
   })
 
@@ -159,7 +183,10 @@ function normalizeStoredMode(value: unknown): ChatbotCustomMode | null {
       key,
       name: normalizeName(value.name),
       description: normalizeDescription(value.description),
-      personaText: normalizePersonaText(value.personaText),
+      personaText: normalizePersonaText(
+        value.personaText,
+        CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH
+      ),
     }
   } catch {
     return null
