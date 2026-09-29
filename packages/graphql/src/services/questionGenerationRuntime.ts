@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { BlobServiceClient } from '@azure/storage-blob'
 import { HatchetClient } from '@hatchet-dev/typescript-sdk'
 import type { QuestionGenerationArtifactRef } from '@klicker-uzh/types'
+import { MAX_BUFFERED_QUESTION_GENERATION_ARTIFACT_BYTES } from './questionGenerationContracts.js'
 import {
   QuestionGenerationServiceError,
   questionGenerationServiceError,
@@ -10,7 +11,6 @@ import {
 const SHA256_PATTERN = /^[0-9a-f]{64}$/
 const CONTAINER_PATTERN = /^(?!.*--)[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])$/
 const MAX_QUESTION_OUTPUT_PREFIX_LENGTH = 901
-const MAX_BUFFERED_ARTIFACT_BYTES = 10 * 1024 * 1024
 const HATCHET_RECOVERY_CLOCK_SKEW_MILLISECONDS = 5 * 60 * 1000
 
 type QuestionWorkflowStartPayloadBase = {
@@ -423,6 +423,12 @@ class ProductionQuestionGenerationRuntime
       ref,
       new Set([this.configuration.questionInputContainer])
     )
+    if (bytes.byteLength > MAX_BUFFERED_QUESTION_GENERATION_ARTIFACT_BYTES) {
+      throw questionGenerationServiceError(
+        'ARTIFACT_INVALID',
+        'Question-generation artifact exceeds the size limit'
+      )
+    }
     const digest = createHash('sha256').update(bytes).digest('hex')
     if (digest !== ref.sha256) {
       throw questionGenerationServiceError(
@@ -577,7 +583,7 @@ class ProductionQuestionGenerationRuntime
           true
         )
       }
-      if (contentLength > MAX_BUFFERED_ARTIFACT_BYTES) {
+      if (contentLength > MAX_BUFFERED_QUESTION_GENERATION_ARTIFACT_BYTES) {
         throw questionGenerationServiceError(
           'ARTIFACT_INVALID',
           'Question-generation artifact exceeds the size limit'
@@ -606,7 +612,7 @@ class ProductionQuestionGenerationRuntime
         true
       )
     }
-    if (bytes.byteLength > MAX_BUFFERED_ARTIFACT_BYTES) {
+    if (bytes.byteLength > MAX_BUFFERED_QUESTION_GENERATION_ARTIFACT_BYTES) {
       throw questionGenerationServiceError(
         'ARTIFACT_INVALID',
         'Question-generation artifact exceeds the size limit'
@@ -637,8 +643,18 @@ class ProductionQuestionGenerationRuntime
       },
       new Set([this.configuration.graphArtifactContainer])
     )
+    if (payload.schema_version === 4) {
+      assertArtifactReference(
+        {
+          containerName: payload.question_library_snapshot.container_name,
+          blobName: payload.question_library_snapshot.blob_name,
+          sha256: payload.question_library_snapshot.sha256,
+        },
+        new Set([this.configuration.questionInputContainer])
+      )
+    }
     if (
-      payload.schema_version !== 3 ||
+      (payload.schema_version !== 3 && payload.schema_version !== 4) ||
       !dispatchAttemptId.trim() ||
       !payload.graph_version_id ||
       !payload.graph_manifest.blob_name.endsWith('/manifest.json') ||

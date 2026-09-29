@@ -1,6 +1,7 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { describe, expect, it, vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
+import { MAX_BUFFERED_QUESTION_GENERATION_ARTIFACT_BYTES } from '../src/services/questionGenerationContracts.js'
 import {
   createQuestionLibrarySnapshot,
   normalizeQuestionLibraryElement,
@@ -141,5 +142,53 @@ describe('question-library snapshot', () => {
     expect(() =>
       normalizeQuestionLibraryElement(element({ options: { choices: [] } }))
     ).toThrow(/choices must contain/)
+  })
+
+  it('skips malformed legacy elements without blocking generation', async () => {
+    const malformed = element({ id: 43, options: { choices: [] } })
+    const valid = element({ id: 42 })
+    const { ctx } = context([malformed, valid])
+
+    const snapshot = JSON.parse(
+      (
+        await createQuestionLibrarySnapshot(ctx, {
+          KB_QUESTION_LIBRARY_COMPARISON_MAX_ELEMENTS: '5',
+        })
+      ).toString('utf8')
+    )
+
+    expect(snapshot).toMatchObject({
+      reference_count: 1,
+      truncated: true,
+      questions: [{ element_id: 42 }],
+    })
+  })
+
+  it('truncates the snapshot to the runtime artifact byte limit', async () => {
+    const largeChoices = Array.from({ length: 100 }, (_, ix) => ({
+      ix,
+      value: `${ix}`.padEnd(10_000, 'x'),
+      correct: ix === 0,
+    }))
+    const rows = Array.from({ length: 11 }, (_, index) =>
+      element({
+        id: index + 1,
+        name: `Large question ${index + 1}`,
+        options: { choices: largeChoices },
+      })
+    )
+    const { ctx } = context(rows)
+
+    const bytes = await createQuestionLibrarySnapshot(ctx, {
+      KB_QUESTION_LIBRARY_COMPARISON_MAX_ELEMENTS: '20',
+    })
+    const snapshot = JSON.parse(bytes.toString('utf8'))
+
+    expect(bytes.byteLength).toBeLessThanOrEqual(
+      MAX_BUFFERED_QUESTION_GENERATION_ARTIFACT_BYTES
+    )
+    expect(snapshot.reference_count).toBeLessThan(rows.length)
+    expect(snapshot.questions).toHaveLength(snapshot.reference_count)
+    expect(snapshot.truncated).toBe(true)
   })
 })

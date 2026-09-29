@@ -6,9 +6,12 @@ import type {
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
 import { canonicalElementGenerationJson } from './elementGenerationProvider.js'
-import { questionGenerationServiceError } from './questionGenerationErrors.js'
+import { MAX_BUFFERED_QUESTION_GENERATION_ARTIFACT_BYTES } from './questionGenerationContracts.js'
+import {
+  QuestionGenerationServiceError,
+  questionGenerationServiceError,
+} from './questionGenerationErrors.js'
 
-const DEFAULT_MAX_LIBRARY_ELEMENTS = 500
 const MAX_LIBRARY_ELEMENTS = 500
 const MAX_NAME_LENGTH = 500
 const MAX_STEM_LENGTH = 50_000
@@ -102,7 +105,7 @@ export function questionLibraryComparisonMaxElements(
   env: RuntimeEnvironment = process.env
 ): number {
   const raw = env.KB_QUESTION_LIBRARY_COMPARISON_MAX_ELEMENTS?.trim()
-  if (!raw) return DEFAULT_MAX_LIBRARY_ELEMENTS
+  if (!raw) return MAX_LIBRARY_ELEMENTS
   const value = Number(raw)
   if (
     !Number.isSafeInteger(value) ||
@@ -163,12 +166,42 @@ export async function createQuestionLibrarySnapshot(
     },
   })
   const selected = elements.slice(0, limit)
-  const snapshot: QuestionLibrarySnapshot = {
-    schema_version: 1,
-    reference_count: selected.length,
-    truncated: elements.length > limit,
-    questions: selected.map(normalizeQuestionLibraryElement),
+  const questions = selected.flatMap((element) => {
+    try {
+      return [normalizeQuestionLibraryElement(element)]
+    } catch (error) {
+      if (error instanceof QuestionGenerationServiceError) return []
+      throw error
+    }
+  })
+  const incompleteSelection =
+    elements.length > limit || questions.length !== selected.length
+
+  function serialize(questionCount: number): Buffer {
+    const snapshot: QuestionLibrarySnapshot = {
+      schema_version: 1,
+      reference_count: questionCount,
+      truncated: incompleteSelection || questionCount < questions.length,
+      questions: questions.slice(0, questionCount),
+    }
+    const canonical = canonicalElementGenerationJson(snapshot)
+    return Buffer.from(`${JSON.stringify(canonical, null, 2)}\n`, 'utf8')
   }
-  const canonical = canonicalElementGenerationJson(snapshot)
-  return Buffer.from(`${JSON.stringify(canonical, null, 2)}\n`, 'utf8')
+
+  let lowerBound = 0
+  let upperBound = questions.length
+  let snapshotBytes = serialize(0)
+  while (lowerBound <= upperBound) {
+    const questionCount = Math.floor((lowerBound + upperBound) / 2)
+    const candidate = serialize(questionCount)
+    if (
+      candidate.byteLength <= MAX_BUFFERED_QUESTION_GENERATION_ARTIFACT_BYTES
+    ) {
+      snapshotBytes = candidate
+      lowerBound = questionCount + 1
+    } else {
+      upperBound = questionCount - 1
+    }
+  }
+  return snapshotBytes
 }

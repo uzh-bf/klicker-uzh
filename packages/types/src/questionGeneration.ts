@@ -19,6 +19,8 @@ export type QuestionLibrarySnapshotQuestion = {
 }
 
 export type QuestionLibrarySnapshot = {
+  // Frozen cross-repository wire contract consumed by kg-content-generation.
+  // Keep its version and snake_case field names stable.
   schema_version: 1
   reference_count: number
   truncated: boolean
