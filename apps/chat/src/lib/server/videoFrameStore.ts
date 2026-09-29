@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
-import { readFile, realpath, stat } from 'node:fs/promises'
+import { constants } from 'node:fs'
+import { open, realpath } from 'node:fs/promises'
 import path from 'node:path'
 import { getBlobStorageAccountUrl } from '@klicker-uzh/util'
 import { z } from 'zod'
@@ -63,9 +64,15 @@ async function readLocalObject(root: string, key: string, limit: number) {
   const base = await realpath(root)
   const filename = await realpath(path.join(base, key))
   assertInside(base, filename)
-  if ((await stat(filename)).size > limit)
-    throw new Error('Video frame artifact exceeds size limit')
-  return readFile(filename)
+  const file = await open(filename, constants.O_RDONLY | constants.O_NOFOLLOW)
+  try {
+    const metadata = await file.stat()
+    if (!metadata.isFile() || metadata.size > limit)
+      throw new Error('Video frame artifact exceeds size limit')
+    return await file.readFile()
+  } finally {
+    await file.close()
+  }
 }
 
 async function readBlobObject(key: string, limit: number) {
