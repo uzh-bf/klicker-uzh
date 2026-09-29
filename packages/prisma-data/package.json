@@ -2,6 +2,10 @@
   "name": "@klicker-uzh/prisma-data",
   "version": "3.4.0-alpha.4",
   "license": "AGPL-3.0",
+  "dependencies": {
+    "@klicker-uzh/adaptive-client": "workspace:*",
+    "@klicker-uzh/adaptive-contract": "workspace:*"
+  },
   "devDependencies": {
     "@klicker-uzh/adaptive-persistence": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
@@ -81,9 +85,5 @@
   "exports": {
     "./adaptive-seed-host-types": "./src/adaptive-seed-host-types.ts"
   },
-  "type": "module",
-  "dependencies": {
-    "@klicker-uzh/adaptive-client": "workspace:*",
-    "@klicker-uzh/adaptive-contract": "workspace:*"
-  }
+  "type": "module"
 }

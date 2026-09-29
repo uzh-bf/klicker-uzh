@@ -1,14 +1,14 @@
 {
+  "private": true,
   "name": "@klicker-uzh/adaptive-i18n",
   "version": "0.1.0",
   "license": "AGPL-3.0",
-  "sideEffects": false,
+  "devDependencies": {
+    "typescript": "~6.0.3"
+  },
   "exports": {
     "./messages/*": "./src/messages/*.ts",
     ".": "./src/index.ts"
   },
-  "devDependencies": {
-    "typescript": "~6.0.3"
-  },
-  "private": true
+  "sideEffects": false
 }

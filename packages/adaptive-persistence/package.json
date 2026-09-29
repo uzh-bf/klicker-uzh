@@ -1,9 +1,23 @@
 {
+  "private": true,
   "name": "@klicker-uzh/adaptive-persistence",
   "version": "0.1.0",
-  "private": true,
-  "type": "module",
   "license": "AGPL-3.0",
+  "devDependencies": {
+    "@klicker-uzh/adaptive-client": "workspace:*",
+    "@klicker-uzh/adaptive-contract": "workspace:*"
+  },
+  "peerDependencies": {
+    "@klicker-uzh/adaptive-client": "workspace:*",
+    "@klicker-uzh/adaptive-contract": "workspace:*",
+    "@klicker-uzh/prisma": "workspace:*",
+    "@klicker-uzh/prisma-data": "workspace:*",
+    "@klicker-uzh/util": "workspace:*",
+    "pg": "^8.16.3"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
   "exports": {
     "./compose": "./src/compose.mjs",
     "./json-types": "./src/json-types.ts",
@@ -11,19 +25,5 @@
     "./package.json": "./package.json",
     "./scripts/*": "./src/scripts/*.ts"
   },
-  "scripts": {
-    "test": "node --test test/*.test.mjs"
-  },
-  "peerDependencies": {
-    "@klicker-uzh/prisma": "workspace:*",
-    "@klicker-uzh/prisma-data": "workspace:*",
-    "@klicker-uzh/util": "workspace:*",
-    "pg": "^8.16.3",
-    "@klicker-uzh/adaptive-client": "workspace:*",
-    "@klicker-uzh/adaptive-contract": "workspace:*"
-  },
-  "devDependencies": {
-    "@klicker-uzh/adaptive-client": "workspace:*",
-    "@klicker-uzh/adaptive-contract": "workspace:*"
-  }
+  "type": "module"
 }
