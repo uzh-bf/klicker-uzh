@@ -6,6 +6,22 @@ export function resolveDisclosureOpen(
   return manualOpen ?? (autoOpen && active)
 }
 
+type GroupedMessagePart = {
+  type: string
+  toolName?: string
+}
+
+export function countGroupedPartsExceptTool(
+  content: readonly GroupedMessagePart[],
+  indices: readonly number[],
+  excludedToolName: string
+): number {
+  return indices.filter((index) => {
+    const part = content[index]
+    return !(part?.type === 'tool-call' && part.toolName === excludedToolName)
+  }).length
+}
+
 type MessagePartWithName = {
   type: string
   name?: string

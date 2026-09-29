@@ -34,7 +34,10 @@ import {
   selectedVideoFrames,
   VIDEO_FRAME_TOOL,
 } from '@/src/lib/sources/videoFrames'
-import { resolveDisclosureOpen } from './message-parts-state'
+import {
+  countGroupedPartsExceptTool,
+  resolveDisclosureOpen,
+} from './message-parts-state'
 import { useHasAvailableChatMode } from './mode-options-context'
 import { ToolFallback } from './tool-fallback'
 import { InlineVideoFrame } from './video-frames-section'
@@ -272,20 +275,17 @@ export const AssistantMessageParts: FC = () => {
               </div>
             )
           case 'group-tool':
-            return part.indices.length <= 1 ||
-              (!firstText &&
-                part.indices.some((index) => {
-                  const contentPart = content[index]
-                  return (
-                    contentPart?.type === 'tool-call' &&
-                    contentPart.toolName === VIDEO_FRAME_TOOL
-                  )
-                })) ? (
+            const nonFrameCount = countGroupedPartsExceptTool(
+              content,
+              part.indices,
+              VIDEO_FRAME_TOOL
+            )
+            return part.indices.length <= 1 || nonFrameCount === 0 ? (
               children
             ) : (
               <ToolGroup
                 active={part.status.type === 'running'}
-                count={part.indices.length}
+                count={nonFrameCount}
               >
                 {children}
               </ToolGroup>
