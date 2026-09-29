@@ -8,7 +8,7 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
 data:
   ADAPTIVE_QUIZ_SHOW_SOLUTIONS: {{ .Values.backendGraphql.adaptiveQuizShowSolutions | quote }}
-  {{- with .Values.backendGraphql.adaptiveEngine.url }}
+  {{- with include "chart.adaptiveEngineUrl" . }}
   # ADAPTIVE_ENGINE_TOKEN is provisioned in the backend secret.
   ADAPTIVE_ENGINE_URL: {{ . | quote }}
   {{- end }}

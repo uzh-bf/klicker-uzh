@@ -106,8 +106,23 @@ action is pinned to `v3`.
 
 ### Deployment configuration
 
-Set `backendGraphql.adaptiveEngine.url` in the environment values to render
-`ADAPTIVE_ENGINE_URL` for the backend and the general Hatchet worker. Store
-`ADAPTIVE_ENGINE_TOKEN` in the backend secret (provisioned outside the chart);
-the general worker references that key only when the URL is set, so an empty URL
-leaves existing releases unchanged.
+The chart can run the engine next to Klicker as a cluster-internal service:
+`adaptiveEngine.enabled` renders a Deployment and ClusterIP Service on port
+3017 from the private image `ghcr.io/uzh-bf/klicker-uzh-catalyst/adaptive-engine`,
+pinned to the immutable `<catalyst-commit>-arm` tag in `adaptiveEngine.image.tag`.
+Never expose it through an ingress: callers authenticate with a bearer token over
+plain HTTP.
+
+- The engine, the backend and the general Hatchet worker all read
+  `ADAPTIVE_ENGINE_TOKEN` from the backend secret, so the token has one source.
+  The worker's reference is optional; a missing key fails adaptive jobs, not the
+  worker.
+- The pod pulls with `<fullname>-registry-secret-adaptive-engine`, a
+  `kubernetes.io/dockerconfigjson` Secret provisioned by df-cloud from the
+  Infisical key `ADAPTIVE_ENGINE_DOCKER_AUTH` (a read-only GHCR credential).
+- When the chart's engine is enabled, `ADAPTIVE_ENGINE_URL` defaults to its
+  Service. Set `backendGraphql.adaptiveEngine.url` only for an engine hosted
+  elsewhere; with neither, adaptive quizzes stay unconfigured and existing
+  releases are unchanged.
+
+Staging runs the chart's engine; production does not yet.

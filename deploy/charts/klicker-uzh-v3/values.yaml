@@ -379,6 +379,58 @@ mcpStudent:
 
   securityContext: {}
 
+# Private Catalyst adaptive calculation service (cluster-internal). Needs the
+# backend secret key ADAPTIVE_ENGINE_TOKEN and a dockerconfigjson pull secret
+# named <fullname>-registry-secret-adaptive-engine, both provisioned outside
+# the chart. Enabling it also points the backend and general worker at it.
+adaptiveEngine:
+  enabled: false
+  priorityClassName: production-workload
+
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh-catalyst/adaptive-engine
+    # Immutable <catalyst-commit>-arm tag published by Catalyst CI.
+    tag: ''
+    pullPolicy: IfNotPresent
+
+  # Defaults to <fullname>-registry-secret-adaptive-engine.
+  imagePullSecretName: ''
+
+  service:
+    port: 3017
+
+  # Up to four calculation workers with 256 MiB heaps each.
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 1536Mi
+
+  podAnnotations: {}
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+
 mcpLecturer:
   enabled: true
   priorityClassName: production-workload
@@ -542,8 +594,10 @@ frontendControl:
 
 backendGraphql:
   adaptiveQuizShowSolutions: false
-  # Private Catalyst calculation service. Leave empty until it is deployed;
-  # when set, ADAPTIVE_ENGINE_TOKEN must exist in the backend secret.
+  # External Catalyst calculation service URL. Leave empty to use the chart's
+  # own engine (adaptiveEngine.enabled) or to leave adaptive quizzes
+  # unconfigured; when an engine is used, ADAPTIVE_ENGINE_TOKEN must exist in
+  # the backend secret.
   adaptiveEngine:
     url: ''
   priorityClassName: production-workload
