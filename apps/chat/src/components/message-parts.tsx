@@ -1,6 +1,5 @@
 import {
   ActionBarPrimitive,
-  groupPartByType,
   MessagePrimitive,
   type ReasoningMessagePartProps,
   useAuiState,
@@ -34,10 +33,7 @@ import {
   selectedVideoFrames,
   VIDEO_FRAME_TOOL,
 } from '@/src/lib/sources/videoFrames'
-import {
-  countGroupedPartsExceptTool,
-  resolveDisclosureOpen,
-} from './message-parts-state'
+import { messagePartGroups, resolveDisclosureOpen } from './message-parts-state'
 import { useHasAvailableChatMode } from './mode-options-context'
 import { ToolFallback } from './tool-fallback'
 import { InlineVideoFrame } from './video-frames-section'
@@ -47,6 +43,9 @@ type MessageWithCustomMetadata = {
     custom?: Record<string, unknown> | null
   } | null
 }
+
+const groupAssistantMessagePart = (part: { type: string; toolName?: string }) =>
+  messagePartGroups(part, VIDEO_FRAME_TOOL)
 
 const GroupedDisclosure: FC<
   PropsWithChildren<{
@@ -259,10 +258,7 @@ export const AssistantMessageParts: FC = () => {
   return (
     <MessagePrimitive.GroupedParts
       indicator="never"
-      groupBy={groupPartByType({
-        reasoning: ['group-reasoning'],
-        'tool-call': ['group-tool'],
-      })}
+      groupBy={groupAssistantMessagePart}
     >
       {({ part, children }) => {
         switch (part.type) {
@@ -275,17 +271,12 @@ export const AssistantMessageParts: FC = () => {
               </div>
             )
           case 'group-tool':
-            const nonFrameCount = countGroupedPartsExceptTool(
-              content,
-              part.indices,
-              VIDEO_FRAME_TOOL
-            )
-            return part.indices.length <= 1 || nonFrameCount === 0 ? (
+            return part.indices.length <= 1 ? (
               children
             ) : (
               <ToolGroup
                 active={part.status.type === 'running'}
-                count={nonFrameCount}
+                count={part.indices.length}
               >
                 {children}
               </ToolGroup>

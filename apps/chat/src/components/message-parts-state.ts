@@ -6,20 +6,19 @@ export function resolveDisclosureOpen(
   return manualOpen ?? (autoOpen && active)
 }
 
-type GroupedMessagePart = {
+type GroupableMessagePart = {
   type: string
   toolName?: string
 }
 
-export function countGroupedPartsExceptTool(
-  content: readonly GroupedMessagePart[],
-  indices: readonly number[],
-  excludedToolName: string
-): number {
-  return indices.filter((index) => {
-    const part = content[index]
-    return !(part?.type === 'tool-call' && part.toolName === excludedToolName)
-  }).length
+export function messagePartGroups(
+  part: GroupableMessagePart,
+  standaloneToolName: string
+): readonly ('group-reasoning' | 'group-tool')[] {
+  if (part.type === 'reasoning') return ['group-reasoning']
+  if (part.type === 'tool-call' && part.toolName !== standaloneToolName)
+    return ['group-tool']
+  return []
 }
 
 type MessagePartWithName = {

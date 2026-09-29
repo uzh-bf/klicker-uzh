@@ -1,25 +1,28 @@
 import { describe, expect, test } from 'vitest'
 import {
-  countGroupedPartsExceptTool,
   hasChatError,
+  messagePartGroups,
   resolveDisclosureOpen,
   truncateMessagesForReload,
 } from '../src/components/message-parts-state'
 
 describe('message part disclosure state', () => {
-  test('does not count inline video frames as grouped tool calls', () => {
-    const content = [
-      { type: 'tool-call', toolName: 'show_video_frame' },
-      { type: 'tool-call', toolName: 'show_video_frame' },
-      { type: 'tool-call', toolName: 'search_documents' },
-    ]
-
+  test('keeps inline video frames outside ordinary tool groups', () => {
     expect(
-      countGroupedPartsExceptTool(content, [0, 1], 'show_video_frame')
-    ).toBe(0)
+      messagePartGroups(
+        { type: 'tool-call', toolName: 'show_video_frame' },
+        'show_video_frame'
+      )
+    ).toEqual([])
     expect(
-      countGroupedPartsExceptTool(content, [0, 1, 2], 'show_video_frame')
-    ).toBe(1)
+      messagePartGroups(
+        { type: 'tool-call', toolName: 'search_documents' },
+        'show_video_frame'
+      )
+    ).toEqual(['group-tool'])
+    expect(
+      messagePartGroups({ type: 'reasoning' }, 'show_video_frame')
+    ).toEqual(['group-reasoning'])
   })
 
   test('auto-opens only while active until the participant chooses a state', () => {
