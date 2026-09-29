@@ -460,9 +460,9 @@ describe('Integration tests for lecturer chatbot management', () => {
           courseId: course.id,
           ownerId: userOneCtx.user.sub,
           status,
-          allowedModelIds: ['gpt-5.6-luna', 'gpt-4.1'],
+          allowedModelIds: ['gpt-6-luna', 'gpt-4.1'],
           allowedReasoningEffortsByModel: {
-            'gpt-5.6-luna': ['low', 'medium'],
+            'gpt-6-luna': ['low', 'medium'],
           },
         },
       })
@@ -500,9 +500,9 @@ describe('Integration tests for lecturer chatbot management', () => {
             input: {
               modelPolicy: {
                 modelSelection: false,
-                allowedModelIds: ['gpt-5.6-luna'],
+                allowedModelIds: ['gpt-6-luna'],
                 allowedReasoningEffortsByModel: [
-                  { modelId: 'gpt-5.6-luna', efforts: ['low', 'medium'] },
+                  { modelId: 'gpt-6-luna', efforts: ['low', 'medium'] },
                 ],
               },
             },
@@ -519,9 +519,9 @@ describe('Integration tests for lecturer chatbot management', () => {
             input: {
               modelPolicy: {
                 modelSelection: false,
-                allowedModelIds: ['gpt-5.6-luna'],
+                allowedModelIds: ['gpt-6-luna'],
                 allowedReasoningEffortsByModel: [
-                  { modelId: 'gpt-5.6-luna', efforts: ['high'] },
+                  { modelId: 'gpt-6-luna', efforts: ['high'] },
                 ],
               },
             },
@@ -529,9 +529,9 @@ describe('Integration tests for lecturer chatbot management', () => {
           userOneCtx
         )
       ).resolves.toMatchObject({
-        allowedModelIds: ['gpt-5.6-luna'],
+        allowedModelIds: ['gpt-6-luna'],
         allowedReasoningEffortsByModel: [
-          { modelId: 'gpt-5.6-luna', efforts: ['high'] },
+          { modelId: 'gpt-6-luna', efforts: ['high'] },
         ],
       })
     })
@@ -541,9 +541,9 @@ describe('Integration tests for lecturer chatbot management', () => {
       const input = {
         modelPolicy: {
           modelSelection: true,
-          allowedModelIds: ['gpt-4.1', 'gpt-5.6-luna'],
+          allowedModelIds: ['gpt-4.1', 'gpt-6-luna'],
           allowedReasoningEffortsByModel: [
-            { modelId: 'gpt-5.6-luna', efforts: ['medium', 'low'] },
+            { modelId: 'gpt-6-luna', efforts: ['medium', 'low'] },
           ],
         },
       }
@@ -559,9 +559,9 @@ describe('Integration tests for lecturer chatbot management', () => {
         )
       ).resolves.toMatchObject({
         modelSelection: true,
-        allowedModelIds: ['gpt-4.1', 'gpt-5.6-luna'],
+        allowedModelIds: ['gpt-4.1', 'gpt-6-luna'],
         allowedReasoningEffortsByModel: [
-          { modelId: 'gpt-5.6-luna', efforts: ['low', 'medium'] },
+          { modelId: 'gpt-6-luna', efforts: ['low', 'medium'] },
         ],
       })
 
@@ -575,7 +575,7 @@ describe('Integration tests for lecturer chatbot management', () => {
                 modelSelection: true,
                 allowedModelIds: ['gpt-4.1'],
                 allowedReasoningEffortsByModel: [
-                  { modelId: 'gpt-5.6-luna', efforts: ['medium'] },
+                  { modelId: 'gpt-6-luna', efforts: ['medium'] },
                 ],
               },
             },
@@ -1382,7 +1382,7 @@ describe('Integration tests for lecturer chatbot management', () => {
 
       expect(info).toMatchObject({
         id: chatbot.id,
-        allowedModelIds: ['gpt-5.6-luna'],
+        allowedModelIds: ['gpt-6-luna'],
         allowedReasoningEffortsByModel: [],
       })
       await expect(
@@ -1409,7 +1409,7 @@ describe('Integration tests for lecturer chatbot management', () => {
           courseId: course.id,
           ownerId: userOneCtx.user.sub,
           modelSelection: false,
-          allowedModelIds: ['gpt-4.1', 'gpt-5.6-luna'],
+          allowedModelIds: ['gpt-4.1', 'gpt-6-luna'],
         },
       })
       const previousPrimary = process.env.CHAT_PRIMARY_MODEL_ID

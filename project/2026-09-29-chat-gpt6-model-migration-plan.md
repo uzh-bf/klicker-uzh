@@ -62,7 +62,7 @@ operator allowlist.
 
 | ID | Deployment (prd) | Class | Cost in / out | Efforts |
 | --- | --- | --- | --- | --- |
-| `auto` | `klickeruzh/azure/auto-router` | ADVANCED | from Langfuse mix | — |
+| `auto` | `klickeruzh/azure/auto-router` | ADVANCED | 1.0 / 5.0 (kept; Langfuse blocked) | — |
 | `gpt-6-luna` | `klickeruzh/azure/gpt-6-luna` | BASE, fallback | 0.1 / 0.5 | low, medium, high, xhigh |
 | `gpt-6-sol` | `klickeruzh/azure/gpt-6-sol` | ADVANCED | 2.0 / 10.0 | low, medium, high |
 | `gpt-4.1` | `klickeruzh/azure/gpt-4.1` | ADVANCED | 2.0 / 8.0 | — |
@@ -74,19 +74,25 @@ The in-code default registries (chat and backend) mirror the dev stack:
 ### Delivery topology
 
 1. PR A to `v3` (this branch): code rename, data migration, dev LiteLLM,
-   staging values, docs, and this plan.
+   staging and production registry values, docs, and this plan. The registry
+   parity test requires staging and production to carry the same accounting
+   policy and the hard-coded base ID, so production values cannot wait for
+   PR B.
 2. Release tag after PR A merges (withheld authority).
-3. PR B to `v3`: production values with the new image tags, registry,
-   `fallbackId` and course-KG ingestion models. It is prepared as a draft only.
+3. PR B to `v3`: production image tags only. It is prepared once the tag
+   exists.
 4. `ai/deployment` draft MR: Auto classifier `gpt-6-luna-low` in stg and prd.
 
-Staging runs `v3-ai`, so PR A reaches staging after the next `v3` to `v3-ai`
-merge. The data migration then runs through the staging PreSync migrator.
+Staging builds from `v3-audit` through the `v3` → `v3-ai` → `v3-audit`
+promotion chain. The data migration runs through the PreSync migrator in
+both environments.
 
 ### Production rollout order (for PR B, withheld)
 
-1. Run the migration against production (manual, migrator disabled in prd).
-2. Merge PR B and sync Argo so chat and backend roll out with the new registry.
+1. Do not sync the production Argo app between the PR A merge and PR B:
+   PR A's registry needs the new images.
+2. Merge PR B and sync Argo. The PreSync migrator rewrites allow-lists, then
+   chat and backend roll out with the new registry and images.
 3. Verify new answers carry `gpt-6-luna`, `gpt-6-sol` or `auto`.
 
 Rollback: restore the previous tags and registry, and run the migration's
@@ -135,4 +141,12 @@ All slices are owned by the main session (solo mode).
 
 - Execution mode: solo (Opus 5.5).
 - Status: approved 2026-09-29 (plan and Langfuse key allowlist request).
-- Next action: slice 1.
+- Slices 1–3 implemented. Production registry values moved into PR A (parity
+  test). The GPT-5.6 judge and capability model in `util/_run_klicker_eval.sh`
+  stay unchanged so evaluation scores remain comparable.
+- Slice 4 blocked: the KlickerUZH and shared Langfuse keys return 401 on
+  `langfuse.df-app.ch`, and the v1 observation endpoints return 404. Auto
+  stays at 1.0 / 5.0; at GPT-6 prices that equals a 50 % Luna / 50 % Sol
+  generation mix, which is conservative for a router that sends two of four
+  tiers to Luna.
+- Next action: in-container checks, migration proof, browser proof.

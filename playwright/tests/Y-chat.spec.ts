@@ -1840,7 +1840,7 @@ test.describe('Chatbot Settings Panel', () => {
       primary: 'The automatic choice is used while credits are available.',
       fixed: 'Your lecturer fixed this model for all participants.',
       fallback:
-        'No credits remain. GPT-5.6 Luna may be used as the credit fallback.',
+        'No credits remain. GPT-6 Luna may be used as the credit fallback.',
     })
   })
 
@@ -1855,7 +1855,7 @@ test.describe('Chatbot Settings Panel', () => {
       fixed:
         'Die Lehrperson hat dieses Modell für alle Teilnehmenden festgelegt.',
       fallback:
-        'Es sind keine Credits mehr übrig. GPT-5.6 Luna kann als Credit-Fallback verwendet werden.',
+        'Es sind keine Credits mehr übrig. GPT-6 Luna kann als Credit-Fallback verwendet werden.',
     })
   })
 
@@ -1937,7 +1937,7 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(modelSection).toBeVisible()
     await expect(page.getByTestId('chat-model-display')).toHaveCount(0)
 
-    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-5.6 Luna')
+    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-6 Luna')
 
     const chatRequestPromise = page.waitForRequest(
       (request) =>
@@ -1948,7 +1948,7 @@ test.describe('Chatbot Settings Panel', () => {
 
     const chatRequest = await chatRequestPromise
     const payload = chatRequest.postDataJSON() as { selectedModel?: string }
-    expect(payload.selectedModel).toBe('gpt-5.6-luna')
+    expect(payload.selectedModel).toBe('gpt-6-luna')
     await expect(page.getByTestId('chat-assistant-message')).toContainText(
       'assistant reply #1',
       { timeout: 15_000 }
@@ -1963,7 +1963,7 @@ test.describe('Chatbot Settings Panel', () => {
     await openSettings(page)
 
     const modelSection = page.getByTestId('chat-model-selection')
-    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-5.6 Luna')
+    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-6 Luna')
 
     await expect(modelSection).toContainText(
       'Uses fewer credits and remains available when your credits run out'
@@ -1983,7 +1983,7 @@ test.describe('Chatbot Settings Panel', () => {
     await mockChatStream(page, {
       metadata: {
         chatMode: 'tutor',
-        modelId: 'gpt-5.6-luna',
+        modelId: 'gpt-6-luna',
         reasoningEffort: 'high',
       },
     })
@@ -2000,7 +2000,7 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(
       page.getByTestId('chat-reasoning-effort-selection')
     ).toHaveCount(0)
-    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-5.6 Luna')
+    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-6 Luna')
 
     await expect(
       page.getByTestId('chat-reasoning-effort-selection')
