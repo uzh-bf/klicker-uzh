@@ -70,7 +70,7 @@ overrides:
   # unless the advisory has no fix in the older line.
   'axios@>=1.0.0 <1.18.0': 1.18.0
   'browserslist@>=4.0.0 <4.28.7': 4.28.7
-  'fast-uri@>=3.0.0 <3.1.6': 3.1.6
+  'fast-uri@>=3.0.0 <3.1.8': 3.1.8
   'form-data@>=4.0.0 <4.0.6': 4.0.6
   'nanoid@>=3.0.0 <3.3.18': 3.3.18
   'path-to-regexp@>=0.1.0 <0.1.13': 0.1.13
