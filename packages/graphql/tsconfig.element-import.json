@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/scripts/importElementWorkbook.ts",
+    "src/scripts/elementWorkbook/**/*.ts",
+    "test/elementWorkbook*.test.ts"
+  ],
+  "exclude": ["node_modules", "dist"],
+  "compilerOptions": {
+    "noEmit": true,
+    "incremental": false
+  }
+}
