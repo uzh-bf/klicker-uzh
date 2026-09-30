@@ -132,6 +132,26 @@ describe('chat model registry provider protocol', () => {
     expect(getAutomaticModelId(['gpt-4.1-mini'])).toBe('gpt-5.6-luna')
   })
 
+  test('resolves the chatbot fallback regardless of the chatbot allow-list', async () => {
+    const { resolveChatbotFallbackModel } = await import(
+      '../src/lib/server/chatModelRegistry'
+    )
+
+    // An allow-list restricted to a non-fallback model drops the base fallback
+    // when the registry is filtered by that list. Guests and exhausted-credit
+    // accounts still need a model, so the fallback must resolve from the
+    // registry regardless of the chatbot's allow-list.
+    expect(resolveChatbotFallbackModel({ allowedModelIds: ['auto'] })?.id).toBe(
+      'gpt-5.6-luna'
+    )
+    expect(
+      resolveChatbotFallbackModel({ allowedModelIds: ['gpt-4.1-mini'] })?.id
+    ).toBe('gpt-5.6-luna')
+    expect(resolveChatbotFallbackModel({ allowedModelIds: [] })?.id).toBe(
+      'gpt-5.6-luna'
+    )
+  })
+
   test('always selects Luna as the participant fallback', async () => {
     vi.stubEnv('CHAT_FALLBACK_MODEL_ID', 'advanced-fallback')
     vi.stubEnv(
