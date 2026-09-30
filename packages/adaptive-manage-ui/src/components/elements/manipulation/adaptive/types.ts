@@ -1,6 +1,6 @@
 import {
   AdaptiveNodeKind,
-  CompetenceTreeDataFragment,
+  type CompetenceTreeDataFragment,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
 
@@ -94,6 +94,22 @@ export function getNodeBreadcrumb(
   }
 
   return names.join(' / ')
+}
+
+/** Root competence id of a node, used to keep extra mappings in one root. */
+export function getRootNodeId(
+  tree: AdaptiveTreeDetail,
+  nodeId: number
+): number | null {
+  const nodesById = new Map(tree.nodes.map((node) => [node.id, node]))
+  const visited = new Set<number>()
+  let current = nodesById.get(nodeId)
+  while (current && !visited.has(current.id)) {
+    visited.add(current.id)
+    if (typeof current.parentId !== 'number') return current.id
+    current = nodesById.get(current.parentId)
+  }
+  return null
 }
 
 export function createMappingDraft(

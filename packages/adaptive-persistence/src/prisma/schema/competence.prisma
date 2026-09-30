@@ -260,7 +260,8 @@ model CompetenceTreeElementAssignment {
   level   CompetenceTreeLevel @relation(fields: [levelId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   levelId Int
 
-  // Additional authoring targets. Multi-target assignments cannot be published.
+  // Additional subcompetence targets in the primary root. The element stays one
+  // pool item: asked at most once, its answer counts once per mapped node.
   additionalLeafNodes CompetenceTreeNode[] @relation("AdditionalAssignmentLeaves")
 
   quizElementOverrides PracticeQuizAdaptiveElementOverride[]

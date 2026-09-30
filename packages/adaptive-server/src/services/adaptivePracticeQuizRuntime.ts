@@ -63,6 +63,55 @@ export type AdaptiveRuntimeRoutingPoolItem = Omit<
 
 export type AdaptiveRuntimeResponse =
   CoreAdaptiveRuntimeResponse<AdaptiveRuntimeRoutingPoolItem>
+
+/**
+ * IRT_V1 leaves an item counts for: its primary leaf plus every effectively
+ * enabled additional leaf. Mirrors the Catalyst engine so host-side coverage
+ * and reporting count one answer once per mapped leaf.
+ */
+export function getMappedRuntimeLeafIds(
+  item: Pick<
+    CoreAdaptiveRuntimePoolItem,
+    'leafNodeId' | 'additionalLeafNodeIds'
+  >,
+  enabledNodeIds: ReadonlySet<number>
+): number[] {
+  return [
+    item.leafNodeId,
+    ...(item.additionalLeafNodeIds ?? []).filter((leafId) =>
+      enabledNodeIds.has(leafId)
+    ),
+  ]
+}
+
+/**
+ * Union of the primary node path and the paths of effectively enabled
+ * additional leaves. Shared ancestors appear once, so one answer is one
+ * observation per node.
+ */
+export function getMappedRuntimeNodeIds(
+  item: Pick<CoreAdaptiveRuntimePoolItem, 'nodePath' | 'additionalLeafNodeIds'>,
+  nodes: readonly Pick<CoreAdaptiveRuntimeNode, 'id' | 'parentId'>[],
+  enabledNodeIds: ReadonlySet<number>
+): number[] {
+  const nodeIds = new Set(item.nodePath)
+  const additional = (item.additionalLeafNodeIds ?? []).filter((leafId) =>
+    enabledNodeIds.has(leafId)
+  )
+  if (additional.length === 0) return [...nodeIds]
+  const parentById = new Map(nodes.map((node) => [node.id, node.parentId]))
+  for (const leafId of additional) {
+    const path: number[] = []
+    let current: number | null | undefined = leafId
+    while (typeof current === 'number' && !path.includes(current)) {
+      path.unshift(current)
+      current = parentById.get(current)
+    }
+    for (const nodeId of path) nodeIds.add(nodeId)
+  }
+  return [...nodeIds]
+}
+
 export type AdaptiveRuntimeEstimate = CoreAdaptiveRuntimeEstimate
 export type AdaptiveRuntimeEstimates = CoreAdaptiveRuntimeEstimates
 export type AdaptiveNextItemDecision =

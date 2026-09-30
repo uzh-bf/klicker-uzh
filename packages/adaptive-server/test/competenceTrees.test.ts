@@ -2,11 +2,11 @@ import { GraphQLError } from 'graphql'
 import { prepareTreeInput } from '../src/services/competenceTreeInput.js'
 import {
   assertValidCompetenceTreeShape,
+  type CompetenceTreeValidationInput,
   deriveAdaptiveItemParameters,
   hasControlledAdaptiveAnswer,
   isSupportedAdaptiveElementType,
   validateCompetenceTreeShape,
-  type CompetenceTreeValidationInput,
 } from '../src/services/competenceTrees.js'
 
 const validTree: CompetenceTreeValidationInput = {
@@ -608,6 +608,45 @@ describe('multiple draft subcompetence mappings', () => {
       ],
     })
     expect(result.errors.map((issue) => issue.code)).toContain(code)
+  })
+
+  it('rejects additional targets in another root competence', () => {
+    const result = validateCompetenceTreeShape({
+      ...tree,
+      nodes: [
+        ...tree.nodes,
+        {
+          id: 20,
+          kind: 'COMPETENCE',
+          name: 'Writing',
+          order: 1,
+          depth: 1,
+          weight: 1,
+        },
+        {
+          id: 21,
+          kind: 'SUBCOMPETENCE',
+          name: 'Structure',
+          parentId: 20,
+          order: 0,
+          depth: 2,
+        },
+      ],
+      coverages: [
+        ...tree.coverages!,
+        { leafNodeId: 21, levelId: 1, targetItemCount: 3 },
+      ],
+      assignments: [
+        { ...tree.assignments![0]!, additionalLeafNodeIds: [12, 21] },
+      ],
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(
+      expect.objectContaining({
+        code: 'ASSIGNMENT_LEAF_OTHER_ROOT',
+        path: 'assignments.0.additionalLeafNodeIds',
+      })
+    )
   })
 
   it('requires shared-level coverage for every target', () => {

@@ -341,3 +341,39 @@ test('rejects non-JSON and oversized streamed responses', async () => {
   )
   assert.equal(cancelled, true)
 })
+test('sends IRT_V1 additional leaves in the same root and rejects other roots locally', async () => {
+  const node = request.nodes[1]!
+  const multiLeaf: ValidationRequest = {
+    ...validationRequest,
+    nodes: [
+      ...request.nodes,
+      { ...node, id: 3, order: 1 },
+      { ...request.nodes[0]!, id: 4, order: 1 },
+      { ...node, id: 5, parentId: 4 },
+    ],
+    pool: [{ ...request.pool[0]!, additionalLeafNodeIds: [3] }],
+  }
+  let calls = 0
+  const api = client(async (_url, init) => {
+    calls++
+    assert.deepEqual(
+      JSON.parse(String(init?.body)).pool[0].additionalLeafNodeIds,
+      [3]
+    )
+    return Response.json({
+      contractVersion: 1,
+      measurementVersion: 'IRT_V1',
+      valid: true,
+    })
+  })
+  assert.equal((await api.validate(multiLeaf)).valid, true)
+  for (const additionalLeafNodeIds of [[5], [3, 3], [2]]) {
+    await assert.rejects(
+      api.validate({
+        ...multiLeaf,
+        pool: [{ ...multiLeaf.pool[0]!, additionalLeafNodeIds }],
+      })
+    )
+  }
+  assert.equal(calls, 1)
+})

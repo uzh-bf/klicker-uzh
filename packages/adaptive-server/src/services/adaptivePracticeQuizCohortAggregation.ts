@@ -21,6 +21,7 @@ import {
   type AdaptiveRuntimeNode,
   type AdaptiveRuntimeRoutingPoolItem,
   type AdaptiveRuntimeSettings,
+  getMappedRuntimeLeafIds,
   MIN_REPORTING_RESPONSES,
 } from './adaptivePracticeQuizRuntime.js'
 
@@ -242,17 +243,18 @@ export function accumulateAdaptiveCohortAttempt(
     runtime.algorithm.nodes
   )
   const parentIds = new Set(enabledNodes.map((node) => node.parentId))
+  const enabledNodeIds = new Set(enabledNodes.map(({ id }) => id))
+  // One answer covers every enabled leaf its item is mapped to (once each).
   const leafCounts = new Map<number, number>()
   for (const response of responses) {
     const item =
       response.poolItemId === null
         ? undefined
         : accumulator.diagnostics.poolById.get(response.poolItemId)
-    if (item)
-      leafCounts.set(
-        item.leafNodeId,
-        (leafCounts.get(item.leafNodeId) ?? 0) + 1
-      )
+    if (!item) continue
+    for (const leafId of getMappedRuntimeLeafIds(item, enabledNodeIds)) {
+      leafCounts.set(leafId, (leafCounts.get(leafId) ?? 0) + 1)
+    }
   }
   const nodesById = new Map(enabledNodes.map((node) => [node.id, node]))
   const leaves = enabledNodes.filter((node) => !parentIds.has(node.id))

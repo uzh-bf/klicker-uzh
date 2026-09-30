@@ -9,6 +9,7 @@ import {
 import { GraphQLError } from 'graphql'
 import { isSupportedAdaptiveElementType } from './adaptiveElementValidation.js'
 import {
+  findCompetenceTreeRootKey,
   getEnabledLeafDescendants,
   isCompetenceTreeLeafNode,
   isCompetenceTreeNodeEnabled,
@@ -525,6 +526,25 @@ export function validateCompetenceTreeShape(
       addError(
         'ASSIGNMENT_LEAVES_INVALID',
         'Choose distinct subcompetences (at most 100 per element).',
+        `${path}.additionalLeafNodeIds`
+      )
+    }
+    // Reuse is limited to other subcompetences of the same root competence:
+    // an answer counting in two roots would count twice overall.
+    const primaryRootKey = findCompetenceTreeRootKey(
+      assignment.leafNodeId,
+      nodesById
+    )
+    if (
+      primaryRootKey !== null &&
+      (assignment.additionalLeafNodeIds ?? []).some((leafNodeId) => {
+        const rootKey = findCompetenceTreeRootKey(leafNodeId, nodesById)
+        return rootKey !== null && rootKey !== primaryRootKey
+      })
+    ) {
+      addError(
+        'ASSIGNMENT_LEAF_OTHER_ROOT',
+        `Element ${assignment.elementId} can only also count for subcompetences of the same competence as its primary subcompetence.`,
         `${path}.additionalLeafNodeIds`
       )
     }
