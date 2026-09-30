@@ -8,16 +8,11 @@ import {
   faTrashCan,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  Button,
-  NumberField,
-  Select,
-  TextareaField,
-  TextField,
-} from '@uzh-bf/design-system'
+import { Button, Select, TextareaField, TextField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import ConfirmationModal from './ConfirmationModal'
+import DraftNumberField from './DraftNumberField'
 import IconAction from './IconAction'
 import {
   canAddChild,
@@ -446,14 +441,12 @@ function HierarchyEditor({
               <div className="mt-4 max-w-sm">
                 {selectedNode.parentKey === null && (
                   <div>
-                    <NumberField
+                    <DraftNumberField
+                      key={selectedNode.key}
                       id="competence-tree-node-weight"
                       value={selectedNode.weight}
-                      onChange={(value) =>
-                        updateSelectedNode((node) => ({
-                          ...node,
-                          weight: Number(value || 0),
-                        }))
+                      onChange={(weight) =>
+                        updateSelectedNode((node) => ({ ...node, weight }))
                       }
                       min={0.001}
                       precision={3}

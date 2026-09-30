@@ -1,8 +1,9 @@
 import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
-import { NumberField, Select, Switch, TextField } from '@uzh-bf/design-system'
+import { Select, Switch, TextField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
 import { assignmentHasLeaf } from './assignmentHelpers'
+import DraftNumberField from './DraftNumberField'
 import {
   getBreadcrumb,
   getChildren,
@@ -246,13 +247,13 @@ function CoverageMatrix({
                         level: level.label,
                       })}
                     </label>
-                    <NumberField
+                    <DraftNumberField
                       id={`competence-tree-coverage-target-${leaf.key}-${level.key}`}
                       value={coverage.targetItemCount}
-                      onChange={(value) =>
+                      onChange={(targetItemCount) =>
                         updateCoverage(leaf.key, level.key, (current) => ({
                           ...current,
-                          targetItemCount: Number(value || 0),
+                          targetItemCount,
                         }))
                       }
                       min={1}

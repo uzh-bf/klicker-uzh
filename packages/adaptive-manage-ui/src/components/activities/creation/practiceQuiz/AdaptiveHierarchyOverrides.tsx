@@ -177,7 +177,8 @@ function AdaptiveHierarchyOverrides({
             {node.kind === AdaptiveNodeKind.Competence ? (
               <NumberField
                 id={`adaptive-node-weight-${node.id}`}
-                value={override?.weight || String(node.weight)}
+                value={override?.weight ?? ''}
+                placeholder={String(node.weight)}
                 onChange={(weight) => updateNode(node, { weight })}
                 min={0.01}
                 precision={2}
