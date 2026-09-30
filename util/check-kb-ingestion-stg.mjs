@@ -97,6 +97,9 @@ const responseProcessors = configMaps.filter((value) =>
 requireAbsent(backend, ['KB_GRAPH_DISABLED'])
 requireAbsent(generalWorker, ['KB_GRAPH_DISABLED'])
 requireData(generalWorker, expectedWorkerData)
+requireData(backend, {
+  KB_SOURCE_GATEWAY_URL: expectedWorkerData.KB_SOURCE_GATEWAY_URL,
+})
 requireAbsent(backend, ['KB_INGESTION_DISABLED'])
 requireAbsent(generalWorker, ['KB_INGESTION_WORKER_DISABLED'])
 if (responseProcessors.length !== 2) {
