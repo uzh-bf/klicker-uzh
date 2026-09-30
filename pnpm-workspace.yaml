@@ -86,10 +86,13 @@ overrides:
   # These advisories have no fix inside the older major line, so the pin has to
   # cross it: deepmerge-ts is consumed by Prisma config loading (exact 7.1.5),
   # nodemailer by the transactional email transport while @auth/core and
-  # next-auth peer at ^7.0.7, and propagator-jaeger only by the OpenTelemetry
-  # tracing setup of the Hatchet SDK (sdk-trace-node 1.26.0).
+  # next-auth peer at ^7.0.7 (GHSA-v53p-9fqp-m79j is fixed only in 10.0.6;
+  # 10.0.10 is the newest release outside the minimumReleaseAge window and
+  # keeps the follow-up parser and MIME boundary fixes), and propagator-jaeger
+  # only by the OpenTelemetry tracing setup of the Hatchet SDK
+  # (sdk-trace-node 1.26.0).
   'deepmerge-ts@>=7.0.0 <8.0.0': 8.0.0
-  'nodemailer@>=6.0.0 <9.1.0': 9.1.0
+  'nodemailer@>=6.0.0 <10.0.10': 10.0.10
   '@opentelemetry/propagator-jaeger@>=1.0.0 <2.9.0': 2.9.0
   # The next-intl peer-context hash includes @babel/core; a 7.28.3/7.28.6 split
   # gave packages/shared-components and the frontends different translation

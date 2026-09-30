@@ -38,7 +38,12 @@ RUN printf '%s\n' \
 # The pin stays on its own `RUN npm install prisma@` line because
 # util/check-prisma-sync.sh reads it from there and fails when it drifts from the
 # packages/prisma devDependency.
-RUN npm install prisma@7.8.0 --no-package-lock --no-audit --no-fund
+#
+# npm is removed in the same layer once Prisma is installed: no published npm
+# release vendors a patched brace-expansion (>=5.0.11) or undici (>=6.28.1) yet,
+# and the hook runs the local Prisma binary directly (see CMD), never npm or npx.
+RUN npm install prisma@7.8.0 --no-package-lock --no-audit --no-fund \
+ && rm -rf /root/.npm /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 # Prisma 7 keeps the datasource URL out of the schema: prisma.config.ts supplies it
 # from DATABASE_URL and points at the schema/migrations paths (relative to /app).
