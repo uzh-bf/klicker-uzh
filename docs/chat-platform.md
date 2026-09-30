@@ -801,6 +801,17 @@ established conversation language. German answers use Swiss Standard German orth
 never `ß`, and real umlauts). Unit tests prove prompt composition only; model compliance still
 requires a separately authorised live-model evaluation.
 
+The system prompt alone did not hold this rule. In a local tutor evaluation, 13 of 58 English turns
+answered in German after reading bilingual retrieved chunks that ended in German. The chat route
+therefore also resolves the reply language server-side. `resolveReplyLanguage` in
+`src/lib/server/languageInstructions.ts` scans user messages newest first. It ignores code and
+double-quoted spans and counts language-distinctive function words. It returns English or German
+only on a clear majority; otherwise it falls back to an earlier user message or to the prompt policy
+alone. When a language resolves, `prepareStep` appends the `reply-language-lock` system message as
+the last message of every model step, after tool output. The lock therefore sits closer to
+generation than any retrieved text. It leaves `instructions` unchanged, so the prompt-cache
+identity is stable, and it is never persisted. `request.context` logs the resolved `replyLanguage`.
+
 ## Sources and citations
 
 An answer's sources are **derived from the message's own tool-call parts**, not carried in a

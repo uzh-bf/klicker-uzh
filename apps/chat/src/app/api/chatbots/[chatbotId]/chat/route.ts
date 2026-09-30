@@ -44,6 +44,10 @@ import {
   LANGFUSE_CHAT_TRACE_NAME,
 } from '@/src/lib/server/langfuseTracing'
 import {
+  replyLanguageLockMessage,
+  resolveReplyLanguage,
+} from '@/src/lib/server/languageInstructions'
+import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
@@ -1183,6 +1187,14 @@ export async function POST(
       role: msg.role,
       content: msg.content,
     }))
+    const replyLanguage = resolveReplyLanguage(
+      messages
+        .filter((message) => message.role === 'user')
+        .map((message) => message.content)
+    )
+    const replyLanguageLock = replyLanguage
+      ? [replyLanguageLockMessage(replyLanguage)]
+      : []
 
     const maxOutputTokens = selectedModelConfig.maxOutputTokens
 
@@ -1325,6 +1337,7 @@ export async function POST(
       toolNames,
       systemPromptLength: systemPrompt.length,
       systemPromptHash: systemPrompt ? hashSnippet(systemPrompt) : null,
+      replyLanguage,
       userPromptLengthTotal: userPrompt.length,
       userPromptHash: userPrompt ? hashSnippet(userPrompt) : null,
       imageAttachmentCount: images.length,
@@ -1649,22 +1662,31 @@ export async function POST(
         tools: promptCacheRequest?.tools ?? mcpTools,
         toolOrder: promptCacheRequest?.toolOrder,
         toolChoice: 'auto',
-        prepareStep: docQueryToolName
-          ? ({ stepNumber, steps, initialMessages, responseMessages }) =>
-              stepNumber === 0
-                ? {
-                    toolChoice: {
-                      type: 'tool' as const,
-                      toolName: docQueryToolName,
-                    },
-                  }
-                : {
-                    messages: [
-                      ...initialMessages,
-                      ...withModelCitationIndices(responseMessages, steps),
-                    ],
-                  }
-          : undefined,
+        // The reply-language lock is the last message of every step, after
+        // tool output, so the resolved language wins over retrieved material.
+        allowSystemInMessages: replyLanguageLock.length > 0,
+        prepareStep: ({
+          stepNumber,
+          steps,
+          initialMessages,
+          responseMessages,
+        }) => {
+          const history =
+            docQueryToolName && stepNumber > 0
+              ? withModelCitationIndices(responseMessages, steps)
+              : responseMessages
+          return {
+            ...(docQueryToolName && stepNumber === 0
+              ? {
+                  toolChoice: {
+                    type: 'tool' as const,
+                    toolName: docQueryToolName,
+                  },
+                }
+              : {}),
+            messages: [...initialMessages, ...history, ...replyLanguageLock],
+          }
+        },
         stopWhen: isStepCount(5),
         instructions: systemPrompt,
 
