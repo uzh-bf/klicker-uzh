@@ -26,6 +26,11 @@ import {
   toDeliveredRuntimePoolItem,
 } from './adaptivePracticeQuizRuntimeData.js'
 import {
+  type AdaptiveTestingLevelResolver,
+  mostProbableBandLabel,
+  withAdaptiveTestingEstimates,
+} from './adaptivePracticeQuizTestingInfo.js'
+import {
   normalizeV2Position,
   serializeV2EstimateView,
   serializeV2LevelBands,
@@ -181,8 +186,59 @@ export function serializeAdaptiveAttemptState(
         : null,
     submittedResponseFeedback: null,
     servedItem: nextPoolItem
-      ? serializeAdaptiveParticipantElement(nextPoolItem)
+      ? withAttemptTestingEstimates(
+          serializeAdaptiveParticipantElement(nextPoolItem),
+          runtime,
+          attempt
+        )
       : null,
+  }
+}
+
+function withAttemptTestingEstimates(
+  element: AdaptiveParticipantElement,
+  runtime: LoadedAdaptiveRuntime,
+  attempt: AdaptiveAttemptRuntimeRecord
+): AdaptiveParticipantElement {
+  if (!element.testingInfo) return element
+  return {
+    ...element,
+    testingInfo: withAdaptiveTestingEstimates(
+      element.testingInfo,
+      attempt.estimates,
+      adaptiveTestingLevelResolver(runtime)
+    ),
+  }
+}
+
+function adaptiveTestingLevelResolver(
+  runtime: LoadedAdaptiveRuntime
+): AdaptiveTestingLevelResolver {
+  const intervalZ = runtime.publication.evidenceMinimumSnapshot.classificationZ
+  if (
+    runtime.estimator.measurementVersion ===
+    DB.AdaptiveMeasurementVersion.IRT_V2_EAP_GRID_1
+  ) {
+    const levels = runtime.publication.cutScoreSnapshot
+    return {
+      intervalZ,
+      labelForLevelId: (levelId) =>
+        levels.find(({ sourceLevelId }) => sourceLevelId === levelId)?.label ??
+        null,
+      tentativeLabel: (estimate) =>
+        mostProbableBandLabel(estimate.bandProbabilities, levels),
+    }
+  }
+  const levels = runtime.algorithm.levels
+  const settings = runtime.algorithm.settings
+  return {
+    intervalZ,
+    labelForLevelId: (levelId) =>
+      levels.find(({ id }) => id === levelId)?.label ?? null,
+    tentativeLabel: (estimate) =>
+      estimate.theta === null
+        ? null
+        : (mapLevelForTheta(estimate.theta, levels, settings)?.label ?? null),
   }
 }
 

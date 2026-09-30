@@ -11,12 +11,14 @@ import { MCAnswerOptions } from '@klicker-uzh/shared-components/src/questions/MC
 import { SCAnswerOptions } from '@klicker-uzh/shared-components/src/questions/SCAnswerOptions'
 import { Button, TextField, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useAdaptivePwaHost } from '../../../ports'
 
 type ServedItem = NonNullable<
   FAdaptivePracticeQuizAttemptStateFragment['servedItem']
 >
+type TestingInfo = NonNullable<ServedItem['testingInfo']>
+type TestingEstimate = TestingInfo['overallEstimate']
 type ChoicesResponse = Record<number, boolean | undefined>
 
 interface AdaptivePracticeQuizQuestionProps {
@@ -157,51 +159,8 @@ function AdaptivePracticeQuizQuestion({
         />
       </div>
 
-      {item.testingSolution && (
-        <div
-          className="rounded border border-amber-300 bg-amber-50 p-4 text-sm"
-          data-cy="adaptive-testing-solution"
-        >
-          <h3 className="font-semibold">
-            {t('pwa.practiceQuiz.adaptive.question.testingSolution')}
-          </h3>
-          <p className="mb-2 text-slate-600">
-            {t('pwa.practiceQuiz.adaptive.question.testingSolutionDescription')}
-          </p>
-          {item.options.__typename === 'AdaptivePracticeQuizChoicesOptions' ? (
-            <ul className="space-y-2">
-              {item.options.choices
-                .filter(
-                  (choice) =>
-                    item.type === ElementType.Kprim ||
-                    item.testingSolution!.choiceIndices.includes(choice.ix)
-                )
-                .map((choice) => (
-                  <li key={choice.ix}>
-                    {item.type === ElementType.Kprim && (
-                      <span className="font-medium">
-                        {t(
-                          item.testingSolution!.choiceIndices.includes(
-                            choice.ix
-                          )
-                            ? 'pwa.practiceQuiz.adaptive.question.testingTrue'
-                            : 'pwa.practiceQuiz.adaptive.question.testingFalse'
-                        )}
-                        {': '}
-                      </span>
-                    )}
-                    <QuestionContent content={choice.value} noPoints={false} />
-                  </li>
-                ))}
-            </ul>
-          ) : (
-            <ul className="list-inside list-disc">
-              {[...new Set(item.testingSolution.answers)].map((answer) => (
-                <li key={answer}>{answer}</li>
-              ))}
-            </ul>
-          )}
-        </div>
+      {item.testingInfo && (
+        <AdaptiveTestingInfo item={item} testingInfo={item.testingInfo} />
       )}
 
       {submissionError && (
@@ -238,6 +197,178 @@ function AdaptivePracticeQuizQuestion({
       </div>
     </section>
   )
+}
+
+// Rendered only when the server sets ADAPTIVE_QUIZ_SHOW_SOLUTIONS=true.
+function AdaptiveTestingInfo({
+  item,
+  testingInfo,
+}: {
+  item: ServedItem
+  testingInfo: TestingInfo
+}) {
+  const t = useTranslations()
+  const solution = testingInfo.solution
+  const estimates: Array<[string, TestingEstimate, string]> = [
+    [
+      'overall',
+      testingInfo.overallEstimate,
+      t('pwa.practiceQuiz.adaptive.question.testingOverallEstimate'),
+    ],
+    [
+      'competence',
+      testingInfo.competenceEstimate,
+      t('pwa.practiceQuiz.adaptive.question.testingCompetenceEstimate'),
+    ],
+    [
+      'subcompetence',
+      testingInfo.subcompetenceEstimate,
+      t('pwa.practiceQuiz.adaptive.question.testingSubcompetenceEstimate'),
+    ],
+  ]
+  // A leaf directly under the root has no separate competence estimate.
+  const shownEstimates =
+    testingInfo.competencePath.length > 1
+      ? estimates
+      : estimates.filter(([key]) => key !== 'competence')
+
+  return (
+    <div
+      className="space-y-3 rounded border border-amber-300 bg-amber-50 p-4 text-sm"
+      data-cy="adaptive-testing-info"
+    >
+      <div>
+        <h3 className="font-semibold">
+          {t('pwa.practiceQuiz.adaptive.question.testingInfo')}
+        </h3>
+        <p className="text-slate-600">
+          {t('pwa.practiceQuiz.adaptive.question.testingInfoDescription')}
+        </p>
+      </div>
+
+      <dl
+        className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1"
+        data-cy="adaptive-testing-metadata"
+      >
+        <dt className="font-medium">
+          {t('pwa.practiceQuiz.adaptive.question.testingElement')}
+        </dt>
+        <dd className="break-words">
+          {testingInfo.elementTitle}{' '}
+          <span className="text-slate-500">
+            (#{testingInfo.elementId} v{testingInfo.elementVersion})
+          </span>
+        </dd>
+        <dt className="font-medium">
+          {t('pwa.practiceQuiz.adaptive.question.testingTags')}
+        </dt>
+        <dd className="break-words">
+          {testingInfo.elementTags.length > 0
+            ? testingInfo.elementTags.join(', ')
+            : t('pwa.practiceQuiz.adaptive.question.testingNone')}
+        </dd>
+        <dt className="font-medium">
+          {t('pwa.practiceQuiz.adaptive.question.testingSubcompetence')}
+        </dt>
+        <dd className="break-words">
+          {testingInfo.competencePath.length > 0
+            ? testingInfo.competencePath.join(' › ')
+            : t('pwa.practiceQuiz.adaptive.question.testingNone')}
+        </dd>
+        <dt className="font-medium">
+          {t('pwa.practiceQuiz.adaptive.question.testingItemLevel')}
+        </dt>
+        <dd>{testingInfo.itemLevelLabel}</dd>
+        {shownEstimates.map(([key, estimate, label]) => (
+          <Fragment key={key}>
+            <dt className="font-medium">{label}</dt>
+            <dd data-cy={`adaptive-testing-estimate-${key}`}>
+              <AdaptiveTestingEstimateValue estimate={estimate} />
+            </dd>
+          </Fragment>
+        ))}
+      </dl>
+
+      <div data-cy="adaptive-testing-solution">
+        <h4 className="font-medium">
+          {t('pwa.practiceQuiz.adaptive.question.testingSolution')}
+        </h4>
+        {item.options.__typename === 'AdaptivePracticeQuizChoicesOptions' ? (
+          <ul className="space-y-2">
+            {item.options.choices
+              .filter(
+                (choice) =>
+                  item.type === ElementType.Kprim ||
+                  solution.choiceIndices.includes(choice.ix)
+              )
+              .map((choice) => (
+                <li key={choice.ix}>
+                  {item.type === ElementType.Kprim && (
+                    <span className="font-medium">
+                      {t(
+                        solution.choiceIndices.includes(choice.ix)
+                          ? 'pwa.practiceQuiz.adaptive.question.testingTrue'
+                          : 'pwa.practiceQuiz.adaptive.question.testingFalse'
+                      )}
+                      {': '}
+                    </span>
+                  )}
+                  <QuestionContent content={choice.value} noPoints={false} />
+                </li>
+              ))}
+          </ul>
+        ) : (
+          <ul className="list-inside list-disc">
+            {[...new Set(solution.answers)].map((answer) => (
+              <li key={answer}>{answer}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function AdaptiveTestingEstimateValue({
+  estimate,
+}: {
+  estimate: TestingEstimate
+}) {
+  const t = useTranslations()
+  if (!estimate) {
+    return (
+      <span className="text-slate-500">
+        {t('pwa.practiceQuiz.adaptive.question.testingNoEstimate')}
+      </span>
+    )
+  }
+  return (
+    <span>
+      <span className="font-medium">
+        {estimate.levelLabel ??
+          t('pwa.practiceQuiz.adaptive.question.testingNoLevel')}
+      </span>
+      {estimate.levelIsTentative && (
+        <> {t('pwa.practiceQuiz.adaptive.question.testingTentative')}</>
+      )}
+      {estimate.resultStatus && (
+        <span className="text-slate-500"> · {estimate.resultStatus}</span>
+      )}
+      <span className="block tabular-nums text-slate-600">
+        {t('pwa.practiceQuiz.adaptive.question.testingEstimateDetails', {
+          theta: formatTestingNumber(estimate.theta),
+          lower: formatTestingNumber(estimate.lowerBound),
+          upper: formatTestingNumber(estimate.upperBound),
+          standardError: formatTestingNumber(estimate.standardError),
+          count: estimate.responseCount,
+        })}
+      </span>
+    </span>
+  )
+}
+
+function formatTestingNumber(value: number | null | undefined) {
+  return typeof value === 'number' ? value.toFixed(2) : '–'
 }
 
 function formatElapsedSeconds(totalSeconds: number) {

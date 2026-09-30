@@ -4,14 +4,20 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { Button, Switch, TextField } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import {
+  ELEMENT_NAME_SORTS,
+  type ElementNameSort,
+  sortByName,
+} from '../../../lib/elementSorting'
 import AdditionalLeavesSelect from './AdditionalLeavesSelect'
 import { getAssignmentLeaves, updateElementMapping } from './assignmentHelpers'
 import CompetenceTreePagination from './CompetenceTreePagination'
 import ElementPreview from './ElementPreview'
 import IconAction from './IconAction'
 import ItemParameters from './ItemParameters'
+import SortSelect from './SortSelect'
 import { getBreadcrumb } from './treeHelpers'
 import type { CompetenceTreeForm } from './types'
 
@@ -28,13 +34,19 @@ function AssignedElementsPreview({
   disabled?: boolean
 }) {
   const t = useTranslations()
+  const locale = useLocale()
   const leaves = getAssignmentLeaves(form)
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const elements = form.assignments.filter((item) =>
-    item.elementName.toLowerCase().includes(search.toLowerCase())
+  const [sort, setSort] = useState<ElementNameSort>('default')
+  const elements = sortByName(
+    form.assignments.filter((item) =>
+      item.elementName.toLowerCase().includes(search.toLowerCase())
+    ),
+    sort,
+    locale
   )
   const totalPages = Math.max(1, Math.ceil(elements.length / pageSize))
   useEffect(() => {
@@ -61,15 +73,30 @@ function AssignedElementsPreview({
           </Button.Label>
         </Button>
       </div>
-      <TextField
-        label={t('manage.competenceTree.assignmentSearch')}
-        value={search}
-        onChange={(value) => {
-          setSearch(value)
-          setPage(1)
-        }}
-        data={{ cy: 'competence-tree-assigned-search' }}
-      />
+      <div className="grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_14rem]">
+        <TextField
+          label={t('manage.competenceTree.assignmentSearch')}
+          value={search}
+          onChange={(value) => {
+            setSearch(value)
+            setPage(1)
+          }}
+          data={{ cy: 'competence-tree-assigned-search' }}
+        />
+        <SortSelect
+          label={t('manage.competenceTree.sortBy')}
+          value={sort}
+          options={ELEMENT_NAME_SORTS.map((value) => ({
+            value,
+            label: t(`manage.competenceTree.sortOptions.${value}`),
+          }))}
+          onChange={(value) => {
+            setSort(value)
+            setPage(1)
+          }}
+          dataCy="competence-tree-assigned-sort"
+        />
+      </div>
       <ul className="mt-4 divide-y border-y border-gray-200">
         {elements.slice((page - 1) * pageSize, page * pageSize).map((item) => (
           <li

@@ -23,9 +23,23 @@ const messages = {
             'Your result helps you choose what to practise next. Course instructors see only anonymous group results.',
         },
         question: {
-          testingSolution: 'Solution — testing only',
-          testingSolutionDescription:
-            'Answer display is enabled for this environment.',
+          testingInfo: 'Testing info — not shown to students',
+          testingInfoDescription:
+            'Solutions and debugging data are enabled for this environment.',
+          testingSolution: 'Solution',
+          testingElement: 'Element',
+          testingTags: 'Tags',
+          testingNone: 'none',
+          testingSubcompetence: 'Subcompetence',
+          testingItemLevel: 'Item level',
+          testingOverallEstimate: 'Current estimate (overall)',
+          testingCompetenceEstimate: 'Competence estimate',
+          testingSubcompetenceEstimate: 'Subcompetence estimate',
+          testingNoEstimate: 'No estimate yet',
+          testingNoLevel: 'no level',
+          testingTentative: '(best guess)',
+          testingEstimateDetails:
+            'θ {theta} [{lower}, {upper}], SE {standardError}, {count, plural, one {# response} other {# responses}}',
           testingTrue: 'True',
           testingFalse: 'False',
           remainingTime: 'Time remaining: {time}',
@@ -700,6 +714,14 @@ const messages = {
           itemOverviewHelp:
             'Expand a competence and subcompetence to inspect its elements. Each list shows 10 elements per page by default.',
           unassignedItems: 'Other elements',
+          sortBy: 'Sort elements by',
+          sortOptions: {
+            default: 'Default order',
+            nameAsc: 'Name (A–Z)',
+            nameDesc: 'Name (Z–A)',
+            responsesDesc: 'Most responses',
+            responsesAsc: 'Fewest responses',
+          },
           questionDistribution: 'Questions answered',
           timeDistribution: 'Completion time',
           boxPlotHelp:
@@ -789,6 +811,12 @@ const messages = {
       overviewChildren: 'Subcompetences',
       overviewElements: 'Elements',
       overviewWeightHint: 'Contribution to the overall result',
+      numberField: {
+        required: 'Enter a value.',
+        invalid: 'Enter a valid number.',
+        min: 'Enter a value of at least {min}.',
+        max: 'Enter a value of at most {max}.',
+      },
       guidance: {
         missingSubcompetence:
           '“{name}” needs a subcompetence. Add at least one skill beneath it, or remove this competence if you do not need it.',
@@ -933,6 +961,12 @@ const messages = {
       loadElementsError: 'The element library could not be loaded.',
       noElements: 'No matching elements. Adjust your search or filters.',
       assignmentSearch: 'Search tree elements',
+      sortBy: 'Sort by',
+      sortOptions: {
+        default: 'Default order',
+        nameAsc: 'Name (A–Z)',
+        nameDesc: 'Name (Z–A)',
+      },
       allLevels: 'All levels',
       allCompetences: 'All subcompetences',
       libraryDescription:
