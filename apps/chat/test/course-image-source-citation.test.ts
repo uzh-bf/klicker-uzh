@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import {
   type CourseImage,
   courseImageCandidates,
+  courseImageSourceMap,
   matchCourseImageSource,
 } from '../src/lib/sources/courseImages'
 import {
@@ -96,6 +97,15 @@ describe('course image source citation', () => {
 
     expect(matchCourseImageSource(images[0]!, sources, parts)?.index).toBe(1)
     expect(matchCourseImageSource(images[1]!, sources, parts)?.index).toBe(2)
+    expect(
+      [...courseImageSourceMap(sources, parts)].map(([assetId, source]) => [
+        assetId,
+        source.index,
+      ])
+    ).toEqual([
+      [images[0]!.asset_id, 1],
+      [images[1]!.asset_id, 2],
+    ])
   })
 
   it('omits the citation when the asset is in no retrieval at all', () => {

@@ -247,7 +247,22 @@ export function matchCourseImageSource(
   sources: readonly ChatSource[],
   messageParts: readonly ChatSourcePart[]
 ): ChatSource | undefined {
-  const identities = new Set<string>()
+  return courseImageSourceMap(sources, messageParts).get(image.asset_id)
+}
+
+/**
+ * Resolves every unambiguous figure-to-source relationship in one pass.
+ *
+ * This is intended to be computed once per message and shared by all figure
+ * cards. It retains the same fail-closed behavior as `matchCourseImageSource`:
+ * duplicate source identities, conflicting retrieval records, and assets that
+ * point outside the displayed source list are omitted.
+ */
+export function courseImageSourceMap(
+  sources: readonly ChatSource[],
+  messageParts: readonly ChatSourcePart[]
+): ReadonlyMap<string, ChatSource> {
+  const identitiesByAssetId = new Map<string, Set<string>>()
 
   for (const part of messageParts) {
     if (part.type !== 'tool-call' || part.isError) continue
@@ -255,13 +270,34 @@ export function matchCourseImageSource(
       continue
 
     for (const candidate of courseImageCandidatesWithSource(part.result)) {
-      if (candidate.image.asset_id !== image.asset_id) continue
-      if (candidate.sourceId) identities.add(candidate.sourceId)
+      if (!candidate.sourceId) continue
+      const identities = identitiesByAssetId.get(candidate.image.asset_id)
+      if (identities) {
+        identities.add(candidate.sourceId)
+      } else {
+        identitiesByAssetId.set(
+          candidate.image.asset_id,
+          new Set([candidate.sourceId])
+        )
+      }
     }
   }
 
-  if (identities.size !== 1) return undefined
-  const identity = [...identities][0]
-  const matches = sources.filter((source) => source.id === identity)
-  return matches.length === 1 ? matches[0] : undefined
+  const sourcesByIdentity = new Map<string, ChatSource | undefined>()
+  for (const source of sources) {
+    sourcesByIdentity.set(
+      source.id,
+      sourcesByIdentity.has(source.id) ? undefined : source
+    )
+  }
+
+  const matches = new Map<string, ChatSource>()
+  for (const [assetId, identities] of identitiesByAssetId) {
+    if (identities.size !== 1) continue
+    const [identity] = identities
+    if (!identity) continue
+    const source = sourcesByIdentity.get(identity)
+    if (source) matches.set(assetId, source)
+  }
+  return matches
 }
