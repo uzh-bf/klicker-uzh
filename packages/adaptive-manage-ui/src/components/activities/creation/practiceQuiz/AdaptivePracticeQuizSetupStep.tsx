@@ -6,22 +6,22 @@ import {
 } from '@apollo/client'
 import { faLink, faRotate } from '@fortawesome/free-solid-svg-icons'
 import {
-  AdaptivePracticeQuizSetupPreviewDocument,
-  AdaptivePracticeQuizSetupPreviewQuery,
   AdaptivePracticeQuizPreset,
+  AdaptivePracticeQuizSetupPreviewDocument,
+  type AdaptivePracticeQuizSetupPreviewQuery,
   CompetenceTreeCatalogDocument,
   CompetenceTreeCatalogOwnership,
-  QCompetenceTreeWithRuntimeDefaultsDocument,
   CourseCompetenceTreeCatalogDocument,
   LinkCompetenceTreeToCourseDocument,
+  QCompetenceTreeWithRuntimeDefaultsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
   Select,
   TextField,
-  UserNotification,
   toast,
+  UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -33,11 +33,13 @@ import type {
 } from '../../../../types/practiceQuiz'
 import AdaptiveAssignmentPreview from './AdaptiveAssignmentPreview'
 import AdaptiveHierarchyOverrides from './AdaptiveHierarchyOverrides'
-import AdaptiveStoppingSettings from './AdaptiveStoppingSettings'
 import AdaptiveReadinessPanel from './AdaptiveReadinessPanel'
 import AdaptiveScaleReadinessSummary from './AdaptiveScaleReadinessSummary'
+import AdaptiveStoppingSettings from './AdaptiveStoppingSettings'
 import {
+  ADAPTIVE_V2_AUTHORING_ENABLED,
   applyPlacementPilotDefaults,
+  getAuthorableAdaptivePresets,
   isManageAdaptivePresetSelectable,
   mapAdaptivePracticeQuizPreviewToForm,
   serializeAdaptivePracticeQuizConfig,
@@ -505,19 +507,21 @@ function AdaptivePracticeQuizSetupStep({
               {selectedTreeLoading ? <Loader /> : null}
               {selectedTree && selectedTreeLinked ? (
                 <>
-                  <AdaptiveScaleReadinessSummary
-                    treeId={selectedTree.id}
-                    selectedScaleVersionId={
-                      values.adaptiveConfig.scaleVersionId
-                    }
-                    autoSelectActiveScale={!editMode}
-                    onScaleVersionChange={(scaleVersionId) =>
-                      updateConfig({
-                        ...values.adaptiveConfig,
-                        scaleVersionId,
-                      })
-                    }
-                  />
+                  {ADAPTIVE_V2_AUTHORING_ENABLED ? (
+                    <AdaptiveScaleReadinessSummary
+                      treeId={selectedTree.id}
+                      selectedScaleVersionId={
+                        values.adaptiveConfig.scaleVersionId
+                      }
+                      autoSelectActiveScale={!editMode}
+                      onScaleVersionChange={(scaleVersionId) =>
+                        updateConfig({
+                          ...values.adaptiveConfig,
+                          scaleVersionId,
+                        })
+                      }
+                    />
+                  ) : null}
                   <section data-cy="adaptive-preset-selection">
                     <label
                       htmlFor="adaptive-preset"
@@ -538,11 +542,9 @@ function AdaptivePracticeQuizSetupStep({
                               }
                         )
                       }
-                      items={[
-                        AdaptivePracticeQuizPreset.Diagnostic,
-                        AdaptivePracticeQuizPreset.Research,
-                        AdaptivePracticeQuizPreset.Placement,
-                      ].map((preset) => ({
+                      items={getAuthorableAdaptivePresets(
+                        values.adaptiveConfig.preset
+                      ).map((preset) => ({
                         value: preset,
                         label: t(
                           preset === AdaptivePracticeQuizPreset.Placement &&

@@ -26,6 +26,7 @@ import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useUnsavedChangesGuard } from '../../../lib/hooks/useUnsavedChangesGuard'
+import { ADAPTIVE_V2_AUTHORING_ENABLED } from '../../activities/creation/practiceQuiz/adaptivePracticeQuizForm'
 import AssignedElementsPreview from './AssignedElementsPreview'
 import { hasUnmappedElements } from './assignmentHelpers'
 import CoverageMatrix from './CoverageMatrix'
@@ -767,14 +768,14 @@ function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
               navigateToSection('competence-tree-section-assignments', true)
             }}
           />
-          {treeId && tree ? (
+          {ADAPTIVE_V2_AUTHORING_ENABLED && treeId && tree ? (
             <ScaleVersionPanel
               treeId={treeId}
               treeLevels={tree.levels}
               assignments={tree.elementAssignments}
             />
           ) : null}
-          {!treeId && (
+          {ADAPTIVE_V2_AUTHORING_ENABLED && !treeId && (
             <p className="my-4 text-sm text-slate-600">
               {t('manage.competenceTree.scaleAfterSave')}
             </p>

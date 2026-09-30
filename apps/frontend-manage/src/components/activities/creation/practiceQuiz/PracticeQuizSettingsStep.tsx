@@ -1,5 +1,6 @@
 import { faCrown, faGears } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { getAuthorableAdaptivePresets } from '@klicker-uzh/adaptive-manage-ui/source/components/activities/creation/practiceQuiz/adaptivePracticeQuizForm.ts'
 import {
   AdaptivePracticeQuizPreset,
   ElementOrderType,
@@ -20,7 +21,7 @@ import CourseSelectionMonitorPracticeQuiz from '../CourseSelectionMonitorPractic
 import CreationFormValidator from '../CreationFormValidator'
 import MultiplierSelector from '../MultiplierSelector'
 import WizardNavigation from '../WizardNavigation'
-import { PracticeQuizWizardStepProps } from './PracticeQuizWizard'
+import type { PracticeQuizWizardStepProps } from './PracticeQuizWizard'
 
 function PracticeQuizSettingsStep({
   editMode,
@@ -255,14 +256,9 @@ function PracticeQuizSettingsStep({
                         label={t(
                           'manage.activityWizard.adaptive.settings.preset'
                         )}
-                        items={[
-                          AdaptivePracticeQuizPreset.Diagnostic,
-                          AdaptivePracticeQuizPreset.Research,
-                          ...(values.adaptiveConfig.preset ===
-                          AdaptivePracticeQuizPreset.Placement
-                            ? [AdaptivePracticeQuizPreset.Placement]
-                            : []),
-                        ].map((preset) => ({
+                        items={getAuthorableAdaptivePresets(
+                          values.adaptiveConfig.preset
+                        ).map((preset) => ({
                           value: preset,
                           label: t(
                             preset === AdaptivePracticeQuizPreset.Placement
