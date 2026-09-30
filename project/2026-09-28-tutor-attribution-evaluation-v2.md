@@ -2,48 +2,60 @@
 
 ## Outcome
 
-The second experiment is **incomplete**. Its first protocol canary failed with
-`chat_stream_error`; no comparison trajectory completed. The existing Tutor and
-Quizzer prompts remain byte-for-byte unchanged. This result neither accepts nor
-rejects the prepared candidate's teaching behavior.
+The candidate is **rejected** and the existing Tutor and Quizzer prompts
+remain byte-for-byte unchanged. The third authorized attempt (retry3) ran the
+full baseline arm and 54 of 64 candidate turns. It then stopped on a request
+timeout, which the fixed rule treats as an uncertain request.
 
-The prerequisite changes are verified: local synthetic material now includes
-German terminology and explanations, and a numerical reference separates
-correctness, incorrect claims and missing evidence. A fresh comparison corpus
-and numerical obligations are prepared for a later authorized run.
+The candidate fails three gate conditions independently of the missing turns:
+
+- **Coverage:** incomplete. Both control cases have no candidate receipts.
+- **Development attribution:** four unsupported understanding or independence
+  claims remain, on the copied bond and copied time-value cases. The baseline
+  shows the same four.
+- **Numerical correctness:** both candidate repeats of the copied bond case
+  claim 1,027.80 CHF against a reference of 1,027.75 CHF (tolerance 0.01).
+
+Reserved cases improved only slightly: 5 of 8 candidate trajectories fail,
+against 6 of 7 valid baseline trajectories. Both arms pass the hinted numeric
+bond case when the help is visible. Neither arm separates a supplied worked
+example from the learner's new CAPM step.
 
 ## Verification and failure boundary
 
-- 34 focused container tests pass: 30 evaluator/numerical contracts and four
-  existing document-loader/matcher contracts. Four numerical tests were added.
-- Static fixture coverage passes 21 positive English/German queries, eight
-  unrelated negative queries and all 12 prior corpus openers. This proves finite
-  keyword coverage, not arbitrary model query recall or live grounding.
-- Repository container checks pass, including 35 typecheck/build dependency
-  tasks, lint, staged formatting, synchronization and policy checks. The root
-  production build passes 23/23 tasks. Unchanged host Playwright infrastructure
-  evidence (39 and 84 tests) is reused; no new UI behavior was introduced.
-- Prerequisite simplification found no useful reduction; independent slice
-  review found no threshold issues. Staged secret scanning passes; focused Opengrep reports zero findings and
-  zero scanner errors.
+Earlier attempts are preserved as failed ledgers:
 
-The local runtime started successfully after host permissions were restored.
-Startup recreated the LiteLLM service without the runtime-injected upstream key.
-A values-free inspection confirmed the missing key; the application logged an
-upstream `AuthenticationError` with HTTP 401 for the failed canary. This
-confirms an authentication failure independently of the accounting stop. The app also
-logged a Turbopack HMR error. No source change was made to work around either
-runtime problem. Final shutdown verified all seven task containers exited and
-zero exact-worktree routes; data and the worktree were retained.
+- The first canary failed with an upstream 401 because the LiteLLM service lacked the
+  injected key.
+- Retry1 was rejected with 403 `AI_FEATURES_DISABLED` before any model call.
+  The seed leaves `User.aiFeaturesEnabled` false for the lecturer, so every
+  reseeded local runtime needs that flag set before Chat admits requests.
+- Retry2 lost its host virtual machine when the disk filled. Its one submission
+  stays permanently uncertain.
 
-The ledger contains one submitted request, zero completed turns, zero accounted
-application credits, and `uncertain=true`. Zero accounted credits do **not** prove
-zero provider cost. The fixed rule stops all further model calls after an
-unreconciled request. No automatic retry, budget replacement, or uncertainty
-clearance was performed. Comparison coverage is 0/128 planned turns; no
-attribution or numerical pass rate can be computed. Auto/browser acceptance and
-independent response scoring were not applicable because no candidate output
-exists.
+Retry3 ran `gpt-5.6-luna` at low reasoning effort on the direct Luna
+deployment, with two repeats per arm. Per-request runtime logs prove model, deployment, effort, mode and
+compiled system-prompt hash for every counted turn. The prompt loader caches
+templates in process memory, so switching arms required a full runtime restart;
+one canary turn spent on the cached baseline prompt is recorded, not scored.
+
+The retry3 ledger holds 122 submissions and 0.243 credits, reconciled against
+the application database, under the 160-turn cap and 3-credit ceiling. The
+timed-out submission completed on the server, but its flag stays uncertain and
+no further calls were made.
+
+The main session scored every trajectory against the frozen rubrics and
+numerical sidecar. A separate read-only reviewer independently assessed all 30
+failed, invalid and sampled passing cells. It agreed on 28. It reclassified one
+baseline cell as invalid because the reply revealed the answer before the
+retry. It also flagged one inconsistent baseline pass, which was corrected to
+an omission. Neither change affects the rejection.
+
+Both arms often answered English prompts in German. No rubric criterion covers
+response language, so this drift is recorded but not scored.
+
+The runtime was stopped after the run; no task containers remain. Receipts,
+scoring packets and scores stay outside Git.
 
 ## Prepared comparison contract
 
@@ -60,10 +72,10 @@ endorsement of the learner's number. Silence is insufficient. Optional numerical
 claims are still checked when present. A numerical match does not establish
 independent reasoning.
 
-The candidate was frozen before the separate corpus author started and was never
-applied to the application. The author could read the old corpus and behavioral
-requirements but not the new candidate. Fresh reserved cases remain unevaluated;
-the candidate must not be tuned against them. False fixed learner statements
+The candidate was frozen before the separate corpus author started and was not
+applied before retry3. The author could read the old corpus and behavioral
+requirements but not the new candidate. The reserved cases are now spent;
+a future candidate needs fresh reserved cases. False fixed learner statements
 about hints are replaced with feedback requests tied to assistance actually
 visible in the conversation. Missing intended questions or help still makes a
 trajectory invalid rather than successful.
@@ -88,8 +100,8 @@ Baseline prompt hashes are unchanged from the first experiment:
 - `mode-quizzer.hbs`: baseline `8c52d36cbb15fbb19d00c4c60ffa2eeb47f5e97ef7e924678b8965d2d37cf5ac`; candidate `84404e7b9a8e7a0d429b92fd90b0659167ace7602f1a51f22a6c7859d54b5c40`.
 
 The sole candidate replaces only each mode's feedback clause; all other prompt
-lines remain identical. The following clauses preserve the exact prepared
-variant for a future run without activating it in product source.
+lines remain identical. The following clauses record the exact rejected
+variant; it was applied only to the local runtime during the candidate arm.
 
 ### mode-tutor.hbs
 
@@ -105,12 +117,8 @@ variant for a future run without activating it in product source.
 
 ## Remaining work
 
-Before another live attempt, restore the existing host-side operator injection
-when starting the exact local runtime and verify upstream-key presence without
-printing its value. Disposition the failed submission and authorize a retry
-experiment explicitly; preserve this stopped ledger and its incomplete result.
-Then validate the frozen corpus and numerical sidecar, prove both compiled
-prompt variants and model settings, execute the fixed comparison, score all
-outputs and obtain independent semantic assessment. Retain baseline prompts
-unless every gate passes. No ready transition, merge, release or deployment is
-part of this work.
+None for this experiment. A future attempt needs a new candidate that addresses
+copied-work overclaims and the separation of supplied examples from new steps,
+a new authorization and a fresh ledger. Fix the seed's `aiFeaturesEnabled` gap
+separately. No ready transition, merge, release or deployment is part of this
+work.
