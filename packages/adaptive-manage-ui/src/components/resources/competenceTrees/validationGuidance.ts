@@ -22,6 +22,7 @@ const guidanceByCode = {
   ASSIGNMENT_LEAF_MISSING: 'invalidAssignment',
   ASSIGNMENT_LEAF_NOT_LEAF: 'invalidAssignment',
   ASSIGNMENT_LEAF_KIND_INVALID: 'invalidAssignment',
+  ASSIGNMENT_LEAF_OTHER_ROOT: 'additionalLeafOtherRoot',
   ASSIGNMENT_LEVEL_MISSING: 'missingAssignmentLevel',
   ASSIGNMENT_COVERAGE_MISSING: 'assignmentCoverage',
   ASSIGNMENT_COVERAGE_DISABLED: 'assignmentCoverage',

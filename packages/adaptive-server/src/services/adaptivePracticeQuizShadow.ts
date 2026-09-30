@@ -78,6 +78,9 @@ async function computeAdaptiveIrtV2ShadowEvent({
     id: item.id,
     leafNodeId: item.leafNodeId,
     nodePath: item.nodePath,
+    ...(item.additionalLeafNodeIds?.length
+      ? { additionalLeafNodeIds: item.additionalLeafNodeIds }
+      : {}),
     levelId: requireScaleLevelId(item.levelId, sourceToScaleLevel),
     discrimination: item.discrimination,
     difficulty: item.difficulty,

@@ -7,11 +7,13 @@ import {
 import {
   buildAdaptiveRuntimeEstimateWrite,
   buildAdaptiveV2RuntimeEstimateWrite,
+  getEffectivelyEnabledRuntimeNodes,
 } from './adaptivePracticeQuizEstimatePersistence.js'
 import type { PersistAdaptivePracticeQuizEstimatesInput } from './adaptivePracticeQuizRepository.js'
-import type {
-  AdaptiveRuntimeResponse,
-  AdaptiveRuntimeRoutingPoolItem,
+import {
+  type AdaptiveRuntimeResponse,
+  type AdaptiveRuntimeRoutingPoolItem,
+  getMappedRuntimeNodeIds,
 } from './adaptivePracticeQuizRuntime.js'
 import type { AdaptiveAttemptRuntimeRecord } from './adaptivePracticeQuizRuntimeData.js'
 import { tryComputeAdaptiveIrtV2ShadowEvent } from './adaptivePracticeQuizShadow.js'
@@ -77,9 +79,18 @@ export function planAdaptivePracticeQuizResponseTransition({
         DB.AdaptivePracticeQuizStopReason.INSUFFICIENT_DATA)
     const estimates = decision.estimates
 
+    // A multi-leaf answer also updates the nodes on its additional paths.
     const estimateNodeIds = terminalStopReason
       ? [...estimates.nodes.keys()]
-      : servedPoolItem.nodePath
+      : getMappedRuntimeNodeIds(
+          servedPoolItem,
+          runtime.algorithm.nodes,
+          new Set(
+            getEffectivelyEnabledRuntimeNodes(runtime.algorithm.nodes).map(
+              ({ id }) => id
+            )
+          )
+        )
     const attemptUpdate: DB.Prisma.AdaptivePracticeQuizAttemptUncheckedUpdateInput =
       terminalStopReason
         ? {

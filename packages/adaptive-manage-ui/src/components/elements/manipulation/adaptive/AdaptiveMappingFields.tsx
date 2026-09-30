@@ -1,12 +1,13 @@
-import { ElementType } from '@klicker-uzh/graphql/dist/ops'
+import type { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormLabel, Select, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import {
-  AdaptiveMappingDraft,
-  AdaptiveTreeAssignment,
-  AdaptiveTreeDetail,
+  type AdaptiveMappingDraft,
+  type AdaptiveTreeAssignment,
+  type AdaptiveTreeDetail,
   getNodeBreadcrumb,
+  getRootNodeId,
   getSubcompetenceLeaves,
 } from './types'
 
@@ -65,6 +66,15 @@ function AdaptiveMappingFields({
       ),
     [enabledCoverage, mappedLeafIds, tree.levels]
   )
+  const primaryRootId = useMemo(
+    () =>
+      typeof value.leafNodeId === 'number'
+        ? getRootNodeId(tree, value.leafNodeId)
+        : null,
+    [tree, value.leafNodeId]
+  )
+  // Extra targets are limited to the primary leaf's root competence; stale
+  // selections stay listed so they can be removed.
   const additionalLeaves = useMemo(
     () =>
       leaves.filter(
@@ -72,6 +82,7 @@ function AdaptiveMappingFields({
           leaf.id !== value.leafNodeId &&
           (value.additionalLeafNodeIds.includes(leaf.id) ||
             (eligibleLeafIds.has(leaf.id) &&
+              getRootNodeId(tree, leaf.id) === primaryRootId &&
               typeof value.levelId === 'number' &&
               enabledCoverage.some(
                 (coverage) =>
@@ -83,6 +94,8 @@ function AdaptiveMappingFields({
       eligibleLeafIds,
       enabledCoverage,
       leaves,
+      primaryRootId,
+      tree,
       value.additionalLeafNodeIds,
       value.leafNodeId,
       value.levelId,
@@ -119,8 +132,11 @@ function AdaptiveMappingFields({
             }))}
             onChange={(leafId) => {
               const parsedLeafId = Number(leafId)
+              const rootId = getRootNodeId(tree, parsedLeafId)
               const additionalLeafNodeIds = value.additionalLeafNodeIds.filter(
-                (nodeId) => nodeId !== parsedLeafId
+                (nodeId) =>
+                  nodeId !== parsedLeafId &&
+                  getRootNodeId(tree, nodeId) === rootId
               )
               const nextLeafIds = [parsedLeafId, ...additionalLeafNodeIds]
               const firstLevel = tree.levels

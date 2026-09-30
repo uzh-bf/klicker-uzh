@@ -299,7 +299,7 @@ const messages = {
         addAdditionalLeaf: 'Weitere Teilkompetenz hinzufügen',
         removeAdditionalLeaf: 'Teilkompetenz entfernen',
         additionalLeavesDraftOnly:
-          'Weitere Teilkompetenzzuordnungen werden als Entwurfsmetadaten gespeichert. Sie können erst veröffentlicht werden, wenn die Bewertung mehrfacher Zuordnungen verfügbar ist.',
+          'Weitere Teilkompetenzen müssen zur selben Kompetenz wie die Haupt-Teilkompetenz gehören. Das Element wird pro Durchlauf weiterhin höchstens einmal gestellt; seine Antwort zählt einmal für jede zugeordnete Teilkompetenz.',
         level: 'Stufe',
         expectedDifficulty: 'Erwartete Itemschwierigkeit',
         expectedDifficultyTooltip:
@@ -546,7 +546,11 @@ const messages = {
             ADAPTIVE_MINIMUM_EVIDENCE_CAPPED:
               'Der Knoten "{nodeName}" benötigt {requiredQuestionCount} Fragen, sein effektives Limit ist jedoch {effectiveQuestionCap}.',
             ADAPTIVE_MULTIPLE_SUBCOMPETENCES_DRAFT_ONLY:
-              'Elemente mit mehreren Unterkompetenzen benötigen die Einstufung mit einer Kompetenzskala. Andere Quizmodi unterstützen diese Zuordnungen nicht.',
+              'Elemente mit mehreren Unterkompetenzen benötigen das adaptive Standardquiz oder die Einstufung mit einer Kompetenzskala. Andere Quizmodi unterstützen diese Zuordnungen nicht.',
+            ADAPTIVE_ASSIGNMENT_ADDITIONAL_LEAVES_INVALID:
+              'Ein Element hat ungültige weitere Unterkompetenzen. Wählen Sie unterschiedliche Unterkompetenzen, unter denen keine weiteren Unterkompetenzen liegen.',
+            ADAPTIVE_ASSIGNMENT_ADDITIONAL_LEAF_OTHER_ROOT:
+              'Ein Element kann nur zusätzlich für Unterkompetenzen derselben Kompetenz wie seine Haupt-Unterkompetenz zählen. Entfernen Sie Unterkompetenzen anderer Kompetenzen im Kompetenzbaum.',
             ADAPTIVE_PLACEMENT_PILOT_LIMITS_INVALID:
               'Die Einstufung prüft eine Auswahl der Unterkompetenzen. Entfernen Sie die Fragenlimits einzelner Unterkompetenzen, um fortzufahren.',
             ADAPTIVE_ROOT_MINIMUM_EVIDENCE_CAPPED:
@@ -827,6 +831,8 @@ const messages = {
           '„{name}“ wird für mehrere Niveaus verwendet. Gib jedem Niveau einen eigenen Namen.',
         invalidAssignment:
           'Ordne „{name}“ einer Teilkompetenz zu, unter der keine weiteren Teilkompetenzen liegen.',
+        additionalLeafOtherRoot:
+          '„{name}“ kann nur zusätzlich für Teilkompetenzen derselben Kompetenz wie seine Haupt-Teilkompetenz zählen. Entferne die anderen unter „Zählt auch für“.',
         missingAssignmentLevel: 'Wähle für „{name}“ ein erwartetes Niveau.',
         assignmentCoverage:
           'Aktiviere in den Baumeinstellungen das Niveau von „{name}“ für die zugeordnete Teilkompetenz.',
@@ -911,6 +917,14 @@ const messages = {
       competenceGroup: 'Gruppe',
       assignElementLeaf: 'Teilkompetenz für {name}',
       assignElementLevel: 'Erwartetes Niveau für {name}',
+      alsoCountsFor: 'Zählt auch für',
+      alsoCountsForSummary:
+        '{count, plural, =0 {keine weitere Teilkompetenz} one {# weitere Teilkompetenz} other {# weitere Teilkompetenzen}}',
+      alsoCountsForLabel: 'Weitere Teilkompetenzen, für die {name} zählt',
+      alsoCountsForHelp:
+        'Das Element wird pro Durchlauf weiterhin höchstens einmal gestellt. Seine Antwort zählt einmal für seine Teilkompetenz und für jede ausgewählte Teilkompetenz derselben Kompetenz.',
+      alsoCountsForOtherCompetence:
+        'Andere Kompetenz: Entferne diese Teilkompetenz vor dem Speichern.',
       unmappedElements:
         'Wähle für jedes Element eine Teilkompetenz und ein erwartetes Niveau, bevor du den Baum speicherst. Einen unvollständigen Entwurf kannst du auf diesem Gerät speichern. Elemente gehören zur untersten Teilkompetenz. Füge einer neuen Kompetenz eine Teilkompetenz hinzu, um ihr Elemente zuzuordnen.',
       batchLimit:

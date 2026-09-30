@@ -23,6 +23,8 @@ const poolItem = z
     id,
     leafNodeId: id,
     nodePath: z.array(id).min(1).max(5),
+    // Optional in both measurement versions; absent keeps one leaf per item.
+    additionalLeafNodeIds: z.array(id).max(100).optional(),
     levelId: id,
     discrimination: finite.positive().max(10),
     difficulty: theta,
@@ -31,7 +33,6 @@ const poolItem = z
   .strict()
 const v2PoolItem = poolItem
   .extend({
-    additionalLeafNodeIds: z.array(id).max(100).optional(),
     itemType: z.enum(['SC', 'MC', 'KPRIM', 'NUMERICAL', 'FREE_TEXT']),
     choiceCount: z.number().int().min(2).max(100).nullable(),
     model: z.enum(['TWO_PL', 'THREE_PL_FIXED_C']),
@@ -122,6 +123,25 @@ const common = {
     )
     .max(1000),
   terminalStopReason: z.literal('INSUFFICIENT_DATA').optional(),
+}
+// IRT_V1 additional leaves are distinct, differ from the primary leaf, and
+// stay in the primary root so one answer never counts for two roots (which
+// would double-weight it in the overall result). Disabled leaves remain valid:
+// the kernel ignores them, as quiz overrides may disable a subcompetence.
+function isValidV1AdditionalMapping(
+  item: {
+    leafNodeId: number
+    nodePath: number[]
+    additionalLeafNodeIds?: number[]
+  },
+  paths: ReadonlyMap<number, number[]>
+) {
+  const additional = item.additionalLeafNodeIds ?? []
+  return (
+    new Set(additional).size === additional.length &&
+    !additional.includes(item.leafNodeId) &&
+    additional.every((id) => paths.get(id)?.[0] === item.nodePath[0])
+  )
 }
 const runtimeStopReason = z.enum([
   'CLASSIFIED',
@@ -215,6 +235,11 @@ export const decisionRequestSchema = z
         item.additionalLeafNodeIds?.some(
           (id) => !nodesById.has(id) || parents.has(id)
         )
+      )
+        reject('Invalid additional item mapping')
+      if (
+        request.measurementVersion === 'IRT_V1' &&
+        !isValidV1AdditionalMapping(item, paths)
       )
         reject('Invalid additional item mapping')
     }
@@ -331,6 +356,11 @@ export const estimateRequestSchema = z
         item.additionalLeafNodeIds?.some(
           (id) => !nodesById.has(id) || parents.has(id)
         )
+      )
+        reject('Invalid additional item mapping')
+      if (
+        request.measurementVersion === 'IRT_V1' &&
+        !isValidV1AdditionalMapping(item, paths)
       )
         reject('Invalid additional item mapping')
     }

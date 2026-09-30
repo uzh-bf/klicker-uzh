@@ -15,6 +15,7 @@ import {
   toCompetenceTreeKey,
 } from './competenceTreeValidationHierarchy.js'
 import type {
+  CompetenceTreeId,
   CompetenceTreeValidationCoverage,
   CompetenceTreeValidationInput,
   CompetenceTreeValidationIssue,
@@ -474,6 +475,18 @@ export function validateCompetenceTreeShape(
     }
   }
 
+  function findRootKey(nodeId: CompetenceTreeId): string | null {
+    const visited = new Set<string>()
+    let current = nodesById.get(toCompetenceTreeKey(nodeId))
+    while (current && !visited.has(toCompetenceTreeKey(current.id))) {
+      visited.add(toCompetenceTreeKey(current.id))
+      if (current.parentId === null || typeof current.parentId === 'undefined')
+        return toCompetenceTreeKey(current.id)
+      current = nodesById.get(toCompetenceTreeKey(current.parentId))
+    }
+    return null
+  }
+
   const assignedElementIds = new Set<number>()
   for (const [index, assignment] of (tree.assignments ?? []).entries()) {
     const path = `assignments.${index}`
@@ -525,6 +538,22 @@ export function validateCompetenceTreeShape(
       addError(
         'ASSIGNMENT_LEAVES_INVALID',
         'Choose distinct subcompetences (at most 100 per element).',
+        `${path}.additionalLeafNodeIds`
+      )
+    }
+    // Reuse is limited to other subcompetences of the same root competence:
+    // an answer counting in two roots would count twice overall.
+    const primaryRootKey = findRootKey(assignment.leafNodeId)
+    if (
+      primaryRootKey !== null &&
+      (assignment.additionalLeafNodeIds ?? []).some((leafNodeId) => {
+        const rootKey = findRootKey(leafNodeId)
+        return rootKey !== null && rootKey !== primaryRootKey
+      })
+    ) {
+      addError(
+        'ASSIGNMENT_LEAF_OTHER_ROOT',
+        `Element ${assignment.elementId} can only also count for subcompetences of the same competence as its primary subcompetence.`,
         `${path}.additionalLeafNodeIds`
       )
     }

@@ -40,6 +40,12 @@ export type AdaptiveRuntimePoolItem = {
   id: number
   leafNodeId: number
   nodePath: readonly number[]
+  /**
+   * Other subcompetences (leaves) in the same root competence that this one
+   * item also measures. The item is still asked at most once; its answer
+   * counts once for every node on the union of the mapped paths.
+   */
+  additionalLeafNodeIds?: readonly number[]
   levelId: number
   discrimination: number
   difficulty: number

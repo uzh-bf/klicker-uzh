@@ -205,6 +205,7 @@ export async function prepareConfigurationInput(
   const prepared = await prepareConfiguration({
     tree,
     settings,
+    measurementVersion: measurement.measurementVersion,
     nodeOverrides: input.nodeOverrides ?? [],
     elementOverrides: input.elementOverrides ?? [],
     researchSettingsProvided:
@@ -243,6 +244,7 @@ export async function prepareStoredConfiguration(
   const prepared = await prepareConfiguration({
     tree: config.competenceTree,
     settings,
+    measurementVersion: config.measurementVersion,
     nodeOverrides: config.nodeOverrides.map((override) => ({
       nodeId: override.nodeId,
       enabled: override.enabled,
@@ -284,6 +286,7 @@ export async function prepareStoredConfiguration(
 async function prepareConfiguration({
   tree,
   settings,
+  measurementVersion,
   nodeOverrides,
   elementOverrides,
   researchSettingsProvided,
@@ -291,6 +294,7 @@ async function prepareConfiguration({
 }: {
   tree: AdaptiveTreeRecord
   settings: ResolvedPresetSettings
+  measurementVersion: DB.AdaptiveMeasurementVersion
   nodeOverrides: AdaptivePracticeQuizNodeOverrideInput[]
   elementOverrides: AdaptivePracticeQuizElementOverrideInput[]
   researchSettingsProvided: boolean
@@ -389,43 +393,56 @@ async function prepareConfiguration({
       continue
     }
 
-    const additionalLeafNodeIds = assignment.additionalLeafNodes
+    const storedAdditionalLeafNodeIds = assignment.additionalLeafNodes
       .map(({ id }) => id)
       .sort((left, right) => left - right)
-    if (additionalLeafNodeIds.length > 0 && !settings.rootBalancedPlacement) {
+    const legacyMeasurement =
+      measurementVersion === DB.AdaptiveMeasurementVersion.IRT_V1
+    if (
+      storedAdditionalLeafNodeIds.length > 0 &&
+      !legacyMeasurement &&
+      !settings.rootBalancedPlacement
+    ) {
       errors.push({
         code: 'ADAPTIVE_MULTIPLE_SUBCOMPETENCES_DRAFT_ONLY',
         message:
-          'Elements mapped to multiple subcompetences require scale-backed Placement. Other quiz modes do not support these mappings.',
+          'Elements mapped to multiple subcompetences require the standard adaptive quiz or scale-backed Placement. Other quiz modes do not support these mappings.',
         parameters: {},
         path: `assignments.${assignment.id}.additionalLeafNodeIds`,
         assignmentId: assignment.id,
       })
       continue
     }
-    const mappedLeafNodeIds = [assignment.leafNodeId, ...additionalLeafNodeIds]
-    const primaryRootId = rootNodeId(assignment.leafNodeId, nodesById)
-    if (
-      new Set(mappedLeafNodeIds).size !== mappedLeafNodeIds.length ||
-      additionalLeafNodeIds.some((leafNodeId) => {
-        const leaf = nodesById.get(leafNodeId)
-        return (
-          leaf === undefined ||
-          parentIds.has(leafNodeId) ||
-          !effectiveNodeEnabled.get(leafNodeId) ||
-          rootNodeId(leafNodeId, nodesById) !== primaryRootId
-        )
-      })
-    ) {
+    const mappingIssue = findAdditionalLeafMappingIssue({
+      leafNodeId: assignment.leafNodeId,
+      additionalLeafNodeIds: storedAdditionalLeafNodeIds,
+      nodesById,
+      parentIds,
+      // IRT_V1 quiz overrides may disable a subcompetence; that only turns off
+      // the extra mapping. Placement keeps requiring enabled targets.
+      requireEnabled: !legacyMeasurement,
+      effectiveNodeEnabled,
+    })
+    if (mappingIssue) {
       errors.push({
-        code: 'ADAPTIVE_ASSIGNMENT_ADDITIONAL_LEAVES_INVALID',
-        message: `Assignment ${assignment.id} has invalid additional subcompetence mappings.`,
+        code: mappingIssue,
+        message:
+          mappingIssue === 'ADAPTIVE_ASSIGNMENT_ADDITIONAL_LEAF_OTHER_ROOT'
+            ? `Assignment ${assignment.id} can only also count for subcompetences of the same competence as its primary subcompetence.`
+            : `Assignment ${assignment.id} has invalid additional subcompetence mappings.`,
         parameters: { assignmentId: assignment.id },
         path: `assignments.${assignment.id}.additionalLeafNodeIds`,
         assignmentId: assignment.id,
       })
       continue
     }
+    // Disabled extra targets are dropped before publication so the published
+    // pool item (and the engine request) names only active subcompetences.
+    const additionalLeafNodeIds = legacyMeasurement
+      ? storedAdditionalLeafNodeIds.filter(
+          (leafNodeId) => effectiveNodeEnabled.get(leafNodeId) ?? false
+        )
+      : storedAdditionalLeafNodeIds
 
     const choiceCount = getAdaptiveElementChoiceCount(
       assignment.element.options
@@ -508,6 +525,51 @@ async function prepareConfiguration({
   })
 
   return { tree, nodes, coverages, assignments, readiness }
+}
+
+type AdditionalLeafMappingIssue =
+  | 'ADAPTIVE_ASSIGNMENT_ADDITIONAL_LEAVES_INVALID'
+  | 'ADAPTIVE_ASSIGNMENT_ADDITIONAL_LEAF_OTHER_ROOT'
+
+/**
+ * An element may additionally count for other subcompetence leaves of the
+ * same root competence only. Cross-root reuse would count one answer in two
+ * roots and therefore twice in the overall result.
+ */
+export function findAdditionalLeafMappingIssue({
+  leafNodeId,
+  additionalLeafNodeIds,
+  nodesById,
+  parentIds,
+  requireEnabled,
+  effectiveNodeEnabled,
+}: {
+  leafNodeId: number
+  additionalLeafNodeIds: readonly number[]
+  nodesById: ReadonlyMap<number, { id: number; parentId: number | null }>
+  parentIds: ReadonlySet<number>
+  requireEnabled: boolean
+  effectiveNodeEnabled: ReadonlyMap<number, boolean>
+}): AdditionalLeafMappingIssue | null {
+  if (additionalLeafNodeIds.length === 0) return null
+  const mappedLeafNodeIds = [leafNodeId, ...additionalLeafNodeIds]
+  if (
+    new Set(mappedLeafNodeIds).size !== mappedLeafNodeIds.length ||
+    additionalLeafNodeIds.some(
+      (id) =>
+        !nodesById.has(id) ||
+        parentIds.has(id) ||
+        (requireEnabled && !effectiveNodeEnabled.get(id))
+    )
+  ) {
+    return 'ADAPTIVE_ASSIGNMENT_ADDITIONAL_LEAVES_INVALID'
+  }
+  const primaryRootId = rootNodeId(leafNodeId, nodesById)
+  return additionalLeafNodeIds.some(
+    (id) => rootNodeId(id, nodesById) !== primaryRootId
+  )
+    ? 'ADAPTIVE_ASSIGNMENT_ADDITIONAL_LEAF_OTHER_ROOT'
+    : null
 }
 
 function rootNodeId(

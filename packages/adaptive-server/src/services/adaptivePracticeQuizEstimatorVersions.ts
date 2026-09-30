@@ -268,7 +268,14 @@ export function buildAdaptiveDecisionRequest({
         label: `level-${order}`,
         order,
       })),
-      pool: runtime.algorithm.pool.map(commonPool),
+      pool: runtime.algorithm.pool.map((item) => ({
+        ...commonPool(item),
+        // Sent only when present, so single-leaf quizzes keep the exact
+        // request shape accepted by engines without multi-leaf IRT_V1 support.
+        ...(item.additionalLeafNodeIds?.length
+          ? { additionalLeafNodeIds: [...item.additionalLeafNodeIds] }
+          : {}),
+      })),
       settings: runtime.algorithm.settings,
     }
   } else {

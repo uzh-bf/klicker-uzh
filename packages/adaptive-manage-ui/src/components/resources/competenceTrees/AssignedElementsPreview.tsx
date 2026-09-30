@@ -3,9 +3,10 @@ import {
   faTrashCan,
 } from '@fortawesome/free-solid-svg-icons'
 import { Button, Switch, TextField } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import AdditionalLeavesSelect from './AdditionalLeavesSelect'
 import { getAssignmentLeaves, updateElementMapping } from './assignmentHelpers'
 import CompetenceTreePagination from './CompetenceTreePagination'
 import ElementPreview from './ElementPreview'
@@ -190,6 +191,18 @@ function AssignedElementsPreview({
                     data={{
                       cy: `competence-tree-assigned-enabled-${item.elementId}`,
                     }}
+                  />
+                  <AdditionalLeavesSelect
+                    form={form}
+                    assignment={item}
+                    disabled={disabled}
+                    onChange={(additionalLeafKeys) =>
+                      onChange(
+                        updateElementMapping(form, item.key, {
+                          additionalLeafKeys,
+                        })
+                      )
+                    }
                   />
                 </div>
               )}
