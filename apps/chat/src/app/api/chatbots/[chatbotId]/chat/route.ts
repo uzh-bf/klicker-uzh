@@ -1665,28 +1665,34 @@ export async function POST(
         // The reply-language lock is the last message of every step, after
         // tool output, so the resolved language wins over retrieved material.
         allowSystemInMessages: replyLanguageLock.length > 0,
-        prepareStep: ({
-          stepNumber,
-          steps,
-          initialMessages,
-          responseMessages,
-        }) => {
-          const history =
-            docQueryToolName && stepNumber > 0
-              ? withModelCitationIndices(responseMessages, steps)
-              : responseMessages
-          return {
-            ...(docQueryToolName && stepNumber === 0
-              ? {
-                  toolChoice: {
-                    type: 'tool' as const,
-                    toolName: docQueryToolName,
-                  },
+        prepareStep:
+          docQueryToolName || replyLanguageLock.length > 0
+            ? ({ stepNumber, steps, initialMessages, responseMessages }) => {
+                const toolChoice =
+                  docQueryToolName && stepNumber === 0
+                    ? {
+                        toolChoice: {
+                          type: 'tool' as const,
+                          toolName: docQueryToolName,
+                        },
+                      }
+                    : {}
+                const annotateCitations = !!docQueryToolName && stepNumber > 0
+                if (!annotateCitations && replyLanguageLock.length === 0) {
+                  return toolChoice
                 }
-              : {}),
-            messages: [...initialMessages, ...history, ...replyLanguageLock],
-          }
-        },
+                return {
+                  ...toolChoice,
+                  messages: [
+                    ...initialMessages,
+                    ...(annotateCitations
+                      ? withModelCitationIndices(responseMessages, steps)
+                      : responseMessages),
+                    ...replyLanguageLock,
+                  ],
+                }
+              }
+            : undefined,
         stopWhen: isStepCount(5),
         instructions: systemPrompt,
 

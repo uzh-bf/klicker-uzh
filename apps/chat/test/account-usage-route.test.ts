@@ -224,6 +224,7 @@ function createRequest({
   images = [],
   threadId = 'thread-1',
   allowRegeneration = false,
+  content = 'Explain this.',
 }: {
   selectedModel?: string
   selectedMode?: string
@@ -231,12 +232,13 @@ function createRequest({
   images?: string[]
   threadId?: string | null
   allowRegeneration?: boolean
+  content?: string
 } = {}) {
   return new NextRequest('http://localhost/api/chatbots/chatbot-1/chat', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      messages: [{ id: 'message-1', role: 'user', content: 'Explain this.' }],
+      messages: [{ id: 'message-1', role: 'user', content }],
       threadId,
       selectedModel,
       selectedMode,
@@ -676,9 +678,12 @@ describe('account usage chat route', () => {
     )
     mocks.getAggregatedMCPTools.mockResolvedValueOnce({ KB_doc_query: {} })
 
-    const response = await POST(createRequest({ selectedMode }), {
-      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
-    })
+    const response = await POST(
+      createRequest({ selectedMode, content: 'CAPM?' }),
+      {
+        params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+      }
+    )
 
     expect(response.status).toBe(200)
     const prepareStep = mocks.streamConfig?.prepareStep as (input: {
@@ -752,6 +757,38 @@ describe('account usage chat route', () => {
         },
       ],
     })
+  })
+
+  test('appends the reply language lock after the conversation on every step', async () => {
+    const response = await POST(
+      createRequest({ content: 'Wie funktioniert die Diversifikation?' }),
+      { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
+    )
+
+    expect(response.status).toBe(200)
+    expect(mocks.streamConfig?.allowSystemInMessages).toBe(true)
+    const prepareStep = mocks.streamConfig?.prepareStep as (input: {
+      stepNumber: number
+      steps: unknown[]
+      initialMessages: unknown[]
+      responseMessages: unknown[]
+    }) => { messages: Array<{ role: string; content: unknown }> }
+    const initialMessages = [{ role: 'user', content: 'Question' }]
+    const toolMessage = { role: 'tool', content: [] }
+    const output = prepareStep({
+      stepNumber: 1,
+      steps: [],
+      initialMessages,
+      responseMessages: [toolMessage],
+    })
+
+    expect(output.messages.slice(0, 2)).toEqual([
+      initialMessages[0],
+      toolMessage,
+    ])
+    expect(output.messages).toHaveLength(3)
+    expect(output.messages[2]).toMatchObject({ role: 'system' })
+    expect(output.messages[2]?.content).toContain('German')
   })
 
   test('routes zero-credit ADVANCED usage to Luna BASE', async () => {
