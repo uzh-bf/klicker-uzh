@@ -191,11 +191,11 @@ function PracticeQuizSettingsStep({
                 </div>
               ) : (
                 <div
-                  className="grid min-h-0 flex-1 gap-4 overflow-y-auto pb-2 md:grid-cols-[18rem_minmax(0,1fr)]"
+                  className="flex min-h-0 flex-1 flex-col items-center gap-4 overflow-y-auto pb-2 md:flex-row md:items-start md:justify-center"
                   data-cy="adaptive-practice-quiz-settings"
                 >
-                  <section className="border-border h-max rounded-md border border-solid p-3">
-                    <div className="mb-2 text-base font-bold">
+                  <section className="border-border h-max w-full rounded-md border border-solid p-2 shadow-md md:w-72">
+                    <div className="text-center text-lg font-bold">
                       {t('shared.generic.course')}
                     </div>
                     <FormikSelectField
@@ -208,7 +208,11 @@ function PracticeQuizSettingsStep({
                       placeholder={t('manage.activityWizard.selectCourse')}
                       groups={adaptiveGroupedCourses}
                       data={{ cy: 'select-course' }}
-                      className={{ root: 'w-full', tooltip: 'z-20' }}
+                      className={{
+                        root: 'w-full',
+                        tooltip: 'z-20',
+                        select: { root: 'w-full', trigger: 'w-full' },
+                      }}
                     />
                     {typeof values.courseId === 'undefined' ? (
                       <UserNotification
@@ -238,8 +242,14 @@ function PracticeQuizSettingsStep({
                     />
                   </section>
 
-                  <section className="min-w-0">
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <section className="border-border h-max w-full rounded-md border border-solid p-2 shadow-md md:w-72">
+                    <div className="flex flex-row items-center justify-center gap-2">
+                      <FontAwesomeIcon icon={faGears} />
+                      <div className="text-lg font-bold">
+                        {t('shared.generic.settings')}
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-3">
                       <FormikSelectField
                         required
                         name="adaptiveConfig.preset"
@@ -262,17 +272,18 @@ function PracticeQuizSettingsStep({
                           },
                         }))}
                         data={{ cy: 'adaptive-preset' }}
-                        className={{ root: 'w-full' }}
+                        className={{
+                          root: 'w-full',
+                          select: { root: 'w-full', trigger: 'w-full' },
+                        }}
                       />
-                      <div className="flex items-end pb-1">
-                        <FormikSwitchField
-                          name="adaptiveConfig.showTimer"
-                          label={t(
-                            'manage.activityWizard.adaptive.settings.showTimer'
-                          )}
-                          data={{ cy: 'adaptive-show-timer' }}
-                        />
-                      </div>
+                      <FormikSwitchField
+                        name="adaptiveConfig.showTimer"
+                        label={t(
+                          'manage.activityWizard.adaptive.settings.showTimer'
+                        )}
+                        data={{ cy: 'adaptive-show-timer' }}
+                      />
                     </div>
 
                     {values.adaptiveConfig.preset ===
@@ -282,7 +293,7 @@ function PracticeQuizSettingsStep({
                         message={t(
                           'manage.activityWizard.adaptive.research.nonClassifying'
                         )}
-                        className={{ root: 'mt-4' }}
+                        className={{ root: 'mt-3' }}
                         data={{ cy: 'adaptive-research-non-classifying' }}
                       />
                     ) : null}
