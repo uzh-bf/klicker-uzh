@@ -99,4 +99,36 @@ describe('local MCP document loading', () => {
       ],
     })
   })
+
+  test('spans the next page when a document carries continuation text', async () => {
+    const filePath = await documentFile([
+      {
+        title: 'Synthetic document exercise',
+        page: 4,
+        keywords: ['ExampleTool'],
+        content: 'Synthetic embedded content',
+        continuation: 'Synthetic continuation content',
+        reference: 'sources/example-exercise.md',
+        reference_type: 'md',
+      },
+    ])
+    const documents = loadLocalMcpDocuments({
+      LOCAL_MCP_DOCUMENTS_FILE: filePath,
+    })
+    const matches = findLocalMcpDocuments(documents, 'exampletool')
+
+    expect(matches).toHaveLength(1)
+    expect(toLocalMcpDocumentSource(matches[0]).chunks).toEqual([
+      {
+        content: 'Synthetic embedded content',
+        page_number: 4,
+        labeled_page_number: '4',
+      },
+      {
+        content: 'Synthetic continuation content',
+        page_number: 5,
+        labeled_page_number: '5',
+      },
+    ])
+  })
 })

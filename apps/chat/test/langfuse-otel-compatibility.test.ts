@@ -46,6 +46,9 @@ describe('Langfuse SDK and OpenTelemetry compatibility', () => {
     const forbiddenToolOutput = 'FORBIDDEN_TOOL_RESULT'
     const forbiddenProviderError = 'FORBIDDEN_PROVIDER_ERROR_BODY'
     const forbiddenToolError = 'FORBIDDEN_TOOL_ERROR_MESSAGE'
+    const forbiddenSetDigest = 'FORBIDDEN_RESPONSE_EXAMPLE_SET_DIGEST'
+    const forbiddenProjectionDigest =
+      'FORBIDDEN_RESPONSE_EXAMPLE_PROJECTION_DIGEST'
     const fetch = vi.fn(async () => {
       const response =
         fetch.mock.calls.length === 1
@@ -123,6 +126,12 @@ describe('Langfuse SDK and OpenTelemetry compatibility', () => {
           generateText({
             model: provider.chat('compatible-model'),
             prompt: forbiddenInput,
+            runtimeContext: {
+              responseExampleRole: 'included',
+              responseExampleSkillAvailable: true,
+              responseExampleSetDigest: forbiddenSetDigest,
+              responseExampleProjectionDigest: forbiddenProjectionDigest,
+            },
             tools: {
               lookup: tool({
                 inputSchema: z.object({ query: z.string() }),
@@ -134,6 +143,12 @@ describe('Langfuse SDK and OpenTelemetry compatibility', () => {
               isEnabled: true,
               recordInputs: false,
               recordOutputs: false,
+              includeRuntimeContext: {
+                responseExampleRole: true,
+                responseExampleSkillAvailable: true,
+                responseExampleSetDigest: false,
+                responseExampleProjectionDigest: false,
+              },
               functionId: 'langfuse-v4-compatibility-test',
               integrations: [new LangfuseVercelAiSdkIntegration()],
             },
@@ -267,6 +282,8 @@ describe('Langfuse SDK and OpenTelemetry compatibility', () => {
       expect(exportedPayload).not.toContain(forbiddenToolOutput)
       expect(exportedPayload).not.toContain(forbiddenProviderError)
       expect(exportedPayload).not.toContain(forbiddenToolError)
+      expect(exportedPayload).not.toContain(forbiddenSetDigest)
+      expect(exportedPayload).not.toContain(forbiddenProjectionDigest)
       expect(exportedPayload).not.toContain('Error: FORBIDDEN')
     } finally {
       await sdk.shutdown()

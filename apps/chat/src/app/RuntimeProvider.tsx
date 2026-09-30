@@ -12,7 +12,12 @@ import {
   useExternalStoreRuntime,
   type ThreadMessageLike,
 } from '@assistant-ui/react'
-import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import {
+  useParams,
+  usePathname,
+  useRouter,
+  useSearchParams,
+} from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useChatUi } from '../components/chat-ui-context'
 import { ModeOptionsProvider } from '../components/mode-options-context'
@@ -31,7 +36,16 @@ export function RuntimeProvider({
   children: React.ReactNode
 }>) {
   const { embedded } = useChatUi()
-  const { threadId } = useParams<{ chatbotId: string; threadId?: string }>()
+  const { threadId: routeThreadId } = useParams<{
+    chatbotId: string
+    threadId?: string
+  }>()
+  const pathname = usePathname()
+  // Native history changes keep the authenticated embed mounted. Dynamic
+  // route params still describe its original server route, so read the path.
+  const threadId = embedded
+    ? pathname.match(/^\/[^/]+\/threads\/([^/]+)\/?$/)?.[1]
+    : routeThreadId
   const activeThreadId = useChatStore((state) => state.activeThreadId)
   const activeThread = useChatStore((state) =>
     state.threads.find((thread) => thread.id === state.activeThreadId)
@@ -128,6 +142,13 @@ export function RuntimeProvider({
     previousRuntimeContext.current = { chatbotId, embedded, threadId }
 
     if (!shouldLoadRuntimeData) return
+    if (
+      embeddedThreadBecameAvailable &&
+      useChatStore.getState().activeThreadId === threadId
+    ) {
+      setThreadsLoaded(true)
+      return
+    }
 
     const currentGen = ++loadGeneration.current
 
@@ -202,7 +223,8 @@ export function RuntimeProvider({
         return
       }
 
-      if (lastSyncedThreadId.current === threadId) {
+      if (embedded || lastSyncedThreadId.current === threadId) {
+        lastSyncedThreadId.current = threadId
         return
       }
     }
@@ -269,6 +291,7 @@ export function RuntimeProvider({
         modelId,
         reasoningEffort,
         creditsUsed,
+        learningContext,
         imageAttachments,
         metadata,
         ...rest
@@ -280,6 +303,7 @@ export function RuntimeProvider({
         modelId: modelId ?? null,
         reasoningEffort: reasoningEffort ?? null,
         creditsUsed: creditsUsed ?? null,
+        learningContext: learningContext ?? null,
         imageAttachments: imageAttachments ?? [],
       }
 

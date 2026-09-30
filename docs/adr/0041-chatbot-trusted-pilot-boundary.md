@@ -9,6 +9,10 @@ This ADR supersedes the budget-control and pilot-cutover portions of
 for account AI authorization, per-chatbot publication, and usage-class
 semantics where this record does not change them.
 
+Lecturer setup editing after publication is superseded by
+[ADR 0043](./0043-review-chatbot-revisions-before-activation.md). Its saved
+revision and approval contract leaves unrelated runtime dependencies unchanged.
+
 ## Context
 
 The chatbot usage foundation can observe account-level usage for base and
@@ -60,9 +64,8 @@ invariants.
   normalized by this policy. They remain readable through the current
   `CHAT_PRIMARY_MODEL_ID`-aware automatic resolver, with retired-only lists
   retaining the Luna fallback. The strict owner-only
-  `updateChatbotModelPolicy` mutation canonicalizes fixed and participant-choice
-  rows, while `updateChatbotModelSettings` remains available for rolling
-  clients.
+  `saveChatbotRevision` model-policy section canonicalizes fixed and
+  participant-choice rows. Granular save mutations are removed.
 - Manage renders a localized lifecycle status for every chatbot. A participant
   link is rendered only for `PUBLISHED`; every other state explains that the
   link becomes available after publication. Published model-policy edits stay

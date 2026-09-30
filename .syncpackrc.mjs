@@ -52,6 +52,23 @@ export default {
       packages: ['**'],
     },
     {
+      // Same class as the vitest pins above (#5924): the lodash override
+      // rewrites the lockfile specifier to the exact release, so a manifest
+      // carrying a range would fail the verifyDepsBeforeRun spec comparison.
+      range: '',
+      dependencies: ['lodash'],
+      packages: ['**'],
+    },
+    {
+      // The @babel/core override rewrites the lockfile specifier to the exact
+      // pin, and verifyDepsBeforeRun compares spec strings, so the manifest
+      // must carry the exact release too.
+      range: '',
+      dependencyTypes: ['dev'],
+      dependencies: ['@babel/core'],
+      packages: ['**'],
+    },
+    {
       range: '~',
       dependencyTypes: ['dev'],
       dependencies: ['!@types/**'],
@@ -83,6 +100,17 @@ export default {
       // FIXME: update when consistent versions are possible (e.g., do other remark updates in apps)
       label: 'remark-math can be inconsistent between docs and apps',
       dependencies: ['remark-math'],
+      isIgnored: true,
+    },
+    {
+      // FIXME: drop once backend-docker migrates to the OpenTelemetry v2 SDK line;
+      // chat is on v2 (required by @langfuse/otel v4) while backend-docker stays on v1.
+      label: 'backend-docker stays on the OpenTelemetry v1 SDK line',
+      dependencies: [
+        '@opentelemetry/exporter-trace-otlp-http',
+        '@opentelemetry/sdk-trace-node',
+      ],
+      packages: ['@klicker-uzh/backend-docker'],
       isIgnored: true,
     },
     {

@@ -2,35 +2,19 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 const createSDKMCPClientMock = vi.hoisted(() => vi.fn())
 const signDocQueryScopeTokenMock = vi.hoisted(() => vi.fn())
-const transportConstructorMock = vi.hoisted(() => vi.fn())
 const clientToolsMock = vi.hoisted(() => vi.fn())
-const scopedFetchMock = vi.hoisted(() => vi.fn())
-const createDocQueryScopedFetchMock = vi.hoisted(() =>
-  vi.fn(() => scopedFetchMock)
-)
+const safeDecryptMock = vi.hoisted(() => vi.fn((value: string) => value))
 
 vi.mock('@ai-sdk/mcp', () => ({
   experimental_createMCPClient: createSDKMCPClientMock,
 }))
 
 vi.mock('@/src/lib/server/docQueryScopeToken', () => ({
-  createDocQueryScopedFetch: createDocQueryScopedFetchMock,
   signDocQueryScopeToken: signDocQueryScopeTokenMock,
 }))
 
 vi.mock('@klicker-uzh/util', () => ({
-  safeDecrypt: (value: string) => value,
-}))
-
-vi.mock('@modelcontextprotocol/sdk/client/streamableHttp.js', () => ({
-  StreamableHTTPClientTransport: class {
-    constructor(
-      readonly url: URL,
-      readonly options: { requestInit: { headers: Record<string, string> } }
-    ) {
-      transportConstructorMock(url, options)
-    }
-  },
+  safeDecrypt: safeDecryptMock,
 }))
 
 import {
@@ -43,32 +27,17 @@ import {
 } from '../src/services/mcpClients'
 import {
   assertDocQueryTransportSecurity,
+  createDocQueryScopedFetch,
   DOC_QUERY_SCOPE_TOKEN_HEADER,
-  DOC_QUERY_SCOPED_ROUTE_PATH,
+  DOC_QUERY_TOOL_NAME,
   normalizeDocQueryKbId,
   resolveMcpScope,
+  resolveMcpScopeSessionId,
 } from '../src/services/mcpScope'
 
 const KB_ID = '7016810d-31e9-4b39-9529-cd46feb2bf63'
 const CHATBOT_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
 const SESSION_ID = 'thread-4ca8d6a4'
-const SCOPED_SERVER_ID = 'b1b1a0c2-6a86-4f47-9e2d-2a8c58b1f0a4'
-const SCOPED_LEGACY_URL = 'https://doc-query.svc.cluster.local'
-const SCOPED_URL = `${SCOPED_LEGACY_URL}${DOC_QUERY_SCOPED_ROUTE_PATH}`
-
-function stubScopedRouteEnv(
-  overrides: Partial<Record<'serverId' | 'legacyUrl' | 'url', string>> = {}
-): void {
-  const values = {
-    serverId: SCOPED_SERVER_ID,
-    legacyUrl: SCOPED_LEGACY_URL,
-    url: SCOPED_URL,
-    ...overrides,
-  }
-  vi.stubEnv('DOC_QUERY_SCOPED_MCP_SERVER_ID', values.serverId)
-  vi.stubEnv('DOC_QUERY_SCOPED_MCP_LEGACY_URL', values.legacyUrl)
-  vi.stubEnv('DOC_QUERY_SCOPED_MCP_URL', values.url)
-}
 
 function createServer(
   overrides: Partial<MCPServerWithConfig['server']> = {},
@@ -102,7 +71,10 @@ describe('current-v3 Doc Query scope', () => {
     vi.clearAllMocks()
     signDocQueryScopeTokenMock.mockResolvedValue('scope-token')
     clientToolsMock.mockResolvedValue({ doc_query: {} })
-    createSDKMCPClientMock.mockResolvedValue({ tools: clientToolsMock })
+    createSDKMCPClientMock.mockResolvedValue({
+      close: vi.fn(),
+      tools: clientToolsMock,
+    })
   })
 
   test('keeps bearer transport auth separate from the scope token header', async () => {
@@ -111,19 +83,18 @@ describe('current-v3 Doc Query scope', () => {
       sessionId: SESSION_ID,
     })
 
-    expect(transportConstructorMock).toHaveBeenCalledWith(
-      new URL('https://mcp.example.test'),
-      {
-        requestInit: {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: 'Bearer opaque-transport-token',
-            [DOC_QUERY_SCOPE_TOKEN_HEADER]: 'Bearer scope-token',
-          },
-          redirect: 'error',
+    expect(createSDKMCPClientMock).toHaveBeenCalledWith({
+      transport: {
+        type: 'http',
+        url: 'https://mcp.example.test',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer opaque-transport-token',
+          [DOC_QUERY_SCOPE_TOKEN_HEADER]: 'Bearer scope-token',
         },
-      }
-    )
+        redirect: 'error',
+      },
+    })
     expect(signDocQueryScopeTokenMock).toHaveBeenCalledWith({
       kbIds: [KB_ID],
       chatbotId: CHATBOT_ID,
@@ -183,7 +154,7 @@ describe('current-v3 Doc Query scope', () => {
       )
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
     expect(signDocQueryScopeTokenMock).not.toHaveBeenCalled()
-    expect(transportConstructorMock).not.toHaveBeenCalled()
+    expect(createSDKMCPClientMock).not.toHaveBeenCalled()
   })
 
   test('accepts HTTPS and internal cleartext endpoints', async () => {
@@ -202,10 +173,11 @@ describe('current-v3 Doc Query scope', () => {
         kbIds: [KB_ID],
         sessionId: SESSION_ID,
       })
-      expect(transportConstructorMock).toHaveBeenCalledWith(
-        new URL(url),
+      expect(createSDKMCPClientMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          requestInit: expect.objectContaining({
+          transport: expect.objectContaining({
+            type: 'http',
+            url,
             headers: expect.objectContaining({
               Authorization: 'Bearer opaque-transport-token',
             }),
@@ -262,6 +234,19 @@ describe('current-v3 Doc Query scope', () => {
     expect(
       resolveMcpScope([target, explainerTarget], 'explainer', [explainerTarget])
     ).toEqual([KB_ID])
+  })
+
+  test.each([
+    { kb_id: KB_ID },
+    { kb_ids: [KB_ID] },
+  ])('accepts a singleton scope during the parameter transition: %j', (scope) => {
+    const config = {
+      chatMode: 'tutor',
+      parameters: { required: true, toolAlias: 'doc_query', ...scope },
+      mcpServer: { id: 'kb-server', name: 'KB' },
+    }
+
+    expect(resolveMcpScope([config], 'tutor', [config])).toEqual([KB_ID])
   })
 
   test('canonicalizes kb_ids and rejects mixed or mismatched scopes', () => {
@@ -345,7 +330,6 @@ describe('current-v3 Doc Query scope', () => {
 
     for (const kbIds of [
       [],
-      [KB_ID],
       [KB_ID, KB_ID],
       Array.from(
         { length: 33 },
@@ -395,7 +379,7 @@ describe('current-v3 Doc Query scope', () => {
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
 
     expect(signDocQueryScopeTokenMock).not.toHaveBeenCalled()
-    expect(transportConstructorMock).not.toHaveBeenCalled()
+    expect(createSDKMCPClientMock).not.toHaveBeenCalled()
   })
 
   test('accepts a Tutor binding safely inherited by Quizzer', () => {
@@ -529,183 +513,256 @@ describe('current-v3 Doc Query scope', () => {
       )
     ).toThrowError(RequiredMCPUnavailableError)
   })
-})
 
-describe('deployment-bound scoped KB route', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    signDocQueryScopeTokenMock.mockResolvedValue('scope-token')
-    clientToolsMock.mockResolvedValue({ doc_query: {} })
-    createSDKMCPClientMock.mockResolvedValue({ tools: clientToolsMock })
-    createDocQueryScopedFetchMock.mockReturnValue(scopedFetchMock)
+  test('keeps the citation card aligned with the runtime tool name', () => {
+    expect(DOC_QUERY_TOOL_NAME).toBe('KB_doc_query')
   })
 
-  afterEach(() => {
-    vi.unstubAllEnvs()
-  })
-
-  function createScopedServer(
-    overrides: Partial<MCPServerWithConfig['server']> = {}
-  ): MCPServerWithConfig {
-    return createServer({
-      id: SCOPED_SERVER_ID,
-      url: SCOPED_LEGACY_URL,
-      authType: 'none',
-      authSecret: undefined,
-      ...overrides,
-    })
-  }
-
-  test('binds the modern KB server to the deployment route and drops the stored bearer', async () => {
-    stubScopedRouteEnv()
-
-    await getAggregatedMCPTools([createScopedServer()], CHATBOT_ID, {
-      kbIds: [KB_ID],
-      sessionId: SESSION_ID,
-    })
-
-    expect(transportConstructorMock).toHaveBeenCalledWith(new URL(SCOPED_URL), {
-      requestInit: {
-        headers: { 'Content-Type': 'application/json' },
-        redirect: 'error',
-      },
-      fetch: scopedFetchMock,
-    })
-    expect(createDocQueryScopedFetchMock).toHaveBeenCalledWith({
-      target: new URL(SCOPED_URL),
-      kbIds: [KB_ID],
-      chatbotId: CHATBOT_ID,
-      sessionId: SESSION_ID,
-    })
-    // Tokens are minted per outbound request, never while building the client.
-    expect(signDocQueryScopeTokenMock).not.toHaveBeenCalled()
-    expect(clientToolsMock).toHaveBeenCalledTimes(1)
-  })
-
-  test('needs the turn authorization even when the route is configured', async () => {
-    stubScopedRouteEnv()
-
-    await expect(
-      getAggregatedMCPTools([createScopedServer()], CHATBOT_ID)
-    ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
-
-    expect(createDocQueryScopedFetchMock).not.toHaveBeenCalled()
-    expect(transportConstructorMock).not.toHaveBeenCalled()
-  })
-
-  test('rejects a partial scope configuration before any credential exists', async () => {
-    stubScopedRouteEnv({ url: '' })
-
-    await expect(
-      getAggregatedMCPTools([createScopedServer()], CHATBOT_ID, {
-        kbIds: [KB_ID],
-        sessionId: SESSION_ID,
+  test('never signs a client-supplied foreign thread as the session subject', () => {
+    expect(
+      resolveMcpScopeSessionId({
+        requestedThreadId: 'foreign-thread',
+        owningThreadId: undefined,
+        fallbackId: 'server-request',
       })
-    ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
-
-    expect(createDocQueryScopedFetchMock).not.toHaveBeenCalled()
-    expect(transportConstructorMock).not.toHaveBeenCalled()
-  })
-
-  test.each([
-    {
-      name: 'a server row the deployment does not bind',
-      env: {},
-      server: { id: 'e0a1f0d4-3c2f-4a4c-9a1e-9b6b1a0c2f11' },
-    },
-    {
-      name: 'a stored URL that differs from the bound row URL',
-      env: {},
-      server: { url: `${SCOPED_LEGACY_URL}/legacy` },
-    },
-    {
-      name: 'an inactive KB server',
-      env: {},
-      server: { isActive: false },
-    },
-    {
-      name: 'a scope target on another path',
-      env: { url: `${SCOPED_LEGACY_URL}/mcp/klicker` },
-      server: {},
-    },
-    {
-      name: 'a trailing-slash scope target',
-      env: { url: `${SCOPED_URL}/` },
-      server: {},
-    },
-    {
-      name: 'a scope target on another origin',
-      env: { url: `https://other.example.test${DOC_QUERY_SCOPED_ROUTE_PATH}` },
-      server: {},
-    },
-    {
-      name: 'a scope target carrying a query',
-      env: { url: `${SCOPED_URL}?tenant=klicker` },
-      server: {},
-    },
-    {
-      name: 'a scope target carrying userinfo',
-      env: {
-        url: `https://user:secret@doc-query.svc.cluster.local${DOC_QUERY_SCOPED_ROUTE_PATH}`,
-      },
-      server: {},
-    },
-    {
-      name: 'a cleartext public scope target',
-      env: {
-        legacyUrl: 'http://doc-query.example.test',
-        url: `http://doc-query.example.test${DOC_QUERY_SCOPED_ROUTE_PATH}`,
-      },
-      server: { url: 'http://doc-query.example.test' },
-    },
-  ])('rejects $name', async ({ env, server }) => {
-    stubScopedRouteEnv(env)
-
-    await expect(
-      getAggregatedMCPTools([createScopedServer(server)], CHATBOT_ID, {
-        kbIds: [KB_ID],
-        sessionId: SESSION_ID,
+    ).toBeNull()
+    expect(
+      resolveMcpScopeSessionId({
+        requestedThreadId: 'owned-thread',
+        owningThreadId: 'owned-thread',
+        fallbackId: 'server-request',
       })
-    ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
-
-    expect(createDocQueryScopedFetchMock).not.toHaveBeenCalled()
-    expect(signDocQueryScopeTokenMock).not.toHaveBeenCalled()
-    expect(transportConstructorMock).not.toHaveBeenCalled()
-    expect(createSDKMCPClientMock).not.toHaveBeenCalled()
+    ).toBe('owned-thread')
+    expect(
+      resolveMcpScopeSessionId({
+        requestedThreadId: null,
+        owningThreadId: undefined,
+        fallbackId: 'server-request',
+      })
+    ).toBe('server-request')
   })
 
-  test('leaves generic and compatibility servers on their existing authentication', async () => {
-    stubScopedRouteEnv()
+  describe('scoped KB route', () => {
+    const SCOPED_URL = 'https://mcp.example.test/mcp/klicker/kb'
 
-    await getAggregatedMCPTools(
-      [
-        createServer(
-          {
-            id: 'compat-server',
-            name: 'Klicker-compat',
-            url: 'https://compat.example.test',
-            authType: 'bearer',
-            authSecret: 'compat-transport-token',
-          },
-          { allowedTools: ['doc_query'], parameters: {} }
-        ),
-      ],
-      CHATBOT_ID,
-      { kbIds: [KB_ID], sessionId: SESSION_ID }
-    )
-
-    expect(transportConstructorMock).toHaveBeenCalledWith(
-      new URL('https://compat.example.test'),
-      {
-        requestInit: {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: 'Bearer compat-transport-token',
-          },
-          redirect: 'error',
-        },
+    function stubScopedRoute(
+      overrides: Partial<{
+        serverId: string
+        legacyUrl: string
+        url: string
+      }> = {}
+    ) {
+      const configured = {
+        serverId: 'kb-server',
+        legacyUrl: 'https://mcp.example.test',
+        url: SCOPED_URL,
+        ...overrides,
       }
-    )
-    expect(createDocQueryScopedFetchMock).not.toHaveBeenCalled()
+      vi.stubEnv('DOC_QUERY_SCOPED_MCP_SERVER_ID', configured.serverId)
+      vi.stubEnv('DOC_QUERY_SCOPED_MCP_LEGACY_URL', configured.legacyUrl)
+      vi.stubEnv('DOC_QUERY_SCOPED_MCP_URL', configured.url)
+    }
+
+    type RecordedTransport = {
+      url: string
+      headers: Record<string, string>
+      redirect: string
+      fetch?: (url: string | URL, init?: RequestInit) => Promise<Response>
+    }
+
+    function transportOfFirstClient(): RecordedTransport {
+      const [call] = createSDKMCPClientMock.mock.calls
+      const options = call?.[0] as { transport: RecordedTransport }
+      return options.transport
+    }
+
+    afterEach(() => {
+      vi.unstubAllEnvs()
+      vi.unstubAllGlobals()
+    })
+
+    test('binds the modern KB binding to the scoped route without the stored bearer', async () => {
+      stubScopedRoute()
+
+      await getAggregatedMCPTools([createServer()], CHATBOT_ID, {
+        kbIds: [KB_ID],
+        sessionId: SESSION_ID,
+      })
+
+      expect(createSDKMCPClientMock).toHaveBeenCalledTimes(1)
+      const transport = transportOfFirstClient()
+      expect(transport.url).toBe(SCOPED_URL)
+      expect(transport.redirect).toBe('error')
+      expect(transport.headers).toEqual({
+        'Content-Type': 'application/json',
+      })
+      expect(transport.fetch).toBeTypeOf('function')
+      expect(safeDecryptMock).not.toHaveBeenCalled()
+      expect(signDocQueryScopeTokenMock).not.toHaveBeenCalled()
+    })
+
+    test('mints a fresh token for every transport request and never the bearer', async () => {
+      stubScopedRoute()
+      const sentRequests: Array<RequestInit | undefined> = []
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (_url: string | URL, init?: RequestInit) => {
+          sentRequests.push(init)
+          return new Response('{}', { status: 200 })
+        })
+      )
+
+      await getAggregatedMCPTools([createServer()], CHATBOT_ID, {
+        kbIds: [KB_ID],
+        sessionId: SESSION_ID,
+      })
+      const transport = transportOfFirstClient()
+
+      signDocQueryScopeTokenMock.mockResolvedValue('first-token')
+      await transport.fetch?.(SCOPED_URL, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer stale' },
+      })
+      signDocQueryScopeTokenMock.mockResolvedValue('second-token')
+      await transport.fetch?.(new URL(SCOPED_URL), { method: 'POST' })
+
+      expect(signDocQueryScopeTokenMock).toHaveBeenCalledTimes(2)
+      expect(signDocQueryScopeTokenMock).toHaveBeenNthCalledWith(1, {
+        kbIds: [KB_ID],
+        chatbotId: CHATBOT_ID,
+        sessionId: SESSION_ID,
+        jti: expect.any(String),
+      })
+      const [firstInit, secondInit] = sentRequests
+      const firstHeaders = new Headers(firstInit?.headers)
+      expect(firstHeaders.get('authorization')).toBeNull()
+      expect(firstHeaders.get(DOC_QUERY_SCOPE_TOKEN_HEADER)).toBe(
+        'Bearer first-token'
+      )
+      expect(
+        new Headers(secondInit?.headers).get(DOC_QUERY_SCOPE_TOKEN_HEADER)
+      ).toBe('Bearer second-token')
+      expect(firstInit?.redirect).toBe('error')
+    })
+
+    test('preserves Request protocol headers and overlays init headers', async () => {
+      const fetchSpy = vi.fn(
+        async (..._args: Parameters<typeof fetch>) =>
+          new Response('{}', { status: 200 })
+      )
+      vi.stubGlobal('fetch', fetchSpy)
+      const signToken = vi.fn(async () => 'request-token')
+      const request = new Request(SCOPED_URL, {
+        method: 'POST',
+        headers: {
+          accept: 'application/json, text/event-stream',
+          authorization: 'Bearer request-bearer',
+          'content-type': 'application/json',
+          'mcp-session-id': 'session-1',
+          [DOC_QUERY_SCOPE_TOKEN_HEADER]: 'Bearer request-scope',
+        },
+        body: JSON.stringify({ jsonrpc: '2.0', method: 'ping' }),
+      })
+
+      await createDocQueryScopedFetch({
+        target: new URL(SCOPED_URL),
+        kbIds: [KB_ID],
+        signToken,
+      })(request, { headers: { 'x-custom': 'init-value' } })
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
+      expect(fetchSpy.mock.calls[0][0]).toBe(request)
+      const headers = new Headers(fetchSpy.mock.calls[0][1]?.headers)
+      expect(headers.get('accept')).toBe('application/json, text/event-stream')
+      expect(headers.get('content-type')).toBe('application/json')
+      expect(headers.get('mcp-session-id')).toBe('session-1')
+      expect(headers.get('x-custom')).toBe('init-value')
+      expect(headers.get('authorization')).toBeNull()
+      expect(headers.get(DOC_QUERY_SCOPE_TOKEN_HEADER)).toBe(
+        'Bearer request-token'
+      )
+    })
+
+    test('rejects a request outside the bound target and a signing failure before the network', async () => {
+      stubScopedRoute()
+      const fetchSpy = vi.fn(async () => new Response('{}', { status: 200 }))
+      vi.stubGlobal('fetch', fetchSpy)
+
+      await getAggregatedMCPTools([createServer()], CHATBOT_ID, {
+        kbIds: [KB_ID],
+        sessionId: SESSION_ID,
+      })
+      const transport = transportOfFirstClient()
+
+      await expect(
+        transport.fetch?.('https://mcp.example.test/other-route')
+      ).rejects.toThrowError(/mismatch/)
+
+      signDocQueryScopeTokenMock.mockRejectedValueOnce(
+        new Error('signing material unavailable')
+      )
+      await expect(transport.fetch?.(SCOPED_URL)).rejects.toThrowError(
+        'signing material unavailable'
+      )
+
+      expect(fetchSpy).not.toHaveBeenCalled()
+    })
+
+    test.each([
+      {
+        name: 'a partial binding',
+        stub: () => vi.stubEnv('DOC_QUERY_SCOPED_MCP_SERVER_ID', 'kb-server'),
+      },
+      {
+        name: 'another KB server row',
+        stub: () => stubScopedRoute({ serverId: 'other-kb-server' }),
+      },
+      {
+        name: 'a changed stored URL',
+        stub: () =>
+          stubScopedRoute({ legacyUrl: 'https://mcp-renamed.example.test' }),
+      },
+      {
+        name: 'a target outside the scoped path',
+        stub: () =>
+          stubScopedRoute({ url: 'https://mcp.example.test/mcp/klicker' }),
+      },
+      {
+        name: 'a target on another origin',
+        stub: () =>
+          stubScopedRoute({ url: 'https://other.example.test/mcp/klicker/kb' }),
+      },
+    ])('fails closed on $name', async ({ stub }) => {
+      stub()
+
+      await expect(
+        getAggregatedMCPTools([createServer()], CHATBOT_ID, {
+          kbIds: [KB_ID],
+          sessionId: SESSION_ID,
+        })
+      ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
+
+      expect(createSDKMCPClientMock).not.toHaveBeenCalled()
+      expect(signDocQueryScopeTokenMock).not.toHaveBeenCalled()
+    })
+
+    test('keeps generic and compat servers on their existing authentication', async () => {
+      stubScopedRoute()
+
+      await getAggregatedMCPTools(
+        [createServer({ id: 'other-server', name: 'Klicker-compat' })],
+        CHATBOT_ID,
+        { kbIds: [KB_ID], sessionId: SESSION_ID }
+      )
+
+      const transport = transportOfFirstClient()
+      expect(transport.url).toBe('https://mcp.example.test')
+      expect(transport.headers).toEqual(
+        expect.objectContaining({
+          Authorization: 'Bearer opaque-transport-token',
+        })
+      )
+      expect(transport.fetch).toBeUndefined()
+    })
   })
 })

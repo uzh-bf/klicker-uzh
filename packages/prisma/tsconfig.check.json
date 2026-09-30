@@ -8,6 +8,7 @@
     "test/**/*.ts"
   ],
   "compilerOptions": {
+    "rootDir": ".",
     "declaration": false,
     "declarationMap": false,
     "noEmit": true

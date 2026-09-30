@@ -1,5 +1,8 @@
 import { lstatSync } from 'fs'
 
+// util/run-git-hook.mjs also consumes these rules: use extension-group patterns
+// and commands ending in the supplied filenames for container formatting.
+
 // Skip symlinks (the repo checks in skill/config symlinks that must not be
 // rewritten by a formatter).
 const realFiles = (stagedFiles) =>

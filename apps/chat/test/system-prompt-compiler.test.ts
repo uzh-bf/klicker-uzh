@@ -29,6 +29,7 @@ const COURSE_POLICY_MARK = 'Course scope:'
 const GROUNDING_MARK = 'Course grounding:'
 const PARTIAL_RETRIEVAL_MARK = 'Retrieved results are a partial'
 const OUTPUT_FORMAT_MARK = 'Output format:'
+const CHEMISTRY_NOTATION_MARK = 'Chemistry and biology:'
 const CITATION_MARK = '<SYNTHETIC-CITATION-CONTRACT>'
 const LANGUAGE_MARK = 'Swiss Standard German orthography'
 
@@ -66,6 +67,8 @@ describe('compileSystemPrompt', () => {
     expect(result).toContain(INPUT_CONTEXT_MARK)
     expect(result).toContain(COURSE_POLICY_MARK)
     expect(result).toContain(OUTPUT_FORMAT_MARK)
+    expect(result).toContain(CHEMISTRY_NOTATION_MARK)
+    expect(result).toContain('\\ce{')
     expect(result).not.toContain(GROUNDING_MARK)
     expect(result).toContain(LANGUAGE_MARK)
     expect(result).not.toContain(CITATION_MARK)

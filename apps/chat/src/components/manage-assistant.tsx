@@ -1,0 +1,382 @@
+'use client'
+
+import {
+  AssistantRuntimeProvider,
+  useAui,
+  useAuiState,
+} from '@assistant-ui/react'
+import {
+  AssistantChatTransport,
+  useChatRuntime,
+} from '@assistant-ui/react-ai-sdk'
+import {
+  BookOpenTextIcon,
+  FilePenLineIcon,
+  MessageSquareTextIcon,
+  RefreshCwIcon,
+  RotateCcwIcon,
+  SearchIcon,
+  WandSparkles,
+} from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
+import { useEmbeddedManageContext } from '../hooks/useEmbeddedManageContext'
+import { useManageAssistantCapabilities } from '../hooks/useManageAssistantCapabilities'
+import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
+import { MAX_MANAGE_IMAGE_ATTACHMENTS } from '../lib/config/attachmentLimits'
+import {
+  getManageSuggestions,
+  type ManageSuggestionTextKey,
+} from '../lib/config/manageSuggestions'
+import type { ManageAssistantCapabilityState } from '../services/manageAssistantCapabilities'
+import {
+  getManageContextLabel,
+  type ManageAssistantContext,
+} from '../services/manageContext'
+import { ChatUiProvider, useChatUi } from './chat-ui-context'
+import { EmbeddedSettings } from './embedded-settings'
+import { ModeOptionsProvider } from './mode-options-context'
+import { Thread, type ThreadWelcomeCapability } from './thread'
+
+const MANAGE_ASSISTANT_NAME = 'KlickerUZH Assistant'
+const MANAGE_MODE_OPTIONS = { manage: '' }
+export function ManageAssistant() {
+  return (
+    <ChatUiProvider>
+      <ManageAssistantInner />
+    </ChatUiProvider>
+  )
+}
+
+function ManageAssistantInner() {
+  const t = useTranslations('chat.manageAssistant')
+  const { embedded } = useChatUi()
+  const context = useEmbeddedManageContext()
+  const capability = useManageAssistantCapabilities()
+  const welcomeCapability =
+    capability.phase === 'settled' ? capability.capability : null
+  const contextLabel = getManageContextLabel(context, {
+    surfaces: {
+      'activity-creation': t('context.surface.activityCreation'),
+      'course-dashboard': t('context.surface.courseDashboard'),
+      'element-editor': t('context.surface.elementEditor'),
+      evaluation: t('context.surface.evaluation'),
+      general: t('context.surface.general'),
+      'question-pool': t('context.surface.questionPool'),
+    },
+    entities: {
+      activity: (id) => t('context.activity', { id }),
+      course: (id) => t('context.course', { id }),
+      question: (id) => t('context.question', { id }),
+    },
+  })
+  const [contextAnnouncement, setContextAnnouncement] = useState('')
+  const contextKeyRef = useRef<string | null>(null)
+  const hasReceivedContextRef = useRef(false)
+
+  useEffect(() => {
+    if (!embedded) {
+      contextKeyRef.current = null
+      hasReceivedContextRef.current = false
+      setContextAnnouncement('')
+      return
+    }
+
+    // The hook starts with no context while the cross-origin handshake is
+    // pending. Do not treat that placeholder as the first context change.
+    if (!hasReceivedContextRef.current && context === null) return
+
+    const nextContextKey = context ? JSON.stringify(context) : null
+    const previousContextKey = contextKeyRef.current
+    contextKeyRef.current = nextContextKey
+    const isInitialContext = !hasReceivedContextRef.current
+    hasReceivedContextRef.current = true
+
+    // The first context message establishes the embedded session; it is not a
+    // change the lecturer needs announced. Subsequent JSON-distinct messages
+    // represent real Manage navigation or identifier changes.
+    if (isInitialContext || previousContextKey === nextContextKey) {
+      return
+    }
+
+    if (context) {
+      setContextAnnouncement(
+        t('context.changed', {
+          context: contextLabel ?? t('manageContext'),
+        })
+      )
+    } else {
+      setContextAnnouncement(t('context.cleared'))
+    }
+  }, [context, contextLabel, embedded, t])
+  const suggestions = welcomeCapability
+    ? getManageSuggestions(context, welcomeCapability).map((suggestion) => {
+        const textKey = (suggestion.textKey ??
+          suggestion.id) as ManageSuggestionTextKey
+        return {
+          ...suggestion,
+          text: t(`suggestions.${textKey}`),
+        }
+      })
+    : []
+  let capabilityActions: ThreadWelcomeCapability[] = []
+  let limitsNote: string | undefined
+  switch (welcomeCapability) {
+    case null:
+      // Still checking: keep the welcome minimal until the preflight settles.
+      break
+    case 'draft-and-read':
+      capabilityActions = [
+        { icon: SearchIcon, text: t('capabilitySearch') },
+        { icon: FilePenLineIcon, text: t('capabilityDraft') },
+      ]
+      limitsNote = t('limitsNote')
+      break
+    case 'read-only':
+      capabilityActions = [
+        { icon: SearchIcon, text: t('capabilitySearch') },
+        { icon: FilePenLineIcon, text: t('capabilityNoSaveDraft') },
+      ]
+      limitsNote = t('degradedLimitsNote')
+      break
+    case 'unavailable':
+      capabilityActions = [
+        { icon: FilePenLineIcon, text: t('capabilityNoSaveDraft') },
+      ]
+      limitsNote = t('degradedLimitsNote')
+      break
+  }
+  const capabilities: ThreadWelcomeCapability[] = [
+    ...capabilityActions,
+    { icon: MessageSquareTextIcon, text: t('capabilityFeedback') },
+    { icon: BookOpenTextIcon, text: t('capabilityDocumentation') },
+  ]
+
+  return (
+    <ManageAssistantRuntimeProvider
+      capabilityFetch={capability.chatFetch}
+      context={context}
+    >
+      <div className="relative flex h-dvh w-full flex-col overflow-hidden">
+        {!embedded && (
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b bg-white px-3 py-2.5 sm:px-4">
+            <ManageAssistantAvatar className="size-9" />
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-semibold">
+                {MANAGE_ASSISTANT_NAME}
+              </div>
+              <div className="mt-1 inline-flex max-w-full items-center rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium leading-tight text-blue-800">
+                <span className="truncate">
+                  {contextLabel ?? t('manageContext')}
+                </span>
+              </div>
+            </div>
+            <ManageAssistantToolbar />
+          </div>
+        )}
+        {embedded && (
+          <div className="flex shrink-0 items-center justify-between gap-2 px-3 pt-2">
+            <div
+              className="min-w-0 truncate rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium leading-tight text-blue-800"
+              data-cy="manage-assistant-context-label"
+              title={contextLabel ?? t('manageContext')}
+            >
+              {contextLabel ?? t('manageContext')}
+            </div>
+            <ManageAssistantToolbar />
+          </div>
+        )}
+        {embedded && (
+          <span
+            aria-live="polite"
+            className="sr-only"
+            data-cy="manage-assistant-context-announcement"
+            role="status"
+          >
+            {contextAnnouncement}
+          </span>
+        )}
+        <ManageCapabilityNotice
+          capability={capability.capability}
+          phase={capability.phase}
+          retry={capability.retry}
+        />
+        <Thread
+          chatbotAvatar=""
+          chatbotFallbackIcon={WandSparkles}
+          chatbotName={MANAGE_ASSISTANT_NAME}
+          contextLabel={contextLabel}
+          suggestions={suggestions}
+          welcomeMessage={t('welcome')}
+          capabilities={capabilities}
+          limitsNote={limitsNote}
+          maxImageAttachments={MAX_MANAGE_IMAGE_ATTACHMENTS}
+        />
+      </div>
+    </ManageAssistantRuntimeProvider>
+  )
+}
+
+function ManageCapabilityNotice({
+  capability,
+  phase,
+  retry,
+}: {
+  capability: ManageAssistantCapabilityState
+  phase: 'checking' | 'settled'
+  retry: () => void
+}) {
+  const t = useTranslations('chat.manageAssistant')
+  if (phase === 'settled' && capability === 'draft-and-read') return null
+
+  const checking = phase === 'checking'
+  let text: string
+  if (checking) {
+    text = t('capabilityChecking')
+  } else if (capability === 'read-only') {
+    text = t('capabilityReadOnly')
+  } else {
+    text = t('capabilityUnavailable')
+  }
+
+  return (
+    <div
+      data-cy="manage-assistant-capability-status"
+      className="mx-3 mt-2 flex shrink-0 items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950"
+    >
+      <span role="status" className="min-w-0 flex-1">
+        {text}
+      </span>
+      {!checking ? (
+        <button
+          type="button"
+          data-cy="manage-assistant-capability-retry"
+          onClick={retry}
+          className="focus-visible:ring-uzh-blue inline-flex min-h-8 shrink-0 items-center gap-1 rounded-md px-2 font-medium text-amber-950 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2"
+        >
+          <RefreshCwIcon aria-hidden className="size-3.5" />
+          {t('capabilityRetry')}
+        </button>
+      ) : null}
+    </div>
+  )
+}
+
+function ManageAssistantToolbar() {
+  const t = useTranslations()
+  const aui = useAui()
+  const isRunning = useAuiState((state) => state.thread.isRunning)
+  const messageCount = useAuiState((state) => state.thread.messages.length)
+  const composerIsEmpty = useAuiState((state) => state.composer.isEmpty)
+  const [confirmingReset, setConfirmingReset] = useState(false)
+  const hasConversation = messageCount > 0 || !composerIsEmpty
+
+  async function handleReset() {
+    if (isRunning) return
+    if (hasConversation && !confirmingReset) {
+      setConfirmingReset(true)
+      return
+    }
+
+    setConfirmingReset(false)
+    await aui.composer.reset()
+    aui.thread.reset()
+  }
+
+  return (
+    <div className="flex min-w-0 items-center justify-end gap-2">
+      <EmbeddedSettings />
+      <button
+        type="button"
+        disabled={isRunning}
+        onClick={() => void handleReset()}
+        onBlur={() => setConfirmingReset(false)}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            event.stopPropagation()
+            setConfirmingReset(false)
+          }
+        }}
+        aria-label={
+          confirmingReset
+            ? t('chat.assistant.confirmNewConversation')
+            : t('chat.assistant.newConversation')
+        }
+        title={
+          isRunning
+            ? t('chat.assistant.newConversationWait')
+            : t('chat.assistant.newConversation')
+        }
+        data-cy="manage-assistant-new-conversation"
+        className={twMerge(
+          'focus-visible:ring-ring inline-flex h-7 shrink-0 items-center justify-center rounded-md border bg-white text-xs font-medium shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+          confirmingReset
+            ? 'border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20 gap-1.5 px-2'
+            : 'text-muted-foreground hover:bg-muted hover:text-foreground w-7'
+        )}
+      >
+        <RotateCcwIcon aria-hidden className="size-3.5" />
+        {confirmingReset ? (
+          <span>{t('chat.assistant.confirmNewConversationShort')}</span>
+        ) : null}
+      </button>
+      <span role="status" className="sr-only">
+        {confirmingReset ? t('chat.assistant.newConversationArmed') : ''}
+      </span>
+    </div>
+  )
+}
+
+function ManageAssistantRuntimeProvider({
+  capabilityFetch,
+  children,
+  context,
+}: {
+  capabilityFetch: typeof globalThis.fetch
+  children: React.ReactNode
+  context: ManageAssistantContext | null
+}) {
+  const transport = useMemo(
+    () =>
+      new AssistantChatTransport({
+        api: '/api/manage/chat',
+        fetch: capabilityFetch,
+        body: {
+          manageContext: context ?? undefined,
+        },
+      }),
+    [capabilityFetch, context]
+  )
+
+  const runtime = useChatRuntime({
+    transport,
+    adapters: {
+      attachments: imageAttachmentAdapter,
+    },
+  })
+
+  return (
+    <ModeOptionsProvider modeOptions={MANAGE_MODE_OPTIONS}>
+      <AssistantRuntimeProvider runtime={runtime}>
+        {children}
+      </AssistantRuntimeProvider>
+    </ModeOptionsProvider>
+  )
+}
+
+function ManageAssistantAvatar({ className }: { className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={twMerge(
+        'text-uzh-blue inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-50',
+        className
+      )}
+    >
+      <span className="flex size-full items-center justify-center bg-gradient-to-br from-white via-blue-50 to-cyan-50">
+        <WandSparkles className="size-4" />
+      </span>
+    </span>
+  )
+}

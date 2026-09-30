@@ -20,6 +20,7 @@ interface DisclaimerModalProps {
   isOpen: boolean
   onAccept: () => void
   onDecline: () => void
+  stacked?: boolean
   errorMessage?: string | null
 }
 
@@ -28,11 +29,12 @@ export const DisclaimerModal = ({
   isOpen,
   onAccept,
   onDecline,
+  stacked = false,
   errorMessage,
 }: DisclaimerModalProps) => {
   const t = useTranslations()
   const [isLoading, setIsLoading] = useState(false)
-  const acceptButtonRef = useRef<HTMLButtonElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
 
   // Published to the composer via `chat-ui-context` (see comment there) so
   // it can suppress its own autofocus and hand focus back once the gate
@@ -42,12 +44,11 @@ export const DisclaimerModal = ({
     return () => setDisclaimerGateOpen(false)
   }, [isOpen])
 
-  // The design-system `Modal` (@uzh-bf/design-system Modal.tsx) hardcodes
-  // `onOpenAutoFocus={(e) => e.preventDefault()}` with no prop to override
-  // it, so Radix never moves focus into the dialog on its own — do it here
-  // instead, once the Accept button is actually in the DOM.
+  // The design-system Modal prevents default open autofocus, so focus must
+  // be placed explicitly. Focus the beginning of the long dialog so keyboard users start with its
+  // content and opening the gate does not scroll directly to the actions.
   useEffect(() => {
-    if (isOpen) acceptButtonRef.current?.focus()
+    if (isOpen) contentRef.current?.focus({ preventScroll: true })
   }, [isOpen])
 
   const handleAccept = async () => {
@@ -113,8 +114,19 @@ export const DisclaimerModal = ({
       hideCloseButton
       escapeDisabled
     >
-      <div data-cy="chat-disclaimer-content" className="space-y-6">
-        <div className="flex flex-col gap-6 md:flex-row md:gap-12">
+      <div
+        ref={contentRef}
+        tabIndex={-1}
+        data-cy="chat-disclaimer-content"
+        className="space-y-6 outline-none"
+      >
+        <div
+          className={
+            stacked
+              ? 'flex flex-col gap-6'
+              : 'flex flex-col gap-6 md:flex-row md:gap-12'
+          }
+        >
           {/* Custom Introduction */}
           {disclaimer.introText && (
             <Markdown
@@ -188,7 +200,6 @@ export const DisclaimerModal = ({
             {t('chat.disclaimer.decline')}
           </Button>
           <Button
-            ref={acceptButtonRef}
             primary
             data-cy="chat-disclaimer-accept"
             onClick={handleAccept}

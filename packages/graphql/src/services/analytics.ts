@@ -10,6 +10,7 @@ import {
 } from '@klicker-uzh/types'
 import dayjs from 'dayjs'
 import type { ContextWithUser } from '@/lib/context.js'
+import { requireFeatureFlagAccess } from '../lib/featureFlags.js'
 
 import { isLearningAnalyticsEnabled } from '../lib/learningAnalytics.js'
 
@@ -18,6 +19,7 @@ export async function getCourseActivityAnalytics(
   ctx: ContextWithUser
 ) {
   if (!isLearningAnalyticsEnabled()) return null
+  await requireFeatureFlagAccess(ctx, 'learning-analytics')
 
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
@@ -82,6 +84,7 @@ export async function getCourseWeeklyActivity(
   ctx: ContextWithUser
 ) {
   if (!isLearningAnalyticsEnabled()) return null
+  await requireFeatureFlagAccess(ctx, 'learning-analytics')
 
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
@@ -481,6 +484,7 @@ export async function getCoursePerformanceAnalytics(
   ctx: ContextWithUser
 ) {
   if (!isLearningAnalyticsEnabled()) return null
+  await requireFeatureFlagAccess(ctx, 'learning-analytics')
 
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
@@ -572,6 +576,7 @@ export async function getActivityAnalytics(
   ctx: ContextWithUser
 ) {
   if (!isLearningAnalyticsEnabled()) return null
+  await requireFeatureFlagAccess(ctx, 'learning-analytics')
 
   const activityIncludes = {
     stacks: {

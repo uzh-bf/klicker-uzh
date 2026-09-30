@@ -1,0 +1,5 @@
+mutation ReviewElementGeneration($input: ReviewElementGenerationInput!) {
+  reviewElementGeneration(input: $input) {
+    ...ElementGenerationBuildData
+  }
+}

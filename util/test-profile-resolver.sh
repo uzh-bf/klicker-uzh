@@ -15,13 +15,17 @@ A='--filter=@klicker-uzh/auth'
 M='--filter=@klicker-uzh/frontend-manage'
 P='--filter=@klicker-uzh/frontend-pwa'
 C='--filter=@klicker-uzh/chat'
+L='--filter=@klicker-uzh/mcp-lecturer'
 T='--filter=@klicker-uzh/frontend-control'
 R='--filter=@klicker-uzh/response-api'
 W1='--filter=@klicker-uzh/hatchet-worker-general'
 W2='--filter=@klicker-uzh/hatchet-worker-response-processor'
 
 # selection|wants klicker-dev|wants klicker-local-mcp|wants klicker-workers|turbo filters|readiness apps
+# 'workers' is the component the isolated local KB runtime adds so its KB
+# ingestion workflows are registered next to the selected applications.
 CASES="
+standard|yes|no|yes||auth chat frontend-control frontend-manage frontend-pwa response-api
 full|yes|yes|yes||auth chat frontend-control frontend-manage frontend-pwa response-api
 playwright|yes|no|no|$B $A $M $P $C $T $R|auth chat frontend-control frontend-manage frontend-pwa response-api
 playwright,manage|yes|no|no|$B $A $M $P $C $T $R|auth frontend-manage chat frontend-control frontend-pwa response-api
@@ -29,6 +33,7 @@ manage|yes|no|no|$B $A $M|auth frontend-manage
 pwa|yes|no|no|$B $A $P|auth frontend-pwa
 chat|yes|no|no|$B $A $C $P|auth chat frontend-pwa
 live-quiz|yes|no|yes|$B $A $P $T $R $W1 $W2|auth frontend-control frontend-pwa response-api
+workers|yes|no|yes|$B $A $W1 $W2|auth
 ai|no|no|no|||
 mcp|no|yes|no|||
 email|no|no|no|||
@@ -42,6 +47,9 @@ manage,eduid|yes|no|no|$B $A $M|auth frontend-manage
 ai,chat|yes|no|no|$B $A $C $P|auth chat frontend-pwa
 chat,pwa|yes|no|no|$B $A $C $P|auth chat frontend-pwa
 pwa,chat|yes|no|no|$B $A $C $P|auth chat frontend-pwa
+chat,manage|yes|no|no|$B $A $C $P $M $L|auth chat frontend-pwa frontend-manage mcp-lecturer
+manage,chat|yes|no|no|$B $A $C $P $M $L|auth chat frontend-pwa frontend-manage mcp-lecturer
+ai,chat,manage,workers|yes|no|yes|$B $A $C $P $M $W1 $W2 $L|auth chat frontend-pwa frontend-manage mcp-lecturer
 "
 
 while IFS='|' read -r selection wants_dev wants_mcp wants_workers want_filters want_readiness; do
@@ -116,5 +124,25 @@ profile_turbo_filters >/dev/null || status=$?
 status=0
 profile_readiness_apps >/dev/null || status=$?
 [ "$status" -eq 2 ] || fail "unknown selection readiness must exit 2 (got $status)"
+
+export DEVROUTER_PROFILE=local-kb-setup
+unset KLICKER_LOCAL_KB_RUNTIME_ONLY
+status=0
+profile_wants klicker-dev || status=$?
+[ "$status" -eq 2 ] || fail 'isolated setup was accepted in ordinary mode'
+export KLICKER_LOCAL_KB_RUNTIME_ONLY=1
+for marker in klicker-dev klicker-local-mcp klicker-workers; do
+  status=0
+  profile_wants "$marker" || status=$?
+  [ "$status" -eq 1 ] || fail "isolated setup selected $marker"
+done
+[ -z "$(profile_turbo_filters)" ] || fail 'isolated setup selected a turbo root'
+[ -z "$(profile_readiness_apps)" ] || fail 'isolated setup selected a readiness app'
+for selection in 'local-kb-setup,manage' 'manage,local-kb-setup' 'local-kb-setup,local-kb-setup'; do
+  export DEVROUTER_PROFILE="$selection"
+  status=0
+  profile_wants klicker-dev || status=$?
+  [ "$status" -eq 2 ] || fail 'isolated setup accepted a combined profile'
+done
 
 echo '[test-profile-resolver] PASS'

@@ -67,7 +67,9 @@ If `apps/analytics` complains about schema drift or a schema edit isn't visible:
 lsof -nP -iTCP:5432 -sTCP:LISTEN   # repeat for 6379 6380 6381 7077 8888 80 443
 ```
 
-`Bind for :::5432 failed: port is already allocated` means another stack holds the port — stop it or don't start the colliding service. Plain localhost and legacy host-based paths publish fixed ports, so only one such stack runs per machine. Parallel devcontainer worktrees use the port-free base compose file plus `.devcontainer/docker-compose.devrouter.yml`; the one-at-a-time fallback uses `.devcontainer/docker-compose.localhost.yml`. If manage media uploads fail with an Azure Blob CORS error while GraphQL auth still works, check the storage account before changing app CORS. The media library uploads directly from the browser to Azure Blob Storage via SAS, so its CORS rule must allow the actual local origin. Use exact origins for production/staging accounts and dev-only localhost rules for a dedicated dev storage account.
+`Bind for :::5432 failed: port is already allocated` means another stack holds the port — stop it or don't start the colliding service. Plain localhost and legacy host-based paths publish fixed ports, so only one such stack runs per machine. Parallel devcontainer worktrees use the port-free base compose file plus `.devcontainer/docker-compose.devrouter.yml`; the one-at-a-time fallback uses `.devcontainer/docker-compose.localhost.yml`.
+
+The managed DevPod needs no Azure credentials for media or KB uploads: it starts a Blob-only Azurite service, routes `blob.klicker[.<workspace>].localhost`, and configures the exact Manage origin as local Blob CORS during `post-start.sh`. `Blob storage is not configured` means the app process predates that environment; run `devrouter ensure .` and retry against the printed Blob route. A browser CORS failure with working GraphQL should first be reproduced as an `OPTIONS` request to that route using the exact Manage origin. Do not print the SAS query. Production and staging Azure accounts still require exact deployed origins; never add localhost CORS to them.
 
 ## Check 6 — infra bring-up / server status (headless-safe)
 

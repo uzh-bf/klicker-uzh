@@ -48,7 +48,7 @@ if [ -n "${KLICKER_TEST_HELPER_LOG:-}" ]; then
   else
     helper="OTHER"
   fi
-  for name in AZURE_OPENAI_API_KEY AZURE_OPENAI_BASE_URL UPSTREAM_OPENAI_API_KEY UPSTREAM_OPENAI_BASE_URL OPENAI_API_KEY LITELLM_API_KEY KLICKER_EVAL_PARTICIPANT_USERNAME KLICKER_EVAL_PARTICIPANT_PASSWORD KLICKER_EVAL_TARGET_KEY; do
+  for name in AZURE_OPENAI_API_KEY AZURE_OPENAI_BASE_URL UPSTREAM_OPENAI_API_KEY UPSTREAM_OPENAI_BASE_URL OPENAI_API_KEY LITELLM_API_KEY KLICKER_EVAL_PARTICIPANT_USERNAME KLICKER_EVAL_PARTICIPANT_PASSWORD KLICKER_EVAL_TARGET_KEY KLICKER_EVAL_ELEARNING_HANDOFF_SECRET; do
     printf "%s_%s_PRESENT=%s\n" "$helper" "$name" "${!name:+yes}" >>"$KLICKER_TEST_HELPER_LOG"
   done
 fi
@@ -64,7 +64,7 @@ fi
 exit 2'
 
 write_file "$FAKE_BIN/uv" '#!/usr/bin/env bash
-for name in LITELLM_API_BASE EVAL_MODEL EVAL_MODEL_CAPABILITY_MODEL EVAL_REASONING_EFFORT EVAL_JUDGE_SINGLE_ATTEMPT EVAL_METRICS_PATH EVAL_TOOLS_PATH GT_ROOT_DIR DEFAULT_GT_DIR TOOL_PROFILE EVAL_API_MODE EVAL_ENDPOINT_URL EVAL_MODELS_URL EVAL_STREAM AGENT_ID; do
+for name in LITELLM_API_BASE EVAL_MODEL EVAL_MODEL_CAPABILITY_MODEL EVAL_REASONING_EFFORT EVAL_JUDGE_SINGLE_ATTEMPT EVAL_METRICS_PATH EVAL_TOOLS_PATH GT_ROOT_DIR DEFAULT_GT_DIR TOOL_PROFILE KLICKER_EVAL_EVIDENCE_DIR KLICKER_EVAL_RUN_ID EVAL_API_MODE EVAL_ENDPOINT_URL EVAL_MODELS_URL EVAL_STREAM AGENT_ID; do
   printf "%s=%s\n" "$name" "${!name-}" >>"$KLICKER_TEST_CHILD_LOG"
 done
 for name in AZURE_OPENAI_API_KEY AZURE_OPENAI_BASE_URL UPSTREAM_OPENAI_API_KEY UPSTREAM_OPENAI_BASE_URL OPENAI_API_KEY LITELLM_API_KEY JUDGE_KEY JUDGE_URL PIPELINES_LITELLM_API_KEY INFISICAL_TOKEN; do
@@ -596,6 +596,8 @@ PATH="$TEST_PATH" git init --bare "$TEST_ROOT/bare.git" >/dev/null 2>&1
 : >"$CHILD_LOG"
 env -i \
   GIT_DIR="$TEST_ROOT/bare.git" \
+  KLICKER_EVAL_EVIDENCE_DIR="$TEST_ROOT/evidence" \
+  KLICKER_EVAL_RUN_ID='synthetic-run' \
   GIT_WORK_TREE="$TEST_ROOT/not-a-worktree" \
   LITELLM_API_BASE='https://litellm.example.test' \
   LITELLM_API_KEY='synthetic-test-key' \
@@ -603,6 +605,7 @@ env -i \
   KLICKER_EVAL_CHAT_ORIGIN='https://chat.klicker.localhost' \
   KLICKER_EVAL_PARTICIPANT_USERNAME='synthetic-participant' \
   KLICKER_EVAL_PARTICIPANT_PASSWORD='synthetic-password' \
+  KLICKER_EVAL_ELEARNING_HANDOFF_SECRET='synthetic-elearning-secret' \
   AZURE_OPENAI_API_KEY='synthetic-azure-key' \
   AZURE_OPENAI_BASE_URL='https://azure.example.test' \
   UPSTREAM_OPENAI_API_KEY='synthetic-upstream-key' \
@@ -622,6 +625,8 @@ assert_line 'EVAL_API_MODE=chat-completions' "$CHILD_LOG"
 assert_line 'EVAL_ENDPOINT_URL=http://127.0.0.1:41234/v1/chat/completions' "$CHILD_LOG"
 assert_line 'EVAL_MODELS_URL=http://127.0.0.1:41234/v1/models' "$CHILD_LOG"
 assert_line 'EVAL_STREAM=false' "$CHILD_LOG"
+assert_line 'KLICKER_EVAL_EVIDENCE_DIR=' "$CHILD_LOG"
+assert_line 'KLICKER_EVAL_RUN_ID=' "$CHILD_LOG"
 assert_line 'AGENT_ID=gpt-5.6-luna' "$CHILD_LOG"
 assert_line "EVAL_METRICS_PATH=$FAKE_REPO/evaluation/data/metrics/klicker_fineco_semantic_similarity.yaml" "$CHILD_LOG"
 assert_line "ARG=$FAKE_REPO/evaluation/data/ground_truth/klicker_fineco" "$CHILD_LOG"
@@ -639,6 +644,8 @@ assert_line 'ADAPTER_UPSTREAM_OPENAI_API_KEY_PRESENT=' "$TEST_ROOT/helper.log"
 assert_line 'ADAPTER_LITELLM_API_KEY_PRESENT=' "$TEST_ROOT/helper.log"
 assert_line 'ADAPTER_KLICKER_EVAL_PARTICIPANT_USERNAME_PRESENT=yes' "$TEST_ROOT/helper.log"
 assert_line 'ADAPTER_KLICKER_EVAL_TARGET_KEY_PRESENT=yes' "$TEST_ROOT/helper.log"
+assert_line 'KEYGEN_KLICKER_EVAL_ELEARNING_HANDOFF_SECRET_PRESENT=' "$TEST_ROOT/helper.log"
+assert_line 'ADAPTER_KLICKER_EVAL_ELEARNING_HANDOFF_SECRET_PRESENT=yes' "$TEST_ROOT/helper.log"
 [ -s "$LOCAL_STOP_MARKER" ] || fail 'local adapter must stop after a successful child run'
 if grep -Fq -- 'synthetic-target-key' "$CHILD_LOG"; then
   fail 'ephemeral target key must not be written to logs'
@@ -658,6 +665,7 @@ env -i \
   KLICKER_TEST_ADAPTER_STOP_MARKER="$LOCAL_STOP_MARKER" \
   KLICKER_TEST_EXEC_RUNNER='true' \
   KLICKER_TEST_RUNNER_STATUS='74' \
+  KLICKER_EVAL_MODEL_ID='auto' \
   PATH="$TEST_PATH" \
   KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
   KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
@@ -666,6 +674,7 @@ env -i \
   2>"$TEST_ROOT/local-failure.stderr" || status=$?
 
 [ "$status" -eq 74 ] || fail "local child failure returned $status instead of 74"
+assert_line 'AGENT_ID=auto' "$CHILD_LOG"
 [ -s "$LOCAL_STOP_MARKER" ] || fail 'local adapter must stop after a failed child run'
 
 # An unconfigured judge uses the standalone loopback gateway only.

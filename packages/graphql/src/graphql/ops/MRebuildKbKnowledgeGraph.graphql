@@ -1,0 +1,38 @@
+mutation RebuildKbKnowledgeGraph($kbId: ID!, $qualityTier: KBGraphQualityTier) {
+  rebuildKbKnowledgeGraph(kbId: $kbId, qualityTier: $qualityTier) {
+    kbId
+    isEnabled
+    buildId
+    status
+    statusMessage
+    qualityTier
+    sourceContentDigest
+    activeBuildId
+    publishedBuildId
+    isStale
+    startedAt
+    finishedAt
+    createdAt
+    updatedAt
+    costConfigurationReady
+    costCurrency
+    quotaCurrency
+    billingLabel
+    standardEstimateMinorUnits
+    highEstimateMinorUnits
+    estimatedCostMinorUnits
+    actualCostMinorUnits
+    actualInputTokens
+    actualOutputTokens
+    actualEmbeddingTokens
+    actualRequestCount
+    maxCostMinorUnits
+    costStatus
+    semesterKey
+    semesterQuotaMinorUnits
+    semesterReservedMinorUnits
+    semesterSettledMinorUnits
+    remainingSemesterQuotaMinorUnits
+    worstCaseRemainingMinorUnits
+  }
+}

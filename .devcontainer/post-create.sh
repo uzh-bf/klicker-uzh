@@ -3,6 +3,10 @@
 # workspace packages the apps import, prepares the DB, and picks up the Hatchet
 # token. Every routed app plus the two Hatchet workers.
 set -euo pipefail
+case "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" in
+  0|1) ;;
+  *) echo '[post-create] ERROR: invalid isolated runtime mode.' >&2; exit 1 ;;
+esac
 SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 bash "$SCRIPT_ROOT/util/dev-runtime.sh" begin-bootstrap
 
@@ -10,12 +14,19 @@ ROOT="${KLICKER_DEVCONTAINER_ROOT:-/workspaces/klicker-uzh}"
 ROOT="$(cd "$ROOT" && pwd)"
 HATCHET_TOKEN_FILE="${KLICKER_HATCHET_TOKEN_FILE:-/config/authdisabled-token}"
 cd "$ROOT"
+if [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" = 1 ]; then
+  . "$ROOT/util/local-kb/runtime-environment.sh"
+  local_kb_capture_environment
+fi
 
 # DevPod truncates env_file values at '=' (a URL ...?schema=public arrives as
 # ...?schema). Re-source the canonical env file so values with '=' are intact. (GOTCHAS #1)
 set -a
 . "$ROOT/.devcontainer/devcontainer.env"
 set +a
+if [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" = 1 ]; then
+  local_kb_restore_environment
+fi
 
 # No-TTY pnpm hardening: CI=true auto-confirms a stale node_modules purge;
 # verify-deps-before-run=false stops implicit installs hanging on stdin. (GOTCHAS #18)
@@ -56,6 +67,7 @@ pnpm exec turbo run build --filter='./packages/*' --filter=@klicker-uzh/backend-
 # variants wrap Infisical), so call prisma directly with --force. A brand-new
 # Postgres volume has a short warmup where it emits an empty search_path (42601)
 # even though pg_isready is healthy — retry. (GOTCHAS #12)
+if [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" != 1 ]; then
 echo "[post-create] Resetting + pushing Prisma schema (retrying through DB warmup)..."
 retry 12 "prisma reset/push" bash -c '
   pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force \
@@ -63,6 +75,7 @@ retry 12 "prisma reset/push" bash -c '
 
 echo "[post-create] Seeding test data (lecturer/abcd, testuser1..50/abcdabcd)..."
 retry 5 "prisma-data seed" pnpm --filter @klicker-uzh/prisma-data run seed:raw || exit 1
+fi
 
 # response-api uses `tsx --watch --env-file=.env`; both Hatchet workers use
 # nodemon with `node --env-file .env`. Node 24 HARD-ERRORS if .env is missing
@@ -82,6 +95,12 @@ done
 # The backend's HatchetClient.init runs at MODULE LOAD (not lazy), so the backend
 # CRASHES at boot without it — capture it here so post-start sources it before
 # turbo dev.
+if [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" = 1 ]; then
+  if [ -z "${HATCHET_CLIENT_TOKEN:-}" ]; then
+    echo '[post-create] ERROR: isolated setup must supply the Hatchet token.' >&2
+    exit 1
+  fi
+else
 echo "[post-create] Waiting for the Hatchet client token ($HATCHET_TOKEN_FILE)..."
 HATCHET_ENV="$ROOT/.devcontainer/.hatchet.env"
 : > "$HATCHET_ENV"
@@ -105,6 +124,7 @@ EOF
 done
 if [ ! -s "$HATCHET_ENV" ]; then
   echo "[post-create] WARNING: $HATCHET_TOKEN_FILE not present yet; backend will wait for post-start or container env." >&2
+fi
 fi
 
 echo "[post-create] Bootstrap steps succeeded; publishing completion marker."

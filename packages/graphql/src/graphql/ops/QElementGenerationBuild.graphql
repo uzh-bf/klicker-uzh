@@ -1,0 +1,5 @@
+query ElementGenerationBuild($id: ID!) {
+  elementGenerationBuild(id: $id) {
+    ...ElementGenerationBuildData
+  }
+}

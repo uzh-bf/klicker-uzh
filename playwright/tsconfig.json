@@ -12,6 +12,8 @@
   },
   "include": [
     "playwright.config.ts",
+    "retained-citations.config.ts",
+    "retained/**/*.ts",
     "global-setup.ts",
     "tests/**/*.ts",
     "util/**/*.ts",

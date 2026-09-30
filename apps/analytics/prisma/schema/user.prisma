@@ -135,6 +135,14 @@ model User {
   chatbots                   Chatbot[]
   chatAccountUsages          ChatAccountUsage[]
   chatbotDisclaimers         ChatbotDisclaimer[]
+  kbs                        KB[]
+  deletedKbs                 KB[]                   @relation("KBDeletedBy")
+  deletedKbResources         KBResource[]           @relation("KBResourceDeletedBy")
+  requestedKbGraphBuilds       KBGraphBuild[]
+  kbGraphQuotas                KBGraphQuota[]
+  elementGenerationBuilds      ElementGenerationBuild[]  @relation("ElementGenerationBuildOwner")
+  elementGenerationReviews     ElementGenerationReview[] @relation("ElementGenerationReviewReviewer")
+  incompleteElementGenerations ElementGenerationBuild[] @relation("ElementGenerationIncompletePublisher")
   revokedVerificationRecords VerifiableCredential[] @relation("RevokedVerifiableCredentials")
 
   userGroups                UserGroup[]         @relation("UserGroupMembers")

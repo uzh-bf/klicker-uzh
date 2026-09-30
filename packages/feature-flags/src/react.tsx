@@ -22,10 +22,15 @@ import type {
 
 export type { BrowserFeatureFlagConfig } from './browserClient.js'
 
+const FeatureFlagsReadyContext = createContext(false)
+const FeatureFlagEvaluationAvailableContext = createContext(true)
+
 type FeatureFlagProviderProps = {
   attributes: FeatureFlagAttributes
+  attributesReady?: boolean
   config: BrowserFeatureFlagConfig
   children: ReactNode
+  evaluationAvailable?: boolean
 }
 
 const FeatureFlagRefreshContext = createContext<() => Promise<boolean>>(
@@ -34,8 +39,10 @@ const FeatureFlagRefreshContext = createContext<() => Promise<boolean>>(
 
 export function FeatureFlagProvider({
   attributes,
+  attributesReady = true,
   config,
   children,
+  evaluationAvailable = true,
 }: FeatureFlagProviderProps) {
   const [{ growthbook, initialize, refresh, setAttributes }] = useState(() =>
     createBrowserFeatureFlagClient<KlickerFeatureFlags>(config)
@@ -43,20 +50,52 @@ export function FeatureFlagProvider({
   const destroyTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined
   )
+  const [initializationSettled, setInitializationSettled] = useState(false)
+  const [attributeApplication, setAttributeApplication] = useState<
+    | {
+        attributes: FeatureFlagAttributes
+        available: boolean
+      }
+    | undefined
+  >(undefined)
 
   useEffect(() => {
+    let active = true
+
     void setAttributes(attributes)
+      .then(() => {
+        if (active) {
+          setAttributeApplication({ attributes, available: true })
+        }
+      })
+      .catch(() => {
+        console.warn(
+          '[feature-flags] Browser attributes could not be applied; keeping routes unavailable'
+        )
+        if (active) {
+          setAttributeApplication({ attributes, available: false })
+        }
+      })
+
+    return () => {
+      active = false
+    }
   }, [attributes, setAttributes])
 
   useEffect(() => {
+    let active = true
+
     if (destroyTimeout.current !== undefined) {
       clearTimeout(destroyTimeout.current)
       destroyTimeout.current = undefined
     }
 
-    void initialize()
+    void initialize().finally(() => {
+      if (active) setInitializationSettled(true)
+    })
 
     return () => {
+      active = false
       // React Strict Mode immediately repeats effect setup after cleanup in
       // development. Delay destruction by one task so that setup can cancel it.
       destroyTimeout.current = setTimeout(() => {
@@ -66,17 +105,48 @@ export function FeatureFlagProvider({
     }
   }, [growthbook, initialize])
 
+  const attributesSettled = attributeApplication?.attributes === attributes
+  const attributesAvailable = attributesSettled
+    ? attributeApplication?.available === true
+    : true
+  const effectiveEvaluationAvailable =
+    evaluationAvailable && attributesAvailable
+
   return (
-    <GrowthBookProvider growthbook={growthbook}>
-      <FeatureFlagRefreshContext.Provider value={refresh}>
-        {children}
-      </FeatureFlagRefreshContext.Provider>
-    </GrowthBookProvider>
+    <FeatureFlagsReadyContext.Provider
+      value={
+        !evaluationAvailable ||
+        (attributesSettled &&
+          attributesReady &&
+          (!attributesAvailable || initializationSettled))
+      }
+    >
+      <FeatureFlagEvaluationAvailableContext.Provider
+        value={effectiveEvaluationAvailable}
+      >
+        <GrowthBookProvider growthbook={growthbook}>
+          <FeatureFlagRefreshContext.Provider value={refresh}>
+            {children}
+          </FeatureFlagRefreshContext.Provider>
+        </GrowthBookProvider>
+      </FeatureFlagEvaluationAvailableContext.Provider>
+    </FeatureFlagsReadyContext.Provider>
   )
 }
 
 export function useFeatureFlag(key: FeatureFlagKey): boolean {
-  return useFeatureIsOn<KlickerFeatureFlags>(key)
+  const enabled = useFeatureIsOn<KlickerFeatureFlags>(key)
+  const evaluationAvailable = useContext(FeatureFlagEvaluationAvailableContext)
+
+  return evaluationAvailable && enabled
+}
+
+export function useFeatureFlagsReady(): boolean {
+  return useContext(FeatureFlagsReadyContext)
+}
+
+export function useFeatureFlagEvaluationAvailable(): boolean {
+  return useContext(FeatureFlagEvaluationAvailableContext)
 }
 
 export function useRefreshFeatureFlags(): () => Promise<boolean> {

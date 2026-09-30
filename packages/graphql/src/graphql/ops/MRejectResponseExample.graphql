@@ -1,0 +1,5 @@
+mutation RejectResponseExample($id: String!) {
+  rejectResponseExample(id: $id) {
+    ...ResponseExampleSetData
+  }
+}

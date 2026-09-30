@@ -4,6 +4,7 @@ import {
   Thread,
 } from '../../stores/chatStore'
 import { sortAttachmentsByPosition } from '../attachments/attachmentState'
+import { authedFetch } from '../client/authedFetch'
 import { type ReasoningEffort } from '../config/reasoning'
 
 export interface ApiError extends Error {
@@ -23,6 +24,8 @@ export interface ApiThread {
   createdAt: string
   updatedAt: string
   lastChatMode?: string | null
+  // Conversation origin ('elearning' | 'pwa'); null for legacy threads.
+  origin?: string | null
 }
 
 /**
@@ -91,6 +94,9 @@ export interface ApiMessage {
   reasoningContent?: string | null
   creditsUsed?: number | null
   rating?: MessageRating | null
+  // Verified learning-context snapshot for eLearning-origin user
+  // messages; null otherwise.
+  learningContext?: unknown
   imageAttachments?: ApiImageAttachment[]
   parentId?: string | null
   createdAt: string
@@ -110,7 +116,7 @@ export const apiCall = async <T = unknown>(
   url: string,
   options: RequestInit = {}
 ): Promise<T> => {
-  const response = await fetch(`/api${url}`, {
+  const response = await authedFetch(`/api${url}`, {
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,
@@ -164,6 +170,7 @@ export const convertApiThreadToThread = (apiThread: ApiThread): Thread => ({
   createdAt: new Date(apiThread.createdAt),
   updatedAt: new Date(apiThread.updatedAt),
   lastChatMode: apiThread.lastChatMode ?? null,
+  origin: apiThread.origin ?? null,
 })
 
 /**
@@ -226,6 +233,7 @@ export const convertApiMessageToMessage = (
     reasoningContent: apiMessage.reasoningContent ?? null,
     creditsUsed: apiMessage.creditsUsed ?? null,
     rating: apiMessage.rating ?? null,
+    learningContext: apiMessage.learningContext ?? null,
     imageAttachments: sortAttachmentsByPosition(
       apiMessage.imageAttachments ?? []
     ),
