@@ -710,6 +710,14 @@ const messages = {
           itemOverviewHelp:
             'Öffnen Sie eine Kompetenz und Unterkompetenz, um die zugehörigen Elemente anzuzeigen. Jede Liste zeigt standardmässig 10 Elemente pro Seite.',
           unassignedItems: 'Weitere Elemente',
+          sortBy: 'Elemente sortieren nach',
+          sortOptions: {
+            default: 'Standardreihenfolge',
+            nameAsc: 'Name (A–Z)',
+            nameDesc: 'Name (Z–A)',
+            responsesDesc: 'Meiste Antworten',
+            responsesAsc: 'Wenigste Antworten',
+          },
           questionDistribution: 'Beantwortete Fragen',
           timeDistribution: 'Bearbeitungszeit',
           boxPlotHelp:
@@ -942,6 +950,12 @@ const messages = {
       loadElementsError: 'Die Elementbibliothek konnte nicht geladen werden.',
       noElements: 'Keine passenden Elemente. Passen Sie Suche oder Filter an.',
       assignmentSearch: 'Elemente im Baum suchen',
+      sortBy: 'Sortieren nach',
+      sortOptions: {
+        default: 'Standardreihenfolge',
+        nameAsc: 'Name (A–Z)',
+        nameDesc: 'Name (Z–A)',
+      },
       allLevels: 'Alle Stufen',
       allCompetences: 'Alle Teilkompetenzen',
       libraryDescription:
