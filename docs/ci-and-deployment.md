@@ -51,6 +51,32 @@ the long-lived source branch. An API failure is reported rather than treated
 as evidence that a PR exists; a duplicate-creation response is accepted only
 after the matching open PR is found.
 
+### Squashed sync guard
+
+GitHub sets allowed merge methods per target branch, so the integration
+branches allow squash for feature pull requests and cannot also forbid it for
+syncs. A squashed sync keeps the content but drops the source commits from the
+target's ancestry, so every later sync re-conflicts on them.
+`sync-ancestry-guard.yml` runs on every push to a sync target (the `base`
+branches of `PAIRS`). It walks the target's first-parent history back to the
+most recent merge-commit sync. The first single-parent commit on that walk
+whose pull request head brought source commits is an unrepaired squashed sync.
+The guard then pushes `chore/restore-ancestry-pr-<n>` at that pull request's
+original head, which GitHub keeps as `refs/pull/<n>/head` after branch
+deletion. It opens a restore pull request for it, records a successful
+`sync-ancestry` status on that head, and fails the status on the target.
+Merging the restore pull request with a merge commit changes no files and
+restores the ancestry. Its file list still repeats the squashed changes,
+because GitHub diffs against the merge base.
+
+The `sync-ancestry` pull-request check fails for every non-sync pull request
+into a target with an unrepaired squashed sync. Any sync pull request, including
+the restore pull request, passes with a warning to use a merge commit, because
+merging it restores the ancestry. The block takes effect as a required check in
+the `v3 integration baseline CI` ruleset. It evaluates when a pull request's
+head is pushed, so a pull request that already passed before the squash stays
+mergeable until its next push.
+
 ### Changing the sync chain
 
 The `PAIRS` constant in [draft-sync-prs.cjs](../.github/scripts/draft-sync-prs.cjs)
@@ -69,11 +95,14 @@ must update the following together in the same PR:
    to the distinct source branches in `PAIRS`. Verify that Check codebase still
    runs on pushes to every source; its name must match the workflow subscription
    and controller event guard.
-3. Update the structured pair and event expectations in
+3. Let `sync-ancestry-guard.yml` follow the targets: set its `push` and
+   `pull_request` branches to the distinct `base` branches in `PAIRS`.
+   `sync-ancestry-guard.test.cjs` fails when they differ.
+4. Update the structured pair and event expectations in
    [draft-sync-prs.test.cjs](../.github/scripts/draft-sync-prs.test.cjs), retaining
    coverage that every new PR is a draft and unapproved sources are rejected.
    Update the chain in `AGENTS.md` and this page to match.
-4. Run the focused controller tests and, after the controller change reaches
+5. Run the focused controller tests and, after the controller change reaches
    `v3`, its manual dry run. Check the reported pairs against the approved chain
    before relying on automated creation.
 
