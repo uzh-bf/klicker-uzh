@@ -1,11 +1,30 @@
 import { describe, expect, test } from 'vitest'
 import {
   hasChatError,
+  messagePartGroups,
   resolveDisclosureOpen,
   truncateMessagesForReload,
 } from '../src/components/message-parts-state'
 
 describe('message part disclosure state', () => {
+  test('keeps inline video frames outside ordinary tool groups', () => {
+    expect(
+      messagePartGroups(
+        { type: 'tool-call', toolName: 'show_video_frame' },
+        'show_video_frame'
+      )
+    ).toEqual([])
+    expect(
+      messagePartGroups(
+        { type: 'tool-call', toolName: 'search_documents' },
+        'show_video_frame'
+      )
+    ).toEqual(['group-tool'])
+    expect(
+      messagePartGroups({ type: 'reasoning' }, 'show_video_frame')
+    ).toEqual(['group-reasoning'])
+  })
+
   test('auto-opens only while active until the participant chooses a state', () => {
     expect(resolveDisclosureOpen(null, true, true)).toBe(true)
     expect(resolveDisclosureOpen(null, true, false)).toBe(false)

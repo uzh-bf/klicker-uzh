@@ -1,0 +1,52 @@
+{
+  "mode": "documents",
+  "summary": { "sources_returned": 1, "chunks_returned": 1 },
+  "sources": [
+    {
+      "reference": "urn:video-ingestion:sha256:34f453033678a90c989939d9c845ffdb031d39c5869c2eb794d073d7047c9f67#t=42,59",
+      "reference_type": "video",
+      "source_type": "video",
+      "video_name": "lecture-01.mp4",
+      "display_name": "Synthetic learning-cycle lecture",
+      "title": "Synthetic learning-cycle lecture · 0:42–0:59",
+      "chunks": [
+        {
+          "chunk_id": "video-unit-0001",
+          "content": "Visual summary: a three-stage learning-cycle diagram connects Explore, Practise, and Reflect. The representative frame is at 0:50. Transcript excerpt: the lecturer explains how reflection sends the learner back to exploration.",
+          "start_sec": 42,
+          "end_sec": 59,
+          "representative_frame_sec": 50,
+          "video_frames": {
+            "version": 1,
+            "manifest_sha256": "47aa57950e0f33709b06c7b9e312d47a14d1d5a1612451a272af867f3c05de8b",
+            "source_video_sha256": "34f453033678a90c989939d9c845ffdb031d39c5869c2eb794d073d7047c9f67",
+            "kb_id": "35a72f62-a714-45f1-8b18-2cf5681b0c75",
+            "external_resource_id": "video-lecture:synthetic-001",
+            "resource_version": 1,
+            "video": {
+              "sha256": "34f453033678a90c989939d9c845ffdb031d39c5869c2eb794d073d7047c9f67",
+              "mime_type": "video/mp4",
+              "extension": "mp4",
+              "kind": "video"
+            },
+            "assets": [
+              {
+                "asset_id": "f1d7d1bb20d0b9996ff110fd93ede38d2914c03073f2f30c7dabdabfb263f1c7",
+                "frame_sha256": "790402ba3458fbc222e596e78e13425168655b16519489118424255b97ee4eb8",
+                "visual_state_id": "visual-state-0001",
+                "timestamp_sec": 50,
+                "start_sec": 42,
+                "end_sec": 59,
+                "width_px": 1025,
+                "height_px": 608,
+                "mime_type": "image/jpeg",
+                "kind": "video_frame"
+              }
+            ]
+          }
+        }
+      ],
+      "source_url": "urn:video-ingestion:sha256:34f453033678a90c989939d9c845ffdb031d39c5869c2eb794d073d7047c9f67#t=42,59"
+    }
+  ]
+}
