@@ -92,7 +92,8 @@ function standardModeContextSection(
   if (
     selectedMode !== 'tutor' &&
     selectedMode !== 'explainer' &&
-    selectedMode !== 'quizzer'
+    selectedMode !== 'quizzer' &&
+    selectedMode !== 'writing-coach'
   ) {
     return null
   }
@@ -116,7 +117,12 @@ function standardModeContextSection(
   return promptSection(
     'Lecturer-provided standard-mode context',
     renderPromptTemplate('lecturer-standard-context', {
-      personaContextJson: JSON.stringify(personaContext),
+      // The serialized value keeps valid JSON while losing every `<`, so a
+      // stored value cannot close the delimiter block around it.
+      personaContextJson: JSON.stringify(personaContext).replaceAll(
+        '<',
+        '\\u003C'
+      ),
     })
   )
 }

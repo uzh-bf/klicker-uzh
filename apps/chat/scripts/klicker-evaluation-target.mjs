@@ -6,6 +6,7 @@ import { createServer } from 'node:http'
 import { basename, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { CHAT_MODE_KEYS } from './chat-mode-keys.mjs'
 import {
   evaluatePersistedEvidence,
   evidenceError,
@@ -735,6 +736,8 @@ export class KlickerEvaluationTarget {
     assistantMessageId,
     maxStreamBytes,
     cookie,
+    history = [],
+    parentId = null,
   }) {
     const response = await fetchWithTimeout(
       urlFor(this.chatOrigin, `/api/chatbots/${this.chatbotId}/chat`),
@@ -745,12 +748,15 @@ export class KlickerEvaluationTarget {
           Accept: 'text/event-stream',
         },
         body: JSON.stringify({
-          messages: [{ id: userMessageId, role: 'user', content: question }],
+          messages: [
+            ...history,
+            { id: userMessageId, role: 'user', content: question },
+          ],
           threadId,
           selectedModel: this.modelId,
           selectedMode: mode,
           reasoningEffort: 'low',
-          parentId: null,
+          parentId,
           assistantMessageId,
           images: [],
         }),
@@ -764,7 +770,13 @@ export class KlickerEvaluationTarget {
     await drainResponse(response, maxStreamBytes)
   }
 
-  async readCompletedMessage(threadId, assistantMessageId, mode, cookie) {
+  async readCompletedMessage(
+    threadId,
+    assistantMessageId,
+    mode,
+    cookie,
+    expectedSelectedModelId = this.modelId
+  ) {
     const deadline = Date.now() + this.pollTimeoutMs
     while (Date.now() < deadline) {
       const response = await fetchWithTimeout(
@@ -786,7 +798,7 @@ export class KlickerEvaluationTarget {
       if (message) {
         if (message.chatMode !== mode)
           throw evaluationError('chat_mode_mismatch')
-        if (message.modelId !== this.modelId) {
+        if (message.modelId !== expectedSelectedModelId) {
           throw evaluationError('chat_model_mismatch')
         }
         return message
@@ -796,6 +808,68 @@ export class KlickerEvaluationTarget {
       )
     }
     throw evaluationError('assistant_message_timeout')
+  }
+
+  async runTurn({
+    question,
+    mode,
+    threadId,
+    history = [],
+    parentId,
+    expectedSelectedModelId = this.modelId,
+    maxStreamBytes = this.maxStreamBytes,
+  }) {
+    if (!CHAT_MODE_KEYS.includes(mode)) {
+      throw evaluationError('chat_mode_invalid')
+    }
+    // `history` and `parentId` describe the same conversation: a turn that
+    // continues a thread may only hang off the trailing assistant message of the
+    // history it submits, and an empty history is a root turn.
+    const trailingAssistantMessage =
+      history.at(-1)?.role === 'assistant' ? history.at(-1) : null
+    if (parentId && !trailingAssistantMessage) {
+      throw evaluationError('chat_parent_without_history')
+    }
+    if (parentId && trailingAssistantMessage?.id !== parentId) {
+      throw evaluationError('chat_parent_history_mismatch')
+    }
+    const resolvedParentId = parentId ?? trailingAssistantMessage?.id ?? null
+    await this.ensureSession()
+    const currentThreadId = threadId || (await this.createThread(this.cookie))
+    const userMessageId = randomUUID()
+    const assistantMessageId = randomUUID()
+    await this.submitTurn({
+      question,
+      mode,
+      threadId: currentThreadId,
+      userMessageId,
+      assistantMessageId,
+      maxStreamBytes,
+      history,
+      parentId: resolvedParentId,
+      cookie: this.cookie,
+    })
+    const message = await this.readCompletedMessage(
+      currentThreadId,
+      assistantMessageId,
+      mode,
+      this.cookie,
+      expectedSelectedModelId
+    )
+    const result = extractAssistantMessage(message)
+    return {
+      ...result,
+      threadId: currentThreadId,
+      userMessageId,
+      assistantMessageId,
+      requestedModelId: this.modelId,
+      selectedModelId: message.modelId,
+      history: [
+        ...history,
+        { id: userMessageId, role: 'user', content: question },
+        { id: assistantMessageId, role: 'assistant', content: result.answer },
+      ],
+    }
   }
 
   async runQuestion(question) {

@@ -2,8 +2,9 @@ import {
   GraduationCap,
   Lightbulb,
   ListChecks,
-  Sparkles,
   type LucideIcon,
+  PencilLine,
+  Sparkles,
 } from 'lucide-react'
 import type { useTranslations } from 'next-intl'
 
@@ -15,12 +16,13 @@ const MODE_ICONS = {
   tutor: GraduationCap,
   explainer: Lightbulb,
   quizzer: ListChecks,
+  'writing-coach': PencilLine,
 } as const
 
 export type KnownMode = keyof typeof MODE_ICONS
 
 export function isKnownMode(mode: string): mode is KnownMode {
-  return Object.prototype.hasOwnProperty.call(MODE_ICONS, mode)
+  return Object.hasOwn(MODE_ICONS, mode)
 }
 
 export function parseModeOptions(
@@ -47,9 +49,7 @@ export function resolveSelectedMode(
   const firstMode = Object.keys(modeOptions)[0]
   if (!firstMode) return ''
 
-  return Object.prototype.hasOwnProperty.call(modeOptions, selectedMode)
-    ? selectedMode
-    : firstMode
+  return Object.hasOwn(modeOptions, selectedMode) ? selectedMode : firstMode
 }
 
 export function hasAvailableChatMode(

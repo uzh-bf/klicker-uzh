@@ -624,10 +624,19 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     ).toBeChecked()
     await expect(page.getByTestId('chatbot-mode-switch-quizzer')).toBeChecked()
     const framingField = page.getByTestId('chatbot-framing')
-    await expect(framingField).toHaveAttribute('maxlength', '200')
-    await framingField.fill(
-      'Focus on the course materials and applied examples.'
-    )
+    await expect(framingField).toHaveAttribute('maxlength', '1000')
+    await expect(framingField).toHaveValue('')
+    const examples = page.getByTestId('chatbot-framing-examples')
+    await examples.locator('summary').focus()
+    await page.keyboard.press('Enter')
+    await expect(examples).toHaveAttribute('open', '')
+    await expect(framingField).toHaveValue('')
+    const scopeNote = 'Synthetic audience context. '.repeat(40).slice(0, 1000)
+    await framingField.fill(`${scopeNote}x`)
+    await expect(framingField).toHaveValue(scopeNote)
+    await expect(
+      page.getByTestId('chatbot-mode-switch-writing-coach')
+    ).not.toBeChecked()
     await page.getByTestId('chatbot-mode-switch-tutor').click()
     await expect(
       page.getByTestId('chatbot-mode-switch-explainer')
@@ -642,9 +651,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       page.getByTestId('chatbot-mode-switch-explainer')
     ).toBeDisabled()
     await expect(page.getByTestId('chatbot-mode-switch-quizzer')).toBeDisabled()
-    await expect(
-      page.getByTestId('chatbot-mode-capability-note')
-    ).toContainText('Quizzer may still be hidden')
+    await expect(page.getByTestId('chatbot-mode-capability-note')).toBeVisible()
     await expect
       .poll(() => modeConfigVariables)
       .toMatchObject({
@@ -654,7 +661,8 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
         courseName: null,
         subjectDomain: null,
         languageOfInstruction: null,
-        scopeNote: 'Focus on the course materials and applied examples.',
+        writingCoachEnabled: false,
+        scopeNote,
       })
     modeRequestGate.release()
     await expect(page.getByText('Learning modes saved.')).toBeVisible()
@@ -671,7 +679,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       'Disabled'
     )
     await expect(page.getByTestId('chatbot-review-framing')).toHaveText(
-      'Focus on the course materials and applied examples.'
+      scopeNote
     )
     await page.getByTestId('chatbot-setup-edit-modes').click()
     await expect(page.getByTestId('chatbot-setup-modes')).toBeVisible()
@@ -840,9 +848,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(page.getByTestId('chatbot-setup-review')).toBeVisible()
     await navigateToSetupStep(page, 'modes')
     await expect(page.getByTestId('chatbot-mode-switch-tutor')).toBeChecked()
-    await expect(page.getByTestId('chatbot-framing')).toHaveValue(
-      'Focus on the course materials and applied examples.'
-    )
+    await expect(page.getByTestId('chatbot-framing')).toHaveValue(scopeNote)
     await expect(
       page.getByTestId('chatbot-mode-switch-explainer')
     ).not.toBeChecked()
@@ -895,6 +901,50 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(page.getByTestId('chatbot-framing')).toHaveValue(
       legacyScopeNote
     )
+    await page.getByTestId('chatbot-mode-switch-writing-coach').click()
+    await page.getByTestId('chatbot-mode-switch-tutor').click()
+    await page.getByTestId('chatbot-mode-switch-explainer').click()
+    await expect(
+      page.getByTestId('chatbot-mode-switch-writing-coach')
+    ).toBeChecked()
+    await expect(
+      page.getByTestId('chatbot-mode-switch-writing-coach')
+    ).toBeDisabled()
+    await page.getByTestId('save-chatbot-modes').click()
+    await expect
+      .poll(() => modeConfigVariables)
+      .toMatchObject({
+        tutorEnabled: false,
+        explainerEnabled: false,
+        quizzerEnabled: false,
+        writingCoachEnabled: true,
+        scopeNote: legacyScopeNote,
+      })
+    await expect
+      .poll(async () =>
+        prisma.chatbot.findUnique({
+          where: { id: firstChatbotId },
+          select: { standardModeConfig: true },
+        })
+      )
+      .toMatchObject({
+        standardModeConfig: {
+          writingCoachEnabled: true,
+          tutorEnabled: false,
+          explainerEnabled: false,
+        },
+      })
+    await page.reload()
+    await navigateToSetupStep(page, 'modes')
+    await expect(
+      page.getByTestId('chatbot-mode-switch-writing-coach')
+    ).toBeChecked()
+    await expect(
+      page.getByTestId('chatbot-mode-switch-tutor')
+    ).not.toBeChecked()
+    await expect(
+      page.getByTestId('chatbot-mode-switch-explainer')
+    ).not.toBeChecked()
     await navigateToSetupStep(page, 'basics')
     await expect(page.getByTestId('chatbot-name')).toHaveValue(FIRST_CHATBOT)
     await expect(page.getByTestId('chatbot-description')).toHaveValue(

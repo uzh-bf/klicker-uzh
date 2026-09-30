@@ -772,6 +772,7 @@ type Chatbot {
   status: ChatbotStatus!
   updatedAt: Date
   usageSummary: ChatbotUsageSummary
+  writingCoachUnavailableReason: String
 }
 
 type ChatbotAuthoringRevision {
@@ -904,6 +905,7 @@ type ChatbotStandardModeConfig {
   scopeNote: String
   subjectDomain: String
   tutorEnabled: Boolean!
+  writingCoachEnabled: Boolean!
 }
 
 input ChatbotStandardModeConfigInput {
@@ -914,6 +916,7 @@ input ChatbotStandardModeConfigInput {
   scopeNote: String
   subjectDomain: String
   tutorEnabled: Boolean!
+  writingCoachEnabled: Boolean
 }
 
 enum ChatbotStatus {

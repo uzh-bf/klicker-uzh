@@ -383,3 +383,61 @@ describe('effective chatbot modes', () => {
     ).not.toHaveProperty('quizzer')
   })
 })
+
+describe('Writing Coach availability', () => {
+  const config = {
+    tutorEnabled: false,
+    explainerEnabled: false,
+    quizzerEnabled: false,
+    writingCoachEnabled: true,
+  }
+
+  test('requires opt-in and supports a standalone writing chatbot', () => {
+    expect(resolveEffectiveChatModeOptions(null, [])).not.toHaveProperty(
+      'writing-coach'
+    )
+    expect(
+      Object.keys(resolveEffectiveChatModeOptions(null, [], config))
+    ).toEqual(['writing-coach'])
+  })
+
+  test('keeps required-tool eligibility on the exact writing mode', () => {
+    const requiredBinding = {
+      chatMode: 'tutor',
+      isEnabled: true,
+      parameters: { required: true },
+      mcpServerId: 'synthetic-server',
+    }
+    expect(
+      resolveEffectiveChatModeOptions(null, [requiredBinding], config)
+    ).toEqual({})
+    expect(
+      Object.keys(
+        resolveEffectiveChatModeOptions(
+          null,
+          [{ ...requiredBinding, chatMode: 'writing-coach' }],
+          config
+        )
+      )
+    ).toEqual(['writing-coach'])
+  })
+
+  test('requires the typed opt-in even when stored guidance uses the same key', () => {
+    const stored = { 'writing-coach': { enabled: true } }
+    expect(resolveEffectiveChatModeOptions(stored, [])).not.toHaveProperty(
+      'writing-coach'
+    )
+    const options = resolveEffectiveChatModeOptions(stored, [], config)
+    expect(Object.keys(options)).toEqual(['writing-coach'])
+    expect(resolveRequestedChatMode(options, 'WRITING-COACH')).toBe(
+      'writing-coach'
+    )
+    expect(
+      resolveEffectiveChatModeOptions(
+        { 'writing-coach': { enabled: false } },
+        [],
+        config
+      )
+    ).toHaveProperty('writing-coach')
+  })
+})

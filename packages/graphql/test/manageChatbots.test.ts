@@ -685,7 +685,10 @@ describe('Integration tests for lecturer chatbot management', () => {
             chatbotId: chatbot.id,
             expectedRevisionVersion: chatbot.revisionVersion,
             input: {
-              modelPolicy: { modelSelection: false, allowedModelIds: ['auto'] },
+              modelPolicy: {
+                modelSelection: false,
+                allowedModelIds: ['auto'],
+              },
             },
           },
           userOneCtx
@@ -836,6 +839,94 @@ describe('Integration tests for lecturer chatbot management', () => {
           explainerEnabled: true,
           scopeNote,
         },
+      })
+    })
+
+    it('preserves an enabled Writing Coach for old-client saves and accepts an explicit disable', async () => {
+      const chatbot = await seedOwnedChatbot(ChatbotStatus.DRAFT)
+      await saveChatbotRevision(
+        {
+          chatbotId: chatbot.id,
+          expectedRevisionVersion: chatbot.revisionVersion,
+          input: {
+            standardModeConfig: { ...config, writingCoachEnabled: true },
+          },
+        },
+        userOneCtx
+      )
+      const scopeNote = 'x'.repeat(1000)
+      await expect(
+        saveChatbotRevision(
+          {
+            chatbotId: chatbot.id,
+            expectedRevisionVersion: 1,
+            input: { standardModeConfig: { ...config, scopeNote } },
+          },
+          userOneCtx
+        )
+      ).resolves.toMatchObject({
+        standardModeConfig: { writingCoachEnabled: true, scopeNote },
+      })
+      await expect(
+        prisma.chatbot.findUniqueOrThrow({ where: { id: chatbot.id } })
+      ).resolves.toMatchObject({
+        standardModeConfig: { writingCoachEnabled: true, scopeNote },
+      })
+      await expect(
+        saveChatbotRevision(
+          {
+            chatbotId: chatbot.id,
+            expectedRevisionVersion: 2,
+            input: {
+              standardModeConfig: {
+                ...config,
+                writingCoachEnabled: false,
+                scopeNote,
+              },
+            },
+          },
+          userOneCtx
+        )
+      ).resolves.toMatchObject({
+        standardModeConfig: { writingCoachEnabled: false, scopeNote },
+      })
+      await expect(
+        saveChatbotRevision(
+          {
+            chatbotId: chatbot.id,
+            expectedRevisionVersion: 3,
+            input: {
+              standardModeConfig: { ...config, scopeNote: `${scopeNote}x` },
+            },
+          },
+          userOneCtx
+        )
+      ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+    })
+
+    it('saves Writing Coach alone without creating a stored custom persona', async () => {
+      const chatbot = await seedOwnedChatbot(ChatbotStatus.DRAFT)
+      const standalone = {
+        tutorEnabled: false,
+        explainerEnabled: false,
+        quizzerEnabled: false,
+        writingCoachEnabled: true,
+      }
+      await expect(
+        saveChatbotRevision(
+          {
+            chatbotId: chatbot.id,
+            expectedRevisionVersion: chatbot.revisionVersion,
+            input: { standardModeConfig: standalone },
+          },
+          userOneCtx
+        )
+      ).resolves.toMatchObject({ standardModeConfig: standalone })
+      await expect(
+        prisma.chatbot.findUniqueOrThrow({ where: { id: chatbot.id } })
+      ).resolves.toMatchObject({
+        standardModeConfig: standalone,
+        systemPrompts: null,
       })
     })
 

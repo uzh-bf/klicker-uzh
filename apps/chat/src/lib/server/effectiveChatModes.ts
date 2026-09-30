@@ -189,6 +189,8 @@ function isStandardModeEnabled(
     systemPrompts
   )
 
+  if (mode === 'writing-coach') return normalizedConfig.writingCoachEnabled
+
   if (isTypedStandardMode(mode)) {
     if (mode === 'tutor') return normalizedConfig.tutorEnabled
     if (mode === 'explainer') return normalizedConfig.explainerEnabled
@@ -202,7 +204,9 @@ function getModeDescription(systemPrompts: unknown, mode: string): string {
   const defaultDescription = (
     DEFAULT_MODE_DESCRIPTIONS as Record<string, string>
   )[mode]
-  if (typeof defaultDescription === 'string') return defaultDescription
+  if (typeof defaultDescription === 'string') {
+    return defaultDescription
+  }
 
   const modeConfig = asRecord(asRecord(systemPrompts)?.[mode])
   return typeof modeConfig?.description === 'string'

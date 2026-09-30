@@ -1,17 +1,37 @@
 import type { Locale } from '@klicker-uzh/prisma/client'
-import type {
-  ChatbotStandardModeConfig,
-  ChatbotStandardModeConfigInput,
+import {
+  CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH,
+  type ChatbotStandardModeConfig,
+  type ChatbotStandardModeConfigInput,
 } from '@klicker-uzh/types'
 
 export const CHATBOT_STANDARD_MODE_COURSE_NAME_MAX_LENGTH = 160
 export const CHATBOT_STANDARD_MODE_SUBJECT_DOMAIN_MAX_LENGTH = 160
-export const CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH = 1000
+export { CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH } from '@klicker-uzh/types'
 
 const supportedLocales = new Set<Locale>(['en', 'de'])
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+export function getWritingCoachUnavailableReason(
+  mcpConfigurations: readonly {
+    chatMode: string
+    isEnabled?: boolean
+    parameters?: unknown
+  }[] = []
+): 'REQUIRED_TOOL_BINDING' | null {
+  const requiredBindings = mcpConfigurations.filter(
+    (config) =>
+      config.isEnabled !== false &&
+      isRecord(config.parameters) &&
+      config.parameters.required === true
+  )
+  return requiredBindings.length > 0 &&
+    !requiredBindings.some((config) => config.chatMode === 'writing-coach')
+    ? 'REQUIRED_TOOL_BINDING'
+    : null
 }
 
 function isLegacyModeEnabled(systemPrompts: unknown, mode: string): boolean {
@@ -25,6 +45,7 @@ function defaultConfig(systemPrompts: unknown): ChatbotStandardModeConfig {
     tutorEnabled: isLegacyModeEnabled(systemPrompts, 'tutor'),
     explainerEnabled: isLegacyModeEnabled(systemPrompts, 'explainer'),
     quizzerEnabled: isLegacyModeEnabled(systemPrompts, 'quizzer'),
+    writingCoachEnabled: false,
     courseName: null,
     subjectDomain: null,
     languageOfInstruction: null,
@@ -97,14 +118,22 @@ function parseConfig(value: unknown): ChatbotStandardModeConfig {
   if (typeof value.quizzerEnabled !== 'boolean') {
     throw new Error('quizzerEnabled must be a boolean')
   }
-  if (!value.tutorEnabled && !value.explainerEnabled) {
-    throw new Error('Tutor or Explainer must remain enabled')
+  if (
+    value.writingCoachEnabled != null &&
+    typeof value.writingCoachEnabled !== 'boolean'
+  ) {
+    throw new Error('writingCoachEnabled must be a boolean')
+  }
+  const writingCoachEnabled = value.writingCoachEnabled === true
+  if (!value.tutorEnabled && !value.explainerEnabled && !writingCoachEnabled) {
+    throw new Error('Tutor, Explainer or Writing Coach must remain enabled')
   }
 
   return {
     tutorEnabled: value.tutorEnabled,
     explainerEnabled: value.explainerEnabled,
     quizzerEnabled: value.quizzerEnabled,
+    writingCoachEnabled,
     courseName: normalizeSingleLineText(
       value.courseName,
       'courseName',
