@@ -55,6 +55,7 @@ const expectedDefaultCosts = {
   auto: { input: 1, output: 5 },
   'gpt-6-luna': { input: 0.1, output: 0.5 },
   'gpt-6-sol': { input: 2, output: 10 },
+  'gpt-6.1-sol': { input: 2, output: 10 },
   'gpt-5.4': { input: 2.5, output: 15 },
   'gpt-4.1': { input: 2, output: 8 },
 }
@@ -63,6 +64,7 @@ const expectedDeployedCosts = {
   auto: { input: 1, output: 5 },
   'gpt-6-luna': { input: 0.1, output: 0.5 },
   'gpt-6-sol': { input: 2, output: 10 },
+  'gpt-6.1-sol': { input: 2, output: 10 },
   'gpt-4.1': { input: 2, output: 8 },
   'gpt-5.4': { input: 2.5, output: 15 },
 }

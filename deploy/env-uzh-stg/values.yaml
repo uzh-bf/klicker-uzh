@@ -269,6 +269,22 @@ chat:
       cost:
         input: 2.0
         output: 10.0
+    - id: gpt-6.1-sol
+      deploymentId: klickeruzh/azure/gpt-6.1-sol
+      name: GPT-6.1 Sol
+      description: OpenAI reasoning model
+      supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - low
+        - medium
+        - high
+      fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
+      cost:
+        input: 2.0
+        output: 10.0
     - id: gpt-4.1
       deploymentId: klickeruzh/azure/gpt-4.1
       name: GPT-4.1

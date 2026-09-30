@@ -65,11 +65,15 @@ operator allowlist.
 | `auto` | `klickeruzh/azure/auto-router` | ADVANCED | 1.0 / 5.0 (kept; Langfuse blocked) | — |
 | `gpt-6-luna` | `klickeruzh/azure/gpt-6-luna` | BASE, fallback | 0.1 / 0.5 | low, medium, high, xhigh |
 | `gpt-6-sol` | `klickeruzh/azure/gpt-6-sol` | ADVANCED | 2.0 / 10.0 | low, medium, high |
+| `gpt-6.1-sol` | `klickeruzh/azure/gpt-6.1-sol` | ADVANCED | 2.0 / 10.0 | low, medium, high |
 | `gpt-4.1` | `klickeruzh/azure/gpt-4.1` | ADVANCED | 2.0 / 8.0 | — |
 | `gpt-5.4` | `klickeruzh/azure/gpt-5.4` | ADVANCED | 2.5 / 15.0 | minimal to xhigh |
 
 The in-code default registries (chat and backend) mirror the dev stack:
-`auto`, `gpt-6-luna`, `gpt-6-sol`, `gpt-4.1`.
+`auto`, `gpt-6-luna`, `gpt-6-sol`, `gpt-6.1-sol`, `gpt-4.1`.
+GPT-6.1 Sol (added 2026-09-30) needs df-cloud-klickeruzh !640 applied and
+the LiteLLM aliases in ai-infrastructure/deployment !994 before its values
+sync; it falls back to `gpt-6-sol`, then GPT-5.6.
 
 ### Delivery topology
 

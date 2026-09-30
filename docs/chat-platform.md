@@ -379,8 +379,9 @@ configuration lives in the external AI deployment repository's
 `litellm/config.yaml` and **cannot be verified from this repository** — treat
 the values.yaml comment as the best available record and confirm against the
 deployment before making a routing claim. The deployed registry also exposes
-direct `gpt-6-luna` (the participant base model) and `gpt-6-sol` through the
-`klickeruzh/azure/gpt-6-luna` and `klickeruzh/azure/gpt-6-sol` aliases; the
+direct `gpt-6-luna` (the participant base model), `gpt-6-sol` and
+`gpt-6.1-sol` through the matching `klickeruzh/azure/*` aliases;
+`gpt-6.1-sol` falls back to `gpt-6-sol` and from there to GPT-5.6. The
 router's effort targets remain internal. Before 2026-09-29 the base model id
 was `gpt-5.6-luna`; migration `20260929120000_chat_gpt6_base_model` rewrote
 stored chatbot allow-lists, while historical message `modelId` values keep the
@@ -409,8 +410,8 @@ and GPT-6 Sol medium for REASONING, with GPT-5.6 fallbacks. It deliberately reta
 production Azure URLs, model prefixes, secrets, or failover topology. Local
 Auto Mode is therefore evidence about the wiring and policy simulation, never
 live production routing. The local chat registry maps the user-facing `auto`
-model id to the `auto-router` LiteLLM deployment and exposes `gpt-6-luna` and
-`gpt-6-sol` for a direct comparison. The seeded Benibot fixture allow-lists all
+model id to the `auto-router` LiteLLM deployment and exposes `gpt-6-luna`,
+`gpt-6-sol` and `gpt-6.1-sol` for a direct comparison. The seeded Benibot fixture allow-lists all
 four active options — `auto`, `gpt-6-luna`, `gpt-6-sol` and `gpt-4.1` —
 explicitly, so it satisfies
 the strict model allow-list. The zero-credit safety fallback may use Luna even
