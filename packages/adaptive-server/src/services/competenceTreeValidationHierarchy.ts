@@ -50,3 +50,18 @@ export function isCompetenceTreeNodeEnabled(
 export function toCompetenceTreeKey(id: CompetenceTreeId): string {
   return String(id)
 }
+
+export function findCompetenceTreeRootKey(
+  nodeId: CompetenceTreeId,
+  nodesById: ReadonlyMap<string, CompetenceTreeValidationNode>
+): string | null {
+  const visited = new Set<string>()
+  let current = nodesById.get(toCompetenceTreeKey(nodeId))
+  while (current && !visited.has(toCompetenceTreeKey(current.id))) {
+    visited.add(toCompetenceTreeKey(current.id))
+    if (current.parentId === null || typeof current.parentId === 'undefined')
+      return toCompetenceTreeKey(current.id)
+    current = nodesById.get(toCompetenceTreeKey(current.parentId))
+  }
+  return null
+}

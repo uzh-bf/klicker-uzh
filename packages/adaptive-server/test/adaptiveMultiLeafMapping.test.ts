@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { findAdditionalLeafMappingIssue } from '../src/services/adaptivePracticeQuizConfigPreparation.js'
+import { findAdditionalLeafMappingIssue } from '../src/services/adaptivePracticeQuizAdditionalLeaves.js'
 import { markClassifiedAdaptiveRootEstimates } from '../src/services/adaptivePracticeQuizEstimatePersistence.js'
 import {
   buildAdaptiveDecisionRequest,
