@@ -308,6 +308,7 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 
 - **pre-commit** (husky): a staged `gitleaks` secret scan (skipped with a notice when the binary isn't installed; CI enforces it), then `pnpm run check:all` (typecheck + format:check via lint-staged + lint + syncpack)
 - **pre-push**: runs `pnpm run build`
+- Both `pnpm` steps go through `util/run-hook-pnpm.sh`. Devcontainer checkouts have no host dependency install, so they skip the step with a notice and rely on required CI. Never run a host `pnpm install` to satisfy a hook; see [Getting Started](docs/getting-started.md).
 - lint-staged: Biome on staged code files, Prettier on staged Markdown/YAML and `playwright/` specs
 
 ## Important Notes
