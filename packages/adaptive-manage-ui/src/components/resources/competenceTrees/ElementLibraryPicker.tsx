@@ -1,7 +1,7 @@
 import { useApolloClient, useQuery } from '@apollo/client'
 import {
   ElementStatus,
-  ElementType,
+  type ElementType,
   GetUserElementsDocument,
   type GetUserElementsQuery,
   GetUserTagsDocument,
@@ -59,6 +59,7 @@ function ElementLibraryPicker({
   const [search, setSearch] = useState('')
   const [type, setType] = useState('all')
   const [tagId, setTagId] = useState('all')
+  const [sortAsc, setSortAsc] = useState(true)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [selected, setSelected] = useState<
@@ -83,7 +84,7 @@ function ElementLibraryPicker({
     tagIds: tagId === 'all' ? [] : [Number(tagId)],
     showUntagged: false,
     sortByType: SortByType.Title,
-    sortByAsc: true,
+    sortByAsc: sortAsc,
     showArchived: false,
   }
   const { data, loading, error } = useQuery(GetUserElementsDocument, {
@@ -171,7 +172,7 @@ function ElementLibraryPicker({
         {t('manage.competenceTree.bulkDescription')}
       </p>
       <fieldset disabled={busy} className="space-y-4">
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <TextField
             id="competence-tree-library-search"
             label={t('manage.competenceTree.searchElements')}
@@ -232,6 +233,33 @@ function ElementLibraryPicker({
               }}
               disabled={busy}
               data={{ cy: 'competence-tree-library-tag' }}
+            />
+          </label>
+          <label
+            htmlFor="competence-tree-library-sort"
+            className="min-w-0 space-y-1 text-sm"
+          >
+            <span className="block">{t('manage.competenceTree.sortBy')}</span>
+            <Select
+              id="competence-tree-library-sort"
+              className={{ trigger: 'w-full' }}
+              value={sortAsc ? 'nameAsc' : 'nameDesc'}
+              items={[
+                {
+                  value: 'nameAsc',
+                  label: t('manage.competenceTree.sortOptions.nameAsc'),
+                },
+                {
+                  value: 'nameDesc',
+                  label: t('manage.competenceTree.sortOptions.nameDesc'),
+                },
+              ]}
+              onChange={(value) => {
+                setSortAsc(value === 'nameAsc')
+                setPage(1)
+              }}
+              disabled={busy}
+              data={{ cy: 'competence-tree-library-sort' }}
             />
           </label>
         </div>
