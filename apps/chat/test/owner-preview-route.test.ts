@@ -777,6 +777,76 @@ describe('POST owner preview chat', () => {
     expect(streamOptions.prepareStep({ stepNumber: 0 })).toEqual({
       toolChoice: { type: 'tool', toolName: 'KB_doc_query' },
     })
-    expect(streamOptions.prepareStep({ stepNumber: 1 })).toEqual({})
+    expect(
+      streamOptions.prepareStep({
+        initialMessages: [],
+        responseMessages: [],
+        stepNumber: 1,
+        steps: [],
+      })
+    ).toEqual({ messages: [] })
+  })
+
+  it('projects canonical citation indices into the preview continuation', async () => {
+    const raw = {
+      mode: 'documents',
+      sources: [
+        {
+          chunks: [{ content: 'Passage', page_number: 1 }],
+          reference: 'urn:source:a',
+          title: 'Material',
+        },
+      ],
+    }
+    const steps = [
+      {
+        content: [
+          {
+            input: {},
+            toolCallId: 'call-1',
+            toolName: 'KB_doc_query',
+            type: 'tool-call',
+          },
+          {
+            output: raw,
+            toolCallId: 'call-1',
+            toolName: 'KB_doc_query',
+            type: 'tool-result',
+          },
+        ],
+      },
+    ]
+    const responseMessages = [
+      {
+        content: [
+          {
+            output: { type: 'text', value: JSON.stringify(raw) },
+            toolCallId: 'call-1',
+            toolName: 'KB_doc_query',
+            type: 'tool-result',
+          },
+        ],
+        role: 'tool',
+      },
+    ]
+
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+
+    expect(response.status).toBe(200)
+    const streamOptions = mocks.streamText.mock.calls[0]![0]
+    const prepared = streamOptions.prepareStep({
+      initialMessages: [{ role: 'user' }],
+      responseMessages,
+      stepNumber: 1,
+      steps,
+    })
+
+    expect(prepared.messages).toHaveLength(2)
+    expect(
+      JSON.parse(prepared.messages[1].content[0].output.value).sources[0]
+        .citation_index
+    ).toBe(1)
   })
 })
