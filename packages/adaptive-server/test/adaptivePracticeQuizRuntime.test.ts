@@ -52,16 +52,14 @@ describe('adaptive practice quiz runtime', () => {
     const item = poolItem(1, [1, 2], 2, 2, 0)
     try {
       vi.stubEnv('ADAPTIVE_QUIZ_SHOW_SOLUTIONS', undefined)
-      expect(
-        serializeAdaptiveParticipantElement(item).testingSolution
-      ).toBeNull()
+      expect(serializeAdaptiveParticipantElement(item).testingInfo).toBeNull()
       vi.stubEnv('ADAPTIVE_QUIZ_SHOW_SOLUTIONS', 'true')
-      expect(serializeAdaptiveParticipantElement(item).testingSolution).toEqual(
-        {
-          choiceIndices: [0],
-          answers: [],
-        }
-      )
+      expect(
+        serializeAdaptiveParticipantElement(item).testingInfo?.solution
+      ).toEqual({
+        choiceIndices: [0],
+        answers: [],
+      })
     } finally {
       vi.unstubAllEnvs()
     }
@@ -76,18 +74,21 @@ describe('adaptive practice quiz runtime', () => {
     for (const flag of ['', 'false', 'TRUE', '1']) {
       for (const item of items) {
         expect(
-          serializeAdaptiveParticipantElement(item, flag).testingSolution
+          serializeAdaptiveParticipantElement(item, flag).testingInfo
         ).toBeNull()
       }
     }
     expect(
-      serializeAdaptiveParticipantElement(items[0]!, 'true').testingSolution
+      serializeAdaptiveParticipantElement(items[0]!, 'true').testingInfo
+        ?.solution
     ).toEqual({ choiceIndices: [0], answers: [] })
     expect(
-      serializeAdaptiveParticipantElement(items[1]!, 'true').testingSolution
+      serializeAdaptiveParticipantElement(items[1]!, 'true').testingInfo
+        ?.solution
     ).toEqual({ choiceIndices: [], answers: ['0'] })
     expect(
-      serializeAdaptiveParticipantElement(items[2]!, 'true').testingSolution
+      serializeAdaptiveParticipantElement(items[2]!, 'true').testingInfo
+        ?.solution
     ).toEqual({ choiceIndices: [], answers: ['zurich'] })
     const enabled = serializeAdaptiveParticipantElement(items[0]!, 'true')
     expect(collectKeys(enabled.options)).not.toContain('correct')

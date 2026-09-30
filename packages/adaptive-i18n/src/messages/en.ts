@@ -23,9 +23,23 @@ const messages = {
             'Your result helps you choose what to practise next. Course instructors see only anonymous group results.',
         },
         question: {
-          testingSolution: 'Solution — testing only',
-          testingSolutionDescription:
-            'Answer display is enabled for this environment.',
+          testingInfo: 'Testing info — not shown to students',
+          testingInfoDescription:
+            'Solutions and debugging data are enabled for this environment.',
+          testingSolution: 'Solution',
+          testingElement: 'Element',
+          testingTags: 'Tags',
+          testingNone: 'none',
+          testingSubcompetence: 'Subcompetence',
+          testingItemLevel: 'Item level',
+          testingOverallEstimate: 'Current estimate (overall)',
+          testingCompetenceEstimate: 'Competence estimate',
+          testingSubcompetenceEstimate: 'Subcompetence estimate',
+          testingNoEstimate: 'No estimate yet',
+          testingNoLevel: 'no level',
+          testingTentative: '(best guess)',
+          testingEstimateDetails:
+            'θ {theta} [{lower}, {upper}], SE {standardError}, {count, plural, one {# response} other {# responses}}',
           testingTrue: 'True',
           testingFalse: 'False',
           remainingTime: 'Time remaining: {time}',
