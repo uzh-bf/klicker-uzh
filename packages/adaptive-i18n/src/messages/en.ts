@@ -696,6 +696,14 @@ const messages = {
           itemOverviewHelp:
             'Expand a competence and subcompetence to inspect its elements. Each list shows 10 elements per page by default.',
           unassignedItems: 'Other elements',
+          sortBy: 'Sort elements by',
+          sortOptions: {
+            default: 'Default order',
+            nameAsc: 'Name (A–Z)',
+            nameDesc: 'Name (Z–A)',
+            responsesDesc: 'Most responses',
+            responsesAsc: 'Fewest responses',
+          },
           questionDistribution: 'Questions answered',
           timeDistribution: 'Completion time',
           boxPlotHelp:
@@ -919,6 +927,12 @@ const messages = {
       loadElementsError: 'The element library could not be loaded.',
       noElements: 'No matching elements. Adjust your search or filters.',
       assignmentSearch: 'Search tree elements',
+      sortBy: 'Sort by',
+      sortOptions: {
+        default: 'Default order',
+        nameAsc: 'Name (A–Z)',
+        nameDesc: 'Name (Z–A)',
+      },
       allLevels: 'All levels',
       allCompetences: 'All subcompetences',
       libraryDescription:

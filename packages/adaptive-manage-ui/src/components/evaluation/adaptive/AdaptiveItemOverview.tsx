@@ -3,9 +3,15 @@ import {
   faChevronRight,
 } from '@fortawesome/free-solid-svg-icons'
 import { Button } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
-import { useId, useMemo, useState } from 'react'
+import { useLocale, useTranslations } from 'next-intl'
+import { type SetStateAction, useId, useMemo, useState } from 'react'
+import {
+  ELEMENT_RESPONSE_SORTS,
+  type ElementResponseSort,
+  sortByNameOrResponses,
+} from '../../../lib/elementSorting'
 import CompetenceTreePagination from '../../resources/competenceTrees/CompetenceTreePagination'
+import SortSelect from '../../resources/competenceTrees/SortSelect'
 import AdaptiveItemDiagnosticTable from './AdaptiveItemDiagnosticTable'
 import type { AdaptiveItemDiagnostic } from './types'
 
@@ -20,16 +26,33 @@ type ItemGroup = {
 function ItemGroupPanel({
   group,
   practiceQuizId,
+  sort,
 }: {
   group: ItemGroup
   practiceQuizId: string
+  sort: ElementResponseSort
 }) {
   const t = useTranslations()
+  const locale = useLocale()
   const [expanded, setExpanded] = useState(false)
-  const [page, setPage] = useState(1)
+  // Changing the sort order returns the list to its first page.
+  const [pageState, setPageState] = useState({ sort, page: 1 })
+  const page = pageState.sort === sort ? pageState.page : 1
+  const setPage = (value: SetStateAction<number>) =>
+    setPageState((current) => ({
+      sort,
+      page:
+        typeof value === 'function'
+          ? value(current.sort === sort ? current.page : 1)
+          : value,
+    }))
   const [pageSize, setPageSize] = useState(10)
   const id = useId()
-  const totalPages = Math.max(1, Math.ceil(group.items.length / pageSize))
+  const items = useMemo(
+    () => sortByNameOrResponses(group.items, sort, locale),
+    [group.items, sort, locale]
+  )
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize))
   const currentPage = Math.min(page, totalPages)
   return (
     <div
@@ -66,13 +89,14 @@ function ItemGroupPanel({
               key={child.key}
               group={child}
               practiceQuizId={practiceQuizId}
+              sort={sort}
             />
           ))}
-          {group.items.length > 0 ? (
+          {items.length > 0 ? (
             <>
               <AdaptiveItemDiagnosticTable
                 practiceQuizId={practiceQuizId}
-                items={group.items.slice(
+                items={items.slice(
                   (currentPage - 1) * pageSize,
                   currentPage * pageSize
                 )}
@@ -81,7 +105,7 @@ function ItemGroupPanel({
                 currentPage={currentPage}
                 totalPages={totalPages}
                 setCurrentPage={setPage}
-                numOfObjects={group.items.length}
+                numOfObjects={items.length}
                 pageSize={pageSize}
                 setPageSize={(value) => {
                   setPageSize(value)
@@ -105,6 +129,7 @@ function AdaptiveItemOverview({
 }) {
   const t = useTranslations()
   const [expanded, setExpanded] = useState(false)
+  const [sort, setSort] = useState<ElementResponseSort>('default')
   const id = useId()
   const fallback = t('manage.evaluation.adaptive.pilot.unassignedItems')
   const groups = useMemo(() => {
@@ -156,14 +181,30 @@ function AdaptiveItemOverview({
       </Button>
       {expanded ? (
         <div id={id} className="space-y-3 border-t border-gray-200 p-3 sm:p-4">
-          <p className="text-sm text-gray-600">
-            {t('manage.evaluation.adaptive.pilot.itemOverviewHelp')}
-          </p>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <p className="min-w-0 flex-1 text-sm text-gray-600">
+              {t('manage.evaluation.adaptive.pilot.itemOverviewHelp')}
+            </p>
+            <SortSelect
+              label={t('manage.evaluation.adaptive.pilot.sortBy')}
+              value={sort}
+              options={ELEMENT_RESPONSE_SORTS.map((value) => ({
+                value,
+                label: t(
+                  `manage.evaluation.adaptive.pilot.sortOptions.${value}`
+                ),
+              }))}
+              onChange={setSort}
+              className="w-full sm:w-56"
+              dataCy="adaptive-item-overview-sort"
+            />
+          </div>
           {groups.map((group) => (
             <ItemGroupPanel
               key={group.key}
               group={group}
               practiceQuizId={practiceQuizId}
+              sort={sort}
             />
           ))}
         </div>
