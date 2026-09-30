@@ -1,9 +1,13 @@
+import { CHATBOT_STANDARD_MODE_KEYS } from '@klicker-uzh/util'
 import { describe, expect, test } from 'vitest'
+import { DEFAULT_PROMPT } from '../src/lib/config/prompts'
 import {
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
 } from '../src/lib/server/effectiveChatModes'
+
+const KB_ID = '7016810d-31e9-4b39-9529-cd46feb2bf63'
 
 function config({
   allowedTools,
@@ -31,6 +35,14 @@ function config({
 }
 
 describe('effective chatbot modes', () => {
+  // The shared key list decides which modes carry a standard-mode flag, so it
+  // has to name exactly the modes the runtime offers.
+  test('matches the shared standard-mode keys to the prompt registry', () => {
+    expect([...CHATBOT_STANDARD_MODE_KEYS].sort()).toEqual(
+      Object.keys(DEFAULT_PROMPT).sort()
+    )
+  })
+
   test('composes platform and stored modes while preserving custom copy', () => {
     expect(
       resolveEffectiveChatModeOptions(
@@ -197,7 +209,7 @@ describe('effective chatbot modes', () => {
     )
   })
 
-  test('hides modes that cannot satisfy the chatbot required-tool policy', () => {
+  test('offers an unbound mode while another mode declares a required binding', () => {
     const configurations = [
       config({
         allowedTools: ['course_search'],
@@ -218,7 +230,39 @@ describe('effective chatbot modes', () => {
       )
     ).toEqual({
       tutor: 'Guides students with focused questions, hints, and feedback.',
+      explainer:
+        'Explains course concepts directly with definitions and grounded examples.',
+      custom: 'Custom',
     })
+  })
+
+  test('keeps a custom-only chatbot serving once a knowledge base is attached', () => {
+    const configurations = [
+      config({
+        allowedTools: ['doc_query'],
+        chatMode: 'tutor',
+        parameters: { required: true, toolAlias: 'doc_query', kb_id: KB_ID },
+        serverId: 'kb-server',
+      }),
+      config({
+        allowedTools: ['doc_query'],
+        chatMode: 'explainer',
+        parameters: { required: true, toolAlias: 'doc_query', kb_id: KB_ID },
+        serverId: 'kb-server',
+      }),
+    ]
+
+    expect(
+      resolveEffectiveChatModeOptions(
+        {
+          tutor: { enabled: false },
+          explainer: { enabled: false },
+          quizzer: { enabled: false },
+          'ethik-rollenspiel': { description: 'Ethics role play' },
+        },
+        configurations
+      )
+    ).toEqual({ 'ethik-rollenspiel': 'Ethics role play' })
   })
 
   test('inherits only a restricted Tutor document-query binding', () => {

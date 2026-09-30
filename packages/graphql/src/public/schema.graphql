@@ -760,7 +760,7 @@ type Chatbot {
   id: ID!
   knowledgeGraphRetrievalEnabled: Boolean!
   knowledgeGraphVisible: Boolean!
-  mcpConfigurations: [ChatbotMcpConfigurationSummary!]!
+  mcpConfigurations: [ChatbotMcpConfigurationSummary!]! @deprecated(reason: "Retrieval bindings are internal plumbing and are no longer projected; this field always resolves to an empty list.")
   modelSelection: Boolean!
   name: String!
   publicationUseCase: String

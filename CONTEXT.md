@@ -199,9 +199,11 @@ _Avoid_: raw prompt, system prompt editor, custom-mode configuration
 
 **Effective mode set**:
 The server-resolved modes a participant may present or request for one
-chatbot. It combines standard-mode configuration, legacy custom-mode entries,
-and required MCP capability checks; a hidden mode is rejected before thread or
-provider work.
+chatbot. It combines standard-mode configuration and legacy custom-mode
+entries; a mode is not hidden because the chatbot declares a required retrieval
+binding elsewhere. An unsupported or typed-disabled mode is rejected before
+thread or provider work, and a mode whose declared required binding is
+unavailable fails closed at request time.
 _Avoid_: client mode list, available modes (when referring to server policy)
 
 ### Model classes and budgets

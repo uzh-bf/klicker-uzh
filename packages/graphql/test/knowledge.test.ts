@@ -1015,6 +1015,222 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expectScopedConfigurations(secondKb.id)
   })
 
+  it('provisions a required binding for every declared custom mode', async () => {
+    const kb = await createKb({ name: 'Case notes' }, userOneCtx)
+    const course = await seedCourse({}, userOneCtx)
+    // The legacy NULL standard-mode configuration has to provision the same
+    // rows, because availability is resolved per request rather than here.
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Case interview trainer',
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+        systemPrompts: {
+          tutor: { enabled: false },
+          explainer: { enabled: false },
+          quizzer: { enabled: false },
+          'case-interview': { description: 'Case interview' },
+          'retired-workshop': { description: 'Retired', enabled: false },
+        },
+      },
+    })
+
+    await attachKbToChatbot({ kbId: kb.id, chatbotId: chatbot.id }, userOneCtx)
+
+    const configurations = await prisma.chatbotMCPConfig.findMany({
+      where: { chatbotId: chatbot.id, mcpServer: { name: 'KB' } },
+      include: { mcpServer: { select: { id: true, name: true } } },
+      orderBy: { chatMode: 'asc' },
+    })
+    const modeKeys = [
+      'case-interview',
+      'explainer',
+      'retired-workshop',
+      'tutor',
+    ]
+    expect(configurations).toEqual(
+      modeKeys.map((chatMode) =>
+        expect.objectContaining({
+          chatMode,
+          allowedTools: ['doc_query'],
+          parameters: { required: true, toolAlias: 'doc_query', kb_id: kb.id },
+          isEnabled: true,
+        })
+      )
+    )
+
+    for (const chatMode of modeKeys) {
+      expect(
+        resolveMcpScope(
+          configurations,
+          chatMode,
+          configurations.filter(
+            (configuration) => configuration.chatMode === chatMode
+          )
+        )
+      ).toEqual([kb.id])
+    }
+  })
+
+  it('disables bindings for modes the chatbot no longer declares', async () => {
+    const firstKb = await createKb({ name: 'First KB' }, userOneCtx)
+    const secondKb = await createKb({ name: 'Second KB' }, userOneCtx)
+    const course = await seedCourse({}, userOneCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Case interview trainer',
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+        systemPrompts: { 'case-interview': { description: 'Case interview' } },
+      },
+    })
+    const mcpServer = await prisma.chatbotMCPServer.findUniqueOrThrow({
+      where: { name: 'KB' },
+      select: { id: true },
+    })
+
+    await attachKbToChatbot(
+      { kbId: firstKb.id, chatbotId: chatbot.id },
+      userOneCtx
+    )
+
+    // A disabled exact Quizzer row overrides Tutor inheritance, so attachment
+    // neither disables it nor repoints it.
+    await prisma.chatbotMCPConfig.create({
+      data: {
+        chatbotId: chatbot.id,
+        mcpServerId: mcpServer.id,
+        chatMode: 'quizzer',
+        allowedTools: ['doc_query'],
+        parameters: {
+          required: true,
+          toolAlias: 'doc_query',
+          kb_id: firstKb.id,
+        },
+        isEnabled: false,
+      },
+    })
+
+    await prisma.chatbot.update({
+      where: { id: chatbot.id },
+      data: { systemPrompts: {} },
+    })
+    await attachKbToChatbot(
+      { kbId: secondKb.id, chatbotId: chatbot.id },
+      userOneCtx
+    )
+
+    const configurations = await prisma.chatbotMCPConfig.findMany({
+      where: { chatbotId: chatbot.id, mcpServer: { name: 'KB' } },
+      include: { mcpServer: { select: { id: true, name: true } } },
+      orderBy: { chatMode: 'asc' },
+    })
+    expect(configurations.map(({ chatMode }) => chatMode)).toEqual([
+      'case-interview',
+      'explainer',
+      'quizzer',
+      'tutor',
+    ])
+    // Every binding the chatbot still declares grounds the replacement KB, so
+    // no enabled row can hold the scope of the previous one.
+    expect(
+      configurations
+        .filter(({ isEnabled }) => isEnabled)
+        .map(({ parameters }) => parameters)
+    ).toEqual([
+      { required: true, toolAlias: 'doc_query', kb_id: secondKb.id },
+      { required: true, toolAlias: 'doc_query', kb_id: secondKb.id },
+    ])
+    // The removed mode keeps its row without grounding retrieval, and the
+    // Quizzer override keeps the scope it was authored with.
+    expect(configurations.filter(({ isEnabled }) => !isEnabled)).toEqual([
+      expect.objectContaining({ chatMode: 'case-interview' }),
+      expect.objectContaining({
+        chatMode: 'quizzer',
+        parameters: {
+          required: true,
+          toolAlias: 'doc_query',
+          kb_id: firstKb.id,
+        },
+      }),
+    ])
+  })
+
+  it('reconciles an enabled quizzer binding to the replacement knowledge base', async () => {
+    const firstKb = await createKb({ name: 'First KB' }, userOneCtx)
+    const secondKb = await createKb({ name: 'Second KB' }, userOneCtx)
+    const course = await seedCourse({}, userOneCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Finance tutor',
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+    const mcpServer = await prisma.chatbotMCPServer.findUniqueOrThrow({
+      where: { name: 'KB' },
+      select: { id: true },
+    })
+
+    await attachKbToChatbot(
+      { kbId: firstKb.id, chatbotId: chatbot.id },
+      userOneCtx
+    )
+    await prisma.chatbotMCPConfig.create({
+      data: {
+        chatbotId: chatbot.id,
+        mcpServerId: mcpServer.id,
+        chatMode: 'quizzer',
+        allowedTools: ['doc_query'],
+        parameters: {
+          required: true,
+          toolAlias: 'doc_query',
+          kb_id: firstKb.id,
+        },
+        isEnabled: true,
+      },
+    })
+
+    await attachKbToChatbot(
+      { kbId: secondKb.id, chatbotId: chatbot.id },
+      userOneCtx
+    )
+    // Re-attaching the same knowledge base cannot add rows.
+    await attachKbToChatbot(
+      { kbId: secondKb.id, chatbotId: chatbot.id },
+      userOneCtx
+    )
+
+    const configurations = await prisma.chatbotMCPConfig.findMany({
+      where: { chatbotId: chatbot.id, mcpServer: { name: 'KB' } },
+      include: { mcpServer: { select: { id: true, name: true } } },
+      orderBy: { chatMode: 'asc' },
+    })
+    expect(configurations).toEqual(
+      ['explainer', 'quizzer', 'tutor'].map((chatMode) =>
+        expect.objectContaining({
+          chatMode,
+          allowedTools: ['doc_query'],
+          parameters: {
+            required: true,
+            toolAlias: 'doc_query',
+            kb_id: secondKb.id,
+          },
+          isEnabled: true,
+        })
+      )
+    )
+    expect(
+      resolveMcpScope(
+        configurations,
+        'quizzer',
+        configurations.filter(
+          (configuration) => configuration.chatMode === 'quizzer'
+        )
+      )
+    ).toEqual([secondKb.id])
+  })
+
   it('serializes concurrent replacements to one enabled binding', async () => {
     const firstKb = await createKb({ name: 'First KB' }, userOneCtx)
     const secondKb = await createKb({ name: 'Second KB' }, userOneCtx)

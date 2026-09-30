@@ -36,6 +36,7 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 - [0042](./0042-version-chatbot-disclaimers-by-replacement.md) — Version lecturer-edited chatbot disclaimers by transactional replacement
 - [0043](./0043-sonar-analysis-credential-and-coverage-input-boundary.md) — Sonar analysis credentials stay out of contributor-controlled execution
 - [0049](./0049-url-content-identity-is-the-accepted-snapshot.md) — URL sources are identified by the accepted snapshot, not a re-fetch
+- [0050](./0050-per-mode-retrieval-scope-and-kb-attachment.md) — Retrieval availability is per mode, and attaching a knowledge base reconciles the mode rows
 
 `0001`, `0003`, and `0008` are each used twice — their lines were numbered
 independently before this index existed. Numbers are not reassigned, because

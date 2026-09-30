@@ -35,7 +35,10 @@ import {
   MAX_KB_TOTAL_SIZE_BYTES,
   resolveKBStorageLimitBytes,
 } from '@klicker-uzh/types'
-import { getBlobStorageAccountUrl } from '@klicker-uzh/util'
+import {
+  getBlobStorageAccountUrl,
+  resolveChatbotKbRetrievalModeKeys,
+} from '@klicker-uzh/util'
 import { normalizePublicHttpUrl } from '@klicker-uzh/util/public-url'
 import { createHash, randomUUID } from 'crypto'
 import { GraphQLError } from 'graphql'
@@ -74,7 +77,6 @@ const KB_CURSOR_VERSION = 1
 // rather than failing after dispatch.
 const KB_GRAPH_FOCUS_TOPIC_MAX_LENGTH = 300
 const KB_MCP_SERVER_NAME = 'KB'
-const KB_MCP_CHAT_MODES = ['tutor', 'explainer'] as const
 const KB_FILE_TYPES: Record<string, readonly string[]> = {
   pdf: ['application/pdf'],
   txt: ['text/plain'],
@@ -1188,6 +1190,10 @@ export async function attachKbToChatbot(
     await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
     await lockOwnedChatbotOrThrow(prisma, chatbotId, ctx.user.sub)
     const mcpServer = await getKbMcpServerOrThrow(prisma)
+    const { systemPrompts } = await prisma.chatbot.findUniqueOrThrow({
+      where: { id: chatbotId },
+      select: { systemPrompts: true },
+    })
 
     await prisma.kBChatbot.updateMany({
       where: {
@@ -1203,7 +1209,25 @@ export async function attachKbToChatbot(
       update: { isEnabled: true },
     })
 
-    for (const chatMode of KB_MCP_CHAT_MODES) {
+    // Retrieval is provisioned for every mode the chatbot declares, so a custom
+    // mode keeps its grounding. Nothing is provisioned for Quizzer, which
+    // inherits the Tutor binding under ADR 0021.
+    const retrievalModeKeys = resolveChatbotKbRetrievalModeKeys(systemPrompts)
+
+    // A binding for a mode the chatbot no longer declares would keep grounding
+    // retrieval that the owner removed. An exact Quizzer row is exempt, because
+    // it overrides Tutor inheritance whether or not it is enabled.
+    await prisma.chatbotMCPConfig.updateMany({
+      where: {
+        chatbotId,
+        mcpServerId: mcpServer.id,
+        isEnabled: true,
+        chatMode: { notIn: [...retrievalModeKeys, 'quizzer'] },
+      },
+      data: { isEnabled: false },
+    })
+
+    for (const chatMode of retrievalModeKeys) {
       await prisma.chatbotMCPConfig.upsert({
         where: {
           chatbotId_mcpServerId_chatMode: {
@@ -1229,6 +1253,24 @@ export async function attachKbToChatbot(
         },
       })
     }
+
+    // An enabled Quizzer binding has to follow the replacement knowledge base:
+    // an exact row on the previous one fails the single-scope check for every
+    // mode of this chatbot. An exact row that is disabled is an intentional
+    // override and stays untouched.
+    await prisma.chatbotMCPConfig.updateMany({
+      where: {
+        chatbotId,
+        mcpServerId: mcpServer.id,
+        chatMode: 'quizzer',
+        isEnabled: true,
+      },
+      data: {
+        allowedTools: ['doc_query'],
+        parameters: { required: true, toolAlias: 'doc_query', kb_id: kbId },
+        priority: 0,
+      },
+    })
 
     const [chatbot, kb] = await Promise.all([
       prisma.chatbot.findUniqueOrThrow({
