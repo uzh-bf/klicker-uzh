@@ -1,8 +1,13 @@
 import { faTrashCan, faXmark } from '@fortawesome/free-solid-svg-icons'
 import { mapLevelsToTheta } from '@klicker-uzh/adaptive-contract'
 import { Button, Switch, UserNotification } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
+import {
+  ELEMENT_NAME_SORTS,
+  type ElementNameSort,
+  sortByName,
+} from '../../../lib/elementSorting'
 import {
   assignmentHasLeaf,
   getAssignmentLeaves,
@@ -15,6 +20,7 @@ import ElementLibraryPicker from './ElementLibraryPicker'
 import ElementPreview from './ElementPreview'
 import IconAction from './IconAction'
 import ItemParameters from './ItemParameters'
+import SortSelect from './SortSelect'
 import { getBreadcrumb } from './treeHelpers'
 import type { CompetenceTreeForm } from './types'
 
@@ -36,6 +42,7 @@ function AssignmentTable({
   filterReset?: number
 }) {
   const t = useTranslations()
+  const locale = useLocale()
   const leaves = getAssignmentLeaves(form)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
@@ -51,6 +58,7 @@ function AssignmentTable({
   )
   const [search, setSearch] = useState('')
   const [type, setType] = useState('')
+  const [sort, setSort] = useState<ElementNameSort>('default')
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: filterReset is an explicit parent signal to clear all filters.
   useEffect(() => {
@@ -65,10 +73,14 @@ function AssignmentTable({
           assignment.levelKey === selectedCell.levelKey
       )
     : form.assignments
-  const assignments = assignmentsInCell.filter(
-    (item) =>
-      item.elementName.toLowerCase().includes(search.toLowerCase()) &&
-      (!type || item.elementType === type)
+  const assignments = sortByName(
+    assignmentsInCell.filter(
+      (item) =>
+        item.elementName.toLowerCase().includes(search.toLowerCase()) &&
+        (!type || item.elementType === type)
+    ),
+    sort,
+    locale
   )
   const totalPages = Math.max(1, Math.ceil(assignments.length / pageSize))
   const visibleAssignments = assignments.slice(
@@ -132,7 +144,7 @@ function AssignmentTable({
         </div>
       )}
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2">
+      <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <label className="text-sm">
           {t('manage.competenceTree.assignmentSearch')}
           <input
@@ -166,6 +178,19 @@ function AssignmentTable({
             ))}
           </select>
         </label>
+        <SortSelect
+          label={t('manage.competenceTree.sortBy')}
+          value={sort}
+          options={ELEMENT_NAME_SORTS.map((value) => ({
+            value,
+            label: t(`manage.competenceTree.sortOptions.${value}`),
+          }))}
+          onChange={(value) => {
+            setSort(value)
+            setCurrentPage(1)
+          }}
+          dataCy="competence-tree-assignment-sort"
+        />
       </div>
       {!disabled && (
         <ElementLibraryPicker
