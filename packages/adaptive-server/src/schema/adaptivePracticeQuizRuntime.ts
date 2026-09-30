@@ -20,6 +20,10 @@ import {
   type AdaptiveStudentResult,
   type AdaptiveStudentResultNode,
   type AdaptiveSubmittedResponseFeedback,
+  type AdaptiveTestingEstimate,
+  type AdaptiveTestingInfo,
+  type AdaptiveTestingSolution,
+  loadAdaptiveTestingElementTags,
 } from '../services/adaptivePracticeQuizzes.js'
 import type { createCompetenceTreeSchema } from './competenceTree.js'
 
@@ -196,14 +200,64 @@ export function createAdaptivePracticeQuizRuntimeSchema(
     }
   )
 
-  const AdaptiveTestingSolution = builder
-    .objectRef<NonNullable<AdaptiveParticipantElement['testingSolution']>>(
-      'AdaptivePracticeQuizTestingSolution'
-    )
+  // Testing-only objects: populated solely when the server runs with
+  // ADAPTIVE_QUIZ_SHOW_SOLUTIONS=true (staging walkthroughs); null otherwise.
+  const AdaptiveTestingSolutionType = builder
+    .objectRef<AdaptiveTestingSolution>('AdaptivePracticeQuizTestingSolution')
     .implement({
       fields: (t) => ({
         choiceIndices: t.exposeIntList('choiceIndices'),
         answers: t.exposeStringList('answers'),
+      }),
+    })
+
+  const AdaptiveTestingEstimateType = builder
+    .objectRef<AdaptiveTestingEstimate>('AdaptivePracticeQuizTestingEstimate')
+    .implement({
+      fields: (t) => ({
+        responseCount: t.exposeInt('responseCount'),
+        theta: t.exposeFloat('theta', { nullable: true }),
+        standardError: t.exposeFloat('standardError', { nullable: true }),
+        lowerBound: t.exposeFloat('lowerBound', { nullable: true }),
+        upperBound: t.exposeFloat('upperBound', { nullable: true }),
+        levelLabel: t.exposeString('levelLabel', { nullable: true }),
+        levelIsTentative: t.exposeBoolean('levelIsTentative'),
+        resultStatus: t.expose('resultStatus', {
+          type: AdaptiveResultClassificationType,
+          nullable: true,
+        }),
+      }),
+    })
+
+  const AdaptiveTestingInfoType = builder
+    .objectRef<AdaptiveTestingInfo>('AdaptivePracticeQuizTestingInfo')
+    .implement({
+      fields: (t) => ({
+        solution: t.expose('solution', { type: AdaptiveTestingSolutionType }),
+        elementId: t.exposeInt('elementId'),
+        elementVersion: t.exposeInt('elementVersion'),
+        elementTitle: t.exposeString('elementTitle'),
+        elementTags: t.stringList({
+          resolve: (info, _args, ctx) =>
+            loadAdaptiveTestingElementTags(ctx.prisma, info.elementId),
+        }),
+        competencePath: t.exposeStringList('competencePath'),
+        subcompetenceName: t.exposeString('subcompetenceName', {
+          nullable: true,
+        }),
+        itemLevelLabel: t.exposeString('itemLevelLabel'),
+        overallEstimate: t.expose('overallEstimate', {
+          type: AdaptiveTestingEstimateType,
+          nullable: true,
+        }),
+        competenceEstimate: t.expose('competenceEstimate', {
+          type: AdaptiveTestingEstimateType,
+          nullable: true,
+        }),
+        subcompetenceEstimate: t.expose('subcompetenceEstimate', {
+          type: AdaptiveTestingEstimateType,
+          nullable: true,
+        }),
       }),
     })
 
@@ -219,8 +273,8 @@ export function createAdaptivePracticeQuizRuntimeSchema(
         name: t.exposeString('name'),
         type: t.expose('type', { type: ElementType }),
         content: t.exposeString('content'),
-        testingSolution: t.expose('testingSolution', {
-          type: AdaptiveTestingSolution,
+        testingInfo: t.expose('testingInfo', {
+          type: AdaptiveTestingInfoType,
           nullable: true,
         }),
         options: t.expose('options', {

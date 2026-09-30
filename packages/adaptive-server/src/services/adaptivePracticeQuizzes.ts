@@ -39,3 +39,9 @@ export type {
   AdaptiveParticipantElement,
   AdaptivePracticeQuizResponseInput,
 } from './adaptivePracticeQuizRuntime.js'
+export {
+  type AdaptiveTestingEstimate,
+  type AdaptiveTestingInfo,
+  type AdaptiveTestingSolution,
+  loadAdaptiveTestingElementTags,
+} from './adaptivePracticeQuizTestingInfo.js'

@@ -24,9 +24,27 @@ fragment FAdaptivePracticeQuizAttemptState on AdaptivePracticeQuizAttemptState {
     name
     type
     content
-    testingSolution {
-      choiceIndices
-      answers
+    testingInfo {
+      solution {
+        choiceIndices
+        answers
+      }
+      elementId
+      elementVersion
+      elementTitle
+      elementTags
+      competencePath
+      subcompetenceName
+      itemLevelLabel
+      overallEstimate {
+        ...FAdaptivePracticeQuizTestingEstimate
+      }
+      competenceEstimate {
+        ...FAdaptivePracticeQuizTestingEstimate
+      }
+      subcompetenceEstimate {
+        ...FAdaptivePracticeQuizTestingEstimate
+      }
     }
     options {
       __typename

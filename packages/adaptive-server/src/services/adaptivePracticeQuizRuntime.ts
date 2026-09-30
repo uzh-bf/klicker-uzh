@@ -26,6 +26,10 @@ import type {
   FreeTextElementData,
   NumericalElementData,
 } from '@klicker-uzh/types'
+import {
+  type AdaptiveTestingInfo,
+  buildAdaptiveTestingInfo,
+} from './adaptivePracticeQuizTestingInfo.js'
 
 export const MIN_REPORTING_RESPONSES = MIN_ADAPTIVE_REPORTING_RESPONSES
 
@@ -77,7 +81,7 @@ export type AdaptiveParticipantElement = {
   name: string
   type: DB.ElementType
   content: string
-  testingSolution: { choiceIndices: number[]; answers: string[] } | null
+  testingInfo: AdaptiveTestingInfo | null
   options:
     | {
         kind: 'CHOICES'
@@ -146,7 +150,16 @@ export function gradeAdaptiveResponse({
 export function serializeAdaptiveParticipantElement(
   poolItem: Pick<
     AdaptiveRuntimePoolItem,
-    'id' | 'elementId' | 'elementName' | 'elementType' | 'elementData'
+    | 'id'
+    | 'elementId'
+    | 'elementVersion'
+    | 'elementName'
+    | 'elementType'
+    | 'elementData'
+    | 'nodePath'
+    | 'nodeNamePath'
+    | 'leafNodeId'
+    | 'levelLabel'
   >,
   showSolutions = process.env.ADAPTIVE_QUIZ_SHOW_SOLUTIONS
 ): AdaptiveParticipantElement {
@@ -158,33 +171,7 @@ export function serializeAdaptiveParticipantElement(
     )
   }
 
-  const testingSolution: AdaptiveParticipantElement['testingSolution'] =
-    showSolutions === 'true'
-      ? {
-          choiceIndices:
-            element.type === DB.ElementType.SC ||
-            element.type === DB.ElementType.MC ||
-            element.type === DB.ElementType.KPRIM
-              ? element.options.choices
-                  .filter((choice) => choice.correct === true)
-                  .map((choice) => choice.ix)
-              : [],
-          answers:
-            element.type === DB.ElementType.FREE_TEXT
-              ? (element.options.solutions ?? [])
-              : element.type === DB.ElementType.NUMERICAL
-                ? [
-                    ...(element.options.exactSolutions ?? []).map(String),
-                    ...(element.options.solutionRanges ?? []).map(
-                      ({ min, max }) =>
-                        min === max
-                          ? String(min)
-                          : `${min ?? '−∞'} – ${max ?? '∞'}`
-                    ),
-                  ]
-                : [],
-        }
-      : null
+  const testingInfo = buildAdaptiveTestingInfo(poolItem, showSolutions)
 
   switch (element.type) {
     case DB.ElementType.SC:
@@ -196,7 +183,7 @@ export function serializeAdaptiveParticipantElement(
         name: poolItem.elementName,
         type: poolItem.elementType,
         content: element.content,
-        testingSolution,
+        testingInfo,
         options: {
           kind: 'CHOICES',
           displayMode: element.options.displayMode,
@@ -213,7 +200,7 @@ export function serializeAdaptiveParticipantElement(
         name: poolItem.elementName,
         type: poolItem.elementType,
         content: element.content,
-        testingSolution,
+        testingInfo,
         options: {
           kind: 'NUMERICAL',
           unit: element.options.unit ?? null,
@@ -230,7 +217,7 @@ export function serializeAdaptiveParticipantElement(
         name: poolItem.elementName,
         type: poolItem.elementType,
         content: element.content,
-        testingSolution,
+        testingInfo,
         options: {
           kind: 'FREE_TEXT',
           restrictions: element.options.restrictions ?? null,

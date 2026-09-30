@@ -23,9 +23,23 @@ const messages = {
             'Dein Ergebnis zeigt dir, was du als Nächstes üben kannst. Kursdozierende sehen nur anonymisierte Gruppenergebnisse.',
         },
         question: {
-          testingSolution: 'Lösung — nur für Tests',
-          testingSolutionDescription:
-            'Die Anzeige der Antworten ist für diese Umgebung aktiviert.',
+          testingInfo: 'Testinformationen — für Studierende nicht sichtbar',
+          testingInfoDescription:
+            'Lösungen und Debugging-Daten sind für diese Umgebung aktiviert.',
+          testingSolution: 'Lösung',
+          testingElement: 'Element',
+          testingTags: 'Tags',
+          testingNone: 'keine',
+          testingSubcompetence: 'Teilkompetenz',
+          testingItemLevel: 'Niveau der Frage',
+          testingOverallEstimate: 'Aktuelle Schätzung (gesamt)',
+          testingCompetenceEstimate: 'Schätzung Kompetenz',
+          testingSubcompetenceEstimate: 'Schätzung Teilkompetenz',
+          testingNoEstimate: 'Noch keine Schätzung',
+          testingNoLevel: 'kein Niveau',
+          testingTentative: '(beste Schätzung)',
+          testingEstimateDetails:
+            'θ {theta} [{lower}, {upper}], SE {standardError}, {count, plural, one {# Antwort} other {# Antworten}}',
           testingTrue: 'Richtig',
           testingFalse: 'Falsch',
           remainingTime: 'Verbleibende Zeit: {time}',

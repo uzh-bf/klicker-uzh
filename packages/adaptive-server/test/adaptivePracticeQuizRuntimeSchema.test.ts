@@ -8,8 +8,31 @@ describe('adaptive practice quiz participant schema', () => {
       'name',
       'options',
       'poolItemId',
-      'testingSolution',
+      'testingInfo',
       'type',
+    ])
+    expect(fieldNames('AdaptivePracticeQuizTestingInfo')).toEqual([
+      'competenceEstimate',
+      'competencePath',
+      'elementId',
+      'elementTags',
+      'elementTitle',
+      'elementVersion',
+      'itemLevelLabel',
+      'overallEstimate',
+      'solution',
+      'subcompetenceEstimate',
+      'subcompetenceName',
+    ])
+    expect(fieldNames('AdaptivePracticeQuizTestingEstimate')).toEqual([
+      'levelIsTentative',
+      'levelLabel',
+      'lowerBound',
+      'responseCount',
+      'resultStatus',
+      'standardError',
+      'theta',
+      'upperBound',
     ])
     expect(fieldNames('AdaptivePracticeQuizChoicesOptions')).toEqual([
       'choices',
