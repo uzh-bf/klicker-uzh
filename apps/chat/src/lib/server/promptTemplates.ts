@@ -9,7 +9,7 @@ type PromptContext = {
   'course-policy': Record<string, never>
   'input-context': Record<string, never>
   'language-style': Record<string, never>
-  'reply-language-lock': { language: string }
+  'reply-language-reminder': Record<string, never>
   'output-format': Record<string, never>
   'mode-tutor': Record<string, never>
   'mode-explainer': Record<string, never>

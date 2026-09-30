@@ -803,14 +803,11 @@ requires a separately authorised live-model evaluation.
 
 The system prompt alone did not hold this rule. In a local tutor evaluation, 13 of 58 English turns
 answered in German after reading bilingual retrieved chunks that ended in German. The chat route
-therefore also resolves the reply language server-side. `resolveReplyLanguage` in
-`src/lib/server/languageInstructions.ts` scans user messages newest first. It ignores code and
-double-quoted spans and counts language-distinctive function words. It returns English or German
-only on a clear majority; otherwise it falls back to an earlier user message or to the prompt policy
-alone. When a language resolves, `prepareStep` appends the `reply-language-lock` system message as
-the last message of every model step, after tool output. The lock therefore sits closer to
-generation than any retrieved text. It leaves `instructions` unchanged, so the prompt-cache
-identity is stable, and it is never persisted. `request.context` logs the resolved `replyLanguage`.
+therefore restates the rule where the model reads it last: `prepareStep` appends the
+`reply-language-reminder` system message after the conversation and any tool output on every model
+step. The reminder names no language. The model identifies the user's language itself, which works
+for any language and avoids a brittle server-side detector on short or mixed messages. The reminder
+leaves `instructions` unchanged, so the prompt-cache identity is stable, and it is never persisted.
 
 ## Sources and citations
 

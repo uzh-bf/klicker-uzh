@@ -43,10 +43,7 @@ import {
   isAiTelemetryEnabled,
   LANGFUSE_CHAT_TRACE_NAME,
 } from '@/src/lib/server/langfuseTracing'
-import {
-  replyLanguageLockMessage,
-  resolveReplyLanguage,
-} from '@/src/lib/server/languageInstructions'
+import { REPLY_LANGUAGE_REMINDER } from '@/src/lib/server/languageInstructions'
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
@@ -1187,14 +1184,6 @@ export async function POST(
       role: msg.role,
       content: msg.content,
     }))
-    const replyLanguage = resolveReplyLanguage(
-      messages
-        .filter((message) => message.role === 'user')
-        .map((message) => message.content)
-    )
-    const replyLanguageLock = replyLanguage
-      ? [replyLanguageLockMessage(replyLanguage)]
-      : []
 
     const maxOutputTokens = selectedModelConfig.maxOutputTokens
 
@@ -1337,7 +1326,6 @@ export async function POST(
       toolNames,
       systemPromptLength: systemPrompt.length,
       systemPromptHash: systemPrompt ? hashSnippet(systemPrompt) : null,
-      replyLanguage,
       userPromptLengthTotal: userPrompt.length,
       userPromptHash: userPrompt ? hashSnippet(userPrompt) : null,
       imageAttachmentCount: images.length,
@@ -1662,37 +1650,31 @@ export async function POST(
         tools: promptCacheRequest?.tools ?? mcpTools,
         toolOrder: promptCacheRequest?.toolOrder,
         toolChoice: 'auto',
-        // The reply-language lock is the last message of every step, after
-        // tool output, so the resolved language wins over retrieved material.
-        allowSystemInMessages: replyLanguageLock.length > 0,
-        prepareStep:
-          docQueryToolName || replyLanguageLock.length > 0
-            ? ({ stepNumber, steps, initialMessages, responseMessages }) => {
-                const toolChoice =
-                  docQueryToolName && stepNumber === 0
-                    ? {
-                        toolChoice: {
-                          type: 'tool' as const,
-                          toolName: docQueryToolName,
-                        },
-                      }
-                    : {}
-                const annotateCitations = !!docQueryToolName && stepNumber > 0
-                if (!annotateCitations && replyLanguageLock.length === 0) {
-                  return toolChoice
-                }
-                return {
-                  ...toolChoice,
-                  messages: [
-                    ...initialMessages,
-                    ...(annotateCitations
-                      ? withModelCitationIndices(responseMessages, steps)
-                      : responseMessages),
-                    ...replyLanguageLock,
-                  ],
-                }
+        // The reply-language reminder is the last message of every step, after
+        // tool output, so retrieved material cannot set the reply language.
+        allowSystemInMessages: true,
+        prepareStep: ({
+          stepNumber,
+          steps,
+          initialMessages,
+          responseMessages,
+        }) => ({
+          ...(docQueryToolName && stepNumber === 0
+            ? {
+                toolChoice: {
+                  type: 'tool' as const,
+                  toolName: docQueryToolName,
+                },
               }
-            : undefined,
+            : {}),
+          messages: [
+            ...initialMessages,
+            ...(docQueryToolName && stepNumber > 0
+              ? withModelCitationIndices(responseMessages, steps)
+              : responseMessages),
+            REPLY_LANGUAGE_REMINDER,
+          ],
+        }),
         stopWhen: isStepCount(5),
         instructions: systemPrompt,
 
