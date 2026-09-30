@@ -15,13 +15,7 @@ import {
   ValidateCompetenceTreeDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import {
-  Button,
-  H2,
-  NumberField,
-  Switch,
-  UserNotification,
-} from '@uzh-bf/design-system'
+import { Button, H2, Switch, UserNotification } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -30,6 +24,10 @@ import { ADAPTIVE_V2_AUTHORING_ENABLED } from '../../activities/creation/practic
 import AssignedElementsPreview from './AssignedElementsPreview'
 import { hasUnmappedElements } from './assignmentHelpers'
 import CoverageMatrix from './CoverageMatrix'
+import DraftNumberField, {
+  NumberFieldValidityProvider,
+  useHasInvalidNumberFields,
+} from './DraftNumberField'
 import ElementLibraryPicker from './ElementLibraryPicker'
 import HierarchyEditor from './HierarchyEditor'
 import LevelEditor from './LevelEditor'
@@ -51,7 +49,7 @@ import {
 import ValidationPanel from './ValidationPanel'
 import { type EditorStep, getEditorStepForSection } from './wizardHelpers'
 
-function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
+function CompetenceTreeEditorContent({ treeId }: { treeId?: string }) {
   const t = useTranslations()
   const router = useRouter()
   const { data: profile } = useQuery(UserProfileDocument)
@@ -152,8 +150,12 @@ function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
   const metadataDisabled = !isOwner
   const structureDisabled = !isOwner || isLocked
   const saving = creating || replacing || updatingMetadata || validating
+  const hasInvalidNumberFields = useHasInvalidNumberFields()
   const canSubmit =
-    isOwner && form.name.trim().length > 0 && form.displayName.trim().length > 0
+    isOwner &&
+    form.name.trim().length > 0 &&
+    form.displayName.trim().length > 0 &&
+    !hasInvalidNumberFields
   const isDirty = useMemo(
     () => JSON.stringify(form) !== JSON.stringify(savedForm),
     [form, savedForm]
@@ -673,14 +675,11 @@ function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
             {t('manage.competenceTree.quizDefaultsHint')}
           </p>
           <div className="grid max-w-2xl gap-4 sm:grid-cols-2">
-            <NumberField
+            <DraftNumberField
               id="competence-tree-default-question-cap"
               value={form.defaultTotalQuestionCap ?? 50}
-              onChange={(value) =>
-                handleFormChange({
-                  ...form,
-                  defaultTotalQuestionCap: Number(value || 2),
-                })
+              onChange={(defaultTotalQuestionCap) =>
+                handleFormChange({ ...form, defaultTotalQuestionCap })
               }
               min={2}
               max={1000}
@@ -705,15 +704,15 @@ function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
                 data={{ cy: 'competence-tree-time-limit-toggle' }}
               />
               {form.defaultTimeLimitSeconds != null && (
-                <NumberField
+                <DraftNumberField
                   id="competence-tree-default-duration"
                   value={form.defaultTimeLimitSeconds / 60}
-                  onChange={(value) =>
+                  onChange={(minutes) =>
                     handleFormChange({
                       ...form,
                       defaultTimeLimitSeconds: Math.max(
                         1,
-                        Math.round(Number(value || 1) * 60)
+                        Math.round(minutes * 60)
                       ),
                     })
                   }
@@ -735,12 +734,10 @@ function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
           tabIndex={-1}
           className="mb-5 max-w-sm"
         >
-          <NumberField
+          <DraftNumberField
             id="competence-tree-max-depth"
             value={form.maxDepth}
-            onChange={(value) =>
-              handleFormChange({ ...form, maxDepth: Number(value || 1) })
-            }
+            onChange={(maxDepth) => handleFormChange({ ...form, maxDepth })}
             min={1}
             max={5}
             precision={0}
@@ -805,6 +802,14 @@ function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
         </Button>
       </div>
     </div>
+  )
+}
+
+function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
+  return (
+    <NumberFieldValidityProvider>
+      <CompetenceTreeEditorContent treeId={treeId} />
+    </NumberFieldValidityProvider>
   )
 }
 

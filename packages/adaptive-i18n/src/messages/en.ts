@@ -793,6 +793,12 @@ const messages = {
       overviewChildren: 'Subcompetences',
       overviewElements: 'Elements',
       overviewWeightHint: 'Contribution to the overall result',
+      numberField: {
+        required: 'Enter a value.',
+        invalid: 'Enter a valid number.',
+        min: 'Enter a value of at least {min}.',
+        max: 'Enter a value of at most {max}.',
+      },
       guidance: {
         missingSubcompetence:
           '“{name}” needs a subcompetence. Add at least one skill beneath it, or remove this competence if you do not need it.',

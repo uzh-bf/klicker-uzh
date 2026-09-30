@@ -806,6 +806,12 @@ const messages = {
       overviewChildren: 'Teilkompetenzen',
       overviewElements: 'Elemente',
       overviewWeightHint: 'Beitrag zum Gesamtergebnis',
+      numberField: {
+        required: 'Gib einen Wert ein.',
+        invalid: 'Gib eine gültige Zahl ein.',
+        min: 'Gib einen Wert von mindestens {min} ein.',
+        max: 'Gib einen Wert von höchstens {max} ein.',
+      },
       guidance: {
         missingSubcompetence:
           '„{name}“ braucht eine Teilkompetenz. Füge mindestens eine Fähigkeit darunter hinzu oder entferne diese Kompetenz, wenn du sie nicht brauchst.',
