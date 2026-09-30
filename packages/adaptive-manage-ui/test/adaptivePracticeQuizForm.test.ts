@@ -7,11 +7,28 @@ import {
   createAdaptivePracticeQuizDefaultConfig,
   applyPlacementPilotDefaults,
   getAdaptivePracticeQuizEffectiveSettings,
+  getAuthorableAdaptivePresets,
   isManageAdaptivePresetSelectable,
   serializeAdaptivePracticeQuizConfig,
 } from '../src/components/activities/creation/practiceQuiz/adaptivePracticeQuizForm'
 
 describe('adaptive practice quiz Manage form', () => {
+  test('offers only IRT v1 presets while v2 authoring is hidden', () => {
+    expect(
+      getAuthorableAdaptivePresets(AdaptivePracticeQuizPreset.Diagnostic)
+    ).toEqual([
+      AdaptivePracticeQuizPreset.Diagnostic,
+      AdaptivePracticeQuizPreset.Research,
+    ])
+    expect(
+      getAuthorableAdaptivePresets(AdaptivePracticeQuizPreset.Placement)
+    ).toEqual([
+      AdaptivePracticeQuizPreset.Diagnostic,
+      AdaptivePracticeQuizPreset.Research,
+      AdaptivePracticeQuizPreset.Placement,
+    ])
+  })
+
   test.each([
     '1.28',
     '1.645',

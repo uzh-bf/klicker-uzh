@@ -20,6 +20,27 @@ export const ADAPTIVE_MAX_CLASSIFICATION_Z = 5
 export const ADAPTIVE_MAX_DISCRIMINATION = 10
 export const PLACEMENT_PILOT_MIN_QUESTIONS_PER_LEAF = 4
 
+// The calibrated IRT v2 track (competence scales and the scale-based placement
+// pilot) is not offered to authors. Without a scale every quiz runs on IRT v1.
+// Existing v2 configurations keep their scale; flip this to show the v2
+// authoring UI again.
+export const ADAPTIVE_V2_AUTHORING_ENABLED = false
+
+// Presets offered in the authoring UI. The current preset stays listed so an
+// existing quiz still shows what it was created with.
+export function getAuthorableAdaptivePresets(
+  currentPreset: AdaptivePracticeQuizPreset
+): AdaptivePracticeQuizPreset[] {
+  const presets = [
+    AdaptivePracticeQuizPreset.Diagnostic,
+    AdaptivePracticeQuizPreset.Research,
+    ...(ADAPTIVE_V2_AUTHORING_ENABLED
+      ? [AdaptivePracticeQuizPreset.Placement]
+      : []),
+  ]
+  return presets.includes(currentPreset) ? presets : [...presets, currentPreset]
+}
+
 export function createAdaptivePracticeQuizDefaultConfig(): AdaptivePracticeQuizConfigFormValues {
   const defaults = getAdaptivePresetDefaults('DIAGNOSTIC')
 
