@@ -304,7 +304,7 @@ const messages = {
         addAdditionalLeaf: 'Add another subcompetence',
         removeAdditionalLeaf: 'Remove subcompetence',
         additionalLeavesDraftOnly:
-          'Additional subcompetence mappings are saved as draft metadata. They cannot be published until multi-mapping scoring is available.',
+          'Additional subcompetences must belong to the same competence as the main subcompetence. The element is still asked at most once per attempt; its answer counts once for each mapped subcompetence.',
         level: 'Level',
         expectedDifficulty: 'Expected item difficulty',
         expectedDifficultyTooltip:
@@ -549,7 +549,11 @@ const messages = {
             ADAPTIVE_MINIMUM_EVIDENCE_CAPPED:
               'The node "{nodeName}" requires {requiredQuestionCount} questions, but its effective cap is {effectiveQuestionCap}.',
             ADAPTIVE_MULTIPLE_SUBCOMPETENCES_DRAFT_ONLY:
-              'Elements mapped to multiple subcompetences require Placement with a competence scale. Other quiz modes do not support these mappings.',
+              'Elements mapped to multiple subcompetences require the standard adaptive quiz or Placement with a competence scale. Other quiz modes do not support these mappings.',
+            ADAPTIVE_ASSIGNMENT_ADDITIONAL_LEAVES_INVALID:
+              'An element has invalid additional subcompetences. Choose distinct subcompetences without further subcompetences beneath them.',
+            ADAPTIVE_ASSIGNMENT_ADDITIONAL_LEAF_OTHER_ROOT:
+              'An element can only also count for subcompetences of the same competence as its main subcompetence. Remove subcompetences of other competences in the competence tree.',
             ADAPTIVE_PLACEMENT_PILOT_LIMITS_INVALID:
               'Placement samples subcompetences. Remove question limits on individual subcompetences to continue.',
             ADAPTIVE_ROOT_MINIMUM_EVIDENCE_CAPPED:
@@ -839,6 +843,8 @@ const messages = {
           '“{name}” is used for more than one level. Give each level a different name.',
         invalidAssignment:
           'Assign “{name}” to a subcompetence with no further subcompetences beneath it.',
+        additionalLeafOtherRoot:
+          '“{name}” can only also count for subcompetences of the same competence as its main subcompetence. Remove the others under “Also counts for”.',
         missingAssignmentLevel: 'Choose an expected level for “{name}”.',
         assignmentCoverage:
           'Enable the level used by “{name}” for its subcompetence in Tree settings.',
@@ -922,6 +928,14 @@ const messages = {
       competenceGroup: 'group',
       assignElementLeaf: 'Subcompetence for {name}',
       assignElementLevel: 'Expected level for {name}',
+      alsoCountsFor: 'Also counts for',
+      alsoCountsForSummary:
+        '{count, plural, =0 {no other subcompetence} one {# other subcompetence} other {# other subcompetences}}',
+      alsoCountsForLabel: 'Other subcompetences {name} also counts for',
+      alsoCountsForHelp:
+        'The element is still asked at most once per attempt. Its answer counts once for its subcompetence and for each selected subcompetence of the same competence.',
+      alsoCountsForOtherCompetence:
+        'Other competence: remove this subcompetence before saving.',
       unmappedElements:
         'Choose a subcompetence and an expected level for every element before saving the tree. You can save an unfinished draft on this device. Elements belong to the lowest subcompetence; add a subcompetence beneath a new competence to assign elements to it.',
       batchLimit:

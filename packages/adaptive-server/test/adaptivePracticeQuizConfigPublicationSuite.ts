@@ -1,16 +1,16 @@
+import {
+  manipulatePracticeQuiz,
+  publishPracticeQuiz,
+  unpublishPracticeQuiz,
+} from '@klicker-uzh/adaptive-test-host/services/practiceQuizzes'
+import type { ContextWithUser } from '@klicker-uzh/graphql/adaptive-context-types'
 import { prisma } from '@klicker-uzh/prisma'
 import {
   AdaptivePracticeQuizPreset,
   PracticeQuizMode,
   PublicationStatus,
 } from '@klicker-uzh/prisma/client'
-import type { ContextWithUser } from '@klicker-uzh/graphql/adaptive-context-types'
 import { getAdaptivePracticeQuizPreview } from '../src/services/adaptivePracticeQuizConfig.js'
-import {
-  manipulatePracticeQuiz,
-  publishPracticeQuiz,
-  unpublishPracticeQuiz,
-} from '@klicker-uzh/adaptive-test-host/services/practiceQuizzes'
 
 const owner = {
   id: '10000000-0000-4000-8000-000000000001',
@@ -28,6 +28,7 @@ const outsider = {
   shortname: 'adaptive-outsider',
 }
 
+import { itWithAdaptiveEngine } from './adaptiveEngineTestEnv.js'
 import {
   cleanup,
   contextFor,
@@ -36,7 +37,6 @@ import {
   createTreeFixture,
   quizInput,
 } from './adaptivePracticeQuizConfigTestSupport.js'
-import { itWithAdaptiveEngine } from './adaptiveEngineTestEnv.js'
 
 export function registerAdaptivePracticeQuizConfigPublicationTests() {
   let ownerCtx: ContextWithUser
@@ -85,20 +85,22 @@ export function registerAdaptivePracticeQuizConfigPublicationTests() {
     }
   )
 
-  it('rejects multi-mapped items in legacy Placement rather than dropping targets', async () => {
-    const course = await createCourse(owner.id)
-    const fixture = await createTreeFixture(course.id, ownerCtx)
-    const source =
-      await prisma.competenceTreeElementAssignment.findFirstOrThrow({
-        where: {
-          treeId: fixture.treeId,
-          leafNode: { parentId: fixture.rootIds[0] },
-        },
-      })
+  async function addExtraTarget(
+    fixture: Awaited<ReturnType<typeof createTreeFixture>>,
+    parentId: number
+  ) {
+    const sources = await prisma.competenceTreeElementAssignment.findMany({
+      where: {
+        treeId: fixture.treeId,
+        leafNode: { parentId: fixture.rootIds[0] },
+        level: { order: 0 },
+      },
+      orderBy: { id: 'asc' },
+    })
     const extra = await prisma.competenceTreeNode.create({
       data: {
         treeId: fixture.treeId,
-        parentId: fixture.rootIds[0],
+        parentId,
         kind: 'SUBCOMPETENCE',
         name: 'Additional target',
         order: 1,
@@ -109,15 +111,53 @@ export function registerAdaptivePracticeQuizConfigPublicationTests() {
       data: {
         treeId: fixture.treeId,
         leafNodeId: extra.id,
-        levelId: source.levelId,
+        levelId: sources[0]!.levelId,
         targetItemCount: 1,
         enabled: true,
       },
     })
-    await prisma.competenceTreeElementAssignment.update({
-      where: { id: source.id },
-      data: { additionalLeafNodes: { connect: { id: extra.id } } },
-    })
+    for (const source of sources) {
+      await prisma.competenceTreeElementAssignment.update({
+        where: { id: source.id },
+        data: { additionalLeafNodes: { connect: { id: extra.id } } },
+      })
+    }
+    return { sources, extra }
+  }
+
+  itWithAdaptiveEngine(
+    'publishes same-root additional targets on IRT_V1 quizzes as one pool item each',
+    async () => {
+      const course = await createCourse(owner.id)
+      const fixture = await createTreeFixture(course.id, ownerCtx)
+      const { sources, extra } = await addExtraTarget(
+        fixture,
+        fixture.rootIds[0]!
+      )
+      const quiz = await createAdaptiveQuiz({
+        courseId: course.id,
+        fixture,
+        ctx: ownerCtx,
+        preset: AdaptivePracticeQuizPreset.PLACEMENT,
+      })
+      await publishPracticeQuiz({ id: quiz.id }, ownerCtx)
+      const items = await prisma.practiceQuizAdaptivePoolItem.findMany({
+        where: { sourceAssignmentId: { in: sources.map(({ id }) => id) } },
+      })
+      expect(items).toHaveLength(sources.length)
+      for (const item of items) {
+        expect(item).toMatchObject({
+          measurementVersion: 'IRT_V1',
+          additionalLeafNodeIds: [extra.id],
+        })
+      }
+    }
+  )
+
+  it('rejects additional targets in another root competence', async () => {
+    const course = await createCourse(owner.id)
+    const fixture = await createTreeFixture(course.id, ownerCtx)
+    await addExtraTarget(fixture, fixture.rootIds[1]!)
     await expect(
       createAdaptiveQuiz({
         courseId: course.id,
@@ -130,7 +170,7 @@ export function registerAdaptivePracticeQuizConfigPublicationTests() {
         code: 'ADAPTIVE_CONFIG_INVALID',
         issues: expect.arrayContaining([
           expect.objectContaining({
-            code: 'ADAPTIVE_MULTIPLE_SUBCOMPETENCES_DRAFT_ONLY',
+            code: 'ADAPTIVE_ASSIGNMENT_ADDITIONAL_LEAF_OTHER_ROOT',
           }),
         ]),
       },

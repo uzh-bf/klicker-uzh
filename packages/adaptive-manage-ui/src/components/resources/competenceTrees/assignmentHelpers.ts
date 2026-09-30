@@ -10,6 +10,35 @@ export function getAssignmentLeaves(form: CompetenceTreeForm) {
   )
 }
 
+/** Key of the root competence that contains the given node, if resolvable. */
+export function getRootKey(form: CompetenceTreeForm, nodeKey: string) {
+  const nodesByKey = new Map(form.nodes.map((node) => [node.key, node]))
+  const visited = new Set<string>()
+  let current = nodesByKey.get(nodeKey)
+  while (current && !visited.has(current.key)) {
+    visited.add(current.key)
+    if (current.parentKey === null) return current.key
+    current = nodesByKey.get(current.parentKey)
+  }
+  return null
+}
+
+/**
+ * Leaves an element may additionally count for: other subcompetence leaves of
+ * the same root competence as its primary leaf. Cross-root reuse would count
+ * one answer twice in the overall result, so it is not offered.
+ */
+export function getAdditionalLeafOptions(
+  form: CompetenceTreeForm,
+  leafKey: string
+) {
+  const rootKey = getRootKey(form, leafKey)
+  if (rootKey === null) return []
+  return getAssignmentLeaves(form).filter(
+    (leaf) => leaf.key !== leafKey && getRootKey(form, leaf.key) === rootKey
+  )
+}
+
 export function hasUnmappedElements(form: CompetenceTreeForm) {
   const leaves = new Set(getAssignmentLeaves(form).map((node) => node.key))
   const levels = new Set(form.levels.map((level) => level.key))
@@ -42,13 +71,19 @@ export function updateElementMapping(
 ): CompetenceTreeForm {
   const assignments = form.assignments.map((item) => {
     if (item.key !== key) return item
+    const leafKey = patch.leafKey ?? item.leafKey
+    // Moving the primary leaf to another competence drops extra targets that
+    // no longer share its root.
+    const rootKey = patch.leafKey ? getRootKey(form, leafKey) : null
     const updated = {
       ...item,
       ...patch,
       additionalLeafKeys: Array.from(
         new Set(
           (patch.additionalLeafKeys ?? item.additionalLeafKeys).filter(
-            (leafKey) => leafKey !== (patch.leafKey ?? item.leafKey)
+            (additionalKey) =>
+              additionalKey !== leafKey &&
+              (rootKey === null || getRootKey(form, additionalKey) === rootKey)
           )
         )
       ),

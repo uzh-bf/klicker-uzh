@@ -10,6 +10,7 @@ import {
   type AdaptiveRuntimeEstimates,
   type AdaptiveRuntimeNode,
   type AdaptiveRuntimeResponse,
+  getMappedRuntimeLeafIds,
   MIN_REPORTING_RESPONSES,
 } from './adaptivePracticeQuizRuntime.js'
 import type {
@@ -37,16 +38,22 @@ export function markClassifiedAdaptiveRootEstimates(
   responses: AdaptiveRuntimeResponse[],
   estimates: AdaptiveRuntimeEstimates
 ) {
+  const enabledNodes = getEffectivelyEnabledRuntimeNodes(
+    runtime.algorithm.nodes
+  )
+  const enabledNodeIds = new Set(enabledNodes.map(({ id }) => id))
+  // A multi-leaf item counts toward every enabled leaf it is mapped to, as in
+  // the engine's own terminal finalization.
   const leafCounts = new Map<number, number>()
   for (const response of responses) {
-    leafCounts.set(
-      response.poolItem.leafNodeId,
-      (leafCounts.get(response.poolItem.leafNodeId) ?? 0) + 1
-    )
+    for (const leafId of getMappedRuntimeLeafIds(
+      response.poolItem,
+      enabledNodeIds
+    )) {
+      leafCounts.set(leafId, (leafCounts.get(leafId) ?? 0) + 1)
+    }
   }
-  const roots = getEffectivelyEnabledRuntimeNodes(
-    runtime.algorithm.nodes
-  ).filter(
+  const roots = enabledNodes.filter(
     (node) =>
       node.parentId === null && node.kind === DB.AdaptiveNodeKind.COMPETENCE
   )
@@ -64,7 +71,11 @@ export function markClassifiedAdaptiveRootEstimates(
       ...new Set(
         runtime.pool
           .filter((item) => item.nodePath[0] === root.id)
-          .map(({ leafNodeId }) => leafNodeId)
+          .flatMap((item) =>
+            item.nodePath.every((nodeId) => enabledNodeIds.has(nodeId))
+              ? getMappedRuntimeLeafIds(item, enabledNodeIds)
+              : [item.leafNodeId]
+          )
       ),
     ]
     const breadthSatisfied = leafIds.every(
