@@ -81,7 +81,6 @@ test('the reusable envelope owns lifecycle routing and selector shadow planning'
     'synchronize',
     'reopened',
     'ready_for_review',
-    'edited',
     'converted_to_draft',
     'closed',
   ])
