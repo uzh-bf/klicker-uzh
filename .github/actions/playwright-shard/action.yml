@@ -270,6 +270,10 @@ runs:
         REDIS_ASSESSMENT_PORT: 6379
         REDIS_ASSESSMENT_PASS: ''
         REDIS_ASSESSMENT_HOST: redis_assessment_exec
+        EMAIL_HOST: mailhog
+        EMAIL_PORT: '1025'
+        EMAIL_FROM: noreply@klicker.test
+        MAILHOG_URL: http://mailhog:8025
         HATCHET_CHECK_HOST: hatchet
         HATCHET_HTTP_PORT: 8888
         HATCHET_GRPC_PORT: 7077

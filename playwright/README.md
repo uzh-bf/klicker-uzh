@@ -59,6 +59,12 @@ Applying a profile reconciles the runtime downward: services outside the
 selected profile (for example LiteLLM, MailHog or the local MCP process) are
 stopped, so pass `--runtime-profile` explicitly when you need them running.
 
+The one-time login link test in `A-login.spec.ts` reads the delivered message
+from MailHog and skips when `MAILHOG_URL` is unset. CI sets it. Locally, keep
+MailHog running with `--runtime-profile manage,chat,email` and expose its port
+8025 to the host, for example through a temporary `alpine/socat` container on
+the workspace's compose network, then set `MAILHOG_URL` to that address.
+
 Use one worker per runtime: specs share seeded identities and database-wide resets.
 Concurrent shards require separate worktrees and complete isolated runtimes,
 including PostgreSQL, Redis, Hatchet and report directories. A second browser
