@@ -1345,7 +1345,7 @@ test.describe('Generation source readiness', () => {
     loginLecturer,
     page,
   }) => {
-    let current = syntheticSource('5', 'READY', ['5', '6'])
+    let current = syntheticSource('5', 'READY', ['5', '6', '7'])
     const submitted: Array<Record<string, unknown>> = []
     const counts = await routeGenerationForm(page, {
       sources: () => [current],
@@ -1353,7 +1353,7 @@ test.describe('Generation source readiness', () => {
         submitted.push(input)
         if (submitted.length === 1) {
           // The basis moves on while the lecturer reviews the form.
-          current = syntheticSource('5', 'READY', ['5'])
+          current = syntheticSource('5', 'READY', ['5', '6'])
           return {
             errors: [
               {
@@ -1373,12 +1373,17 @@ test.describe('Generation source readiness', () => {
       `${manageUrl}/elements/generate?kbId=${current.kbId}`
     )
 
-    await expect(page.getByTestId('element-generation-scope-1')).toBeVisible()
+    await expect(page.getByTestId('element-generation-scope-2')).toBeVisible()
+    // A deselected source stays deselected when the basis is refreshed.
+    await page.getByTestId('element-generation-scope-0').uncheck()
     const before = counts.sources
     await page.getByTestId('element-generation-start').click()
     await expect.poll(() => counts.sources).toBeGreaterThan(before)
-    await expect(page.getByTestId('element-generation-scope-1')).toHaveCount(0)
-    await expect(page.getByTestId('element-generation-scope-0')).toBeChecked()
+    await expect(page.getByTestId('element-generation-scope-2')).toHaveCount(0)
+    await expect(
+      page.getByTestId('element-generation-scope-0')
+    ).not.toBeChecked()
+    await expect(page.getByTestId('element-generation-scope-1')).toBeChecked()
     expect(submitted).toHaveLength(1)
 
     // The next submission carries the refreshed basis.
@@ -1387,7 +1392,7 @@ test.describe('Generation source readiness', () => {
     expect(submitted[1]).toMatchObject({
       kbId: current.kbId,
       basisFingerprint: current.basis?.fingerprint,
-      sourceScopes: [{ resourceId: current.basis?.sources[0].resourceId }],
+      sourceScopes: [{ resourceId: current.basis?.sources[1].resourceId }],
     })
   })
 })

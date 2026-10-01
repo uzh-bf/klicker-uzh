@@ -72,6 +72,7 @@ const PREPARATION_IN_PROGRESS = new Set<ElementGenerationPreparationState>([
   ElementGenerationPreparationState.WaitingForMaterials,
   ElementGenerationPreparationState.Queued,
   ElementGenerationPreparationState.Processing,
+  ElementGenerationPreparationState.Delayed,
 ])
 const PREPARATION_POLL_INTERVAL_MS = 60_000
 // States whose remedy is outside the lecturer's control.
@@ -234,7 +235,12 @@ export default function ElementGenerationConfigure({
     )
   }
 
-  if (capabilitiesQuery.error || sourcesQuery.error || !capabilities) {
+  // A failed background refresh keeps the last listed sources on screen.
+  if (
+    capabilitiesQuery.error ||
+    (sourcesQuery.error && !sourcesQuery.data) ||
+    !capabilities
+  ) {
     return (
       <UserNotification
         type="error"
@@ -442,6 +448,7 @@ export default function ElementGenerationConfigure({
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {sources.map((source) => {
                 const checked = selectedKbId === source.kbId
+                const preparationState = effectivePreparationState(source)
                 return (
                   <label
                     key={source.kbId}
@@ -493,16 +500,14 @@ export default function ElementGenerationConfigure({
                             ) : null}
                           </>
                         ) : null}
-                        {effectivePreparationState(source) !==
+                        {preparationState !==
                         ElementGenerationPreparationState.Ready ? (
                           <span
                             className="mt-1 block text-xs text-slate-600"
                             data-cy={`element-generation-preparation-${source.kbId}`}
-                            data-state={effectivePreparationState(source)}
+                            data-state={preparationState}
                           >
-                            {t(
-                              `configure.preparation.${effectivePreparationState(source)}`
-                            )}
+                            {t(`configure.preparation.${preparationState}`)}
                           </span>
                         ) : null}
                       </span>
@@ -512,9 +517,14 @@ export default function ElementGenerationConfigure({
               })}
             </div>
 
+            {/* While a usable basis exists, the stale-graph notice explains
+                that generation uses the previously prepared material; only
+                states that need support are explained here as well. */}
             {selectedPreparationState &&
             selectedPreparationState !==
-              ElementGenerationPreparationState.Ready ? (
+              ElementGenerationPreparationState.Ready &&
+            (!basis ||
+              PREPARATION_CONTACT_STATES.has(selectedPreparationState)) ? (
               <div
                 className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700"
                 data-cy="element-generation-preparation-detail"
