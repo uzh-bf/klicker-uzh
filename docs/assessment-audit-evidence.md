@@ -2,7 +2,7 @@
 type: Architecture
 title: Assessment Audit Evidence
 description: Assessment evidence contract, PostgreSQL outbox, append-only Azure delivery, verification, and operator export.
-timestamp: '2026-09-16'
+timestamp: '2026-09-28'
 tags:
   - audit
   - assessment
@@ -69,8 +69,8 @@ publication (with the scheduling lecturer retained as `initiatedBy`),
 unpublishing, cancellation, block activation/closure, and standalone quiz
 name/settings mutations use the same transactional producer boundary. The
 dedicated deployments remain dormant by default until their Pulumi-provisioned
-staging identities and endpoints are supplied. The manifest sealer and
-retention worker remain fast-follow work.
+staging identities and endpoints are supplied. Periodic event sealing is available
+through a separate opt-in worker; retention deletion remains future work.
 
 The older Hatchet `create-audit-log-entry` workflow and its current call sites
 have been removed. Historical database or migration artifacts named `AuditLog`
@@ -167,11 +167,13 @@ without creating a second authoritative response.
 ## Contract and identity
 
 Owner exports cross-check the retention index against the independent locator
-inventory. Missing retention rows therefore produce explicit verification
+and event-root inventories. Missing retention rows therefore produce explicit verification
 failures instead of silently disappearing from an export. The locator lookup
 filters by quiz and optional epoch, but Azure must scan non-key properties;
-this additional read cost is confined to owner exports. Until manifest sealing
-ships, simultaneous loss of both inventories cannot prove completeness.
+this additional read cost applies to owner exports and sealing. Immutable manifest
+versions independently record sealed event membership, so even simultaneous loss
+of all Table inventories is detected for sealed events. Events lost before their
+first seal remain outside this guarantee.
 Missing rows are classified by their provider 404 response, while other read
 errors remain verification failures. A participant scope must match exactly,
 including the absence of a participant UUID on shared evidence.
@@ -357,8 +359,62 @@ Outbox workers claim with `FOR UPDATE SKIP LOCKED`, a two-minute recoverable
 lease, at most 100 events, and an 8 MiB canonical-byte target per claim. The
 first oversized event is still claimable so it cannot block the queue. The
 state path is `PENDING` → `LEASED` →
-`DELIVERED_UNSEALED`, with retry release or quarantine; sealing arrives in the
-fast-follow layer.
+`DELIVERED_UNSEALED` → `SEALED`, with retry release or quarantine before delivery.
+Sealing does not delete the outbox rows.
+
+## Periodic sealing
+
+`sealAssessmentAudit` runs every five minutes on the dedicated `sealer` worker.
+It enumerates Table evidence for retained assessment scopes, verifies canonical
+bytes and required indexes, and conditionally creates batches of at most 100
+event IDs, event hashes, and canonical hashes. Each lifecycle has a contiguous
+sequence with a previous-manifest hash. Late events join a later batch regardless
+of their original `recordedAt`. Each run creates at most ten batches per quiz;
+a backlog therefore takes multiple runs. Each batch selects the lifecycle
+containing the oldest remaining event, then its oldest 100 events. A nonzero
+deferred count fails the Hatchet run visibly until the queue drains. This replaces the historical daily
+manifest proposal for the currently implemented event store.
+
+The immutable manifest is the durable retry checkpoint at
+`audit-manifests/manifest/v1/<quiz>/<epoch>/<12-digit-sequence>.json`.
+Concurrent workers use create-only writes at the same next sequence and verify
+the winning batch. After exact-version byte/hash/MIME/policy readback and a fresh
+Table verification, the sealer conditionally changes matching
+`DELIVERED_UNSEALED` rows to `SEALED`, setting `sealedAt`. A crash before that
+transition is recovered from the existing manifest on the next run. PostgreSQL
+state is operational bookkeeping, never the export's proof of immutability.
+
+Exports enumerate **all blob versions** under the quiz prefix, verify locked
+unexpired retention, canonical hashes and chain continuity, then compare every
+manifest member with Table evidence. This detects disappearance even when all
+Table indexes are gone; version enumeration also prevents a base-blob deletion
+or replacement from hiding protected versions. Conflicting versions, chain gaps,
+missing evidence, or verification errors yield `INVALID`, `PARTIAL` evidence,
+and an unsuccessful CLI exit status. Participant filtering happens after this
+whole-scope check. Exported manifests contain inventory hashes, not image data.
+New unsealed arrivals are reported explicitly; sealing is an inventory checkpoint,
+not a declaration that an assessment can never produce another event.
+
+There are no current `AuditControl` producers. This iteration seals canonical
+events and their required storage relationships, not arbitrary Azure transport
+metadata or future control/hold records. It introduces no mutable latest pointer,
+second manifest index, database migration, or outbox cleanup. Retention is extended
+conservatively to `retentionBatchFor(now)` while a retained scope is visited,
+including terminal scopes; final retention/deletion orchestration is separate.
+An already expired policy fails closed instead of pretending uninterrupted WORM.
+
+Deployment is opt-in: set `assessmentAudit.sealer.enabled: true` and a distinct
+`assessmentAudit.sealer.serviceAccountName`. The sealer inherits the audit worker
+image, resource and scheduling settings. Provision that identity separately with
+Table read and manifest-container read/create/version immutability-policy rights;
+it does not need Table mutation or image-container access. Keep the dispatcher
+identity unchanged. The manifest container must support version-level immutability
+and blob versioning. No cloud permissions or environment enablement are applied by
+this code change. Before enabling on staging, prove create/read/lock/readback and
+replay with the actual managed identity, then submit a synthetic assessment, wait
+for a successful sealer run, and verify both `sealedAt` in PostgreSQL and `SEALED`
+in a fresh CLI export. Hatchet failures and the existing delivered-unsealed backlog
+monitor are the operational failure signals; no sealer-specific heartbeat is added.
 
 ## Azure delivery and verification
 
@@ -369,7 +425,8 @@ the denormalized outbox columns before delivery. Schema/canonical corruption and
 different-value append conflicts are quarantined with stable reason codes;
 ordinary storage failures return to `PENDING` with full-jitter exponential
 backoff from two seconds to five minutes. Successful rows remain
-`DELIVERED_UNSEALED`; this layer never deletes them.
+`DELIVERED_UNSEALED` until the separate sealer verifies an immutable manifest.
+Neither worker deletes them.
 
 Canonical bytes are stored as deterministic 48 KiB `Edm.Binary` chunks. The
 event root, locator, and retention-index rows contain hashes and query metadata.
@@ -396,8 +453,9 @@ schema, and identity. `klicker-audit export --live-quiz-id <uuid> --output
 <path>` verifies and exports all epochs, with optional epoch and stable
 participant UUID filters. Evidence never goes to stdout. The CLI creates a
 same-directory `0600` temporary file, flushes it, installs it atomically, and
-refuses replacement unless `--force` is explicit. Until the sealer lands,
-exports explicitly report `UNSEALED`; an empty query reports
+refuses replacement unless `--force` is explicit. Exports report `UNSEALED`,
+`PARTIALLY_SEALED`, `SEALED`, or `INVALID` from independent storage verification;
+an empty query reports
 `NO_ROLLOUT_RECORD`, not proof that an unknown pre-instrumentation assessment
 did or did not exist, and carries the explicit
 `PRE_INSTRUMENTATION_DELETION_UNKNOWABLE` limitation. A participant export

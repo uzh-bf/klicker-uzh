@@ -45,6 +45,7 @@ type LocatorEntity = {
 }
 
 type RootEntity = {
+  recordKind: string
   eventId: string
   eventHash: string
   canonicalHash: string
@@ -217,6 +218,20 @@ async function mapInParallel<T, R>(
   return results
 }
 
+function assertRequestedScope(
+  evidence: VerifiedAuditEvidence,
+  input: { liveQuizId: string; lifecycleEpoch?: number }
+): VerifiedAuditEvidence {
+  if (
+    evidence.envelope.scope.liveQuizId !== input.liveQuizId ||
+    (input.lifecycleEpoch !== undefined &&
+      evidence.envelope.scope.lifecycleEpoch !== input.lifecycleEpoch)
+  ) {
+    throw new Error('Discovered audit evidence does not match requested scope')
+  }
+  return evidence
+}
+
 export class AzureTableAuditReader {
   private readonly clients: AuditTableReaderClients
 
@@ -386,6 +401,16 @@ export class AzureTableAuditReader {
       assertString(entity.eventId, 'locator eventId')
       eventIds.add(entity.eventId)
     }
+    // Root discovery also exposes partially delivered events and lost indexes.
+    for await (const entity of this.clients.evidence.listEntities<RootEntity>({
+      queryOptions: {
+        filter: `${partitionFilter} and recordKind eq 'EVENT_ROOT'`,
+      },
+    })) {
+      if (entity.recordKind !== 'EVENT_ROOT') continue
+      assertString(entity.eventId, 'root eventId')
+      eventIds.add(entity.eventId)
+    }
     return [...eventIds].sort()
   }
 
@@ -401,7 +426,8 @@ export class AzureTableAuditReader {
     const evidence = await mapInParallel(
       eventIds,
       AUDIT_EXPORT_READ_CONCURRENCY,
-      (eventId) => this.verifyEvent(eventId)
+      async (eventId) =>
+        assertRequestedScope(await this.verifyEvent(eventId), input)
     )
     const participantScoped =
       input.participantId === undefined
@@ -457,7 +483,13 @@ export class AzureTableAuditReader {
       AUDIT_EXPORT_READ_CONCURRENCY,
       async (eventId): Promise<ExportResult> => {
         try {
-          return { eventId, evidence: await this.verifyEvent(eventId) }
+          return {
+            eventId,
+            evidence: assertRequestedScope(
+              await this.verifyEvent(eventId),
+              input
+            ),
+          }
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error)
           const reason =

@@ -224,6 +224,11 @@ and an exact workflow selection:
 - `monitorAssessmentAudit` — every minute; emits a metadata-only health snapshot
   and fails the Hatchet run on critical thresholds.
 
+A separate opt-in `assessment-audit-sealer` deployment registers only
+`sealAssessmentAudit` under the `sealer` identity class, every five minutes.
+It uses Table read and versioned manifest Blob permissions, independently of the
+dispatcher's Table write identity. See [sealing and its staging gates](./assessment-audit-evidence.md#periodic-sealing).
+
 Image URLs are retained within element content; there is no image-capture or
 media-policy renewal workflow. The backend needs no audit Blob workload identity.
 The dispatcher uses its Pulumi-owned Table-data identity; the ordinary general
