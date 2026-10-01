@@ -131,12 +131,12 @@ export default function ElementGenerationConfigure({
   const selectedSource = sources.find((source) => source.kbId === selectedKbId)
   const basis = selectedSource?.basis
   const language = basis?.language
-  // A requested KB that is not listed is missing or not the actor's; another
-  // KB is never selected in its place.
+  // A requested or selected KB that is not listed is missing or no longer the
+  // actor's; another KB is never selected in its place.
+  const expectedKbId = selectedKbId ?? preselectedKbId
   const requestedSourceMissing =
-    preselectedKbId !== undefined &&
-    selectedKbId === undefined &&
-    !sources.some((source) => source.kbId === preselectedKbId)
+    expectedKbId !== undefined &&
+    !sources.some((source) => source.kbId === expectedKbId)
   const selectedCapability = capabilities?.typeCapabilities.find(
     (capability) => capability.elementType === elementType
   )
@@ -333,10 +333,12 @@ export default function ElementGenerationConfigure({
         // until the lecturer submits again.
         try {
           const refreshed = await sourcesQuery.refetch()
-          const source = refreshed.data.elementGenerationSources.find(
+          const source = refreshed.data?.elementGenerationSources.find(
             (candidate) => candidate.kbId === selectedSource.kbId
           )
-          setSourceScopes(scopeValues(source?.basis?.sources ?? []))
+          // A KB that is no longer listed keeps its scopes; the form reports
+          // it as unavailable instead of showing an empty basis.
+          if (source) setSourceScopes(scopeValues(source.basis?.sources ?? []))
         } catch {
           // Keep the current scopes rather than clearing them without a
           // refreshed basis to show in their place.
