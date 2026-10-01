@@ -15,7 +15,9 @@ This skill is the procedure and the decision rules.
   replay, bench and DeepEval. Production traffic enters only as `observe.py`
   aggregates; never fetch, print or store prompts or answers.
 - Inject every key through `rs-infisical-operator`. A missing allowlist
-  mapping is a blocker to report, not a reason to use another path.
+  mapping is a blocker to report, not a reason to use another path. The
+  spend-log reader currently uses `LITELLM_MASTER_KEY` from the
+  `ai-generic-prd` profile; use it only for GET requests.
 - Paid runs need a stated bound: `--limit`, `--repeats` and `--max-calls`
   for bench. The default bench (5 arms × 27 questions × 2) costs a few USD
   including the judge.
@@ -26,10 +28,11 @@ This skill is the procedure and the decision rules.
 
 ## Procedure
 
-1. **Observe.** Run `observe.py` for the last full week of the environment in
-   question, with `--tier-map` set to the router that served the traffic.
-   Record request share, cache rate, p50/p90 latency and spend per alias.
-   Without a spend-log key, report the gap and fall back to the replay mix.
+1. **Observe.** Run `observe.py` for the last full week of production. It
+   reports each router's logged tier mix, classifier causes, per-tier prompt,
+   cached and output tokens, cache rate, list cost and Azure latency. Check
+   that projected cost for the current map matches the observed list cost
+   before trusting projections for new maps.
 2. **Replay.** Run `replay.py` for every candidate router in the local config
    with at least two repeats. Note the tier mix and the unstable share; an
    unstable share above about 20% means tier choices for MEDIUM matter more
@@ -38,8 +41,10 @@ This skill is the procedure and the decision rules.
    plus the current map's arms. Use a judge from another model family than
    the arms (`--judge`, default Claude Opus).
 4. **Analyze.** Run `analyze.py` with each candidate as `--tier-map`, the
-   observed mix (`--mix observe:...`), monthly volume from the observed week,
-   and `--compare` for every tier where candidates differ.
+   observed mix and token profile (`--mix observe:<file>#<router>`), monthly
+   volume from the observed week, and `--compare` for every tier where
+   candidates differ. Never quote cost from a replay or explicit mix: benchmark
+   prompts lack the chatbot's system prompt and course context.
 5. **DeepEval.** After both routers exist in staging, compare them on the
    deployed path (below).
 6. **Record** the report, the decision and the rollback in the MR/PR that

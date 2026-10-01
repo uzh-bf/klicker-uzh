@@ -9,7 +9,7 @@
         --mix replay:auto-router > _local/report.md
 
 `--mix` selects the tier mix for projections: `replay:<router>` uses a replay
-file, `observe:<path>` uses real traffic from observe.py, and
+file, `observe:<path>[#router]` uses real traffic from observe.py, and
 `SIMPLE=0.13,MEDIUM=0.74,...` sets it explicitly.
 """
 
@@ -96,22 +96,62 @@ def replay_mix(rows: list[dict], router: str) -> tuple[dict[str, float], float]:
     return {t: counts[t] / len(rs) if rs else 0 for t in TIERS}, unstable
 
 
-def parse_mix(spec: str, replay_rows: list[dict]) -> tuple[dict[str, float], str]:
+def parse_mix(spec: str, replay_rows: list[dict]) -> tuple[dict[str, float], str, dict | None]:
+    """Tier mix, its source and, for observed traffic, the per-tier token profile."""
     if spec.startswith("replay:"):
         router = spec.split(":", 1)[1]
-        return replay_mix(replay_rows, router)[0], f"replay of `{router}`"
+        return replay_mix(replay_rows, router)[0], f"replay of `{router}`", None
     if spec.startswith("observe:"):
-        data = json.loads(Path(spec.split(":", 1)[1]).read_text())
-        if "tier_mix" not in data:
-            raise SystemExit("observe output has no tier_mix; rerun observe.py with --tier-map")
-        return data["tier_mix"], f"observed traffic {data.get('window')}"
+        path, _, router = spec.split(":", 1)[1].partition("#")
+        data = json.loads(Path(path).read_text())
+        routers = data.get("routers") or {}
+        if not router and len(routers) == 1:
+            router = next(iter(routers))
+        if router not in routers:
+            raise SystemExit(
+                f"observe output has no router {router!r}; choose one of {sorted(routers)}"
+            )
+        observed = routers[router]
+        profile = {
+            tier: {
+                "prompt": s["prompt_tokens"] / s["requests"],
+                "cached": s["cached_tokens"] / s["requests"],
+            }
+            for tier, s in observed["tiers"].items()
+            if s["requests"]
+        }
+        return observed["tier_mix"], f"observed `{router}` traffic {data.get('window')}", profile
     mix = {k: float(v) for k, v in (p.split("=") for p in spec.split(","))}
-    return {t: mix.get(t, 0.0) for t in TIERS}, "explicit mix"
+    return {t: mix.get(t, 0.0) for t in TIERS}, "explicit mix", None
 
 
-def project(tier_map: dict[str, str], mix: dict[str, float], stats: dict[str, dict]) -> dict:
+def project(
+    tier_map: dict[str, str],
+    mix: dict[str, float],
+    stats: dict[str, dict],
+    prices: dict | None = None,
+    profile: dict | None = None,
+) -> dict:
+    """Mix-weighted arm metrics. With an observed token profile, cost uses the
+    tier's real prompt and cached tokens plus the arm's benchmark output tokens,
+    because benchmark prompts lack the chatbot's system prompt and context."""
+
+    def value(tier, field):
+        arm = tier_map[tier]
+        s = stats.get(arm, {})
+        if field == "usd" and profile and tier in profile and s.get("out_mean") is not None:
+            p = profile[tier]
+            return cost_usd(
+                prices,
+                arm.split(":")[0],
+                round(p["prompt"]),
+                round(s["out_mean"]),
+                round(p["cached"]),
+            )
+        return s.get(field)
+
     def weighted(field):
-        vals = [(mix[t], stats.get(tier_map[t], {}).get(field)) for t in TIERS]
+        vals = [(mix[t], value(t, field)) for t in TIERS]
         if any(v is None for w, v in vals if w):
             return None
         return sum(w * v for w, v in vals if w)
@@ -131,7 +171,7 @@ def main():
     ap.add_argument("--bench", nargs="*", type=Path, default=[])
     ap.add_argument("--compare", action="append", default=[], help="arm_a~arm_b")
     ap.add_argument("--tier-map", action="append", default=[], help="name=TIER:arm,...")
-    ap.add_argument("--mix", help="replay:<router> | observe:<path> | SIMPLE=0.1,...")
+    ap.add_argument("--mix", help="replay:<router> | observe:<path>[#router] | SIMPLE=0.1,...")
     ap.add_argument("--monthly-requests", type=int, help="scale projected cost to a month")
     args = ap.parse_args()
     prices = load_prices()
@@ -193,7 +233,7 @@ def main():
         out += ["", "A CI that excludes 0 is a reliable difference on this question set.", ""]
 
     if args.tier_map and stats and args.mix:
-        mix, source = parse_mix(args.mix, replay_rows)
+        mix, source, profile = parse_mix(args.mix, replay_rows)
         out += [
             "## Router projections",
             "",
@@ -205,7 +245,7 @@ def main():
         for spec in args.tier_map:
             name, body = spec.split("=", 1)
             tier_map = dict(p.split(":", 1) for p in body.split(","))
-            pr = project(tier_map, mix, stats)
+            pr = project(tier_map, mix, stats, prices, profile)
             monthly = (
                 pr["usd"] * args.monthly_requests
                 if pr["usd"] is not None and args.monthly_requests
@@ -217,8 +257,14 @@ def main():
             )
         out += [
             "",
-            "Projections weight each tier's arm by the mix. They exclude classifier and "
-            "embedding calls and assume the benchmark's prompt size and cache rate.",
+            "Projections weight each tier's arm by the mix and exclude classifier and "
+            "embedding calls. "
+            + (
+                "Cost uses the observed prompt and cached tokens per tier with each arm's "
+                "benchmark output tokens; latency and quality come from the benchmark."
+                if profile
+                else "Cost assumes the benchmark's short prompts, so it understates real cost."
+            ),
             "",
         ]
     print("\n".join(out))

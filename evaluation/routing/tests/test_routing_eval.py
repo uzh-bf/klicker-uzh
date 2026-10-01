@@ -7,31 +7,49 @@ from observe import aggregate
 PRICES = {"gpt-6-luna": {"input": 0.1, "output": 0.5, "cached_input": 0.01}}
 
 
-def test_observe_output_never_contains_request_content():
+def test_observe_reports_routed_tiers_without_request_content():
     marker = "SYNTHETIC-PROMPT-MARKER"
-    rows = [
-        {
-            "model_group": "klickeruzh/azure/gpt-6-luna-high",
-            "status": "success",
-            "prompt_tokens": 1000,
-            "completion_tokens": 200,
-            "spend": 0.001,
-            "startTime": "2026-10-01T10:00:00Z",
-            "completionStartTime": "2026-10-01T10:00:02Z",
-            "endTime": "2026-10-01T10:00:05Z",
-            "messages": [{"role": "user", "content": marker}],
-            "response": {"content": marker},
-            "user": marker,
-            "api_key": marker,
-            "metadata": {"usage_object": {"prompt_tokens_details": {"cached_tokens": 400}}},
-        }
-    ]
-    out = aggregate(rows, PRICES, {"gpt-6-luna-high": "SIMPLE"})
+    routed = {
+        "model_group": "klickeruzh/azure/auto-router",
+        "model": "azure/responses/gpt-6-luna",
+        "call_type": "aresponses",
+        "status": "success",
+        "prompt_tokens": 1000,
+        "completion_tokens": 200,
+        "spend": 0.001,
+        "request_duration_ms": 5000,
+        "ttft_ms": 2000,
+        "messages": [{"role": "user", "content": marker}],
+        "response": {"content": marker},
+        "user": marker,
+        "api_key": marker,
+        "metadata": {
+            "usage_object": {"prompt_tokens_details": {"cached_tokens": 400}},
+            "routing_decision": {
+                "tier": "MEDIUM",
+                "cause": "llm_classifier",
+                "signals": [marker],
+                "routed_model": "klickeruzh/azure/gpt-6-luna-xhigh",
+                "router_model_name": "klickeruzh/azure/auto-router",
+            },
+        },
+    }
+    embedding = {
+        "model_group": "klickeruzh/azure/auto-router",
+        "model": "text-embedding-3-small",
+        "call_type": "aembedding",
+        "prompt_tokens": 16,
+        "metadata": {"routing_decision": None},
+    }
+    out = aggregate([routed, embedding], PRICES)
     assert marker not in json.dumps(out)
-    stats = out["models"]["klickeruzh/azure/gpt-6-luna-high"]
+    stats = out["models"]["klickeruzh/azure/gpt-6-luna-xhigh"]
     assert stats["cached_tokens"] == 400 and stats["cache_rate"] == 0.4
     assert stats["latency_ms"]["p50"] == 5000 and stats["ttft_ms"]["p50"] == 2000
-    assert out["tier_mix"]["SIMPLE"] == 1.0
+    assert "klickeruzh/azure/auto-router (embedding)" in out["models"]
+    router = out["routers"]["klickeruzh/azure/auto-router"]
+    assert router["requests"] == 1 and router["tier_mix"]["MEDIUM"] == 1.0
+    assert router["causes"] == {"llm_classifier": 1}
 
 
 def test_cost_charges_cached_prompt_tokens_at_the_cached_rate():

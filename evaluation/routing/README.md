@@ -36,17 +36,21 @@ Each script reads one key from its environment. Inject it through
 - `bench.py`: the variable named by `--api-key-env` (default
   `OPENROUTER_API_KEY`).
 - `observe.py`: `LITELLM_OBSERVE_API_KEY`, a LiteLLM key allowed to read the
-  Klicker team's spend logs.
+  Klicker team's spend logs. Today this is `LITELLM_MASTER_KEY` from the
+  `ai-generic-prd` operator profile, used only for GET requests. Look up the
+  team ID once with `GET /team/list` (alias `KlickerUZH`).
 
 ## Examples
 
 ```bash
-# Real traffic for one week, mapped onto the v2 tiers.
-uv run --frozen python src/routing_eval/observe.py \
-  --base-url https://<litellm-host> --team-id <klicker-team-id> \
-  --start 2026-10-01 --end 2026-10-07 \
-  --tier-map SIMPLE=gpt-6-luna-high,MEDIUM=gpt-6.1-sol-low,COMPLEX=gpt-6.1-sol-medium,REASONING=gpt-6.1-sol-high \
-  --out _local/observe.json
+# Real traffic for one week: per-alias usage plus each router's logged tier
+# decisions. The prd proxy is reachable on the tailnet; its address is
+# PROXY_BASE_URL in ai-infrastructure/deployment litellm/prd-generic/cm.yaml.
+rs-infisical-operator --profile ai-generic-prd run \
+  --map LITELLM_MASTER_KEY=LITELLM_OBSERVE_API_KEY -- \
+  uv run --frozen python src/routing_eval/observe.py \
+  --base-url <prd-proxy-url> --team-id <klicker-team-id> \
+  --start 2026-09-24 --end 2026-09-30 --out _local/observe.json
 
 # Tier distribution of both local routers, two repeats each.
 uv run --frozen python src/routing_eval/replay.py --router auto-router --out _local/replay-v1.jsonl
@@ -63,7 +67,8 @@ uv run --frozen python src/routing_eval/analyze.py \
   --compare gpt-6.1-sol:low~gpt-6-luna:xhigh \
   --tier-map v1=SIMPLE:gpt-6-luna:high,MEDIUM:gpt-6-luna:xhigh,COMPLEX:gpt-6.1-sol:high,REASONING:gpt-6.1-sol:medium \
   --tier-map v2=SIMPLE:gpt-6-luna:high,MEDIUM:gpt-6.1-sol:low,COMPLEX:gpt-6.1-sol:medium,REASONING:gpt-6.1-sol:high \
-  --mix observe:_local/observe.json --monthly-requests <requests> > _local/report.md
+  --mix observe:_local/observe.json#klickeruzh/azure/auto-router \
+  --monthly-requests <requests> > _local/report.md
 ```
 
 ## Limits
@@ -72,7 +77,11 @@ uv run --frozen python src/routing_eval/analyze.py \
   latency. Use `observe.py` for production latency.
 - The benchmark uses a short tutor prompt, not a chatbot's full system prompt,
   knowledge-base context or tools. Real prompts are longer and more cacheable.
-- Observed tier mix is valid only while one router carries the traffic,
-  because v1 and v2 reuse some aliases for different tiers.
+- `observe.py` reads the tier from the routing decision LiteLLM logs on each
+  routed request, so v1 and v2 stay separate even though they share aliases.
+- Real prompts are large: in late September 2026, Klicker Auto requests
+  averaged 14,000–24,000 prompt tokens per tier. `analyze.py` therefore costs
+  each tier from the observed prompt and cached tokens when `--mix observe:`
+  is used; a replay or explicit mix understates cost.
 - `prices.yaml` holds list prices. Spend logs report LiteLLM's own cost, which
-  can differ when its model metadata lags a new model.
+  lags new models: for GPT-6 it reported about a third of list cost.
