@@ -22,10 +22,11 @@ on:
   push:
     branches: ['v3', 'v3*']
   pull_request:
-    # "edited" re-validates the changed package set when a PR is retargeted;
+    # No "edited": a title or body edit never changes the tested tree, and a
+    # base retarget is revalidated by the restack push or a close and reopen.
     # "ready_for_review" recomputes the required context at the ready boundary
     # so a draft-era success cannot stand in for the ready state.
-    types: [opened, synchronize, reopened, edited, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -43,11 +44,10 @@ env:
   TURBO_REMOTE_ONLY: true
 
 jobs:
-  # A metadata-only edited event leaves the merge tree and the commit range
-  # unchanged, so it reuses a completed successful check at the same head
-  # instead of repeating the full validation. Every other event still selects
-  # the suite, and the selector runs the suite when the prior result is missing,
-  # pending, failed, or unavailable.
+  # Every subscribed event selects the suite. The selector's metadata-only
+  # reuse of a completed successful check at the same head only applies to an
+  # edited event, which this workflow no longer receives; it runs the suite when
+  # the prior result is missing, pending, failed, or unavailable.
   select:
     runs-on: ubuntu-latest
     outputs:
