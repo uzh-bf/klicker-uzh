@@ -282,6 +282,69 @@ the target process. The committed KB_doc_query canary proves synthetic
 transport and persistence only; it must not be reported as FineCo quality or
 replace an authorized EXPERT_df_fineco_expert binding.
 
+For assistance-attribution checks, `apps/chat/scripts/run-tutor-trajectories.mjs`
+uses the same local target directly, without extending its single-message HTTP
+API. The corpus schema, per-turn verification and trajectory driver live in
+`apps/chat/scripts/tutor-trajectory.mjs`; the target module keeps transport. It follows actual persisted replies and parent IDs across a trajectory,
+checks streamed text against saved text, and requires successful `KB_doc_query`
+completion on the first turn. Follow-up turns may use existing context; any
+emitted retrieval must still complete with matching call IDs in stream and
+persistence. Disagreement between streamed and saved credits stops the run. `evaluation/data/trajectories/tutor-attribution.json` contains
+synthetic English/German scenarios and behavioral rubrics. These rubrics need
+assessment of meaning; exact response wording is not a test contract.
+
+For the revised fixture and numerical checks, use
+`evaluation/data/trajectories/tutor-attribution-v2.json` with its
+`tutor-attribution-v2-numeric.json` sidecar. The sidecar binds numerical
+obligations to case IDs and one-based assessment turns without changing the
+strict trajectory schema. Pass it with `--numeric` so the runner rejects an
+obligation without a matching assessment turn before login. Annotate claims from visible responses, convert their
+units, then call `compareTutorNumericClaim` from
+`apps/chat/scripts/tutor-numeric-reference.mjs` with the formula, explicit
+inputs, numeric claim and the sidecar's absolute tolerance. Rates are decimal
+fractions and cash flows use annual periods. Missing claims remain unassessed;
+a numerical match alone does not establish correct assistance attribution.
+`studentAnswerCorrect` describes the literal learner claim; `null` means its
+correctness is not fixed, for example when copying a live reply.
+`requiredAnswer` requires an assessable assistant judgment of that result. An
+explicit confirmation of the learner's numeric answer can supply this evidence
+without repeating the number; silence or unrelated feedback cannot. Optional
+claims are still checked when made. Keep numerical comparisons separate from
+semantic rubric judgments. Freeze the
+corpus, numerical obligations, materials and both prompt variants before calls.
+
+Run the script on the host against the exact routed synthetic runtime. Supply
+`KLICKER_EVAL_API_ORIGIN`, `KLICKER_EVAL_CHAT_ORIGIN`,
+`KLICKER_EVAL_PARTICIPANT_USERNAME`, and `KLICKER_EVAL_PARTICIPANT_PASSWORD` through
+the existing local evaluation environment. Trust the local CA through
+`NODE_EXTRA_CA_CERTS` when using HTTPS; do not disable certificate verification.
+The default model is the fixed `gpt-5.6-luna` selection. Test `auto` separately
+through `KLICKER_EVAL_MODEL_ID`; it is not a controlled fixed-model comparison.
+
+```sh
+node apps/chat/scripts/run-tutor-trajectories.mjs \
+  --corpus evaluation/data/trajectories/tutor-attribution-v2.json \
+  --numeric evaluation/data/trajectories/tutor-attribution-v2-numeric.json \
+  --output project/_local/tutor-baseline.jsonl --arm baseline --repeats 2 \
+  --budget-file project/_local/tutor-budget.json
+```
+
+`--arm` only labels receipts; it does not select a prompt. Apply the arm's
+templates and restart the chat process before each arm, then confirm the
+compiled prompt fingerprint. Use a new output path for each arm and the same
+budget file across the whole experiment. Receipts contain visible synthetic turns and allowlisted metadata;
+they exclude credentials, reasoning and raw tool payloads. Keep them outside
+Git. The ledger marks each submission as uncertain before sending it and clears
+that flag only after usage is accounted for. Run arms sequentially with one ledger
+owner; concurrent runs are unsupported. A transport, persistence, accounting or evidence failure is an incomplete
+evaluation, never a behavioral pass. Re-running a stopped or uncertain request
+requires an explicit experiment decision; the runner does not retry it.
+
+Freeze candidate, corpus and rubric before comparing outputs. Evaluate support
+qualification separately from answer correctness and checkpoint timing. A small
+synthetic pass does not establish learning effectiveness, production retrieval
+quality or unaided work outside the visible conversation.
+
 Local LiteLLM enables `LITELLM_REASONING_AUTO_SUMMARY` for the Responses path.
 That maps each routed alias's fixed `reasoning_effort` to a visible summary
 without adding a request-level effort that would flatten Auto's Luna/Sol tier
@@ -800,6 +863,14 @@ assistant messages cannot switch the response language. Short acknowledgements p
 established conversation language. German answers use Swiss Standard German orthography (`ss`,
 never `ß`, and real umlauts). Unit tests prove prompt composition only; model compliance still
 requires a separately authorised live-model evaluation.
+
+The system prompt alone did not hold this rule. In a local tutor evaluation, 13 of 58 English turns
+answered in German after reading bilingual retrieved chunks that ended in German. The chat route
+therefore restates the rule where the model reads it last: `prepareStep` appends the
+`reply-language-reminder` system message after the conversation and any tool output on every model
+step. The reminder names no language. The model identifies the user's language itself, which works
+for any language and avoids a brittle server-side detector on short or mixed messages. The reminder
+leaves `instructions` unchanged, so the prompt-cache identity is stable, and it is never persisted.
 
 ## Sources and citations
 
