@@ -59,7 +59,7 @@ The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-p
 
 - Prisma migrations live in `packages/prisma/src/prisma/schema/migrations/` (~170 since 2022). Migrations may contain data backfills (SQL `ROW_NUMBER()` etc.), not just DDL.
 - Separately, the backend runs a **homegrown runtime data-migration runner** (`apps/backend-docker/src/migration.ts:migrate`) with its own `Migration` table for one-off data fixes; don't confuse it with `prisma migrate deploy`. Startup awaits the runner before the HTTP server starts listening, so keep entries short. If the runner fails, the backend logs the error and starts in a degraded state, and an unrecorded entry retries on the next restart. Transient database errors, classified by Prisma or driver error code first and by message as a fallback, receive up to three attempts with exponential backoff. Entries marked `isIdempotent` run without a transaction and tolerate a concurrent insert of their migration record. Other entries run in one transaction that first takes a transaction-scoped advisory lock on the entry id, so a second replica waits and then skips the recorded entry. The streak rollout entry is an idempotent Prisma `updateMany`. It initializes tracking only for active leaderboard participations in already-enabled, non-assessment courses whose `endDate` is on or after the current tracking-day start and whose `studyStreakTrackingStartedAt` is still null. It does not backfill earlier responses. The development `Testkurs` seed also initializes new and existing active participations because the seed can run after the runtime migration has already been recorded. Remove an entry once every environment has applied it.
-- The study-streak schema change ships as three migrations. `20260823120000_add_study_streak_state` adds the seven `Participation` columns in one `ALTER TABLE` statement. `20260823120001_add_question_response_streak_index` and `20260823120002_add_question_response_detail_streak_index` each build one response-table index. Each index migration is a single `CREATE INDEX CONCURRENTLY` statement. A `DROP INDEX CONCURRENTLY` guard cannot share the file: Prisma then sends the whole file as one transaction, which fails. PostgreSQL Prisma migrations are not transaction-wrapped by default; keep these files outside a manual `BEGIN`/`COMMIT` block because concurrent index statements cannot run inside a transaction. Do not use `CREATE INDEX CONCURRENTLY IF NOT EXISTS`: an invalid index satisfies the name check, so the build would be skipped silently.
+- The study-streak schema change ships as three migrations. `20260823120000_add_study_streak_state` adds the seven `Participation` columns in one `ALTER TABLE` statement. `20260823120001_add_question_response_streak_index` and `20260823120002_add_question_response_detail_streak_index` each build one response-table index. Each index migration is a single `CREATE INDEX CONCURRENTLY` statement. A `DROP INDEX CONCURRENTLY` guard cannot share the file: Prisma adds no `BEGIN`/`COMMIT`, but it sends a multi-statement file as one implicit transaction, and concurrent index statements cannot run inside a transaction. For the same reason, never wrap these files in a manual `BEGIN`/`COMMIT` block. Do not use `CREATE INDEX CONCURRENTLY IF NOT EXISTS`: an invalid index satisfies the name check, so the build would be skipped silently.
 
 ### Deployment migrations
 
@@ -106,19 +106,30 @@ WHERE c.relname IN (
 
 The first query names the failed migration. The second shows `indisvalid = false` for an index that an interrupted build left behind.
 
-For an index-only migration (`20260823120001_add_question_response_streak_index` or `20260823120002_add_question_response_detail_streak_index`), first check `pg_stat_activity` for a leftover `CREATE INDEX CONCURRENTLY` session from the killed run and end it with `pg_terminate_backend`; the drop otherwise waits behind it. Then drop the invalid index as its own statement:
+For an index-only migration (`20260823120001_add_question_response_streak_index` or `20260823120002_add_question_response_detail_streak_index`), killing the hook job stops the Prisma client, not necessarily the Postgres backend, so the build may still be running. Check `pg_stat_activity` for an active `CREATE INDEX CONCURRENTLY` session from the killed run, and branch on what you find:
 
-```sql
-DROP INDEX CONCURRENTLY IF EXISTS "<index name>";
-```
+- **Build still active:** let it finish, then re-run the `indisvalid` query.
+- **`indisvalid = true`:** the build completed. Mark the migration applied:
 
-This does not block response writes. Do not use a plain `DROP INDEX`, which takes an `ACCESS EXCLUSIVE` lock on the response table. Then mark the migration rolled back and re-sync:
+  ```bash
+  pnpm --filter @klicker-uzh/prisma prisma:resolve:prod --applied <migration name>
+  ```
 
-```bash
-pnpm --filter @klicker-uzh/prisma prisma:resolve:prod --rolled-back <migration name>
-```
+- **`indisvalid = false`:** drop the invalid index as its own statement:
 
-The next hook run re-applies the migration and builds the index again.
+  ```sql
+  DROP INDEX CONCURRENTLY IF EXISTS "<index name>";
+  ```
+
+  This does not block response writes. Do not use a plain `DROP INDEX`, which takes an `ACCESS EXCLUSIVE` lock on the response table. Then mark the migration rolled back; the next hook run re-applies it and builds the index again:
+
+  ```bash
+  pnpm --filter @klicker-uzh/prisma prisma:resolve:prod --rolled-back <migration name>
+  ```
+
+If the build cannot finish within the hook deadline, rolling back repeats the failure. Instead, drop the invalid index, run the migration's single `CREATE INDEX CONCURRENTLY` statement out of band, confirm `indisvalid = true`, and resolve with `--applied`.
+
+Use the environment's `prisma:resolve:*` script throughout: `prisma:resolve:prod` for production, `prisma:resolve:qa` for staging.
 
 The `ALTER TABLE` migration `20260823120000_add_study_streak_state` is a single atomic statement. Check which of the seven `studyStreak*` columns exist on `Participation`. Use `--applied` when all seven exist and `--rolled-back` when none do.
 

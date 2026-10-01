@@ -54,7 +54,7 @@ requests, and any staging or production action.
   entry.
 - `v3`'s `index.ts` awaits `migrate(prisma)` before `listen` inside a
   degraded-start `try`/`catch`. The PR's `startRuntimeMigrations` disappears.
-- Migration contract: Prisma 7.8.0 `migrate deploy` splits a file into
+- Migration contract (superseded by the drill; see Progress): Prisma 7.8.0 `migrate deploy` splits a file into
   statements, so a guard statement and a `CREATE INDEX CONCURRENTLY` can share
   one file. The audit drilled this. An interrupted concurrent build leaves an
   invalid index with the final name and a failed `_prisma_migrations` row.
@@ -264,3 +264,28 @@ withheld.
   because headless mode denied a tool permission. The transcript is
   `project/_local/reviews/2026-09-23-pr5515-w7-plan-hardening.md`
   (gitignored).
+- 2026-09-23/25 — S1 merged `origin/v3` at `b4f9db90c0` (`6ac3401b31`): `v3`'s
+  runner kept, streak rollout registered once, `student-gamification.spec.ts`
+  added to the `manage,pwa` Playwright group. `987f4419ca` adds the registry
+  test. `0a104dcd16` splits the streak migration into three files and adds the
+  recovery runbook; `da89e92f4b` aligns docs and the data-model skill.
+- Deviation from the migration contract above: the drill showed Prisma 7.8.0
+  sends a multi-statement file as one transaction, so a `DROP INDEX
+  CONCURRENTLY` guard beside the build fails with `25001`. Each index file
+  therefore holds one statement, and the runbook owns the invalid-index drop.
+  The drill passed clean apply, `v3`-first order, interrupted-build (`P3009`)
+  recovery and a no-drift check.
+- 2026-10-01 — Checks at `da89e92f4b`: `check:all` pass, backend tests 12/12,
+  host Playwright tooling 50/50; one GraphQL Redis test fails only in the
+  DevPod (`packages/graphql/test/helpers.ts:138` hardcodes `127.0.0.1`).
+  Browser pass with eight screenshots: the practice counter went from 5 to 1 left
+  without a reload, the goal was reached, the 1-day streak showed, and receipt
+  acknowledgement persisted. Two copy issues were found and recorded in the PR
+  body. The simplifier found no merge leftovers; it suggested three optional doc
+  trims, which were declined.
+- 2026-10-01 — Slice review (Opus 5.5) of the merge resolution and
+  `6ac3401b31..da89e92f4b`: all contracts hold. One accepted major: the runbook
+  dropped the index even when the interrupted build had finished. It now
+  branches on an active build and `indisvalid`, and covers a deadline overrun
+  with an out-of-band build. Two accepted minors: the implicit-transaction
+  wording and the `prisma:resolve:qa` staging script.
