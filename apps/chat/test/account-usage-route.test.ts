@@ -157,6 +157,7 @@ vi.mock('ai', async (importOriginal) => {
 })
 
 import { POST } from '../src/app/api/chatbots/[chatbotId]/chat/route'
+import { REPLY_LANGUAGE_REMINDER } from '../src/lib/server/languageInstructions'
 
 type StreamCallbacks = {
   onEnd: (result: {
@@ -687,10 +688,13 @@ describe('account usage chat route', () => {
       initialMessages?: unknown[]
       responseMessages?: unknown[]
     }) => unknown
-    expect(prepareStep({ stepNumber: 0 })).toEqual({
-      toolChoice: { type: 'tool', toolName: 'KB_doc_query' },
-    })
     const initialMessages = [{ role: 'user', content: 'Question' }]
+    expect(
+      prepareStep({ stepNumber: 0, initialMessages, responseMessages: [] })
+    ).toEqual({
+      toolChoice: { type: 'tool', toolName: 'KB_doc_query' },
+      messages: [initialMessages[0], REPLY_LANGUAGE_REMINDER],
+    })
     const raw = {
       mode: 'documents',
       sources: [{ reference: 'urn:source:a', chunks: [] }],
@@ -750,7 +754,35 @@ describe('account usage chat route', () => {
             },
           ],
         },
+        REPLY_LANGUAGE_REMINDER,
       ],
+    })
+  })
+
+  test('ends every model step with the reply language reminder', async () => {
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.streamConfig?.allowSystemInMessages).toBe(true)
+    const prepareStep = mocks.streamConfig?.prepareStep as (input: {
+      stepNumber: number
+      steps: unknown[]
+      initialMessages: unknown[]
+      responseMessages: unknown[]
+    }) => unknown
+    const initialMessages = [{ role: 'user', content: 'Question' }]
+    const toolMessage = { role: 'tool', content: [] }
+    expect(
+      prepareStep({
+        stepNumber: 1,
+        steps: [],
+        initialMessages,
+        responseMessages: [toolMessage],
+      })
+    ).toEqual({
+      messages: [initialMessages[0], toolMessage, REPLY_LANGUAGE_REMINDER],
     })
   })
 
