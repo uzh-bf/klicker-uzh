@@ -109,9 +109,9 @@ The first query names the failed migration. The second shows `indisvalid = false
 For an index-only migration (`20260823120001_add_question_response_streak_index` or `20260823120002_add_question_response_detail_streak_index`), killing the hook job stops the Prisma client, not necessarily the Postgres backend, so the build may still be running. Check for an active build session from the killed run:
 
 ```sql
-SELECT pid, state, now() - query_start AS running_for
-FROM pg_stat_activity
-WHERE query ILIKE 'CREATE INDEX CONCURRENTLY%';
+SELECT p.pid, p.phase, p.relid::regclass, now() - a.query_start AS running_for
+FROM pg_stat_progress_create_index p
+JOIN pg_stat_activity a USING (pid);
 ```
 
 Then branch on what the two queries show:
