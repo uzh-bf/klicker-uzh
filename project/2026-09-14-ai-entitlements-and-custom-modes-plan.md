@@ -64,7 +64,7 @@ release remain separately gated and are not requested here.
   `catalystTier`, and `catalyst` is already passed to GrowthBook
   (`featureFlags.ts:30-37`).
 - Classes are already separate: `enum ChatUsageClass { BASE, ADVANCED }` with one
-  `ChatAccountUsage` row per owner, class, and Zurü month
+  `ChatAccountUsage` row per owner, class, and Zurich month
   (`packages/prisma/src/prisma/schema/chat.prisma:41-44,95-109`). Class is a
   property of the registry entry, not of the mode.
 - Enforcement is a pre-check that reads
@@ -117,11 +117,11 @@ release remain separately gated and are not requested here.
   pre-check. Class admission therefore applies to preview too, so a base-only
   account cannot preview an advanced entry. Preview remains owner-funded: it
   creates no usage row and charges no budget.
-- **Monthly base budget.** A base-class budget is granted per Zurü month. The
+- **Monthly base budget.** A base-class budget is granted per Zurich month. The
   default applies to newly entitled accounts and is backfilled for existing
   ones; it never silently raises a budget an administrator has already set.
 - **Backfill safety.** The backfill may only create missing rows. It writes
-  `usageClass: BASE` rows for the current Zurü month with duplicate skipping
+  `usageClass: BASE` rows for the current Zurich month with duplicate skipping
   and never touches past months, because `getEffectiveChatAccountUsage` carries
   the most recent earlier row forward into later months. A past-month row would
   therefore leak a budget into every future month, and an upsert would clobber a

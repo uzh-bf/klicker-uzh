@@ -608,7 +608,7 @@ export async function setAiFeatures(
       },
     })
 
-    // Enabling an account seeds the base-class budget for the current Zurü
+    // Enabling an account seeds the base-class budget for the current Zurich
     // month, so a newly entitled account can chat without an administrator
     // setting a budget first. A budget that was already set for this month or
     // an earlier one is left untouched, because the effective usage carries
