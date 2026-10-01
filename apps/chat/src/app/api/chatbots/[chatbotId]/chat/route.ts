@@ -43,6 +43,7 @@ import {
   isAiTelemetryEnabled,
   LANGFUSE_CHAT_TRACE_NAME,
 } from '@/src/lib/server/langfuseTracing'
+import { REPLY_LANGUAGE_REMINDER } from '@/src/lib/server/languageInstructions'
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
@@ -1649,22 +1650,31 @@ export async function POST(
         tools: promptCacheRequest?.tools ?? mcpTools,
         toolOrder: promptCacheRequest?.toolOrder,
         toolChoice: 'auto',
-        prepareStep: docQueryToolName
-          ? ({ stepNumber, steps, initialMessages, responseMessages }) =>
-              stepNumber === 0
-                ? {
-                    toolChoice: {
-                      type: 'tool' as const,
-                      toolName: docQueryToolName,
-                    },
-                  }
-                : {
-                    messages: [
-                      ...initialMessages,
-                      ...withModelCitationIndices(responseMessages, steps),
-                    ],
-                  }
-          : undefined,
+        // The reply-language reminder is the last message of every step, after
+        // tool output, so retrieved material cannot set the reply language.
+        allowSystemInMessages: true,
+        prepareStep: ({
+          stepNumber,
+          steps,
+          initialMessages,
+          responseMessages,
+        }) => ({
+          ...(docQueryToolName && stepNumber === 0
+            ? {
+                toolChoice: {
+                  type: 'tool' as const,
+                  toolName: docQueryToolName,
+                },
+              }
+            : {}),
+          messages: [
+            ...initialMessages,
+            ...(docQueryToolName && stepNumber > 0
+              ? withModelCitationIndices(responseMessages, steps)
+              : responseMessages),
+            REPLY_LANGUAGE_REMINDER,
+          ],
+        }),
         stopWhen: isStepCount(5),
         instructions: systemPrompt,
 

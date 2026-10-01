@@ -864,6 +864,14 @@ established conversation language. German answers use Swiss Standard German orth
 never `ß`, and real umlauts). Unit tests prove prompt composition only; model compliance still
 requires a separately authorised live-model evaluation.
 
+The system prompt alone did not hold this rule. In a local tutor evaluation, 13 of 58 English turns
+answered in German after reading bilingual retrieved chunks that ended in German. The chat route
+therefore restates the rule where the model reads it last: `prepareStep` appends the
+`reply-language-reminder` system message after the conversation and any tool output on every model
+step. The reminder names no language. The model identifies the user's language itself, which works
+for any language and avoids a brittle server-side detector on short or mixed messages. The reminder
+leaves `instructions` unchanged, so the prompt-cache identity is stable, and it is never persisted.
+
 ## Sources and citations
 
 An answer's sources are **derived from the message's own tool-call parts**, not carried in a
