@@ -698,12 +698,17 @@ type AdaptivePracticeQuizReadinessIssueParameters {
   enabledAssignmentCount: Int
   estimatedDurationMinutes: Float
   field: String
+  leafName: String
+  leafOrder: Int
   levelCount: Int
+  levelLabel: String
+  levelOrder: Int
   maximumValue: Float
   minimumValue: Float
   nodeId: Int
   nodeName: String
   requiredQuestionCount: Int
+  rootName: String
   scaleVersionId: String
   secondsPerItem: Int
   targetItemCount: Int

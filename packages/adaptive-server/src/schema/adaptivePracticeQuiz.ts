@@ -1,3 +1,4 @@
+import type { AdaptiveSchemaBuilder } from '@klicker-uzh/graphql/adaptive-schema-host-types'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   AdaptiveCoverageReadiness,
@@ -15,7 +16,6 @@ import type {
   PracticeQuizPublicationPreview,
 } from '../services/adaptivePracticeQuizConfig.js'
 import type { createCompetenceTreeSchema } from './competenceTree.js'
-import type { AdaptiveSchemaBuilder } from '@klicker-uzh/graphql/adaptive-schema-host-types'
 
 type AdaptivePracticeQuizLevelView =
   AdaptivePracticeQuizPreview['competenceTree']['levels'][number]
@@ -304,6 +304,11 @@ export function createAdaptivePracticeQuizSchema(
           nullable: true,
         }),
         elementVersion: t.exposeInt('elementVersion', { nullable: true }),
+        rootName: t.exposeString('rootName', { nullable: true }),
+        leafName: t.exposeString('leafName', { nullable: true }),
+        leafOrder: t.exposeInt('leafOrder', { nullable: true }),
+        levelLabel: t.exposeString('levelLabel', { nullable: true }),
+        levelOrder: t.exposeInt('levelOrder', { nullable: true }),
       }),
     })
   const AdaptiveReadinessIssueType = AdaptiveReadinessIssueRef.implement({

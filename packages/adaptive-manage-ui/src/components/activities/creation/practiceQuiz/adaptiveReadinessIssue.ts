@@ -1,4 +1,9 @@
 import { ApolloError } from '@apollo/client'
+import {
+  type AdaptiveCoverageIssueCode,
+  formatAdaptiveCoverageCell,
+  groupAdaptiveReadinessIssues,
+} from './adaptiveReadinessGrouping'
 
 export type AdaptiveTranslator = (
   key: string,
@@ -14,6 +19,8 @@ export type AdaptiveReadinessIssueLike = {
   message?: string | null
   assignmentId?: number | null
   nodeId?: number | null
+  leafNodeId?: number | null
+  levelId?: number | null
   parameters?: {
     nodeName?: string | null
     elementName?: string | null
@@ -32,7 +39,45 @@ export type AdaptiveReadinessIssueLike = {
     secondsPerItem?: number | null
     assignmentId?: number | null
     nodeId?: number | null
+    rootName?: string | null
+    leafName?: string | null
+    leafOrder?: number | null
+    levelLabel?: string | null
+    levelOrder?: number | null
   } | null
+}
+
+const COVERAGE_GROUP_EXAMPLE_COUNT = 5
+
+/** One line per affected cell, e.g. "Grammar › Gender · B2.1: 3 of 5". */
+export function formatAdaptiveCoverageIssueCell(
+  t: AdaptiveTranslator,
+  issue: AdaptiveReadinessIssueLike
+): string {
+  const p = issue.parameters ?? {}
+  return t(
+    `manage.activityWizard.adaptive.readiness.coverageGroups.cells.${issue.code}`,
+    {
+      cell: formatAdaptiveCoverageCell(issue),
+      enabledAssignmentCount: p.enabledAssignmentCount ?? 0,
+      minimumValue: p.minimumValue ?? 0,
+      targetItemCount: p.targetItemCount ?? 0,
+    }
+  )
+}
+
+export function formatAdaptiveCoverageGroupSummary(
+  t: AdaptiveTranslator,
+  code: AdaptiveCoverageIssueCode,
+  issues: readonly AdaptiveReadinessIssueLike[]
+): string {
+  const minimumValue = issues.find(
+    (issue) => typeof issue.parameters?.minimumValue === 'number'
+  )?.parameters?.minimumValue
+  return t(
+    `manage.activityWizard.adaptive.readiness.coverageGroups.summary.${code}`,
+    { count: issues.length, minimumValue: minimumValue ?? 0 }
+  )
 }
 
 export function formatAdaptiveReadinessIssue(
@@ -295,9 +340,23 @@ export function formatAdaptiveApolloError(
   const details = error.graphQLErrors.flatMap((graphQLError) => {
     const issues = graphQLError.extensions?.issues
     if (!Array.isArray(issues)) return []
-    return issues
-      .filter(isAdaptiveReadinessIssue)
-      .map((issue) => formatAdaptiveReadinessIssue(t, issue))
+    return groupAdaptiveReadinessIssues(
+      issues.filter(isAdaptiveReadinessIssue)
+    ).map((entry) => {
+      if (entry.kind === 'issue') {
+        return formatAdaptiveReadinessIssue(t, entry.issue)
+      }
+      const examples = entry.issues
+        .slice(0, COVERAGE_GROUP_EXAMPLE_COUNT)
+        .map(formatAdaptiveCoverageCell)
+      return `${formatAdaptiveCoverageGroupSummary(t, entry.code, entry.issues)} ${t(
+        'manage.activityWizard.adaptive.readiness.coverageGroups.examples',
+        {
+          cells: examples.join(', '),
+          remaining: entry.issues.length - examples.length,
+        }
+      )}`
+    })
   })
   const rolloutDisabled = error.graphQLErrors.some(
     (graphQLError) =>

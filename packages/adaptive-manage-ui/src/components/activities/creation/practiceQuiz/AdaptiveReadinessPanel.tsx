@@ -4,11 +4,14 @@ import {
   faTriangleExclamation,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { AdaptivePracticeQuizReadinessDataFragment } from '@klicker-uzh/graphql/dist/ops'
+import type { AdaptivePracticeQuizReadinessDataFragment } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { groupAdaptiveReadinessIssues } from './adaptiveReadinessGrouping'
 import {
   asAdaptiveTranslator,
+  formatAdaptiveCoverageGroupSummary,
+  formatAdaptiveCoverageIssueCell,
   formatAdaptiveReadinessIssue,
 } from './adaptiveReadinessIssue'
 
@@ -172,6 +175,9 @@ function Metric({ label, value }: { label: string; value: string }) {
   )
 }
 
+// Groups with at most this many cells are expanded by default.
+const OPEN_COVERAGE_GROUP_LIMIT = 5
+
 function IssueList({
   title,
   issues,
@@ -184,6 +190,9 @@ function IssueList({
   const t = useTranslations()
   if (issues.length === 0) return null
 
+  const translator = asAdaptiveTranslator(t)
+  const entries = groupAdaptiveReadinessIssues(issues)
+
   return (
     <div className="mt-3" data-cy={`adaptive-readiness-${type}s`}>
       <div className="mb-1 flex items-center gap-2 text-sm font-bold">
@@ -194,15 +203,43 @@ function IssueList({
         {title}
       </div>
       <ul className="m-0 flex list-none flex-col gap-1 p-0 text-sm">
-        {issues.map((issue, index) => (
-          <li
-            key={`${issue.code}-${issue.path ?? index}`}
-            className="border-uzh-grey-80 border-l-2 py-1 pl-2"
-            data-cy={`adaptive-readiness-issue-${issue.code}`}
-          >
-            {formatAdaptiveReadinessIssue(asAdaptiveTranslator(t), issue)}
-          </li>
-        ))}
+        {entries.map((entry, index) =>
+          entry.kind === 'issue' ? (
+            <li
+              key={`${entry.issue.code}-${entry.issue.path ?? index}`}
+              className="border-uzh-grey-80 border-l-2 py-1 pl-2"
+              data-cy={`adaptive-readiness-issue-${entry.issue.code}`}
+            >
+              {formatAdaptiveReadinessIssue(translator, entry.issue)}
+            </li>
+          ) : (
+            <li
+              key={`group-${entry.code}`}
+              className="border-uzh-grey-80 border-l-2 py-1 pl-2"
+              data-cy={`adaptive-readiness-issue-group-${entry.code}`}
+            >
+              <details open={entry.issues.length <= OPEN_COVERAGE_GROUP_LIMIT}>
+                <summary className="cursor-pointer">
+                  {formatAdaptiveCoverageGroupSummary(
+                    translator,
+                    entry.code,
+                    entry.issues
+                  )}
+                </summary>
+                <ul className="mt-1 max-h-64 list-disc overflow-y-auto pl-5 text-xs text-slate-700">
+                  {entry.issues.map((issue, cellIndex) => (
+                    <li
+                      key={`${issue.path ?? cellIndex}`}
+                      data-cy={`adaptive-readiness-issue-${issue.code}`}
+                    >
+                      {formatAdaptiveCoverageIssueCell(translator, issue)}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            </li>
+          )
+        )}
       </ul>
     </div>
   )
