@@ -83,6 +83,9 @@ overrides:
   'path-to-regexp@>=0.1.0 <0.1.13': 0.1.13
   # @graphql-codegen/plugin-helpers asks for lodash ~4.17.0, below 4.18.1.
   'lodash@>=4.17.0 <4.18.1': 4.18.1
+  # ajv 8.20.0 asks for fast-uri ^3.0.1, which resolves to 3.1.6 below the
+  # patched 3.1.8 (CVE-2026-84292, CVE-2026-84394).
+  'fast-uri@>=3.0.0 <3.1.8': 3.1.8
   # These advisories have no fix inside the older major line, so the pin has to
   # cross it: deepmerge-ts is consumed by Prisma config loading (exact 7.1.5),
   # nodemailer by the transactional email transport while @auth/core and

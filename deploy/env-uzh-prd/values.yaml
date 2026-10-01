@@ -235,7 +235,7 @@ chat:
     enabled: false
     environment: 'production'
 
-  replicaCount: 1
+  replicaCount: 3
 
   automaticModels:
     primaryId: auto
