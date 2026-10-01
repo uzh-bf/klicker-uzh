@@ -2781,12 +2781,43 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       configure: {
         sourceTitle: 'Knowledge source',
         sourceHelp:
-          'Choose a knowledge base with a published graph. The generation remains linked to this graph build for traceability.',
+          'Choose a knowledge base. The generation stays linked to the prepared material it uses for traceability.',
         sourceCount: '{count, plural, one {# source} other {# sources}}',
-        indexedAt: 'Published {date}',
-        staleGraph: 'Update available',
+        indexedAt: 'Prepared {date}',
+        staleGraph: 'Recent changes not included yet',
         staleGraphHelp:
-          'This published graph is still usable, but the knowledge base has newer changes. Rebuild it first if those changes should be included.',
+          'This knowledge base has newer changes that are still being prepared. Questions generated now use the previously prepared material.',
+        basisLanguage: 'Questions in {language}',
+        settingsChangedHelp:
+          'The subject area or language of this knowledge base changed. New questions wait for a preparation that matches the new settings. Existing questions stay unchanged.',
+        contactSupport: 'Contact {email}',
+        preparation: {
+          WAITING_FOR_MATERIALS: 'Waiting for materials to finish processing',
+          QUEUED: 'Preparing automatically',
+          PROCESSING: 'Preparing automatically',
+          READY: 'Ready',
+          DELAYED: 'Preparation is delayed',
+          NEEDS_ATTENTION: 'Preparation needs attention',
+          UNAVAILABLE: 'Automatic preparation is not available',
+          NO_ELIGIBLE_MATERIALS: 'No course material yet',
+        },
+        preparationHelp: {
+          WAITING_FOR_MATERIALS:
+            'The uploaded materials are still being processed. Question preparation starts automatically afterwards.',
+          QUEUED:
+            'Question generation is being prepared automatically. Check back within 24 hours.',
+          PROCESSING:
+            'Question generation is being prepared automatically. Check back within 24 hours.',
+          READY: 'Ready for question generation.',
+          DELAYED:
+            'Preparation is taking longer than expected. Contact us so we can look into it.',
+          NEEDS_ATTENTION:
+            'Preparation could not be completed automatically. Check the materials of this knowledge base or contact us.',
+          UNAVAILABLE:
+            'Automatic preparation is not enabled for this knowledge base. Contact us to enable question generation.',
+          NO_ELIGIBLE_MATERIALS:
+            'Add course material to this knowledge base. Administrative documents are not used for question generation.',
+        },
         sourceDetails: 'Included sources',
         completeSource: 'The complete source will be used.',
         pageFrom: 'From page',
