@@ -532,6 +532,25 @@ const messages = {
           allocated: 'Zugewiesene Fragen',
           levels: 'Klassifizierbare Stufen',
           minimumSe: 'Minimal erreichbarer SE',
+          coverageGroups: {
+            summary: {
+              ADAPTIVE_COVERAGE_CELL_EMPTY:
+                '{count, plural, one {# aktive Kombination aus Blatt und Stufe hat} other {# aktive Kombinationen aus Blatt und Stufe haben}} keine aktiven Elemente. Fügen Sie Elemente hinzu oder deaktivieren Sie diese Kombinationen im inhaltlichen Bauplan des Kompetenzbaums.',
+              ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM:
+                '{count, plural, one {# aktive Kombination aus Blatt und Stufe hat} other {# aktive Kombinationen aus Blatt und Stufe haben}} weniger als die {minimumValue} unabhängigen, aktiven und automatisch bewertbaren Elemente, die produktive Voreinstellungen benötigen.',
+              ADAPTIVE_COVERAGE_BELOW_TARGET:
+                '{count, plural, one {# aktive Kombination aus Blatt und Stufe liegt} other {# aktive Kombinationen aus Blatt und Stufe liegen}} unter der Zielanzahl an Elementen.',
+            },
+            cells: {
+              ADAPTIVE_COVERAGE_CELL_EMPTY: '{cell}: keine aktiven Elemente',
+              ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM:
+                '{cell}: {enabledAssignmentCount} von {minimumValue} Elementen',
+              ADAPTIVE_COVERAGE_BELOW_TARGET:
+                '{cell}: {enabledAssignmentCount} von {targetItemCount} Elementen',
+            },
+            examples:
+              'Betroffen: {cells}{remaining, plural, =0 {} other { und # weitere}}.',
+          },
           issues: {
             ADAPTIVE_COURSE_DISABLED:
               'Adaptives Lernen ist für diesen Kurs nicht aktiviert.',
@@ -1122,6 +1141,33 @@ const messages = {
       coverageFilterLabel: 'Zuordnungen für {leaf} auf Stufe {level} anzeigen',
       coverageAssignmentCount: '{count} von {target} aktiviert',
       noMatchingLeaves: 'Keine Blätter entsprechen den aktuellen Filtern.',
+      coverageBulk: {
+        title: 'Sammelaktionen',
+        scope:
+          'Gilt für {leaves, plural, one {die # angezeigte Teilkompetenz} other {die # angezeigten Teilkompetenzen}} ({scope}).',
+        scopeWithSearch: '{root}, passend zu „{search}“',
+        actionWithCount: '{label} ({count})',
+        switchOffEmpty: 'Leere Felder deaktivieren',
+        switchOffBelow: 'Felder unter {minimum} deaktivieren',
+        switchOnAll: 'Alle Felder aktivieren',
+        minimumLabel: 'Minimum',
+        minimumInvalid: 'Gib eine ganze Zahl von 1 bis 1000 ein.',
+        confirmOffTitle: 'Felder deaktivieren?',
+        confirmOnTitle: 'Felder aktivieren?',
+        confirmOffMessage:
+          '{cells, plural, one {# aktives Feld wird} other {# aktive Felder werden}} deaktiviert ({scope}).',
+        confirmOnMessage:
+          '{cells, plural, one {# deaktiviertes Feld wird} other {# deaktivierte Felder werden}} aktiviert ({scope}).',
+        assignmentsDisabled:
+          '{count, plural, one {# diesen Feldern zugeordnetes Element wird} other {# diesen Feldern zugeordnete Elemente werden}} ebenfalls deaktiviert.',
+        linksRemoved:
+          '{count, plural, one {# Element zählt} other {# Elemente zählen}} nicht mehr zusätzlich für ein deaktiviertes Feld.',
+        leavesSkipped:
+          '{count, plural, one {# Teilkompetenz bleibt} other {# Teilkompetenzen bleiben}} unverändert, weil sonst kein Niveau aktiv bliebe.',
+        saveHint:
+          'Speichere den Kompetenzbaum, um die Änderungen zu übernehmen.',
+        confirm: 'Anwenden',
+      },
       itemParameters: {
         title: 'Itemparameter',
         difficulty: 'Geschätzte Schwierigkeit (b)',

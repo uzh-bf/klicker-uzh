@@ -2,7 +2,11 @@ import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
 import { Select, Switch, TextField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
-import { assignmentHasLeaf } from './assignmentHelpers'
+import CoverageBulkActions from './CoverageBulkActions'
+import {
+  countEnabledAssignmentsByCell,
+  coverageCellId,
+} from './coverageBulkSelection'
 import DraftNumberField from './DraftNumberField'
 import {
   getBreadcrumb,
@@ -10,7 +14,7 @@ import {
   getLeafNodes,
   getRootNode,
 } from './treeHelpers'
-import { CompetenceTreeCoverageForm, CompetenceTreeForm } from './types'
+import type { CompetenceTreeCoverageForm, CompetenceTreeForm } from './types'
 
 export interface CoverageCellSelection {
   leafKey: string
@@ -49,6 +53,22 @@ function CoverageMatrix({
         .includes(normalizedSearch)
     })
   }, [form.nodes, rootFilter, search])
+  const leafKeys = useMemo(() => leaves.map((leaf) => leaf.key), [leaves])
+  const assignmentCounts = useMemo(
+    () => countEnabledAssignmentsByCell(form.assignments),
+    [form.assignments]
+  )
+  const rootLabel =
+    rootFilter === 'all'
+      ? t('manage.competenceTree.allRoots')
+      : (roots.find((root) => root.key === rootFilter)?.name ??
+        t('manage.competenceTree.allRoots'))
+  const scopeLabel = search.trim()
+    ? t('manage.competenceTree.coverageBulk.scopeWithSearch', {
+        root: rootLabel,
+        search: search.trim(),
+      })
+    : rootLabel
 
   const updateCoverage = (
     leafKey: string,
@@ -136,6 +156,14 @@ function CoverageMatrix({
         </div>
       </div>
 
+      <CoverageBulkActions
+        form={form}
+        onChange={onChange}
+        leafKeys={leafKeys}
+        scopeLabel={scopeLabel}
+        disabled={disabled}
+      />
+
       <div className="max-h-160 overflow-auto border border-slate-300 [contain:paint]">
         <div
           className="grid min-w-max"
@@ -174,12 +202,8 @@ function CoverageMatrix({
                   targetItemCount: 5,
                   enabled: true,
                 }
-                const assignmentCount = form.assignments.filter(
-                  (assignment) =>
-                    assignmentHasLeaf(assignment, leaf.key) &&
-                    assignment.levelKey === level.key &&
-                    assignment.enabled
-                ).length
+                const assignmentCount =
+                  assignmentCounts.get(coverageCellId(leaf.key, level.key)) ?? 0
                 const isSelected =
                   selectedCell?.leafKey === leaf.key &&
                   selectedCell.levelKey === level.key

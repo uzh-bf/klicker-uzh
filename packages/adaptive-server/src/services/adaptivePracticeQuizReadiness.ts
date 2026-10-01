@@ -79,6 +79,11 @@ export type AdaptiveReadinessIssueParameters = {
   scaleVersionId?: string
   calibrationStatus?: string
   elementVersion?: number
+  rootName?: string
+  leafName?: string
+  leafOrder?: number
+  levelLabel?: string
+  levelOrder?: number
 }
 
 export type AdaptiveCoverageReadiness = {

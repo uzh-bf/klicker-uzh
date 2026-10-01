@@ -36,6 +36,7 @@ import {
   validateAdaptiveQuizReadiness,
   validateAdaptiveSettings,
 } from './adaptivePracticeQuizReadiness.js'
+import { annotateAdaptiveReadinessIssueLabels } from './adaptivePracticeQuizReadinessLabels.js'
 import { normalizeRootWeights } from './adaptivePracticeQuizRootWeights.js'
 import {
   type AdaptiveMeasurementSelection,
@@ -515,15 +516,18 @@ async function prepareConfiguration({
     targetItemCount: coverage.targetItemCount,
     enabled: coverage.enabled,
   }))
-  const readiness = await validateAdaptiveQuizReadiness({
-    settings,
-    nodes,
-    coverages,
-    assignments,
-    levels: mappedLevels,
-    thetaRange: { min: tree.thetaMin, max: tree.thetaMax },
-    analyzer: createAdaptiveBankAnalyzer(),
-  })
+  const readiness = annotateAdaptiveReadinessIssueLabels(
+    await validateAdaptiveQuizReadiness({
+      settings,
+      nodes,
+      coverages,
+      assignments,
+      levels: mappedLevels,
+      thetaRange: { min: tree.thetaMin, max: tree.thetaMax },
+      analyzer: createAdaptiveBankAnalyzer(),
+    }),
+    { nodes: tree.nodes, levels: tree.levels }
+  )
 
   return { tree, nodes, coverages, assignments, readiness }
 }

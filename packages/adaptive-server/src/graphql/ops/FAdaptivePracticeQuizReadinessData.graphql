@@ -24,6 +24,11 @@ fragment AdaptivePracticeQuizReadinessData on AdaptivePracticeQuizReadiness {
       scaleVersionId
       calibrationStatus
       elementVersion
+      rootName
+      leafName
+      leafOrder
+      levelLabel
+      levelOrder
     }
     path
     nodeId
@@ -55,6 +60,11 @@ fragment AdaptivePracticeQuizReadinessData on AdaptivePracticeQuizReadiness {
       scaleVersionId
       calibrationStatus
       elementVersion
+      rootName
+      leafName
+      leafOrder
+      levelLabel
+      levelOrder
     }
     path
     nodeId

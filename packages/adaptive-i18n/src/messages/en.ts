@@ -521,6 +521,25 @@ const messages = {
           allocated: 'Allocated questions',
           levels: 'Classifiable levels',
           minimumSe: 'Minimum reachable SE',
+          coverageGroups: {
+            summary: {
+              ADAPTIVE_COVERAGE_CELL_EMPTY:
+                '{count, plural, one {# enabled leaf and level combination has} other {# enabled leaf and level combinations have}} no enabled elements. Add elements or switch off these combinations in the content blueprint of the competence tree.',
+              ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM:
+                '{count, plural, one {# enabled leaf and level combination has} other {# enabled leaf and level combinations have}} fewer than the {minimumValue} independent, enabled, scorable elements that production presets require.',
+              ADAPTIVE_COVERAGE_BELOW_TARGET:
+                '{count, plural, one {# enabled leaf and level combination is} other {# enabled leaf and level combinations are}} below the target number of elements.',
+            },
+            cells: {
+              ADAPTIVE_COVERAGE_CELL_EMPTY: '{cell}: no enabled elements',
+              ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM:
+                '{cell}: {enabledAssignmentCount} of {minimumValue} elements',
+              ADAPTIVE_COVERAGE_BELOW_TARGET:
+                '{cell}: {enabledAssignmentCount} of {targetItemCount} elements',
+            },
+            examples:
+              'Affected: {cells}{remaining, plural, =0 {} other { and # more}}.',
+          },
           issues: {
             ADAPTIVE_COURSE_DISABLED:
               'Adaptive learning is not enabled for this course.',
@@ -1103,6 +1122,32 @@ const messages = {
       coverageFilterLabel: 'Show assignments for {leaf} at {level}',
       coverageAssignmentCount: '{count} of {target} enabled',
       noMatchingLeaves: 'No leaves match the current filters.',
+      coverageBulk: {
+        title: 'Bulk actions',
+        scope:
+          'Applies to the {leaves, plural, one {# subcompetence} other {# subcompetences}} shown ({scope}).',
+        scopeWithSearch: '{root}, matching “{search}”',
+        actionWithCount: '{label} ({count})',
+        switchOffEmpty: 'Switch off empty cells',
+        switchOffBelow: 'Switch off cells below {minimum}',
+        switchOnAll: 'Switch on all cells',
+        minimumLabel: 'Minimum',
+        minimumInvalid: 'Enter a whole number from 1 to 1000.',
+        confirmOffTitle: 'Switch off cells?',
+        confirmOnTitle: 'Switch on cells?',
+        confirmOffMessage:
+          '{cells, plural, one {# enabled cell} other {# enabled cells}} will be switched off ({scope}).',
+        confirmOnMessage:
+          '{cells, plural, one {# disabled cell} other {# disabled cells}} will be switched on ({scope}).',
+        assignmentsDisabled:
+          '{count, plural, one {# element mapped to these cells is} other {# elements mapped to these cells are}} disabled as well.',
+        linksRemoved:
+          '{count, plural, one {# element no longer also counts} other {# elements no longer also count}} for a switched-off cell.',
+        leavesSkipped:
+          '{count, plural, one {# subcompetence is} other {# subcompetences are}} left unchanged because no level would remain switched on.',
+        saveHint: 'Save the competence tree to store the changes.',
+        confirm: 'Apply',
+      },
       itemParameters: {
         title: 'Item parameters',
         difficulty: 'Estimated difficulty (b)',
