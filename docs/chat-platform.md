@@ -369,12 +369,17 @@ planning target, while the reset date is exact; in-flight requests may exceed
 the target. It is read-only for account owners, and it does not expose
 internal funding or provider details.
 
-The deployed Klicker Auto option is a LiteLLM `auto-router` endpoint. The
-only in-repo record of its tier map is the comment above `modelRegistry` in
-`deploy/env-uzh-{stg,prd}/values.yaml`: SIMPLE = `gpt-6-luna-high`, MEDIUM
-= `gpt-6-luna-xhigh`, COMPLEX = `gpt-6-sol-high`, REASONING =
-`gpt-6-sol-medium` (match_threshold 0.55). Each GPT-6 alias falls back to a
-GPT-5.6 twin on an upstream failure. The authoritative router
+The deployed Klicker Auto option is the LiteLLM `auto-router-v2` endpoint.
+The only in-repo record of its tier map is the comment above `modelRegistry`
+in `deploy/env-uzh-{stg,prd}/values.yaml`: SIMPLE = `gpt-6-luna-high`, MEDIUM
+= `gpt-6.1-sol-low`, COMPLEX = `gpt-6.1-sol-medium`, REASONING =
+`gpt-6.1-sol-high` (match_threshold 0.55). The v1 `auto-router` stays
+deployed with the same classifier and corpus (MEDIUM = `gpt-6-luna-xhigh`,
+COMPLEX = `gpt-6.1-sol-high`, REASONING = `gpt-6.1-sol-medium`) so both
+routers can be compared on one evaluation suite. Each GPT-6.1 Sol alias falls
+back to its GPT-6 Sol twin and each GPT-6 alias to a GPT-5.6 twin on an
+upstream failure. The 2026-10-01 benchmark behind v2 is recorded in
+ai-infrastructure/deployment !996. The authoritative router
 configuration lives in the external AI deployment repository's
 `litellm/config.yaml` and **cannot be verified from this repository** — treat
 the values.yaml comment as the best available record and confirm against the
@@ -391,7 +396,7 @@ primary, so chatbots using automatic model selection use Auto by default.
 Chatbots with an explicit model selection can continue using that selection.
 Keep the `v3-ai` staging values aligned with this block when resolving merges:
 `CHAT_PRIMARY_MODEL_ID=auto`, the `auto` registry entry targets
-`klickeruzh/azure/auto-router`, and that entry sets `usesResponsesApi: true`.
+`klickeruzh/azure/auto-router-v2`, and that entry sets `usesResponsesApi: true`.
 This repository controls those consumer values but does not prove that the
 external LiteLLM key or team is authorized for the deployment.
 Model registry capabilities separate the student-facing reasoning-effort
@@ -404,13 +409,17 @@ keeps ownership of effort instead of accepting a participant override.
 
 The local devcontainer simulation in `util/litellm/config.yaml` mirrors the
 deployed Klicker Auto V2 policy and semantic corpus with local, unprefixed model
-aliases: GPT-6 Luna high/xhigh for SIMPLE/MEDIUM, GPT-6 Sol high for COMPLEX
-and GPT-6 Sol medium for REASONING, with GPT-5.6 fallbacks. It deliberately retains the generic
+aliases. It defines both routers: `auto-router` mirrors v1 and
+`auto-router-v2` mirrors v2, with GPT-6 Sol and GPT-5.6 fallbacks. LiteLLM
+1.96 does not recognise GPT-6 as a reasoning family, so the GPT-6 entries set
+`allowed_openai_params: ['reasoning_effort']`; without it `drop_params`
+silently removes the effort locally. Production is unaffected because its
+aliases use the Responses API `reasoning` field. It deliberately retains the generic
 `UPSTREAM_OPENAI_BASE_URL`/`UPSTREAM_OPENAI_API_KEY` boundary instead of
 production Azure URLs, model prefixes, secrets, or failover topology. Local
 Auto Mode is therefore evidence about the wiring and policy simulation, never
 live production routing. The local chat registry maps the user-facing `auto`
-model id to the `auto-router` LiteLLM deployment and exposes `gpt-6-luna`,
+model id to the `auto-router-v2` LiteLLM deployment and exposes `gpt-6-luna`,
 `gpt-6-sol` and `gpt-6.1-sol` for a direct comparison. The seeded Benibot fixture allow-lists all
 four active options — `auto`, `gpt-6-luna`, `gpt-6-sol` and `gpt-4.1` —
 explicitly, so it satisfies

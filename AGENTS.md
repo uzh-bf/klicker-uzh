@@ -212,18 +212,20 @@ upstream and the Azure-specific chatbot disclaimer does not describe this
 local path.
 
 Local Auto Mode is selected by `CHAT_PRIMARY_MODEL_ID=auto`. Chat sends the
-`auto-router` deployment to LiteLLM at `http://litellm:4000`; LiteLLM classifies
-the request with the current Auto V2 policy in `util/litellm/config.yaml`.
-Classification uses GPT-6 Luna low; semantic corpus matching uses
-`openai/text-embedding-3-small`; SIMPLE and MEDIUM route to GPT-6 Luna high
-and xhigh; COMPLEX and REASONING route to GPT-6 Sol high and medium. LiteLLM then forwards
-all three request types through OpenRouter's OpenAI-compatible endpoint;
-OpenRouter supplies the selected models but does not make the routing decision.
-This adds one classifier request and, for semantic matching, one embedding
-request to the same external OpenRouter data boundary. It therefore adds local
-latency and usage cost. Each GPT-6 alias falls back to its GPT-5.6 twin on an
-upstream failure. Separately, zero-credit fallback remains within the selected
-usage class. Chat can select allow-listed Luna for a BASE selection before
+`auto-router-v2` deployment to LiteLLM at `http://litellm:4000`; LiteLLM
+classifies the request with the current Auto V2 policy in
+`util/litellm/config.yaml`. Classification uses GPT-6 Luna low; semantic corpus
+matching uses `openai/text-embedding-3-small`; SIMPLE routes to GPT-6 Luna
+high, and MEDIUM, COMPLEX and REASONING route to GPT-6.1 Sol low, medium and
+high. The v1 `auto-router` remains available for comparison. LiteLLM then
+forwards all three request types through OpenRouter's OpenAI-compatible
+endpoint; OpenRouter supplies the selected models but does not make the
+routing decision. This adds one classifier request and, for semantic matching,
+one embedding request to the same external OpenRouter data boundary. It
+therefore adds local latency and usage cost. Each GPT-6 alias falls back to its
+GPT-5.6 twin, and each GPT-6.1 Sol alias to its GPT-6 Sol twin, on an upstream
+failure. Separately, zero-credit fallback remains within the selected usage
+class. Chat can select allow-listed Luna for a BASE selection before
 calling LiteLLM; current ADVANCED selections such as Auto are denied while no
 ADVANCED fallback is allow-listed.
 

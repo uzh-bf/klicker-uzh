@@ -267,8 +267,8 @@ provider-level acceptance check. The same harness proves the managed-process
 liveness guard: a process that dies inside the grace interval fails startup
 before any readiness probe, and a survivor advances into the readiness pass.
 
-- The local Chat model simulation includes LiteLLM's `auto-router` and
-  the GPT-6 Luna/Sol target aliases with GPT-5.6 fallbacks. Start it with
+- The local Chat model simulation includes LiteLLM's `auto-router` (v1) and
+  `auto-router-v2`, plus the GPT-6 Luna/Sol target aliases with GPT-5.6 fallbacks. Start it with
   `devrouter ensure . --profile chat,ai`; add `mcp` for the seeded synthetic
   tool path. Then verify the
   LiteLLM liveness endpoint, direct embedding/model probes, expected Auto V2

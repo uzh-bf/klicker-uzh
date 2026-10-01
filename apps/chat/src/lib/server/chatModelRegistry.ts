@@ -133,7 +133,7 @@ export function parseChatModelRegistry(value: unknown): ChatModelConfig[] {
 export const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = parseRegistryValue([
   {
     id: 'auto',
-    deploymentId: 'auto-router',
+    deploymentId: 'auto-router-v2',
     name: 'Auto Mode',
     description: 'Automatic model selection through the LiteLLM auto router',
     fallback: false,
