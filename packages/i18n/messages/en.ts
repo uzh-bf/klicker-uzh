@@ -48,7 +48,7 @@ export default {
       usingPrimaryModel:
         'The automatic choice is used while credits are available.',
       usingFallbackModel:
-        'No credits remain. GPT-6 Luna may be used as the credit fallback.',
+        'No credits remain. The base model may be used as the credit fallback.',
       reasoningEffortLabel: 'Reasoning Effort',
       selectReasoningEffort: 'Select reasoning effort',
       reasoningEffortHint:
