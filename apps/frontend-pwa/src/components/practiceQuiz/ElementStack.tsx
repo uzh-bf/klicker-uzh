@@ -115,7 +115,7 @@ function ElementStack({
     QGetStudyStreakParticipationDocument,
     {
       variables: { courseId },
-      skip: previewOnly || !withParticipant,
+      skip: previewOnly || !withParticipant || focusedPresentation,
     }
   )
   const elementFeedbacks = useStackElementFeedbacks({
@@ -520,7 +520,7 @@ function ElementStack({
       return
     }
 
-    if (!previewOnly && withParticipant) {
+    if (!previewOnly && withParticipant && !focusedPresentation) {
       try {
         await refetchStudyStreak()
       } catch (error) {
@@ -575,6 +575,7 @@ function ElementStack({
   }, [
     courseId,
     currentStep,
+    focusedPresentation,
     handleNextElement,
     onAllStacksCompletion,
     previewOnly,

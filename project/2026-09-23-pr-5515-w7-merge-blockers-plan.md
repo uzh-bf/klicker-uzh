@@ -11,7 +11,7 @@ every later deployment after one interrupted index build. Fourth, the PR
 description states a startup order that the merge reverses. W7 merges `v3`
 with a written hand-merge, registers the rollout once in `v3`'s migration
 runner, and adds a test that the production registry contains it. It then
-splits the migration so each index build has its own guarded file, adds a
+splits the migration so each index build has its own single-statement file, adds a
 recovery runbook, fixes the docs, and rewrites the PR description.
 
 **What stays unchanged?** Streak, leaderboard and achievement behavior. `v3`'s
@@ -20,8 +20,8 @@ migrations. The 24 open major findings, which remain named conditions.
 
 **What could change the decision?** The two index builds must still fit inside
 the migration hook's 600-second deadline. W7 cannot measure that without
-production data. It makes an overrun recoverable in one command instead of
-destructive. Merge-time conflicts beyond the nine mapped ones stop the slice
+production data. It makes an overrun recoverable through a short runbook instead
+of destructive. Merge-time conflicts beyond the nine mapped ones stop the slice
 for a ruling.
 
 **How will we know it is done?** Package-owned CI is green at the pushed head.
@@ -162,7 +162,8 @@ files, and the S1b commit.
 **S2 — Split the streak migration and add recovery.** Route: executor.
 
 1. Keep only the `ALTER TABLE` in `20260823120000_add_study_streak_state`.
-2. Add `20260823120001_add_question_response_streak_index` and
+2. (Superseded by the drill; see Progress: each file holds only the `CREATE`
+   statement, without a guard.) Add `20260823120001_add_question_response_streak_index` and
    `20260823120002_add_question_response_detail_streak_index`. Each holds a
    comment saying that the guard removes an invalid index left by an
    interrupted build, so a rolled-back migration can simply re-run. Do not copy
@@ -173,7 +174,8 @@ files, and the S1b commit.
    failed migration hook" in `docs/data-and-migrations.md`. It covers:
    - read-only diagnosis of `_prisma_migrations` and `pg_index.indisvalid`;
    - for an index migration, `prisma:resolve:prod --rolled-back <name>` and
-     re-sync, relying on the guard;
+     re-sync, relying on the guard (superseded: the runbook branches on build
+     state and drops an invalid index itself);
    - for the atomic `ALTER TABLE` migration, `--applied` when the columns
      exist and `--rolled-back` when they do not.
    Point generic step 3 at it. Rewrite the PR-side bullet on concurrent
@@ -289,3 +291,10 @@ withheld.
   branches on an active build and `indisvalid`, and covers a deadline overrun
   with an out-of-band build. Two accepted minors: the implicit-transaction
   wording and the `prisma:resolve:qa` staging script.
+- 2026-10-01 — Final review (Claude CLI Opus 5.5) of `9996e0a24e..176da15bcd`:
+  no blockers; merge and migration contracts hold. Three accepted findings:
+  stale guard wording in this plan and the roadmap (amended); the runbook now
+  gives the `pg_stat_activity` query and a branch for a missing index; focused
+  practice-quiz embeds no longer query or refetch the hidden streak card.
+  The pre-push build first failed on duplicate `.next/dev` type declarations
+  from the running dev server, then passed 23/23 once the dev servers were stopped.

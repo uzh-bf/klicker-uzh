@@ -89,7 +89,7 @@ Nothing alerts on hook failure — detection is whoever is watching ArgoCD, so a
 
 #### Interrupted concurrent index build
 
-A killed or failed `CREATE INDEX CONCURRENTLY` does not roll back. It leaves an invalid index with the target name, and Prisma records the migration as failed. Diagnose read-only first:
+A killed or failed `CREATE INDEX CONCURRENTLY` does not roll back. It usually leaves an invalid index with the target name, and Prisma records the migration as failed. Diagnose read-only first:
 
 ```sql
 SELECT migration_name, started_at
@@ -106,7 +106,15 @@ WHERE c.relname IN (
 
 The first query names the failed migration. The second shows `indisvalid = false` for an index that an interrupted build left behind.
 
-For an index-only migration (`20260823120001_add_question_response_streak_index` or `20260823120002_add_question_response_detail_streak_index`), killing the hook job stops the Prisma client, not necessarily the Postgres backend, so the build may still be running. Check `pg_stat_activity` for an active `CREATE INDEX CONCURRENTLY` session from the killed run, and branch on what you find:
+For an index-only migration (`20260823120001_add_question_response_streak_index` or `20260823120002_add_question_response_detail_streak_index`), killing the hook job stops the Prisma client, not necessarily the Postgres backend, so the build may still be running. Check for an active build session from the killed run:
+
+```sql
+SELECT pid, state, now() - query_start AS running_for
+FROM pg_stat_activity
+WHERE query ILIKE 'CREATE INDEX CONCURRENTLY%';
+```
+
+Then branch on what the two queries show:
 
 - **Build still active:** let it finish, then re-run the `indisvalid` query.
 - **`indisvalid = true`:** the build completed. Mark the migration applied:
@@ -115,6 +123,7 @@ For an index-only migration (`20260823120001_add_question_response_streak_index`
   pnpm --filter @klicker-uzh/prisma prisma:resolve:prod --applied <migration name>
   ```
 
+- **No index row and no active build:** the build failed before creating its index, for example while waiting for the table lock. Mark the migration rolled back as below so the next hook run retries it.
 - **`indisvalid = false`:** drop the invalid index as its own statement:
 
   ```sql

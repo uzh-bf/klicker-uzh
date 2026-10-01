@@ -114,7 +114,7 @@ rechecked on 2026-09-23.
 | The branch does not merge into `v3` | Confirmed. Nine files conflict, including all four conflicting `apps/backend-docker/` files, which carry the startup migration runner | One integration pass with the hand-merge described in the next row |
 | No file-by-file conflict resolution of the backend startup runner both compiles and keeps the package correct | Confirmed. Keeping `v3`'s runner file alone breaks the typecheck. Keeping all three `v3` backend files compiles but deletes streak initialization. Keeping the PR's files drops `v3`'s advisory lock and transient-error handling | Keep `v3`'s runner. Carry the PR's rollout helper as one registered entry, and add a test that the production migration list contains it |
 | Under the likely resolution, existing participants never start streak tracking | Confirmed. They see a streak badge frozen at zero. No CI test detects the loss | The hand-merge above, then a staging check that no active participation in a gamified, non-assessment course lacks a tracking start |
-| An interrupted run of `20260823120000_add_study_streak_state` blocks every later migration deploy to that environment | Confirmed by reproduction with Prisma 7.8.0: `P3018`, then `P3009` | One statement per migration file, each concurrent index build preceded by `DROP INDEX CONCURRENTLY IF EXISTS`, plus a recovery runbook |
+| An interrupted run of `20260823120000_add_study_streak_state` blocks every later migration deploy to that environment | Confirmed by reproduction with Prisma 7.8.0: `P3018`, then `P3009` | One statement per migration file, each concurrent index build alone in its file, plus a recovery runbook that drops an invalid index |
 | Required checks are not green | Confirmed. GitGuardian fails on a synthetic CI database password that `v3` also contains; `final-ai-review` is pending | A GitGuardian dashboard disposition, then a new `/final-review` at the integrated head |
 | The migrate hook may not cover the assessment backend's database | Unverifiable from the repository | A cluster-authorized operator compares digests (never values) of `DATABASE_URL` in the graphql and assessment backend Secrets |
 
@@ -613,9 +613,10 @@ fixtures/spec, screenshots, and wiki pages.
   1. Merge `origin/v3` with the documented hand-merge. Keep `v3`'s migration
      runner and blocking startup, and register the streak rollout once.
   2. Add a test that the production migration registry contains the rollout.
-  3. Split the streak migration so each concurrent index build has its own
-     file, guarded by `DROP INDEX CONCURRENTLY IF EXISTS`. Add a recovery
-     runbook and prove it with a disposable-Postgres drill.
+  3. Split the streak migration so each concurrent index build is the only
+     statement in its file. A same-file `DROP INDEX CONCURRENTLY` guard fails,
+     because Prisma runs a multi-statement file as one transaction. Add a
+     recovery runbook and prove it with a disposable-Postgres drill.
   4. Reconcile the docs and skill text, then rewrite the PR description.
   5. Post `/final-review` at the integrated head.
 - **Check** — The plan's slice acceptance checks, the drill evidence,
