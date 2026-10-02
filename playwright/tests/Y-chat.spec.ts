@@ -19,6 +19,7 @@ import {
   TEST_PNG_DATA_URL,
   testImageUpload,
 } from '../util/chat.js'
+import { deMessages, enMessages } from '../util/messages.js'
 import { selectOption } from '../util/workflow.js'
 
 const UNKNOWN_CHATBOT_ID = '00000000-0000-4000-8000-000000000404'
@@ -1651,6 +1652,27 @@ test.describe('Chatbot Settings Panel', () => {
     })
   }
 
+  // Read the shipped settings copy so the spec tracks the product text.
+  function settingsCopy(messages: {
+    chat: {
+      settingsPanel: Record<
+        | 'autoSelectionInfo'
+        | 'usingPrimaryModel'
+        | 'fixedModelInfo'
+        | 'usingFallbackModel',
+        string
+      >
+    }
+  }) {
+    const copy = messages.chat.settingsPanel
+    return {
+      automatic: copy.autoSelectionInfo,
+      primary: copy.usingPrimaryModel,
+      fixed: copy.fixedModelInfo,
+      fallback: copy.usingFallbackModel,
+    }
+  }
+
   async function assertAutomaticAndFixedModelCopy(
     page: Page,
     participantId: string,
@@ -1835,28 +1857,23 @@ test.describe('Chatbot Settings Panel', () => {
   test('Participant settings distinguish Auto and fixed models in English', async ({
     page,
   }) => {
-    await assertAutomaticAndFixedModelCopy(page, participantId, 'en', {
-      automatic: 'KlickerUZH chooses a suitable model for each message.',
-      primary: 'The automatic choice is used while credits are available.',
-      fixed: 'Your lecturer fixed this model for all participants.',
-      fallback:
-        'No credits remain. GPT-6 Luna may be used as the credit fallback.',
-    })
+    await assertAutomaticAndFixedModelCopy(
+      page,
+      participantId,
+      'en',
+      settingsCopy(enMessages)
+    )
   })
 
   test('Participant settings distinguish Auto and fixed models in German', async ({
     page,
   }) => {
-    await assertAutomaticAndFixedModelCopy(page, participantId, 'de', {
-      automatic:
-        'KlickerUZH wählt für jede Nachricht ein passendes Modell aus.',
-      primary:
-        'Die automatische Auswahl wird verwendet, solange Credits verfügbar sind.',
-      fixed:
-        'Die Lehrperson hat dieses Modell für alle Teilnehmenden festgelegt.',
-      fallback:
-        'Es sind keine Credits mehr übrig. GPT-6 Luna kann als Credit-Fallback verwendet werden.',
-    })
+    await assertAutomaticAndFixedModelCopy(
+      page,
+      participantId,
+      'de',
+      settingsCopy(deMessages)
+    )
   })
 
   test('Credits display shows current/total and percentage', async ({
