@@ -67,26 +67,40 @@ test.beforeAll(async () => {
       select: { isActive: true },
     }),
   ])
-  const publicLeaderboardEntry = await prisma.leaderboardEntry.create({
-    data: {
-      type: LeaderboardType.COURSE,
-      score: 100,
-      participant: { connect: { id: publicParticipantIdForTest } },
-      course: { connect: { id: COURSE_ID_TEST } },
-      participation: {
-        connect: {
-          courseId_participantId: {
-            courseId: COURSE_ID_TEST,
-            participantId: publicParticipantIdForTest,
-          },
-        },
+  // Earlier specs in the same shard may already have created this course
+  // entry; reuse it and only remove an entry this spec created.
+  const existingLeaderboardEntry = await prisma.leaderboardEntry.findUnique({
+    where: {
+      type_participantId_courseId: {
+        type: LeaderboardType.COURSE,
+        participantId: publicParticipantIdForTest,
+        courseId: COURSE_ID_TEST,
       },
     },
+    select: { id: true },
   })
+  const createdLeaderboardEntry = existingLeaderboardEntry
+    ? undefined
+    : await prisma.leaderboardEntry.create({
+        data: {
+          type: LeaderboardType.COURSE,
+          score: 100,
+          participant: { connect: { id: publicParticipantIdForTest } },
+          course: { connect: { id: COURSE_ID_TEST } },
+          participation: {
+            connect: {
+              courseId_participantId: {
+                courseId: COURSE_ID_TEST,
+                participantId: publicParticipantIdForTest,
+              },
+            },
+          },
+        },
+      })
   publicParticipantId = publicParticipantIdForTest
   publicParticipantWasPublic = publicParticipant.isProfilePublic
   publicParticipantWasActive = publicParticipation.isActive
-  publicLeaderboardEntryId = publicLeaderboardEntry.id
+  publicLeaderboardEntryId = createdLeaderboardEntry?.id
   publicParticipantUsername = publicParticipant.username
   receiptParticipantWasPublic = receiptParticipant.isProfilePublic
   receiptParticipantWasActive = receiptParticipation.isActive
