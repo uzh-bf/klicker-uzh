@@ -239,7 +239,7 @@ function useDisclaimerGate(
     // denies an account that has not completed the data-use disclosure, so the
     // request could only fail until the completion step is behind us.
     if (participationRequired || !dataUseComplete) {
-      setIsLoading(false)
+      setIsLoading(true)
       return
     }
 

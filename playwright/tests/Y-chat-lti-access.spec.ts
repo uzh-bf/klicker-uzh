@@ -183,6 +183,14 @@ test.describe('LTI chatbot launch identity resolution', () => {
     let submittedRevision: number | undefined
     let attempts = 0
     let rejectReload = false
+    let releaseDisclaimer: (() => void) | undefined
+    const disclaimerReady = new Promise<void>((resolve) => {
+      releaseDisclaimer = resolve
+    })
+    await page.route('**/api/chatbots/*/disclaimer', async (route) => {
+      if (route.request().method() === 'GET') await disclaimerReady
+      await route.continue()
+    })
     await page.route('**/api/chatbots/*/data-use', async (route) => {
       if (route.request().method() === 'POST') {
         attempts += 1
@@ -215,6 +223,9 @@ test.describe('LTI chatbot launch identity resolution', () => {
     await expect(submit).toBeEnabled()
     await submit.click()
     await expect(submit).toBeHidden()
+    await expect(page.getByTestId('chat-composer')).toBeHidden()
+    releaseDisclaimer?.()
+    await expect(page.getByTestId('chat-disclaimer-accept')).toBeVisible()
     expect(attempts).toBe(2)
     expect(submittedRevision).toBe(0)
 

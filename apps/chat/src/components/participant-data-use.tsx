@@ -98,6 +98,7 @@ export function ParticipantDataUseGate({
 
     setSaving(true)
     setFailed(false)
+    setConflict(false)
     try {
       const response = await authedFetch(dataUseEndpoint(chatbotId), {
         method: 'POST',
@@ -277,6 +278,7 @@ export function ParticipantDataUseSettings({
 
     setSaving(true)
     setFailed(false)
+    setConflict(false)
     try {
       const response = await authedFetch(dataUseEndpoint(chatbotId), {
         method: 'PATCH',
