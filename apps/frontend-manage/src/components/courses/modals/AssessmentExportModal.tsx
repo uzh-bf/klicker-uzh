@@ -1,3 +1,4 @@
+import { ASSESSMENT_EXPORT_DISCLOSURE_VERSION } from '@klicker-uzh/types'
 import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useLocale, useTranslations } from 'next-intl'
@@ -28,7 +29,7 @@ function downloadAssessmentExport(blob: Blob, requestId: string) {
     anchor.click()
     anchor.remove()
   } finally {
-    URL.revokeObjectURL(objectUrl)
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
   }
 }
 
@@ -86,7 +87,7 @@ function AssessmentExportModal({
         initialValues={{ acknowledgement: false }}
         validateOnMount
         validationSchema={validationSchema}
-        onSubmit={async () => {
+        onSubmit={async (values) => {
           if (activeController.current) return
 
           setSubmissionStatus(undefined)
@@ -113,8 +114,8 @@ function AssessmentExportModal({
                   scope,
                   ...(liveQuizId ? { liveQuizId } : {}),
                   locale,
-                  disclosureVersion: 'v1',
-                  acknowledgement: true,
+                  disclosureVersion: ASSESSMENT_EXPORT_DISCLOSURE_VERSION,
+                  acknowledgement: values.acknowledgement,
                 }),
                 signal: controller.signal,
               }
@@ -134,6 +135,7 @@ function AssessmentExportModal({
             handleClose()
           } catch {
             if (!controller.signal.aborted && !closed.current) {
+              console.error('Assessment export request failed')
               setSubmissionStatus('error')
             }
           } finally {

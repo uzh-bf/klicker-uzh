@@ -1,6 +1,7 @@
+import { RESEARCH_EXPORT_DISCLOSURE_VERSION } from '@klicker-uzh/types'
 import { z } from 'zod'
 
-export const RESEARCH_EXPORT_DISCLOSURE_VERSION = 'v1'
+export { RESEARCH_EXPORT_DISCLOSURE_VERSION }
 export const MAX_RESEARCH_EXPORT_RECORDS = 50_000
 export const MAX_RESEARCH_EXPORT_BYTES = 25 * 1024 * 1024
 

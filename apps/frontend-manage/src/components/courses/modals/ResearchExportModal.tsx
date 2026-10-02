@@ -1,3 +1,4 @@
+import { RESEARCH_EXPORT_DISCLOSURE_VERSION } from '@klicker-uzh/types'
 import {
   Button,
   FormikTextareaField,
@@ -75,7 +76,7 @@ function downloadResearchExport(
     anchor.click()
     anchor.remove()
   } finally {
-    URL.revokeObjectURL(objectUrl)
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
   }
 }
 
@@ -131,6 +132,7 @@ function ResearchExportClassOption({
 }
 
 function ResearchExportAcknowledgement({ disabled }: { disabled: boolean }) {
+  const t = useTranslations()
   const [field, meta] = useField<boolean>('acknowledgement')
   const errorId = 'research-export-acknowledgement-error'
   const showError = Boolean(meta.touched && meta.error)
@@ -150,9 +152,7 @@ function ResearchExportAcknowledgement({ disabled }: { disabled: boolean }) {
           className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary-100 focus:ring-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
           data-cy="research-export-acknowledgement"
         />
-        <span>
-          {useTranslations()('manage.researchExport.acknowledgement')}
-        </span>
+        <span>{t('manage.researchExport.acknowledgement')}</span>
       </label>
       {showError ? (
         <p id={errorId} className="mt-1 text-sm text-red-700" role="alert">
@@ -219,12 +219,20 @@ function ResearchExportModal({
       .trim()
       .max(500, t('manage.researchExport.maxLength')),
     selectedClasses: Yup.array()
-      .of(Yup.mixed<ResearchExportClass>().oneOf(researchExportClassValues))
+      .of(
+        Yup.mixed<ResearchExportClass>().oneOf(
+          researchExportClassValues.filter(
+            (value) =>
+              value === 'LIVE_QUIZ_RESPONSES' ||
+              value === 'ASYNCHRONOUS_RESPONSES'
+          )
+        )
+      )
+      .required()
       .min(1, t('manage.researchExport.classesRequired')),
-    acknowledgement: Yup.boolean().oneOf(
-      [true],
-      t('manage.researchExport.acknowledgementRequired')
-    ),
+    acknowledgement: Yup.boolean()
+      .required()
+      .oneOf([true], t('manage.researchExport.acknowledgementRequired')),
   })
 
   function handleClose() {
@@ -259,6 +267,7 @@ function ResearchExportModal({
         validateOnMount
         validationSchema={validationSchema}
         onSubmit={async (values) => {
+          if (activeController.current) return
           setSubmissionStatus(undefined)
           const controller = new AbortController()
           activeController.current = controller
@@ -287,8 +296,8 @@ function ResearchExportModal({
                   deletionDate: values.deletionDate,
                   reference: values.reference.trim() || undefined,
                   selectedClasses: values.selectedClasses,
-                  acknowledgement: true,
-                  disclosureVersion: 'v1',
+                  acknowledgement: values.acknowledgement,
+                  disclosureVersion: RESEARCH_EXPORT_DISCLOSURE_VERSION,
                 }),
                 signal: controller.signal,
               }
@@ -308,6 +317,7 @@ function ResearchExportModal({
             setSubmissionStatus('success')
           } catch {
             if (!controller.signal.aborted && !closed.current) {
+              console.error('Research export request failed')
               setSubmissionStatus('error')
             }
           } finally {

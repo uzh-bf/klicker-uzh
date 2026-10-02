@@ -1,6 +1,7 @@
+import { ASSESSMENT_EXPORT_DISCLOSURE_VERSION } from '@klicker-uzh/types'
 import { z } from 'zod'
 
-export const ASSESSMENT_EXPORT_DISCLOSURE_VERSION = 'v1'
+export { ASSESSMENT_EXPORT_DISCLOSURE_VERSION }
 
 const assessmentExportFields = {
   requestId: z.string().uuid(),

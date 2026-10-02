@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 
-import { prisma } from '@klicker-uzh/prisma'
+import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import {
   CourseAuthType,
   DataExportStatus,
@@ -341,6 +341,7 @@ async function cleanupFixture() {
 
 describe('research export PostgreSQL integration', () => {
   beforeAll(async () => {
+    await requireDisposableDatabase(prisma)
     await prisma.$connect()
     fixture = await createFixture()
   })
@@ -735,6 +736,47 @@ describe('research export PostgreSQL integration', () => {
       byteCount: null,
       recordCount: null,
       failureCode: 'DATA_EXPORT_CANCELLED',
+      releasedAt: null,
+    })
+  })
+
+  it('preserves the release error when recording failure also fails', async () => {
+    const request = buildRequest(fixture.courseId)
+    fixtureIds.receipts.push(request.requestId)
+    const failingPrisma = prisma.$extends({
+      query: {
+        researchExportReceipt: {
+          async update({ args, query }) {
+            if (args.data.status === DataExportStatus.RELEASED) {
+              throw new Error('Synthetic release failure')
+            }
+            if (args.data.status === DataExportStatus.FAILED) {
+              throw new Error('Synthetic failure recording error')
+            }
+            return query(args)
+          },
+        },
+      },
+    })
+
+    await expect(
+      downloadResearchExport(
+        request,
+        contextFor(
+          fixture.adminId,
+          UserRole.USER,
+          UserLoginScope.FULL_ACCESS,
+          failingPrisma as unknown as typeof prisma
+        )
+      )
+    ).rejects.toThrow('Synthetic release failure')
+    await expect(
+      prisma.researchExportReceipt.findUnique({
+        where: { id: request.requestId },
+      })
+    ).resolves.toMatchObject({
+      status: DataExportStatus.PENDING,
+      sha256: null,
       releasedAt: null,
     })
   })

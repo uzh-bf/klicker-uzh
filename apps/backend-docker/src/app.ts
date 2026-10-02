@@ -214,19 +214,17 @@ function prepareApp({
           typeof code === 'string' && knownCodes.includes(code)
             ? code
             : 'DATA_EXPORT_FAILED'
-        const status =
-          safeCode === 'DATA_EXPORT_FORBIDDEN'
-            ? 403
-            : safeCode === 'DATA_EXPORT_TOO_LARGE'
-              ? 413
-              : [
-                    'DATA_EXPORT_ELIGIBILITY_CHANGED',
-                    'DATA_EXPORT_REQUEST_ALREADY_USED',
-                  ].includes(safeCode)
-                ? 409
-                : safeCode === 'DATA_EXPORT_FAILED'
-                  ? 500
-                  : 400
+        if (safeCode === 'DATA_EXPORT_FAILED') {
+          console.error('Data export failed unexpectedly')
+        }
+        const statusByCode: Record<string, number> = {
+          DATA_EXPORT_FORBIDDEN: 403,
+          DATA_EXPORT_TOO_LARGE: 413,
+          DATA_EXPORT_ELIGIBILITY_CHANGED: 409,
+          DATA_EXPORT_REQUEST_ALREADY_USED: 409,
+          DATA_EXPORT_FAILED: 500,
+        }
+        const status = statusByCode[safeCode] ?? 400
         res.status(status).json({ code: safeCode })
       } finally {
         res.off('close', cancel)

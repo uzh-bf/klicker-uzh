@@ -285,16 +285,20 @@ export async function downloadResearchExport(
       { timeout: 60_000, maxWait: 10_000 }
     )
   } catch (error) {
-    await ctx.prisma.researchExportReceipt.update({
-      where: { id: exportId },
-      data: {
-        status: DB.DataExportStatus.FAILED,
-        failureCode:
-          error instanceof GraphQLError
-            ? String(error.extensions.code)
-            : 'DATA_EXPORT_FAILED',
-      },
-    })
+    try {
+      await ctx.prisma.researchExportReceipt.update({
+        where: { id: exportId },
+        data: {
+          status: DB.DataExportStatus.FAILED,
+          failureCode:
+            error instanceof GraphQLError
+              ? String(error.extensions.code)
+              : 'DATA_EXPORT_FAILED',
+        },
+      })
+    } catch {
+      console.error('Failed to record research export failure')
+    }
     throw error
   }
 }

@@ -476,6 +476,47 @@ describe('assessment export PostgreSQL integration', () => {
     })
   })
 
+  it('preserves the release error when recording failure also fails', async () => {
+    const request = buildCourseRequest(fixture.courseId)
+    fixtureIds.receipts.push(request.requestId)
+    const failingPrisma = prisma.$extends({
+      query: {
+        assessmentExportReceipt: {
+          async update({ args, query }) {
+            if (args.data.status === DataExportStatus.RELEASED) {
+              throw new Error('Synthetic release failure')
+            }
+            if (args.data.status === DataExportStatus.FAILED) {
+              throw new Error('Synthetic failure recording error')
+            }
+            return query(args)
+          },
+        },
+      },
+    })
+
+    await expect(
+      downloadAssessmentExport(
+        request,
+        contextFor(
+          fixture.adminId,
+          UserLoginScope.FULL_ACCESS,
+          UserRole.USER,
+          failingPrisma as unknown as typeof prisma
+        )
+      )
+    ).rejects.toThrow('Synthetic release failure')
+    await expect(
+      prisma.assessmentExportReceipt.findUnique({
+        where: { id: request.requestId },
+      })
+    ).resolves.toMatchObject({
+      status: DataExportStatus.PENDING,
+      sha256: null,
+      releasedAt: null,
+    })
+  })
+
   it('records cancellation during release receipt write as a failed audit receipt', async () => {
     const request = buildCourseRequest(fixture.courseId)
     fixtureIds.receipts.push(request.requestId)

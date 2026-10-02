@@ -140,16 +140,20 @@ export async function downloadAssessmentExport(
       { timeout: 60_000, maxWait: 10_000 }
     )
   } catch (error) {
-    await ctx.prisma.assessmentExportReceipt.update({
-      where: { id: request.requestId },
-      data: {
-        status: DB.DataExportStatus.FAILED,
-        failureCode:
-          error instanceof GraphQLError
-            ? String(error.extensions.code)
-            : 'DATA_EXPORT_FAILED',
-      },
-    })
+    try {
+      await ctx.prisma.assessmentExportReceipt.update({
+        where: { id: request.requestId },
+        data: {
+          status: DB.DataExportStatus.FAILED,
+          failureCode:
+            error instanceof GraphQLError
+              ? String(error.extensions.code)
+              : 'DATA_EXPORT_FAILED',
+        },
+      })
+    } catch {
+      console.error('Failed to record assessment export failure')
+    }
     throw error
   }
 }
