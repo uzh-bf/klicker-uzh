@@ -4,8 +4,8 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { describe, expect, test } from 'vitest'
 import {
-  createAdaptivePracticeQuizDefaultConfig,
   applyPlacementPilotDefaults,
+  createAdaptivePracticeQuizDefaultConfig,
   getAdaptivePracticeQuizEffectiveSettings,
   getAuthorableAdaptivePresets,
   isManageAdaptivePresetSelectable,
@@ -13,19 +13,19 @@ import {
 } from '../src/components/activities/creation/practiceQuiz/adaptivePracticeQuizForm'
 
 describe('adaptive practice quiz Manage form', () => {
-  test('offers only IRT v1 presets while v2 authoring is hidden', () => {
+  test('offers only the diagnostic preset while research and v2 authoring are hidden', () => {
     expect(
       getAuthorableAdaptivePresets(AdaptivePracticeQuizPreset.Diagnostic)
-    ).toEqual([
+    ).toEqual([AdaptivePracticeQuizPreset.Diagnostic])
+  })
+
+  test.each([
+    AdaptivePracticeQuizPreset.Research,
+    AdaptivePracticeQuizPreset.Placement,
+  ])('keeps the current %s preset of an existing quiz listed', (preset) => {
+    expect(getAuthorableAdaptivePresets(preset)).toEqual([
       AdaptivePracticeQuizPreset.Diagnostic,
-      AdaptivePracticeQuizPreset.Research,
-    ])
-    expect(
-      getAuthorableAdaptivePresets(AdaptivePracticeQuizPreset.Placement)
-    ).toEqual([
-      AdaptivePracticeQuizPreset.Diagnostic,
-      AdaptivePracticeQuizPreset.Research,
-      AdaptivePracticeQuizPreset.Placement,
+      preset,
     ])
   })
 

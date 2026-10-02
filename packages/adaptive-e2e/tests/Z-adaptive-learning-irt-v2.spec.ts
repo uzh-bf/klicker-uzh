@@ -35,9 +35,11 @@ test.describe('Adaptive PracticeQuiz IRT v2 evidence', () => {
     loginStudentPassword,
   }) => {
     // The competence scale panel and scale selection are hidden while
-    // ADAPTIVE_V2_AUTHORING_ENABLED is false in adaptive-manage-ui
-    // (adaptivePracticeQuizForm.ts). Re-enable this test with the flag.
-    test.skip(true, 'IRT v2 authoring UI is hidden')
+    // ADAPTIVE_V2_AUTHORING_ENABLED is false, and the Research preset option
+    // is hidden while ADAPTIVE_RESEARCH_AUTHORING_ENABLED is false, in
+    // adaptive-manage-ui (adaptivePracticeQuizForm.ts). Re-enable this test
+    // with both flags.
+    test.skip(true, 'IRT v2 and Research authoring UI are hidden')
     const fixture = await createAdaptiveV2ResearchDraftFixture({
       key: 'research-completion',
     })

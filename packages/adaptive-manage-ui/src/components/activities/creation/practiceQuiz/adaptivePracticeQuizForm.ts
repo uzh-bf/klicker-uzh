@@ -26,6 +26,11 @@ export const PLACEMENT_PILOT_MIN_QUESTIONS_PER_LEAF = 4
 // authoring UI again.
 export const ADAPTIVE_V2_AUTHORING_ENABLED = false
 
+// The non-classifying research / calibration preset is not offered to authors,
+// so new quizzes only use the diagnostic preset. Existing research quizzes keep
+// their preset and keep working; flip this to offer the preset again.
+export const ADAPTIVE_RESEARCH_AUTHORING_ENABLED = false
+
 // Presets offered in the authoring UI. The current preset stays listed so an
 // existing quiz still shows what it was created with.
 export function getAuthorableAdaptivePresets(
@@ -33,7 +38,9 @@ export function getAuthorableAdaptivePresets(
 ): AdaptivePracticeQuizPreset[] {
   const presets = [
     AdaptivePracticeQuizPreset.Diagnostic,
-    AdaptivePracticeQuizPreset.Research,
+    ...(ADAPTIVE_RESEARCH_AUTHORING_ENABLED
+      ? [AdaptivePracticeQuizPreset.Research]
+      : []),
     ...(ADAPTIVE_V2_AUTHORING_ENABLED
       ? [AdaptivePracticeQuizPreset.Placement]
       : []),
