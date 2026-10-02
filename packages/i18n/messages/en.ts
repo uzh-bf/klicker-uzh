@@ -1,6 +1,14 @@
 export default {
   chat: {
     courseImages: {
+      expand: 'Expand image',
+      expandLabel: 'Expand image: {label}',
+      closeViewer: 'Close image viewer',
+      zoomIn: 'Zoom in',
+      zoomOut: 'Zoom out',
+      zoomLevel: 'Zoom level relative to fitted image',
+      fitImage: 'Fit image',
+      panHint: 'When zoomed in, scroll or swipe to explore the image.',
       source: '{title} · Page {page}',
       unavailable: 'This course image is currently unavailable.',
       retry: 'Retry image',

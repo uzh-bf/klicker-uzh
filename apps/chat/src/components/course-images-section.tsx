@@ -15,6 +15,9 @@ import {
 } from '@/src/lib/sources/courseImages'
 import type { ChatSourcePart } from '@/src/lib/sources/normalizeSources'
 import { useChatStore } from '@/src/stores/chatStore'
+import { CitationChip } from './citation-chip'
+import { CourseImageViewer } from './course-image-viewer'
+import { useMessageSourcesContext } from './message-sources-context'
 
 function courseImageSrc({
   chatbotId,
@@ -64,6 +67,11 @@ export function CourseImageCard({
     page: image.logical_page_number ?? image.physical_page_number,
   })
   const caption = image.captions?.map((value) => value.text).join(' ')
+  // The figure points at its own Sources card, matched on the identity of the
+  // retrieval record that carried the asset (see `courseImageSourceMap`).
+  // An unmatched or ambiguous figure shows no citation rather than a guess.
+  const { courseImageSourcesByAssetId } = useMessageSourcesContext()
+  const citationSource = courseImageSourcesByAssetId.get(image.asset_id)
   return (
     <figure
       data-cy="chat-course-image"
@@ -84,22 +92,39 @@ export function CourseImageCard({
           </button>
         </div>
       ) : (
-        <Image
-          key={attempt}
+        <CourseImageViewer
           src={src}
           alt={caption || label}
+          label={label}
+          caption={caption}
           width={image.width_px}
           height={image.height_px}
-          unoptimized
-          onError={() => setFailed(true)}
-          className="h-auto w-full object-contain"
-        />
+        >
+          <Image
+            key={attempt}
+            src={src}
+            alt={caption || label}
+            width={image.width_px}
+            height={image.height_px}
+            unoptimized
+            onError={() => setFailed(true)}
+            className="h-auto w-full object-contain"
+          />
+        </CourseImageViewer>
       )}
       <figcaption className="mt-2 text-xs text-muted-foreground">
         {image.captions?.map((entry) => (
           <p key={entry.ref}>{entry.text}</p>
         ))}
-        <p className={caption ? 'mt-1' : undefined}>{label}</p>
+        <p className={caption ? 'mt-1' : undefined}>
+          {label}
+          {citationSource && (
+            <>
+              {' '}
+              <CitationChip index={citationSource.index} />
+            </>
+          )}
+        </p>
       </figcaption>
     </figure>
   )
