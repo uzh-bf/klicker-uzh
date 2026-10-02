@@ -12,6 +12,41 @@ const {
   validatePublicPlaywrightWorkflow,
 } = require('./validate-public-playwright-workflow.cjs')
 
+test('both shard backends pin the verified multi-architecture MailHog image and gate readiness', () => {
+  const root = path.join(__dirname, '../..')
+  const workflow = YAML.parse(
+    fs.readFileSync(
+      path.join(root, '.github/workflows/public-pr-playwright-shards.yml'),
+      'utf8'
+    )
+  )
+  for (const name of ['test-playwright-hosted', 'test-playwright-public-pr']) {
+    assert.equal(
+      workflow.jobs[name].services.mailhog.image,
+      'jcalonso/mailhog:v1.0.1@sha256:f35c05c5e7bd005020a7865838c198c0fcb2ce1a64c5497c4c9c72dec5050cc9'
+    )
+  }
+  const action = YAML.parse(
+    fs.readFileSync(
+      path.join(root, '.github/actions/playwright-shard/action.yml'),
+      'utf8'
+    )
+  )
+  const steps = action.runs.steps
+  const readiness = steps.findIndex((step) => step.name === 'Wait for MailHog')
+  assert.ok(readiness >= 0)
+  assert.ok(
+    readiness < steps.findIndex((step) => step.name === 'Install dependencies')
+  )
+  assert.equal(
+    steps[readiness].run,
+    'node .ci-control/.github/scripts/wait-for-mailhog.cjs'
+  )
+  assert.equal(steps[readiness].env.MAILHOG_URL, 'http://mailhog:8025')
+  assert.equal(steps[readiness].env.EMAIL_HOST, 'mailhog')
+  assert.equal(steps[readiness]['continue-on-error'], undefined)
+})
+
 test('the current public workflow satisfies the runner trust boundary', () => {
   const root = path.join(__dirname, '../..')
   const result = validatePublicPlaywrightWorkflow(root)

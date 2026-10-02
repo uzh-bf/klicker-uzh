@@ -69,6 +69,14 @@ runs:
         version: 11.5.0
         run_install: false
 
+    - name: Wait for MailHog
+      shell: bash
+      env:
+        EMAIL_HOST: mailhog
+        EMAIL_PORT: '1025'
+        MAILHOG_URL: http://mailhog:8025
+      run: node .ci-control/.github/scripts/wait-for-mailhog.cjs
+
     - name: Compute cache contract
       id: cache-contract
       continue-on-error: true

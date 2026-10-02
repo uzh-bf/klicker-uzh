@@ -2,7 +2,7 @@
 type: Operations
 title: CI & Deployment
 description: PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
-timestamp: '2026-09-20'
+timestamp: '2026-10-02'
 tags:
   - ci
   - deployment
@@ -290,6 +290,17 @@ trusted-policy runner. PR lifecycle status handling and exact review commands
 retain their existing authorization and serialized status locks.
 
 ## Public ARM64 runner operations
+
+The shared Playwright workflow pins the multi-architecture manifest for
+`jcalonso/mailhog:v1.0.1` on both hosted AMD64 and public ARM64 shards. The
+upstream `mailhog/mailhog:v1.0.1` image is AMD64-only: on native ARM64 it exits
+with `exec format error`, later surfacing as a `mailhog` DNS failure in the
+email-login test. The trusted shard action runs
+`.github/scripts/wait-for-mailhog.cjs` before installing dependencies; it
+requires both the HTTP API and an SMTP greeting within 60 seconds. Keep the
+SMTP ports and MailHog search API compatible when changing this image. This
+workflow and action execute from trusted `v3`, so candidate-branch edits do
+not activate the fix on the public runner pool until merged into `v3`.
 
 Run the policy reconciler from a trusted administrator checkout. Both modes
 accept `GH_TOKEN` or a hidden prompt for a short-lived fine-grained token;
