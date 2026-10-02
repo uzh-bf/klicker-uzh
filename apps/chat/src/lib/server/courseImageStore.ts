@@ -83,7 +83,20 @@ export async function readCourseImage(
       const client = BlobServiceClient.fromConnectionString(connectionString)
         .getContainerClient(container)
         .getBlobClient(projectionObjectPath(kind, hash, extension))
-      bytes = Buffer.from(await client.downloadToBuffer(0, limit + 1))
+      const { contentLength, etag } = await client.getProperties()
+      if (
+        typeof contentLength !== 'number' ||
+        !Number.isSafeInteger(contentLength) ||
+        contentLength <= 0 ||
+        contentLength > limit
+      )
+        throw new Error('Image artifact exceeds size limit')
+      if (!etag) throw new Error('Image artifact version unavailable')
+      // The SDK count is exact, not an upper bound. Pin the metadata version
+      // so a replacement cannot invalidate the size check during the download.
+      bytes = await client.downloadToBuffer(0, contentLength, {
+        conditions: { ifMatch: etag },
+      })
     }
     if (
       bytes.length > limit ||

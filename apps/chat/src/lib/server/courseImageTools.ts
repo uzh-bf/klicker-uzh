@@ -18,7 +18,8 @@ export function withCourseImageTool(
     throw new Error(`Tool name conflict: ${COURSE_IMAGE_TOOL}`)
   }
   const candidates = new Map<string, CourseImage>()
-  const selected = new Set<string>()
+  const selected = new Map<string, CourseImage>()
+  const inFlight = new Map<string, Promise<CourseImage | undefined>>()
   const wrapped: ToolSet = { ...tools }
   for (const [name, definition] of Object.entries(tools)) {
     if (!isCourseSearchTool(name) || !definition.execute) continue
@@ -31,7 +32,9 @@ export function withCourseImageTool(
           if (!kbIds.includes(image.kb_id)) continue
           if (candidates.has(image.asset_id)) candidates.delete(image.asset_id)
           while (candidates.size >= COURSE_IMAGE_LIMITS.candidates) {
-            const oldest = candidates.keys().find((id) => !selected.has(id))
+            const oldest = candidates
+              .keys()
+              .find((id) => !selected.has(id) && !inFlight.has(id))
             if (!oldest) break
             candidates.delete(oldest)
           }
@@ -64,20 +67,35 @@ export function withCourseImageTool(
     }),
     execute: async ({ asset_id, reason }) => {
       if (asset_id === null) return { status: 'skipped' as const, reason }
-      const image = candidates.get(asset_id)
-      if (!image) return { status: 'unavailable' as const }
-      if (selected.has(asset_id))
-        return { status: 'selected' as const, image, reason }
-      if (selected.size >= COURSE_IMAGE_LIMITS.selectionsPerResponse)
-        return { status: 'unavailable' as const }
-      selected.add(asset_id)
-      try {
-        await readImage(image)
-      } catch (error) {
-        console.error('Failed to read selected course image', error)
-        selected.delete(asset_id)
-        return { status: 'unavailable' as const }
+      const validated = selected.get(asset_id)
+      if (validated)
+        return { status: 'selected' as const, image: validated, reason }
+      let validation = inFlight.get(asset_id)
+      if (!validation) {
+        const image = candidates.get(asset_id)
+        if (
+          !image ||
+          selected.size + inFlight.size >=
+            COURSE_IMAGE_LIMITS.selectionsPerResponse
+        )
+          return { status: 'unavailable' as const }
+        // Reserve a slot before invoking storage, but publish only validated
+        // images. Duplicate calls share both the success and failure result.
+        validation = Promise.resolve()
+          .then(() => readImage(image))
+          .then(() => {
+            selected.set(asset_id, image)
+            return image
+          })
+          .catch((error) => {
+            console.error('Failed to read selected course image', error)
+            return undefined
+          })
+          .finally(() => inFlight.delete(asset_id))
+        inFlight.set(asset_id, validation)
       }
+      const image = await validation
+      if (!image) return { status: 'unavailable' as const }
       return { status: 'selected' as const, image, reason }
     },
   })
