@@ -2078,8 +2078,8 @@ export const Mutation = builder.mutationType({
           fileName: t.arg.string({ required: true }),
           contentType: t.arg.string({ required: true }),
           sizeBytes: t.arg.int({ required: true }),
-          rightsConfirmed: t.arg.boolean({ required: true }),
-          personalDataConfirmed: t.arg.boolean({ required: true }),
+          rightsConfirmed: t.arg.boolean(),
+          personalDataConfirmed: t.arg.boolean(),
         },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.requestKbFileUpload(args, ctx)
@@ -2115,8 +2115,8 @@ export const Mutation = builder.mutationType({
           fileName: t.arg.string({ required: true }),
           contentType: t.arg.string({ required: true }),
           sizeBytes: t.arg.int({ required: true }),
-          rightsConfirmed: t.arg.boolean({ required: true }),
-          personalDataConfirmed: t.arg.boolean({ required: true }),
+          rightsConfirmed: t.arg.boolean(),
+          personalDataConfirmed: t.arg.boolean(),
         },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.requestKbFileReplacement(args, ctx)
@@ -2146,8 +2146,8 @@ export const Mutation = builder.mutationType({
           kbId: t.arg.id({ required: true }),
           url: t.arg.string({ required: true }),
           title: t.arg.string({ required: true }),
-          rightsConfirmed: t.arg.boolean({ required: true }),
-          personalDataConfirmed: t.arg.boolean({ required: true }),
+          rightsConfirmed: t.arg.boolean(),
+          personalDataConfirmed: t.arg.boolean(),
           materialType: t.arg({
             type: KBResourceMaterialType,
             required: false,

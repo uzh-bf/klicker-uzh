@@ -293,7 +293,7 @@ describe('Knowledge base GraphQL contract', () => {
     ).toBe('KBResourceMaterialType!')
   })
 
-  it('requires both transfer confirmations on every material-transfer mutation', () => {
+  it('keeps confirmation arguments optional in the schema for existing clients', () => {
     const schema = buildSchema(
       readFileSync(
         new URL('../src/public/schema.graphql', import.meta.url),
@@ -312,12 +312,12 @@ describe('Knowledge base GraphQL contract', () => {
         args
           .find((argument) => argument.name === 'rightsConfirmed')
           ?.type.toString()
-      ).toBe('Boolean!')
+      ).toBe('Boolean')
       expect(
         args
           .find((argument) => argument.name === 'personalDataConfirmed')
           ?.type.toString()
-      ).toBe('Boolean!')
+      ).toBe('Boolean')
     }
   })
 })
@@ -2242,6 +2242,49 @@ describe('Integration tests for knowledge base CRUD', () => {
         userOneCtx
       )
     ).rejects.toMatchObject(denial)
+
+    for (const confirmations of [
+      {},
+      { rightsConfirmed: null, personalDataConfirmed: true },
+      { rightsConfirmed: true, personalDataConfirmed: null },
+    ]) {
+      await expect(
+        requestKbFileUpload(
+          {
+            kbId: created.id,
+            fileName: 'notes.pdf',
+            contentType: 'application/pdf',
+            sizeBytes: 1024,
+            ...confirmations,
+          },
+          userOneCtx
+        )
+      ).rejects.toMatchObject(denial)
+      await expect(
+        requestKbFileReplacement(
+          {
+            kbId: created.id,
+            resourceId: existing.id,
+            fileName: 'updated.pdf',
+            contentType: 'application/pdf',
+            sizeBytes: 2048,
+            ...confirmations,
+          },
+          userOneCtx
+        )
+      ).rejects.toMatchObject(denial)
+      await expect(
+        createKbUrlResource(
+          {
+            kbId: created.id,
+            title: 'Denied source',
+            url: 'https://example.com/denied',
+            ...confirmations,
+          },
+          userOneCtx
+        )
+      ).rejects.toMatchObject(denial)
+    }
 
     // A denied transfer must not leave a reservation or a resource behind.
     await expect(

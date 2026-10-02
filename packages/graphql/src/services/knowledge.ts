@@ -398,10 +398,10 @@ function assertKbTransferAttestation({
   rightsConfirmed,
   personalDataConfirmed,
 }: {
-  rightsConfirmed: boolean
-  personalDataConfirmed: boolean
+  rightsConfirmed?: boolean | null
+  personalDataConfirmed?: boolean | null
 }) {
-  if (!rightsConfirmed || !personalDataConfirmed) {
+  if (rightsConfirmed !== true || personalDataConfirmed !== true) {
     throw new GraphQLError(
       'KB material transfer requires the rights and personal-data confirmations',
       { extensions: { code: 'KB_TRANSFER_ATTESTATION_REQUIRED' } }
@@ -1598,8 +1598,8 @@ export async function requestKbFileUpload(
     fileName: string
     contentType: string
     sizeBytes: number
-    rightsConfirmed: boolean
-    personalDataConfirmed: boolean
+    rightsConfirmed?: boolean | null
+    personalDataConfirmed?: boolean | null
   },
   ctx: ContextWithUser
 ) {
@@ -1882,8 +1882,8 @@ export async function requestKbFileReplacement(
     fileName: string
     contentType: string
     sizeBytes: number
-    rightsConfirmed: boolean
-    personalDataConfirmed: boolean
+    rightsConfirmed?: boolean | null
+    personalDataConfirmed?: boolean | null
   },
   ctx: ContextWithUser
 ) {
@@ -2160,8 +2160,8 @@ export async function createKbUrlResource(
     url: string
     title: string
     materialType?: DB.KBResourceMaterialType | null
-    rightsConfirmed: boolean
-    personalDataConfirmed: boolean
+    rightsConfirmed?: boolean | null
+    personalDataConfirmed?: boolean | null
   },
   ctx: ContextWithUser
 ) {
