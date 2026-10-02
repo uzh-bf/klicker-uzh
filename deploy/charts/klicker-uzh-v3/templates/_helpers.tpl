@@ -113,6 +113,7 @@ Deployments.
 */}}
 {{- define "chart.frontendPWAPodSpec" -}}
 priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.frontendPWA.priorityClassName }}
+automountServiceAccountToken: false
 {{- with .Values.frontendPWA.imagePullSecrets }}
 imagePullSecrets:
   {{- toYaml . | nindent 2 }}
