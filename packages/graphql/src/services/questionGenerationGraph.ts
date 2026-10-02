@@ -552,7 +552,8 @@ export async function getQuestionGenerationSources(
 }
 
 // One load per request serves every KB field of a listing. A null entry marks
-// an actor without question-generation preview access.
+// an actor without question-generation preview access or a failed load, so
+// the KB pages keep rendering without the readiness line.
 const sourcesByRequest = new WeakMap<
   object,
   Promise<Map<string, QuestionGenerationSource> | null>
@@ -568,16 +569,24 @@ export async function getKBQuestionGenerationSource(
 ): Promise<QuestionGenerationSource | null> {
   let pending = sourcesByRequest.get(ctx)
   if (!pending) {
-    pending = assertQuestionGenerationPreviewAccess(ctx).then(
-      async () =>
-        new Map(
-          (await loadQuestionGenerationSources(ctx)).map((source) => [
-            source.kbId,
-            source,
-          ])
-        ),
-      () => null
-    )
+    pending = assertQuestionGenerationPreviewAccess(ctx)
+      .then(
+        async () =>
+          new Map(
+            (await loadQuestionGenerationSources(ctx)).map((source) => [
+              source.kbId,
+              source,
+            ])
+          ),
+        () => null
+      )
+      .catch((error: unknown) => {
+        console.error(
+          'Failed to load question generation readiness',
+          error instanceof Error ? error.message : error
+        )
+        return null
+      })
     sourcesByRequest.set(ctx, pending)
   }
   return (await pending)?.get(kbId) ?? null

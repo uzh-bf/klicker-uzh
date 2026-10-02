@@ -454,6 +454,16 @@ describe('question generation source listing and basis revalidation', () => {
     expect(mocks.findKnowledgeBases).not.toHaveBeenCalled()
   })
 
+  it('reports no readiness when the readiness load fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    mocks.findBuilds.mockRejectedValue(new Error('database unavailable'))
+    const request = { ...ctx } as ContextWithUser
+
+    await expect(
+      getKBQuestionGenerationSource(request, 'kb-ready')
+    ).resolves.toBeNull()
+  })
+
   it('accepts the current basis of the requested KB', async () => {
     const [ready] = await getQuestionGenerationSources(ctx)
     await expect(

@@ -279,8 +279,8 @@ KBQuestionPreparationRef.implement({
     }),
   }),
 })
-// Null without question-generation preview access, so a KB listing never
-// fails because of it.
+// Null without question-generation preview access or when its load fails,
+// so a KB listing never fails because of it.
 builder.objectField(KBRef, 'questionPreparation', (t) =>
   t.field({
     type: KBQuestionPreparationRef,
