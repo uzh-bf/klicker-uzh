@@ -2,7 +2,7 @@
 type: Async Architecture
 title: Async & Workers
 description: The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
-timestamp: '2026-09-02'
+timestamp: '2026-10-02'
 tags:
   - backend
   - hatchet
@@ -50,6 +50,8 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
 - Daily crons (`0 0 * * *`): `updateGroupAverageScores`, `runningRandomGroupAssignments`, `finalRandomGroupAssignments`, `updateWeeklyTimelineEntries`
 
 ## Course duplication operations
+
+A lost publication acknowledgement can mark a task `FAILED` while its worker is already copying. Verified completion can repair this terminal state: `packages/graphql/src/services/asyncTasks.ts:syncCourseDuplicationTask` accepts `FAILED` → `SUCCEEDED` only when a `COMPLETED` snapshot points to the job id and Postgres contains that course owned by the same user. Worker retries, status reads, and sweeps share this repair path. The conditional update preserves acknowledgement (`readAt`), and late failures still cannot overwrite success.
 
 Course-duplication execution coordination lives in Redis under three key families (all self-expiring): status records `course-duplication:job:<jobId>` and per-user/per-course source locks `course-duplication:source:<userId>:<sourceCourseId>` expire after **24 hours**; process leases `course-duplication:job:<jobId>:processing` and heartbeats `course-duplication:job:<jobId>:heartbeat` expire after 60/120 seconds. Postgres owns two durable facts: a committed course row whose id equals the job id proves the copy succeeded regardless of Redis state, and the matching `AsyncTask` row owns the lecturer-visible lifecycle/read state. If an active task loses its Redis record, the task query checks bounded newest, oldest, and cursor-rotated stale active sets, recognizes a committed course immediately, or marks stale missing work failed; repeated polling advances through larger stale backlogs without an unbounded Redis request (`packages/graphql/src/services/asyncTasks.ts:reconcileMissingCourseDuplicationTasks`). The rotating scan position is an owner-scoped Redis cursor under `async-task:course-duplication-reconciliation-cursor:<userId>` with a 24-hour TTL. Redis/Hatchet details must not become the task-center API.
 

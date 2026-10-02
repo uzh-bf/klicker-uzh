@@ -444,6 +444,40 @@ export async function acknowledgeAsyncTasks(
   return result.count
 }
 
+async function repairFailedCourseDuplicationTask(
+  job: CourseDuplicationTaskSnapshot,
+  task: DB.AsyncTask,
+  prisma: DB.PrismaClient
+) {
+  if (
+    task.status !== DB.AsyncTaskStatus.FAILED ||
+    job.status !== 'COMPLETED' ||
+    job.createdCourseId !== job.id
+  ) {
+    return task
+  }
+
+  // A lost publish acknowledgement can mark an already-running copy FAILED.
+  // Only the committed course (whose primary key is the job id) can override
+  // that terminal result; a completion snapshot alone is not sufficient.
+  const committedCourse = await prisma.course.findUnique({
+    where: { id: job.id, ownerId: job.userId },
+    select: { id: true },
+  })
+  if (!committedCourse) return task
+
+  await prisma.asyncTask.updateMany({
+    where: {
+      id: job.id,
+      kind: DB.AsyncTaskKind.COURSE_DUPLICATION,
+      ownerId: job.userId,
+      status: DB.AsyncTaskStatus.FAILED,
+    },
+    data: getCourseDuplicationTaskData(job),
+  })
+  return await prisma.asyncTask.findUnique({ where: { id: job.id } })
+}
+
 export async function syncCourseDuplicationTask(
   job: CourseDuplicationTaskSnapshot,
   prisma: DB.PrismaClient
@@ -480,7 +514,7 @@ export async function syncCourseDuplicationTask(
       )
     }
 
-    return existingTask
+    return await repairFailedCourseDuplicationTask(job, existingTask, prisma)
   }
 
   try {

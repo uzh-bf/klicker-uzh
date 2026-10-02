@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto'
+import { EventEmitter } from 'node:events'
 import {
   AsyncTaskKind,
   AsyncTaskStatus,
+  Locale,
   type PrismaClient,
   UserLoginScope,
   UserRole,
@@ -20,6 +22,14 @@ import {
   syncCourseDuplicationTask,
 } from '@/services/asyncTasks.js'
 import { schema } from '../src/index.js'
+import {
+  getCourseDuplicationStatuses,
+  handleProcessCourseDuplication,
+  handleSweepStaleCourseDuplications,
+  startCourseDuplication,
+} from '../src/services/courseDuplication.js'
+import { getCourseDuplicationStatusKey } from '../src/services/courseDuplicationShared.js'
+import { createCourse } from '../src/services/courses.js'
 import { initializePrisma } from './helpers.js'
 
 describe('AsyncTask service and GraphQL API', () => {
@@ -50,6 +60,9 @@ describe('AsyncTask service and GraphQL API', () => {
   })
 
   afterEach(async () => {
+    await prisma.course.deleteMany({
+      where: { ownerId: { in: [ownerId, otherOwnerId] } },
+    })
     await prisma.user.deleteMany({
       where: { id: { in: [ownerId, otherOwnerId] } },
     })
@@ -128,6 +141,21 @@ describe('AsyncTask service and GraphQL API', () => {
       userId: ownerId,
       ...overrides,
     }
+  }
+
+  function createSyntheticCourse(courseId?: string, ctx = ownerCtx) {
+    return createCourse(
+      {
+        courseId,
+        name: 'Synthetic recovery course',
+        displayName: 'Synthetic recovery course',
+        startDate: new Date('2026-01-01'),
+        endDate: new Date('2026-12-31'),
+        language: Locale.en,
+        isGamificationEnabled: false,
+      },
+      ctx
+    )
   }
 
   it('returns only the owner active tasks and recent terminal tasks', async () => {
@@ -702,6 +730,238 @@ describe('AsyncTask service and GraphQL API', () => {
       finishedAt: completedAt,
     })
     expect(task.readAt).toBeInstanceOf(Date)
+  })
+
+  it('repairs a publish failure when an already-running worker commits the course', async () => {
+    const args = {
+      name: 'Synthetic race source',
+      displayName: 'Synthetic race source',
+      startDate: new Date('2026-01-01'),
+      endDate: new Date('2026-12-31'),
+      groupDeadlineDate: new Date('2026-12-31'),
+      isGroupCreationEnabled: false,
+      maxGroupSize: 5,
+      preferredGroupSize: 3,
+      language: Locale.en,
+      isGamificationEnabled: false,
+    }
+    const source = await createCourse(args, ownerCtx)
+    const stored = new Map<string, string>()
+    const redis = {
+      get: async (key: string) => stored.get(key) ?? null,
+      mget: async (...keys: string[]) =>
+        keys.map((key) => stored.get(key) ?? null),
+      set: async (key: string, value: string, ...options: unknown[]) => {
+        if (options.includes('NX') && stored.has(key)) return null
+        stored.set(key, value)
+        return 'OK'
+      },
+      eval: async (
+        _script: string,
+        _count: number,
+        key: string,
+        value: string
+      ) => {
+        if (stored.get(key) !== value) return 0
+        return Number(stored.delete(key))
+      },
+    }
+    let signalCopying!: () => void
+    let releaseCopy!: () => void
+    const copying = new Promise<void>((resolve) => {
+      signalCopying = resolve
+    })
+    const finishCopy = new Promise<void>((resolve) => {
+      releaseCopy = resolve
+    })
+    const pausedCourse = new Proxy(prisma.course, {
+      get(target, property, receiver) {
+        if (property === 'findUnique') {
+          return async (query: Parameters<typeof target.findUnique>[0]) => {
+            if (query.where.id === source.id && query.include) {
+              signalCopying()
+              await finishCopy
+            }
+            return target.findUnique(query)
+          }
+        }
+        const value = Reflect.get(target, property, receiver)
+        return typeof value === 'function' ? value.bind(target) : value
+      },
+    })
+    const workerPrisma = new Proxy(prisma, {
+      get(target, property, receiver) {
+        if (property === 'course') return pausedCourse
+        const value = Reflect.get(target, property, receiver)
+        return typeof value === 'function' ? value.bind(target) : value
+      },
+    })
+    const logger = { error: vi.fn(), warn: vi.fn(), info: vi.fn() }
+    let worker: Promise<boolean> | undefined
+    let jobId = ''
+    const ctx = {
+      ...ownerCtx,
+      prisma: workerPrisma,
+      redisExec: redis,
+      emitter: new EventEmitter(),
+      hatchet: {
+        events: {
+          push: async (_event: string, payload: { jobId: string }) => {
+            if (!worker) {
+              jobId = payload.jobId
+              worker = handleProcessCourseDuplication(
+                payload,
+                ctx as never,
+                { logger } as never
+              )
+              // Do not fail publication until the real worker is inside copying.
+              await Promise.race([
+                copying,
+                worker.then(() => {
+                  throw new Error('Worker finished before the race barrier')
+                }),
+              ])
+            }
+            throw new Error('Synthetic lost Hatchet acknowledgement')
+          },
+        },
+      },
+    } as unknown as ContextWithUser
+
+    try {
+      await expect(
+        startCourseDuplication({ ...args, sourceCourseId: source.id }, ctx)
+      ).rejects.toMatchObject({
+        extensions: { code: COURSE_DUPLICATION_ERROR_CODES.startFailed },
+      })
+      expect(await getAsyncTasks({ trackedIds: [jobId] }, ctx)).toEqual([
+        expect.objectContaining({
+          id: jobId,
+          status: AsyncTaskStatus.FAILED,
+          resultId: null,
+        }),
+      ])
+
+      releaseCopy()
+      await expect(worker).resolves.toBe(true)
+      expect(await getAsyncTasks({ trackedIds: [jobId] }, ctx)).toEqual([
+        expect.objectContaining({
+          id: jobId,
+          status: AsyncTaskStatus.SUCCEEDED,
+          resultId: jobId,
+          errorCode: null,
+        }),
+      ])
+      expect(await getCourseDuplicationStatuses({ ids: [jobId] }, ctx)).toEqual(
+        [
+          expect.objectContaining({
+            id: jobId,
+            status: 'COMPLETED',
+            createdCourseId: jobId,
+          }),
+        ]
+      )
+    } finally {
+      releaseCopy()
+      await worker?.catch(() => undefined)
+    }
+  })
+
+  it.each([
+    'worker retry',
+    'status query',
+    'sweep',
+  ] as const)('repairs a failed task through %s without losing acknowledgement', async (operation) => {
+    const course = await createSyntheticCourse()
+    const job = courseDuplicationSnapshot({
+      id: course.id,
+      status: 'FAILED',
+      errorType: 'generic',
+    })
+    await syncCourseDuplicationTask(job, prisma)
+    await acknowledgeAsyncTasks({ ids: [job.id] }, ownerCtx)
+    const [failedTask] = await getAsyncTasks({ trackedIds: [job.id] }, ownerCtx)
+    const completed = {
+      ...job,
+      status: 'COMPLETED',
+      createdCourseId: job.id,
+      updatedAt: new Date(),
+    }
+    const key = getCourseDuplicationStatusKey(job.id)
+    const ctx = {
+      ...ownerCtx,
+      redisExec: {
+        ...ownerCtx.redisExec,
+        get: async (lookup: string) =>
+          lookup === key ? JSON.stringify(completed) : null,
+        scan: async () => ['0', [key]],
+        eval: async () => 0,
+      },
+    } as unknown as ContextWithUser
+    const execution = {
+      logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+    }
+
+    if (operation === 'worker retry') {
+      await handleProcessCourseDuplication(
+        { jobId: job.id },
+        ctx as never,
+        execution as never
+      )
+    } else if (operation === 'status query') {
+      await getCourseDuplicationStatuses({ ids: [job.id] }, ctx)
+    } else {
+      await handleSweepStaleCourseDuplications(
+        {},
+        ctx as never,
+        execution as never
+      )
+    }
+
+    expect(await getAsyncTasks({ trackedIds: [job.id] }, ctx)).toEqual([
+      expect.objectContaining({
+        id: job.id,
+        status: AsyncTaskStatus.SUCCEEDED,
+        resultId: job.id,
+        errorCode: null,
+        readAt: failedTask!.readAt,
+      }),
+    ])
+  })
+
+  it.each([
+    'uncommitted',
+    'mismatched result',
+    'foreign owner',
+  ] as const)('does not repair failure from an unverified completion: %s', async (condition) => {
+    const id = randomUUID()
+    if (condition !== 'uncommitted') {
+      await createSyntheticCourse(
+        id,
+        condition === 'foreign owner' ? otherOwnerCtx : ownerCtx
+      )
+    }
+    const job = courseDuplicationSnapshot({
+      id,
+      status: 'FAILED',
+      errorType: 'generic',
+    })
+    await syncCourseDuplicationTask(job, prisma)
+    await syncCourseDuplicationTask(
+      {
+        ...job,
+        status: 'COMPLETED',
+        createdCourseId: condition === 'mismatched result' ? randomUUID() : id,
+      },
+      prisma
+    )
+    expect(await getAsyncTasks({ trackedIds: [id] }, ownerCtx)).toEqual([
+      expect.objectContaining({
+        id,
+        status: AsyncTaskStatus.FAILED,
+        resultId: null,
+      }),
+    ])
   })
 
   it('rejects task ids owned by another producer with a stable error code', async () => {
