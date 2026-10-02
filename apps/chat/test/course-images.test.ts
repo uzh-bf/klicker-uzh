@@ -278,6 +278,51 @@ it('bounds concurrent image selections to three', async () => {
   expect(read).toHaveBeenCalledTimes(3)
 })
 
+it.each([
+  'resolve',
+  'reject',
+] as const)('waits for shared validation when duplicate selections %s', async (outcome) => {
+  const pending = Promise.withResolvers<void>()
+  const read = vi.fn(() => pending.promise)
+  const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+  try {
+    const tools = withCourseImageTool(searchTools(), [candidate.kb_id], read)
+    await call(tools, 'KB_doc_query', { query: 'diagram' })
+    const first = call(tools, 'show_course_image', {
+      asset_id: candidate.asset_id,
+    })
+    let duplicateFinished = false
+    const second = call(tools, 'show_course_image', {
+      asset_id: candidate.asset_id,
+    }).then((result) => {
+      duplicateFinished = true
+      return result
+    })
+    // Give a premature duplicate success time to escape before validation settles.
+    await new Promise((resolve) => setImmediate(resolve))
+    const finishedBeforeValidation = duplicateFinished
+    if (outcome === 'resolve') pending.resolve()
+    else pending.reject(new Error('Synthetic storage failure'))
+    const results = await Promise.all([first, second])
+    expect(finishedBeforeValidation).toBe(false)
+    expect(read).toHaveBeenCalledTimes(1)
+    for (const result of results) {
+      expect(result).toMatchObject({
+        status: outcome === 'resolve' ? 'selected' : 'unavailable',
+      })
+    }
+    if (outcome === 'reject') {
+      read.mockResolvedValue(undefined)
+      expect(
+        await call(tools, 'show_course_image', { asset_id: candidate.asset_id })
+      ).toMatchObject({ status: 'selected' })
+      expect(read).toHaveBeenCalledTimes(2)
+    }
+  } finally {
+    consoleError.mockRestore()
+  }
+})
+
 it('can decline an image without reading storage or producing a card', async () => {
   const read = vi.fn()
   const tools = withCourseImageTool(searchTools(), [candidate.kb_id], read)
