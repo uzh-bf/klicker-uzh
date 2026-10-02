@@ -105,6 +105,40 @@ describe('chat participant data-use route', () => {
     expect(mocks.loadChatDataUseState).not.toHaveBeenCalled()
   })
 
+  test.each([
+    'GET',
+    'POST',
+    'PATCH',
+  ] as const)('keeps unexpected %s failures out of the response and diagnostic', async (method) => {
+    const error = revisionError('SYNTHETIC_PRIVATE_DATABASE_DETAIL')
+    const logger = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const failingOperation = {
+      GET: mocks.loadChatDataUseState,
+      POST: mocks.completeParticipantDataUse,
+      PATCH: mocks.updateParticipantDataUseChoice,
+    }[method]
+    failingOperation.mockRejectedValueOnce(error)
+
+    try {
+      const handler = { GET, POST, PATCH }[method]!
+      const response = await handler(
+        request(
+          method,
+          method === 'GET' ? undefined : { purpose: 'analytics' }
+        ),
+        { params: params() }
+      )
+      expect(response.status).toBe(500)
+      expect(await response.json()).toEqual({
+        error: 'PARTICIPANT_DATA_USE_WRITE_FAILED',
+      })
+      expect(logger).toHaveBeenCalledWith(expect.any(String))
+      expect(JSON.stringify(logger.mock.calls)).not.toContain(error.message)
+    } finally {
+      logger.mockRestore()
+    }
+  })
+
   test('records the acknowledgement with both choices and the server-owned version', async () => {
     mocks.completeParticipantDataUse.mockResolvedValue({ id: participantId })
     mocks.loadChatDataUseState.mockResolvedValue({

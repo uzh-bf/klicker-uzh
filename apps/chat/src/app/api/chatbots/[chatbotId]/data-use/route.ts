@@ -43,7 +43,9 @@ function dataUseErrorBody(error: unknown) {
   const code = dataUseErrorCode(error)
   return {
     error:
-      typeof code === 'string' ? code : 'PARTICIPANT_DATA_USE_WRITE_FAILED',
+      dataUseErrorStatus(error) !== 500 && typeof code === 'string'
+        ? code
+        : 'PARTICIPANT_DATA_USE_WRITE_FAILED',
   }
 }
 
@@ -59,7 +61,7 @@ function invalidInputResponse() {
 function dataUseWriteErrorResponse(error: unknown, failureMessage: string) {
   const status = dataUseErrorStatus(error)
   if (status === 500) {
-    console.error(failureMessage, error)
+    console.error(failureMessage)
   }
   return NextResponse.json(dataUseErrorBody(error), { status })
 }
@@ -80,7 +82,15 @@ export async function GET(
     return authResult.response
   }
 
-  const state = await loadChatDataUseState(authResult.participantId)
+  let state: Awaited<ReturnType<typeof loadChatDataUseState>>
+  try {
+    state = await loadChatDataUseState(authResult.participantId)
+  } catch (error) {
+    return dataUseWriteErrorResponse(
+      error,
+      'Failed to read participant data use in chat'
+    )
+  }
   if (!state) {
     return NextResponse.json(
       { error: 'Participant account not found' },
