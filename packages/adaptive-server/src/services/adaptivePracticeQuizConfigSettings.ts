@@ -5,6 +5,7 @@ import type { AdaptivePracticeQuizConfigInput } from './adaptivePracticeQuizConf
 import type { AdaptiveConfiguredSettings } from './adaptivePracticeQuizReadiness.js'
 
 export type ResolvedPresetSettings = AdaptiveConfiguredSettings & {
+  minItemsPerCoverageCell: number
   preset: DB.AdaptivePracticeQuizPreset
   attemptSelectionPolicy: DB.AdaptiveAttemptSelectionPolicy
   levelMappingRule: DB.AdaptiveLevelMappingRule
@@ -59,6 +60,8 @@ export function resolvePresetSettings(
     perLeafQuestionCap: input.perLeafQuestionCap ?? defaults.perLeafQuestionCap,
     minQuestionsPerLeaf:
       input.minQuestionsPerLeaf ?? (pilot ? 1 : defaults.minQuestionsPerLeaf),
+    minItemsPerCoverageCell:
+      input.minItemsPerCoverageCell ?? defaults.minItemsPerCoverageCell,
     classificationZ: input.classificationZ ?? defaults.classificationZ,
     topInformationRatio: isResearch
       ? (research?.topInformationRatio ?? defaults.topInformationRatio)

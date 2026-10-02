@@ -1,3 +1,8 @@
+import {
+  MAX_CONFIGURABLE_ITEMS_PER_COVERAGE_CELL,
+  MIN_CONFIGURABLE_ITEMS_PER_COVERAGE_CELL,
+} from '@klicker-uzh/adaptive-contract'
+import { AdaptivePracticeQuizPreset } from '@klicker-uzh/graphql/dist/ops'
 import { FormikNumberField, Select, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import type { AdaptivePracticeQuizConfigFormValues } from '../../../../types/practiceQuiz'
@@ -16,6 +21,10 @@ function AdaptiveStoppingSettings({
   const update = (patch: Partial<AdaptivePracticeQuizConfigFormValues>) =>
     onChange({ ...config, ...patch })
   const placementPilot = isPlacementPilotConfig(config)
+  // The per-cell minimum gates product readiness only; Research requires one
+  // element per cell and root-balanced placement does not check cells.
+  const showCellMinimum =
+    config.preset !== AdaptivePracticeQuizPreset.Research && !placementPilot
   const custom = !INTERVALS.some(
     (value) => Number(value) === Number(config.classificationZ)
   )
@@ -135,6 +144,29 @@ function AdaptiveStoppingSettings({
             className={{ root: 'min-w-0', label: 'min-w-0 whitespace-normal' }}
             data={{ cy: 'adaptive-min-questions-per-leaf' }}
           />
+          {showCellMinimum && (
+            <div className="min-w-0">
+              <FormikNumberField
+                id="adaptive-min-items-per-coverage-cell"
+                label={t('minPerCell')}
+                name="adaptiveConfig.minItemsPerCoverageCell"
+                min={MIN_CONFIGURABLE_ITEMS_PER_COVERAGE_CELL}
+                max={MAX_CONFIGURABLE_ITEMS_PER_COVERAGE_CELL}
+                precision={0}
+                className={{
+                  root: 'min-w-0',
+                  label: 'min-w-0 whitespace-normal',
+                }}
+                data={{ cy: 'adaptive-min-items-per-coverage-cell' }}
+              />
+              <p
+                className="mt-1 text-sm text-gray-600"
+                id="adaptive-min-items-per-coverage-cell-hint"
+              >
+                {t('minPerCellHint')}
+              </p>
+            </div>
+          )}
           <FormikNumberField
             id="adaptive-per-leaf-question-cap"
             label={t('maxPerLeaf')}

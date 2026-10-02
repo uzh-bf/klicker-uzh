@@ -135,6 +135,22 @@ export function formatAdaptiveReadinessIssue(
           enabledAssignmentCount: p.enabledAssignmentCount ?? 0,
         }
       )
+    case 'ADAPTIVE_COVERAGE_MINIMUM_BELOW_RECOMMENDED':
+      return t(
+        'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_COVERAGE_MINIMUM_BELOW_RECOMMENDED',
+        {
+          minimumValue: p.minimumValue ?? 0,
+          maximumValue: p.maximumValue ?? 0,
+        }
+      )
+    case 'ADAPTIVE_COVERAGE_CELL_MINIMUM_INVALID':
+      return t(
+        'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_COVERAGE_CELL_MINIMUM_INVALID',
+        {
+          minimumValue: p.minimumValue ?? 0,
+          maximumValue: p.maximumValue ?? 0,
+        }
+      )
     case 'ADAPTIVE_COVERAGE_BELOW_TARGET':
       return t(
         'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_COVERAGE_BELOW_TARGET',

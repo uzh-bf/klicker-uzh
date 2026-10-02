@@ -49,7 +49,60 @@ export type AdaptiveConfiguredSettings = {
   totalQuestionCap: number
   perLeafQuestionCap: number | null
   minQuestionsPerLeaf: number
+  /**
+   * Minimum enabled elements per enabled leaf × level coverage cell for
+   * product presets. Defaults to MIN_PRODUCT_ITEMS_PER_COVERAGE_CELL.
+   */
+  minItemsPerCoverageCell?: number
   classificationZ: number
   topInformationRatio: number
   defaultDiscrimination: number
+}
+
+export type AdaptiveReadinessIssue = {
+  code: string
+  message: string
+  parameters: AdaptiveReadinessIssueParameters
+  path?: string
+  nodeId?: number
+  leafNodeId?: number
+  levelId?: number
+  assignmentId?: number
+}
+
+export type AdaptiveReadinessIssueParameters = {
+  nodeName?: string
+  elementName?: string
+  field?: string
+  minimumValue?: number
+  maximumValue?: number
+  targetItemCount?: number
+  enabledAssignmentCount?: number
+  requiredQuestionCount?: number
+  availableItemCount?: number
+  effectiveQuestionCap?: number
+  totalQuestionCap?: number
+  classifiableLevelCount?: number
+  levelCount?: number
+  estimatedDurationMinutes?: number
+  secondsPerItem?: number
+  assignmentId?: number
+  nodeId?: number
+  scaleVersionId?: string
+  calibrationStatus?: string
+  elementVersion?: number
+  rootName?: string
+  leafName?: string
+  leafOrder?: number
+  levelLabel?: string
+  levelOrder?: number
+}
+
+export type AdaptiveCoverageReadiness = {
+  coverageId: number
+  leafNodeId: number
+  levelId: number
+  targetItemCount: number
+  enabledAssignmentCount: number
+  ready: boolean
 }

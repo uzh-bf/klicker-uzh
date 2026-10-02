@@ -1,5 +1,9 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
+  MAX_CONFIGURABLE_ITEMS_PER_COVERAGE_CELL,
+  MIN_CONFIGURABLE_ITEMS_PER_COVERAGE_CELL,
+} from '@klicker-uzh/adaptive-contract'
+import {
   ADAPTIVE_MAX_CLASSIFICATION_Z,
   ADAPTIVE_MAX_DISCRIMINATION,
   ADAPTIVE_MAX_QUESTION_CAP,
@@ -239,6 +243,22 @@ function PracticeQuizWizard({
         .max(
           ADAPTIVE_MAX_QUESTION_CAP,
           t('manage.activityWizard.adaptive.validation.questionCapMax')
+        ),
+      minItemsPerCoverageCell: requiredNumber()
+        .integer(t('manage.activityWizard.adaptive.validation.integer'))
+        .min(
+          MIN_CONFIGURABLE_ITEMS_PER_COVERAGE_CELL,
+          t('manage.activityWizard.adaptive.validation.cellMinimumRange', {
+            min: MIN_CONFIGURABLE_ITEMS_PER_COVERAGE_CELL,
+            max: MAX_CONFIGURABLE_ITEMS_PER_COVERAGE_CELL,
+          })
+        )
+        .max(
+          MAX_CONFIGURABLE_ITEMS_PER_COVERAGE_CELL,
+          t('manage.activityWizard.adaptive.validation.cellMinimumRange', {
+            min: MIN_CONFIGURABLE_ITEMS_PER_COVERAGE_CELL,
+            max: MAX_CONFIGURABLE_ITEMS_PER_COVERAGE_CELL,
+          })
         ),
       classificationZ: requiredNumber()
         .moreThan(0, t('manage.activityWizard.adaptive.validation.positive'))

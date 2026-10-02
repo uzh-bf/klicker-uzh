@@ -12,6 +12,7 @@ fragment AdaptivePracticeQuizPreviewData on AdaptivePracticeQuizPreview {
     totalQuestionCap
     perLeafQuestionCap
     minQuestionsPerLeaf
+    minItemsPerCoverageCell
     classificationZ
     topInformationRatio
     defaultDiscrimination

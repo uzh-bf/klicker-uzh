@@ -3,8 +3,13 @@ import {
   ADAPTIVE_SECONDS_PER_ITEM,
   isAdaptiveProductPreset,
   MAX_DISCRIMINATION,
-  MIN_PRODUCT_ITEMS_PER_COVERAGE_CELL,
 } from '@klicker-uzh/adaptive-contract'
+import {
+  adviseCoverageCellMinimum,
+  evaluateAdaptiveCoverageReadiness,
+  resolveRequiredItemsPerCoverageCell,
+  validateCoverageCellMinimumSetting,
+} from './adaptivePracticeQuizCoverageReadiness.js'
 import {
   hasValidAdaptiveItemParameters,
   isUsableAdaptiveAssignment,
@@ -26,6 +31,8 @@ import type {
   AdaptiveConfiguredLevel,
   AdaptiveConfiguredNode,
   AdaptiveConfiguredSettings,
+  AdaptiveCoverageReadiness,
+  AdaptiveReadinessIssue,
 } from './adaptivePracticeQuizReadinessTypes.js'
 
 export {
@@ -38,6 +45,9 @@ export type {
   AdaptiveConfiguredLevel,
   AdaptiveConfiguredNode,
   AdaptiveConfiguredSettings,
+  AdaptiveCoverageReadiness,
+  AdaptiveReadinessIssue,
+  AdaptiveReadinessIssueParameters,
 } from './adaptivePracticeQuizReadinessTypes.js'
 export const MAX_ADAPTIVE_QUESTION_CAP = 1000
 
@@ -46,54 +56,6 @@ export const ADAPTIVE_PUBLICATION_BLOCKING_WARNING_CODES = new Set([
   'ADAPTIVE_MINIMUM_EVIDENCE_CAPPED',
   'ADAPTIVE_GLOBAL_MINIMUM_EVIDENCE_CAPPED',
 ])
-
-export type AdaptiveReadinessIssue = {
-  code: string
-  message: string
-  parameters: AdaptiveReadinessIssueParameters
-  path?: string
-  nodeId?: number
-  leafNodeId?: number
-  levelId?: number
-  assignmentId?: number
-}
-
-export type AdaptiveReadinessIssueParameters = {
-  nodeName?: string
-  elementName?: string
-  field?: string
-  minimumValue?: number
-  maximumValue?: number
-  targetItemCount?: number
-  enabledAssignmentCount?: number
-  requiredQuestionCount?: number
-  availableItemCount?: number
-  effectiveQuestionCap?: number
-  totalQuestionCap?: number
-  classifiableLevelCount?: number
-  levelCount?: number
-  estimatedDurationMinutes?: number
-  secondsPerItem?: number
-  assignmentId?: number
-  nodeId?: number
-  scaleVersionId?: string
-  calibrationStatus?: string
-  elementVersion?: number
-  rootName?: string
-  leafName?: string
-  leafOrder?: number
-  levelLabel?: string
-  levelOrder?: number
-}
-
-export type AdaptiveCoverageReadiness = {
-  coverageId: number
-  leafNodeId: number
-  levelId: number
-  targetItemCount: number
-  enabledAssignmentCount: number
-  ready: boolean
-}
 
 export type AdaptiveRootReachability = {
   nodeId: number
@@ -326,62 +288,24 @@ export async function validateAdaptiveQuizReadiness({
     }
   }
 
-  const coverageReadiness: AdaptiveCoverageReadiness[] = []
-  for (const coverage of coverages) {
-    if (!coverage.enabled || !enabledLeafIds.has(coverage.leafNodeId)) continue
-
-    const enabledAssignmentCount =
-      assignmentsByCell.get(`${coverage.leafNodeId}:${coverage.levelId}`)
-        ?.length ?? 0
-    const requiredItemCount = strictProductReadiness
-      ? MIN_PRODUCT_ITEMS_PER_COVERAGE_CELL
-      : 1
-    const ready = enabledAssignmentCount >= requiredItemCount
-    coverageReadiness.push({
-      coverageId: coverage.id,
-      leafNodeId: coverage.leafNodeId,
-      levelId: coverage.levelId,
-      targetItemCount: coverage.targetItemCount,
-      enabledAssignmentCount,
-      ready,
-    })
-
-    if (enabledAssignmentCount === 0) {
-      errors.push({
-        code: 'ADAPTIVE_COVERAGE_CELL_EMPTY',
-        message:
-          'Every enabled leaf-level coverage cell needs at least one enabled element.',
-        parameters: {},
-        path: `coverages.${coverage.id}`,
-        leafNodeId: coverage.leafNodeId,
-        levelId: coverage.levelId,
-      })
-    } else if (!ready) {
-      errors.push({
-        code: 'ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM',
-        message: `Production presets require at least ${MIN_PRODUCT_ITEMS_PER_COVERAGE_CELL} independent, enabled, scorable elements in every enabled leaf-level cell; this cell has ${enabledAssignmentCount}.`,
-        parameters: {
-          minimumValue: MIN_PRODUCT_ITEMS_PER_COVERAGE_CELL,
-          enabledAssignmentCount,
-        },
-        path: `coverages.${coverage.id}`,
-        leafNodeId: coverage.leafNodeId,
-        levelId: coverage.levelId,
-      })
-    } else if (enabledAssignmentCount < coverage.targetItemCount) {
-      warnings.push({
-        code: 'ADAPTIVE_COVERAGE_BELOW_TARGET',
-        message: `Coverage target is ${coverage.targetItemCount}, but only ${enabledAssignmentCount} enabled element${enabledAssignmentCount === 1 ? '' : 's'} are available.`,
-        parameters: {
-          targetItemCount: coverage.targetItemCount,
-          enabledAssignmentCount,
-        },
-        path: `coverages.${coverage.id}`,
-        leafNodeId: coverage.leafNodeId,
-        levelId: coverage.levelId,
-      })
-    }
-  }
+  const coverageResult = evaluateAdaptiveCoverageReadiness({
+    coverages,
+    enabledLeafIds,
+    assignmentsByCell,
+    requiredItemCount: resolveRequiredItemsPerCoverageCell(
+      settings,
+      strictProductReadiness
+    ),
+  })
+  const coverageReadiness: AdaptiveCoverageReadiness[] =
+    coverageResult.coverages
+  errors.push(...coverageResult.errors)
+  warnings.push(...coverageResult.warnings)
+  const coverageMinimumAdvisory = adviseCoverageCellMinimum(
+    settings,
+    strictProductReadiness
+  )
+  if (coverageMinimumAdvisory) warnings.push(coverageMinimumAdvisory)
 
   if (!rootBalancedPlacement) {
     for (const leaf of enabledLeaves) {
@@ -645,6 +569,7 @@ export function validateAdaptiveSettings(
       path: 'perLeafQuestionCap',
     })
   }
+  errors.push(...validateCoverageCellMinimumSetting(settings))
   if (settings.minQuestionsPerLeaf > settings.totalQuestionCap) {
     errors.push({
       code: 'ADAPTIVE_MIN_QUESTIONS_EXCEEDS_TOTAL',

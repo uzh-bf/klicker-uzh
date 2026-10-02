@@ -414,6 +414,9 @@ const messages = {
           coverageHint:
             'Vor dem vorzeitigen Beenden sind einige Antworten pro Unterkompetenz erforderlich. Lassen Sie die maximale Anzahl pro Unterkompetenz leer, um nur das Gesamtlimit zu verwenden.',
           minPerLeaf: 'Mindestanzahl Fragen pro Unterkompetenz',
+          minPerCell: 'Mindestanzahl Elemente pro Zelle',
+          minPerCellHint:
+            'Die Mindestanzahl aktiver Elemente, die jede eingeschaltete Kombination aus Unterkompetenz und Stufe (Zelle) im inhaltlichen Bauplan benötigt, bevor das Quiz veröffentlicht werden kann. Empfohlen sind 5. Mit tieferen Werten (bis 1) können Sie Quiz für fein gegliederte Kompetenzbäume veröffentlichen, das Quiz hat dann aber weniger alternative Fragen pro Zelle.',
           maxPerLeaf: 'Maximale Anzahl Fragen pro Unterkompetenz (optional)',
         },
         settings: {
@@ -537,7 +540,7 @@ const messages = {
               ADAPTIVE_COVERAGE_CELL_EMPTY:
                 '{count, plural, one {# aktive Kombination aus Blatt und Stufe hat} other {# aktive Kombinationen aus Blatt und Stufe haben}} keine aktiven Elemente. Fügen Sie Elemente hinzu oder deaktivieren Sie diese Kombinationen im inhaltlichen Bauplan des Kompetenzbaums.',
               ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM:
-                '{count, plural, one {# aktive Kombination aus Blatt und Stufe hat} other {# aktive Kombinationen aus Blatt und Stufe haben}} weniger als die {minimumValue} unabhängigen, aktiven und automatisch bewertbaren Elemente, die produktive Voreinstellungen benötigen.',
+                '{count, plural, one {# aktive Kombination aus Blatt und Stufe hat} other {# aktive Kombinationen aus Blatt und Stufe haben}} weniger als die {minimumValue} unabhängigen, aktiven und automatisch bewertbaren Elemente, die dieses Quiz pro Kombination benötigt.',
               ADAPTIVE_COVERAGE_BELOW_TARGET:
                 '{count, plural, one {# aktive Kombination aus Blatt und Stufe liegt} other {# aktive Kombinationen aus Blatt und Stufe liegen}} unter der Zielanzahl an Elementen.',
             },
@@ -571,7 +574,11 @@ const messages = {
             ADAPTIVE_COVERAGE_CELL_EMPTY:
               'Jede aktive Kombination aus Blatt und Stufe benötigt mindestens ein aktives Element.',
             ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM:
-              'Produktive Voreinstellungen benötigen {minimumValue} unabhängige, aktive und automatisch bewertbare Elemente in dieser Blatt-Stufen-Kombination; {enabledAssignmentCount} sind verfügbar.',
+              'Dieses Quiz benötigt {minimumValue} unabhängige, aktive und automatisch bewertbare Elemente in dieser Blatt-Stufen-Kombination; {enabledAssignmentCount} sind verfügbar.',
+            ADAPTIVE_COVERAGE_MINIMUM_BELOW_RECOMMENDED:
+              'Jede aktive Kombination aus Blatt und Stufe benötigt nur {minimumValue} {minimumValue, plural, one {Element} other {Elemente}}. Empfohlen sind {maximumValue}, damit das Quiz in jeder Kombination genügend alternative Fragen hat.',
+            ADAPTIVE_COVERAGE_CELL_MINIMUM_INVALID:
+              'Die Mindestanzahl Elemente pro Zelle muss eine ganze Zahl zwischen {minimumValue} und {maximumValue} sein.',
             ADAPTIVE_COVERAGE_BELOW_TARGET:
               'Das Ziel sind {targetItemCount} Elemente, aber nur {enabledAssignmentCount} {enabledAssignmentCount, plural, one {Element ist} other {Elemente sind}} verfügbar.',
             ADAPTIVE_MINIMUM_EVIDENCE_UNREACHABLE:
@@ -666,6 +673,8 @@ const messages = {
           questionCapMax: 'Geben Sie höchstens 1000 Fragen ein.',
           classificationZMax: 'Geben Sie einen Wert von höchstens 5 ein.',
           ratioMax: 'Geben Sie einen Wert von höchstens 1 ein.',
+          cellMinimumRange:
+            'Geben Sie eine ganze Zahl zwischen {min} und {max} ein.',
           discriminationMax: 'Geben Sie einen Wert von höchstens 10 ein.',
           treeRequired: 'Wählen Sie einen Kompetenzbaum.',
           courseNotEnabled:

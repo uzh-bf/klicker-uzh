@@ -111,6 +111,7 @@ export function createAdaptivePracticeQuizSchema(
         timeLimitSeconds: t.int({ required: false }),
         perLeafQuestionCap: t.int({ required: false }),
         minQuestionsPerLeaf: t.int({ required: false }),
+        minItemsPerCoverageCell: t.int({ required: false }),
         classificationZ: t.float({ required: false }),
         showTimer: t.boolean({ required: false }),
         nodeOverrides: t.field({
@@ -152,6 +153,7 @@ export function createAdaptivePracticeQuizSchema(
         nullable: true,
       }),
       minQuestionsPerLeaf: t.exposeInt('minQuestionsPerLeaf'),
+      minItemsPerCoverageCell: t.exposeInt('minItemsPerCoverageCell'),
       classificationZ: t.exposeFloat('classificationZ'),
       topInformationRatio: t.exposeFloat('topInformationRatio'),
       defaultDiscrimination: t.exposeFloat('defaultDiscrimination'),

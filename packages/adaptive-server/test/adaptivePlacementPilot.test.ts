@@ -151,6 +151,32 @@ describe('sealed focused root-balanced placement identity', () => {
     })
   })
 
+  it('defaults the coverage-cell minimum to five and keeps an explicit value', () => {
+    const treeDefaults = {
+      defaultDiscrimination: 1.2,
+      defaultTotalQuestionCap: 50,
+      defaultTimeLimitSeconds: null,
+    }
+    for (const preset of Object.values(DB.AdaptivePracticeQuizPreset)) {
+      expect(
+        resolvePresetSettings(
+          { competenceTreeId: 'tree', preset },
+          treeDefaults
+        ).minItemsPerCoverageCell
+      ).toBe(5)
+    }
+    expect(
+      resolvePresetSettings(
+        {
+          competenceTreeId: 'tree',
+          preset: DB.AdaptivePracticeQuizPreset.DIAGNOSTIC,
+          minItemsPerCoverageCell: 2,
+        },
+        treeDefaults
+      ).minItemsPerCoverageCell
+    ).toBe(2)
+  })
+
   it('inherits the tree default and accepts an explicitly configured 70-question cap', () => {
     const treeDefaults = {
       defaultDiscrimination: 1.2,

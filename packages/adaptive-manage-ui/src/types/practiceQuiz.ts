@@ -21,6 +21,7 @@ export type AdaptivePracticeQuizConfigFormValues = {
   totalQuestionCap: string
   perLeafQuestionCap: string
   minQuestionsPerLeaf: string
+  minItemsPerCoverageCell: string
   classificationZ: string
   showTimer: boolean
   attemptSelectionPolicy: AdaptiveAttemptSelectionPolicy

@@ -81,6 +81,10 @@ const adaptiveConfigFieldBehavior = {
     kind: 'readiness',
     consumer: 'breadth evidence requirement',
   },
+  minItemsPerCoverageCell: {
+    kind: 'readiness',
+    consumer: 'product coverage-cell publication minimum',
+  },
   classificationZ: {
     kind: 'runtime',
     consumer: 'classification interval width',
@@ -168,6 +172,7 @@ export function registerAdaptivePracticeQuizConfigContractTests() {
         'defaultDiscrimination',
         'levelMappingRule',
         'measurementVersion',
+        'minItemsPerCoverageCell',
         'minQuestionsPerLeaf',
         'perLeafQuestionCap',
         'preset',
@@ -189,6 +194,7 @@ export function registerAdaptivePracticeQuizConfigContractTests() {
         'scaleVersionId',
         'showTimer',
         'classificationZ',
+        'minItemsPerCoverageCell',
         'minQuestionsPerLeaf',
         'perLeafQuestionCap',
         'totalQuestionCap',
