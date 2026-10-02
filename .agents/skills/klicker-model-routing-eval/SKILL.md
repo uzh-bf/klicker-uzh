@@ -59,13 +59,24 @@ aliases as targets:
 ```bash
 rs-infisical-operator --profile <profile> run \
   --map <stg-litellm-key-secret>=EVAL_API_KEY -- \
-  env EVAL_ENDPOINT_URL=https://<stg-litellm-host>/v1 \
+  env EVAL_ENDPOINT_URL=https://<stg-litellm-host>/v1/chat/completions \
+    EVAL_API_MODE=chat-completions \
   pnpm run eval:klicker -- --mode query-eval \
     --gt-dir "$PWD/evaluation/data/ground_truth/klicker_fineco" \
     --agent-id klickeruzh/azure/auto-router klickeruzh/azure/auto-router-v2 \
     --metrics "$PWD/evaluation/data/metrics/klicker_fineco_semantic_similarity.yaml" \
     --eval-mode ground-truth --env stg-router-compare
 ```
+
+`EVAL_ENDPOINT_URL` is the full request URL, not an API base. The framework
+names its answer file after the agent ID without escaping `/`, so create
+`evaluation/framework/data/output/qa_pairs/qa_pairs_klickeruzh/azure/` before
+the run. The staging key is `PIPELINES_LITELLM_API_KEY` in the
+`klicker-uzh-stg` profile; the same key reaches the judge model when
+`LITELLM_API_BASE` points at the proxy and `EVAL_MODEL` is
+`klickeruzh/azure/gpt-5.6-luna` with `EVAL_MODEL_CAPABILITY_MODEL=gpt-5.6-luna`.
+Without a direct route to the staging proxy, a `kubectl port-forward` to
+`svc/litellm` in `stg-litellm` works.
 
 This sends only the question, without a chatbot system prompt or knowledge
 base, so it measures the routers and models. For the full chatbot path, use
