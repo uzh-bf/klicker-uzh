@@ -248,9 +248,20 @@ describe('leaderboard publication retains private balances', () => {
       leaveCourseLeaderboard({ courseId }, ctx),
     ])
     expect(await groupState()).toMatchObject({ averageMemberScore: 100 })
+    const invalidations = vi.spyOn(ctx.emitter, 'emit')
     await leaveParticipantGroup({ groupId: group.id, courseId }, ctx)
+    expect(invalidations).toHaveBeenCalledWith('invalidate', {
+      typename: 'ParticipantGroup',
+      id: group.id,
+    })
     expect(await groupState()).toMatchObject({ averageMemberScore: 0 })
     await joinCourseLeaderboard({ courseId }, ctx)
+    invalidations.mockClear()
+    await joinParticipantGroup({ courseId, code: group.code }, ctx)
+    expect(invalidations).toHaveBeenCalledWith('invalidate', {
+      typename: 'ParticipantGroup',
+      id: group.id,
+    })
     await Promise.all([
       joinParticipantGroup({ courseId, code: group.code }, ctx),
       leaveCourseLeaderboard({ courseId }, ctx),
@@ -370,6 +381,28 @@ describe('leaderboard publication retains private balances', () => {
     expect(awarded.filter((points) => points > 0)).toHaveLength(1)
     const points = Math.max(...awarded)
     expect(points).toBeGreaterThan(0)
+    const anonymousResponse = () =>
+      respondToQuestion(
+        {
+          id: instance.id,
+          courseId,
+          answerTime: 1000,
+          participation: null,
+          response: {
+            choices: [
+              { ix: 0, selected: true },
+              { ix: 1, selected: false },
+            ],
+          },
+        },
+        { ...ctx, user: undefined }
+      )
+    await Promise.all([anonymousResponse(), anonymousResponse()])
+    expect(
+      await prisma.elementInstance.findUniqueOrThrow({
+        where: { id: instance.id },
+      })
+    ).toMatchObject({ anonymousResults: { total: 2 } })
     expect(
       await prisma.timelineEntry.findFirst({
         where: {
@@ -417,6 +450,16 @@ describe('leaderboard publication retains private balances', () => {
     })
     const closingCtx = {
       ...ctx,
+      prisma: prisma.$extends({
+        query: {
+          participant: {
+            async findUnique({ args, query }) {
+              await new Promise((resolve) => setTimeout(resolve, 5500))
+              return query(args)
+            },
+          },
+        },
+      }),
       redisExec: {
         hgetall: async (key: string) => ({
           [participantId]: key.endsWith(':lb') ? '25' : '5',
@@ -448,5 +491,5 @@ describe('leaderboard publication retains private balances', () => {
         where: { participantId },
       })
     ).toBe(0)
-  })
+  }, 60000)
 })

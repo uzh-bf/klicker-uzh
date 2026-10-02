@@ -2624,15 +2624,15 @@ export async function respondToQuestion(
       await prisma.$queryRaw(Prisma.sql`
         SELECT "id" FROM "Participation" WHERE "id" = ${participation.id} FOR UPDATE
       `)
-      await prisma.$queryRaw(
-        Prisma.sql`
-          SELECT "id"
-          FROM "ElementInstance"
-          WHERE "id" = ${id}
-          FOR UPDATE
-        `
-      )
     }
+    await prisma.$queryRaw(
+      Prisma.sql`
+        SELECT "id"
+        FROM "ElementInstance"
+        WHERE "id" = ${id}
+        FOR UPDATE
+      `
+    )
 
     const existingInstance = await getValidateElementInstance({
       prisma,

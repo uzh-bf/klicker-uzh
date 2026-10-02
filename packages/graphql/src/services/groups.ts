@@ -626,7 +626,7 @@ export async function joinParticipantGroup(
   { courseId, code }: { courseId: string; code: number },
   ctx: ContextWithUser
 ) {
-  return await ctx.prisma.$transaction(async (prisma) => {
+  const result = await ctx.prisma.$transaction(async (prisma) => {
     // Serialize new group membership with leaderboard publication changes.
     await prisma.$queryRaw(Prisma.sql`
       SELECT "id" FROM "Participation"
@@ -673,13 +673,18 @@ export async function joinParticipantGroup(
 
     return participantGroup.id
   })
+
+  if (result !== 'FAILURE' && result !== 'FULL') {
+    ctx.emitter.emit('invalidate', { typename: 'ParticipantGroup', id: result })
+  }
+  return result
 }
 
 export async function leaveParticipantGroup(
   { groupId }: { groupId: string; courseId: string },
   ctx: ContextWithUser
 ) {
-  return await ctx.prisma.$transaction(async (prisma) => {
+  const result = await ctx.prisma.$transaction(async (prisma) => {
     const lockedGroups = await prisma.$queryRaw<{ id: string }[]>(
       Prisma.sql`
         SELECT "id"
@@ -703,12 +708,6 @@ export async function leaveParticipantGroup(
     if (participantGroup.participants.length === 1) {
       const deletedGroup = await prisma.participantGroup.delete({
         where: { id: groupId },
-      })
-
-      // invalidate graphql response cache
-      ctx.emitter.emit('invalidate', {
-        typename: 'ParticipantGroup',
-        id: groupId,
       })
 
       return deletedGroup
@@ -740,6 +739,15 @@ export async function leaveParticipantGroup(
         updatedParticipantGroup.groupActivityScore,
     }
   })
+
+  if (result) {
+    // invalidate graphql response cache
+    ctx.emitter.emit('invalidate', {
+      typename: 'ParticipantGroup',
+      id: groupId,
+    })
+  }
+  return result
 }
 
 export async function renameParticipantGroup(
