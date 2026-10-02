@@ -469,6 +469,7 @@ type AdaptivePracticeQuizConfig {
   defaultDiscrimination: Float!
   levelMappingRule: AdaptiveLevelMappingRule!
   measurementVersion: String!
+  minItemsPerCoverageCell: Int!
   minQuestionsPerLeaf: Int!
   perLeafQuestionCap: Int
   preset: AdaptivePracticeQuizPreset!
@@ -483,6 +484,7 @@ input AdaptivePracticeQuizConfigInput {
   classificationZ: Float
   competenceTreeId: String!
   elementOverrides: [AdaptivePracticeQuizElementOverrideInput!]
+  minItemsPerCoverageCell: Int
   minQuestionsPerLeaf: Int
   nodeOverrides: [AdaptivePracticeQuizNodeOverrideInput!]
   perLeafQuestionCap: Int

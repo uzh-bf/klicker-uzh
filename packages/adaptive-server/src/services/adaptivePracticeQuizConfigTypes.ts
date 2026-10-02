@@ -28,6 +28,7 @@ export type AdaptivePracticeQuizConfigInput = {
   timeLimitSeconds?: number | null
   perLeafQuestionCap?: number | null
   minQuestionsPerLeaf?: number | null
+  minItemsPerCoverageCell?: number | null
   classificationZ?: number | null
   showTimer?: boolean | null
   nodeOverrides?: AdaptivePracticeQuizNodeOverrideInput[] | null
@@ -47,6 +48,7 @@ export type AdaptivePracticeQuizConfigView = Pick<
   | 'timeLimitSeconds'
   | 'perLeafQuestionCap'
   | 'minQuestionsPerLeaf'
+  | 'minItemsPerCoverageCell'
   | 'classificationZ'
   | 'topInformationRatio'
   | 'defaultDiscrimination'

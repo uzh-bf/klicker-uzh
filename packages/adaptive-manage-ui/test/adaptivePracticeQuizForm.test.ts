@@ -9,6 +9,7 @@ import {
   getAdaptivePracticeQuizEffectiveSettings,
   getAuthorableAdaptivePresets,
   isManageAdaptivePresetSelectable,
+  mapAdaptivePracticeQuizPreviewToForm,
   serializeAdaptivePracticeQuizConfig,
 } from '../src/components/activities/creation/practiceQuiz/adaptivePracticeQuizForm'
 
@@ -164,5 +165,51 @@ describe('adaptive practice quiz Manage form', () => {
 
     expect(config.preset).toBe(AdaptivePracticeQuizPreset.Diagnostic)
     expect(PracticeQuizMode.Adaptive).toBe('ADAPTIVE')
+  })
+
+  test.each([
+    ['1', 1],
+    ['3', 3],
+    ['5', 5],
+    ['', 5],
+  ])('serializes a coverage-cell minimum of "%s" as %i', (value, expected) => {
+    const config = createAdaptivePracticeQuizDefaultConfig()
+    expect(config.minItemsPerCoverageCell).toBe('5')
+    expect(
+      serializeAdaptivePracticeQuizConfig({
+        ...config,
+        competenceTreeId: 'tree-id',
+        minItemsPerCoverageCell: value,
+      })?.minItemsPerCoverageCell
+    ).toBe(expected)
+  })
+
+  test('maps the stored coverage-cell minimum back into the form', () => {
+    const preview = {
+      config: {
+        competenceTreeId: 'tree-id',
+        scaleVersionId: null,
+        preset: AdaptivePracticeQuizPreset.Diagnostic,
+        totalQuestionCap: 50,
+        timeLimitSeconds: null,
+        perLeafQuestionCap: null,
+        minQuestionsPerLeaf: 2,
+        minItemsPerCoverageCell: 3,
+        classificationZ: 1.28,
+        showTimer: true,
+        attemptSelectionPolicy: 'LATEST_COMPLETED',
+        levelMappingRule: 'NEAREST',
+        topInformationRatio: 0.8,
+        defaultDiscrimination: 1.2,
+      },
+      nodes: [],
+      assignments: [],
+    } as unknown as Parameters<typeof mapAdaptivePracticeQuizPreviewToForm>[0]
+
+    const form = mapAdaptivePracticeQuizPreviewToForm(preview)
+    expect(form.minItemsPerCoverageCell).toBe('3')
+    expect(
+      serializeAdaptivePracticeQuizConfig(form)?.minItemsPerCoverageCell
+    ).toBe(3)
   })
 })

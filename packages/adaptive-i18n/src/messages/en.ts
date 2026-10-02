@@ -405,6 +405,9 @@ const messages = {
           coverageHint:
             'Require some answers in each subcompetence before finishing early. Leave the per-subcompetence maximum empty to use only the overall limit.',
           minPerLeaf: 'Minimum questions per subcompetence',
+          minPerCell: 'Minimum elements per cell',
+          minPerCellHint:
+            'The minimum number of enabled elements that each switched-on subcompetence and level combination (cell) of the content blueprint needs before the quiz can be published. 5 is recommended. Lower values (down to 1) let you publish quizzes for fine-grained competence trees, but the quiz then has fewer alternative questions per cell.',
           maxPerLeaf: 'Maximum questions per subcompetence (optional)',
         },
         settings: {
@@ -526,7 +529,7 @@ const messages = {
               ADAPTIVE_COVERAGE_CELL_EMPTY:
                 '{count, plural, one {# enabled leaf and level combination has} other {# enabled leaf and level combinations have}} no enabled elements. Add elements or switch off these combinations in the content blueprint of the competence tree.',
               ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM:
-                '{count, plural, one {# enabled leaf and level combination has} other {# enabled leaf and level combinations have}} fewer than the {minimumValue} independent, enabled, scorable elements that production presets require.',
+                '{count, plural, one {# enabled leaf and level combination has} other {# enabled leaf and level combinations have}} fewer than the {minimumValue} independent, enabled, scorable elements that this quiz requires per combination.',
               ADAPTIVE_COVERAGE_BELOW_TARGET:
                 '{count, plural, one {# enabled leaf and level combination is} other {# enabled leaf and level combinations are}} below the target number of elements.',
             },
@@ -560,7 +563,11 @@ const messages = {
             ADAPTIVE_COVERAGE_CELL_EMPTY:
               'Every enabled leaf and level combination needs at least one enabled element.',
             ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM:
-              'Production presets require {minimumValue} independent, enabled, scorable elements in this leaf and level combination; {enabledAssignmentCount} are available.',
+              'This quiz requires {minimumValue} independent, enabled, scorable elements in this leaf and level combination; {enabledAssignmentCount} are available.',
+            ADAPTIVE_COVERAGE_MINIMUM_BELOW_RECOMMENDED:
+              'Each enabled leaf and level combination needs only {minimumValue} {minimumValue, plural, one {element} other {elements}}. {maximumValue} are recommended so that the quiz has enough alternative questions in every combination.',
+            ADAPTIVE_COVERAGE_CELL_MINIMUM_INVALID:
+              'The minimum number of elements per cell must be a whole number between {minimumValue} and {maximumValue}.',
             ADAPTIVE_COVERAGE_BELOW_TARGET:
               'The target is {targetItemCount} elements, but only {enabledAssignmentCount} {enabledAssignmentCount, plural, one {element is} other {elements are}} available.',
             ADAPTIVE_MINIMUM_EVIDENCE_UNREACHABLE:
@@ -654,6 +661,7 @@ const messages = {
           questionCapMax: 'Enter no more than 1000 questions.',
           classificationZMax: 'Enter a value no greater than 5.',
           ratioMax: 'Enter a value no greater than 1.',
+          cellMinimumRange: 'Enter a whole number between {min} and {max}.',
           discriminationMax: 'Enter a value no greater than 10.',
           treeRequired: 'Select a competence tree.',
           courseNotEnabled:

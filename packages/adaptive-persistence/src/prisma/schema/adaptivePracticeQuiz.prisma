@@ -16,14 +16,17 @@ model PracticeQuizAdaptiveConfig {
   preset                 AdaptivePracticeQuizPreset     @default(DIAGNOSTIC)
   attemptSelectionPolicy AdaptiveAttemptSelectionPolicy @default(LATEST_COMPLETED)
 
-  totalQuestionCap      Int                      @default(50)
-  timeLimitSeconds      Int?
-  perLeafQuestionCap    Int?
-  minQuestionsPerLeaf   Int                      @default(2)
-  classificationZ       Float                    @default(1.28)
-  topInformationRatio   Float                    @default(0.8)
-  defaultDiscrimination Float                    @default(1.2)
-  levelMappingRule      AdaptiveLevelMappingRule @default(NEAREST)
+  totalQuestionCap        Int                      @default(50)
+  timeLimitSeconds        Int?
+  perLeafQuestionCap      Int?
+  minQuestionsPerLeaf     Int                      @default(2)
+  /// Minimum enabled elements per enabled subcompetence × level coverage cell
+  /// for product presets (1–5; 5 is recommended). Research ignores it.
+  minItemsPerCoverageCell Int                      @default(5)
+  classificationZ         Float                    @default(1.28)
+  topInformationRatio     Float                    @default(0.8)
+  defaultDiscrimination   Float                    @default(1.2)
+  levelMappingRule        AdaptiveLevelMappingRule @default(NEAREST)
 
   showTimer Boolean @default(true)
 

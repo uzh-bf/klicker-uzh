@@ -59,6 +59,7 @@ export async function replaceAdaptivePracticeQuizConfig(
       timeLimitSeconds: settings.timeLimitSeconds,
       perLeafQuestionCap: settings.perLeafQuestionCap,
       minQuestionsPerLeaf: settings.minQuestionsPerLeaf,
+      minItemsPerCoverageCell: settings.minItemsPerCoverageCell,
       classificationZ: settings.classificationZ,
       topInformationRatio: settings.topInformationRatio,
       defaultDiscrimination: settings.defaultDiscrimination,

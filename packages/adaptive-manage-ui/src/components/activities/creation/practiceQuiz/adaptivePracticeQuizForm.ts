@@ -59,6 +59,7 @@ export function createAdaptivePracticeQuizDefaultConfig(): AdaptivePracticeQuizC
     timeLimitMinutes: '',
     perLeafQuestionCap: nullableNumberToString(defaults.perLeafQuestionCap),
     minQuestionsPerLeaf: String(defaults.minQuestionsPerLeaf),
+    minItemsPerCoverageCell: String(defaults.minItemsPerCoverageCell),
     classificationZ: String(defaults.classificationZ),
     showTimer: defaults.showTimer,
     attemptSelectionPolicy: toAttemptSelectionPolicy(
@@ -160,6 +161,10 @@ export function serializeAdaptivePracticeQuizConfig(
       config.minQuestionsPerLeaf,
       defaults.minQuestionsPerLeaf
     ),
+    minItemsPerCoverageCell: requiredNumber(
+      config.minItemsPerCoverageCell,
+      defaults.minItemsPerCoverageCell
+    ),
     classificationZ: config.scaleVersionId
       ? undefined
       : requiredNumber(config.classificationZ, defaults.classificationZ),
@@ -253,6 +258,7 @@ export function mapAdaptivePracticeQuizPreviewToForm(
       preview.config.perLeafQuestionCap
     ),
     minQuestionsPerLeaf: String(preview.config.minQuestionsPerLeaf),
+    minItemsPerCoverageCell: String(preview.config.minItemsPerCoverageCell),
     classificationZ: String(preview.config.classificationZ),
     showTimer: preview.config.showTimer,
     attemptSelectionPolicy: preview.config.attemptSelectionPolicy,
