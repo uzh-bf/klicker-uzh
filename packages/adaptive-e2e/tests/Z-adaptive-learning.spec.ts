@@ -29,6 +29,9 @@ const elementNames = [
   'Adaptive E2E single choice 2',
   'Adaptive E2E single choice 3',
   'Adaptive E2E single choice 4',
+  // Diagnostic readiness needs MIN_PRODUCT_ITEMS_PER_COVERAGE_CELL (5)
+  // enabled elements in every enabled leaf-level coverage cell.
+  'Adaptive E2E single choice 5',
 ] as const
 const elementName = elementNames[0]
 const quizName = 'Adaptive E2E practice quiz'
@@ -444,7 +447,7 @@ test.describe('Adaptive PracticeQuiz production workflow', () => {
       where: { name: { in: [...elementNames.slice(1)] } },
       select: { id: true },
     })
-    expect(additionalElements).toHaveLength(3)
+    expect(additionalElements).toHaveLength(elementNames.length - 1)
     await prisma.competenceTreeElementAssignment.createMany({
       data: additionalElements.map(({ id }) => ({
         treeId: tree.id,
@@ -459,7 +462,7 @@ test.describe('Adaptive PracticeQuiz production workflow', () => {
           where: { treeId: tree.id, leafNodeId: leaf.id, levelId: level.id },
         })
       )
-      .toBe(4)
+      .toBe(elementNames.length)
 
     await page.goto(`${manageUrl}/resources/competenceTrees/${tree.id}`)
     const assignmentTable = page.getByRole('table', {
@@ -526,11 +529,10 @@ test.describe('Adaptive PracticeQuiz production workflow', () => {
 
     await selectOption(page, '[data-cy="select-course"]', 'Testkurs')
     await page.getByTestId('adaptive-preset').click()
-    await page.getByTestId('adaptive-preset-research').click()
-    await page.getByTestId('adaptive-total-question-cap').fill('4')
-    await page.getByTestId('adaptive-advanced-settings-toggle').click()
-    await page.getByTestId('adaptive-min-questions-per-leaf').fill('1')
-    await page.getByTestId('adaptive-classification-z').fill('0.01')
+    // Research / calibration is hidden while ADAPTIVE_RESEARCH_AUTHORING_ENABLED
+    // is false in adaptive-manage-ui (adaptivePracticeQuizForm.ts).
+    await expect(page.getByTestId('adaptive-preset-research')).toHaveCount(0)
+    await page.getByTestId('adaptive-preset-diagnostic').click()
     await expect(page.getByTestId('next-or-submit')).toBeEnabled()
     await page.getByTestId('next-or-submit').click()
 
@@ -539,6 +541,12 @@ test.describe('Adaptive PracticeQuiz production workflow', () => {
       '[data-cy="adaptive-tree-select"]',
       treeDisplayName
     )
+    await page.getByTestId('adaptive-total-question-cap').fill('4')
+    await page
+      .getByTestId('adaptive-coverage-settings')
+      .locator('summary')
+      .click()
+    await page.getByTestId('adaptive-min-questions-per-leaf').fill('1')
     await expect(page.getByTestId('adaptive-hierarchy-overrides')).toBeVisible()
     await page
       .getByTestId(`adaptive-node-enabled-${demonstrationRoot.id}`)
@@ -550,11 +558,6 @@ test.describe('Adaptive PracticeQuiz production workflow', () => {
     await page.getByTestId('adaptive-refresh-preview').click()
     await expect(page.getByTestId('adaptive-readiness-status')).toBeVisible()
     await expect(page.getByTestId('adaptive-readiness-errors')).toHaveCount(0)
-    await expect(
-      page.getByTestId(
-        'adaptive-readiness-issue-ADAPTIVE_CLASSIFICATION_BANDS_UNREACHABLE'
-      )
-    ).toHaveCount(0)
     await expect(page.getByTestId('next-or-submit')).toBeEnabled()
     await page.getByTestId('next-or-submit').click()
 
@@ -562,6 +565,18 @@ test.describe('Adaptive PracticeQuiz production workflow', () => {
     const quiz = await findQuiz()
     expect(quiz.mode).toBe('ADAPTIVE')
     expect(quiz.courseId).toBe(COURSE_ID_TEST)
+    expect(quiz.adaptiveConfig).toMatchObject({
+      preset: 'DIAGNOSTIC',
+      totalQuestionCap: 4,
+      minQuestionsPerLeaf: 1,
+    })
+    // The authoring UI offers only the 80/90/95 % intervals. A narrow interval
+    // keeps every level band classifiable within the four-question cap, so the
+    // later level-band and cohort assertions stay deterministic.
+    await prisma.practiceQuizAdaptiveConfig.update({
+      where: { practiceQuizId: quiz.id },
+      data: { classificationZ: 0.01 },
+    })
 
     await page.getByTestId('courses').click()
     await page
@@ -571,6 +586,15 @@ test.describe('Adaptive PracticeQuiz production workflow', () => {
     await page.getByTestId(`publish-practice-quiz-${quizName}`).click()
     await expect(page.getByTestId('adaptive-publication')).toBeVisible()
     await expect(page.getByTestId('adaptive-readiness-status')).toBeVisible()
+    await expect(page.getByTestId('adaptive-readiness-errors')).toHaveCount(0)
+    await expect(
+      page.getByTestId(
+        'adaptive-readiness-issue-ADAPTIVE_CLASSIFICATION_BANDS_UNREACHABLE'
+      )
+    ).toHaveCount(0)
+    await expect(
+      page.getByTestId('adaptive-research-non-classifying')
+    ).toHaveCount(0)
     await expect(
       page.getByTestId('publish-practice-quiz-immediately')
     ).toBeEnabled()
@@ -578,7 +602,9 @@ test.describe('Adaptive PracticeQuiz production workflow', () => {
 
     await expect.poll(async () => (await findQuiz()).status).toBe('PUBLISHED')
     const publishedQuiz = await findQuiz()
-    expect(publishedQuiz.adaptiveConfig?.publishedPool).toHaveLength(4)
+    expect(publishedQuiz.adaptiveConfig?.publishedPool).toHaveLength(
+      elementNames.length
+    )
   })
 
   test('shows level-band results and anonymous cohort reporting', async ({
