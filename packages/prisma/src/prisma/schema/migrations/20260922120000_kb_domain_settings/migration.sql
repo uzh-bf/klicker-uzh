@@ -14,6 +14,7 @@ SET "domainPolicyId" = build."domainPolicyId",
     "domainPolicyLanguage" = build."domainPolicyLanguage"
 FROM "KBGraphBuild" AS build
 WHERE build."id" = kb."publishedGraphBuildId"
+  AND build."kbId" = kb."id"
   AND build."domainPolicyId" IS NOT NULL
   AND build."domainPolicyVersion" IS NOT NULL
   AND build."domainPolicyLanguage" IS NOT NULL;
@@ -38,4 +39,5 @@ FROM (
   HAVING COUNT(DISTINCT ("domainPolicyId", "domainPolicyVersion", "domainPolicyLanguage")) = 1
 ) AS agreed
 WHERE agreed."kbId" = kb."id"
+  AND kb."publishedGraphBuildId" IS NULL
   AND kb."domainPolicyId" IS NULL;

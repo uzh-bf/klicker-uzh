@@ -134,6 +134,16 @@ describe('KB subject and language initialization', () => {
     expect(observed).toEqual(['finance', 1, 'en'])
   })
 
+  it('keeps the served legacy default when only an unpublished build chose', async () => {
+    const [observed] = await initialize([
+      [
+        { triple: null, published: true },
+        { triple: ['economics', 1, 'de'] },
+      ],
+    ])
+    expect(observed).toBeNull()
+  })
+
   it('adopts the builds own choice when every build that recorded one agrees', async () => {
     const [observed] = await initialize([
       [{ triple: ['economics', 1, 'de'] }, { triple: ['economics', 1, 'de'] }],
