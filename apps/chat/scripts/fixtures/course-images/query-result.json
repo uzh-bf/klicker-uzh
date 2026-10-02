@@ -29,7 +29,13 @@
                 "width_px": 1025,
                 "height_px": 608,
                 "mime_type": "image/png",
-                "kind": "figure"
+                "kind": "figure",
+                "captions": [
+                  {
+                    "ref": "#/texts/12",
+                    "text": "Figure 1. Original synthetic diagram for the course-material retrieval test."
+                  }
+                ]
               }
             ],
             "manifest_sha256": "9629910654864852335118d0742a657536905950ba543b31bf56c708fc3a12e7",

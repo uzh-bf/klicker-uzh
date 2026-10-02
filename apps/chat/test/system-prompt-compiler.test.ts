@@ -16,6 +16,7 @@ vi.mock('@/src/lib/server/promptTemplates', async (importOriginal) => {
 import { DEFAULT_PROMPT } from '../src/lib/config/prompts'
 import { withCitationContract } from '../src/lib/server/citationInstructions'
 import { compileSystemPrompt } from '../src/lib/server/systemPromptCompiler'
+import { COURSE_IMAGE_TOOL } from '../src/lib/sources/courseImages'
 
 const COURSE_DATA_MARK = '## Course data'
 const LECTURER_GUIDANCE_MARK = '## Lecturer-provided guidance'
@@ -397,6 +398,19 @@ describe('compileSystemPrompt', () => {
     expect(result).toContain(
       'Do not default every coding answer to one language'
     )
+  })
+
+  test('adds course-image instructions only with selection and retrieval tools', () => {
+    expect(compilePrompt(null, 'explainer', [COURSE_IMAGE_TOOL])).not.toContain(
+      'Course images:'
+    )
+
+    const result = compilePrompt(null, 'explainer', [
+      DOC_TOOL,
+      COURSE_IMAGE_TOOL,
+    ])
+    expect(result).toContain('Course images:')
+    expect(result).toContain(`call ${COURSE_IMAGE_TOOL} proactively`)
   })
 
   test('keeps scope, evidence, privacy, non-disclosure, integrity, and safety fixed', () => {

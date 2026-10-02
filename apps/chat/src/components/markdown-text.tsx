@@ -32,12 +32,19 @@ import {
   inspectStreamingMath,
 } from '../lib/markdown/streamingMath'
 import { cn } from '../lib/utils/ui'
+import { remarkCourseImages } from '../lib/markdown/remarkCourseImages'
+import { InlineCourseImage } from './course-images-section'
 import { CitationChip } from './citation-chip'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 // Stable module-scope reference: recreating this array on every render would
 // defeat `MarkdownTextPrimitive`'s own memoization of the parsed tree.
-const remarkPlugins = [remarkGfm, remarkMath, remarkCitationMarkers]
+const remarkPlugins = [
+  remarkGfm,
+  remarkMath,
+  remarkCitationMarkers,
+  remarkCourseImages,
+]
 const rehypePlugins: NonNullable<
   ComponentProps<typeof MarkdownTextPrimitive>['rehypePlugins']
 > = [[rehypeKatex, { trust: false }]]
@@ -48,7 +55,11 @@ const MarkdownTextImpl = () => {
   const { hasMathOpener } = inspectStreamingMath(text)
   const preprocess = useCallback(
     (input: string) =>
-      normalizeCustomMathTags(isRunning ? hideIncompleteMath(input) : input),
+      normalizeCustomMathTags(
+        isRunning
+          ? hideIncompleteMath(input).replace(/\[course-image:[a-f0-9]*$/, '')
+          : input
+      ),
     [isRunning]
   )
 
@@ -114,6 +125,14 @@ const useCopyToClipboard = ({
 }
 
 const defaultComponents = memoizeMarkdownComponents({
+  div: ({
+    'data-course-image': assetId,
+    ...props
+  }: ComponentProps<'div'> & { 'data-course-image'?: string }) => {
+    if (typeof assetId === 'string')
+      return <InlineCourseImage assetId={assetId} />
+    return <div {...props} />
+  },
   // Shift Markdown headings down one level because the chatbot shell owns the
   // page's h1. The smaller scale keeps answer structure readable without
   // making a chat bubble look like a document title page.
