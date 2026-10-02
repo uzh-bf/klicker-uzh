@@ -551,6 +551,38 @@ export async function getQuestionGenerationSources(
   return loadQuestionGenerationSources(ctx)
 }
 
+// One load per request serves every KB field of a listing. A null entry marks
+// an actor without question-generation preview access.
+const sourcesByRequest = new WeakMap<
+  object,
+  Promise<Map<string, QuestionGenerationSource> | null>
+>()
+
+/**
+ * Question-generation readiness of one owned KB for a KB listing or detail.
+ * Null when the actor has no preview access or the KB is not listed.
+ */
+export async function getKBQuestionGenerationSource(
+  ctx: ContextWithUser,
+  kbId: string
+): Promise<QuestionGenerationSource | null> {
+  let pending = sourcesByRequest.get(ctx)
+  if (!pending) {
+    pending = assertQuestionGenerationPreviewAccess(ctx).then(
+      async () =>
+        new Map(
+          (await loadQuestionGenerationSources(ctx)).map((source) => [
+            source.kbId,
+            source,
+          ])
+        ),
+      () => null
+    )
+    sourcesByRequest.set(ctx, pending)
+  }
+  return (await pending)?.get(kbId) ?? null
+}
+
 /**
  * Revalidates the source basis a generation request was configured with. The
  * KB must still be owned by the actor and its eligible basis must still be

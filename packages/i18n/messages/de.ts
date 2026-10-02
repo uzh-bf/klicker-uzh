@@ -1876,6 +1876,22 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       'Chatbot-Materialien: {available} von {total} verfügbar',
     materialsReadinessProcessing: '{count} in Verarbeitung',
     materialsReadinessFailed: '{count} fehlgeschlagen',
+    questionReadiness: {
+      WAITING_FOR_MATERIALS:
+        'Fragengenerierung: wartet auf die Verarbeitung der Materialien',
+      QUEUED:
+        'Fragengenerierung: wird automatisch vorbereitet. Schauen Sie innerhalb von 24 Stunden wieder vorbei.',
+      PROCESSING:
+        'Fragengenerierung: wird automatisch vorbereitet. Schauen Sie innerhalb von 24 Stunden wieder vorbei.',
+      READY: 'Fragengenerierung: bereit',
+      DELAYED: 'Fragengenerierung: Vorbereitung verzögert.',
+      NEEDS_ATTENTION:
+        'Fragengenerierung: Vorbereitung erfordert Aufmerksamkeit.',
+      UNAVAILABLE:
+        'Fragengenerierung: automatische Vorbereitung nicht verfügbar.',
+      NO_ELIGIBLE_MATERIALS: 'Fragengenerierung: noch kein Kursmaterial',
+      contact: 'Kontakt aufnehmen',
+    },
     loadMore: 'Weitere Wissensdatenbanken laden',
     notFound: 'Die Wissensdatenbank konnte nicht gefunden werden.',
     detailFallbackTitle: 'Wissensdatenbank',

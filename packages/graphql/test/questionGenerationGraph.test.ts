@@ -36,6 +36,7 @@ vi.mock(
 import {
   assertQuestionGenerationBasisCurrent,
   assertQuestionGenerationGraphEligible,
+  getKBQuestionGenerationSource,
   getQuestionGenerationSources,
   type QuestionGenerationSourceInputs,
   resolveQuestionGenerationSource,
@@ -416,6 +417,41 @@ describe('question generation source listing and basis revalidation', () => {
         where: { ownerId: ctx.user.sub, deletedAt: null },
       })
     )
+  })
+
+  it('loads the readiness once per request for every listed KB', async () => {
+    const request = { ...ctx } as ContextWithUser
+
+    const [ready, unready, missing] = await Promise.all([
+      getKBQuestionGenerationSource(request, 'kb-ready'),
+      getKBQuestionGenerationSource(request, 'kb-unready'),
+      getKBQuestionGenerationSource(request, 'kb-other'),
+    ])
+
+    expect(ready).toEqual(
+      expect.objectContaining({ kbId: 'kb-ready', preparationState: 'READY' })
+    )
+    expect(unready).toEqual(
+      expect.objectContaining({ kbId: 'kb-unready', basis: null })
+    )
+    expect(missing).toBeNull()
+    expect(mocks.findKnowledgeBases).toHaveBeenCalledTimes(1)
+
+    await getKBQuestionGenerationSource(request, 'kb-ready')
+    expect(mocks.findKnowledgeBases).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports no readiness without question generation preview access', async () => {
+    mocks.access.mockRejectedValue(new Error('no preview access'))
+    const request = { ...ctx } as ContextWithUser
+
+    await expect(
+      getKBQuestionGenerationSource(request, 'kb-ready')
+    ).resolves.toBeNull()
+    await expect(
+      getKBQuestionGenerationSource(request, 'kb-unready')
+    ).resolves.toBeNull()
+    expect(mocks.findKnowledgeBases).not.toHaveBeenCalled()
   })
 
   it('accepts the current basis of the requested KB', async () => {
