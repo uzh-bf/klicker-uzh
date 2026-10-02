@@ -425,6 +425,9 @@ async function openKnowledgeGraphPanel(
   detailPath: string
 ) {
   await page.goto(`${manageUrl}${detailPath}#knowledge-graph`)
+  // From the detail page itself, the goto only changes the hash: the mounted
+  // panel neither opens from the anchor nor refetches the mocked state.
+  await page.reload()
   await expect(page.getByTestId('kb-knowledge-graph-panel')).toBeVisible()
   await expect(page.getByTestId('kb-knowledge-graph-rebuild')).toBeVisible()
 }
