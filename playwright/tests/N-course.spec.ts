@@ -19,6 +19,7 @@ import {
   openCourseActionMenu,
 } from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
+import { waitForClientHydration } from '../util/authSession.js'
 import {
   COURSE_ID_TEST2,
   COURSE_ID_TEST3,
@@ -908,6 +909,7 @@ async function loginStudentPassword(page: Page, username: string) {
     waitUntil: 'domcontentloaded',
     timeout: 300_000,
   })
+  await waitForClientHydration(page)
   await page.evaluate(() => {
     try {
       localStorage.clear()

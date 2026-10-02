@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-09-07'
+timestamp: '2026-10-02'
 tags:
   - backend
   - prisma
@@ -185,7 +185,9 @@ requester lost ADMIN/OWNER permission in the meantime.
 
 ## Lecturer async tasks
 
-`AsyncTask` (`packages/prisma/src/prisma/schema/user.prisma:AsyncTask`) is lecturer-owned product state, not a generic message or a Hatchet execution record. Its lifecycle is monotonic — `QUEUED → RUNNING → SUCCEEDED | FAILED` — and its kind identifies the producer (`COURSE_DUPLICATION`, `KNOWLEDGE_GRAPH_GENERATION`, or `QUESTION_GENERATION`). Subject/result ids remain opaque strings because producers refer to different domains. `readAt` acknowledges only terminal results; active tasks cannot be marked read. Producer-specific services adapt execution state into this model and store stable error codes rather than internal messages. Deleting the owner cascades their tasks.
+`AsyncTask` (`packages/prisma/src/prisma/schema/user.prisma:AsyncTask`) is lecturer-owned product state, not a generic message or a Hatchet execution record. Its normal lifecycle is monotonic — `QUEUED → RUNNING → SUCCEEDED | FAILED` — and its kind identifies the producer (`COURSE_DUPLICATION`, `KNOWLEDGE_GRAPH_GENERATION`, or `QUESTION_GENERATION`). Subject/result ids remain opaque strings because producers refer to different domains. `readAt` acknowledges only terminal results; active tasks cannot be marked read. Producer-specific services adapt execution state into this model and store stable error codes rather than internal messages. Deleting the owner cascades their tasks.
+
+Course duplication has one verified-completion exception: a lost publication acknowledgement can mark an already-running copy `FAILED`. `packages/graphql/src/services/asyncTasks.ts:syncCourseDuplicationTask` repairs it to `SUCCEEDED` only when a `COMPLETED` snapshot identifies the job-id course and Postgres confirms that course belongs to the same owner. Reconciliation restores the result link and preserves the existing `readAt`; late failures still cannot overwrite success. See [Course duplication operations](./async-and-workers.md#course-duplication-operations).
 
 ## Gamification details
 
