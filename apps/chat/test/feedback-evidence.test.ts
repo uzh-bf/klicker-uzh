@@ -19,6 +19,8 @@ describe('canonicalNumber', () => {
     expect(canonicalNumber("1'027.8")).toBe('1027.8')
     expect(canonicalNumber('1027,80')).toBe('1027.8')
     expect(canonicalNumber('5,800')).toBe('5800')
+    expect(canonicalNumber('1.027,80')).toBe('1027.8')
+    expect(canonicalNumber('1.000.000')).toBe('1000000')
   })
 
   test('ignores values too short to identify a computed result', () => {
@@ -47,6 +49,15 @@ describe('measureReusedContent', () => {
     ])
     expect(result.reusedShare).toBe(0)
     expect(result.reusedNumbers).toEqual(['1027.75'])
+  })
+
+  test('keeps dot-grouped amounts and long factors whole', () => {
+    const result = measureReusedContent([
+      { role: 'user', content: 'Wie wächst mein Guthaben?' },
+      { role: 'assistant', content: 'Faktor 1.327022 ergibt 15.924,26 CHF.' },
+      { role: 'user', content: 'Mit 1.327022 komme ich auf 15.924,26 CHF.' },
+    ])
+    expect(result.reusedNumbers).toEqual(['1.327022', '15924.26'])
   })
 
   test('does not flag original work or values the user supplied first', () => {

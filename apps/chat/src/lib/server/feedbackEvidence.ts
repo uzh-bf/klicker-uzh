@@ -20,7 +20,8 @@ const MIN_SIGNIFICANT_DIGITS = 3
 const MAX_LISTED_NUMBERS = 8
 
 const WORD_PATTERN = /[\p{L}\p{N}]+/gu
-const NUMBER_PATTERN = /\d{1,3}(?:[,'’]\d{3})+(?:\.\d+)?|\d+(?:[.,]\d+)?/g
+const NUMBER_PATTERN =
+  /\d{1,3}(?:[,.'’]\d{3})+(?!\d)(?:[.,]\d+)?|\d+(?:[.,]\d+)?/g
 
 /**
  * Restates the feedback attribution rules at the end of every model step.
@@ -40,15 +41,21 @@ function words(text: string): string[] {
 
 /**
  * Converts a written number to one canonical form, so that 1,027.80,
- * 1'027.8 and 1027,80 compare equal. A lone comma followed by groups of
- * three digits is a thousands separator; otherwise it is a decimal comma.
+ * 1.027,80, 1'027.8 and 1027,80 compare equal. When both a comma and a dot
+ * appear, the last one is the decimal mark. A lone comma followed by groups
+ * of three digits is a thousands separator, as are two or more dot groups;
+ * otherwise the separator is a decimal mark.
  */
 export function canonicalNumber(raw: string): string | null {
   let value = raw.replace(/['’]/g, '')
-  if (value.includes(',') && value.includes('.')) {
-    value = value.replace(/,/g, '')
-  } else if (/^\d{1,3}(?:,\d{3})+$/.test(value)) {
-    value = value.replace(/,/g, '')
+  const lastComma = value.lastIndexOf(',')
+  const lastDot = value.lastIndexOf('.')
+  if (lastComma !== -1 && lastDot !== -1) {
+    const decimalMark = lastComma > lastDot ? ',' : '.'
+    const groupMark = decimalMark === ',' ? '.' : ','
+    value = value.split(groupMark).join('').replace(decimalMark, '.')
+  } else if (/^\d{1,3}(?:,\d{3})+$|^\d{1,3}(?:\.\d{3}){2,}$/.test(value)) {
+    value = value.replace(/[,.]/g, '')
   } else {
     value = value.replace(',', '.')
   }
