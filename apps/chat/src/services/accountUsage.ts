@@ -5,6 +5,7 @@ import {
   isChatUsageClassEntitled,
 } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
+import { NextResponse } from 'next/server'
 import { withTransaction } from '../utils/transactions'
 import { CreditsService } from './credits'
 
@@ -16,6 +17,19 @@ export const CHAT_TURN_IN_PROGRESS_CODE = 'CHAT_TURN_IN_PROGRESS'
 // answer with them so a client can distinguish the class that was closed.
 export const CHAT_MODEL_UNAVAILABLE_BASE = 'CHAT_MODEL_UNAVAILABLE_BASE'
 export const CHAT_MODEL_UNAVAILABLE_ADVANCED = 'CHAT_MODEL_UNAVAILABLE_ADVANCED'
+
+export function chatModelUnavailableResponse(usageClass: ChatUsageClass) {
+  return NextResponse.json(
+    {
+      error: 'Chat model usage is unavailable',
+      code:
+        usageClass === 'BASE'
+          ? CHAT_MODEL_UNAVAILABLE_BASE
+          : CHAT_MODEL_UNAVAILABLE_ADVANCED,
+    },
+    { status: 403 }
+  )
+}
 
 export function isChatAccountUsageEnforcementEnabled(): boolean {
   return process.env.CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED === 'true'

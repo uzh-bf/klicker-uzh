@@ -73,8 +73,7 @@ import {
 } from '@/src/lib/server/toolDiagnostics'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import {
-  CHAT_MODEL_UNAVAILABLE_ADVANCED,
-  CHAT_MODEL_UNAVAILABLE_BASE,
+  chatModelUnavailableResponse,
   CHAT_TURN_ALREADY_COMPLETED_CODE,
   ChatTurnConflictError,
   claimChatTurn,
@@ -129,21 +128,6 @@ type ChatRouteModelMessage = {
   content:
     | string
     | Array<{ type: 'text'; text: string } | { type: 'image'; image: string }>
-}
-
-function chatModelUnavailableResponse(
-  usageClass: ChatModelConfig['usageClass']
-) {
-  return NextResponse.json(
-    {
-      error: 'Chat model usage is unavailable',
-      code:
-        usageClass === 'BASE'
-          ? CHAT_MODEL_UNAVAILABLE_BASE
-          : CHAT_MODEL_UNAVAILABLE_ADVANCED,
-    },
-    { status: 403 }
-  )
 }
 
 function completedTurnResponse() {

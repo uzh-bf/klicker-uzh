@@ -33,10 +33,7 @@ import { withOwnerPreviewAuth } from '@/src/lib/server/ownerPreviewAuth'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
-import {
-  CHAT_MODEL_UNAVAILABLE_ADVANCED,
-  CHAT_MODEL_UNAVAILABLE_BASE,
-} from '@/src/services/accountUsage'
+import { chatModelUnavailableResponse } from '@/src/services/accountUsage'
 import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
@@ -246,16 +243,7 @@ export async function POST(
       aiChatbotCostCenter: chatbot.owner.aiChatbotCostCenter,
     })
   ) {
-    return NextResponse.json(
-      {
-        error: 'Chat model usage is unavailable',
-        code:
-          selectedModel.usageClass === 'BASE'
-            ? CHAT_MODEL_UNAVAILABLE_BASE
-            : CHAT_MODEL_UNAVAILABLE_ADVANCED,
-      },
-      { status: 403 }
-    )
+    return chatModelUnavailableResponse(selectedModel.usageClass)
   }
 
   const kbConfigurations: MCPServerWithConfig[] = modeConfigurations
