@@ -11,6 +11,11 @@ from pathlib import Path
 from xml.etree import ElementTree
 
 EXPECTED_TIMING_VERSION = 1
+# Timing weights are architecture-specific: the same spec takes measurably
+# different time on ARM64 and x64 runners. A table therefore records the
+# architecture it was measured on, so one architecture cannot silently replace
+# another's calibration.
+TIMING_ARCHITECTURES = ("arm64", "x64")
 MAX_JUNIT_BYTES = 50 * 1024 * 1024
 SHARD_ARTIFACT_PATTERN = re.compile(
     r"(?:^|/)playwright-results-(\d+)-of-(\d+)(?:/|$)"
@@ -213,9 +218,12 @@ def collect_durations(
     return durations, skipped_only_specs
 
 
-def write_timings(output_path: Path, durations: dict[str, float]) -> None:
+def write_timings(
+    output_path: Path, durations: dict[str, float], architecture: str
+) -> None:
     payload = {
         "version": EXPECTED_TIMING_VERSION,
+        "architecture": architecture,
         "durations": [
             {
                 "spec": f"tests/{spec_name}",
@@ -247,6 +255,25 @@ def write_timings(output_path: Path, durations: dict[str, float]) -> None:
                 temporary_path.unlink()
             except FileNotFoundError:
                 pass
+
+
+def read_declared_architecture(output_path: Path) -> str | None:
+    try:
+        payload = json.loads(output_path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, UnicodeDecodeError, json.JSONDecodeError):
+        return None
+
+    if (
+        not isinstance(payload, dict)
+        or isinstance(payload.get("version"), bool)
+        or payload.get("version") != EXPECTED_TIMING_VERSION
+    ):
+        return None
+
+    architecture = payload.get("architecture")
+    if not isinstance(architecture, str) or not architecture.strip():
+        return None
+    return architecture
 
 
 def read_prior_durations(
@@ -307,6 +334,12 @@ def main() -> None:
     )
     parser.add_argument("artifact_dir", type=Path)
     parser.add_argument("output_path", type=Path)
+    parser.add_argument(
+        "--architecture",
+        choices=TIMING_ARCHITECTURES,
+        required=True,
+        help="architecture the measured shard durations were produced on",
+    )
     args = parser.parse_args()
 
     tests_dir = args.output_path.parent / "tests"
@@ -341,14 +374,29 @@ def main() -> None:
         )
         return
 
+    declared_architecture = read_declared_architecture(args.output_path)
+    if (
+        declared_architecture is not None
+        and declared_architecture != args.architecture
+    ):
+        print(
+            "playwright/timings.json is calibrated for "
+            f"{declared_architecture}, so measurements from "
+            f"{args.architecture} must not replace them; leaving the timing "
+            "table unchanged",
+            file=sys.stderr,
+        )
+        return
+
     durations = dict(fresh_durations)
     durations.update(
         {spec_name: prior_durations[spec_name] for spec_name in skipped_only_specs}
     )
-    write_timings(args.output_path, durations)
+    write_timings(args.output_path, durations, args.architecture)
     print(
         f"Wrote {len(durations)} Playwright spec timings from "
-        f"{len(junit_files)} shards to {args.output_path}"
+        f"{len(junit_files)} shards to {args.output_path} "
+        f"for {args.architecture}"
     )
 
 

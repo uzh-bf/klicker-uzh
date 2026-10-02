@@ -97,6 +97,12 @@ configuration. Plaintext credentials remain in the local process environment;
 the database stores only the encrypted transport token. The local shared
 process environment is not an isolation boundary between apps.
 
+After Playwright cleanup, startup can recreate the fixture's synthetic course,
+draft chatbot and two mode bindings when all are absent. The exact local server
+and seeded lecturer must still match. Partial parent state is rejected; repair
+never overwrites an existing course or chatbot. Restoration and credential
+rotation share one transaction, so a failure leaves the previous data intact.
+
 Use the completed tool call, final answer, source card and reload persistence
 as integration evidence. The deterministic fixture has no public origin URL,
 so its source card cannot prove that a linked website or PDF is accessible.
@@ -130,6 +136,22 @@ injected `devrouter ensure ... --profile chat,ai,mcp`; the repository confirms
 that signature and performs one bounded repair for the affected `.next` cache.
 If the route remains unhealthy, inspect `/tmp/dev.log` before diagnosing the
 upstream.
+
+When a production build follows live verification in the same checkout, the
+PWA can include both `.next/dev/types/validator.ts` and
+`.next/types/validator.ts`. If TypeScript reports duplicate `PagesPageConfig`
+identifiers in those generated files, stop the exact owned development process
+through the delivered managed process helper before building again. Preserve
+the affected generated dev-type directory outside the application's compiler
+inputs, then rerun the build. The collision does not require changing application
+source or disabling type checking. Finalize the exact runtime through
+`devrouter stop <checkout-path>` after the last check.
+
+Prompt-template comparisons also need a real process restart: the server caches
+loaded template text. Record the request context's compiled prompt fingerprint
+for each arm rather than assuming an edited `.hbs` file is already serving.
+See [the bounded attribution experiment](../../../project/2026-09-28-tutor-attribution-evaluation.md)
+for the observed failure, acceptance limits and verified recovery.
 
 ## Examples
 

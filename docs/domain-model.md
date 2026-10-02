@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-09-02'
+timestamp: '2026-09-07'
 tags:
   - backend
   - prisma
@@ -26,6 +26,56 @@ Schema sources live in [packages/prisma/src/prisma/schema/](../packages/prisma/s
 They are unrelated models — never conflate them. A `Participant` joins a `Course` through **`Participation`** (`@@unique([courseId, participantId])`, carries `isActive`) — the domain word is _Participation_, not "Enrollment". Course names like "Testkurs" are seed data only (`packages/prisma-data/src/data/seedTEST.ts`).
 
 `Participation.isActive` is the **course-leaderboard opt-in**, not an enrollment flag. It defaults to `false`; joining the course leaderboard flips it to `true`, and leaving the leaderboard sets it back to `false` while keeping the row and collected points. Participant access to a published chatbot is likewise authorized by the existence of the course `Participation`, regardless of `isActive` (`apps/chat/src/lib/server/apiGuards.ts:requireParticipation`). Assessment course access and assessment report issuance are backed by the **accepted course invitation** plus an active participant account — never by `Participation.isActive` — so leaderboard-inactive students keep their assessment access.
+
+### Participant data-use choices
+
+Research and learning-analytics choices are participant-global current state on
+`Participant`, not course-scoped history. `researchConsent` and
+`learningAnalyticsConsent` both default to `false`; their choice timestamps and
+disclosure-version fields describe the current decision. Every completion and
+choice change is also appended to `ParticipantDataUseEvent`, an audit row per
+participant and revision; an immutability trigger blocks updates, deletes, and
+truncation, and analytics withdrawal requests reference the revision that
+recorded them.
+
+`researchConsent = true` allows a future research export to include all stored
+canonical data for that participant; `false` excludes all of it. Returning to
+`true` makes all stored canonical data eligible for future exports again.
+`learningAnalyticsConsent = true` allows eligible individual learning analytics
+to include all stored activity history after a course has been recomputed
+strictly after the current choice; `false` excludes individual learning
+analytics. The privacy policy also makes Learning Analytics voluntary at course
+level, but no course-level activation setting exists in this schema yet;
+`Course.areAnalyticsValid` records only whether previously computed data are
+still valid and must not be reused as that setting. The course-level choice is
+owned by a later layer.
+
+An analytics withdrawal request is created only on a true-to-false transition.
+The migration initializes existing accounts with
+`learningAnalyticsConsent = false` and records no choice, so legacy analytics
+data for an account whose first recorded choice is false is not represented by
+any withdrawal request. Consuming the queue is therefore not, by itself, a
+legacy-data cleanup strategy. Before the consent release, the legacy Python
+analytics package and all four GraphQL analytics reads are contained. Running
+old collectors must be stopped, and any retained derived data requiring deletion
+must be reconciled before users receive the updated policy promises. Full
+consent-aware processing remains a later layer; `true` alone does not activate
+it. Operational answers, points and assessment records are not LA derivatives.
+
+`Participation` remains the course-membership row and keeps its existing
+leaderboard meaning. It carries no research or learning-analytics choice or
+history, and participants have no per-course data-use choice in this schema.
+
+The public Prisma schema is the sole authority for these models. Catalyst must
+pin the exact immutable public commit and digest it consumes; a moving branch,
+dirty tree, or generated Analytics mirror is not provenance. The stored fields
+alone do not enable export, computation, or workflow dispatch.
+
+Chatbot and live-quiz analytics rows reference their owning `Chatbot` or
+`LiveQuiz` instead of storing a second, independently writable `courseId`.
+Course-scoped analytics joins through that owner, which keeps course ownership
+consistent by construction. Participant live-quiz point totals retain the
+canonical fractional `REAL` values.
 
 ### Assessment participant invitations
 
@@ -128,7 +178,7 @@ requester lost ADMIN/OWNER permission in the meantime.
 **Copies share Elements with the source — only the instances are new.** The manage frontend starts duplication through `startCourseDuplication`, which stores Redis execution state, creates an owner-scoped `AsyncTask`, emits the `process-course-duplication` Hatchet event, and returns the shared job/task id immediately. Manage reads lifecycle and badge state from Postgres rather than relying on browser-persisted jobs: active and unread-terminal work contributes to the header badge, terminal results survive reload and device changes, and opening a copied course remains an explicit user action. Local storage remembers only ids started in that browser until their terminal state is observed, preserving the existing completion toast across a reload without becoming product state. The worker still calls `packages/graphql/src/services/courseDuplication.ts:duplicateCourse`, which runs the actual copy in **one interactive transaction** (10 min timeout): afterwards either the full copy exists or nothing does. The legacy `createCourse(sourceCourseId: …)` path still routes directly to `duplicateCourse` for compatibility. Pre-checks that would otherwise produce a partial copy throw a `GraphQLError` with `extensions.code = COURSE_DUPLICATION_PARTIAL_FAILURE`, which the manage frontend maps to a dedicated toast (`apps/frontend-manage/src/components/courses/modals/CourseDuplicationModal.tsx:getCourseDuplicationErrorMessage`).
 
 - **Permission contract (fail-closed):** course-level ADMIN (checked, then re-checked after `recomputeDerivedPermissions`), ADMIN on every selected activity, and ADMIN/OWNER **derived** permission on the Element behind every selected instance (`courseDuplication.ts:assertCourseDuplicationActivityAccess`, `courseDuplication.ts:assertCourseDuplicationInstanceAccess`). Any missing permission aborts the whole duplication.
-- **Copied:** selected activities, including live-quiz random selection and ElementStack titles and descriptions (through the existing `manipulate*` services with a transaction client — creation invariants are not re-implemented), direct permissions of the course and of each copied activity (minus the duplicator's own row), `competencyTreeId`, `authType`, gamification/assessment flags. Every copied permission writes an `AuditLogEntry`. If a non-owner ADMIN duplicates, the source owner is granted ADMIN on the copy (`courseDuplication.ts:grantDuplicatedCourseAccessToSourceOwner`); the duplicator becomes OWNER.
+- **Copied:** selected activities, including live-quiz random selection and ElementStack titles and descriptions (through the existing `manipulate*` services with a transaction client — creation invariants are not re-implemented), direct permissions of the course and of each copied activity (minus the duplicator's own row), `competencyTreeId`, `authType`, gamification/assessment flags. Every copied permission writes an `AuditLogEntry`. Ownership lives in each object's owner column rather than a permission row, so the duplicator becomes OWNER of the copy and any other source owner (course and each activity) is granted direct ADMIN on the copy when they differ from the duplicator (`courseDuplication.ts:grantDuplicatedAccessToSourceOwner`).
 - **Not copied:** participants/participations, groups, results, leaderboards, responses. Copies land in DRAFT with zeroed `results`/`anonymousResults` and fresh `instanceStatistics` (`packages/util/src/elements.ts:getActivityInstanceConnectOrCreate`, duplication branch). Live-quiz PINs are regenerated, never reused; a SSO course's `pinCode` is nulled.
 - **Shared elements:** duplicated instances connect to the **same `Element` rows** and keep the source instance's `elementData` snapshot (same item version the previous cohort saw, even if the Element moved on — `areInstancesOutdated` flags the drift). Element edits reach both courses only through the instance-update flow.
 - **Date shifting:** The duplication dialog requires a new start date; the end date is derived from the original course duration and cannot be edited in the dialog. MicroLearning/GroupActivity schedules shift by the local calendar-day delta between old and new course start while preserving the Europe/Zurich wall-clock time across DST changes (`courseDuplication.ts:getCourseStartDayDelta`, `courseDuplication.ts:applyCourseStartDelta`). The dialog initially derives the group creation deadline from its original offset to the course start, then lets the lecturer override it before creating the copy (`apps/frontend-manage/src/components/courses/modals/CourseDuplicationModal.tsx:FormikNativeDateInput`).

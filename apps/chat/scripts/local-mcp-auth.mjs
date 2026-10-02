@@ -10,7 +10,25 @@ export const LOCAL_SCOPE = {
 }
 export const LOCAL_FIXTURE_MARKER = { localFixture: 'authenticated-benibot-v1' }
 
-export async function createLocalAuthenticator(env) {
+/**
+ * @overload
+ * @param {Record<string, string>} env
+ * @param {object | null} [fixture]
+ * @param {{ returnIdentity?: false }} [options]
+ * @returns {Promise<(headers: Record<string, string>) => Promise<boolean>>}
+ */
+/**
+ * @overload
+ * @param {Record<string, string>} env
+ * @param {object | null} fixture
+ * @param {{ returnIdentity: true }} options
+ * @returns {Promise<(headers: Record<string, string>) => Promise<string | false>>}
+ */
+export async function createLocalAuthenticator(
+  env,
+  fixture = null,
+  { returnIdentity = false } = {}
+) {
   for (const name of [
     'LOCAL_MCP_TRANSPORT_TOKEN',
     'LOCAL_MCP_PUBLIC_KEY',
@@ -53,17 +71,20 @@ export async function createLocalAuthenticator(env) {
         typeof value === 'string' &&
         value.trim().length > 0 &&
         value.length <= 256
-      return (
+      const valid =
         protectedHeader.kid === env.DOC_QUERY_SCOPE_KID &&
-        payload.chatbot_id === LOCAL_CHATBOT_ID &&
-        payload.kb_id === LOCAL_KB_ID &&
+        ((payload.chatbot_id === LOCAL_CHATBOT_ID &&
+          payload.kb_id === LOCAL_KB_ID) ||
+          (fixture !== null &&
+            payload.chatbot_id === fixture.chatbotId &&
+            payload.kb_id === fixture.kbId)) &&
         Number.isInteger(payload.iat) &&
         Number.isInteger(payload.exp) &&
         payload.exp > payload.iat &&
         payload.exp - payload.iat <= 300 &&
         boundedIdentifier(payload.sub) &&
         boundedIdentifier(payload.jti)
-      )
+      return valid && (returnIdentity ? payload.chatbot_id : true)
     } catch {
       return false
     }
@@ -80,7 +101,33 @@ function exactObject(actual, expected) {
   )
 }
 
-export function assertLocalSeedOwnership(server, configs) {
+export function assertLocalSeedOwnership(server, configs, fixture = null) {
+  const additional = configs.filter(
+    (config) => config.chatbotId !== LOCAL_CHATBOT_ID
+  )
+  configs = configs.filter((config) => config.chatbotId === LOCAL_CHATBOT_ID)
+  if (
+    additional.length > 0 &&
+    (!fixture ||
+      additional.length !== 1 ||
+      additional.some(
+        (config) =>
+          config.chatbotId !== fixture.chatbotId ||
+          config.ownerId !== fixture.ownerId ||
+          config.courseId !== fixture.courseId ||
+          config.chatMode !== fixture.chatMode ||
+          !config.isEnabled ||
+          config.priority !== 0 ||
+          !Array.isArray(config.allowedTools) ||
+          config.allowedTools.length !== 1 ||
+          config.allowedTools[0] !== 'doc_query' ||
+          !exactObject(config.parameters, {
+            ...LOCAL_SCOPE,
+            kb_id: fixture.kbId,
+          })
+      ))
+  )
+    throw new Error('Local MCP seed ownership conflict')
   const legacy =
     server?.authType === 'none' &&
     !server.authSecret &&

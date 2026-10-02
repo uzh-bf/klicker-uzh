@@ -1,10 +1,38 @@
-'use strict'
-
 const crypto = require('node:crypto')
 const { execFileSync } = require('node:child_process')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
+
+const {
+  evaluateScanAdmission,
+  evaluateScanJobStatus,
+  receiptFileName,
+} = require('./image-scan-admission.cjs')
+
+const {
+  buildReleaseManifest,
+  validateReleaseManifest,
+} = require('./release-image-manifest.cjs')
+
+const { fingerprintTag } = require('./image-input-fingerprint.cjs')
+
+const {
+  STAGING_STATUS_JOB_ID,
+  STAGING_WORKFLOW_NAME,
+  validateStagingWorkflow: validateConsolidatedStagingWorkflow,
+} = require('./staging-image-workflow.cjs')
+
+const {
+  CONSOLIDATED_WORKFLOW_PATH,
+  STAGING_IMAGE_TARGETS,
+  WORKFLOWS_DIRECTORY,
+  amdJobName,
+  buildJobName,
+  imageName,
+  scanJobName,
+  targetById,
+} = require('./staging-image-targets.cjs')
 
 const PROMOTION_REF = 'refs/heads/stg-release'
 const PROMOTION_REF_NAME = 'stg-release'
@@ -12,14 +40,30 @@ const PROMOTION_REF_API = `heads/${PROMOTION_REF_NAME}`
 const SOURCE_BRANCH_VARIABLE = 'STG_SOURCE_BRANCH'
 const PROMOTION_ENABLED_VARIABLE = 'STG_RELEASE_PROMOTION_ENABLED'
 const MANUAL_CONFIRMATION = 'stg-release'
+// The controller wakes once per trigger workflow completing, so an early wake
+// routinely finds a required workflow that is still executing. These bounds
+// cover the gap between a completion event and readable jobs and artifacts, and
+// let a workflow that finishes inside the window be promoted by the same wake.
+// A gate that is still unfinished when the window closes defers instead of
+// failing: only a concluded non-success is a candidate failure, and the
+// still-running workflow wakes the controller again when it completes.
 const DEFAULT_MAX_ATTEMPTS = 6
 const DEFAULT_RETRY_DELAY_MS = 20_000
 const DEFAULT_POST_PUSH_READBACK_ATTEMPTS = 3
 const DEFAULT_POST_PUSH_READBACK_DELAY_MS = 2_000
-const WORKFLOW_PATH_PATTERN = /^\.github\/workflows\/v3_.*-stg\.yml$/
+// One consolidated workflow replaces the per-image files. It stays a single
+// trusted path, so the controller keeps validating a fixed workflow identity
+// instead of a candidate-chosen set.
+const WORKFLOW_PATH_PATTERN = new RegExp(
+  '^' + CONSOLIDATED_WORKFLOW_PATH.replace(/[.]/g, '\\.') + '$'
+)
 const APPROVED_PUSH_BRANCHES = Object.freeze(['v3', 'v3*'])
 const DIGEST_PATTERN = /^sha256:[0-9a-f]{64}$/
 const SHA_PATTERN = /^[0-9a-f]{40}$/
+// One scanned image uploads its findings report, SBOM, and receipt together, so
+// the archive budget has to cover a full vulnerability report rather than a
+// receipt alone.
+const SCAN_ARCHIVE_LIMIT = 67108864
 const REGISTRY_CONTENT_TYPES = Object.freeze([
   'application/vnd.oci.image.index.v1+json',
   'application/vnd.docker.distribution.manifest.list.v2+json',
@@ -27,95 +71,190 @@ const REGISTRY_CONTENT_TYPES = Object.freeze([
   'application/vnd.docker.distribution.manifest.v2+json',
 ])
 const REGISTRY_ACCEPT = REGISTRY_CONTENT_TYPES.join(', ')
-
-// Keep this inventory synchronized with the workflow_run names below. A
-// candidate cannot rename, add, remove, or retarget a runtime publisher without
-// a trusted controller change.
-const STAGING_WORKFLOWS = Object.freeze([
-  {
-    jobs: [{ id: 'build-arm', image: 'analytics-arm' }],
-    name: 'Build Docker image for analytics (stg)',
-    path: '.github/workflows/v3_analytics-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'auth-arm' }],
-    name: 'Build Docker image for auth (stg)',
-    path: '.github/workflows/v3_auth-stg.yml',
-  },
-  {
-    jobs: [
-      { id: 'build-arm', image: 'backend-docker-arm' },
-      { id: 'build-migrator-arm', image: 'backend-docker-migrator-arm' },
-    ],
-    name: 'Build Docker image for backend-docker (stg)',
-    path: '.github/workflows/v3_backend-docker-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'chat-arm' }],
-    name: 'Build Docker image for chat (stg)',
-    path: '.github/workflows/v3_chat-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'frontend-control-arm' }],
-    name: 'Build Docker image for frontend-control (stg)',
-    path: '.github/workflows/v3_frontend-control-docker-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'frontend-manage-arm' }],
-    name: 'Build Docker image for frontend-manage (stg)',
-    path: '.github/workflows/v3_frontend-manage-docker-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'frontend-assessment-arm' }],
-    name: 'Build Docker image for frontend-assessment (stg)',
-    path: '.github/workflows/v3_frontend-pwa-docker-assessment-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'frontend-pwa-arm' }],
-    name: 'Build Docker image for frontend-pwa (stg)',
-    path: '.github/workflows/v3_frontend-pwa-docker-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'hatchet-worker-general-arm' }],
-    name: 'Build Docker image for hatchet-worker-general (stg)',
-    path: '.github/workflows/v3_hatchet-worker-general-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'hatchet-worker-response-processor-arm' }],
-    name: 'Build Docker image for hatchet-worker-response-processor (stg)',
-    path: '.github/workflows/v3_hatchet-worker-response-processor-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'lti-arm' }],
-    name: 'Build Docker image for lti (stg)',
-    path: '.github/workflows/v3_lti-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'mcp-lecturer-arm' }],
-    name: 'Build Docker image for mcp-lecturer (stg)',
-    nonRuntimeJobs: [{ id: 'build-amd', image: 'mcp-lecturer-amd' }],
-    path: '.github/workflows/v3_mcp-lecturer-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'mcp-student-arm' }],
-    name: 'Build Docker image for mcp-student (stg)',
-    nonRuntimeJobs: [{ id: 'build-amd', image: 'mcp-student-amd' }],
-    path: '.github/workflows/v3_mcp-student-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'olat-api-arm' }],
-    name: 'Build Docker image for olat-api (stg)',
-    path: '.github/workflows/v3_olat-api-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'response-api-arm' }],
-    name: 'Build Docker image for response-api (stg)',
-    path: '.github/workflows/v3_response-api-stg.yml',
-  },
-])
-const STAGING_WORKFLOW_PATHS = Object.freeze(
-  STAGING_WORKFLOWS.map((workflow) => workflow.path)
+// An index has to be resolved to its platform manifest before the config that
+// carries the labels can be read, so the two reads declare different types.
+const REGISTRY_INDEX_ACCEPT = REGISTRY_CONTENT_TYPES.slice(0, 2).join(', ')
+const REGISTRY_IMAGE_ACCEPT = REGISTRY_CONTENT_TYPES.slice(2).join(', ')
+const REGISTRY_CONFIG_ACCEPT =
+  'application/vnd.oci.image.config.v1+json, application/vnd.docker.container.image.v1+json'
+const REGISTRY_CONFIG_CONTENT_TYPES = Object.freeze(
+  REGISTRY_CONFIG_ACCEPT.split(', ')
 )
+// A registry serves a manifest where it is addressed, but a blob only through
+// a redirect to the storage host that holds the bytes. GHCR redirects to this
+// host, so a blob read has to follow exactly one hop. The hop is accepted only
+// when it stays on that host and the bytes it returns still hash to the digest
+// that was requested, so neither an unexpected redirect nor a substituted
+// storage response can decide what the promotion reads.
+const REGISTRY_BLOB_REDIRECT_HOSTS = Object.freeze([
+  'pkg-containers.githubusercontent.com',
+])
+const REGISTRY_BLOB_REDIRECT_STATUSES = Object.freeze([301, 302, 303, 307, 308])
+const REGISTRY_BLOB_STORAGE_CONTENT_TYPES = Object.freeze([
+  'application/octet-stream',
+])
+// The publication publishes one ARM64 image per target, so a manifest that
+// describes another platform, or several, cannot be the promoted digest.
+const PUBLICATION_ARCHITECTURE = Object.freeze({
+  architecture: 'arm64',
+  os: 'linux',
+})
+const PUBLICATION_DIGEST_ARTIFACT_PREFIX = 'build-digest-'
+const PUBLICATION_ARTIFACT_LIMIT = 1048576
+const PUBLICATION_RECORD_SCHEMA_VERSION = 1
+// Which label names the commit an image was built from. It is declared by the
+// trusted workflow next to the fingerprinted inputs, so an adopted digest can
+// be bound to the revision that produced it.
+const REVISION_LABEL = 'org.opencontainers.image.revision'
+
+const CI_SUITE_JOBS = Object.freeze({
+  'test-graphql.yml': ['test-graphql'],
+  'test-unit.yml': ['test-unit'],
+  'test-olat-api.yml': ['test-olat-api'],
+  'test-intl-production.yml': [
+    'intl-production-smoke (frontend-pwa)',
+    'intl-production-smoke (frontend-manage)',
+  ],
+})
+
+const REQUIRED_CI_WORKFLOWS = Object.freeze(
+  [
+    ['check.yml', 'check'],
+    ['check-gitleaks.yml', 'check-gitleaks'],
+    ['test-graphql.yml', 'test-graphql-status'],
+    ['test-playwright.yml', 'test-playwright-status'],
+    ['test-unit.yml', 'test-unit-status'],
+    ['test-olat-api.yml', 'test-olat-api-status'],
+    ['test-intl-production.yml', 'test-intl-production-status'],
+    ['v3_images-stg.yml', 'build-images-status'],
+    // Admission reads push runs. There the SonarCloud job publishes a branch
+    // analysis without awaiting the quality gate, and the boundary step names
+    // an inflated branch classification in an annotation rather than failing
+    // the job. A hard scan failure still fails this candidate, which is what
+    // admission checks. The awaited gate is on the pull request, where new
+    // code is the diff against the base.
+    ['v3_sonarcloud.yml', 'SonarCloud'],
+  ].map(([file, id]) => ({
+    path: `.github/workflows/${file}`,
+    jobs:
+      id === 'test-playwright-status'
+        ? [
+            { id },
+            ...Array.from({ length: 8 }, (_, i) => ({
+              id: `test-playwright-execution / test-playwright-hosted (${i + 1}, 8)`,
+            })),
+          ]
+        : [{ id }, ...(CI_SUITE_JOBS[file] ?? []).map((id) => ({ id }))],
+  }))
+)
+
+// The trusted runtime publisher inventory.
+//
+// One consolidated workflow now owns every staging image publication, so the
+// controller no longer compares a candidate-authored set of workflow files
+// against a list of trusted names. What stays trusted is the target list in
+// .github/scripts/staging-image-targets.cjs, read from the controller's own
+// revision: a candidate can neither add, drop nor retarget a promoted image.
+// Which of those targets a candidate can actually build is resolved from the
+// candidate tree through its dockerfiles, never from candidate output.
+const STAGING_WORKFLOWS = Object.freeze([
+  { name: STAGING_WORKFLOW_NAME, path: CONSOLIDATED_WORKFLOW_PATH },
+])
+const STAGING_WORKFLOW_PATHS = Object.freeze([CONSOLIDATED_WORKFLOW_PATH])
+
+// Every target the trusted inventory names, regardless of whether a given
+// branch can build it. Availability is resolved per candidate below.
+const STAGING_TARGET_IDS = Object.freeze(
+  STAGING_IMAGE_TARGETS.map((target) => target.id)
+)
+
+function stagingTargets(targetIds) {
+  return (targetIds ?? [])
+    .map((targetId) => targetById(targetId))
+    .filter(Boolean)
+}
+
+// The ARM64 build job names, the scan job names and the AMD64 job names are
+// deterministic functions of the trusted inventory. The controller matches them
+// in the candidate run's own job list, so a candidate cannot fulfill an
+// expected target with a differently named job of its own choosing.
+function stagingArmBuildJobIds(targetIds) {
+  return stagingTargets(targetIds).map((target) => buildJobName(target))
+}
+
+function stagingScanJobIds(targetIds) {
+  return stagingTargets(targetIds)
+    .filter((target) => target.scan === true)
+    .map((target) => scanJobName(target))
+}
+
+// The targets a release may adopt instead of rebuilding, and the targets whose
+// scan receipt a promotion admits. Both come from the trusted inventory, so a
+// release manifest can never claim more reuse or more qualification than the
+// publication produces.
+function stagingReuseEligibleTargetIds(targetIds) {
+  return stagingTargets(targetIds)
+    .filter((target) => target.reuse === true)
+    .map((target) => target.id)
+    .sort()
+}
+
+function stagingScannedTargetIds(targetIds) {
+  return stagingTargets(targetIds)
+    .filter((target) => target.scan === true)
+    .map((target) => target.id)
+    .sort()
+}
+
+// The ARM64 build job name of each target, so a resolved image is bound to the
+// inventory entry that owns it instead of to a name the run chose.
+function stagingTargetIdByBuildJob(targetIds) {
+  return new Map(
+    stagingTargets(targetIds).map((target) => [buildJobName(target), target.id])
+  )
+}
+
+function stagingAmdJobIds(targetIds) {
+  return stagingTargets(targetIds)
+    .filter((target) => target.amd === true)
+    .map((target) => amdJobName(target))
+}
+
+// The publisher inventory for one candidate. 'jobs' pairs each ARM64 build job
+// with the registry image the trusted target list binds to it; those are the
+// images a promotion may contain. 'requiredJobIds' is every job the candidate
+// must complete, so the scan and AMD64 legs are proved from the run's own job
+// list rather than from candidate evidence.
+function stagingWorkflowIncarnation({ repository, targetIds }) {
+  const jobs = stagingTargets(targetIds)
+    .map((target) => ({
+      id: buildJobName(target),
+      image: 'ghcr.io/' + repository + '/' + imageName(target) + '-arm',
+    }))
+    .sort((left, right) => left.id.localeCompare(right.id))
+  return {
+    jobs,
+    name: STAGING_WORKFLOW_NAME,
+    path: CONSOLIDATED_WORKFLOW_PATH,
+    requiredJobIds: [
+      ...jobs.map((job) => job.id),
+      ...stagingScanJobIds(targetIds),
+      ...stagingAmdJobIds(targetIds),
+    ].sort(),
+  }
+}
+
+// The scan admission entries for one candidate, derived from the same trusted
+// target list, so the admitted set can never differ from the built set.
+function stagingScanAdmissionInventory(targetIds) {
+  return stagingTargets(targetIds)
+    .filter((target) => target.scan === true)
+    .map((target) => ({
+      buildJob: buildJobName(target),
+      scanJob: scanJobName(target),
+      workflowPath: CONSOLIDATED_WORKFLOW_PATH,
+    }))
+}
 
 function sha256(value) {
   return crypto.createHash('sha256').update(String(value)).digest('hex')
@@ -174,374 +313,31 @@ function matchesApprovedBranch(sourceBranch) {
   )
 }
 
-function parseScalar(value) {
-  return String(value ?? '')
-    .trim()
-    .replace(/^(['"])(.*)\1$/, '$2')
-}
-
-function extractTopLevelBlock(
-  content,
-  key,
-  workflowPath,
-  { optional = false } = {}
-) {
-  const lines = String(content).split(/\r?\n/)
-  const indexes = lines
-    .map((line, index) => (line === `${key}:` ? index : -1))
-    .filter((index) => index >= 0)
-  if (indexes.length === 0 && optional) return []
-  if (indexes.length !== 1) {
-    throw new Error(
-      `${workflowPath} must have exactly one top-level ${key} block`
-    )
-  }
-  const start = indexes[0]
-  const relativeEnd = lines
-    .slice(start + 1)
-    .findIndex((line) => line.trim() !== '' && !/^\s/.test(line))
-  const end = relativeEnd < 0 ? lines.length : start + 1 + relativeEnd
-  return lines.slice(start + 1, end)
-}
-
-function extractName(content, workflowPath) {
-  const matches = [...String(content).matchAll(/^name:\s*(.+)$/gm)]
-  if (matches.length !== 1 || !parseScalar(matches[0][1])) {
-    throw new Error(`${workflowPath} must have exactly one workflow name`)
-  }
-  return parseScalar(matches[0][1])
-}
-
-function extractPushBranches(content, workflowPath) {
-  const lines = extractTopLevelBlock(content, 'on', workflowPath)
-  const pushIndex = lines.findIndex((line) => /^  push:\s*$/.test(line))
-  if (pushIndex < 0) {
-    throw new Error(`${workflowPath} has no push trigger`)
-  }
-  const end = lines.slice(pushIndex + 1).findIndex((line) => {
-    return line.trim() !== '' && !/^\s*#/.test(line) && /^  \S/.test(line)
-  })
-  const endIndex = end < 0 ? lines.length : pushIndex + 1 + end
-  const branchesIndex = lines.findIndex(
-    (line, index) =>
-      index > pushIndex && index < endIndex && /^    branches:\s*$/.test(line)
-  )
-  if (branchesIndex < 0) {
-    throw new Error(`${workflowPath} push trigger has no branches`)
-  }
-  const pushKeys = lines
-    .slice(pushIndex + 1, endIndex)
-    .flatMap((line) => line.match(/^    ([A-Za-z0-9_-]+):/)?.[1] ?? [])
-  if (canonicalJson(pushKeys) !== canonicalJson(['branches'])) {
-    throw new Error(`${workflowPath} does not use the approved push triggers`)
-  }
-  const branches = []
-  for (let index = branchesIndex + 1; index < endIndex; index += 1) {
-    const match = lines[index].match(/^      -\s*(.+?)\s*$/)
-    if (match) branches.push(parseScalar(match[1]))
-  }
-  return branches
-}
-
-function extractRootEnvironment(content, workflowPath) {
-  const lines = extractTopLevelBlock(content, 'env', workflowPath, {
-    optional: true,
-  })
-  const values = {}
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index]
-    const match = line.match(/^  ([A-Z][A-Z0-9_]*)\s*:\s*(.*?)\s*$/)
-    if (match) values[match[1]] = parseScalar(match[2])
-  }
-  return values
-}
-
-function extractJobBlocks(content, workflowPath) {
-  const lines = extractTopLevelBlock(content, 'jobs', workflowPath)
-  const jobs = []
-  let current = null
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index]
-    const jobMatch = line.match(/^  ([A-Za-z0-9_-]+):\s*$/)
-    if (jobMatch) {
-      if (current) jobs.push(current)
-      current = { id: jobMatch[1], lines: [] }
-      continue
-    }
-    if (current) {
-      if (/^\S/.test(line) && line.trim() !== '') break
-      current.lines.push(line)
-    }
-  }
-  if (current) jobs.push(current)
-  return jobs.map((job) => ({ ...job, content: job.lines.join('\n') }))
-}
-
-function isDisabledJob(job) {
-  return /^    if:\s*\$\{\{\s*false\s*\}\}\s*(?:#.*)?$/m.test(job.content)
-}
-
-function resolveTemplate(value, environment, repository) {
-  let resolved = parseScalar(value)
-  for (let pass = 0; pass < 3; pass += 1) {
-    const next = resolved
-      .replace(/\$\{\{\s*github\.repository\s*\}\}/g, repository)
-      .replace(
-        /\$\{\{\s*env\.([A-Z][A-Z0-9_]*)\s*\}\}/g,
-        (_match, name) => environment[name] ?? ''
-      )
-    if (next === resolved) break
-    resolved = next
-  }
-  return resolved
-}
-
-function extractActionSteps(job, workflowPath) {
-  const lines = job.content.split(/\r?\n/)
-  const stepsIndexes = lines
-    .map((line, index) => (line === '    steps:' ? index : -1))
-    .filter((index) => index >= 0)
-  if (stepsIndexes.length !== 1) {
-    throw new Error(
-      `${workflowPath}/${job.id} must have exactly one steps block`
-    )
-  }
-  const start = stepsIndexes[0]
-  const relativeEnd = lines.slice(start + 1).findIndex((line) => {
-    return (
-      line.trim() !== '' &&
-      !/^\s*#/.test(line) &&
-      /^    [A-Za-z0-9_-]+:/.test(line)
-    )
-  })
-  const end = relativeEnd < 0 ? lines.length : start + 1 + relativeEnd
-  const steps = []
-  let current = null
-  for (const line of lines.slice(start + 1, end)) {
-    if (/^      -\s+/.test(line)) {
-      if (current) steps.push(current.join('\n'))
-      current = [line]
-    } else if (current) {
-      current.push(line)
-    }
-  }
-  if (current) steps.push(current.join('\n'))
-  return steps
-}
-
-function actionStep(job, action, workflowPath) {
-  const matches = extractActionSteps(job, workflowPath).filter((step) =>
-    new RegExp(
-      `^(?:      - uses|        uses):\\s*${action.replace('/', '\\/')}@[^\\s#]+\\s*(?:#.*)?$`,
-      'm'
-    ).test(step)
-  )
-  if (matches.length !== 1) {
-    throw new Error(`${workflowPath}/${job.id} must use exactly one ${action}`)
-  }
-  return matches[0]
-}
-
-function extractImageReference(
-  step,
-  environment,
-  repository,
-  workflowPath,
-  jobId
-) {
-  const matches = [...step.matchAll(/^          images:\s*(.+)$/gm)]
-  if (matches.length !== 1) {
-    throw new Error(
-      `${workflowPath}/${jobId} must declare exactly one metadata image`
-    )
-  }
-  const match = matches[0]
-  if (!match) {
-    throw new Error(`${workflowPath}/${jobId} has no Docker image metadata`)
-  }
-  const image = resolveTemplate(match[1], environment, repository)
-  if (
-    image.includes('${{') ||
-    !/^[A-Za-z0-9.-]+\/[A-Za-z0-9._/-]+$/.test(image)
-  ) {
-    throw new Error(
-      `${workflowPath}/${jobId} has an unresolved image reference`
-    )
-  }
-  return image
-}
-
-function hasFullShaTag(metadataStep) {
-  return (
-    /^\s*type\s*=\s*raw[^\n#]*value\s*=\s*\$\{\{\s*github\.sha\s*\}\}\s*$/m.test(
-      metadataStep
-    ) || /^\s*tags:\s*\$\{\{\s*github\.sha\s*\}\}\s*$/m.test(metadataStep)
-  )
-}
-
+// Structural validation of the candidate's consolidated staging workflow.
+//
+// The controller must not execute candidate code, so the shape the promotion
+// contract depends on is pinned by staging-image-workflow.cjs (trusted name and
+// trigger, plan and matrix structure, ARM runner, full-SHA publish guard,
+// per-target digest handoff, pinned scanner, enforced scan policy, terminal
+// reporting job). Which images that pipeline proves is then bound from the
+// controller's own target inventory, never from candidate output.
 function validateStagingWorkflow({
   path: workflowPath,
   content,
-  expectedWorkflow,
   repository,
   sourceBranch,
+  targetIds = STAGING_TARGET_IDS,
 }) {
-  if (!WORKFLOW_PATH_PATTERN.test(workflowPath)) {
-    throw new Error(`${workflowPath} is not an approved staging workflow path`)
-  }
-  const workflowName = extractName(content, workflowPath)
-  if (workflowName !== expectedWorkflow.name) {
-    throw new Error(`${workflowPath} does not use the trusted workflow name`)
-  }
-  const branches = extractPushBranches(content, workflowPath)
-  if (canonicalJson(branches) !== canonicalJson([...APPROVED_PUSH_BRANCHES])) {
-    throw new Error(`${workflowPath} does not use the approved push triggers`)
-  }
-  if (!matchesApprovedBranch(sourceBranch)) {
-    throw new Error(
-      `${sourceBranch} is not covered by the approved push triggers`
-    )
-  }
-
-  const environment = extractRootEnvironment(content, workflowPath)
-  const jobs = extractJobBlocks(content, workflowPath)
-  if (jobs.length === 0) throw new Error(`${workflowPath} has no jobs`)
-
-  const expectedNonRuntimeJobIds = (expectedWorkflow.nonRuntimeJobs ?? [])
-    .map((job) => job.id)
-    .sort()
-  for (const job of jobs.filter((entry) => entry.id.endsWith('-amd'))) {
-    if (!isDisabledJob(job) && !expectedNonRuntimeJobIds.includes(job.id)) {
-      throw new Error(`${workflowPath}/${job.id} must remain disabled`)
-    }
-  }
-
-  const activeArmJobs = jobs.filter(
-    (job) => job.id.endsWith('-arm') && !isDisabledJob(job)
-  )
-  const expectedJobIds = expectedWorkflow.jobs.map((job) => job.id).sort()
-  const actualJobIds = activeArmJobs.map((job) => job.id).sort()
-  if (canonicalJson(actualJobIds) !== canonicalJson(expectedJobIds)) {
-    throw new Error(`${workflowPath} active ARM job inventory changed`)
-  }
-
-  const activeNonRuntimeJobs = jobs.filter(
-    (job) => expectedNonRuntimeJobIds.includes(job.id) && !isDisabledJob(job)
-  )
-  const actualNonRuntimeJobIds = activeNonRuntimeJobs
-    .map((job) => job.id)
-    .sort()
-  if (
-    canonicalJson(actualNonRuntimeJobIds) !==
-    canonicalJson(expectedNonRuntimeJobIds)
-  ) {
-    throw new Error(`${workflowPath} active non-runtime job inventory changed`)
-  }
-
-  const publisherJobs = [...activeArmJobs, ...activeNonRuntimeJobs]
-  const images = publisherJobs.map((job) => {
-    if (
-      job.id.endsWith('-arm') &&
-      !/^    runs-on:\s*ubuntu-24\.04-arm\s*$/m.test(job.content)
-    ) {
-      throw new Error(
-        `${workflowPath}/${job.id} is not pinned to the ARM runner`
-      )
-    }
-    const metadataStep = actionStep(job, 'docker/metadata-action', workflowPath)
-    const publisherStep = actionStep(
-      job,
-      'docker/build-push-action',
-      workflowPath
-    )
-    const metadataId = metadataStep.match(
-      /^        id:\s*([A-Za-z0-9_-]+)\s*$/m
-    )?.[1]
-    if (!metadataId) {
-      throw new Error(
-        `${workflowPath}/${job.id} metadata action has no stable id`
-      )
-    }
-    if (
-      !/^          push:\s*\$\{\{\s*github\.event_name\s*!=\s*'pull_request'\s*\}\}\s*$/m.test(
-        publisherStep
-      )
-    ) {
-      throw new Error(`${workflowPath}/${job.id} has an unsafe push condition`)
-    }
-    if (
-      !new RegExp(
-        `^          tags:\\s*\\$\\{\\{\\s*steps\\.${metadataId}\\.outputs\\.tags\\s*\\}\\}\\s*$`,
-        'm'
-      ).test(publisherStep)
-    ) {
-      throw new Error(
-        `${workflowPath}/${job.id} does not publish the validated metadata tags`
-      )
-    }
-    if (!hasFullShaTag(metadataStep)) {
-      throw new Error(
-        `${workflowPath}/${job.id} does not publish a full source SHA tag`
-      )
-    }
-    return {
-      id: job.id,
-      image: extractImageReference(
-        metadataStep,
-        environment,
-        repository,
-        workflowPath,
-        job.id
-      ),
-    }
-  })
-
-  const unexpectedPublishers = jobs.filter(
-    (job) =>
-      extractActionSteps(job, workflowPath).some((step) =>
-        /^(?:      - uses|        uses):\s*docker\/build-push-action@[^\s#]+\s*(?:#.*)?$/m.test(
-          step
-        )
-      ) &&
-      !publisherJobs.includes(job) &&
-      !(job.id.endsWith('-amd') && isDisabledJob(job))
-  )
-  if (unexpectedPublishers.length > 0) {
-    throw new Error(`${workflowPath} has an unexpected active image publisher`)
-  }
-
-  const hasMigratorJob = expectedJobIds.includes('build-migrator-arm')
-  if (
-    hasMigratorJob &&
-    !/^    needs:\s*build-migrator-arm\s*$/m.test(
-      activeArmJobs.find((job) => job.id === 'build-arm').content
-    )
-  ) {
-    throw new Error(`${workflowPath}/build-arm does not wait for the migrator`)
-  }
-
-  const expectedImages = [
-    ...expectedWorkflow.jobs,
-    ...(expectedWorkflow.nonRuntimeJobs ?? []),
-  ]
-    .map((job) => ({
-      id: job.id,
-      image: `ghcr.io/${repository}/${job.image}`,
-    }))
-    .sort((left, right) => left.id.localeCompare(right.id))
-  const actualImages = images.sort((left, right) =>
-    left.id.localeCompare(right.id)
-  )
-  if (canonicalJson(actualImages) !== canonicalJson(expectedImages)) {
-    throw new Error(`${workflowPath} runtime image inventory changed`)
-  }
-
-  const runtimeJobIds = new Set(expectedJobIds)
-  return {
-    name: workflowName,
+  validateConsolidatedStagingWorkflow({
+    content,
     path: workflowPath,
-    jobs: actualImages.filter((job) => runtimeJobIds.has(job.id)),
+    sourceBranch,
+  })
+  const incarnation = stagingWorkflowIncarnation({ repository, targetIds })
+  if (incarnation.jobs.length === 0) {
+    throw new Error(`${workflowPath} proves no staging image target`)
   }
+  return incarnation
 }
 
 function validateStagingWorkflows({
@@ -549,34 +345,27 @@ function validateStagingWorkflows({
   repository,
   sourceBranch,
   expectedWorkflows = STAGING_WORKFLOWS,
+  targetIds = STAGING_TARGET_IDS,
 }) {
   assertSafeSourceBranch(sourceBranch)
-  const paths = definitions.map((definition) => definition.path).sort()
+  if (definitions.length !== 1) {
+    throw new Error('the candidate must carry exactly one staging workflow')
+  }
   const expected = expectedWorkflows.map((workflow) => workflow.path).sort()
+  const paths = definitions.map((definition) => definition.path).sort()
   if (canonicalJson(paths) !== canonicalJson(expected)) {
     throw new Error(
       'candidate staging workflow set differs from the trusted set'
     )
   }
-  const workflows = definitions
-    .map((definition) => {
-      const expectedWorkflow = expectedWorkflows.find(
-        (workflow) => workflow.path === definition.path
-      )
-      return validateStagingWorkflow({
-        ...definition,
-        expectedWorkflow,
-        repository,
-        sourceBranch,
-      })
-    })
-    .sort((left, right) => left.path.localeCompare(right.path))
-  const jobCount = workflows.reduce(
-    (count, workflow) => count + workflow.jobs.length,
-    0
-  )
-  if (jobCount === 0) throw new Error('candidate has no active ARM image jobs')
-  return workflows
+  return [
+    validateStagingWorkflow({
+      ...definitions[0],
+      repository,
+      sourceBranch,
+      targetIds,
+    }),
+  ]
 }
 
 async function getFileText(github, context, filePath, ref) {
@@ -597,6 +386,28 @@ async function getFileText(github, context, filePath, ref) {
   return Buffer.from(data.content, 'base64').toString('utf8')
 }
 
+// The per-image workflows this consolidation replaces. A candidate that still
+// carries one would publish outside the planned matrix, so its presence fails
+// the candidate closed until the integration line carries the consolidation.
+const LEGACY_STAGING_PATTERN = /^[.]github[/]workflows[/]v3_.*-stg[.]yml$/
+
+function isLegacyStagingWorkflowPath(entryPath) {
+  return (
+    String(entryPath) !== CONSOLIDATED_WORKFLOW_PATH &&
+    LEGACY_STAGING_PATTERN.test(String(entryPath))
+  )
+}
+
+function legacyStagingWorkflowPaths(entries) {
+  return (entries ?? [])
+    .filter(
+      (entry) =>
+        entry?.type === 'file' && isLegacyStagingWorkflowPath(entry.path)
+    )
+    .map((entry) => entry.path)
+    .sort()
+}
+
 async function getCandidateDefinitions({
   github,
   context,
@@ -606,34 +417,97 @@ async function getCandidateDefinitions({
   const response = await github.rest.repos.getContent({
     owner: context.repo.owner,
     repo: context.repo.repo,
-    path: '.github/workflows',
+    path: WORKFLOWS_DIRECTORY,
     ref: candidateSha,
   })
   if (!Array.isArray(response.data)) {
     throw new Error('candidate workflow directory is unavailable')
   }
-  const entries = response.data
-    .filter(
-      (entry) =>
-        entry?.type === 'file' && WORKFLOW_PATH_PATTERN.test(entry.path)
+  const legacy = legacyStagingWorkflowPaths(response.data)
+  if (legacy.length > 0) {
+    throw new Error(
+      'candidate still publishes per-image staging workflows: ' +
+        legacy.join(', ')
     )
-    .map((entry) => entry.path)
-    .sort()
+  }
   const expectedPaths = expectedWorkflows
     .map((workflow) => workflow.path)
     .sort()
-  if (canonicalJson(entries) !== canonicalJson(expectedPaths)) {
+  const present = response.data
+    .filter(
+      (entry) => entry?.type === 'file' && expectedPaths.includes(entry.path)
+    )
+    .map((entry) => entry.path)
+    .sort()
+  if (canonicalJson(present) !== canonicalJson(expectedPaths)) {
     throw new Error(
       'candidate staging workflow set differs from the trusted set'
     )
   }
-  const definitions = await Promise.all(
-    entries.map(async (workflowPath) => ({
+  return Promise.all(
+    expectedPaths.map(async (workflowPath) => ({
       content: await getFileText(github, context, workflowPath, candidateSha),
       path: workflowPath,
     }))
   )
-  return definitions
+}
+
+// The targets a candidate must have built, from the targets its tree does not
+// carry. A target marked optional in the trusted inventory exists on the
+// integration lines only; every other absence is a missing publication and fails
+// the candidate. Pure, so the boundary is covered without a token or a network.
+function resolveCandidateTargetIds(unavailableTargetIds = []) {
+  const known = new Set(STAGING_TARGET_IDS)
+  const optional = new Set(
+    STAGING_IMAGE_TARGETS.filter((target) => target.optional === true).map(
+      (target) => target.id
+    )
+  )
+  const missing = new Set()
+  for (const targetId of unavailableTargetIds) {
+    if (!known.has(targetId)) {
+      throw new Error(
+        `candidate reports an unknown staging image target: ${targetId}`
+      )
+    }
+    if (!optional.has(targetId)) {
+      throw new Error(
+        `candidate is missing the required staging image target ${targetId}`
+      )
+    }
+    missing.add(targetId)
+  }
+  return STAGING_TARGET_IDS.filter((targetId) => !missing.has(targetId))
+}
+
+// Availability is read from the candidate tree rather than from the plan output,
+// so a candidate that omits a build also drops its dockerfile or fails here.
+const MISSING_DOCKERFILE_STATUS = 404
+
+async function getCandidateTargetIds({ github, context, candidateSha }) {
+  const probe = async (target) => {
+    try {
+      const response = await github.rest.repos.getContent({
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        path: target.dockerfile,
+        ref: candidateSha,
+      })
+      if (Array.isArray(response.data) || response.data?.type !== 'file') {
+        throw new Error(
+          `${target.dockerfile} is not a regular file in the candidate tree`
+        )
+      }
+      return null
+    } catch (error) {
+      if (error?.status === MISSING_DOCKERFILE_STATUS) return target.id
+      throw error
+    }
+  }
+  const unavailable = (
+    await Promise.all(STAGING_IMAGE_TARGETS.map(probe))
+  ).filter(Boolean)
+  return resolveCandidateTargetIds(unavailable)
 }
 
 function getSourceBranch(selectedSourceBranch) {
@@ -688,12 +562,21 @@ async function paginate(github, endpoint, params) {
   return result
 }
 
-function latestRun(runs, workflowPath, candidateSha) {
+function latestRun(runs, workflowPath, candidateSha, sourceBranch, repository) {
   const exact = runs
     .filter(
-      (run) => run?.path === workflowPath && run?.head_sha === candidateSha
+      (run) =>
+        run?.path === workflowPath &&
+        run?.head_sha === candidateSha &&
+        run.event === 'push' &&
+        run.head_branch === sourceBranch &&
+        run.repository?.full_name === repository
     )
-    .sort((left, right) => Number(right.id ?? 0) - Number(left.id ?? 0))
+    .sort(
+      (left, right) =>
+        Number(right.id ?? 0) - Number(left.id ?? 0) ||
+        Number(right.run_attempt ?? 0) - Number(left.run_attempt ?? 0)
+    )
   return {
     exact: exact[0],
     candidateRuns: runs.filter((run) => run?.head_sha === candidateSha),
@@ -715,9 +598,40 @@ function runState(run, sourceBranch, repository) {
   return 'failed'
 }
 
+// The jobs a candidate run must have completed successfully. The publisher
+// inventory carries the image each ARM64 build proves; the remaining required
+// ids are the scan and AMD64 legs, which publish no runtime image and are
+// verified for success alone.
+function requiredJobIds(workflow) {
+  return workflow.requiredJobIds ?? workflow.jobs.map((job) => job.id)
+}
+
+function publisherJobIds(workflow) {
+  return workflow.jobs.map((job) => job.id)
+}
+
+// A required job name is the trusted inventory's own identifier for that job,
+// but a job that delegates to a reusable workflow is reported under the caller
+// name and the callee name joined by " / ". The Sonar job is the one required
+// job that now calls a reusable workflow, so the expected identifier appears as
+// "SonarCloud / SonarCloud". Matching the identifier as a prefix keeps the
+// trusted name mandatory -- a candidate cannot substitute an unrelated job --
+// while tolerating the expansion GitHub performs for the delegation.
+function jobNameMatches(reportedName, expectedJobId) {
+  if (reportedName === expectedJobId) return true
+  return (
+    typeof reportedName === 'string' &&
+    reportedName.startsWith(expectedJobId + ' / ') &&
+    reportedName.length > expectedJobId.length + 3
+  )
+}
+
 function jobState(job, expectedJobId, candidateSha) {
   if (!job) return 'missing'
-  if (job.name !== expectedJobId || job.head_sha !== candidateSha) {
+  if (
+    !jobNameMatches(job.name, expectedJobId) ||
+    job.head_sha !== candidateSha
+  ) {
     return 'wrong_evidence'
   }
   if (job.status !== 'completed') return 'running'
@@ -743,7 +657,13 @@ async function collectWorkflowEvidence({
     head_sha: candidateSha,
     per_page: 100,
   })
-  const { exact, candidateRuns } = latestRun(runs, workflow.path, candidateSha)
+  const { exact, candidateRuns } = latestRun(
+    runs,
+    workflow.path,
+    candidateSha,
+    sourceBranch,
+    repository
+  )
   if (!exact) {
     return {
       path: workflow.path,
@@ -763,7 +683,7 @@ async function collectWorkflowEvidence({
       status: state,
     }
   }
-  if (typeof github.rest.actions.listJobsForWorkflowRun !== 'function') {
+  if (typeof github.rest.actions.listJobsForWorkflowRunAttempt !== 'function') {
     return {
       path: workflow.path,
       reason: 'workflow jobs are unavailable',
@@ -771,24 +691,51 @@ async function collectWorkflowEvidence({
       status: 'wrong_evidence',
     }
   }
+  if (!Number.isSafeInteger(exact.run_attempt) || exact.run_attempt < 1) {
+    return {
+      path: workflow.path,
+      reason: 'run attempt is unavailable',
+      run: exact,
+      status: 'wrong_evidence',
+    }
+  }
   const jobs = await paginate(
     github,
-    github.rest.actions.listJobsForWorkflowRun,
+    github.rest.actions.listJobsForWorkflowRunAttempt,
     {
       owner: context.repo.owner,
       repo: context.repo.repo,
       run_id: exact.id,
+      attempt_number: exact.run_attempt,
       per_page: 100,
     }
   )
   const verifiedJobs = []
-  for (const required of workflow.jobs) {
-    const matching = jobs.find((job) => job?.name === required.id)
-    const stateForJob = jobState(matching, required.id, candidateSha)
+  // Every job the candidate had to complete must be present and successful, but
+  // only the ARM64 publisher jobs carry an image reference for promotion.
+  const publisherIds = new Set(publisherJobIds(workflow))
+  for (const requiredJobId of requiredJobIds(workflow)) {
+    // Matching tolerates the reusable-workflow name expansion, so a required
+    // job that delegates is still proved from the run's own job list. More than
+    // one match stays a hard failure: two reported names cannot both be the one
+    // trusted job this identifier names.
+    const matches = jobs.filter((job) =>
+      jobNameMatches(job?.name, requiredJobId)
+    )
+    if (matches.length > 1) {
+      return {
+        path: workflow.path,
+        reason: `${requiredJobId} is ambiguous`,
+        run: exact,
+        status: 'wrong_evidence',
+      }
+    }
+    const matching = matches[0]
+    const stateForJob = jobState(matching, requiredJobId, candidateSha)
     if (stateForJob !== 'success') {
       return {
         path: workflow.path,
-        reason: `${required.id} is ${stateForJob.replace('_', ' ')}`,
+        reason: `${requiredJobId} is ${stateForJob.replace('_', ' ')}`,
         run: exact,
         status: stateForJob,
       }
@@ -796,23 +743,33 @@ async function collectWorkflowEvidence({
     if (!Number.isSafeInteger(matching.id) || matching.id <= 0) {
       return {
         path: workflow.path,
-        reason: `${required.id} has no stable job id`,
+        reason: `${requiredJobId} has no stable job id`,
         run: exact,
         status: 'wrong_evidence',
       }
     }
+    if (!publisherIds.has(requiredJobId)) continue
     verifiedJobs.push({
       id: matching.id,
       name: matching.name,
       url: matching.html_url ?? '',
+      conclusion: matching.conclusion,
     })
   }
   return {
     jobs: verifiedJobs,
+    observedJobs: jobs.map(({ id, name, status, conclusion }) => ({
+      id,
+      name,
+      status,
+      conclusion,
+    })),
     path: workflow.path,
     run: {
       branch: exact.head_branch,
       id: exact.id,
+      attempt: exact.run_attempt,
+      event: exact.event,
       sha: exact.head_sha,
       url: exact.html_url ?? '',
     },
@@ -820,10 +777,284 @@ async function collectWorkflowEvidence({
   }
 }
 
+async function readCiEvidence({ github, context, run }) {
+  const artifacts = await paginate(
+    github,
+    github.rest.actions.listWorkflowRunArtifacts,
+    {
+      ...context.repo,
+      run_id: run.id,
+      per_page: 100,
+    }
+  )
+  const matches = artifacts.filter(
+    (a) => a.name === 'required-ci-evidence' && !a.expired
+  )
+  if (matches.length !== 1 || matches[0].size_in_bytes > 1048576) {
+    throw new Error('missing or ambiguous CI selection artifact')
+  }
+  const response = await github.rest.actions.downloadArtifact({
+    ...context.repo,
+    artifact_id: matches[0].id,
+    archive_format: 'zip',
+  })
+  if (response.data.byteLength > 1048576)
+    throw new Error('CI selection archive too large')
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'stg-ci-'))
+  try {
+    const archive = path.join(directory, 'evidence.zip')
+    fs.writeFileSync(archive, Buffer.from(response.data))
+    return JSON.parse(
+      execFileSync('unzip', ['-p', archive, 'required-ci-evidence.json'], {
+        encoding: 'utf8',
+        maxBuffer: 1048576,
+        timeout: 10000,
+      })
+    )
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+}
+
+// Scan receipts travel as one artifact per scanned image, next to the findings
+// JSON and SBOM they describe. The findings report can be large, so the
+// archive is bounded before it is read.
+async function readScanReceipts({ github, context, run }) {
+  const artifacts = await paginate(
+    github,
+    github.rest.actions.listWorkflowRunArtifacts,
+    { ...context.repo, run_id: run.id, per_page: 100 }
+  )
+  const scanned = artifacts.filter(
+    (artifact) =>
+      typeof artifact.name === 'string' &&
+      artifact.name.startsWith('image-scan-') &&
+      !artifact.expired
+  )
+  const receipts = []
+  for (const artifact of scanned) {
+    if (artifact.size_in_bytes > SCAN_ARCHIVE_LIMIT) {
+      throw new Error(`${artifact.name} exceeds the scan receipt read budget`)
+    }
+    const response = await github.rest.actions.downloadArtifact({
+      ...context.repo,
+      artifact_id: artifact.id,
+      archive_format: 'zip',
+    })
+    if (response.data.byteLength > SCAN_ARCHIVE_LIMIT)
+      throw new Error(`${artifact.name} archive too large`)
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'stg-scan-'))
+    try {
+      const archive = path.join(directory, 'receipt.zip')
+      fs.writeFileSync(archive, Buffer.from(response.data))
+      receipts.push(
+        JSON.parse(
+          execFileSync(
+            'unzip',
+            ['-p', archive, receiptFileName(artifact.name)],
+            { encoding: 'utf8', maxBuffer: 1048576, timeout: 10000 }
+          )
+        )
+      )
+    } finally {
+      fs.rmSync(directory, { recursive: true, force: true })
+    }
+  }
+  return receipts
+}
+
+// The scans run after the images they judge, so a candidate can legitimately
+// finish its builds while a scan is still running. Only that state is retried.
+// A failed or missing scan job, and a receipt that does not describe the
+// promoted digest, block the candidate instead of being retried.
+async function collectScanAdmission({
+  github,
+  context,
+  workflows,
+  images,
+  candidateSha,
+  sourceBranch,
+  targetIds = STAGING_TARGET_IDS,
+  maxAttempts = DEFAULT_MAX_ATTEMPTS,
+  retryDelayMs = DEFAULT_RETRY_DELAY_MS,
+  sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay)),
+  getReceipts = readScanReceipts,
+  inventory = stagingScanAdmissionInventory(targetIds),
+}) {
+  const repository = repositoryName(context)
+  const paths = [...new Set(inventory.map((entry) => entry.workflowPath))]
+  const attempts = []
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const collected = await Promise.all(
+      paths.map(async (workflowPath) => {
+        const workflow = workflows.find((entry) => entry.path === workflowPath)
+        if (!workflow) {
+          return { path: workflowPath, status: 'wrong_evidence' }
+        }
+        const result = await collectWorkflowEvidence({
+          github,
+          context,
+          workflow,
+          candidateSha,
+          sourceBranch,
+          repository,
+        })
+        if (result.status !== 'success') return { ...result, workflowPath }
+        const jobs = inventory
+          .filter((entry) => entry.workflowPath === workflowPath)
+          .map((entry) => ({
+            ...evaluateScanJobStatus(result.observedJobs, entry.scanJob),
+            scanJob: entry.scanJob,
+          }))
+        const failed = jobs.find((job) => job.status !== 'success')
+        if (failed) {
+          return {
+            ...failed,
+            path: workflowPath,
+            reason: `${failed.scanJob} is ${failed.status.replace('_', ' ')}`,
+            workflowPath,
+          }
+        }
+        return { path: workflowPath, run: result.run, status: 'success' }
+      })
+    )
+    const failures = collected.filter((result) => result.status !== 'success')
+    attempts.push({
+      attempt,
+      failures: failures.map(({ path, reason, status }) => ({
+        path,
+        reason,
+        status,
+      })),
+    })
+    if (failures.length > 0) {
+      const retryable = failures.every((failure) =>
+        isRetryableEvidenceStatus(failure.status)
+      )
+      if (!retryable || attempt === maxAttempts) {
+        return {
+          attempts,
+          entries: [],
+          reason: failures
+            .map(({ path, reason }) => `${path} (${reason})`)
+            .join(', '),
+          valid: false,
+        }
+      }
+      await sleep(retryDelayMs)
+      continue
+    }
+    const runs = Object.fromEntries(
+      collected.map((result) => [result.path, result.run])
+    )
+    const receipts = Object.fromEntries(
+      await Promise.all(
+        collected.map(async (result) => [
+          result.path,
+          await getReceipts({ github, context, run: result.run }),
+        ])
+      )
+    )
+    const decision = evaluateScanAdmission({
+      images,
+      inventory,
+      receipts,
+      runs,
+    })
+    if (decision.valid) {
+      return { attempts, entries: decision.entries, valid: true }
+    }
+    return {
+      attempts,
+      entries: decision.entries,
+      reason: decision.entries
+        .filter((entry) => !entry.ok)
+        .map((entry) => `${entry.scanJob} (${entry.reason})`)
+        .join(', '),
+      valid: false,
+    }
+  }
+  throw new Error('bounded scan admission did not reach a terminal state')
+}
+
+function validateCiSelection(
+  evidence,
+  workflow,
+  repository,
+  candidateSha,
+  sourceBranch
+) {
+  if (
+    evidence?.schemaVersion !== 1 ||
+    evidence.repository !== repository ||
+    evidence.workflow?.path !== workflow.path ||
+    evidence.workflow?.terminalJob !== workflow.jobs[0].name ||
+    evidence.event?.name !== 'push' ||
+    evidence.event.branch !== sourceBranch ||
+    evidence.event.sha !== candidateSha ||
+    evidence.run?.id !== workflow.run.id ||
+    evidence.run.attempt !== workflow.run.attempt ||
+    evidence.decision?.outcome !== 'pass' ||
+    evidence.reuse != null ||
+    evidence.selection?.state !== 'run' ||
+    !Array.isArray(evidence.jobs) ||
+    evidence.jobs.length === 0
+  ) {
+    throw new Error('invalid CI selection evidence')
+  }
+  const expectedSuites = CI_SUITE_JOBS[path.basename(workflow.path)]
+  if (!expectedSuites) throw new Error('unknown CI suite')
+  const names = new Set()
+  for (const job of evidence.jobs) {
+    if (
+      typeof job.name !== 'string' ||
+      !job.name ||
+      names.has(job.name) ||
+      !['success', 'skipped'].includes(job.result)
+    )
+      throw new Error('invalid selected job evidence')
+    const observed = workflow.observedJobs?.filter(
+      (actual) => actual.name === job.name
+    )
+    if (
+      observed?.length !== 1 ||
+      observed[0].status !== 'completed' ||
+      observed[0].conclusion !== job.result
+    ) {
+      throw new Error('CI selection does not match actual jobs')
+    }
+    names.add(job.name)
+  }
+  const suite = evidence.jobs.filter((job) => job.role === 'suite')
+  const selector = evidence.jobs.filter((job) => job.role === 'selection')
+  if (
+    evidence.jobs.length !== expectedSuites.length + 1 ||
+    suite.length !== expectedSuites.length ||
+    expectedSuites.some(
+      (name) =>
+        !suite.some((job) => job.name === name && job.result === 'success')
+    ) ||
+    selector.length !== 1 ||
+    selector[0].name !== 'filter' ||
+    selector[0].result !== 'success'
+  ) {
+    throw new Error(
+      'selected CI suite did not succeed or selection is unproven'
+    )
+  }
+  return evidence
+}
+
 function isRetryableEvidenceStatus(status) {
   return status === 'missing' || status === 'running'
 }
 
+// A required workflow in a retryable state is retried inside one wake, because
+// the completion event can precede the jobs and artifacts it just produced. A
+// workflow that is still running once the window closes is pending rather than
+// failed: nothing has concluded, and its own completion wakes the controller
+// again. Evidence that is absent after the same window stays a hard failure,
+// because a required workflow with no run at all will not resolve by waiting.
 async function collectBuildEvidence({
   github,
   context,
@@ -872,6 +1103,9 @@ async function collectBuildEvidence({
       return {
         attempts,
         failures,
+        pending:
+          retryable &&
+          failures.every((failure) => failure.status === 'running'),
         reason: failures
           .map(({ path, reason }) => `${path} (${reason})`)
           .join(', '),
@@ -966,12 +1200,191 @@ async function resolveStableRegistryDigests({
   }))
 }
 
+// An archive member of one publication record, or null when the publication
+// did not write it. The artifact is small and trusted in shape only, so a
+// member that is absent, unreadable or not an object is reported by the caller
+// instead of being repaired here.
+function readArchiveMember(archive, member) {
+  let parsed
+  try {
+    parsed = JSON.parse(
+      execFileSync('unzip', ['-p', archive, member], {
+        encoding: 'utf8',
+        maxBuffer: PUBLICATION_ARTIFACT_LIMIT,
+        timeout: 10000,
+      })
+    )
+  } catch {
+    return null
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return null
+  }
+  return parsed
+}
+
+// The two records a reuse-capable publication uploads next to its digest: the
+// input fingerprint it resolved and whether it adopted an already-qualified
+// digest or built one. Both are candidate-run output, so every field is
+// checked against the trusted inventory before the manifest may use it.
+function readPublicationRecord({ archive, targetId }) {
+  const fingerprint = readArchiveMember(
+    archive,
+    'image-input-fingerprint-' + targetId + '.json'
+  )
+  if (!fingerprint) {
+    throw new Error(
+      targetId + ' published no input fingerprint with its staging digest'
+    )
+  }
+  if (fingerprint.target !== targetId) {
+    throw new Error(targetId + ' published a fingerprint for another target')
+  }
+  if (!DIGEST_PATTERN.test(fingerprint.fingerprint ?? '')) {
+    throw new Error(targetId + ' published no canonical input fingerprint')
+  }
+  if (fingerprintTag(fingerprint.fingerprint) !== fingerprint.tag) {
+    throw new Error(targetId + ' published a fingerprint under another tag')
+  }
+  if (fingerprint.reuseEligible !== true) {
+    throw new Error(
+      targetId + ' is reusable in the trusted inventory but not in its own'
+    )
+  }
+  const reuse = readArchiveMember(archive, 'image-reuse-' + targetId + '.json')
+  if (!reuse) {
+    throw new Error(targetId + ' published no reuse record with its digest')
+  }
+  if (reuse.schemaVersion !== PUBLICATION_RECORD_SCHEMA_VERSION) {
+    throw new Error(targetId + ' published a reuse record of another schema')
+  }
+  if (typeof reuse.adopted !== 'boolean' || reuse.tag !== fingerprint.tag) {
+    throw new Error(targetId + ' published an unreadable reuse record')
+  }
+  if (reuse.adopted && !DIGEST_PATTERN.test(reuse.digest ?? '')) {
+    throw new Error(targetId + ' adopted an image without a digest')
+  }
+  return {
+    adopted: reuse.adopted,
+    adoptedDigest: reuse.adopted ? reuse.digest : null,
+    fingerprint: fingerprint.fingerprint,
+    tag: fingerprint.tag,
+    targetId,
+  }
+}
+
+// Reads the digest artifacts of the reuse-capable targets of one publication.
+// A missing artifact is a broken publication rather than a rebuilt image:
+// without the record the release could not say what produced the digest it
+// promotes, and an incomplete release manifest is not admissible.
+async function readPublicationRecords({
+  github,
+  context,
+  run,
+  targetIds = [],
+}) {
+  const records = new Map()
+  if (targetIds.length === 0) return records
+  const artifacts = await paginate(
+    github,
+    github.rest.actions.listWorkflowRunArtifacts,
+    { ...context.repo, run_id: run.id, per_page: 100 }
+  )
+  for (const targetId of targetIds) {
+    const name = PUBLICATION_DIGEST_ARTIFACT_PREFIX + targetId
+    const matches = artifacts.filter(
+      (artifact) => artifact?.name === name && !artifact.expired
+    )
+    if (matches.length !== 1) {
+      throw new Error(
+        targetId + ' published ' + matches.length + ' ' + name + ' artifacts'
+      )
+    }
+    const artifact = matches[0]
+    if (Number(artifact.size_in_bytes) > PUBLICATION_ARTIFACT_LIMIT) {
+      throw new Error(name + ' exceeds the publication record read budget')
+    }
+    const response = await github.rest.actions.downloadArtifact({
+      ...context.repo,
+      artifact_id: artifact.id,
+      archive_format: 'zip',
+    })
+    const bytes = Buffer.from(response?.data ?? [])
+    if (
+      bytes.byteLength === 0 ||
+      bytes.byteLength > PUBLICATION_ARTIFACT_LIMIT
+    ) {
+      throw new Error(name + ' archive is outside the read budget')
+    }
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'stg-publication-'))
+    try {
+      const archive = path.join(directory, 'record.zip')
+      fs.writeFileSync(archive, bytes)
+      records.set(targetId, readPublicationRecord({ archive, targetId }))
+    } finally {
+      fs.rmSync(directory, { recursive: true, force: true })
+    }
+  }
+  return records
+}
+
 function registryManifestUrl(repository, tag) {
   const parts = repository.split('/')
   if (parts.length < 2)
     throw new Error(`invalid registry repository ${repository}`)
   const registry = parts.shift()
   return `https://${registry}/v2/${parts.map(encodeURIComponent).join('/')}/manifests/${encodeURIComponent(tag)}`
+}
+
+function registryBlobUrl(repository, digest) {
+  const parts = repository.split('/')
+  if (parts.length < 2)
+    throw new Error(`invalid registry repository ${repository}`)
+  const registry = parts.shift()
+  return `https://${registry}/v2/${parts.map(encodeURIComponent).join('/')}/blobs/${encodeURIComponent(digest)}`
+}
+
+// One pull authorization covers every read of one repository, so the manifest
+// read and the configuration read that follows it share a single token.
+async function resolveRegistryAuthorization({
+  challenge,
+  fetchImpl,
+  manifestUrl,
+  repository,
+  tag,
+}) {
+  const repositoryPath = repository.split('/').slice(1).join('/')
+  const registry = new URL(manifestUrl).hostname
+  const realm = new URL(challenge.realm)
+  if (realm.protocol !== 'https:' || realm.hostname !== registry) {
+    throw new Error('registry Bearer challenge uses an untrusted token realm')
+  }
+  if (challenge.service && challenge.service !== registry) {
+    throw new Error('registry Bearer challenge uses an unexpected service')
+  }
+  const expectedScope = `repository:${repositoryPath}:pull`
+  if (challenge.scope && challenge.scope !== expectedScope) {
+    throw new Error('registry Bearer challenge uses an unexpected scope')
+  }
+  realm.searchParams.set('service', registry)
+  realm.searchParams.set('scope', expectedScope)
+  const tokenResponse = await fetchImpl(realm, { redirect: 'error' })
+  if (tokenResponse.redirected) {
+    throw new Error(`${repository}:${tag} registry token response redirected`)
+  }
+  if (!tokenResponse.ok) {
+    throw new Error(
+      `${repository}:${tag} registry token response was ${tokenResponse.status}`
+    )
+  }
+  const tokenPayload = await tokenResponse.json()
+  const token = tokenPayload?.token ?? tokenPayload?.access_token
+  if (typeof token !== 'string' || token.length === 0) {
+    throw new Error(
+      `${repository}:${tag} registry token response was incomplete`
+    )
+  }
+  return `Bearer ${token}`
 }
 
 function parseBearerChallenge(value) {
@@ -1008,41 +1421,14 @@ async function registryResponse({ repository, tag, fetchImpl }) {
   }
   if (response.status !== 401) return response
 
-  const challenge = parseBearerChallenge(
-    response.headers.get('www-authenticate')
-  )
-  const repositoryPath = repository.split('/').slice(1).join('/')
-  const registry = new URL(manifestUrl).hostname
-  const realm = new URL(challenge.realm)
-  if (realm.protocol !== 'https:' || realm.hostname !== registry) {
-    throw new Error('registry Bearer challenge uses an untrusted token realm')
-  }
-  if (challenge.service && challenge.service !== registry) {
-    throw new Error('registry Bearer challenge uses an unexpected service')
-  }
-  const expectedScope = `repository:${repositoryPath}:pull`
-  if (challenge.scope && challenge.scope !== expectedScope) {
-    throw new Error('registry Bearer challenge uses an unexpected scope')
-  }
-  realm.searchParams.set('service', registry)
-  realm.searchParams.set('scope', expectedScope)
-  const tokenResponse = await fetchImpl(realm, { redirect: 'error' })
-  if (tokenResponse.redirected) {
-    throw new Error(`${repository}:${tag} registry token response redirected`)
-  }
-  if (!tokenResponse.ok) {
-    throw new Error(
-      `${repository}:${tag} registry token response was ${tokenResponse.status}`
-    )
-  }
-  const tokenPayload = await tokenResponse.json()
-  const token = tokenPayload?.token ?? tokenPayload?.access_token
-  if (typeof token !== 'string' || token.length === 0) {
-    throw new Error(
-      `${repository}:${tag} registry token response was incomplete`
-    )
-  }
-  response = await request(`Bearer ${token}`)
+  const authorization = await resolveRegistryAuthorization({
+    challenge: parseBearerChallenge(response.headers.get('www-authenticate')),
+    fetchImpl,
+    manifestUrl,
+    repository,
+    tag,
+  })
+  response = await request(authorization)
   if (response.redirected) {
     throw new Error(`${repository}:${tag} registry response redirected`)
   }
@@ -1090,6 +1476,295 @@ async function fetchRegistryDigest({ repository, tag, fetchImpl = fetch }) {
     )
   }
   return digest
+}
+
+// The commit an adopted digest was built from. A registry tag carries no
+// provenance, so the image itself does: the trusted workflow declares the
+// revision label next to the inputs it fingerprints, and the label survives
+// adoption because adoption republishes the same digest under another tag.
+//
+// The walk is deliberately narrow: one index or image manifest for the exact
+// digest, one platform manifest for an index, and one configuration blob. A
+// registry answer that cannot be resolved to exactly one ARM64 image, or an
+// image without a readable source revision, fails instead of guessing.
+async function fetchImageRevision({ digest, fetchImpl = fetch, repository }) {
+  if (!DIGEST_PATTERN.test(digest ?? '')) {
+    throw new Error('an adopted image needs an immutable digest')
+  }
+  const label = repository + '@' + digest
+  let authorization = null
+  const read = async (accept, reference, allowed) => {
+    const url = allowed.blobs
+      ? registryBlobUrl(repository, reference)
+      : registryManifestUrl(repository, reference)
+    // Only a blob is served through a redirect, so a manifest keeps failing
+    // fast on one instead of following it.
+    const request = (header, target = url, redirect = 'error') =>
+      fetchImpl(target, {
+        headers: { accept, ...(header ? { authorization: header } : {}) },
+        redirect,
+      })
+    let response = await request(
+      authorization,
+      url,
+      allowed.blobs ? 'manual' : 'error'
+    )
+    if (!allowed.blobs && response.redirected) {
+      throw new Error(label + ' registry response redirected')
+    }
+    if (response.status === 401) {
+      authorization = await resolveRegistryAuthorization({
+        challenge: parseBearerChallenge(
+          response.headers.get('www-authenticate')
+        ),
+        fetchImpl,
+        manifestUrl: registryManifestUrl(repository, digest),
+        repository,
+        tag: digest,
+      })
+      response = await request(
+        authorization,
+        url,
+        allowed.blobs ? 'manual' : 'error'
+      )
+      if (!allowed.blobs && response.redirected) {
+        throw new Error(label + ' registry response redirected')
+      }
+    }
+    let storage = false
+    if (
+      allowed.blobs &&
+      REGISTRY_BLOB_REDIRECT_STATUSES.includes(response.status)
+    ) {
+      const location = String(response.headers.get('location') ?? '')
+      let target
+      try {
+        target = new URL(location, url)
+      } catch {
+        throw new Error(label + ' registry blob redirect is not a URL')
+      }
+      if (
+        target.protocol !== 'https:' ||
+        !REGISTRY_BLOB_REDIRECT_HOSTS.includes(target.hostname)
+      ) {
+        throw new Error(label + ' registry blob redirect left its storage host')
+      }
+      // The signed storage URL carries its own authorization, so the registry
+      // token stays with the registry.
+      response = await fetchImpl(target.href, { redirect: 'error' })
+      if (response.redirected) {
+        throw new Error(label + ' registry blob redirect chained')
+      }
+      storage = true
+    }
+    if (!response.ok) {
+      throw new Error(label + ' registry response was ' + response.status)
+    }
+    const contentType = String(response.headers.get('content-type') ?? '')
+      .split(';', 1)[0]
+      .trim()
+      .toLowerCase()
+    const accepted =
+      allowed.types.includes(contentType) ||
+      (storage && REGISTRY_BLOB_STORAGE_CONTENT_TYPES.includes(contentType))
+    if (!accepted) {
+      throw new Error(
+        label + ' registry response has an unexpected content type'
+      )
+    }
+    let buffer
+    try {
+      buffer = Buffer.from(await response.arrayBuffer())
+    } catch {
+      throw new Error(label + ' registry response was incomplete')
+    }
+    if (allowed.blobs && 'sha256:' + sha256Bytes(buffer) !== reference) {
+      throw new Error(label + ' registry blob is not the requested digest')
+    }
+    const body = buffer.toString('utf8')
+    try {
+      return JSON.parse(body)
+    } catch {
+      throw new Error(label + ' registry response was not readable JSON')
+    }
+  }
+  const top = await read(REGISTRY_INDEX_ACCEPT, digest, {
+    types: REGISTRY_CONTENT_TYPES,
+  })
+  let manifest = top
+  if (Array.isArray(top?.manifests)) {
+    const platform = top.manifests.filter(
+      (entry) =>
+        entry?.platform?.architecture ===
+          PUBLICATION_ARCHITECTURE.architecture &&
+        entry?.platform?.os === PUBLICATION_ARCHITECTURE.os
+    )
+    if (
+      platform.length !== 1 ||
+      !DIGEST_PATTERN.test(platform[0]?.digest ?? '')
+    ) {
+      throw new Error(
+        label +
+          ' does not describe exactly one ' +
+          PUBLICATION_ARCHITECTURE.os +
+          '/' +
+          PUBLICATION_ARCHITECTURE.architecture +
+          ' image'
+      )
+    }
+    manifest = await read(REGISTRY_IMAGE_ACCEPT, platform[0].digest, {
+      types: REGISTRY_CONTENT_TYPES,
+    })
+  }
+  const configDigest = manifest?.config?.digest
+  if (!DIGEST_PATTERN.test(configDigest ?? '')) {
+    throw new Error(label + ' has no image configuration')
+  }
+  const config = await read(REGISTRY_CONFIG_ACCEPT, configDigest, {
+    blobs: true,
+    types: REGISTRY_CONFIG_CONTENT_TYPES,
+  })
+  const revision = config?.config?.Labels?.[REVISION_LABEL]
+  if (!SHA_PATTERN.test(revision ?? '')) {
+    throw new Error(label + ' does not label its source revision')
+  }
+  return revision
+}
+
+// The release manifest of one candidate: every target it publishes, with the
+// digest the registry resolved, the input identity the publication recorded,
+// the qualification the scan leg admitted, and, for a target that adopted an
+// already-qualified digest instead of rebuilding, the commit that digest was
+// built from.
+//
+// The manifest is the release's own answer to 'what is in this release and
+// where did each part come from', so it is assembled from trusted inventory
+// plus published evidence only: an image without an admitted scan receipt, an
+// adoption whose digest is not the digest being promoted, or a reuse source
+// that is not a proven ancestor of the candidate all block the promotion.
+async function collectReleaseManifest({
+  candidateSha,
+  context,
+  fetchImpl = fetch,
+  getImageRevision = fetchImageRevision,
+  github,
+  images,
+  records,
+  reuseEligibleIds = [],
+  scanEvidence,
+  scannedTargetIds = [],
+  sourceBranch,
+  targetIdByBuildJob,
+  unavailableTargetIds = [],
+}) {
+  const reusable = new Set(reuseEligibleIds)
+  const scanned = new Set(scannedTargetIds)
+  const architecture =
+    PUBLICATION_ARCHITECTURE.os + '/' + PUBLICATION_ARCHITECTURE.architecture
+  const entries = []
+  const reused = new Map()
+  for (const image of images) {
+    const targetId = targetIdByBuildJob.get(image.job_name)
+    if (!targetId) {
+      throw new Error(image.job_name + ' is not a trusted staging image target')
+    }
+    const record = records.get(targetId)
+    const receipts = []
+    if (scanned.has(targetId)) {
+      const admitted = (scanEvidence?.entries ?? []).find(
+        (entry) => entry?.buildJob === image.job_name && entry.ok === true
+      )
+      if (!admitted) {
+        throw new Error(targetId + ' has no admitted scan receipt to bind')
+      }
+      receipts.push({
+        digest: image.digest,
+        kind: 'image-scan',
+        path: 'image-scan-' + admitted.scanJob,
+      })
+    }
+    if (record?.adopted === true) {
+      if (record.adoptedDigest !== image.digest) {
+        throw new Error(
+          targetId +
+            ' adopted ' +
+            record.adoptedDigest +
+            ' but published ' +
+            image.digest
+        )
+      }
+      reused.set(targetId, {
+        digest: image.digest,
+        fingerprint: record.fingerprint,
+        sourceSha: await getImageRevision({
+          digest: image.digest,
+          fetchImpl,
+          repository: image.repository,
+        }),
+        tag: record.tag,
+      })
+    }
+    entries.push({
+      architecture,
+      digest: image.digest,
+      fingerprint: record?.fingerprint ?? null,
+      image: image.repository + '@' + image.digest,
+      receipts,
+      reusedFrom: null,
+      sourceSha: candidateSha,
+      targetId,
+    })
+  }
+  // A reuse names the commit its digest was built from, and only a proven
+  // ancestor of the candidate may be promoted that way: an image built on
+  // another line is not a shorter path to this release, it is a different one.
+  const proven = new Set()
+  for (const source of new Set(
+    [...reused.values()].map((entry) => entry.sourceSha)
+  )) {
+    if (source === candidateSha) {
+      proven.add(source)
+      continue
+    }
+    const comparison = await compareRevisions({
+      base: source,
+      context,
+      github,
+      head: candidateSha,
+    })
+    if (['ahead', 'identical'].includes(comparison?.status)) proven.add(source)
+  }
+  for (const [targetId, source] of reused) {
+    entries.find((entry) => entry.targetId === targetId).reusedFrom = source
+  }
+  const manifest = buildReleaseManifest({
+    candidateSha,
+    entries,
+    sourceBranch,
+  })
+  const decision = validateReleaseManifest({
+    expectedTargetIds: [...targetIdByBuildJob.values()],
+    isAncestor: (sha) => proven.has(sha),
+    manifest,
+    resolvedDigests: new Map(
+      entries.map((entry) => [entry.targetId, entry.digest])
+    ),
+    reuseEligibleIds: [...reusable],
+    scannedTargetIds: [...scanned],
+    unavailableTargetIds,
+  })
+  if (!decision.ok) {
+    throw new Error(
+      'release manifest rejected: ' +
+        decision.errors
+          .slice(0, 5)
+          .map((error) =>
+            error.targetId ? error.targetId + ':' + error.code : error.code
+          )
+          .join(', ')
+    )
+  }
+  return { decision, manifest }
 }
 
 async function getReleaseRef({ github, context }) {
@@ -1373,6 +2048,26 @@ function setOutput(core, name, value) {
   if (typeof core?.setOutput === 'function') core.setOutput(name, value)
 }
 
+// A candidate whose required evidence has not concluded is neither promoted nor
+// failed. Every required workflow wakes this controller when it completes, so
+// the unresolved state is reported and the evidence is re-read on that wake
+// instead of being counted as a failure the run cannot prove.
+function deferUnfinishedGate({ core, inputs, evidence, gate }) {
+  const unfinished = evidence.failures
+    .map(({ path, reason }) => `${path} (${reason})`)
+    .join(', ')
+  core?.info?.(
+    `Deferring staging release promotion: ${gate} is not concluded yet: ${unfinished}`
+  )
+  setOutput(core, 'decision', 'deferred')
+  return {
+    ...inputs,
+    decision: 'deferred',
+    pending: evidence.failures.map(({ path, status }) => ({ path, status })),
+    skipped: true,
+  }
+}
+
 async function resolveInputs({
   context,
   sourceBranch,
@@ -1412,7 +2107,19 @@ async function resolveInputs({
         `manual writes require confirm_ref_update=${MANUAL_CONFIRMATION}`
       )
     }
+    if (
+      !dryRun &&
+      ((inputs.expected_release_sha !== 'absent' &&
+        !validSha(inputs.expected_release_sha)) ||
+        !validSha(inputs.expected_controller_sha))
+    ) {
+      throw new Error(
+        'manual writes require expected_release_sha and expected_controller_sha'
+      )
+    }
     return {
+      expectedReleaseSha: inputs.expected_release_sha,
+      expectedControllerSha: inputs.expected_controller_sha,
       allowWrite: !dryRun,
       candidateSha: selectedCandidateSha,
       confirmation,
@@ -1431,8 +2138,14 @@ async function runPromotion({
   sourceBranch,
   candidateSha,
   promotionEnabled,
+  controllerSha = process.env.TRUSTED_WORKFLOW_SHA,
   expectedWorkflows = STAGING_WORKFLOWS,
+  getCandidateTargetIds: resolveTargetIds = getCandidateTargetIds,
   getRegistryDigest = fetchRegistryDigest,
+  getCiEvidence = readCiEvidence,
+  getScanAdmission = collectScanAdmission,
+  getImageRevision = fetchImageRevision,
+  getPublicationRecords = readPublicationRecords,
   maxAttempts = DEFAULT_MAX_ATTEMPTS,
   retryDelayMs = DEFAULT_RETRY_DELAY_MS,
   sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay)),
@@ -1471,7 +2184,23 @@ async function runPromotion({
     return { ...inputs, decision: 'disabled', skipped: true }
   }
 
+  if (!validSha(controllerSha))
+    throw new Error('trusted controller SHA is unavailable')
+  if (
+    inputs.expectedControllerSha &&
+    inputs.expectedControllerSha !== controllerSha
+  ) {
+    throw new Error('trusted controller SHA changed since dry run')
+  }
   const repository = repositoryName(context)
+  // Which targets this candidate can build is read from its own tree, so a
+  // candidate that drops an integration-only image is tolerated while a missing
+  // required image fails before any evidence is collected.
+  const targetIds = await resolveTargetIds({
+    github,
+    context,
+    candidateSha: inputs.candidateSha,
+  })
   const definitions = await getCandidateDefinitions({
     github,
     context,
@@ -1483,6 +2212,7 @@ async function runPromotion({
     repository,
     sourceBranch: inputs.sourceBranch,
     expectedWorkflows,
+    targetIds,
   })
   await validateCandidateAncestry({
     github,
@@ -1502,7 +2232,54 @@ async function runPromotion({
     sleep,
   })
   if (!evidence.valid) {
+    if (evidence.pending) {
+      return deferUnfinishedGate({
+        core,
+        evidence,
+        gate: 'staging build evidence',
+        inputs,
+      })
+    }
     throw new Error(`staging build evidence is incomplete: ${evidence.reason}`)
+  }
+  const ciEvidence = await collectBuildEvidence({
+    github,
+    context,
+    workflows: REQUIRED_CI_WORKFLOWS,
+    candidateSha: inputs.candidateSha,
+    sourceBranch: inputs.sourceBranch,
+    maxAttempts,
+    retryDelayMs,
+    sleep,
+  })
+  if (!ciEvidence.valid) {
+    if (ciEvidence.pending) {
+      return deferUnfinishedGate({
+        core,
+        evidence: ciEvidence,
+        gate: 'staging CI evidence',
+        inputs,
+      })
+    }
+    throw new Error(`staging CI evidence is incomplete: ${ciEvidence.reason}`)
+  }
+  for (const workflow of ciEvidence.workflows) {
+    if (
+      [
+        'test-graphql.yml',
+        'test-unit.yml',
+        'test-olat-api.yml',
+        'test-intl-production.yml',
+      ].some((file) => workflow.path === `.github/workflows/${file}`)
+    ) {
+      workflow.selection = validateCiSelection(
+        await getCiEvidence({ github, context, run: workflow.run }),
+        workflow,
+        repository,
+        inputs.candidateSha,
+        inputs.sourceBranch
+      )
+    }
   }
   const images = await resolveStableRegistryDigests({
     candidateSha: inputs.candidateSha,
@@ -1510,8 +2287,63 @@ async function runPromotion({
     workflows,
     getRegistryDigest,
   })
+  // A promoted digest must be the digest the scan policy judged, so the scan
+  // evidence is bound to the resolved references rather than to an image name.
+  const scanEvidence = await getScanAdmission({
+    github,
+    context,
+    workflows,
+    images,
+    candidateSha: inputs.candidateSha,
+    sourceBranch: inputs.sourceBranch,
+    targetIds,
+    maxAttempts,
+    retryDelayMs,
+    sleep,
+  })
+  if (!scanEvidence.valid) {
+    throw new Error(
+      `staging image scan evidence is incomplete: ${scanEvidence.reason}`
+    )
+  }
+
+  // The release manifest binds every promoted digest to the identity and the
+  // qualification that produced it, so it is assembled after the scans are
+  // admitted and before any release ref is touched.
+  const reuseEligibleIds = stagingReuseEligibleTargetIds(targetIds)
+  const scannedTargetIds = stagingScannedTargetIds(targetIds)
+  const targetIdByBuildJob = stagingTargetIdByBuildJob(targetIds)
+  const release = await collectReleaseManifest({
+    candidateSha: inputs.candidateSha,
+    context,
+    getImageRevision,
+    github,
+    images,
+    records: await getPublicationRecords({
+      context,
+      github,
+      run: evidence.workflows[0].run,
+      targetIds: reuseEligibleIds,
+    }),
+    reuseEligibleIds,
+    scanEvidence,
+    scannedTargetIds,
+    sourceBranch: inputs.sourceBranch,
+    targetIdByBuildJob,
+    unavailableTargetIds: STAGING_TARGET_IDS.filter(
+      (targetId) => !targetIds.includes(targetId)
+    ),
+  })
 
   const currentSha = await getReleaseRef({ github, context })
+  if (
+    inputs.expectedReleaseSha &&
+    (inputs.expectedReleaseSha === 'absent'
+      ? currentSha !== null
+      : inputs.expectedReleaseSha !== currentSha)
+  ) {
+    throw new Error('stg-release changed since dry run')
+  }
   const decision = await planReleaseRef({
     github,
     context,
@@ -1546,7 +2378,9 @@ async function runPromotion({
     updateResult.verification === 'verified' ? inputs.candidateSha : null
 
   const receipt = {
-    schema_version: 'stg-release-promotion/v1',
+    schema_version: 'stg-release-promotion/v2',
+    controller_sha: controllerSha,
+    ci: ciEvidence,
     controller_run_id: context.runId,
     repository,
     source_branch: inputs.sourceBranch,
@@ -1569,8 +2403,25 @@ async function runPromotion({
       jobs: workflow.jobs,
     })),
     images,
+    release_manifest: release.manifest,
+    reuse: {
+      rebuilt: release.decision.rebuilt,
+      reused: release.decision.reused,
+    },
+    scan: {
+      attempts: scanEvidence.attempts,
+      images: scanEvidence.entries,
+    },
   }
   const checksum = checksumReceipt(receipt)
+  core?.info?.(
+    'release image manifest: ' +
+      release.manifest.entries.length +
+      ' targets, reused ' +
+      (release.decision.reused.join(', ') || 'none') +
+      ', rebuilt ' +
+      (release.decision.rebuilt.join(', ') || 'none')
+  )
   const artifacts = writeReceiptArtifacts({
     receipt,
     checksum,
@@ -1597,7 +2448,12 @@ async function runPromotion({
 }
 
 module.exports = {
+  readCiEvidence,
+  resolveInputs,
+  validateCiSelection,
+  REQUIRED_CI_WORKFLOWS,
   APPROVED_PUSH_BRANCHES,
+  STAGING_IMAGE_TARGETS,
   DEFAULT_MAX_ATTEMPTS,
   DEFAULT_POST_PUSH_READBACK_ATTEMPTS,
   DEFAULT_POST_PUSH_READBACK_DELAY_MS,
@@ -1609,22 +2465,36 @@ module.exports = {
   PROMOTION_REF_API,
   PROMOTION_REF_NAME,
   SOURCE_BRANCH_VARIABLE,
+  STAGING_TARGET_IDS,
   STAGING_WORKFLOWS,
   STAGING_WORKFLOW_PATHS,
   canonicalJson,
   checksumReceipt,
   collectBuildEvidence,
+  collectScanAdmission,
   compareAndSwapReleaseRef,
   fetchRegistryDigest,
+  fetchImageRevision,
   getCandidateDefinitions,
+  getCandidateTargetIds,
   getReleaseRef,
   getSourceBranch,
-  isDisabledJob,
+  isLegacyStagingWorkflowPath,
+  legacyStagingWorkflowPaths,
   matchesApprovedBranch,
   planReleaseRef,
   pushReleaseRefWithLease,
+  readScanReceipts,
+  requiredJobIds,
+  resolveCandidateTargetIds,
   resolveStableRegistryDigests,
   runPromotion,
+  stagingAmdJobIds,
+  stagingArmBuildJobIds,
+  stagingScanAdmissionInventory,
+  stagingScanJobIds,
+  stagingTargets,
+  stagingWorkflowIncarnation,
   validateCandidateAncestry,
   validateStagingWorkflow,
   validateStagingWorkflows,

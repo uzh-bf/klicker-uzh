@@ -63,11 +63,10 @@ test('CI refreshes pnpm workspace state after moving into the test container', (
       .replaceAll(/\\n\\\n/g, '\n')
     const setup = entrypoint
       .split('  # Ensure PostgreSQL is ready')[0]
-      .replace('cd /usr/src/app', 'cd "$FIXTURE_WORKSPACE"')
       .replace('pnpm install', '"$PNPM_EXECUTABLE" install')
     const refreshed = spawnSync('/bin/bash', ['-c', setup], {
       cwd: container,
-      env: { ...env, FIXTURE_WORKSPACE: container },
+      env: { ...env, OLAT_TEST_WORKSPACE: container },
       encoding: 'utf8',
     })
     assert.equal(refreshed.status, 0, refreshed.stdout + refreshed.stderr)

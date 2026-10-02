@@ -55,6 +55,40 @@ runs:
       shell: bash
       run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
+    - name: Install Devrouter profile planner
+      # Only a bounded plan resolves a profile; a full wave never pays for the
+      # planner download.
+      if: inputs.mode == 'selected'
+      shell: bash
+      run: bash .ci-control/.github/scripts/install-devrouter.sh
+
+    - name: Resolve the minimum build graph
+      # The resolver is the checkout's own profile runtime, so a bounded wave
+      # builds exactly the applications its shards resolve at startup. Every
+      # failure keeps the previous full graph.
+      id: build-graph
+      # Fail open to the complete graph: an unexpected resolver failure costs
+      # build time, while a graph that is too small fails the shards.
+      continue-on-error: true
+      shell: bash
+      run: |
+        set -euo pipefail
+        # RUNNER_TEMP is the container-visible temp directory; runner.temp is
+        # the host path and is not where this container writes.
+        FILTERS_PATH="$RUNNER_TEMP/playwright-build-filters.txt"
+        node .ci-control/.github/scripts/playwright-build-graph.cjs \
+          --plan playwright-execution-plan.json \
+          --root "$GITHUB_WORKSPACE" \
+          --filters-path "$FILTERS_PATH" \
+          --output "$GITHUB_OUTPUT" | tee "$RUNNER_TEMP/playwright-build-graph.json"
+        {
+          echo '### Playwright build graph'
+          echo
+          echo '```json'
+          cat "$RUNNER_TEMP/playwright-build-graph.json"
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
+
     - name: Define node version
       uses: actions/setup-node@v4
       with:
@@ -84,6 +118,14 @@ runs:
       with:
         path: ${{ env.STORE_PATH }}
         key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.dependency-fingerprint }}
+        # The seed publishes only from v3 and its key embeds the full
+        # dependency fingerprint, so any branch whose manifests differ
+        # (v3-ai does) can never match exactly and installs from an empty
+        # store. The pnpm store is content-addressed and verified against
+        # the lockfile, so a near-match reuses compatible packages and only
+        # fetches the remainder. Public readers cannot write this cache.
+        restore-keys: |
+          playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-
 
     - name: Restore turbo build artifacts
       if: inputs.cache-enabled == 'true' && steps.cache-contract.outcome == 'success'
@@ -98,30 +140,53 @@ runs:
 
     - name: Install dependencies
       shell: bash
-      run: pnpm install
+      # Runs from the trusted control checkout so a cached-store miss or a
+      # transient native-binary download failure cannot fail the whole wave.
+      run: bash .ci-control/.github/scripts/pnpm-install-retry.sh
 
-    - name: Build all packages and apps
+    - name: Build the planned packages and apps
       id: build
       shell: bash
       run: |
         started=$(date +%s)
         set +e
         set -o pipefail
-        pnpm run --filter @klicker-uzh/prisma build:test 2>&1 | tee turbo-build.log
-        prisma_status=("${PIPESTATUS[@]}")
-        pnpm run build:test --concurrency=4 2>&1 | tee -a turbo-build.log
-        build_status=("${PIPESTATUS[@]}")
         status=0
-        if [ "${prisma_status[0]}" -ne 0 ] ||
-          [ "${prisma_status[1]}" -ne 0 ] ||
-          [ "${build_status[0]}" -ne 0 ] ||
-          [ "${build_status[1]}" -ne 0 ]; then
-          status=1
+        filters_path="$RUNNER_TEMP/playwright-build-filters.txt"
+        if [ "$PLAYWRIGHT_BUILD_GRAPH" = 'bounded' ] && [ -s "$filters_path" ]; then
+          # A bounded wave builds the union of the shard profiles: the same
+          # filters each shard passes to `turbo run start:test`. Turbo also
+          # builds their `build:test` dependencies, so the shared packages the
+          # selected applications import stay in the artifact.
+          mapfile -t BUILD_FILTERS < "$filters_path"
+          PATH="$GITHUB_WORKSPACE/node_modules/.bin:$PATH" \
+            node .ci-control/.github/scripts/playwright-resource-sampler.cjs playwright-resources-build.jsonl \
+            bash ./util/_with_local_test_origins.sh cross-env NODE_ENV=test turbo run build:test "${BUILD_FILTERS[@]}" --concurrency=4 2>&1 | tee turbo-build.log
+          build_status=("${PIPESTATUS[@]}")
+          if [ "${build_status[0]}" -ne 0 ] ||
+            [ "${build_status[1]}" -ne 0 ]; then
+            status=1
+          fi
+        else
+          if [ "$PLAYWRIGHT_BUILD_GRAPH" = 'bounded' ]; then
+            echo '::warning::a bounded plan arrived without usable build filters; building the complete graph'
+          fi
+          node .ci-control/.github/scripts/playwright-resource-sampler.cjs playwright-resources-prisma.jsonl pnpm run --filter @klicker-uzh/prisma build:test 2>&1 | tee turbo-build.log
+          prisma_status=("${PIPESTATUS[@]}")
+          node .ci-control/.github/scripts/playwright-resource-sampler.cjs playwright-resources-build.jsonl pnpm run build:test --concurrency=4 2>&1 | tee -a turbo-build.log
+          build_status=("${PIPESTATUS[@]}")
+          if [ "${prisma_status[0]}" -ne 0 ] ||
+            [ "${prisma_status[1]}" -ne 0 ] ||
+            [ "${build_status[0]}" -ne 0 ] ||
+            [ "${build_status[1]}" -ne 0 ]; then
+            status=1
+          fi
         fi
         set -e
         echo "PLAYWRIGHT_DURATION_SECONDS=$(( $(date +%s) - started ))" >> "$GITHUB_ENV"
         exit "$status"
       env:
+        PLAYWRIGHT_BUILD_GRAPH: ${{ steps.build-graph.outputs.mode }}
         APP_SECRET: abcd
         DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
         NODE_ENV: test
@@ -145,22 +210,29 @@ runs:
     - name: Archive Next build outputs
       shell: bash
       run: |
-        tar -cf playwright-next-builds.tar \
-          --exclude='apps/auth/.next/cache' \
-          --exclude='apps/auth/.next/standalone' \
-          --exclude='apps/chat/.next/cache' \
-          --exclude='apps/chat/.next/standalone' \
-          --exclude='apps/frontend-control/.next/cache' \
-          --exclude='apps/frontend-control/.next/standalone' \
-          --exclude='apps/frontend-manage/.next/cache' \
-          --exclude='apps/frontend-manage/.next/standalone' \
-          --exclude='apps/frontend-pwa/.next/cache' \
-          --exclude='apps/frontend-pwa/.next/standalone' \
-          apps/auth/.next \
-          apps/chat/.next \
-          apps/frontend-control/.next \
-          apps/frontend-manage/.next \
-          apps/frontend-pwa/.next
+        set -euo pipefail
+        # A bounded wave only built the applications its profiles select, so
+        # the archive carries the Next outputs that exist in this workspace.
+        members=()
+        for app in auth chat frontend-control frontend-manage frontend-pwa; do
+          if [ -d "apps/$app/.next" ]; then
+            members+=("apps/$app/.next")
+          fi
+        done
+
+        if [ "${#members[@]}" -eq 0 ]; then
+          # Every shard extracts this archive, so an archive that has no member
+          # still has to stay readable.
+          tar -cf playwright-next-builds.tar --files-from /dev/null
+          exit 0
+        fi
+
+        exclusions=()
+        for member in "${members[@]}"; do
+          exclusions+=("--exclude=$member/cache" "--exclude=$member/standalone")
+        done
+
+        tar -cf playwright-next-builds.tar "${exclusions[@]}" "${members[@]}"
 
     - name: Upload Playwright build outputs
       uses: actions/upload-artifact@v4
@@ -175,16 +247,7 @@ runs:
           apps/mcp-lecturer/dist
           apps/olat-api/dist
           apps/response-api/dist
-          packages/export/dist
-          packages/feature-flags/dist
-          packages/grading/dist
-          packages/graphql/dist
-          packages/hatchet/dist
-          packages/knowledge-graph/dist
-          packages/markdown/dist
-          packages/prisma/dist
-          packages/types/dist
-          packages/util/dist
+          packages/*/dist
         retention-days: 1
 
     - name: Extract Turbo build telemetry
@@ -201,6 +264,9 @@ runs:
         PLAYWRIGHT_TELEMETRY_PHASE: build
         PLAYWRIGHT_ROUTE: ${{ inputs.route }}
         PLAYWRIGHT_MODE: ${{ inputs.mode }}
+        PLAYWRIGHT_BUILD_GRAPH_MODE: ${{ steps.build-graph.outputs.mode }}
+        PLAYWRIGHT_BUILD_GRAPH_PROFILE: ${{ steps.build-graph.outputs.profile }}
+        PLAYWRIGHT_BUILD_GRAPH_REASON: ${{ steps.build-graph.outputs.reason }}
         PLAYWRIGHT_CACHE_CONTRACT: ${{ steps.cache-contract.outputs.fingerprint }}
         PNPM_CACHE_HIT: ${{ steps.pnpm-cache.outputs.cache-hit }}
         PNPM_CACHE_KEY: ${{ steps.pnpm-cache.outputs.cache-primary-key }}
@@ -217,6 +283,9 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         name: playwright-build-telemetry
-        path: playwright-build-telemetry.json
+        path: |
+          playwright-build-telemetry.json
+          playwright-resources-prisma.jsonl
+          playwright-resources-build.jsonl
         if-no-files-found: ignore
         retention-days: 7

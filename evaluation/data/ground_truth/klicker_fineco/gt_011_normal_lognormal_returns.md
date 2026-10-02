@@ -7,18 +7,17 @@ expected_tools_by_profile:
 
 ## Normal and Lognormal Quantities
 
-Let the simple net return be $r_t$, the gross return or growth factor be $R_t=1+r_t$, and the log return be $g_t=\ln(1+r_t)$.
+Let the simple net return be $r_t$, the gross return or growth factor be $R_t=1+r_t$, and the log return be $g_t=\ln(R_t)=\ln(1+r_t)$.
 
 In the standard model used in the course:
 
-- log returns $g_t$ are modeled as normally distributed;
-- gross returns $R_t=e^{g_t}$ are then lognormally distributed;
-- prices are products of positive growth factors and are therefore also modeled as lognormal;
-- simple returns satisfy $r_t=R_t-1$, so they have a lower bound of $-100\%$ and are shifted-lognormal under this exact model.
+- if $g_t$ is normally distributed, the gross return $R_t=e^{g_t}$ is lognormally distributed;
+- the simple return $r_t=R_t-1$ is then shifted lognormal and bounded below by $-100\%$;
+- with a fixed positive initial price and a normally distributed accumulated log return, the future price or price ratio is lognormal.
 
-Simple returns are also sometimes approximated as normal for short horizons and moderate volatility. That is a convenient approximation, not the same statement as lognormal prices.
+Positivity alone does not make prices lognormal. Simple returns are also sometimes approximated as normal, and $\ln(1+r_t)\approx r_t$ for small returns. That approximation is convenient for portfolio aggregation but is not the same statement as an exact lognormal price model. Normality is a modeling assumption, not a consequence of i.i.d. returns alone or of the central limit theorem in every finite sample.
 
 ## Sources
 
-- Financial Economics script FS26, Chapters 1.3–1.4, return distributions and random walks, pp. 12–17
-- FinEco FS26 Guide, Chapters 1.3–1.4, simple returns, gross returns, and log returns, pp. 12–17
+- Financial Economics script FS26, Chapter 1.4, normal and lognormal return distributions
+- Financial Economics script FS26, Chapter 2, aggregation of normal portfolio returns and the small-return approximation

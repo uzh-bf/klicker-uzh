@@ -5,9 +5,9 @@ external EduID, no `/etc/hosts` edits — clone, route through devrouter, and ru
 The devcontainer owns the whole stack (toolchain, Postgres, 3× Redis, MailHog,
 Hatchet, install + build + seed, `turbo dev`);
 [devrouter](https://github.com/rschlaefli/devrouter) fronts it on a shared
-`:443` / `:5432`. Linked worktrees publish no host ports and can coexist;
-the primary checkout intentionally keeps fixed localhost ports and is
-one-at-a-time.
+`:443` / `:5432`. Linked worktrees publish only ephemeral host ports and can
+coexist; the primary checkout keeps fixed localhost application ports,
+publishes its database on an ephemeral loopback port, and is one-at-a-time.
 
 > **Scope:** all runnable apps — **backend, auth, frontend-pwa, frontend-manage,
 > frontend-control, olat-api, response-api, lti-service, chat**, and the **two
@@ -24,7 +24,7 @@ You can run the devcontainer in two modes:
 
 ### Mode 1: Primary checkout
 
-The primary checkout keeps fixed localhost ports and receives stable unnamespaced devrouter routes:
+The primary checkout keeps fixed localhost application ports, publishes the database on an ephemeral loopback port, and receives stable unnamespaced devrouter routes:
 
 1. Run one-time setup: `devrouter setup --yes`.
 2. Start and prove the checkout: `devrouter ensure .`.
@@ -37,13 +37,13 @@ The primary checkout keeps fixed localhost ports and receives stable unnamespace
    - Auth Service: `http://localhost:3010`
    - MailHog UI: `http://localhost:8025`
    - Hatchet Dashboard: `http://localhost:8888`
-   - Postgres DB: `localhost:5432`
+   - Postgres DB: ephemeral loopback port (`docker port <postgres-container> 5432/tcp`), or `db.klicker.localhost:5432` through the router with direct-SSL SNI (libpq 17+)
 
 ### Mode 2: Linked checkout
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.59 and set it up:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.1.2 and set it up:
    ```bash
    devrouter setup --yes   # Traefik + the shared `devnet` + mkcert CA
    ```
@@ -93,7 +93,7 @@ marker creation to work around a refusal.
 
 ## Profiles
 
-This repository pins devrouter 0.0.59. Managed profiles, introduced in 0.0.40,
+This repository pins devrouter 0.1.2. Managed profiles, introduced in 0.0.40,
 select three independent dimensions: routed
 apps, optional Compose services, and managed processes. Merged selections are
 additive and order-insensitive; omitting `--profile` keeps the all-on `full`
@@ -112,10 +112,11 @@ It does not apply changed mounts to retained containers.
 | Profile                                 | What starts                                                                   |
 | --------------------------------------- | ----------------------------------------------------------------------------- |
 | `manage` / `pwa` / `chat` / `live-quiz` | That app set + API/Auth (+ PWA for chat; workers for live-quiz), the 3x Redis |
+| `eduid`                                 | The local Edu-ID OIDC mock only - combine it with an application profile      |
 | `ai`                                    | LiteLLM only - no routes, no app process                                      |
 | `mcp`                                   | The local MCP fixture (Benibot) only                                          |
 | `email`                                 | MailHog only                                                                  |
-| `full` (default)                        | Everything, including LiteLLM, MailHog, and the MCP fixture                   |
+| `full` (default)                        | Everything, including LiteLLM, MailHog, the MCP fixture, and the OIDC mock    |
 
 Postgres and Hatchet stay in the managed base for every profile (the backend
 treats both as boot-critical). Capability-only selections keep the idle app
@@ -152,6 +153,19 @@ workspace Postgres container's random loopback port for test cleanup and
 seeding. The Playwright process, Node dependencies, and browser binaries stay
 on the host; applications and services stay in this devcontainer.
 
+The default starts the full profile. For focused activity tests, request the
+required profile union explicitly before the Playwright arguments:
+
+```bash
+pnpm playwright:host -- --runtime-profile manage,live-quiz --project=chromium tests/MA-elements-operations.spec.ts
+```
+
+The caller must include every profile the selected tests need; the launcher
+does not infer them from spec names or reuse a previous narrow selection.
+Place `--runtime-profile` and `--print-env` before other arguments, or use `--`
+to end the launcher-option prefix. `--print-env` still reconciles the runtime
+and can start services. `--show-report` does not accept a runtime profile.
+
 The repository sets pnpm's `verifyDepsBeforeRun` policy to `error`, so pnpm
 reports stale dependency links instead of installing before the host launcher
 can control the lifecycle. On a cold host run, when the Playwright CLI is
@@ -181,10 +195,11 @@ continues to run directly in the official Playwright container.
 
 The monorepo runs the selected apps in **one container** via `turbo dev`;
 devrouter's Traefik (on `devnet`) routes each hostname to that container's
-internal port. The linked-worktree overlay publishes no host ports and exposes
-`${WORKSPACE}-app` and `${WORKSPACE}-db` aliases. The primary overlay exposes
-stable unnamespaced aliases plus fixed localhost ports. `.devrouter.yml` uses
-the selected checkout identity in every proxy upstream.
+internal port. Both overlays publish the database on an ephemeral loopback port
+and expose a database alias; the linked overlay uses `${WORKSPACE}-app` and
+`${WORKSPACE}-db`, while the primary overlay uses stable unnamespaced aliases
+plus fixed localhost application ports. `.devrouter.yml` uses the selected
+checkout identity in every proxy upstream.
 
 | What              | Host                                                 | Upstream (devnet)       |
 | ----------------- | ---------------------------------------------------- | ----------------------- |
@@ -214,13 +229,50 @@ psql "host=db.klicker.<workspace>.localhost port=5432 user=klicker_test \
 
 ## Auth model in dev
 
-EduID is replaced by klicker's own **credentials login** (no OIDC mock needed).
-Seeded users (`packages/prisma-data`): `lecturer`/`abcd` (ADMIN), `free`/`abcd`,
-`pro1..3`/`abcd`, and `testuser1..50`/`abcdabcd`. Cross-app sessions work because
-linked-worktree apps are served under the same `klicker.<workspace>.localhost`
-parent and the cookie domain resolves to that parent. `post-start.sh` rewrites
-the public origins and `AUTH_*_ALLOWED_HOSTS` when `WORKSPACE` is set, because
-the hardcoded defaults only know `klicker.com`.
+Lecturer login uses klicker's own **credentials login** — `lecturer`/`abcd`
+(ADMIN), `free`/`abcd`, `pro1..3`/`abcd`, and `testuser1..50`/`abcdabcd` come
+from `packages/prisma-data`. Cross-app sessions work because linked-worktree apps
+are served under the same `klicker.<workspace>.localhost` parent and the cookie
+domain resolves to that parent. `post-start.sh` rewrites the public origins and
+`AUTH_*_ALLOWED_HOSTS` when `WORKSPACE` is set, because the hardcoded defaults
+only know `klicker.com`.
+
+**Edu-ID** is served by a local OIDC mock (`oidc` service, routed at
+`https://oidc.klicker[.<workspace>].localhost`). The real SWITCH client registers
+redirect URIs per client, so `uzh_klicker_auth_dev` only ever accepts
+`https://auth.klicker.com/api/auth/callback/...`; a linked worktree's
+`https://auth.klicker.<workspace>.localhost/...` callback is rejected by the
+provider and no local configuration can change that. The mock accepts any
+redirect URI, so Edu-ID login and the assessment flow are testable in every
+checkout.
+
+The mock is a devcontainer-only capability, so it stays out of the application
+profiles: CI plans those unions against `playwright/runtime-contract.yml`, whose
+closed schema requires a literal binding for every selected app and managed
+service, and the hosted Playwright runtime cannot provision a Compose-only
+proxy. The default `full` selection routes the mock; a selective selection adds
+the capability explicitly:
+
+```bash
+devrouter ensure . --profile manage,eduid
+```
+
+Outside such a selection `post-start` reports the mock as not selected and
+leaves the Edu-ID provider unregistered, so no checkout offers an issuer it
+cannot reach. When a selected mock cannot be prepared (for example an
+unresolvable Traefik), startup continues, the mock is reported as disabled, and
+the recovery is `devrouter setup --yes` followed by `devrouter ensure .`.
+
+The mock signs in one fixed synthetic participant
+(`testuser2@test.uzh.ch`, `sub=local-eduid-dev`); `post-start.sh` exposes it only
+while `EDUID_CLIENT_SECRET` is unset, so real provider credentials always win.
+Link that mock identity to a seeded participant with
+`pnpm --filter @klicker-uzh/prisma-data run seed:local-eduid-link`.
+
+In the plain-localhost fallback (a native Dev Container client without
+devrouter routing) the issuer is `http://localhost:8090/default`. The primary
+checkout publishes that port on `127.0.0.1` and `devcontainer.json` forwards it.
+Linked worktrees keep the routed HTTPS issuer and publish no fixed host port.
 
 ## Hatchet token
 
@@ -243,6 +295,7 @@ boot because its `HatchetClient.init` runs at module load (not lazy).
 | `mailhog`                           | `mailhog/mailhog`                          | dev SMTP sink                                                                    |
 | `hatchet`                           | `hatchet-lite-dev:v0.101.0`                | workflow engine (gRPC :7077, no UI auth)                                         |
 | `litellm`                           | `ghcr.io/berriai/litellm-database:v1.96.2` | LLM proxy + Auto V2 complexity router for chat (port 4000 intra-net)             |
+| `oidc`                              | `ghcr.io/navikt/mock-oauth2-server:2.1.11` | local Edu-ID OIDC mock (dev-only, shares the app network namespace)              |
 
 Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
 host-side `initialize.sh` creates the persistent machine-local pnpm store,
@@ -270,7 +323,8 @@ custom `KLICKER_DEV_RUNTIME_STATE_DIR`, place it in that directory instead.
 
 Before `post-start` reports success, it probes every selected runtime app's
 readiness contract. Unauthenticated Chat must answer `401 application/json` on
-a nested API route, the committed shell pages of auth, PWA, manage, and control
+a nested API route. Auth must answer `200 application/json` at
+`/api/auth/providers`; the committed shell pages of PWA, manage, and control
 must answer `2xx` HTML or a redirect, and Response API must answer `200`
 JSON at `/healthz`. Profiles that include live-quiz workers also require one
 live runtime process for each worker below the exact managed Turbo root. Five
@@ -310,7 +364,7 @@ analytics image and lint CI so the root quality gate runs inside the container.
   Generation failures abort startup and retain the previous output; unchanged
   output is not rewritten.
 - Generating updated configuration does not change mounts in an existing
-  container. Devrouter 0.0.59 does not support warm mount reconciliation.
+  container. Devrouter 0.1.2 does not support warm mount reconciliation.
   Do not recreate or reset a retained workspace to apply a package addition or
   removal. Keep its data intact and resolve the supported lifecycle procedure
   separately. Unchanged package inventories retain the same volume names.
@@ -342,3 +396,50 @@ analytics image and lint CI so the root quality gate runs inside the container.
   seeded or synthetic content and expect the extra calls to add latency/cost.
 - Benibot's seeded Tutor and Explainer modes use the read-only `doc_query`
   fixture at `http://localhost:1417/mcp`. Its log is `/tmp/local-mcp.log`.
+
+## Guarded retained-runtime recovery
+
+Use `devrouter ensure <checkout>` for normal startup. Use
+`devrouter ensure <checkout> --repair` only for a persisted degraded runtime.
+A healthy stopped runtime needs normal `ensure`, not repair. If an ordinary
+restart is appropriate, stop the exact checkout with `devrouter stop <checkout>`
+and confirm its provider is stopped and its routes are gone before restarting.
+
+The repository's `.devcontainer/recover-runtime.sh` is a consumer callback for
+the separately reviewed devrouter retained-recovery implementation. It is not
+an ordinary startup hook or a command to invoke manually. The repository-pinned
+0.1.2 release does not provide this recovery contract. The recovery performed
+for this branch used devrouter source revision
+`aacf9ea595b9c76b0aaf66c0f4d52179b05197d8`, whose `recovery-preview`,
+`recovery-apply` and `recovery-resume` commands own the lifecycle locks, exact
+container identities and digest-bound journal. This is source-version evidence,
+not a claim that the contract is available in a published release. Confirm a
+release provides that contract before changing the repository version pin.
+
+The callback requires the provider to inject exact 64-character application
+and PostgreSQL container IDs. It assumes the canonical container mount
+`/workspaces/klicker-uzh`. Both restricted disposable databases must already be
+provisioned and marked; the callback explicitly initializes their schema and
+synthetic seeds after verifying their identities. This path therefore requires
+approval for that initialization. It never marks an existing retained database
+as disposable. The provisioning helper defaults to bootstrap login `klicker`
+for CI; the retained local environment explicitly selects the allow-listed
+`klicker-prod` login. Neither is the restricted `klicker_test` application login.
+
+The four hashes in `recover-runtime.sh` bind the reviewed consumer source.
+When one of those files changes, review the semantic change and refresh its pin
+in the same commit. Run `pnpm run test:dev-runtime` to catch pin drift before
+publication. A pin failure must never be bypassed by deleting the guard.
+
+| Failure                                                               | Next action                                                                                                                                        |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Recovery source changed` or a mounted-source mismatch                | Compare the exact reviewed host and mounted files; update a pin only after reviewing the changed procedure.                                        |
+| `Repair requires a persisted degraded managed runtime`                | Use normal `ensure` for a stopped healthy runtime.                                                                                                 |
+| `Lifecycle worker completion is unknown` or an operation-request lock | Preserve the existing operation and inspect its owner/journal through devrouter; do not clear locks or start competing operations.                 |
+| `Managed stop Compose file identity changed`                          | Compare recorded and current source configuration through the provider's recovery preview; do not bypass identity checks with raw Docker commands. |
+| Disposable identity or schema refusal                                 | Stop initialization and verify configuration and marked identities without exposing connection strings; do not reset or reseed blindly.            |
+
+A partial recovery journal records work already performed. Resume only through
+the owning recovery command and its reviewed preview; repeating replacement
+can lose writable-layer data. If the installed tool lacks the required command,
+stop at that capability boundary instead of substituting raw Docker mutations.

@@ -9,9 +9,23 @@
 
 ## Stacked PRs
 
+- Use the maintained draft sync PRs for `v3` -> `v3-ai` and `v3-ai` -> `v3-audit`. Merge these integrations with normal merge commits to preserve ancestry; a squashed sync fails the `sync-ancestry` check until the restore PR the guard opens is merged with a merge commit (see [Squashed sync guard](docs/ci-and-deployment.md#squashed-sync-guard)). Retain the applicable verification and merge/deployment authorization gates. Other feature-branch synchronization remains manual.
+- **Branch promotion chain**: `v3` -> `v3-ai` -> `v3-audit`. Never merge `v3` into `v3-audit` directly, and do not cherry-pick around a hop. `v3-audit` is the branch staging builds from, so every `v3-ai` commit it is meant to release has to arrive through a `v3-ai` -> `v3-audit` merge. When an approved change adds, renames, reorders, or retires an integration branch, agents must maintain the explicit sync pairs and their workflow triggers, tests, and documentation together; follow [Changing the sync chain](docs/ci-and-deployment.md#changing-the-sync-chain).
+- **Integration mechanics**: the `v3` and `v3-*` rulesets block deletion and force-push, and their required checks evaluate both pull requests and direct pushes. Admins may bypass required checks on pull requests; `v3-ai` additionally permits a repository-admin direct push, and the push still runs the full CI suite on the branch. A non-fast-forward push is rejected when the branch has moved, so duplicate syncs cannot land.
+- **Sync routing**: automation creates drafts for those two pairs only; source pushes keep their diffs current. Maintainers control readiness, conflict resolution, and merging. Resolve substantive conflicts on a task branch and open an integration PR, recording the integrated source SHA in the merge message. The staging promoter independently re-validates the exact `v3-audit` head before moving `stg-release`. See [Draft sync PR maintenance](docs/ci-and-deployment.md#draft-sync-pr-maintenance) for triggers and CI behavior.
 - GitHub stacked PRs are enabled for this repository. Always use `$stacked-change` and `$gh-stack` for larger features: substantial cross-layer or multi-concern work, changes with distinct reviewer audiences or runtime models, and existing large branches that need decomposition. Keep an ordinary single PR for small, cohesive changes only.
 - This is a KlickerUZH repository capability, not a GitHub-wide assumption. Verify native stack support before using the workflow in another repository.
 - Final AI review is standing-authorized for all KlickerUZH PRs. Once exact-head CI and ordinary feedback are settled, agents may post `/final-review` for an unstacked PR or ordinary stack layer, and `/final-review-stack` only on the top PR of a verified native stack, without asking again. This approval covers sending the public PR diff to the workflow's configured OpenRouter model and the resulting usage cost; it does not authorize merging, approving, force-pushing, or exposing uncommitted or private data.
+
+## Release preparation
+
+Use the release scripts in the root `package.json` to generate versions and
+`CHANGELOG.md`; never hand-edit package versions or assemble release notes as a
+substitute. For an alpha release, run `pnpm run release:alpha` (preview with
+`pnpm run release:alpha:dry`). The script uses `.versionrc.js` as the authoritative
+version-target list. During PR preparation, pass `--skip.tag` and create the tag
+only at the approved merged release commit. Tag publication and production
+activation remain separately authorized actions.
 
 ## Commands
 
@@ -222,7 +236,7 @@ card. Reload the thread and require the tool result, answer, and source to
 remain visible. Use the direct `GPT-5.6 Luna` option only when isolating the
 router from the model/tool integration.
 
-**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.55 fronts the stack over the shared `devnet` network. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery, 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime, and 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct retained-runtime configuration and mount comparison. One-time host setup must happen **before** the container starts:
+**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.1.2 fronts the stack over the shared `devnet` network. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery, 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime, and 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct retained-runtime configuration and mount comparison. One-time host setup must happen **before** the container starts:
 
 ```bash
 devrouter setup --yes # Traefik + devnet + mkcert CA
@@ -294,6 +308,7 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 
 - **pre-commit** (husky): a staged `gitleaks` secret scan (skipped with a notice when the binary isn't installed; CI enforces it), then `pnpm run check:all` (typecheck + format:check via lint-staged + lint + syncpack)
 - **pre-push**: runs `pnpm run build`
+- Both `pnpm` steps go through `util/run-hook-pnpm.sh`. Devcontainer checkouts have no host dependency install, so they skip the step with a notice and rely on required CI. Never run a host `pnpm install` to satisfy a hook; see [Getting Started](docs/getting-started.md).
 - lint-staged: Biome on staged code files, Prettier on staged Markdown/YAML and `playwright/` specs
 
 ## Important Notes
