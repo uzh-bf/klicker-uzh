@@ -55,6 +55,13 @@ function CoverageBulkActions({
       on: plan({ type: 'switchOnAll' }),
     }
   }, [form, leafKeys, minimumValue])
+  // A leaf whose every enabled cell qualifies is never switched off (it would
+  // keep no level), so explain why a button can show a lower count than
+  // expected, including (0).
+  const skippedLeafCount = Math.max(
+    plans.empty.plan.skippedLeafKeys.length,
+    plans.below?.plan.skippedLeafKeys.length ?? 0
+  )
 
   const buttonFor = (
     entry: { action: CoverageBulkAction; plan: CoverageBulkPlan } | null,
@@ -157,6 +164,16 @@ function CoverageBulkActions({
         plans.on,
         t('manage.competenceTree.coverageBulk.switchOnAll'),
         'competence-tree-coverage-bulk-on-all'
+      )}
+      {skippedLeafCount > 0 && (
+        <p
+          className="w-full text-xs text-slate-600"
+          data-cy="competence-tree-coverage-bulk-skipped"
+        >
+          {t('manage.competenceTree.coverageBulk.leavesSkipped', {
+            count: skippedLeafCount,
+          })}
+        </p>
       )}
 
       {pending && (
