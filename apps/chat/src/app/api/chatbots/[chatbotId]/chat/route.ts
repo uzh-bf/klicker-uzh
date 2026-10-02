@@ -23,6 +23,10 @@ import { z } from 'zod'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
+  stepReminder,
+  withCalculatorTool,
+} from '@/src/lib/server/calculatorTool'
+import {
   type ChatModelConfig,
   getAllowedReasoningEffortsForModel,
   getAutomaticModelId,
@@ -43,7 +47,6 @@ import {
   isAiTelemetryEnabled,
   LANGFUSE_CHAT_TRACE_NAME,
 } from '@/src/lib/server/langfuseTracing'
-import { REPLY_LANGUAGE_REMINDER } from '@/src/lib/server/languageInstructions'
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
@@ -1142,6 +1145,9 @@ export async function POST(
     }
 
     const toolNames = Object.keys(mcpTools || {})
+    // The calculator is added after the system prompt inputs are fixed, so
+    // course grounding and citation rules still see only course tools.
+    const chatTools = withCalculatorTool(selectedMode, mcpTools)
     const docQueryToolName = toolNames.find(isDocQueryToolName)
     const quizzerDocQueryToolName =
       selectedMode === 'quizzer' ? docQueryToolName : undefined
@@ -1212,7 +1218,7 @@ export async function POST(
               ? 'responses'
               : 'chat',
             instructions: systemPrompt,
-            tools: mcpTools,
+            tools: chatTools,
           })
         : null
 
@@ -1647,11 +1653,11 @@ export async function POST(
           },
         },
         messages: modelMessages as ModelMessage[],
-        tools: promptCacheRequest?.tools ?? mcpTools,
+        tools: promptCacheRequest?.tools ?? chatTools,
         toolOrder: promptCacheRequest?.toolOrder,
         toolChoice: 'auto',
-        // The reply-language reminder is the last message of every step, after
-        // tool output, so retrieved material cannot set the reply language.
+        // The precision and reply-language reminders end every step, after
+        // tool output, so retrieved material cannot override them.
         allowSystemInMessages: true,
         prepareStep: ({
           stepNumber,
@@ -1672,7 +1678,7 @@ export async function POST(
             ...(docQueryToolName && stepNumber > 0
               ? withModelCitationIndices(responseMessages, steps)
               : responseMessages),
-            REPLY_LANGUAGE_REMINDER,
+            stepReminder(selectedMode),
           ],
         }),
         stopWhen: isStepCount(5),
