@@ -30,9 +30,8 @@ import { verifyPwaEmbedSessionToken } from '@/src/lib/server/pwaEmbed'
 
 export type { AuthMode, ChatDataUseState }
 /**
- * Error code shared with the response API and the PWA: the account has not
- * acknowledged the current data-use disclosure, so attributed data must not be
- * collected for it yet.
+ * The participant account has not acknowledged the current data-use disclosure
+ * and recorded both purpose choices required before using chat.
  */
 export { PARTICIPANT_DATA_USE_COMPLETION_REQUIRED }
 
@@ -75,7 +74,18 @@ export async function loadChatDataUseState(
 export async function requireCompletedDataUse(
   participantId: string
 ): Promise<{ ok: true } | { response: NextResponse }> {
-  const state = await loadChatDataUseState(participantId)
+  let state: Awaited<ReturnType<typeof loadChatDataUseState>>
+  try {
+    state = await loadChatDataUseState(participantId)
+  } catch {
+    console.error('Error checking data-use completion')
+    return {
+      response: NextResponse.json(
+        { error: 'Error checking data-use completion' },
+        { status: 500 }
+      ),
+    }
+  }
   if (state?.complete) return { ok: true }
 
   return {

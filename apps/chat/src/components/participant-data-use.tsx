@@ -133,9 +133,8 @@ export function ParticipantDataUseGate({
             setFailed(false)
           } else {
             // The stored revision is still unknown, so report the stale page
-            // instead of a system error. The submit stays available: every
-            // retry reloads the reported revision first, and the server
-            // rejects a stale revision anyway.
+            // instead of a system error. A retry with the old revision is
+            // rejected by the server and reloads the persisted state again.
             setConflict(true)
             setFailed(true)
           }
@@ -209,9 +208,7 @@ export function ParticipantDataUseGate({
             type="submit"
             loading={saving}
             disabled={
-              !acknowledged ||
-              learningAnalyticsConsent === undefined ||
-              conflict
+              !acknowledged || learningAnalyticsConsent === undefined || saving
             }
             className={{ root: 'w-full flex-none md:w-max' }}
             data={{ cy: 'chat-data-use-submit' }}
@@ -258,7 +255,7 @@ export function ParticipantDataUseSettings({
           return
         }
         const data = (await response.json()) as DataUseResponse
-        setState(data.state)
+        if (active) setState(data.state)
       })
       .catch(() => {
         if (active) setFailed(true)

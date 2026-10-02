@@ -27,7 +27,11 @@ vi.mock('jose', () => ({
 }))
 
 import { PARTICIPANT_DATA_USE_COMPLETION_REQUIRED } from '../src/lib/dataUse'
-import { getChatbotOr404, withChatbotAuth } from '../src/lib/server/apiGuards'
+import {
+  getChatbotOr404,
+  requireCompletedDataUse,
+  withChatbotAuth,
+} from '../src/lib/server/apiGuards'
 import { acknowledgedParticipantDataUse } from './participant-data-use-support'
 
 // A syntactically valid UUID so the guard proceeds to the DB lookup.
@@ -58,6 +62,26 @@ describe('getChatbotOr404 publication gate', () => {
   })
 
   afterEach(() => vi.unstubAllEnvs())
+
+  test('returns a controlled failure when completion cannot be checked', async () => {
+    const error = new Error('synthetic database failure')
+    mocks.participantFindUnique.mockRejectedValueOnce(error)
+    const logger = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    try {
+      const result = await requireCompletedDataUse('participant-1')
+      expect('response' in result).toBe(true)
+      if ('response' in result) {
+        expect(result.response.status).toBe(500)
+        expect(JSON.stringify(await result.response.json())).not.toContain(
+          error.message
+        )
+      }
+      expect(logger).toHaveBeenCalledWith(expect.any(String))
+    } finally {
+      logger.mockRestore()
+    }
+  })
 
   test('returns the chatbot when it is PUBLISHED', async () => {
     mocks.findUnique.mockResolvedValue({
