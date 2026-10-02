@@ -12,9 +12,10 @@ BEGIN;
 -- reference their keys.
 --
 -- Converted values satisfy the stored-mode reader, which otherwise drops an
--- entry: names are single-line, at most 60 characters, unique ignoring case,
--- and never a reserved built-in name; descriptions are single-line and at most
--- 160 characters. A legacy prompt becomes "personaText" up to the stored
+-- entry: a chatbot keeps at most its first five modes by key, the ones the
+-- reader would keep; names are single-line, at most 60 characters, unique
+-- ignoring case, and never a reserved built-in name; descriptions are
+-- single-line and at most 160 characters. A legacy prompt becomes "personaText" up to the stored
 -- 100,000-character ceiling, so lecturers see and edit the prompt that runs. A
 -- longer prompt is left out of "personaText", so the runtime keeps compiling
 -- the full legacy prompt from "systemPrompts" instead of a truncated copy.
@@ -26,7 +27,11 @@ WITH "legacy" AS (
     left(
       btrim(regexp_replace(initcap("entry"."key"), '\s+', ' ', 'g')),
       60
-    ) AS "baseName"
+    ) AS "baseName",
+    row_number() OVER (
+      PARTITION BY "c"."id"
+      ORDER BY "entry"."key"
+    ) AS "keyRank"
   FROM "Chatbot" AS "c"
   CROSS JOIN LATERAL jsonb_each("c"."systemPrompts") AS "entry"("key", "value")
   WHERE "c"."customModeConfig" IS NULL
@@ -43,6 +48,7 @@ WITH "legacy" AS (
       ORDER BY "key"
     ) AS "nameRank"
   FROM "legacy"
+  WHERE "keyRank" <= 5
 ),
 "converted" AS (
   SELECT
