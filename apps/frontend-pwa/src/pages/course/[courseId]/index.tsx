@@ -691,7 +691,9 @@ function CourseOverview({
                     setIsJoinCourseLeaderboardModalOpen(false)
                     return
                   }
-                } catch {}
+                } catch {
+                  console.error('Failed to join course leaderboard')
+                }
                 toast({
                   type: 'error',
                   message: t('pwa.courses.joinLeaderboardError'),
@@ -733,7 +735,9 @@ function CourseOverview({
                     setIsLeaveCourseLeaderboardModalOpen(false)
                     return
                   }
-                } catch {}
+                } catch {
+                  console.error('Failed to leave course leaderboard')
+                }
                 toast({
                   type: 'error',
                   message: t('pwa.courses.leaveLeaderboardError'),
