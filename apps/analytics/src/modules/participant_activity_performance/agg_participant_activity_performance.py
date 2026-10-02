@@ -17,8 +17,9 @@ def agg_participant_activity_performance(
     course_id: str | None = None,
 ):
     eligibility = ensure_analytics_eligibility(db, eligibility)
+    eligible_participant_ids = set(eligibility.participant_ids)
     participant_ids = [
-        participant_id for participant_id in participant_ids if str(participant_id) in eligibility.participant_ids
+        participant_id for participant_id in participant_ids if str(participant_id) in eligible_participant_ids
     ]
     if not participant_ids or df_responses.empty or df_activities.empty:
         return

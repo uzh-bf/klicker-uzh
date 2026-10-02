@@ -330,6 +330,19 @@ def _writer_calls(db, eligibility):
 
 
 class PublicationFencingTests(unittest.TestCase):
+    def test_unknown_aggregation_type_is_rejected_even_with_no_rows(self):
+        database = _Database()
+        with self.assertRaises(ValueError):
+            save_aggregated_analytics(
+                database,
+                pd.DataFrame(),
+                "2026-09-01T00:00:00.000Z",
+                analytics_type="UNKNOWN",
+                eligibility=_eligibility(),
+            )
+        self.assertEqual(database.transactions, [])
+        self.assertEqual(database.write_attempts, [])
+
     def test_each_writer_rejects_stale_generation_before_any_write(self):
         for name, _ in _writer_calls(
             _Database(

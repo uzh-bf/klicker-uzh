@@ -10,10 +10,10 @@ def save_aggregated_analytics(
     analytics_type="DAILY",
     eligibility: AnalyticsEligibilityContext | None = None,
 ):
-    if df_analytics.empty:
-        return
     if analytics_type not in ["DAILY", "WEEKLY", "MONTHLY", "COURSE"]:
         raise ValueError("Unknown analytics type: {}".format(analytics_type))
+    if df_analytics.empty:
+        return
 
     computedAt = datetime.now().strftime("%Y-%m-%d") + "T00:00:00.000Z"
     course_ids = tuple(dict.fromkeys(str(course_id) for course_id in df_analytics["courseId"].dropna()))
