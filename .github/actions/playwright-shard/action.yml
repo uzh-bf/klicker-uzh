@@ -291,6 +291,12 @@ runs:
         APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
         APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
 
+    - name: Report tests that passed only on retry
+      if: always()
+      continue-on-error: true
+      shell: bash
+      run: node .ci-control/.github/scripts/playwright-flaky-summary.cjs playwright/test-results/results.json "$GITHUB_STEP_SUMMARY"
+
     - name: Upload Playwright JUnit results
       if: always()
       uses: actions/upload-artifact@v4
