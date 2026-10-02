@@ -168,10 +168,12 @@ function CoverageMatrix({
         <div
           className="grid min-w-max"
           style={{
-            gridTemplateColumns: `minmax(16rem, 1fr) repeat(${Math.max(
+            // Fixed tracks: `1fr` inside a `min-w-max` grid sizes every column
+            // to the longest leaf name, pushing the level columns off-screen.
+            gridTemplateColumns: `minmax(12rem, 18rem) repeat(${Math.max(
               orderedLevels.length,
               1
-            )}, minmax(11rem, 1fr))`,
+            )}, 9rem)`,
           }}
         >
           <div className="sticky left-0 top-0 z-20 border-b border-r border-slate-300 bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600">
@@ -188,7 +190,7 @@ function CoverageMatrix({
 
           {leaves.map((leaf) => (
             <div key={leaf.key} className="contents">
-              <div className="sticky left-0 z-10 border-b border-r border-slate-200 bg-white px-3 py-3 text-sm">
+              <div className="sticky left-0 z-10 break-words border-b border-r border-slate-200 bg-white px-3 py-3 text-sm">
                 {getBreadcrumb(form.nodes, leaf.key)}
               </div>
               {orderedLevels.map((level) => {
