@@ -3,7 +3,7 @@ import { importPKCS8, SignJWT } from 'jose'
 import { DOC_QUERY_SCOPE_TOKEN_HEADER } from '@/src/services/mcpScope'
 
 const DOC_QUERY_SCOPE_TOKEN_ALGORITHM = 'ES256'
-const DOC_QUERY_SCOPE_TOKEN_TTL_SECONDS = 5 * 60
+export const DOC_QUERY_SCOPE_TOKEN_TTL_SECONDS = 5 * 60
 
 // Every scoped request mints a fresh token, but the signing key itself only
 // changes through configuration. Caching the imported key by PEM keeps the
@@ -35,11 +35,22 @@ export async function signDocQueryScopeToken({
   chatbotId,
   sessionId,
   jti,
+  partnerId,
+  chatbotName,
+  chatbotUrl,
+  sessionRef,
 }: {
   kbIds: readonly string[]
   chatbotId: string
   sessionId: string
   jti: string
+  /** Partner service identity; present only on partner-issued tokens. */
+  partnerId?: string
+  /** Trusted display metadata bound to the signed chatbot scope. */
+  chatbotName?: string
+  chatbotUrl?: string
+  /** Opaque partner-side session reference; never used as the token subject. */
+  sessionRef?: string
 }): Promise<string> {
   const privateKeyPem = requireScopeTokenEnv(
     'DOC_QUERY_SCOPE_PRIVATE_KEY'
@@ -61,6 +72,12 @@ export async function signDocQueryScopeToken({
     return await new SignJWT({
       kb_id: kbIds.length === 1 ? kbIds[0] : kbIds,
       chatbot_id: chatbotId,
+      // Partner issuance binds the trusted service identity and display
+      // metadata server-side; participant-issued tokens omit these claims.
+      ...(partnerId ? { partner: partnerId } : {}),
+      ...(chatbotName ? { chatbot_name: chatbotName } : {}),
+      ...(chatbotUrl ? { chatbot_url: chatbotUrl } : {}),
+      ...(sessionRef ? { session_ref: sessionRef } : {}),
     })
       .setProtectedHeader({
         alg: DOC_QUERY_SCOPE_TOKEN_ALGORITHM,
