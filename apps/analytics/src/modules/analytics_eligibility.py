@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
+import pandas as pd
+
 
 # Keep this value aligned with the server-owned participant data-use disclosure.
 # Server source: packages/util/src/participantAccountDataUse.ts
@@ -54,23 +56,6 @@ FROM "Participant" AS p
 WHERE p."learningAnalyticsConsent" IS TRUE
   AND p."learningAnalyticsChoiceAt" IS NOT NULL
   AND p."learningAnalyticsDisclosureVersion" = $1
-  AND NOT EXISTS (
-    SELECT 1
-    FROM "ParticipantAnalyticsWithdrawal" AS withdrawal
-    WHERE withdrawal."participantId" = p."id"
-      AND withdrawal."completedAt" IS NULL
-  )
-"""
-
-_VALIDATE_PARTICIPANT_QUERY = """
-SELECT
-  p."id" AS "participantId",
-  p."learningAnalyticsChoiceAt" AS "choiceAt"
-FROM "Participant" AS p
-WHERE p."id" = CAST($1 AS uuid)
-  AND p."learningAnalyticsConsent" IS TRUE
-  AND p."learningAnalyticsChoiceAt" IS NOT NULL
-  AND p."learningAnalyticsDisclosureVersion" = $2
   AND NOT EXISTS (
     SELECT 1
     FROM "ParticipantAnalyticsWithdrawal" AS withdrawal
@@ -213,17 +198,12 @@ def filter_dataframe_by_eligibility(
     if "participantId" not in dataframe or "createdAt" not in dataframe:
         return dataframe.iloc[0:0]
 
-    return dataframe.loc[
-        dataframe.apply(
-            lambda row: bool(
-                filter_records_by_eligibility(
-                    [row.to_dict()],
-                    eligibility,
-                )
-            ),
-            axis=1,
-        )
-    ].copy()
+    choices = pd.to_datetime(
+        dataframe["participantId"].astype(str).map(eligibility.choice_at_by_participant),
+        utc=True,
+    )
+    created_at = pd.to_datetime(dataframe["createdAt"].map(_as_utc_datetime), utc=True)
+    return dataframe.loc[choices.notna() & created_at.notna() & (created_at >= choices)].copy()
 
 
 def filter_dataframe_by_participants(
@@ -267,20 +247,16 @@ def _validate_participants(
     db: Any,
     eligibility: AnalyticsEligibilityContext,
 ) -> None:
-    for participant in eligibility.participants:
-        rows = db.query_raw(
-            _VALIDATE_PARTICIPANT_QUERY,
-            participant.participant_id,
-            eligibility.disclosure_version,
-        )
-        if len(rows) != 1:
-            raise AnalyticsEligibilityChanged("Participant eligibility changed during computation")
+    rows = db.query_raw(_ELIGIBLE_PARTICIPANTS_QUERY, eligibility.disclosure_version)
+    current_choices = {}
+    for row in rows:
+        current = _participant_row(row)
+        if current is not None:
+            current_choices[current[0]] = current[1]
 
-        current = _participant_row(rows[0])
-        if current is None or current[0] != participant.participant_id:
-            raise AnalyticsEligibilityChanged("Participant eligibility changed during computation")
-        if current[1] != participant.learning_analytics_choice_at:
-            raise AnalyticsEligibilityChanged("Participant choice changed during computation")
+    for participant in eligibility.participants:
+        if current_choices.get(participant.participant_id) != participant.learning_analytics_choice_at:
+            raise AnalyticsEligibilityChanged("Participant eligibility or choice changed during computation")
 
 
 def validate_analytics_eligibility(

@@ -17,10 +17,11 @@ def compute_weekday_activity(
     eligibility = ensure_analytics_eligibility(db, eligibility)
     course_id = course["id"]
 
+    eligible_ids = set(eligibility.participant_ids)
     eligible_participant_ids = tuple(
         str(participation["participantId"])
         for participation in course["participations"]
-        if str(participation["participantId"]) in eligibility.participant_ids
+        if str(participation["participantId"]) in eligible_ids
     )
     if not eligible_participant_ids:
         return None

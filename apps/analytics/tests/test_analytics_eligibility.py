@@ -5,6 +5,8 @@ import sys
 from pathlib import Path
 from unittest.mock import ANY
 
+import pandas as pd
+
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
 from modules import analytics_eligibility as eligibility_module
@@ -162,9 +164,56 @@ class AnalyticsEligibilityTests(unittest.TestCase):
                     "SELECT pg_advisory_xact_lock(CAST($1 AS integer), CAST($2 AS integer))",
                     eligibility_module.ANALYTICS_ADVISORY_LOCK,
                 ),
-                ("validate", ANY, (PARTICIPANT_ID, SERVER_DISCLOSURE_VERSION)),
+                ("validate", ANY, (SERVER_DISCLOSURE_VERSION,)),
             ],
         )
+
+    def test_dataframe_filter_preserves_prospective_boundaries_and_index(self):
+        records = [
+            {"participantId": PARTICIPANT_ID, "createdAt": "2026-08-31T23:59:59Z"},
+            {"participantId": PARTICIPANT_ID, "createdAt": "2026-09-01T02:00:00+02:00"},
+            {"participantId": "objector", "createdAt": CHOICE_AT},
+            {"participantId": PARTICIPANT_ID, "createdAt": None},
+            {"participantId": PARTICIPANT_ID, "createdAt": "invalid"},
+            {"participantId": PARTICIPANT_ID, "createdAt": CHOICE_AT + timedelta(days=1)},
+        ]
+        dataframe = pd.DataFrame(records, index=[4, 4, 8, 9, 10, 11])
+        filtered = eligibility_module.filter_dataframe_by_eligibility(dataframe, self.context)
+        self.assertEqual(filtered.index.tolist(), [4, 11])
+        self.assertEqual(
+            filtered.to_dict("records"), list(eligibility_module.filter_records_by_eligibility(records, self.context))
+        )
+        self.assertTrue(
+            eligibility_module.filter_dataframe_by_eligibility(dataframe.drop(columns="createdAt"), self.context).empty
+        )
+
+    def test_publication_validates_the_whole_captured_cohort_once(self):
+        second_id = "00000000-0000-0000-0000-000000000002"
+        context = eligibility_module.AnalyticsEligibilityContext(
+            0,
+            SERVER_DISCLOSURE_VERSION,
+            (self.context.participants[0], eligibility_module.EligibleParticipant(second_id, CHOICE_AT)),
+        )
+        rows = [
+            {"participantId": second_id, "choiceAt": CHOICE_AT},
+            {"participantId": PARTICIPANT_ID, "choiceAt": CHOICE_AT},
+        ]
+        database = _Database(participant_rows=rows)
+        writes = []
+        eligibility_module.publish_analytics(database, context, ("course-1",), lambda _: writes.append(True))
+        self.assertEqual(writes, [True])
+        self.assertEqual(len([event for event in database.transactions[0].events if event[0] == "validate"]), 1)
+        for changed_rows in (
+            rows[:1],
+            [rows[0], {"participantId": PARTICIPANT_ID, "choiceAt": CHOICE_AT + timedelta(seconds=1)}],
+        ):
+            with self.subTest(rows=changed_rows):
+                writes.clear()
+                with self.assertRaises(eligibility_module.AnalyticsEligibilityChanged):
+                    eligibility_module.publish_analytics(
+                        _Database(participant_rows=changed_rows), context, ("course-1",), lambda _: writes.append(True)
+                    )
+                self.assertEqual(writes, [])
 
     def test_synthetic_doubles_reject_unsupported_prisma_keywords(self):
         model = _Model()

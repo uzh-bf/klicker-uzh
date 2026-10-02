@@ -14,10 +14,11 @@ def get_active_weeks(
     eligibility = ensure_analytics_eligibility(db, eligibility)
     course_id = course["id"]
 
+    eligible_participant_ids = set(eligibility.participant_ids)
     participations = [
         participation
         for participation in course["participations"]
-        if participation["participantId"] in eligibility.participant_ids
+        if participation["participantId"] in eligible_participant_ids
     ]
 
     if not participations:
