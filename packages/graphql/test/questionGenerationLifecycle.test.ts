@@ -129,6 +129,7 @@ function preparingBuild() {
     status: DB.ElementGenerationBuildStatus.PREPARING_INPUT,
     providerDispatchAttemptId: fixtures.dispatchAttemptId,
     blueprintArtifact: null,
+    librarySnapshotArtifact: null,
     createdAt: new Date('2026-08-26T12:00:00.000Z'),
     reviews: [],
     drafts: [],
@@ -340,7 +341,15 @@ function failedBuildContext(
 
 describe('question-generation preparation lifecycle', () => {
   it('resumes a crash-window build with its durable dispatch attempt', async () => {
-    const build = preparingBuild()
+    const librarySnapshotArtifact = {
+      containerName: 'question-inputs',
+      blobName: `question-builds/${fixtures.buildId}/library-snapshots/${'d'.repeat(64)}.json`,
+      sha256: 'd'.repeat(64),
+    }
+    const build = {
+      ...preparingBuild(),
+      librarySnapshotArtifact,
+    }
     const completed = {
       ...build,
       status: DB.ElementGenerationBuildStatus.DESIGNING,
@@ -397,7 +406,10 @@ describe('question-generation preparation lifecycle', () => {
       )
     ).resolves.toEqual(completed)
 
-    expect(runtime.downloadVerified).toHaveBeenCalledOnce()
+    expect(runtime.downloadVerified).toHaveBeenCalledTimes(2)
+    expect(runtime.downloadVerified).toHaveBeenCalledWith(
+      librarySnapshotArtifact
+    )
     expect(findRunByBuildId).toHaveBeenCalledWith(
       fixtures.buildId,
       fixtures.dispatchAttemptId,
@@ -413,6 +425,131 @@ describe('question-generation preparation lifecycle', () => {
         }),
       })
     )
+  })
+
+  it('pins an owned library snapshot before dispatching payload v4', async () => {
+    vi.stubEnv('KB_QUESTION_LIBRARY_COMPARISON_ENABLED', 'true')
+    vi.stubEnv('KB_QUESTION_LIBRARY_COMPARISON_MAX_ELEMENTS', '500')
+    try {
+      const build = preparingBuild()
+      const updateMany = vi.fn(async () => ({ count: 1 }))
+      const uploadCreateOnly = vi.fn<
+        QuestionGenerationRuntime['uploadCreateOnly']
+      >(async () => undefined)
+      const start = vi.fn(
+        async (
+          _payload: Parameters<QuestionGenerationRuntime['start']>[0],
+          _scope: string,
+          _attemptId: string,
+          beforeProviderDispatch: () => Promise<void>
+        ) => {
+          await beforeProviderDispatch()
+          return { eventId: 'event-with-library' }
+        }
+      )
+      const runtime = {
+        questionInputContainer: 'question-inputs',
+        questionOutputContainer: 'question-results',
+        questionOutputPrefix: 'question-builds',
+        uploadCreateOnly,
+        downloadVerified: vi.fn(),
+        downloadVerifiedStream: vi.fn(),
+        downloadImmutable: vi.fn(),
+        start,
+        review: vi.fn(),
+        getRun: vi.fn(),
+        getRunById: vi.fn(),
+        findRunByBuildId: vi.fn(async () => null),
+        findRunByQuestionReview: vi.fn(),
+      } satisfies QuestionGenerationRuntime
+      const completed = {
+        ...build,
+        status: DB.ElementGenerationBuildStatus.DESIGNING,
+      }
+      const ctx = {
+        user: { sub: fixtures.ownerId },
+        elementGenerationRuntime: runtime,
+        prisma: {
+          element: {
+            findMany: vi.fn(async () => [
+              {
+                id: 17,
+                version: 2,
+                type: DB.ElementType.SC,
+                name: 'Diversification',
+                content: 'Why can diversification reduce risk?',
+                options: {
+                  displayMode: 'LIST',
+                  choices: [
+                    {
+                      ix: 0,
+                      value: 'It reduces asset-specific risk.',
+                      correct: true,
+                    },
+                    { ix: 1, value: 'It removes all risk.', correct: false },
+                  ],
+                },
+              },
+            ]),
+          },
+          elementGenerationBuild: {
+            findUnique: vi.fn(async () => build),
+            findFirst: vi.fn(async () => completed),
+            updateMany,
+          },
+        },
+      }
+
+      await expect(
+        startQuestionGeneration(
+          {
+            graphBuildId: fixtures.graphBuildId,
+            idempotencyKey: 'stable-request',
+          } as never,
+          ctx as never
+        )
+      ).resolves.toEqual(completed)
+
+      const snapshotUpload = runtime.uploadCreateOnly.mock.calls[1]
+      expect(snapshotUpload?.[0]).toMatchObject({
+        containerName: 'question-inputs',
+        blobName: expect.stringMatching(
+          new RegExp(
+            `^question-builds/${fixtures.buildId}/library-snapshots/[a-f0-9]{64}\\.json$`
+          )
+        ),
+      })
+      expect(
+        JSON.parse(snapshotUpload?.[1].toString('utf8') ?? '')
+      ).toMatchObject({
+        reference_count: 1,
+        questions: [{ element_id: 17, version: 2 }],
+      })
+      expect(updateMany).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          data: {
+            librarySnapshotArtifact: snapshotUpload?.[0],
+          },
+        })
+      )
+      expect(start).toHaveBeenCalledWith(
+        expect.objectContaining({
+          schema_version: 4,
+          question_library_snapshot: expect.objectContaining({
+            sha256: snapshotUpload?.[0].sha256,
+          }),
+        }),
+        `question-build:${fixtures.buildId}`,
+        fixtures.dispatchAttemptId,
+        expect.any(Function)
+      )
+      expect(updateMany.mock.invocationCallOrder[1]).toBeLessThan(
+        start.mock.invocationCallOrder[0]!
+      )
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 })
 

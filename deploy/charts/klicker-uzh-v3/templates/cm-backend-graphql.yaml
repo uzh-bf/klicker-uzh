@@ -64,6 +64,8 @@ data:
   KB_QUESTION_INPUT_CONTAINER: {{ required "backendGraphql.elementGeneration.inputContainer is required when element generation is enabled" .Values.backendGraphql.elementGeneration.inputContainer | quote }}
   KB_QUESTION_OUTPUT_CONTAINER: {{ required "backendGraphql.elementGeneration.outputContainer is required when element generation is enabled" .Values.backendGraphql.elementGeneration.outputContainer | quote }}
   KB_QUESTION_OUTPUT_PREFIX: {{ required "backendGraphql.elementGeneration.outputPrefix is required when element generation is enabled" .Values.backendGraphql.elementGeneration.outputPrefix | quote }}
+  KB_QUESTION_LIBRARY_COMPARISON_ENABLED: {{ .Values.backendGraphql.elementGeneration.libraryComparison.enabled | quote }}
+  KB_QUESTION_LIBRARY_COMPARISON_MAX_ELEMENTS: {{ required "backendGraphql.elementGeneration.libraryComparison.maxElements is required when element generation is enabled" .Values.backendGraphql.elementGeneration.libraryComparison.maxElements | quote }}
   KB_ELEMENT_GENERATION_QUESTION_COST_MINOR_UNITS: {{ required "backendGraphql.elementGeneration.cost.questionMinorUnits is required when element generation is enabled" .Values.backendGraphql.elementGeneration.cost.questionMinorUnits | quote }}
   KB_ELEMENT_GENERATION_FLASHCARD_COST_MINOR_UNITS: {{ required "backendGraphql.elementGeneration.cost.flashcardMinorUnits is required when element generation is enabled" .Values.backendGraphql.elementGeneration.cost.flashcardMinorUnits | quote }}
   KB_ELEMENT_GENERATION_FLASHCARD_RETRY_COST_MINOR_UNITS: {{ required "backendGraphql.elementGeneration.cost.flashcardRetryMinorUnits is required when element generation is enabled" .Values.backendGraphql.elementGeneration.cost.flashcardRetryMinorUnits | quote }}

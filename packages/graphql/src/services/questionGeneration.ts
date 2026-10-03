@@ -65,6 +65,10 @@ import {
   assertQuestionGenerationPreviewAccess,
   questionGenerationSourceSnapshot,
 } from './questionGenerationGraph.js'
+import {
+  createQuestionLibrarySnapshot,
+  questionLibraryComparisonEnabled,
+} from './questionGenerationLibrary.js'
 import type {
   QuestionGenerationRuntime,
   QuestionWorkflowReviewEvent,
@@ -325,6 +329,7 @@ export function questionWorkflowStartPayload(
     graphManifest: QuestionGenerationArtifactRef
     storageName: string
     blueprint: QuestionGenerationArtifactRef
+    librarySnapshot?: QuestionGenerationArtifactRef | null
     output: { containerName: string; blobPrefix: string }
     language: QuestionGenerationConfiguration['language']
   },
@@ -332,8 +337,7 @@ export function questionWorkflowStartPayload(
 ): QuestionWorkflowStartPayload {
   const allowPartialResults =
     options.allowPartialResults ?? QUESTION_PARTIAL_RESULTS_ENABLED
-  return {
-    schema_version: 3,
+  const common = {
     question_build_id: input.buildId,
     graph_version_id: input.graphVersionId,
     graph_manifest: elementGenerationArtifactPayload(input.graphManifest),
@@ -346,12 +350,25 @@ export function questionWorkflowStartPayload(
     language: input.language,
     ...(allowPartialResults ? { allow_partial_results: true } : {}),
   }
+  return input.librarySnapshot
+    ? {
+        ...common,
+        schema_version: 4 as const,
+        question_library_snapshot: elementGenerationArtifactPayload(
+          input.librarySnapshot
+        ),
+      }
+    : { ...common, schema_version: 3 as const }
 }
 
-function questionWorkflowPayload(
+export function questionWorkflowPayload(
   build: Pick<
     QuestionBuild,
-    'id' | 'blueprintArtifact' | 'configuration' | 'sourceGraphBuild'
+    | 'id'
+    | 'blueprintArtifact'
+    | 'librarySnapshotArtifact'
+    | 'configuration'
+    | 'sourceGraphBuild'
   >,
   runtime: QuestionGenerationRuntime
 ): QuestionWorkflowStartPayload {
@@ -372,6 +389,8 @@ function questionWorkflowPayload(
     graphManifest: build.sourceGraphBuild.graphManifestArtifact,
     storageName: build.sourceGraphBuild.graphBundleStorageName,
     blueprint: build.blueprintArtifact,
+    librarySnapshot:
+      build.librarySnapshotArtifact as QuestionGenerationArtifactRef | null,
     output: {
       containerName: runtime.questionOutputContainer,
       blobPrefix: runtime.questionOutputPrefix,
@@ -408,8 +427,54 @@ async function dispatchPreparingQuestionBuild(
     await runtime.downloadVerified(blueprintArtifact)
   }
 
+  let librarySnapshotArtifact =
+    build.librarySnapshotArtifact as QuestionGenerationArtifactRef | null
+  if (librarySnapshotArtifact) {
+    await runtime.downloadVerified(librarySnapshotArtifact)
+  } else if (questionLibraryComparisonEnabled()) {
+    const librarySnapshotBytes = await createQuestionLibrarySnapshot(ctx)
+    const librarySnapshotSha256 = createHash('sha256')
+      .update(librarySnapshotBytes)
+      .digest('hex')
+    librarySnapshotArtifact = {
+      containerName: runtime.questionInputContainer,
+      blobName: `question-builds/${build.id}/library-snapshots/${librarySnapshotSha256}.json`,
+      sha256: librarySnapshotSha256,
+    }
+    try {
+      await runtime.uploadCreateOnly(
+        librarySnapshotArtifact,
+        librarySnapshotBytes
+      )
+    } catch (error) {
+      if (
+        !(error instanceof QuestionGenerationServiceError) ||
+        error.code !== 'ARTIFACT_UPLOAD_CONFLICT'
+      ) {
+        throw error
+      }
+      await runtime.downloadVerified(librarySnapshotArtifact)
+    }
+
+    const pinned = await ctx.prisma.elementGenerationBuild.updateMany({
+      where: {
+        id: build.id,
+        ownerId: ctx.user.sub,
+        status: DB.ElementGenerationBuildStatus.PREPARING_INPUT,
+        syncLeaseOwner: leaseOwner,
+      },
+      data: { librarySnapshotArtifact },
+    })
+    if (pinned.count !== 1) {
+      return serviceError(
+        'CONCURRENT_MODIFICATION',
+        'Question-library snapshot was changed by another request'
+      )
+    }
+  }
+
   const payload = questionWorkflowPayload(
-    { ...build, blueprintArtifact },
+    { ...build, blueprintArtifact, librarySnapshotArtifact },
     runtime
   )
   const { eventId, recoveredRunId } =
@@ -739,18 +804,7 @@ async function synchronizeLeasedBuild(
         // The provenance check recomputes the dispatched start-manifest hash,
         // so this payload must be built by the same function as the dispatch
         // payload above; otherwise the optional rollout-gated fields diverge.
-        const startPayload = questionWorkflowStartPayload({
-          buildId: build.id,
-          graphVersionId: build.sourceGraphBuild.id,
-          graphManifest,
-          storageName: build.sourceGraphBuild.graphBundleStorageName!,
-          blueprint,
-          output: {
-            containerName: runtime.questionOutputContainer,
-            blobPrefix: runtime.questionOutputPrefix,
-          },
-          language: configuration.language,
-        })
+        const startPayload = questionWorkflowPayload(build, runtime)
         v3Evidence = {
           graphVersionId: build.sourceGraphBuild.id,
           graphManifest,
