@@ -45,7 +45,39 @@ function isLocalHostname(hostname) {
   )
 }
 
-export function validateLocalOrigin(value, name) {
+/**
+ * Parses KLICKER_EVAL_ALLOWED_ORIGINS, a comma-separated list of exact https
+ * origins (no path, query or fragment) that may be targeted in addition to
+ * loopback hosts.
+ */
+export function parseAllowedOrigins(value) {
+  if (!value) return []
+  return value
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => {
+      let url
+      try {
+        url = new URL(entry)
+      } catch {
+        throw evaluationError('allowed_origins_invalid')
+      }
+      if (
+        url.protocol !== 'https:' ||
+        url.username ||
+        url.password ||
+        url.pathname !== '/' ||
+        url.search ||
+        url.hash
+      ) {
+        throw evaluationError('allowed_origins_invalid')
+      }
+      return url.origin
+    })
+}
+
+export function validateLocalOrigin(value, name, allowedOrigins = []) {
   let url
   try {
     url = new URL(value)
@@ -56,7 +88,10 @@ export function validateLocalOrigin(value, name) {
   if (!['http:', 'https:'].includes(url.protocol)) {
     throw evaluationError(`${name}_protocol`)
   }
-  if (!isLocalHostname(url.hostname)) {
+  if (
+    !isLocalHostname(url.hostname) &&
+    !(url.protocol === 'https:' && allowedOrigins.includes(url.origin))
+  ) {
     throw evaluationError(`${name}_non_local`)
   }
 
@@ -506,6 +541,7 @@ export class KlickerEvaluationTarget {
     pollIntervalMs = DEFAULT_POLL_INTERVAL_MS,
     pollTimeoutMs = DEFAULT_POLL_TIMEOUT_MS,
     requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
+    allowedOrigins = [],
   }) {
     if (!apiKey) throw evaluationError('target_key_missing')
     if (!participantUsername || !participantPassword) {
@@ -517,8 +553,8 @@ export class KlickerEvaluationTarget {
     if (!evidenceDirectory && evidenceRunId) {
       throw evidenceError('evidence_directory_missing')
     }
-    this.apiOrigin = validateLocalOrigin(apiOrigin, 'api_origin')
-    this.chatOrigin = validateLocalOrigin(chatOrigin, 'chat_origin')
+    this.apiOrigin = validateLocalOrigin(apiOrigin, 'api_origin', allowedOrigins)
+    this.chatOrigin = validateLocalOrigin(chatOrigin, 'chat_origin', allowedOrigins)
     this.participantUsername = participantUsername
     this.participantPassword = participantPassword
     this.chatbotId = chatbotId
@@ -959,6 +995,7 @@ export async function createTargetFromEnvironment(env = process.env) {
     participantUsername: env.KLICKER_EVAL_PARTICIPANT_USERNAME,
     participantPassword: env.KLICKER_EVAL_PARTICIPANT_PASSWORD,
     chatbotId: env.KLICKER_EVAL_CHATBOT_ID || DEFAULT_CHATBOT_ID,
+    allowedOrigins: parseAllowedOrigins(env.KLICKER_EVAL_ALLOWED_ORIGINS),
     modelId: env.KLICKER_EVAL_MODEL_ID || DEFAULT_MODEL_ID,
     elearningHandoffSecret: env.KLICKER_EVAL_ELEARNING_HANDOFF_SECRET || null,
     groundTruthDirectory: env.KLICKER_EVAL_GT_DIR,
