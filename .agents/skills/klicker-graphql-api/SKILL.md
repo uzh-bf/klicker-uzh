@@ -45,9 +45,10 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
    return explicit per-object outcomes. Never infer permission for the whole
    batch from one selected object.
 
-   Capability-gated reads add a fail-closed feature check after the auth scope
-   and before the first data query (`lib/featureFlags.ts:isFeatureFlagEnabled`);
-   return `null` when the flag is off, keep authorization errors unchanged, and
+   Capability-gated reads await the fail-closed feature check after the auth scope
+   and before the protected data query (`lib/featureFlags.ts:isFeatureFlagEnabled`);
+   the helper reads the trusted beta preference once per request.
+   Return `null` when the flag is off, keep authorization errors unchanged, and
    never gate administrative mutations with a visibility flag (see
    `services/chatAccountUsage.ts` for the pattern).
 
@@ -67,7 +68,7 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
    its persisted hash remains in `server.json`.
 
 7. **Frontend wiring** — `import { <Name>Document } from '@klicker-uzh/graphql/dist/ops'`; `useQuery`/`useMutation` (+ `refetchQueries`) per [docs/frontend-conventions.md](../../../docs/frontend-conventions.md).
-8. **Tests** — graphql vitest for service logic (`pnpm --filter @klicker-uzh/graphql test:local`; see the heavy pattern in `38c92d035`); route further via `klicker-testing-verification`.
+8. **Tests** — run `pnpm --filter @klicker-uzh/graphql test` inside the provisioned self-contained environment with marked disposable Postgres, Redis and Hatchet. The legacy `test:local` helper is disabled because it deletes shared volumes. Route further via `klicker-testing-verification`.
 
 For pagination changes, test both finite `take`/`skip` values and omitted
 values in the service, and verify that the generated operation variables and

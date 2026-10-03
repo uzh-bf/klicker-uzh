@@ -15,6 +15,7 @@ import remarkParse from 'remark-parse'
 import { unified } from 'unified'
 import { z } from 'zod'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import { isFeatureFlagEnabled } from '../lib/featureFlags.js'
 
 const chatModelSchema = z
   .object({
@@ -502,13 +503,70 @@ function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(
 export async function getChatbotPublishingCapability(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUniqueOrThrow({
     where: { id: ctx.user.sub },
-    select: { aiChatbotPublishingEnabled: true },
+    select: { aiFeaturesEnabled: true },
   })
 
-  return user.aiChatbotPublishingEnabled
+  return user.aiFeaturesEnabled
+}
+
+export async function getPendingChatbotPublications(ctx: ContextWithUser) {
+  if (ctx.user.role !== DB.UserRole.ADMIN) {
+    throw new GraphQLError('Not authorized')
+  }
+
+  const chatbots = await ctx.prisma.chatbot.findMany({
+    where: { status: DB.ChatbotStatus.PENDING_APPROVAL },
+    orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }],
+    select: {
+      ...chatbotOwnerSelect,
+      owner: {
+        select: { shortname: true, email: true, aiFeaturesEnabled: true },
+      },
+      course: { select: { id: true, name: true } },
+      disclaimer: { select: { title: true, introText: true } },
+      mcpConfigurations: {
+        select: {
+          chatMode: true,
+          isEnabled: true,
+          priority: true,
+          allowedTools: true,
+          mcpServer: {
+            select: { id: true, name: true, isActive: true },
+          },
+        },
+      },
+    },
+  })
+
+  return chatbots.map(
+    ({ owner, disclaimer, mcpConfigurations, ...chatbot }) => ({
+      ownerShortname: owner.shortname,
+      ownerEmail: owner.email,
+      ownerPublishingEnabled: owner.aiFeaturesEnabled,
+      disclaimerTitle: disclaimer?.title ?? null,
+      disclaimerIntroText: disclaimer?.introText ?? null,
+      chatbot: shapeChatbotResponse(chatbot),
+      tools: mcpConfigurations.map((config) => ({
+        serverName: config.mcpServer.name,
+        chatMode: config.chatMode,
+        enabled: config.isEnabled && config.mcpServer.isActive,
+        // Empty/null allow-lists allow all tools in the existing MCP client.
+        // Unknown shapes stay null so review never mislabels them as unrestricted.
+        allowedTools:
+          config.allowedTools == null
+            ? []
+            : Array.isArray(config.allowedTools) &&
+                config.allowedTools.every((tool) => typeof tool === 'string')
+              ? (config.allowedTools as string[])
+              : null,
+      })),
+    })
+  )
 }
 
 export async function getChatbotsInfo(ctx: ContextWithUser) {
+  if (!(await isFeatureFlagEnabled(ctx, 'ai-beta'))) return null
+
   const chatbots = await ctx.prisma.chatbot.findMany({
     where: { ownerId: ctx.user.sub },
     select: {
@@ -1347,9 +1405,9 @@ export async function requestChatbotPublication(
   // a JWT claim — ops flips this flag out of band after the token was issued.
   const owner = await ctx.prisma.user.findUniqueOrThrow({
     where: { id: ctx.user.sub },
-    select: { aiChatbotPublishingEnabled: true },
+    select: { aiFeaturesEnabled: true },
   })
-  if (!owner.aiChatbotPublishingEnabled) {
+  if (!owner.aiFeaturesEnabled) {
     throw new GraphQLError('Account is not approved for chatbot publishing')
   }
 
@@ -1392,7 +1450,7 @@ export async function requestChatbotPublication(
       status: {
         in: [DB.ChatbotStatus.DRAFT, DB.ChatbotStatus.REJECTED],
       },
-      owner: { aiChatbotPublishingEnabled: true },
+      owner: { aiFeaturesEnabled: true },
     },
     data: {
       status: DB.ChatbotStatus.PENDING_APPROVAL,
@@ -1444,10 +1502,10 @@ export async function approveChatbotPublication(
       publishedAt: true,
       // Re-check the owner's account-level publishing capability at approval
       // time (S3 review): the manual queue can sit for days, and ops may revoke
-      // aiChatbotPublishingEnabled while a request is pending. Checking only at
+      // aiFeaturesEnabled while a request is pending. Checking only at
       // request time would let an unaware admin publish a bot under an account
       // that no longer holds the capability. See ADR 0020 (two-tier approval).
-      owner: { select: { aiChatbotPublishingEnabled: true } },
+      owner: { select: { aiFeaturesEnabled: true } },
     },
   })
   if (!chatbot) {
@@ -1456,7 +1514,7 @@ export async function approveChatbotPublication(
   if (chatbot.status !== DB.ChatbotStatus.PENDING_APPROVAL) {
     throw new GraphQLError(`Cannot approve from status ${chatbot.status}`)
   }
-  if (!chatbot.owner.aiChatbotPublishingEnabled) {
+  if (!chatbot.owner.aiFeaturesEnabled) {
     throw new GraphQLError(
       'Account is no longer approved for chatbot publishing'
     )
@@ -1466,7 +1524,7 @@ export async function approveChatbotPublication(
     where: {
       id: chatbot.id,
       status: DB.ChatbotStatus.PENDING_APPROVAL,
-      owner: { aiChatbotPublishingEnabled: true },
+      owner: { aiFeaturesEnabled: true },
     },
     data: {
       status: DB.ChatbotStatus.PUBLISHED,

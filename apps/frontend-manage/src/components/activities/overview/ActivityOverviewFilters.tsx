@@ -112,7 +112,11 @@ function ActivityOverviewFilters({
 
   return (
     <div className="flex h-max max-h-full flex-1 flex-col overflow-y-auto rounded-md border border-solid p-2 text-sm md:w-56">
-      <Accordion type="single" defaultValue="status-filters" className="w-full">
+      <Accordion
+        type="multiple"
+        defaultValue={['status-filters']}
+        className="w-full"
+      >
         <FilterListEntry
           trigger={t('shared.generic.status')}
           value="status-filters"
