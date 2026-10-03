@@ -41,12 +41,6 @@ export function getChatModelAutoPolicyIssues(
   const autoModel = autoModels[0]
   if (!autoModel) return issues
 
-  if (autoModel.model.usageClass !== 'ADVANCED') {
-    issues.push({
-      path: [autoModel.index, 'usageClass'],
-      message: 'Model "auto" must be classified as ADVANCED.',
-    })
-  }
   if (autoModel.model.supportsReasoning) {
     issues.push({
       path: [autoModel.index, 'supportsReasoning'],
@@ -67,18 +61,19 @@ export function getChatModelAutoPolicyIssues(
 export function getChatModelBasePolicyIssues(
   models: readonly ChatModelBasePolicyModel[]
 ): ChatModelBasePolicyIssue[] {
-  const baseModels = models.filter((model) => model.usageClass === 'BASE')
   const issues: ChatModelBasePolicyIssue[] = []
 
-  if (baseModels.length !== 1 || baseModels[0]?.id !== CHAT_BASE_MODEL_ID) {
-    issues.push({
-      message: `Model "${CHAT_BASE_MODEL_ID}" must be the registry's only BASE model.`,
-    })
-  }
-
+  // Other models may also be BASE; this one is the participant-credit
+  // fallback every chatbot can always reach.
   const baseModelIndex = models.findIndex(
     (model) => model.id === CHAT_BASE_MODEL_ID
   )
+  if (baseModelIndex < 0 || models[baseModelIndex]?.usageClass !== 'BASE') {
+    issues.push({
+      message: `Model "${CHAT_BASE_MODEL_ID}" must be a BASE model in the registry.`,
+    })
+  }
+
   if (baseModelIndex >= 0 && !models[baseModelIndex]?.fallback) {
     issues.push({
       path: [baseModelIndex, 'fallback'],

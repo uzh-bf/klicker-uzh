@@ -73,6 +73,20 @@ uses the accepted rounded accounting rate of 1 input / 5 output, based on the
 observed 90% Luna and 10% Sol generation mix whose exact weighted rate is 0.68
 input / 4.08 output. Classifier and embedding overhead are not represented.
 
+Amendment, 2026-09-28: Luna and Sol became cheap enough that `Auto` is
+reclassified as `BASE`, and GPT-6 Luna joins GPT-5.6 Luna as a `BASE` model and
+becomes the deployed automatic primary. GPT-5.6 Luna stays the only
+participant-credit fallback. Directly selected Sol models (GPT-6 Sol and
+GPT-5.6 Sol) remain `ADVANCED`. GPT-4.1, GPT-5.1, GPT-5.4 and GPT-5.5 are
+retired from the deployed registries. `Auto` keeps its 1 input / 5 output
+accounting rate, although its tiers now route to GPT-6 Luna and GPT-6 Sol.
+
+Amendment, 2026-10-03: migration `20260929120000_chat_gpt6_base_model` moves
+the participant-credit fallback from GPT-5.6 Luna to GPT-6 Luna and retires
+GPT-5.6 Luna from the deployed registries. GPT-6 Luna is therefore both the
+automatic primary and the only fallback. GPT-6.1 Sol joins as an `ADVANCED`
+model, and staging `Auto` routes through `auto-router-v2`.
+
 The original design assigned one account-wide monthly budget per class to the
 lecturer. ADR 0041 supersedes that write ownership for the trusted pilot:
 operations manages each configured limit, which persists until an authorized

@@ -13,7 +13,7 @@ import type {
 import type { ChatbotRevisionSaveInput as ChatbotRevisionSaveInputShape } from '../services/chatbots.js'
 import { CourseListEntryRef, type ICourseListEntry } from './course.js'
 import { PermissionLevel, SharingType } from './sharing.js'
-import { LocaleType } from './user.js'
+import { AiSubscriptionTier, LocaleType } from './user.js'
 
 // ----- ANSWER COLLECTIONS -----
 // #region
@@ -119,6 +119,7 @@ export const ChatAccountUsageLaneRef = builder.objectRef<ChatAccountUsageLane>(
 export const ChatAccountUsageLaneType = ChatAccountUsageLaneRef.implement({
   fields: (t) => ({
     usageClass: t.expose('usageClass', { type: ChatUsageClass }),
+    entitled: t.exposeBoolean('entitled'),
     budgetCredits: t.exposeFloat('budgetCredits'),
     usedCredits: t.exposeFloat('usedCredits'),
     remainingCredits: t.exposeFloat('remainingCredits'),
@@ -132,6 +133,9 @@ export const ChatAccountUsageOverviewType =
   ChatAccountUsageOverviewRef.implement({
     fields: (t) => ({
       authorized: t.exposeBoolean('authorized'),
+      subscriptionTier: t.expose('subscriptionTier', {
+        type: AiSubscriptionTier,
+      }),
       baseModelUsage: t.expose('baseModelUsage', {
         type: ChatAccountUsageLaneRef,
       }),

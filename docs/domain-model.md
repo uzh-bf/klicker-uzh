@@ -132,8 +132,8 @@ two-flag values derive Quizzer from its legacy opt-out/default. The owner-only
 Manage projection exposes the combined effective settings, never raw
 `systemPrompts`. Participant GraphQL projections expose only the resolved mode
 options, never this owner configuration or raw system prompts. The chat compiler
-keeps the platform scaffolding authoritative. New chatbots have a fixed `auto`
-model policy with no reasoning entries. The strict owner-only
+keeps the platform scaffolding authoritative. New chatbots have a fixed `gpt-6-luna`
+model policy (`auto` where the registry lacks it) with no reasoning entries. The strict owner-only
 `saveChatbotRevision` mutation enforces fixed versus participant-choice
 cardinality and model-specific reasoning invariants through its `modelPolicy`
 section. Granular save mutations are removed. Legacy fixed rows
