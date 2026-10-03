@@ -732,4 +732,188 @@ test.describe('Knowledge base management workspace', () => {
       }
     }
   })
+
+  test('adds several documents in one drop and keeps the batch intact when one file fails', async ({
+    loginLecturer,
+    page,
+  }) => {
+    await loginLecturer()
+
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    const kbName = `Batch upload ${Date.now()}`
+
+    try {
+      await page.goto(`${manageUrl}/resources/knowledgeBases`)
+      await expect(page.getByTestId('knowledge-base-loading')).toBeHidden()
+      await page.getByTestId('create-knowledge-base').click()
+      await page.getByTestId('knowledge-base-name').fill(kbName)
+      await page.getByTestId('submit-create-knowledge-base').click()
+
+      const knowledgeBaseLink = page
+        .getByRole('link')
+        .filter({ hasText: kbName })
+      await expect(knowledgeBaseLink).toBeVisible()
+      await knowledgeBaseLink.click()
+      await expect(page.getByTestId('knowledge-base-detail')).toBeVisible()
+
+      const persistedOperations = JSON.parse(
+        await readFile(
+          new URL(
+            '../../packages/graphql/src/public/client.json',
+            import.meta.url
+          ),
+          'utf8'
+        )
+      ) as Record<string, string>
+      const persistedNames = Object.fromEntries(
+        Object.entries(persistedOperations).map(([name, hash]) => [hash, name])
+      )
+
+      // Each reservation is named after its position in the batch so that the
+      // blob route can reject exactly the second transfer.
+      let reservedUploads = 0
+      let confirmedUploads = 0
+
+      await page.route('**/graphql*', async (route) => {
+        const request = route.request()
+        const requestUrl = new URL(request.url())
+        let operationName =
+          requestUrl.searchParams.get('operationName') ?? undefined
+
+        if (!operationName && request.method() === 'POST') {
+          operationName = (request.postDataJSON() as { operationName?: string })
+            .operationName
+        }
+        if (!operationName) {
+          const extensions = requestUrl.searchParams.get('extensions')
+          const hash = extensions
+            ? (
+                JSON.parse(extensions) as {
+                  persistedQuery?: { sha256Hash?: string }
+                }
+              ).persistedQuery?.sha256Hash
+            : undefined
+          operationName = hash ? persistedNames[hash] : undefined
+        }
+
+        if (operationName === 'RequestKbFileUpload') {
+          reservedUploads += 1
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              data: {
+                requestKbFileUpload: {
+                  uploadSasURL: 'https://kb-upload.invalid/?sig=test',
+                  containerName: 'kb',
+                  blobName: `batch-${reservedUploads}.txt`,
+                },
+              },
+            }),
+          })
+          return
+        }
+        if (operationName === 'ConfirmKbFileUpload') {
+          confirmedUploads += 1
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              data: {
+                confirmKbFileUpload: {
+                  id: `batch-resource-${confirmedUploads}`,
+                },
+              },
+            }),
+          })
+          return
+        }
+
+        await route.continue()
+      })
+
+      await page.route('https://kb-upload.invalid/**', async (route) => {
+        if (route.request().method() === 'OPTIONS') {
+          await route.fulfill({
+            status: 204,
+            headers: {
+              'access-control-allow-headers': '*',
+              'access-control-allow-methods': 'PUT, OPTIONS',
+              'access-control-allow-origin': '*',
+            },
+          })
+          return
+        }
+
+        // A 403 is refused outright by the storage client, so the second file
+        // fails once instead of running through the retry policy.
+        if (new URL(route.request().url()).pathname.includes('batch-2')) {
+          await route.fulfill({
+            status: 403,
+            headers: { 'access-control-allow-origin': '*' },
+          })
+          return
+        }
+
+        await route.fulfill({
+          status: 201,
+          headers: {
+            'access-control-allow-origin': '*',
+            etag: '"synthetic-etag"',
+            'last-modified': new Date(0).toUTCString(),
+            'x-ms-request-id': 'synthetic-request',
+            'x-ms-version': '2025-11-05',
+          },
+        })
+      })
+
+      const modal = page.getByTestId('kb-add-resource-modal')
+      await page.getByTestId('add-kb-resource').click()
+      await page.getByTestId('choose-kb-resource-document').click()
+      await page.getByTestId('kb-file-input').setInputFiles([
+        {
+          name: 'alpha.txt',
+          mimeType: 'text/plain',
+          buffer: Buffer.from('first of the batch'),
+        },
+        {
+          name: 'beta.txt',
+          mimeType: 'text/plain',
+          buffer: Buffer.from('second of the batch'),
+        },
+        {
+          name: 'gamma.txt',
+          mimeType: 'text/plain',
+          buffer: Buffer.from('third of the batch'),
+        },
+      ])
+
+      const errorToast = page.locator('[data-sonner-toast][data-type="error"]')
+      await expect(errorToast).toContainText(
+        /2 of 3 files were added|2 von 3 Dateien wurden hinzugefügt/
+      )
+      await expect(errorToast).toContainText('beta.txt')
+      await expect(errorToast).not.toContainText('alpha.txt')
+
+      // The files after the failed one were still transferred, and the modal
+      // stays open so the failed file can be chosen again.
+      expect(reservedUploads).toBe(3)
+      expect(confirmedUploads).toBe(2)
+      await expect(modal).toBeVisible()
+
+      await page.getByTestId('close-kb-add-resource-modal').click()
+      await expect(modal).toBeHidden()
+    } finally {
+      await page.unrouteAll({ behavior: 'ignoreErrors' })
+      await page.goto(`${manageUrl}/resources/knowledgeBases`)
+      const knowledgeBaseRow = page.locator('li').filter({ hasText: kbName })
+      if (await knowledgeBaseRow.count()) {
+        await knowledgeBaseRow
+          .getByRole('button', { name: /Delete|Löschen/ })
+          .click()
+        await page.getByTestId('confirm-delete-knowledge-base').click()
+        await expect(knowledgeBaseRow).toHaveCount(0)
+      }
+    }
+  })
 })
