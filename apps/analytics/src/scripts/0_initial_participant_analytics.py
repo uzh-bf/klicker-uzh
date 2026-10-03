@@ -16,9 +16,11 @@ from src.modules.participant_analytics.compute_participant_analytics import (
 from src.modules.participant_analytics.compute_participant_course_analytics import (
     compute_participant_course_analytics,
 )
+from src.modules.analytics_eligibility import capture_analytics_eligibility
 
 db = Prisma()
 db.connect()
+eligibility = capture_analytics_eligibility(db)
 
 # Script settings
 verbose = False
@@ -49,7 +51,15 @@ if compute_daily:
 
         # Compute participant analytics for a specific day
         timestamp = start_date
-        compute_participant_analytics(db, start_date, end_date, timestamp, "DAILY", verbose)
+        compute_participant_analytics(
+            db,
+            start_date,
+            end_date,
+            timestamp,
+            "DAILY",
+            verbose,
+            eligibility,
+        )
 
 if compute_weekly:
     # Iterate over the date range and compute the participant analytics for each week
@@ -61,7 +71,15 @@ if compute_weekly:
 
         # Compute participant analytics for a specific week
         timestamp = end_date
-        compute_participant_analytics(db, start_date, end_date, timestamp, "WEEKLY", verbose)
+        compute_participant_analytics(
+            db,
+            start_date,
+            end_date,
+            timestamp,
+            "WEEKLY",
+            verbose,
+            eligibility,
+        )
 
 if compute_monthly:
     # Iterate over the date range and compute the participant analytics for each month
@@ -73,7 +91,15 @@ if compute_monthly:
 
         # Compute participant analytics for a specific month
         timestamp = end_date
-        compute_participant_analytics(db, start_date, end_date, timestamp, "MONTHLY", verbose)
+        compute_participant_analytics(
+            db,
+            start_date,
+            end_date,
+            timestamp,
+            "MONTHLY",
+            verbose,
+            eligibility,
+        )
 
 # ! Compute course analytics
 # Fetch all ongoing / past courses
@@ -92,7 +118,12 @@ if compute_course:
     df_courses = pd.DataFrame(list(map(lambda x: x.dict(), courses)))
     print("Found {} courses with a start date before {}".format(len(df_courses), curr_date))
 
-    courses_without_responses = compute_participant_course_analytics(db, df_courses, verbose)
+    courses_without_responses = compute_participant_course_analytics(
+        db,
+        df_courses,
+        verbose,
+        eligibility,
+    )
 
     print("Found {} courses without any responses".format(courses_without_responses))
 
