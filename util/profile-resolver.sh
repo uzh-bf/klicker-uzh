@@ -33,7 +33,7 @@ _profile_components() {
     component="${component#"${component%%[![:space:]]*}"}"
     component="${component%"${component##*[![:space:]]}"}"
     case "$component" in
-      full|manage|pwa|chat|live-quiz|mcp|ai|email) ;;
+      full|playwright|manage|pwa|chat|live-quiz|mcp|ai|email|eduid) ;;
       *) return 2 ;;
     esac
     components+=("$component")
@@ -55,6 +55,9 @@ profile_wants() {
   for component in $components; do
     case "${component}" in
       full) return 0 ;;
+      # 'playwright' mirrors the maximal routed app set from .devrouter.yml:
+      # every app, but neither workers nor optional processes.
+      playwright) [ "$marker" = klicker-dev ] && return 0 ;;
       manage|pwa|chat) [ "$marker" = klicker-dev ] && return 0 ;;
       live-quiz)
         case "$marker" in
@@ -62,7 +65,9 @@ profile_wants() {
         esac
         ;;
       mcp) [ "$marker" = klicker-local-mcp ] && return 0 ;;
-      ai|email) ;;
+      # `eduid` only routes the local Edu-ID OIDC mock, so it starts no
+      # managed process of its own and adds nothing to a merged selection.
+      ai|email|eduid) ;;
       *) return 2 ;;
     esac
   done
@@ -81,13 +86,16 @@ profile_turbo_filters() {
   for component in $components; do
     case "${component}" in
       full) return 0 ;;
+      playwright)
+        filters="${filters} ${KLICKER_PROFILE_MANAGE_ROOT} ${KLICKER_PROFILE_PWA_ROOT} ${KLICKER_PROFILE_CHAT_ROOT} ${KLICKER_PROFILE_CONTROL_ROOT} ${KLICKER_PROFILE_RESPONSE_ROOT}"
+        ;;
       manage) filters="${filters} ${KLICKER_PROFILE_MANAGE_ROOT}" ;;
       pwa) filters="${filters} ${KLICKER_PROFILE_PWA_ROOT}" ;;
       chat) filters="${filters} ${KLICKER_PROFILE_CHAT_ROOT} ${KLICKER_PROFILE_PWA_ROOT}" ;;
       live-quiz)
         filters="${filters} ${KLICKER_PROFILE_PWA_ROOT} ${KLICKER_PROFILE_CONTROL_ROOT} ${KLICKER_PROFILE_RESPONSE_ROOT} ${KLICKER_PROFILE_WORKER_GENERAL_ROOT} ${KLICKER_PROFILE_WORKER_RESPONSE_ROOT}"
         ;;
-      mcp|ai|email) ;;
+      mcp|ai|email|eduid) ;;
       *) return 2 ;;
     esac
   done
@@ -106,11 +114,12 @@ profile_readiness_apps() {
   for component in $components; do
     case "${component}" in
       full) printf 'auth chat frontend-control frontend-manage frontend-pwa response-api\n'; return 0 ;;
+      playwright) apps="${apps} chat frontend-control frontend-manage frontend-pwa response-api" ;;
       manage) apps="${apps} frontend-manage" ;;
       pwa) apps="${apps} frontend-pwa" ;;
       chat) apps="${apps} chat frontend-pwa" ;;
       live-quiz) apps="${apps} frontend-control frontend-pwa response-api" ;;
-      mcp|ai|email) ;;
+      mcp|ai|email|eduid) ;;
       *) return 2 ;;
     esac
   done

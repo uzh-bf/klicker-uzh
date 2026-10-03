@@ -979,6 +979,11 @@ test.describe('Create different types of elements (with and without sample solut
   })
 
   test.describe('Part 3: Element instance updates', () => {
+    // These steps share activities and element instances. Retry from a clean
+    // baseline instead of replaying only the step that partially created them.
+    test.describe.configure({ mode: 'serial' })
+    test.beforeAll(cleanupTest)
+
     test('Create a single choice question with sample solution and answer feedbacks', async ({
       page,
       loginLecturer,

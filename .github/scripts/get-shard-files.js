@@ -31,6 +31,30 @@ function canonicalProfile(profile) {
   return [...new Set(apps)].sort(compareNames).join(',')
 }
 
+function productionSpecs(manifest) {
+  if (!manifest || manifest.version !== SUPPORTED_PROFILE_VERSION) {
+    fail(`unsupported profile schema version ${manifest?.version}`)
+  }
+  if (!Array.isArray(manifest.groups) || manifest.groups.length === 0) {
+    fail('profile groups must be a non-empty array')
+  }
+
+  const specs = []
+  for (const group of manifest.groups) {
+    if (group.runtime !== undefined && group.runtime !== 'production-webpack') {
+      fail(`unsupported profile runtime ${group.runtime}`)
+    }
+    if (group.runtime === 'production-webpack') {
+      const profile = canonicalProfile(group?.profile)
+      if (!Array.isArray(group.specs) || group.specs.length === 0) {
+        fail(`profile ${profile} needs at least one spec`)
+      }
+      specs.push(...group.specs)
+    }
+  }
+  return specs.sort(compareNames)
+}
+
 function parseProfileManifest(manifest, allFiles) {
   if (!manifest || manifest.version !== SUPPORTED_PROFILE_VERSION) {
     fail(`unsupported profile schema version ${manifest?.version}`)
@@ -44,6 +68,12 @@ function parseProfileManifest(manifest, allFiles) {
 
   for (const group of manifest.groups) {
     const profile = canonicalProfile(group?.profile)
+    if (group.runtime !== undefined && group.runtime !== 'production-webpack') {
+      fail(`unsupported profile runtime ${group.runtime}`)
+    }
+    // Production-lane specs are designated by this manifest before their
+    // files land on this branch; the dedicated production workflow owns them.
+    const productionLane = group.runtime === 'production-webpack'
     if (!Array.isArray(group.specs) || group.specs.length === 0) {
       fail(`profile ${profile} needs at least one spec`)
     }
@@ -52,7 +82,7 @@ function parseProfileManifest(manifest, allFiles) {
       if (typeof spec !== 'string' || !spec.endsWith('.spec.ts')) {
         fail(`profile ${profile} contains an invalid spec ${spec}`)
       }
-      if (!activeFiles.has(spec)) {
+      if (!activeFiles.has(spec) && !productionLane) {
         fail(`profile ${profile} references inactive spec ${spec}`)
       }
       if (profiles.has(spec)) {
@@ -322,6 +352,7 @@ if (require.main === module) {
 
 module.exports = {
   DEFAULT_DURATION_SECONDS,
+  productionSpecs,
   SELECTED_FALLBACK_DURATION_SECONDS,
   SELECTED_MAX_SHARDS,
   SELECTED_TARGET_SHARD_SECONDS,

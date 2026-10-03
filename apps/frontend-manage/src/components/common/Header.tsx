@@ -9,6 +9,7 @@ import {
   CountCatalogSharingRequestsDocument,
   GetUserCoursesDocument,
   GetUserRunningLiveQuizzesDocument,
+  ManageFeaturePreferencesDocument,
   type ManageUserProfileQuery,
   UserLoginScope,
   UserRole,
@@ -64,12 +65,8 @@ function Header({
     // gets the tour rather than whichever query answered first.
     autoPresentReady: tour.autoStartSettled,
   })
-  const betaSignupEnabled = useFeatureFlag('beta-signup')
-  const canDiscoverBetaFeatures =
-    betaSignupEnabled &&
-    user?.catalyst === true &&
-    (userScope === UserLoginScope.FullAccess ||
-      userScope === UserLoginScope.AccountOwner)
+  const aiBetaEnabled = useFeatureFlag('ai-beta')
+  const { data: preferences } = useQuery(ManageFeaturePreferencesDocument)
 
   const { data: pendingRequestData } = useQuery(
     CountCatalogSharingRequestsDocument
@@ -92,7 +89,11 @@ function Header({
       onClick: () => router.push('/resources/answerCollections'),
       data: { cy: 'answer-collections' },
     },
-    ...(user?.privatePreview
+    ...(aiBetaEnabled &&
+    preferences?.userProfile?.betaEnabled === true &&
+    user?.catalyst === true &&
+    (userScope === UserLoginScope.FullAccess ||
+      userScope === UserLoginScope.AccountOwner)
       ? [
           {
             key: 'chatbots-item',
@@ -308,17 +309,6 @@ function Header({
       icon: faUser,
       data: { cy: 'user-menu' },
       elements: [
-        ...(canDiscoverBetaFeatures
-          ? [
-              {
-                key: 'beta-features',
-                type: 'link' as const,
-                label: t('manage.settings.betaFeaturesTitle'),
-                onClick: () => router.push('/user/settings#beta-features'),
-                data: { cy: 'menu-beta-features' },
-              },
-            ]
-          : []),
         {
           key: 'settings',
           type: 'link',

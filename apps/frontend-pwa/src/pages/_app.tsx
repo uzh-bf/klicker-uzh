@@ -19,6 +19,7 @@ import { useRouter } from 'next/router'
 import { Locale, NextIntlClientProvider } from 'next-intl'
 import { useEffect } from 'react'
 
+import 'katex/dist/katex.min.css'
 import '../globals.css'
 
 config.autoAddCss = false

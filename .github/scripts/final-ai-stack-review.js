@@ -1,5 +1,6 @@
 const {
   getPermission,
+  isEligibleBaseBranch,
   listCheckRunsForRef,
   repositoryName,
   safeFence,
@@ -530,8 +531,10 @@ function canUseStackReviewBaseAdvance(membership, context) {
   const rootRange = membership.ranges[0]?.response?.data
   if (
     !['behind', 'diverged'].includes(rootRange?.status) ||
-    membership.members[0].pull.base.ref !==
-      context.payload.repository.default_branch ||
+    !isEligibleBaseBranch({
+      baseRef: membership.members[0].pull.base.ref,
+      context,
+    }) ||
     membership.members[0].pull.base.repo?.full_name !== repositoryName(context)
   ) {
     return false
@@ -1009,7 +1012,7 @@ async function canPreserveStackReviewAcrossBaseAdvance({
     if (
       !['behind', 'diverged'].includes(rootRange?.status) ||
       !upperRanges.every((range) => range.response?.data?.status === 'ahead') ||
-      rootPull.base.ref !== context.payload.repository.default_branch ||
+      !isEligibleBaseBranch({ baseRef: rootPull.base.ref, context }) ||
       rootPull.base.repo?.full_name !== repositoryName(context) ||
       !membership.members.every(({ pull }, index) =>
         index === 0

@@ -8,23 +8,28 @@ publication approval, and usage-class semantics remain in force.
 
 ## Context
 
-The tutoring chatbot public beta lets any lecturer request access via a form
-(use case, expected student count, cost center). Chatbot usage is billable, so
-uncontrolled go-live is not acceptable; at the same time, a per-change approval
-queue would make the operating team the bottleneck for every configuration
-tweak and kill the beta feedback loop.
+The tutoring chatbot is billable, so uncontrolled go-live is not acceptable; at
+the same time, a per-change approval queue would make the operating team the
+bottleneck for every configuration tweak and kill the beta feedback loop.
 
 ## Decision
 
 Approval is two-tier and both tiers are account- or artifact-level, never
 per-edit:
 
-1. **Account AI capability**: the team approves a lecturer's account and cost
-   center once and enables a feature flag. This single AI usage authorization
-   covers both base and advanced model usage; it is not split by model or
-   model class. Lecturers with Catalyst can already see and use the chatbot
-   creation and configuration features beforehand; the flag gates publication,
-   not creation.
+1. **Account AI approval**: `User.aiFeaturesEnabled`, default `false`, is the
+   sole account-level approval gate for chatbot publication and model usage.
+   Operations enables it after approving the account and cost center. The gate
+   covers both base and advanced model usage; it is not split by model or model
+   class, and it remains authoritative when account-budget enforcement is
+   disabled. Beta preference and the `ai-beta` rollout never grant this
+   approval. Chatbot authoring remains separately restricted by the
+   server-evaluated `ai-beta` rollout, Catalyst, existing login-scope and
+   ownership checks, as recorded in
+   [ADR 0008 — shared feature flags](./0008-use-growthbook-for-feature-flags.md).
+   An eligible lecturer may create and configure chatbots when authoring is
+   allowed, but publication and model usage still require
+   `aiFeaturesEnabled`.
 2. **Per-chatbot publication**: each chatbot is created and configured
    self-service in a non-published state. In Phase 0, the owning lecturer can
    manage and configure it, but no use or preview path exists. A later
@@ -83,6 +88,9 @@ is not charged, and manual corrections remain available. Existing participant
 usage credits remain a separate legacy allowance and cannot cause cross-class
 fallbacks. At migration cutover, new account counters start at zero; historical
 messages and participant credits remain legacy analytics.
+
+Token provisioning and validation are outside this approval contract and belong
+to the v3-ai workflow.
 
 ## Consequences
 

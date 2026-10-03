@@ -3,6 +3,8 @@ import { faLockOpen } from '@fortawesome/free-solid-svg-icons'
 import {
   GetUsersPrivatePreviewDocument,
   GrantPrivatePreviewAccessDocument,
+  ManageUserProfileDocument,
+  UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import DataTable from '@klicker-uzh/shared-components/src/DataTable'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -15,29 +17,62 @@ import {
   Button,
   FormikTextField,
   toast,
+  UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
-import { GetStaticPropsContext } from 'next'
+import type { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
+import ChatbotPublicationQueue from '../components/admin/ChatbotPublicationQueue'
 import Layout from '../components/Layout'
 
 function AdminPanel() {
   const t = useTranslations()
-  const { data, loading } = useQuery(GetUsersPrivatePreviewDocument)
+  const { data: profile, loading: profileLoading } = useQuery(
+    ManageUserProfileDocument
+  )
+  const isAdmin = profile?.userProfile?.role === UserRole.Admin
+  const { data, loading } = useQuery(GetUsersPrivatePreviewDocument, {
+    skip: !isAdmin,
+  })
   const [grantPrivatePreviewAccess] = useMutation(
     GrantPrivatePreviewAccessDocument
   )
 
+  if (!isAdmin) {
+    return (
+      <Layout displayName={t('manage.admin.pageName')}>
+        {profileLoading ? (
+          <Loader />
+        ) : (
+          <UserNotification type="error">
+            {t('manage.admin.adminOnly')}
+          </UserNotification>
+        )}
+      </Layout>
+    )
+  }
+
   return (
     <Layout displayName={t('manage.admin.pageName')}>
-      <div className="mx-auto w-full max-w-2xl">
+      <div className="mx-auto w-full max-w-3xl">
         <Accordion
           collapsible
           type="single"
-          defaultValue="metadata"
+          defaultValue="chatbot-approvals"
           className="w-full"
         >
+          <AccordionItem value="chatbot-approvals">
+            <AccordionTrigger
+              className="hover:bg-accent px-1 py-2 text-lg font-semibold hover:no-underline"
+              data-cy="open-chatbot-approvals"
+            >
+              {t('manage.admin.chatbotApprovals')}
+            </AccordionTrigger>
+            <AccordionContent className="px-1">
+              <ChatbotPublicationQueue />
+            </AccordionContent>
+          </AccordionItem>
           <AccordionItem value="metadata">
             <AccordionTrigger
               className="hover:bg-accent px-1 py-2 text-lg font-semibold hover:no-underline"
