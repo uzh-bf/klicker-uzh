@@ -55,10 +55,11 @@ import {
   useChatbotRevisionReload,
 } from './chatbotRevision'
 import { getChatbotStatusTranslationKey } from './chatbotStatus'
-import type {
-  ChatbotNavigationState,
-  ChatbotSetupStep,
-  ChatbotWorkspaceView,
+import {
+  type ChatbotNavigationState,
+  type ChatbotSetupStep,
+  type ChatbotWorkspaceView,
+  hasCompleteDisclaimer,
 } from './chatbotWorkspace'
 
 type ChatbotModelPolicy = Pick<
@@ -920,6 +921,28 @@ function ChatbotDetails({
                 </div>
               )}
             </div>
+            {(chatbot.status === ChatbotStatus.Draft ||
+              chatbot.status === ChatbotStatus.Rejected) &&
+            !hasCompleteDisclaimer(chatbot) ? (
+              // Student information is required for publication, and a new
+              // chatbot opens here first.
+              <div
+                className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-blue-100 bg-blue-50 p-3"
+                data-cy="chatbot-knowledge-next-disclaimer"
+              >
+                <p className="text-sm text-blue-900">
+                  {t('manage.resources.chatbotKnowledgeNextDisclaimer')}
+                </p>
+                <Button
+                  onClick={() => onNavigate('disclaimer')}
+                  data={{ cy: 'chatbot-knowledge-open-disclaimer' }}
+                >
+                  <Button.Label>
+                    {t('manage.resources.chatbotKnowledgeOpenDisclaimer')}
+                  </Button.Label>
+                </Button>
+              </div>
+            ) : null}
             <ChatbotKnowledgeBaseSetup
               key={chatbot.id}
               chatbotId={chatbot.id}
