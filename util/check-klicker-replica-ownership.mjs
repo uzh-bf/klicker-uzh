@@ -35,6 +35,40 @@ const hpaEnvironment = {
   ],
 }
 
+const burstEnvironment = {
+  name: 'burst',
+  namespace: 'klicker-burst',
+  values: null,
+  overrides: ['frontendPWA.burst.enabled=true'],
+}
+
+const fullname = 'klicker-klicker-uzh-v2'
+const pwaDeploymentName = `${fullname}-frontend-pwa`
+const pwaBurstDeploymentName = `${fullname}-frontend-pwa-burst`
+const tierLabel = 'klicker.uzh.ch/tier'
+const componentLabel = 'app.kubernetes.io/component'
+
+const spotTolerations = [
+  { key: 'asyncspot', value: 'reserved' },
+  { key: 'kubernetes.azure.com/scalesetpriority', value: 'spot' },
+]
+
+// Deployments whose replicas a scaler owns, per render environment. Each entry
+// mirrors an exact `/spec/replicas` ignoreDifferences entry that the Argo CD
+// Application for that render must carry; the infrastructure repository owns
+// those Applications. The live stg and prd Applications currently carry none.
+const expectedArgoReplicaExceptions = {
+  base: [],
+  stg: [],
+  prd: [],
+  hpa: [
+    `${fullname}-backend-graphql`,
+    `${fullname}-frontend-manage`,
+    pwaDeploymentName,
+  ],
+  burst: [pwaBurstDeploymentName],
+}
+
 function renderChart({ namespace, values, overrides = [] }) {
   const args = ['template', 'klicker', chartPath, '--namespace', namespace]
 
@@ -211,6 +245,121 @@ function assertHpaSchema(resources, source) {
     autoscaledDeployments,
     `${source}: HPA targets must be exactly the Deployments without replicas`
   )
+}
+
+function assertArgoReplicaExceptions(resources, source) {
+  const scaledDeployments = resources
+    .filter(({ kind }) =>
+      ['HorizontalPodAutoscaler', 'ScaledObject'].includes(kind)
+    )
+    .map((scaler) => scalerTargetKey(scaler, source).split('/')[1])
+    .sort()
+
+  assert.deepEqual(
+    scaledDeployments,
+    expectedArgoReplicaExceptions[source],
+    `${source}: scaler targets must match the expected Argo replica exceptions`
+  )
+}
+
+function hasSpotToleration(podSpec, { key, value }) {
+  return (podSpec?.tolerations ?? []).some(
+    (toleration) =>
+      toleration.key === key &&
+      toleration.operator === 'Equal' &&
+      toleration.value === value &&
+      toleration.effect === 'NoSchedule'
+  )
+}
+
+function assertPwaBurstTier(resources, source) {
+  const deployments = resources.filter(({ kind }) => kind === 'Deployment')
+  const burst = deployments.find(
+    ({ metadata }) => metadata?.name === pwaBurstDeploymentName
+  )
+  const baseline = deployments.find(
+    ({ metadata }) => metadata?.name === pwaDeploymentName
+  )
+
+  assert.ok(burst, `${source}: expected the PWA burst Deployment`)
+  assert.ok(baseline, `${source}: expected the baseline PWA Deployment`)
+
+  assert.equal(
+    Object.hasOwn(burst.spec ?? {}, 'replicas'),
+    false,
+    `${source}: PWA burst Deployment must not set replicas`
+  )
+
+  for (const [labelSource, labels] of [
+    ['selector', burst.spec?.selector?.matchLabels],
+    ['pod template', burst.spec?.template?.metadata?.labels],
+  ]) {
+    assert.equal(
+      labels?.[tierLabel],
+      'burst',
+      `${source}: PWA burst ${labelSource} labels must carry the burst tier`
+    )
+    assert.equal(
+      labels?.[componentLabel],
+      'frontend-pwa',
+      `${source}: PWA burst ${labelSource} labels must carry the frontend-pwa component`
+    )
+  }
+
+  const burstPodSpec = burst.spec?.template?.spec
+  for (const toleration of spotTolerations) {
+    assert.ok(
+      hasSpotToleration(burstPodSpec, toleration),
+      `${source}: PWA burst pods must tolerate ${toleration.key}=${toleration.value}:NoSchedule`
+    )
+  }
+
+  const requiredTerms =
+    burstPodSpec?.affinity?.nodeAffinity
+      ?.requiredDuringSchedulingIgnoredDuringExecution?.nodeSelectorTerms ?? []
+  assert.deepEqual(
+    requiredTerms,
+    [
+      {
+        matchExpressions: [
+          {
+            key: 'kubernetes.azure.com/scalesetpriority',
+            operator: 'In',
+            values: ['spot'],
+          },
+        ],
+      },
+    ],
+    `${source}: PWA burst pods must require spot nodes`
+  )
+
+  const burstScalers = resources.filter(
+    (resource) =>
+      ['HorizontalPodAutoscaler', 'ScaledObject'].includes(resource.kind) &&
+      resource.spec?.scaleTargetRef?.name === pwaBurstDeploymentName
+  )
+  assert.equal(
+    burstScalers.length,
+    1,
+    `${source}: expected exactly one scaler for the PWA burst Deployment`
+  )
+  assert.equal(
+    burstScalers[0].kind,
+    'HorizontalPodAutoscaler',
+    `${source}: the PWA burst Deployment must be scaled by an HPA`
+  )
+
+  assert.ok(
+    Object.hasOwn(baseline.spec ?? {}, 'replicas'),
+    `${source}: baseline PWA Deployment must keep static replicas`
+  )
+  for (const toleration of spotTolerations) {
+    assert.equal(
+      hasSpotToleration(baseline.spec?.template?.spec, toleration),
+      false,
+      `${source}: baseline PWA pods must not tolerate ${toleration.key}`
+    )
+  }
 }
 
 function assertStaticLti(resources, source, expectedReplicas) {
@@ -475,6 +624,35 @@ function assertNegativeFixtures() {
       )
     )
   }
+
+  for (const [overrides, message] of [
+    [
+      ['frontendPWA.autoscaling.enabled=true'],
+      /frontendPWA\.burst\.enabled cannot be combined with frontendPWA\.autoscaling\.enabled/,
+    ],
+    [
+      ['frontendPWA.burst.targetCPUUtilizationPercentage=0'],
+      /frontendPWA\.burst\.targetCPUUtilizationPercentage must be greater than zero/,
+    ],
+    [
+      ['frontendPWA.burst.minReplicas=0'],
+      /frontendPWA\.burst\.minReplicas must be at least 1/,
+    ],
+    [
+      ['frontendPWA.burst.minReplicas=3', 'frontendPWA.burst.maxReplicas=2'],
+      /frontendPWA\.burst\.maxReplicas must be greater than or equal to frontendPWA\.burst\.minReplicas/,
+    ],
+  ]) {
+    assert.throws(
+      () =>
+        renderChart({
+          namespace: 'invalid-burst',
+          values: null,
+          overrides: ['frontendPWA.burst.enabled=true', ...overrides],
+        }),
+      message
+    )
+  }
 }
 
 for (const environment of environments) {
@@ -510,6 +688,7 @@ for (const environment of environments) {
     }[environment.name]
   )
   assertWorkerRuntimeContracts(resources, environment.name)
+  assertArgoReplicaExceptions(resources, environment.name)
 }
 
 const hpaResources = parseManifest(
@@ -518,6 +697,15 @@ const hpaResources = parseManifest(
 )
 assertReplicaOwnership(hpaResources, hpaEnvironment.name, 17)
 assertHpaSchema(hpaResources, hpaEnvironment.name)
+assertArgoReplicaExceptions(hpaResources, hpaEnvironment.name)
+
+const burstResources = parseManifest(
+  renderChart(burstEnvironment),
+  burstEnvironment.name
+)
+assertReplicaOwnership(burstResources, burstEnvironment.name, 18)
+assertPwaBurstTier(burstResources, burstEnvironment.name)
+assertArgoReplicaExceptions(burstResources, burstEnvironment.name)
 
 for (const valuesSource of [
   `${chartPath}/values.yaml`,
@@ -533,5 +721,5 @@ for (const valuesSource of [
 assertNegativeFixtures()
 
 console.log(
-  `Replica ownership, worker runtime contract, and disruption budget checks passed for ${environments.length} default Helm renders, one all-three-HPA render, three values files, and seven negative fixtures`
+  `Replica ownership, Argo replica exception, PWA burst tier, worker runtime contract, and disruption budget checks passed for ${environments.length} default Helm renders, one all-three-HPA render, one PWA burst render, three values files, and eleven negative fixtures`
 )
