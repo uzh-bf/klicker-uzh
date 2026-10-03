@@ -4188,6 +4188,7 @@ test.describe.serial('Core live-quiz workflows', () => {
       'be.disabled'
     )
     await confirmResponseDeletionIfAvailable(page)
+    await clickIfVisible(page, 'confirm-deletion-leaderboard-entries')
     await page.getByTestId(`confirm-deletion-qa-feedbacks`).click()
     await expectByAssertion(
       page.getByTestId(`confirm-deletion-confusion-feedbacks`),
@@ -4207,6 +4208,7 @@ test.describe.serial('Core live-quiz workflows', () => {
       'be.disabled'
     )
     await confirmResponseDeletionIfAvailable(page)
+    await clickIfVisible(page, 'confirm-deletion-leaderboard-entries')
     await page.getByTestId(`confirm-deletion-qa-feedbacks`).click()
     await page.getByTestId(`confirmation-modal-confirm`).click()
     await expectByAssertion(
@@ -4704,6 +4706,7 @@ test.describe.serial('Core live-quiz workflows', () => {
     await page.getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.name}`).click()
     await page.getByTestId(`delete-live-quiz-${data.liveQuiz.name}`).click()
     await confirmResponseDeletionIfAvailable(page)
+    await clickIfVisible(page, 'confirm-deletion-leaderboard-entries')
     await clickIfVisible(page, 'confirm-deletion-qa-feedbacks')
     await clickIfVisible(page, 'confirm-deletion-confusion-feedbacks')
     await page.getByTestId(`confirmation-modal-confirm`).click()
@@ -4714,6 +4717,7 @@ test.describe.serial('Core live-quiz workflows', () => {
       .getByTestId(`delete-live-quiz-${data.liveQuiz.duplicateName}`)
       .click()
     await confirmResponseDeletionIfAvailable(page)
+    await clickIfVisible(page, 'confirm-deletion-leaderboard-entries')
     await clickIfVisible(page, 'confirm-deletion-qa-feedbacks')
     await clickIfVisible(page, 'confirm-deletion-confusion-feedbacks')
     await page.getByTestId(`confirmation-modal-confirm`).click()

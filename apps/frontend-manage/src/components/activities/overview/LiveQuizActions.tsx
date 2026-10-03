@@ -259,6 +259,7 @@ function LiveQuizActions({
         {deletionModal && (
           <LiveQuizDeletionModal
             quizId={liveQuiz.id}
+            isGamificationEnabled={liveQuiz.isGamificationEnabled}
             onClose={() => setDeletionModal(false)}
             onDelete={async () => {
               await deleteLiveQuiz()

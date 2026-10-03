@@ -10,11 +10,13 @@ function LiveQuizDeletionModal({
   quizId,
   onDelete,
   deleting,
+  isGamificationEnabled,
 }: {
   onClose: () => void
   quizId: string
   onDelete: () => Promise<any>
   deleting: boolean
+  isGamificationEnabled?: boolean | null
 }) {
   const t = useTranslations()
   const { data: summaryData, loading: summaryLoading } = useQuery(
@@ -115,6 +117,30 @@ function LiveQuizDeletionModal({
           confirmationType="delete"
           data={{ cy: 'confirm-deletion-confusion-feedbacks' }}
         />
+        {/* Deleting a live quiz cascades to its session leaderboard entries, so
+            the entry count has to stay confirmable even when gamification was
+            disabled after entries had already been collected. */}
+        {(isGamificationEnabled || summary.numOfLeaderboardEntries > 0) && (
+          <ConfirmationItem
+            label={
+              summary.numOfLeaderboardEntries === 0
+                ? t('manage.liveQuizzes.noLeaderboardEntriesToDelete')
+                : t('manage.liveQuizzes.deleteLeaderboardEntries', {
+                    number: summary.numOfLeaderboardEntries,
+                  })
+            }
+            onClick={() => {
+              setConfirmations((prev) => ({
+                ...prev,
+                deleteLeaderboardEntries: true,
+              }))
+            }}
+            confirmed={confirmations.deleteLeaderboardEntries}
+            notApplicable={summary.numOfLeaderboardEntries === 0}
+            confirmationType="delete"
+            data={{ cy: 'confirm-deletion-leaderboard-entries' }}
+          />
+        )}
       </div>
     </ActivityConfirmationModal>
   )
