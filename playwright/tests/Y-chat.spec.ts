@@ -2965,8 +2965,18 @@ test.describe('Chatbot Source Citations', () => {
     await expect(assistant.getByTestId('chat-source-card')).not.toBeVisible()
     await assistant.getByTestId('chat-other-sources-toggle').click()
     await expect(assistant.getByTestId('chat-source-card')).toBeVisible()
-    await assistant.hover()
-    await assistant.getByTestId('chat-branch-next').click()
+    // Switching branches remounts the sources section, which can scroll its
+    // heading into view while the next click is in flight and make it miss.
+    // Retry the click until the branch indicator confirms the switch, so a
+    // stale grouping still fails the assertions below.
+    await expect(async () => {
+      await assistant.hover()
+      await assistant.getByTestId('chat-branch-next').click()
+      await expect(assistant.getByTestId('chat-branch-indicator')).toHaveText(
+        '2 / 2',
+        { timeout: 2_000 }
+      )
+    }).toPass()
     await expect(cited.getByTestId('chat-source-card')).toHaveCount(1)
     await expect(
       assistant.getByTestId('chat-other-sources-toggle')
