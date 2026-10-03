@@ -41,7 +41,8 @@ export const PRODUCT_UPDATES: ProductUpdate[] = [
         '- Usage and cost limits so adoption stays predictable.',
       ].join('\n'),
     },
-    promotions: ['feed'],
+    promotions: ['feed', 'spotlight'],
+    spotlightTarget: 'manage-header-main-nav',
     suppressInAssessment: true,
   },
 ]

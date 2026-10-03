@@ -1,15 +1,23 @@
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import ProductUpdateCard from '@klicker-uzh/shared-components/src/productUpdates/ProductUpdateCard'
 import { H1 } from '@uzh-bf/design-system'
 import type { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
-import ProductUpdateCard from '@klicker-uzh/shared-components/src/productUpdates/ProductUpdateCard'
+import { resolveSpotlightTarget } from '../components/productUpdates/spotlightTargets'
+import { useProductUpdateSpotlight } from '../components/productUpdates/useProductUpdateSpotlight'
 import { useProductUpdates } from '../components/productUpdates/useProductUpdates'
 
 function Updates() {
   const t = useTranslations()
+  const productUpdates = useProductUpdates()
   const { entries, loading, recordPresentation, markRead, dismiss } =
-    useProductUpdates()
+    productUpdates
+  // Replay only: the header's runner owns the unsolicited spotlight, and a
+  // dismissed entry stays replayable from this archive.
+  const { replaySpotlight } = useProductUpdateSpotlight({
+    updates: productUpdates,
+  })
 
   return (
     <Layout displayName={t('manage.productUpdates.pageTitle')}>
@@ -37,6 +45,10 @@ function Updates() {
                 onPresent={recordPresentation}
                 onRead={markRead}
                 onDismiss={entry.dismissed ? undefined : dismiss}
+                onShowSpotlight={replaySpotlight}
+                isSpotlightReachable={(update) =>
+                  resolveSpotlightTarget(update.spotlightTarget) !== null
+                }
               />
             ))
           )}

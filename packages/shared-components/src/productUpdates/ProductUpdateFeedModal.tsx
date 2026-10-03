@@ -1,3 +1,4 @@
+import type { ProductUpdate } from '@klicker-uzh/product-updates'
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
@@ -10,6 +11,8 @@ function ProductUpdateFeedModal({
   fullScreen,
   className,
   children,
+  onShowSpotlight,
+  isSpotlightReachable,
 }: {
   // The feed of the surface that opened the modal; the caller decides which
   // audience and surface it reads for.
@@ -20,6 +23,9 @@ function ProductUpdateFeedModal({
   // Rendered below the cards, for surface-specific links such as the entry to
   // a persistent archive of all updates.
   children?: ReactNode
+  // Forwarded to every card; see ProductUpdateCard.
+  onShowSpotlight?: (update: ProductUpdate) => void
+  isSpotlightReachable?: (update: ProductUpdate) => boolean
 }) {
   const t = useTranslations()
   const { entries, loading, recordPresentation, markRead, dismiss } = feed
@@ -55,6 +61,8 @@ function ProductUpdateFeedModal({
               onPresent={recordPresentation}
               onRead={markRead}
               onDismiss={dismiss}
+              onShowSpotlight={onShowSpotlight}
+              isSpotlightReachable={isSpotlightReachable}
             />
           ))
         )}

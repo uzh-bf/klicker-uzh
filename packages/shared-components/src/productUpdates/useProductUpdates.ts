@@ -46,6 +46,11 @@ export type UseProductUpdatesResult = {
   entries: ProductUpdateEntry[]
   unreadCount: number
   loading: boolean
+  // True once the stored states are known to be complete. A failed query
+  // resolves with no rows, which is indistinguishable from "this actor has
+  // never seen anything", so every decision that depends on a stored state has
+  // to wait for this rather than for `loading` alone.
+  statesLoaded: boolean
   // The write calls never reject: read state is a convenience, so a refused
   // write is swallowed. Callers await them only to order two writes on the
   // same entry, never to learn whether one succeeded.
@@ -110,7 +115,7 @@ export function useProductUpdates({
     trackProductUpdateEligibility(updateIds)
   }, [updateIds])
 
-  const { data, loading } = useQuery(ProductUpdateStatesDocument, {
+  const { data, loading, error } = useQuery(ProductUpdateStatesDocument, {
     variables: { updateIds },
     skip: updateIds.length === 0,
     // The feed is cookie-scoped and must never be server-rendered into a page
@@ -235,6 +240,7 @@ export function useProductUpdates({
     // cold load.
     unreadCount: loading ? 0 : entries.filter((entry) => entry.unread).length,
     loading,
+    statesLoaded: !loading && !error,
     recordPresentation,
     markRead,
     dismiss,
