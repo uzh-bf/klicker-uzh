@@ -50,6 +50,7 @@ and worker-only KB settlement are unaffected.
 | `kb-graph-builds`           | Lecturer graph opt-in and rebuilds                      | `false`  | New opt-ins and rebuilds are refused before any cost reservation; published graphs and accepted builds continue                      |
 | `kb-graph-domain-selection` | Explicit graph-domain and graph-focus requests          | `false`  | The capability handshake advertises no options and a complete selection is refused                                                   |
 | `question-focus-topic`      | Per-batch question-generation focus                     | `false`  | `supportsFocusTopic` is false and a requested focus is refused                                                                       |
+| `kb-auto-graph-preparation` | System-triggered (scheduled) graph preparation          | `false`  | No automatic graph build is admitted; lecturer-requested builds are unaffected                                                       |
 
 Beta Features is discoverable in account settings and the first-login dialog
 regardless of Catalyst, login scope, or rollout availability. The information
