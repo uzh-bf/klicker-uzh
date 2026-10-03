@@ -72,3 +72,42 @@ SET "draftConfig" = jsonb_set(
 WHERE jsonb_typeof("draftConfig") = 'object'
   AND jsonb_typeof("draftConfig" -> 'allowedReasoningEffortsByModel') = 'object'
   AND "draftConfig" -> 'allowedReasoningEffortsByModel' ? 'gpt-5.6-luna';
+
+-- The retired "gpt-5.1" has no successor id, so drop it from live and stored
+-- policies. A list left empty falls back to the base model, and the model's
+-- reasoning-effort entry is removed. Drafts are copied from the live policy,
+-- so both must be clean for later edits to stay submittable.
+UPDATE "Chatbot" AS c
+SET "allowedModelIds" = COALESCE(
+  NULLIF(array_remove(c."allowedModelIds", 'gpt-5.1'), '{}'),
+  ARRAY['gpt-6-luna']
+)
+WHERE 'gpt-5.1' = ANY(c."allowedModelIds");
+
+UPDATE "Chatbot"
+SET "allowedReasoningEffortsByModel" = "allowedReasoningEffortsByModel" - 'gpt-5.1'
+WHERE jsonb_typeof("allowedReasoningEffortsByModel") = 'object'
+  AND "allowedReasoningEffortsByModel" ? 'gpt-5.1';
+
+UPDATE "Chatbot"
+SET "draftConfig" = jsonb_set(
+  "draftConfig",
+  '{allowedModelIds}',
+  COALESCE(
+    NULLIF(("draftConfig" -> 'allowedModelIds') - 'gpt-5.1', '[]'::jsonb),
+    '["gpt-6-luna"]'::jsonb
+  )
+)
+WHERE jsonb_typeof("draftConfig") = 'object'
+  AND jsonb_typeof("draftConfig" -> 'allowedModelIds') = 'array'
+  AND "draftConfig" -> 'allowedModelIds' ? 'gpt-5.1';
+
+UPDATE "Chatbot"
+SET "draftConfig" = jsonb_set(
+  "draftConfig",
+  '{allowedReasoningEffortsByModel}',
+  ("draftConfig" -> 'allowedReasoningEffortsByModel') - 'gpt-5.1'
+)
+WHERE jsonb_typeof("draftConfig") = 'object'
+  AND jsonb_typeof("draftConfig" -> 'allowedReasoningEffortsByModel') = 'object'
+  AND "draftConfig" -> 'allowedReasoningEffortsByModel' ? 'gpt-5.1';
