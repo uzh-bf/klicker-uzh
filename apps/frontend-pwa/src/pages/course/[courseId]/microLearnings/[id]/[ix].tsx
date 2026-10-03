@@ -37,9 +37,13 @@ function MicrolearningInstance() {
     return <Loader />
   }
 
+  // Every branch of this route marks itself as an answering surface, including
+  // the ones rendered before the microlearning has loaded: the layout decides on
+  // its first render whether a product update may appear, and a later branch
+  // cannot recall a request that the earlier one already sent.
   if (!data?.microLearning) {
     return (
-      <Layout>
+      <Layout activelyAnswering>
         <UserNotification
           type="error"
           message={t('pwa.microLearning.notFound')}
@@ -49,7 +53,7 @@ function MicrolearningInstance() {
   }
 
   if (error) {
-    return <Layout>{t('shared.generic.systemError')}</Layout>
+    return <Layout activelyAnswering>{t('shared.generic.systemError')}</Layout>
   }
 
   const microLearning = data.microLearning
@@ -69,6 +73,7 @@ function MicrolearningInstance() {
 
   return (
     <Layout
+      activelyAnswering
       displayName={microLearning.displayName}
       course={microLearning.course ?? undefined}
     >

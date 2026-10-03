@@ -28,6 +28,7 @@ import CourseElement from '../components/CourseElement'
 import Layout from '../components/Layout'
 import LinkButton from '../components/common/LinkButton'
 import MicroLearningListSubscriber from '../components/microLearning/MicroLearningListSubscriber'
+import { featureTargetProps } from '../components/onboarding/featureTargets'
 import useStudentOverviewSplit from '../lib/hooks/useStudentOverviewSplit'
 
 function Index() {
@@ -185,6 +186,10 @@ function Index() {
   return (
     <Layout
       key="pwa-home-layout"
+      // Only the loaded overview page hosts the onboarding tour: its steps
+      // point at the sections below, which do not exist while the page still
+      // shows its loader.
+      withOnboardingTour
       displayName={
         process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
           ? `${t('shared.generic.title')} (${t('shared.generic.assessment')})`
@@ -269,7 +274,7 @@ function Index() {
         )}
 
         {process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' && (
-          <div>
+          <div {...featureTargetProps('pwa-home-practice')}>
             <H1 className={{ root: 'mb-2 text-xl' }}>
               {t('shared.generic.practice')}
             </H1>
@@ -341,7 +346,7 @@ function Index() {
           </div>
         ) : null}
 
-        <div>
+        <div {...featureTargetProps('pwa-home-courses')}>
           <H1 className={{ root: 'mb-2 text-xl' }}>
             {process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
               ? t('pwa.general.myAssessmentCourses')
@@ -376,7 +381,7 @@ function Index() {
         </div>
 
         {process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' && (
-          <div>
+          <div {...featureTargetProps('pwa-home-insights')}>
             <H1 className={{ root: 'mb-2 text-xl' }}>
               {t('pwa.general.insights')}
             </H1>
