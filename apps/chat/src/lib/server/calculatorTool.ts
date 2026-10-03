@@ -118,9 +118,14 @@ const calculatorTool = tool({
     required: ['expressions'],
     additionalProperties: false,
   }),
-  execute: async ({ expressions }) => ({
-    results: expressions.slice(0, MAX_EXPRESSIONS).map(calculate),
-  }),
+  // The JSON schema is not validated at runtime, so an over-long list is
+  // rejected here instead of being cut short with unverified values.
+  execute: async ({ expressions }) =>
+    expressions.length > MAX_EXPRESSIONS
+      ? {
+          error: `Pass at most ${MAX_EXPRESSIONS} expressions per call, and put the rest in another call.`,
+        }
+      : { results: expressions.map(calculate) },
 })
 
 /**

@@ -55,6 +55,13 @@ describe('calculate tool', () => {
       ],
     })
   })
+
+  test('rejects more expressions than one call allows', async () => {
+    const execute = withCalculatorTool('tutor', {})[CALCULATOR_TOOL_NAME]
+      ?.execute as (input: { expressions: string[] }) => Promise<unknown>
+    const output = await execute({ expressions: Array(21).fill('1 + 1') })
+    expect(output).toEqual({ error: expect.any(String) })
+  })
 })
 
 describe('stepReminder', () => {
