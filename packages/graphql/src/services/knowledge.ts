@@ -4,6 +4,7 @@ import {
   generateBlobSASQueryParameters,
   StorageSharedKeyCredential,
 } from '@azure/storage-blob'
+import { Priority } from '@hatchet-dev/typescript-sdk'
 import {
   computeKBContentDigest,
   getDefaultKBGraphDomainCatalog,
@@ -49,6 +50,7 @@ import {
   assertManageAiCapability,
   assertManageAiEnabled,
   getAccountManageAiCapability,
+  type ManageAiCapabilityState,
 } from '../lib/manageAiFeatureGate.js'
 import {
   fetchKbSourceInventory,
@@ -1452,6 +1454,24 @@ export async function updateKb(
 
   return ctx.prisma.$transaction(async (prisma) => {
     await lockOwnedKbOrThrow(prisma, id, ctx.user.sub)
+    const stored = domain
+      ? await prisma.kB.findUniqueOrThrow({
+          where: { id },
+          select: {
+            domainPolicyId: true,
+            domainPolicyVersion: true,
+            domainPolicyLanguage: true,
+          },
+        })
+      : null
+    // Resaving the same subject and language must not restart the wait of
+    // scheduled graph preparation.
+    const domainChanged =
+      domain !== null &&
+      stored !== null &&
+      (stored.domainPolicyId !== domain.domainPolicyId ||
+        stored.domainPolicyVersion !== domain.domainPolicyVersion ||
+        stored.domainPolicyLanguage !== domain.language)
     return prisma.kB.update({
       where: { id },
       data: {
@@ -1464,6 +1484,7 @@ export async function updateKb(
               domainPolicyLanguage: domain.language,
             }
           : {}),
+        ...(domainChanged ? { graphSettingsChangedAt: new Date() } : {}),
       },
     })
   })
@@ -3381,10 +3402,23 @@ export async function setKbKnowledgeGraphEnabled(
 
   await ctx.prisma.$transaction(async (prisma) => {
     await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
-    await prisma.kB.update({
-      where: { id: kbId },
-      data: { knowledgeGraphEnabled: enabled },
-    })
+    // Turning the opt-in on makes the KB eligible for scheduled preparation,
+    // which then waits a full quiet period from this moment.
+    const turnedOn = enabled
+      ? await prisma.kB.updateMany({
+          where: { id: kbId, knowledgeGraphEnabled: false },
+          data: {
+            knowledgeGraphEnabled: true,
+            graphSettingsChangedAt: new Date(),
+          },
+        })
+      : { count: 0 }
+    if (turnedOn.count === 0) {
+      await prisma.kB.update({
+        where: { id: kbId },
+        data: { knowledgeGraphEnabled: enabled },
+      })
+    }
   })
 
   return getKbKnowledgeGraphConfig({ kbId }, ctx)
@@ -3715,6 +3749,67 @@ export type KBGraphBuildServiceContext = Pick<
   'prisma' | 'tasks' | 'featureFlags'
 >
 
+/** Owner attributes a system trigger evaluates without a session. */
+export const KB_GRAPH_SYSTEM_OWNER_SELECT = {
+  id: true,
+  role: true,
+  catalystInstitutional: true,
+  catalystIndividual: true,
+  aiFeaturesEnabled: true,
+  betaEnabled: true,
+} satisfies DB.Prisma.UserSelect
+
+export type KBGraphSystemOwner = DB.Prisma.UserGetPayload<{
+  select: typeof KB_GRAPH_SYSTEM_OWNER_SELECT
+}>
+
+export interface KBGraphSystemOwnerAdmission {
+  /** The owner's AI entitlement; anything but enabled refuses the build. */
+  capability: ManageAiCapabilityState
+  /** `kb-auto-graph-preparation` and `kb-graph-builds` both admit the owner. */
+  graphBuildsAdmitted: boolean
+  /** A build for this owner could freeze an explicit domain selection. */
+  domainCapabilityEnabled: boolean
+}
+
+/**
+ * Admission of a KB owner to system-triggered graph builds. The system
+ * trigger enforces it before every build; the scheduler evaluates it once per
+ * owner and sweep to skip refused owners without touching their KBs. Rollout
+ * flags are only consulted for an entitled owner.
+ */
+export function evaluateKBGraphSystemOwner(
+  featureFlags: KBGraphBuildServiceContext['featureFlags'],
+  owner: KBGraphSystemOwner | null
+): KBGraphSystemOwnerAdmission {
+  const capability = getAccountManageAiCapability(featureFlags, owner)
+  if (!owner || capability !== 'enabled') {
+    return {
+      capability,
+      graphBuildsAdmitted: false,
+      domainCapabilityEnabled: false,
+    }
+  }
+  const catalog = getDefaultKBGraphDomainCatalog()
+  return {
+    capability,
+    graphBuildsAdmitted:
+      isFeatureFlagEnabledForAccount(
+        featureFlags,
+        owner,
+        'kb-auto-graph-preparation'
+      ) &&
+      isFeatureFlagEnabledForAccount(featureFlags, owner, 'kb-graph-builds'),
+    domainCapabilityEnabled:
+      isKBGraphDomainCapabilityEnabled(catalog.revision, process.env) &&
+      isFeatureFlagEnabledForAccount(
+        featureFlags,
+        owner,
+        'kb-graph-domain-selection'
+      ),
+  }
+}
+
 type KBGraphBuildAdmission = {
   ownerId: string
   qualityTier: DB.KBGraphQualityTier
@@ -3750,41 +3845,18 @@ async function admitKBGraphBuildTrigger(
 
   const owner = await deps.prisma.user.findUnique({
     where: { id: trigger.ownerId },
-    select: {
-      id: true,
-      role: true,
-      catalystInstitutional: true,
-      catalystIndividual: true,
-      aiFeaturesEnabled: true,
-      betaEnabled: true,
-    },
+    select: KB_GRAPH_SYSTEM_OWNER_SELECT,
   })
-  assertManageAiCapability(
-    getAccountManageAiCapability(deps.featureFlags, owner)
-  )
-  if (
-    !owner ||
-    !isFeatureFlagEnabledForAccount(
-      deps.featureFlags,
-      owner,
-      'kb-auto-graph-preparation'
-    ) ||
-    !isFeatureFlagEnabledForAccount(deps.featureFlags, owner, 'kb-graph-builds')
-  ) {
+  const admission = evaluateKBGraphSystemOwner(deps.featureFlags, owner)
+  assertManageAiCapability(admission.capability)
+  if (!owner || !admission.graphBuildsAdmitted) {
     throwKbGraphGenerationDisabled()
   }
-  const catalog = getDefaultKBGraphDomainCatalog()
   return {
     ownerId: owner.id,
     qualityTier: KB_GRAPH_PREPARATION_QUALITY_TIER,
     focusTopic: null,
-    domainCapabilityEnabled:
-      isKBGraphDomainCapabilityEnabled(catalog.revision, process.env) &&
-      isFeatureFlagEnabledForAccount(
-        deps.featureFlags,
-        owner,
-        'kb-graph-domain-selection'
-      ),
+    domainCapabilityEnabled: admission.domainCapabilityEnabled,
   }
 }
 
@@ -3793,8 +3865,11 @@ export type KBGraphBuildStart = {
    * QUEUED dispatched a new build, ALREADY_ACTIVE returned the build holding
    * the slot, and NOT_DUE means a system trigger found the published graph
    * already matching the desired preparation and reserved nothing.
+   * UNSUPPORTED_SETTINGS means a system trigger found no explicit subject and
+   * language it can honor and reserved nothing: scheduled preparation never
+   * builds with provider defaults.
    */
-  outcome: 'QUEUED' | 'ALREADY_ACTIVE' | 'NOT_DUE'
+  outcome: 'QUEUED' | 'ALREADY_ACTIVE' | 'NOT_DUE' | 'UNSUPPORTED_SETTINGS'
   kb: {
     id: string
     knowledgeGraphEnabled: boolean
@@ -3810,9 +3885,10 @@ export type KBGraphBuildStart = {
  * Starts a graph build for one KB. Admission order: AI entitlement,
  * `kb-graph-builds`, the per-KB opt-in, serving course-content sources, the
  * cost configuration and quota reservation, then a compare-and-swap on the
- * KB's single build slot. A system trigger additionally skips a KB whose
- * published graph already matches the desired preparation, so unchanged
- * inputs never reserve cost.
+ * KB's single build slot. A system trigger additionally refuses a KB whose
+ * stored subject and language do not resolve to an explicit selection, and
+ * skips one whose published graph already matches the desired preparation,
+ * so neither provider defaults nor unchanged inputs ever reserve cost.
  */
 export async function startKbKnowledgeGraphBuild(
   { kbId }: { kbId: string },
@@ -3843,6 +3919,14 @@ export async function startKbKnowledgeGraphBuild(
       throw new GraphQLError('KB knowledge graph is not enabled', {
         extensions: { code: 'KB_GRAPH_NOT_ENABLED' },
       })
+    }
+    if (trigger.kind === 'system' && !storedDomain) {
+      return {
+        outcome: 'UNSUPPORTED_SETTINGS' as const,
+        kb,
+        build: null,
+        queueBuildId: null,
+      }
     }
 
     if (kb.activeGraphBuildId) {
@@ -3970,6 +4054,10 @@ export async function startKbKnowledgeGraphBuild(
         id: buildId,
         kbId,
         requestedById: ownerId,
+        origin:
+          trigger.kind === 'system'
+            ? DB.KBGraphBuildOrigin.SYSTEM
+            : DB.KBGraphBuildOrigin.USER,
         qualityTier,
         ...domainFields,
         focusTopic,
@@ -4014,7 +4102,12 @@ export async function startKbKnowledgeGraphBuild(
 
   if (result.queueBuildId) {
     try {
-      await deps.tasks.buildKBGraph.runNoWait({ buildId: result.queueBuildId })
+      const input = { buildId: result.queueBuildId }
+      // Scheduled preparation yields worker slots to lecturer requests and
+      // ingestion work queued at the default priority.
+      await (trigger.kind === 'system'
+        ? deps.tasks.buildKBGraph.runNoWait(input, { priority: Priority.LOW })
+        : deps.tasks.buildKBGraph.runNoWait(input))
     } catch {
       const finishedAt = new Date()
       await deps.prisma.$transaction(async (prisma) => {
