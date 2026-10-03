@@ -273,7 +273,9 @@ runs:
         EMAIL_HOST: mailhog
         EMAIL_PORT: '1025'
         EMAIL_FROM: noreply@klicker.test
-        MAILHOG_URL: http://mailhog:8025
+        # The MailHog image is amd64-only, so only the hosted route runs it;
+        # the one-time login link test skips on the arm64 public-pr route.
+        MAILHOG_URL: ${{ inputs.route == 'hosted' && 'http://mailhog:8025' || '' }}
         HATCHET_CHECK_HOST: hatchet
         HATCHET_HTTP_PORT: 8888
         HATCHET_GRPC_PORT: 7077

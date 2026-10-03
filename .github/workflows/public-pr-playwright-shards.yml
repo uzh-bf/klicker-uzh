@@ -495,10 +495,6 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
-      # SMTP sink for the one-time login link test; the image ships no shell
-      # or HTTP client, so it carries no health check and the test polls.
-      mailhog:
-        image: mailhog/mailhog:v1.0.1@sha256:8d76a3d4ffa32a3661311944007a415332c4bb855657f4f6c57996405c009bea
       hatchet:
         image: ghcr.io/hatchet-dev/hatchet/hatchet-lite-dev:v0.101.0
         env:
