@@ -2058,15 +2058,16 @@ type CreateChatbotArgs = {
   courseId: string
 }
 
-// New chatbots start on GPT-6 Luna, the BASE default model. A registry without
-// it, such as the local development default, keeps the single-Auto default.
+// New chatbots start on GPT-6 Luna, the BASE default model, which is also the
+// participant-credit fallback. A registry without it keeps the single-Auto
+// default.
 const NEW_CHATBOT_MODEL_ID = 'gpt-6-luna'
 
 export function getNewChatbotModelId(
   registry: readonly ChatModelCapability[]
 ): string | null {
   const preferred = registry.find((model) => model.id === NEW_CHATBOT_MODEL_ID)
-  if (preferred?.usageClass === 'BASE' && !preferred.fallback) {
+  if (preferred?.usageClass === 'BASE') {
     return preferred.id
   }
   const auto = registry.find((model) => model.id === 'auto')

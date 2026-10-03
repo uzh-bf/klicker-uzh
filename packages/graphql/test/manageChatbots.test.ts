@@ -76,7 +76,7 @@ describe('Integration tests for lecturer chatbot management', () => {
         description: null,
         status: 'DRAFT',
         modelSelection: false,
-        allowedModelIds: ['auto'],
+        allowedModelIds: ['gpt-6-luna'],
         allowedReasoningEffortsByModel: [],
         courses: [{ id: course.id }],
       })
@@ -101,7 +101,7 @@ describe('Integration tests for lecturer chatbot management', () => {
         status: 'DRAFT',
         systemPrompts: null,
         modelSelection: false,
-        allowedModelIds: ['auto'],
+        allowedModelIds: ['gpt-6-luna'],
         allowedReasoningEffortsByModel: null,
         knowledgeGraphVisible: false,
         knowledgeGraphRetrievalEnabled: false,

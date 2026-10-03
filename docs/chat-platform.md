@@ -297,8 +297,9 @@ conservative, because a missing class must never imply base usage.
 
 New chatbots use a fixed GPT-6 Luna policy by default: the owner projection
 contains one effective `gpt-6-luna` model and no reasoning entries. A registry
-without that BASE model, such as the local development default, keeps a single
-`auto` model instead. The strict owner-only
+without that BASE model keeps a single `auto` model instead. Staging sets
+`auto` as the automatic primary so existing automatic-selection chatbots
+exercise `auto-router-v2`; production keeps GPT-6 Luna. The strict owner-only
 `saveChatbotRevision` mutation uses its `modelPolicy` section to require exactly
 one active model for fixed mode, one supported reasoning effort when that model
 supports reasoning, and at least one active model plus valid reasoning entries

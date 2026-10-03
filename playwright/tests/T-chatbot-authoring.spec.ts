@@ -693,12 +693,8 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       page.getByTestId('chatbot-model-selection-switch')
     ).not.toBeChecked()
     await expect(page.getByTestId('chatbot-fixed-model')).toContainText(
-      'Auto Mode'
+      'GPT-6 Luna'
     )
-    await expect(page.getByTestId('chatbot-reasoning-gpt-6-luna')).toHaveCount(
-      0
-    )
-    await selectOption(page, '[data-cy="chatbot-fixed-model"]', 'GPT-6 Luna')
     await selectOption(page, '[data-cy="chatbot-reasoning-gpt-6-luna"]', 'high')
     await page.getByTestId('chatbot-model-selection-switch').click()
     await expect(page.getByTestId('chatbot-model-gpt-6-luna')).toBeChecked()

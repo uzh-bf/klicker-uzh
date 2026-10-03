@@ -147,8 +147,8 @@ describe('default chat model registry parity', () => {
     expect(costsById(backendModels)).toEqual(expectedDefaultCosts)
   })
 
-  test('new chatbots keep the Auto default without GPT-6 Luna', () => {
-    expect(getNewChatbotModelId(DEFAULT_CHAT_MODEL_REGISTRY)).toBe('auto')
+  test('new chatbots start on GPT-6 Luna in the default registry', () => {
+    expect(getNewChatbotModelId(DEFAULT_CHAT_MODEL_REGISTRY)).toBe('gpt-6-luna')
   })
 
   test('both consumers reject duplicate model ids', () => {

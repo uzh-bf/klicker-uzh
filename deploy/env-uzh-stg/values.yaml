@@ -219,13 +219,15 @@ chat:
   accountUsageEnforcementEnabled: false
 
   automaticModels:
-    primaryId: gpt-6-luna
+    primaryId: auto
     fallbackId: gpt-6-luna
 
   modelRegistry:
-    # GPT-6 Luna is the global automatic-model primary and the
-    # participant-credit fallback, so chatbots using automatic model selection
-    # use it by default; explicit model selections remain respected.
+    # Staging makes Auto the global automatic-model primary, so chatbots using
+    # automatic model selection exercise auto-router-v2; production keeps GPT-6
+    # Luna there. Explicit model selections remain respected, and new chatbots
+    # still start fixed on GPT-6 Luna. GPT-6 Luna is the participant-credit
+    # fallback.
     # "Auto" routes through the LiteLLM auto-router-v2, which self-selects the
     # tier per request (SIMPLE=gpt-6-luna-high, MEDIUM=gpt-6.1-sol-low,
     # COMPLEX=gpt-6.1-sol-medium, REASONING=gpt-6.1-sol-high; match_threshold
