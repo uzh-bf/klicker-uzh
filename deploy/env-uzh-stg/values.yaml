@@ -220,6 +220,10 @@ chat:
     # therefore use Auto by default; explicit model selections remain respected.
     # A chatbot can be pinned to Auto-only via its DB columns
     # (modelSelection=false + allowedModelIds=["auto"]); see the vorkurs chatbot.
+    # "Auto v2" (auto-v2) is a second router for comparison on staging only:
+    # SIMPLE=gpt-5.6-luna-high, MEDIUM=gpt-5.6-sol-low,
+    # COMPLEX=gpt-5.6-sol-medium, REASONING=gpt-5.6-sol-high. It is not the
+    # automatic-model primary; allow-list it on a chatbot to select it.
     # The accounting rate is the accepted rounded blend for an observed
     # generation mix of about 90% Luna and 10% Sol. Classifier and embedding
     # overhead remain outside the registry's selected-model token fields.
@@ -227,6 +231,18 @@ chat:
       deploymentId: klickeruzh/azure/auto-router
       name: Auto
       description: Automatic model selection (routes to the best model per request)
+      supportsImageAttachments: true
+      usesResponsesApi: true
+      fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
+      cost:
+        input: 1.0
+        output: 5.0
+    - id: auto-v2
+      deploymentId: klickeruzh/azure/auto-router-v2
+      name: Auto v2
+      description: Automatic model selection through the second router (staging comparison)
       supportsImageAttachments: true
       usesResponsesApi: true
       fallback: false
