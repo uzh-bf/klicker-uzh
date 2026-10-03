@@ -248,6 +248,14 @@ export default {
       showMore:
         '{count, plural, one {Show more (# more line)} other {Show more (# more lines)}}',
       docQueryQueryLabel: 'Search query',
+      unnamedSource: 'Unnamed source',
+      originUnavailable: 'Original source URL unavailable',
+      chunkUnavailable: 'Chunk content unavailable',
+      resultUnavailable: 'Search details unavailable',
+      openSource: 'Open source',
+      showFullChunk: 'Show full passage',
+      moreChunks: 'Show more passages ({count} remaining)',
+      moreSources: 'Show more sources ({count} remaining)',
       docQuerySourcesHint: 'The results appear as sources below the answer.',
     },
     tools: {
@@ -259,6 +267,8 @@ export default {
     },
     sources: {
       title: 'Sources',
+      cited: 'Cited in this answer',
+      otherRetrieved: 'Other retrieved material ({count})',
       page: 'p. {page}',
       video: 'Video',
       image: 'Image',
@@ -800,6 +810,9 @@ export default {
       rank: 'Rank',
       username: 'Username',
       email: 'Email',
+      entryAriaLabel: 'Rank {rank}: {name}, {points} points',
+      selfPositionDivider: 'your position',
+      podiumEmpty: 'No entries on the podium yet',
     },
     error: {
       '404': '404 Page not found',
@@ -825,6 +838,17 @@ export default {
     privacyUrl: 'https://www.klicker.uzh.ch/privacy_policy',
     loginInfo:
       'You do not need a management account to participate in activities or a course, only to create your own activities and courses.',
+    sessionCheckFailed:
+      'Your login could not be verified because the service is temporarily unavailable. Please try again in a moment.',
+    sessionCheckRetry: 'Try again',
+    restart: {
+      title: 'Login',
+      info: 'Your login attempt could not be continued. Please choose how you would like to log in again.',
+      errorInfo:
+        'The login provider reported an error. Please choose how you would like to log in again.',
+      studentLogin: 'Student login (assessment)',
+      lecturerLogin: 'Lecturer login',
+    },
   },
   pwa: {
     general: {
@@ -926,6 +950,65 @@ Your data will never be shared with other parties beside the above and will neve
         'Your account data, such as profile information, achievements, and experience points, as well as responses you give to questions in KlickerUZH, will be stored for the lifetime of your account. Your points and ranking on course activities and leaderboards will be stored for as long as you participate on the respective course leaderboard. You can request deletion of your data and account at any time.',
       confirmationMessage:
         'I agree to the KlickerUZH [privacy policy](https://www.klicker.uzh.ch/privacy_policy) and [terms of service](https://www.klicker.uzh.ch/terms_of_service) and consent to the processing of my data as described therein. I am aware that I can participate in learning activities anonymously and without an account if I do not agree to these conditions.',
+      signup: {
+        accountTitle: 'Your account',
+        emailLabel: 'E-mail',
+        usernameHint:
+          'Your username is shown when you join a course leaderboard.',
+        assessmentTitle: 'Enable assessment access',
+        assessmentSubmit: 'Enable access',
+        assessmentDataCollectionNotice:
+          'We store your account data and the identity information provided by Switch edu-ID as well as data from courses and activities: such as answers and inputs in activities, assessments, points, and feedback.\n\nIn an assessment, identity information such as your matriculation number as well as detailed logs of your answer attempts and interactions (audit logs) are added.',
+        assessmentDataSharingNotice:
+          'Lecturers and other authorised people see the information they need to run and evaluate the course. If you join a leaderboard, other participants see your username and leaderboard details. Learning Analytics shows lecturers only aggregated group values.\n\nIn an assessment, authorised lecturers and assessment staff additionally receive your identity, answer details, and results for grading and follow-up. Other participants cannot see this assessment data.',
+        assessmentDataUsageNotice:
+          'Lecturers use the data collected from you to make teaching more interactive. We use your data to operate your account and to run and evaluate course activities. In an assessment, they additionally support grading and traceability. Your choice in the account settings applies to research and Learning Analytics. It does not affect points, grades, or assessment access.',
+        assessmentDataStorageNotice:
+          'Account data and answers are stored for the lifetime of your account. You cannot delete your assessment account and its data yourself: they remain available for traceability and during the applicable appeal and retention periods. Afterwards, they are deleted or anonymised. [Details in the privacy policy](https://www.klicker.uzh.ch/privacy_policy)',
+        assessmentAcknowledgement:
+          'I have read the [KlickerUZH privacy policy](https://www.klicker.uzh.ch/privacy_policy), accept the [terms of use](https://www.klicker.uzh.ch/terms_of_service), and confirm my choices. I have acknowledged the additional information about assessment data, inspection, and retention.',
+        accessTitle: 'Your access',
+        accessNoPassword: 'You do not need a password or any further input.',
+        dataUseTitle: 'Data use and settings',
+        dataCollectionTitle: 'What data do you collect about me?',
+        dataCollectionNotice:
+          'We store your account data and data from your courses and activities, such as answers and inputs in activities, their assessment, points, and feedback.',
+        dataSharingTitle: 'Who can see my data?',
+        dataSharingNotice:
+          'Lecturers and other authorised people see the information they need to run and evaluate the course. If you join a leaderboard, other participants see your username and leaderboard details. Learning Analytics shows lecturers only aggregated group values.',
+        dataUsageTitle: 'How is my data used?',
+        dataUsageNotice:
+          'Lecturers use the data collected from you to make teaching more interactive. We use your data to operate your account and to run and evaluate course activities. Your choice in the account settings applies to research and Learning Analytics.',
+        dataStorageTitle: 'How long is my data stored?',
+        dataStorageNotice:
+          'Your account data and answers are stored while your account exists. Data may be retained until legal or contractual retention periods expire. Afterwards, they are deleted or changed so that they can no longer be linked to any person. You can request deletion of your account and your data.',
+        acknowledgement:
+          'I have read the KlickerUZH [privacy policy](https://www.klicker.uzh.ch/privacy_policy), accept the [terms of service](https://www.klicker.uzh.ch/terms_of_service), and confirm my choices. Research and Learning Analytics are voluntary.',
+        researchConsentTitle: 'Data for research',
+        researchConsentDescription:
+          'Your usage and learning data may be used without personal identifiers for UZH research and teaching projects. You can object at any time in your settings. Your data is then excluded from future research exports. [More about privacy](https://www.klicker.uzh.ch/privacy_policy)',
+        researchConsentDescriptionAssessment:
+          'Your usage and learning data may be used without direct identifiers for UZH research and teaching projects. You can object at any time in your settings. Your data is then excluded from future research exports. [More about privacy](https://www.klicker.uzh.ch/privacy_policy)',
+        researchConsentBadgeAllowed: 'Allowed',
+        researchConsentBadgeRefused: 'Refused',
+        researchConsentBadgeUnanswered: 'Not answered',
+        researchConsentYes: 'Allow',
+        researchConsentNo: 'Object',
+        researchConsentControlLabel: 'Use for research:',
+        learningAnalyticsConsentTitle: 'Learning Analytics',
+        learningAnalyticsConsentDescription:
+          'Get personal insights into your learning. Lecturers see de-identified group reports. Participation is voluntary and can be changed at any time.\n\nLA records data only when it is active for your account and the course. When you turn it off, the affected LA data is deleted automatically. [More about Learning Analytics](https://www.klicker.uzh.ch/learning_analytics)',
+        learningAnalyticsDecisionRequired: 'Decision required',
+        learningAnalyticsConsentYes: 'Yes, participate',
+        learningAnalyticsConsentYesDescription:
+          'Private insights and protected group reports.',
+        learningAnalyticsConsentNo: 'No, do not participate',
+        learningAnalyticsConsentNoDescription:
+          'Courses, points, and chat work as usual.',
+        submit: 'Create account',
+        acknowledgementRequired: 'Please confirm your choices.',
+        dataUseChoiceRequired: 'Please choose yes or no.',
+      },
     },
     studentDocs: {
       assessmentInstanceWarning:
@@ -1268,6 +1351,33 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       createProfileFailed:
         'Unfortunately, your account could not be created or linked. Please check your entries and try again.',
       editProfileSuccess: 'Your profile has been updated successfully.',
+      dataUseTitle: 'Research and learning analytics',
+      dataUseDescription:
+        'These choices apply to your entire KlickerUZH account. You can change them at any time.',
+      dataUseLoadFailed:
+        'Your data-use choices could not be loaded. Please try again.',
+      researchConsentTitle: 'Research',
+      researchConsentDescription:
+        'Your usage and learning data may be used without direct identifiers for UZH research and teaching projects. You can opt out at any time in your settings. Your data will then be excluded from future research exports.',
+      researchConsentSaved: 'Your research choice has been saved.',
+      researchConsentFailed:
+        'Your research choice could not be saved. Please reload the page before trying again.',
+      dataUseConflict:
+        'This page is out of date. Reload it before trying again.',
+      learningAnalyticsConsentTitle: 'Learning analytics',
+      learningAnalyticsConsentDescription:
+        'Get personal insights into your learning. Only you see your personal insights; lecturers see de-identified group reports. Participation is voluntary and can be changed at any time; course access and points remain unchanged. Learning Analytics collects data only while it is active for both your account and the course. When you turn it off, the relevant Learning Analytics data is automatically deleted.',
+      learningAnalyticsConsentSaved:
+        'Your learning-analytics choice has been saved.',
+      learningAnalyticsConsentFailed:
+        'Your learning-analytics choice could not be saved. Please reload the page before trying again.',
+      learningAnalyticsWithdrawalTitle:
+        'Stop participating in Learning Analytics?',
+      learningAnalyticsWithdrawalConfirmation:
+        'Turn off Learning Analytics? Your personal LA data and insights will be deleted automatically. Your responses and points needed to run the course will remain.',
+      dataUseCanonicalDataNotice:
+        'These choices do not delete your account, course participation, activity submissions, or responses.',
+      dataUsePrivacyPolicy: 'Read the privacy policy.',
       achievements: 'Achievements',
       myProfile: 'My Profile',
       createProfile: 'Create Profile',
@@ -1598,6 +1708,38 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       nextPage: 'Next',
     },
     admin: {
+      chatbotRejectionReason: 'Reason for rejection',
+      chatbotRejectConsequence:
+        'The owner will see this reason and can revise the chatbot before requesting approval again.',
+      chatbotReject: 'Reject request',
+      chatbotRejected:
+        '“{name}” was rejected. The owner can revise and resubmit it.',
+      chatbotRejectionError:
+        'Rejection could not be confirmed. Refresh the list and check the current status before trying again.',
+      chatbotAllTools: 'All tools',
+      chatbotDefaultReasoning: 'All reasoning levels supported by the model',
+      adminOnly: 'This page is available to administrators only.',
+      chatbotApprovals: 'Chatbot approvals',
+      chatbotApprovalsDescription:
+        'Review pending publication requests. Open a chatbot to check its configuration before approving participant access.',
+      chatbotOwner: 'Owner',
+      chatbotAccountApproval: 'Account publishing permission',
+      chatbotAccountApproved: 'Approved',
+      chatbotAccountNotApproved: 'Not approved',
+      chatbotConnectedTools: 'Connected tools',
+      chatbotNoConnectedTools: 'No connected tools.',
+      chatbotRefresh: 'Refresh requests',
+      chatbotQueueEmpty: 'No chatbots are awaiting approval.',
+      chatbotQueueError:
+        'Could not load publication requests. Refresh to try again.',
+      chatbotOwnerBlocked:
+        'The owner is not currently approved for chatbot publishing. Account approval is required before this chatbot can be published.',
+      chatbotApproveConsequence:
+        'Approving publishes this chatbot immediately for participants in its course. Account usage budgets remain unchanged.',
+      chatbotApprove: 'Approve and publish',
+      chatbotPublished: '“{name}” has been published.',
+      chatbotApprovalError:
+        'Publication could not be confirmed. The request list has been refreshed; check the current status before trying again.',
       pageName: 'Admin Panel',
       privatePreviewAvailability: 'Availability: Private Features',
       privatePreviewDescription:
@@ -1963,10 +2105,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     settings: {
       advancedModelUsage: 'Advanced model usage',
       baseModelUsage: 'Base model usage',
-      betaFeaturesDataUse:
-        'If you opt in, a pseudonymous identifier for your account is added to an account-level beta cohort for feature targeting. You can opt out again using this same setting.',
       betaFeaturesDescription:
-        'Opt in to optional early access to selected beta features. These features may be unstable, change without notice, or be unsuitable for important work.',
+        'Beta features include chatbot creation. Your beta preference is enabled by default and can be turned off here. Feature availability and approval for AI usage are managed separately. Beta features may be unstable, change without notice, or be unsuitable for important work.',
+      betaFeaturesSignupClosed:
+        'New beta enrollment is currently closed. You can still discover beta features here.',
+      betaFeaturesEnrollmentRestricted:
+        'Enrollment cannot be changed with this account or login. New enrollment requires Catalyst and full account access.',
       betaFeaturesConvergedOff: 'Beta access is no longer active.',
       betaFeaturesConvergedOn: 'Beta access is now active.',
       betaFeaturesEnrollment: 'Beta enrollment',
@@ -1975,16 +2119,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       betaFeaturesError:
         'Your beta enrollment could not be saved. Your current enrollment state was not changed. Please try again.',
       betaFeaturesRefreshFailure:
-        'Your beta enrollment was saved, but beta access information could not be refreshed. Reload the page or try again. Access may take up to 120 seconds to update.',
+        'Your beta preference was saved, but the displayed settings could not be refreshed. Reload the page to see the current state.',
       betaFeaturesRefreshing:
-        'Your enrollment was saved. Refreshing beta access information now; access may take up to 120 seconds to become available.',
+        'Your beta preference was saved. Refreshing the displayed settings.',
       betaFeaturesSaved:
-        'Your beta enrollment was saved. Beta access may take up to 120 seconds to become available.',
+        'Your beta preference was saved. Available features still depend on rollout and any required approval.',
       betaFeaturesPending:
         'Saving your beta enrollment. Your current setting will remain unchanged until the save completes.',
       betaFeaturesTitle: 'Beta features',
+      chatbotBetaAccessRequired:
+        'Chatbot creation is a beta feature. It requires AI beta access, Catalyst, and full account access. You can find beta enrollment in your account settings.',
       betaFeaturesUnavailable:
-        'Beta enrollment is temporarily unavailable. Please try again later. Your current enrollment status has not been assumed.',
+        'Your beta preference cannot be displayed or changed right now. No preference has been assumed.',
       chatAccountUsageDescription:
         'Review the current monthly usage estimates for each usage class.',
       chatAccountUsageBoundaryDescription:
@@ -3512,10 +3658,19 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       joinCourse: 'Join course',
       viewCourse: 'View Course',
       viewActivities: 'View Activities',
+      openLibrary: 'Open library',
+      noNotificationEmail: 'Not set',
       executeActivities: 'Execute Activities',
       modifyCourseSettings: 'Modify Course Settings',
       modifyContainedActivities: 'Modify Activities in Course',
       manageParticipantGroups: 'Manage Participant Groups',
+      leaderboardSummary: 'Compare participant points for the selected period.',
+      leaderboardInclusionHelp: 'Who appears in the leaderboard?',
+      leaderboardInclusion:
+        'Participants without points are included in the entire-course and rolling leaderboards.',
+      leaderboardExportHelp: 'About CSV export',
+      leaderboardExportDescription:
+        'The CSV export includes participant email addresses in addition to usernames.',
       deleteCourse: 'Delete Course',
       removeCourse: 'Remove Course',
       confirmCourseRemoval:

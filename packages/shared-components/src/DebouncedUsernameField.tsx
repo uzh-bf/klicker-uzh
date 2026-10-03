@@ -2,7 +2,6 @@ import { faCheck, faSpinner, faX } from '@fortawesome/free-solid-svg-icons'
 import type { TextFieldClassName } from '@uzh-bf/design-system'
 import { FormikTextField } from '@uzh-bf/design-system'
 import { useField } from 'formik'
-import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -38,7 +37,6 @@ function DebouncedUsernameField({
   data,
   className,
 }: DebouncedUsernameFieldProps) {
-  const t = useTranslations()
   const [field, meta, helpers] = useField<string>(name)
 
   // validate field when valid value changes
