@@ -32,10 +32,10 @@ hatchet:
     apiUrl: 'http://app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080'
     tlsStrategy: 'none'
     workflowName: 'course-kg-ingestion'
-    standardGenerationModel: 'klickeruzh/azure/gpt-5.6-luna'
-    standardCleaningModel: 'klickeruzh/azure/gpt-5.6-luna'
-    highGenerationModel: 'klickeruzh/azure/gpt-5.6-luna'
-    highCleaningModel: 'klickeruzh/azure/gpt-5.6-luna'
+    standardGenerationModel: 'klickeruzh/azure/gpt-6-luna'
+    standardCleaningModel: 'klickeruzh/azure/gpt-6-luna'
+    highGenerationModel: 'klickeruzh/azure/gpt-6-luna'
+    highCleaningModel: 'klickeruzh/azure/gpt-6-luna'
   workers:
     general:
       replicaCount: 1
@@ -209,22 +209,26 @@ chat:
 
   automaticModels:
     primaryId: auto
-    fallbackId: gpt-5.6-luna
+    fallbackId: gpt-6-luna
 
   modelRegistry:
-    # "Auto" routes through the LiteLLM auto-router, which self-selects the
-    # tier per request (SIMPLE=gpt-5.6-luna-medium, MEDIUM=gpt-5.6-luna-high,
-    # COMPLEX=gpt-5.6-luna-xhigh, REASONING=gpt-5.6-sol-medium; match_threshold
-    # 0.55). It is a normal selectable model (fallback: false) and is also the
+    # "Auto" routes through the LiteLLM auto-router-v2, which self-selects the
+    # tier per request (SIMPLE=gpt-6-luna-high, MEDIUM=gpt-6.1-sol-low,
+    # COMPLEX=gpt-6.1-sol-medium, REASONING=gpt-6.1-sol-high; match_threshold
+    # 0.55). The v1 auto-router (MEDIUM=gpt-6-luna-xhigh, COMPLEX=
+    # gpt-6.1-sol-high, REASONING=gpt-6.1-sol-medium) stays deployed beside it
+    # for evaluation. It is a normal selectable model (fallback: false) and is also the
     # global automatic-model primary. Chatbots using automatic model selection
     # therefore use Auto by default; explicit model selections remain respected.
     # A chatbot can be pinned to Auto-only via its DB columns
     # (modelSelection=false + allowedModelIds=["auto"]); see the vorkurs chatbot.
-    # The accounting rate is the accepted rounded blend for an observed
-    # generation mix of about 90% Luna and 10% Sol. Classifier and embedding
-    # overhead remain outside the registry's selected-model token fields.
+    # The accounting rate matches a generation mix of about 50% Luna and 50%
+    # Sol at GPT-6 list prices. With v2, Sol serves most routed requests, so
+    # the rate is below list cost until prompt-cache data justify a new
+    # price. Classifier and embedding overhead remain outside the
+    # registry's selected-model token fields.
     - id: auto
-      deploymentId: klickeruzh/azure/auto-router
+      deploymentId: klickeruzh/azure/auto-router-v2
       name: Auto
       description: Automatic model selection (routes to the best model per request)
       supportsImageAttachments: true
@@ -235,9 +239,9 @@ chat:
       cost:
         input: 1.0
         output: 5.0
-    - id: gpt-5.6-luna
-      deploymentId: klickeruzh/azure/gpt-5.6-luna
-      name: GPT-5.6 Luna
+    - id: gpt-6-luna
+      deploymentId: klickeruzh/azure/gpt-6-luna
+      name: GPT-6 Luna
       description: OpenAI reasoning model
       supportsImageAttachments: true
       supportsReasoning: true
@@ -250,8 +254,40 @@ chat:
       usageClass: BASE
       maxOutputTokens: 4096
       cost:
-        input: 0.2
-        output: 1.2
+        input: 0.1
+        output: 0.5
+    - id: gpt-6-sol
+      deploymentId: klickeruzh/azure/gpt-6-sol
+      name: GPT-6 Sol
+      description: OpenAI reasoning model
+      supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - low
+        - medium
+        - high
+      fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
+      cost:
+        input: 2.0
+        output: 10.0
+    - id: gpt-6.1-sol
+      deploymentId: klickeruzh/azure/gpt-6.1-sol
+      name: GPT-6.1 Sol
+      description: OpenAI reasoning model
+      supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - low
+        - medium
+        - high
+      fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
+      cost:
+        input: 2.0
+        output: 10.0
     - id: gpt-4.1
       deploymentId: klickeruzh/azure/gpt-4.1
       name: GPT-4.1
@@ -263,24 +299,6 @@ chat:
       cost:
         input: 2.0
         output: 8.0
-    - id: gpt-5.1
-      deploymentId: klickeruzh/azure/gpt-5.1
-      name: GPT-5.1
-      description: OpenAI reasoning model
-      supportsImageAttachments: true
-      supportsReasoning: true
-      supportedReasoningEfforts:
-        - none
-        - minimal
-        - low
-        - medium
-        - high
-      fallback: false
-      usageClass: ADVANCED
-      maxOutputTokens: 4096
-      cost:
-        input: 1.25
-        output: 10.0
     - id: gpt-5.4
       deploymentId: klickeruzh/azure/gpt-5.4
       name: GPT-5.4
@@ -629,7 +647,11 @@ backendGraphql:
       standardEstimateMinorUnits: '100'
       highEstimateMinorUnits: '200'
       maxCostMinorUnits: '250'
-      semesterQuotaMinorUnits: '1000'
+      # Staging carries the full domain and language comparison plus element
+      # generation, so the 10.00 CHF semester budget does not cover a test
+      # cycle. The backend adopts a configured limit at or above an owner's
+      # granted ledger limit; a lower configured value never reduces it.
+      semesterQuotaMinorUnits: '5000'
       pricingVersion: 'stg-canary-v1'
       billingMode: 'SEMESTER_QUOTA'
       semesterKey: '2026-H2'
