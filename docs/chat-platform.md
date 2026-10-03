@@ -286,15 +286,19 @@ Three properties matter when debugging it:
 
 Every registry entry carries an explicit `usageClass` (`BASE` or `ADVANCED`),
 the server-derived classification of the model lane ([ADR 0020](./adr/0020-two-tier-chatbot-approval.md)).
-`auto` is invariantly `ADVANCED` (both consumers reject any other class for
-it). GPT-5.6 Luna is the only `BASE` model and the participant-credit fallback;
-every other current model is `ADVANCED`. Both consumers reject external
-registries that violate that invariant.
+GPT-5.6 Luna must be a `BASE` model and the participant-credit fallback; both
+consumers reject external registries that violate that invariant. Other models
+may also be `BASE`. The deployed registries classify GPT-6 Luna (the automatic
+primary), `auto`, and GPT-5.6 Luna as `BASE`, because Luna and Sol are cheap
+enough that the auto-router needs no cost center, while directly selected
+GPT-6 Sol and GPT-5.6 Sol stay `ADVANCED`.
 External registry JSON that omits `usageClass` normalizes to `ADVANCED` —
 conservative, because a missing class must never imply base usage.
 
-New chatbots use a fixed Auto policy by default: the owner projection contains
-one effective `auto` model and no reasoning entries. The strict owner-only
+New chatbots use a fixed GPT-6 Luna policy by default: the owner projection
+contains one effective `gpt-6-luna` model and no reasoning entries. A registry
+without that BASE model, such as the local development default, keeps a single
+`auto` model instead. The strict owner-only
 `saveChatbotRevision` mutation uses its `modelPolicy` section to require exactly
 one active model for fixed mode, one supported reasoning effort when that model
 supports reasoning, and at least one active model plus valid reasoning entries
@@ -350,6 +354,95 @@ current-month row carries the latest budget and resets used credits. The outer
 owner ID. Other lecturer login scopes are denied by the service. Participant
 roles are denied by the schema, while the service repeats the role and scope
 checks as a direct-call safeguard.
+
+### Account usage activation
+
+Two switches gate account usage, and they are separate cutovers for a named
+environment. `chat.lifecycleWritersEnabled`
+(`CHAT_TURN_LIFECYCLE_WRITES_ENABLED`) turns on attempt markers and credit
+counters; the Helm template omits the runtime key while it is false, so an
+older chart cannot accidentally enable it after a newer application is rolled
+back. `chat.accountUsageEnforcementEnabled`
+(`CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED`) adds the participant route's
+pre-provider budget rejection. With enforcement off, a request whose account has
+no configured usage row is served and simply records nothing; with enforcement
+on, the same request fails closed with `403` and the class-specific
+`CHAT_MODEL_UNAVAILABLE_*` code. Both `deploy/env-uzh-stg/values.yaml` and
+`deploy/env-uzh-prd/values.yaml` ship the switches disabled. Activation is a
+separate reviewed values change, applied per environment only after the
+base-budget backfill and cohort evidence exist for it.
+
+Enforcement does not control class admission. Whether or not the switch is on,
+the participant and preview routes admit a candidate only when its usage class
+is entitled: the account-level AI approval opens the cost-free base class, and a
+cost-carrying advanced class additionally needs a non-blank cost center. Both
+deployed automatic primaries (GPT-6 Luna) are `BASE`, so an approved account
+without a cost center keeps its automatic default; only directly selected Sol
+models need the cost center.
+
+An account with no configured base budget receives the default
+`DEFAULT_BASE_CHAT_BUDGET_CREDITS` (`packages/util/src/chatUsage.ts`) for the
+current Zurich month. The grant happens in two places: enabling the account's AI
+entitlement grants it, and
+`packages/prisma-data/src/scripts/2026-09-14_backfill_chat_base_budget.ts`
+grants it to accounts that were entitled before that grant existed. The backfill
+only ever creates missing rows, only for the current month, and only when the
+account has no configured base budget at or before it, because
+`getEffectiveChatAccountUsage` carries the newest configured budget forward: a
+fresh row would replace a value an administrator set, and a past-month row would
+leak into every later month. It is therefore safe to re-run, and it never raises,
+lowers, or replaces a configured budget or a used-credit counter.
+
+Cutover order for one environment:
+
+1. Run the backfill dry, then apply it, **before** promoting the release that
+   carries `accountUsageEnforcementEnabled: true`. Applying it to an
+   already-running environment is safe and idempotent.
+2. Verify that entitled accounts have a current-month `BASE` row and that
+   `getChatAccountUsage` reports a positive base budget for them. Set an explicit
+   budget through `setChatAccountUsageBudgets` where the default is not the
+   intended allowance.
+3. Promote a values change that sets `chat.lifecycleWritersEnabled: true` and
+   `chat.accountUsageEnforcementEnabled: true`, and confirm the running pods
+   carry both variables. That values change is reviewed separately from the
+   release, so a newly promoted release can ship with both switches disabled.
+4. Exercise one participant turn on a budgeted account and confirm the class
+   counter increments, the answer persists, and no `CHAT_MODEL_UNAVAILABLE_*`
+   appears for the cohort.
+5. Watch class-exhaustion responses for the cohort; they are expected only when a
+   budget is genuinely spent.
+
+Commands (secrets come from the local operator profile, never from the shell
+history):
+
+```bash
+pnpm --filter @klicker-uzh/prisma-data run script src/scripts/2026-09-14_backfill_chat_base_budget.ts
+pnpm --filter @klicker-uzh/prisma-data run script src/scripts/2026-09-14_backfill_chat_base_budget.ts --apply
+pnpm --filter @klicker-uzh/prisma-data run script:qa src/scripts/2026-09-14_backfill_chat_base_budget.ts --apply
+pnpm --filter @klicker-uzh/prisma-data run script:prod src/scripts/2026-09-14_backfill_chat_base_budget.ts --apply
+```
+
+Rollback is `chat.accountUsageEnforcementEnabled: false` plus a promotion. The
+route then skips the rejection while retaining lifecycle claims and
+post-completion accounting, and no data repair is needed, because enforcement
+never writes usage. Class admission is unaffected by the rollback, because it
+does not depend on this switch.
+
+One partial-failure state has no automatic recovery. With enforcement on,
+`finalizeChatTurn` throws when the owner has no configured usage row for the
+charged class after the provider response: the provider was already paid, and
+the turn is not persisted, so the assistant message stays an `IN_PROGRESS` or
+`FAILED` placeholder and no credit is recorded. Recovery is to run the backfill
+for the affected accounts and ask the participant to send the message again - a
+failed attempt is reclaimable with a new attempt id. This state is reachable when
+a row disappears between the route's pre-check and finalization, or when
+enforcement is enabled while a turn is in flight, so flip the switch outside an
+active cohort session where that is operationally possible.
+
+The production cutover is the same procedure run with the production values and
+the production backfill, and it waits for the staging proof. Account-usage
+telemetry is independent of Langfuse tracing (`chat.telemetry.enabled`), which
+keeps its production value.
 
 `setChatAccountUsageBudgets` is an `ADMIN`-only operations mutation and requires
 an explicit target owner ID. It validates both values against the shared
