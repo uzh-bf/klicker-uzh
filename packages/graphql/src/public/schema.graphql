@@ -759,6 +759,7 @@ type Chatbot {
   creditMaxCredits: Int!
   creditResetAmount: Int!
   creditResetPeriod: CreditResetPeriod!
+  customModeConfig: ChatbotCustomModeConfig
   description: String
   disclaimerSummary: ChatbotDisclaimerSummary
   enabledKnowledgeBase: ChatbotKnowledgeBaseSummary @deprecated(reason: "Use enabledKnowledgeBases for all attached knowledge bases.")
@@ -789,6 +790,7 @@ type ChatbotAuthoringRevision {
   creditMaxCredits: Int!
   creditResetAmount: Int!
   creditResetPeriod: CreditResetPeriod!
+  customModeConfig: ChatbotCustomModeConfig
   description: String
   disclaimerIntroText: String
   disclaimerTitle: String
@@ -809,6 +811,28 @@ input ChatbotCreditPolicyInput {
   creditMaxCredits: Int!
   creditResetAmount: Int!
   creditResetPeriod: CreditResetPeriod!
+}
+
+type ChatbotCustomMode {
+  description: String
+  key: String!
+  name: String!
+  personaText: String
+}
+
+type ChatbotCustomModeConfig {
+  modes: [ChatbotCustomMode!]!
+}
+
+input ChatbotCustomModeConfigInput {
+  modes: [ChatbotCustomModeInput!]!
+}
+
+input ChatbotCustomModeInput {
+  description: String
+  key: String
+  name: String!
+  personaText: String
 }
 
 type ChatbotDisclaimerSummary {
@@ -896,6 +920,7 @@ input ChatbotRevisionModelPolicyInput {
 
 input ChatbotRevisionSaveInput {
   creditPolicy: ChatbotCreditPolicyInput
+  customModeConfig: ChatbotCustomModeConfigInput
   disclaimer: ChatbotRevisionDisclaimerInput
   knowledgeGraphPolicy: ChatbotRevisionKnowledgeGraphPolicyInput
   metadata: ChatbotRevisionMetadataInput

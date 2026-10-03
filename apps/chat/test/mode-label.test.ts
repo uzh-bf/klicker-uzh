@@ -30,6 +30,22 @@ describe('formatModeLabel', () => {
     expect(formatModeLabel(t, 'examPrep')).toBe('ExamPrep')
   })
 
+  test('prefers an authored name for a custom mode', () => {
+    expect(
+      formatModeLabel(t, 'cm_custom', {
+        cm_custom: { description: 'Practises debates.', name: 'Debate coach' },
+      })
+    ).toBe('Debate coach')
+  })
+
+  test('falls back to the capitalized key when an authored name is blank', () => {
+    expect(
+      formatModeLabel(t, 'cm_custom', {
+        cm_custom: { description: 'Practises debates.', name: '   ' },
+      })
+    ).toBe('Cm_custom')
+  })
+
   test('does not treat inherited object keys as known modes', () => {
     expect(isKnownMode('toString')).toBe(false)
     expect(formatModeLabel(t, 'toString')).toBe('ToString')
@@ -37,7 +53,7 @@ describe('formatModeLabel', () => {
 
   test('gates generation actions when no chat mode is available', () => {
     expect(hasAvailableChatMode({})).toBe(false)
-    expect(hasAvailableChatMode({ tutor: '' })).toBe(true)
+    expect(hasAvailableChatMode({ tutor: { description: '' } })).toBe(true)
     expect(getComposerSubmitMode(false)).toBe('none')
     expect(getComposerSubmitMode(true)).toBe('enter')
   })
