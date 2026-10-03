@@ -9,7 +9,7 @@ export const PRODUCT_UPDATES: ProductUpdate[] = [
     id: 'v3-4-release',
     publishedAt: '2026-09-03T00:00:00.000Z',
     audiences: ['lecturer', 'student'],
-    surfaces: ['manage', 'pwa', 'docs'],
+    surfaces: ['manage', 'pwa', 'chat', 'docs'],
     maturity: 'preview',
     title: {
       de: 'KlickerUZH v3.4: KI-Funktionen in der Beta',

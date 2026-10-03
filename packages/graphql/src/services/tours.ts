@@ -102,8 +102,10 @@ export async function markTourCompleted(
   // touches only the housekeeping timestamp — but it must not be empty, because
   // Prisma turns an empty update into a read-then-insert that two concurrent
   // calls can race into a unique-constraint error. This mutation is the only
-  // writer of both tables, and it always sets `completedAt` on insert, so every
-  // row it can meet here already carries a completion.
+  // writer of the user table; the participant table is also written by the
+  // chat app's tour service (`apps/chat/src/services/tours.ts`), which
+  // restates these same rules. Every writer sets `completedAt` on insert, so
+  // every row met here already carries a completion.
   return actor.type === 'user'
     ? await ctx.prisma.userTourState.upsert({
         where: { userId_tourId: { userId: actor.id, tourId } },
