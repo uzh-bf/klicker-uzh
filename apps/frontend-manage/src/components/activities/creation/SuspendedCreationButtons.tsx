@@ -6,6 +6,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { ActivityType } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
+import { featureTargetProps } from '../../onboarding/featureTargets'
 import CreationButton from './CreationButton'
 
 interface CreationButtonsProps {
@@ -16,10 +17,13 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
   const t = useTranslations()
 
   return (
+    // The onboarding tour points at the group rather than at one button: the
+    // step is about the four activity types existing, not about picking one.
     <section
       className="pb-4"
       data-cy="activity-creation-choices"
       aria-label={t('manage.questionPool.createActivitiesLabel')}
+      {...featureTargetProps('manage-home-activity-types')}
     >
       <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4">
         <CreationButton

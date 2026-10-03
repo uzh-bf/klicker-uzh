@@ -31,6 +31,7 @@ import ElementEditModal, {
 import RecoveryPrompt from '../components/elements/manipulation/RecoveryPrompt'
 import FilterList from '../components/elements/tags/FilterList'
 import Layout from '../components/Layout'
+import { featureTargetProps } from '../components/onboarding/featureTargets'
 import SuspendedFirstLoginModal from '../components/user/SuspendedFirstLoginModal'
 import useSortingAndFiltering, {
   SORTING_FILTERING_INITIAL,
@@ -365,6 +366,7 @@ function Index() {
             onClick={handleCreateElement}
             data={{ cy: 'create-question' }}
             className={{ root: 'h-9 font-bold' }}
+            {...featureTargetProps('manage-home-create-element')}
           >
             <Button.Label>
               {t('manage.questionPool.createElement')}

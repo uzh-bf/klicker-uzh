@@ -275,11 +275,13 @@ postmerge shard run. The action logs its provisioner checksum so that run can
 be matched to the reviewed source.
 
 The path-filtered `test-unit` workflow runs the chat, grading, markdown, util,
-and product-updates suites with one frozen install. It builds Prisma, types,
-grading, product-updates, and util once, then keeps each suite as a separately
-visible step. The product-updates suite validates the announcement catalog
-against the flag registry, which Turbo builds ahead of it through the package
-dependency graph ([Product Updates](./product-updates.md)). The chat suite runs against
+product-updates, and product-tours suites with one frozen install. It builds
+Prisma, types, grading, product-updates, product-tours, and util once, then
+keeps each suite as a separately visible step. The product-updates suite
+validates the announcement catalog against the flag registry, which Turbo
+builds ahead of it through the package dependency graph
+([Product Updates](./product-updates.md)). The product-tours suite covers the
+pure tour-id registry and HTML-escaping helpers. The chat suite runs against
 a PostgreSQL 15 service; the workflow resets that disposable test database
 before the suite and enables the account-usage integration cases. Later suites
 still run after an earlier test failure, but not after setup or

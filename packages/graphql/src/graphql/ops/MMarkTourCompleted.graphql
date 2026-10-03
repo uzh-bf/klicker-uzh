@@ -1,0 +1,7 @@
+mutation MarkTourCompleted($tourId: String!) {
+  markTourCompleted(tourId: $tourId) {
+    id
+    tourId
+    completedAt
+  }
+}

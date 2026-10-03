@@ -2,7 +2,7 @@ import type { ProductUpdate } from '@klicker-uzh/product-updates'
 import SharedProductUpdateFeedModal from '@klicker-uzh/shared-components/src/productUpdates/ProductUpdateFeedModal'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
-import { resolveSpotlightTarget } from './spotlightTargets'
+import { resolveFeatureTarget } from '../onboarding/featureTargets'
 import { useProductUpdates } from './useProductUpdates'
 
 function ProductUpdateFeedModal({
@@ -24,7 +24,7 @@ function ProductUpdateFeedModal({
       onClose={onClose}
       onShowSpotlight={onShowSpotlight}
       isSpotlightReachable={(update) =>
-        resolveSpotlightTarget(update.spotlightTarget) !== null
+        resolveFeatureTarget(update.spotlightTarget) !== null
       }
       className={{
         overlay: 'my-auto text-black',

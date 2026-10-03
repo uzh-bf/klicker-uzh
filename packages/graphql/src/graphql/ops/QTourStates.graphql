@@ -1,0 +1,7 @@
+query TourStates($tourIds: [String!]!) {
+  tourStates(tourIds: $tourIds) {
+    id
+    tourId
+    completedAt
+  }
+}
