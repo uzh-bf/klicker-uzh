@@ -1,7 +1,7 @@
 # Dev container image for klicker-uzh (monorepo).
 # glibc base (bookworm) for painless Prisma/esbuild/sharp native binaries — the
 # prod images can stay Alpine, the dev image favors fewer surprises. (GOTCHAS #7)
-FROM node:24.16.0-bookworm-slim
+FROM node:24.21.0-bookworm-slim
 
 ENV PNPM_HOME="/pnpm" \
     PATH="/pnpm:$PATH" \

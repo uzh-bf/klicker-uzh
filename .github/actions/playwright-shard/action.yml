@@ -17,6 +17,10 @@ inputs:
   cache-enabled:
     description: Whether restore-only Actions caches are enabled
     required: true
+  workers:
+    description: Playwright worker processes running spec files in parallel
+    required: false
+    default: '1'
 
 runs:
   using: composite
@@ -82,13 +86,23 @@ runs:
       uses: actions/cache/restore@v4
       with:
         path: ${{ env.STORE_PATH }}
-        key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-${{ github.sha }}
+        key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.dependency-fingerprint }}
+        # See playwright-build: an exact-key-only restore leaves any branch
+        # with different manifests (v3-ai does) installing from an empty
+        # store. A content-addressed near-match reuses compatible packages
+        # and is read-only for public readers, so the seed cannot be poisoned.
         restore-keys: |
-          playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-
+          playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-
 
     - name: Install dependencies
       shell: bash
-      run: pnpm install
+      # Runs from the trusted control checkout so a cached-store miss or a
+      # transient native-binary download failure cannot fail the whole wave.
+      run: bash .ci-control/.github/scripts/pnpm-install-retry.sh
+
+    - name: Install Devrouter profile planner
+      shell: bash
+      run: bash .ci-control/.github/scripts/install-devrouter.sh
 
     - name: Download canonical Playwright execution plan
       uses: actions/download-artifact@v4
@@ -135,11 +149,21 @@ runs:
       shell: bash
       run: tar -xf playwright-next-builds.tar
 
+    - name: Provision disposable test database
+      shell: bash
+      env:
+        PROVISIONER_ROOT: ${{ github.action_path }}
+      run: |
+        set -euo pipefail
+        node --test "$PROVISIONER_ROOT/prepare-test-database.test.cjs"
+        sha256sum "$PROVISIONER_ROOT/prepare-test-database.cjs"
+        node "$PROVISIONER_ROOT/prepare-test-database.cjs"
+
     - name: Generate Prisma Client
       shell: bash
       run: pnpm --filter @klicker-uzh/prisma generate
       env:
-        DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
+        DATABASE_URL: postgres://klicker_test:klicker@postgres:5432/klicker_test
 
     - name: Prepare .env files
       shell: bash
@@ -154,13 +178,13 @@ runs:
         cd packages/prisma
         pnpm run prisma:reset:raw -f
       env:
-        DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
+        DATABASE_URL: postgres://klicker_test:klicker@postgres:5432/klicker_test
 
     - name: Seed test participants for Playwright
       shell: bash
       run: pnpm --filter @klicker-uzh/prisma-data seed:test
       env:
-        DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
+        DATABASE_URL: postgres://klicker_test:klicker@postgres:5432/klicker_test
 
     - name: Start services, wait for readiness, and run Playwright tests
       shell: bash
@@ -193,6 +217,7 @@ runs:
         if [ "$profile_file_count" -eq "${#PROFILE_RUNTIME_FILES[@]}" ]; then
           RUNTIME_PLAN="${RUNNER_TEMP}/playwright-runtime-${SHARD_INDEX}.json"
           node util/playwright-profile-runtime.mjs resolve \
+            --devrouter-bin "$KLICKER_DEVROUTER_BIN" \
             --profile "$PROFILE" \
             --output "$RUNTIME_PLAN"
           export PLAYWRIGHT_RUNTIME_PLAN="$RUNTIME_PLAN"
@@ -211,7 +236,7 @@ runs:
           exit 1
         fi
         echo "Running tests for shard ${SHARD_INDEX}/${SHARD_TOTAL} with profile $PROFILE: ${TEST_FILES[*]}"
-        .github/scripts/wait-for-services.sh -- \
+        node .ci-control/.github/scripts/playwright-resource-sampler.cjs "playwright-resources-shard-${SHARD_INDEX}.jsonl" .github/scripts/wait-for-services.sh -- \
           env NODE_ENV=test \
           pnpm --filter @klicker-uzh/playwright exec playwright test \
             --project=chromium \
@@ -219,8 +244,9 @@ runs:
       env:
         SHARD_INDEX: ${{ inputs.shard-index }}
         SHARD_TOTAL: ${{ inputs.shard-total }}
+        PLAYWRIGHT_WORKERS: ${{ inputs.workers }}
         APP_SECRET: abcd
-        DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
+        DATABASE_URL: postgres://klicker_test:klicker@postgres:5432/klicker_test
         NODE_ENV: production
         PLAYWRIGHT_BASE_URL: http://127.0.0.1:3001
         URL_AUTH: http://127.0.0.1:3010
@@ -234,8 +260,8 @@ runs:
         CHECK_INTERVAL: '5'
         POSTGRES_CHECK_HOST: postgres
         POSTGRES_CHECK_PORT: 5432
-        POSTGRES_CHECK_USER: klicker-prod
-        POSTGRES_CHECK_DATABASE: klicker-prod
+        POSTGRES_CHECK_USER: klicker_test
+        POSTGRES_CHECK_DATABASE: klicker_test
         REDIS_HOST: redis_exec
         REDIS_PASS: ''
         REDIS_PORT: 6379
@@ -244,6 +270,12 @@ runs:
         REDIS_ASSESSMENT_PORT: 6379
         REDIS_ASSESSMENT_PASS: ''
         REDIS_ASSESSMENT_HOST: redis_assessment_exec
+        EMAIL_HOST: mailhog
+        EMAIL_PORT: '1025'
+        EMAIL_FROM: noreply@klicker.test
+        # The MailHog image is amd64-only, so only the hosted route runs it;
+        # the one-time login link test skips on the arm64 public-pr route.
+        MAILHOG_URL: ${{ inputs.route == 'hosted' && 'http://mailhog:8025' || '' }}
         HATCHET_CHECK_HOST: hatchet
         HATCHET_HTTP_PORT: 8888
         HATCHET_GRPC_PORT: 7077
@@ -260,6 +292,12 @@ runs:
         APP_ORIGIN_CONTROL: http://127.0.0.1:3003
         APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
         APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
+
+    - name: Report tests that passed only on retry
+      if: always()
+      continue-on-error: true
+      shell: bash
+      run: node .ci-control/.github/scripts/playwright-flaky-summary.cjs playwright/test-results/results.json "$GITHUB_STEP_SUMMARY"
 
     - name: Upload Playwright JUnit results
       if: always()
@@ -308,6 +346,8 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         name: playwright-telemetry-${{ inputs.shard-index }}-of-${{ inputs.shard-total }}
-        path: playwright-telemetry-${{ inputs.shard-index }}.json
+        path: |
+          playwright-telemetry-${{ inputs.shard-index }}.json
+          playwright-resources-shard-${{ inputs.shard-index }}.jsonl
         if-no-files-found: ignore
-        retention-days: 1
+        retention-days: 7

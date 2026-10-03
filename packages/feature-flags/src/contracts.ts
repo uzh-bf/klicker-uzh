@@ -4,7 +4,6 @@
 // letting a `true` here advertise a fallback the evaluation path cannot honor.
 export const FEATURE_FLAG_DEFAULTS = {
   'ai-beta': false,
-  'beta-signup': false,
   'learning-analytics': false,
 } as const satisfies Record<string, false>
 
@@ -45,6 +44,7 @@ export type FeatureFlagAttributes = Record<
   id?: string
   actorType: 'user' | 'participant' | 'anonymous'
   catalyst?: boolean
+  betaEnabled?: boolean
   role?: string
 }
 
@@ -74,6 +74,9 @@ export function sanitizeFeatureFlagAttributes(
   if (typeof source.id === 'string') sanitized.id = source.id
   if (typeof source.catalyst === 'boolean') {
     sanitized.catalyst = source.catalyst
+  }
+  if (typeof source.betaEnabled === 'boolean') {
+    sanitized.betaEnabled = source.betaEnabled
   }
   if (typeof source.role === 'string') sanitized.role = source.role
   return sanitized
