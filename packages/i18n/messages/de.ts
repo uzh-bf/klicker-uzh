@@ -300,6 +300,16 @@ export default {
     },
   },
   shared: {
+    productUpdates: {
+      feedTitle: 'Neu in KlickerUZH',
+      empty: 'Zurzeit gibt es keine neuen Produkt-Updates.',
+      readMore: 'Mehr erfahren',
+      dismiss: 'Ausblenden',
+      maturity: {
+        preview: 'Vorschau',
+        pilot: 'Pilot',
+      },
+    },
     table: {
       download: 'Als CSV herunterladen',
       noResults: 'Keine Ergebnisse.',
@@ -2031,6 +2041,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       reportRecordsRefreshError:
         'Der Berichtsstatus hat sich geändert, aber die sichtbare Liste konnte nicht aktualisiert werden. Schliessen und öffnen Sie den Dialog erneut, um den aktuellen Status zu laden.',
       reportTimeZone: 'Europe/Zurich',
+    },
+    productUpdates: {
+      pageTitle: 'Produkt-Updates',
+      showAll: 'Alle Produkt-Updates ansehen',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
