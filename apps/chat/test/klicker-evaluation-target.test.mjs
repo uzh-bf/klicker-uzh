@@ -26,6 +26,7 @@ import {
   createEvaluationServer,
   extractAssistantMessage,
   KlickerEvaluationTarget,
+  parseAllowedOrigins,
   parseGroundTruthFrontmatter,
   validateLocalOrigin,
 } from '../scripts/klicker-evaluation-target.mjs'
@@ -74,6 +75,44 @@ test('local origin validation rejects non-local target routes', () => {
   assert.throws(() => validateLocalOrigin('https://example.test', 'chat'), {
     code: 'chat_non_local',
   })
+})
+
+test('origin allow-list admits only exact listed https origins', () => {
+  const allowed = parseAllowedOrigins(
+    'https://chat.stg.example.test, https://api.stg.example.test/'
+  )
+  assert.deepEqual(allowed, [
+    'https://chat.stg.example.test',
+    'https://api.stg.example.test',
+  ])
+  assert.equal(
+    validateLocalOrigin('https://chat.stg.example.test', 'chat', allowed),
+    'https://chat.stg.example.test'
+  )
+  for (const lookalike of [
+    'http://chat.stg.example.test',
+    'https://chat.stg.example.test.evil.test',
+    'https://evil-chat.stg.example.test',
+    'https://chat.stg.example.test:8443',
+    'https://chat.stg.example.test@evil.test',
+    'https://other.example.test',
+  ]) {
+    assert.throws(() => validateLocalOrigin(lookalike, 'chat', allowed), {
+      code: 'chat_non_local',
+    })
+  }
+  assert.throws(
+    () => validateLocalOrigin('https://chat.stg.example.test', 'chat'),
+    { code: 'chat_non_local' }
+  )
+  assert.throws(() => parseAllowedOrigins('http://chat.stg.example.test'), {
+    code: 'allowed_origins_invalid',
+  })
+  assert.throws(
+    () => parseAllowedOrigins('https://chat.stg.example.test/app'),
+    { code: 'allowed_origins_invalid' }
+  )
+  assert.deepEqual(parseAllowedOrigins(''), [])
 })
 
 test('persisted assistant content converts to answer and tool names', () => {
