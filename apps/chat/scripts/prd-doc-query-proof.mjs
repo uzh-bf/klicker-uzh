@@ -18,6 +18,9 @@ const EXPECTED_CHATBOT_COUNT = 22
 const EXPECTED_EXCLUDED_CHATBOT_COUNT = 2
 const EXPECTED_CORPUS_PROOF_COUNT = 15
 const EXPECTED_DIRECT_CALL_COUNT = 37
+const EXPECTED_CANARY_DIRECT_CALL_COUNT = 9
+const FULL_PROOF_MODE = 'full'
+const CANARY_PROOF_MODE = 'canary-only'
 const COLLECTION = 'klicker_course_materials_v1'
 const PRD_ENDPOINT =
   'http://mcp-doc-query.prd-doc-query.svc.cluster.local:1417/mcp/klicker'
@@ -55,6 +58,7 @@ const PLATFORM_ENV_NAMES = new Set(['__CF_USER_TEXT_ENCODING'])
 const WORKER_CONTROL_ENV_NAMES = new Set([
   'DOC_QUERY_PROOF_PARENT_PID',
   'DOC_QUERY_PROOF_MANIFEST_PATH',
+  'DOC_QUERY_PROOF_MODE',
 ])
 const WORKER_INTEGRITY_ENV_NAMES = new Set([
   'DOC_QUERY_PROOF_MANIFEST_FINGERPRINT',
@@ -344,11 +348,41 @@ export function validateManifest(
   }
 }
 
-function emptyReceipt() {
+function resolveProofMode(value) {
+  if (value === undefined || value === FULL_PROOF_MODE) return FULL_PROOF_MODE
+  if (value === CANARY_PROOF_MODE) return CANARY_PROOF_MODE
+  throw new ProofFailure('protocol_failed')
+}
+
+function requireProofMode(value) {
+  if (value === FULL_PROOF_MODE || value === CANARY_PROOF_MODE) return value
+  throw new ProofFailure('protocol_failed')
+}
+
+function proofExpectations(mode) {
+  return mode === CANARY_PROOF_MODE
+    ? {
+        kbPassed: 1,
+        representativeChatbotsPassed: 1,
+        positivePassed: 1,
+        isolationPassed: 1,
+        directCallsAttempted: EXPECTED_CANARY_DIRECT_CALL_COUNT,
+      }
+    : {
+        kbPassed: EXPECTED_KB_COUNT,
+        representativeChatbotsPassed: EXPECTED_CORPUS_PROOF_COUNT,
+        positivePassed: EXPECTED_CORPUS_PROOF_COUNT,
+        isolationPassed: EXPECTED_CORPUS_PROOF_COUNT,
+        directCallsAttempted: EXPECTED_DIRECT_CALL_COUNT,
+      }
+}
+
+function emptyReceipt(mode = FULL_PROOF_MODE) {
   return {
     receiptVersion: RECEIPT_VERSION,
     environment: 'prd',
     collection: COLLECTION,
+    mode,
     phase: 'preflight',
     result: 'failed',
     failureClass: 'none',
@@ -378,9 +412,10 @@ function fixedFailureReceipt(
   failureClass,
   caseId = null,
   rejectionClass = null,
-  diagnosticClass = 'none'
+  diagnosticClass = 'none',
+  mode = FULL_PROOF_MODE
 ) {
-  const receipt = emptyReceipt()
+  const receipt = emptyReceipt(mode)
   receipt.failureClass = FAILURE_CLASSES.has(failureClass)
     ? failureClass
     : 'protocol_failed'
@@ -394,8 +429,11 @@ function fixedFailureReceipt(
   return receipt
 }
 
-function workerProtocolFailureReceipt(failureClass = 'protocol_failed') {
-  return fixedFailureReceipt(failureClass, null, null, 'worker_protocol')
+function workerProtocolFailureReceipt(
+  failureClass = 'protocol_failed',
+  mode = FULL_PROOF_MODE
+) {
+  return fixedFailureReceipt(failureClass, null, null, 'worker_protocol', mode)
 }
 
 function extractDocuments(result) {
@@ -743,11 +781,20 @@ export async function runProofMatrix({
   invoke = invokeMcp,
   createSigner = createScopeSigner,
 }) {
-  const receipt = emptyReceipt()
+  let proofMode
+  try {
+    proofMode = resolveProofMode(environment.DOC_QUERY_PROOF_MODE)
+  } catch {
+    return fixedFailureReceipt('protocol_failed')
+  }
+  const receipt = emptyReceipt(proofMode)
+  const expectations = proofExpectations(proofMode)
   try {
     const invokeWithCap = async (request) => {
       receipt.counts.directCallsAttempted += 1
-      if (receipt.counts.directCallsAttempted > EXPECTED_DIRECT_CALL_COUNT) {
+      if (
+        receipt.counts.directCallsAttempted > expectations.directCallsAttempted
+      ) {
         throw new ProofFailure('protocol_failed')
       }
       return withDiagnostic(() => invoke(request), 'mcp_invocation')
@@ -759,7 +806,15 @@ export async function runProofMatrix({
     const signer = (request) =>
       withDiagnostic(() => rawSigner(request), 'scope_signing')
     await runCanaryProof(invokeWithCap, signer, environment, manifest, receipt)
-    await runSerialProof(invokeWithCap, signer, environment, manifest, receipt)
+    if (proofMode === FULL_PROOF_MODE) {
+      await runSerialProof(
+        invokeWithCap,
+        signer,
+        environment,
+        manifest,
+        receipt
+      )
+    }
 
     receipt.phase = 'complete'
     receipt.result = 'passed'
@@ -800,6 +855,9 @@ function requiredWorkerEnvironment(source) {
   environment.DOC_QUERY_PROOF_MANIFEST_FINGERPRINT = requireFingerprint(
     source.DOC_QUERY_PROOF_MANIFEST_FINGERPRINT
   )
+  environment.DOC_QUERY_PROOF_MODE = requireProofMode(
+    source.DOC_QUERY_PROOF_MODE
+  )
   return environment
 }
 
@@ -812,8 +870,12 @@ export function validateWorkerEnvironment(source) {
 }
 
 export function minimalChildEnvironment(source, parentPid) {
+  const proofMode = resolveProofMode(source.DOC_QUERY_PROOF_MODE)
   return {
-    ...requiredWorkerEnvironment(source),
+    ...requiredWorkerEnvironment({
+      ...source,
+      DOC_QUERY_PROOF_MODE: proofMode,
+    }),
     DOC_QUERY_PROOF_PARENT_PID: String(parentPid),
   }
 }
@@ -833,13 +895,15 @@ async function readManifest(path, trustedFingerprint) {
   }
 }
 
-function sanitizeReceipt(value) {
+function sanitizeReceipt(value, expectedMode) {
+  const expectations = proofExpectations(expectedMode)
   if (
     !value ||
     typeof value !== 'object' ||
     value.receiptVersion !== RECEIPT_VERSION ||
     value.environment !== 'prd' ||
     value.collection !== COLLECTION ||
+    value.mode !== expectedMode ||
     !['preflight', 'canary', 'rejections', 'matrix', 'complete'].includes(
       value.phase
     ) ||
@@ -847,13 +911,13 @@ function sanitizeReceipt(value) {
     !FAILURE_CLASSES.has(value.failureClass) ||
     !DIAGNOSTIC_CLASSES.has(value.diagnosticClass)
   ) {
-    return workerProtocolFailureReceipt()
+    return workerProtocolFailureReceipt('protocol_failed', expectedMode)
   }
   if (!hasExactZeroPreservation(value.preservation)) {
-    return workerProtocolFailureReceipt()
+    return workerProtocolFailureReceipt('protocol_failed', expectedMode)
   }
   if (value.result === 'failed' && value.failureClass === 'none') {
-    return workerProtocolFailureReceipt()
+    return workerProtocolFailureReceipt('protocol_failed', expectedMode)
   }
   if (
     value.result === 'passed' &&
@@ -863,22 +927,23 @@ function sanitizeReceipt(value) {
       value.failedCaseId !== null ||
       value.failedRejectionClass !== null ||
       value.counts?.kbExpected !== EXPECTED_KB_COUNT ||
-      value.counts?.kbPassed !== EXPECTED_KB_COUNT ||
+      value.counts?.kbPassed !== expectations.kbPassed ||
       value.counts?.chatbotsInScope !== EXPECTED_CHATBOT_COUNT ||
       value.counts?.representativeChatbotsExpected !==
         EXPECTED_CORPUS_PROOF_COUNT ||
       value.counts?.representativeChatbotsPassed !==
-        EXPECTED_CORPUS_PROOF_COUNT ||
+        expectations.representativeChatbotsPassed ||
       value.counts?.excludedExpected !== EXPECTED_EXCLUDED_CHATBOT_COUNT ||
-      value.counts?.positivePassed !== EXPECTED_CORPUS_PROOF_COUNT ||
-      value.counts?.isolationPassed !== EXPECTED_CORPUS_PROOF_COUNT ||
+      value.counts?.positivePassed !== expectations.positivePassed ||
+      value.counts?.isolationPassed !== expectations.isolationPassed ||
       value.counts?.rejectionsPassed !== REJECTION_CLASSES.length ||
-      value.counts?.directCallsAttempted !== EXPECTED_DIRECT_CALL_COUNT ||
+      value.counts?.directCallsAttempted !==
+        expectations.directCallsAttempted ||
       REJECTION_CLASSES.some((name) => value.rejections?.[name] !== 'passed'))
   ) {
-    return workerProtocolFailureReceipt()
+    return workerProtocolFailureReceipt('protocol_failed', expectedMode)
   }
-  const receipt = emptyReceipt()
+  const receipt = emptyReceipt(expectedMode)
   receipt.phase = value.phase
   receipt.result = value.result
   receipt.failureClass = value.failureClass
@@ -980,6 +1045,17 @@ export async function superviseProof({
   spawnForProof = spawn,
 }) {
   const startedAt = Date.now()
+  let proofMode
+  try {
+    proofMode = resolveProofMode(sourceEnvironment.DOC_QUERY_PROOF_MODE)
+  } catch {
+    return {
+      ...fixedFailureReceipt('protocol_failed'),
+      exitCode: null,
+      signal: null,
+      elapsedMs: Math.min(Date.now() - startedAt, DEFAULT_DEADLINE_MS + 5_000),
+    }
+  }
   let lock
   try {
     lock = await acquireLockForProof(lockPath)
@@ -987,7 +1063,7 @@ export async function superviseProof({
     const failureClass =
       error instanceof ProofFailure ? error.failureClass : 'child_failed'
     return {
-      ...fixedFailureReceipt(failureClass),
+      ...fixedFailureReceipt(failureClass, null, null, 'none', proofMode),
       exitCode: null,
       signal: null,
       elapsedMs: Math.min(Date.now() - startedAt, DEFAULT_DEADLINE_MS + 5_000),
@@ -995,7 +1071,13 @@ export async function superviseProof({
   }
   if (!lock) {
     return {
-      ...fixedFailureReceipt('duplicate_refused'),
+      ...fixedFailureReceipt(
+        'duplicate_refused',
+        null,
+        null,
+        'none',
+        proofMode
+      ),
       exitCode: null,
       signal: null,
       elapsedMs: 0,
@@ -1021,7 +1103,7 @@ export async function superviseProof({
       }
     )
     child.on('message', (candidate) => {
-      if (message === null) message = sanitizeReceipt(candidate)
+      if (message === null) message = sanitizeReceipt(candidate, proofMode)
     })
 
     const terminateChildGroup = () => {
@@ -1063,13 +1145,29 @@ export async function superviseProof({
     })
     clearTimeout(deadlineTimer)
 
-    let receipt = message ?? workerProtocolFailureReceipt()
-    if (timedOut) receipt = fixedFailureReceipt('timeout')
-    else if (interrupted) receipt = fixedFailureReceipt('interrupted')
-    else if (close.signal) receipt = fixedFailureReceipt('child_signaled')
-    else if (close.code === 0) {
+    let receipt =
+      message ?? workerProtocolFailureReceipt('protocol_failed', proofMode)
+    if (timedOut) {
+      receipt = fixedFailureReceipt('timeout', null, null, 'none', proofMode)
+    } else if (interrupted) {
+      receipt = fixedFailureReceipt(
+        'interrupted',
+        null,
+        null,
+        'none',
+        proofMode
+      )
+    } else if (close.signal) {
+      receipt = fixedFailureReceipt(
+        'child_signaled',
+        null,
+        null,
+        'none',
+        proofMode
+      )
+    } else if (close.code === 0) {
       if (message?.result !== 'passed') {
-        receipt = workerProtocolFailureReceipt('child_failed')
+        receipt = workerProtocolFailureReceipt('child_failed', proofMode)
       }
     } else if (
       !Number.isInteger(close.code) ||
@@ -1077,7 +1175,7 @@ export async function superviseProof({
       message === null ||
       message.result === 'passed'
     ) {
-      receipt = workerProtocolFailureReceipt('child_failed')
+      receipt = workerProtocolFailureReceipt('child_failed', proofMode)
     }
 
     return {
@@ -1096,7 +1194,7 @@ export async function superviseProof({
     const failureClass =
       error instanceof ProofFailure ? error.failureClass : 'child_failed'
     return {
-      ...fixedFailureReceipt(failureClass),
+      ...fixedFailureReceipt(failureClass, null, null, 'none', proofMode),
       exitCode: null,
       signal: null,
       elapsedMs: Math.min(Date.now() - startedAt, DEFAULT_DEADLINE_MS + 5_000),
@@ -1131,7 +1229,9 @@ async function workerMain() {
     process.once(signal, () => process.exit(1))
   }
 
+  let proofMode = FULL_PROOF_MODE
   try {
+    proofMode = requireProofMode(process.env.DOC_QUERY_PROOF_MODE)
     validateWorkerEnvironment(process.env)
     const environment = requiredWorkerEnvironment(process.env)
     const manifest = await readManifest(
@@ -1146,9 +1246,11 @@ async function workerMain() {
         ? fixedFailureReceipt(
             error.failureClass,
             error.caseId,
-            error.rejectionClass
+            error.rejectionClass,
+            'none',
+            proofMode
           )
-        : fixedFailureReceipt('protocol_failed')
+        : fixedFailureReceipt('protocol_failed', null, null, 'none', proofMode)
     sendWorkerReceipt(receipt, 1)
   }
 }

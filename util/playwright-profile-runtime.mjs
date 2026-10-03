@@ -4,13 +4,10 @@ import { spawn, spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { resolveDevrouter } from './devrouter-cli.mjs'
 
 const SCHEMA_VERSION = 1
 const REPOSITORY_ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)))
-const DEFAULT_DEVROUTER_BIN = resolve(
-  REPOSITORY_ROOT,
-  'node_modules/.bin/devrouter'
-)
 const PROFILE_PLAN_CONTRACT = 'playwright/runtime-contract.yml'
 const PLAYWRIGHT_FULL_PROFILE = 'playwright'
 const TRUSTED_FULL_PROFILE_COMPONENTS = new Set([
@@ -163,7 +160,7 @@ export function resolveRuntimePlan({
   profile,
   output,
   repo = REPOSITORY_ROOT,
-  devrouterBin = DEFAULT_DEVROUTER_BIN,
+  devrouterBin,
   contract = PROFILE_PLAN_CONTRACT,
 }) {
   requireString(profile, 'profile selection')
@@ -180,7 +177,7 @@ export function resolveRuntimePlan({
       : profile
 
   const result = spawnSync(
-    devrouterBin,
+    resolveDevrouter({ repo, executable: devrouterBin }),
     [
       'profile',
       'plan',
@@ -303,7 +300,7 @@ function main(args = process.argv.slice(2)) {
       profile: option(options, '--profile'),
       output: option(options, '--output'),
       repo: option(options, '--repo', REPOSITORY_ROOT),
-      devrouterBin: option(options, '--devrouter-bin', DEFAULT_DEVROUTER_BIN),
+      devrouterBin: option(options, '--devrouter-bin'),
       contract: option(options, '--contract', PROFILE_PLAN_CONTRACT),
     })
     console.log(

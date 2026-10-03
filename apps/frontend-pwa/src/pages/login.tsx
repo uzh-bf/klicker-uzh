@@ -89,14 +89,13 @@ function Login({ redirectPath }: Readonly<LoginProps>) {
           message: t('shared.generic.studentLoginError'),
           options: { duration: 6000 },
         })
-        setSubmitting(false)
         resetForm()
       } else {
         await fetchSelf()
 
         // redirect to the specified redirect path (default: question pool)
         if (redirectPath.startsWith('/')) {
-          void router.push(redirectPath)
+          await router.push(redirectPath)
         } else {
           window.location.assign(redirectPath)
         }
@@ -108,8 +107,9 @@ function Login({ redirectPath }: Readonly<LoginProps>) {
         message: t('shared.generic.systemError'),
         options: { duration: 6000 },
       })
-      setSubmitting(false)
       resetForm()
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -157,7 +157,7 @@ function Login({ redirectPath }: Readonly<LoginProps>) {
           if (magicLinkLogin) {
             sendMagicLinkEmail(values, { setSubmitting })
           } else {
-            loginWithPassword(values, { setSubmitting, resetForm })
+            return loginWithPassword(values, { setSubmitting, resetForm })
           }
         }}
       >

@@ -646,6 +646,27 @@ test('resolves a four-layer native stack and exact ancestry', async () => {
   assert.match(membership.orderDigest, /^[0-9a-f]{64}$/)
 })
 
+test('resolves a native stack whose root targets a consolidation branch', async () => {
+  const { github, pulls } = stackFixture()
+  pulls[11].base.ref = 'v3-ai'
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  assert.equal(membership.valid, true)
+  assert.deepEqual(membership.numbers, [11, 12, 13, 14])
+
+  pulls[11].base.ref = 'feature/v3-ai'
+  const rejected = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  assert.equal(rejected.valid, false)
+  assert.match(rejected.reason, /stack root does not target/)
+})
+
 test('accepts a verified two-layer stack as a distinct topology', async () => {
   const { github } = stackFixture()
   github.request = async () => ({
@@ -1503,6 +1524,123 @@ test('preserves comment-free clean evidence across unrelated default-base advanc
     false
   )
   assert.equal(state.createdStatuses.length, 0)
+})
+
+test('preserves stack evidence across base advancement of a consolidation root', async () => {
+  const { files, github, pulls, responses, state } = stackFixture()
+  pulls[11].base.ref = 'v3-ai'
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  assert.equal(membership.valid, true)
+  const manifestBundle = await buildStackSnapshot({
+    github,
+    context: context(),
+    membership,
+  })
+  const plan = await buildStackReviewPlan({
+    github,
+    context: context(),
+    membership,
+  })
+  state.reviews = [
+    {
+      body: renderStackReview({
+        codeResult: completeOCRResult([codeFinding()]),
+        headSha: pulls[14].head.sha,
+        manifestBundle,
+        topologyResult: topologyResult(),
+        policyDigest: plan.policyDigest,
+        workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
+        workflowHeadSha: 'a'.repeat(40),
+        trustedPolicySha: 'a'.repeat(40),
+        workflowSha: 'a'.repeat(40),
+        workflowRunId: 700,
+      }),
+      commit_id: pulls[14].head.sha,
+      state: 'COMMENTED',
+      submitted_at: '2026-08-25T00:00:00Z',
+      user: { login: 'github-actions[bot]' },
+    },
+  ]
+  state.comments = []
+  state.workflowRun = {
+    id: 700,
+    path: '.github/workflows/check-ocr-final-review.yml',
+    event: 'issue_comment',
+    head_branch: 'v3',
+    head_sha: 'a'.repeat(40),
+    conclusion: 'success',
+    repository: { full_name: repository },
+  }
+  state.statuses = [
+    {
+      context: 'final-ai-stack-review',
+      state: 'success',
+      target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
+    },
+  ]
+  github.rest.actions = {
+    getWorkflowRun: async () => ({ data: state.workflowRun }),
+  }
+  github.paginate = async (endpoint, params) =>
+    endpoint === github.rest.repos.listCommitStatusesForRef
+      ? (await endpoint(params)).data
+      : endpoint === github.rest.pulls.listReviews
+        ? state.reviews
+        : state.comments
+
+  const advancedBase = '9'.repeat(40)
+  pulls[11].base.sha = advancedBase
+  responses.set('b'.repeat(40), advancedBase)
+  files.set('b'.repeat(40), [
+    { filename: 'docs/base.md', additions: 1, deletions: 0 },
+  ])
+  files.set(advancedBase, [])
+  const eventContext = context(11)
+  eventContext.eventName = 'pull_request_target'
+  eventContext.payload.pull_request = pulls[11]
+
+  assert.equal(
+    await initializeStackReview({ github, context: eventContext }),
+    false
+  )
+  assert.equal(state.createdStatuses.length, 0)
+
+  const reviewContext = context(14)
+  reviewContext.payload.comment.user = { login: 'reviewer' }
+  const notices = []
+  assert.equal(
+    await authorizeStackReview({
+      github,
+      context: reviewContext,
+      core: {
+        notice: (message) => notices.push(message),
+        setOutput: () => {},
+      },
+    }),
+    false
+  )
+  assert.equal(
+    notices.at(-1),
+    'Stack review already succeeded for the current top head'
+  )
+
+  pulls[11].base.ref = 'feature/v3-ai'
+  assert.equal(
+    await authorizeStackReview({
+      github,
+      context: reviewContext,
+      core: {
+        notice: (message) => notices.push(message),
+        setOutput: () => {},
+      },
+    }),
+    false
+  )
+  assert.match(notices.at(-1), /stack root does not target/)
 })
 
 test('preserves current stack evidence across unrelated default-base advancement', async () => {
