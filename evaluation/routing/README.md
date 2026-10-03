@@ -1,14 +1,15 @@
 # Auto routing evaluation
 
 Repeatable evidence for choosing the Chat Auto router's tier map. It answers
-four questions with separate scripts that share one price table:
+five questions with separate scripts that share one price table:
 
-| Question                                                              | Script       | Calls                                 |
-| --------------------------------------------------------------------- | ------------ | ------------------------------------- |
-| How does real Auto traffic split across tiers, and what does it cost? | `observe.py` | LiteLLM spend logs (read-only)        |
-| How does a router config classify the evaluation questions?           | `replay.py`  | classifier, embeddings, short answers |
-| How fast, good and expensive is each model and effort?                | `bench.py`   | full answers plus one judge call each |
-| What do these imply for candidate tier maps?                          | `analyze.py` | none                                  |
+| Question                                                              | Script        | Calls                                 |
+| --------------------------------------------------------------------- | ------------- | ------------------------------------- |
+| How does real Auto traffic split across tiers, and what does it cost? | `observe.py`  | LiteLLM spend logs (read-only)        |
+| How does a router config classify the evaluation questions?           | `replay.py`   | classifier, embeddings, short answers |
+| How fast, good and expensive is each model and effort?                | `bench.py`    | full answers plus one judge call each |
+| Which of two answer sets do blind judges prefer?                      | `pairwise.py` | two judge calls per answer pair       |
+| What do these imply for candidate tier maps?                          | `analyze.py`  | none                                  |
 
 The DeepEval comparison of deployed routers uses the existing `eval:klicker`
 launcher; the [routing skill](../../.agents/skills/klicker-model-routing-eval/SKILL.md)
@@ -35,6 +36,8 @@ Each script reads one key from its environment. Inject it through
   same upstream boundary as the local LiteLLM config (OpenRouter).
 - `bench.py`: the variable named by `--api-key-env` (default
   `OPENROUTER_API_KEY`).
+- `pairwise.py`: the variable named by `--api-key-env` (default
+  `OPENROUTER_API_KEY`), like `bench.py`.
 - `observe.py`: `LITELLM_OBSERVE_API_KEY`, a LiteLLM key allowed to read the
   Klicker team's spend logs. Today this is `LITELLM_MASTER_KEY` from the
   `ai-generic-prd` operator profile, used only for GET requests. Look up the
@@ -60,6 +63,17 @@ uv run --frozen python src/routing_eval/replay.py --router auto-router-v2 --out 
 uv run --frozen python src/routing_eval/bench.py \
   --arms gpt-6-luna:high,gpt-6-luna:xhigh,gpt-6.1-sol:low,gpt-6.1-sol:medium,gpt-6.1-sol:high \
   --out _local/bench.jsonl
+
+# Blind pairwise comparison of two answer files (JSON lines with q, text and
+# optional rep; one file per system).
+# --gt-dir holds the questions and their reference facts. Each pair is judged
+# in both orders with random labels; the report gives the per-question
+# preference, position consistency, the win rate of A (ties count half) and a
+# bootstrap 95% CI over questions. --limit caps questions, --max-calls caps
+# judge calls (two per pair). The default judge is non-OpenAI, as in bench.py.
+uv run --frozen python src/routing_eval/pairwise.py \
+  --answers-a _local/answers-v1.jsonl --answers-b _local/answers-v2.jsonl \
+  --gt-dir <questions-dir> --limit 30 --out _local/pairwise.json
 
 # One report.
 uv run --frozen python src/routing_eval/analyze.py \
