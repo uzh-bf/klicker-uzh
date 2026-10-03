@@ -10,6 +10,7 @@ type PromptContext = {
   'input-context': Record<string, never>
   'language-style': Record<string, never>
   'reply-language-reminder': Record<string, never>
+  'numeric-precision': Record<string, never>
   'output-format': Record<string, never>
   'mode-tutor': Record<string, never>
   'mode-explainer': Record<string, never>
