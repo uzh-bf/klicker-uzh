@@ -60,6 +60,22 @@ describe('streaming math scanner', () => {
     })
   })
 
+  test('hides partial chemistry until its existing math delimiter completes', () => {
+    const partial = String.raw`before $$\ce{H2O}`
+    const complete = `${partial}$$ after`
+
+    expect(hideIncompleteMath(partial)).toBe('before ')
+    expect(inspectStreamingMath(partial)).toEqual({
+      hasMathOpener: true,
+      incompleteMathStart: 'before '.length,
+    })
+    expect(hideIncompleteMath(complete)).toBe(complete)
+    expect(inspectStreamingMath(complete)).toEqual({
+      hasMathOpener: true,
+      incompleteMathStart: null,
+    })
+  })
+
   test.each([
     ['escaped dollar', String.raw`Use \$5 without math`],
     ['currency', 'The price is $5 today'],
