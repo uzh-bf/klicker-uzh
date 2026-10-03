@@ -1,10 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  useFeatureFlag,
-  useRefreshFeatureFlags,
-} from '@klicker-uzh/feature-flags/react'
-import {
   BetaEnrollmentDocument,
+  ManageFeaturePreferencesDocument,
   SetBetaEnrollmentDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -27,13 +24,14 @@ function BetaEnrollmentSettings({
   dataCy?: string
 }) {
   const t = useTranslations()
-  const aiBetaEnabled = useFeatureFlag('ai-beta')
-  const refreshFeatureFlags = useRefreshFeatureFlags()
   const { data, loading, refetch } = useQuery(BetaEnrollmentDocument, {
     fetchPolicy: 'cache-and-network',
     notifyOnNetworkStatusChange: true,
   })
   const [setBetaEnrollment] = useMutation(SetBetaEnrollmentDocument)
+  const { refetch: refetchPreferences } = useQuery(
+    ManageFeaturePreferencesDocument
+  )
   const [confirmedMembership, setConfirmedMembership] = useState<
     boolean | null | undefined
   >(undefined)
@@ -49,33 +47,19 @@ function BetaEnrollmentSettings({
   }
 
   const capability = data?.betaEnrollment
-  if (!capability?.mayChange) {
-    return null
-  }
-
   const membership =
     confirmedMembership === undefined
-      ? capability.membership
+      ? capability?.membership
       : confirmedMembership
   const membershipKnown = typeof membership === 'boolean'
-  const showUnavailable = !membershipKnown
-  const hideClosedNonMember =
-    membership === false && !capability.signupAvailable && status === 'idle'
-
-  if (hideClosedNonMember) {
-    return null
-  }
-
   const canToggle =
-    membershipKnown && (membership === true || capability.signupAvailable)
-  const saving = status === 'pending'
-  const accessConverged =
-    status === 'saved' &&
+    capability?.mayChange === true &&
     membershipKnown &&
-    aiBetaEnabled === (membership === true)
+    (membership === true || capability.signupAvailable)
+  const saving = status === 'pending'
 
   async function handleEnrollmentChange(enabled: boolean) {
-    if (saving || isRefreshing) return
+    if (!canToggle || saving || isRefreshing) return
 
     setStatus('pending')
 
@@ -93,16 +77,7 @@ function BetaEnrollmentSettings({
       setIsRefreshing(true)
 
       try {
-        try {
-          await refetch()
-        } catch {
-          // The mutation response remains the last confirmed membership.
-        }
-
-        const refreshed = await refreshFeatureFlags()
-        if (!refreshed) {
-          setStatus('refresh-failed')
-        }
+        await Promise.all([refetch(), refetchPreferences()])
       } catch {
         setStatus('refresh-failed')
       } finally {
@@ -118,52 +93,38 @@ function BetaEnrollmentSettings({
       <Setting title={t('manage.settings.betaFeaturesTitle')}>
         <div className="mb-5 flex flex-col gap-3">
           <p>{t('manage.settings.betaFeaturesDescription')}</p>
-          <p className="text-sm text-gray-600">
-            {t('manage.settings.betaFeaturesDataUse')}
-          </p>
 
-          {showUnavailable ? (
+          {!canToggle ? (
             <div data-cy="beta-enrollment-unavailable" role="status">
               <UserNotification type="info">
-                {t('manage.settings.betaFeaturesUnavailable')}
+                {t(
+                  !capability || !membershipKnown
+                    ? 'manage.settings.betaFeaturesUnavailable'
+                    : 'manage.settings.betaFeaturesEnrollmentRestricted'
+                )}
               </UserNotification>
             </div>
           ) : (
-            canToggle && (
-              <SimpleSetting
-                label={t('manage.settings.betaFeaturesEnrollment')}
-                tooltip={t('manage.settings.betaFeaturesEnrollmentTooltip')}
-              >
-                <Switch
-                  checked={membership === true}
-                  disabled={saving || isRefreshing}
-                  onCheckedChange={(enabled) =>
-                    void handleEnrollmentChange(enabled)
-                  }
-                  aria-label={t('manage.settings.betaFeaturesEnrollment')}
-                  data={{ cy: 'beta-enrollment-switch' }}
-                />
-              </SimpleSetting>
-            )
+            <SimpleSetting
+              label={t('manage.settings.betaFeaturesEnrollment')}
+              tooltip={t('manage.settings.betaFeaturesEnrollmentTooltip')}
+            >
+              <Switch
+                checked={membership === true}
+                disabled={saving || isRefreshing}
+                onCheckedChange={(enabled) =>
+                  void handleEnrollmentChange(enabled)
+                }
+                aria-label={t('manage.settings.betaFeaturesEnrollment')}
+                data={{ cy: 'beta-enrollment-switch' }}
+              />
+            </SimpleSetting>
           )}
 
           {status === 'saved' && !isRefreshing ? (
-            <div
-              data-cy={
-                accessConverged
-                  ? 'beta-enrollment-converged'
-                  : 'beta-enrollment-saved'
-              }
-              role="status"
-            >
+            <div data-cy="beta-enrollment-saved" role="status">
               <UserNotification type="success">
-                {t(
-                  accessConverged
-                    ? membership
-                      ? 'manage.settings.betaFeaturesConvergedOn'
-                      : 'manage.settings.betaFeaturesConvergedOff'
-                    : 'manage.settings.betaFeaturesSaved'
-                )}
+                {t('manage.settings.betaFeaturesSaved')}
               </UserNotification>
             </div>
           ) : null}

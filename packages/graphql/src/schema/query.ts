@@ -15,6 +15,7 @@ import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
+import { getParticipantAccountDataUse } from '../services/participantAccountDataUse.js'
 import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
@@ -87,6 +88,7 @@ import {
 import { MicroLearning } from './microLearning.js'
 import {
   Participant,
+  ParticipantAccountDataUse,
   ParticipantGroup,
   ParticipantLearningData,
   ParticipantWithAchievements,
@@ -109,6 +111,7 @@ import {
   ChatAccountUsageOverviewRef,
   Chatbot,
   ChatbotPublic,
+  ChatbotPublicationReview,
   ChatModelCapability,
 } from './resource.js'
 import {
@@ -159,6 +162,12 @@ export const Query = builder.queryType({
         type: Participant,
         args: { liveQuizId: t.arg.string({ required: false }) },
         resolve: async (_, args, ctx) => ParticipantService.getSelf(args, ctx),
+      }),
+
+      selfAccountDataUse: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: ParticipantAccountDataUse,
+        resolve: (_, _args, ctx) => getParticipantAccountDataUse(ctx),
       }),
 
       selfWithAchievements: t.withAuth(asParticipant).field({
@@ -1487,6 +1496,12 @@ export const Query = builder.queryType({
         resolve: async (_, __, ctx) => {
           return await ResourcesService.getAnswerCollectionsInfo(ctx)
         },
+      }),
+
+      getPendingChatbotPublications: t.withAuth(asAdmin).field({
+        type: [ChatbotPublicationReview],
+        resolve: (_, _args, ctx) =>
+          ChatbotsService.getPendingChatbotPublications(ctx),
       }),
 
       getChatbotsInfo: t.withAuth(asUser).field({

@@ -94,26 +94,16 @@ function choosePlaywrightRoute(input) {
     validDraft
   if (forceHosted) reasons.push('force-hosted-canary')
 
-  if (prDraft === 'true' && publicEligible && smartDraft) {
-    reasons.push('smart-draft-enabled')
-    return {
-      schemaVersion: ROUTE_SCHEMA_VERSION,
-      route: publicRollout && !forceHosted ? 'public-pr' : 'hosted',
-      selectorPrState: 'draft',
-      reasonCodes: [
-        ...new Set([
-          ...reasons,
-          publicRollout && !forceHosted
-            ? 'public-pr-rollout'
-            : 'hosted-fallback',
-        ]),
-      ].sort(),
-    }
+  // A draft runs the change-based plan only when an operator enables the
+  // smart-draft control and the pull request passes the eligibility rules the
+  // public route applies. Drafts stay on the hosted route, so they never take
+  // public runner slots from ready pull requests. The force-hosted canary and
+  // every unset, malformed or unmatched control keep the ready-state full plan.
+  if (prDraft === 'true') {
+    reasons.push(smartDraft ? 'smart-draft-enabled' : 'smart-draft-disabled')
   }
-
-  if (prDraft === 'true' && !smartDraft) {
-    reasons.push('smart-draft-disabled')
-  }
+  const smartDraftApplies =
+    prDraft === 'true' && publicEligible && smartDraft && !forceHosted
   const publicReady =
     prDraft === 'false' && publicEligible && publicRollout && !forceHosted
   if (publicReady) reasons.push('public-pr-rollout')
@@ -122,7 +112,7 @@ function choosePlaywrightRoute(input) {
   return {
     schemaVersion: ROUTE_SCHEMA_VERSION,
     route: publicReady ? 'public-pr' : 'hosted',
-    selectorPrState: 'ready',
+    selectorPrState: smartDraftApplies ? 'draft' : 'ready',
     reasonCodes: [...new Set(reasons)].sort(),
   }
 }

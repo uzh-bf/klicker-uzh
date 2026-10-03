@@ -1,23 +1,29 @@
 'use server'
 
+import { createHash, randomUUID } from 'node:crypto'
 import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
 import { safeDecrypt } from '@klicker-uzh/util'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import { createHash, randomUUID } from 'crypto'
 import {
   MAX_TOOL_NAME_LENGTH,
   TOOL_NAME_SUFFIX_LENGTH,
 } from '@/src/lib/config/toolNames'
-import { signDocQueryScopeToken } from '@/src/lib/server/docQueryScopeToken'
+import {
+  createDocQueryScopedFetch,
+  type DocQueryScopedFetch,
+  signDocQueryScopeToken,
+} from '@/src/lib/server/docQueryScopeToken'
 import {
   parseMCPRuntimePolicy,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
 import {
+  assertDocQueryRequestScope,
   assertDocQueryTransportSecurity,
   DOC_QUERY_MCP_SERVER_NAME,
   DOC_QUERY_SCOPE_TOKEN_HEADER,
-  normalizeDocQueryKbId,
+  normalizeDocQueryKbIds,
+  resolveDocQueryScopedRoute,
 } from './mcpScope'
 
 // Type definitions for MCP server configuration
@@ -46,7 +52,7 @@ export interface MCPServerWithConfig {
 
 export interface MCPRequestOptions {
   requestTimeoutMs?: number
-  kbId?: string
+  kbIds?: readonly string[]
   sessionId?: string
 }
 
@@ -122,7 +128,7 @@ async function applyDocQueryAuthHeaders(
   authType: string
 ): Promise<boolean> {
   if (server.name !== DOC_QUERY_MCP_SERVER_NAME) return false
-  if (!(options.kbId && options.sessionId)) {
+  if (!options.kbIds || !options.sessionId) {
     throw new Error('Scoped knowledge retrieval is not available')
   }
   if (authType !== 'bearer' || !server.authSecret) {
@@ -137,10 +143,10 @@ async function applyDocQueryAuthHeaders(
 
   assertDocQueryTransportSecurity(server.url)
 
-  const kbId = normalizeDocQueryKbId(options.kbId)
+  const kbIds = normalizeDocQueryKbIds(options.kbIds)
   headers.Authorization = `Bearer ${safeDecrypt(server.authSecret)}`
   const token = await signDocQueryScopeToken({
-    kbId,
+    kbIds,
     chatbotId,
     sessionId: options.sessionId,
     jti: randomUUID(),
@@ -149,17 +155,71 @@ async function applyDocQueryAuthHeaders(
   return true
 }
 
+interface MCPTransportRequest {
+  url: URL
+  headers: Record<string, string>
+  fetch?: DocQueryScopedFetch
+}
+
+/**
+ * Binds the modern KB server to the deployment-controlled scoped route. The
+ * stored bearer and its auth type are ignored here: destination and credential
+ * both come from configuration, so neither a database URL edit nor an expired
+ * stored credential can redirect or weaken the request.
+ */
+function createScopedDocQueryTransport(
+  server: MCPServerConfig,
+  chatbotId: string,
+  options: MCPRequestOptions
+): { url: URL; fetch: DocQueryScopedFetch } | undefined {
+  const target = resolveDocQueryScopedRoute(server)
+  if (!target) return undefined
+
+  if (!options.kbIds || !options.sessionId) {
+    throw new Error('Scoped knowledge retrieval is not available')
+  }
+  if (
+    typeof options.sessionId !== 'string' ||
+    options.sessionId.trim().length === 0
+  ) {
+    throw new Error('Scoped knowledge retrieval is not available')
+  }
+
+  const kbIds = normalizeDocQueryKbIds(options.kbIds)
+
+  return {
+    url: target,
+    fetch: createDocQueryScopedFetch({
+      target,
+      kbIds,
+      chatbotId,
+      sessionId: options.sessionId,
+    }),
+  }
+}
+
 /**
  * Creates authentication headers based on server auth type
  */
-async function createAuthHeaders(
+async function createMCPTransportRequest(
   server: MCPServerConfig,
   chatbotId: string,
   options: MCPRequestOptions = {}
-): Promise<Record<string, string>> {
+): Promise<MCPTransportRequest> {
   const baseHeaders = Object.assign(Object.create(null), {
     'Content-Type': 'application/json',
   }) as Record<string, string>
+
+  const scopedTransport = createScopedDocQueryTransport(
+    server,
+    chatbotId,
+    options
+  )
+  if (scopedTransport) {
+    return { ...scopedTransport, headers: baseHeaders }
+  }
+
+  const url = new URL(server.url)
 
   const authType = server.authType.toLowerCase()
 
@@ -172,7 +232,7 @@ async function createAuthHeaders(
       authType
     )
   ) {
-    return baseHeaders
+    return { url, headers: baseHeaders }
   }
 
   // Add chatbot ID if configured (new behavior - defaults to false for backward compatibility)
@@ -183,7 +243,7 @@ async function createAuthHeaders(
   }
 
   if (!server.authSecret) {
-    return baseHeaders
+    return { url, headers: baseHeaders }
   }
 
   const decryptedSecret = safeDecrypt(server.authSecret)
@@ -235,13 +295,13 @@ async function createAuthHeaders(
       break
   }
 
-  return baseHeaders
+  return { url, headers: baseHeaders }
 }
 
 /**
  * Creates and initializes a single MCP client for a specific server configuration
  */
-export async function createMCPClient(
+async function createMCPClient(
   server: MCPServerConfig,
   chatbotId: string,
   options: MCPRequestOptions = {}
@@ -251,20 +311,18 @@ export async function createMCPClient(
   }
 
   try {
-    const headers = await createAuthHeaders(server, chatbotId, options)
+    const request = await createMCPTransportRequest(server, chatbotId, options)
 
-    const httpTransport = new StreamableHTTPClientTransport(
-      new URL(server.url),
-      {
-        requestInit: {
-          headers,
-          redirect: 'error',
-          ...(options.requestTimeoutMs
-            ? { signal: AbortSignal.timeout(options.requestTimeoutMs) }
-            : {}),
-        },
-      }
-    )
+    const httpTransport = new StreamableHTTPClientTransport(request.url, {
+      requestInit: {
+        headers: request.headers,
+        redirect: 'error',
+        ...(options.requestTimeoutMs
+          ? { signal: AbortSignal.timeout(options.requestTimeoutMs) }
+          : {}),
+      },
+      ...(request.fetch ? { fetch: request.fetch } : {}),
+    })
 
     const client = await createSDKMCPClient({
       transport: httpTransport,
@@ -336,6 +394,9 @@ async function loadServerTools(
   }
 
   try {
+    if (server.name === DOC_QUERY_MCP_SERVER_NAME) {
+      assertDocQueryRequestScope(config.parameters, options.kbIds)
+    }
     const client = await createMCPClient(server, chatbotId, options)
     const rawTools = await client.tools()
 

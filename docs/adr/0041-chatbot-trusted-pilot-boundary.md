@@ -24,6 +24,12 @@ invariants.
 
 ## Decision
 
+- `User.aiFeaturesEnabled`, default `false`, is the sole account-level approval
+  gate for chatbot publication and model usage. Chat admission and publication
+  paths check it before provider work or publication, even when account usage
+  enforcement is disabled. The beta preference and the server-side `ai-beta`
+  rollout control eligibility and authoring rollout separately; neither grants
+  this approval. Per-chatbot publication review remains unchanged.
 - Account usage enforcement remains **default-off**. Lifecycle attempt
   tracking uses an independent default-off switch. The initial R1 rollout writes
   a hidden `IN_PROGRESS` marker before provider work, while supported
@@ -65,6 +71,8 @@ invariants.
   provider hard caps, secret or configuration writes, enforcement activation,
   deployment, and live smoke testing are separate tasks requiring explicit
   authority and their own evidence.
+- Token provisioning and validation are not defined by this ADR; v3-ai owns
+  that workflow.
 - R2 lifecycle attempt tracking may be enabled only after all Chat pods run
   R1-compatible, complete-only readers. R1 then becomes the application
   rollback floor because R2 may leave `IN_PROGRESS` or `FAILED` rows. A

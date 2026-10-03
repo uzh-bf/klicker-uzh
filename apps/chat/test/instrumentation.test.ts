@@ -15,4 +15,22 @@ describe('chat startup validation', () => {
 
     await expect(register()).rejects.toThrow()
   })
+
+  test('continues startup when Langfuse initialization fails open', async () => {
+    const getChatModelRegistry = vi.fn(() => [])
+    const registerLangfuseTelemetry = vi.fn(async () => false)
+    vi.stubEnv('NEXT_RUNTIME', 'nodejs')
+    vi.doMock('../src/lib/server/chatModelRegistry', () => ({
+      getChatModelRegistry,
+    }))
+    vi.doMock('../src/lib/server/langfuseTracing', () => ({
+      registerLangfuseTelemetry,
+    }))
+
+    const { register } = await import('../src/instrumentation')
+
+    await expect(register()).resolves.toBeUndefined()
+    expect(getChatModelRegistry).toHaveBeenCalledOnce()
+    expect(registerLangfuseTelemetry).toHaveBeenCalledOnce()
+  })
 })
