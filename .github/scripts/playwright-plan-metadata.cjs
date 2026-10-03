@@ -1,5 +1,7 @@
 const fs = require('node:fs')
 
+const { CHANGE_CLASS, isKnownClass } = require('./minimum-validation-class.cjs')
+
 const PLAN_SCHEMA_VERSION = 1
 
 function fail(message) {
@@ -39,11 +41,28 @@ function buildPlanMetadata(plan, routeDecision) {
     )
   }
 
-  if (routeDecision.selectorPrState === 'ready' && plan.mode !== 'full') {
+  // Every plan carries the change class the trusted classifier proved for the
+  // same diff. An unknown or absent class is a failure rather than an implicit
+  // narrow envelope, and only the bounded classes may narrow the ready state.
+  const envelopeClass = plan.envelopeClass
+  if (!isKnownClass(envelopeClass)) {
+    fail(`unsupported change class ${JSON.stringify(envelopeClass ?? null)}`)
+  }
+  const boundedEnvelope = envelopeClass !== CHANGE_CLASS.application
+
+  if (
+    routeDecision.selectorPrState === 'ready' &&
+    !boundedEnvelope &&
+    plan.mode !== 'full'
+  ) {
     fail('ready execution must use the full Playwright plan')
   }
 
-  if (routeDecision.selectorPrState === 'ready' && plan.shardCount !== 8) {
+  if (
+    routeDecision.selectorPrState === 'ready' &&
+    !boundedEnvelope &&
+    plan.shardCount !== 8
+  ) {
     fail('ready execution must use exactly eight Playwright shards')
   }
 
@@ -94,6 +113,7 @@ function buildPlanMetadata(plan, routeDecision) {
   return {
     route: routeDecision.route,
     mode: plan.mode,
+    envelopeClass,
     selectorPrState: routeDecision.selectorPrState,
     shouldRun: plan.mode !== 'skip',
     shardMatrix: { include },
@@ -105,6 +125,7 @@ function writeGithubOutputs(metadata, outputPath) {
   const lines = [
     `route=${metadata.route}`,
     `mode=${metadata.mode}`,
+    `envelope_class=${metadata.envelopeClass}`,
     `selector_pr_state=${metadata.selectorPrState}`,
     `should_run=${metadata.shouldRun}`,
     `shard_matrix=${JSON.stringify(metadata.shardMatrix)}`,

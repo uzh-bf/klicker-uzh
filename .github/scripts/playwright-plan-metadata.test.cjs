@@ -1,12 +1,23 @@
 const assert = require('node:assert/strict')
+const fs = require('node:fs')
+const os = require('node:os')
+const path = require('node:path')
 const test = require('node:test')
 
-const { buildPlanMetadata } = require('./playwright-plan-metadata.cjs')
+const {
+  buildPlanMetadata,
+  writeGithubOutputs,
+} = require('./playwright-plan-metadata.cjs')
 
-function plan(mode, shardCount = mode === 'skip' ? 0 : 1) {
+function plan(
+  mode,
+  shardCount = mode === 'skip' ? 0 : 1,
+  envelopeClass = 'application'
+) {
   return {
     schemaVersion: 1,
     mode,
+    envelopeClass,
     shardCount,
     reasonCodes: [],
     shards: Array.from({ length: shardCount }, (_, index) => ({
@@ -46,6 +57,67 @@ test('ready execution fails closed unless the plan is full', () => {
         selectorPrState: 'ready',
       }),
     /ready execution must use the full/
+  )
+})
+
+test('a bounded change class may narrow the ready plan it attests', () => {
+  const documented = buildPlanMetadata(
+    plan('skip', 0, 'documentation-and-planning'),
+    {
+      route: 'hosted',
+      selectorPrState: 'ready',
+    }
+  )
+  assert.equal(documented.mode, 'skip')
+  assert.equal(documented.envelopeClass, 'documentation-and-planning')
+  assert.equal(documented.shouldRun, false)
+
+  const ci = buildPlanMetadata(plan('selected', 1, 'ci-orchestration'), {
+    route: 'public-pr',
+    selectorPrState: 'ready',
+  })
+  assert.equal(ci.mode, 'selected')
+  assert.equal(ci.envelopeClass, 'ci-orchestration')
+  assert.equal(ci.shouldRun, true)
+})
+
+test('an unknown or absent change class fails closed', () => {
+  const absent = plan('selected', 1)
+  // delete, because an explicit undefined argument would take the fixture
+  // default and silently exercise the application class instead.
+  delete absent.envelopeClass
+  for (const candidate of [absent, null, '', 'narrow', 'constructor']) {
+    const target =
+      candidate && typeof candidate === 'object'
+        ? candidate
+        : plan('selected', 1, candidate)
+    assert.throws(
+      () =>
+        buildPlanMetadata(target, {
+          route: 'hosted',
+          selectorPrState: 'ready',
+        }),
+      /unsupported change class/,
+      String(candidate)
+    )
+  }
+})
+
+test('the envelope class travels through the workflow output', (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'plan-metadata-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const output = path.join(directory, 'outputs.txt')
+  fs.writeFileSync(output, '')
+  writeGithubOutputs(
+    buildPlanMetadata(plan('selected', 1, 'ci-orchestration'), {
+      route: 'public-pr',
+      selectorPrState: 'ready',
+    }),
+    output
+  )
+  assert.match(
+    fs.readFileSync(output, 'utf8'),
+    /^envelope_class=ci-orchestration$/m
   )
 })
 

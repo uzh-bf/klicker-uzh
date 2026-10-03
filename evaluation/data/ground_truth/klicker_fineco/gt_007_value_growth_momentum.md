@@ -1,5 +1,5 @@
 ---
-question: What is the difference between value, growth, and momentum investment styles?
+question: Are value and growth fundamental strategies while momentum is a price-based strategy, and how do the three styles differ?
 mode: tutor
 expected_tools_by_profile:
   catalog_expert_v1: [EXPERT_df_fineco_expert]
@@ -7,13 +7,17 @@ expected_tools_by_profile:
 
 ## Value, Growth, and Momentum
 
-Value strategies favor securities that look inexpensive relative to fundamentals, for example firms with a high book-to-market ratio. Growth strategies favor firms whose sales, earnings, or investment opportunities are expected to grow strongly, which often trade at higher valuation multiples. Momentum strategies instead buy securities with strong recent returns and avoid or sell recent losers.
+Value and growth are fundamental styles because both compare market prices with an assessment of the business:
 
-The first two styles classify firms using fundamentals and valuations; momentum classifies them using recent price performance.
+- Value investors favor securities that appear inexpensive relative to fundamentals, for example a high book-to-market ratio.
+- Growth investors favor firms whose profits or other fundamentals have grown strongly and are expected to continue growing.
+- Momentum investors use recent price performance, buying recent winners and avoiding or selling recent losers.
+
+Momentum is therefore price-based rather than fundamental. These labels describe security-selection styles; they are different from portfolio-maintenance rules such as buy-and-hold or rebalancing.
 
 Which information would you examine first to decide whether a security belongs to a value strategy or a momentum strategy?
 
 ## Sources
 
-- Financial Economics script FS26, Chapters 9.3–9.5, value, momentum, and growth strategies, p. 82
-- FinEco FS26 Guide, Chapter 9, value, growth, and momentum strategies, pp. 81–82
+- Financial Economics script FS26, Chapter 9, Momentum and Growth investment strategies
+- Financial Economics script FS26, Chapter 5, Value and Growth classification in the factor-model discussion

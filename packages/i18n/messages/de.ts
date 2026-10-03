@@ -283,6 +283,14 @@ export default {
       showMore:
         '{count, plural, one {Mehr anzeigen (# weitere Zeile)} other {Mehr anzeigen (# weitere Zeilen)}}',
       docQueryQueryLabel: 'Suchanfrage',
+      unnamedSource: 'Unbenannte Quelle',
+      originUnavailable: 'Original-URL der Quelle nicht verfügbar',
+      chunkUnavailable: 'Inhalt des Abschnitts nicht verfügbar',
+      resultUnavailable: 'Suchdetails nicht verfügbar',
+      openSource: 'Quelle öffnen',
+      showFullChunk: 'Vollständigen Abschnitt anzeigen',
+      moreChunks: 'Weitere Abschnitte anzeigen ({count} verbleibend)',
+      moreSources: 'Weitere Quellen anzeigen ({count} verbleibend)',
       docQuerySourcesHint:
         'Die Treffer erscheinen als Quellen unter der Antwort.',
     },
@@ -295,6 +303,8 @@ export default {
     },
     sources: {
       title: 'Quellen',
+      cited: 'In dieser Antwort zitiert',
+      otherRetrieved: 'Weitere gefundene Materialien ({count})',
       page: 'S. {page}',
       video: 'Video',
       image: 'Bild',
@@ -841,6 +851,9 @@ export default {
       rank: 'Rang',
       username: 'Nutzername',
       email: 'E-Mail',
+      entryAriaLabel: 'Rang {rank}: {name}, {points} Punkte',
+      selfPositionDivider: 'deine Position',
+      podiumEmpty: 'Noch keine Einträge auf dem Podest',
     },
     error: {
       '404': '404 Seite nicht gefunden',
@@ -866,6 +879,17 @@ export default {
     privacyUrl: 'https://www.klicker.uzh.ch/datenschutz',
     loginInfo:
       'Sie müssen sich nur hier einloggen, wenn Sie eigene Aktivitäten und Kurse erstellen möchten, nicht um an solchen teilzunehmen.',
+    sessionCheckFailed:
+      'Ihr Login konnte nicht überprüft werden, da der Dienst vorübergehend nicht verfügbar ist. Bitte versuchen Sie es in einem Moment erneut.',
+    sessionCheckRetry: 'Erneut versuchen',
+    restart: {
+      title: 'Login',
+      info: 'Der Login-Vorgang konnte nicht fortgesetzt werden. Bitte wählen Sie, wie Sie sich erneut anmelden möchten.',
+      errorInfo:
+        'Der Login-Anbieter hat einen Fehler gemeldet. Bitte wählen Sie, wie Sie sich erneut anmelden möchten.',
+      studentLogin: 'Studenten-Login (Assessment)',
+      lecturerLogin: 'Dozenten-Login',
+    },
   },
   pwa: {
     general: {
@@ -967,6 +991,66 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
         'Deine Kontodaten, wie z.B. Profilinformationen, Erfolge und Erfahrungspunkte sowie Antworten, die du auf Fragen im KlickerUZH gibst, werden für die Lebenszeit Deines Kontos gespeichert. Deine Punkte und Platzierungen bei Kursaktivitäten und Bestenlisten werden so lange gespeichert, wie Du an der jeweiligen Kursrangliste teilnimmst. Du kannst jederzeit die Löschung Deiner Daten und Deines Kontos beantragen.',
       confirmationMessage:
         'Ich stimme den KlickerUZH [Datenschutzbestimmungen](https://www.klicker.uzh.ch/privacy_policy) und [Nutzungsbedingungen](https://www.klicker.uzh.ch/terms_of_service) zu und erkläre mich mit der darin beschriebenen Verarbeitung meiner Daten einverstanden. Mir ist bewusst, dass ich anonym und ohne Konto an den Lernaktivitäten teilnehmen kann, wenn ich diesen Bedingungen nicht zustimme.',
+      signup: {
+        accountTitle: 'Dein Konto',
+        emailLabel: 'E-Mail',
+        usernameHint:
+          'Dein Benutzername wird angezeigt, wenn Du einer Kursrangliste beitrittst.',
+        assessmentTitle: 'Zugang zum Assessment freischalten',
+        assessmentSubmit: 'Zugang freischalten',
+        assessmentDataCollectionNotice:
+          'Wir speichern deine Kontodaten und die von Switch edu-ID übermittelten Identitätsangaben sowie Daten aus Kursen und Aktivitäten: etwa Antworten und Eingaben in Aktivitäten, Bewertungen, Punkte und Rückmeldungen.\n\nIm Assessment kommen Identitätsangaben wie deine Matrikelnummer sowie detaillierte Protokolle deiner Antwortversuche und Interaktionen (Audit Logs) hinzu.',
+        assessmentDataSharingNotice:
+          'Dozierende und weitere berechtigte Personen sehen die Angaben, die sie für Durchführung und Auswertung des Kurses benötigen. Bei einem Ranglistenbeitritt sehen andere Teilnehmende deinen Benutzernamen und deine Ranglistenangaben. Learning Analytics zeigt ihnen nur zusammengefasste Gruppenwerte.\n\nIm Assessment erhalten berechtigte Dozierende und Assessment-Mitarbeitende zusätzlich deine Identität, Antwortdetails und Ergebnisse zur Bewertung und Nachbearbeitung. Andere Teilnehmende sehen diese Assessment-Daten nicht.',
+        assessmentDataUsageNotice:
+          'Dozierende nutzen deine erhobenen Daten, um die Lehre interaktiver zu gestalten. Wir verwenden deine Daten, um dein Konto zu betreiben und Kursaktivitäten durchzuführen und auszuwerten. Im Assessment dienen sie zusätzlich der Bewertung und Nachvollziehbarkeit. Für Forschung und Learning Analytics gilt deine Auswahl in den Kontoeinstellungen. Sie hat keinen Einfluss auf Punkte, Noten oder den Zugang zum Assessment.',
+        assessmentDataStorageNotice:
+          'Kontodaten und Antworten werden während der Lebensdauer deines Kontos gespeichert. Dein Assessment-Konto und die zugehörigen Daten kannst du nicht selbst löschen: Sie bleiben für die Nachvollziehbarkeit und während der geltenden Einsprache- und Aufbewahrungsfristen erhalten. Danach werden sie gelöscht oder anonymisiert. [Details in den Datenschutzbestimmungen](https://www.klicker.uzh.ch/datenschutz)',
+        assessmentAcknowledgement:
+          'Ich habe die [KlickerUZH Datenschutzbestimmungen](https://www.klicker.uzh.ch/datenschutz) gelesen, akzeptiere die [Nutzungsbedingungen](https://www.klicker.uzh.ch/terms_of_service) und bestätige meine Auswahl. Die zusätzlichen Hinweise zu Assessment-Daten, Einsicht und Aufbewahrung habe ich zur Kenntnis genommen.',
+        accessTitle: 'Dein Zugang',
+        accessNoPassword:
+          'Du brauchst kein Passwort und keine weiteren Eingaben.',
+        dataUseTitle: 'Datennutzung und Einstellungen',
+        dataCollectionTitle: 'Welche Daten werden über mich gesammelt?',
+        dataCollectionNotice:
+          'Wir speichern deine Kontodaten sowie Daten aus deinen Kursen und Aktivitäten, etwa Antworten und Eingaben in Aktivitäten, deren Bewertung, Punkte und Rückmeldungen.',
+        dataSharingTitle: 'Wer sieht meine Daten?',
+        dataSharingNotice:
+          'Dozierende und weitere berechtigte Personen sehen die Angaben, die sie für die Durchführung und Auswertung des Kurses benötigen. Bei einem Ranglistenbeitritt sehen andere Teilnehmende deinen Benutzernamen und deine Ranglistenangaben. Learning Analytics zeigt Dozierenden nur zusammengefasste Gruppenwerte.',
+        dataUsageTitle: 'Wofür werden meine Daten genutzt?',
+        dataUsageNotice:
+          'Dozierende nutzen deine erhobenen Daten, um die Lehre interaktiver zu gestalten. Wir verwenden deine Daten, um dein Konto zu betreiben und Kursaktivitäten durchzuführen und auszuwerten. Für Forschung und Learning Analytics gilt deine Auswahl in den Kontoeinstellungen.',
+        dataStorageTitle: 'Wie lange werden meine Daten gespeichert?',
+        dataStorageNotice:
+          'Deine Kontodaten und Antworten werden gespeichert, solange dein Konto besteht. Daten können bis zum Ablauf rechtlicher oder vertraglicher Aufbewahrungsfristen gespeichert bleiben. Danach werden sie gelöscht oder so verändert, dass sie keiner Person mehr zugeordnet werden können. Du kannst die Löschung deines Kontos und deiner Daten beantragen.',
+        acknowledgement:
+          'Ich habe die KlickerUZH [Datenschutzbestimmungen](https://www.klicker.uzh.ch/datenschutz) gelesen, akzeptiere die [Nutzungsbedingungen](https://www.klicker.uzh.ch/terms_of_service) und bestätige meine Auswahl. Forschung und Learning Analytics sind freiwillig.',
+        researchConsentTitle: 'Daten für Forschung',
+        researchConsentDescription:
+          'Deine Nutzungs- und Lerndaten dürfen ohne personenbezogene Identifikatoren für Forschungs- und Lehrprojekte der UZH verwendet werden. Du kannst jederzeit in den Einstellungen widersprechen. Deine Daten werden dann aus künftigen Forschungsexporten ausgeschlossen. [Mehr zum Datenschutz](https://www.klicker.uzh.ch/datenschutz)',
+        researchConsentDescriptionAssessment:
+          'Deine Nutzungs- und Lerndaten dürfen ohne direkte Identifikatoren für Forschungs- und Lehrprojekte der UZH verwendet werden. Du kannst jederzeit in den Einstellungen widersprechen. Deine Daten werden dann aus künftigen Forschungsexporten ausgeschlossen. [Mehr zum Datenschutz](https://www.klicker.uzh.ch/datenschutz)',
+        researchConsentBadgeAllowed: 'Zugelassen',
+        researchConsentBadgeRefused: 'Widersprochen',
+        researchConsentBadgeUnanswered: 'Nicht beantwortet',
+        researchConsentYes: 'Zulassen',
+        researchConsentNo: 'Widersprechen',
+        researchConsentControlLabel: 'Nutzung für Forschung:',
+        learningAnalyticsConsentTitle: 'Learning Analytics',
+        learningAnalyticsConsentDescription:
+          'Erhalte persönliche Einblicke in dein Lernen. Dozierende sehen de-identifizierte Gruppenberichte. Die Teilnahme ist freiwillig und jederzeit änderbar.\n\nLA erfasst Daten nur, wenn es für dein Konto und den Kurs aktiv ist. Beim Ausschalten werden die betreffenden LA-Daten automatisch gelöscht. [Mehr zu Learning Analytics](https://www.klicker.uzh.ch/lernanalyse)',
+        learningAnalyticsDecisionRequired: 'Entscheidung erforderlich',
+        learningAnalyticsConsentYes: 'Ja, teilnehmen',
+        learningAnalyticsConsentYesDescription:
+          'Private Einblicke und geschützte Gruppenberichte.',
+        learningAnalyticsConsentNo: 'Nein, nicht teilnehmen',
+        learningAnalyticsConsentNoDescription:
+          'Kurse, Punkte und Chat funktionieren wie gewohnt.',
+        submit: 'Konto erstellen',
+        acknowledgementRequired: 'Bitte bestätige Deine Auswahl.',
+        dataUseChoiceRequired: 'Bitte wähle Ja oder Nein.',
+      },
     },
     studentDocs: {
       assessmentInstanceWarning:
@@ -1306,6 +1390,33 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       createProfileFailed:
         'Leider konnte Ihr Konto nicht erstellt oder verknüpft werden. Bitte überprüfen Sie Ihre Eingaben und versuchen Sie es erneut.',
       editProfileSuccess: 'Ihr Profil wurde erfolgreich aktualisiert.',
+      dataUseTitle: 'Forschung und Learning Analytics',
+      dataUseDescription:
+        'Diese Einstellungen gelten für Dein gesamtes KlickerUZH-Konto. Du kannst sie jederzeit ändern.',
+      dataUseLoadFailed:
+        'Deine Einstellungen zur Datennutzung konnten nicht geladen werden. Bitte versuche es erneut.',
+      researchConsentTitle: 'Forschung',
+      researchConsentDescription:
+        'Deine Nutzungs- und Lerndaten dürfen ohne direkte Identifikatoren für Forschungs- und Lehrprojekte der UZH verwendet werden. Du kannst jederzeit in den Einstellungen widersprechen. Deine Daten werden dann aus künftigen Forschungsexporten ausgeschlossen.',
+      researchConsentSaved: 'Deine Forschungseinstellung wurde gespeichert.',
+      researchConsentFailed:
+        'Deine Forschungseinstellung konnte nicht gespeichert werden. Bitte lade die Seite neu, bevor Du es erneut versuchst.',
+      dataUseConflict:
+        'Diese Seite ist nicht mehr aktuell. Lade sie neu, bevor Du es erneut versuchst.',
+      learningAnalyticsConsentTitle: 'Learning Analytics',
+      learningAnalyticsConsentDescription:
+        'Erhalte persönliche Einblicke in Dein Lernen. Nur Du siehst Deine persönlichen Einblicke; Dozierende sehen de-identifizierte Gruppenberichte. Die Teilnahme ist freiwillig und jederzeit änderbar; Kurszugang und Punkte bleiben unverändert. Learning Analytics erfasst Daten nur, wenn es für Dein Konto und den Kurs aktiv ist. Beim Ausschalten werden die betreffenden Learning-Analytics-Daten automatisch gelöscht.',
+      learningAnalyticsConsentSaved:
+        'Deine Learning-Analytics-Einstellung wurde gespeichert.',
+      learningAnalyticsConsentFailed:
+        'Deine Learning-Analytics-Einstellung konnte nicht gespeichert werden. Bitte lade die Seite neu, bevor Du es erneut versuchst.',
+      learningAnalyticsWithdrawalTitle:
+        'Teilnahme an Learning Analytics beenden?',
+      learningAnalyticsWithdrawalConfirmation:
+        'Learning Analytics ausschalten? Deine persönlichen LA-Daten und Einblicke werden automatisch gelöscht. Deine Antworten und Punkte für den Kursbetrieb bleiben erhalten.',
+      dataUseCanonicalDataNotice:
+        'Diese Einstellungen löschen weder Dein Konto noch Kursteilnahmen, Eingaben oder Antworten.',
+      dataUsePrivacyPolicy: 'Datenschutzerklärung lesen.',
       achievements: 'Errungenschaften',
       myProfile: 'Mein Profil',
       createProfile: 'Profil erstellen',
@@ -1636,6 +1747,38 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       nextPage: 'Nächste',
     },
     admin: {
+      chatbotRejectionReason: 'Grund für die Ablehnung',
+      chatbotRejectConsequence:
+        'Der Besitzer sieht diesen Grund und kann den Chatbot überarbeiten und erneut zur Freigabe einreichen.',
+      chatbotReject: 'Antrag ablehnen',
+      chatbotRejected:
+        '«{name}» wurde abgelehnt. Der Besitzer kann ihn überarbeiten und erneut einreichen.',
+      chatbotRejectionError:
+        'Die Ablehnung konnte nicht bestätigt werden. Aktualisieren Sie die Liste und prüfen Sie den aktuellen Status vor einem erneuten Versuch.',
+      chatbotAllTools: 'Alle Werkzeuge',
+      chatbotDefaultReasoning: 'Alle vom Modell unterstützten Reasoning-Stufen',
+      adminOnly: 'Diese Seite ist nur für Administratoren verfügbar.',
+      chatbotApprovals: 'Chatbot-Freigaben',
+      chatbotApprovalsDescription:
+        'Prüfen Sie ausstehende Veröffentlichungsanträge. Öffnen Sie einen Chatbot, um seine Konfiguration vor der Freigabe für Teilnehmende zu prüfen.',
+      chatbotOwner: 'Besitzer',
+      chatbotAccountApproval: 'Veröffentlichungsberechtigung des Kontos',
+      chatbotAccountApproved: 'Freigegeben',
+      chatbotAccountNotApproved: 'Nicht freigegeben',
+      chatbotConnectedTools: 'Verbundene Werkzeuge',
+      chatbotNoConnectedTools: 'Keine verbundenen Werkzeuge.',
+      chatbotRefresh: 'Anträge aktualisieren',
+      chatbotQueueEmpty: 'Keine Chatbots warten auf eine Freigabe.',
+      chatbotQueueError:
+        'Veröffentlichungsanträge konnten nicht geladen werden. Aktualisieren Sie die Liste, um es erneut zu versuchen.',
+      chatbotOwnerBlocked:
+        'Der Besitzer ist derzeit nicht zur Veröffentlichung von Chatbots berechtigt. Das Konto muss zuerst freigegeben werden.',
+      chatbotApproveConsequence:
+        'Die Freigabe veröffentlicht diesen Chatbot sofort für Teilnehmende seines Kurses. Die Nutzungsbudgets des Kontos bleiben unverändert.',
+      chatbotApprove: 'Freigeben und veröffentlichen',
+      chatbotPublished: '«{name}» wurde veröffentlicht.',
+      chatbotApprovalError:
+        'Die Veröffentlichung konnte nicht bestätigt werden. Die Antragsliste wurde aktualisiert; prüfen Sie den aktuellen Status vor einem erneuten Versuch.',
       pageName: 'Admin-Panel',
       privatePreviewAvailability: 'Verfügbarkeit: Private Features',
       privatePreviewDescription:
@@ -2045,10 +2188,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     settings: {
       advancedModelUsage: 'Nutzung des fortgeschrittenen Modells',
       baseModelUsage: 'Nutzung des Basismodells',
-      betaFeaturesDataUse:
-        'Wenn Sie sich anmelden, wird ein pseudonymer Bezeichner Ihres Kontos einer kontobasierten Beta-Kohorte für die Zielsteuerung von Features hinzugefügt. Sie können sich über dieselbe Einstellung wieder abmelden.',
       betaFeaturesDescription:
-        'Melden Sie sich optional für den frühzeitigen Zugang zu ausgewählten Beta-Features an. Diese Features können instabil sein, sich ohne Vorankündigung ändern oder für wichtige Arbeiten ungeeignet sein.',
+        'Zu den Beta-Features gehört die Erstellung von Chatbots. Ihre Beta-Einstellung ist standardmässig aktiviert und kann hier ausgeschaltet werden. Die Verfügbarkeit einzelner Features und die Freigabe der KI-Nutzung werden separat verwaltet. Beta-Features können instabil sein, sich ohne Vorankündigung ändern oder für wichtige Arbeiten ungeeignet sein.',
+      betaFeaturesSignupClosed:
+        'Neue Beta-Anmeldungen sind derzeit geschlossen. Informationen zu Beta-Features finden Sie weiterhin hier.',
+      betaFeaturesEnrollmentRestricted:
+        'Mit diesem Konto oder dieser Anmeldung kann die Beta-Anmeldung nicht geändert werden. Neue Anmeldungen erfordern Catalyst und vollen Kontozugriff.',
       betaFeaturesConvergedOff: 'Der Beta-Zugang ist nicht mehr aktiv.',
       betaFeaturesConvergedOn: 'Der Beta-Zugang ist jetzt aktiv.',
       betaFeaturesEnrollment: 'Beta-Anmeldung',
@@ -2057,16 +2202,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       betaFeaturesError:
         'Ihre Beta-Anmeldung konnte nicht gespeichert werden. Der aktuelle Anmeldestatus wurde nicht geändert. Bitte versuchen Sie es erneut.',
       betaFeaturesRefreshFailure:
-        'Ihre Beta-Anmeldung wurde gespeichert, aber die Informationen zum Beta-Zugang konnten nicht aktualisiert werden. Laden Sie die Seite neu oder versuchen Sie es erneut. Der Zugang kann bis zu 120 Sekunden benötigen, um aktualisiert zu werden.',
+        'Ihre Beta-Einstellung wurde gespeichert, aber die angezeigten Einstellungen konnten nicht aktualisiert werden. Laden Sie die Seite neu, um den aktuellen Stand zu sehen.',
       betaFeaturesRefreshing:
-        'Ihre Anmeldung wurde gespeichert. Die Informationen zum Beta-Zugang werden aktualisiert; der Zugang kann bis zu 120 Sekunden benötigen.',
+        'Ihre Beta-Einstellung wurde gespeichert. Die angezeigten Einstellungen werden aktualisiert.',
       betaFeaturesSaved:
-        'Ihre Beta-Anmeldung wurde gespeichert. Der Beta-Zugang kann bis zu 120 Sekunden benötigen.',
+        'Ihre Beta-Einstellung wurde gespeichert. Verfügbare Features hängen weiterhin von der Einführung und erforderlichen Freigaben ab.',
       betaFeaturesPending:
         'Ihre Beta-Anmeldung wird gespeichert. Der aktuelle Status bleibt unverändert, bis der Speichervorgang abgeschlossen ist.',
       betaFeaturesTitle: 'Beta-Features',
+      chatbotBetaAccessRequired:
+        'Die Erstellung von Chatbots ist ein Beta-Feature. Sie erfordert AI-Beta-Zugang, Catalyst und vollen Kontozugriff. Die Beta-Anmeldung finden Sie in Ihren Kontoeinstellungen.',
       betaFeaturesUnavailable:
-        'Die Beta-Anmeldung ist vorübergehend nicht verfügbar. Bitte versuchen Sie es später erneut. Ihr aktueller Anmeldestatus wurde nicht angenommen.',
+        'Ihre Beta-Einstellung kann derzeit nicht angezeigt oder geändert werden. Es wurde keine Einstellung angenommen.',
       chatAccountUsageDescription:
         'Prüfen Sie die geschätzte Nutzung des aktuellen Monats für jede Nutzungsklasse.',
       chatAccountUsageBoundaryDescription:
@@ -3644,10 +3791,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       joinCourse: 'Kurs beitreten',
       viewCourse: 'Kurs einsehen',
       viewActivities: 'Aktivitäten einsehen',
+      openLibrary: 'Bibliothek öffnen',
+      noNotificationEmail: 'Nicht angegeben',
       executeActivities: 'Aktivitäten ausführen',
       modifyCourseSettings: 'Kurseinstellungen ändern',
       modifyContainedActivities: 'Aktivitäten im Kurs bearbeiten',
       manageParticipantGroups: 'Teilnehmergruppen verwalten',
+      leaderboardSummary:
+        'Vergleichen Sie die Punkte der Teilnehmenden im gewählten Zeitraum.',
+      leaderboardInclusionHelp: 'Wer erscheint in der Rangliste?',
+      leaderboardInclusion:
+        'Teilnehmende ohne Punkte werden in der Rangliste für den gesamten Kurs und in rollierenden Ranglisten aufgeführt.',
+      leaderboardExportHelp: 'Hinweise zum CSV-Export',
+      leaderboardExportDescription:
+        'Der CSV-Export enthält zusätzlich zu den Benutzernamen die E-Mail-Adressen der Teilnehmenden.',
       deleteCourse: 'Kurs löschen',
       removeCourse: 'Kurs entfernen',
       confirmCourseRemoval:
