@@ -1,4 +1,5 @@
 import { TOOL_NAME_SUFFIX_LENGTH } from '../config/toolNames'
+import { getPublicSourceUrl } from './sourceUrl'
 import type { ChatSource, ChatSourceType } from './types'
 
 export const MAX_SOURCES = 12
@@ -113,6 +114,25 @@ export function normalizeSourcesFromParts(
   }
 
   return sources
+}
+
+/** Maps original source positions to the message registry without renumbering. */
+export function sourceCitationIndices(
+  payload: Record<string, unknown>,
+  sources: readonly ChatSource[]
+): Array<number | null> {
+  if (!Array.isArray(payload.sources)) return []
+  const indices = new Map(sources.map((source) => [source.id, source.index]))
+  return payload.sources.map((source) => {
+    const [normalized] = normalizeSourcesFromParts([
+      {
+        type: 'tool-call',
+        toolName: 'doc_query',
+        result: { ...payload, sources: [source] },
+      },
+    ])
+    return normalized ? (indices.get(normalized.id) ?? null) : null
+  })
 }
 
 function isQualifyingPart(
@@ -258,6 +278,23 @@ function lastPathSegment(value: string): string | undefined {
   }
 }
 
+// Resource ingestion gateways are machine-to-machine fetch endpoints, never
+// participant source links, even when exposed through a public API hostname.
+function isIngestionReference(value: string | undefined): boolean {
+  if (!value) return false
+  try {
+    const url = new URL(value)
+    const hostname = url.hostname.toLowerCase().replace(/\.$/, '')
+    return (
+      hostname.endsWith('.svc') ||
+      hostname.endsWith('.svc.cluster.local') ||
+      url.pathname.startsWith('/api/ingestion/resources/')
+    )
+  } catch {
+    return false
+  }
+}
+
 function isUrlLike(value: string): boolean {
   return /^https?:\/\//i.test(value)
 }
@@ -330,13 +367,18 @@ function normalizeAnswerModeSources(
     // only one — it also keeps relative paths and other schemes from
     // rendering as links that go nowhere useful from this origin. The raw
     // value still feeds the title and type fallbacks.
-    const url = rawUrl && isUrlLike(rawUrl) ? rawUrl : undefined
+    const ingestionReference = isIngestionReference(rawUrl)
+    const url =
+      rawUrl && isUrlLike(rawUrl) && !ingestionReference ? rawUrl : undefined
     const fileName = cleanString(source.file_name)
     const expert = cleanString(source.expert)
-    // Title fallback chain: file_name -> last URL path segment -> expert
+    // Title fallback chain: display name -> file_name -> URL path -> expert
     // name -> skip (no usable title/url means the entry is useless to show).
     const title =
-      fileName ?? (rawUrl ? lastPathSegment(rawUrl) : undefined) ?? expert
+      cleanString(source.display_name) ??
+      fileName ??
+      (rawUrl && !ingestionReference ? lastPathSegment(rawUrl) : undefined) ??
+      expert
     if (!title) continue
 
     const page = cleanPage(source.page_number)
@@ -348,8 +390,13 @@ function normalizeAnswerModeSources(
       title,
       page,
       labeledPage,
-      url,
-      dedupeKey: buildDedupeKey({ url, title, page, labeledPage }),
+      url: getPublicSourceUrl(url),
+      dedupeKey: buildDedupeKey({
+        url: ingestionReference ? rawUrl : url,
+        title,
+        page,
+        labeledPage,
+      }),
     })
   }
 
@@ -367,17 +414,23 @@ function normalizeDocumentsModeSources(
     const source = rawSource as Record<string, unknown>
 
     const reference = cleanString(source.reference)
-    const explicitTitle = cleanString(source.title)
+    const explicitTitle =
+      cleanString(source.title) ??
+      cleanString(source.display_name) ??
+      cleanString(source.file_name)
+    const ingestionReference = isIngestionReference(reference)
     const referenceIsUrl = reference ? isUrlLike(reference) : false
-    const url = referenceIsUrl ? reference : undefined
+    const url = referenceIsUrl && !ingestionReference ? reference : undefined
 
     // Title fallback: explicit title -> (if reference is a URL) a short name
     // derived from its last path segment -> the raw reference -> skip.
     const title =
       explicitTitle ??
-      (referenceIsUrl && reference
-        ? (lastPathSegment(reference) ?? reference)
-        : reference)
+      (ingestionReference
+        ? undefined
+        : referenceIsUrl && reference
+          ? (lastPathSegment(reference) ?? reference)
+          : reference)
     if (!title) continue
 
     const rawChunks = Array.isArray(source.chunks) ? source.chunks : []
@@ -404,12 +457,13 @@ function normalizeDocumentsModeSources(
       title,
       page,
       labeledPage,
-      url,
+      url: getPublicSourceUrl(source.source_url) ?? getPublicSourceUrl(url),
       excerpt,
       startSec,
       endSec,
       dedupeKey: buildDedupeKey({
-        url,
+        // Non-link references still identify distinct resources with the same title.
+        url: reference,
         title,
         page,
         labeledPage,

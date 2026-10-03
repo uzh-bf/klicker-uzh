@@ -1,0 +1,523 @@
+# V3 beta discovery and chatbot authoring gates
+
+## September 7 readiness corrections
+
+The user requested review and incorporation of relevant findings from the
+production-readiness report at head `7ba2082aef1139dfc18cda348f0057eed84e273a`.
+The report is an input to verify, not authority to change the approved product
+policy. Preserve default-on beta preference, Catalyst-required opt-in, one
+default-off AI approval, the guarded shadow, and general backend GrowthBook
+management configuration. No approval backfill, migration rewrite, live rule
+change, staging integration, deployment or retained-volume mutation is included.
+
+The native planner approved the bounded corrective scope: release inventory and
+activation prerequisites; developer migration/test guidance; ordered GrowthBook
+transition and back-out; privacy-safe beta failure and Chat admission diagnostics;
+obsolete saved-group pass-through removal and fixture-specific CI triggers.
+Main owns the safety-sensitive diagnostics and release decisions. The bounded
+documentation inspection used trusted native continuity after the configured
+exploration provider failed before work. Its create-only claim was rejected:
+`prisma:migrate:only` runs `migrate dev`; only the separately named create-only
+script supplies `--create-only`.
+
+Verification extends existing beta failure and Chat denial cases, adding no
+new suites or UI contract. Mocked tests run without services or network access;
+configuration checks cover CI inclusions/exclusions and retained management
+wiring. Documentation commands are config-derived, not live operational proof.
+Follow-up UX states and a richer rollout-availability API remain separate from
+these corrections; no permission widening or new GraphQL capability is implied.
+
+### Correction progress
+
+The migration inventory now lists seven entries, including the shared AI approval
+and preference/drop migration. Activation remains blocked on explicit owner
+approval/token readiness, staging expand-contract coordination, full migration
+rehearsal, assessment-database coverage, Analytics ordering and recovery evidence.
+Neither existing publication nor a beta preference grants AI approval.
+
+Local focused evidence: 18 beta-preference tests and 28 Chat-route tests pass,
+including safe diagnostic fields and denial before provider work. CI filter
+checks and retained GrowthBook management-variable/Secret checks pass. No model
+provider, database, managed runtime or live GrowthBook service was contacted.
+GraphQL and Chat typechecks, documentation links, AGENTS.md validation, syncpack
+and formatting pass, with one pre-existing Chat `any` warning. All seven root
+lint tasks have passing evidence. Six passed in the offline checks container;
+Analytics subsequently passed with frozen dependencies and Python 3.12.13 in
+a temporary container-local environment. The initial offline download failure
+is resolved without changing retained environments or dependency files.
+This is not frozen Node-install proof: the installed node_modules still reports
+a minimumReleaseAgeExclude mismatch. Correction commit `7357b9e2bb` passed
+the native simplifier and risk-selected slice review with no findings.
+The slice review is recorded in
+`project/_local/reviews/2026-09-07-pr5799-readiness-corrections-slice-review.md`.
+Prisma-sync and removed-doc-artifact checks also pass. All disposable checks
+containers exited and were removed; the managed runtime was not started.
+The integrated-final addendum reviewed the complete 86-path PR range through
+`d55be1e536` and found no source blocker, reusing accepted unchanged-content
+review evidence. Its only finding was the stale Analytics status corrected here.
+No further source change or review rerun is needed for this evidence update.
+Source publication to the existing PR is the next action. Current-head hosted
+CI, GitGuardian disposition and hosted final-review completion remain merge
+gates; production activation remains separately withheld.
+Existing hosted final review is
+incomplete, not a code verdict; do not claim merge or production readiness.
+
+Prior reviews are reusable by unchanged content, not invalid merely because
+the commit id moved. The report's blanket SHA-based stale classification does
+not supersede that rule. No new hosted review budget or automatic retry is
+authorized by this correction.
+
+## Approved destructive database guard extension
+
+Prevent repository test cleanup, test seeds and destructive Prisma development
+commands from using staging, production or retained databases through port
+forwards. User approval on September 7 covers implementation, verification,
+reviews and publication to the existing beta PR, but not its merge, upstream
+integration, deployment, cluster connectivity or retained-data mutation.
+Local restoration is not required. Existing beta/AI product decisions below
+remain unchanged.
+
+The trusted Playwright provisioning prerequisite
+[PR #5812 — disposable CI databases](https://github.com/uzh-bf/klicker-uzh/pull/5812)
+was merged by the user as d8e29ee75168b61e5c6902a5a8d8afa12495e261.
+Its non-skipped postmerge shard proof passed in the run recorded below.
+No branch integration is needed to consume that trusted action.
+
+Require explicit test login and database identities plus the database comment
+`klicker-disposable-test-v1`. Neither localhost, CI flags nor force options are
+proof. Check the actual connected client before mutation, including cleanup
+after failed setup, and recheck newly opened pooled connections. Never validate
+only an environment URL when a cached Prisma client holds another connection.
+Reject missing, ambiguous or overridden destinations before connecting.
+Production application access and `prisma migrate deploy` stay unchanged.
+
+The permitted main database and login are `klicker_test`; the explicit migration
+shadow is `klicker_test_shadow`, owned by that same restricted login and marked
+independently. Development migration requires that shadow because the role has
+no database-creation privilege. Migration diff may read its configured main
+datasource, but replay must validate the shadow. Guard CLI configuration,
+schema and connection overrides as well as URI parameters; accept only the
+necessary documented operation flags. Do not introduce an unsafe bypass.
+
+Fresh self-contained PostgreSQL volumes receive dedicated init SQL creating the
+test login, main database and shadow with markers. Mount it only in the local
+devcontainer. Switch local application/test defaults to that identity. Existing
+volumes lacking provisioned objects fail with guidance; never mark, adopt or
+delete retained databases automatically. Preserve unrelated dump-support init
+SQL and production behavior.
+
+GraphQL and Chat unit CI are candidate-owned and need equivalent provisioning.
+Run it inside the exact GitHub PostgreSQL service container ID, not through
+localhost administration. Refuse existing target objects. Reset runs only after
+provisioning succeeds; Chat integration requires provisioning and reset success.
+Preserve all existing suites. Extend relevant workflow path filters. Do not add
+Docker access to Playwright shards. The legacy local test helper must not delete
+existing volumes; use an ownership-proven isolated service or fail before work.
+
+| Work | Owner | Acceptance |
+| --- | --- | --- |
+| Guard, actual-client integration and CLI | Main; coupled security boundary | URI/override refusal, actual identity/marker, setup-failure cleanup and reconnect refusal; production path unchanged |
+| Guard behavior tests | Executor after API is defined | Consequential failure cases and successful marked disposable operations, no prose/seed-content assertions |
+| Cold bootstrap and candidate CI | Executor on disjoint local init/config and GraphQL/unit workflow files | Fresh provisioning, existing-object refusal, explicit failure dependencies and sentinel preservation |
+| Beta amendment completion | Main | Affected tests/browser evidence, committed reviews, whole-package review and current-head PR checks |
+
+Use existing pg and Prisma dependencies. The installed pg-pool callback `verify`
+hook blocks release of each new connection; do not use an asynchronous connect
+event as a gate. Guard GraphQL initialization/cleanup, Playwright's shared
+client, Chat account-usage integration, demo-participant integration, test and
+assessment seed entrypoints, and reset/push/dev-migration/shadow replay wrappers.
+Keep legitimate production administration scripts outside this test-only guard.
+
+Verify unmarked and mismatched targets using only synthetic isolated databases
+or mocks, with zero destructive calls on refusal. Prove reconnect checks, marked
+reset/push/seed, guarded shadow migration and fresh bootstrap. Update testing and
+development guidance. Preserve already passing beta/browser evidence when its
+source and environment contract remain unchanged; rerun affected checks. Commit
+coherent slices, run simplification/risk reviews and integrated final review,
+then update the existing PR without merging it.
+
+Planner round 2 required Chat unit CI provisioning and explicit dependency
+gates; round 3 APPROVED after both were included. The earlier advisor's dedicated
+identity, external marker and actual-connection guidance remains applicable.
+Implementation is complete locally and awaits committed review. The original
+postmerge run was cancelled. Its successor
+[run 34099313029 — hosted Playwright proof](https://github.com/uzh-bf/klicker-uzh/actions/runs/34099313029)
+passed all eight shards. Shard 4 executed the expected provisioner checksum
+`5a42839332cf620086237564494b0050f3e56b38f411ff416bbf3ce15c933534`,
+provisioned the database, reset successfully and passed 109 tests. No watcher
+remains active; both previous heartbeats remain paused.
+
+### Guard extension progress
+
+The actual-client guard and CLI wrappers are implemented without new
+dependencies. GraphQL setup/cleanup, Playwright client acquisition, Chat
+integration and both test seeds now require the guard. The demo-participant
+suite creates a dedicated guarded client. The unsafe legacy Compose helper
+fails before service or volume operations. Fresh local and candidate-owned CI
+bootstrap use a restricted login and independently marked main/shadow databases.
+
+Verification on September 7: 16 guard/CLI tests, 120 beta/authoring tests and
+61 Chat tests (including actual PostgreSQL integration) pass. Prisma,
+GraphQL, Chat, Manage and Prisma-data focused typechecks pass. Prisma builds;
+Analytics schema parity and the reused v3-ai migration byte comparison pass.
+The bounded Opengrep scan reports zero findings on the three guard source files.
+
+New tmpfs-only PostgreSQL 15 services with no host ports proved guarded reset,
+schema push, development migration, shadow-backed diff and both test seeds.
+The diff is empty. An actual Prisma reconnect after marker removal refused a
+delete and preserved its sentinel row. Fresh CI helper provisioning succeeded;
+a repeated invocation refused before CREATE. Both database markers, owners and
+all five restricted-role flags were verified. Both exact services were stopped
+and auto-removed; retained volumes and cluster connections were untouched.
+
+The slim Node image lacked OpenSSL, so migration proof used the pinned official
+Playwright image (Node 24). The seed wrapper used installed pnpm 11.5.0 with
+dependency verification in warning mode to avoid replacing the existing
+node_modules; this is not frozen-install evidence. A separate checks image was
+built from the repository Dockerfile, without starting the retained runtime.
+All changed-file formatting, syncpack, repository policy checks and seven lint
+tasks pass. Broad type verification passed 34 of 35 tasks; only the container's
+Git-based SDL check failed because its host Git metadata was not mounted.
+That exact SDL diff check passes on the host, and fresh GraphQL types pass
+after generation. Nine demo-participant integration tests also pass against a
+new marked tmpfs database, which is now stopped and auto-removed. Helm chart
+rendering and the three host Git-identity contract tests pass.
+The first production build emitted Hatchet's bundle but retained TypeScript
+watch handles. It was stopped without changing source. An isolated Hatchet
+build passed, and the full retry passed all 23 tasks (seven cached) in
+3m14.456s. No build-source fix was required. All verification containers are
+stopped and absent; the generated public SDL remains unchanged.
+
+Implementation commit 5f7ab0c6a2 is local only. The native simplifier inspected
+all 72 changed paths and recommended only consolidating repeated feature-flag
+documentation; parent accepted that behavior-preserving change. Native slice
+risk review inspected all 72 paths and found no blocking defect. Its advisory
+about direct operator-script use is outside the explicitly test-only guard
+scope; legitimate operator behavior remains unchanged. Both children are closed.
+
+The user explicitly approved sending the isolated amendment and sanitized
+verification manifest to Gemini through AGY. The required advisor completed
+with no blocking source finding after receiving the full payload directly.
+The parent retained the operational caveats and corrected unsupported summary
+claims about the initial build's cause and test attribution. Integrated final
+review inspected the complete 81-path committed branch through 4738150bc2 and
+returned three findings. All are accepted: make the new account fields self-only,
+adapt OLAT test provisioning to the shared guard, and avoid account-restriction
+messaging when beta preference is unknown. OLAT setup and cleanup also arm the
+guard before use, and its localhost fallback is removed.
+
+Correction verification: 21 schema-authorization tests (including ten privacy
+cases), guarded reset and all 22 OLAT integration tests pass. GraphQL generation,
+fresh GraphQL types, Manage and OLAT types and changed-file formatting pass.
+The generated SDL is unchanged. A real Manage-only runtime with synthetic API
+responses shows the incorrect old message and corrected neutral message for the
+same failed-read state. English desktop and German mobile screenshots confirm
+readability and absence of a beta toggle. This is UI-state proof, not real-login
+proof. The browser and exact Manage runtime are stopped; the fresh tmpfs OLAT
+database is stopped with no published port or retained volume.
+
+Production build passes all 23 tasks (14 cached) in 2m5.024s. The same reviewer's
+one correction pass remains pending.
+No publication or merge-readiness claim is made yet. Fresh refs leave the branch
+19 ahead and eleven behind v3, with no upstream integration. Current-head hosted
+checks remain pending publication.
+
+## Approved amendment: database beta preference and one AI approval
+
+The September 6 user ruling supersedes the saved-group storage and separate
+publication-entitlement contracts below. The user approved implementation and
+confirmed that this approval feature has never deployed and has no approval
+data to preserve. Store `User.betaEnabled` with default `true` and use
+`User.aiFeaturesEnabled`, default `false`, as the sole account AI approval.
+Per-chatbot publication review remains separate. Token provisioning and
+validation belong to v3-ai and are not implemented here.
+
+Authority: scoped local source, generated migrations, isolated verification,
+independent reviews and commits on the existing branch. On September 7 the
+user additionally requested a destructive-test database guard and publication
+to the existing PR. Push to origin/rs/v3-release-verification and updating
+[PR #5799 — beta authoring](https://github.com/uzh-bf/klicker-uzh/pull/5799)
+are authorized after verification and review. Terminal: merge-ready source
+with passing current-head checks. Merge, branch integration, deployment,
+live GrowthBook changes and retained-data deletion remain excluded.
+Boundary owner: self. Pause for contradictory deployment evidence, failed test
+isolation, an unavailable required gate, or a new material authority boundary.
+
+### Migration and ownership
+
+Reuse `20260823120459_ai_features_enabled/migration.sql` byte-for-byte from
+v3-ai. Generate one additional migration adding `betaEnabled` and dropping
+`aiChatbotPublishingEnabled`. Preserve the original lifecycle migration and
+do not backfill approvals. Two migration directories are necessary to preserve
+the shared v3-ai migration identity without a duplicate column addition later.
+Generate the Analytics mirror through `prisma:sync`. No retained local database
+is migrated or reset; migration and browser proof use a disposable database.
+
+| Product primitive | Disposition | Contract |
+| --- | --- | --- |
+| Beta preference | Extend | Database-owned, default on, full-access edits; Catalyst required to opt in, opt-out remains possible without Catalyst. |
+| Feature rollout | Reuse | GrowthBook `ai-beta` targets trusted `betaEnabled` and existing actor attributes; failure stays false. |
+| Account AI approval | Compose | One `aiFeaturesEnabled` approval gates publication and model usage; beta preference never grants approval. |
+| Chatbot publication | Reuse | Per-chatbot review, participant permissions and publication state remain authoritative. |
+
+### Implementation and verification
+
+Slice 1 persists beta preference and normalizes the complete schema. Main owns
+schema, authorization and cache seams because they are coupled. A bounded
+executor may own mechanical shared-attribute/fixture changes. Replace the
+saved-group management API and Redis lock with database reads and scoped writes;
+remove `beta-signup` and dedicated configuration. Read trusted preference per
+request with request-local reuse, never from JWT or a global cache. Database
+false must defeat even a forced-true rollout. Preserve persisted operation hashes
+using new operation names for new selections. Synchronize preference writes with
+Manage's provider and distinguish saved preference from rollout availability.
+Mechanical approval-field substitutions keep this slice buildable.
+
+Slice 2 completes unified approval at publication and Chat admission, including
+when budget enforcement is disabled. Main owns the security-sensitive seam.
+Pre-approval configuration remains available to otherwise eligible authors.
+Participant usage ignores the owner's beta preference. Preserve conditional
+publication writes, revocation checks and existing budget switches.
+
+Extend or consolidate existing enrollment, authoring, publication, account-usage
+and Chat admission tests. Cover account isolation, scoped opt-in/out, write/read
+failure, fresh-request revocation, forced rollout, approval before provider work
+under both budget-switch states, and participant independence from beta.
+Retain existing contracts instead of adding prose-pinning tests. Verify generated
+migrations/defaults, Analytics sync, old persisted hashes, chart rendering,
+affected checks, root checks and production build. Browser proof must use real
+database opt-out/in, API denial/allow and persistence after restart without
+reseeding. Stop the exact runtime and verify its routes are released.
+
+Update ADRs 0008, 0020 and 0041 and directly affected feature-flag guidance to
+reflect these ownership changes. Commit each coherent slice after checks, then
+run its simplifier and risk reviewer, followed by integrated final review.
+Prior reviews apply only to unchanged behavior.
+
+### Amendment progress
+
+Planner approved the amendment on September 6. The cross-provider consultation
+flagged eligibility, cache and migration-lineage risks; the contracts above
+resolve them. Generic beta naming is intentional. No global cache is added.
+Baseline: clean `5e5b1d69c8cf08a58f27dee6c81d618844116b77`, matching upstream,
+15 commits ahead and 5 behind `v3`. The 42 feature-flag baseline tests pass.
+Implementation is committed locally as recorded above. Browser verification on the disposable database
+proved default-on preference, real opt-out/in, opt-out persistence after process
+restart, backend denial while opted out, and authoring availability without AI
+approval after opt-in. English desktop and German mobile settings were inspected.
+The temporary database override and fixture marker have been restored/removed.
+
+Incident: a repeated integration run omitted its explicit disposable DATABASE_URL.
+It failed with missing `aiFeaturesEnabled` columns. The publication test's cleanup
+hook performs unscoped deletes even after setup failure, so retained local data
+were changed: read-only verification confirmed `/klicker-prod` and zero rows in
+User, Course, Participant, and CatalogCollection. Recovery is not established.
+On September 7 the user confirmed that local restoration is unnecessary and
+requested a guard against staging/production port forwards before publication.
+No recovery or reseeding is planned. Destructive verification must wait for
+the fail-closed guard and explicit disposable provisioning. The exact runtime
+`rs-v3-release-verification` is stopped: its container is exited and its source
+path has zero routes. Volumes were not deleted. The isolated browser is closed.
+No production system was accessed. Prior
+passing checks do not make this attempt successful. Independent amendment reviews
+have not run.
+
+September 7 safety-extension planning: no guard code has been written yet.
+The planner returned REVISE because both hosted and public Playwright routes
+load the reset/seed action from trusted v3. That action hardcodes the generic
+database identity; a candidate-only dedicated-test guard would correctly reject
+it. A trusted CI provisioning prerequisite must land first, under separate
+authorization. Switching runner routes does not resolve this dependency.
+The proposed guard requires dedicated test database/login identities and an
+actual database-side disposable marker; localhost and CI flags are not proof.
+The planner also requires resolving shadow targets, CLI argument overrides,
+and cold local bootstrap before accepting the extension. The Gemini high
+advisor consultation completed with concerns about connection reuse and
+credential isolation. No runtime, database, CI setting or PR was changed in
+this planning pass. Existing implementation remains uncommitted.
+
+## Approval summary
+
+Make beta features easy for every lecturer to find while restricting chatbot
+creation to accounts with AI beta access and existing authoring permissions.
+Reuse the current enrollment toggle. Keep informational discovery visible even
+when signup closes or the current login cannot change enrollment.
+
+Participant access, publication approval, account ownership and existing-member
+opt-out remain unchanged. No schema, migration, dependency or live feature-flag
+change is included. Verification must preserve the user's retained local data;
+enabled authoring tests require a separate disposable runtime and database.
+
+Approval already permits scoped local edits, isolated verification setup,
+checks, independent reviews and commits. Completion requires passing relevant
+checks and browser evidence plus integrated review. Push, PR publication,
+upstream integration, merge, release, deployment and retained-data reset remain
+outside this approval.
+
+## Execution details
+
+## Research
+- Goal: reuse v3's existing beta enrollment toggle, show Beta Features to every authenticated lecturer, and protect lecturer chatbot authoring with ai-beta.
+- Baseline: rs/v3-release-verification in trees/rs/v3-production-release, tracking origin/v3 at fbc5f4fcc2ffa1c8d25695679823134985c5a8d8; fresh fetch confirmed clean and zero ahead/behind. Target v3; no PR yet.
+- Current evidence: BetaEnrollmentSettings already appears in settings and SuspendedFirstLoginModal, but hides when mayChange is false or enrollment closes. Header discovery requires beta-signup, Catalyst and full access. Chatbots menu currently uses privatePreview; page mounts authoring queries unconditionally. Seven authoring mutations share asChatbotAuthor without a feature check.
+- v3-ai comparison: beta enrollment source is identical. Its separate aiFeaturesEnabled billing entitlement belongs to broader AI tools, not this change. Do not cherry-pick its AI menu, Knowledge Bases, or entitlement architecture.
+- Research completed by main and read-only native executor fallback; configured explore failed before work with provider HTTP 400. No external research or secret access needed.
+## Contract and authority
+- One cohesive full-path source package. Main owns execution and integration. Boundary owner: self.
+- User approved product direction and reversible work. Formal reviewed-plan approval covers scoped edits, isolated verification setup, reviews and local commits through the terminal condition.
+- Withheld: upstream integration, push, PR publication, merge, tag/release, deployment, live GrowthBook/membership changes, production data, runtime deletion, and resetting the retained manual database.
+- Terminal: locally committed, verified and independently reviewed package; report publication boundary separately.
+- Pause only for a new material product/security decision, required unavailable capability, unprovable test isolation, or external action beyond authority.
+- No schema, migration, dependency, participant access, gamification or worker behavior changes. Existing ownership, Catalyst, scope and publication controls remain.
+## Primitive impact
+| Primitive | Disposition | Contract |
+| --- | --- | --- |
+| Beta enrollment | Reuse | Existing saved-group membership and backend capability remain authoritative; beta-signup controls new opt-ins, not discovery. Preserve full-access eligibility, Catalyst requirement and existing-member opt-out. |
+| Lecturer chatbot authoring | Compose | Require existing ai-beta alongside current authoring permissions, fail closed for missing/off/throwing evaluators. |
+| Beta discovery | Extend | Every authenticated lecturer can find informational Beta Features in account settings and first login. The normal Settings menu entry provides navigation; no separate beta menu entry. Chatbots is named as a beta feature. |
+| Published participant access | Reuse unchanged | Publication and course Participation rules remain authoritative; isActive is not access control. |
+- ADR: no new primitive. Align ADR 0008 (shared feature flags) with the approved restrictive server-side beta gate and clarify ADR 0020 (publication approval) to distinguish the unchanged account entitlement. Update docs/feature-flags.md; reopening entitlement architecture, storage or participant rules requires a new ruling.
+## Delegation Map
+| Workstream | Owner and reason | Dependency | Acceptance |
+| --- | --- | --- | --- |
+| Research | Main, completed with read-only fallback evidence | None | Verified current v3 seams and bounded v3-ai comparison |
+| Authorization and authoring UI gating | Main; security decision and critical-path coupling | Research | Every gated GraphQL field denies before service work; denied page mounts no authoring queries |
+| Beta discovery | Main; coupled capability and UI contract | Authoring contract | Every lecturer scope sees discovery; mutation remains backend-capability controlled |
+| Verification | Main; retained-runtime privacy/isolation boundary | Both implementation slices | Focused schema tests, checks and isolated browser proof |
+| Integration and reviews | Main owns integration and required review dispatch; independent native roles remain reviewers | Verified committed slices | Simplifier and risk review per slice, then integrated final review |
+- No independent implementation delegation proposed. Required read-only specialist gates follow rs-model-routing.
+## Test portfolio
+| Risk | Obligation and primary seam | Slice |
+| --- | --- | --- |
+| Flag bypass or weakened authorization | Extend chatbotAuthoringAuthorization.test.ts schema-backed tests: all seven mutations and publishing capability, missing/off/throwing/on flag, existing role/Catalyst/scope rejection; denied service mocks never called | Authoring gate |
+| Data read despite disabled flag | Extend existing GraphQL tests: getChatbotsInfo returns null with no Prisma read on deny; retain enabled owner filtering and administrative/participant boundaries | Authoring gate |
+| UI bypass | Extend T-chatbot-authoring.spec.ts and existing feature-access tests: menu eligibility, direct denied route with no authoring requests, enabled creation | Authoring gate |
+| Discovery or enrollment regression | Extend B-feature-access.spec.ts: all lecturer scopes, open/closed signup, non-Catalyst, existing-member opt-out, unknown/error/pending/refresh failure; settings/header/first-login | Beta discovery |
+| Lost usage or participant access | Reuse existing usage gating and participant/publication tests; add only missing consequential assertions | Both |
+## Slice: authoring gate
+- Do: add fail-closed ai-beta auth scope using existing feature evaluator and compose it into asChatbotAuthor.
+- Gate updateChatbotModelSettings, updateChatbotModelPolicy, updateChatbotStandardModeConfig, createChatbot, updateChatbot, saveChatbotDisclaimer, requestChatbotPublication, and getChatbotPublishingCapability.
+- getChatbotsInfo retains asUser and returns null before any Prisma query when ai-beta denies.
+- Keep admin approve/reject, publication ownership/capability checks, participant routes and getChatModelRegistry unchanged.
+- Header Chatbots entry requires ai-beta, Catalyst and FULL_ACCESS/ACCOUNT_OWNER, replacing privatePreview only for this entry. Gate direct route before mounting Chatbots or issuing its authoring queries; show stable informational unavailable state linking beta settings.
+- Route: main; acceptance: field-by-field schema authorization tests, enabled path, denied no-query browser proof, GraphQL codegen/check and Manage check.
+- Commit: fix(chatbots): gate lecturer authoring with AI beta.
+## Slice: beta discovery
+- Do: keep existing BetaEnrollmentSettings informative for every authenticated lecturer in settings and first-login, reached through the existing Settings menu. Name Chatbots in paired EN/DE beta copy. Omit the cohort-identifier explanation as explicitly requested on September 6.
+- Controls appear only when mayChange is true, membership is known, and signup is open or the lecturer is already enrolled. Guard handlers too. Preserve mutation, confirmed membership, pending/refetch/refresh-failure handling and opt-out.
+- Explain closed signup, insufficient eligibility/scope, or unavailable membership accurately without inferring membership from ai-beta.
+- Keep account usage behind ai-beta. Update docs/feature-flags.md active flag table and rollout discovery instructions.
+- Route: main; acceptance: existing feature-access suite updated for all discovery states, EN/DE desktop/mobile browser evidence, formatting/type checks.
+- Commit: enhance(manage): make beta features discoverable to every lecturer.
+## Verification and runtime boundary
+- Preserve user-retained rs-v3-production-release runtime and database. Do not run standard Playwright there: global setup unconditionally cleans/seeds.
+- Before mutation E2E, establish a separate test runtime and database and prove identities distinct from retained runtime. Configure browser AND backend evaluation using explicit synthetic test-only ai-beta fixtures; browser route interception alone does not prove backend flag behavior.
+- Never globally enable ai-beta or contact real GrowthBook management services for tests. If isolated DB or backend-fixture control cannot be proven, report browser verification blocked without resetting retained data.
+- Run repository-native GraphQL/Manage checks and codegen, focused GraphQL tests and Playwright specs on isolated lane, root check:all and build before completion. Git on host; toolchain checks in container; Playwright on host only.
+- Browser screenshots before/after, EN/DE and desktop/mobile; no source/runtime success claim from mocks alone.
+- Commit exact slices, run dedicated simplifier plus risk-selected slice reviewer, verify and integrate findings; run final reviewer over complete committed range after all required checks. Correctness, maintainability, security and architecture lenses apply.
+- Stop and verify exact test runtime after use; retain original manual runtime under user's keep-running request. No deletion.
+## Planning review and Progress
+- Local finish, September 6: slice risk review completed without findings.
+  The integrated final reviewer inspected all 23 paths through 0cd245b632 and
+  reported only conflicting ADR wording. The main session verified the finding:
+  ADR 0008's blanket prohibition was stale against the approved server-side gate;
+  ADR 0020 referred to the separate account publication entitlement, not ai-beta.
+  Both records now explicitly distinguish these controls. This documentation-only
+  correction changes no behavior or approved product decision. Parent diff and
+  source checks resolve the finding; existing runtime and test evidence remains
+  applicable. The native final-review route failed with adapter_eof before a
+  result; one trusted Sol-high continuity reviewer completed the same contract.
+  All reviewers are closed. The local package is complete; further push to the
+  existing draft PR requires explicit authorization. No release readiness is claimed.
+- September 6 receiving-device continuation: Auth delegated login and providers
+  work without source repair. The local enrollment fixture now connects the
+  test-only backend payload to Manage, with explicit ignored-marker activation
+  restricted to the manage profile. Main owns this coupled runtime/browser seam;
+  delegation skip reason: critical-path coupling. The read-only mapping completed
+  through trusted Luna continuity after the configured exploration route failed.
+  Real opt-out and opt-in both converge in the browser. The publishing-capability
+  query returns Unauthorized while opted out and resolves normally while opted
+  in; existing publishing permission remains false. The authoring page follows
+  both states. Backend tests (11), backend types and Manage types pass. Root
+  check:all passes (35 type/prerequisite tasks and seven lint tasks); runtime
+  regressions and focused formatting pass. Removing the local marker and
+  reconciling ordinary manage startup returns 404 from both fixture routes.
+  The engineering browser is closed. All 23 production build tasks pass with
+  NODE_ENV=production; the first attempt inherited development mode and failed
+  Auth logout prerendering. No Auth source repair was needed. The three focused
+  authorization/enrollment suites pass all 110 tests. Fixture commit f44bc324a1
+  is local only. The simplifier found no warranted reduction; slice risk review
+  is running. Runtime shutdown waited for another worktree's provider lock,
+  then completed. Fresh source-path provider readback is Stopped and the exact
+  route count is zero. No database, cache or worktree was deleted.
+  No real
+  GrowthBook service, entitlement, retained database reset or production change
+  is involved. Slice risk review and integrated final review
+  remain pending. Fresh refs match the task upstream; the branch is 11 ahead and
+  4 behind v3, including unrelated routing-version and review-workflow changes.
+  No additional integration or push is authorized by this continuation.
+- Device-transfer landing on the receiving machine: fresh fetch confirms
+  origin/rs/v3-release-verification at the recorded head fdd83714a6; the
+  canonical worktree was recreated at trees/rs/v3-production-release as a
+  local tracking branch and the disposable mirror was not recreated. PR #5799
+  remains an open MERGEABLE draft; current-head CI is green except ocr-review,
+  which failed all selected provider/subtask requests with zero findings, and
+  the stale-pending final-ai-review status whose workflow skipped its review
+  jobs on the draft; no human feedback exists. The user-requested retry
+  resolved the escalation blocker. PATH selected Devrouter 0.0.51, whose
+  helper lacks preparation support; the already-installed Volta 0.0.55
+  executable successfully reconciled the manage profile. Workspace
+  rs-v3-release-verification uses Compose project default-rs-9efcf and reports
+  ready with no drift. Auth providers return JSON 200 and real delegated
+  login succeeds. Browser checks confirm beta information and direct
+  authoring denial with the flag off. The
+  approved local enrollment fixture remains an uncommitted partial
+  test-only preload extension: beta-signup rule, an in-process saved-group
+  control plane behind the real HTTPS validation, membership-driven ai-beta,
+  and updated node tests. Header lookup now uses Headers so the enrollment
+  service's Authorization header is accepted case-insensitively. All 11
+  backend unit tests, backend typechecking and focused Biome checks pass in
+  the container. Browser/backend shared-payload integration and actual
+  enrollment verification remain incomplete; integrated final review has
+  not run. The fixture is not activated by ordinary development startup.
+- Device-transfer checkpoint: the user requests publication of the current work on a draft PR against v3 and continuation on another device. This authorizes pushing `rs/v3-release-verification` to origin and opening a draft; it does not authorize merge, tag, deployment or another upstream integration. The package is parked for transfer, not accepted or release-ready. Resume Auth API diagnosis, the approved local-only enrollment fixture, affected verification and the unused integrated-final review. The last real-login attempt failed before credentials with HTML 404s from Auth's API endpoints. Source-level Auth repair was proposed but not implemented. Browser cleanup could not execute after two permission-review timeouts. Retained local caches, database data and ignored review evidence remain machine-local and must not be committed.
+- September 6 recovery follow-up: the user approved recoverable Chat-cache relocation and a local-only beta enrollment fixture. Chat's old cache is preserved at ignored `project/_local/chat-next-archive-20260906T1332`. Canonical repair eventually returned full/ready, all services healthy, no drift, and `recreated: false`; a missing-container inspection failure and a transient LiteLLM health timeout preceded that successful run. Chat now passes its JSON 401 readiness contract. Real routed Auth root loads, but delegated access reaches `/api/auth/error`; browser fetches of providers, signin/delegation and error all return HTML 404, confirmed in current Auth server logs. Root-page readiness is insufficient proof of authentication. No further cache removal or authentication source change was made. Local fixture source mapping is complete, but implementation and integrated final review remain pending. The configured exploration provider rejected the request for insufficient credits; one trusted native Luna continuity mapping completed and both children are closed. HEAD remains `70d3322a511d3f494c57eeb111d8848bdc6cfa0c`, ten ahead and two behind origin/v3; no additional upstream integration. Retain this runtime for the user's manual verification until the next checkpoint.
+- Latest checkpoint: Auth now passes HTTP readiness after its caches were rebuilt outside Tailwind's scan path. Full startup instead detects a stale Chat API route. The preserve-next-cache marker correctly blocks automatic deletion; a separate request to recoverably archive only the Chat cache is awaiting the user. Managed state is degraded, so routed real-login proof is unavailable. No Chat cache or database data was changed. Both runtime review findings are resolved and both children are closed. The local beta fixture decision and integrated final review remain pending. Production disclaimer PR #5696 is still open against v3 on fresh readback.
+- September 6 verification follow-up: all nine non-destructive beta discovery/disabled-authoring browser tests pass in 30 seconds. Host execution requires pinned Node and the direct repository runner to avoid pnpm's automatic dependency replacement and its older Devrouter PATH selection. Runtime corrections at `e54427a49d` pass the shell suite and the same-child risk re-review; the simplifier found no warranted reduction. Actual delegated login still returned 404, so the user explicitly approved recoverable Auth-cache regeneration. The first sibling archive contaminated Tailwind source scanning and caused invalid CSS; both the original and failed regenerated caches are now retained only under ignored `project/_local/` paths. Restart and real-login proof remain underway. The local-only enrollment fixture question remains unanswered; no live flags, data resets, publication or deployment changed.
+- September 6 integration: the authorized one-time merge of v3 `1387f884ba` completed without conflicts at `3a311052f0`. The six already-adopted runtime files were preserved in a scoped stash because they exactly matched upstream. Do not reapply the stash. Three Chat suites, 60 Playwright CI contract tests and 28 FinanceWiki tests pass. Two preparation failures reproduced the transient Git-child issue; local repair commit `3976ebd61e` waits up to five seconds without bypassing the lifecycle guard. Shell regression tests pass, and canonical repair now reports full/ready with healthy services, workers and no drift. No data reset or deletion occurred. The runtime remains retained for manual verification. The local-only enrollment fixture decision and integrated final review remain pending; no push, tag or deployment is authorized.
+- September 6 follow-up: Settings-only navigation and explanation removal pass formatting, Manage typechecking and real-browser settings/menu checks. Existing Header equality lint findings remain unchanged. The revised Playwright assertions are not yet rerun. The approved Gemini consultation completed using the exact high-effort catalog ID; its local report records the remaining manual enrollment and final-review gates. The user now explicitly authorizes one upstream v3 integration pass. Preserve the adopted runtime files in a scoped stash before merging: all six match origin/v3 exactly and must not be duplicated in a new implementation commit. Local-only enrollment fixture selection remains unresolved; no live GrowthBook access is authorized.
+- September 6 UI revision: the user requests Settings-only beta navigation and removal of the cohort-identifier paragraph. These narrow changes and matching navigation tests are implemented; verification is in progress. Local database read confirms the seeded lecturer has both Catalyst flags and a FULL_ACCESS login. All three GrowthBook enrollment configuration variables are absent; changing Catalyst is not the solution. A local-only enrollment/feature fixture is a separate pending implementation choice; production flag permissions remain unchanged. Advisor invocation failed before inference because the CLI rejected the model/effort combination; the approved summary was not evaluated. Integrated final review waits for the revised package and local verification decision.
+- September 6 recreation: the user explicitly authorized rebuilding the recycled runtime. Exact provider state was NotFound and former Compose containers/volumes were absent. After restoring the missing shared Devrouter network, canonical full-profile ensure completed bootstrap and returned ready with no drift. New app container 001d211c0627 mounts this exact worktree. Auth providers return 200; real delegated browser login, menu-to-beta-settings navigation and denied direct chatbot route all pass. Browser closed; runtime retained for the user's manual verification until the next checkpoint. No source or lockfile change, deletion, integration or publication. The prior Auth cache approval blocker is resolved. Final review remains pending: command approval rejected the required Gemini advisor consultation because its local verification summary needs explicit destination/payload authorization. Nothing was sent. See the latest recovery receipt in 2026-09-06-v3-release-readiness.md; older runtime status below is historical.
+- Local verification is complete for the feature changes: eight authoring E2E tests and 148 focused database tests pass, alongside the previously recorded full build, checks and discovery proof. Disposable shutdown completed with fresh Stopped provider state and zero routes; no data was deleted. Package delivery remains pending retained Auth recovery approval. No final reviewer is dispatched while that goal requirement remains unresolved. Evidence-only documentation is ready for a scoped local commit; no push, integration, release or deployment is authorized.
+- Runtime verification completed after command execution resumed. Canonical disposable full-profile startup and host-launcher reconciliation both passed with the bounded transient-Git wait. All eight authoring browser tests passed in 46.7s; all 148 tests in six focused GraphQL suites passed in 6.59s after a guarded disposable-only reset. The shared test helper emitted unused localhost Redis connection errors; do not infer Redis integration proof. Main feature source and retained runtime/cache remain unchanged. Final review and final local evidence commit remain; exact disposable shutdown follows the last runtime check.
+- Subsequent diagnosis reproduced a transient orphaned `git diff HEAD --no-ext-diff --no-color` after successful Turbo preparation. A later process readback showed it had exited. A disposable-only bounded wait is syntax-checked but unverified: both canonical startup attempts and both guarded database-test attempts timed out in command approval before launch. No database reset ran. Both non-destructive stop attempts then failed in approval too, so the prior stopped receipt is stale after this reproduction. No command is running. First resume action is exact disposable runtime shutdown/verification, then the still-required runtime checks once execution capability returns. Main feature source and retained runtime remain unchanged.
+- Pause receipt: child-process diagnosis could not launch after two permission-review timeouts. Devsy Issues message delivery failed with thread-not-found despite fresh inventory resolving that task. The disposable runtime was stopped without deletion; fresh provider state is Stopped and exact route count is zero. No browser, child reviewer or command remains running. The main manual runtime remains under its existing user verification lease. Resume child-process diagnosis when command approval works; do not claim authoring E2E or final review passed.
+- September 6 continuation: fresh fetch leaves the feature branch three commits ahead and four behind origin/v3. No upstream integration. Frozen disposable dependency restoration completed, and targeted readback confirms Chat/Auth Next.js and backend NYC links. No prior host verification process remained running. Canonical full-profile repair passed all nine cached preparation tasks but failed because the process helper reported running children after synchronous preparation. Child-process diagnosis is pending; enabled authoring and integrated final review remain incomplete. The retained runtime and its cache remain unchanged.
+- Discovery committed locally at 19ea2de078 after equivalent container hook checks plus host gitleaks/identity checks. Both native discovery passes completed: simplifier found no warranted reduction; GLM slice reviewer found no blocking issue. Parent verified and persisted both reports; both children are closed.
+- Production build in the disposable lane passed 23 tasks in 2m55.956s. Host readback confirms all five standalone server outputs and all three service-worker artifact sets. The first authoring browser run reached only Bad Gateway: two attempted tests failed and six serial tests did not run. The host launcher's first filtered install removed container-visible dependency links; Next then failed and Turbo stopped every app. Frozen Linux dependency restoration is in progress in the disposable lane; no authoring failure is inferred from that run, and retained data/cache remain unchanged.
+- Isolated browser proof: canonical manage ensure returned ready with no drift. Fresh Auth providers returned HTTP 200 and real delegated login succeeded. Menu navigation reached beta settings. English/German desktop and 390x844 mobile screenshots show readable beta information with restricted enrollment; the pre-existing global header overflows on mobile, while the beta section fits. The engineering browser is closed. Full production build is running only in the disposable lane. The first build invocation incorrectly forwarded a concurrency argument to package scripts and failed before building; the corrected command applies it to Turbo.
+- Isolated verification continuation: created repo-local trees/rs/v3-beta-verification-isolated on rs/v3-beta-verification-isolated from exact HEAD 2be0a2108f, then mirrored the current feature and adopted runtime source with apply_patch. No upstream integration. The disposable lane alone pins Devrouter 0.0.55 and uses frozen bootstrap installation. Its committed database URLs resolve only to its Compose postgres service; Compose volumes are project-scoped. Canonical manage-profile ensure is starting the new lane. Retained Auth cache approval is still pending and no retained cache or database was changed.
+- Current checkpoint, 2026-09-06: Devrouter 0.0.55 guarded warm ensure and a subsequent normal stop/restart both returned ready/full with no drift or recreation. Original container IDs and retained database are preserved. All 35 serial check tasks, remaining repository policy/lint checks, 83 authorization tests, 16 effective-mode tests and two backend fixture tests pass. The corrected discovery smoke now passes all nine tests in 14.6 seconds; the first-login fixture must intercept the preloaded ManageUserProfile operation as well as UserProfile.
+- Real delegated login still reaches an Auth 404 after restart. Source exists in the exact container, static API routing works, process paths are correct and a standalone Watchpack probe discovers the catch-all source. This does not prove cache corruption. Requested permission to archive only apps/auth/.next recoverably and regenerate it; no cache mutation has occurred. Runtime is retained for the user's requested manual verification and this pending diagnostic decision. No browser, test, lifecycle command or child remains active at this checkpoint.
+- Updated release evidence is in 2026-09-06-v3-release-readiness.md: five pending migrations, including nullable standardModeConfig, and the deployed disclaimer fix in open PR #5696 is still absent from origin/v3. Full build, isolated enabled-authoring proof, discovery commit/reviews and integrated final review remain pending. No release-readiness claim or publication is made.
+- Resume on 2026-09-06: the user explicitly returns source and runtime ownership to this task and requests independent completion with a goal. Fresh fetch reports rs/v3-release-verification two commits ahead and four behind origin/v3; no upstream integration. Adopted runtime source matches the merged preparation/cache-preservation fix in PR #5790. Existing feature edits remain preserved and uncommitted.
+- Devrouter 0.0.55 is installed. Before guarded full-profile repair, all eight retained containers were stopped, exact routes were zero, and no competing lifecycle command targeted this workspace. The ignored preserve-next-cache marker is enabled. Repair is running against the retained IDs without bootstrap or recreation; application readiness and acceptance remain pending.
+- Remaining work: focused checks and safe discovery browser smoke, separate enabled-authoring test isolation, discovery commit and reviews, full checks/build and integrated final review. The previously completed authoring reviews remain applicable. No publication, tag, deployment, retained-data reset or upstream integration is authorized.
+- Draft v1: native planner REVISE; product direction approved. Four accepted corrections: explicit ownership map; complete field boundary/tests; UI discovery/control contract; isolated browser/backend fixture proof.
+- Draft v2: native planner APPROVED. A subsequent read-only Claude advisor consultation failed before work: OAuth session expired and could not be refreshed. No authentication repair attempted; this does not replace or invalidate the native planner approval.
+- Status: user approved the reviewed execution contract on 2026-09-05. Begin authoring gate implementation. Source baseline remains fbc5f4fcc2, clean apart from this plan; no upstream integration or publication.
+- Authoring gate source implemented. GraphQL codegen/SDL parity, GraphQL types, Manage types and Playwright types pass. Focused schema suite: 83 passing tests; two synthetic GrowthBook fixture tests pass. Test-only backend preload is limited to start:test, refuses non-test startup, and targets only the seeded eligible lecturer with a false default.
+- Baseline check:all failed before implementation from simultaneous Prisma generation (ENOTEMPTY and partial generated types) and Analytics choosing Python 3.14. Serial Prisma regeneration/build passed. Full checks remain required after integration, using Analytics Python 3.12.
+- Browser proof pending: retained manual runtime returned Bad Gateway after checks. Canonical full-profile ensure is waiting in the provider queue; no manual database reset or runtime deletion. Source-only checks do not establish enabled authoring browser behavior. Beta discovery implementation and independent slice/final reviews remain.
+- Authoring gate committed locally at 2be0a2108f. Native simplifier returned DONE with no warranted reduction; independent slice risk review is still running. Nothing pushed.
+- Beta discovery source now retains the header/settings/first-login information, names chatbot creation in EN/DE, and guards controls and handlers with backend capability and confirmed membership. Added closed, unknown, first-login and weaker-scope discovery assertions; enrollment mutation semantics are unchanged.
+- Manage, backend and Playwright typechecks passed after discovery UI changes. The final added browser assertions still require a fresh Playwright typecheck and execution. Browser inspection confirmed the real denied chatbot route and its beta-settings link, plus visible English settings and German mobile settings without an enrollment control.
+- Canonical runtime recovery initially failed auth readiness, later repaired a confirmed stale Chat cache and observed readiness, but exited nonzero with candidate rollback. The retained Manage route is reachable in the browser; do not describe the whole runtime as canonically healthy. Original runtime remains retained for the user's manual verification; no test runtime or database reset was created.
+- Read-only browser smoke setup is isolated from database mutations by an ignored config with no global setup, no cleanup test and only intercepted enrollment writes. The host launcher was not started: automatic permission review timed out twice before execution. Do not bypass the launcher or run the standard reset against retained data. Full checks/build and enabled isolated-runtime proof remain required before completion.
+- Native authoring slice reviewer returned DONE with no reportable findings. Its static test-preload review does not replace enabled runtime proof. Discovery remains uncommitted and still needs its own reviews. A subsequent serial repository-check command also timed out in automatic approval before launch; no check result exists for that attempt.
+- Checkpoint: both completed authoring review children are closed. No command remains running. The engineering browser session v3-beta-gates remains open on German settings because its screenshot/close command also timed out before launch; closing it is the first cleanup action on resume. Original manual runtime is retained under the user's verification request. Next authorized steps are to resume checks, finish isolated enabled-authoring proof, commit/review discovery and perform integrated final review. The permission-review service must permit command launch before these can continue.
+- Retry checkpoint: fresh fetch confirms the task branch is two commits ahead and zero behind origin/v3. Approval review now permits commands. New beta tests use element visibility, control state and enrollment transitions rather than literal prose, following the revised repository instructions. Main-session diff whitespace validation passes; container checks have not run.
+- Runtime blocker: devrouter exec reports no running container for default-rs-01df8. Canonical ensure then failed during Node image lookup with Docker Hub DNS timeout, before container bootstrap. No reset/seed step ran in this attempt. The bootstrap script resets its database on container creation, so do not retry rebuilding the retained runtime until data preservation is resolved.
+- Values-free inspection in Docker context orbstack found no exact compose-project containers/volumes, no volume name containing rs-01df8, and no container matching this worktree source-path label. These observations do not prove data loss or authorize recreation. Ask whether Docker was reset or its context changed; next verification remains authorized once the runtime/data boundary and image connectivity are resolved.
+- The old engineering browser session is now closed. Its final German mobile screenshot shows Bad Gateway and is not UI acceptance evidence. No command or review child is running. Discovery remains uncommitted; full checks, isolated enabled-authoring proof, discovery reviews and final review remain incomplete. No publication or deployment occurred.
