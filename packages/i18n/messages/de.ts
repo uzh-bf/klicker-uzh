@@ -2154,21 +2154,22 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     graphDomainInformatics: 'Informatik',
     graphDomainGeneralAcademic: 'Allgemein / Gemischt',
     graphDomainCategoriesLabel: 'Erzeugte Kategorien',
-    graphDomainLanguageNote:
-      'Der Graph wird in der gewählten Sprache erzeugt. Die Oberflächensprache ändert die Kategorien nicht.',
-    graphDomainLanguageLabel: 'Generierungssprache',
     graphDomainLanguageSelectPlaceholder: 'Sprache wählen',
-    graphDomainCurrentUnavailable:
-      'Die gewählte Domäne {domain} (Version {version}) ist in dieser Installation nicht verfügbar. Wählen Sie eine unterstützte Domäne, um erneut aufzubauen.',
-    graphDomainLanguageUnavailable:
-      'Die gewählte Domäne {domain} bietet {language} in dieser Installation nicht an. Wählen Sie eine unterstützte Generierungssprache, um erneut aufzubauen.',
-    graphDomainRebuildBlocked:
-      'Diese Wissensdatenbank verwendet eine explizite Domäne ({domain}, Version {version}, {language}), die diese Installation nicht erneut anwenden kann. Ein Neuaufbau ist blockiert, bis eine explizite Domänenwahl wieder möglich ist.',
     graphDomainVersionUnknown: 'unbekannt',
     graphDomainPublished:
       'Ausgelieferter Graph: {domain} (Version {version}, {language})',
     graphDomainLanguageGerman: 'Deutsch',
     graphDomainLanguageEnglish: 'Englisch',
+    domainSettingsTitle: 'Fachgebiet und Sprache',
+    domainSettingsDescription:
+      'Wird für jede Aufbereitung eines Wissensgraphen dieser Wissensbasis verwendet. Bereits bestehende Graphen behalten das Fachgebiet und die Sprache, mit denen sie erstellt wurden.',
+    domainSubjectLabel: 'Fachgebiet',
+    domainLanguageLabel: 'Inhaltssprache',
+    domainSettingsNotSet: 'Nicht festgelegt',
+    domainSettingsSaveError:
+      'Fachgebiet und Sprache konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.',
+    domainLanguageUnsupported:
+      '{domain} ist nicht in {language} verfügbar. Wählen Sie ein anderes Fachgebiet oder eine andere Sprache.',
     ingestionDisabledError:
       'Das Hinzufügen neuer Inhalte zu Wissensdatenbanken ist vorübergehend deaktiviert.',
   },

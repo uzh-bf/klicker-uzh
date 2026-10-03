@@ -2125,21 +2125,22 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     graphDomainInformatics: 'Informatics',
     graphDomainGeneralAcademic: 'General / Mixed',
     graphDomainCategoriesLabel: 'Generated categories',
-    graphDomainLanguageNote:
-      'The graph is generated in the selected language. The interface language does not change the categories.',
-    graphDomainLanguageLabel: 'Generation language',
     graphDomainLanguageSelectPlaceholder: 'Select a language',
-    graphDomainCurrentUnavailable:
-      'The selected domain {domain} (version {version}) is not available in this deployment. Choose a supported domain to build again.',
-    graphDomainLanguageUnavailable:
-      'The selected domain {domain} does not serve {language} in this deployment. Choose a supported generation language to build again.',
-    graphDomainRebuildBlocked:
-      'This knowledge base uses an explicit domain ({domain}, version {version}, {language}) that this deployment cannot reapply. Rebuilding is blocked until an explicit domain selection is available again.',
     graphDomainVersionUnknown: 'unknown',
     graphDomainPublished:
       'Served graph: {domain} (version {version}, {language})',
     graphDomainLanguageGerman: 'German',
     graphDomainLanguageEnglish: 'English',
+    domainSettingsTitle: 'Subject area and language',
+    domainSettingsDescription:
+      'Used whenever a knowledge graph is prepared for this knowledge base. Graphs that already exist keep the subject area and language they were built with.',
+    domainSubjectLabel: 'Subject area',
+    domainLanguageLabel: 'Content language',
+    domainSettingsNotSet: 'Not set',
+    domainSettingsSaveError:
+      'The subject area and language could not be saved. Please try again.',
+    domainLanguageUnsupported:
+      '{domain} is not available in {language}. Choose another subject area or another language.',
     ingestionDisabledError:
       'Adding new content to knowledge bases is temporarily disabled.',
   },
