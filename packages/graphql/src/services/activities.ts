@@ -1,11 +1,11 @@
-import { ContextWithUser } from '@/lib/context.js'
 import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType, SharingType, SortByType } from '@klicker-uzh/types'
 import {
-  PrismaTransactionClient,
+  type PrismaTransactionClient,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import generatePassword from 'generate-password'
+import type { ContextWithUser } from '@/lib/context.js'
 import { POINTS_PER_GROUP_ACTIVITY_ELEMENT } from './groups.js'
 import { POINTS_PER_INSTANCE } from './stacks.js'
 
@@ -27,6 +27,67 @@ function isPrismaRecordNotFoundError(error: unknown) {
     'code' in error &&
     error.code === 'P2025'
   )
+}
+
+// at least write permissions are required to update an activity through a
+// batch operation
+const BATCH_UPDATE_PERMISSION_LEVELS: DB.PermissionLevel[] = [
+  DB.PermissionLevel.WRITE,
+  DB.PermissionLevel.ADMIN,
+  DB.PermissionLevel.OWNER,
+]
+
+// shared access clauses for batch activity updates across the four activity
+// models: write-level (or higher) permission and unpublished status
+function activityBatchAccessClauses({
+  activityIds,
+  userId,
+}: {
+  activityIds: string[]
+  userId: string
+}) {
+  return {
+    id: { in: activityIds },
+    permissions: {
+      some: {
+        userId,
+        permissionLevel: { in: BATCH_UPDATE_PERMISSION_LEVELS },
+      },
+    },
+    status: { in: UNPUBLISHED_ACTIVITY_STATUSES },
+  }
+}
+
+// setting a multiplier without a course re-assignment (or updating the grading
+// points of a live quiz) requires the activity to be gamified or
+// assessment-relevant already
+function gamifiedOrAssessmentClause() {
+  return {
+    OR: [{ isGamificationEnabled: true }, { isAssessmentEnabled: true }],
+  }
+}
+
+// assessment-relevant activities can only be assigned to another course (and
+// thereby removed from their current one) by an owner/admin of the assessment
+// course; live quizzes additionally admit activities without a course (the
+// other activity models cannot be assessment-relevant without one)
+function assessmentCourseMoveBranches(userId: string) {
+  return [
+    { isAssessmentEnabled: false },
+    {
+      isAssessmentEnabled: true,
+      course: {
+        permissions: {
+          some: {
+            userId,
+            permissionLevel: {
+              in: [DB.PermissionLevel.OWNER, DB.PermissionLevel.ADMIN],
+            },
+          },
+        },
+      },
+    },
+  ]
 }
 
 export async function deleteWithPublicationStatusGuard<T>(
@@ -524,19 +585,6 @@ export async function applyActivityBatchOperations(
     return 0
   }
 
-  // at least write permissions on the activities are required
-  const requiredPermissionLevels = [
-    DB.PermissionLevel.WRITE,
-    DB.PermissionLevel.ADMIN,
-    DB.PermissionLevel.OWNER,
-  ]
-
-  // only draft and scheduled activities can be updated
-  const allowedActivityStatus = [
-    DB.PublicationStatus.DRAFT,
-    DB.PublicationStatus.SCHEDULED,
-  ]
-
   // check if the live quiz grading logic should be manipulated
   const setLiveQuizPoints =
     typeof basePoints !== 'undefined' &&
@@ -554,44 +602,19 @@ export async function applyActivityBatchOperations(
   // fetch all live quizzes that should be updated
   const liveQuizzes = await ctx.prisma.liveQuiz.findMany({
     where: {
-      id: { in: activityIds },
-      permissions: {
-        some: {
-          userId: ctx.user.sub,
-          permissionLevel: { in: requiredPermissionLevels },
-        },
-      },
-      status: { in: allowedActivityStatus },
+      ...activityBatchAccessClauses({ activityIds, userId: ctx.user.sub }),
       AND: [
         // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
+        // updating the grading points of a live quiz requires the same
         ...((setMultiplier && !newCourse) || setLiveQuizPoints
-          ? [
-              {
-                OR: [
-                  { isGamificationEnabled: true },
-                  { isAssessmentEnabled: true },
-                ],
-              },
-            ]
+          ? [gamifiedOrAssessmentClause()]
           : []),
         // activities in assessment mode can only be assigned to another course (and thereby removed from it) by an admin of the assessment course
+        // live quizzes without a course always qualify for updates
         {
           OR: [
             { courseId: null },
-            { isAssessmentEnabled: false },
-            {
-              isAssessmentEnabled: true,
-              course: {
-                permissions: {
-                  some: {
-                    userId: ctx.user.sub,
-                    permissionLevel: {
-                      in: [DB.PermissionLevel.OWNER, DB.PermissionLevel.ADMIN],
-                    },
-                  },
-                },
-              },
-            },
+            ...assessmentCourseMoveBranches(ctx.user.sub),
           ],
         },
       ],
@@ -603,14 +626,7 @@ export async function applyActivityBatchOperations(
   const practiceQuizzes = !setLiveQuizPoints
     ? await ctx.prisma.practiceQuiz.findMany({
         where: {
-          id: { in: activityIds },
-          permissions: {
-            some: {
-              userId: ctx.user.sub,
-              permissionLevel: { in: requiredPermissionLevels },
-            },
-          },
-          status: { in: allowedActivityStatus },
+          ...activityBatchAccessClauses({ activityIds, userId: ctx.user.sub }),
           AND: [
             // if the practice quiz is assigned to a new course, the scheduled publication date must lie within the course duration (or be null -> draft)
             ...(newCourse
@@ -630,37 +646,10 @@ export async function applyActivityBatchOperations(
               : []),
             // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
             ...(setMultiplier && !newCourse
-              ? [
-                  {
-                    OR: [
-                      { isGamificationEnabled: true },
-                      { isAssessmentEnabled: true },
-                    ],
-                  },
-                ]
+              ? [gamifiedOrAssessmentClause()]
               : []),
             // activities in assessment mode can only be assigned to another course (and thereby removed from it) by an admin of the assessment course
-            {
-              OR: [
-                { isAssessmentEnabled: false },
-                {
-                  isAssessmentEnabled: true,
-                  course: {
-                    permissions: {
-                      some: {
-                        userId: ctx.user.sub,
-                        permissionLevel: {
-                          in: [
-                            DB.PermissionLevel.OWNER,
-                            DB.PermissionLevel.ADMIN,
-                          ],
-                        },
-                      },
-                    },
-                  },
-                },
-              ],
-            },
+            { OR: assessmentCourseMoveBranches(ctx.user.sub) },
           ],
         },
         include: { stacks: { include: { elements: true } } },
@@ -671,14 +660,7 @@ export async function applyActivityBatchOperations(
   const microLearnings = !setLiveQuizPoints
     ? await ctx.prisma.microLearning.findMany({
         where: {
-          id: { in: activityIds },
-          permissions: {
-            some: {
-              userId: ctx.user.sub,
-              permissionLevel: { in: requiredPermissionLevels },
-            },
-          },
-          status: { in: allowedActivityStatus },
+          ...activityBatchAccessClauses({ activityIds, userId: ctx.user.sub }),
           // if a new course is assigned, the entire availability interval of the activity should lie inside the course duration
           scheduledStartAt: newCourse
             ? { gte: newCourse.startDate }
@@ -687,37 +669,10 @@ export async function applyActivityBatchOperations(
           AND: [
             // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
             ...(setMultiplier && !newCourse
-              ? [
-                  {
-                    OR: [
-                      { isGamificationEnabled: true },
-                      { isAssessmentEnabled: true },
-                    ],
-                  },
-                ]
+              ? [gamifiedOrAssessmentClause()]
               : []),
             // activities in assessment mode can only be assigned to another course (and thereby removed from it) by an admin of the assessment course
-            {
-              OR: [
-                { isAssessmentEnabled: false },
-                {
-                  isAssessmentEnabled: true,
-                  course: {
-                    permissions: {
-                      some: {
-                        userId: ctx.user.sub,
-                        permissionLevel: {
-                          in: [
-                            DB.PermissionLevel.OWNER,
-                            DB.PermissionLevel.ADMIN,
-                          ],
-                        },
-                      },
-                    },
-                  },
-                },
-              ],
-            },
+            { OR: assessmentCourseMoveBranches(ctx.user.sub) },
           ],
         },
         include: { stacks: { include: { elements: true } } },
@@ -729,14 +684,10 @@ export async function applyActivityBatchOperations(
     !setLiveQuizPoints && (!newCourse || newCourse.isGroupCreationEnabled) // if the course is updated, group creation needs to be enabled
       ? await ctx.prisma.groupActivity.findMany({
           where: {
-            id: { in: activityIds },
-            permissions: {
-              some: {
-                userId: ctx.user.sub,
-                permissionLevel: { in: requiredPermissionLevels },
-              },
-            },
-            status: { in: allowedActivityStatus },
+            ...activityBatchAccessClauses({
+              activityIds,
+              userId: ctx.user.sub,
+            }),
             // if a new course is assigned, the group formation deadline should be before the start of the group activity
             // (start date of course does not need to be verified, since group formation deadline is always after start date)
             scheduledStartAt: newCourse
@@ -747,37 +698,10 @@ export async function applyActivityBatchOperations(
             AND: [
               // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
               ...(setMultiplier && !newCourse
-                ? [
-                    {
-                      OR: [
-                        { isGamificationEnabled: true },
-                        { isAssessmentEnabled: true },
-                      ],
-                    },
-                  ]
+                ? [gamifiedOrAssessmentClause()]
                 : []),
               // activities in assessment mode can only be assigned to another course (and thereby removed from it) by an admin of the assessment course
-              {
-                OR: [
-                  { isAssessmentEnabled: false },
-                  {
-                    isAssessmentEnabled: true,
-                    course: {
-                      permissions: {
-                        some: {
-                          userId: ctx.user.sub,
-                          permissionLevel: {
-                            in: [
-                              DB.PermissionLevel.OWNER,
-                              DB.PermissionLevel.ADMIN,
-                            ],
-                          },
-                        },
-                      },
-                    },
-                  },
-                ],
-              },
+              { OR: assessmentCourseMoveBranches(ctx.user.sub) },
             ],
           },
           include: { stacks: { include: { elements: true } } },
@@ -785,10 +709,10 @@ export async function applyActivityBatchOperations(
       : []
 
   // apply activity updates
-  let updatedLiveQuizzes: string[] = []
-  let updatedPracticeQuizzes: string[] = []
-  let updatedMicroLearnings: string[] = []
-  let updatedGroupActivities: string[] = []
+  const updatedLiveQuizzes: string[] = []
+  const updatedPracticeQuizzes: string[] = []
+  const updatedMicroLearnings: string[] = []
+  const updatedGroupActivities: string[] = []
 
   // update live quizzes (including gamification / assessment flags & all instances - depending on the required updates)
   for (const liveQuiz of liveQuizzes) {
@@ -1765,7 +1689,7 @@ export async function setActivityReviewStatus(
         data: { reviewStatus },
       })
 
-      return !!liveQuiz ? reviewStatus : null
+      return liveQuiz ? reviewStatus : null
     } else if (activityType === ActivityType.PRACTICE_QUIZ) {
       const practiceQuiz = await ctx.prisma.practiceQuiz.update({
         where: {
@@ -1782,7 +1706,7 @@ export async function setActivityReviewStatus(
         data: { reviewStatus },
       })
 
-      return !!practiceQuiz ? reviewStatus : null
+      return practiceQuiz ? reviewStatus : null
     } else if (activityType === ActivityType.MICRO_LEARNING) {
       const microLearning = await ctx.prisma.microLearning.update({
         where: {
@@ -1799,7 +1723,7 @@ export async function setActivityReviewStatus(
         data: { reviewStatus },
       })
 
-      return !!microLearning ? reviewStatus : null
+      return microLearning ? reviewStatus : null
     } else if (activityType === ActivityType.GROUP_ACTIVITY) {
       const groupActivity = await ctx.prisma.groupActivity.update({
         where: {
@@ -1816,7 +1740,7 @@ export async function setActivityReviewStatus(
         data: { reviewStatus },
       })
 
-      return !!groupActivity ? reviewStatus : null
+      return groupActivity ? reviewStatus : null
     }
   } catch (error) {
     console.error('Error setting activity review status:', error)

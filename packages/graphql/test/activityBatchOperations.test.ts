@@ -5,19 +5,19 @@ import {
   ElementStackType,
   ElementType,
   PermissionLevel,
-  PrismaClient,
+  type PrismaClient,
   PublicationStatus,
   ReviewStatus,
 } from '@klicker-uzh/prisma/client'
-import {
+import type {
   ElementData,
   ElementInstanceResults,
   ElementOptions,
 } from '@klicker-uzh/types'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
-import { vi } from 'vitest'
 import { v4 as uuid } from 'uuid'
+import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { applyActivityBatchOperations } from '../src/services/activities.js'
 import { deleteGroupActivity } from '../src/services/groups.js'
@@ -117,7 +117,7 @@ describe('Integration tests for batch operations on activities', () => {
         isGroupCreationEnabled: true,
         groupDeadlineDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // one week in the future
         ownerId: userOneCtx.user.sub,
-        authType: !!args.isAssessmentEnabled
+        authType: args.isAssessmentEnabled
           ? CourseAuthType.SSO
           : CourseAuthType.PIN,
         ...args,
@@ -1070,6 +1070,28 @@ describe('Integration tests for batch operations on activities', () => {
     const gaNonGamifiedInstance =
       unchangedGroupActivityNonGamified?.stacks[0]?.elements[0]
     expect(gaNonGamifiedInstance?.options.pointsMultiplier).toEqual(4)
+  })
+
+  it('Verify that assessment live quizzes without a course remain eligible for multiplier updates', async () => {
+    // only live quizzes can be assessment-relevant without a course assignment
+    // (the other activity models require a course for assessment mode); such
+    // quizzes stay eligible for multiplier-only batch updates
+    const liveQuiz = await seedLiveQuiz(
+      { isAssessmentEnabled: true, isGamificationEnabled: false },
+      prisma
+    )
+
+    const updates = await applyActivityBatchOperations(
+      { activityIds: [liveQuiz.id], multiplier: 2 },
+      userOneCtx
+    )
+    expect(updates).toBe(1)
+
+    const updatedLiveQuiz = await prisma.liveQuiz.findUnique({
+      where: { id: liveQuiz.id },
+    })
+    expect(updatedLiveQuiz?.pointsMultiplier).toEqual(2)
+    expect(updatedLiveQuiz?.courseId).toBeNull()
   })
 
   it('Verify that with live quiz grading components set, the quizzes are updated accordingly (and other activities are skipped', async () => {
