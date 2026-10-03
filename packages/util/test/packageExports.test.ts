@@ -21,6 +21,15 @@ describe('package subpath exports', () => {
     expect(citations.extractCitationIndexes('Grounded [1].')).toEqual([1])
   })
 
+  it('loads the KB transfer attestation contract through the public package path', async () => {
+    const attestation = await import(
+      '@klicker-uzh/util/knowledge-transfer-attestation'
+    )
+
+    expect(attestation.KB_TRANSFER_ATTESTATION_VERSION).toBeTypeOf('string')
+    expect(attestation.isKbTransferAttestationCurrent).toBeTypeOf('function')
+  })
+
   it('loads participant data-use helpers through the public package path', async () => {
     const dataUse = await import(
       '@klicker-uzh/util/participant-account-data-use'

@@ -14,6 +14,10 @@ import { useTranslations } from 'next-intl'
 import React, { type FormEvent, useState } from 'react'
 import { getGraphQLErrorCode } from '../graphqlError'
 import { refreshAfterMutation } from '../refreshAfterMutation'
+import KnowledgeBaseMaterialConfirmation, {
+  EMPTY_KB_TRANSFER_ATTESTATION,
+  isKbTransferAttestationGiven,
+} from './KnowledgeBaseMaterialConfirmation'
 
 function isValidWebUrl(value: string) {
   try {
@@ -37,6 +41,7 @@ function KnowledgeBaseUrlForm({
   const [title, setTitle] = useState('')
   const [url, setUrl] = useState('')
   const [urlTouched, setUrlTouched] = useState(false)
+  const [attestation, setAttestation] = useState(EMPTY_KB_TRANSFER_ATTESTATION)
   const [materialType, setMaterialType] = useState(
     KbResourceMaterialType.CourseContent
   )
@@ -49,7 +54,7 @@ function KnowledgeBaseUrlForm({
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!valid || loading) return
+    if (!valid || loading || !isKbTransferAttestationGiven(attestation)) return
 
     try {
       await createUrlResource({
@@ -58,6 +63,8 @@ function KnowledgeBaseUrlForm({
           title: title.trim(),
           url: url.trim(),
           materialType,
+          rightsConfirmed: attestation.rightsConfirmed,
+          personalDataConfirmed: attestation.personalDataConfirmed,
         },
       })
     } catch (error) {
@@ -82,6 +89,7 @@ function KnowledgeBaseUrlForm({
     setTitle('')
     setUrl('')
     setUrlTouched(false)
+    setAttestation(EMPTY_KB_TRANSFER_ATTESTATION)
     setMaterialType(KbResourceMaterialType.CourseContent)
     toast({ type: 'success', message: t('kb.linkSuccess') })
   }
@@ -95,7 +103,10 @@ function KnowledgeBaseUrlForm({
           id="kb-url-title"
           autoComplete="off"
           value={title}
-          onChange={setTitle}
+          onChange={(value) => {
+            setAttestation(EMPTY_KB_TRANSFER_ATTESTATION)
+            setTitle(value)
+          }}
           label={t('kb.resourceTitleLabel')}
           required
           disabled={loading}
@@ -106,7 +117,10 @@ function KnowledgeBaseUrlForm({
           autoComplete="off"
           spellCheck={false}
           value={url}
-          onChange={setUrl}
+          onChange={(value) => {
+            setAttestation(EMPTY_KB_TRANSFER_ATTESTATION)
+            setUrl(value)
+          }}
           label={t('kb.urlLabel')}
           placeholder="https://"
           type="url"
@@ -121,7 +135,10 @@ function KnowledgeBaseUrlForm({
           id="kb-url-material-type"
           label={t('kb.materialType')}
           value={materialType}
-          onChange={(value) => setMaterialType(value as KbResourceMaterialType)}
+          onChange={(value) => {
+            setAttestation(EMPTY_KB_TRANSFER_ATTESTATION)
+            setMaterialType(value as KbResourceMaterialType)
+          }}
           items={[
             {
               value: KbResourceMaterialType.Unclassified,
@@ -149,11 +166,18 @@ function KnowledgeBaseUrlForm({
             {t('kb.invalidUrl')}
           </p>
         ) : null}
+        <KnowledgeBaseMaterialConfirmation
+          attestation={attestation}
+          onChange={setAttestation}
+          disabled={loading}
+        />
         <Button
           primary
           type="submit"
           loading={loading}
-          disabled={!valid || loading}
+          disabled={
+            !valid || loading || !isKbTransferAttestationGiven(attestation)
+          }
           data={{ cy: 'add-kb-url-resource' }}
         >
           <Button.Label>{t('kb.linkTitle')}</Button.Label>

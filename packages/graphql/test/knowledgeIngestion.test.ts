@@ -124,6 +124,8 @@ describe('Integration tests for knowledge base ingestion', () => {
         kbId: created.id,
         title: 'Lecture recording',
         url: 'https://video.example.com/course',
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -172,6 +174,8 @@ describe('Integration tests for knowledge base ingestion', () => {
         kbId: created.id,
         title: 'Lecture recording',
         url: 'https://video.example.com/course',
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -263,6 +267,8 @@ describe('Integration tests for knowledge base ingestion', () => {
         kbId: created.id,
         title: 'Lecture recording',
         url: 'https://video.example.com/course',
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -290,6 +296,8 @@ describe('Integration tests for knowledge base ingestion', () => {
         kbId: created.id,
         title: 'Lecture recording',
         url: 'https://video.example.com/course',
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -411,6 +419,8 @@ describe('Integration tests for knowledge base ingestion', () => {
         kbId: created.id,
         title: 'Lecture recording',
         url: 'https://video.example.com/course',
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -476,6 +486,8 @@ describe('Integration tests for knowledge base ingestion', () => {
         kbId: created.id,
         title: 'Lecture recording',
         url: 'https://video.example.com/course',
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -504,6 +516,8 @@ describe('Integration tests for knowledge base ingestion', () => {
         kbId: created.id,
         title: 'Lecture recording',
         url: 'https://video.example.com/course',
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -549,6 +563,8 @@ describe('Integration tests for knowledge base ingestion', () => {
             kbId: created.id,
             title: name,
             url: `https://example.com/${name}`,
+            rightsConfirmed: true,
+            personalDataConfirmed: true,
           },
           userOneCtx
         )
@@ -682,6 +698,8 @@ describe('Integration tests for knowledge base ingestion', () => {
         kbId: created.id,
         title: 'Provider refresh',
         url: 'https://example.com/provider-refresh',
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -722,6 +740,8 @@ describe('Integration tests for knowledge base ingestion', () => {
             kbId: created.id,
             title: name,
             url: `https://example.com/concurrent-${name}`,
+            rightsConfirmed: true,
+            personalDataConfirmed: true,
           },
           userOneCtx
         )
@@ -774,6 +794,8 @@ describe('Integration tests for knowledge base ingestion', () => {
         kbId: created.id,
         title: 'Concurrent resource',
         url: 'https://example.com/concurrent-resource',
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -822,6 +844,8 @@ describe('Integration tests for knowledge base ingestion', () => {
             kbId: created.id,
             title: name,
             url: `https://example.com/${name}`,
+            rightsConfirmed: true,
+            personalDataConfirmed: true,
           },
           userOneCtx
         )
