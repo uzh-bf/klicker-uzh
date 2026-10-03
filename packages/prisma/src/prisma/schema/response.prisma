@@ -67,6 +67,7 @@ model QuestionResponse {
   isMigrated Boolean @default(false)
 
   @@unique([participantId, elementInstanceId])
+  @@index([participationId, lastAnsweredAt])
   @@index([practiceQuizId])
   @@index([microLearningId])
   @@index([practiceQuizId, participantId])
@@ -106,6 +107,7 @@ model QuestionResponseDetail {
   @@index([microLearningId])
   @@index([practiceQuizId, participantId])
   @@index([microLearningId, participantId])
+  @@index([participationId, createdAt])
 }
 
 model LiveQuizResponse {

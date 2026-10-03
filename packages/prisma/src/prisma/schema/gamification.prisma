@@ -48,6 +48,9 @@ model Achievement {
   rewardedTitles Title[]
   type           AchievementType
   scope          AchievementScope @default(GLOBAL)
+  // only entries with an implemented award path are visible to students;
+  // seed data controls the flag per entry (roadmap)
+  isDiscoverable Boolean @default(false)
 
   course   Course? @relation(fields: [courseId], references: [id])
   courseId String? @db.Uuid
@@ -65,6 +68,8 @@ model ParticipantAchievementInstance {
 
   achievedAt    DateTime
   achievedCount Int      @default(1)
+  // set when the student has seen the award receipt for this achievement
+  receiptAcknowledgedAt DateTime?
 
   achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   achievementId Int
