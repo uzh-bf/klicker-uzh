@@ -1,0 +1,11 @@
+mutation MarkProductUpdateRead($updateId: String!) {
+  markProductUpdateRead(updateId: $updateId) {
+    id
+    updateId
+    firstPresentedAt
+    lastPresentedAt
+    presentationCount
+    readAt
+    dismissedAt
+  }
+}
