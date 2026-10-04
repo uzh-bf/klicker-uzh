@@ -157,7 +157,14 @@ vi.mock('ai', async (importOriginal) => {
 })
 
 import { POST } from '../src/app/api/chatbots/[chatbotId]/chat/route'
-import { REPLY_LANGUAGE_REMINDER } from '../src/lib/server/languageInstructions'
+import { stepReminder } from '../src/lib/server/calculatorTool'
+
+// Tutor and quizzer steps end with one system message that carries the
+// precision rule and the reply-language reminder.
+const STEP_REMINDER = {
+  role: 'system',
+  content: expect.stringContaining(stepReminder('tutor').content),
+}
 
 type StreamCallbacks = {
   onEnd: (result: {
@@ -693,7 +700,7 @@ describe('account usage chat route', () => {
       prepareStep({ stepNumber: 0, initialMessages, responseMessages: [] })
     ).toEqual({
       toolChoice: { type: 'tool', toolName: 'KB_doc_query' },
-      messages: [initialMessages[0], REPLY_LANGUAGE_REMINDER],
+      messages: [initialMessages[0], STEP_REMINDER],
     })
     const raw = {
       mode: 'documents',
@@ -754,12 +761,12 @@ describe('account usage chat route', () => {
             },
           ],
         },
-        REPLY_LANGUAGE_REMINDER,
+        STEP_REMINDER,
       ],
     })
   })
 
-  test('ends every model step with the reply language reminder', async () => {
+  test('ends every model step with the precision and language reminders', async () => {
     const response = await POST(createRequest(), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
     })
@@ -782,7 +789,7 @@ describe('account usage chat route', () => {
         responseMessages: [toolMessage],
       })
     ).toEqual({
-      messages: [initialMessages[0], toolMessage, REPLY_LANGUAGE_REMINDER],
+      messages: [initialMessages[0], toolMessage, STEP_REMINDER],
     })
   })
 

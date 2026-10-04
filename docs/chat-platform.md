@@ -90,7 +90,8 @@ key-only path intentionally receives neither the default exact-response bypass
 nor the default prompt-cache identity.
 
 For default requests, `POST` passes the final `systemPrompt`, requested
-deployment identity, transport family, and MCP tools to
+deployment identity, transport family, and request tools (the MCP tools plus
+the Tutor and Quizzer `calculate` tool) to
 `buildPromptCacheRequest`. The helper hashes only a versioned canonical
 provider-visible projection with SHA-256, then emits the provider-safe
 `klicker:pc:v1:<50-hex-character-digest>` key and
