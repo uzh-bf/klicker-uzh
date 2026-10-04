@@ -33,6 +33,7 @@ import {
   getModelsForChatbot,
   getParticipantFallbackModelId,
 } from '@/src/lib/server/chatModelRegistry'
+import { buildChatTurnRequest } from '@/src/lib/server/chatTurnRequest'
 import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
 import {
   resolveEffectiveChatModeOptions,
@@ -52,6 +53,7 @@ import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
+import { getOpenAIProviderOptions } from '@/src/lib/server/openaiProviderOptions'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import {
   buildAbortedAssistantContent,
@@ -99,12 +101,14 @@ import {
 import {
   formatPracticeCandidatesForPrompt,
   getPracticeStackForQuiz,
+  getStudentPracticeMcpUrl,
   lookupRelevantPracticeStacks,
   STUDENT_PRACTICE_QUIZ_TOOL_NAME,
   toPracticeCandidateId,
 } from '@/src/services/studentPracticeMcp'
 import {
-  formatElearningGroundingPolicy,
+  formatElearningEvidencePolicy,
+  formatElearningSnapshotContext,
   normalizePersistedLearningContext,
   resolveElearningThreadOrigin,
   verifyAndNormalizeElearningChatContext,
@@ -1339,8 +1343,11 @@ export async function POST(
       }
     }
 
+    // Registered by mode and deployment capability, not by this turn's
+    // candidates, so the tool list at the start of the request prefix stays
+    // constant across a thread.
     const studentPracticeTools: Record<string, any> = {}
-    if (practiceCandidatePrompt) {
+    if (selectedMode === 'tutor' && getStudentPracticeMcpUrl() !== null) {
       studentPracticeTools[STUDENT_PRACTICE_QUIZ_TOOL_NAME] = tool({
         description:
           'Show a selected answer-safe practice quiz question to the student. Use only candidateId values from the current relevant practice candidate context.',
@@ -1355,7 +1362,13 @@ export async function POST(
         execute: async ({ candidateId }) => {
           const questionRef = practiceCandidateRefs.get(candidateId)
           if (!questionRef) {
-            throw new Error('Unknown practice candidate id')
+            return {
+              kind: 'student-practice-unavailable' as const,
+              reason:
+                practiceCandidateRefs.size === 0
+                  ? 'no-candidates'
+                  : 'unknown-candidate',
+            }
           }
 
           const payload = await getPracticeStackForQuiz({
@@ -1373,10 +1386,12 @@ export async function POST(
             ...payload,
           }
         },
-        toModelOutput: () => ({
+        toModelOutput: ({ output }) => ({
           type: 'text' as const,
           value:
-            'A practice quiz was shown to the student. Wait for the student answer or submission result before giving feedback.',
+            output.kind === 'student-practice-quiz'
+              ? 'A practice quiz was shown to the student. Wait for the student answer or submission result before giving feedback.'
+              : 'No practice quiz was shown: there is no matching practice candidate for this turn. Continue without a quiz.',
         }),
       })
     }
@@ -1425,22 +1440,25 @@ export async function POST(
     const chatContextPrompt = formatKlickerChatContextForPrompt(chatContext)
     // The materials-only policy is bound to the conversation origin, so a turn
     // that lost or never carried a verified snapshot still answers under it.
-    const elearningContextPrompt = isElearningThread
-      ? formatElearningGroundingPolicy(elearningSnapshot)
+    // The policy text is fixed per thread and stays in the instructions; the
+    // snapshot and the other per-turn data travel in the turn context message.
+    const elearningPolicyPrompt = isElearningThread
+      ? formatElearningEvidencePolicy()
       : ''
-    const contextSections = [chatContextPrompt, elearningContextPrompt].filter(
-      Boolean
-    )
-    const contextAwareSystemPrompt =
-      contextSections.length > 0
-        ? `${systemPrompt}\n\n${contextSections.join('\n\n')}`
-        : systemPrompt
-    const practiceAwareSystemPrompt = practiceCandidatePrompt
-      ? `${contextAwareSystemPrompt}\n\n${practiceCandidatePrompt}`
-      : contextAwareSystemPrompt
-    const effectiveSystemPrompt = responseExampleSummary
-      ? `${practiceAwareSystemPrompt}\n\n${responseExampleSummary}`
-      : practiceAwareSystemPrompt
+    const elearningContextPrompt = isElearningThread
+      ? formatElearningSnapshotContext(elearningSnapshot)
+      : ''
+    const stableSections = [
+      systemPrompt,
+      elearningPolicyPrompt,
+      responseExampleSummary,
+    ]
+    const turnContextSections = [
+      chatContextPrompt,
+      elearningContextPrompt,
+      practiceCandidatePrompt,
+    ]
+    const effectiveSystemPrompt = stableSections.filter(Boolean).join('\n\n')
 
     // track partial content for cancelled streams
     let partialContent = ''
@@ -1481,10 +1499,21 @@ export async function POST(
             transport: selectedModelConfig.usesResponsesApi
               ? 'responses'
               : 'chat',
-            instructions: effectiveSystemPrompt,
+            cacheScope: {
+              chatbotId,
+              mode: selectedMode,
+              threadId: owningThread.id,
+            },
             tools: chatTools,
           })
         : null
+
+    const openAIProviderOptions = await getOpenAIProviderOptions({
+      assistantMessageId,
+      chatbotId,
+      threadId: owningThread.id,
+      routingSource: routing.source,
+    })
 
     const resolvedImages = await Promise.all(
       normalizedImages.map((image) => ensureImagePreviewBase64(image))
@@ -1919,6 +1948,12 @@ export async function POST(
       }
     }
 
+    const turnRequest = buildChatTurnRequest({
+      stableSections,
+      turnContextSections,
+      history: modelMessages as ModelMessage[],
+    })
+
     const startStream = () => {
       providerStreamStarted = true
       return streamText({
@@ -1950,6 +1985,7 @@ export async function POST(
         },
         providerOptions: {
           openai: {
+            ...openAIProviderOptions,
             ...(promptCacheRequest
               ? { promptCacheKey: promptCacheRequest.promptCacheKey }
               : {}),
@@ -1962,7 +1998,8 @@ export async function POST(
             }),
           },
         },
-        messages: modelMessages as ModelMessage[],
+        messages: turnRequest.messages,
+        allowSystemInMessages: true,
         tools: promptCacheRequest?.tools ?? chatTools,
         toolOrder: promptCacheRequest?.toolOrder,
         toolChoice: 'auto',
@@ -1983,7 +2020,7 @@ export async function POST(
                   }
           : undefined,
         stopWhen: isStepCount(5),
-        instructions: effectiveSystemPrompt,
+        instructions: turnRequest.instructions,
 
         abortSignal: req.signal,
 

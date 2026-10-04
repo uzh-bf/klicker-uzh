@@ -411,7 +411,7 @@ describe('required MCP chat preflight', () => {
       'tutor',
       {
         courseDisplayName: displayName,
-        toolNames: [],
+        toolNames: ['start_student_practice_quiz'],
         standardModeConfig: null,
       }
     )

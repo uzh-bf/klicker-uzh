@@ -322,7 +322,13 @@ export async function POST(
         ? await buildPromptCacheRequest({
             deploymentId: selectedModel.deploymentId,
             transport: selectedModel.usesResponsesApi ? 'responses' : 'chat',
-            instructions: systemPrompt,
+            // Owner previews have no persisted thread, so one preview scope per
+            // chatbot and mode shares the cached prefix.
+            cacheScope: {
+              chatbotId,
+              mode: selectedMode,
+              threadId: 'owner-preview',
+            },
             tools,
           })
         : null

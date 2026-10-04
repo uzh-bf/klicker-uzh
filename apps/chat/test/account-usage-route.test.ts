@@ -132,6 +132,7 @@ vi.mock('@/src/lib/server/langfuseTracing', () => ({
   registerLangfuseTelemetry: vi.fn().mockResolvedValue(undefined),
   flushLangfuseTelemetry: mocks.flushLangfuseTelemetry,
   getChatTraceContext: mocks.getChatTraceContext,
+  getTraceIdForMessage: vi.fn().mockResolvedValue('synthetic-trace-id'),
   getLangfuseAiSdkIntegration: mocks.getLangfuseAiSdkIntegration,
   isAiTelemetryEnabled: mocks.isAiTelemetryEnabled,
   LANGFUSE_CHAT_TRACE_NAME: 'generate-chat-response',
@@ -515,7 +516,6 @@ describe('account usage chat route', () => {
     })
     expect(mocks.buildPromptCacheRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        instructions: expect.stringContaining('Synthetic lecturer guidance.'),
         tools: expect.objectContaining({
           search_response_examples: responseExampleTool,
         }),
@@ -558,7 +558,6 @@ describe('account usage chat route', () => {
     expect(mocks.streamText).toHaveBeenCalledOnce()
     expect(mocks.buildPromptCacheRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        instructions: expect.not.stringContaining('Response-example skill'),
         tools: expect.not.objectContaining({
           search_response_examples: expect.anything(),
         }),
@@ -566,6 +565,7 @@ describe('account usage chat route', () => {
     )
     expect(mocks.streamText).toHaveBeenCalledWith(
       expect.objectContaining({
+        instructions: expect.not.stringContaining('Response-example skill'),
         runtimeContext: {
           responseExampleRole: 'included',
           responseExampleSkillAvailable: false,
@@ -601,9 +601,6 @@ describe('account usage chat route', () => {
     expect(response.status).toBe(200)
     expect(mocks.buildPromptCacheRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        instructions: expect.not.stringContaining(
-          'Synthetic lecturer guidance.'
-        ),
         tools: expect.not.objectContaining({
           search_response_examples: expect.anything(),
         }),
@@ -642,9 +639,6 @@ describe('account usage chat route', () => {
     expect(mocks.createResponseExampleSearchTool).not.toHaveBeenCalled()
     expect(mocks.buildPromptCacheRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        instructions: expect.not.stringContaining(
-          'Synthetic lecturer guidance.'
-        ),
         tools: expect.objectContaining({ search_response_examples: mcpTool }),
       })
     )
