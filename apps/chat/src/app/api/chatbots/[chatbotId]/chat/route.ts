@@ -25,6 +25,7 @@ import { after, type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
+import { withCalculatorTool } from '@/src/lib/server/calculatorTool'
 import { getChatModel } from '@/src/lib/server/chatModelProvider'
 import {
   type ChatModelConfig,
@@ -40,6 +41,7 @@ import {
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
 } from '@/src/lib/server/effectiveChatModes'
+import { trailingStepMessage } from '@/src/lib/server/feedbackEvidence'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
   flushLangfuseTelemetry,
@@ -1390,6 +1392,9 @@ export async function POST(
       ...studentPracticeTools,
     }
     const toolNames = Object.keys(chatTools)
+    // The calculator is added after the system prompt inputs are fixed, so
+    // course grounding and citation rules still see only course tools.
+    const modelTools = withCalculatorTool(selectedMode, chatTools)
     const docQueryToolName = toolNames.find(isDocQueryToolName)
     const quizzerDocQueryToolName =
       selectedMode === 'quizzer' ? docQueryToolName : undefined
@@ -1458,6 +1463,7 @@ export async function POST(
       role: msg.role,
       content: msg.content,
     }))
+    const stepReminder = trailingStepMessage(selectedMode, messages)
 
     const maxOutputTokens = selectedModelConfig.maxOutputTokens
 
@@ -1486,7 +1492,7 @@ export async function POST(
               ? 'responses'
               : 'chat',
             instructions: effectiveSystemPrompt,
-            tools: chatTools,
+            tools: modelTools,
           })
         : null
 
@@ -1967,25 +1973,34 @@ export async function POST(
           },
         },
         messages: modelMessages as ModelMessage[],
-        tools: promptCacheRequest?.tools ?? chatTools,
+        tools: promptCacheRequest?.tools ?? modelTools,
         toolOrder: promptCacheRequest?.toolOrder,
         toolChoice: 'auto',
-        prepareStep: docQueryToolName
-          ? ({ stepNumber, steps, initialMessages, responseMessages }) =>
-              stepNumber === 0
-                ? {
-                    toolChoice: {
-                      type: 'tool' as const,
-                      toolName: docQueryToolName,
-                    },
-                  }
-                : {
-                    messages: [
-                      ...initialMessages,
-                      ...withModelCitationIndices(responseMessages, steps),
-                    ],
-                  }
-          : undefined,
+        // The feedback, precision and reply-language reminders end every step, after
+        // tool output, so retrieved material cannot override them.
+        allowSystemInMessages: true,
+        prepareStep: ({
+          stepNumber,
+          steps,
+          initialMessages,
+          responseMessages,
+        }) => ({
+          ...(docQueryToolName && stepNumber === 0
+            ? {
+                toolChoice: {
+                  type: 'tool' as const,
+                  toolName: docQueryToolName,
+                },
+              }
+            : {}),
+          messages: [
+            ...initialMessages,
+            ...(docQueryToolName && stepNumber > 0
+              ? withModelCitationIndices(responseMessages, steps)
+              : responseMessages),
+            stepReminder,
+          ],
+        }),
         stopWhen: isStepCount(5),
         instructions: effectiveSystemPrompt,
 

@@ -715,6 +715,11 @@ test.describe('Test creation and editing functionalities for Case Study elements
   }) => {
     await searchAndEdit(page, CS.title)
     const rangeCriterion = CS.criteria[0] as RangeCriterion
+    // The modal fills its fields after opening; clearing earlier lets the
+    // loaded title overwrite the cleared field and re-enable saving.
+    await expect(page.getByTestId('insert-question-title')).toHaveValue(
+      CS.title
+    )
 
     await page.getByTestId('insert-question-title').click()
     await page.getByTestId('insert-question-title').clear()
