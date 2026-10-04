@@ -157,13 +157,13 @@ vi.mock('ai', async (importOriginal) => {
 })
 
 import { POST } from '../src/app/api/chatbots/[chatbotId]/chat/route'
-import { REPLY_LANGUAGE_REMINDER } from '../src/lib/server/languageInstructions'
+import { stepReminder } from '../src/lib/server/calculatorTool'
 
-// Tutor and quizzer steps end with one system message that includes the
-// reply-language reminder.
+// Tutor and quizzer steps end with one system message that carries the
+// precision rule and the reply-language reminder.
 const STEP_REMINDER = {
   role: 'system',
-  content: expect.stringContaining(REPLY_LANGUAGE_REMINDER.content),
+  content: expect.stringContaining(stepReminder('tutor').content),
 }
 
 type StreamCallbacks = {
