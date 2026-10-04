@@ -10,10 +10,14 @@ overrides:
   axios@<=0.31.1: 0.32.0
   glob@>=10.2.0 <10.5.0: 10.5.0
   next@>=15.0.0 <15.5.24: 15.5.24
+  brace-expansion@>=1.0.0 <1.1.20: 1.1.20
+  brace-expansion@>=2.0.0 <2.1.6: 2.1.6
+  brace-expansion@>=5.0.0 <5.0.11: 5.0.11
   postcss@>=8.0.0 <8.5.18: 8.5.18
   mysql2@<3.22.0: 3.22.0
   path-to-regexp@>=0.1.0 <0.1.13: 0.1.13
   lodash@>=4.17.0 <4.18.1: 4.18.1
+  fast-uri@>=3.0.0 <3.1.8: 3.1.8
   deepmerge-ts@>=7.0.0 <8.0.0: 8.0.0
   nodemailer@>=6.0.0 <10.0.10: 10.0.10
   '@opentelemetry/propagator-jaeger@>=1.0.0 <2.9.0': 2.9.0
@@ -2392,9 +2396,6 @@ importers:
       '@types/node-schedule':
         specifier: ^2.1.7
         version: 2.1.8
-      '@types/nodemailer':
-        specifier: ^6.4.23
-        version: 6.4.23
       '@types/uuid':
         specifier: ^10.0.0
         version: 10.0.0
@@ -10789,9 +10790,6 @@ packages:
   '@types/node@24.13.3':
     resolution: {integrity: sha512-Dh8vAsV36ig5wa9OX4pXvMc9D3Veibfw2wix0CUwYODLD8nkj9UsLjASr49nPg+2eKzxhBV+v7L8pXvT4e639Q==}
 
-  '@types/nodemailer@6.4.23':
-    resolution: {integrity: sha512-aFV3/NsYFLSx9mbb5gtirBSXJnAlrusoKNuPbxsASWc7vrKLmIrTQRpdcxNcSFL3VW2A2XpeLEavwb2qMi6nlQ==}
-
   '@types/normalize-package-data@2.4.4':
     resolution: {integrity: sha512-37i+OaWTh9qeK4LSHPsyRC7NahnGotNuZvjLSgcPzblpHB3rrCJxAOgI5gCdKm7coonsaX1Of0ILiTcnZjbfxA==}
 
@@ -11947,14 +11945,14 @@ packages:
     resolution: {integrity: sha512-apC2+fspHGI3mMKj+dGevkGo/tCqVB8jMb6i+OX+E29p0Iposz07fABkRIfVUPNd5A5VbuOz1bZbnmkKLYF+wQ==}
     engines: {node: '>= 5.10.0'}
 
-  brace-expansion@1.1.21:
-    resolution: {integrity: sha512-9zeA+KLZNNzglF2TPKRQEDyx6Yby7daAkuy8MiPzpXPsYDWi/DRM8jmwUDxokQjYqBpv5DgPiwD4h4ZZSy1Ujw==}
+  brace-expansion@1.1.20:
+    resolution: {integrity: sha512-5/qk29RyvatwgzNMrvGjkIhKYzpJ0OUnPK+9TU+zS/CMJqzmb+UD0irWu42JfpUvO636fxd8IstgiydZRM/76A==}
 
-  brace-expansion@2.1.7:
-    resolution: {integrity: sha512-uZbew1NqdmPDTMJ8ah1y+b+9QEJrfkXFk3RcTQw3X0jW/xRUvFKsg1CfQdSYGdTbXZWExtU3J3ccxtnfw1Fi0g==}
+  brace-expansion@2.1.6:
+    resolution: {integrity: sha512-pi/WFpBvCBmB/NsURt7hW5sDvuOqvJaDMDai7CrlT9xoehzWRzo/dhQRKqOhpPvlnicVaTzHCbzGnnTgpvMTFw==}
 
-  brace-expansion@5.0.12:
-    resolution: {integrity: sha512-YovQ3rzhaLMIrDjNDMkNS01tea93qhEhG5xy8f6+R0l+dw3Ki+5sCoIoI942iuLZTHWogWktgwVDhU09iNEimQ==}
+  brace-expansion@5.0.11:
+    resolution: {integrity: sha512-awigjhi6cLTh90bdw6+QJ9CtmJmyYhEIi70iCbc8Rozn04Fw9FeQIBjv/E22FFGuCGx1bLJyUfB64x/szUSXUg==}
     engines: {node: 20 || >=22}
 
   braces@3.0.3:
@@ -30344,10 +30342,6 @@ snapshots:
     dependencies:
       undici-types: 7.18.2
 
-  '@types/nodemailer@6.4.23':
-    dependencies:
-      '@types/node': 24.13.3
-
   '@types/normalize-package-data@2.4.4': {}
 
   '@types/object-hash@3.0.6': {}
@@ -31923,16 +31917,16 @@ snapshots:
     dependencies:
       big-integer: 1.6.52
 
-  brace-expansion@1.1.21:
+  brace-expansion@1.1.20:
     dependencies:
       balanced-match: 1.0.2
       concat-map: 0.0.1
 
-  brace-expansion@2.1.7:
+  brace-expansion@2.1.6:
     dependencies:
       balanced-match: 1.0.2
 
-  brace-expansion@5.0.12:
+  brace-expansion@5.0.11:
     dependencies:
       balanced-match: 4.0.4
 
@@ -37693,35 +37687,35 @@ snapshots:
 
   minimatch@10.2.5:
     dependencies:
-      brace-expansion: 5.0.12
+      brace-expansion: 5.0.11
 
   minimatch@3.1.2:
     dependencies:
-      brace-expansion: 1.1.21
+      brace-expansion: 1.1.20
 
   minimatch@3.1.4:
     dependencies:
-      brace-expansion: 1.1.21
+      brace-expansion: 1.1.20
 
   minimatch@3.1.5:
     dependencies:
-      brace-expansion: 1.1.21
+      brace-expansion: 1.1.20
 
   minimatch@5.1.9:
     dependencies:
-      brace-expansion: 2.1.7
+      brace-expansion: 2.1.6
 
   minimatch@8.0.7:
     dependencies:
-      brace-expansion: 2.1.7
+      brace-expansion: 2.1.6
 
   minimatch@9.0.5:
     dependencies:
-      brace-expansion: 2.1.7
+      brace-expansion: 2.1.6
 
   minimatch@9.0.7:
     dependencies:
-      brace-expansion: 5.0.12
+      brace-expansion: 5.0.11
 
   minimist-options@4.1.0:
     dependencies:

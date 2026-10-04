@@ -285,7 +285,6 @@ test('the consolidated workflow declares the matrix the plan emits', () => {
     'opened',
     'synchronize',
     'reopened',
-    'edited',
     'ready_for_review',
   ])
   // No path filter: the required context must always be reportable.

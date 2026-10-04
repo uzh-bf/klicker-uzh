@@ -908,6 +908,11 @@ type AdaptiveWorkflowReceipt {
   status: String!
 }
 
+enum AiSubscriptionTier {
+  ADVANCED
+  BASE
+}
+
 type AnswerCollection {
   createdAt: Date
   description: String!
@@ -1381,6 +1386,7 @@ type CatalogSelectionObject {
 
 type ChatAccountUsageLane {
   budgetCredits: Float!
+  entitled: Boolean!
   remainingCredits: Float!
   resetAt: Date!
   usageClass: ChatUsageClass!
@@ -1391,6 +1397,7 @@ type ChatAccountUsageOverview {
   advancedModelUsage: ChatAccountUsageLane!
   authorized: Boolean!
   baseModelUsage: ChatAccountUsageLane!
+  subscriptionTier: AiSubscriptionTier!
 }
 
 type ChatModelCapability {
@@ -1418,6 +1425,7 @@ type Chatbot {
   creditMaxCredits: Int!
   creditResetAmount: Int!
   creditResetPeriod: CreditResetPeriod!
+  customModeConfig: ChatbotCustomModeConfig
   description: String
   disclaimerSummary: ChatbotDisclaimerSummary
   enabledKnowledgeBase: ChatbotKnowledgeBaseSummary @deprecated(reason: "Use enabledKnowledgeBases for all attached knowledge bases.")
@@ -1448,6 +1456,7 @@ type ChatbotAuthoringRevision {
   creditMaxCredits: Int!
   creditResetAmount: Int!
   creditResetPeriod: CreditResetPeriod!
+  customModeConfig: ChatbotCustomModeConfig
   description: String
   disclaimerIntroText: String
   disclaimerTitle: String
@@ -1468,6 +1477,28 @@ input ChatbotCreditPolicyInput {
   creditMaxCredits: Int!
   creditResetAmount: Int!
   creditResetPeriod: CreditResetPeriod!
+}
+
+type ChatbotCustomMode {
+  description: String
+  key: String!
+  name: String!
+  personaText: String
+}
+
+type ChatbotCustomModeConfig {
+  modes: [ChatbotCustomMode!]!
+}
+
+input ChatbotCustomModeConfigInput {
+  modes: [ChatbotCustomModeInput!]!
+}
+
+input ChatbotCustomModeInput {
+  description: String
+  key: String
+  name: String!
+  personaText: String
 }
 
 type ChatbotDisclaimerSummary {
@@ -1555,6 +1586,7 @@ input ChatbotRevisionModelPolicyInput {
 
 input ChatbotRevisionSaveInput {
   creditPolicy: ChatbotCreditPolicyInput
+  customModeConfig: ChatbotCustomModeConfigInput
   disclaimer: ChatbotRevisionDisclaimerInput
   knowledgeGraphPolicy: ChatbotRevisionKnowledgeGraphPolicyInput
   metadata: ChatbotRevisionMetadataInput
@@ -3913,7 +3945,7 @@ type Mutation {
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
-  setAiFeatures(email: String!, enabled: Boolean!): Int
+  setAiFeatures(costCenter: String, email: String!, enabled: Boolean!, tier: AiSubscriptionTier): Int
   setBetaEnrollment(enabled: Boolean!): BetaEnrollmentCapability!
   setChatAccountUsageBudgets(advancedBudgetCredits: Float!, baseBudgetCredits: Float!, ownerId: String!): ChatAccountUsageOverview
   setCourseAdaptiveCalibrationCollectionEnabled(courseId: String!, enabled: Boolean!): Boolean!
@@ -5114,6 +5146,7 @@ input UpdateGeneratedElementDraftInput {
 
 type User {
   aiFeaturesEnabled: Boolean!
+  aiSubscriptionTier: AiSubscriptionTier!
   betaEnabled: Boolean!
   catalyst: Boolean!
   catalystTier: String

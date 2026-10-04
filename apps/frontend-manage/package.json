@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-manage",
-  "version": "3.4.0-alpha.83",
+  "version": "3.4.0-alpha.84",
   "license": "AGPL-3.0",
   "dependencies": {
     "@apollo/client": "3.13.8",
@@ -109,7 +109,7 @@
     "start": "next start --port 3002",
     "start:test": "node ../../util/playwright-next-runtime.mjs start 3002",
     "test:adaptive": "vitest run test/adaptiveReadinessGrouping.test.ts test/bulkAssignmentHelpers.test.ts test/coverageBulkSelection.test.ts test/elementSorting.test.ts test/adaptivePracticeQuizForm.test.ts test/itemBankMap.test.ts test/navigationGuard.test.ts test/treeHelpers.test.ts test/numberDraft.test.ts",
-    "test:host": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test test/chatbotOwnerPreviewAccess.test.ts test/chatbotOwnerPreviewUrl.test.ts test/elementGenerationDesignEvidence.test.ts test/elementGenerationObjectiveSource.test.ts test/elementGenerationSlotFailures.test.ts test/generatedTagSelection.test.ts test/manageAssistantConfig.test.ts test/manageAssistantContext.test.ts test/manageAssistantFrameState.test.ts test/manageAssistantPanelSize.test.ts test/manageElementCreatedMessage.test.ts",
+    "test:host": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test test/chatbotErrorMessages.test.ts test/chatbotOwnerPreviewAccess.test.ts test/chatbotOwnerPreviewUrl.test.ts test/elementGenerationDesignEvidence.test.ts test/elementGenerationObjectiveSource.test.ts test/elementGenerationSlotFailures.test.ts test/generatedTagSelection.test.ts test/manageAssistantConfig.test.ts test/manageAssistantContext.test.ts test/manageAssistantFrameState.test.ts test/manageAssistantPanelSize.test.ts test/manageElementCreatedMessage.test.ts",
     "test:run": "pnpm run test:host && pnpm run test:adaptive"
   },
   "engines": {
