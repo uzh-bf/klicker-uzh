@@ -22,10 +22,7 @@ import { after, type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
-import {
-  stepReminder,
-  withCalculatorTool,
-} from '@/src/lib/server/calculatorTool'
+import { withCalculatorTool } from '@/src/lib/server/calculatorTool'
 import {
   type ChatModelConfig,
   getAllowedReasoningEffortsForModel,
@@ -39,6 +36,7 @@ import {
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
 } from '@/src/lib/server/effectiveChatModes'
+import { trailingStepMessage } from '@/src/lib/server/feedbackEvidence'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
   flushLangfuseTelemetry,
@@ -1190,6 +1188,7 @@ export async function POST(
       role: msg.role,
       content: msg.content,
     }))
+    const stepReminder = trailingStepMessage(selectedMode, messages)
 
     const maxOutputTokens = selectedModelConfig.maxOutputTokens
 
@@ -1656,7 +1655,7 @@ export async function POST(
         tools: promptCacheRequest?.tools ?? chatTools,
         toolOrder: promptCacheRequest?.toolOrder,
         toolChoice: 'auto',
-        // The precision and reply-language reminders end every step, after
+        // The feedback, precision and reply-language reminders end every step, after
         // tool output, so retrieved material cannot override them.
         allowSystemInMessages: true,
         prepareStep: ({
@@ -1678,7 +1677,7 @@ export async function POST(
             ...(docQueryToolName && stepNumber > 0
               ? withModelCitationIndices(responseMessages, steps)
               : responseMessages),
-            stepReminder(selectedMode),
+            stepReminder,
           ],
         }),
         stopWhen: isStepCount(5),
