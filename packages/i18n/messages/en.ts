@@ -2024,6 +2024,14 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       'The uploaded file no longer matches its upload reservation. Please upload it again.',
     ingestionFailed: 'The ingestion operation failed.',
     ingestionSuperseded: 'The ingestion operation was superseded.',
+    ingestionFailureSourceVersionMismatch:
+      'The source no longer matches the version recorded when it was added.',
+    ingestionFailureSourceFetch: 'The source could not be retrieved.',
+    ingestionFailureSourceProcessing:
+      'The source content could not be processed.',
+    ingestionFailureSourceSizeLimit:
+      'The source is larger than the supported size limit.',
+    ingestionFailureActivation: 'The imported content could not be activated.',
     inspectResource: 'Inspect',
     inspectorTitle: 'Resource details',
     sourceType: 'Source type',
