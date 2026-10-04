@@ -14,6 +14,7 @@ overrides:
   mysql2@<3.22.0: 3.22.0
   path-to-regexp@>=0.1.0 <0.1.13: 0.1.13
   lodash@>=4.17.0 <4.18.1: 4.18.1
+  fast-uri@>=3.0.0 <3.1.8: 3.1.8
   deepmerge-ts@>=7.0.0 <8.0.0: 8.0.0
   nodemailer@>=6.0.0 <10.0.10: 10.0.10
   '@opentelemetry/propagator-jaeger@>=1.0.0 <2.9.0': 2.9.0
