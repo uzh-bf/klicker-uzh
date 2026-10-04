@@ -165,12 +165,6 @@ model_list:
               - 'Evaluate whether a price ceiling improves welfare when the market also has an externality.'
       complexity_router_default_model: 'gpt-6-luna-high'
 
-  - model_name: 'gpt-4.1'
-    litellm_params:
-      model: 'openai/gpt-4.1'
-      api_base: 'os.environ/UPSTREAM_OPENAI_BASE_URL'
-      api_key: 'os.environ/UPSTREAM_OPENAI_API_KEY'
-
   - model_name: 'gpt-5.4'
     litellm_params:
       model: 'openai/gpt-5.4'
