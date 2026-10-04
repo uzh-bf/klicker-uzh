@@ -2282,7 +2282,7 @@ export async function POST(
               deploymentId: selectedModelConfig.deploymentId,
               routingSource: routing.source,
               reasoningEffort: appliedReasoningEffort ?? 'none',
-              toolCount: String(toolNames.length),
+              toolCount: String(Object.keys(modelTools).length),
               imageAttachmentCount: String(images.length),
               handoffSource: handoffSource ?? 'direct',
             },
