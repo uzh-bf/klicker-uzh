@@ -2930,9 +2930,11 @@ test.describe('Chatbot Source Citations', () => {
         ...[
           'An answer without a citation.',
           'A supported answer [1] and [1].',
-        ].map((text) => ({
+        ].map((text, ix) => ({
           role: 'assistant' as const,
           parentId: userId,
+          // The cited answer must be the newest sibling so it opens first.
+          createdAt: new Date(Date.now() + ix * 1000),
           content: [
             docQueryPart({
               toolCallId: text.includes('[1]') ? 'call-cited' : 'call-uncited',
@@ -2965,18 +2967,8 @@ test.describe('Chatbot Source Citations', () => {
     await expect(assistant.getByTestId('chat-source-card')).not.toBeVisible()
     await assistant.getByTestId('chat-other-sources-toggle').click()
     await expect(assistant.getByTestId('chat-source-card')).toBeVisible()
-    // Switching branches remounts the sources section, which can scroll its
-    // heading into view while the next click is in flight and make it miss.
-    // Retry the click until the branch indicator confirms the switch, so a
-    // stale grouping still fails the assertions below.
-    await expect(async () => {
-      await assistant.hover()
-      await assistant.getByTestId('chat-branch-next').click()
-      await expect(assistant.getByTestId('chat-branch-indicator')).toHaveText(
-        '2 / 2',
-        { timeout: 2_000 }
-      )
-    }).toPass()
+    await assistant.hover()
+    await assistant.getByTestId('chat-branch-next').click()
     await expect(cited.getByTestId('chat-source-card')).toHaveCount(1)
     await expect(
       assistant.getByTestId('chat-other-sources-toggle')
