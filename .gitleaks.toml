@@ -35,9 +35,16 @@ paths = [
   '''(^|/)dist/''',
 ]
 
-# Azurite's fixed, public emulator credential. It is documented by Microsoft
-# and cannot authenticate to Azure Storage; keep the exception value-specific.
+# Verified false positives matched on the detected value, so the exceptions stay
+# value-specific:
+# - Azurite's fixed, public emulator credential. It is documented by Microsoft
+#   and cannot authenticate to Azure Storage.
+# - A synthetic custom chat mode key used by the chat test fixtures. Mode keys
+#   are generated as `cm_` plus a UUID, so the fixture is high-entropy and
+#   matches the generic-api-key rule, but it is a test placeholder and not a
+#   credential.
 regexTarget = "secret"
 regexes = [
   '''^Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==$''',
+  '''^cm_0d1f2c3b-4a59-4e6f-8b7a-9c8d7e6f5a4b$''',
 ]
