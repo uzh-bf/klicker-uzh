@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { AppLogger } from '@klicker-uzh/logging/node'
 import { prisma } from '@klicker-uzh/prisma'
+import { isChatUsageClassEntitled } from '@klicker-uzh/util'
 import {
   consumeStream,
   convertToModelMessages,
@@ -30,10 +31,12 @@ import {
 import { REQUIRED_MCP_UNAVAILABLE_CODE } from '@/src/lib/server/mcpRuntimePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import { withOwnerPreviewAuth } from '@/src/lib/server/ownerPreviewAuth'
+import { resolveOwnerPreviewModeConfiguration } from '@/src/lib/server/previewAuthoringConfig'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import { withRouteLogging } from '@/src/lib/server/requestLogging'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
+import { chatModelUnavailableResponse } from '@/src/services/accountUsage'
 import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
@@ -137,7 +140,9 @@ async function handlePOST(
   const chatbot = await prisma.chatbot.findUnique({
     where: { id: chatbotId, ownerId: auth.userId },
     include: {
-      owner: { select: { aiFeaturesEnabled: true } },
+      owner: {
+        select: { aiFeaturesEnabled: true, aiChatbotCostCenter: true },
+      },
       course: {
         select: { displayName: true },
       },
@@ -163,7 +168,11 @@ async function handlePOST(
   const modeOptions = resolveEffectiveChatModeOptions(
     chatbot.systemPrompts,
     chatbot.mcpConfigurations,
-    chatbot.standardModeConfig
+    chatbot.standardModeConfig,
+    {
+      allowUnapprovedModes: true,
+      customModeConfig: resolveOwnerPreviewModeConfiguration(chatbot),
+    }
   )
   const selectedMode = resolveRequestedChatMode(
     modeOptions,
@@ -231,6 +240,19 @@ async function handlePOST(
   }
 
   const { model: selectedModel, reasoningEffort } = modelResolution
+
+  // Preview is owner-funded and writes no usage row, so it skips the budget
+  // pre-check. Class admission still applies: an account without a cost center
+  // cannot start an advanced preview turn, exactly as in the participant route.
+  if (
+    !isChatUsageClassEntitled({
+      usageClass: selectedModel.usageClass,
+      aiFeaturesEnabled: chatbot.owner.aiFeaturesEnabled,
+      aiChatbotCostCenter: chatbot.owner.aiChatbotCostCenter,
+    })
+  ) {
+    return chatModelUnavailableResponse(selectedModel.usageClass)
+  }
 
   const kbConfigurations: MCPServerWithConfig[] = modeConfigurations
     .filter(
@@ -313,6 +335,9 @@ async function handlePOST(
         courseDisplayName: chatbot.course.displayName,
         toolNames,
         standardModeConfig: chatbot.standardModeConfig,
+        // Owner preview is an authoring surface, so it compiles the saved
+        // revision's custom modes rather than the currently approved set.
+        customModeConfig: resolveOwnerPreviewModeConfiguration(chatbot),
       }
     )
 

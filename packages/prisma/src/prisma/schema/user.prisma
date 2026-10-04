@@ -83,6 +83,11 @@ enum Locale {
   de
 }
 
+enum AiSubscriptionTier {
+  BASE
+  ADVANCED
+}
+
 model User {
   id String @id @default(uuid()) @db.Uuid
 
@@ -109,8 +114,12 @@ model User {
 
   // Account-level approval for AI usage and chatbot publication. Checked from
   // the database, never granted by beta preference or a JWT claim.
-  aiFeaturesEnabled   Boolean @default(false)
+  aiFeaturesEnabled   Boolean            @default(false)
   aiChatbotCostCenter String?
+  // Recorded subscription level for administration and display. Admission is
+  // still driven by the flag for base classes and by the cost center for
+  // cost-carrying classes, so withdrawing access stays a single switch.
+  aiSubscriptionTier  AiSubscriptionTier @default(BASE)
 
   // Personal beta preference; feature rollout and AI approval remain separate.
   betaEnabled Boolean @default(true)

@@ -462,9 +462,11 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     test.slow()
     const metadataRequestGate = createRequestGate()
     const modeRequestGate = createRequestGate()
+    const customModeRequestGate = createRequestGate()
     const disclaimerRequestGate = createRequestGate()
     const modelSettingsRequestGate = createRequestGate()
     let modeConfigVariables: Record<string, unknown> | undefined
+    let customModeConfigVariables: Record<string, unknown> | undefined
     let modelPolicyVariables: Record<string, unknown> | undefined
 
     await page.route('**/api/graphql', async (route) => {
@@ -478,6 +480,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
                 metadata?: Record<string, unknown>
                 modelPolicy?: Record<string, unknown>
                 standardModeConfig?: Record<string, unknown>
+                customModeConfig?: Record<string, unknown>
                 disclaimer?: Record<string, unknown>
               }
             }
@@ -487,6 +490,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       const input = requestBody?.variables?.input
       if (operationName === 'MSaveChatbotRevision') {
         modeConfigVariables = input?.standardModeConfig
+        customModeConfigVariables = input?.customModeConfig
         modelPolicyVariables = input?.modelPolicy
       }
       const requestGate =
@@ -496,11 +500,13 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
             ? modelSettingsRequestGate
             : input?.standardModeConfig
               ? modeRequestGate
-              : input?.metadata
-                ? metadataRequestGate
-                : input?.disclaimer
-                  ? disclaimerRequestGate
-                  : undefined
+              : input?.customModeConfig
+                ? customModeRequestGate
+                : input?.metadata
+                  ? metadataRequestGate
+                  : input?.disclaimer
+                    ? disclaimerRequestGate
+                    : undefined
 
       if (!requestGate) {
         await route.continue()
@@ -907,6 +913,145 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(
       page.getByTestId('chatbot-disclaimer-intro').locator('strong')
     ).toContainText('Verify important information.')
+  })
+
+  test('authors a custom mode that survives save and review', async ({
+    page,
+  }) => {
+    let customModeConfigVariables: Record<string, unknown> | undefined
+    await page.route('**/api/graphql', async (route) => {
+      const request = route.request()
+      if (request.postDataJSON()?.operationName === 'MSaveChatbotRevision') {
+        customModeConfigVariables =
+          request.postDataJSON()?.variables?.input?.customModeConfig
+      }
+      await route.continue()
+    })
+
+    const chatbotId = await createChatbot(page, `${CHATBOT_PREFIX} Custom Mode`)
+    await navigateToSetupStep(page, 'modes')
+    await expect(page.getByTestId('chatbot-custom-modes-form')).toBeVisible()
+    await expect(page.getByTestId('chatbot-custom-modes-empty')).toBeVisible()
+    await expect(page.getByTestId('add-chatbot-custom-mode')).toBeEnabled()
+
+    await page.getByTestId('add-chatbot-custom-mode').click()
+    await expect(page.getByTestId('chatbot-custom-mode-name-0')).toBeVisible()
+    await page.getByTestId('chatbot-custom-mode-name-0').fill('Debate coach')
+    await page
+      .getByTestId('chatbot-custom-mode-description-0')
+      .fill('Argues both sides of a course question.')
+    await page
+      .getByTestId('chatbot-custom-mode-persona-0')
+      .fill('Challenge the participant with counter-arguments.')
+    await expect(page.getByTestId('save-chatbot-custom-modes')).toBeEnabled()
+    await page.getByTestId('save-chatbot-custom-modes').click()
+    await expect
+      .poll(() => customModeConfigVariables)
+      .toMatchObject({
+        modes: [
+          {
+            key: null,
+            name: 'Debate coach',
+            description: 'Argues both sides of a course question.',
+            personaText: 'Challenge the participant with counter-arguments.',
+          },
+        ],
+      })
+    await expect(page.getByText('Custom modes saved.')).toBeVisible()
+
+    await page.reload()
+    await navigateToSetupStep(page, 'modes')
+    await expect(page.getByTestId('chatbot-custom-mode-name-0')).toHaveValue(
+      'Debate coach'
+    )
+    await expect(
+      page.getByTestId('chatbot-custom-mode-description-0')
+    ).toHaveValue('Argues both sides of a course question.')
+    await expect(page.getByTestId('chatbot-custom-mode-persona-0')).toHaveValue(
+      'Challenge the participant with counter-arguments.'
+    )
+
+    await page.reload()
+    await navigateToSetupStep(page, 'review')
+    await expect(
+      page.getByTestId('chatbot-review-custom-mode-0')
+    ).toContainText('Debate coach')
+    await expect(
+      page.getByTestId('chatbot-review-custom-mode-0')
+    ).toContainText('Argues both sides of a course question.')
+    await expect(
+      page.getByTestId('chatbot-review-custom-mode-0')
+    ).toContainText('Challenge the participant with counter-arguments.')
+
+    // Approval only applies to a revision that was submitted for review, so the
+    // draft has to pass the publication gate before it can be approved.
+    await setPublishingAuthorization(true)
+    await page.reload()
+    await navigateToSetupStep(page, 'disclaimer')
+    await page.getByTestId('save-chatbot-disclaimer').click()
+    await expect(page.getByTestId('chatbot-disclaimer-title')).toBeDisabled()
+    await navigateToSetupStep(page, 'review')
+    await fillPublicationRequest(
+      page,
+      'Support students with a synthetic study aid.'
+    )
+    await page.getByTestId('request-chatbot-publication').click()
+    await expect(
+      page.getByTestId('chatbot-details').getByTestId('chatbot-status')
+    ).toHaveText('Pending approval')
+
+    const prisma = await getPrisma()
+    const revision = await prisma.chatbot.findUniqueOrThrow({
+      where: { id: chatbotId },
+      select: { revisionVersion: true },
+    })
+    await approveRevision(page, chatbotId, revision.revisionVersion)
+    await page.goto(
+      `${process.env.URL_MANAGE ?? URL_MANAGE}/resources/chatbots?chatbotId=${chatbotId}`
+    )
+    await navigateToSetupStep(page, 'review')
+    await expect(
+      page.getByTestId('chatbot-review-custom-mode-0')
+    ).toContainText('Debate coach')
+  })
+
+  test('stops adding custom modes at the platform limit', async ({ page }) => {
+    const chatbotId = await createChatbot(
+      page,
+      `${CHATBOT_PREFIX} Custom Mode Limit`
+    )
+    const prisma = await getPrisma()
+    await prisma.chatbot.update({
+      where: { id: chatbotId },
+      data: {
+        customModeConfig: {
+          modes: [1, 2, 3, 4, 5].map((number) => ({
+            key: `cm_seed-${number}`,
+            name: `Alpha-${number}`,
+            description: null,
+            personaText: null,
+          })),
+        },
+      },
+    })
+
+    await page.reload()
+    await navigateToSetupStep(page, 'modes')
+    await expect(page.getByTestId('chatbot-custom-mode-name-4')).toHaveValue(
+      'Alpha-5'
+    )
+    await expect(page.getByText('5 of 5')).toBeVisible()
+    await expect(page.getByTestId('add-chatbot-custom-mode')).toBeDisabled()
+
+    await page.getByTestId('remove-chatbot-custom-mode-0').click()
+    await expect(page.getByText('4 of 5')).toBeVisible()
+    await expect(page.getByTestId('add-chatbot-custom-mode')).toBeEnabled()
+    await expect(page.getByTestId('chatbot-custom-mode-name-0')).toHaveValue(
+      'Alpha-2'
+    )
+    await page.getByTestId('add-chatbot-custom-mode').click()
+    await expect(page.getByTestId('chatbot-custom-mode-name-4')).toBeVisible()
+    await expect(page.getByTestId('add-chatbot-custom-mode')).toBeDisabled()
   })
 
   test('submits a complete draft and locks publication details while pending', async ({

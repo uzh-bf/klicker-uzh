@@ -1,0 +1,67 @@
+# Syncs between the integration branches (v3 -> v3-ai -> v3-audit) must be
+# merged with a merge commit. GitHub sets merge methods per target branch, so a
+# squash of a sync cannot be prevented; this guard detects one right after the
+# push, opens a pull request that merges the lost original head back, and fails
+# the required sync-ancestry check on every other pull request into that branch
+# until the repair is merged. See docs/ci-and-deployment.md.
+name: Guard sync ancestry
+
+on:
+  push:
+    branches: [v3-ai, v3-audit]
+  pull_request:
+    branches: [v3-ai, v3-audit]
+
+concurrency:
+  group: sync-ancestry-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  repair:
+    name: sync-ancestry-repair
+    if: github.repository == 'uzh-bf/klicker-uzh' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+      statuses: write
+    steps:
+      - name: Checkout integration history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Detect and repair squashed syncs
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { guardSyncAncestry } = require('./.github/scripts/sync-ancestry-guard.cjs')
+            await guardSyncAncestry({ github, context, core, cwd: process.cwd() })
+
+  sync-ancestry:
+    name: sync-ancestry
+    if: github.repository == 'uzh-bf/klicker-uzh' && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout integration history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: false
+
+      - name: Check target branch ancestry
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { guardSyncAncestry } = require('./.github/scripts/sync-ancestry-guard.cjs')
+            await guardSyncAncestry({ github, context, core, cwd: process.cwd() })
