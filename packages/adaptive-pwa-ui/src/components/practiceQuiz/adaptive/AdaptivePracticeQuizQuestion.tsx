@@ -13,6 +13,7 @@ import { Button, TextField, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useAdaptivePwaHost } from '../../../ports'
+import AdaptiveTestingHistory from './AdaptiveTestingHistory'
 
 type ServedItem = NonNullable<
   FAdaptivePracticeQuizAttemptStateFragment['servedItem']
@@ -325,6 +326,10 @@ function AdaptiveTestingInfo({
           </ul>
         )}
       </div>
+
+      {testingInfo.history && (
+        <AdaptiveTestingHistory history={testingInfo.history} />
+      )}
     </div>
   )
 }

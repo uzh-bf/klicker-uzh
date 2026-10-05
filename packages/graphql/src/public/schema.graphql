@@ -781,6 +781,7 @@ type AdaptivePracticeQuizResultNode {
   order: Int!
   position: Float
   responseCount: Int!
+  roughLevelLabel: String
   upperPosition: Float
 }
 
@@ -828,6 +829,23 @@ type AdaptivePracticeQuizSubmittedResponseFeedback {
   score: Float!
 }
 
+enum AdaptivePracticeQuizTestingAnswerResult {
+  CORRECT
+  INCORRECT
+  PARTIALLY_CORRECT
+}
+
+type AdaptivePracticeQuizTestingCompetenceSnapshot {
+  levelIsTentative: Boolean!
+  levelLabel: String
+  lowerPosition: Float
+  name: String!
+  position: Float
+  responseCount: Int!
+  theta: Float
+  upperPosition: Float
+}
+
 type AdaptivePracticeQuizTestingEstimate {
   levelIsTentative: Boolean!
   levelLabel: String
@@ -839,6 +857,25 @@ type AdaptivePracticeQuizTestingEstimate {
   upperBound: Float
 }
 
+type AdaptivePracticeQuizTestingHistory {
+  competenceEstimates: [AdaptivePracticeQuizTestingCompetenceSnapshot!]!
+  entries: [AdaptivePracticeQuizTestingHistoryEntry!]!
+  levelBands: [AdaptivePracticeQuizLevelBand!]!
+}
+
+type AdaptivePracticeQuizTestingHistoryEntry {
+  competenceName: String
+  elementTitle: String!
+  itemLevelLabel: String
+  itemLevelPosition: Float
+  order: Int!
+  overallPosition: Float
+  overallTheta: Float
+  result: AdaptivePracticeQuizTestingAnswerResult!
+  score: Float!
+  subcompetenceName: String
+}
+
 type AdaptivePracticeQuizTestingInfo {
   competenceEstimate: AdaptivePracticeQuizTestingEstimate
   competencePath: [String!]!
@@ -846,6 +883,7 @@ type AdaptivePracticeQuizTestingInfo {
   elementTags: [String!]!
   elementTitle: String!
   elementVersion: Int!
+  history: AdaptivePracticeQuizTestingHistory
   itemLevelLabel: String!
   overallEstimate: AdaptivePracticeQuizTestingEstimate
   solution: AdaptivePracticeQuizTestingSolution!

@@ -6,7 +6,11 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import { ADAPTIVE_BAND_COLORS } from './AdaptiveResultTrajectoryChart'
+import {
+  ADAPTIVE_LEVEL_MARKER_COLOR,
+  getAdaptiveLevelBandColors,
+  getAdaptiveLevelGroupEnds,
+} from './adaptiveLevelPalette'
 import {
   getAdaptiveProfileIndication,
   isAdaptiveProfileNodeNotTested,
@@ -20,6 +24,7 @@ export type AdaptiveCompetenceProfileNode = {
   responseCount: number
   classification: AdaptivePracticeQuizResultClassification
   levelLabel?: string | null
+  roughLevelLabel?: string | null
   leadingLevelLabels: string[]
   classificationProbability?: number | null
   confidence: AdaptiveResultConfidence
@@ -35,6 +40,8 @@ type ProfileEstimate = {
   responseCount: number
   classification: AdaptivePracticeQuizResultClassification
   levelLabel?: string | null
+  // Display-only level for nodes with answers but no reported level.
+  roughLevelLabel?: string | null
   leadingLevelLabels: string[]
   classificationProbability?: number | null
   confidence: AdaptiveResultConfidence
@@ -176,7 +183,7 @@ function ProfileRow({
       AdaptivePracticeQuizResultClassification.InsufficientEvidence
   const displayLabel = provisional
     ? t('pwa.practiceQuiz.adaptive.profile.earlyIndication', {
-        level: indication.levelLabel,
+        level: estimate.roughLevelLabel ?? indication.levelLabel,
       })
     : isPlacementPilot
       ? (() => {
@@ -275,6 +282,12 @@ function ProfileRow({
               estimate={estimate}
               levelBands={levelBands}
               displayLabel={displayLabel}
+              rough={Boolean(
+                provisional ||
+                  (!emphasized &&
+                    !estimate.levelLabel &&
+                    estimate.roughLevelLabel)
+              )}
             />
             {indication && (
               <div
@@ -289,7 +302,7 @@ function ProfileRow({
                         : `${indication.lowerLevelLabel} – ${indication.upperLevelLabel}`,
                   })}
                 </p>
-                <p>
+                <p data-cy="adaptive-profile-evidence-note">
                   {estimate.responseCount < 4
                     ? t('pwa.practiceQuiz.adaptive.profile.fewResponses', {
                         count: estimate.responseCount,
@@ -331,16 +344,20 @@ function BandTrack({
   estimate,
   levelBands,
   displayLabel,
+  rough,
 }: {
   estimate: ProfileEstimate
   levelBands: AdaptiveCompetenceProfileProps['levelBands']
   displayLabel: string
+  rough: boolean
 }) {
   const hasEstimate =
     typeof estimate.position === 'number' &&
     typeof estimate.lowerPosition === 'number' &&
     typeof estimate.upperPosition === 'number'
   const { bands, project } = createEqualLevelScale(levelBands)
+  const bandColors = getAdaptiveLevelBandColors(bands)
+  const groupEnds = getAdaptiveLevelGroupEnds(bands)
   const lower = project(estimate.lowerPosition ?? 0)
   const upper = project(estimate.upperPosition ?? 0)
   const position = project(estimate.position ?? 0)
@@ -350,6 +367,7 @@ function BandTrack({
       className="relative h-3 w-full overflow-hidden border border-slate-300 bg-slate-100"
       role="img"
       aria-label={`${estimate.name}: ${displayLabel}`}
+      data-cy={rough ? 'adaptive-profile-rough-track' : undefined}
     >
       {bands.map((band, index) => (
         <span
@@ -358,8 +376,13 @@ function BandTrack({
           style={{
             left: `${clamp(band.startPosition) * 100}%`,
             width: `${Math.max(0, clamp(band.endPosition) - clamp(band.startPosition)) * 100}%`,
-            backgroundColor:
-              ADAPTIVE_BAND_COLORS[index % ADAPTIVE_BAND_COLORS.length],
+            backgroundColor: bandColors[index],
+            // Separators keep band boundaries visible independent of color;
+            // main-level groups (A2.1-A2.3 -> A2) get a wider one.
+            borderRight:
+              index < bands.length - 1
+                ? `${groupEnds[index] ? 2 : 1}px solid #ffffff`
+                : undefined,
           }}
           aria-hidden="true"
         />
@@ -367,16 +390,28 @@ function BandTrack({
       {hasEstimate && (
         <>
           <span
-            className="bg-primary-100/25 absolute inset-y-0"
+            className={`absolute inset-y-0 ${
+              rough
+                ? 'border border-dashed border-primary-100'
+                : 'bg-primary-100/25 border-x border-primary-100'
+            }`}
             style={{
               left: `${Math.min(lower, upper) * 100}%`,
               width: `${Math.abs(upper - lower) * 100}%`,
+              backgroundImage: rough
+                ? 'repeating-linear-gradient(135deg, rgba(0, 40, 165, 0.5) 0 2px, transparent 2px 6px)'
+                : undefined,
             }}
             aria-hidden="true"
           />
           <span
-            className="bg-primary-100 absolute inset-y-0 w-0.5"
-            style={{ left: `calc(${position * 100}% - 1px)` }}
+            className="absolute inset-y-0 w-0.5"
+            style={{
+              left: `calc(${position * 100}% - 1px)`,
+              backgroundColor: ADAPTIVE_LEVEL_MARKER_COLOR,
+              boxShadow: '0 0 0 1px #ffffff',
+              opacity: rough ? 0.75 : 1,
+            }}
             aria-hidden="true"
           />
         </>

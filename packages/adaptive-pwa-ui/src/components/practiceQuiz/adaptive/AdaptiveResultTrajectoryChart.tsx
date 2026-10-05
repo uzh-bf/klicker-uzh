@@ -13,21 +13,19 @@ import {
   ComposedChart,
   Line,
   ReferenceArea,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts'
 
+import {
+  ADAPTIVE_LEVEL_MARKER_COLOR,
+  getAdaptiveLevelBandColors,
+  getAdaptiveLevelGroupEnds,
+} from './adaptiveLevelPalette'
 import { createEqualLevelScale } from './equalLevelScale'
-
-export const ADAPTIVE_BAND_COLORS = [
-  '#ddeaf3',
-  '#e8f0ea',
-  '#fff4cc',
-  '#fbe5e5',
-  '#e5f3f6',
-]
 
 interface AdaptiveResultTrajectoryChartProps {
   levelBands: AdaptiveResultLevelBand[]
@@ -42,6 +40,8 @@ function AdaptiveResultTrajectoryChart({
 }: AdaptiveResultTrajectoryChartProps) {
   const t = useTranslations()
   const { bands, project } = createEqualLevelScale(levelBands)
+  const bandColors = getAdaptiveLevelBandColors(bands)
+  const groupEnds = getAdaptiveLevelGroupEnds(bands)
   const points = prepareAdaptiveResultTrajectory({ trajectory, overall }).map(
     (point) => {
       const lowerPosition = project(point.lowerPosition)
@@ -90,12 +90,24 @@ function AdaptiveResultTrajectoryChart({
                 key={`${band.order}-${band.label}`}
                 y1={band.startPosition}
                 y2={band.endPosition}
-                fill={ADAPTIVE_BAND_COLORS[index % ADAPTIVE_BAND_COLORS.length]}
-                fillOpacity={0.82}
-                strokeOpacity={0}
+                fill={bandColors[index]}
+                fillOpacity={1}
+                stroke="#ffffff"
+                strokeWidth={1}
                 ifOverflow="hidden"
               />
             ))}
+            {bands.map((band, index) =>
+              groupEnds[index] ? (
+                <ReferenceLine
+                  key={`group-${band.order}-${band.label}`}
+                  y={band.endPosition}
+                  stroke="#ffffff"
+                  strokeWidth={3}
+                  ifOverflow="hidden"
+                />
+              ) : null
+            )}
             <XAxis
               dataKey="order"
               type="number"
@@ -132,16 +144,18 @@ function AdaptiveResultTrajectoryChart({
             <Area
               type="linear"
               dataKey="interval"
-              stroke="none"
-              fill="#0070b4"
-              fillOpacity={0.18}
+              stroke={ADAPTIVE_LEVEL_MARKER_COLOR}
+              strokeOpacity={0.7}
+              strokeWidth={1}
+              fill={ADAPTIVE_LEVEL_MARKER_COLOR}
+              fillOpacity={0.16}
               isAnimationActive={false}
               connectNulls
             />
             <Line
               type="linear"
               dataKey="position"
-              stroke="#00589c"
+              stroke={ADAPTIVE_LEVEL_MARKER_COLOR}
               strokeWidth={3}
               isAnimationActive={false}
               connectNulls
@@ -158,8 +172,12 @@ function AdaptiveResultTrajectoryChart({
                     cx={cx}
                     cy={cy}
                     r={payload?.isEndpoint ? 6 : 3}
-                    fill={payload?.isEndpoint ? '#00589c' : '#ffffff'}
-                    stroke="#00589c"
+                    fill={
+                      payload?.isEndpoint
+                        ? ADAPTIVE_LEVEL_MARKER_COLOR
+                        : '#ffffff'
+                    }
+                    stroke={ADAPTIVE_LEVEL_MARKER_COLOR}
                     strokeWidth={payload?.isEndpoint ? 3 : 2}
                   />
                 )
@@ -217,8 +235,7 @@ function AdaptiveResultTrajectoryChart({
             <span
               className="h-3 w-5 shrink-0 border border-slate-300"
               style={{
-                backgroundColor:
-                  ADAPTIVE_BAND_COLORS[index % ADAPTIVE_BAND_COLORS.length],
+                backgroundColor: bandColors[index],
               }}
               aria-hidden="true"
             />

@@ -84,6 +84,7 @@ describe('adaptive practice quiz testing info', () => {
       overallEstimate: null,
       competenceEstimate: null,
       subcompetenceEstimate: null,
+      history: null,
       leafNodeId: 5,
       rootNodeId: 1,
     })

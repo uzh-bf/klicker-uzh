@@ -1,16 +1,22 @@
 import {
   classificationIntervalWithinLevelBand,
   isNearLevelBoundary,
-  mapLevelsToTheta,
-  normalizeThetaForChart,
 } from '@klicker-uzh/adaptive-contract'
 import * as DB from '@klicker-uzh/prisma/client'
 import { adaptivePracticeQuizError } from './adaptivePracticeQuizErrors.js'
 import { getEffectivelyEnabledRuntimeNodes } from './adaptivePracticeQuizEstimatePersistence.js'
 import {
+  mapLevelForTheta,
+  serializeLevelBands,
+} from './adaptivePracticeQuizLegacyLevelScale.js'
+import {
   adaptiveRetakeAvailableAt,
   isAdaptiveRetakeCooldownElapsed,
 } from './adaptivePracticeQuizRetakes.js'
+import {
+  resolveLegacyRoughEstimate,
+  resolveV2RoughLevelLabel,
+} from './adaptivePracticeQuizRoughEstimate.js'
 import {
   type AdaptiveParticipantElement,
   type AdaptiveRuntimeLevel,
@@ -25,11 +31,7 @@ import {
   type LoadedAdaptiveRuntime,
   toDeliveredRuntimePoolItem,
 } from './adaptivePracticeQuizRuntimeData.js'
-import {
-  type AdaptiveTestingLevelResolver,
-  mostProbableBandLabel,
-  withAdaptiveTestingEstimates,
-} from './adaptivePracticeQuizTestingInfo.js'
+import { withAttemptTestingEstimates } from './adaptivePracticeQuizTestingAttemptView.js'
 import {
   normalizeV2Position,
   serializeV2EstimateView,
@@ -94,6 +96,9 @@ export type AdaptiveStudentResultNode = {
   responseCount: number
   classification: AdaptiveResultClassification
   levelLabel: string | null
+  // Display-only best-guess level for a node with answers but no reported
+  // level; never changes classification or what counts as determined.
+  roughLevelLabel: string | null
   leadingLevelLabels: string[]
   classificationProbability: number | null
   confidence: AdaptiveResultConfidence
@@ -195,53 +200,6 @@ export function serializeAdaptiveAttemptState(
   }
 }
 
-function withAttemptTestingEstimates(
-  element: AdaptiveParticipantElement,
-  runtime: LoadedAdaptiveRuntime,
-  attempt: AdaptiveAttemptRuntimeRecord
-): AdaptiveParticipantElement {
-  if (!element.testingInfo) return element
-  return {
-    ...element,
-    testingInfo: withAdaptiveTestingEstimates(
-      element.testingInfo,
-      attempt.estimates,
-      adaptiveTestingLevelResolver(runtime)
-    ),
-  }
-}
-
-function adaptiveTestingLevelResolver(
-  runtime: LoadedAdaptiveRuntime
-): AdaptiveTestingLevelResolver {
-  const intervalZ = runtime.publication.evidenceMinimumSnapshot.classificationZ
-  if (
-    runtime.estimator.measurementVersion ===
-    DB.AdaptiveMeasurementVersion.IRT_V2_EAP_GRID_1
-  ) {
-    const levels = runtime.publication.cutScoreSnapshot
-    return {
-      intervalZ,
-      labelForLevelId: (levelId) =>
-        levels.find(({ sourceLevelId }) => sourceLevelId === levelId)?.label ??
-        null,
-      tentativeLabel: (estimate) =>
-        mostProbableBandLabel(estimate.bandProbabilities, levels),
-    }
-  }
-  const levels = runtime.algorithm.levels
-  const settings = runtime.algorithm.settings
-  return {
-    intervalZ,
-    labelForLevelId: (levelId) =>
-      levels.find(({ id }) => id === levelId)?.label ?? null,
-    tentativeLabel: (estimate) =>
-      estimate.theta === null
-        ? null
-        : (mapLevelForTheta(estimate.theta, levels, settings)?.label ?? null),
-  }
-}
-
 export function serializeAdaptiveStudentResult(
   runtime: LoadedAdaptiveRuntime,
   attempt: AdaptiveAttemptRuntimeRecord
@@ -303,6 +261,16 @@ export function serializeAdaptiveStudentResult(
       levelsById,
       settings,
     })
+    const rough =
+      view.levelLabel === null
+        ? resolveLegacyRoughEstimate({
+            estimate,
+            levels: runtime.algorithm.levels,
+            range: settings.thetaRange,
+            mappingRule: settings.levelMappingRule,
+            z: settings.classificationZ,
+          })
+        : null
     return {
       id: node.id,
       name: runtime.tree.nodes.find(({ id }) => id === node.id)!.name,
@@ -316,6 +284,8 @@ export function serializeAdaptiveStudentResult(
       leadingLevelLabels: [],
       classificationProbability: null,
       ...view,
+      ...rough,
+      roughLevelLabel: rough?.roughLevelLabel ?? null,
       children: (childrenByParent.get(node.id) ?? [])
         .slice()
         .sort((a, b) => a.order - b.order || a.id - b.id)
@@ -455,13 +425,24 @@ function serializeAdaptiveV2StudentResult(
         'ADAPTIVE_PUBLICATION_SNAPSHOT_INVALID'
       )
     }
+    const view = serializeV2EstimateView({ estimate, levels, runtime })
     return {
       id: node.id,
       name,
       kind: node.kind,
       order: node.order,
       responseCount: estimate.responseCount,
-      ...serializeV2EstimateView({ estimate, levels, runtime }),
+      ...view,
+      roughLevelLabel:
+        view.classification === DB.AdaptiveResultStatus.INSUFFICIENT_EVIDENCE &&
+        view.position !== null &&
+        estimate.responseCount > 0
+          ? resolveV2RoughLevelLabel({
+              theta: estimate.theta,
+              bandProbabilities: estimate.bandProbabilities,
+              levels,
+            })
+          : null,
       children: (childrenByParent.get(node.id) ?? [])
         .slice()
         .sort((left, right) => left.order - right.order || left.id - right.id)
@@ -600,47 +581,4 @@ function serializeEstimateView({
     nearBoundary,
     ...normalized,
   }
-}
-
-function serializeLevelBands(
-  levels: AdaptiveRuntimeLevel[],
-  settings: AdaptiveRuntimeSettings
-) {
-  return mapLevelsToTheta(
-    levels,
-    settings.thetaRange,
-    settings.levelMappingRule
-  ).map((level) => ({
-    label: level.label,
-    order: level.order,
-    startPosition: normalizeThetaForChart(
-      Number.isFinite(level.lowerBound)
-        ? level.lowerBound
-        : settings.thetaRange.min,
-      settings.thetaRange
-    ),
-    endPosition: normalizeThetaForChart(
-      Number.isFinite(level.upperBound)
-        ? level.upperBound
-        : settings.thetaRange.max,
-      settings.thetaRange
-    ),
-  }))
-}
-
-function mapLevelForTheta(
-  theta: number,
-  levels: AdaptiveRuntimeLevel[],
-  settings: AdaptiveRuntimeSettings
-) {
-  const mapped = mapLevelsToTheta(
-    levels,
-    settings.thetaRange,
-    settings.levelMappingRule
-  ).find((level) => theta >= level.lowerBound && theta < level.upperBound)
-  return mapped
-    ? levels.find(
-        (level) => level.label === mapped.label && level.order === mapped.order
-      )
-    : levels.at(-1)
 }
