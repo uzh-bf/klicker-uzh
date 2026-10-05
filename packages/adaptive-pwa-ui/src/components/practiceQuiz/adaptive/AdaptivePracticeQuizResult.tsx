@@ -9,6 +9,7 @@ import { useFormatter, useTranslations } from 'next-intl'
 import { useEffect, useRef } from 'react'
 import AdaptiveCompetenceProfile from './AdaptiveCompetenceProfile'
 import AdaptiveResultTrajectoryChart from './AdaptiveResultTrajectoryChart'
+import { getAdaptiveReportedLevelLabel } from './adaptiveReportedLevel'
 import { getAdaptiveEstimatedLevelRange } from './adaptiveResultUncertainty'
 
 function AdaptivePracticeQuizResult({
@@ -93,11 +94,20 @@ function AdaptivePracticeQuizResult({
       })()
     : (() => {
         switch (result.classification) {
-          case AdaptivePracticeQuizResultClassification.Classified:
+          case AdaptivePracticeQuizResultClassification.Classified: {
+            const level = result.levelLabel
+              ? getAdaptiveReportedLevelLabel({
+                  levelLabel: result.levelLabel,
+                  levelBands: result.levelBands,
+                  toleranceBands: result.classificationToleranceBands,
+                  classified: true,
+                })
+              : null
             return t(
               `pwa.practiceQuiz.adaptive.result.interpretation.${result.levelInterpretation}.headline`,
-              { level: result.levelLabel ?? '' }
+              { level: level ? t(level.key, level.values) : '' }
             )
+          }
           case AdaptivePracticeQuizResultClassification.BetweenLevels:
             return t('pwa.practiceQuiz.adaptive.result.betweenHeadline', {
               levels: result.leadingLevelLabels.join(' / '),
@@ -271,6 +281,7 @@ function AdaptivePracticeQuizResult({
             }}
             levelBands={result.levelBands}
             nodes={result.competenceProfile}
+            toleranceBands={result.classificationToleranceBands}
           />
         </div>
       )}

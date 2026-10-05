@@ -48,6 +48,36 @@ export function normalizeAdaptiveEstimateForChart({
   }
 }
 
+/**
+ * Tolerance rule shared with Catalyst SEQUENTIAL_ROOTS_V6: the interval
+ * [lower, upper) must lie within bands k−t … k+t (clipped at both ends) around
+ * the band k containing θ. `bands` must be ordered and contiguous. With t = 0
+ * this is exactly "the interval lies within one band". The reported level
+ * stays band k.
+ */
+export function intervalWithinToleranceBands({
+  theta,
+  lower,
+  upper,
+  bands,
+  toleranceBands = 0,
+}: {
+  theta: number
+  lower: number
+  upper: number
+  bands: ReadonlyArray<{ lowerBound: number; upperBound: number }>
+  toleranceBands?: number
+}) {
+  const index = bands.findIndex(
+    (band) => theta >= band.lowerBound && theta < band.upperBound
+  )
+  if (index === -1) return false
+  const tolerance = Math.max(0, Math.floor(toleranceBands))
+  const first = bands[Math.max(0, index - tolerance)]!
+  const last = bands[Math.min(bands.length - 1, index + tolerance)]!
+  return lower >= first.lowerBound && upper < last.upperBound
+}
+
 export function classificationIntervalWithinLevelBand({
   theta,
   standardError,
@@ -55,6 +85,7 @@ export function classificationIntervalWithinLevelBand({
   range = DEFAULT_THETA_RANGE,
   mappingRule = 'NEAREST',
   z = 1.28,
+  toleranceBands = 0,
 }: {
   theta: number
   standardError: number
@@ -62,16 +93,17 @@ export function classificationIntervalWithinLevelBand({
   range?: ThetaRange
   mappingRule?: LevelMappingRule
   z?: number
+  toleranceBands?: number
 }) {
   if (!Number.isFinite(standardError) || standardError < 0) return false
 
-  const lower = theta - z * standardError
-  const upper = theta + z * standardError
-  const mappedLevels = mapLevelsToTheta(levels, range, mappingRule)
-
-  return mappedLevels.some(
-    (level) => lower >= level.lowerBound && upper < level.upperBound
-  )
+  return intervalWithinToleranceBands({
+    theta,
+    lower: theta - z * standardError,
+    upper: theta + z * standardError,
+    bands: mapLevelsToTheta(levels, range, mappingRule),
+    toleranceBands,
+  })
 }
 
 export function isNearLevelBoundary({

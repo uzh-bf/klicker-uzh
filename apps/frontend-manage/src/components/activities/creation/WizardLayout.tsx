@@ -1,4 +1,4 @@
-import {
+import type {
   AdaptiveAttemptSelectionPolicy,
   AdaptiveLevelMappingRule,
   AdaptivePracticeQuizPreset,
@@ -107,6 +107,7 @@ export interface PracticeQuizFormValues extends CommonFormValues {
     perLeafQuestionCap: string
     minQuestionsPerLeaf: string
     minItemsPerCoverageCell: string
+    classificationToleranceBands: string
     classificationZ: string
     showTimer: boolean
     attemptSelectionPolicy: AdaptiveAttemptSelectionPolicy

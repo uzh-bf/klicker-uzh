@@ -6,6 +6,7 @@ import {
   createAdaptiveClient,
   type DecisionRequest,
   type DecisionResponse,
+  decisionRequestSchema,
   type PosteriorBatchRequest,
   type ValidationRequest,
 } from '../index.js'
@@ -366,6 +367,71 @@ test('rejects invalid or misplaced IRT_V1 leaf coverage status', async () => {
       AdaptiveEngineUnavailableError
     )
   }
+})
+test('sends an IRT_V1 classification tolerance only within 0–5 and never for IRT v2', async () => {
+  const withTolerance = {
+    ...request,
+    settings: { ...request.settings, classificationToleranceBands: 1 },
+  } as DecisionRequest
+  const api = client(async (_url, init) => {
+    assert.equal(
+      JSON.parse(String(init?.body)).settings.classificationToleranceBands,
+      1
+    )
+    return Response.json(result)
+  })
+  await api.decide(withTolerance)
+  for (const invalid of [-1, 6, 1.5])
+    assert.equal(
+      decisionRequestSchema.safeParse({
+        ...request,
+        settings: {
+          ...request.settings,
+          classificationToleranceBands: invalid,
+        },
+      }).success,
+      false
+    )
+  const v2 = {
+    contractVersion: 1,
+    routingSeed: request.routingSeed,
+    measurementVersion: 'IRT_V2_EAP_GRID_1',
+    nodes: request.nodes,
+    responses: [],
+    scale: posteriorRequest.scale,
+    pool: [
+      {
+        ...request.pool[0]!,
+        itemType: 'SC',
+        choiceCount: 4,
+        model: 'THREE_PL_FIXED_C',
+        calibrationId: 'cal-1',
+        contributesToEstimate: true,
+        role: 'SCORING',
+      },
+    ],
+    settings: {
+      ...request.settings,
+      mode: 'DIAGNOSTIC',
+      credibleMass: 0.8,
+      classificationProbabilityThreshold: 0.8,
+      minimumRootResponses: 4,
+      researchPolicy: null,
+    },
+    selection: {
+      eligiblePoolItemIds: [1],
+      servedCounts: [],
+      priorAttemptPoolItemIds: [],
+    },
+  }
+  assert.equal(decisionRequestSchema.safeParse(v2).success, true)
+  assert.equal(
+    decisionRequestSchema.safeParse({
+      ...v2,
+      settings: { ...v2.settings, classificationToleranceBands: 1 },
+    }).success,
+    false
+  )
 })
 test('does not leak upstream errors or use a local estimator on service failure', async () => {
   const api = client(async () => {

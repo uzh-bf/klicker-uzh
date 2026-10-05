@@ -14,6 +14,7 @@ import {
 } from './adaptiveElementValidation.js'
 import { findAdditionalLeafMappingIssue } from './adaptivePracticeQuizAdditionalLeaves.js'
 import {
+  assertClassificationToleranceSupported,
   assertPlacementPilotSettings,
   type ResolvedPresetSettings,
   resolvePresetSettings,
@@ -204,6 +205,10 @@ export async function prepareConfigurationInput(
       DB.AdaptiveAttemptSelectionPolicy.LATEST_COMPLETED
   }
   assertPlacementPilotSettings(input, settings)
+  assertClassificationToleranceSupported(
+    measurement.measurementVersion,
+    settings
+  )
   const prepared = await prepareConfiguration({
     tree,
     settings,
@@ -237,6 +242,7 @@ export async function prepareStoredConfiguration(
     minQuestionsPerLeaf: config.minQuestionsPerLeaf,
     minItemsPerCoverageCell: config.minItemsPerCoverageCell,
     classificationZ: config.classificationZ,
+    classificationToleranceBands: config.classificationToleranceBands,
     topInformationRatio: config.topInformationRatio,
     defaultDiscrimination: config.defaultDiscrimination,
     levelMappingRule: config.levelMappingRule,
@@ -278,6 +284,7 @@ export async function prepareStoredConfiguration(
       minQuestionsPerLeaf: config.minQuestionsPerLeaf,
       minItemsPerCoverageCell: config.minItemsPerCoverageCell,
       classificationZ: config.classificationZ,
+      classificationToleranceBands: config.classificationToleranceBands,
       topInformationRatio: config.topInformationRatio,
       defaultDiscrimination: config.defaultDiscrimination,
       levelMappingRule: config.levelMappingRule,

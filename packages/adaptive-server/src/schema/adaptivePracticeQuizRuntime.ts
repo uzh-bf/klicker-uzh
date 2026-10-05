@@ -419,6 +419,9 @@ export function createAdaptivePracticeQuizRuntimeSchema(
       order: t.exposeInt('order'),
       startPosition: t.exposeFloat('startPosition'),
       endPosition: t.exposeFloat('endPosition'),
+      hasElements: t.boolean({
+        resolve: (band) => band.hasElements ?? true,
+      }),
     }),
   })
 
@@ -508,6 +511,7 @@ export function createAdaptivePracticeQuizRuntimeSchema(
       levelBands: t.expose('levelBands', {
         type: [AdaptiveResultLevelBandRef],
       }),
+      classificationToleranceBands: t.exposeInt('classificationToleranceBands'),
       trajectory: t.expose('trajectory', {
         type: [AdaptiveResultTrajectoryPointRef],
       }),

@@ -471,6 +471,7 @@ type AdaptivePracticeQuizCohortResults {
 type AdaptivePracticeQuizConfig {
   attemptSelectionPolicy: AdaptiveAttemptSelectionPolicy!
   calibrationPolicyVersion: Int
+  classificationToleranceBands: Int!
   classificationZ: Float!
   competenceTreeId: String!
   defaultDiscrimination: Float!
@@ -488,6 +489,7 @@ type AdaptivePracticeQuizConfig {
 }
 
 input AdaptivePracticeQuizConfigInput {
+  classificationToleranceBands: Int
   classificationZ: Float
   competenceTreeId: String!
   elementOverrides: [AdaptivePracticeQuizElementOverrideInput!]
@@ -552,6 +554,7 @@ type AdaptivePracticeQuizLevel {
 
 type AdaptivePracticeQuizLevelBand {
   endPosition: Float!
+  hasElements: Boolean!
   label: String!
   order: Int!
   startPosition: Float!
@@ -748,6 +751,7 @@ type AdaptivePracticeQuizResult {
   attemptId: String!
   classification: AdaptivePracticeQuizResultClassification!
   classificationProbability: Float
+  classificationToleranceBands: Int!
   competenceProfile: [AdaptivePracticeQuizResultNode!]!
   completedAt: Date!
   confidence: AdaptiveResultConfidence!

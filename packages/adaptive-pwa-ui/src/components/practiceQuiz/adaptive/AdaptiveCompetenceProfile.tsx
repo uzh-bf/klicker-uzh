@@ -12,6 +12,7 @@ import {
   getAdaptiveLevelBandColors,
   getAdaptiveLevelGroupEnds,
 } from './adaptiveLevelPalette'
+import { getAdaptiveReportedLevelLabel } from './adaptiveReportedLevel'
 import {
   getAdaptiveProfileIndication,
   isAdaptiveProfileNodeNotTested,
@@ -63,8 +64,11 @@ interface AdaptiveCompetenceProfileProps {
     order: number
     startPosition: number
     endPosition: number
+    hasElements?: boolean | null
   }>
   nodes: AdaptiveCompetenceProfileNode[]
+  // Quiz classification tolerance in level bands (0 = exact level).
+  toleranceBands?: number
 }
 
 function AdaptiveCompetenceProfile({
@@ -72,6 +76,7 @@ function AdaptiveCompetenceProfile({
   overall,
   levelBands,
   nodes,
+  toleranceBands = 0,
 }: AdaptiveCompetenceProfileProps) {
   return (
     <div className="border-t" data-cy="adaptive-competence-profile">
@@ -79,6 +84,7 @@ function AdaptiveCompetenceProfile({
         estimate={overall}
         levelBands={levelBands}
         isPlacementPilot={isPlacementPilot}
+        toleranceBands={toleranceBands}
         emphasized
       />
       {nodes
@@ -90,6 +96,7 @@ function AdaptiveCompetenceProfile({
             node={node}
             levelBands={levelBands}
             isPlacementPilot={isPlacementPilot}
+            toleranceBands={toleranceBands}
             depth={0}
           />
         ))}
@@ -101,11 +108,13 @@ function ProfileNode({
   node,
   levelBands,
   isPlacementPilot,
+  toleranceBands,
   depth,
 }: {
   node: AdaptiveCompetenceProfileNode
   levelBands: AdaptiveCompetenceProfileProps['levelBands']
   isPlacementPilot: boolean
+  toleranceBands: number
   depth: number
 }) {
   const [open, setOpen] = useState(false)
@@ -116,6 +125,7 @@ function ProfileNode({
       estimate={node}
       levelBands={levelBands}
       isPlacementPilot={isPlacementPilot}
+      toleranceBands={toleranceBands}
       depth={depth}
     />
   )
@@ -154,6 +164,7 @@ function ProfileNode({
               node={child}
               levelBands={levelBands}
               isPlacementPilot={isPlacementPilot}
+              toleranceBands={toleranceBands}
               depth={Math.min(depth + 1, 4)}
             />
           ))}
@@ -166,16 +177,27 @@ function ProfileRow({
   estimate,
   levelBands,
   isPlacementPilot = false,
+  toleranceBands = 0,
   depth = 0,
   emphasized = false,
 }: {
   estimate: ProfileEstimate
   levelBands: AdaptiveCompetenceProfileProps['levelBands']
   isPlacementPilot?: boolean
+  toleranceBands?: number
   depth?: number
   emphasized?: boolean
 }) {
   const t = useTranslations()
+  const reportedLevel = (levelLabel: string, classified: boolean) => {
+    const label = getAdaptiveReportedLevelLabel({
+      levelLabel,
+      levelBands,
+      toleranceBands,
+      classified,
+    })
+    return t(label.key, label.values)
+  }
   const hasResponses = !isAdaptiveProfileNodeNotTested(estimate.responseCount)
   const notTested = !emphasized && !hasResponses
   const indication = !emphasized
@@ -187,7 +209,10 @@ function ProfileRow({
       AdaptivePracticeQuizResultClassification.InsufficientEvidence
   const displayLabel = provisional
     ? t('pwa.practiceQuiz.adaptive.profile.earlyIndication', {
-        level: estimate.roughLevelLabel ?? indication.levelLabel,
+        level: reportedLevel(
+          estimate.roughLevelLabel ?? indication.levelLabel,
+          false
+        ),
       })
     : isPlacementPilot
       ? (() => {
@@ -211,10 +236,9 @@ function ProfileRow({
       : (() => {
           switch (estimate.classification) {
             case AdaptivePracticeQuizResultClassification.Classified:
-              return (
-                estimate.levelLabel ??
-                t('pwa.practiceQuiz.adaptive.profile.insufficientData')
-              )
+              return estimate.levelLabel
+                ? reportedLevel(estimate.levelLabel, true)
+                : t('pwa.practiceQuiz.adaptive.profile.insufficientData')
             case AdaptivePracticeQuizResultClassification.BetweenLevels:
               return t('pwa.practiceQuiz.adaptive.profile.betweenLevels', {
                 levels: estimate.leadingLevelLabels.join(' / '),

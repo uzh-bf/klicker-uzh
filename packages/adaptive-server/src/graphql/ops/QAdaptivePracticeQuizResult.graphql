@@ -21,7 +21,9 @@ query QAdaptivePracticeQuizResult($attemptId: String!) {
       order
       startPosition
       endPosition
+      hasElements
     }
+    classificationToleranceBands
     trajectory {
       order
       position

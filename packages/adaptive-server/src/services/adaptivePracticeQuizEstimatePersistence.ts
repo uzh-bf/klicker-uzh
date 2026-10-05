@@ -117,6 +117,8 @@ export function markClassifiedAdaptiveRootEstimates(
         range: runtime.algorithm.settings.thetaRange,
         mappingRule: runtime.algorithm.settings.levelMappingRule,
         z: runtime.algorithm.settings.classificationZ,
+        toleranceBands:
+          runtime.algorithm.settings.classificationToleranceBands ?? 0,
       })
     ) {
       estimates.nodes.set(root.id, {

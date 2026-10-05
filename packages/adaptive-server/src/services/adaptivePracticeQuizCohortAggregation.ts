@@ -1,4 +1,3 @@
-import { classificationIntervalWithinLevelBand } from '@klicker-uzh/adaptive-contract'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   type AdaptiveItemDiagnostic,
@@ -9,6 +8,7 @@ import {
   finalizeAdaptiveItemDiagnostics,
   finalizeAdaptivePilotMetrics,
 } from './adaptivePracticeQuizDiagnostics.js'
+import { createAdaptiveV1LevelDetermination } from './adaptivePracticeQuizLevelDetermination.js'
 import {
   type AdaptivePrivacySuppression,
   compactAdaptivePrivacySuppressions,
@@ -21,14 +21,8 @@ import {
   type AdaptiveRuntimeNode,
   type AdaptiveRuntimeRoutingPoolItem,
   type AdaptiveRuntimeSettings,
-  getMappedRuntimeLeafIds,
   MIN_REPORTING_RESPONSES,
 } from './adaptivePracticeQuizRuntime.js'
-import {
-  hasAdaptiveV1LeafBreadth,
-  resolveAdaptiveV1EngineLeafBreadth,
-  resolveAdaptiveV1LeafCoverage,
-} from './adaptivePracticeQuizSamplingCoverage.js'
 
 export type AdaptiveCohortLevelBucket = {
   levelLabel: string
@@ -263,72 +257,18 @@ export function accumulateAdaptiveCohortAttempt(
     accumulator.insufficientData += 1
   }
 
-  const enabledNodes = getEffectivelyEnabledRuntimeNodes(
-    runtime.algorithm.nodes
-  )
-  const parentIds = new Set(enabledNodes.map((node) => node.parentId))
-  const enabledNodeIds = new Set(enabledNodes.map(({ id }) => id))
-  // One answer covers every enabled leaf its item is mapped to (once each).
-  const leafCounts = new Map<number, number>()
-  for (const response of responses) {
-    const item =
-      response.poolItemId === null
-        ? undefined
-        : accumulator.diagnostics.poolById.get(response.poolItemId)
-    if (!item) continue
-    for (const leafId of getMappedRuntimeLeafIds(item, enabledNodeIds)) {
-      leafCounts.set(leafId, (leafCounts.get(leafId) ?? 0) + 1)
-    }
-  }
-  const nodesById = new Map(enabledNodes.map((node) => [node.id, node]))
-  const leaves = enabledNodes.filter((node) => !parentIds.has(node.id))
-  const coverage = resolveAdaptiveV1LeafCoverage(runtime, enabledNodeIds)
-  const coverageStatusByLeaf = new Map(
-    leaves.map(
-      ({ id }) =>
-        [
-          id,
-          estimates.get(
-            estimateKey(DB.AdaptiveEstimateNodeKind.SUBCOMPETENCE, id)
-          )?.coverageStatus,
-        ] as const
-    )
-  )
-  function relevantLeafIds(nodeId: number | null) {
-    return leaves
-      .filter((leaf) => {
-        if (nodeId === null) return true
-        let current: typeof leaf | undefined = leaf
-        while (current) {
-          if (current.id === nodeId) return true
-          current =
-            current.parentId === null
-              ? undefined
-              : nodesById.get(current.parentId)
-        }
-        return false
-      })
-      .map(({ id }) => id)
-  }
-  // Engine coverage status of the persisted decision, or null when any
-  // relevant leaf lacks one (older engine): then the count rules apply.
-  function engineBreadth(nodeId: number | null) {
-    return resolveAdaptiveV1EngineLeafBreadth({
-      leafIds: relevantLeafIds(nodeId),
-      coverageStatusByLeaf,
-    })
-  }
-  function hasCoverage(nodeId: number | null) {
-    return (
-      engineBreadth(nodeId) ??
-      hasAdaptiveV1LeafBreadth({
-        leafIds: relevantLeafIds(nodeId),
-        leafCounts,
-        minQuestionsPerLeaf: runtime.algorithm.settings.minQuestionsPerLeaf,
-        coverage,
-      })
-    )
-  }
+  const determination = createAdaptiveV1LevelDetermination({
+    runtime,
+    answeredPoolItemIds: responses.map(({ poolItemId }) => poolItemId),
+    coverageStatusByLeaf: new Map(
+      attempt.estimates.flatMap((estimate) =>
+        estimate.nodeKind === DB.AdaptiveEstimateNodeKind.SUBCOMPETENCE &&
+        estimate.nodeId !== null
+          ? [[estimate.nodeId, estimate.coverageStatus] as const]
+          : []
+      )
+    ),
+  })
 
   for (const [index, definition] of accumulator.definitions.entries()) {
     const estimate = estimates.get(
@@ -375,21 +315,11 @@ export function accumulateAdaptiveCohortAttempt(
         )
         const determined =
           attempt.measurementVersion === DB.AdaptiveMeasurementVersion.IRT_V1
-            ? // Under sampling, or when the engine reported leaf coverage,
-              // trust a root the engine already classified.
-              ((coverage.sampling ||
-                engineBreadth(definition.nodeId) !== null) &&
-                estimate.stopReason ===
-                  DB.AdaptivePracticeQuizStopReason.CLASSIFIED) ||
-              (hasCoverage(definition.nodeId) &&
-                classificationIntervalWithinLevelBand({
-                  theta: estimate.theta!,
-                  standardError: estimate.standardError!,
-                  levels: runtime.algorithm.levels,
-                  range: runtime.algorithm.settings.thetaRange,
-                  mappingRule: runtime.algorithm.settings.levelMappingRule,
-                  z: runtime.algorithm.settings.classificationZ,
-                }))
+            ? determination.isDetermined(definition.nodeId, {
+                theta: estimate.theta!,
+                standardError: estimate.standardError!,
+                stopReason: estimate.stopReason,
+              })
             : classification === DB.AdaptiveResultStatus.CLASSIFIED
         if (determined)
           metric.determinedCounts.set(

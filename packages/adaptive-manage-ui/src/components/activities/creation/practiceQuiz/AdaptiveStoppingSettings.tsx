@@ -1,4 +1,6 @@
 import {
+  ADAPTIVE_CLASSIFICATION_TOLERANCE_OPTIONS,
+  ADAPTIVE_TOLERANCE_RECOMMENDED_MIN_LEVELS,
   MAX_CONFIGURABLE_ITEMS_PER_COVERAGE_CELL,
   MIN_CONFIGURABLE_ITEMS_PER_COVERAGE_CELL,
 } from '@klicker-uzh/adaptive-contract'
@@ -27,6 +29,10 @@ function AdaptiveStoppingSettings({
     config.preset !== AdaptivePracticeQuizPreset.Research && !placementPilot
   const custom = !INTERVALS.some(
     (value) => Number(value) === Number(config.classificationZ)
+  )
+  const tolerance = config.classificationToleranceBands || '0'
+  const customTolerance = !ADAPTIVE_CLASSIFICATION_TOLERANCE_OPTIONS.some(
+    (value) => value === Number(tolerance)
   )
   return (
     <section
@@ -97,6 +103,45 @@ function AdaptiveStoppingSettings({
                 className={{ root: 'w-full', trigger: 'w-full' }}
               />
               <p className="mt-1 text-sm text-gray-600">{t('intervalHint')}</p>
+              <label
+                className="mb-1 mt-4 block text-sm font-bold"
+                htmlFor="adaptive-classification-tolerance"
+              >
+                {t('precision')}
+              </label>
+              <Select
+                id="adaptive-classification-tolerance"
+                value={tolerance}
+                onChange={(classificationToleranceBands) =>
+                  update({ classificationToleranceBands })
+                }
+                items={[
+                  ...ADAPTIVE_CLASSIFICATION_TOLERANCE_OPTIONS.map((value) => ({
+                    value: String(value),
+                    label:
+                      value === 0
+                        ? t('precisionExact')
+                        : t('precisionTolerance', { count: value }),
+                  })),
+                  ...(customTolerance
+                    ? [
+                        {
+                          value: tolerance,
+                          label: t('precisionTolerance', {
+                            count: Number(tolerance),
+                          }),
+                        },
+                      ]
+                    : []),
+                ]}
+                data={{ cy: 'adaptive-classification-tolerance' }}
+                className={{ root: 'w-full', trigger: 'w-full' }}
+              />
+              <p className="mt-1 text-sm text-gray-600">
+                {t('precisionHint', {
+                  levelCount: ADAPTIVE_TOLERANCE_RECOMMENDED_MIN_LEVELS,
+                })}
+              </p>
             </>
           )}
         </div>

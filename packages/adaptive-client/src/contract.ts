@@ -52,6 +52,14 @@ const settings = z
     thetaRange: z.object({ min: theta, max: theta }).strict(),
   })
   .strict()
+// IRT_V1 only (Catalyst SEQUENTIAL_ROOTS_V6). Hosts omit it for the exact
+// rule (0) so requests stay valid for engines that predate it; IRT v2
+// settings stay strict without it.
+const v1Settings = settings
+  .extend({
+    classificationToleranceBands: z.number().int().min(0).max(5).optional(),
+  })
+  .strict()
 const v2Settings = settings
   .extend({
     mode: z.enum(['DIAGNOSTIC', 'RESEARCH']),
@@ -160,7 +168,7 @@ export const decisionRequestSchema = z
         measurementVersion: z.literal('IRT_V1'),
         levels: z.array(level).min(2).max(50),
         pool: z.array(poolItem).min(1).max(10000),
-        settings,
+        settings: v1Settings,
       })
       .strict(),
     z
@@ -291,7 +299,7 @@ export const estimateRequestSchema = z
         terminalReason: runtimeStopReason.nullable(),
         levels: z.array(level).min(2).max(50),
         pool: z.array(poolItem).min(1).max(10000),
-        settings,
+        settings: v1Settings,
       })
       .strict(),
     z
@@ -399,7 +407,7 @@ export const validationRequestSchema = z
         responses: common.responses.max(0),
         levels: z.array(level).min(2).max(50),
         pool: z.array(poolItem).min(1).max(10000),
-        settings,
+        settings: v1Settings,
       })
       .strict(),
     z

@@ -19,6 +19,11 @@ export type AdaptiveRuntimeSettings = {
   topInformationRatio: number
   levelMappingRule: LevelMappingRule
   thetaRange: ThetaRange
+  /**
+   * IRT_V1 only: classify within ±t bands of the band containing θ (Catalyst
+   * SEQUENTIAL_ROOTS_V6). Absent or 0 is the exact rule; never sent as 0.
+   */
+  classificationToleranceBands?: number
 }
 
 export type AdaptiveRuntimeLevel = LevelDefinition & {

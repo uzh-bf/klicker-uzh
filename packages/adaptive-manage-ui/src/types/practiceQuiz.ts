@@ -3,15 +3,13 @@ import type {
   AdaptiveLevelMappingRule,
   AdaptivePracticeQuizPreset,
   ElementOrderType,
-  PracticeQuizMode,
-} from '@klicker-uzh/graphql/dist/ops'
-import type { Dispatch, RefObject, SetStateAction } from 'react'
-import type { FormikProps } from 'formik'
-import type * as yup from 'yup'
-import type {
-  QAdaptivePracticeQuizPreviewWithRuntimeLimitsQuery,
   ElementType,
+  PracticeQuizMode,
+  QAdaptivePracticeQuizPreviewWithRuntimeLimitsQuery,
 } from '@klicker-uzh/graphql/dist/ops'
+import type { FormikProps } from 'formik'
+import type { Dispatch, RefObject, SetStateAction } from 'react'
+import type * as yup from 'yup'
 
 export type AdaptivePracticeQuizConfigFormValues = {
   competenceTreeId?: string
@@ -22,6 +20,7 @@ export type AdaptivePracticeQuizConfigFormValues = {
   perLeafQuestionCap: string
   minQuestionsPerLeaf: string
   minItemsPerCoverageCell: string
+  classificationToleranceBands: string
   classificationZ: string
   showTimer: boolean
   attemptSelectionPolicy: AdaptiveAttemptSelectionPolicy

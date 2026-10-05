@@ -2,7 +2,10 @@ import {
   type BankAnalysisResponse,
   createAdaptiveClient,
 } from '@klicker-uzh/adaptive-client'
-import { normalizeEnabledRootWeights } from '@klicker-uzh/adaptive-contract'
+import {
+  intervalWithinToleranceBands,
+  normalizeEnabledRootWeights,
+} from '@klicker-uzh/adaptive-contract'
 import { GraphQLError } from 'graphql'
 
 import type {
@@ -249,6 +252,42 @@ export function buildThetaGrid(
     }
   }
   return Array.from(values).sort((a, b) => a - b)
+}
+
+/**
+ * Planning check: how many level bands a root could classify at their
+ * representative θ given the information of its allocated questions. Uses
+ * the engine's tolerance rule, so ±t bands count as classifiable.
+ */
+export function countClassifiableLevels({
+  levels,
+  thetaRange,
+  thetaGrid,
+  information,
+  classificationZ,
+  toleranceBands = 0,
+}: {
+  levels: AdaptiveConfiguredLevel[]
+  thetaRange: { min: number; max: number }
+  thetaGrid: number[]
+  information: number[]
+  classificationZ: number
+  toleranceBands?: number
+}): number {
+  const bands = levels.slice().sort((a, b) => a.lowerBound - b.lowerBound)
+  return bands.filter((level) => {
+    const theta = representativeBandTheta(level, thetaRange)
+    const totalInformation = information[thetaGrid.indexOf(theta)] ?? 0
+    if (totalInformation <= 0) return false
+    const halfWidth = classificationZ / Math.sqrt(totalInformation)
+    return intervalWithinToleranceBands({
+      theta,
+      lower: theta - halfWidth,
+      upper: theta + halfWidth,
+      bands,
+      toleranceBands,
+    })
+  }).length
 }
 
 export function representativeBandTheta(

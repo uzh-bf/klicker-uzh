@@ -61,6 +61,9 @@ export function createAdaptivePracticeQuizDefaultConfig(): AdaptivePracticeQuizC
     minQuestionsPerLeaf: String(defaults.minQuestionsPerLeaf),
     minItemsPerCoverageCell: String(defaults.minItemsPerCoverageCell),
     classificationZ: String(defaults.classificationZ),
+    // Exact level by default: a tolerance needs an upgraded engine and is an
+    // explicit authoring choice.
+    classificationToleranceBands: String(defaults.classificationToleranceBands),
     showTimer: defaults.showTimer,
     attemptSelectionPolicy: toAttemptSelectionPolicy(
       defaults.attemptSelectionPolicy
@@ -168,6 +171,13 @@ export function serializeAdaptivePracticeQuizConfig(
     classificationZ: config.scaleVersionId
       ? undefined
       : requiredNumber(config.classificationZ, defaults.classificationZ),
+    // IRT_V1 only: calibrated-scale (IRT v2) quizzes reject a tolerance.
+    classificationToleranceBands: config.scaleVersionId
+      ? undefined
+      : requiredNumber(
+          config.classificationToleranceBands,
+          defaults.classificationToleranceBands
+        ),
     showTimer: config.showTimer,
     nodeOverrides: config.nodeOverrides.map((override) => ({
       nodeId: override.nodeId,
@@ -260,6 +270,9 @@ export function mapAdaptivePracticeQuizPreviewToForm(
     minQuestionsPerLeaf: String(preview.config.minQuestionsPerLeaf),
     minItemsPerCoverageCell: String(preview.config.minItemsPerCoverageCell),
     classificationZ: String(preview.config.classificationZ),
+    classificationToleranceBands: String(
+      preview.config.classificationToleranceBands
+    ),
     showTimer: preview.config.showTimer,
     attemptSelectionPolicy: preview.config.attemptSelectionPolicy,
     levelMappingRule: preview.config.levelMappingRule,

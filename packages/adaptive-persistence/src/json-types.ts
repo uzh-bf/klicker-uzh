@@ -89,6 +89,9 @@ declare global {
       minimumResponsesPerRoot: number
       requiredRootIds: number[]
       classificationZ: number
+      // IRT_V1 classification tolerance in level bands; absent in
+      // publications written before it existed (= 0, the exact rule).
+      classificationToleranceBands?: number
       topInformationRatio: number
       levelMappingRule: 'NEAREST' | 'MASTERY'
       thetaMin: number
