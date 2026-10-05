@@ -31,7 +31,11 @@ import {
   type LoadedAdaptiveRuntime,
   toDeliveredRuntimePoolItem,
 } from './adaptivePracticeQuizRuntimeData.js'
-import { withAttemptTestingEstimates } from './adaptivePracticeQuizTestingAttemptView.js'
+import {
+  buildAttemptTestingHistory,
+  withAttemptTestingEstimates,
+} from './adaptivePracticeQuizTestingAttemptView.js'
+import type { AdaptiveTestingHistory } from './adaptivePracticeQuizTestingInfo.js'
 import {
   normalizeV2Position,
   serializeV2EstimateView,
@@ -130,6 +134,8 @@ export type AdaptiveStudentResult = {
   levelBands: AdaptiveResultLevelBand[]
   trajectory: AdaptiveResultTrajectoryPoint[]
   competenceProfile: AdaptiveStudentResultNode[]
+  // Debug-only answer history; null unless ADAPTIVE_QUIZ_SHOW_SOLUTIONS=true.
+  testingHistory: AdaptiveTestingHistory | null
 }
 
 export function serializeAdaptiveAttemptState(
@@ -202,8 +208,19 @@ export function serializeAdaptiveAttemptState(
 
 export function serializeAdaptiveStudentResult(
   runtime: LoadedAdaptiveRuntime,
-  attempt: AdaptiveAttemptRuntimeRecord
+  attempt: AdaptiveAttemptRuntimeRecord,
+  showSolutions: string | undefined = process.env.ADAPTIVE_QUIZ_SHOW_SOLUTIONS
 ): AdaptiveStudentResult {
+  return {
+    ...serializeAdaptiveStudentResultCore(runtime, attempt),
+    testingHistory: buildAttemptTestingHistory(runtime, attempt, showSolutions),
+  }
+}
+
+function serializeAdaptiveStudentResultCore(
+  runtime: LoadedAdaptiveRuntime,
+  attempt: AdaptiveAttemptRuntimeRecord
+): Omit<AdaptiveStudentResult, 'testingHistory'> {
   if (!attempt.stopReason || !attempt.completedAt) {
     throw adaptivePracticeQuizError(
       'The completed adaptive attempt has no terminal metadata.',
@@ -363,7 +380,7 @@ export function serializeAdaptiveStudentResult(
 function serializeAdaptiveV2StudentResult(
   runtime: LoadedAdaptiveRuntime,
   attempt: AdaptiveAttemptRuntimeRecord
-): AdaptiveStudentResult {
+): Omit<AdaptiveStudentResult, 'testingHistory'> {
   const completedAt = attempt.completedAt!
   const stopReason = attempt.stopReason!
   const overall = attempt.estimates.find(

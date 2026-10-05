@@ -9,6 +9,7 @@ import { useFormatter, useTranslations } from 'next-intl'
 import { useEffect, useRef } from 'react'
 import AdaptiveCompetenceProfile from './AdaptiveCompetenceProfile'
 import AdaptiveResultTrajectoryChart from './AdaptiveResultTrajectoryChart'
+import AdaptiveTestingHistory from './AdaptiveTestingHistory'
 import { getAdaptiveEstimatedLevelRange } from './adaptiveResultUncertainty'
 
 function AdaptivePracticeQuizResult({
@@ -272,6 +273,24 @@ function AdaptivePracticeQuizResult({
             levelBands={result.levelBands}
             nodes={result.competenceProfile}
           />
+        </div>
+      )}
+
+      {/* Only returned by the server when ADAPTIVE_QUIZ_SHOW_SOLUTIONS=true. */}
+      {result.testingHistory && (
+        <div
+          className="space-y-3 rounded border border-amber-300 bg-amber-50 p-4 text-sm"
+          data-cy="adaptive-result-testing-info"
+        >
+          <div>
+            <h3 className="font-semibold">
+              {t('pwa.practiceQuiz.adaptive.question.testingInfo')}
+            </h3>
+            <p className="text-slate-600">
+              {t('pwa.practiceQuiz.adaptive.question.testingInfoDescription')}
+            </p>
+          </div>
+          <AdaptiveTestingHistory history={result.testingHistory} />
         </div>
       )}
 
