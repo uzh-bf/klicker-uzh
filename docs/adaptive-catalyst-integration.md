@@ -73,9 +73,18 @@ of `minQuestionsPerLeaf` as that share allows. It remains blocking
 (`ADAPTIVE_SUBCOMPETENCE_SAMPLING_UNREACHABLE`) when a root cannot receive one
 block. Research, Placement and IRT v2 readiness are unchanged.
 
-This relies on Catalyst V1 routing that reserves the per-root shares and serves
-a random subset of leaf blocks per attempt. An engine without it serves roots in
-tree order, so later roots can receive no questions. Leaves without responses
+This relies on Catalyst V1 routing `SEQUENTIAL_ROOTS_V3`, which reserves the
+per-root shares and serves a per-attempt subset of leaf blocks. An engine
+without it serves roots in tree order, so later roots can receive no questions.
+
+Host breadth checks (root classification finalization and cohort "level
+determined" counts) mirror only the engine's activation rule: sampling is
+active when the summed `min(minQuestionsPerLeaf, eligible items)` over enabled
+leaves exceeds the total cap. Under sampling, the sampled leaves are the
+leaves that received responses, and each of them needs its minimum; an
+engine-classified root is kept. Without sampling, every leaf still needs
+`minQuestionsPerLeaf`. The share algorithm itself is not re-implemented on the
+host (`adaptivePracticeQuizSamplingCoverage.ts`). Leaves without responses
 in an attempt are "not tested": the student profile labels them so, and cohort
 distributions count them in `notTestedCount`, never as level estimates.
 

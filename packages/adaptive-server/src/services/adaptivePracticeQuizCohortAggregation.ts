@@ -24,6 +24,10 @@ import {
   getMappedRuntimeLeafIds,
   MIN_REPORTING_RESPONSES,
 } from './adaptivePracticeQuizRuntime.js'
+import {
+  hasAdaptiveV1LeafBreadth,
+  resolveAdaptiveV1LeafCoverage,
+} from './adaptivePracticeQuizSamplingCoverage.js'
 
 export type AdaptiveCohortLevelBucket = {
   levelLabel: string
@@ -126,6 +130,7 @@ export type AdaptiveCohortAttemptRecord = {
     responseCount: number
     levelId: number | null
     resultStatus: DB.AdaptiveResultStatus | null
+    stopReason?: DB.AdaptivePracticeQuizStopReason | null
   }>
 }
 
@@ -267,6 +272,7 @@ export function accumulateAdaptiveCohortAttempt(
   }
   const nodesById = new Map(enabledNodes.map((node) => [node.id, node]))
   const leaves = enabledNodes.filter((node) => !parentIds.has(node.id))
+  const coverage = resolveAdaptiveV1LeafCoverage(runtime, enabledNodeIds)
   function hasCoverage(nodeId: number | null) {
     const relevantLeaves = leaves.filter((leaf) => {
       if (nodeId === null) return true
@@ -280,11 +286,12 @@ export function accumulateAdaptiveCohortAttempt(
       }
       return false
     })
-    return relevantLeaves.every(
-      (leaf) =>
-        (leafCounts.get(leaf.id) ?? 0) >=
-        runtime.algorithm.settings.minQuestionsPerLeaf
-    )
+    return hasAdaptiveV1LeafBreadth({
+      leafIds: relevantLeaves.map(({ id }) => id),
+      leafCounts,
+      minQuestionsPerLeaf: runtime.algorithm.settings.minQuestionsPerLeaf,
+      coverage,
+    })
   }
 
   for (const [index, definition] of accumulator.definitions.entries()) {
@@ -327,15 +334,19 @@ export function accumulateAdaptiveCohortAttempt(
         )
         const determined =
           attempt.measurementVersion === DB.AdaptiveMeasurementVersion.IRT_V1
-            ? hasCoverage(definition.nodeId) &&
-              classificationIntervalWithinLevelBand({
-                theta: estimate.theta!,
-                standardError: estimate.standardError!,
-                levels: runtime.algorithm.levels,
-                range: runtime.algorithm.settings.thetaRange,
-                mappingRule: runtime.algorithm.settings.levelMappingRule,
-                z: runtime.algorithm.settings.classificationZ,
-              })
+            ? // Under sampling, trust a root the engine already classified.
+              (coverage.sampling &&
+                estimate.stopReason ===
+                  DB.AdaptivePracticeQuizStopReason.CLASSIFIED) ||
+              (hasCoverage(definition.nodeId) &&
+                classificationIntervalWithinLevelBand({
+                  theta: estimate.theta!,
+                  standardError: estimate.standardError!,
+                  levels: runtime.algorithm.levels,
+                  range: runtime.algorithm.settings.thetaRange,
+                  mappingRule: runtime.algorithm.settings.levelMappingRule,
+                  z: runtime.algorithm.settings.classificationZ,
+                }))
             : classification === DB.AdaptiveResultStatus.CLASSIFIED
         if (determined)
           metric.determinedCounts.set(
