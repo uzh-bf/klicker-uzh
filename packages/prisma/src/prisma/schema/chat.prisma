@@ -192,6 +192,9 @@ model Chatbot {
   /// [PrismaChatbotStandardModeConfig]
   standardModeConfig Json?
 
+  /// [PrismaChatbotCustomModeConfig]
+  customModeConfig Json?
+
   /// [PrismaChatbotAuthoringRevision]
   draftConfig Json?
 
