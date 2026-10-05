@@ -7,7 +7,6 @@ on:
         opened,
         synchronize,
         reopened,
-        edited,
         closed,
         ready_for_review,
         converted_to_draft,

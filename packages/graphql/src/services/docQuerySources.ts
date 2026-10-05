@@ -5,6 +5,7 @@ import {
   type DocQueryMcpClient,
   type DocQueryMcpClientOptions,
   isDocQuerySessionNotFound,
+  resolveDocQueryScopedRoute,
   signDocQueryScopeToken,
 } from '@klicker-uzh/doc-query-client'
 import { safeDecrypt } from '@klicker-uzh/util'
@@ -13,9 +14,11 @@ export const KB_SOURCES_TOOL_NAME = 'doc_query_sources'
 export const KB_SOURCES_REQUEST_TIMEOUT_MS = 30_000
 
 export interface KbMcpServerEndpoint {
+  id: string
   url: string | null
   authType: string
   authSecret?: string | null
+  isActive?: boolean
 }
 
 export interface KbImportedSourceItem {
@@ -187,20 +190,37 @@ export async function fetchKbSourceInventory(
   if (!serverUrl) {
     throw new DocQueryInventoryError('KB MCP server has no URL')
   }
-  assertDocQueryTransportSecurity(serverUrl)
 
-  const scopeToken = await signScopeToken({ kbIds: [kbId] })
-  const authorization =
-    server.authType === 'bearer' && server.authSecret
-      ? decryptSecret(server.authSecret)
-      : undefined
+  // All three deployment variables absent keeps the stored transport bearer;
+  // a bound scoped route mints a fresh scope token per HTTP request and never
+  // reads the stored credential, so a database URL or credential edit cannot
+  // redirect or weaken the inventory call.
+  const scopedTarget = resolveDocQueryScopedRoute(server)
+  assertDocQueryTransportSecurity(scopedTarget?.href ?? serverUrl)
+
+  let clientOptions: DocQueryMcpClientOptions
+  if (scopedTarget) {
+    clientOptions = {
+      url: scopedTarget.href,
+      scoped: {
+        target: scopedTarget,
+        kbIds: [kbId],
+        signToken: signScopeToken,
+      },
+    }
+  } else {
+    clientOptions = {
+      url: serverUrl,
+      authorization:
+        server.authType === 'bearer' && server.authSecret
+          ? decryptSecret(server.authSecret)
+          : undefined,
+      scopeToken: await signScopeToken({ kbIds: [kbId] }),
+    }
+  }
 
   const callOnce = async (): Promise<KbImportedSourceInventory> => {
-    const handle = await createClient({
-      url: serverUrl,
-      authorization,
-      scopeToken,
-    })
+    const handle = await createClient(clientOptions)
     try {
       const result = await handle.client.callTool(
         {

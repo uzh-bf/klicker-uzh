@@ -55,7 +55,6 @@ const APPROVED_PULL_REQUEST_TYPES = Object.freeze([
   'opened',
   'synchronize',
   'reopened',
-  'edited',
   'ready_for_review',
 ])
 const ARM_RUNNER = 'ubuntu-24.04-arm'
@@ -554,8 +553,8 @@ function validateStagingWorkflow({
   if (prTypes === null) {
     throw new Error(workflowPath + ' has no pull-request trigger types')
   }
-  // 'edited' re-evaluates the selection after a retarget; ready_for_review is
-  // where a draft pull request's deferred builds are restored.
+  // ready_for_review is where a draft pull request's deferred builds are
+  // restored.
   const approvedTypes = [...APPROVED_PULL_REQUEST_TYPES].sort()
   if (prTypes.slice().sort().join(',') !== approvedTypes.join(',')) {
     throw new Error(

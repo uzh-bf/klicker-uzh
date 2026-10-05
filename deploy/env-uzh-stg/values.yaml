@@ -191,7 +191,7 @@ auth:
       memory: 192Mi
     limits:
       cpu: 200m
-      memory: 200Mi
+      memory: 512Mi
 
 chat:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
@@ -207,22 +207,52 @@ chat:
     enabled: true
     environment: 'staging'
 
+  # Account usage has two independent switches: lifecycle writes record attempt
+  # markers and credit counters, and enforcement rejects a participant request
+  # before the provider call when the selected class has no available budget.
+  # STG ships both switches disabled. The release that carries them stays
+  # deployable without usage data; each switch is activated separately only
+  # after the base-budget backfill and cohort evidence for this environment.
+  # Order, rollback, and partial-failure recovery: docs/chat-platform.md,
+  # "Account usage activation".
+  lifecycleWritersEnabled: false
+  accountUsageEnforcementEnabled: false
+
   automaticModels:
-    primaryId: auto
+    primaryId: gpt-6-luna
     fallbackId: gpt-5.6-luna
 
   modelRegistry:
+    # GPT-6 Luna is the global automatic-model primary, so chatbots using
+    # automatic model selection use it by default; explicit model selections
+    # remain respected. GPT-5.6 Luna stays the participant-credit fallback.
     # "Auto" routes through the LiteLLM auto-router, which self-selects the
-    # tier per request (SIMPLE=gpt-5.6-luna-medium, MEDIUM=gpt-5.6-luna-high,
-    # COMPLEX=gpt-5.6-luna-xhigh, REASONING=gpt-5.6-sol-medium; match_threshold
-    # 0.55). It is a normal selectable model (fallback: false) and is also the
-    # global automatic-model primary. Chatbots using automatic model selection
-    # therefore use Auto by default; explicit model selections remain respected.
+    # tier per request (SIMPLE=gpt-6-luna-high, MEDIUM=gpt-6-luna-xhigh,
+    # COMPLEX=gpt-6-sol-high, REASONING=gpt-6-sol-medium; match_threshold
+    # 0.55). Luna and Sol are cheap enough that Auto is a BASE model; Sol
+    # selected directly stays ADVANCED.
     # A chatbot can be pinned to Auto-only via its DB columns
     # (modelSelection=false + allowedModelIds=["auto"]); see the vorkurs chatbot.
-    # The accounting rate is the accepted rounded blend for an observed
+    # Auto's accounting rate is the accepted rounded blend for an observed
     # generation mix of about 90% Luna and 10% Sol. Classifier and embedding
     # overhead remain outside the registry's selected-model token fields.
+    - id: gpt-6-luna
+      deploymentId: klickeruzh/azure/gpt-6-luna
+      name: GPT-6 Luna
+      description: OpenAI reasoning model
+      supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - low
+        - medium
+        - high
+        - xhigh
+      fallback: false
+      usageClass: BASE
+      maxOutputTokens: 4096
+      cost:
+        input: 0.1
+        output: 0.5
     - id: auto
       deploymentId: klickeruzh/azure/auto-router
       name: Auto
@@ -230,11 +260,27 @@ chat:
       supportsImageAttachments: true
       usesResponsesApi: true
       fallback: false
-      usageClass: ADVANCED
+      usageClass: BASE
       maxOutputTokens: 4096
       cost:
         input: 1.0
         output: 5.0
+    - id: gpt-6-sol
+      deploymentId: klickeruzh/azure/gpt-6-sol
+      name: GPT-6 Sol
+      description: OpenAI frontier reasoning model
+      supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - low
+        - medium
+        - high
+      fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
+      cost:
+        input: 2.0
+        output: 10.0
     - id: gpt-5.6-luna
       deploymentId: klickeruzh/azure/gpt-5.6-luna
       name: GPT-5.6 Luna
@@ -252,53 +298,21 @@ chat:
       cost:
         input: 0.2
         output: 1.2
-    - id: gpt-4.1
-      deploymentId: klickeruzh/azure/gpt-4.1
-      name: GPT-4.1
-      description: OpenAI model
-      supportsImageAttachments: true
-      fallback: false
-      usageClass: ADVANCED
-      maxOutputTokens: 4096
-      cost:
-        input: 2.0
-        output: 8.0
-    - id: gpt-5.1
-      deploymentId: klickeruzh/azure/gpt-5.1
-      name: GPT-5.1
-      description: OpenAI reasoning model
+    - id: gpt-5.6-sol
+      deploymentId: klickeruzh/azure/gpt-5.6-sol
+      name: GPT-5.6 Sol
+      description: OpenAI frontier reasoning model
       supportsImageAttachments: true
       supportsReasoning: true
       supportedReasoningEfforts:
-        - none
-        - minimal
         - low
         - medium
-        - high
       fallback: false
       usageClass: ADVANCED
       maxOutputTokens: 4096
       cost:
-        input: 1.25
-        output: 10.0
-    - id: gpt-5.4
-      deploymentId: klickeruzh/azure/gpt-5.4
-      name: GPT-5.4
-      description: OpenAI reasoning model
-      supportsImageAttachments: true
-      supportsReasoning: true
-      supportedReasoningEfforts:
-        - minimal
-        - low
-        - medium
-        - high
-        - xhigh
-      fallback: false
-      usageClass: ADVANCED
-      maxOutputTokens: 4096
-      cost:
-        input: 2.5
-        output: 15.0
+        input: 5.0
+        output: 30.0
   replicaCount: 1
 
   affinity:
@@ -629,7 +643,11 @@ backendGraphql:
       standardEstimateMinorUnits: '100'
       highEstimateMinorUnits: '200'
       maxCostMinorUnits: '250'
-      semesterQuotaMinorUnits: '1000'
+      # Staging carries the full domain and language comparison plus element
+      # generation, so the 10.00 CHF semester budget does not cover a test
+      # cycle. The backend adopts a configured limit at or above an owner's
+      # granted ledger limit; a lower configured value never reduces it.
+      semesterQuotaMinorUnits: '5000'
       pricingVersion: 'stg-canary-v1'
       billingMode: 'SEMESTER_QUOTA'
       semesterKey: '2026-H2'
@@ -790,6 +808,15 @@ lti:
       - secretName: klicker-lti-tls
         hosts:
           - lti.klicker.stg.df-app.ch
+
+  # The chart default (200m CPU / 200Mi memory) over-reserves this service: its
+  # staging VPA sits at the clamp floor (15m CPU / 100Mi memory) while live usage
+  # is about 1m CPU and 63Mi memory. CPU matches the 50m used by every other
+  # staging app; the chart's 500Mi memory limit is retained.
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
 
 responseApi:
   corsAllowedOrigins: 'https://pwa.klicker.stg.df-app.ch'

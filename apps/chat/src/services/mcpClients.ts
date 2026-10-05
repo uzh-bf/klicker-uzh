@@ -18,9 +18,12 @@ import { sanitizeDocQueryResult } from './docQueryResult'
 import {
   assertDocQueryRequestScope,
   assertDocQueryTransportSecurity,
+  createDocQueryScopedFetch,
   DOC_QUERY_MCP_SERVER_NAME,
   DOC_QUERY_SCOPE_TOKEN_HEADER,
+  type DocQueryScopedFetch,
   normalizeDocQueryKbIds,
+  resolveDocQueryScopedRoute,
 } from './mcpScope'
 
 // Type definitions for MCP server configuration
@@ -159,6 +162,12 @@ function toSafeToolName(
   return candidate
 }
 
+function createBaseHeaders(): Record<string, string> {
+  return Object.assign(Object.create(null), {
+    'Content-Type': 'application/json',
+  }) as Record<string, string>
+}
+
 async function applyDocQueryAuthHeaders(
   headers: Record<string, string>,
   server: MCPServerConfig,
@@ -193,6 +202,53 @@ async function applyDocQueryAuthHeaders(
   return true
 }
 
+interface MCPTransportRequest {
+  url: string
+  headers: Record<string, string>
+  fetch?: DocQueryScopedFetch
+}
+
+/**
+ * Binds the modern KB server to the deployment-controlled scoped route. The
+ * stored bearer and its auth type are ignored in this mode: destination and
+ * credential both come from configuration, so a database URL edit or an
+ * expired stored credential can neither redirect nor weaken the request.
+ * Absent configuration keeps the legacy transport bearer; a partial or
+ * inconsistent configuration throws before any credential is handed out.
+ */
+function createScopedDocQueryTransport(
+  server: MCPServerConfig,
+  context: MCPRequestContext
+): MCPTransportRequest | undefined {
+  if (server.name !== DOC_QUERY_MCP_SERVER_NAME) return undefined
+
+  const target = resolveDocQueryScopedRoute(server)
+  if (!target) return undefined
+
+  if (
+    !context.kbIds ||
+    !context.sessionId ||
+    typeof context.sessionId !== 'string' ||
+    context.sessionId.trim().length === 0
+  ) {
+    throw new Error('Scoped knowledge retrieval is not available')
+  }
+
+  const kbIds = normalizeDocQueryKbIds(context.kbIds)
+
+  return {
+    url: target.href,
+    headers: createBaseHeaders(),
+    fetch: createDocQueryScopedFetch({
+      target,
+      kbIds,
+      chatbotId: context.chatbotId,
+      sessionId: context.sessionId,
+      signToken: signDocQueryScopeToken,
+    }),
+  }
+}
+
 /**
  * Creates authentication headers based on server auth type
  */
@@ -200,9 +256,7 @@ export async function createAuthHeaders(
   server: MCPServerConfig,
   context: MCPRequestContext
 ): Promise<Record<string, string>> {
-  const baseHeaders = Object.assign(Object.create(null), {
-    'Content-Type': 'application/json',
-  }) as Record<string, string>
+  const baseHeaders = createBaseHeaders()
   const authType = server.authType.toLowerCase()
 
   if (await applyDocQueryAuthHeaders(baseHeaders, server, context, authType)) {
@@ -345,14 +399,18 @@ export async function createMCPClient(
   )
 
   try {
-    const headers = await createAuthHeaders(server, context)
+    const scopedTransport = createScopedDocQueryTransport(server, context)
+    const headers = scopedTransport
+      ? scopedTransport.headers
+      : await createAuthHeaders(server, context)
 
     const client = await createSDKMCPClient({
       transport: {
         type: 'http',
-        url: server.url,
+        url: scopedTransport ? scopedTransport.url : server.url,
         headers,
         redirect: 'error',
+        ...(scopedTransport?.fetch ? { fetch: scopedTransport.fetch } : {}),
       },
       ...(options.requestTimeoutMs !== undefined
         ? { initializationOptions: { timeout: options.requestTimeoutMs } }

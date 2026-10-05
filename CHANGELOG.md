@@ -2,6 +2,169 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.84](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.83...v3.4.0-alpha.84) (2026-09-29)
+
+
+### Features
+
+* **import:** add standalone Excel template importer ([#6285](https://github.com/uzh-bf/klicker-uzh/issues/6285)) ([51fcf52](https://github.com/uzh-bf/klicker-uzh/commit/51fcf526102d7a3e67b98a96be8f26f14c742ec3))
+
+
+### Bug Fixes
+
+* **deps:** lift fast-uri to 3.1.8 for CVE-2026-84292 and CVE-2026-84394 ([#6334](https://github.com/uzh-bf/klicker-uzh/issues/6334)) ([e97579d](https://github.com/uzh-bf/klicker-uzh/commit/e97579d474f5afdf83f501fb3b15ac347d7cfc86))
+* **deps:** remove duplicate GraphQL exceljs dev dependency ([3a36755](https://github.com/uzh-bf/klicker-uzh/commit/3a36755491a35d89c5ea33106b0e4eeb97e56b9b))
+* **graphql:** adopt raised graph quota limits instead of rejecting admissions ([#6299](https://github.com/uzh-bf/klicker-uzh/issues/6299)) ([9c354cf](https://github.com/uzh-bf/klicker-uzh/commit/9c354cf7918035fea12a075b11e43eb57285b139))
+* **leaderboard:** repair React resolution and align Playwright production builds ([#6311](https://github.com/uzh-bf/klicker-uzh/issues/6311)) ([cde7e42](https://github.com/uzh-bf/klicker-uzh/commit/cde7e4274757893a698a6c762a18e4e877a131c0))
+
+
+### Documentation
+
+* **project:** fold the cost and spot review into the KEDA roadmap ([#6277](https://github.com/uzh-bf/klicker-uzh/issues/6277)) ([5d0940e](https://github.com/uzh-bf/klicker-uzh/commit/5d0940ed02e0e65d9e374b97b4c09fd5dbbf5cc8))
+
+
+### Enhancements
+
+* **chatbot:** add admin publication approval UI ([#6223](https://github.com/uzh-bf/klicker-uzh/issues/6223)) ([679b582](https://github.com/uzh-bf/klicker-uzh/commit/679b582e12d5005c648ade883c95ede80526371a))
+* **chat:** qualify assisted progress and clarify quiz continuation ([#6313](https://github.com/uzh-bf/klicker-uzh/issues/6313)) ([8c48bfb](https://github.com/uzh-bf/klicker-uzh/commit/8c48bfb32a7da960429e6fd75578fec7f4672921))
+* **ci:** detect and repair squashed integration syncs ([#6331](https://github.com/uzh-bf/klicker-uzh/issues/6331)) ([daac575](https://github.com/uzh-bf/klicker-uzh/commit/daac575f849229abbcb0989961c60a81976e515d))
+
+## [3.4.0-alpha.83](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.82...v3.4.0-alpha.83) (2026-09-22)
+
+
+### Bug Fixes
+
+* **chat:** keep Tutor starters out of chatbot-defined modes ([#6275](https://github.com/uzh-bf/klicker-uzh/issues/6275)) ([9578d98](https://github.com/uzh-bf/klicker-uzh/commit/9578d98d1697b374c77ea1ad7b7f744eeae489ed))
+* **ci:** defer the staging promotion while a required workflow is still running ([#6242](https://github.com/uzh-bf/klicker-uzh/issues/6242)) ([66ba554](https://github.com/uzh-bf/klicker-uzh/commit/66ba55427d93edf29365a69ed9e383bda5ba010d))
+* **deploy:** correct staging auth limit and lti request sizing ([#6232](https://github.com/uzh-bf/klicker-uzh/issues/6232)) ([2520f69](https://github.com/uzh-bf/klicker-uzh/commit/2520f694164b6711c742dbe1e2ffac7db396a786))
+* **kb:** retire an already-removed graph without failing the sweep ([#6272](https://github.com/uzh-bf/klicker-uzh/issues/6272)) ([dba80bc](https://github.com/uzh-bf/klicker-uzh/commit/dba80bc43078ddac24b299c1da52305df5e56468))
+* **manage:** keep generated draft choices distinct in the review cache ([#6245](https://github.com/uzh-bf/klicker-uzh/issues/6245)) ([9ae0c18](https://github.com/uzh-bf/klicker-uzh/commit/9ae0c18ddc0d8d0808e71e18dfaf0b15a20424bd))
+
+
+### Other
+
+* **kb:** cover the unmetered reservation release sweep ([#6240](https://github.com/uzh-bf/klicker-uzh/issues/6240)) ([14a0b35](https://github.com/uzh-bf/klicker-uzh/commit/14a0b3540e7a9223a5da8a31f95126be089c0ab2))
+
+
+### Documentation
+
+* **project:** correct the W12a rollout status in the KG quality roadmap ([#6266](https://github.com/uzh-bf/klicker-uzh/issues/6266)) ([4ec8bfe](https://github.com/uzh-bf/klicker-uzh/commit/4ec8bfe183350a2a7227c11318de8b1d1464f4d2))
+* **project:** plan the chat citation and KB-transport debt closure ([#6225](https://github.com/uzh-bf/klicker-uzh/issues/6225)) ([b4a4d66](https://github.com/uzh-bf/klicker-uzh/commit/b4a4d669dca88fb68b8d101499cf371deb108697))
+* **project:** record the staging domain and language graph comparison ([#6234](https://github.com/uzh-bf/klicker-uzh/issues/6234)) ([0f9767a](https://github.com/uzh-bf/klicker-uzh/commit/0f9767a522a6380a5d70022989d1732581a4102c))
+
+
+### Enhancements
+
+* **ci:** guard the Doc Query scope-token ownership on v3-ai ([#6263](https://github.com/uzh-bf/klicker-uzh/issues/6263)) ([0e6fea4](https://github.com/uzh-bf/klicker-uzh/commit/0e6fea4e19657172fb6c7f415511fe4951f3a359))
+* **deploy:** bind production KB retrieval to the scoped Doc Query route ([#6251](https://github.com/uzh-bf/klicker-uzh/issues/6251)) ([107265c](https://github.com/uzh-bf/klicker-uzh/commit/107265cc48454ca44f84b73ab1a58b52d21840df))
+* **devcontainer:** add a local OIDC mock so Edu-ID login works in every checkout ([#5976](https://github.com/uzh-bf/klicker-uzh/issues/5976)) ([abbf785](https://github.com/uzh-bf/klicker-uzh/commit/abbf785082f9ffb05ef18bfb6d735efb6483264b))
+* **element-generation:** deliver partial question banks and retry recoverable builds ([#6268](https://github.com/uzh-bf/klicker-uzh/issues/6268)) ([dd716fb](https://github.com/uzh-bf/klicker-uzh/commit/dd716fbae16358f941cf5cbcf1513cf14cfa3edd))
+
+## [3.4.0-alpha.82](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.81...v3.4.0-alpha.82) (2026-09-22)
+
+
+### Features
+
+* **prisma:** enforce MCP bearer rotation custody ([3ab30bb](https://github.com/uzh-bf/klicker-uzh/commit/3ab30bb329cf9bb1b7d026e3de4a902b18a459d8))
+
+
+### Bug Fixes
+
+* **chat:** fall back to the account session when a stale embed session targets another chatbot ([#6230](https://github.com/uzh-bf/klicker-uzh/issues/6230)) ([d447a18](https://github.com/uzh-bf/klicker-uzh/commit/d447a18094563bcc916678cf406be2db9bc5dbd3))
+* **chat:** use scope tokens for KB transport authentication ([0c08f23](https://github.com/uzh-bf/klicker-uzh/commit/0c08f2377e492e399891bb7722cf4f4f5ffb3809))
+* **chat:** use scope tokens for KB transport authentication ([#6197](https://github.com/uzh-bf/klicker-uzh/issues/6197)) ([ffcd329](https://github.com/uzh-bf/klicker-uzh/commit/ffcd3297c2f49f9694e8da207670142a575f8b68))
+* **deploy:** correct staging auth limit and lti request sizing ([#6235](https://github.com/uzh-bf/klicker-uzh/issues/6235)) ([1b19cea](https://github.com/uzh-bf/klicker-uzh/commit/1b19cea803201b4c9fb79be4f2253db7bf0e6f46))
+* **deploy:** raise the staging auth memory limit to 512Mi ([e148022](https://github.com/uzh-bf/klicker-uzh/commit/e148022c15b6e979c11ffbc55b095b0fd7250ace))
+* **kb:** accept a missing published build id in the graph preview ([#6246](https://github.com/uzh-bf/klicker-uzh/issues/6246)) ([171c3e9](https://github.com/uzh-bf/klicker-uzh/commit/171c3e96cbdefdcccc860f6facd962f523c8d864))
+* **kb:** release graph reservations held by unmetered terminal results ([#6238](https://github.com/uzh-bf/klicker-uzh/issues/6238)) ([2c1533f](https://github.com/uzh-bf/klicker-uzh/commit/2c1533f5d208fa5a6df52ed0a34c85b2f2239464))
+* **kb:** reload the served graph preview when a rebuild publishes ([#6237](https://github.com/uzh-bf/klicker-uzh/issues/6237)) ([5eaf18c](https://github.com/uzh-bf/klicker-uzh/commit/5eaf18ccbebfe19c188604ea0e0c13bc1a49de71))
+
+
+### Other
+
+* **chat:** await scoped cancellation arrival ([45997b0](https://github.com/uzh-bf/klicker-uzh/commit/45997b0523942c5d4304d9db597fefb87e2b3b2a))
+
+
+### Documentation
+
+* **project:** record final DPO staging acceptance evidence ([#6217](https://github.com/uzh-bf/klicker-uzh/issues/6217)) ([542dafe](https://github.com/uzh-bf/klicker-uzh/commit/542dafe88bff612effc396c42e8c6f7341dc9b4c))
+* **skills:** document multi-KB prepared corpus imports ([#6207](https://github.com/uzh-bf/klicker-uzh/issues/6207)) ([a14b067](https://github.com/uzh-bf/klicker-uzh/commit/a14b067cdbb00b0bbf9612bf1abbd65da3c5f25e))
+
+
+### Enhancements
+
+* **chat:** reuse the imported scope signing key ([71c194a](https://github.com/uzh-bf/klicker-uzh/commit/71c194aede348357200d887e77b0f5677e9ca1cc))
+* **deploy:** bind production KB retrieval to the scoped Doc Query route (v3-ai parity) ([#6262](https://github.com/uzh-bf/klicker-uzh/issues/6262)) ([c4e1d54](https://github.com/uzh-bf/klicker-uzh/commit/c4e1d54139dcfeb5e19e0b98c0a9dca430362fe8))
+* **shared-components:** redesign leaderboard with animations ([#5792](https://github.com/uzh-bf/klicker-uzh/issues/5792)) ([0a7d125](https://github.com/uzh-bf/klicker-uzh/commit/0a7d12597c76bf4abeb329034da6ac92caa1e5fe))
+
+## [3.4.0-alpha.81](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.80...v3.4.0-alpha.81) (2026-09-21)
+
+
+### Features
+
+* **ci:** fail the codebase check when deploy/ diverges from v3-ai ([#6160](https://github.com/uzh-bf/klicker-uzh/issues/6160)) ([50a1549](https://github.com/uzh-bf/klicker-uzh/commit/50a1549d2c7b0aa1bf4fd00270a503c462bca0a2))
+* **dpo:** term-start disclaimer and consent acceptance layer ([#5970](https://github.com/uzh-bf/klicker-uzh/issues/5970)) ([d3ab5f1](https://github.com/uzh-bf/klicker-uzh/commit/d3ab5f1c0460b7a340127fd201e77cd5b034f88c))
+
+
+### Bug Fixes
+
+* **auth:** enforce stable login audience across the OAuth lifecycle ([#6071](https://github.com/uzh-bf/klicker-uzh/issues/6071)) ([e1d8e18](https://github.com/uzh-bf/klicker-uzh/commit/e1d8e185e868e64cde1d2a2d8479cc92af39ecdc))
+* **chat:** show cited pages instead of the retrieval span on source rows ([#6175](https://github.com/uzh-bf/klicker-uzh/issues/6175)) ([5f654bb](https://github.com/uzh-bf/klicker-uzh/commit/5f654bbc117999827e1b70771169756ced54031e))
+* **ci:** follow the registry blob redirect when reading image revisions ([#6214](https://github.com/uzh-bf/klicker-uzh/issues/6214)) ([a225835](https://github.com/uzh-bf/klicker-uzh/commit/a2258352dd3af4524a0f4c8f7054799f7dce9c60))
+* **ci:** forward public build configuration to the staging image builds ([#6169](https://github.com/uzh-bf/klicker-uzh/issues/6169)) ([de86095](https://github.com/uzh-bf/klicker-uzh/commit/de860955c96c7ab2432063bd4ee7b64022742a3a))
+* **ci:** make the staging image reuse guard executable ([#6193](https://github.com/uzh-bf/klicker-uzh/issues/6193)) ([2abdbb9](https://github.com/uzh-bf/klicker-uzh/commit/2abdbb90e8ac0217926a340cc498aa3b7d572845))
+* **ci:** match a required CI job by its reusable-workflow name ([#6200](https://github.com/uzh-bf/klicker-uzh/issues/6200)) ([11e48f2](https://github.com/uzh-bf/klicker-uzh/commit/11e48f2aeb2f7d44dbe3ce403f42bfc98891d1b6))
+* **ci:** pin the @babel/core spec to the overridden release ([#6158](https://github.com/uzh-bf/klicker-uzh/issues/6158)) ([545a6ef](https://github.com/uzh-bf/klicker-uzh/commit/545a6ef746c2d6585e7e06424c0bd03ec96da096))
+* **deploy:** keep FASTMCP_STATELESS on the v3-ai MCP configmaps ([#6159](https://github.com/uzh-bf/klicker-uzh/issues/6159)) ([cf846da](https://github.com/uzh-bf/klicker-uzh/commit/cf846daeb7645d71cea3de7a07897f7113275fb6))
+* **deploy:** render production topology spread constraints ([#5694](https://github.com/uzh-bf/klicker-uzh/issues/5694)) ([3e3251c](https://github.com/uzh-bf/klicker-uzh/commit/3e3251cf10ec50579c10ac2ef15b2628bec82314))
+* **deploy:** render production topology spread constraints ([#6180](https://github.com/uzh-bf/klicker-uzh/issues/6180)) ([cd9fbe9](https://github.com/uzh-bf/klicker-uzh/commit/cd9fbe9998dec63192438d7e29335d393fe7d6e8))
+* **deps:** repair the lockfile resolution for the merged auth vitest devDependency ([0ad7030](https://github.com/uzh-bf/klicker-uzh/commit/0ad7030e90fa8e590f4cc1122cb87b58a4871f45)), closes [#6168](https://github.com/uzh-bf/klicker-uzh/issues/6168)
+* **devcontainer:** fail startup fast when a managed process dies early ([#6170](https://github.com/uzh-bf/klicker-uzh/issues/6170)) ([ff94697](https://github.com/uzh-bf/klicker-uzh/commit/ff94697eb870aa6dfb6f65cd9913e508188de063))
+* **devcontainer:** publish postgres on an ephemeral loopback port ([#6176](https://github.com/uzh-bf/klicker-uzh/issues/6176)) ([e63cd39](https://github.com/uzh-bf/klicker-uzh/commit/e63cd390e13ac56ff1ef498b6f923724e075fe69))
+* **generation:** preserve graph language and scope focus to questions ([4135519](https://github.com/uzh-bf/klicker-uzh/commit/4135519322dc1c617a54c5ec5e5bb84d2ca01e70))
+* **graphql:** match the checked-in SDL to the generator output ([ced55b2](https://github.com/uzh-bf/klicker-uzh/commit/ced55b2e9f3d605bc42724c9cd04e8270723465c))
+* **kb:** authenticate source inventory with fresh scope tokens ([#6198](https://github.com/uzh-bf/klicker-uzh/issues/6198)) ([938c0f4](https://github.com/uzh-bf/klicker-uzh/commit/938c0f4dad0ac4473c8883d169f27245522a836d))
+* **knowledge-graph:** stop sharing rollup output with incremental compiler state ([#6210](https://github.com/uzh-bf/klicker-uzh/issues/6210)) ([327529b](https://github.com/uzh-bf/klicker-uzh/commit/327529bc260e4f539da0241e4cb890bcfd10e934))
+* **lti:** register the OLAT platform of the STG Finance I element ([#6162](https://github.com/uzh-bf/klicker-uzh/issues/6162)) ([a97002f](https://github.com/uzh-bf/klicker-uzh/commit/a97002ffeacff1b9c2e84b47fe24bfe1d86623c0))
+* **playwright:** de-duplicate the fixture flag blocks ([f04f5d2](https://github.com/uzh-bf/klicker-uzh/commit/f04f5d20c2cf278a4effdfd49d0020def3289444))
+* **playwright:** register the knowledge-graph flags in the test payloads ([855a3f8](https://github.com/uzh-bf/klicker-uzh/commit/855a3f814e10eaced6d634cc3771281073bcb82c))
+* **util:** export the participant data-use subpath the pwa imports ([9a400e3](https://github.com/uzh-bf/klicker-uzh/commit/9a400e39acc1403421bccbb6d177552ce6ed518a))
+* **util:** export the participant data-use subpath the pwa imports ([#6208](https://github.com/uzh-bf/klicker-uzh/issues/6208)) ([4be34ed](https://github.com/uzh-bf/klicker-uzh/commit/4be34ed26d91aead4291e04f2b5de0778ad23591))
+
+
+### Build and CI
+
+* auto-cancel superseded dependency review runs ([#6196](https://github.com/uzh-bf/klicker-uzh/issues/6196)) ([91db0e9](https://github.com/uzh-bf/klicker-uzh/commit/91db0e9661bcf528d9dadfefc6ce4d57b612f3a4))
+* **sync:** maintain draft forward integration PRs ([#6183](https://github.com/uzh-bf/klicker-uzh/issues/6183)) ([fa8ce96](https://github.com/uzh-bf/klicker-uzh/commit/fa8ce963499a69b3b74c85076d3d216bbca64ffd))
+
+
+### Other
+
+* **devcontainer:** prove managed-process liveness across the grace interval ([#6177](https://github.com/uzh-bf/klicker-uzh/issues/6177)) ([b9e2a56](https://github.com/uzh-bf/klicker-uzh/commit/b9e2a561f181521ab7f73a1cfa237383d5723d26))
+* **docs:** normalize the auth model markdown after the merge ([3840d03](https://github.com/uzh-bf/klicker-uzh/commit/3840d03b61bc12424f8e9dd797509a5c8abc9ea4))
+* **graphql:** cover the learning analytics release switch ([662314c](https://github.com/uzh-bf/klicker-uzh/commit/662314c5bfadd3132d97754944a9c47edbe84d61))
+* **playwright:** align analytics access cases with the closed release gate ([#6213](https://github.com/uzh-bf/klicker-uzh/issues/6213)) ([680bc22](https://github.com/uzh-bf/klicker-uzh/commit/680bc224bcd6d9d2b3855ea397fcd7b49ea8eca0))
+
+
+### Enhancements
+
+* **ci:** stop paying for work whose inputs did not change ([#6173](https://github.com/uzh-bf/klicker-uzh/issues/6173)) ([bb24e13](https://github.com/uzh-bf/klicker-uzh/commit/bb24e130374b790f83081a21e50dd87b57e10a07))
+* **element-generation:** narrow a question batch to a lecturer focus topic ([#5966](https://github.com/uzh-bf/klicker-uzh/issues/5966)) ([97a57c8](https://github.com/uzh-bf/klicker-uzh/commit/97a57c8018ca4d714669032963b67e497e2f2d2e))
+* **hatchet:** bound a stuck KB ingestion operation ([#6184](https://github.com/uzh-bf/klicker-uzh/issues/6184)) ([dda8029](https://github.com/uzh-bf/klicker-uzh/commit/dda80290417ed693a6c7fd915adf5fd29f9386ba))
+* **kg:** follow graph language and move KB admissions to GrowthBook flags ([#6178](https://github.com/uzh-bf/klicker-uzh/issues/6178)) ([faf4fbe](https://github.com/uzh-bf/klicker-uzh/commit/faf4fbea3b9ea03552f9bd224a1361196d3a24b9))
+* **kg:** gate new knowledge-base work on GrowthBook admissions ([1b0401d](https://github.com/uzh-bf/klicker-uzh/commit/1b0401d0f375cf2a78a6b68e66afcf3e610fdb3f))
+* **prisma-data:** add guarded chatbot knowledge-base provisioning ([#6187](https://github.com/uzh-bf/klicker-uzh/issues/6187)) ([d831b2b](https://github.com/uzh-bf/klicker-uzh/commit/d831b2bc862c5529d6aa8db6700ede27b8f62fea))
+
+
+### Documentation
+
+* **project:** add GrowthBook toggle migration roadmap ([d6b8357](https://github.com/uzh-bf/klicker-uzh/commit/d6b8357b00350915ca0618bfc4d373a04e384771))
+* **project:** add KG simplification execution plan ([184f51a](https://github.com/uzh-bf/klicker-uzh/commit/184f51acd32d0ceb376df49064e2e21d3c0261ed))
+* **project:** close the resolved doc-query canary key checkbox ([#6174](https://github.com/uzh-bf/klicker-uzh/issues/6174)) ([02aaaa8](https://github.com/uzh-bf/klicker-uzh/commit/02aaaa87b14c2d27db8ceb9a8e617ec5a5875fef))
+* **project:** record KG consumer delivery and remaining gates ([75d9e33](https://github.com/uzh-bf/klicker-uzh/commit/75d9e339b573cde4f9f732f598bb77b8c748ea72))
+* **project:** sequence the DPO release through STG, then PRD ([#6205](https://github.com/uzh-bf/klicker-uzh/issues/6205)) ([812e410](https://github.com/uzh-bf/klicker-uzh/commit/812e4105b9f1d4b6e7b8233ec4c7594026e6b2cc))
+* **skills:** make the inventory verification concrete in the video lane ([#6047](https://github.com/uzh-bf/klicker-uzh/issues/6047)) ([0e2c0e8](https://github.com/uzh-bf/klicker-uzh/commit/0e2c0e8b76a91a50e6ba912f5263375f2642135c))
+
 ## [3.4.0-alpha.80](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.79...v3.4.0-alpha.80) (2026-09-19)
 
 

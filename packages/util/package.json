@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/util",
-  "version": "3.4.0-alpha.80",
+  "version": "3.4.0-alpha.84",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -84,6 +84,10 @@
     "./response-example-runtime": {
       "types": "./dist/responseExampleRuntime.d.ts",
       "default": "./dist/responseExampleRuntime.js"
+    },
+    "./chatbot-custom-mode-limits": {
+      "types": "./dist/chatbotCustomModeLimits.d.ts",
+      "default": "./dist/chatbotCustomModeLimits.js"
     }
   },
   "type": "module"

@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-pwa",
-  "version": "3.4.0-alpha.80",
+  "version": "3.4.0-alpha.84",
   "license": "AGPL-3.0",
   "dependencies": {
     "@apollo/client": "3.13.8",
@@ -78,7 +78,7 @@
   },
   "scripts": {
     "build": "next build --webpack",
-    "build:test": "cross-env NODE_ENV=test next build --turbopack",
+    "build:test": "node ../../util/playwright-next-runtime.mjs build",
     "check": "next typegen && tsc --noEmit -p tsconfig.check.json",
     "dev": "cross-env NODE_ENV=development next dev --turbopack --port 3001",
     "dev:assessment": "pnpm run dev",
@@ -90,7 +90,7 @@
     "lint": "eslint .",
     "pushTest": "node src/testPush.js",
     "start": "next start --port 3001",
-    "start:test": "cross-env NODE_ENV=test pnpm start",
+    "start:test": "node ../../util/playwright-next-runtime.mjs start 3001",
     "test": "pnpm run test:run",
     "test:run": "tsx --test \"src/**/*.test.ts\""
   },

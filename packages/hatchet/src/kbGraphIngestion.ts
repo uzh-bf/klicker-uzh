@@ -56,6 +56,24 @@ const KB_GRAPH_DISPATCH_FAILED_CODE = 'KB_GRAPH_DISPATCH_FAILED'
 // goes on to spend. Only a claim older than the window is treated as abandoned.
 const KB_GRAPH_DISPATCH_CLAIM_GRACE_MS = 15 * 60 * 1000
 
+// A build whose provider run finished but whose terminal result could not be
+// metered keeps its reservation parked for review. The hold is bounded: after
+// this window the platform absorbs the provider cost instead of leaving the
+// lecturer's semester quota reduced for a graph that was never served, and the
+// build keeps its failure code as the record of why nothing was charged.
+const KB_GRAPH_COST_HOLD_RELEASE_MS = 24 * 60 * 60 * 1000
+
+// Terminal results that arrived but could not become metered spend. The dispatch
+// sweep owns the ambiguous-dispatch hold, and a result parked after cleanup
+// belongs to the build that already replaced it, so neither code is listed here.
+export const KB_GRAPH_UNMETERED_RESULT_CODES = [
+  'KB_GRAPH_RESULT_CONTRACT_INVALID',
+  'KB_GRAPH_RESULT_IDENTITY_INVALID',
+  'KB_GRAPH_RESULT_METERING_MISSING',
+  'KB_GRAPH_RESULT_METERING_OVERFLOW',
+  'KB_GRAPH_RESULT_CURRENCY_MISMATCH',
+] as const
+
 type KBGraphPrisma = Pick<
   PrismaClient,
   | '$queryRaw'
@@ -182,7 +200,7 @@ async function releaseKBGraphReservationInTransaction(
   // dispatch also has to unwind a hold that was already parked for review, once
   // the provider has confirmed that no run of that build id ever existed.
   releasableCostStatuses: KBGraphCostStatus[] = [KBGraphCostStatus.RESERVED]
-): Promise<void> {
+): Promise<boolean> {
   const build = await prisma.kBGraphBuild.findUnique({
     where: { id: buildId },
     select: {
@@ -197,7 +215,7 @@ async function releaseKBGraphReservationInTransaction(
     !releasableCostStatuses.includes(build.costStatus) ||
     build.estimatedCostMinorUnits === null
   ) {
-    return
+    return false
   }
 
   if (build.quotaId) {
@@ -215,7 +233,7 @@ async function releaseKBGraphReservationInTransaction(
     },
     data: { costStatus: KBGraphCostStatus.RELEASED },
   })
-  if (updated.count !== 1 || !build.quotaId) return
+  if (updated.count !== 1 || !build.quotaId) return updated.count === 1
 
   const quotaUpdated = await prisma.kBGraphQuota.updateMany({
     where: {
@@ -229,6 +247,8 @@ async function releaseKBGraphReservationInTransaction(
   if (quotaUpdated.count !== 1) {
     throw new Error('KB graph quota reservation could not be released')
   }
+
+  return true
 }
 
 function getGraphMonitorBatchOffset(total: number, now: Date) {
@@ -1315,6 +1335,12 @@ export async function monitorActiveKBGraphBuilds(
     { ...dependencies, providerOperationTimeoutMs },
     sweepNow
   )
+  // A held cost reservation has neither an active status nor a timeout, so this
+  // sweep also has to run before the early return.
+  await releaseUnmeteredKBGraphReservations(
+    { prisma: dependencies.prisma, logger: dependencies.logger },
+    sweepNow
+  )
 
   if (builds.length === 0 && timedOutBuilds.length === 0) {
     return
@@ -1477,6 +1503,60 @@ export async function recheckAmbiguousKBGraphDispatches(
       now: () => sweepNow,
     })
   })
+}
+
+/**
+ * Releases the reservations of builds whose provider run finished but whose
+ * terminal result could not be metered. The lecturer never received the graph
+ * the reservation paid for, so after the review window the platform absorbs the
+ * provider cost instead of parking spend against a semester quota forever. Every
+ * release keeps the build's failure code and is logged for the operator.
+ */
+export async function releaseUnmeteredKBGraphReservations(
+  dependencies: Pick<MonitorKBGraphBuildsDependencies, 'prisma' | 'logger'>,
+  sweepNow: Date
+): Promise<number> {
+  const unmeteredWhere = {
+    costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW,
+    errorCode: { in: [...KB_GRAPH_UNMETERED_RESULT_CODES] },
+    estimatedCostMinorUnits: { not: null },
+    // Without a quota row the hold reduced no quota, so there is nothing to
+    // unwind and the review flag stays as the operator's record.
+    quotaId: { not: null },
+    finishedAt: {
+      lte: new Date(sweepNow.getTime() - KB_GRAPH_COST_HOLD_RELEASE_MS),
+    },
+  } satisfies Prisma.KBGraphBuildWhereInput
+  const heldCount = await dependencies.prisma.kBGraphBuild.count({
+    where: unmeteredWhere,
+  })
+  const heldOffset = getGraphMonitorBatchOffset(heldCount, sweepNow)
+  const heldBuilds = await dependencies.prisma.kBGraphBuild.findMany({
+    where: unmeteredWhere,
+    select: { id: true, kbId: true },
+    orderBy: { finishedAt: 'asc' },
+    ...(heldOffset > 0 ? { skip: heldOffset } : {}),
+    take: KB_GRAPH_MONITOR_BATCH_SIZE,
+  })
+
+  let releasedCount = 0
+  for (const build of heldBuilds) {
+    const released = await dependencies.prisma.$transaction((tx) =>
+      releaseKBGraphReservationInTransaction(tx, build.id, [
+        KBGraphCostStatus.NEEDS_HUMAN_REVIEW,
+      ])
+    )
+    if (!released) continue
+
+    releasedCount += 1
+    await logInfoBestEffort(
+      dependencies.logger,
+      'KB graph reservation released after an unmetered terminal result',
+      { buildId: build.id, kbId: build.kbId }
+    )
+  }
+
+  return releasedCount
 }
 
 export async function markKBGraphBuildDispatchFailed(
