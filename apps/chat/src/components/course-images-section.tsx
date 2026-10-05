@@ -52,10 +52,10 @@ function usePersistedCourseImageContext() {
 export function CourseImageCard({
   image,
   src,
-}: {
+}: Readonly<{
   image: CourseImage
   src: string
-}) {
+}>) {
   const t = useTranslations('chat.courseImages')
   const [failed, setFailed] = useState(false)
   const [attempt, setAttempt] = useState(0)

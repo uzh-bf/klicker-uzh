@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { readCourseImage } from '@/src/lib/server/courseImageStore'
 import { resolveEffectiveMCPConfigurations } from '@/src/lib/server/effectiveChatModes'
+import { COURSE_IMAGE_DIGEST_REGEX } from '@/src/lib/sources/courseImageIdentity'
 import { selectedCourseImages } from '@/src/lib/sources/courseImages'
 import type { ChatSourcePart } from '@/src/lib/sources/normalizeSources'
 import { resolveMcpScope } from '@/src/services/mcpScope'
@@ -32,7 +33,7 @@ export async function GET(
       { error: 'Course image unavailable' },
       { status: 404, headers }
     )
-  if (!/^[a-f0-9]{64}$/.test(assetId)) return missing()
+  if (!COURSE_IMAGE_DIGEST_REGEX.test(assetId)) return missing()
   try {
     const message = await prisma.chatMessage.findFirst({
       where: {
