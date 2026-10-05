@@ -29,6 +29,7 @@ fragment CompetenceTreeData on CompetenceTree {
     id
     label
     order
+    color
     theta
     lowerBound
     upperBound

@@ -22,6 +22,7 @@ query QAdaptivePracticeQuizResultWithPlacementPilot($attemptId: String!) {
       order
       startPosition
       endPosition
+      color
       hasElements
     }
     classificationToleranceBands
@@ -34,6 +35,9 @@ query QAdaptivePracticeQuizResultWithPlacementPilot($attemptId: String!) {
     }
     competenceProfile {
       ...FAdaptivePracticeQuizResultNodeLevel1
+    }
+    testingHistory {
+      ...FAdaptivePracticeQuizTestingHistory
     }
   }
 }

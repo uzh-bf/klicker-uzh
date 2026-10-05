@@ -553,6 +553,7 @@ type AdaptivePracticeQuizLevel {
 }
 
 type AdaptivePracticeQuizLevelBand {
+  color: String
   endPosition: Float!
   hasElements: Boolean!
   label: String!
@@ -766,6 +767,7 @@ type AdaptivePracticeQuizResult {
   practiceQuizId: String!
   practiceQuizName: String!
   stopReason: AdaptivePracticeQuizStopReason!
+  testingHistory: AdaptivePracticeQuizTestingHistory
   trajectory: [AdaptivePracticeQuizTrajectoryPoint!]!
   upperPosition: Float
 }
@@ -1964,6 +1966,7 @@ input CompetenceTreeInput {
 }
 
 type CompetenceTreeLevel {
+  color: String
   id: Int!
   label: String!
   lowerBound: Float
@@ -1972,7 +1975,13 @@ type CompetenceTreeLevel {
   upperBound: Float
 }
 
+input CompetenceTreeLevelColorInput {
+  color: String
+  levelId: Int!
+}
+
 input CompetenceTreeLevelInput {
+  color: String
   key: String!
   label: String!
   order: Int!
@@ -1983,6 +1992,7 @@ input CompetenceTreeMetadataInput {
   defaultTotalQuestionCap: Int
   description: String
   displayName: String!
+  levelColors: [CompetenceTreeLevelColorInput!]
   name: String!
 }
 

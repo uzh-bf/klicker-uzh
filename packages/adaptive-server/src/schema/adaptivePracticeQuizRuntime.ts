@@ -419,6 +419,10 @@ export function createAdaptivePracticeQuizRuntimeSchema(
       order: t.exposeInt('order'),
       startPosition: t.exposeFloat('startPosition'),
       endPosition: t.exposeFloat('endPosition'),
+      color: t.string({
+        nullable: true,
+        resolve: ({ color }) => color ?? null,
+      }),
       hasElements: t.boolean({
         resolve: (band) => band.hasElements ?? true,
       }),
@@ -517,6 +521,11 @@ export function createAdaptivePracticeQuizRuntimeSchema(
       }),
       competenceProfile: t.expose('competenceProfile', {
         type: [AdaptiveStudentResultNodeRef],
+      }),
+      // ADAPTIVE_QUIZ_SHOW_SOLUTIONS=true (staging walkthroughs); null otherwise.
+      testingHistory: t.expose('testingHistory', {
+        type: AdaptiveTestingHistoryType,
+        nullable: true,
       }),
     }),
   })

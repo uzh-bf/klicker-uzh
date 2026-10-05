@@ -22,6 +22,7 @@ export type {
   CompetenceTreeNodeInput,
   DuplicateCompetenceTreeInput,
 } from './competenceTreeInput.js'
+export type { CompetenceTreeLevelColorInput } from './competenceTreeLevelColors.js'
 export type {
   CompetenceTreeAssignmentView,
   CompetenceTreeCatalogArgs,

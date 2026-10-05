@@ -32,12 +32,17 @@ import {
   type LoadedAdaptiveRuntime,
   toDeliveredRuntimePoolItem,
 } from './adaptivePracticeQuizRuntimeData.js'
-import { withAttemptTestingEstimates } from './adaptivePracticeQuizTestingAttemptView.js'
+import {
+  buildAttemptTestingHistory,
+  withAttemptTestingEstimates,
+} from './adaptivePracticeQuizTestingAttemptView.js'
+import type { AdaptiveTestingHistory } from './adaptivePracticeQuizTestingInfo.js'
 import {
   normalizeV2Position,
   serializeV2EstimateView,
   serializeV2LevelBands,
 } from './adaptivePracticeQuizV2ParticipantViews.js'
+import { competenceTreeLevelColorsById } from './competenceTreeLevelColors.js'
 
 export type AdaptivePracticeQuizAttemptState = {
   attemptId: string
@@ -79,6 +84,8 @@ export type AdaptiveResultLevelBand = {
   order: number
   startPosition: number
   endPosition: number
+  /** Lecturer-chosen band color; null uses the default palette. */
+  color?: string | null
   // Whether the published pool has at least one element at this level, so
   // the result can mark estimates beyond the measurable range.
   hasElements?: boolean
@@ -139,6 +146,8 @@ export type AdaptiveStudentResult = {
   classificationToleranceBands: number
   trajectory: AdaptiveResultTrajectoryPoint[]
   competenceProfile: AdaptiveStudentResultNode[]
+  // Debug-only answer history; null unless ADAPTIVE_QUIZ_SHOW_SOLUTIONS=true.
+  testingHistory: AdaptiveTestingHistory | null
 }
 
 export function serializeAdaptiveAttemptState(
@@ -211,8 +220,19 @@ export function serializeAdaptiveAttemptState(
 
 export function serializeAdaptiveStudentResult(
   runtime: LoadedAdaptiveRuntime,
-  attempt: AdaptiveAttemptRuntimeRecord
+  attempt: AdaptiveAttemptRuntimeRecord,
+  showSolutions: string | undefined = process.env.ADAPTIVE_QUIZ_SHOW_SOLUTIONS
 ): AdaptiveStudentResult {
+  return {
+    ...serializeAdaptiveStudentResultCore(runtime, attempt),
+    testingHistory: buildAttemptTestingHistory(runtime, attempt, showSolutions),
+  }
+}
+
+function serializeAdaptiveStudentResultCore(
+  runtime: LoadedAdaptiveRuntime,
+  attempt: AdaptiveAttemptRuntimeRecord
+): Omit<AdaptiveStudentResult, 'testingHistory'> {
   if (!attempt.stopReason || !attempt.completedAt) {
     throw adaptivePracticeQuizError(
       'The completed adaptive attempt has no terminal metadata.',
@@ -387,7 +407,11 @@ export function serializeAdaptiveStudentResult(
     classificationProbability: null,
     ...overallView,
     levelBands: withLevelBandElements(
-      serializeLevelBands(runtime.algorithm.levels, settings),
+      serializeLevelBands(
+        runtime.algorithm.levels,
+        settings,
+        competenceTreeLevelColorsById(runtime.tree.levels)
+      ),
       runtime.algorithm.levels.filter(({ id }) =>
         runtime.pool.some(({ levelId }) => levelId === id)
       )
@@ -404,7 +428,7 @@ export function serializeAdaptiveStudentResult(
 function serializeAdaptiveV2StudentResult(
   runtime: LoadedAdaptiveRuntime,
   attempt: AdaptiveAttemptRuntimeRecord
-): AdaptiveStudentResult {
+): Omit<AdaptiveStudentResult, 'testingHistory'> {
   const completedAt = attempt.completedAt!
   const stopReason = attempt.stopReason!
   const overall = attempt.estimates.find(

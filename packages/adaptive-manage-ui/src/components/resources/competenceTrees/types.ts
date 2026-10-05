@@ -1,15 +1,18 @@
 import {
   AdaptiveLevelMappingRule,
   AdaptiveNodeKind,
-  CompetenceTreeDataFragment,
-  CompetenceTreeInput,
-  ElementType,
+  type CompetenceTreeDataFragment,
+  type CompetenceTreeInput,
+  type CompetenceTreeMetadataInput,
+  type ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
 
 export interface CompetenceTreeLevelForm {
   key: string
   label: string
   order: number
+  /** Lowercase `#rrggbb` override; null/undefined uses the default palette. */
+  color?: string | null
 }
 
 export interface CompetenceTreeNodeForm {
@@ -167,6 +170,7 @@ export function competenceTreeToForm(
         key: levelKeyById.get(level.id)!,
         label: level.label,
         order: level.order,
+        color: level.color ?? null,
       }))
       .sort((a, b) => a.order - b.order),
     nodes: tree.nodes.map((node) => ({
@@ -251,6 +255,7 @@ export function competenceTreeFormToInput(
         key: level.key,
         label: level.label.trim(),
         order,
+        color: level.color?.toLowerCase() || null,
       })),
     nodes: form.nodes.map((node) => ({
       key: node.key,
@@ -306,5 +311,35 @@ export function competenceTreeFormToInput(
       discrimination: null,
       enablePercentInput: assignment.enablePercentInput,
     })),
+  }
+}
+
+const SAVED_LEVEL_KEY = /^level:(\d+)$/
+
+/**
+ * Input for the metadata save that is used while a practice quiz locks the
+ * tree structure. Level colors are cosmetic, so they are included for every
+ * saved level (null clears an override).
+ */
+export function competenceTreeFormToMetadataInput(
+  form: CompetenceTreeForm
+): CompetenceTreeMetadataInput {
+  return {
+    name: form.name.trim(),
+    displayName: form.displayName.trim(),
+    description: form.description.trim() || null,
+    defaultTotalQuestionCap: form.defaultTotalQuestionCap,
+    defaultTimeLimitSeconds: form.defaultTimeLimitSeconds,
+    levelColors: form.levels.flatMap((level) => {
+      const match = SAVED_LEVEL_KEY.exec(level.key)
+      return match
+        ? [
+            {
+              levelId: Number(match[1]),
+              color: level.color?.toLowerCase() || null,
+            },
+          ]
+        : []
+    }),
   }
 }

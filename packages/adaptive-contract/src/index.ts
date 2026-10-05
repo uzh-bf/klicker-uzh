@@ -1,5 +1,6 @@
 export * from './core.js'
 export * from './legacyPresentation.js'
+export * from './levelPalette.js'
 export * from './policy.js'
 export * from './posterior.js'
 export * from './presentation.js'

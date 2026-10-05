@@ -184,6 +184,10 @@ model CompetenceTreeLevel {
 
   label String
   order Int
+  // Optional presentation color (lowercase #rrggbb). Cosmetic only: not part
+  // of the tree structure, publications, scales, or fingerprints. Null uses
+  // the default ordinal palette.
+  color String?
 
   tree   CompetenceTree @relation(fields: [treeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   treeId String         @db.Uuid

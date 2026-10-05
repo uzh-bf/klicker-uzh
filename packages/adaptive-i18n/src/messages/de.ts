@@ -42,7 +42,7 @@ const messages = {
             'θ {theta} [{lower}, {upper}], SE {standardError}, {count, plural, one {# Antwort} other {# Antworten}}',
           testingTrue: 'Richtig',
           testingFalse: 'Falsch',
-          testingHistory: 'Bisherige Antworten',
+          testingHistorySummary: 'Bisherige Antworten ({count})',
           testingHistoryEmpty: 'In diesem Versuch noch keine Antworten.',
           testingHistoryOrder: '#',
           testingHistoryElement: 'Element',
@@ -255,16 +255,22 @@ const messages = {
             '{count, plural, one {Nach # beantworteter Frage liegen noch nicht genügend Daten für ein Gesamtniveau vor.} other {Nach # beantworteten Fragen liegen noch nicht genügend Daten für ein Gesamtniveau vor.}}',
         },
         profile: {
-          earlyIndication: '{level} (grobe Schätzung)',
-          plausibleRange: 'Plausibler Bereich: {range}',
-          fewResponses:
-            '{count, plural, one {Basiert auf nur # Antwort – die Spanne ist noch breit.} other {Basiert auf nur # Antworten – die Spanne ist noch breit.}}',
-          supportedEstimate:
-            'Deine Antworten stützen diese Einschätzung. Der schattierte Bereich zeigt die verbleibende Unsicherheit.',
-          uncertainEstimate:
-            'Dein Niveau ist noch unsicher. Weitere Antworten in diesem Bereich würden helfen, die Spanne einzugrenzen.',
-          noResponses: 'In diesem Versuch nicht geprüft.',
+          estimatedLevel: 'Geschätztes Niveau: {level}',
+          roughLevel: 'Grobe Schätzung: {level}',
+          aroundLevel: 'Ungefähr {level}',
+          notEnoughAnswers:
+            '{count, plural, one {Noch zu wenige Antworten für eine Schätzung (# Antwort)} other {Noch zu wenige Antworten für eine Schätzung (# Antworten)}}',
+          likelyRange: 'Wahrscheinlich zwischen {lower} und {upper}',
+          certainty: {
+            HIGH: 'Hohe Sicherheit',
+            MEDIUM: 'Mittlere Sicherheit',
+            LOW: 'Geringe Sicherheit',
+          },
           notTested: 'Nicht geprüft',
+          notTestedCompetences:
+            '{count, plural, one {# Kompetenz in diesem Versuch nicht geprüft} other {# Kompetenzen in diesem Versuch nicht geprüft}}',
+          notTestedSubcompetences:
+            '{count, plural, one {# Teilkompetenz in diesem Versuch nicht geprüft} other {# Teilkompetenzen in diesem Versuch nicht geprüft}}',
           notTestedOutOfRange:
             'Nicht geprüft – außerhalb deines Niveaubereichs',
           levelExact: '{level}',
@@ -275,7 +281,7 @@ const messages = {
           levelAboveRange:
             '{level} oder höher (oberhalb des messbaren Bereichs)',
           evidenceHelp:
-            'Jede Zeile verwendet Antworten aus dem jeweiligen Bereich. Nach wenigen Antworten ist die Einschätzung vorläufig. Die schattierte Spanne zeigt die Unsicherheit: Je breiter sie ist, desto unsicherer ist dein Niveau. Bereiche mit „Nicht geprüft“ haben in diesem Versuch keine Fragen erhalten und keine Schätzung.',
+            'Jede Zeile zeigt dein geschätztes Niveau in diesem Bereich und wie sicher die Schätzung ist. Mit mehr Antworten wird die Schätzung sicherer.',
           title: 'Kompetenzprofil',
           overall: 'Gesamt',
           responses: '{count, plural, one {# Antwort} other {# Antworten}}',
@@ -1111,7 +1117,7 @@ const messages = {
       readOnlyNotice:
         'Dieser Baum gehört einer anderen Person. Sie können ihn einsehen und duplizieren, aber nur die Eigentümerin oder der Eigentümer kann ihn bearbeiten.',
       lockedNotice:
-        'Dieser Baum wird von einem adaptiven Quiz verwendet. Seine Metadaten können weiterhin bearbeitet werden; duplizieren Sie den Baum, um Stufen, Hierarchie, Abdeckung oder Zuordnungen zu ändern.',
+        'Dieser Baum wird von einem adaptiven Quiz verwendet. Seine Metadaten und Stufenfarben können weiterhin bearbeitet werden; duplizieren Sie den Baum, um Stufen, Hierarchie, Abdeckung oder Zuordnungen zu ändern.',
       defaultLevelLow: 'Tief',
       defaultLevelMedium: 'Mittel',
       defaultLevelHigh: 'Hoch',
@@ -1143,6 +1149,19 @@ const messages = {
       moveUp: 'Nach oben verschieben',
       moveDown: 'Nach unten verschieben',
       deleteLevel: 'Stufe löschen',
+      levelColor: 'Farbe',
+      levelColorPicker: 'Farbe für Stufe {label}',
+      levelColorHex: 'Hex-Farbe für Stufe {label}',
+      levelColorDefault: 'Standard',
+      levelColorCustom: 'Eigene',
+      levelColorReset: 'Auf Standard zurücksetzen',
+      levelColorResetAll: 'Alle Farben zurücksetzen',
+      levelColorInvalid: 'Geben Sie eine Farbe im Format #RRGGBB ein.',
+      levelColorLowContrast:
+        'Geringer Kontrast: Die Schätzungsmarkierung ist auf dieser Farbe möglicherweise schlecht sichtbar. Wählen Sie eine hellere Farbe.',
+      levelColorsDescription:
+        'Farben werden nur für die Darstellung der Ergebnisse verwendet. Stufen ohne eigene Farbe verwenden die Standardpalette (Blau von hell nach dunkel, Grau für eine tiefste Stufe ohne Präfix). Farben können jederzeit geändert werden, auch nachdem der Baum in einem Quiz verwendet wird.',
+      levelColorPreview: 'Vorschau der Stufenfarben in den Ergebnisansichten',
       assignmentsAffectedTitle: 'Zuordnungen werden geändert',
       levelReorderWarning:
         'Durch das Verschieben von Stufen ändern sich deren Schwierigkeitsanker; bestehende Zuordnungen können betroffen sein. Fortfahren?',

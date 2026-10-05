@@ -1,24 +1,25 @@
-import type { PrismaTransactionClient } from '@klicker-uzh/util'
-import * as DB from '@klicker-uzh/prisma/client'
-import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '@klicker-uzh/graphql/adaptive-context-types'
+import * as DB from '@klicker-uzh/prisma/client'
+import type { PrismaTransactionClient } from '@klicker-uzh/util'
+import { GraphQLError } from 'graphql'
 import { hasControlledAdaptiveAnswer } from './adaptiveElementValidation.js'
 import {
   assertValidTree,
+  type CompetenceTreeInput,
+  type CompetenceTreeMetadataInput,
+  type DuplicateCompetenceTreeInput,
   getAccessibleElements,
-  normalizeEditableTreeDefaults,
   normalizeEditableMetadata,
+  normalizeEditableTreeDefaults,
   normalizeTreeMetadata,
   persistTreeStructure,
   prepareTreeInput,
   validatePreparedTree,
-  type CompetenceTreeInput,
-  type CompetenceTreeMetadataInput,
-  type DuplicateCompetenceTreeInput,
 } from './competenceTreeInput.js'
-import {
-  type CompetenceTreeDetail,
-  type CompetenceTreeElementAssignmentUpdateInput,
+import { persistCompetenceTreeLevelColors } from './competenceTreeLevelColors.js'
+import type {
+  CompetenceTreeDetail,
+  CompetenceTreeElementAssignmentUpdateInput,
 } from './competenceTreeManagementTypes.js'
 import {
   competenceTreeDetailInclude,
@@ -34,8 +35,8 @@ import {
   lockOwnedCompetenceTreeAnyState,
 } from './competenceTreeRepository.js'
 import {
-  validateCompetenceTreeShape,
   type CompetenceTreeValidationResult,
+  validateCompetenceTreeShape,
 } from './competenceTrees.js'
 
 export async function validateCompetenceTreeInput(
@@ -136,6 +137,9 @@ export async function updateCompetenceTreeMetadata(
       where: { id, ownerId: ctx.user.sub },
       data: { ...metadata, ...defaults },
     })
+    // Colors are cosmetic, so they are saved here (not via replace) and stay
+    // editable when a practice quiz locks the tree structure.
+    await persistCompetenceTreeLevelColors(tx, id, input.levelColors ?? [])
   })
   return await getRequiredCompetenceTree(id, ctx)
 }
@@ -322,6 +326,7 @@ export async function duplicateCompetenceTree(
           key: levelKeys.get(level.id)!,
           label: level.label,
           order: level.order,
+          color: level.color,
         })),
         nodes: source.nodes.map((node) => ({
           key: nodeKeys.get(node.id)!,

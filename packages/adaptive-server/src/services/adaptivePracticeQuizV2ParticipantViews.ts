@@ -2,6 +2,7 @@ import { normalizeThetaForChart } from '@klicker-uzh/adaptive-contract'
 import * as DB from '@klicker-uzh/prisma/client'
 import { adaptivePracticeQuizError } from './adaptivePracticeQuizErrors.js'
 import type { LoadedAdaptiveRuntime } from './adaptivePracticeQuizRuntimeData.js'
+import { competenceTreeLevelColorsById } from './competenceTreeLevelColors.js'
 
 export function serializeV2EstimateView({
   estimate,
@@ -66,9 +67,16 @@ export function serializeV2LevelBands(runtime: LoadedAdaptiveRuntime) {
   const levels = runtime.publication.cutScoreSnapshot
     .slice()
     .sort((left, right) => left.order - right.order)
+  // Colors are cosmetic and resolved live from the source tree levels, so a
+  // lecturer can change them without republishing.
+  const colors = competenceTreeLevelColorsById(runtime.tree.levels)
   return levels.map((level, index) => ({
     label: level.label,
     order: level.order,
+    color:
+      level.sourceLevelId === null
+        ? null
+        : (colors.get(level.sourceLevelId) ?? null),
     startPosition: normalizeV2Position(
       index === 0
         ? runtime.publication.gridMin
