@@ -42,7 +42,7 @@ const messages = {
             'θ {theta} [{lower}, {upper}], SE {standardError}, {count, plural, one {# response} other {# responses}}',
           testingTrue: 'True',
           testingFalse: 'False',
-          testingHistory: 'Answers so far',
+          testingHistorySummary: 'Answers so far ({count})',
           testingHistoryEmpty: 'No answers yet in this attempt.',
           testingHistoryOrder: '#',
           testingHistoryElement: 'Element',
@@ -247,18 +247,24 @@ const messages = {
             '{count, plural, one {After # answered question, there is not enough evidence for an overall level.} other {After # answered questions, there is not enough evidence for an overall level.}}',
         },
         profile: {
-          earlyIndication: '{level} (rough estimate)',
-          plausibleRange: 'Plausible range: {range}',
-          fewResponses:
-            '{count, plural, one {Based on only # answer — the range is still wide.} other {Based on only # answers — the range is still wide.}}',
-          supportedEstimate:
-            'Your answers support this estimate. The shaded range shows the remaining uncertainty.',
-          uncertainEstimate:
-            'Your level is still uncertain. More answers in this area would help narrow the range.',
-          noResponses: 'Not tested in this attempt.',
+          estimatedLevel: 'Estimated level: {level}',
+          roughLevel: 'Rough estimate: {level}',
+          aroundLevel: 'Around {level}',
+          notEnoughAnswers:
+            '{count, plural, one {Not enough answers yet to estimate (# answer)} other {Not enough answers yet to estimate (# answers)}}',
+          likelyRange: 'Likely between {lower} and {upper}',
+          certainty: {
+            HIGH: 'High certainty',
+            MEDIUM: 'Medium certainty',
+            LOW: 'Low certainty',
+          },
           notTested: 'Not tested',
+          notTestedCompetences:
+            '{count, plural, one {# competence not tested in this attempt} other {# competences not tested in this attempt}}',
+          notTestedSubcompetences:
+            '{count, plural, one {# subcompetence not tested in this attempt} other {# subcompetences not tested in this attempt}}',
           evidenceHelp:
-            'Each row uses answers from that area. After a few answers, the indication is tentative. The shaded range shows the uncertainty: a wider range means your level is less certain. Areas marked “Not tested” received no questions in this attempt and have no estimate.',
+            'Each row shows your estimated level in that area and how certain it is. The estimate gets more certain with more answers.',
           title: 'Competence profile',
           overall: 'Overall',
           responses: '{count, plural, one {# response} other {# responses}}',

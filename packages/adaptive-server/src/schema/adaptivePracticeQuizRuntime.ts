@@ -510,6 +510,11 @@ export function createAdaptivePracticeQuizRuntimeSchema(
       competenceProfile: t.expose('competenceProfile', {
         type: [AdaptiveStudentResultNodeRef],
       }),
+      // ADAPTIVE_QUIZ_SHOW_SOLUTIONS=true (staging walkthroughs); null otherwise.
+      testingHistory: t.expose('testingHistory', {
+        type: AdaptiveTestingHistoryType,
+        nullable: true,
+      }),
     }),
   })
 

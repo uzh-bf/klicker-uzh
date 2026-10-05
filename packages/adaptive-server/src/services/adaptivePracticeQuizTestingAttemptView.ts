@@ -10,6 +10,7 @@ import type {
   LoadedAdaptiveRuntime,
 } from './adaptivePracticeQuizRuntimeData.js'
 import { buildAdaptiveTestingHistory } from './adaptivePracticeQuizTestingHistory.js'
+import { competenceTreeLevelColorsById } from './competenceTreeLevelColors.js'
 import {
   type AdaptiveTestingLevelResolver,
   mostProbableBandLabel,
@@ -19,7 +20,6 @@ import {
   normalizeV2Position,
   serializeV2LevelBands,
 } from './adaptivePracticeQuizV2ParticipantViews.js'
-import { competenceTreeLevelColorsById } from './competenceTreeLevelColors.js'
 
 // Attaches attempt-level testing data (estimates, answer history) to the
 // served item's testing info. Testing info itself only exists when
@@ -31,10 +31,6 @@ export function withAttemptTestingEstimates(
 ): AdaptiveParticipantElement {
   if (!element.testingInfo) return element
   const resolver = adaptiveTestingLevelResolver(runtime)
-  const v2 =
-    runtime.estimator.measurementVersion ===
-    DB.AdaptiveMeasurementVersion.IRT_V2_EAP_GRID_1
-  const settings = runtime.algorithm.settings
   return {
     ...element,
     testingInfo: {
@@ -43,24 +39,38 @@ export function withAttemptTestingEstimates(
         attempt.estimates,
         resolver
       ),
-      history: buildAdaptiveTestingHistory({
-        responses: attempt.responses,
-        estimates: attempt.estimates,
-        levelBands: v2
-          ? serializeV2LevelBands(runtime)
-          : serializeLevelBands(
-              runtime.algorithm.levels,
-              settings,
-              competenceTreeLevelColorsById(runtime.tree.levels)
-            ),
-        normalizeTheta: v2
-          ? (theta) => normalizeV2Position(theta, runtime)
-          : (theta) => normalizeThetaForChart(theta, settings.thetaRange),
-        resolver,
-        showSolutions: process.env.ADAPTIVE_QUIZ_SHOW_SOLUTIONS,
-      }),
+      history: buildAttemptTestingHistory(runtime, attempt),
     },
   }
+}
+
+// Answer history of an attempt (served item and completed result). Null
+// unless ADAPTIVE_QUIZ_SHOW_SOLUTIONS=true; never part of a normal result.
+export function buildAttemptTestingHistory(
+  runtime: LoadedAdaptiveRuntime,
+  attempt: AdaptiveAttemptRuntimeRecord,
+  showSolutions: string | undefined = process.env.ADAPTIVE_QUIZ_SHOW_SOLUTIONS
+) {
+  const v2 =
+    runtime.estimator.measurementVersion ===
+    DB.AdaptiveMeasurementVersion.IRT_V2_EAP_GRID_1
+  const settings = runtime.algorithm.settings
+  return buildAdaptiveTestingHistory({
+    responses: attempt.responses,
+    estimates: attempt.estimates,
+    levelBands: v2
+      ? serializeV2LevelBands(runtime)
+      : serializeLevelBands(
+          runtime.algorithm.levels,
+          settings,
+          competenceTreeLevelColorsById(runtime.tree.levels)
+        ),
+    normalizeTheta: v2
+      ? (theta) => normalizeV2Position(theta, runtime)
+      : (theta) => normalizeThetaForChart(theta, settings.thetaRange),
+    resolver: adaptiveTestingLevelResolver(runtime),
+    showSolutions,
+  })
 }
 
 function adaptiveTestingLevelResolver(
