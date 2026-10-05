@@ -9,6 +9,7 @@ import { useState } from 'react'
 import {
   ADAPTIVE_LEVEL_MARKER_COLOR,
   getAdaptiveLevelBandColors,
+  getAdaptiveLevelGroupEnds,
 } from './adaptiveLevelPalette'
 import {
   getAdaptiveProfileIndication,
@@ -356,6 +357,7 @@ function BandTrack({
     typeof estimate.upperPosition === 'number'
   const { bands, project } = createEqualLevelScale(levelBands)
   const bandColors = getAdaptiveLevelBandColors(bands)
+  const groupEnds = getAdaptiveLevelGroupEnds(bands)
   const lower = project(estimate.lowerPosition ?? 0)
   const upper = project(estimate.upperPosition ?? 0)
   const position = project(estimate.position ?? 0)
@@ -375,9 +377,12 @@ function BandTrack({
             left: `${clamp(band.startPosition) * 100}%`,
             width: `${Math.max(0, clamp(band.endPosition) - clamp(band.startPosition)) * 100}%`,
             backgroundColor: bandColors[index],
-            // Separators keep band boundaries visible independent of color.
+            // Separators keep band boundaries visible independent of color;
+            // main-level groups (A2.1-A2.3 -> A2) get a wider one.
             borderRight:
-              index < bands.length - 1 ? '1px solid #ffffff' : undefined,
+              index < bands.length - 1
+                ? `${groupEnds[index] ? 2 : 1}px solid #ffffff`
+                : undefined,
           }}
           aria-hidden="true"
         />
@@ -394,7 +399,7 @@ function BandTrack({
               left: `${Math.min(lower, upper) * 100}%`,
               width: `${Math.abs(upper - lower) * 100}%`,
               backgroundImage: rough
-                ? 'repeating-linear-gradient(135deg, rgba(0, 88, 156, 0.4) 0 2px, transparent 2px 6px)'
+                ? 'repeating-linear-gradient(135deg, rgba(0, 40, 165, 0.5) 0 2px, transparent 2px 6px)'
                 : undefined,
             }}
             aria-hidden="true"

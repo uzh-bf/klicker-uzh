@@ -13,6 +13,7 @@ import {
   ComposedChart,
   Line,
   ReferenceArea,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -22,6 +23,7 @@ import {
 import {
   ADAPTIVE_LEVEL_MARKER_COLOR,
   getAdaptiveLevelBandColors,
+  getAdaptiveLevelGroupEnds,
 } from './adaptiveLevelPalette'
 import { createEqualLevelScale } from './equalLevelScale'
 
@@ -39,6 +41,7 @@ function AdaptiveResultTrajectoryChart({
   const t = useTranslations()
   const { bands, project } = createEqualLevelScale(levelBands)
   const bandColors = getAdaptiveLevelBandColors(bands)
+  const groupEnds = getAdaptiveLevelGroupEnds(bands)
   const points = prepareAdaptiveResultTrajectory({ trajectory, overall }).map(
     (point) => {
       const lowerPosition = project(point.lowerPosition)
@@ -94,6 +97,17 @@ function AdaptiveResultTrajectoryChart({
                 ifOverflow="hidden"
               />
             ))}
+            {bands.map((band, index) =>
+              groupEnds[index] ? (
+                <ReferenceLine
+                  key={`group-${band.order}-${band.label}`}
+                  y={band.endPosition}
+                  stroke="#ffffff"
+                  strokeWidth={3}
+                  ifOverflow="hidden"
+                />
+              ) : null
+            )}
             <XAxis
               dataKey="order"
               type="number"
@@ -130,11 +144,11 @@ function AdaptiveResultTrajectoryChart({
             <Area
               type="linear"
               dataKey="interval"
-              stroke="#0070b4"
-              strokeOpacity={0.55}
+              stroke={ADAPTIVE_LEVEL_MARKER_COLOR}
+              strokeOpacity={0.7}
               strokeWidth={1}
-              fill="#0070b4"
-              fillOpacity={0.2}
+              fill={ADAPTIVE_LEVEL_MARKER_COLOR}
+              fillOpacity={0.16}
               isAnimationActive={false}
               connectNulls
             />

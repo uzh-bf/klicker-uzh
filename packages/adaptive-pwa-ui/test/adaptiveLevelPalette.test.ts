@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ADAPTIVE_COMPETENCE_MARKER_COLORS,
   ADAPTIVE_LEVEL_MARKER_COLOR,
   contrastRatio,
   getAdaptiveLevelBandColors,
   getAdaptiveLevelColorSpecs,
   getAdaptiveLevelColors,
+  getAdaptiveLevelGroupEnds,
   relativeLuminance,
 } from '../src/components/practiceQuiz/adaptive/adaptiveLevelPalette'
 
@@ -15,43 +17,85 @@ const cefrSublevels = [
   ),
 ]
 
-describe('adaptive level palette', () => {
-  it('never repeats a color for 2 to 30 levels, grouped or not', () => {
-    for (let count = 2; count <= 30; count += 1) {
-      const plain = Array.from({ length: count }, (_, i) => `Level ${i + 1}`)
-      expect(new Set(getAdaptiveLevelColors(plain)).size).toBe(count)
-      const grouped = Array.from(
+function labelSets() {
+  const sets: string[][] = [cefrSublevels, ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']]
+  for (let count = 2; count <= 30; count += 1) {
+    sets.push(Array.from({ length: count }, (_, i) => `Level ${i + 1}`))
+    sets.push(
+      Array.from(
         { length: count },
         (_, i) =>
           `${String.fromCharCode(65 + Math.floor(i / 3))}.${(i % 3) + 1}`
       )
-      expect(new Set(getAdaptiveLevelColors(grouped)).size).toBe(count)
+    )
+  }
+  return sets
+}
+
+describe('adaptive level palette', () => {
+  it('never repeats a color for 2 to 30 levels, grouped or not', () => {
+    for (const labels of labelSets()) {
+      expect(new Set(getAdaptiveLevelColors(labels)).size).toBe(labels.length)
     }
   })
 
-  it('gives each CEFR main level one hue family and steps sublevels by lightness', () => {
-    const specs = getAdaptiveLevelColorSpecs(cefrSublevels)
-    const colors = getAdaptiveLevelColors(cefrSublevels)
-    expect(specs).toHaveLength(16)
-    expect(specs[0]!.group).toBeNull()
-    const groupHues: number[] = []
-    for (let group = 0; group < 5; group += 1) {
-      const members = specs.slice(1 + group * 3, 4 + group * 3)
-      expect(new Set(members.map(({ group }) => group)).size).toBe(1)
-      expect(new Set(members.map(({ hue }) => hue)).size).toBe(1)
-      expect(members[0]!.lightness).toBeGreaterThan(members[1]!.lightness)
-      expect(members[1]!.lightness).toBeGreaterThan(members[2]!.lightness)
-      const luminances = colors
-        .slice(1 + group * 3, 4 + group * 3)
+  it('uses one hue as a light-to-dark ramp in level order', () => {
+    for (const labels of labelSets()) {
+      const specs = getAdaptiveLevelColorSpecs(labels).filter(
+        ({ chroma }) => chroma > 0.01
+      )
+      expect(new Set(specs.map(({ hue }) => hue)).size).toBe(1)
+      const luminances = getAdaptiveLevelColors(labels)
+        .filter(
+          (_, index) => getAdaptiveLevelColorSpecs(labels)[index]!.chroma > 0.01
+        )
         .map(relativeLuminance)
-      expect(luminances[0]).toBeGreaterThan(luminances[1]!)
-      expect(luminances[1]).toBeGreaterThan(luminances[2]!)
-      groupHues.push(members[0]!.hue)
+      for (let index = 1; index < specs.length; index += 1) {
+        expect(specs[index]!.lightness).toBeLessThan(
+          specs[index - 1]!.lightness
+        )
+        expect(luminances[index]).toBeLessThan(luminances[index - 1]!)
+      }
     }
-    // Neighbouring main levels use clearly different, ordered hues.
-    for (let index = 1; index < groupHues.length; index += 1) {
-      expect(groupHues[index - 1]! - groupHues[index]!).toBeGreaterThan(40)
-    }
+  })
+
+  it('shows main levels by a larger lightness step than sublevels', () => {
+    const specs = getAdaptiveLevelColorSpecs(cefrSublevels)
+    expect(specs).toHaveLength(16)
+    const step = (index: number) =>
+      specs[index - 1]!.lightness - specs[index]!.lightness
+    // A2.1 -> A2.2 (sublevel) vs. A2.3 -> B1.1 (main level).
+    expect(step(4)).toBeGreaterThan(step(2) * 1.5)
+    expect(step(2)).toBeCloseTo(step(3))
+    expect(
+      getAdaptiveLevelGroupEnds(
+        cefrSublevels.map((label, order) => ({ label, order }))
+      )
+    ).toEqual([
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+    ])
+    // Ungrouped labels have no group separators.
+    expect(
+      getAdaptiveLevelGroupEnds([
+        { label: 'Basic', order: 0 },
+        { label: 'Advanced', order: 1 },
+      ])
+    ).toEqual([false, false])
   })
 
   it('renders an unprefixed lowest level as a neutral gray', () => {
@@ -59,33 +103,19 @@ describe('adaptive level palette', () => {
     const [r, g, b] = [1, 3, 5].map((offset) =>
       Number.parseInt(under!.slice(offset, offset + 2), 16)
     ) as [number, number, number]
-    expect(Math.max(r, g, b) - Math.min(r, g, b)).toBeLessThan(20)
+    expect(Math.max(r, g, b) - Math.min(r, g, b)).toBeLessThan(8)
+    expect(getAdaptiveLevelColorSpecs(cefrSublevels)[0]!.group).toBeNull()
   })
 
-  it('falls back to an ordered ramp for unprefixed or single-prefix labels', () => {
-    for (const labels of [
-      ['Basic', 'Independent', 'Proficient'],
-      ['L1', 'L2', 'L3', 'L4'],
-      ['A2.1', 'Middle', 'B1.1'],
-    ]) {
-      const colors = getAdaptiveLevelColors(labels)
-      const luminances = colors.map(relativeLuminance)
-      for (let index = 1; index < luminances.length; index += 1) {
-        expect(luminances[index]).toBeLessThan(luminances[index - 1]!)
-      }
-    }
-  })
-
-  it('keeps the current-estimate marker readable on every band', () => {
-    for (const labels of [
-      cefrSublevels,
-      Array.from({ length: 30 }, (_, i) => `Level ${i + 1}`),
-      ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'],
-    ]) {
+  it('keeps the estimate marker and competence markers readable on every band', () => {
+    for (const labels of labelSets()) {
       for (const color of getAdaptiveLevelColors(labels)) {
         expect(
           contrastRatio(color, ADAPTIVE_LEVEL_MARKER_COLOR)
         ).toBeGreaterThan(4.5)
+        for (const marker of ADAPTIVE_COMPETENCE_MARKER_COLORS) {
+          expect(contrastRatio(color, marker)).toBeGreaterThan(4.5)
+        }
       }
     }
   })

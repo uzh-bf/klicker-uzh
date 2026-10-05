@@ -1,6 +1,10 @@
 import type { FAdaptivePracticeQuizAttemptStateFragment } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
-import { getAdaptiveLevelBandColors } from './adaptiveLevelPalette'
+import {
+  ADAPTIVE_COMPETENCE_MARKER_COLORS,
+  getAdaptiveLevelBandColors,
+  getAdaptiveLevelGroupEnds,
+} from './adaptiveLevelPalette'
 import { createEqualLevelScale } from './equalLevelScale'
 
 type TestingHistory = NonNullable<
@@ -9,16 +13,7 @@ type TestingHistory = NonNullable<
   >['testingInfo']
 >['history']
 
-// Dark, mutually distinct marker colors per competence (root); all reach at
-// least 4.5:1 against the light level band tints.
-const COMPETENCE_COLORS = [
-  '#1d4ed8',
-  '#b45309',
-  '#047857',
-  '#7e22ce',
-  '#be123c',
-  '#0f766e',
-]
+const COMPETENCE_COLORS = ADAPTIVE_COMPETENCE_MARKER_COLORS
 
 const WIDTH = 640
 const MARGIN = { top: 8, right: 132, bottom: 22, left: 56 }
@@ -161,6 +156,7 @@ function AdaptiveTestingHistoryChart({
   const t = useTranslations()
   const { bands, project } = createEqualLevelScale(history.levelBands)
   const bandColors = getAdaptiveLevelBandColors(bands)
+  const groupEnds = getAdaptiveLevelGroupEnds(bands)
   const entries = history.entries
   const rowHeight = bands.length > 12 ? 12 : 16
   const plotHeight = Math.max(120, bands.length * rowHeight)
@@ -231,6 +227,22 @@ function AdaptiveTestingHistoryChart({
                   : band.label}
               </text>
             </g>
+          )
+        })}
+        {bands.map((band, index) => {
+          if (!groupEnds[index]) return null
+          // Wider separator above the last band of a main level.
+          const lineY = MARGIN.top + (1 - band.endPosition) * plotHeight
+          return (
+            <line
+              key={`group-${band.order}-${band.label}`}
+              x1={MARGIN.left}
+              x2={MARGIN.left + plotWidth}
+              y1={lineY}
+              y2={lineY}
+              stroke="#ffffff"
+              strokeWidth={2.5}
+            />
           )
         })}
         {history.competenceEstimates.map((estimate) => {
