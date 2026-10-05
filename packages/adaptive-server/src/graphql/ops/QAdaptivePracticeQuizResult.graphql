@@ -83,4 +83,5 @@ fragment FAdaptivePracticeQuizResultNodeFields on AdaptivePracticeQuizResultNode
   position
   lowerPosition
   upperPosition
+  coverageStatus
 }

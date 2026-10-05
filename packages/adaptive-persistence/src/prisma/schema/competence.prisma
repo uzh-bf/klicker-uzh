@@ -105,6 +105,15 @@ enum AdaptiveResultStatus {
   RESEARCH_ONLY
 }
 
+// IRT_V1 leaf coverage of the persisted engine decision (subcompetence
+// estimates only; null for other nodes and for engines that predate it).
+enum AdaptiveLeafCoverageStatus {
+  COVERED
+  OUT_OF_RANGE
+  SAMPLED_PENDING
+  NOT_SAMPLED
+}
+
 enum AdaptivePoolItemRole {
   SCORING
   ANCHOR

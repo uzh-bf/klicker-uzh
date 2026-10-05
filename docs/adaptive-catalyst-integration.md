@@ -88,6 +88,55 @@ host (`adaptivePracticeQuizSamplingCoverage.ts`). Leaves without responses
 in an attempt are "not tested": the student profile labels them so, and cohort
 distributions count them in `notTestedCount`, never as level estimates.
 
+### Leaf coverage status (engine contract)
+
+Catalyst V1 routing `SEQUENTIAL_ROOTS_V5` adds `coverageStatus` to every
+IRT_V1 `/adaptive/v1/decide` node estimate. Subcompetence (leaf) nodes carry
+one of the following values; all other nodes, including the overall estimate,
+carry `null`:
+
+- `COVERED`: the leaf has at least `minQuestionsPerLeaf` answers.
+- `OUT_OF_RANGE`: the leaf is excluded because none of its eligible items has
+  a difficulty within the root's θ ± 1.96·SE. The engine reports this only
+  after four or more root answers, and the status can change in later
+  decisions.
+- `SAMPLED_PENDING`: the leaf is required but still below its minimum.
+- `NOT_SAMPLED`: subcompetence sampling did not choose the leaf.
+
+The engine classifies a root (`CLASSIFIED`) when none of its leaves is
+`SAMPLED_PENDING` and its interval lies within a single band. Each status
+describes the decision it was returned with. IRT v2 and `/adaptive/v1/estimates`
+do not carry the field.
+
+The host client (`packages/adaptive-client/src/response.ts`) uses strict
+schemas. It accepts the field as optional and nullable on IRT_V1 decision
+estimates only, and rejects unknown values and non-null values on
+non-subcompetence nodes. When an older engine omits the field, it parses as
+`undefined`.
+
+The host stores the status of the decision it persists in
+`AdaptivePracticeQuizEstimate.coverageStatus`, a nullable
+`AdaptiveLeafCoverageStatus` column. The CHECK `apqe_coverage_status_leaf_check`
+allows a value on subcompetence rows only. Non-terminal steps update only the
+nodes on the answered item's path. The terminal decision writes every node, so
+the statuses of a completed attempt come from its final decision. Older
+attempts and engines leave the column `NULL`.
+
+Host breadth checks (`resolveAdaptiveV1EngineLeafBreadth`) use the status
+whenever every relevant leaf has one. A leaf is required if and only if it is
+`COVERED` or `SAMPLED_PENDING`. Breadth holds when at least one leaf is
+required and none of the required leaves is `SAMPLED_PENDING`. An
+engine-`CLASSIFIED` root is trusted. When any relevant leaf has no status, the
+response-count rules above apply unchanged. The student profile labels an
+unanswered `OUT_OF_RANGE` leaf "Not tested — outside your level range"; other
+unanswered leaves keep "Not tested". Cohort distributions report
+`outOfRangeCount` as a subset of `notTestedCount`.
+
+**Deploy order:** merge and deploy the host change that accepts
+`coverageStatus` before bumping the engine image tag to a `SEQUENTIAL_ROOTS_V5`
+build. Otherwise the strict host schema rejects every IRT_V1 decision, and
+adaptive quizzes fail with `ADAPTIVE_ENGINE_UNAVAILABLE`.
+
 ## Verification boundaries
 
 Private engine tests verify calculations. Public tests verify authorization,

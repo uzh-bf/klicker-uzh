@@ -512,6 +512,7 @@ model AdaptivePracticeQuizEstimate {
   classificationProbability Float?
   credibleLower             Float?
   credibleUpper             Float?
+  coverageStatus            AdaptiveLeafCoverageStatus?
 
   /// [PrismaAdaptiveBandProbabilities]
   bandProbabilities Json?

@@ -5,6 +5,7 @@ import {
   type BankAnalysisRequest,
   createAdaptiveClient,
   type DecisionRequest,
+  type DecisionResponse,
   type PosteriorBatchRequest,
   type ValidationRequest,
 } from '../index.js'
@@ -300,6 +301,71 @@ test('fails closed for wrong estimator, unknown item, repeated item and inconsis
     }),
     AdaptiveEngineUnavailableError
   )
+})
+function coverageStatusOf(response: DecisionResponse, index: number) {
+  assert.equal(response.measurementVersion, 'IRT_V1')
+  return response.measurementVersion === 'IRT_V1'
+    ? response.estimates.nodes[index]!.coverageStatus
+    : undefined
+}
+test('accepts IRT_V1 leaf coverage status from newer engines and its absence from older ones', async () => {
+  // Older engines omit the field entirely.
+  assert.equal(
+    coverageStatusOf(
+      await client(async () => Response.json(result)).decide(request),
+      1
+    ),
+    undefined
+  )
+  for (const coverageStatus of [
+    'COVERED',
+    'OUT_OF_RANGE',
+    'SAMPLED_PENDING',
+    'NOT_SAMPLED',
+  ] as const) {
+    const withStatus = {
+      ...result,
+      estimates: {
+        overall: { ...result.estimates.overall, coverageStatus: null },
+        nodes: [
+          { ...result.estimates.nodes[0]!, coverageStatus: null },
+          { ...result.estimates.nodes[1]!, coverageStatus },
+        ],
+      },
+    }
+    const parsed = await client(async () => Response.json(withStatus)).decide(
+      request
+    )
+    assert.equal(coverageStatusOf(parsed, 1), coverageStatus)
+    assert.equal(coverageStatusOf(parsed, 0), null)
+  }
+})
+test('rejects invalid or misplaced IRT_V1 leaf coverage status', async () => {
+  const withNodes = (
+    overall: Record<string, unknown>,
+    competence: Record<string, unknown>,
+    leaf: Record<string, unknown>
+  ) => ({
+    ...result,
+    estimates: {
+      overall: { ...result.estimates.overall, ...overall },
+      nodes: [
+        { ...result.estimates.nodes[0]!, ...competence },
+        { ...result.estimates.nodes[1]!, ...leaf },
+      ],
+    },
+  })
+  for (const invalid of [
+    withNodes({}, {}, { coverageStatus: 'UNKNOWN' }),
+    withNodes({}, {}, { coverageStatus: 1 }),
+    withNodes({}, { coverageStatus: 'COVERED' }, {}),
+    withNodes({ coverageStatus: 'OUT_OF_RANGE' }, {}, {}),
+  ]) {
+    await assert.rejects(
+      client(async () => Response.json(invalid)).decide(request),
+      AdaptiveEngineUnavailableError
+    )
+  }
 })
 test('does not leak upstream errors or use a local estimator on service failure', async () => {
   const api = client(async () => {

@@ -351,6 +351,13 @@ enum AdaptiveItemModel {
   TWO_PL
 }
 
+enum AdaptiveLeafCoverageStatus {
+  COVERED
+  NOT_SAMPLED
+  OUT_OF_RANGE
+  SAMPLED_PENDING
+}
+
 enum AdaptiveLevelMappingRule {
   MASTERY
   NEAREST
@@ -583,6 +590,7 @@ type AdaptivePracticeQuizNodeDistribution {
   nodeName: String!
   notTestedCount: Int
   order: Int!
+  outOfRangeCount: Int
   parentNodeId: Int
   poolLimitedCount: Int
   researchOnlyCount: Int
@@ -771,6 +779,7 @@ type AdaptivePracticeQuizResultNode {
   classification: AdaptivePracticeQuizResultClassification!
   classificationProbability: Float
   confidence: AdaptiveResultConfidence!
+  coverageStatus: AdaptiveLeafCoverageStatus
   id: Int!
   kind: AdaptiveNodeKind!
   leadingLevelLabels: [String!]!

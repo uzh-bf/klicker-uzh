@@ -224,6 +224,8 @@ declare global {
               insufficientDataCount: number | null
               // Absent in snapshots written before not-tested reporting.
               notTestedCount?: number | null
+              // Absent in snapshots written before leaf coverage status.
+              outOfRangeCount?: number | null
               buckets: Array<{
                 levelLabel: string
                 levelOrder: number

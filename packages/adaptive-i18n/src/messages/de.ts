@@ -265,6 +265,8 @@ const messages = {
             'Dein Niveau ist noch unsicher. Weitere Antworten in diesem Bereich würden helfen, die Spanne einzugrenzen.',
           noResponses: 'In diesem Versuch nicht geprüft.',
           notTested: 'Nicht geprüft',
+          notTestedOutOfRange:
+            'Nicht geprüft – außerhalb deines Niveaubereichs',
           evidenceHelp:
             'Jede Zeile verwendet Antworten aus dem jeweiligen Bereich. Nach wenigen Antworten ist die Einschätzung vorläufig. Die schattierte Spanne zeigt die Unsicherheit: Je breiter sie ist, desto unsicherer ist dein Niveau. Bereiche mit „Nicht geprüft“ haben in diesem Versuch keine Fragen erhalten und keine Schätzung.',
           title: 'Kompetenzprofil',
@@ -753,6 +755,8 @@ const messages = {
             '{count} Ergebnisse ohne verwendbare Schätzung für diesen Bereich werden nicht angezeigt.',
           notTested:
             '{count, plural, one {# Ergebnis hat diesen Bereich nicht geprüft} other {# Ergebnisse haben diesen Bereich nicht geprüft}} (es wurden keine Fragen gestellt, z. B. wegen der Stichprobe von Unterkompetenzen). Nicht geprüfte Ergebnisse zählen nicht als Schätzung.',
+          outOfRange:
+            '{count, plural, one {Davon hat # Ergebnis diesen Bereich übersprungen, weil er außerhalb des Niveaubereichs der Person lag.} other {Davon haben # Ergebnisse diesen Bereich übersprungen, weil er außerhalb des Niveaubereichs der Person lag.}}',
         },
         distributionStatuses: {
           betweenLevels: 'Zwischen Stufen',

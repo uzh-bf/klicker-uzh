@@ -80,6 +80,10 @@ export function createAdaptivePracticeQuizRuntimeSchema(
     'AdaptiveEstimateNodeKind',
     { values: Object.values(DB.AdaptiveEstimateNodeKind) }
   )
+  const AdaptiveLeafCoverageStatus = builder.enumType(
+    'AdaptiveLeafCoverageStatus',
+    { values: Object.values(DB.AdaptiveLeafCoverageStatus) }
+  )
   const AdaptiveResultConfidenceType = builder.enumType(
     'AdaptiveResultConfidence',
     {
@@ -460,6 +464,10 @@ export function createAdaptivePracticeQuizRuntimeSchema(
       position: t.exposeFloat('position', { nullable: true }),
       lowerPosition: t.exposeFloat('lowerPosition', { nullable: true }),
       upperPosition: t.exposeFloat('upperPosition', { nullable: true }),
+      coverageStatus: t.expose('coverageStatus', {
+        type: AdaptiveLeafCoverageStatus,
+        nullable: true,
+      }),
       children: t.expose('children', {
         type: [AdaptiveStudentResultNodeRef],
       }),
@@ -545,6 +553,7 @@ export function createAdaptivePracticeQuizRuntimeSchema(
           nullable: true,
         }),
         notTestedCount: t.exposeInt('notTestedCount', { nullable: true }),
+        outOfRangeCount: t.exposeInt('outOfRangeCount', { nullable: true }),
         classifiedCount: t.exposeInt('classifiedCount', { nullable: true }),
         betweenLevelsCount: t.exposeInt('betweenLevelsCount', {
           nullable: true,

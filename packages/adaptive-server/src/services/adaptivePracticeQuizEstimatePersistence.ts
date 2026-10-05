@@ -19,6 +19,7 @@ import type {
 } from './adaptivePracticeQuizRuntimeData.js'
 import {
   hasAdaptiveV1LeafBreadth,
+  resolveAdaptiveV1EngineLeafBreadth,
   resolveAdaptiveV1LeafCoverage,
 } from './adaptivePracticeQuizSamplingCoverage.js'
 
@@ -62,10 +63,16 @@ export function markClassifiedAdaptiveRootEstimates(
       node.parentId === null && node.kind === DB.AdaptiveNodeKind.COMPETENCE
   )
   const coverage = resolveAdaptiveV1LeafCoverage(runtime, enabledNodeIds)
+  const coverageStatusByLeaf = new Map(
+    [...estimates.nodes].map(
+      ([nodeId, estimate]) => [nodeId, estimate.coverageStatus] as const
+    )
+  )
   for (const root of roots) {
     const estimate = estimates.nodes.get(root.id)
-    // The engine's own classification (sampled leaves under SEQUENTIAL_ROOTS_V3)
-    // is authoritative; the host only adds classifications, never removes them.
+    // The engine's own classification (sampled leaves under SEQUENTIAL_ROOTS_V3,
+    // coverage status under V5) is authoritative; the host only adds
+    // classifications, never removes them.
     if (estimate?.stopReason === DB.AdaptivePracticeQuizStopReason.CLASSIFIED) {
       continue
     }
@@ -88,12 +95,19 @@ export function markClassifiedAdaptiveRootEstimates(
           )
       ),
     ]
-    const breadthSatisfied = hasAdaptiveV1LeafBreadth({
-      leafIds,
-      leafCounts,
-      minQuestionsPerLeaf: runtime.algorithm.settings.minQuestionsPerLeaf,
-      coverage,
-    })
+    // Prefer the engine's per-leaf coverage status of this decision; fall
+    // back to response counts when the engine did not report it.
+    const breadthSatisfied =
+      resolveAdaptiveV1EngineLeafBreadth({
+        leafIds,
+        coverageStatusByLeaf,
+      }) ??
+      hasAdaptiveV1LeafBreadth({
+        leafIds,
+        leafCounts,
+        minQuestionsPerLeaf: runtime.algorithm.settings.minQuestionsPerLeaf,
+        coverage,
+      })
     if (
       breadthSatisfied &&
       classificationIntervalWithinLevelBand({
@@ -154,6 +168,11 @@ export function buildAdaptiveRuntimeEstimateWrite({
           responseCount: estimate.responseCount,
           levelId: estimate.levelId,
           stopReason: estimate.stopReason,
+          // Status of the decision persisted here; absent from older engines.
+          coverageStatus:
+            estimate.nodeKind === DB.AdaptiveEstimateNodeKind.SUBCOMPETENCE
+              ? (estimate.coverageStatus ?? null)
+              : null,
         },
       ]
     }),

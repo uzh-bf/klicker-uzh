@@ -6,6 +6,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { getAdaptiveProfileNotTestedLabelKey } from './adaptiveLeafCoverage'
 import {
   ADAPTIVE_LEVEL_MARKER_COLOR,
   getAdaptiveLevelBandColors,
@@ -32,6 +33,7 @@ export type AdaptiveCompetenceProfileNode = {
   position?: number | null
   lowerPosition?: number | null
   upperPosition?: number | null
+  coverageStatus?: string | null
   children?: AdaptiveCompetenceProfileNode[] | null
 }
 
@@ -49,6 +51,8 @@ type ProfileEstimate = {
   position?: number | null
   lowerPosition?: number | null
   upperPosition?: number | null
+  // Engine leaf coverage status (IRT_V1 subcompetences only).
+  coverageStatus?: string | null
 }
 
 interface AdaptiveCompetenceProfileProps {
@@ -242,7 +246,7 @@ function ProfileRow({
               className="font-medium text-slate-700"
               data-cy="adaptive-profile-not-tested"
             >
-              {t('pwa.practiceQuiz.adaptive.profile.notTested')}
+              {t(getAdaptiveProfileNotTestedLabelKey(estimate.coverageStatus))}
             </span>
           ) : (
             <span>

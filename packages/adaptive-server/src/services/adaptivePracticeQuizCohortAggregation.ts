@@ -26,6 +26,7 @@ import {
 } from './adaptivePracticeQuizRuntime.js'
 import {
   hasAdaptiveV1LeafBreadth,
+  resolveAdaptiveV1EngineLeafBreadth,
   resolveAdaptiveV1LeafCoverage,
 } from './adaptivePracticeQuizSamplingCoverage.js'
 
@@ -58,6 +59,12 @@ export type AdaptiveCohortNodeDistribution = {
    * cohort snapshots written before this field existed.
    */
   notTestedCount?: number | null
+  /**
+   * Not-tested attempts whose engine excluded this subcompetence because no
+   * eligible item lay within the student's level range (coverage status
+   * OUT_OF_RANGE). A subset of notTestedCount; absent in older snapshots.
+   */
+  outOfRangeCount?: number | null
   buckets: AdaptiveCohortLevelBucket[]
 }
 
@@ -131,6 +138,7 @@ export type AdaptiveCohortAttemptRecord = {
     levelId: number | null
     resultStatus: DB.AdaptiveResultStatus | null
     stopReason?: DB.AdaptivePracticeQuizStopReason | null
+    coverageStatus?: DB.AdaptiveLeafCoverageStatus | null
   }>
 }
 
@@ -160,6 +168,7 @@ export type AdaptiveCohortAccumulator = {
   distributions: Array<{
     insufficientDataCount: number
     notTestedCount: number
+    outOfRangeCount: number
     levelCounts: Map<number, number>
     determinedCounts: Map<number, number>
     classifications: Record<DB.AdaptiveResultStatus, number>
@@ -213,6 +222,7 @@ export function createAdaptiveCohortAccumulator(
     distributions: definitions.map(() => ({
       insufficientDataCount: 0,
       notTestedCount: 0,
+      outOfRangeCount: 0,
       levelCounts: new Map(),
       determinedCounts: new Map(),
       classifications: emptyClassificationCounts(),
@@ -273,25 +283,51 @@ export function accumulateAdaptiveCohortAttempt(
   const nodesById = new Map(enabledNodes.map((node) => [node.id, node]))
   const leaves = enabledNodes.filter((node) => !parentIds.has(node.id))
   const coverage = resolveAdaptiveV1LeafCoverage(runtime, enabledNodeIds)
+  const coverageStatusByLeaf = new Map(
+    leaves.map(
+      ({ id }) =>
+        [
+          id,
+          estimates.get(
+            estimateKey(DB.AdaptiveEstimateNodeKind.SUBCOMPETENCE, id)
+          )?.coverageStatus,
+        ] as const
+    )
+  )
+  function relevantLeafIds(nodeId: number | null) {
+    return leaves
+      .filter((leaf) => {
+        if (nodeId === null) return true
+        let current: typeof leaf | undefined = leaf
+        while (current) {
+          if (current.id === nodeId) return true
+          current =
+            current.parentId === null
+              ? undefined
+              : nodesById.get(current.parentId)
+        }
+        return false
+      })
+      .map(({ id }) => id)
+  }
+  // Engine coverage status of the persisted decision, or null when any
+  // relevant leaf lacks one (older engine): then the count rules apply.
+  function engineBreadth(nodeId: number | null) {
+    return resolveAdaptiveV1EngineLeafBreadth({
+      leafIds: relevantLeafIds(nodeId),
+      coverageStatusByLeaf,
+    })
+  }
   function hasCoverage(nodeId: number | null) {
-    const relevantLeaves = leaves.filter((leaf) => {
-      if (nodeId === null) return true
-      let current: typeof leaf | undefined = leaf
-      while (current) {
-        if (current.id === nodeId) return true
-        current =
-          current.parentId === null
-            ? undefined
-            : nodesById.get(current.parentId)
-      }
-      return false
-    })
-    return hasAdaptiveV1LeafBreadth({
-      leafIds: relevantLeaves.map(({ id }) => id),
-      leafCounts,
-      minQuestionsPerLeaf: runtime.algorithm.settings.minQuestionsPerLeaf,
-      coverage,
-    })
+    return (
+      engineBreadth(nodeId) ??
+      hasAdaptiveV1LeafBreadth({
+        leafIds: relevantLeafIds(nodeId),
+        leafCounts,
+        minQuestionsPerLeaf: runtime.algorithm.settings.minQuestionsPerLeaf,
+        coverage,
+      })
+    )
   }
 
   for (const [index, definition] of accumulator.definitions.entries()) {
@@ -313,6 +349,11 @@ export function accumulateAdaptiveCohortAttempt(
       (!estimate || estimate.responseCount === 0)
     ) {
       metric.notTestedCount += 1
+      if (
+        estimate?.coverageStatus === DB.AdaptiveLeafCoverageStatus.OUT_OF_RANGE
+      ) {
+        metric.outOfRangeCount += 1
+      }
     }
     // Each estimate uses its own interval and descendant-leaf coverage.
     const usable =
@@ -334,8 +375,10 @@ export function accumulateAdaptiveCohortAttempt(
         )
         const determined =
           attempt.measurementVersion === DB.AdaptiveMeasurementVersion.IRT_V1
-            ? // Under sampling, trust a root the engine already classified.
-              (coverage.sampling &&
+            ? // Under sampling, or when the engine reported leaf coverage,
+              // trust a root the engine already classified.
+              ((coverage.sampling ||
+                engineBreadth(definition.nodeId) !== null) &&
                 estimate.stopReason ===
                   DB.AdaptivePracticeQuizStopReason.CLASSIFIED) ||
               (hasCoverage(definition.nodeId) &&
@@ -531,6 +574,10 @@ function finalizeDistributions(
         withheld || insufficientDataRelease.value === null
           ? null
           : metric.notTestedCount,
+      outOfRangeCount:
+        withheld || insufficientDataRelease.value === null
+          ? null
+          : metric.outOfRangeCount,
       buckets: withheld ? [] : (release.value?.buckets ?? []),
     }
   })

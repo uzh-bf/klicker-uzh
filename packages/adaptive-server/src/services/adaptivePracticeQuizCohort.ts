@@ -52,6 +52,7 @@ const cohortAttemptSelect = {
       levelId: true,
       resultStatus: true,
       stopReason: true,
+      coverageStatus: true,
     },
   },
 } satisfies DB.Prisma.AdaptivePracticeQuizAttemptSelect

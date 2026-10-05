@@ -106,6 +106,9 @@ export type AdaptiveStudentResultNode = {
   position: number | null
   lowerPosition: number | null
   upperPosition: number | null
+  // IRT_V1 engine leaf coverage of the persisted decision (subcompetences
+  // only); null for other nodes, IRT v2 and older engines.
+  coverageStatus: DB.AdaptiveLeafCoverageStatus | null
   children: AdaptiveStudentResultNode[]
 }
 
@@ -286,6 +289,10 @@ export function serializeAdaptiveStudentResult(
       ...view,
       ...rough,
       roughLevelLabel: rough?.roughLevelLabel ?? null,
+      coverageStatus:
+        node.kind === DB.AdaptiveNodeKind.SUBCOMPETENCE
+          ? (estimate?.coverageStatus ?? null)
+          : null,
       children: (childrenByParent.get(node.id) ?? [])
         .slice()
         .sort((a, b) => a.order - b.order || a.id - b.id)
@@ -443,6 +450,7 @@ function serializeAdaptiveV2StudentResult(
               levels,
             })
           : null,
+      coverageStatus: null,
       children: (childrenByParent.get(node.id) ?? [])
         .slice()
         .sort((left, right) => left.order - right.order || left.id - right.id)

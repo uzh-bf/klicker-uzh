@@ -257,6 +257,7 @@ const messages = {
             'Your level is still uncertain. More answers in this area would help narrow the range.',
           noResponses: 'Not tested in this attempt.',
           notTested: 'Not tested',
+          notTestedOutOfRange: 'Not tested — outside your level range',
           evidenceHelp:
             'Each row uses answers from that area. After a few answers, the indication is tentative. The shaded range shows the uncertainty: a wider range means your level is less certain. Areas marked “Not tested” received no questions in this attempt and have no estimate.',
           title: 'Competence profile',
@@ -738,6 +739,8 @@ const messages = {
             '{count} results without a usable estimate for this area are not shown.',
           notTested:
             '{count, plural, one {# result did not test this area} other {# results did not test this area}} (no questions were served, for example because of subcompetence sampling). Untested results are not counted as estimates.',
+          outOfRange:
+            '{count, plural, one {Of these, # result skipped this area because it was outside the student’s level range.} other {Of these, # results skipped this area because it was outside the student’s level range.}}',
         },
         distributionStatuses: {
           betweenLevels: 'Between levels',

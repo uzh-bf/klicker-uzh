@@ -1,5 +1,8 @@
 import { describe, expect, test } from 'vitest'
-import { summarizeAdaptiveDistributionCoverage } from '../src/components/evaluation/adaptive/adaptiveDistributionCoverage'
+import {
+  summarizeAdaptiveDistributionCoverage,
+  summarizeAdaptiveDistributionOutOfRange,
+} from '../src/components/evaluation/adaptive/adaptiveDistributionCoverage'
 
 describe('summarizeAdaptiveDistributionCoverage', () => {
   test('separates untested results from results without a usable estimate', () => {
@@ -47,5 +50,38 @@ describe('summarizeAdaptiveDistributionCoverage', () => {
         notTestedCount: 1,
       })
     ).toEqual({ notTested: null, withoutUsableEstimate: null })
+  })
+})
+
+describe('summarizeAdaptiveDistributionOutOfRange', () => {
+  test('reports out-of-range results as a subset of untested results', () => {
+    expect(
+      summarizeAdaptiveDistributionOutOfRange({
+        notTested: 15,
+        outOfRangeCount: 4,
+      })
+    ).toBe(4)
+    expect(
+      summarizeAdaptiveDistributionOutOfRange({
+        notTested: 2,
+        outOfRangeCount: 9,
+      })
+    ).toBe(2)
+  })
+
+  test('stays unavailable for older payloads or withheld counts', () => {
+    expect(
+      summarizeAdaptiveDistributionOutOfRange({
+        notTested: 5,
+        outOfRangeCount: null,
+      })
+    ).toBeNull()
+    expect(summarizeAdaptiveDistributionOutOfRange({ notTested: 5 })).toBeNull()
+    expect(
+      summarizeAdaptiveDistributionOutOfRange({
+        notTested: null,
+        outOfRangeCount: 3,
+      })
+    ).toBeNull()
   })
 })
