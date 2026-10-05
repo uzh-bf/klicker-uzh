@@ -43,6 +43,7 @@ import {
 import {
   type CompetenceTreeForm,
   competenceTreeFormToInput,
+  competenceTreeFormToMetadataInput,
   competenceTreeToForm,
   createDefaultCompetenceTreeForm,
 } from './types'
@@ -305,13 +306,7 @@ function CompetenceTreeEditorContent({ treeId }: { treeId?: string }) {
         const result = await updateMetadata({
           variables: {
             id: treeId,
-            input: {
-              name: formToSave.name.trim(),
-              displayName: formToSave.displayName.trim(),
-              description: formToSave.description.trim() || null,
-              defaultTotalQuestionCap: formToSave.defaultTotalQuestionCap,
-              defaultTimeLimitSeconds: formToSave.defaultTimeLimitSeconds,
-            },
+            input: competenceTreeFormToMetadataInput(formToSave),
           },
         })
         const updated = result.data?.updateCompetenceTreeMetadata
@@ -750,6 +745,7 @@ function CompetenceTreeEditorContent({ treeId }: { treeId?: string }) {
           form={form}
           onChange={handleFormChange}
           disabled={structureDisabled}
+          colorsDisabled={metadataDisabled}
         />
         <details className="mb-5 rounded border border-gray-200 p-4">
           <summary className="cursor-pointer font-semibold">

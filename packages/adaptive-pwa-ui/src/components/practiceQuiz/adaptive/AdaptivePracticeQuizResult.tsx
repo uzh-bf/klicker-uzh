@@ -9,6 +9,8 @@ import { useFormatter, useTranslations } from 'next-intl'
 import { useEffect, useRef } from 'react'
 import AdaptiveCompetenceProfile from './AdaptiveCompetenceProfile'
 import AdaptiveResultTrajectoryChart from './AdaptiveResultTrajectoryChart'
+import AdaptiveTestingHistory from './AdaptiveTestingHistory'
+import { getAdaptiveReportedLevelLabel } from './adaptiveReportedLevel'
 import { getAdaptiveEstimatedLevelRange } from './adaptiveResultUncertainty'
 
 function AdaptivePracticeQuizResult({
@@ -93,11 +95,20 @@ function AdaptivePracticeQuizResult({
       })()
     : (() => {
         switch (result.classification) {
-          case AdaptivePracticeQuizResultClassification.Classified:
+          case AdaptivePracticeQuizResultClassification.Classified: {
+            const level = result.levelLabel
+              ? getAdaptiveReportedLevelLabel({
+                  levelLabel: result.levelLabel,
+                  levelBands: result.levelBands,
+                  toleranceBands: result.classificationToleranceBands,
+                  classified: true,
+                })
+              : null
             return t(
               `pwa.practiceQuiz.adaptive.result.interpretation.${result.levelInterpretation}.headline`,
-              { level: result.levelLabel ?? '' }
+              { level: level ? t(level.key, level.values) : '' }
             )
+          }
           case AdaptivePracticeQuizResultClassification.BetweenLevels:
             return t('pwa.practiceQuiz.adaptive.result.betweenHeadline', {
               levels: result.leadingLevelLabels.join(' / '),
@@ -271,7 +282,26 @@ function AdaptivePracticeQuizResult({
             }}
             levelBands={result.levelBands}
             nodes={result.competenceProfile}
+            toleranceBands={result.classificationToleranceBands}
           />
+        </div>
+      )}
+
+      {/* Only returned by the server when ADAPTIVE_QUIZ_SHOW_SOLUTIONS=true. */}
+      {result.testingHistory && (
+        <div
+          className="space-y-3 rounded border border-amber-300 bg-amber-50 p-4 text-sm"
+          data-cy="adaptive-result-testing-info"
+        >
+          <div>
+            <h3 className="font-semibold">
+              {t('pwa.practiceQuiz.adaptive.question.testingInfo')}
+            </h3>
+            <p className="text-slate-600">
+              {t('pwa.practiceQuiz.adaptive.question.testingInfoDescription')}
+            </p>
+          </div>
+          <AdaptiveTestingHistory history={result.testingHistory} />
         </div>
       )}
 

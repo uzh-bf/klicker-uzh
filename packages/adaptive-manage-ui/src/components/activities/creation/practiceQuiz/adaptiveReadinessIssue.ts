@@ -210,6 +210,11 @@ export function formatAdaptiveReadinessIssue(
           levelCount: p.levelCount ?? 0,
         }
       )
+    case 'ADAPTIVE_CLASSIFICATION_TOLERANCE_SUGGESTED':
+      return t(
+        'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_CLASSIFICATION_TOLERANCE_SUGGESTED',
+        { nodeName: p.nodeName ?? '', levelCount: p.levelCount ?? 0 }
+      )
     case 'ADAPTIVE_TIME_BUDGET_EXCEEDED':
       return t(
         'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_TIME_BUDGET_EXCEEDED',

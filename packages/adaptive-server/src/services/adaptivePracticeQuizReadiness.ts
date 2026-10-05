@@ -22,8 +22,8 @@ import {
   buildThetaGrid,
   capAssignmentsByRoot,
   computeMinimumEvidenceByNode,
+  countClassifiableLevels,
   minimumDefined,
-  representativeBandTheta,
 } from './adaptivePracticeQuizReachability.js'
 import type {
   AdaptiveConfiguredAssignment,
@@ -481,16 +481,15 @@ export async function validateAdaptiveQuizReadiness({
     const minimumReachableStandardError =
       maximumInformation > 0 ? 1 / Math.sqrt(maximumInformation) : null
 
-    const classifiableLevelCount = levels.filter((level) => {
-      const theta = representativeBandTheta(level, thetaRange)
-      const totalInformation = information[thetaGrid.indexOf(theta)] ?? 0
-      if (totalInformation <= 0) return false
-      const halfWidth = settings.classificationZ / Math.sqrt(totalInformation)
-      return (
-        theta - halfWidth >= level.lowerBound &&
-        theta + halfWidth < level.upperBound
-      )
-    }).length
+    const toleranceBands = settings.classificationToleranceBands ?? 0
+    const classifiableLevelCount = countClassifiableLevels({
+      levels,
+      thetaRange,
+      thetaGrid,
+      information,
+      classificationZ: settings.classificationZ,
+      toleranceBands,
+    })
     const allLevelsPotentiallyClassifiable =
       classifiableLevelCount === levels.length
     if (!allLevelsPotentiallyClassifiable) {
@@ -505,6 +504,17 @@ export async function validateAdaptiveQuizReadiness({
           levelCount: levels.length,
         },
         path: `nodes.${root.id}`,
+        nodeId: root.id,
+      })
+    }
+    if (classifiableLevelCount === 0 && toleranceBands < 1) {
+      // Advisory only: with fine-grained scales an exact level is rarely
+      // reachable; ±1 level usually is (Catalyst SEQUENTIAL_ROOTS_V6).
+      warnings.push({
+        code: 'ADAPTIVE_CLASSIFICATION_TOLERANCE_SUGGESTED',
+        message: `No level band of competence ${root.name} can be determined exactly with the configured questions. Consider the classification precision "±1 level".`,
+        parameters: { nodeName: root.name, levelCount: levels.length },
+        path: 'classificationToleranceBands',
         nodeId: root.id,
       })
     }

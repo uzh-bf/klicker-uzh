@@ -199,6 +199,11 @@ async function prepareAdaptiveRuntime(
     topInformationRatio: evidence.topInformationRatio,
     levelMappingRule: evidence.levelMappingRule,
     thetaRange: { min: evidence.thetaMin, max: evidence.thetaMax },
+    // Only present above 0, so exact-rule quizzes keep the request shape
+    // accepted by engines before SEQUENTIAL_ROOTS_V6.
+    ...((evidence.classificationToleranceBands ?? 0) > 0
+      ? { classificationToleranceBands: evidence.classificationToleranceBands }
+      : {}),
   }
 
   try {

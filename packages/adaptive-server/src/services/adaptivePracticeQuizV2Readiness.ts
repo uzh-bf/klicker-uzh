@@ -87,7 +87,10 @@ export async function assessAdaptiveV2Readiness({
   prisma: DB.PrismaClient | PrismaTransactionClient
 }): Promise<AdaptiveV2ReadinessAssessment> {
   const errors = [...prepared.readiness.errors]
-  const warnings = [...prepared.readiness.warnings]
+  // Classification tolerance is IRT_V1-only, so never suggest it for v2.
+  const warnings = prepared.readiness.warnings.filter(
+    ({ code }) => code !== 'ADAPTIVE_CLASSIFICATION_TOLERANCE_SUGGESTED'
+  )
   const scale = await prisma.competenceTreeScaleVersion.findUnique({
     where: {
       treeId_id: { treeId: prepared.tree.id, id: scaleVersionId },

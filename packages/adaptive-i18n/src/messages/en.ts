@@ -42,7 +42,7 @@ const messages = {
             'θ {theta} [{lower}, {upper}], SE {standardError}, {count, plural, one {# response} other {# responses}}',
           testingTrue: 'True',
           testingFalse: 'False',
-          testingHistory: 'Answers so far',
+          testingHistorySummary: 'Answers so far ({count})',
           testingHistoryEmpty: 'No answers yet in this attempt.',
           testingHistoryOrder: '#',
           testingHistoryElement: 'Element',
@@ -248,18 +248,30 @@ const messages = {
             '{count, plural, one {After # answered question, there is not enough evidence for an overall level.} other {After # answered questions, there is not enough evidence for an overall level.}}',
         },
         profile: {
-          earlyIndication: '{level} (rough estimate)',
-          plausibleRange: 'Plausible range: {range}',
-          fewResponses:
-            '{count, plural, one {Based on only # answer — the range is still wide.} other {Based on only # answers — the range is still wide.}}',
-          supportedEstimate:
-            'Your answers support this estimate. The shaded range shows the remaining uncertainty.',
-          uncertainEstimate:
-            'Your level is still uncertain. More answers in this area would help narrow the range.',
-          noResponses: 'Not tested in this attempt.',
+          estimatedLevel: 'Estimated level: {level}',
+          roughLevel: 'Rough estimate: {level}',
+          aroundLevel: 'Around {level}',
+          notEnoughAnswers:
+            '{count, plural, one {Not enough answers yet to estimate (# answer)} other {Not enough answers yet to estimate (# answers)}}',
+          likelyRange: 'Likely between {lower} and {upper}',
+          certainty: {
+            HIGH: 'High certainty',
+            MEDIUM: 'Medium certainty',
+            LOW: 'Low certainty',
+          },
           notTested: 'Not tested',
+          notTestedCompetences:
+            '{count, plural, one {# competence not tested in this attempt} other {# competences not tested in this attempt}}',
+          notTestedSubcompetences:
+            '{count, plural, one {# subcompetence not tested in this attempt} other {# subcompetences not tested in this attempt}}',
+          notTestedOutOfRange: 'Not tested — outside your level range',
+          levelExact: '{level}',
+          levelWithTolerance:
+            '{level} (±{count, plural, one {# level} other {# levels}})',
+          levelBelowRange: '{level} or below (below the measurable range)',
+          levelAboveRange: '{level} or above (above the measurable range)',
           evidenceHelp:
-            'Each row uses answers from that area. After a few answers, the indication is tentative. The shaded range shows the uncertainty: a wider range means your level is less certain. Areas marked “Not tested” received no questions in this attempt and have no estimate.',
+            'Each row shows your estimated level in that area and how certain it is. The estimate gets more certain with more answers.',
           title: 'Competence profile',
           overall: 'Overall',
           responses: '{count, plural, one {# response} other {# responses}}',
@@ -414,6 +426,12 @@ const messages = {
           customInterval: 'Existing custom setting (z = {value})',
           intervalHint:
             'A higher percentage gives a wider uncertainty interval and usually needs more questions. This is a model-based interval, not a guarantee that the reported level is correct.',
+          precision: 'Classification precision',
+          precisionExact: 'Exact level',
+          precisionTolerance:
+            '{count, plural, one {±# level} other {±# levels}}',
+          precisionHint:
+            'With “±1 level”, a level counts as determined when the uncertainty interval stays within one level of the reported level; results then show, for example, “B1.2 (±1 level)”. Recommended for scales with {levelCount} or more levels, where an exact level is rarely reachable. Requires the upgraded adaptive engine; publishing fails with a clear message otherwise.',
           scalePolicy:
             'Confidence and early stopping follow the approved policy of the selected calibrated scale. The question and time limits below still apply.',
           enableTimeLimit: 'Also set a time limit',
@@ -613,6 +631,8 @@ const messages = {
               'The competence "{rootName}" receives only {allocatedQuestionCount} of the total questions, fewer than the {questionsPerLeaf} needed to test one subcompetence. Increase the total question cap, lower the minimum questions per subcompetence, or adjust the competence weights.',
             ADAPTIVE_CLASSIFICATION_BANDS_UNREACHABLE:
               'The planning estimate supports a precise result in {classifiableLevelCount} of {levelCount} levels for "{nodeName}". With this question limit, some results may remain uncertain.',
+            ADAPTIVE_CLASSIFICATION_TOLERANCE_SUGGESTED:
+              'With these questions, no exact level of "{nodeName}" ({levelCount} levels) can be determined. Consider setting the classification precision to “±1 level”.',
             ADAPTIVE_TIME_BUDGET_EXCEEDED:
               'The coverage is expected to take about {estimatedDurationMinutes} minutes using {secondsPerItem} seconds per item.',
             ADAPTIVE_CONFIG_INTEGER_RANGE:
@@ -739,6 +759,8 @@ const messages = {
             '{count} results without a usable estimate for this area are not shown.',
           notTested:
             '{count, plural, one {# result did not test this area} other {# results did not test this area}} (no questions were served, for example because of subcompetence sampling). Untested results are not counted as estimates.',
+          outOfRange:
+            '{count, plural, one {Of these, # result skipped this area because it was outside the student’s level range.} other {Of these, # results skipped this area because it was outside the student’s level range.}}',
         },
         distributionStatuses: {
           betweenLevels: 'Between levels',
@@ -1074,7 +1096,7 @@ const messages = {
       readOnlyNotice:
         'This tree belongs to another owner. You can inspect and duplicate it, but only the owner can edit it.',
       lockedNotice:
-        'This tree is used by an adaptive quiz. Its metadata can still be edited; duplicate the tree to change levels, hierarchy, coverage, or assignments.',
+        'This tree is used by an adaptive quiz. Its metadata and level colors can still be edited; duplicate the tree to change levels, hierarchy, coverage, or assignments.',
       defaultLevelLow: 'Low',
       defaultLevelMedium: 'Medium',
       defaultLevelHigh: 'High',
@@ -1106,6 +1128,19 @@ const messages = {
       moveUp: 'Move up',
       moveDown: 'Move down',
       deleteLevel: 'Delete level',
+      levelColor: 'Color',
+      levelColorPicker: 'Color for level {label}',
+      levelColorHex: 'Hex color for level {label}',
+      levelColorDefault: 'Default',
+      levelColorCustom: 'Custom',
+      levelColorReset: 'Reset to default',
+      levelColorResetAll: 'Reset all colors',
+      levelColorInvalid: 'Enter a color as #RRGGBB.',
+      levelColorLowContrast:
+        'Low contrast: the estimate marker may be hard to see on this color. Choose a lighter color.',
+      levelColorsDescription:
+        'Colors are only used to display results. Unset levels use the default palette (blue from light to dark, gray for an unprefixed lowest level). Colors can be changed at any time, also after the tree is used in a quiz.',
+      levelColorPreview: 'Preview of the level colors in result views',
       assignmentsAffectedTitle: 'Assignments will change',
       levelReorderWarning:
         'Reordering levels changes their difficulty anchors and can affect existing assignments. Continue?',

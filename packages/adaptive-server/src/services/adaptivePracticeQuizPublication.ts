@@ -1,8 +1,9 @@
-import type { PrismaTransactionClient } from '@klicker-uzh/util'
 import * as DB from '@klicker-uzh/prisma/client'
+import type { PrismaTransactionClient } from '@klicker-uzh/util'
 import { processElementData } from '@klicker-uzh/util'
 import { adaptiveServiceError } from './adaptivePracticeQuizConfigPreparation.js'
 import { loadAdaptiveConfigurationForQuiz } from './adaptivePracticeQuizConfigViews.js'
+import { assertAdaptiveEngineSupportsClassificationTolerance } from './adaptivePracticeQuizEngineCapabilities.js'
 import { emitAdaptiveOperationalEvent } from './adaptivePracticeQuizEvents.js'
 import {
   assertAdaptivePublicationSourceElementsAuthorized,
@@ -88,6 +89,14 @@ export async function materializeAdaptivePracticeQuizPool(
     throw adaptiveServiceError(
       'Adaptive practice quiz is not ready to publish.',
       'ADAPTIVE_QUIZ_NOT_READY'
+    )
+  }
+  if (
+    loaded.prepared.config.measurementVersion ===
+    DB.AdaptiveMeasurementVersion.IRT_V1
+  ) {
+    await assertAdaptiveEngineSupportsClassificationTolerance(
+      loaded.prepared.config.classificationToleranceBands
     )
   }
   const poolAssignments = selectedPoolAssignments.filter(

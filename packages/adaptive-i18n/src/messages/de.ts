@@ -42,7 +42,7 @@ const messages = {
             'θ {theta} [{lower}, {upper}], SE {standardError}, {count, plural, one {# Antwort} other {# Antworten}}',
           testingTrue: 'Richtig',
           testingFalse: 'Falsch',
-          testingHistory: 'Bisherige Antworten',
+          testingHistorySummary: 'Bisherige Antworten ({count})',
           testingHistoryEmpty: 'In diesem Versuch noch keine Antworten.',
           testingHistoryOrder: '#',
           testingHistoryElement: 'Element',
@@ -256,18 +256,33 @@ const messages = {
             '{count, plural, one {Nach # beantworteter Frage liegen noch nicht genügend Daten für ein Gesamtniveau vor.} other {Nach # beantworteten Fragen liegen noch nicht genügend Daten für ein Gesamtniveau vor.}}',
         },
         profile: {
-          earlyIndication: '{level} (grobe Schätzung)',
-          plausibleRange: 'Plausibler Bereich: {range}',
-          fewResponses:
-            '{count, plural, one {Basiert auf nur # Antwort – die Spanne ist noch breit.} other {Basiert auf nur # Antworten – die Spanne ist noch breit.}}',
-          supportedEstimate:
-            'Deine Antworten stützen diese Einschätzung. Der schattierte Bereich zeigt die verbleibende Unsicherheit.',
-          uncertainEstimate:
-            'Dein Niveau ist noch unsicher. Weitere Antworten in diesem Bereich würden helfen, die Spanne einzugrenzen.',
-          noResponses: 'In diesem Versuch nicht geprüft.',
+          estimatedLevel: 'Geschätztes Niveau: {level}',
+          roughLevel: 'Grobe Schätzung: {level}',
+          aroundLevel: 'Ungefähr {level}',
+          notEnoughAnswers:
+            '{count, plural, one {Noch zu wenige Antworten für eine Schätzung (# Antwort)} other {Noch zu wenige Antworten für eine Schätzung (# Antworten)}}',
+          likelyRange: 'Wahrscheinlich zwischen {lower} und {upper}',
+          certainty: {
+            HIGH: 'Hohe Sicherheit',
+            MEDIUM: 'Mittlere Sicherheit',
+            LOW: 'Geringe Sicherheit',
+          },
           notTested: 'Nicht geprüft',
+          notTestedCompetences:
+            '{count, plural, one {# Kompetenz in diesem Versuch nicht geprüft} other {# Kompetenzen in diesem Versuch nicht geprüft}}',
+          notTestedSubcompetences:
+            '{count, plural, one {# Teilkompetenz in diesem Versuch nicht geprüft} other {# Teilkompetenzen in diesem Versuch nicht geprüft}}',
+          notTestedOutOfRange:
+            'Nicht geprüft – außerhalb deines Niveaubereichs',
+          levelExact: '{level}',
+          levelWithTolerance:
+            '{level} (±{count, plural, one {# Stufe} other {# Stufen}})',
+          levelBelowRange:
+            '{level} oder tiefer (unterhalb des messbaren Bereichs)',
+          levelAboveRange:
+            '{level} oder höher (oberhalb des messbaren Bereichs)',
           evidenceHelp:
-            'Jede Zeile verwendet Antworten aus dem jeweiligen Bereich. Nach wenigen Antworten ist die Einschätzung vorläufig. Die schattierte Spanne zeigt die Unsicherheit: Je breiter sie ist, desto unsicherer ist dein Niveau. Bereiche mit „Nicht geprüft“ haben in diesem Versuch keine Fragen erhalten und keine Schätzung.',
+            'Jede Zeile zeigt dein geschätztes Niveau in diesem Bereich und wie sicher die Schätzung ist. Mit mehr Antworten wird die Schätzung sicherer.',
           title: 'Kompetenzprofil',
           overall: 'Gesamt',
           responses: '{count, plural, one {# Antwort} other {# Antworten}}',
@@ -423,6 +438,12 @@ const messages = {
           customInterval: 'Bestehende individuelle Einstellung (z = {value})',
           intervalHint:
             'Ein höherer Prozentsatz ergibt ein breiteres Unsicherheitsintervall und benötigt meist mehr Fragen. Dies ist ein modellbasiertes Intervall, keine Garantie für die Richtigkeit der angezeigten Stufe.',
+          precision: 'Bestimmungsgenauigkeit',
+          precisionExact: 'Exakte Stufe',
+          precisionTolerance:
+            '{count, plural, one {±# Stufe} other {±# Stufen}}',
+          precisionHint:
+            'Mit „±1 Stufe“ gilt eine Stufe als bestimmt, wenn das Unsicherheitsintervall höchstens eine Stufe von der angezeigten Stufe abweicht; Ergebnisse zeigen dann z. B. „B1.2 (±1 Stufe)“. Empfohlen für Skalen mit {levelCount} oder mehr Stufen, bei denen eine exakte Stufe selten erreichbar ist. Erfordert die aktualisierte adaptive Engine; andernfalls schlägt die Veröffentlichung mit einer klaren Meldung fehl.',
           scalePolicy:
             'Konfidenz und vorzeitiges Beenden folgen der genehmigten Regel der gewählten kalibrierten Skala. Die Frage- und Zeitlimits gelten weiterhin.',
           enableTimeLimit: 'Zusätzlich ein Zeitlimit setzen',
@@ -624,6 +645,8 @@ const messages = {
               'Die Kompetenz "{rootName}" erhält nur {allocatedQuestionCount} der insgesamt verfügbaren Fragen, weniger als die {questionsPerLeaf} Fragen, die für eine Unterkompetenz nötig sind. Erhöhen Sie das Gesamtlimit, senken Sie die minimale Fragenzahl pro Unterkompetenz oder passen Sie die Gewichtung der Kompetenzen an.',
             ADAPTIVE_CLASSIFICATION_BANDS_UNREACHABLE:
               'Die Planungsschätzung unterstützt für "{nodeName}" ein präzises Ergebnis in {classifiableLevelCount} von {levelCount} Stufen. Mit diesem Fragelimit können Ergebnisse unsicher bleiben.',
+            ADAPTIVE_CLASSIFICATION_TOLERANCE_SUGGESTED:
+              'Mit diesen Fragen kann für "{nodeName}" ({levelCount} Stufen) keine Stufe exakt bestimmt werden. Erwägen Sie, die Bestimmungsgenauigkeit auf „±1 Stufe“ zu setzen.',
             ADAPTIVE_TIME_BUDGET_EXCEEDED:
               'Die Abdeckung dauert voraussichtlich etwa {estimatedDurationMinutes} Minuten bei {secondsPerItem} Sekunden pro Item.',
             ADAPTIVE_CONFIG_INTEGER_RANGE:
@@ -754,6 +777,8 @@ const messages = {
             '{count} Ergebnisse ohne verwendbare Schätzung für diesen Bereich werden nicht angezeigt.',
           notTested:
             '{count, plural, one {# Ergebnis hat diesen Bereich nicht geprüft} other {# Ergebnisse haben diesen Bereich nicht geprüft}} (es wurden keine Fragen gestellt, z. B. wegen der Stichprobe von Unterkompetenzen). Nicht geprüfte Ergebnisse zählen nicht als Schätzung.',
+          outOfRange:
+            '{count, plural, one {Davon hat # Ergebnis diesen Bereich übersprungen, weil er außerhalb des Niveaubereichs der Person lag.} other {Davon haben # Ergebnisse diesen Bereich übersprungen, weil er außerhalb des Niveaubereichs der Person lag.}}',
         },
         distributionStatuses: {
           betweenLevels: 'Zwischen Stufen',
@@ -1093,7 +1118,7 @@ const messages = {
       readOnlyNotice:
         'Dieser Baum gehört einer anderen Person. Sie können ihn einsehen und duplizieren, aber nur die Eigentümerin oder der Eigentümer kann ihn bearbeiten.',
       lockedNotice:
-        'Dieser Baum wird von einem adaptiven Quiz verwendet. Seine Metadaten können weiterhin bearbeitet werden; duplizieren Sie den Baum, um Stufen, Hierarchie, Abdeckung oder Zuordnungen zu ändern.',
+        'Dieser Baum wird von einem adaptiven Quiz verwendet. Seine Metadaten und Stufenfarben können weiterhin bearbeitet werden; duplizieren Sie den Baum, um Stufen, Hierarchie, Abdeckung oder Zuordnungen zu ändern.',
       defaultLevelLow: 'Tief',
       defaultLevelMedium: 'Mittel',
       defaultLevelHigh: 'Hoch',
@@ -1125,6 +1150,19 @@ const messages = {
       moveUp: 'Nach oben verschieben',
       moveDown: 'Nach unten verschieben',
       deleteLevel: 'Stufe löschen',
+      levelColor: 'Farbe',
+      levelColorPicker: 'Farbe für Stufe {label}',
+      levelColorHex: 'Hex-Farbe für Stufe {label}',
+      levelColorDefault: 'Standard',
+      levelColorCustom: 'Eigene',
+      levelColorReset: 'Auf Standard zurücksetzen',
+      levelColorResetAll: 'Alle Farben zurücksetzen',
+      levelColorInvalid: 'Geben Sie eine Farbe im Format #RRGGBB ein.',
+      levelColorLowContrast:
+        'Geringer Kontrast: Die Schätzungsmarkierung ist auf dieser Farbe möglicherweise schlecht sichtbar. Wählen Sie eine hellere Farbe.',
+      levelColorsDescription:
+        'Farben werden nur für die Darstellung der Ergebnisse verwendet. Stufen ohne eigene Farbe verwenden die Standardpalette (Blau von hell nach dunkel, Grau für eine tiefste Stufe ohne Präfix). Farben können jederzeit geändert werden, auch nachdem der Baum in einem Quiz verwendet wird.',
+      levelColorPreview: 'Vorschau der Stufenfarben in den Ergebnisansichten',
       assignmentsAffectedTitle: 'Zuordnungen werden geändert',
       levelReorderWarning:
         'Durch das Verschieben von Stufen ändern sich deren Schwierigkeitsanker; bestehende Zuordnungen können betroffen sein. Fortfahren?',

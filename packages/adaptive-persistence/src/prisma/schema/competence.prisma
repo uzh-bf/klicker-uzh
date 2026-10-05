@@ -105,6 +105,15 @@ enum AdaptiveResultStatus {
   RESEARCH_ONLY
 }
 
+// IRT_V1 leaf coverage of the persisted engine decision (subcompetence
+// estimates only; null for other nodes and for engines that predate it).
+enum AdaptiveLeafCoverageStatus {
+  COVERED
+  OUT_OF_RANGE
+  SAMPLED_PENDING
+  NOT_SAMPLED
+}
+
 enum AdaptivePoolItemRole {
   SCORING
   ANCHOR
@@ -175,6 +184,10 @@ model CompetenceTreeLevel {
 
   label String
   order Int
+  // Optional presentation color (lowercase #rrggbb). Cosmetic only: not part
+  // of the tree structure, publications, scales, or fingerprints. Null uses
+  // the default ordinal palette.
+  color String?
 
   tree   CompetenceTree @relation(fields: [treeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   treeId String         @db.Uuid

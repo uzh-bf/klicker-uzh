@@ -1,10 +1,12 @@
 import { once } from 'node:events'
 import { createServer } from 'node:http'
 import { afterEach, expect, it, vi } from 'vitest'
+import { buildAdaptiveRuntimeEstimateWrite } from '../src/services/adaptivePracticeQuizEstimatePersistence.js'
 import {
   advanceLoadedAdaptiveRuntime,
   prepareLoadedAdaptiveEstimator,
 } from '../src/services/adaptivePracticeQuizEstimatorVersions.js'
+import type { AdaptiveAttemptRuntimeRecord } from '../src/services/adaptivePracticeQuizRuntimeData.js'
 
 const token = 'synthetic-host-adaptive-token-0000000000'
 afterEach(() => vi.unstubAllEnvs())
@@ -64,7 +66,14 @@ it('sends only scored metadata and hydrates the selected item from the host snap
           overall: { ...estimate, nodeKind: 'OVERALL', nodeId: null },
           nodes: [
             { ...estimate, nodeKind: 'COMPETENCE', nodeId: 1 },
-            { ...estimate, nodeKind: 'SUBCOMPETENCE', nodeId: 2 },
+            // Catalyst SEQUENTIAL_ROOTS_V5 leaf coverage status; the
+            // competence node omits it like an older engine would.
+            {
+              ...estimate,
+              nodeKind: 'SUBCOMPETENCE',
+              nodeId: 2,
+              coverageStatus: 'SAMPLED_PENDING',
+            },
           ],
         },
       })
@@ -132,6 +141,22 @@ it('sends only scored metadata and hydrates the selected item from the host snap
     ])
     expect(result.decision.nextPoolItem).toBe(pool[1])
     expect(result.decision.estimates.nodes.get(2)?.responseCount).toBe(1)
+    if (result.measurementVersion !== 'IRT_V1') throw new Error('Expected V1')
+    const write = buildAdaptiveRuntimeEstimateWrite({
+      attempt: {
+        id: '11111111-1111-4111-8111-111111111111',
+        configId: '22222222-2222-4222-8222-222222222222',
+        competenceTreeId: '33333333-3333-4333-8333-333333333333',
+      } as AdaptiveAttemptRuntimeRecord,
+      estimates: result.decision.estimates,
+      nodeIds: [1, 2],
+    })
+    expect(
+      write.nodes.map(({ nodeId, coverageStatus }) => [nodeId, coverageStatus])
+    ).toEqual([
+      [1, null],
+      [2, 'SAMPLED_PENDING'],
+    ])
   } finally {
     await new Promise<void>((resolve, reject) =>
       server.close((error) => (error ? reject(error) : resolve()))

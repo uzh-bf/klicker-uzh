@@ -40,6 +40,7 @@ export type AdaptiveTestingHistoryBand = {
   order: number
   startPosition: number
   endPosition: number
+  color?: string | null
 }
 
 export type AdaptiveTestingHistoryEntry = {

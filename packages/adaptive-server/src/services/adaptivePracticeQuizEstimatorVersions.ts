@@ -345,7 +345,7 @@ export function buildAdaptiveDecisionRequest({
           ? { additionalLeafNodeIds: [...item.additionalLeafNodeIds] }
           : {}),
       })),
-      settings: runtime.algorithm.settings,
+      settings: v1EngineSettings(runtime.algorithm.settings),
     }
   } else {
     const algorithm = runtime.algorithm
@@ -403,4 +403,17 @@ export function buildAdaptiveDecisionRequest({
     }
   }
   return request
+}
+
+/**
+ * The classification tolerance is sent only when above 0: engines before
+ * Catalyst SEQUENTIAL_ROOTS_V6 reject the field, and 0 is their exact rule.
+ */
+export function v1EngineSettings(
+  settings: AdaptiveRuntimeSettings
+): AdaptiveRuntimeSettings {
+  const { classificationToleranceBands, ...exact } = settings
+  return classificationToleranceBands && classificationToleranceBands > 0
+    ? { ...exact, classificationToleranceBands }
+    : exact
 }

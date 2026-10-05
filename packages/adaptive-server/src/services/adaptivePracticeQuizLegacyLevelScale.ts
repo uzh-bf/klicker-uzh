@@ -11,7 +11,8 @@ import type {
 
 export function serializeLevelBands(
   levels: AdaptiveRuntimeLevel[],
-  settings: AdaptiveRuntimeSettings
+  settings: AdaptiveRuntimeSettings,
+  colorsByLevelId: ReadonlyMap<number, string> = new Map()
 ) {
   return mapLevelsToTheta(
     levels,
@@ -20,6 +21,11 @@ export function serializeLevelBands(
   ).map((level) => ({
     label: level.label,
     order: level.order,
+    // Legacy runtime level ids are the source competence tree level ids.
+    color:
+      colorsByLevelId.get(
+        levels.find((candidate) => candidate.order === level.order)?.id ?? -1
+      ) ?? null,
     startPosition: normalizeThetaForChart(
       Number.isFinite(level.lowerBound)
         ? level.lowerBound

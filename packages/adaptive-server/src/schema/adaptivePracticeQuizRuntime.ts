@@ -80,6 +80,10 @@ export function createAdaptivePracticeQuizRuntimeSchema(
     'AdaptiveEstimateNodeKind',
     { values: Object.values(DB.AdaptiveEstimateNodeKind) }
   )
+  const AdaptiveLeafCoverageStatus = builder.enumType(
+    'AdaptiveLeafCoverageStatus',
+    { values: Object.values(DB.AdaptiveLeafCoverageStatus) }
+  )
   const AdaptiveResultConfidenceType = builder.enumType(
     'AdaptiveResultConfidence',
     {
@@ -415,6 +419,13 @@ export function createAdaptivePracticeQuizRuntimeSchema(
       order: t.exposeInt('order'),
       startPosition: t.exposeFloat('startPosition'),
       endPosition: t.exposeFloat('endPosition'),
+      color: t.string({
+        nullable: true,
+        resolve: ({ color }) => color ?? null,
+      }),
+      hasElements: t.boolean({
+        resolve: (band) => band.hasElements ?? true,
+      }),
     }),
   })
 
@@ -460,6 +471,10 @@ export function createAdaptivePracticeQuizRuntimeSchema(
       position: t.exposeFloat('position', { nullable: true }),
       lowerPosition: t.exposeFloat('lowerPosition', { nullable: true }),
       upperPosition: t.exposeFloat('upperPosition', { nullable: true }),
+      coverageStatus: t.expose('coverageStatus', {
+        type: AdaptiveLeafCoverageStatus,
+        nullable: true,
+      }),
       children: t.expose('children', {
         type: [AdaptiveStudentResultNodeRef],
       }),
@@ -500,11 +515,17 @@ export function createAdaptivePracticeQuizRuntimeSchema(
       levelBands: t.expose('levelBands', {
         type: [AdaptiveResultLevelBandRef],
       }),
+      classificationToleranceBands: t.exposeInt('classificationToleranceBands'),
       trajectory: t.expose('trajectory', {
         type: [AdaptiveResultTrajectoryPointRef],
       }),
       competenceProfile: t.expose('competenceProfile', {
         type: [AdaptiveStudentResultNodeRef],
+      }),
+      // ADAPTIVE_QUIZ_SHOW_SOLUTIONS=true (staging walkthroughs); null otherwise.
+      testingHistory: t.expose('testingHistory', {
+        type: AdaptiveTestingHistoryType,
+        nullable: true,
       }),
     }),
   })
@@ -545,6 +566,7 @@ export function createAdaptivePracticeQuizRuntimeSchema(
           nullable: true,
         }),
         notTestedCount: t.exposeInt('notTestedCount', { nullable: true }),
+        outOfRangeCount: t.exposeInt('outOfRangeCount', { nullable: true }),
         classifiedCount: t.exposeInt('classifiedCount', { nullable: true }),
         betweenLevelsCount: t.exposeInt('betweenLevelsCount', {
           nullable: true,

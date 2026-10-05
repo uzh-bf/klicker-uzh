@@ -1,9 +1,9 @@
 import type { PrismaTransactionClient } from '@klicker-uzh/util'
 import { lockAdaptiveLearningCourseEnabled } from './adaptiveLearningRollout.js'
 import {
+  type AdaptivePracticeQuizConfigInput,
   adaptiveServiceError,
   prepareConfigurationInput,
-  type AdaptivePracticeQuizConfigInput,
 } from './adaptivePracticeQuizConfigPreparation.js'
 import { purgeAttemptFreeAdaptivePublications } from './adaptivePracticeQuizPublicationCleanup.js'
 
@@ -61,6 +61,7 @@ export async function replaceAdaptivePracticeQuizConfig(
       minQuestionsPerLeaf: settings.minQuestionsPerLeaf,
       minItemsPerCoverageCell: settings.minItemsPerCoverageCell,
       classificationZ: settings.classificationZ,
+      classificationToleranceBands: settings.classificationToleranceBands,
       topInformationRatio: settings.topInformationRatio,
       defaultDiscrimination: settings.defaultDiscrimination,
       levelMappingRule: settings.levelMappingRule,
