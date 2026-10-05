@@ -166,7 +166,7 @@ does not replace environment values in an existing service container. The
 target adapter reads only namespaced local API/Chat origins and seeded
 participant credentials from the invoking shell, then removes those variables
 from the evaluator child. The wrapper pins a loopback Chat Completions target,
-one in-flight request, direct gpt-5.6-luna, and cleanup on every exit.
+one in-flight request, direct gpt-6-luna, and cleanup on every exit.
 
 The local KB_doc_query canary is a transport check for authentication, thread
 and message persistence, mode handling, and expected-tool evidence. It is not
@@ -267,13 +267,13 @@ provider-level acceptance check. The same harness proves the managed-process
 liveness guard: a process that dies inside the grace interval fails startup
 before any readiness probe, and a survivor advances into the readiness pass.
 
-- The local Chat model simulation includes LiteLLM's `auto-router` and
-  the GPT-5.6 Luna/Sol target aliases. Start it with
+- The local Chat model simulation includes LiteLLM's `auto-router` (v1) and
+  `auto-router-v2`, plus the GPT-6 Luna/Sol target aliases with GPT-5.6 fallbacks. Start it with
   `devrouter ensure . --profile chat,ai`; add `mcp` for the seeded synthetic
   tool path. Then verify the
   LiteLLM liveness endpoint, direct embedding/model probes, expected Auto V2
   routing decisions in LiteLLM logs, and the chat credits response before
-  browser testing the `Auto Mode`/`GPT-5.6 Luna` picker. A real
+  browser testing the `Auto Mode`/`GPT-6 Luna`/`GPT-6 Sol` picker. A real
   `UPSTREAM_OPENAI_API_KEY` is required for these calls; service health alone is
   not classification or answer-stream evidence.
 - Tests that **publish, schedule, or end activities** need the Hatchet **general worker** running on top of the test stack — otherwise mutations fail with `workflow not found`. Use `live-quiz`, `manage,live-quiz`, or `full`; the worker needs `DATABASE_URL` pointed at the test DB ([Async & Workers](./async-and-workers.md)).

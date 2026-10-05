@@ -121,7 +121,7 @@ export function parseChatModelRegistry(value: unknown): ChatModelCapability[] {
 const DEFAULT_CHAT_MODEL_REGISTRY_INPUT = [
   {
     id: 'auto',
-    deploymentId: 'auto-router',
+    deploymentId: 'auto-router-v2',
     name: 'Auto Mode',
     description: 'Automatic model selection through the LiteLLM auto router',
     fallback: false,
@@ -134,9 +134,9 @@ const DEFAULT_CHAT_MODEL_REGISTRY_INPUT = [
     cost: { input: 1.0, output: 5.0 },
   },
   {
-    id: 'gpt-5.6-luna',
-    deploymentId: 'gpt-5.6-luna',
-    name: 'GPT-5.6 Luna',
+    id: 'gpt-6-luna',
+    deploymentId: 'gpt-6-luna',
+    name: 'GPT-6 Luna',
     description: 'OpenAI reasoning model',
     fallback: true,
     supportsReasoning: true,
@@ -145,7 +145,35 @@ const DEFAULT_CHAT_MODEL_REGISTRY_INPUT = [
     maxOutputTokens: 4096,
     usageClass: 'BASE',
     apiVersion: 'preview',
-    cost: { input: 0.2, output: 1.2 },
+    cost: { input: 0.1, output: 0.5 },
+  },
+  {
+    id: 'gpt-6-sol',
+    deploymentId: 'gpt-6-sol',
+    name: 'GPT-6 Sol',
+    description: 'OpenAI reasoning model',
+    fallback: false,
+    supportsReasoning: true,
+    usesResponsesApi: true,
+    supportedReasoningEfforts: ['low', 'medium', 'high'],
+    maxOutputTokens: 4096,
+    usageClass: 'ADVANCED',
+    apiVersion: 'preview',
+    cost: { input: 2.0, output: 10.0 },
+  },
+  {
+    id: 'gpt-6.1-sol',
+    deploymentId: 'gpt-6.1-sol',
+    name: 'GPT-6.1 Sol',
+    description: 'OpenAI reasoning model',
+    fallback: false,
+    supportsReasoning: true,
+    usesResponsesApi: true,
+    supportedReasoningEfforts: ['low', 'medium', 'high'],
+    maxOutputTokens: 4096,
+    usageClass: 'ADVANCED',
+    apiVersion: 'preview',
+    cost: { input: 2.0, output: 10.0 },
   },
   {
     id: 'gpt-5.4',
@@ -159,19 +187,6 @@ const DEFAULT_CHAT_MODEL_REGISTRY_INPUT = [
     maxOutputTokens: 4096,
     apiVersion: 'preview',
     cost: { input: 2.5, output: 15.0 },
-  },
-  {
-    id: 'gpt-5.1',
-    deploymentId: 'gpt-5.1',
-    name: 'GPT-5.1',
-    description: 'OpenAI reasoning model',
-    fallback: false,
-    supportsReasoning: true,
-    usesResponsesApi: true,
-    supportedReasoningEfforts: ['none', 'minimal', 'low', 'medium', 'high'],
-    maxOutputTokens: 4096,
-    apiVersion: 'preview',
-    cost: { input: 1.25, output: 10.0 },
   },
   {
     id: 'gpt-4.1',
@@ -2120,15 +2135,16 @@ type CreateChatbotArgs = {
   courseId: string
 }
 
-// New chatbots start on GPT-6 Luna, the BASE default model. A registry without
-// it, such as the local development default, keeps the single-Auto default.
+// New chatbots start on GPT-6 Luna, the BASE default model, which is also the
+// participant-credit fallback. A registry without it keeps the single-Auto
+// default.
 const NEW_CHATBOT_MODEL_ID = 'gpt-6-luna'
 
 export function getNewChatbotModelId(
   registry: readonly ChatModelCapability[]
 ): string | null {
   const preferred = registry.find((model) => model.id === NEW_CHATBOT_MODEL_ID)
-  if (preferred?.usageClass === 'BASE' && !preferred.fallback) {
+  if (preferred?.usageClass === 'BASE') {
     return preferred.id
   }
   const auto = registry.find((model) => model.id === 'auto')

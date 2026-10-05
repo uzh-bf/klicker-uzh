@@ -287,19 +287,20 @@ Three properties matter when debugging it:
 
 Every registry entry carries an explicit `usageClass` (`BASE` or `ADVANCED`),
 the server-derived classification of the model lane ([ADR 0020](./adr/0020-two-tier-chatbot-approval.md)).
-GPT-5.6 Luna must be a `BASE` model and the participant-credit fallback; both
+GPT-6 Luna must be a `BASE` model and the participant-credit fallback; both
 consumers reject external registries that violate that invariant. Other models
 may also be `BASE`. The deployed registries classify GPT-6 Luna (the automatic
-primary), `auto`, and GPT-5.6 Luna as `BASE`, because Luna and Sol are cheap
+primary and fallback) and `auto` as `BASE`, because Luna and Sol are cheap
 enough that the auto-router needs no cost center, while directly selected
-GPT-6 Sol and GPT-5.6 Sol stay `ADVANCED`.
+GPT-6 Sol, GPT-6.1 Sol and GPT-5.6 Sol stay `ADVANCED`.
 External registry JSON that omits `usageClass` normalizes to `ADVANCED` —
 conservative, because a missing class must never imply base usage.
 
 New chatbots use a fixed GPT-6 Luna policy by default: the owner projection
 contains one effective `gpt-6-luna` model and no reasoning entries. A registry
-without that BASE model, such as the local development default, keeps a single
-`auto` model instead. The strict owner-only
+without that BASE model keeps a single `auto` model instead. Staging sets
+`auto` as the automatic primary so existing automatic-selection chatbots
+exercise `auto-router-v2`; production keeps GPT-6 Luna. The strict owner-only
 `saveChatbotRevision` mutation uses its `modelPolicy` section to require exactly
 one active model for fixed mode, one supported reasoning effort when that model
 supports reasoning, and at least one active model plus valid reasoning entries
@@ -463,24 +464,34 @@ planning target, while the reset date is exact; in-flight requests may exceed
 the target. It is read-only for account owners, and it does not expose
 internal funding or provider details.
 
-The deployed Klicker Auto option is a LiteLLM `auto-router` endpoint. The
-only in-repo record of its tier map is the comment above `modelRegistry` in
-`deploy/env-uzh-{stg,prd}/values.yaml`: SIMPLE = `gpt-5.6-luna-medium`, MEDIUM
-= `gpt-5.6-luna-high`, COMPLEX = `gpt-5.6-luna-xhigh`, REASONING =
-`gpt-5.6-sol-medium` (match_threshold 0.55). The authoritative router
+The deployed Klicker Auto option is the LiteLLM `auto-router-v2` endpoint.
+The only in-repo record of its tier map is the comment above `modelRegistry`
+in `deploy/env-uzh-{stg,prd}/values.yaml`: SIMPLE = `gpt-6-luna-high`, MEDIUM
+= `gpt-6.1-sol-low`, COMPLEX = `gpt-6.1-sol-medium`, REASONING =
+`gpt-6.1-sol-high` (match_threshold 0.55). The v1 `auto-router` stays
+deployed with the same classifier and corpus (MEDIUM = `gpt-6-luna-xhigh`,
+COMPLEX = `gpt-6.1-sol-high`, REASONING = `gpt-6.1-sol-medium`) so both
+routers can be compared on one evaluation suite. Each GPT-6.1 Sol alias falls
+back to its GPT-6 Sol twin and each GPT-6 alias to a GPT-5.6 twin on an
+upstream failure. The 2026-10-01 benchmark behind v2 is recorded in
+ai-infrastructure/deployment !996. The authoritative router
 configuration lives in the external AI deployment repository's
 `litellm/config.yaml` and **cannot be verified from this repository** — treat
 the values.yaml comment as the best available record and confirm against the
 deployment before making a routing claim. The deployed registry also exposes
-direct `gpt-5.6-luna` through the existing
-`klickeruzh/azure/gpt-5.6-luna` alias; the router's effort targets remain
-internal.
+direct `gpt-6-luna` (the participant base model), `gpt-6-sol` and
+`gpt-6.1-sol` through the matching `klickeruzh/azure/*` aliases;
+`gpt-6.1-sol` falls back to `gpt-6-sol` and from there to GPT-5.6. The
+router's effort targets remain internal. Before 2026-09-29 the base model id
+was `gpt-5.6-luna`; migration `20260929120000_chat_gpt6_base_model` rewrote
+stored chatbot allow-lists, while historical message `modelId` values keep the
+id that answered.
 Both staging and production now use `auto` as the global automatic-model
 primary, so chatbots using automatic model selection use Auto by default.
 Chatbots with an explicit model selection can continue using that selection.
 Keep the `v3-ai` staging values aligned with this block when resolving merges:
 `CHAT_PRIMARY_MODEL_ID=auto`, the `auto` registry entry targets
-`klickeruzh/azure/auto-router`, and that entry sets `usesResponsesApi: true`.
+`klickeruzh/azure/auto-router-v2`, and that entry sets `usesResponsesApi: true`.
 This repository controls those consumer values but does not prove that the
 external LiteLLM key or team is authorized for the deployment.
 Model registry capabilities separate the student-facing reasoning-effort
@@ -493,22 +504,27 @@ keeps ownership of effort instead of accepting a participant override.
 
 The local devcontainer simulation in `util/litellm/config.yaml` mirrors the
 deployed Klicker Auto V2 policy and semantic corpus with local, unprefixed model
-aliases: Luna medium/high/xhigh for SIMPLE/MEDIUM/COMPLEX and Sol medium for
-REASONING. It deliberately retains the generic
+aliases. It defines both routers: `auto-router` mirrors v1 and
+`auto-router-v2` mirrors v2, with GPT-6 Sol and GPT-5.6 fallbacks. LiteLLM
+1.96 does not recognise GPT-6 as a reasoning family, so the GPT-6 entries set
+`allowed_openai_params: ['reasoning_effort']`; without it `drop_params`
+silently removes the effort locally. Production is unaffected because its
+aliases use the Responses API `reasoning` field. It deliberately retains the generic
 `UPSTREAM_OPENAI_BASE_URL`/`UPSTREAM_OPENAI_API_KEY` boundary instead of
 production Azure URLs, model prefixes, secrets, or failover topology. Local
 Auto Mode is therefore evidence about the wiring and policy simulation, never
 live production routing. The local chat registry maps the user-facing `auto`
-model id to the `auto-router` LiteLLM deployment and exposes `gpt-5.6-luna` for
-a direct comparison. The seeded Benibot fixture allow-lists all three active
-options — `auto`, `gpt-5.6-luna` and `gpt-4.1` — explicitly, so it satisfies
+model id to the `auto-router-v2` LiteLLM deployment and exposes `gpt-6-luna`,
+`gpt-6-sol` and `gpt-6.1-sol` for a direct comparison. The seeded Benibot fixture allow-lists all
+four active options — `auto`, `gpt-6-luna`, `gpt-6-sol` and `gpt-4.1` —
+explicitly, so it satisfies
 the strict model allow-list. The zero-credit safety fallback may use Luna even
 when that allow-list omits it.
 
 The local LiteLLM service pins
 `ghcr.io/berriai/litellm-database:v1.96.2` by immutable multi-platform digest,
 has a healthcheck, and is included in
-`.devcontainer/devcontainer.json:runServices`. Auto V2 uses Luna low for its LLM
+`.devcontainer/devcontainer.json:runServices`. Auto V2 uses GPT-6 Luna low for its LLM
 classifier and `openai/text-embedding-3-small` for semantic corpus matching,
 then invokes the selected answer model. With an OpenRouter upstream, all of
 those requests cross the same external provider boundary and add latency and
@@ -524,7 +540,7 @@ starting the exact devrouter worktree. The repository has no dependency on a
 personal secret operator. The VPN is required. Stop and restart an existing
 worktree when its LiteLLM container was started without those values; a warm
 ensure does not replace service-container environment. The direct
-`gpt-5.6-luna` entry pins `num_retries` to zero for bounded target evaluation;
+`gpt-6-luna` entry pins `num_retries` to zero for bounded target evaluation;
 the fixed effort aliases remain internal router targets.
 
 The local target-evaluation adapter is a host loopback boundary, not another
@@ -671,13 +687,13 @@ The existing `ChatUsageCredits` balance remains a separate participant
 allowance. Its decrement is part of the `finalizeChatTurn` transaction together
 with the completed message and account usage, so a failed debit rolls back the
 other two writes and a duplicate completion cannot debit twice. At zero
-participant credits, the route switches from any effective model to GPT-5.6
+participant credits, the route switches from any effective model to GPT-6
 Luna and clamps its effective usage class to `BASE` before enforcement; Luna is
 therefore charged only through its `BASE` account lane and the participant
 allowance. This fallback intentionally does not require the chatbot allow-list
 to contain Luna. New browser sessions start with Auto Mode. Saved unavailable selections use
 the server-provided automatic model; an explicitly selected available Luna is
-preserved. Local seeded chatbots offer Auto and GPT-5.6 Luna. GPT-5.5 is retired
+preserved. Local seeded chatbots offer Auto, GPT-6 Luna, and GPT-6 Sol. GPT-5.5 is retired
 from the built-in and deployment registries.
 
 Automatic selection otherwise retains Auto and is attributed
@@ -687,9 +703,9 @@ immutable ledgers, automated refunds, invoices, per-chatbot allocation, and
 participant-credit migration remain deferred.
 
 - Omitted `supportsImageAttachments` defaults to **false** — every image-capable model must set it explicitly in deployment values or the attach button disappears.
-- The zero-credit participant path uses GPT-5.6 Luna as the base-lane fallback
+- The zero-credit participant path uses GPT-6 Luna as the base-lane fallback
   even when the chatbot allow-list excludes it. The registry must contain a
-  `fallback` GPT-5.6 Luna `BASE` entry; the route denies the turn only if that
+  `fallback` GPT-6 Luna `BASE` entry; the route denies the turn only if that
   entry is absent. Retired model IDs in persisted allow-lists are ignored, and
   an automatic chatbot with no current allowed model resolves to Luna. The
   chart still emits `CHAT_FALLBACK_MODEL_ID` for mixed-version compatibility
@@ -1478,7 +1494,7 @@ the UI locale or by a lecturer's stored persona prompt.
 
 Two recurring traps in this app's strings:
 
-- **Per-chatbot vocabulary is free-form**, so chat modes (`systemPrompts` keys) and reasoning efforts are `string`, not unions. Only the well-known values get a translation; anything else falls back to its raw name. `src/lib/config/modes.ts` holds the own-property known-mode predicate and `formatModeLabel` (used by the mode dropdown and thread-list subtitle; unknown modes fall back to their capitalized raw name), while `src/lib/config/reasoning.ts` exports `formatReasoningEffort` outright, since its three call sites want nothing but the label and had already drifted apart once. The mode dropdown shows the same localized label and description in its Radix menu, never an English-only registry description for a known mode. Either way, go through those modules so the selector and the caption under an answer cannot end up with different words for the same value. When a model registry or LiteLLM alias introduces a new effort id, add it to `KNOWN_REASONING_EFFORTS` and to both message files in the same change — otherwise the raw-name fallback leaks an English id (`xhigh` shipped that way and read "Xhigh" next to Niedrig/Mittel/Hoch until it was fixed, and `none` read "None" for the same reason). The local seeded chatbot offers only Auto and Luna, while the built-in and deployment registries retain additional models and effort ids (`none`, `minimal`). Check both registry capabilities and chatbot allow-lists before assuming a browser pass covered every effort id.
+- **Per-chatbot vocabulary is free-form**, so chat modes (`systemPrompts` keys) and reasoning efforts are `string`, not unions. Only the well-known values get a translation; anything else falls back to its raw name. `src/lib/config/modes.ts` holds the own-property known-mode predicate and `formatModeLabel` (used by the mode dropdown and thread-list subtitle; unknown modes fall back to their capitalized raw name), while `src/lib/config/reasoning.ts` exports `formatReasoningEffort` outright, since its three call sites want nothing but the label and had already drifted apart once. The mode dropdown shows the same localized label and description in its Radix menu, never an English-only registry description for a known mode. Either way, go through those modules so the selector and the caption under an answer cannot end up with different words for the same value. When a model registry or LiteLLM alias introduces a new effort id, add it to `KNOWN_REASONING_EFFORTS` and to both message files in the same change — otherwise the raw-name fallback leaks an English id (`xhigh` shipped that way and read "Xhigh" next to Niedrig/Mittel/Hoch until it was fixed, and `none` read "None" for the same reason). The local seeded chatbot offers Auto, GPT-6 Luna, and GPT-6 Sol, while the built-in and deployment registries retain additional models and effort ids (`none`, `minimal`). Check both registry capabilities and chatbot allow-lists before assuming a browser pass covered every effort id.
 - **ICU plurals must be selected on the displayed number.** `formatCredits(1.2)` renders `1` but `Intl.PluralRules.select(1.2)` is `other`, so passing the raw float prints "1 credits". Feed `count` the rounded value the user actually sees.
 
 ## Message feedback and Langfuse
@@ -1546,7 +1562,7 @@ the local MCP tool to test the integration. Search for
 end-to-end pass requires a completed tool call, `KLICKER_LOCAL_MCP_OK` in the
 non-empty answer, and the `synthetic-course-material.pdf` source card. Keep
 Auto Mode selected and require the tool result, answer, and source to remain
-after reloading the thread. Use direct GPT-5.6 Luna only to isolate the router
+after reloading the thread. Use direct GPT-6 Luna only to isolate the router
 from the model/tool path. The fixture is synthetic wiring evidence only; it
 does not validate retrieval quality or a deployed MCP server.
 
