@@ -17,6 +17,7 @@ import {
   getAdaptiveProfileCertainty,
   getAdaptiveRangeWidth,
   getAdaptiveRoughEstimateDisplay,
+  showsAdaptiveLevelTrack,
 } from './adaptiveProfileCertainty'
 import {
   getAdaptiveProfileIndication,
@@ -84,7 +85,6 @@ function AdaptiveCompetenceProfile({
         estimate={overall}
         levelBands={levelBands}
         isPlacementPilot={isPlacementPilot}
-        showTrack
         emphasized
       />
       <ProfileNodeList
@@ -225,7 +225,6 @@ function ProfileNode({
       estimate={node}
       levelBands={levelBands}
       isPlacementPilot={isPlacementPilot}
-      showTrack={depth === 0}
       depth={depth}
     />
   )
@@ -271,14 +270,12 @@ function ProfileRow({
   estimate,
   levelBands,
   isPlacementPilot = false,
-  showTrack = false,
   depth = 0,
   emphasized = false,
 }: {
   estimate: ProfileEstimate
   levelBands: LevelBands
   isPlacementPilot?: boolean
-  showTrack?: boolean
   depth?: number
   emphasized?: boolean
 }) {
@@ -439,8 +436,9 @@ function ProfileRow({
         {rangeSentence && (
           <p className="mt-1 text-xs text-slate-600">{rangeSentence}</p>
         )}
-        {showTrack && width && !hidesEstimate && (
+        {width && showsAdaptiveLevelTrack(certainty) && (
           <LevelTrack
+            compact={!emphasized && depth > 0}
             estimate={estimate}
             levelBands={levelBands}
             ariaLabel={[
@@ -518,10 +516,13 @@ function LevelTrack({
   estimate,
   levelBands,
   ariaLabel,
+  compact,
 }: {
   estimate: ProfileEstimate
   levelBands: LevelBands
   ariaLabel: string
+  /** Nested rows: thinner track, no tick labels (the aria-label has the level). */
+  compact: boolean
 }) {
   const { bands, project } = createEqualLevelScale(levelBands)
   if (bands.length === 0) return null
@@ -538,12 +539,12 @@ function LevelTrack({
 
   return (
     <div
-      className="mt-2"
+      className={compact ? 'mt-2 pb-1' : 'mt-2'}
       role="img"
       aria-label={ariaLabel}
       data-cy="adaptive-profile-track"
     >
-      <div className="relative h-2.5">
+      <div className={`relative ${compact ? 'h-1.5' : 'h-2.5'}`}>
         <div className="absolute inset-0 overflow-hidden rounded-full bg-slate-100">
           {bands.map((band, index) => (
             <span
@@ -565,7 +566,7 @@ function LevelTrack({
           ))}
         </div>
         <span
-          className="bg-primary-100/15 border-primary-100/60 absolute -inset-y-1 rounded-full border"
+          className={`bg-primary-100/15 border-primary-100/60 absolute rounded-full border ${compact ? '-inset-y-0.5' : '-inset-y-1'}`}
           style={{
             left: `${Math.min(lower, upper) * 100}%`,
             width: `${Math.abs(upper - lower) * 100}%`,
@@ -573,7 +574,9 @@ function LevelTrack({
         />
         {position !== null && (
           <span
-            className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow"
+            className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow ${
+              compact ? 'h-3 w-3' : 'h-4 w-4'
+            }`}
             style={{
               left: `${position * 100}%`,
               backgroundColor: ADAPTIVE_LEVEL_MARKER_COLOR,
@@ -581,19 +584,21 @@ function LevelTrack({
           />
         )}
       </div>
-      <div className="relative mt-1.5 h-4 text-[11px] leading-4 text-slate-500">
-        {segments.map((segment) =>
-          segment.grouped || labelAll ? (
-            <TickLabel
-              key={`label-${segment.startIndex}`}
-              left={toPercent(segment.startIndex)}
-              width={toPercent(segment.endIndex - segment.startIndex + 1)}
-            >
-              {segment.label}
-            </TickLabel>
-          ) : null
-        )}
-      </div>
+      {!compact && (
+        <div className="relative mt-1.5 h-4 text-[11px] leading-4 text-slate-500">
+          {segments.map((segment) =>
+            segment.grouped || labelAll ? (
+              <TickLabel
+                key={`label-${segment.startIndex}`}
+                left={toPercent(segment.startIndex)}
+                width={toPercent(segment.endIndex - segment.startIndex + 1)}
+              >
+                {segment.label}
+              </TickLabel>
+            ) : null
+          )}
+        </div>
+      )}
     </div>
   )
 }

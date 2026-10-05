@@ -42,7 +42,7 @@ const messages = {
             'θ {theta} [{lower}, {upper}], SE {standardError}, {count, plural, one {# response} other {# responses}}',
           testingTrue: 'True',
           testingFalse: 'False',
-          testingHistory: 'Answers so far',
+          testingHistorySummary: 'Answers so far ({count})',
           testingHistoryEmpty: 'No answers yet in this attempt.',
           testingHistoryOrder: '#',
           testingHistoryElement: 'Element',

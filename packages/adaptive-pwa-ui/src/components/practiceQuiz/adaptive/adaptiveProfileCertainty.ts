@@ -166,6 +166,18 @@ export function getAdaptiveProfileCertainty({
   }
 }
 
+/**
+ * The marker track is shown iff a row shows an estimate with HIGH or MEDIUM
+ * certainty, for every row type (overall, competences, nested nodes). Low
+ * certainty, "not enough answers yet" (certainty null) and untested rows are
+ * text only, so a wide, uninformative range is never drawn.
+ */
+export function showsAdaptiveLevelTrack(
+  certainty: AdaptiveCertaintyLevel | null
+) {
+  return certainty === 'HIGH' || certainty === 'MEDIUM'
+}
+
 export type AdaptiveRoughEstimateDisplay =
   /** Narrow range: the rough sublevel itself is meaningful. */
   | { kind: 'level'; levelLabel: string }
