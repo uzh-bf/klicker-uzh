@@ -3,9 +3,9 @@ import { createHash } from 'node:crypto'
 import { open, realpath } from 'node:fs/promises'
 import path from 'node:path'
 import { BlobServiceClient } from '@azure/storage-blob'
+import { COURSE_IMAGE_DIGEST_REGEX } from '@/src/lib/sources/courseImageIdentity'
 import type { CourseImage } from '@/src/lib/sources/courseImages'
 
-const DIGEST = /^[a-f0-9]{64}$/
 const PROJECTION_GENERATIONS = ['e4/v3'] as const
 const DEFAULT_PROJECTION_CONTAINER = 'doc-processing'
 const MANIFEST_SIZE_LIMIT = 2_000_000
@@ -57,7 +57,8 @@ export async function readCourseImage(
     extension: string,
     limit: number
   ) {
-    if (!DIGEST.test(hash)) throw new Error('Invalid image reference')
+    if (!COURSE_IMAGE_DIGEST_REGEX.test(hash))
+      throw new Error('Invalid image reference')
     let bytes: Buffer
     if (base) {
       const filename = await realpath(
