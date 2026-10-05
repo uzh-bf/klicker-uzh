@@ -76,13 +76,13 @@
   },
   "scripts": {
     "build": "cross-env NODE_ENV=production next build --turbopack",
-    "build:test": "cross-env NODE_ENV=test next build --turbopack",
+    "build:test": "node ../../util/playwright-next-runtime.mjs build",
     "check": "next typegen && tsc --noEmit",
     "dev": "cross-env NODE_ENV=development next dev --turbopack --port 3004",
     "dev:test": "cross-env NODE_ENV=test next dev --turbopack --port 3004",
     "lint": "eslint .",
     "start": "next start --port 3004",
-    "start:test": "cross-env NODE_ENV=test pnpm start",
+    "start:test": "node ../../util/playwright-next-runtime.mjs start 3004",
     "test:account-usage": "cross-env CHAT_ACCOUNT_USAGE_INTEGRATION=1 vitest run test/account-usage.integration.test.ts",
     "test:run": "vitest run",
     "test:watch": "vitest"

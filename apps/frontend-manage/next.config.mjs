@@ -13,7 +13,8 @@ let nextConfig = {
     NEXT_PUBLIC_ENV: process.env.NEXT_PUBLIC_ENV,
   }),
   async rewrites() {
-    return process.env.NODE_ENV === 'test'
+    return process.env.NODE_ENV === 'test' ||
+      process.env.KLICKER_PLAYWRIGHT_FIXTURES === '1'
       ? [
           {
             source: '/__growthbook__/api/features/sdk-test',
