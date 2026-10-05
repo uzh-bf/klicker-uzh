@@ -6,7 +6,7 @@ const ADAPTIVE_TRANSACTION_RETRIES = 3
 const ADAPTIVE_OPERATION_MAX_WAIT_MS = 10_000
 const ADAPTIVE_OPERATION_TIMEOUT_MS = 60_000
 const ADAPTIVE_RETRY_BASE_DELAY_MS = 25
-const ADAPTIVE_RETRY_MAX_DELAY_MS = 100
+const ADAPTIVE_RETRY_MAX_DELAY_MS = 400
 
 export async function withAdaptiveOperationalTransaction<T>(
   prisma: DB.PrismaClient,
@@ -46,7 +46,9 @@ export function isRetryableAdaptiveTransactionConflict(
   error: unknown
 ): boolean {
   const prismaError = error as {
+    name?: string
     code?: string
+    cause?: { kind?: string; code?: string; originalCode?: string }
     meta?: {
       code?: string
       driverAdapterError?: {
@@ -54,7 +56,11 @@ export function isRetryableAdaptiveTransactionConflict(
       }
     }
   }
-  const driverCause = prismaError.meta?.driverAdapterError?.cause
+  // A failure raised at COMMIT reaches the caller as the bare driver adapter
+  // error rather than wrapped in a Prisma known-request error.
+  const driverCause =
+    prismaError.meta?.driverAdapterError?.cause ??
+    (prismaError.name === 'DriverAdapterError' ? prismaError.cause : undefined)
   const postgresCode =
     prismaError.meta?.code ??
     driverCause?.originalCode ??
@@ -75,10 +81,13 @@ export function isAdaptiveUniqueConstraintConflict(error: unknown): boolean {
 export async function waitForAdaptiveTransactionRetry(
   attempt: number
 ): Promise<void> {
-  const delayMs = Math.min(
+  const ceilingMs = Math.min(
     ADAPTIVE_RETRY_BASE_DELAY_MS * 2 ** attempt,
     ADAPTIVE_RETRY_MAX_DELAY_MS
   )
+  // Equal jitter keeps the exponential floor while de-synchronizing requests
+  // that collided on the same lock, so they do not collide again in lockstep.
+  const delayMs = ceilingMs / 2 + Math.random() * (ceilingMs / 2)
   await new Promise((resolve) => setTimeout(resolve, delayMs))
 }
 

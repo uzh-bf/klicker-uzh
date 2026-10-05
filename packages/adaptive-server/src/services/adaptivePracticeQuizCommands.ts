@@ -15,10 +15,11 @@ import {
   serializeAdaptiveAttemptState as serializeAttemptState,
 } from './adaptivePracticeQuizParticipantViews.js'
 import {
+  lockAdaptiveParticipantQuizAttempts,
   lockAdaptivePracticeQuizConfigForShare,
   lockPracticeQuizForShare,
   persistAdaptivePracticeQuizEstimates,
-  withSerializableRetry,
+  withAdaptiveAttemptTransaction,
 } from './adaptivePracticeQuizRepository.js'
 import { planAdaptivePracticeQuizResponseTransition } from './adaptivePracticeQuizResponseTransition.js'
 import { isAdaptiveRetakeCooldownElapsed } from './adaptivePracticeQuizRetakes.js'
@@ -54,7 +55,7 @@ export async function startAdaptivePracticeQuizAttempt(
   ctx: ContextWithUser
 ): Promise<AdaptivePracticeQuizAttemptState> {
   assertParticipant(ctx)
-  const outcome = await withSerializableRetry(
+  const outcome = await withAdaptiveAttemptTransaction(
     ctx,
     async (prisma) => {
       const targetQuiz = await prisma.practiceQuiz.findUnique({
@@ -67,7 +68,13 @@ export async function startAdaptivePracticeQuizAttempt(
           'ADAPTIVE_QUIZ_NOT_FOUND'
         )
       }
-      await lockAdaptiveLearningCourseEnabled(targetQuiz.courseId, prisma)
+      await lockAdaptiveLearningCourseEnabled(targetQuiz.courseId, prisma, {
+        onMissing: () =>
+          runtimeError(
+            'Adaptive practice quiz was not found.',
+            'ADAPTIVE_QUIZ_NOT_FOUND'
+          ),
+      })
       const lockedQuiz = await lockPracticeQuizForShare(
         practiceQuizId,
         targetQuiz.courseId,
@@ -80,6 +87,11 @@ export async function startAdaptivePracticeQuizAttempt(
         )
       }
       await lockAdaptivePracticeQuizConfigForShare(practiceQuizId, prisma)
+      await lockAdaptiveParticipantQuizAttempts(
+        practiceQuizId,
+        ctx.user.sub,
+        prisma
+      )
       const runtime = await loadAdaptiveRuntime(prisma, practiceQuizId, {
         includeAlgorithmData: true,
       })
@@ -191,7 +203,7 @@ export async function resumeAdaptivePracticeQuizAttempt(
     attemptId,
     ctx.user.sub
   )
-  return withSerializableRetry(ctx, async (prisma) => {
+  return withAdaptiveAttemptTransaction(ctx, async (prisma) => {
     await lockAdaptiveAttemptLifecycle({
       prisma,
       identity,
@@ -236,7 +248,7 @@ export async function restartAdaptivePracticeQuizAttempt(
     ctx.user.sub
   )
 
-  const state = await withSerializableRetry(ctx, async (prisma) => {
+  const state = await withAdaptiveAttemptTransaction(ctx, async (prisma) => {
     await lockAdaptiveAttemptLifecycle({
       prisma,
       identity: candidate,
@@ -337,7 +349,7 @@ export async function submitAdaptivePracticeQuizResponse(
     ctx.user.sub
   )
 
-  const outcome = await withSerializableRetry(ctx, async (prisma) => {
+  const outcome = await withAdaptiveAttemptTransaction(ctx, async (prisma) => {
     await lockAdaptiveAttemptLifecycle({
       prisma,
       identity: candidate,
@@ -593,7 +605,7 @@ export async function abandonAdaptivePracticeQuizAttempt(
     attemptId,
     ctx.user.sub
   )
-  const outcome = await withSerializableRetry(ctx, async (prisma) => {
+  const outcome = await withAdaptiveAttemptTransaction(ctx, async (prisma) => {
     await lockAdaptiveAttemptLifecycle({
       prisma,
       identity,

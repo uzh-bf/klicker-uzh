@@ -1,6 +1,7 @@
 import { testCleanup } from '@klicker-uzh/adaptive-test-host/helpers'
 import { prisma } from '@klicker-uzh/prisma'
 import { registerAdaptivePracticeQuizAttemptFlowTests } from './adaptivePracticeQuizAttemptFlowSuite.js'
+import { registerAdaptivePracticeQuizConcurrencyTests } from './adaptivePracticeQuizConcurrencySuite.js'
 import { registerAdaptivePracticeQuizOutcomeTests } from './adaptivePracticeQuizOutcomesSuite.js'
 import { registerAdaptivePracticeQuizRetentionTests } from './adaptivePracticeQuizRetentionSuite.js'
 import { registerAdaptivePracticeQuizRetryTests } from './adaptivePracticeQuizRetrySuite.js'
@@ -21,4 +22,5 @@ describe('adaptive practice quiz service', () => {
   registerAdaptivePracticeQuizAttemptFlowTests()
   registerAdaptivePracticeQuizOutcomeTests()
   registerAdaptivePracticeQuizRetryTests()
+  registerAdaptivePracticeQuizConcurrencyTests()
 })

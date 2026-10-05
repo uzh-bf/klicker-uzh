@@ -88,6 +88,23 @@ host (`adaptivePracticeQuizSamplingCoverage.ts`). Leaves without responses
 in an attempt are "not tested": the student profile labels them so, and cohort
 distributions count them in `notTestedCount`, never as level estimates.
 
+## Attempt concurrency
+
+Participant attempt commands (start, resume, restart, submit, abandon and
+time-limit expiry) run at READ COMMITTED in `withAdaptiveAttemptTransaction`,
+not SERIALIZABLE. Under SSI, predicate locks on the shared attempt, response
+and estimate tables are page- or relation-granular, so attempts of different
+participants aborted each other with SQLSTATE 40001 when a class worked on one
+quiz together. Correctness instead comes from one lock order: course, quiz and
+config `FOR SHARE`, then a per-participant-and-quiz transaction advisory lock,
+then the attempt `FOR UPDATE`, then (IRT v2 only) the publication exposure rows
+`FOR UPDATE`. The one-in-progress and response-order unique indexes are the
+backstop. The advisory lock serializes one participant's commands on one quiz,
+so double submits and duplicate starts stay safe. IRT v2 selections of one
+publication queue on the exposure lock to keep the exposure ceiling exact.
+Read-mostly snapshots such as cohort results keep `withSerializableRetry`.
+New attempt writers must take the same locks in that order.
+
 ## Verification boundaries
 
 Private engine tests verify calculations. Public tests verify authorization,
