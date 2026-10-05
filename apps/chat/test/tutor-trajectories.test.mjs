@@ -159,7 +159,7 @@ test('numerical sidecar obligations must reference corpus assessment turns', asy
   }
 })
 
-const SYNTHETIC_MODEL = 'gpt-5.6-luna'
+const SYNTHETIC_MODEL = 'gpt-6-luna'
 
 const TURN_RECEIPT_FIELDS = [
   'arm',
@@ -985,7 +985,7 @@ test('runner writes one verified receipt per turn and keeps the ledger honest', 
       assert.equal(summary.submittedTurns, 3)
       assert.equal(summary.creditsUsed, 1.25)
       assert.equal(summary.uncertain, false)
-      assert.equal(summary.model, 'gpt-5.6-luna')
+      assert.equal(summary.model, 'gpt-6-luna')
       assert.deepEqual(
         JSON.parse(await readFile(paths.budget, 'utf8')),
         budgetLedger({ submittedTurns: 3, creditsUsed: 1.25 })
