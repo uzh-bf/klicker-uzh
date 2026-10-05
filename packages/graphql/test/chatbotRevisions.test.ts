@@ -904,4 +904,89 @@ describe('chatbot authoring revision transitions', () => {
       )
     ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
   })
+
+  it('materializes an approved custom mode into the live column', async () => {
+    const bot = await seed()
+    const saved = await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 0,
+        input: {
+          customModeConfig: {
+            modes: [
+              {
+                name: 'Interview coach',
+                description: 'Practices interview questions',
+                personaText: 'You are an interview coach.',
+              },
+            ],
+          },
+        },
+      },
+      owner
+    )
+    const key = saved?.authoringRevision?.customModeConfig?.modes[0]?.key
+    expect(key).toMatch(/^cm_/)
+    // A published chatbot keeps serving its live configuration until approval.
+    expect((await read(bot.id)).customModeConfig).toBeNull()
+
+    await submit(bot.id, 1)
+    expect(
+      await service.getChatbotPendingRevision({ id: bot.id }, admin)
+    ).toMatchObject({
+      customModeConfig: {
+        modes: [
+          {
+            key,
+            name: 'Interview coach',
+            description: 'Practices interview questions',
+            personaText: 'You are an interview coach.',
+          },
+        ],
+      },
+    })
+
+    await service.approveChatbotRevision(
+      { id: bot.id, expectedRevisionVersion: 2 },
+      admin
+    )
+    const approved = await read(bot.id)
+    expect(approved.draftConfig).toBeNull()
+    expect(approved.customModeConfig).toMatchObject({
+      modes: [
+        {
+          key,
+          name: 'Interview coach',
+          description: 'Practices interview questions',
+          personaText: 'You are an interview coach.',
+        },
+      ],
+    })
+  })
+
+  it('keeps a rejected custom mode out of the live column', async () => {
+    const bot = await seed()
+    await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 0,
+        input: {
+          customModeConfig: { modes: [{ name: 'Draft mode' }] },
+        },
+      },
+      owner
+    )
+    await submit(bot.id, 1)
+    await service.rejectChatbotRevision(
+      { id: bot.id, expectedRevisionVersion: 2, comment: 'Please revise' },
+      admin
+    )
+
+    const rejected = await read(bot.id)
+    expect(rejected.customModeConfig).toBeNull()
+    expect(rejected.revisionStatus).toBe(ChatbotStatus.REJECTED)
+    expect(rejected.draftConfig).toMatchObject({
+      customModeConfig: { modes: [{ name: 'Draft mode' }] },
+    })
+  })
 })

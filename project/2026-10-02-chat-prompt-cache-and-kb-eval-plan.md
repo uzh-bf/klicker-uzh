@@ -62,7 +62,7 @@ also with a merge commit.
 This plan also asks for two conditional merges, needed because A5, B3's
 canary and B6 run against staging:
 
-1. The Part A PR (A2, A3 and the Klicker half of A4) and #6360 with B2:
+1. The Part A PR (A2, A3 and the Klicker half of A4) and #6360:
    merge each into `v3-ai` with a merge commit, once exact-head CI and the
    final AI review pass.
 2. Then merge the `v3-ai` -> `v3-audit` sync PR with a merge commit, once its
@@ -190,10 +190,12 @@ about 15 requests per minute per key and prefix before misses rise.
   (read-only DB query: KB, resource count, linked chatbots). Use a dedicated
   synthetic staging participant with credit headroom. Credentials go through
   `rs-infisical-operator`.
-- **B2 Second router model.** Add registry model `auto-v2` with
-  `deploymentId: klickeruzh/azure/auto-router-v2` to the staging values and
-  allow-list `auto` and `auto-v2` on the evaluation chatbot. Check that credit
-  and admission code do not special-case the literal id `auto`.
+- **B2 Router comparison.** Staging `auto` itself now routes through
+  `klickeruzh/azure/auto-router-v2` (#6330). A staging-only second registry
+  model is dropped (ruling 2026-10-05): the stg/prd registry parity test
+  requires the same model menu in both environments. Compare v1 and v2
+  routing at the gateway with `evaluation/routing` (`bench.py`), and run the
+  KB-grounded quality evaluation single-arm on staging `auto` (v2).
 - **B3 Remote target.** Let `apps/chat/scripts/klicker-evaluation-target.mjs`
   accept an explicit HTTPS origin allow-list through an opt-in variable, and
   take the chatbot id from `KLICKER_EVAL_CHATBOT_ID`. Acceptance: one canary
