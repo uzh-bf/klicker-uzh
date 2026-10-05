@@ -44,6 +44,10 @@ export type AdaptiveReadinessIssueLike = {
     leafOrder?: number | null
     levelLabel?: string | null
     levelOrder?: number | null
+    allocatedQuestionCount?: number | null
+    leafCount?: number | null
+    coveredLeafCount?: number | null
+    questionsPerLeaf?: number | null
   } | null
 }
 
@@ -183,6 +187,18 @@ export function formatAdaptiveReadinessIssue(
         {
           requiredQuestionCount: p.requiredQuestionCount ?? 0,
           totalQuestionCap: p.totalQuestionCap ?? 0,
+        }
+      )
+    case 'ADAPTIVE_SUBCOMPETENCE_SAMPLING':
+    case 'ADAPTIVE_SUBCOMPETENCE_SAMPLING_UNREACHABLE':
+      return t(
+        `manage.activityWizard.adaptive.readiness.issues.${issue.code}`,
+        {
+          rootName: p.rootName ?? p.nodeName ?? '',
+          allocatedQuestionCount: p.allocatedQuestionCount ?? 0,
+          leafCount: p.leafCount ?? 0,
+          coveredLeafCount: p.coveredLeafCount ?? 0,
+          questionsPerLeaf: p.questionsPerLeaf ?? 0,
         }
       )
     case 'ADAPTIVE_CLASSIFICATION_BANDS_UNREACHABLE':

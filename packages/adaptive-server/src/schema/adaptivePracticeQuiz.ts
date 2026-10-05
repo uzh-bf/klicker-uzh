@@ -311,6 +311,12 @@ export function createAdaptivePracticeQuizSchema(
         leafOrder: t.exposeInt('leafOrder', { nullable: true }),
         levelLabel: t.exposeString('levelLabel', { nullable: true }),
         levelOrder: t.exposeInt('levelOrder', { nullable: true }),
+        allocatedQuestionCount: t.exposeInt('allocatedQuestionCount', {
+          nullable: true,
+        }),
+        leafCount: t.exposeInt('leafCount', { nullable: true }),
+        coveredLeafCount: t.exposeInt('coveredLeafCount', { nullable: true }),
+        questionsPerLeaf: t.exposeInt('questionsPerLeaf', { nullable: true }),
       }),
     })
   const AdaptiveReadinessIssueType = AdaptiveReadinessIssueRef.implement({

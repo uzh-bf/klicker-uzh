@@ -9,6 +9,15 @@ export type AdaptiveEstimatedLevelRange = {
   upperLevelLabel: string
 }
 
+/**
+ * A node without any response in this attempt was not tested (for example a
+ * subcompetence the student was not served under subcompetence sampling). It
+ * has no estimate and must not be read as a low level.
+ */
+export function isAdaptiveProfileNodeNotTested(responseCount: number) {
+  return !(Number.isFinite(responseCount) && responseCount > 0)
+}
+
 /** Presentation only: this does not turn a provisional posterior into a classification. */
 export function getAdaptiveProfileIndication({
   responseCount,

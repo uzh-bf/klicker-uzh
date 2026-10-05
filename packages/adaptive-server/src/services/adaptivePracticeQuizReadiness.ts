@@ -34,6 +34,10 @@ import type {
   AdaptiveCoverageReadiness,
   AdaptiveReadinessIssue,
 } from './adaptivePracticeQuizReadinessTypes.js'
+import {
+  planAdaptiveSubcompetenceSampling,
+  resolveAdaptiveSubcompetenceSampling,
+} from './adaptivePracticeQuizSubcompetenceSampling.js'
 
 export {
   ADAPTIVE_PLANNING_BUDGET_MINUTES,
@@ -102,6 +106,13 @@ export async function validateAdaptiveQuizReadiness({
   const rootBalancedPlacement = settings.rootBalancedPlacement
   const strictProductReadiness =
     isAdaptiveProductPreset(settings.preset) && !rootBalancedPlacement
+  const subcompetenceSampling =
+    settings.preset === 'DIAGNOSTIC' &&
+    !rootBalancedPlacement &&
+    settings.subcompetenceSampling === true
+  // Root and global minimum-evidence conflicts of a sampling quiz are resolved
+  // after the per-root allocation is known.
+  const deferredSamplingIssues: AdaptiveReadinessIssue[] = []
   const childrenByParent = new Map<number, AdaptiveConfiguredNode[]>()
 
   for (const node of nodes) {
@@ -346,7 +357,12 @@ export async function validateAdaptiveQuizReadiness({
         : null,
     ])
     if (effectiveCap !== null && effectiveCap < required) {
-      const issues = strictProductReadiness ? errors : warnings
+      const issues =
+        subcompetenceSampling && node.parentId === null
+          ? deferredSamplingIssues
+          : strictProductReadiness
+            ? errors
+            : warnings
       issues.push({
         code: 'ADAPTIVE_MINIMUM_EVIDENCE_CAPPED',
         message: `Node ${node.name} requires ${required} minimum-evidence question${required === 1 ? '' : 's'}, but its effective cap is ${effectiveCap}.`,
@@ -366,9 +382,9 @@ export async function validateAdaptiveQuizReadiness({
     0
   )
   if (settings.totalQuestionCap < totalMinimumEvidence) {
-    const issues = rootBalancedPlacement
-      ? errors
-      : strictProductReadiness
+    const issues = subcompetenceSampling
+      ? deferredSamplingIssues
+      : rootBalancedPlacement || strictProductReadiness
         ? errors
         : warnings
     issues.push({
@@ -419,6 +435,20 @@ export async function validateAdaptiveQuizReadiness({
     minimumEvidenceByNode,
     totalQuestionCap: settings.totalQuestionCap,
   })
+  if (subcompetenceSampling) {
+    const sampling = resolveAdaptiveSubcompetenceSampling({
+      plans: planAdaptiveSubcompetenceSampling({
+        roots: enabledRoots,
+        enabledLeaves,
+        rootByNode,
+        rootAllocations,
+        minQuestionsPerLeaf: settings.minQuestionsPerLeaf,
+      }),
+      deferredIssues: deferredSamplingIssues,
+    })
+    errors.push(...sampling.errors)
+    warnings.push(...sampling.warnings)
+  }
   const thetaGrid = buildThetaGrid(thetaRange, levels, enabledAssignments)
   const allocatedByRoot = enabledRoots
     .map((root) => ({

@@ -47,6 +47,13 @@ export type AdaptiveCohortNodeDistribution = {
   poolLimitedCount: number | null
   researchOnlyCount: number | null
   insufficientDataCount: number | null
+  /**
+   * Attempts without any response in this node (e.g. a subcompetence a
+   * student was not served under subcompetence sampling). A subset of
+   * insufficientDataCount; never counted as an ability estimate. Absent in
+   * cohort snapshots written before this field existed.
+   */
+  notTestedCount?: number | null
   buckets: AdaptiveCohortLevelBucket[]
 }
 
@@ -147,6 +154,7 @@ export type AdaptiveCohortAccumulator = {
   definitions: DistributionDefinition[]
   distributions: Array<{
     insufficientDataCount: number
+    notTestedCount: number
     levelCounts: Map<number, number>
     determinedCounts: Map<number, number>
     classifications: Record<DB.AdaptiveResultStatus, number>
@@ -199,6 +207,7 @@ export function createAdaptiveCohortAccumulator(
     definitions,
     distributions: definitions.map(() => ({
       insufficientDataCount: 0,
+      notTestedCount: 0,
       levelCounts: new Map(),
       determinedCounts: new Map(),
       classifications: emptyClassificationCounts(),
@@ -291,6 +300,12 @@ export function accumulateAdaptiveCohortAttempt(
       estimate.standardError === null
     ) {
       metric.insufficientDataCount += 1
+    }
+    if (
+      definition.nodeId !== null &&
+      (!estimate || estimate.responseCount === 0)
+    ) {
+      metric.notTestedCount += 1
     }
     // Each estimate uses its own interval and descendant-leaf coverage.
     const usable =
@@ -499,6 +514,12 @@ function finalizeDistributions(
         ? null
         : (release.value?.researchOnlyCount ?? null),
       insufficientDataCount: withheld ? null : insufficientDataRelease.value,
+      // Not-tested attempts are a subset of the insufficient-data partition
+      // and follow its release decision.
+      notTestedCount:
+        withheld || insufficientDataRelease.value === null
+          ? null
+          : metric.notTestedCount,
       buckets: withheld ? [] : (release.value?.buckets ?? []),
     }
   })

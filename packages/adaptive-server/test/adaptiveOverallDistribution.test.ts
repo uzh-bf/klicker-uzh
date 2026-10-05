@@ -266,4 +266,76 @@ describe('overall estimated level distribution', () => {
       ).toMatchObject({ count: 1, determinedCount })
     }
   })
+  it('reports untested subcompetences separately and never as estimates', () => {
+    const sampled = {
+      ...runtime,
+      tree: {
+        nodes: [
+          { id: 1, parentId: null, name: 'Root', depth: 1, order: 0 },
+          { id: 11, parentId: 1, name: 'Tested', depth: 2, order: 0 },
+          { id: 12, parentId: 1, name: 'Sampled out', depth: 2, order: 1 },
+        ],
+      },
+      algorithm: {
+        ...runtime.algorithm,
+        nodes: [
+          [1, null, 'COMPETENCE'],
+          [11, 1, 'SUBCOMPETENCE'],
+          [12, 1, 'SUBCOMPETENCE'],
+        ].map(([id, parentId, kind], order) => ({
+          id,
+          parentId,
+          kind,
+          enabled: true,
+          depth: parentId === null ? 1 : 2,
+          order,
+          weight: parentId === null ? 1 : null,
+          questionCap: null,
+        })),
+        settings: { ...runtime.algorithm.settings, minQuestionsPerLeaf: 2 },
+      },
+    } as unknown as AdaptiveCohortRuntime
+    const node = (
+      nodeId: number,
+      nodeKind: DB.AdaptiveEstimateNodeKind,
+      responseCount: number
+    ) => ({
+      nodeKind,
+      nodeId,
+      theta: responseCount > 0 ? 0 : null,
+      standardError: responseCount > 0 ? 0.2 : null,
+      responseCount,
+      levelId: responseCount > 0 ? 2 : null,
+      resultStatus: null,
+    })
+    const accumulator = createAdaptiveCohortAccumulator(sampled)
+    for (let index = 0; index < 3; index++) {
+      const row = attempt(0)
+      row.estimates.push(
+        node(1, DB.AdaptiveEstimateNodeKind.COMPETENCE, 4),
+        node(11, DB.AdaptiveEstimateNodeKind.SUBCOMPETENCE, 4)
+      )
+      // The second subcompetence has a zero-response estimate in one attempt
+      // and no estimate at all in the others.
+      if (index === 0) {
+        row.estimates.push(
+          node(12, DB.AdaptiveEstimateNodeKind.SUBCOMPETENCE, 0)
+        )
+      }
+      accumulateAdaptiveCohortAttempt(sampled, accumulator, row, [])
+    }
+    const byNode = new Map(
+      finalizeAdaptiveCohort(sampled, accumulator).distributions.map(
+        (distribution) => [distribution.nodeId, distribution]
+      )
+    )
+    expect(byNode.get(12)).toMatchObject({
+      notTestedCount: 3,
+      insufficientDataCount: 3,
+    })
+    expect(byNode.get(12)!.buckets.every(({ count }) => count === 0)).toBe(true)
+    expect(byNode.get(11)).toMatchObject({ notTestedCount: 0 })
+    expect(byNode.get(1)).toMatchObject({ notTestedCount: 0 })
+    expect(byNode.get(null)).toMatchObject({ notTestedCount: 0 })
+  })
 })

@@ -62,6 +62,23 @@ before recomposing. Adaptive migrations belong in the public persistence package
 The migration and analytics images copy these public fragments directly; neither
 needs a private checkout.
 
+## Diagnostic subcompetence sampling
+
+IRT_V1 Diagnostic quizzes may publish with a total question cap below the
+all-leaf minimum evidence (`enabled leaves × minQuestionsPerLeaf`). Readiness
+then reports one `ADAPTIVE_SUBCOMPETENCE_SAMPLING` warning per sampled root
+instead of the blocking minimum-evidence errors: each root keeps its
+weight-based share of the cap, and each attempt covers as many leaf blocks
+of `minQuestionsPerLeaf` as that share allows. It remains blocking
+(`ADAPTIVE_SUBCOMPETENCE_SAMPLING_UNREACHABLE`) when a root cannot receive one
+block. Research, Placement and IRT v2 readiness are unchanged.
+
+This relies on Catalyst V1 routing that reserves the per-root shares and serves
+a random subset of leaf blocks per attempt. An engine without it serves roots in
+tree order, so later roots can receive no questions. Leaves without responses
+in an attempt are "not tested": the student profile labels them so, and cohort
+distributions count them in `notTestedCount`, never as level estimates.
+
 ## Verification boundaries
 
 Private engine tests verify calculations. Public tests verify authorization,

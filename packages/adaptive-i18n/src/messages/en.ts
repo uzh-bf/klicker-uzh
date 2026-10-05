@@ -238,9 +238,10 @@ const messages = {
             'Your answers support this estimate. The shaded range shows the remaining uncertainty.',
           uncertainEstimate:
             'Your level is still uncertain. More answers in this area would help narrow the range.',
-          noResponses: 'No questions answered in this area.',
+          noResponses: 'Not tested in this attempt.',
+          notTested: 'Not tested',
           evidenceHelp:
-            'Each row uses answers from that area. After a few answers, the indication is tentative. The shaded range shows the uncertainty: a wider range means your level is less certain. Areas without answers have no estimate.',
+            'Each row uses answers from that area. After a few answers, the indication is tentative. The shaded range shows the uncertainty: a wider range means your level is less certain. Areas marked “Not tested” received no questions in this attempt and have no estimate.',
           title: 'Competence profile',
           overall: 'Overall',
           responses: '{count, plural, one {# response} other {# responses}}',
@@ -588,6 +589,10 @@ const messages = {
               'The competence "{nodeName}" needs at least four available questions and a question limit of four or more.',
             ADAPTIVE_GLOBAL_MINIMUM_EVIDENCE_CAPPED:
               'The enabled leaves require {requiredQuestionCount} questions, but the total cap is {totalQuestionCap}.',
+            ADAPTIVE_SUBCOMPETENCE_SAMPLING:
+              'Each student is tested on about {coveredLeafCount} of {leafCount} {rootName} subcompetences ({allocatedQuestionCount} questions, {questionsPerLeaf} per subcompetence). The {rootName} result uses all of a student’s answers in this competence; subcompetences a student did not receive are shown as not tested.',
+            ADAPTIVE_SUBCOMPETENCE_SAMPLING_UNREACHABLE:
+              'The competence "{rootName}" receives only {allocatedQuestionCount} of the total questions, fewer than the {questionsPerLeaf} needed to test one subcompetence. Increase the total question cap, lower the minimum questions per subcompetence, or adjust the competence weights.',
             ADAPTIVE_CLASSIFICATION_BANDS_UNREACHABLE:
               'The planning estimate supports a precise result in {classifiableLevelCount} of {levelCount} levels for "{nodeName}". With this question limit, some results may remain uncertain.',
             ADAPTIVE_TIME_BUDGET_EXCEEDED:
@@ -714,6 +719,8 @@ const messages = {
             '{count} results with an estimate for this area. Bar lengths show their share of these results.',
           excluded:
             '{count} results without a usable estimate for this area are not shown.',
+          notTested:
+            '{count, plural, one {# result did not test this area} other {# results did not test this area}} (no questions were served, for example because of subcompetence sampling). Untested results are not counted as estimates.',
         },
         distributionStatuses: {
           betweenLevels: 'Between levels',

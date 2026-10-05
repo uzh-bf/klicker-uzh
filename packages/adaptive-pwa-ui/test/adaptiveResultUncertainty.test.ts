@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   getAdaptiveEstimatedLevelRange,
   getAdaptiveProfileIndication,
+  isAdaptiveProfileNodeNotTested,
 } from '../src/components/practiceQuiz/adaptive/adaptiveResultUncertainty'
 
 const levelBands = [
@@ -88,6 +89,27 @@ describe('provisional profile indication', () => {
     ).toBeNull()
     expect(
       getAdaptiveProfileIndication({ ...estimate, position: Infinity })
+    ).toBeNull()
+  })
+})
+
+describe('not-tested profile nodes', () => {
+  it('treats nodes without responses in the attempt as not tested', () => {
+    expect(isAdaptiveProfileNodeNotTested(0)).toBe(true)
+    expect(isAdaptiveProfileNodeNotTested(Number.NaN)).toBe(true)
+    expect(isAdaptiveProfileNodeNotTested(1)).toBe(false)
+  })
+
+  it('never derives a level indication for a not-tested node', () => {
+    expect(
+      getAdaptiveProfileIndication({
+        responseCount: 0,
+        classification: 'INSUFFICIENT_EVIDENCE',
+        position: 0.2,
+        lowerPosition: 0.1,
+        upperPosition: 0.3,
+        levelBands,
+      })
     ).toBeNull()
   })
 })

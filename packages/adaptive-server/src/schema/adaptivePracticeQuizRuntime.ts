@@ -475,6 +475,7 @@ export function createAdaptivePracticeQuizRuntimeSchema(
         insufficientDataCount: t.exposeInt('insufficientDataCount', {
           nullable: true,
         }),
+        notTestedCount: t.exposeInt('notTestedCount', { nullable: true }),
         classifiedCount: t.exposeInt('classifiedCount', { nullable: true }),
         betweenLevelsCount: t.exposeInt('betweenLevelsCount', {
           nullable: true,
