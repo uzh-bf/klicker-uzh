@@ -1,4 +1,12 @@
+import { COURSE_IMAGE_DIGEST_PATTERN } from '@/src/lib/sources/courseImageIdentity'
 import type { MarkdownAstNode } from './remarkCitationMarkers'
+
+const placementRegex = new RegExp(
+  String.raw`^( {0,3})\[course-image:(${COURSE_IMAGE_DIGEST_PATTERN})\][ \t]*$`
+)
+const paragraphRegex = new RegExp(
+  String.raw`^\[course-image:(${COURSE_IMAGE_DIGEST_PATTERN})\][ \t]*$`
+)
 
 export const courseImageMarker = (assetId: string) =>
   `[course-image:${assetId}]`
@@ -44,7 +52,7 @@ export function courseImagePlacements(text: string): string[] {
       fence = { char: delimiter[0]!, length: delimiter.length }
       continue
     }
-    const match = /^( {0,3})\[course-image:([a-f0-9]{64})\][ \t]*$/.exec(line)
+    const match = placementRegex.exec(line)
     if (
       match &&
       !isNestedListPlacement(lines, i, match[1]!.length) &&
@@ -73,9 +81,7 @@ export function remarkCourseImages() {
       if (node.type !== 'paragraph' || node.children?.length !== 1) continue
       const child = node.children[0]!
       if (child.type !== 'text') continue
-      const match = /^\[course-image:([a-f0-9]{64})\][ \t]*$/.exec(
-        child.value ?? ''
-      )
+      const match = paragraphRegex.exec(child.value ?? '')
       if (!match) continue
       const assetId = match[1]!
       node.data = {

@@ -1,6 +1,7 @@
 import { type ToolSet, tool } from 'ai'
 import { z } from 'zod'
 import { courseImageMarker } from '@/src/lib/markdown/remarkCourseImages'
+import { COURSE_IMAGE_DIGEST_REGEX } from '@/src/lib/sources/courseImageIdentity'
 import {
   COURSE_IMAGE_LIMITS,
   COURSE_IMAGE_TOOL,
@@ -71,7 +72,7 @@ export function withCourseImageTool(
         ),
       asset_id: z
         .string()
-        .regex(/^[a-f0-9]{64}$/)
+        .regex(COURSE_IMAGE_DIGEST_REGEX)
         .nullable()
         .describe(
           'Use null for definitions, simple facts, text-only requests, or unsupported topics, EVEN if a retrieved figure mentions the term. Otherwise choose a retrieved asset_id that clarifies the requested relationship/process, or matches an explicit image request.'

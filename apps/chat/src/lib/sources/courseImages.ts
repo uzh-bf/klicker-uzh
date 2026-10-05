@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { COURSE_IMAGE_DIGEST_REGEX } from './courseImageIdentity'
 import {
   type ChatSourcePart,
   isDocQueryToolName,
@@ -16,7 +17,7 @@ export const COURSE_IMAGE_LIMITS = {
   candidates: 30,
   selectionsPerResponse: 3,
 } as const
-const digest = z.string().regex(/^[a-f0-9]{64}$/)
+const digest = z.string().regex(COURSE_IMAGE_DIGEST_REGEX)
 const courseImageCaptionSchema = z.object({
   ref: z
     .string()
