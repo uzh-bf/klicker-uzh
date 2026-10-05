@@ -22,7 +22,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useChatUi } from '../components/chat-ui-context'
 import { ModeOptionsProvider } from '../components/mode-options-context'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
-import { resolveSelectedMode } from '../lib/config/modes'
+import { type ChatModeOptions, resolveSelectedMode } from '../lib/config/modes'
 
 const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
 
@@ -32,7 +32,7 @@ export function RuntimeProvider({
   children,
 }: Readonly<{
   chatbotId: string
-  initialModeOptions: Record<string, string>
+  initialModeOptions: ChatModeOptions
   children: React.ReactNode
 }>) {
   const { embedded } = useChatUi()
