@@ -5,6 +5,7 @@ import {
   getAdaptiveRangeWidth,
   getAdaptiveRoughEstimateDisplay,
   getAdaptiveWidthCertainty,
+  showsAdaptiveLevelTrack,
 } from '../src/components/practiceQuiz/adaptive/adaptiveProfileCertainty'
 
 const LABELS = [
@@ -152,6 +153,53 @@ describe('row certainty respects the classification', () => {
     expect(
       getAdaptiveProfileCertainty({ classification: 'CLASSIFIED', width: null })
     ).toBeNull()
+  })
+})
+
+describe('marker track rule', () => {
+  it('shows the track only for high or medium certainty', () => {
+    expect(showsAdaptiveLevelTrack('HIGH')).toBe(true)
+    expect(showsAdaptiveLevelTrack('MEDIUM')).toBe(true)
+    expect(showsAdaptiveLevelTrack('LOW')).toBe(false)
+    expect(showsAdaptiveLevelTrack(null)).toBe(false)
+  })
+  it('applies to every row type through the classification bounds', () => {
+    // Determined nested level with a wide range: MEDIUM -> track.
+    expect(
+      showsAdaptiveLevelTrack(
+        getAdaptiveProfileCertainty({
+          classification: 'CLASSIFIED',
+          width: width('A2.3', 'B2.3'),
+        })
+      )
+    ).toBe(true)
+    // Rough estimate, even with a narrow range: LOW -> text only.
+    expect(
+      showsAdaptiveLevelTrack(
+        getAdaptiveProfileCertainty({
+          classification: 'INSUFFICIENT_EVIDENCE',
+          width: width('B2.2', 'C1.1'),
+        })
+      )
+    ).toBe(false)
+    // Between levels with a wide range: LOW -> text only.
+    expect(
+      showsAdaptiveLevelTrack(
+        getAdaptiveProfileCertainty({
+          classification: 'BETWEEN_LEVELS',
+          width: width('A2.3', 'C1.1'),
+        })
+      )
+    ).toBe(false)
+    // Not tested / no estimate: no width -> text only.
+    expect(
+      showsAdaptiveLevelTrack(
+        getAdaptiveProfileCertainty({
+          classification: 'CLASSIFIED',
+          width: null,
+        })
+      )
+    ).toBe(false)
   })
 })
 

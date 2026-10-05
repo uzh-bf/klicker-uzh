@@ -1,5 +1,8 @@
+import { faChevronRight } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type { FAdaptivePracticeQuizAttemptStateFragment } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import {
   ADAPTIVE_COMPETENCE_MARKER_COLORS,
   getAdaptiveLevelBandColors,
@@ -19,7 +22,43 @@ const WIDTH = 640
 const MARGIN = { top: 8, right: 132, bottom: 22, left: 56 }
 
 // Rendered only inside the testing box (ADAPTIVE_QUIZ_SHOW_SOLUTIONS=true).
+// Collapsed by default so the solution stays the first thing testers see.
 function AdaptiveTestingHistory({
+  history,
+}: {
+  history: NonNullable<TestingHistory>
+}) {
+  const t = useTranslations()
+  const [open, setOpen] = useState(false)
+  return (
+    <details
+      className="min-w-0"
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+      data-cy="adaptive-testing-history"
+    >
+      <summary
+        className="focus-visible:outline-primary-80 flex cursor-pointer list-none items-center gap-2 rounded-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden"
+        data-cy="adaptive-testing-history-toggle"
+      >
+        <FontAwesomeIcon
+          icon={faChevronRight}
+          className={`h-3 w-3 text-slate-500 transition-transform motion-reduce:transition-none ${
+            open ? 'rotate-90' : ''
+          }`}
+          aria-hidden="true"
+        />
+        {t('pwa.practiceQuiz.adaptive.question.testingHistorySummary', {
+          count: history.entries.length,
+        })}
+      </summary>
+      <div className="mt-2">
+        <AdaptiveTestingHistoryContent history={history} />
+      </div>
+    </details>
+  )
+}
+
+function AdaptiveTestingHistoryContent({
   history,
 }: {
   history: NonNullable<TestingHistory>
@@ -52,10 +91,7 @@ function AdaptiveTestingHistory({
   )
 
   return (
-    <div className="space-y-2" data-cy="adaptive-testing-history">
-      <h4 className="font-medium">
-        {t('pwa.practiceQuiz.adaptive.question.testingHistory')}
-      </h4>
+    <div className="space-y-2" data-cy="adaptive-testing-history-content">
       <div className="max-h-72 overflow-auto rounded border border-amber-200 bg-white">
         <table className="w-full text-left text-xs tabular-nums">
           <thead className="sticky top-0 bg-amber-100 text-slate-700">
