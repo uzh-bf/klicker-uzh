@@ -229,7 +229,8 @@ export function isCourseSearchTool(name: string) {
 }
 
 /**
- * The message's own Sources card for a displayed figure.
+ * Resolves every unambiguous figure-to-source relationship in one pass.
+ * Compute once per message and share the map across all figure cards.
  *
  * The persisted `show_course_image` result carries no reference to the
  * retrieval it came from, so the identity is re-derived from the same
@@ -242,22 +243,6 @@ export function isCourseSearchTool(name: string) {
  * record does not become a source, whose records disagree about the identity,
  * or whose identity is not among the message's sources (a source past the
  * `MAX_SOURCES` cap, for instance) gets no citation rather than a wrong one.
- */
-export function matchCourseImageSource(
-  image: Pick<CourseImage, 'asset_id'>,
-  sources: readonly ChatSource[],
-  messageParts: readonly ChatSourcePart[]
-): ChatSource | undefined {
-  return courseImageSourceMap(sources, messageParts).get(image.asset_id)
-}
-
-/**
- * Resolves every unambiguous figure-to-source relationship in one pass.
- *
- * This is intended to be computed once per message and shared by all figure
- * cards. It retains the same fail-closed behavior as `matchCourseImageSource`:
- * duplicate source identities, conflicting retrieval records, and assets that
- * point outside the displayed source list are omitted.
  */
 export function courseImageSourceMap(
   sources: readonly ChatSource[],

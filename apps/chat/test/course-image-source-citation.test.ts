@@ -5,7 +5,6 @@ import {
   type CourseImage,
   courseImageCandidates,
   courseImageSourceMap,
-  matchCourseImageSource,
 } from '../src/lib/sources/courseImages'
 import {
   type ChatSourcePart,
@@ -50,7 +49,7 @@ describe('course image source citation', () => {
     const sources = sourcesFor(parts)
     expect(sources).toHaveLength(1)
 
-    const match = matchCourseImageSource(image, sources, parts)
+    const match = courseImageSourceMap(sources, parts).get(image.asset_id)
     expect(match?.index).toBe(1)
     expect(match?.title).toBe('Synthetic learning cycle')
   })
@@ -72,7 +71,9 @@ describe('course image source citation', () => {
     const sources = sourcesFor(parts)
     expect(sources).toHaveLength(2)
 
-    expect(matchCourseImageSource(image, sources, parts)?.index).toBe(2)
+    expect(
+      courseImageSourceMap(sources, parts).get(image.asset_id)?.index
+    ).toBe(2)
   })
 
   it('keeps same-titled documents apart', () => {
@@ -95,8 +96,12 @@ describe('course image source citation', () => {
       'Synthetic learning cycle',
     ])
 
-    expect(matchCourseImageSource(images[0]!, sources, parts)?.index).toBe(1)
-    expect(matchCourseImageSource(images[1]!, sources, parts)?.index).toBe(2)
+    expect(
+      courseImageSourceMap(sources, parts).get(images[0]!.asset_id)?.index
+    ).toBe(1)
+    expect(
+      courseImageSourceMap(sources, parts).get(images[1]!.asset_id)?.index
+    ).toBe(2)
     expect(
       [...courseImageSourceMap(sources, parts)].map(([assetId, source]) => [
         assetId,
@@ -117,7 +122,7 @@ describe('course image source citation', () => {
     const parts = [docQueryPart(payload)]
 
     expect(
-      matchCourseImageSource(orphan, sourcesFor(parts), parts)
+      courseImageSourceMap(sourcesFor(parts), parts).get(orphan.asset_id)
     ).toBeUndefined()
   })
 
@@ -126,7 +131,7 @@ describe('course image source citation', () => {
     const image = figureFrom(payload)
     const parts = [selectionPart(image)]
 
-    expect(matchCourseImageSource(image, [], parts)).toBeUndefined()
+    expect(courseImageSourceMap([], parts).get(image.asset_id)).toBeUndefined()
   })
 
   it('omits the citation when retrievals disagree about the identity', () => {
@@ -140,7 +145,9 @@ describe('course image source citation', () => {
     const sources = sourcesFor(parts)
     expect(sources).toHaveLength(2)
 
-    expect(matchCourseImageSource(image, sources, parts)).toBeUndefined()
+    expect(
+      courseImageSourceMap(sources, parts).get(image.asset_id)
+    ).toBeUndefined()
   })
 
   it('ignores errored retrieval parts when resolving the identity', () => {
@@ -153,8 +160,8 @@ describe('course image source citation', () => {
       { ...docQueryPart(failing), isError: true },
     ]
 
-    expect(matchCourseImageSource(image, sourcesFor(parts), parts)?.index).toBe(
-      1
-    )
+    expect(
+      courseImageSourceMap(sourcesFor(parts), parts).get(image.asset_id)?.index
+    ).toBe(1)
   })
 })
