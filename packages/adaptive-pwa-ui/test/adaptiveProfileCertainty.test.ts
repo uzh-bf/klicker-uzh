@@ -220,14 +220,14 @@ describe('rough estimate display', () => {
       })
     ).toEqual({ kind: 'notEnoughAnswers' })
   })
-  it('falls back to the main level when moderately wide', () => {
+  it('keeps the sublevel when moderately wide', () => {
     expect(
       getAdaptiveRoughEstimateDisplay({
         levelLabel: 'B1.2',
         width: width('B1.1', 'B2.1'),
         levelBands: cefr,
       })
-    ).toEqual({ kind: 'mainLevel', levelLabel: 'B1' })
+    ).toEqual({ kind: 'level', levelLabel: 'B1.2' })
   })
   it('keeps the sublevel when the range is narrow', () => {
     expect(
@@ -274,5 +274,17 @@ describe('main level segments', () => {
         { label: 'Advanced' },
       ]).map((segment) => segment.label)
     ).toEqual(['Novice', 'Advanced'])
+  })
+})
+
+describe('finished estimate certainty', () => {
+  it('follows the width but never exceeds MEDIUM', async () => {
+    const { getAdaptiveEstimatedCertainty } = await import(
+      '../src/components/practiceQuiz/adaptive/adaptiveProfileCertainty'
+    )
+    expect(getAdaptiveEstimatedCertainty(width('B1.2', 'B1.3'))).toBe('MEDIUM')
+    expect(getAdaptiveEstimatedCertainty(width('B1.1', 'B2.2'))).toBe('MEDIUM')
+    expect(getAdaptiveEstimatedCertainty(width('A2.1', 'C1.3'))).toBe('LOW')
+    expect(getAdaptiveEstimatedCertainty(null)).toBeNull()
   })
 })

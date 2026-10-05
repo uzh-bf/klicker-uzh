@@ -20,6 +20,8 @@ const runtime = {
     },
   },
   publication: { evidenceMinimumSnapshot: { classificationZ: 1.96 } },
+  tree: { levels: [] },
+  pool: [{ levelId: 2 }],
 } as unknown as LoadedAdaptiveRuntime
 
 const attempt = {

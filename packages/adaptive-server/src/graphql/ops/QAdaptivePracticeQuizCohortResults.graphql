@@ -11,6 +11,7 @@ query QAdaptivePracticeQuizCohortResults($practiceQuizId: String!) {
         reason
       }
       classified
+      stoppedClassified
       betweenLevels
       insufficientEvidence
       poolLimited

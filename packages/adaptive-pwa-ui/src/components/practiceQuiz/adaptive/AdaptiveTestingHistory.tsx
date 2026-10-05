@@ -15,7 +15,7 @@ type TestingHistory = FAdaptivePracticeQuizTestingHistoryFragment
 const COMPETENCE_COLORS = ADAPTIVE_COMPETENCE_MARKER_COLORS
 
 const WIDTH = 640
-const MARGIN = { top: 8, right: 132, bottom: 22, left: 56 }
+const MARGIN = { top: 8, right: 8, bottom: 22, left: 56 }
 
 // Rendered only inside the testing box (ADAPTIVE_QUIZ_SHOW_SOLUTIONS=true) on
 // the question and result pages; the server returns no history otherwise.
@@ -85,11 +85,7 @@ function AdaptiveTestingHistoryContent({
 
   return (
     <div className="space-y-2" data-cy="adaptive-testing-history-content">
-      <AdaptiveTestingHistoryChart
-        history={history}
-        colorFor={colorFor}
-        showOverall={showOverall}
-      />
+      <AdaptiveTestingHistoryChart history={history} colorFor={colorFor} />
       <div className="max-h-72 overflow-auto rounded border border-amber-200 bg-white">
         <table className="w-full text-left text-xs tabular-nums">
           <thead className="sticky top-0 bg-amber-100 text-slate-700">
@@ -176,11 +172,9 @@ function AdaptiveTestingHistoryContent({
 function AdaptiveTestingHistoryChart({
   history,
   colorFor,
-  showOverall,
 }: {
   history: TestingHistory
   colorFor: (name: string | null | undefined) => string
-  showOverall: boolean
 }) {
   const t = useTranslations()
   const { bands, project } = createEqualLevelScale(history.levelBands)
@@ -193,29 +187,18 @@ function AdaptiveTestingHistoryChart({
   const plotWidth = WIDTH - MARGIN.left - MARGIN.right
   const maxOrder = Math.max(...entries.map(({ order }) => order))
   const minOrder = Math.min(...entries.map(({ order }) => order))
+  // Inset so the first and last markers are not clipped at the plot edges.
+  const inset = 6
   const x = (order: number) =>
     MARGIN.left +
+    inset +
     (maxOrder === minOrder
-      ? plotWidth / 2
-      : ((order - minOrder) / (maxOrder - minOrder)) * plotWidth)
+      ? plotWidth / 2 - inset
+      : ((order - minOrder) / (maxOrder - minOrder)) * (plotWidth - 2 * inset))
   const y = (position: number) =>
     MARGIN.top + (1 - project(position)) * plotHeight
-  // Keep the right-hand estimate labels from overlapping.
-  const labelYs = new Map<string, number>()
-  let previousLabelY = Number.NEGATIVE_INFINITY
-  for (const estimate of history.competenceEstimates
-    .filter((candidate) => typeof candidate.position === 'number')
-    .slice()
-    .sort((a, b) => b.position! - a.position!)) {
-    const labelY = Math.max(y(estimate.position!), previousLabelY + 11)
-    labelYs.set(estimate.name, labelY)
-    previousLabelY = labelY
-  }
-  const overallPoints = entries.flatMap((entry) =>
-    typeof entry.overallPosition === 'number'
-      ? [`${x(entry.order)},${y(entry.overallPosition)}`]
-      : []
-  )
+  // Label every answer while that stays readable, otherwise every 5th.
+  const tickStep = entries.length > 25 ? 5 : 1
 
   return (
     <figure className="space-y-1" data-cy="adaptive-testing-history-chart">
@@ -283,39 +266,18 @@ function AdaptiveTestingHistoryChart({
           const to = own.at(-1)?.order ?? maxOrder
           const lineY = y(estimate.position)
           return (
-            <g key={estimate.name}>
-              <line
-                x1={x(from) - 4}
-                x2={x(to) + 4}
-                y1={lineY}
-                y2={lineY}
-                stroke={colorFor(estimate.name)}
-                strokeWidth={2}
-                strokeDasharray="5 3"
-              />
-              <text
-                x={MARGIN.left + plotWidth + 6}
-                y={labelYs.get(estimate.name) ?? lineY}
-                dominantBaseline="middle"
-                fontSize={9}
-                fill={colorFor(estimate.name)}
-              >
-                {`${truncate(estimate.name, 12)} ${t(
-                  'pwa.practiceQuiz.adaptive.question.testingHistoryCurrentEstimate',
-                  { level: estimate.levelLabel ?? '–' }
-                )}`}
-              </text>
-            </g>
+            <line
+              key={estimate.name}
+              x1={x(from) - 4}
+              x2={x(to) + 4}
+              y1={lineY}
+              y2={lineY}
+              stroke={colorFor(estimate.name)}
+              strokeWidth={2}
+              strokeDasharray="5 3"
+            />
           )
         })}
-        {showOverall && overallPoints.length > 1 && (
-          <polyline
-            points={overallPoints.join(' ')}
-            fill="none"
-            stroke="#334155"
-            strokeWidth={1.5}
-          />
-        )}
         {entries.map((entry) => {
           if (typeof entry.itemLevelPosition !== 'number') return null
           const cx = x(entry.order)
@@ -345,19 +307,56 @@ function AdaptiveTestingHistoryChart({
             </g>
           )
         })}
-        {entries.map((entry) => (
-          <text
-            key={`x-${entry.order}`}
-            x={x(entry.order)}
-            y={MARGIN.top + plotHeight + 14}
-            textAnchor="middle"
-            fontSize={9}
-            fill="#475569"
-          >
-            {entry.order}
-          </text>
-        ))}
+        {entries.map((entry, index) =>
+          index % tickStep !== 0 && index !== entries.length - 1 ? null : (
+            <text
+              key={`x-${entry.order}`}
+              x={x(entry.order)}
+              y={MARGIN.top + plotHeight + 14}
+              textAnchor="middle"
+              fontSize={9}
+              fill="#475569"
+            >
+              {entry.order}
+            </text>
+          )
+        )}
       </svg>
+      <ul
+        className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-700"
+        data-cy="adaptive-testing-history-legend"
+      >
+        {history.competenceEstimates.map((estimate) => (
+          <li key={estimate.name} className="flex items-center gap-1.5">
+            <LegendLine color={colorFor(estimate.name)} dashed />
+            <span className="font-medium">{estimate.name}</span>
+          </li>
+        ))}
+        {(['CORRECT', 'PARTIALLY_CORRECT', 'INCORRECT'] as const).map(
+          (result) => (
+            <li key={result} className="flex items-center gap-1.5">
+              <svg
+                viewBox="0 0 10 10"
+                className="h-2.5 w-2.5"
+                aria-hidden="true"
+              >
+                <circle
+                  cx={5}
+                  cy={5}
+                  r={4}
+                  fill={result === 'CORRECT' ? '#475569' : '#ffffff'}
+                  stroke="#475569"
+                  strokeWidth={1.5}
+                />
+                {result === 'PARTIALLY_CORRECT' && (
+                  <path d="M 5 1 A 4 4 0 0 0 5 9 Z" fill="#475569" />
+                )}
+              </svg>
+              {t(`pwa.practiceQuiz.adaptive.question.testingResult.${result}`)}
+            </li>
+          )
+        )}
+      </ul>
       <p className="text-xs text-slate-600">
         {t('pwa.practiceQuiz.adaptive.question.testingHistoryChartNote')}
       </p>
@@ -365,8 +364,20 @@ function AdaptiveTestingHistoryChart({
   )
 }
 
-function truncate(value: string, length: number) {
-  return value.length > length ? `${value.slice(0, length - 1)}…` : value
+function LegendLine({ color, dashed }: { color: string; dashed?: boolean }) {
+  return (
+    <svg viewBox="0 0 20 6" className="h-1.5 w-5 shrink-0" aria-hidden="true">
+      <line
+        x1={0}
+        x2={20}
+        y1={3}
+        y2={3}
+        stroke={color}
+        strokeWidth={2}
+        strokeDasharray={dashed ? '5 3' : undefined}
+      />
+    </svg>
+  )
 }
 
 export default AdaptiveTestingHistory

@@ -542,6 +542,9 @@ export function createAdaptivePracticeQuizRuntimeSchema(
       determinedCount: t.int({
         resolve: (bucket) => bucket.determinedCount ?? 0,
       }),
+      hasElements: t.boolean({
+        resolve: (bucket) => bucket.hasElements ?? true,
+      }),
     }),
   })
 
@@ -592,6 +595,9 @@ export function createAdaptivePracticeQuizRuntimeSchema(
           type: [AdaptivePrivacySuppressionRef],
         }),
         classified: t.exposeInt('classified', { nullable: true }),
+        stoppedClassified: t.exposeInt('stoppedClassified', {
+          nullable: true,
+        }),
         betweenLevels: t.exposeInt('betweenLevels', { nullable: true }),
         insufficientEvidence: t.exposeInt('insufficientEvidence', {
           nullable: true,

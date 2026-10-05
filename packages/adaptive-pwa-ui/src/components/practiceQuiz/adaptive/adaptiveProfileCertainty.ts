@@ -167,6 +167,17 @@ export function getAdaptiveProfileCertainty({
 }
 
 /**
+ * Certainty of a finished estimate that is not determined (reporting minimum
+ * met, but the interval is not within the tolerance bands): from the width,
+ * at most MEDIUM, so it never reads like a determined level.
+ */
+export function getAdaptiveEstimatedCertainty(
+  width: AdaptiveRangeWidth | null
+): AdaptiveCertaintyLevel | null {
+  return width ? minCertainty(getAdaptiveWidthCertainty(width), 'MEDIUM') : null
+}
+
+/**
  * The marker track is shown iff a row shows an estimate with HIGH or MEDIUM
  * certainty, for every row type (overall, competences, nested nodes). Low
  * certainty, "not enough answers yet" (certainty null) and untested rows are
@@ -179,18 +190,17 @@ export function showsAdaptiveLevelTrack(
 }
 
 export type AdaptiveRoughEstimateDisplay =
-  /** Narrow range: the rough sublevel itself is meaningful. */
+  /** Narrow or moderately wide range: the estimated level itself. */
   | { kind: 'level'; levelLabel: string }
-  /** Moderately wide: only the main level ("around B1"). */
-  | { kind: 'mainLevel'; levelLabel: string }
   /** Too wide: no level is shown at all. */
   | { kind: 'notEnoughAnswers' }
 
 /**
  * What a rough estimate (answers, but below the reporting minimum) may show.
  * Uses the same width thresholds as the certainty indicator:
- * - width HIGH -> the rough sublevel (e.g. "B2.3")
- * - width MEDIUM -> the main level of the point estimate (e.g. "around B1")
+ * - width HIGH or MEDIUM -> the estimated level itself (e.g. "B2.3"); the
+ *   certainty badge and range sentence carry the uncertainty. Levels are
+ *   never coarsened, because scale labels need not follow a main.sub pattern
  * - width LOW (more than 1/3 of the scale or 3+ main levels, e.g. "Under A2 -
  *   C2.3" after 2 answers) -> "not enough answers yet"; never an extreme
  *   sublevel from a handful of answers
@@ -206,15 +216,9 @@ export function getAdaptiveRoughEstimateDisplay({
 }): AdaptiveRoughEstimateDisplay {
   if (!levelLabel || !width) return { kind: 'notEnoughAnswers' }
   const widthCertainty = getAdaptiveWidthCertainty(width)
-  if (widthCertainty === 'HIGH') return { kind: 'level', levelLabel }
   if (widthCertainty === 'LOW') return { kind: 'notEnoughAnswers' }
-  const bands = prepareAdaptiveResultLevelBands(levelBands)
-  const index = bands.findIndex((band) => band.label === levelLabel)
-  if (index < 0) return { kind: 'notEnoughAnswers' }
-  return {
-    kind: 'mainLevel',
-    levelLabel: getAdaptiveMainLevelLabels(bands)[index]!,
-  }
+  const known = levelBands.some((band) => band.label === levelLabel)
+  return known ? { kind: 'level', levelLabel } : { kind: 'notEnoughAnswers' }
 }
 
 export type AdaptiveMainLevelSegment = {

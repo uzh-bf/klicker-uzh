@@ -10,7 +10,6 @@ import type {
   LoadedAdaptiveRuntime,
 } from './adaptivePracticeQuizRuntimeData.js'
 import { buildAdaptiveTestingHistory } from './adaptivePracticeQuizTestingHistory.js'
-import { competenceTreeLevelColorsById } from './competenceTreeLevelColors.js'
 import {
   type AdaptiveTestingLevelResolver,
   mostProbableBandLabel,
@@ -20,6 +19,7 @@ import {
   normalizeV2Position,
   serializeV2LevelBands,
 } from './adaptivePracticeQuizV2ParticipantViews.js'
+import { competenceTreeLevelColorsById } from './competenceTreeLevelColors.js'
 
 // Attaches attempt-level testing data (estimates, answer history) to the
 // served item's testing info. Testing info itself only exists when
@@ -64,7 +64,15 @@ export function buildAttemptTestingHistory(
           runtime.algorithm.levels,
           settings,
           competenceTreeLevelColorsById(runtime.tree.levels)
-        ),
+        ).map((band) => ({
+          ...band,
+          // Marks bands beyond the measurable range, as on the result.
+          hasElements: runtime.algorithm.levels.some(
+            (level) =>
+              level.order === band.order &&
+              runtime.pool.some(({ levelId }) => levelId === level.id)
+          ),
+        })),
     normalizeTheta: v2
       ? (theta) => normalizeV2Position(theta, runtime)
       : (theta) => normalizeThetaForChart(theta, settings.thetaRange),

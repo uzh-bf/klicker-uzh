@@ -403,12 +403,33 @@ describe('host classification under tolerance', () => {
         cohort,
         accumulator
       ).distributions.find(({ nodeId }) => nodeId === 1)
-      return root?.buckets.reduce(
-        (sum, bucket) => sum + (bucket.determinedCount ?? 0),
-        0
-      )
+      return {
+        determinedLevels: root?.buckets.reduce(
+          (sum, bucket) => sum + (bucket.determinedCount ?? 0),
+          0
+        ),
+        // The attempt summary counts the overall level with the same rule,
+        // separately from the stop reason.
+        overallDetermined:
+          accumulator.classifications[DB.AdaptiveResultStatus.CLASSIFIED],
+        stoppedClassified: accumulator.classified,
+        bucketsWithElements: root?.buckets
+          .filter(({ hasElements }) => hasElements)
+          .map(({ levelOrder }) => levelOrder),
+      }
     }
-    expect(determined(0)).toBe(0)
-    expect(determined(1)).toBe(1)
+    expect(determined(0)).toMatchObject({
+      determinedLevels: 0,
+      overallDetermined: 0,
+      stoppedClassified: 0,
+    })
+    expect(determined(1)).toMatchObject({
+      determinedLevels: 1,
+      overallDetermined: 1,
+      stoppedClassified: 0,
+    })
+    expect(determined(1).bucketsWithElements).toEqual(
+      [...new Set(pool.map(({ levelId }) => levelId - 1))].sort()
+    )
   })
 })

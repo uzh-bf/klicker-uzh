@@ -41,6 +41,7 @@ export type AdaptiveTestingHistoryBand = {
   startPosition: number
   endPosition: number
   color?: string | null
+  hasElements?: boolean
 }
 
 export type AdaptiveTestingHistoryEntry = {

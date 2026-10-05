@@ -60,7 +60,7 @@ function attempt(
 }
 
 describe('overall estimated level distribution', () => {
-  it('includes precise and provisional capped estimates without changing stop summary', () => {
+  it('includes precise and provisional capped estimates and counts the determined level apart from the stop reason', () => {
     const accumulator = createAdaptiveCohortAccumulator(runtime)
     for (const row of [attempt(0), attempt(1.4), attempt(null, 0.2, null)]) {
       accumulateAdaptiveCohortAttempt(runtime, accumulator, row, [])
@@ -69,7 +69,11 @@ describe('overall estimated level distribution', () => {
     expect(
       result.distributions[0]!.buckets.find((b) => b.levelOrder === 1)
     ).toMatchObject({ count: 2, determinedCount: 1 })
-    expect(result.attemptSummary).toMatchObject({ classified: 0, capped: 3 })
+    expect(result.attemptSummary).toMatchObject({
+      classified: 1,
+      stoppedClassified: 0,
+      capped: 3,
+    })
   })
 
   it.each([NaN, Infinity])('excludes non-finite estimates (%s)', (theta) => {
