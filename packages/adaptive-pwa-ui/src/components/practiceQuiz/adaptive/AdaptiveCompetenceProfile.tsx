@@ -7,7 +7,10 @@ import {
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { ADAPTIVE_BAND_COLORS } from './AdaptiveResultTrajectoryChart'
-import { getAdaptiveProfileIndication } from './adaptiveResultUncertainty'
+import {
+  getAdaptiveProfileIndication,
+  isAdaptiveProfileNodeNotTested,
+} from './adaptiveResultUncertainty'
 import { createEqualLevelScale } from './equalLevelScale'
 
 export type AdaptiveCompetenceProfileNode = {
@@ -162,7 +165,8 @@ function ProfileRow({
   emphasized?: boolean
 }) {
   const t = useTranslations()
-  const hasResponses = estimate.responseCount > 0
+  const hasResponses = !isAdaptiveProfileNodeNotTested(estimate.responseCount)
+  const notTested = !emphasized && !hasResponses
   const indication = !emphasized
     ? getAdaptiveProfileIndication({ ...estimate, levelBands })
     : null
@@ -226,11 +230,20 @@ function ProfileRow({
           <span className="break-words">{estimate.name}</span>
         </div>
         <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-600">
-          <span>
-            {t('pwa.practiceQuiz.adaptive.profile.responses', {
-              count: estimate.responseCount,
-            })}
-          </span>
+          {notTested ? (
+            <span
+              className="font-medium text-slate-700"
+              data-cy="adaptive-profile-not-tested"
+            >
+              {t('pwa.practiceQuiz.adaptive.profile.notTested')}
+            </span>
+          ) : (
+            <span>
+              {t('pwa.practiceQuiz.adaptive.profile.responses', {
+                count: estimate.responseCount,
+              })}
+            </span>
+          )}
           {!isPlacementPilot && hasResponses ? (
             <span>
               {t(CLASSIFICATION_LABEL_KEYS[estimate.classification])}

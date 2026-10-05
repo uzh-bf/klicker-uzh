@@ -581,6 +581,7 @@ type AdaptivePracticeQuizNodeDistribution {
   nodeId: Int
   nodeKind: AdaptiveEstimateNodeKind!
   nodeName: String!
+  notTestedCount: Int
   order: Int!
   parentNodeId: Int
   poolLimitedCount: Int
@@ -690,16 +691,19 @@ type AdaptivePracticeQuizReadinessIssue {
 }
 
 type AdaptivePracticeQuizReadinessIssueParameters {
+  allocatedQuestionCount: Int
   assignmentId: Int
   availableItemCount: Int
   calibrationStatus: String
   classifiableLevelCount: Int
+  coveredLeafCount: Int
   effectiveQuestionCap: Int
   elementName: String
   elementVersion: Int
   enabledAssignmentCount: Int
   estimatedDurationMinutes: Float
   field: String
+  leafCount: Int
   leafName: String
   leafOrder: Int
   levelCount: Int
@@ -709,6 +713,7 @@ type AdaptivePracticeQuizReadinessIssueParameters {
   minimumValue: Float
   nodeId: Int
   nodeName: String
+  questionsPerLeaf: Int
   requiredQuestionCount: Int
   rootName: String
   scaleVersionId: String

@@ -1,4 +1,5 @@
 import { useTranslations } from 'next-intl'
+import { summarizeAdaptiveDistributionCoverage } from './adaptiveDistributionCoverage'
 import type { AdaptiveCohortDistribution } from './types'
 
 function AdaptiveEstimatedDistribution({
@@ -15,7 +16,12 @@ function AdaptiveEstimatedDistribution({
     (a, b) => a.levelOrder - b.levelOrder
   )
   const total = buckets.reduce((sum, bucket) => sum + bucket.count, 0)
-  const excluded = cohortSize === null ? null : Math.max(0, cohortSize - total)
+  const { notTested, withoutUsableEstimate: excluded } =
+    summarizeAdaptiveDistributionCoverage({
+      cohortSize,
+      estimatedCount: total,
+      notTestedCount: distribution.notTestedCount,
+    })
   return (
     <div className="space-y-3" data-cy={dataCy}>
       <p className="text-sm text-gray-600">{t('description')}</p>
@@ -77,6 +83,11 @@ function AdaptiveEstimatedDistribution({
         </ul>
       )}
       <p className="text-sm text-gray-600">{t('included', { count: total })}</p>
+      {notTested !== null && notTested > 0 ? (
+        <p className="text-sm text-gray-600" data-cy={`${dataCy}-not-tested`}>
+          {t('notTested', { count: notTested })}
+        </p>
+      ) : null}
       {excluded !== null && excluded > 0 ? (
         <p className="text-sm text-gray-600" data-cy={`${dataCy}-excluded`}>
           {t('excluded', { count: excluded })}

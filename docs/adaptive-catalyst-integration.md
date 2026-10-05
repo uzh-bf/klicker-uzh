@@ -62,6 +62,32 @@ before recomposing. Adaptive migrations belong in the public persistence package
 The migration and analytics images copy these public fragments directly; neither
 needs a private checkout.
 
+## Diagnostic subcompetence sampling
+
+IRT_V1 Diagnostic quizzes may publish with a total question cap below the
+all-leaf minimum evidence (`enabled leaves × minQuestionsPerLeaf`). Readiness
+then reports one `ADAPTIVE_SUBCOMPETENCE_SAMPLING` warning per sampled root
+instead of the blocking minimum-evidence errors: each root keeps its
+weight-based share of the cap, and each attempt covers as many leaf blocks
+of `minQuestionsPerLeaf` as that share allows. It remains blocking
+(`ADAPTIVE_SUBCOMPETENCE_SAMPLING_UNREACHABLE`) when a root cannot receive one
+block. Research, Placement and IRT v2 readiness are unchanged.
+
+This relies on Catalyst V1 routing `SEQUENTIAL_ROOTS_V3`, which reserves the
+per-root shares and serves a per-attempt subset of leaf blocks. An engine
+without it serves roots in tree order, so later roots can receive no questions.
+
+Host breadth checks (root classification finalization and cohort "level
+determined" counts) mirror only the engine's activation rule: sampling is
+active when the summed `min(minQuestionsPerLeaf, eligible items)` over enabled
+leaves exceeds the total cap. Under sampling, the sampled leaves are the
+leaves that received responses, and each of them needs its minimum; an
+engine-classified root is kept. Without sampling, every leaf still needs
+`minQuestionsPerLeaf`. The share algorithm itself is not re-implemented on the
+host (`adaptivePracticeQuizSamplingCoverage.ts`). Leaves without responses
+in an attempt are "not tested": the student profile labels them so, and cohort
+distributions count them in `notTestedCount`, never as level estimates.
+
 ## Verification boundaries
 
 Private engine tests verify calculations. Public tests verify authorization,

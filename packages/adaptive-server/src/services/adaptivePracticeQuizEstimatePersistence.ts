@@ -17,6 +17,10 @@ import type {
   AdaptiveAttemptRuntimeRecord,
   LoadedAdaptiveRuntime,
 } from './adaptivePracticeQuizRuntimeData.js'
+import {
+  hasAdaptiveV1LeafBreadth,
+  resolveAdaptiveV1LeafCoverage,
+} from './adaptivePracticeQuizSamplingCoverage.js'
 
 export function getEffectivelyEnabledRuntimeNodes(
   nodes: AdaptiveRuntimeNode[]
@@ -57,8 +61,14 @@ export function markClassifiedAdaptiveRootEstimates(
     (node) =>
       node.parentId === null && node.kind === DB.AdaptiveNodeKind.COMPETENCE
   )
+  const coverage = resolveAdaptiveV1LeafCoverage(runtime, enabledNodeIds)
   for (const root of roots) {
     const estimate = estimates.nodes.get(root.id)
+    // The engine's own classification (sampled leaves under SEQUENTIAL_ROOTS_V3)
+    // is authoritative; the host only adds classifications, never removes them.
+    if (estimate?.stopReason === DB.AdaptivePracticeQuizStopReason.CLASSIFIED) {
+      continue
+    }
     if (
       !estimate ||
       estimate.theta === null ||
@@ -78,11 +88,12 @@ export function markClassifiedAdaptiveRootEstimates(
           )
       ),
     ]
-    const breadthSatisfied = leafIds.every(
-      (leafId) =>
-        (leafCounts.get(leafId) ?? 0) >=
-        runtime.algorithm.settings.minQuestionsPerLeaf
-    )
+    const breadthSatisfied = hasAdaptiveV1LeafBreadth({
+      leafIds,
+      leafCounts,
+      minQuestionsPerLeaf: runtime.algorithm.settings.minQuestionsPerLeaf,
+      coverage,
+    })
     if (
       breadthSatisfied &&
       classificationIntervalWithinLevelBand({

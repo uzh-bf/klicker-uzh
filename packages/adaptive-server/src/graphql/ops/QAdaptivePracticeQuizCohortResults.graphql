@@ -67,6 +67,7 @@ query QAdaptivePracticeQuizCohortResults($practiceQuizId: String!) {
         reason
       }
       insufficientDataCount
+      notTestedCount
       classifiedCount
       betweenLevelsCount
       insufficientEvidenceCount

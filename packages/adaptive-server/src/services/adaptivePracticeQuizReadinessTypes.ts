@@ -46,6 +46,12 @@ export type AdaptiveConfiguredAssignment = {
 export type AdaptiveConfiguredSettings = {
   preset: AdaptivePresetName
   rootBalancedPlacement?: boolean
+  /**
+   * Diagnostic subcompetence (matrix) sampling: a total cap below the
+   * all-leaf minimum evidence is advisory as long as every root can receive
+   * at least one leaf block. Requires the engine's sampled V1 routing.
+   */
+  subcompetenceSampling?: boolean
   totalQuestionCap: number
   perLeafQuestionCap: number | null
   minQuestionsPerLeaf: number
@@ -96,6 +102,10 @@ export type AdaptiveReadinessIssueParameters = {
   leafOrder?: number
   levelLabel?: string
   levelOrder?: number
+  allocatedQuestionCount?: number
+  leafCount?: number
+  coveredLeafCount?: number
+  questionsPerLeaf?: number
 }
 
 export type AdaptiveCoverageReadiness = {

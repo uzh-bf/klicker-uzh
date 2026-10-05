@@ -3,6 +3,7 @@ import {
   formatAdaptiveCoverageCell,
   groupAdaptiveReadinessIssues,
 } from '../src/components/activities/creation/practiceQuiz/adaptiveReadinessGrouping'
+import { formatAdaptiveReadinessIssue } from '../src/components/activities/creation/practiceQuiz/adaptiveReadinessIssue'
 
 function cell(
   code: string,
@@ -95,5 +96,43 @@ describe('formatAdaptiveCoverageCell', () => {
         levelId: 9,
       })
     ).toBe('#7 · #9')
+  })
+})
+
+describe('formatAdaptiveReadinessIssue subcompetence sampling', () => {
+  const translate = (key: string, values?: Record<string, string | number>) =>
+    `${key.split('.').at(-1)} ${JSON.stringify(values ?? {})}`
+
+  test('passes the per-root sampling numbers to the warning text', () => {
+    const text = formatAdaptiveReadinessIssue(translate, {
+      code: 'ADAPTIVE_SUBCOMPETENCE_SAMPLING',
+      nodeId: 1,
+      parameters: {
+        rootName: 'GRAMÁTICA',
+        allocatedQuestionCount: 18,
+        leafCount: 30,
+        coveredLeafCount: 9,
+        questionsPerLeaf: 2,
+      },
+    })
+    expect(text).toBe(
+      `ADAPTIVE_SUBCOMPETENCE_SAMPLING ${JSON.stringify({
+        rootName: 'GRAMÁTICA',
+        allocatedQuestionCount: 18,
+        leafCount: 30,
+        coveredLeafCount: 9,
+        questionsPerLeaf: 2,
+      })}`
+    )
+  })
+
+  test('falls back to the node name for the unreachable error', () => {
+    const text = formatAdaptiveReadinessIssue(translate, {
+      code: 'ADAPTIVE_SUBCOMPETENCE_SAMPLING_UNREACHABLE',
+      parameters: { nodeName: 'Reading', allocatedQuestionCount: 1 },
+    })
+    expect(text).toContain('ADAPTIVE_SUBCOMPETENCE_SAMPLING_UNREACHABLE')
+    expect(text).toContain('"rootName":"Reading"')
+    expect(text).toContain('"questionsPerLeaf":0')
   })
 })

@@ -246,9 +246,10 @@ const messages = {
             'Deine Antworten stützen diese Einschätzung. Der schattierte Bereich zeigt die verbleibende Unsicherheit.',
           uncertainEstimate:
             'Dein Niveau ist noch unsicher. Weitere Antworten in diesem Bereich würden helfen, die Spanne einzugrenzen.',
-          noResponses: 'In diesem Bereich wurden keine Fragen beantwortet.',
+          noResponses: 'In diesem Versuch nicht geprüft.',
+          notTested: 'Nicht geprüft',
           evidenceHelp:
-            'Jede Zeile verwendet Antworten aus dem jeweiligen Bereich. Nach wenigen Antworten ist die Einschätzung vorläufig. Die schattierte Spanne zeigt die Unsicherheit: Je breiter sie ist, desto unsicherer ist dein Niveau. Bereiche ohne Antworten haben keine Schätzung.',
+            'Jede Zeile verwendet Antworten aus dem jeweiligen Bereich. Nach wenigen Antworten ist die Einschätzung vorläufig. Die schattierte Spanne zeigt die Unsicherheit: Je breiter sie ist, desto unsicherer ist dein Niveau. Bereiche mit „Nicht geprüft“ haben in diesem Versuch keine Fragen erhalten und keine Schätzung.',
           title: 'Kompetenzprofil',
           overall: 'Gesamt',
           responses: '{count, plural, one {# Antwort} other {# Antworten}}',
@@ -599,6 +600,10 @@ const messages = {
               'Die Kompetenz "{nodeName}" benötigt mindestens vier verfügbare Fragen und ein Fragenlimit von mindestens vier.',
             ADAPTIVE_GLOBAL_MINIMUM_EVIDENCE_CAPPED:
               'Die aktiven Blätter benötigen {requiredQuestionCount} Fragen, das Gesamtlimit ist jedoch {totalQuestionCap}.',
+            ADAPTIVE_SUBCOMPETENCE_SAMPLING:
+              'Jede Person wird in etwa {coveredLeafCount} von {leafCount} Unterkompetenzen von {rootName} geprüft ({allocatedQuestionCount} Fragen, {questionsPerLeaf} pro Unterkompetenz). Das Ergebnis für {rootName} verwendet alle Antworten in dieser Kompetenz; nicht erhaltene Unterkompetenzen werden als nicht geprüft angezeigt.',
+            ADAPTIVE_SUBCOMPETENCE_SAMPLING_UNREACHABLE:
+              'Die Kompetenz "{rootName}" erhält nur {allocatedQuestionCount} der insgesamt verfügbaren Fragen, weniger als die {questionsPerLeaf} Fragen, die für eine Unterkompetenz nötig sind. Erhöhen Sie das Gesamtlimit, senken Sie die minimale Fragenzahl pro Unterkompetenz oder passen Sie die Gewichtung der Kompetenzen an.',
             ADAPTIVE_CLASSIFICATION_BANDS_UNREACHABLE:
               'Die Planungsschätzung unterstützt für "{nodeName}" ein präzises Ergebnis in {classifiableLevelCount} von {levelCount} Stufen. Mit diesem Fragelimit können Ergebnisse unsicher bleiben.',
             ADAPTIVE_TIME_BUDGET_EXCEEDED:
@@ -729,6 +734,8 @@ const messages = {
             '{count} Ergebnisse mit einer Schätzung für diesen Bereich. Die Balken zeigen den Anteil an diesen Ergebnissen.',
           excluded:
             '{count} Ergebnisse ohne verwendbare Schätzung für diesen Bereich werden nicht angezeigt.',
+          notTested:
+            '{count, plural, one {# Ergebnis hat diesen Bereich nicht geprüft} other {# Ergebnisse haben diesen Bereich nicht geprüft}} (es wurden keine Fragen gestellt, z. B. wegen der Stichprobe von Unterkompetenzen). Nicht geprüfte Ergebnisse zählen nicht als Schätzung.',
         },
         distributionStatuses: {
           betweenLevels: 'Zwischen Stufen',

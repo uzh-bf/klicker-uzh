@@ -520,7 +520,14 @@ async function prepareConfiguration({
   }))
   const readiness = annotateAdaptiveReadinessIssueLabels(
     await validateAdaptiveQuizReadiness({
-      settings,
+      settings: {
+        ...settings,
+        // V1 Diagnostic routing samples leaf blocks per root when the cap is
+        // below the all-leaf minimum evidence (Catalyst V1 sampled routing).
+        subcompetenceSampling:
+          settings.preset === DB.AdaptivePracticeQuizPreset.DIAGNOSTIC &&
+          measurementVersion === DB.AdaptiveMeasurementVersion.IRT_V1,
+      },
       nodes,
       coverages,
       assignments,

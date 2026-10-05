@@ -222,6 +222,8 @@ declare global {
               poolLimitedCount: number | null
               researchOnlyCount: number | null
               insufficientDataCount: number | null
+              // Absent in snapshots written before not-tested reporting.
+              notTestedCount?: number | null
               buckets: Array<{
                 levelLabel: string
                 levelOrder: number

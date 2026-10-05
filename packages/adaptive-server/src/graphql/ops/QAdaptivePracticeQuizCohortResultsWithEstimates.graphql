@@ -85,6 +85,7 @@ query QAdaptivePracticeQuizCohortResultsWithEstimates(
         reason
       }
       insufficientDataCount
+      notTestedCount
       classifiedCount
       betweenLevelsCount
       insufficientEvidenceCount
