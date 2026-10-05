@@ -87,6 +87,7 @@ const messages = {
           startOver: 'A new attempt could not be started. Please try again.',
           submit: 'Your response could not be submitted. Please try again.',
           result: 'Your result could not be loaded. Please try again.',
+          busy: 'The quiz is busy right now. Please try again in a moment.',
         },
         feedback: {
           correct: 'Correct',

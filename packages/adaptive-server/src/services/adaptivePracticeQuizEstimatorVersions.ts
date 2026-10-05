@@ -1,4 +1,5 @@
 import {
+  AdaptiveEngineUnavailableError,
   createAdaptiveClient,
   type DecisionRequest,
 } from '@klicker-uzh/adaptive-client'
@@ -13,7 +14,12 @@ import type {
   AdaptiveV2RuntimeSettings,
   AdaptiveV2SelectionContext,
 } from '@klicker-uzh/adaptive-contract'
+import {
+  adaptiveValidationCacheKey,
+  validateAdaptiveRuntimeOnce,
+} from './adaptiveEngineValidationCache.js'
 import { adaptivePracticeQuizError } from './adaptivePracticeQuizErrors.js'
+import { emitAdaptiveOperationalEvent } from './adaptivePracticeQuizEvents.js'
 import type {
   AdaptiveRuntimeLevel,
   AdaptiveRuntimeResponse,
@@ -69,6 +75,51 @@ export type LoadedAdaptiveDecision =
       decision: AdaptiveV2Decision
     }
 
+type AdaptiveEngineOperation = 'VALIDATE' | 'DECIDE'
+
+function engineRetryReporter(operation: AdaptiveEngineOperation) {
+  return ({
+    retryNumber,
+    overloaded,
+  }: {
+    retryNumber: number
+    overloaded: boolean
+  }) =>
+    emitAdaptiveOperationalEvent({
+      name: 'adaptive_engine_retry',
+      operation,
+      outcome: 'RETRYING',
+      reason: overloaded ? 'OVERLOADED' : 'CONNECTION',
+      retryNumber,
+    })
+}
+
+// The engine answers 503 while all of its workers are busy; the client has
+// already retried with backoff by the time this maps the final outcome.
+export function adaptiveEngineGraphQLError(
+  error: unknown,
+  operation?: AdaptiveEngineOperation
+) {
+  const overloaded =
+    error instanceof AdaptiveEngineUnavailableError && error.overloaded
+  if (overloaded && operation)
+    emitAdaptiveOperationalEvent({
+      name: 'adaptive_engine_retry',
+      operation,
+      outcome: 'EXHAUSTED',
+      reason: 'OVERLOADED',
+    })
+  return overloaded
+    ? adaptivePracticeQuizError(
+        'The adaptive calculation service is busy. Please try again in a moment.',
+        'ADAPTIVE_ENGINE_BUSY'
+      )
+    : adaptivePracticeQuizError(
+        'The adaptive calculation service is unavailable. Please try again.',
+        'ADAPTIVE_ENGINE_UNAVAILABLE'
+      )
+}
+
 export async function prepareLoadedAdaptiveEstimator(
   input:
     | {
@@ -84,7 +135,8 @@ export async function prepareLoadedAdaptiveEstimator(
         scale: AdaptiveScaleDefinition
         pool: AdaptiveV2RoutingPoolItem[]
         settings: AdaptiveV2RuntimeSettings
-      }
+      },
+  { publicationId }: { publicationId?: string } = {}
 ): Promise<LoadedAdaptiveEstimator> {
   const runtime: LoadedAdaptiveEstimator =
     input.measurementVersion === 'IRT_V1'
@@ -119,9 +171,27 @@ export async function prepareLoadedAdaptiveEstimator(
     ...validation,
     selection: 'selection' in validation ? validation.selection : undefined,
   }
-  await createAdaptiveClient({ baseUrl, token, timeoutMs: 4000 }).validate(
-    validationWithoutSelection
-  )
+  try {
+    await validateAdaptiveRuntimeOnce(
+      adaptiveValidationCacheKey({
+        engineUrl: baseUrl,
+        engineRevision: process.env.ADAPTIVE_ENGINE_REVISION || undefined,
+        publicationId,
+        request: validationWithoutSelection,
+      }),
+      () =>
+        createAdaptiveClient({
+          baseUrl,
+          token,
+          timeoutMs: 4000,
+          onRetry: engineRetryReporter('VALIDATE'),
+        }).validate(validationWithoutSelection)
+    )
+  } catch (error) {
+    if (error instanceof AdaptiveEngineUnavailableError)
+      throw adaptiveEngineGraphQLError(error, 'VALIDATE')
+    throw error
+  }
   return runtime
 }
 
@@ -158,9 +228,11 @@ export async function advanceLoadedAdaptiveRuntime({
     terminalStopReason,
   })
   try {
-    const result = await createAdaptiveClient({ baseUrl, token }).decide(
-      request
-    )
+    const result = await createAdaptiveClient({
+      baseUrl,
+      token,
+      onRetry: engineRetryReporter('DECIDE'),
+    }).decide(request)
     if (
       result.measurementVersion === 'IRT_V1' &&
       runtime.measurementVersion === 'IRT_V1'
@@ -206,11 +278,8 @@ export async function advanceLoadedAdaptiveRuntime({
       }
     }
     throw new Error('Estimator mismatch')
-  } catch {
-    throw adaptivePracticeQuizError(
-      'The adaptive calculation service is unavailable. Please try again.',
-      'ADAPTIVE_ENGINE_UNAVAILABLE'
-    )
+  } catch (error) {
+    throw adaptiveEngineGraphQLError(error, 'DECIDE')
   }
 }
 

@@ -205,20 +205,26 @@ async function prepareAdaptiveRuntime(
     const estimator =
       publication.measurementVersion ===
       DB.AdaptiveMeasurementVersion.IRT_V2_EAP_GRID_1
-        ? await prepareLoadedAdaptiveEstimator({
-            measurementVersion: publication.measurementVersion,
-            nodes,
-            scale: preparePublishedV2Scale(publication),
-            pool: pool as AdaptiveV2RoutingPoolItem[],
-            settings: preparePublishedV2Settings(publication),
-          })
-        : await prepareLoadedAdaptiveEstimator({
-            measurementVersion: DB.AdaptiveMeasurementVersion.IRT_V1,
-            nodes,
-            levels,
-            pool,
-            settings: legacySettings,
-          })
+        ? await prepareLoadedAdaptiveEstimator(
+            {
+              measurementVersion: publication.measurementVersion,
+              nodes,
+              scale: preparePublishedV2Scale(publication),
+              pool: pool as AdaptiveV2RoutingPoolItem[],
+              settings: preparePublishedV2Settings(publication),
+            },
+            { publicationId: publication.id }
+          )
+        : await prepareLoadedAdaptiveEstimator(
+            {
+              measurementVersion: DB.AdaptiveMeasurementVersion.IRT_V1,
+              nodes,
+              levels,
+              pool,
+              settings: legacySettings,
+            },
+            { publicationId: publication.id }
+          )
     const algorithm: RuntimeAlgorithmView =
       estimator.measurementVersion ===
       DB.AdaptiveMeasurementVersion.IRT_V2_EAP_GRID_1

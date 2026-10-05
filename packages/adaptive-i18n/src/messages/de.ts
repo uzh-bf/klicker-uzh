@@ -93,6 +93,7 @@ const messages = {
             'Deine Antwort konnte nicht übermittelt werden. Bitte versuche es erneut.',
           result:
             'Dein Ergebnis konnte nicht geladen werden. Bitte versuche es erneut.',
+          busy: 'Das Quiz ist gerade ausgelastet. Bitte versuche es in einem Moment erneut.',
         },
         feedback: {
           correct: 'Richtig',

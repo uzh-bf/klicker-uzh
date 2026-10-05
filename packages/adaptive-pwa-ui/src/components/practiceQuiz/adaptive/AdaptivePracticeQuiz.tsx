@@ -14,6 +14,7 @@ import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useRef, useState } from 'react'
 import { useAdaptivePwaHost } from '../../../ports'
+import { isAdaptiveBusyError } from './adaptiveBusyError'
 import AdaptivePracticeQuizIntro from './AdaptivePracticeQuizIntro'
 import AdaptivePracticeQuizQuestion from './AdaptivePracticeQuizQuestion'
 import AdaptivePracticeQuizResult from './AdaptivePracticeQuizResult'
@@ -57,6 +58,12 @@ function AdaptivePracticeQuiz({
   const [actionError, setActionError] = useState<AdaptiveActionError | null>(
     null
   )
+  // Set when the last failed action was a retryable "quiz is busy" error.
+  const [actionBusy, setActionBusy] = useState(false)
+  const failAction = (action: AdaptiveActionError, error: unknown) => {
+    setActionError(action)
+    setActionBusy(isAdaptiveBusyError(error))
+  }
   const mutationStateApplied = useRef(false)
   const [now, setNow] = useState(() => Date.now())
   const deadline = attempt?.deadlineAt
@@ -176,8 +183,8 @@ function AdaptivePracticeQuiz({
       if (!next) throw new Error('Adaptive attempt did not start.')
       setAttempt(next)
       setShowQuestion(true)
-    } catch {
-      setActionError('start')
+    } catch (error) {
+      failAction('start', error)
     }
   }
 
@@ -193,8 +200,8 @@ function AdaptivePracticeQuiz({
       if (!next) throw new Error('Adaptive attempt did not resume.')
       setAttempt(next)
       setShowQuestion(true)
-    } catch {
-      setActionError('resume')
+    } catch (error) {
+      failAction('resume', error)
     }
   }
 
@@ -211,8 +218,8 @@ function AdaptivePracticeQuiz({
       if (!next) throw new Error('Adaptive attempt did not restart.')
       setAttempt(next)
       setShowQuestion(true)
-    } catch {
-      setActionError('startOver')
+    } catch (error) {
+      failAction('startOver', error)
       const refreshed = await refetch().catch(() => null)
       const next = refreshed?.data.adaptivePracticeQuizAttemptState
       if (
@@ -249,8 +256,8 @@ function AdaptivePracticeQuiz({
       setShowQuestion(
         next.status === AdaptivePracticeQuizAttemptStatus.InProgress
       )
-    } catch {
-      setActionError('submit')
+    } catch (error) {
+      failAction('submit', error)
       const refreshed = await refetch().catch(() => null)
       const next = refreshed?.data.adaptivePracticeQuizAttemptState
       if (next) {
@@ -305,12 +312,38 @@ function AdaptivePracticeQuiz({
           </div>
         )}
 
-        {actionError && actionError !== 'submit' && !showQuestion && (
-          <UserNotification
-            type="error"
-            message={t(`pwa.practiceQuiz.adaptive.errors.${actionError}`)}
-          />
-        )}
+        {actionError &&
+          actionError !== 'submit' &&
+          !showQuestion &&
+          (actionBusy ? (
+            <div className="flex flex-col items-start gap-3">
+              <UserNotification
+                type="warning"
+                message={t('pwa.practiceQuiz.adaptive.errors.busy')}
+                data={{ cy: 'adaptive-practice-quiz-busy' }}
+              />
+              <Button
+                type="button"
+                onClick={() =>
+                  void {
+                    start: handleStart,
+                    resume: handleResume,
+                    startOver: handleRestart,
+                  }[actionError]()
+                }
+                disabled={actionLoading}
+                loading={actionLoading}
+                data={{ cy: 'retry-adaptive-practice-quiz-action' }}
+              >
+                <Button.Label>{t('shared.generic.tryAgain')}</Button.Label>
+              </Button>
+            </div>
+          ) : (
+            <UserNotification
+              type="error"
+              message={t(`pwa.practiceQuiz.adaptive.errors.${actionError}`)}
+            />
+          ))}
 
         {(previewOnly || (!loading && !error)) &&
           attempt?.status !== AdaptivePracticeQuizAttemptStatus.Completed &&
@@ -404,6 +437,7 @@ function AdaptivePracticeQuiz({
                 showTimer={attempt.showTimer}
                 submitting={submitting}
                 submissionError={actionError === 'submit'}
+                submissionBusy={actionError === 'submit' && actionBusy}
                 onSubmit={handleSubmit}
               />
             </div>

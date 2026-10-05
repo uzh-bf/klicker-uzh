@@ -11,9 +11,9 @@ import {
 } from './adaptivePracticeQuizRuntimeTestSupport.js'
 
 // The reference engine computes at most four requests at once per instance
-// and answers 503 beyond that, so the class size stays at that bound to
-// isolate database contention from engine capacity.
-const CLASS_SIZE = 4
+// and answers 503 beyond that. Eight participants therefore exercise both the
+// database locking and the client's bounded overload retry.
+const CLASS_SIZE = 8
 
 // Settle every request before asserting so no transaction is still running
 // when the next test truncates the fixture tables.

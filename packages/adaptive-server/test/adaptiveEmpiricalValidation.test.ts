@@ -66,7 +66,8 @@ const server = createServer(async (request, response) => {
   const body = JSON.parse(raw)
   receivedBatches.push(body)
   if (fixtureMode === 'fail-second' && receivedBatches.length === 2) {
-    response.writeHead(503).end()
+    // A non-overload failure: the client retries only 503/429 answers.
+    response.writeHead(500).end()
     return
   }
   response.setHeader('content-type', 'application/json')
