@@ -754,6 +754,7 @@ type AdaptivePracticeQuizResult {
   practiceQuizId: String!
   practiceQuizName: String!
   stopReason: AdaptivePracticeQuizStopReason!
+  testingHistory: AdaptivePracticeQuizTestingHistory
   trajectory: [AdaptivePracticeQuizTrajectoryPoint!]!
   upperPosition: Float
 }

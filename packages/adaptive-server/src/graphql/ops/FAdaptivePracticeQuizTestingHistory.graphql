@@ -1,0 +1,30 @@
+fragment FAdaptivePracticeQuizTestingHistory on AdaptivePracticeQuizTestingHistory {
+  levelBands {
+    label
+    order
+    startPosition
+    endPosition
+  }
+  entries {
+    order
+    elementTitle
+    competenceName
+    subcompetenceName
+    itemLevelLabel
+    itemLevelPosition
+    result
+    score
+    overallTheta
+    overallPosition
+  }
+  competenceEstimates {
+    name
+    responseCount
+    theta
+    levelLabel
+    levelIsTentative
+    position
+    lowerPosition
+    upperPosition
+  }
+}

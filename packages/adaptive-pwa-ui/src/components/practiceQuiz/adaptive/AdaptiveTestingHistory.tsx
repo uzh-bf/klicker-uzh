@@ -1,6 +1,6 @@
 import { faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import type { FAdaptivePracticeQuizAttemptStateFragment } from '@klicker-uzh/graphql/dist/ops'
+import type { FAdaptivePracticeQuizTestingHistoryFragment } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import {
@@ -10,24 +10,17 @@ import {
 } from './adaptiveLevelPalette'
 import { createEqualLevelScale } from './equalLevelScale'
 
-type TestingHistory = NonNullable<
-  NonNullable<
-    NonNullable<FAdaptivePracticeQuizAttemptStateFragment['servedItem']>
-  >['testingInfo']
->['history']
+type TestingHistory = FAdaptivePracticeQuizTestingHistoryFragment
 
 const COMPETENCE_COLORS = ADAPTIVE_COMPETENCE_MARKER_COLORS
 
 const WIDTH = 640
 const MARGIN = { top: 8, right: 132, bottom: 22, left: 56 }
 
-// Rendered only inside the testing box (ADAPTIVE_QUIZ_SHOW_SOLUTIONS=true).
+// Rendered only inside the testing box (ADAPTIVE_QUIZ_SHOW_SOLUTIONS=true) on
+// the question and result pages; the server returns no history otherwise.
 // Collapsed by default so the solution stays the first thing testers see.
-function AdaptiveTestingHistory({
-  history,
-}: {
-  history: NonNullable<TestingHistory>
-}) {
+function AdaptiveTestingHistory({ history }: { history: TestingHistory }) {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
   return (
@@ -61,7 +54,7 @@ function AdaptiveTestingHistory({
 function AdaptiveTestingHistoryContent({
   history,
 }: {
-  history: NonNullable<TestingHistory>
+  history: TestingHistory
 }) {
   const t = useTranslations()
   const entries = history.entries
@@ -92,6 +85,11 @@ function AdaptiveTestingHistoryContent({
 
   return (
     <div className="space-y-2" data-cy="adaptive-testing-history-content">
+      <AdaptiveTestingHistoryChart
+        history={history}
+        colorFor={colorFor}
+        showOverall={showOverall}
+      />
       <div className="max-h-72 overflow-auto rounded border border-amber-200 bg-white">
         <table className="w-full text-left text-xs tabular-nums">
           <thead className="sticky top-0 bg-amber-100 text-slate-700">
@@ -171,11 +169,6 @@ function AdaptiveTestingHistoryContent({
           </tbody>
         </table>
       </div>
-      <AdaptiveTestingHistoryChart
-        history={history}
-        colorFor={colorFor}
-        showOverall={showOverall}
-      />
     </div>
   )
 }
@@ -185,7 +178,7 @@ function AdaptiveTestingHistoryChart({
   colorFor,
   showOverall,
 }: {
-  history: NonNullable<TestingHistory>
+  history: TestingHistory
   colorFor: (name: string | null | undefined) => string
   showOverall: boolean
 }) {
