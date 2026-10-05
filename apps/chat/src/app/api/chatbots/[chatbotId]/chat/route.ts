@@ -6,6 +6,7 @@ import type {
   ELearningSnapshotContent,
   KlickerChatContext,
 } from '@klicker-uzh/types'
+import { isChatUsageClassEntitled } from '@klicker-uzh/util'
 import {
   type LangfuseSpan,
   propagateAttributes,
@@ -24,6 +25,7 @@ import { after, type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
+import { withCalculatorTool } from '@/src/lib/server/calculatorTool'
 import { getChatModel } from '@/src/lib/server/chatModelProvider'
 import {
   type ChatModelConfig,
@@ -47,6 +49,7 @@ import {
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
 } from '@/src/lib/server/effectiveChatModes'
+import { trailingStepMessage } from '@/src/lib/server/feedbackEvidence'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
   flushLangfuseTelemetry,
@@ -80,6 +83,7 @@ import {
 } from '@/src/lib/server/toolDiagnostics'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import {
+  chatModelUnavailableResponse,
   CHAT_TURN_ALREADY_COMPLETED_CODE,
   ChatTurnConflictError,
   claimChatTurn,
@@ -134,24 +138,6 @@ type ChatRouteModelMessage = {
   content:
     | string
     | Array<{ type: 'text'; text: string } | { type: 'image'; image: string }>
-}
-
-export const CHAT_MODEL_UNAVAILABLE_BASE = 'CHAT_MODEL_UNAVAILABLE_BASE'
-export const CHAT_MODEL_UNAVAILABLE_ADVANCED = 'CHAT_MODEL_UNAVAILABLE_ADVANCED'
-
-function chatModelUnavailableResponse(
-  usageClass: ChatModelConfig['usageClass']
-) {
-  return NextResponse.json(
-    {
-      error: 'Chat model usage is unavailable',
-      code:
-        usageClass === 'BASE'
-          ? CHAT_MODEL_UNAVAILABLE_BASE
-          : CHAT_MODEL_UNAVAILABLE_ADVANCED,
-    },
-    { status: 403 }
-  )
 }
 
 function completedTurnResponse() {
@@ -703,7 +689,9 @@ export async function POST(
     chatbot = await prisma.chatbot.findUnique({
       where: { id: chatbotId },
       include: {
-        owner: { select: { aiFeaturesEnabled: true } },
+        owner: {
+          select: { aiFeaturesEnabled: true, aiChatbotCostCenter: true },
+        },
         course: {
           select: { displayName: true },
         },
@@ -741,7 +729,8 @@ export async function POST(
   const modeOptions = resolveEffectiveChatModeOptions(
     chatbot.systemPrompts,
     chatbot.mcpConfigurations,
-    chatbot.standardModeConfig
+    chatbot.standardModeConfig,
+    { customModeConfig: chatbot.customModeConfig }
   )
   const selectedMode = resolveRequestedChatMode(modeOptions, requestedMode)
   if (!Object.hasOwn(modeOptions, selectedMode)) {
@@ -852,6 +841,22 @@ export async function POST(
       })
       return false
     }
+  }
+
+  // Class admission does not depend on the usage-enforcement switch. The
+  // account-level approval opens the cost-free class; a cost-carrying class
+  // also needs an address to bill, so the turn stays closed without a cost
+  // center even while enforcement is off. The budget check below is the part
+  // that the switch controls.
+  const classAdmittedForSelectedModel = () =>
+    isChatUsageClassEntitled({
+      usageClass: selectedModelConfig.usageClass,
+      aiFeaturesEnabled: chatbot.owner.aiFeaturesEnabled,
+      aiChatbotCostCenter: chatbot.owner.aiChatbotCostCenter,
+    })
+
+  if (!classAdmittedForSelectedModel()) {
+    return chatModelUnavailableResponse(selectedModelConfig.usageClass)
   }
 
   if (isChatAccountUsageEnforcementEnabled()) {
@@ -1405,6 +1410,9 @@ export async function POST(
       )
     }
     const toolNames = Object.keys(chatTools)
+    // The calculator is added after the system prompt inputs are fixed, so
+    // course grounding and citation rules still see only course tools.
+    const modelTools = withCalculatorTool(selectedMode, chatTools)
     const docQueryToolName = toolNames.find(isDocQueryToolName)
     const quizzerDocQueryToolName =
       selectedMode === 'quizzer' ? docQueryToolName : undefined
@@ -1438,6 +1446,7 @@ export async function POST(
         courseDisplayName: chatbot.course.displayName,
         toolNames,
         standardModeConfig: chatbot.standardModeConfig,
+        customModeConfig: chatbot.customModeConfig,
       }
     )
     const chatContextPrompt = formatKlickerChatContextForPrompt(chatContext)
@@ -1472,6 +1481,7 @@ export async function POST(
       role: msg.role,
       content: msg.content,
     }))
+    const stepReminder = trailingStepMessage(selectedMode, messages)
 
     const maxOutputTokens = selectedModelConfig.maxOutputTokens
 
@@ -1500,7 +1510,7 @@ export async function POST(
               ? 'responses'
               : 'chat',
             instructions: effectiveSystemPrompt,
-            tools: chatTools,
+            tools: modelTools,
           })
         : null
 
@@ -1981,25 +1991,34 @@ export async function POST(
           },
         },
         messages: modelMessages as ModelMessage[],
-        tools: promptCacheRequest?.tools ?? chatTools,
+        tools: promptCacheRequest?.tools ?? modelTools,
         toolOrder: promptCacheRequest?.toolOrder,
         toolChoice: 'auto',
-        prepareStep: docQueryToolName
-          ? ({ stepNumber, steps, initialMessages, responseMessages }) =>
-              stepNumber === 0
-                ? {
-                    toolChoice: {
-                      type: 'tool' as const,
-                      toolName: docQueryToolName,
-                    },
-                  }
-                : {
-                    messages: [
-                      ...initialMessages,
-                      ...withModelCitationIndices(responseMessages, steps),
-                    ],
-                  }
-          : undefined,
+        // The feedback, precision and reply-language reminders end every step, after
+        // tool output, so retrieved material cannot override them.
+        allowSystemInMessages: true,
+        prepareStep: ({
+          stepNumber,
+          steps,
+          initialMessages,
+          responseMessages,
+        }) => ({
+          ...(docQueryToolName && stepNumber === 0
+            ? {
+                toolChoice: {
+                  type: 'tool' as const,
+                  toolName: docQueryToolName,
+                },
+              }
+            : {}),
+          messages: [
+            ...initialMessages,
+            ...(docQueryToolName && stepNumber > 0
+              ? withModelCitationIndices(responseMessages, steps)
+              : responseMessages),
+            stepReminder,
+          ],
+        }),
         stopWhen: isStepCount(5),
         instructions: effectiveSystemPrompt,
 
@@ -2281,7 +2300,7 @@ export async function POST(
               deploymentId: selectedModelConfig.deploymentId,
               routingSource: routing.source,
               reasoningEffort: appliedReasoningEffort ?? 'none',
-              toolCount: String(toolNames.length),
+              toolCount: String(Object.keys(modelTools).length),
               imageAttachmentCount: String(images.length),
               handoffSource: handoffSource ?? 'direct',
             },
