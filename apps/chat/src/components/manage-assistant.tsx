@@ -40,7 +40,7 @@ import { ModeOptionsProvider } from './mode-options-context'
 import { Thread, type ThreadWelcomeCapability } from './thread'
 
 const MANAGE_ASSISTANT_NAME = 'KlickerUZH Assistant'
-const MANAGE_MODE_OPTIONS = { manage: '' }
+const MANAGE_MODE_OPTIONS = { manage: { description: '' } }
 export function ManageAssistant() {
   return (
     <ChatUiProvider>
