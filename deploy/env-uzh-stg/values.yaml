@@ -434,7 +434,7 @@ adaptiveEngine:
   enabled: true
   priorityClassName: staging-workload
   image:
-    tag: 5a8fbe279182a7218b86aa8aa5ee45023c5b4e4e-arm
+    tag: 43005ae3781b4205094b826e456e4a4979e9d695-arm
   resources:
     requests:
       cpu: 100m
