@@ -40,7 +40,10 @@ export type {
   AdaptivePracticeQuizResponseInput,
 } from './adaptivePracticeQuizRuntime.js'
 export {
+  type AdaptiveTestingCompetenceSnapshot,
   type AdaptiveTestingEstimate,
+  type AdaptiveTestingHistory,
+  type AdaptiveTestingHistoryEntry,
   type AdaptiveTestingInfo,
   type AdaptiveTestingSolution,
   loadAdaptiveTestingElementTags,

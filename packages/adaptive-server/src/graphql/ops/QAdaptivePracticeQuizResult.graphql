@@ -75,6 +75,7 @@ fragment FAdaptivePracticeQuizResultNodeFields on AdaptivePracticeQuizResultNode
   responseCount
   classification
   levelLabel
+  roughLevelLabel
   leadingLevelLabels
   classificationProbability
   confidence

@@ -30,6 +30,49 @@ export type AdaptiveTestingEstimate = {
   resultStatus: DB.AdaptiveResultStatus | null
 }
 
+export type AdaptiveTestingAnswerResult =
+  | 'CORRECT'
+  | 'PARTIALLY_CORRECT'
+  | 'INCORRECT'
+
+export type AdaptiveTestingHistoryBand = {
+  label: string
+  order: number
+  startPosition: number
+  endPosition: number
+}
+
+export type AdaptiveTestingHistoryEntry = {
+  order: number
+  elementTitle: string
+  competenceName: string | null
+  subcompetenceName: string | null
+  itemLevelLabel: string | null
+  // Normalized chart position of the item's level band center.
+  itemLevelPosition: number | null
+  result: AdaptiveTestingAnswerResult
+  score: number
+  overallTheta: number | null
+  overallPosition: number | null
+}
+
+export type AdaptiveTestingCompetenceSnapshot = {
+  name: string
+  responseCount: number
+  theta: number | null
+  levelLabel: string | null
+  levelIsTentative: boolean
+  position: number | null
+  lowerPosition: number | null
+  upperPosition: number | null
+}
+
+export type AdaptiveTestingHistory = {
+  levelBands: AdaptiveTestingHistoryBand[]
+  entries: AdaptiveTestingHistoryEntry[]
+  competenceEstimates: AdaptiveTestingCompetenceSnapshot[]
+}
+
 export type AdaptiveTestingInfo = {
   solution: AdaptiveTestingSolution
   elementId: number
@@ -41,6 +84,8 @@ export type AdaptiveTestingInfo = {
   overallEstimate: AdaptiveTestingEstimate | null
   competenceEstimate: AdaptiveTestingEstimate | null
   subcompetenceEstimate: AdaptiveTestingEstimate | null
+  // Answers so far in this attempt; attached by the attempt view.
+  history: AdaptiveTestingHistory | null
   // Internal lookup keys; not exposed through GraphQL.
   leafNodeId: number
   rootNodeId: number | null
@@ -124,6 +169,7 @@ export function buildAdaptiveTestingInfo(
     overallEstimate: null,
     competenceEstimate: null,
     subcompetenceEstimate: null,
+    history: null,
     leafNodeId: poolItem.leafNodeId,
     rootNodeId: rootNodeId === poolItem.leafNodeId ? null : rootNodeId,
   }

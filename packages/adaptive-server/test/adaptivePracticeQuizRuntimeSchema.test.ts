@@ -18,6 +18,7 @@ describe('adaptive practice quiz participant schema', () => {
       'elementTags',
       'elementTitle',
       'elementVersion',
+      'history',
       'itemLevelLabel',
       'overallEstimate',
       'solution',
@@ -33,6 +34,24 @@ describe('adaptive practice quiz participant schema', () => {
       'standardError',
       'theta',
       'upperBound',
+    ])
+    // Testing-only answer history (same ADAPTIVE_QUIZ_SHOW_SOLUTIONS gate).
+    expect(fieldNames('AdaptivePracticeQuizTestingHistory')).toEqual([
+      'competenceEstimates',
+      'entries',
+      'levelBands',
+    ])
+    expect(fieldNames('AdaptivePracticeQuizTestingHistoryEntry')).toEqual([
+      'competenceName',
+      'elementTitle',
+      'itemLevelLabel',
+      'itemLevelPosition',
+      'order',
+      'overallPosition',
+      'overallTheta',
+      'result',
+      'score',
+      'subcompetenceName',
     ])
     expect(fieldNames('AdaptivePracticeQuizChoicesOptions')).toEqual([
       'choices',

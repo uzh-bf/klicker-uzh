@@ -42,6 +42,23 @@ const messages = {
             'θ {theta} [{lower}, {upper}], SE {standardError}, {count, plural, one {# response} other {# responses}}',
           testingTrue: 'True',
           testingFalse: 'False',
+          testingHistory: 'Answers so far',
+          testingHistoryEmpty: 'No answers yet in this attempt.',
+          testingHistoryOrder: '#',
+          testingHistoryElement: 'Element',
+          testingHistoryArea: 'Competence › subcompetence',
+          testingHistoryItemLevel: 'Item level',
+          testingHistoryResult: 'Result',
+          testingHistoryOverall: 'Overall θ after',
+          testingResult: {
+            CORRECT: 'correct',
+            PARTIALLY_CORRECT: 'partially correct',
+            INCORRECT: 'incorrect',
+          },
+          testingHistoryChart: 'Item level vs. competence estimate',
+          testingHistoryChartNote:
+            'Markers: level of each answered item (filled = correct, half = partially correct, hollow = incorrect), colored by competence. Dashed lines: current estimate per competence; estimates per competence after each answer are not stored. Solid line: overall estimate after each answer, where stored.',
+          testingHistoryCurrentEstimate: 'now {level}',
           remainingTime: 'Time remaining: {time}',
           timeLimitReached: 'Time is up. Checking your result…',
 
@@ -230,10 +247,10 @@ const messages = {
             '{count, plural, one {After # answered question, there is not enough evidence for an overall level.} other {After # answered questions, there is not enough evidence for an overall level.}}',
         },
         profile: {
-          earlyIndication: 'Early indication: {level}',
+          earlyIndication: '{level} (rough estimate)',
           plausibleRange: 'Plausible range: {range}',
           fewResponses:
-            '{count, plural, one {Based on just # answer. This is an early indication and is still very uncertain.} other {Based on just # answers. This is an early indication and is still very uncertain.}}',
+            '{count, plural, one {Based on only # answer — the range is still wide.} other {Based on only # answers — the range is still wide.}}',
           supportedEstimate:
             'Your answers support this estimate. The shaded range shows the remaining uncertainty.',
           uncertainEstimate:

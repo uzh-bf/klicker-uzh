@@ -42,6 +42,23 @@ const messages = {
             'θ {theta} [{lower}, {upper}], SE {standardError}, {count, plural, one {# Antwort} other {# Antworten}}',
           testingTrue: 'Richtig',
           testingFalse: 'Falsch',
+          testingHistory: 'Bisherige Antworten',
+          testingHistoryEmpty: 'In diesem Versuch noch keine Antworten.',
+          testingHistoryOrder: '#',
+          testingHistoryElement: 'Element',
+          testingHistoryArea: 'Kompetenz › Teilkompetenz',
+          testingHistoryItemLevel: 'Niveau der Frage',
+          testingHistoryResult: 'Ergebnis',
+          testingHistoryOverall: 'θ gesamt danach',
+          testingResult: {
+            CORRECT: 'richtig',
+            PARTIALLY_CORRECT: 'teilweise richtig',
+            INCORRECT: 'falsch',
+          },
+          testingHistoryChart: 'Niveau der Frage vs. Kompetenzschätzung',
+          testingHistoryChartNote:
+            'Markierungen: Niveau jeder beantworteten Frage (gefüllt = richtig, halb = teilweise richtig, leer = falsch), eingefärbt nach Kompetenz. Gestrichelte Linien: aktuelle Schätzung pro Kompetenz; Schätzungen pro Kompetenz nach jeder Antwort werden nicht gespeichert. Durchgezogene Linie: Gesamtschätzung nach jeder Antwort, sofern gespeichert.',
+          testingHistoryCurrentEstimate: 'aktuell {level}',
           remainingTime: 'Verbleibende Zeit: {time}',
           timeLimitReached:
             'Die Zeit ist abgelaufen. Dein Ergebnis wird geprüft…',
@@ -238,10 +255,10 @@ const messages = {
             '{count, plural, one {Nach # beantworteter Frage liegen noch nicht genügend Daten für ein Gesamtniveau vor.} other {Nach # beantworteten Fragen liegen noch nicht genügend Daten für ein Gesamtniveau vor.}}',
         },
         profile: {
-          earlyIndication: 'Erste Einschätzung: {level}',
+          earlyIndication: '{level} (grobe Schätzung)',
           plausibleRange: 'Plausibler Bereich: {range}',
           fewResponses:
-            '{count, plural, one {Basiert auf nur # Antwort. Dies ist eine erste, noch sehr unsichere Einschätzung.} other {Basiert auf nur # Antworten. Dies ist eine erste, noch sehr unsichere Einschätzung.}}',
+            '{count, plural, one {Basiert auf nur # Antwort – die Spanne ist noch breit.} other {Basiert auf nur # Antworten – die Spanne ist noch breit.}}',
           supportedEstimate:
             'Deine Antworten stützen diese Einschätzung. Der schattierte Bereich zeigt die verbleibende Unsicherheit.',
           uncertainEstimate:

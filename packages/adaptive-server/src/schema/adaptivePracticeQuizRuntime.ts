@@ -20,7 +20,10 @@ import {
   type AdaptiveStudentResult,
   type AdaptiveStudentResultNode,
   type AdaptiveSubmittedResponseFeedback,
+  type AdaptiveTestingCompetenceSnapshot,
   type AdaptiveTestingEstimate,
+  type AdaptiveTestingHistory,
+  type AdaptiveTestingHistoryEntry,
   type AdaptiveTestingInfo,
   type AdaptiveTestingSolution,
   loadAdaptiveTestingElementTags,
@@ -229,6 +232,67 @@ export function createAdaptivePracticeQuizRuntimeSchema(
       }),
     })
 
+  const AdaptiveTestingAnswerResultType = builder.enumType(
+    'AdaptivePracticeQuizTestingAnswerResult',
+    { values: ['CORRECT', 'PARTIALLY_CORRECT', 'INCORRECT'] as const }
+  )
+
+  const AdaptiveTestingHistoryEntryType = builder
+    .objectRef<AdaptiveTestingHistoryEntry>(
+      'AdaptivePracticeQuizTestingHistoryEntry'
+    )
+    .implement({
+      fields: (t) => ({
+        order: t.exposeInt('order'),
+        elementTitle: t.exposeString('elementTitle'),
+        competenceName: t.exposeString('competenceName', { nullable: true }),
+        subcompetenceName: t.exposeString('subcompetenceName', {
+          nullable: true,
+        }),
+        itemLevelLabel: t.exposeString('itemLevelLabel', { nullable: true }),
+        itemLevelPosition: t.exposeFloat('itemLevelPosition', {
+          nullable: true,
+        }),
+        result: t.expose('result', { type: AdaptiveTestingAnswerResultType }),
+        score: t.exposeFloat('score'),
+        overallTheta: t.exposeFloat('overallTheta', { nullable: true }),
+        overallPosition: t.exposeFloat('overallPosition', { nullable: true }),
+      }),
+    })
+
+  const AdaptiveTestingCompetenceSnapshotType = builder
+    .objectRef<AdaptiveTestingCompetenceSnapshot>(
+      'AdaptivePracticeQuizTestingCompetenceSnapshot'
+    )
+    .implement({
+      fields: (t) => ({
+        name: t.exposeString('name'),
+        responseCount: t.exposeInt('responseCount'),
+        theta: t.exposeFloat('theta', { nullable: true }),
+        levelLabel: t.exposeString('levelLabel', { nullable: true }),
+        levelIsTentative: t.exposeBoolean('levelIsTentative'),
+        position: t.exposeFloat('position', { nullable: true }),
+        lowerPosition: t.exposeFloat('lowerPosition', { nullable: true }),
+        upperPosition: t.exposeFloat('upperPosition', { nullable: true }),
+      }),
+    })
+
+  const AdaptiveTestingHistoryType = builder
+    .objectRef<AdaptiveTestingHistory>('AdaptivePracticeQuizTestingHistory')
+    .implement({
+      fields: (t) => ({
+        levelBands: t.expose('levelBands', {
+          type: [AdaptiveResultLevelBandRef],
+        }),
+        entries: t.expose('entries', {
+          type: [AdaptiveTestingHistoryEntryType],
+        }),
+        competenceEstimates: t.expose('competenceEstimates', {
+          type: [AdaptiveTestingCompetenceSnapshotType],
+        }),
+      }),
+    })
+
   const AdaptiveTestingInfoType = builder
     .objectRef<AdaptiveTestingInfo>('AdaptivePracticeQuizTestingInfo')
     .implement({
@@ -256,6 +320,10 @@ export function createAdaptivePracticeQuizRuntimeSchema(
         }),
         subcompetenceEstimate: t.expose('subcompetenceEstimate', {
           type: AdaptiveTestingEstimateType,
+          nullable: true,
+        }),
+        history: t.expose('history', {
+          type: AdaptiveTestingHistoryType,
           nullable: true,
         }),
       }),
@@ -380,6 +448,7 @@ export function createAdaptivePracticeQuizRuntimeSchema(
         type: AdaptiveResultClassificationType,
       }),
       levelLabel: t.exposeString('levelLabel', { nullable: true }),
+      roughLevelLabel: t.exposeString('roughLevelLabel', { nullable: true }),
       leadingLevelLabels: t.exposeStringList('leadingLevelLabels'),
       classificationProbability: t.exposeFloat('classificationProbability', {
         nullable: true,
