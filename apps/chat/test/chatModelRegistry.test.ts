@@ -182,7 +182,7 @@ describe('chat model registry provider protocol', () => {
     expect(getParticipantFallbackModelId()).toBe('gpt-5.6-luna')
   })
 
-  test('rejects a registry whose sole BASE model is not fallback Luna', async () => {
+  test('rejects a registry whose fallback Luna is not BASE', async () => {
     const { parseChatModelRegistry } = await import(
       '../src/lib/server/chatModelRegistry'
     )
@@ -207,7 +207,7 @@ describe('chat model registry provider protocol', () => {
           cost: { input: 1, output: 1 },
         },
       ])
-    ).toThrow(/gpt-5\.6-luna.*only BASE/)
+    ).toThrow(/gpt-5\.6-luna.*BASE model/)
 
     expect(() =>
       parseChatModelRegistry([

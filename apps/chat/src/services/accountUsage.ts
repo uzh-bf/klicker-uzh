@@ -1,7 +1,11 @@
 import { getEffectiveChatAccountUsage, prisma } from '@klicker-uzh/prisma'
 import { type ChatUsageClass, Prisma } from '@klicker-uzh/prisma/client'
-import { getZurichMonthStart } from '@klicker-uzh/util'
+import {
+  getZurichMonthStart,
+  isChatUsageClassEntitled,
+} from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
+import { NextResponse } from 'next/server'
 import { withTransaction } from '../utils/transactions'
 import { CreditsService } from './credits'
 
@@ -9,6 +13,23 @@ const CREDIT_SCALE = 6
 const CREDIT_LIMIT = new Prisma.Decimal('1000000000000')
 export const CHAT_TURN_ALREADY_COMPLETED_CODE = 'CHAT_TURN_ALREADY_COMPLETED'
 export const CHAT_TURN_IN_PROGRESS_CODE = 'CHAT_TURN_IN_PROGRESS'
+// Refusal codes for a usage class the account may not reach. Both chat routes
+// answer with them so a client can distinguish the class that was closed.
+export const CHAT_MODEL_UNAVAILABLE_BASE = 'CHAT_MODEL_UNAVAILABLE_BASE'
+export const CHAT_MODEL_UNAVAILABLE_ADVANCED = 'CHAT_MODEL_UNAVAILABLE_ADVANCED'
+
+export function chatModelUnavailableResponse(usageClass: ChatUsageClass) {
+  return NextResponse.json(
+    {
+      error: 'Chat model usage is unavailable',
+      code:
+        usageClass === 'BASE'
+          ? CHAT_MODEL_UNAVAILABLE_BASE
+          : CHAT_MODEL_UNAVAILABLE_ADVANCED,
+    },
+    { status: 403 }
+  )
+}
 
 export function isChatAccountUsageEnforcementEnabled(): boolean {
   return process.env.CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED === 'true'
@@ -92,6 +113,18 @@ async function lockChatTurnParent(
   )
 }
 
+async function loadChatUsageEntitlement(ownerId: string) {
+  const owner = await prisma.user.findUnique({
+    where: { id: ownerId },
+    select: { aiFeaturesEnabled: true, aiChatbotCostCenter: true },
+  })
+
+  return {
+    aiFeaturesEnabled: owner?.aiFeaturesEnabled ?? false,
+    aiChatbotCostCenter: owner?.aiChatbotCostCenter ?? null,
+  }
+}
+
 export async function isChatAccountUsageAvailable({
   ownerId,
   usageClass,
@@ -102,11 +135,8 @@ export async function isChatAccountUsageAvailable({
   now?: Date
 }): Promise<boolean> {
   const monthStart = getZurichMonthStart(now)
-  const [owner, usage] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: ownerId },
-      select: { aiFeaturesEnabled: true },
-    }),
+  const [entitlement, usage] = await Promise.all([
+    loadChatUsageEntitlement(ownerId),
     getEffectiveChatAccountUsage(prisma, {
       ownerId,
       usageClass,
@@ -115,7 +145,7 @@ export async function isChatAccountUsageAvailable({
   ])
 
   return Boolean(
-    owner?.aiFeaturesEnabled &&
+    isChatUsageClassEntitled({ usageClass, ...entitlement }) &&
       usage?.budgetCredits.greaterThan(0) &&
       usage.usedCredits.lessThan(usage.budgetCredits)
   )
