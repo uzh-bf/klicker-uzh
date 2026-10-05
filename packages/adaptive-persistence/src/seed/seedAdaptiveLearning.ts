@@ -451,7 +451,10 @@ Enter the percentage as a number.`
         persistedNode.kind !== seedNode.kind ||
         persistedNode.depth !== seedNode.depth ||
         persistedNode.order !== seedNode.order ||
-        persistedNode.weight !== seedNode.weight
+        // Only root competences carry a weight in the engine input; non-root
+        // nodes are sent with null while the column keeps its default.
+        (seedNode.parentId === null &&
+          persistedNode.weight !== seedNode.weight)
       )
         throw new Error(
           'Persisted adaptive seed topology differs from engine input.'
