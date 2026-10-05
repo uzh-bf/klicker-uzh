@@ -415,6 +415,10 @@ export function createAdaptivePracticeQuizRuntimeSchema(
       order: t.exposeInt('order'),
       startPosition: t.exposeFloat('startPosition'),
       endPosition: t.exposeFloat('endPosition'),
+      color: t.string({
+        nullable: true,
+        resolve: ({ color }) => color ?? null,
+      }),
     }),
   })
 

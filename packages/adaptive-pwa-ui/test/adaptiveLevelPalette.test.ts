@@ -7,6 +7,7 @@ import {
   getAdaptiveLevelColorSpecs,
   getAdaptiveLevelColors,
   getAdaptiveLevelGroupEnds,
+  hasAdaptiveLevelMarkerContrast,
   relativeLuminance,
 } from '../src/components/practiceQuiz/adaptive/adaptiveLevelPalette'
 
@@ -131,5 +132,59 @@ describe('adaptive level palette', () => {
     expect(colors).toEqual([byOrder[2], byOrder[0], byOrder[1]])
     expect(getAdaptiveLevelColors([])).toEqual([])
     expect(getAdaptiveLevelColors(['Only'])).toHaveLength(1)
+  })
+
+  it('replaces only the overridden level color and keeps the rest', () => {
+    const defaults = getAdaptiveLevelColors(cefrSublevels)
+    const overrides = cefrSublevels.map((_, index) =>
+      index === 5 ? '#FFAA00' : index === 0 ? null : undefined
+    )
+    const colors = getAdaptiveLevelColors(cefrSublevels, overrides)
+    expect(colors[5]).toBe('#ffaa00')
+    expect(colors.filter((_, index) => index !== 5)).toEqual(
+      defaults.filter((_, index) => index !== 5)
+    )
+    // The unprefixed lowest level stays neutral gray when not overridden.
+    expect(colors[0]).toBe(defaults[0])
+    // Invalid overrides fall back to the default color.
+    expect(getAdaptiveLevelColors(['A1', 'A2'], ['red', '#12345'])).toEqual(
+      getAdaptiveLevelColors(['A1', 'A2'])
+    )
+    // An overridden gray level uses the override.
+    expect(getAdaptiveLevelColors(cefrSublevels, ['#eeeeee'])[0]).toBe(
+      '#eeeeee'
+    )
+  })
+
+  it('maps band overrides by level order and keeps group separators', () => {
+    const bands = cefrSublevels.map((label, order) => ({
+      label,
+      order,
+      color: order === 3 ? '#cc0000' : null,
+    }))
+    const shuffled = [...bands].reverse()
+    const colors = getAdaptiveLevelBandColors(shuffled)
+    const defaults = getAdaptiveLevelBandColors(
+      shuffled.map(({ color: _color, ...band }) => band)
+    )
+    const overriddenIndex = shuffled.findIndex((band) => band.order === 3)
+    expect(colors[overriddenIndex]).toBe('#cc0000')
+    expect(colors.filter((_, index) => index !== overriddenIndex)).toEqual(
+      defaults.filter((_, index) => index !== overriddenIndex)
+    )
+    expect(getAdaptiveLevelGroupEnds(bands)).toEqual(
+      getAdaptiveLevelGroupEnds(
+        cefrSublevels.map((label, order) => ({ label, order }))
+      )
+    )
+  })
+
+  it('reports marker contrast for custom colors', () => {
+    expect(hasAdaptiveLevelMarkerContrast('#ffffff')).toBe(true)
+    expect(hasAdaptiveLevelMarkerContrast('#ffaa00')).toBe(true)
+    expect(hasAdaptiveLevelMarkerContrast('#102040')).toBe(false)
+    expect(hasAdaptiveLevelMarkerContrast(ADAPTIVE_LEVEL_MARKER_COLOR)).toBe(
+      false
+    )
   })
 })

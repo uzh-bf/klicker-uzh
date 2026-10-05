@@ -19,6 +19,7 @@ import {
   normalizeV2Position,
   serializeV2LevelBands,
 } from './adaptivePracticeQuizV2ParticipantViews.js'
+import { competenceTreeLevelColorsById } from './competenceTreeLevelColors.js'
 
 // Attaches attempt-level testing data (estimates, answer history) to the
 // served item's testing info. Testing info itself only exists when
@@ -47,7 +48,11 @@ export function withAttemptTestingEstimates(
         estimates: attempt.estimates,
         levelBands: v2
           ? serializeV2LevelBands(runtime)
-          : serializeLevelBands(runtime.algorithm.levels, settings),
+          : serializeLevelBands(
+              runtime.algorithm.levels,
+              settings,
+              competenceTreeLevelColorsById(runtime.tree.levels)
+            ),
         normalizeTheta: v2
           ? (theta) => normalizeV2Position(theta, runtime)
           : (theta) => normalizeThetaForChart(theta, settings.thetaRange),

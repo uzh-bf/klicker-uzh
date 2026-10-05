@@ -3,6 +3,8 @@ export type AdaptiveResultLevelBand = {
   order: number
   startPosition: number
   endPosition: number
+  /** Lecturer-chosen band color (`#rrggbb`); null uses the default palette. */
+  color?: string | null
 }
 
 export type AdaptiveResultTrajectoryPoint = {

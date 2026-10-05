@@ -10,6 +10,10 @@ import * as DB from '@klicker-uzh/prisma/client'
 import type { PrismaTransactionClient } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
 import {
+  type CompetenceTreeLevelColorInput,
+  normalizeCompetenceTreeLevelColor,
+} from './competenceTreeLevelColors.js'
+import {
   type CompetenceTreeValidationResult,
   hasControlledAdaptiveAnswer,
   validateCompetenceTreeShape,
@@ -26,6 +30,8 @@ export type CompetenceTreeLevelInput = {
   key: string
   label: string
   order: number
+  /** Optional `#RRGGBB` presentation color; null uses the default palette. */
+  color?: string | null
 }
 
 export type CompetenceTreeNodeInput = {
@@ -78,6 +84,8 @@ export type CompetenceTreeMetadataInput = {
   description?: string | null
   defaultTotalQuestionCap?: number | null
   defaultTimeLimitSeconds?: number | null
+  /** Cosmetic level colors; editable even when the structure is locked. */
+  levelColors?: CompetenceTreeLevelColorInput[] | null
 }
 
 export type DuplicateCompetenceTreeInput = {
@@ -107,6 +115,7 @@ export function prepareTreeInput(
     ...level,
     key: level.key.trim(),
     label: level.label.trim(),
+    color: normalizeCompetenceTreeLevelColor(level.color),
   }))
   const nodes = input.nodes.map((node) => ({
     ...node,
@@ -285,7 +294,12 @@ export async function persistTreeStructure(
   const levelIds = new Map<string, number>()
   for (const level of input.levels.slice().sort((a, b) => a.order - b.order)) {
     const created = await tx.competenceTreeLevel.create({
-      data: { treeId, label: level.label, order: level.order },
+      data: {
+        treeId,
+        label: level.label,
+        order: level.order,
+        color: level.color ?? null,
+      },
       select: { id: true },
     })
     levelIds.set(level.key, created.id)

@@ -59,6 +59,8 @@ interface AdaptiveCompetenceProfileProps {
     order: number
     startPosition: number
     endPosition: number
+    /** Lecturer-chosen band color; null uses the default palette. */
+    color?: string | null
   }>
   nodes: AdaptiveCompetenceProfileNode[]
 }

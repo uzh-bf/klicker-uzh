@@ -51,6 +51,7 @@ fragment FAdaptivePracticeQuizAttemptState on AdaptivePracticeQuizAttemptState {
           order
           startPosition
           endPosition
+          color
         }
         entries {
           order

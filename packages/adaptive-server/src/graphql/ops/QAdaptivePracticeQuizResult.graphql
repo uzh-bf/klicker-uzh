@@ -21,6 +21,7 @@ query QAdaptivePracticeQuizResult($attemptId: String!) {
       order
       startPosition
       endPosition
+      color
     }
     trajectory {
       order
