@@ -9,13 +9,12 @@ import {
   startAdaptivePracticeQuizAttempt,
   submitAdaptivePracticeQuizResponse,
 } from '../src/services/adaptivePracticeQuizzes.js'
-
+import { itWithAdaptiveEngine } from './adaptiveEngineTestEnv.js'
 import {
   choiceOptions,
   contextFor,
   createRuntimeFixture,
 } from './adaptivePracticeQuizRuntimeTestSupport.js'
-import { itWithAdaptiveEngine } from './adaptiveEngineTestEnv.js'
 
 export function registerAdaptivePracticeQuizAttemptFlowTests() {
   itWithAdaptiveEngine(
@@ -84,6 +83,17 @@ export function registerAdaptivePracticeQuizAttemptFlowTests() {
       expect(
         stored.responses.map(({ elapsedSeconds }) => elapsedSeconds)
       ).toEqual([null, 3])
+      // Each answer stores its competence estimate before and after it; the
+      // first answer of a competence has no estimate before it.
+      expect(stored.responses[0]).toMatchObject({
+        competenceThetaBefore: null,
+        competenceStandardErrorBefore: null,
+        competenceThetaAfter: expect.any(Number),
+        competenceStandardErrorAfter: expect.any(Number),
+      })
+      expect(stored.responses[1]?.competenceThetaBefore).toBe(
+        stored.responses[0]?.competenceThetaAfter
+      )
     }
   )
 
