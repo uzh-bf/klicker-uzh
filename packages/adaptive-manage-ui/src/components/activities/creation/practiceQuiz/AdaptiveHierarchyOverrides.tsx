@@ -119,6 +119,12 @@ function AdaptiveHierarchyOverrides({
 
   const renderNode = (node: AdaptiveHierarchyNodeData): React.ReactNode => {
     const override = overrideByNode.get(node.id)
+    // An excluded ancestor excludes the whole subtree: its rows read as
+    // unchecked and locked, while their own choice is kept for when the
+    // ancestor is included again.
+    const ancestorExcluded =
+      typeof node.parentId === 'number' &&
+      !isNodeLocallyEnabled(node.parentId, nodeById, overrideByNode)
     const directEnabled = override?.enabled ?? true
     const effective = effectiveByNode.get(node.id)
     const effectiveEnabled =
@@ -147,7 +153,8 @@ function AdaptiveHierarchyOverrides({
             </label>
             <Checkbox
               id={`adaptive-node-enabled-${node.id}`}
-              checked={directEnabled}
+              checked={directEnabled && !ancestorExcluded}
+              disabled={ancestorExcluded}
               onCheck={() => {
                 if (directEnabled) {
                   setPendingDisableId(node.id)
@@ -184,7 +191,7 @@ function AdaptiveHierarchyOverrides({
                 precision={2}
                 label={t('manage.activityWizard.adaptive.hierarchy.weight')}
                 unit={`${normalizedWeight.toFixed(0)}%`}
-                disabled={!directEnabled}
+                disabled={!directEnabled || ancestorExcluded}
                 data={{ cy: `adaptive-node-weight-${node.id}` }}
                 className={{ input: 'h-8' }}
               />
@@ -198,7 +205,7 @@ function AdaptiveHierarchyOverrides({
             max={1000}
             precision={0}
             label={t('manage.activityWizard.adaptive.hierarchy.cap')}
-            disabled={!directEnabled}
+            disabled={!directEnabled || ancestorExcluded}
             data={{ cy: `adaptive-node-cap-${node.id}` }}
             className={{ input: 'h-8' }}
           />

@@ -5,7 +5,10 @@ import {
   FetchResult,
   MutationFunctionOptions,
 } from '@apollo/client'
-import { serializeAdaptivePracticeQuizConfig } from '@klicker-uzh/adaptive-manage-ui/source/components/activities/creation/practiceQuiz/adaptivePracticeQuizForm.ts'
+import {
+  serializeAdaptivePracticeQuizConfig,
+  withoutUnauthorableScale,
+} from '@klicker-uzh/adaptive-manage-ui/source/components/activities/creation/practiceQuiz/adaptivePracticeQuizForm.ts'
 import {
   AdaptiveTranslator,
   formatAdaptiveApolloError,
@@ -94,7 +97,9 @@ async function submitPracticeQuizForm({
           }),
       mode: values.mode,
       adaptiveConfig: adaptive
-        ? serializeAdaptivePracticeQuizConfig(values.adaptiveConfig)
+        ? serializeAdaptivePracticeQuizConfig(
+            withoutUnauthorableScale(values.adaptiveConfig, editMode)
+          )
         : undefined,
       multiplier: adaptive ? 0 : parseInt(values.multiplier),
       courseId: values.courseId!,

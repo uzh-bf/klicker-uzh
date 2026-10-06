@@ -125,6 +125,21 @@ export function switchPracticeQuizMode(
   }
 }
 
+/**
+ * IRT v2 (calibrated scale) authoring is disabled, so a new quiz never carries
+ * a scale, even one restored from an older wizard draft or copied from a
+ * duplicated v2 quiz; the server would reject an inactive scale. Editing an
+ * existing quiz keeps its scale.
+ */
+export function withoutUnauthorableScale(
+  config: AdaptivePracticeQuizConfigFormValues,
+  editMode: boolean
+): AdaptivePracticeQuizConfigFormValues {
+  return ADAPTIVE_V2_AUTHORING_ENABLED || editMode || !config.scaleVersionId
+    ? config
+    : { ...config, scaleVersionId: undefined }
+}
+
 export function serializeAdaptivePracticeQuizConfig(
   config: AdaptivePracticeQuizConfigFormValues
 ): AdaptivePracticeQuizConfigInput | undefined {

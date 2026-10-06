@@ -43,6 +43,7 @@ import {
   isManageAdaptivePresetSelectable,
   mapAdaptivePracticeQuizPreviewToForm,
   serializeAdaptivePracticeQuizConfig,
+  withoutUnauthorableScale,
 } from './adaptivePracticeQuizForm'
 import {
   asAdaptiveTranslator,
@@ -191,10 +192,21 @@ function AdaptivePracticeQuizSetupStep({
     (tree) => tree.id === selectedTreeId
   )
 
+  const initialValues = useMemo(
+    () => ({
+      ...formData,
+      adaptiveConfig: withoutUnauthorableScale(
+        formData.adaptiveConfig,
+        editMode
+      ),
+    }),
+    [formData, editMode]
+  )
+
   return (
     <Formik
       validateOnMount
-      initialValues={formData}
+      initialValues={initialValues}
       onSubmit={onSubmit!}
       innerRef={formRef}
       validationSchema={validationSchema}
