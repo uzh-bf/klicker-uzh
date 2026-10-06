@@ -1,0 +1,9 @@
+query QAdaptivePracticeQuizAttemptDiagnostics($practiceQuizId: String!) {
+  adaptivePracticeQuizAttemptDiagnostics(practiceQuizId: $practiceQuizId) {
+    levelLabels
+    earlierPublicationAttemptCount
+    attempts {
+      ...FAdaptiveAttemptDiagnosticSummary
+    }
+  }
+}

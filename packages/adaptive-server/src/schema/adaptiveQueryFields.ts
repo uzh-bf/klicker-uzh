@@ -3,10 +3,12 @@ import type {
   AdaptiveSchemaBuilder,
 } from '@klicker-uzh/graphql/adaptive-schema-host-types'
 import * as DB from '@klicker-uzh/prisma/client'
+import * as AdaptiveAttemptDiagnosticsService from '../services/adaptivePracticeQuizAttemptDiagnostics.js'
 import * as AdaptivePracticeQuizService from '../services/adaptivePracticeQuizConfig.js'
 import * as AdaptivePracticeQuizRuntimeService from '../services/adaptivePracticeQuizzes.js'
 import * as CompetenceTreeCalibrationService from '../services/competenceTreeCalibration.js'
 import * as CompetenceTreeService from '../services/competenceTreeManagement.js'
+import type { createAdaptiveAttemptDiagnosticsSchema } from './adaptiveAttemptDiagnostics.js'
 import type { createAdaptivePracticeQuizSchema } from './adaptivePracticeQuiz.js'
 import type { createAdaptivePracticeQuizRuntimeSchema } from './adaptivePracticeQuizRuntime.js'
 import type { createCompetenceTreeSchema } from './competenceTree.js'
@@ -28,6 +30,8 @@ export function adaptiveQueryFields(
     AdaptiveParticipantElementType,
     AdaptivePracticeQuizAttemptStateRef,
     AdaptiveStudentResultRef,
+    AdaptiveAttemptDiagnosticsRef,
+    AdaptiveAttemptDiagnosticRef,
     CompetenceTree,
     CompetenceTreeCatalogOwnership,
     CompetenceTreeCatalogPageType,
@@ -62,6 +66,12 @@ export function adaptiveQueryFields(
     AdaptiveStudentResultRef: ReturnType<
       typeof createAdaptivePracticeQuizRuntimeSchema
     >['AdaptiveStudentResultRef']
+    AdaptiveAttemptDiagnosticsRef: ReturnType<
+      typeof createAdaptiveAttemptDiagnosticsSchema
+    >['AdaptiveAttemptDiagnosticsRef']
+    AdaptiveAttemptDiagnosticRef: ReturnType<
+      typeof createAdaptiveAttemptDiagnosticsSchema
+    >['AdaptiveAttemptDiagnosticRef']
     CompetenceTree: ReturnType<
       typeof createCompetenceTreeSchema
     >['CompetenceTree']
@@ -283,6 +293,43 @@ export function adaptiveQueryFields(
         DB.PermissionLevel.ADMIN,
         async (_, args, ctx) =>
           AdaptivePracticeQuizRuntimeService.getAdaptivePracticeQuizItemPreview(
+            args,
+            ctx
+          )
+      ),
+    }),
+
+    // Testing environments only (ADAPTIVE_QUIZ_SHOW_SOLUTIONS=true); null
+    // elsewhere. Same lecturer permission as the cohort results.
+    adaptivePracticeQuizAttemptDiagnostics: t.withAuth(asUser).field({
+      nullable: true,
+      type: AdaptiveAttemptDiagnosticsRef,
+      args: {
+        practiceQuizId: t.arg.string({ required: true }),
+      },
+      resolve: withPermission(
+        (args) => ({ practiceQuizId: args.practiceQuizId }),
+        DB.PermissionLevel.ADMIN,
+        async (_, args, ctx) =>
+          await AdaptiveAttemptDiagnosticsService.getAdaptivePracticeQuizAttemptDiagnostics(
+            args,
+            ctx
+          )
+      ),
+    }),
+
+    adaptivePracticeQuizAttemptDiagnostic: t.withAuth(asUser).field({
+      nullable: true,
+      type: AdaptiveAttemptDiagnosticRef,
+      args: {
+        practiceQuizId: t.arg.string({ required: true }),
+        attemptCode: t.arg.string({ required: true }),
+      },
+      resolve: withPermission(
+        (args) => ({ practiceQuizId: args.practiceQuizId }),
+        DB.PermissionLevel.ADMIN,
+        async (_, args, ctx) =>
+          await AdaptiveAttemptDiagnosticsService.getAdaptivePracticeQuizAttemptDiagnostic(
             args,
             ctx
           )
