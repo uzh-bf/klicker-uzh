@@ -159,7 +159,7 @@ commit on the PR branch before the `/final-review`:
 
 | Decision | Options | Recommendation |
 | --- | --- | --- |
-| `@@index([participationId, lastAnsweredAt])` on `QuestionResponse` blocks HOT updates on a hot write table | Keep it; or index `participationId` alone while the migration is still unapplied in staging and production | Index `participationId` alone now. The repository cannot prove the migration is unapplied; an operator confirms it before the change ships |
+| `@@index([participationId, lastAnsweredAt])` on `QuestionResponse` blocks HOT updates on a hot write table. Confirmed: `combineCorrectnessParams` in `stacks.ts` sets `lastAnsweredAt` on every answer, and no other index on the table covers a column that changes per answer | Keep it; or index `participationId` alone | Index `participationId` alone now, by editing the schema and the single-statement migration file in place, then `prisma:sync` and re-inspecting the S2 current-day and overdue query plans. The migration exists only on this unmerged branch, so it cannot have reached staging or production through the promotion chain; the operator check reduces to confirming nobody applied it by hand |
 | No kill switch for the streak feature | Add a flag; or accept image rollback as the only switch | Accept image rollback and document it. The feature is additive and fail-open |
 | A day without any available content still breaks a streak | Change the daily goal; or accept and observe | Product decision; observe during the term unless the user rules otherwise |
 | "Broken" and "never started" streaks look the same | Add a state; or defer | Defer to the term review |

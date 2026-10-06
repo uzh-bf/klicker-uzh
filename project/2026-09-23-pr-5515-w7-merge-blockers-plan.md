@@ -298,3 +298,8 @@ withheld.
   practice-quiz embeds no longer query or refetch the hidden streak card.
   The pre-push build first failed on duplicate `.next/dev` type declarations
   from the running dev server, then passed 23/23 once the dev servers were stopped.
+- 2026-10-06 — Terminal condition held open on purpose: CI passes at
+  `ef51300754`, but the `/final-review` waits for the roadmap's Before merge
+  decision so one review covers the final head. The roadmap reconciliation
+  (`e93bf4ff1d`) records the W7 result and the Prisma statement-splitting
+  contradiction between the readiness report and the drill.
