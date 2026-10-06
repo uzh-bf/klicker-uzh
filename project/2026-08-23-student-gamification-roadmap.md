@@ -3,29 +3,30 @@
 ## Identity and status
 
 - Date: 2026-08-23
-- Last reconciled: 2026-09-23
-- Status: implemented through W6 but **not merge-ready**. The 2026-09-09
-  production-readiness audit of PR #5515 returned `not-ready`: five confirmed
-  merge blockers and one that the repository cannot settle. See
-  [Merge blockers](#merge-blockers). The user approved
-  [W7](#w7--merge-blocker-closure-for-pr-5515) on 2026-09-23 to close the
-  repository-owned blockers. Merge, ClickUp reconciliation,
-  deployment, cleanup, and live-data actions remain separate authority
-  boundaries.
+- Last reconciled: 2026-10-06
+- Status: implemented through W7 and **merge-candidate**. W7 closed the four
+  repository-owned blockers from the 2026-09-09 readiness audit; the
+  GitGuardian check passes at the current head. One blocker remains an
+  operator action before deployment (the assessment database Secret check).
+  See [Merge blockers](#merge-blockers) and
+  [Before merge](#before-merge) for the improvements still worth making
+  before the merge decision. Merge, ClickUp reconciliation, deployment,
+  cleanup, and live-data actions remain separate authority boundaries.
 - Repository: `uzh-bf/klicker-uzh`
 - Authoritative remote base checked: remote `v3` at
-  `bd5cc8a186` on 2026-09-23
+  `6189a7487b` on 2026-10-05
 - Roadmap worktree: branch `rs/gamification-achievement-receipts`. The package
   was built in `trees/gamification-roadmap` on another workstation. The
-  2026-09-09 audit and this reconciliation used the linked worktree
+  2026-09-09 audit, W7, and this reconciliation used the linked worktree
   `trees/pr5515-readiness`.
-- The branch is 66 commits ahead of and 227 commits behind the checked remote
-  `v3`. It no longer merges cleanly: nine files conflict. The 2026-08-29
-  integration pass is stale.
-- Delivery layer: PR #5515 is open and not a draft. Its checks at the PR head
-  show GitGuardian failing and `final-ai-review` pending. Merge, ClickUp
-  reconciliation, deployment, cleanup, and live-data actions remain separate
-  authority boundaries.
+- The branch is 77 commits ahead of and zero commits behind the checked remote
+  `v3`. The last integration merge is `ef51300754` (2026-10-05).
+- Delivery layer: PR #5515 is open and not a draft. At head `ef51300754`
+  every check passes except `final-ai-review`, which is pending until the next
+  `/final-review` comment. The comment is held until the
+  [Before merge](#before-merge) decision so that one review covers the final
+  head. Merge, ClickUp reconciliation, deployment, cleanup, and live-data
+  actions remain separate authority boundaries.
 - Audience: an engineer or execution agent with no earlier session context.
 
 Read these sources before starting:
@@ -71,10 +72,10 @@ or efficacy claim.
 | --- | --- | --- | --- |
 | Course gamification | `Course.isGamificationEnabled`, participant leaderboard participation through `Participation.isActive`, course points, session points, and privacy-aware profiles exist | Backlog contains further gamification-setting work | Reuse the existing lecturer activation and participant join flow |
 | XP and avatars | XP is recorded on the participant, response feedback shows awarded XP, levels exist, and profile avatars are account-level | Graduated XP, caps, and multipliers are concepts only | Leave unchanged in this package |
-| Course leaderboards | Top 10 plus self, rolling 14-day mode, privacy handling, opt-in, tie-aware ranks, and nearby context are implemented in PR #5515 | Further leaderboard scope is not planned | Package work is on PR #5515; merge is blocked by the readiness findings |
+| Course leaderboards | Top 10 plus self, rolling 14-day mode, privacy handling, opt-in, tie-aware ranks, and nearby context are implemented in PR #5515 | Further leaderboard scope is not planned | Package work is on PR #5515, which is a merge candidate after W7 |
 | Responses | `QuestionResponseDetail` stores each PracticeQuiz and MicroLearning attempt; `QuestionResponse` stores one aggregate per participant and question instance with `lastAnsweredAt` | Regular LiveQuiz responses remain Redis-only; `LiveQuizResponse` is persisted for assessment flows | Use the existing aggregate for today and existing details for overdue repair; exclude regular LiveQuiz at launch |
-| Streaks and freezes | `Participation` state, Prisma reconciliation, self-scoped API, PWA cards/progress including course and start-page placement, daily progress, notices, focused tests, and browser proof are implemented | A runtime migration on container start initializes existing active participations without response backfill. Current `v3` replaced the runner it lives in, so the merge can drop it silently. The streak migration can also block later deploys if it is interrupted | Keep the private, course-scoped contract; no new streak primitive |
-| Achievements | Catalog discoverability, historical award preservation, private `receiptAcknowledgedAt`, idempotent self-only acknowledgement, and retryable post-presentation receipt UI are implemented | The last `/final-review` request on 2026-08-29 predates the PR head `9a5dcbe47`, so `final-ai-review` is pending there | Preserve every award; keep public profiles receipt-free |
+| Streaks and freezes | `Participation` state, Prisma reconciliation, self-scoped API, PWA cards/progress including course and start-page placement, daily progress, notices, focused tests, and browser proof are implemented | A runtime migration on container start initializes existing active participations without response backfill. W7 registered it once in `v3`'s runner, protected by a registry test, and split the streak migration so an interrupted index build no longer blocks later deploys. Enabling gamification through the course settings form still skips that initialization; see [Before merge](#before-merge) | Keep the private, course-scoped contract; no new streak primitive |
+| Achievements | Catalog discoverability, historical award preservation, private `receiptAcknowledgedAt`, idempotent self-only acknowledgement, and retryable post-presentation receipt UI are implemented | The last `/final-review` request on 2026-08-29 predates the current PR head, so `final-ai-review` is pending until the next request | Preserve every award; keep public profiles receipt-free |
 | Product experimentation | Normal logs, support feedback, and product iteration exist | Open PR #5323 concerns GrowthBook and Learning Analytics; it is not part of this package | No new experiment, survey, or analysis workstream |
 
 Verified repository history:
@@ -88,46 +89,97 @@ Verified repository history:
 - [PR #5323](https://github.com/uzh-bf/klicker-uzh/pull/5323) remains
   open and is not a dependency.
 
-The student-gamification implementation package and W6 receipt correction are
-published on `rs/gamification-achievement-receipts` at exact head `285d58895`.
-S1 nearby leaderboard context, S2 private Study streaks, S3 achievement
-changes, S4 PWA presentation, follow-up streak corrections, and W6 receipt
-closure are on the branch. Exact-head CI passed on 2026-08-29 with only the
-known pre-existing GitGuardian false positive red; the `/final-review` run
-completed. W6 is delivered pending the separate merge decision; no follow-up
-W-item is currently ordered. Further gamification continuation (for example
+The student-gamification implementation package, the W6 receipt correction,
+and the W7 merge-blocker closure are published on
+`rs/gamification-achievement-receipts` at exact head `ef51300754`. S1 nearby
+leaderboard context, S2 private Study streaks, S3 achievement changes, S4 PWA
+presentation, follow-up streak corrections, W6 receipt closure, and W7 are on
+the branch. Exact-head CI passes at that head, including GitGuardian; only
+`final-ai-review` is pending. Further gamification continuation (for example
 streak XP and multipliers) stays explicitly deferred in this roadmap.
 
-The 2026-09-09 readiness audit found that the branch cannot merge as it stands;
-[Merge blockers](#merge-blockers) lists what must change first. The user
-approved [W7](#w7--merge-blocker-closure-for-pr-5515) on 2026-09-23 as the
-package that closes the repository-owned rows.
+The 2026-09-09 readiness audit found that the branch could not merge as it
+stood; [Merge blockers](#merge-blockers) records how W7 closed the
+repository-owned rows. [Before merge](#before-merge) triages the audit's
+remaining major and minor findings into the improvements worth making before
+the merge decision, the decisions that need a ruling, and the operator steps
+that precede deployment.
 
 ### Merge blockers
 
 Source: [PR #5515 production readiness](2026-09-09-pr5515-production-readiness.md),
 audited at PR head `9a5dcbe47`. The conflict count and check states were
-rechecked on 2026-09-23.
+rechecked on 2026-09-23. The states below were reconciled on 2026-10-06
+against head `ef51300754`.
 
 | Blocker | State | What settles it |
 | --- | --- | --- |
-| The branch does not merge into `v3` | Confirmed. Nine files conflict, including all four conflicting `apps/backend-docker/` files, which carry the startup migration runner | One integration pass with the hand-merge described in the next row |
-| No file-by-file conflict resolution of the backend startup runner both compiles and keeps the package correct | Confirmed. Keeping `v3`'s runner file alone breaks the typecheck. Keeping all three `v3` backend files compiles but deletes streak initialization. Keeping the PR's files drops `v3`'s advisory lock and transient-error handling | Keep `v3`'s runner. Carry the PR's rollout helper as one registered entry, and add a test that the production migration list contains it |
-| Under the likely resolution, existing participants never start streak tracking | Confirmed. They see a streak badge frozen at zero. No CI test detects the loss | The hand-merge above, then a staging check that no active participation in a gamified, non-assessment course lacks a tracking start |
-| An interrupted run of `20260823120000_add_study_streak_state` blocks every later migration deploy to that environment | Confirmed by reproduction with Prisma 7.8.0: `P3018`, then `P3009` | One statement per migration file, each concurrent index build alone in its file, plus a recovery runbook that drops an invalid index |
-| Required checks are not green | Confirmed. GitGuardian fails on a synthetic CI database password that `v3` also contains; `final-ai-review` is pending | A GitGuardian dashboard disposition, then a new `/final-review` at the integrated head |
+| The branch does not merge into `v3` | Closed by W7. `6ac3401b31` merged `v3` at `b4f9db90c0` with the documented hand-merge; `ef51300754` merged `v3` at `6189a7487b` cleanly. The branch is zero commits behind `v3` | — |
+| No file-by-file conflict resolution of the backend startup runner both compiles and keeps the package correct | Closed by W7. `v3`'s runner is kept, the streak rollout is one registered entry, and `987f4419ca` tests that the production registry contains it | — |
+| Under the likely resolution, existing participants never start streak tracking | Closed in the repository by the hand-merge and registry test. The staging check remains an operator step | After a staging rollout, confirm that no active participation in a gamified, non-assessment course lacks a tracking start |
+| An interrupted run of `20260823120000_add_study_streak_state` blocks every later migration deploy to that environment | Closed by W7. `0a104dcd16` splits the migration into three files with each concurrent index build alone in its file; `docs/data-and-migrations.md` carries the recovery runbook, drilled on disposable Postgres. See the Prisma note below the table | — |
+| Required checks are not green | Partly closed. GitGuardian passes at `ef51300754` (the synthetic CI password was dispositioned upstream); `final-ai-review` is pending until the next `/final-review` | One `/final-review` at the final head, after the [Before merge](#before-merge) decision |
 | The migrate hook may not cover the assessment backend's database | Unverifiable from the repository | A cluster-authorized operator compares digests (never values) of `DATABASE_URL` in the graphql and assessment backend Secrets |
 
-W7 settles the first four rows in the repository. The GitGuardian disposition
-and the Secret digest comparison stay user and operator actions. The staging
-check on tracking starts follows a staging rollout, which W7 does not
-authorize.
+W7 closed the first four rows in the repository. GitGuardian is green. The
+Secret digest comparison and the staging check on tracking starts remain
+operator actions, and the `/final-review` is held until the pre-merge
+improvements are decided.
 
-The report also records 24 major and 22 minor findings. These include missing
-error reporting, metrics, and tracing in the backend, which leaves both
-fail-open paths invisible. They also include an index on `QuestionResponse`
-that prevents HOT updates on a hot write table, and an irreversible receipt
-backfill.
+Prisma note: the readiness report lists a refuted blocker row stating that
+Prisma splits a multi-statement migration file into separate statements. The
+W7 drill with Prisma 7.8.0 showed the opposite: the file runs as one implicit
+transaction, so `DROP INDEX CONCURRENTLY` beside `CREATE INDEX CONCURRENTLY`
+fails with `25001`. The drill evidence is authoritative; the report row is
+left unedited as the record of what was claimed at audit time.
+
+The report also records 24 major and 22 minor findings. None was in W7 scope.
+[Before merge](#before-merge) triages them.
+
+### Before merge
+
+Triage of the open audit findings on 2026-10-06, after reading the current
+code. Each item names its evidence so the decision can be made from this
+section alone.
+
+**Do before merge** — small, safe, and cheap; recommended as one further
+commit on the PR branch before the `/final-review`:
+
+| Item | Evidence | Change |
+| --- | --- | --- |
+| Enabling gamification from the course settings form never starts streak tracking | `changeCourseSettings` in `packages/graphql/src/services/courses.ts` writes `isGamificationEnabled` without touching participations, while `enableGamification` runs the `studyStreakTrackingStartedAt` backfill for active, non-assessment participations. The two mutations diverge for the same lecturer intent | Run the same tracking-start update when `changeCourseSettings` flips gamification on |
+| The fail-open reconciliation log cannot be correlated | `studyStreak.ts` logs `study streak reconciliation failed (fail-open)` with the raw error and no identifiers | Log `courseId`, `participantId`, and the error code or message |
+| Zero-day card reads "Keep it going" | `StudyStreakCard.tsx` has no first-run variant, and `studyStreakLongest` uses a fixed "days" plural in `en.ts` and `de.ts` | Add a start variant for zero days and ICU plurals for the longest-streak line |
+| Every reconciliation writes `Participation` | `studyStreak.ts` runs `tx.participation.update` unconditionally | Skip the write when the reconciled state equals the loaded state |
+| The streak card refetch races the submit button | `QGetStudyStreakParticipation` omits `studyStreakLongest` and `studyStreakFreezeBalance`, and `ElementStack.tsx` awaits `refetchStudyStreak()` while the button only checks `responsesInitialized` | Add the two fields and disable the button during the awaited refetch |
+| Dates in the course element are hardcoded to `de-CH` | `CourseElement.tsx` builds `Intl.DateTimeFormat('de-CH', …)` | Use the active locale |
+| Docs disagree with behavior | `docs/adr/0009-private-study-streaks.md` says each missed weekday consumes a freeze; the backfill one-way door and its reversal path are undocumented; `CLAUDE.md` does not say that leaving the leaderboard resets the streak | Fix the ADR freeze clause, add the backfill reversal path to the ADR, add the `isActive` streak-reset clause |
+
+**Decide before merge** — each needs a ruling; the recommendation is in the row:
+
+| Decision | Options | Recommendation |
+| --- | --- | --- |
+| `@@index([participationId, lastAnsweredAt])` on `QuestionResponse` blocks HOT updates on a hot write table | Keep it; or index `participationId` alone while the migration is still unapplied in staging and production | Index `participationId` alone now. The repository cannot prove the migration is unapplied; an operator confirms it before the change ships |
+| No kill switch for the streak feature | Add a flag; or accept image rollback as the only switch | Accept image rollback and document it. The feature is additive and fail-open |
+| A day without any available content still breaks a streak | Change the daily goal; or accept and observe | Product decision; observe during the term unless the user rules otherwise |
+| "Broken" and "never started" streaks look the same | Add a state; or defer | Defer to the term review |
+
+**Before deploying** — operator steps, outside repository authority:
+
+- Compare digests, never values, of `DATABASE_URL` in the graphql and
+  assessment backend Secrets to settle the unverifiable blocker.
+- Time both concurrent index builds against the 600-second PreSync deadline
+  on a production-sized copy, or accept the runbook's out-of-band build path.
+- After the staging rollout, confirm that no active participation in a
+  gamified, non-assessment course lacks a tracking start.
+- Watch ArgoCD during the rollout. The only failure signals are the two
+  fail-open log strings; there is no Sentry or OpenTelemetry coverage.
+
+**After merge** — shrink the reconciliation transaction, return streak fields
+from `respondToElementStack`, bound the landing-page fan-out in
+`participants.ts`, and the UX minors (gap marker, snowflake glyph, the
+Freezes/Pausen term, the leave modal, accessibility names). ClickUp
+reconciliation and the term review stay in [Keep later](#keep-later).
 
 ## Settled product contract
 
@@ -632,6 +684,13 @@ fixtures/spec, screenshots, and wiki pages.
 - **Out of scope** — The 24 major and 22 minor audit findings, which remain
   named merge conditions. This includes measuring the index builds against
   the 600-second hook deadline and merging the two receipt migrations.
+- **Result** — Delivered 2026-09-23 to 2026-10-01: `6ac3401b31` (hand-merge),
+  `987f4419ca` (registry test), `0a104dcd16` (migration split and runbook),
+  `da89e92f4b` (docs), `176da15bcd` and `e0e4065ead` (runbook branches),
+  `d35c2a5bb8` (final-review fixes). The slice review and the final review
+  found no blockers. `3e699171ea` fixed a Playwright shard collision and
+  `ef51300754` merged `v3` again. CI passes at `ef51300754`; the
+  `/final-review` is held for the final head.
 
 ## Package validation and operation
 
@@ -678,12 +737,12 @@ the layer changes UI. S2 additionally records the inspected current-day and
 overdue query plans plus forced-failure repair proof. S3 records one integrated
 English and German mobile/desktop flow and the final review result.
 
-The implementation branch reached `pr_ready` through the W6 final review, then
-published exact head `285d58895`. Exact-head CI passed and the `/final-review`
-run completed on 2026-08-29 with only the known pre-existing GitGuardian false
-positive red. W6 is delivered; merge, release, deployment, and live behavior
-remain separate later states. The 2026-09-09 readiness audit found that the
-branch is not merge-ready; see [Merge blockers](#merge-blockers).
+The implementation branch reached `pr_ready` through the W6 final review and
+published exact head `285d58895`. The 2026-09-09 readiness audit then found
+it not merge-ready, and W7 closed the repository-owned blockers; see
+[Merge blockers](#merge-blockers). At head `ef51300754` exact-head CI passes,
+including GitGuardian and deploy parity, with only `final-ai-review` pending.
+Merge, release, deployment, and live behavior remain separate later states.
 
 ## Backlog reconciliation proposal
 
@@ -1080,3 +1139,31 @@ Append entries; do not rewrite history.
   table, slices and drill. This replaces the earlier note that the package
   choice awaited approval. Remote `v3` was re-fetched and is unchanged at
   `bd5cc8a186`.
+- 2026-09-25 to 2026-10-01 — W7 delivered on the PR branch. `6ac3401b31`
+  merged `v3` at `b4f9db90c0` with the hand-merge; `987f4419ca` added the
+  registry test; `0a104dcd16` split the streak migration and added the
+  recovery runbook, drilled on disposable Postgres; `da89e92f4b` aligned the
+  docs and skill text; the PR body was rewritten. The drill refuted the
+  same-file `DROP INDEX CONCURRENTLY` guard (Prisma 7.8.0 runs a file as one
+  transaction, `25001`), so each index build is alone in its file. The slice
+  review accepted one major (runbook branches on build state, `176da15bcd`,
+  `e0e4065ead`). The final review found no blockers and three findings, fixed
+  in `d35c2a5bb8`. Details are in
+  [the W7 plan](2026-09-23-pr-5515-w7-merge-blockers-plan.md).
+- 2026-10-02 — `3e699171ea` made `student-gamification.spec.ts` reuse a course
+  leaderboard entry created by an earlier spec in the same Playwright shard.
+  The host pre-push hook failed without a host install; the push used
+  `--no-verify` after the DevPod build passed.
+- 2026-10-05 — `ef51300754` merged `origin/v3` at `6189a7487b` without
+  conflicts. This picked up #6349 (host hooks pass again) and #6375 (the email
+  login test runs only on the hosted route), which had failed shard 2 on the
+  CI runner's network. Deploy parity and GitGuardian now pass upstream.
+- 2026-10-06 — Reconciliation at `ef51300754`: 77 ahead, 0 behind `v3`;
+  every check green except `final-ai-review`, which is held for the final
+  head. Status moved to merge-candidate. The Merge blockers table records the
+  W7 closures, the Prisma statement-splitting contradiction between the
+  readiness report and the drill, and the new
+  [Before merge](#before-merge) triage of the 24 major and 22 minor findings.
+  One confirmed open defect was found while triaging: `changeCourseSettings`
+  enables gamification without starting streak tracking. No code changed in
+  this reconciliation.
