@@ -32,10 +32,10 @@ hatchet:
     apiUrl: 'http://app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080'
     tlsStrategy: 'none'
     workflowName: 'course-kg-ingestion'
-    standardGenerationModel: 'klickeruzh/azure/gpt-5.6-luna'
-    standardCleaningModel: 'klickeruzh/azure/gpt-5.6-luna'
-    highGenerationModel: 'klickeruzh/azure/gpt-5.6-luna'
-    highCleaningModel: 'klickeruzh/azure/gpt-5.6-luna'
+    standardGenerationModel: 'klickeruzh/azure/gpt-6-luna'
+    standardCleaningModel: 'klickeruzh/azure/gpt-6-luna'
+    highGenerationModel: 'klickeruzh/azure/gpt-6-luna'
+    highCleaningModel: 'klickeruzh/azure/gpt-6-luna'
   workers:
     general:
       replicaCount: 1
@@ -248,23 +248,41 @@ chat:
   accountUsageEnforcementEnabled: false
 
   automaticModels:
-    primaryId: gpt-6-luna
-    fallbackId: gpt-5.6-luna
+    primaryId: auto
+    fallbackId: gpt-6-luna
 
   modelRegistry:
-    # GPT-6 Luna is the global automatic-model primary, so chatbots using
-    # automatic model selection use it by default; explicit model selections
-    # remain respected. GPT-5.6 Luna stays the participant-credit fallback.
-    # "Auto" routes through the LiteLLM auto-router, which self-selects the
-    # tier per request (SIMPLE=gpt-6-luna-high, MEDIUM=gpt-6-luna-xhigh,
-    # COMPLEX=gpt-6-sol-high, REASONING=gpt-6-sol-medium; match_threshold
-    # 0.55). Luna and Sol are cheap enough that Auto is a BASE model; Sol
-    # selected directly stays ADVANCED.
+    # Staging makes Auto the global automatic-model primary, so chatbots using
+    # automatic model selection exercise auto-router-v2; production keeps GPT-6
+    # Luna there. Explicit model selections remain respected, and new chatbots
+    # still start fixed on GPT-6 Luna. GPT-6 Luna is the participant-credit
+    # fallback.
+    # "Auto" routes through the LiteLLM auto-router-v2, which self-selects the
+    # tier per request (SIMPLE=gpt-6-luna-high, MEDIUM=gpt-6.1-sol-low,
+    # COMPLEX=gpt-6.1-sol-medium, REASONING=gpt-6.1-sol-high; match_threshold
+    # 0.55). The v1 auto-router (MEDIUM=gpt-6-luna-xhigh, COMPLEX=
+    # gpt-6.1-sol-high, REASONING=gpt-6.1-sol-medium) stays deployed beside it
+    # for evaluation. Auto is a BASE model; Sol selected directly stays
+    # ADVANCED.
     # A chatbot can be pinned to Auto-only via its DB columns
     # (modelSelection=false + allowedModelIds=["auto"]); see the vorkurs chatbot.
-    # Auto's accounting rate is the accepted rounded blend for an observed
-    # generation mix of about 90% Luna and 10% Sol. Classifier and embedding
-    # overhead remain outside the registry's selected-model token fields.
+    # Auto's accounting rate matches a generation mix of about 50% Luna and
+    # 50% Sol at GPT-6 list prices. With v2, Sol serves most routed requests,
+    # so the rate is below list cost until prompt-cache data justify a new
+    # price. Classifier and embedding overhead remain outside the
+    # registry's selected-model token fields.
+    - id: auto
+      deploymentId: klickeruzh/azure/auto-router-v2
+      name: Auto
+      description: Automatic model selection (routes to the best model per request)
+      supportsImageAttachments: true
+      usesResponsesApi: true
+      fallback: false
+      usageClass: BASE
+      maxOutputTokens: 4096
+      cost:
+        input: 1.0
+        output: 5.0
     - id: gpt-6-luna
       deploymentId: klickeruzh/azure/gpt-6-luna
       name: GPT-6 Luna
@@ -276,24 +294,12 @@ chat:
         - medium
         - high
         - xhigh
-      fallback: false
+      fallback: true
       usageClass: BASE
       maxOutputTokens: 4096
       cost:
         input: 0.1
         output: 0.5
-    - id: auto
-      deploymentId: klickeruzh/azure/auto-router
-      name: Auto
-      description: Automatic model selection (routes to the best model per request)
-      supportsImageAttachments: true
-      usesResponsesApi: true
-      fallback: false
-      usageClass: BASE
-      maxOutputTokens: 4096
-      cost:
-        input: 1.0
-        output: 5.0
     - id: gpt-6-sol
       deploymentId: klickeruzh/azure/gpt-6-sol
       name: GPT-6 Sol
@@ -310,23 +316,22 @@ chat:
       cost:
         input: 2.0
         output: 10.0
-    - id: gpt-5.6-luna
-      deploymentId: klickeruzh/azure/gpt-5.6-luna
-      name: GPT-5.6 Luna
-      description: OpenAI reasoning model
+    - id: gpt-6.1-sol
+      deploymentId: klickeruzh/azure/gpt-6.1-sol
+      name: GPT-6.1 Sol
+      description: OpenAI frontier reasoning model
       supportsImageAttachments: true
       supportsReasoning: true
       supportedReasoningEfforts:
         - low
         - medium
         - high
-        - xhigh
-      fallback: true
-      usageClass: BASE
+      fallback: false
+      usageClass: ADVANCED
       maxOutputTokens: 4096
       cost:
-        input: 0.2
-        output: 1.2
+        input: 2.0
+        output: 10.0
     - id: gpt-5.6-sol
       deploymentId: klickeruzh/azure/gpt-5.6-sol
       name: GPT-5.6 Sol
