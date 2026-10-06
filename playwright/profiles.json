@@ -67,7 +67,11 @@
     {
       "profile": "pwa",
       "runtime": "production-webpack",
-      "specs": ["A-account-lti.spec.ts", "PA-olat-session-recovery.spec.ts"]
+      "specs": ["A-account-lti.spec.ts"]
+    },
+    {
+      "profile": "pwa",
+      "specs": ["PA-olat-session-recovery.spec.ts"]
     }
   ]
 }
