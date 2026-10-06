@@ -4,10 +4,12 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
-import { toast } from '@uzh-bf/design-system'
+import { Button, toast } from '@uzh-bf/design-system'
 import type { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import nookies from 'nookies'
+import { useEffect, useState } from 'react'
 import AccountDeletionForm from '../components/forms/AccountDeletionForm'
 import AvatarUpdateForm from '../components/forms/AvatarUpdateForm'
 import UpdateAccountInfoForm from '../components/forms/UpdateAccountInfoForm'
@@ -18,11 +20,19 @@ function EditProfile({
   participantToken,
   cookiesAvailable,
 }: {
-  participantToken?: string
+  participantToken?: string | null
   cookiesAvailable?: boolean
 }) {
   const t = useTranslations()
-  const { data, loading, refetch } = useQuery(SelfDocument)
+  const router = useRouter()
+  const { data, loading, error, refetch } = useQuery(SelfDocument)
+  const [retrying, setRetrying] = useState(false)
+  const [embedded, setEmbedded] = useState(false)
+
+  // Frame detection only selects recovery guidance; it never grants identity.
+  useEffect(() => {
+    setEmbedded(window.self !== window.top)
+  }, [])
 
   const onError = () =>
     toast({
@@ -38,18 +48,89 @@ function EditProfile({
     })
 
   useParticipantToken({
-    participantToken,
+    participantToken: participantToken ?? undefined,
     cookiesAvailable,
     callback: () => refetch(),
   })
 
-  if (loading || !data?.self) {
+  const retryProfileQuery = async () => {
+    setRetrying(true)
+    try {
+      await refetch()
+    } catch {
+      // The settled error state stays visible for another manual retry.
+    } finally {
+      setRetrying(false)
+    }
+  }
+
+  if (loading) {
     return (
       <Layout
         course={{ displayName: t('shared.generic.title') }}
         displayName={t('pwa.profile.editProfile')}
       >
         <Loader />
+      </Layout>
+    )
+  }
+
+  if (error) {
+    return (
+      <Layout
+        course={{ displayName: t('shared.generic.title') }}
+        displayName={t('pwa.profile.editProfile')}
+      >
+        <div
+          className="flex h-full flex-col items-center justify-center gap-4 text-center"
+          data-cy="participant-session-error"
+        >
+          <p className="max-w-140 text-gray-600">
+            {t('pwa.profile.sessionError')}
+          </p>
+          <Button
+            disabled={retrying}
+            onClick={() => void retryProfileQuery()}
+            className={{ root: 'h-8' }}
+            data={{ cy: 'participant-session-retry' }}
+          >
+            <Button.Label>{t('pwa.profile.sessionErrorRetry')}</Button.Label>
+          </Button>
+        </div>
+      </Layout>
+    )
+  }
+
+  if (!data?.self) {
+    return (
+      <Layout
+        course={{ displayName: t('shared.generic.title') }}
+        displayName={t('pwa.profile.editProfile')}
+      >
+        <div
+          className="flex h-full flex-col items-center justify-center gap-4 text-center"
+          data-cy="participant-session-recovery"
+        >
+          <p className="max-w-140 text-gray-600">
+            {t('pwa.profile.sessionRecovery')}
+          </p>
+          {embedded ? (
+            <p className="max-w-140 text-gray-600">
+              {t('pwa.profile.sessionRecoveryEmbedded')}
+            </p>
+          ) : null}
+          <Button
+            onClick={() =>
+              void router.push(
+                `/login?redirect_to=${encodeURIComponent('/editProfile')}`
+              )
+            }
+            className={{ root: 'h-8' }}
+            data={{ cy: 'participant-session-login' }}
+          >
+            <Button.Label>{t('shared.generic.signin')}</Button.Label>
+          </Button>
+        </div>
       </Layout>
     )
   }

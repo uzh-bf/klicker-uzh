@@ -1346,6 +1346,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       createProfileFailed:
         'Leider konnte Ihr Konto nicht erstellt oder verknüpft werden. Bitte überprüfen Sie Ihre Eingaben und versuchen Sie es erneut.',
       editProfileSuccess: 'Ihr Profil wurde erfolgreich aktualisiert.',
+      sessionError:
+        'Ihr Profil konnte nicht geladen werden. Bitte versuchen Sie es erneut.',
+      sessionErrorRetry: 'Erneut versuchen',
+      sessionRecovery:
+        'Sie sind derzeit nicht angemeldet, daher ist Ihr Profil nicht verfügbar. Melden Sie sich an, um Ihr Profil zu bearbeiten, oder öffnen Sie diese KlickerUZH-Aktivität erneut aus OLAT oder Ihrer Lernplattform, um eine neue Sitzung zu starten.',
+      sessionRecoveryEmbedded:
+        'Diese Seite ist in Ihrer Lernplattform eingebettet. Starten Sie eine neue Sitzung, indem Sie die KlickerUZH-Aktivität erneut in OLAT oder Ihrer Lernplattform öffnen.',
       dataUseTitle: 'Forschung und Learning Analytics',
       dataUseDescription:
         'Diese Einstellungen gelten für Dein gesamtes KlickerUZH-Konto. Du kannst sie jederzeit ändern.',
@@ -1408,6 +1415,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       serverSideError:
         'Ein unerwarteter Fehler ist bei Ihrer Anfrage aufgetreten. Bitte setzen Sie Ihre Cookies zurück und versuchen Sie es erneut. Wenn das Problem weiterhin besteht, wenden Sie sich an Ihren Kursleiter.',
       tryAgain: 'Erneut versuchen',
+      freshLaunchRecovery:
+        'Ihre Sitzung konnte nicht gestartet werden, da der Start aus Ihrer Lernplattform ungültig oder abgelaufen ist. Um eine neue Sitzung zu starten, öffnen Sie diese KlickerUZH-Aktivität erneut aus OLAT oder Ihrer Lernplattform.',
+      freshLaunchRecoveryEmbedded:
+        'Diese Seite ist in Ihrer Lernplattform eingebettet; eine neue Sitzung muss von dort aus gestartet werden.',
     },
     avatar: {
       hair: 'Frisur',
