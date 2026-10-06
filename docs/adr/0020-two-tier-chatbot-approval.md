@@ -57,9 +57,9 @@ per-model approval.
 
 Usage is tracked in two explicit model classes. Registry entries are classified
 as `BASE` or `ADVANCED`. GPT-6 Luna (`gpt-6-luna`, which replaced
-`gpt-5.6-luna` on 2026-09-29) is the only `BASE` model and the
-participant-credit fallback. Every other current registry entry, including
-`Auto`, is `ADVANCED`. Exhausting participant credits intentionally replaces
+`gpt-5.6-luna` on 2026-09-29) is the required `BASE` model and the
+participant-credit fallback. `Auto` is also `BASE` since the 2026-09-28
+amendment below; every other current registry entry is `ADVANCED`. Exhausting participant credits intentionally replaces
 the selected entry with Luna and therefore meters that effective turn as
 `BASE`, independently of the chatbot allow-list. Account-budget exhaustion
 remains class-specific and never switches classes. Provider-level LiteLLM
@@ -120,7 +120,7 @@ to the v3-ai workflow.
   and model choices within the account authorization) take effect
   without another approval; this bounded risk is accepted.
 - Both registry consumers reject configurations that do not make GPT-6 Luna
-  the sole `BASE` model and participant-credit fallback. CI pins registry
+  a `BASE` model and the participant-credit fallback. CI pins registry
   class, fallback, and accounting-rate parity across built-in, staging, and
   production declarations.
 - Base and advanced budgets are visible as separate usage lanes, while the

@@ -464,9 +464,10 @@ planning target, while the reset date is exact; in-flight requests may exceed
 the target. It is read-only for account owners, and it does not expose
 internal funding or provider details.
 
-The deployed Klicker Auto option is the LiteLLM `auto-router-v2` endpoint.
+On staging, the deployed Klicker Auto option is the LiteLLM `auto-router-v2`
+endpoint; production Auto still uses `auto-router`.
 The only in-repo record of its tier map is the comment above `modelRegistry`
-in `deploy/env-uzh-{stg,prd}/values.yaml`: SIMPLE = `gpt-6-luna-high`, MEDIUM
+in `deploy/env-uzh-stg/values.yaml`: SIMPLE = `gpt-6-luna-high`, MEDIUM
 = `gpt-6.1-sol-low`, COMPLEX = `gpt-6.1-sol-medium`, REASONING =
 `gpt-6.1-sol-high` (match_threshold 0.55). The v1 `auto-router` stays
 deployed with the same classifier and corpus (MEDIUM = `gpt-6-luna-xhigh`,
@@ -516,7 +517,7 @@ Auto Mode is therefore evidence about the wiring and policy simulation, never
 live production routing. The local chat registry maps the user-facing `auto`
 model id to the `auto-router-v2` LiteLLM deployment and exposes `gpt-6-luna`,
 `gpt-6-sol` and `gpt-6.1-sol` for a direct comparison. The seeded Benibot fixture allow-lists all
-four active options — `auto`, `gpt-6-luna`, `gpt-6-sol` and `gpt-4.1` —
+three active options — `auto`, `gpt-6-luna` and `gpt-6-sol` —
 explicitly, so it satisfies
 the strict model allow-list. The zero-credit safety fallback may use Luna even
 when that allow-list omits it.
@@ -588,7 +589,7 @@ Run the script on the host against the exact routed synthetic runtime. Supply
 `KLICKER_EVAL_PARTICIPANT_USERNAME`, and `KLICKER_EVAL_PARTICIPANT_PASSWORD` through
 the existing local evaluation environment. Trust the local CA through
 `NODE_EXTRA_CA_CERTS` when using HTTPS; do not disable certificate verification.
-The default model is the fixed `gpt-5.6-luna` selection. Test `auto` separately
+The default model is the fixed `gpt-6-luna` selection. Test `auto` separately
 through `KLICKER_EVAL_MODEL_ID`; it is not a controlled fixed-model comparison.
 
 ```sh
