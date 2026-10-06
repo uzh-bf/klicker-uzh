@@ -601,8 +601,16 @@ export class KlickerEvaluationTarget {
     if (!evidenceDirectory && evidenceRunId) {
       throw evidenceError('evidence_directory_missing')
     }
-    this.apiOrigin = validateLocalOrigin(apiOrigin, 'api_origin', allowedOrigins)
-    this.chatOrigin = validateLocalOrigin(chatOrigin, 'chat_origin', allowedOrigins)
+    this.apiOrigin = validateLocalOrigin(
+      apiOrigin,
+      'api_origin',
+      allowedOrigins
+    )
+    this.chatOrigin = validateLocalOrigin(
+      chatOrigin,
+      'chat_origin',
+      allowedOrigins
+    )
     this.participantUsername = participantUsername
     this.participantPassword = participantPassword
     this.chatbotId = chatbotId
