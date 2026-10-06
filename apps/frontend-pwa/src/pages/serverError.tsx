@@ -3,6 +3,7 @@ import {
   faExclamationCircle,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { participantDataUseReturn } from '@lib/participantDataUseReturn'
 import { Button, H1 } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
@@ -40,7 +41,9 @@ function Index() {
           <FontAwesomeIcon icon={faExclamationCircle} size="3x" />
           <H1 className={{ root: 'mb-0' }}>{t('pwa.serverError.warning')}</H1>
         </div>
-        {freshLaunch ? (
+        {!router.isReady ? (
+          <Loader />
+        ) : freshLaunch ? (
           <div data-cy="fresh-launch-recovery">
             <p className="max-w-140 my-4 text-gray-600">
               {t('pwa.serverError.freshLaunchRecovery')}
