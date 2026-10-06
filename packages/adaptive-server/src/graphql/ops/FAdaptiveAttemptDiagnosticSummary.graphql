@@ -15,6 +15,17 @@ fragment FAdaptiveAttemptNodeResult on AdaptiveAttemptNodeResult {
   weightShare
 }
 
+fragment FAdaptiveAttemptReview on AdaptiveAttemptReview {
+  verdict
+  expectedOverallLevelLabel
+  expectedCompetenceLevels {
+    nodeId
+    levelLabel
+  }
+  comment
+  updatedAt
+}
+
 fragment FAdaptiveAttemptDiagnosticSummary on AdaptiveAttemptDiagnosticSummary {
   attemptCode
   participantCode
@@ -36,5 +47,34 @@ fragment FAdaptiveAttemptDiagnosticSummary on AdaptiveAttemptDiagnosticSummary {
     severity
     nodeName
     value
+  }
+  estimatesComplete
+  review {
+    ...FAdaptiveAttemptReview
+  }
+  answers {
+    order
+    competenceName
+    subcompetenceName
+    nodeNamePath
+    elementTitle
+    itemLevelLabel
+    difficulty
+    discrimination
+    guessing
+    correct
+    score
+    overallThetaAfter
+    levelDistance
+    phase
+    competenceThetaBefore
+    competenceStandardErrorBefore
+    competenceLevelBefore
+    competenceThetaAfter
+    competenceStandardErrorAfter
+    competenceLevelAfter
+    competenceLowerLevelAfter
+    competenceUpperLevelAfter
+    levelDistanceBefore
   }
 }

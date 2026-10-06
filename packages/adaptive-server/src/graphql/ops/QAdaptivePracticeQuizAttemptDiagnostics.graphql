@@ -2,6 +2,19 @@ query QAdaptivePracticeQuizAttemptDiagnostics($practiceQuizId: String!) {
   adaptivePracticeQuizAttemptDiagnostics(practiceQuizId: $practiceQuizId) {
     levelLabels
     earlierPublicationAttemptCount
+    incompleteEstimateAttemptCount
+    accuracy {
+      reviewedAttempts
+      asExpected
+      tooHigh
+      tooLow
+      unsure
+      levelComparisons
+      exactShare
+      withinOneLevelShare
+      meanLevelDifference
+      meanAbsoluteLevelDifference
+    }
     attempts {
       ...FAdaptiveAttemptDiagnosticSummary
     }

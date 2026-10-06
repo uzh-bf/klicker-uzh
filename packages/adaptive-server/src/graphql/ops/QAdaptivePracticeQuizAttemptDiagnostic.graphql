@@ -13,20 +13,5 @@ query QAdaptivePracticeQuizAttemptDiagnostic(
     nodes {
       ...FAdaptiveAttemptNodeResult
     }
-    answers {
-      order
-      competenceName
-      subcompetenceName
-      nodeNamePath
-      elementTitle
-      itemLevelLabel
-      difficulty
-      discrimination
-      guessing
-      correct
-      score
-      overallThetaAfter
-      levelDistance
-    }
   }
 }
