@@ -4,7 +4,10 @@ import { type ToolSet, tool } from 'ai'
 import { describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { readCourseImage } from '../src/lib/server/courseImageStore'
-import { withCourseImageTool } from '../src/lib/server/courseImageTools'
+import {
+  canRegisterCourseImageTool,
+  withCourseImageTool,
+} from '../src/lib/server/courseImageTools'
 import {
   COURSE_IMAGE_TOOL,
   courseImageCandidates,
@@ -38,6 +41,19 @@ function searchTools(result: unknown = fixture): ToolSet {
 }
 
 describe('course image selection', () => {
+  it('registers only with scoped knowledge and a document search tool', () => {
+    expect(canRegisterCourseImageTool(searchTools(), [candidate.kb_id])).toBe(
+      true
+    )
+    expect(canRegisterCourseImageTool(searchTools(), [])).toBe(false)
+    expect(canRegisterCourseImageTool({}, [candidate.kb_id])).toBe(false)
+    expect(
+      canRegisterCourseImageTool(
+        { ...searchTools(), [COURSE_IMAGE_TOOL]: searchTools().KB_doc_query! },
+        [candidate.kb_id]
+      )
+    ).toBe(false)
+  })
   it('rejects a reserved tool-name collision without replacing the existing tool', () => {
     const existing = tool({
       inputSchema: z.object({}),
@@ -53,7 +69,6 @@ describe('course image selection', () => {
     ).toThrow(`Tool name conflict: ${COURSE_IMAGE_TOOL}`)
     expect(tools[COURSE_IMAGE_TOOL]).toBe(existing)
   })
-
   it('preserves text-only and illustrated search results in their original order', async () => {
     const result = structuredClone(fixture)
     const textOnly = {

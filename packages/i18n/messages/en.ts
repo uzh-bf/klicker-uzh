@@ -1,5 +1,10 @@
 export default {
   chat: {
+    courseImages: {
+      source: '{title} · Page {page}',
+      unavailable: 'This course image is currently unavailable.',
+      retry: 'Retry image',
+    },
     graphPanel: {
       missingEndpoint: 'Unknown concept',
       title: 'Knowledge graph',

@@ -85,6 +85,7 @@ import {
 import { BranchPicker } from './branch-picker'
 import { useChatUi, useDisclaimerGateOpen } from './chat-ui-context'
 import { ChatbotAvatar } from './chatbot-avatar'
+import { CourseImagesSection } from './course-images-section'
 import { HistoryRail } from './history-rail'
 import { MessageAttachments } from './message-attachments'
 import { AssistantMessageParts } from './message-parts'
@@ -1896,6 +1897,7 @@ const AssistantMessage: FC<{
         >
           <AssistantMessageParts />
           {showSources && <SourcesSection />}
+          {showSources && <CourseImagesSection />}
         </MessageSourcesProvider>
         <MessageMetadata includeCredits />
         <AssistantMessageError />
