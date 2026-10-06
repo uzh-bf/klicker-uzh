@@ -64,6 +64,8 @@ established participant, verified registration context, rejected state, exchange
 failure, or no launch. It never retries another account after explicit failure.
 OTP and activation credentials require their own exchange; their participant
 role does not make them session tokens.
+Edit Profile carries the verified signed handoff through its registration
+redirect, so Create Account does not substitute an older or missing LTI cookie.
 
 The application boundary installs a verified explicit page token before child
 queries. It replaces the old bearer and Apollo cache; late responses stay in

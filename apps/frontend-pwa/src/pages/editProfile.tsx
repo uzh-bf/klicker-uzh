@@ -169,11 +169,16 @@ function EditProfile({
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   try {
     const apolloClient = initializeApollo()
-    const { participantToken, cookiesAvailable, sessionState, tokenSource } =
-      await getParticipantToken({
-        apolloClient,
-        ctx,
-      })
+    const {
+      participantToken,
+      cookiesAvailable,
+      sessionState,
+      tokenSource,
+      signedLtiData,
+    } = await getParticipantToken({
+      apolloClient,
+      ctx,
+    })
 
     if (
       sessionState === 'registration_required' ||
@@ -181,7 +186,11 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     ) {
       return {
         redirect: {
-          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/createAccount`,
+          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/createAccount${
+            sessionState === 'registration_required' && signedLtiData
+              ? `?jwt=${encodeURIComponent(signedLtiData.token)}`
+              : ''
+          }`,
           permanent: false,
         },
       }

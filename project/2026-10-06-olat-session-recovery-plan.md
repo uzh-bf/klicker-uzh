@@ -124,7 +124,9 @@ stay outside the public repository and specialist scope.
    destination validation. Regular direct registration remains available. The SSR helper exposes bounded
    states: no launch, authenticated, verified launch requiring registration,
    rejected launch/session, and exchange unavailable. Select the LTI credential
-   once and return its verified registration context to Create Account. Existing
+   once and return its verified registration context to Create Account. When Edit
+   Profile redirects a verified registration-only launch, carry its signed `jwt`
+   to Create Account so an old or missing LTI cookie cannot replace that context. Existing
    callers carry the rejected/unavailable state to the application boundary.
    Participant claims require nonempty subject, role PARTICIPANT and finite
    future expiry with HS256 verification. OTP, activation, lecturer and temporary
@@ -313,6 +315,13 @@ answer and checks that only the freshly launched participant owns the saved
 response. The harness captures authenticated, anonymous, retry and expired-launch
 states; captures remain unproduced until the browser lane executes.
 
+The existing `.github/workflows/test-unit.yml` dependency-build step must also
+build `@klicker-uzh/graphql`. The added PWA contract tests import its generated
+operations and persisted-query map. CI initially omitted that dependency and
+failed with missing `dist/ops` and `dist/client.json`. Main session owns this
+one-line verification correction; test it with GraphQL output initially absent.
+Do not change application source solely to accommodate the test runner.
+
 Each substantive committed slice receives the required simplifier and bounded
 authentication risk review, with accepted corrections verified before its
 successor. Final review covers the exact committed integrated range after local
@@ -336,66 +345,101 @@ this new implementation plan. The optional opposing-provider CLI reported missin
 qualified opposing-provider opinion was obtained; unavailable optional consultation does not replace or
 block the required Astra loop.
 
-Status: execution active; delivery pending. Plan commit `a8a1035` contains the
-Astra-approved contract. Slice 1 is committed as `5176746` with reviewed scoped
-credential corrections in `edf4eb2`. Slice 2 is committed as `bdd95c0`; Astra's
-behavior-preserving middleware simplification is committed as `7c03f66`.
-Slice 3 is committed as `09db305`; Astra removed a redundant route-derived
-state/effect in `cc04910`, with PWA and harness typechecks passing.
+Status: planned source slices implemented; automated-review corrections,
+browser acceptance and publication of the CI correction remain pending.
+The native goal remains active. Draft
+[PR #6414](https://github.com/uzh-bf/klicker-uzh/pull/6414) targets `v3`.
 
-Slice 1 authentication review returned DONE after OTP/activation scope rejection
-and expired ambient-cookie coverage were corrected. Slice 2 authentication
-review returned DONE with no findings across all 22 immutable changed paths.
-Astra accepted the cookie success-sequence consolidation in slice 1 and removed
-an unnecessary one-caller tagged parser in slice 2. Scoped reports live in
-ignored `project/_local/reviews/`. Native review results establish source review,
-not browser or incident acceptance.
+### Implemented slices and review disposition
 
-Verification: 25 PWA tests and 31 backend tests pass; backend includes 20 new
-signed bearer/audience cases. Four browser-session/cache contract tests were
-added. Three pure deletion/logout checks and one cookie retention check pass;
-all three database-backed accounts, account-linking and login suites passed
-(33 tests, zero skipped) in a new guarded disposable database. The restricted
-role and disposable markers were verified; exact harness resources were removed. PWA/backend/GraphQL focused typechecks, PWA lint, touched-file format,
-staged secret scan and diff checks passed. The root production build passed all
-23 tasks on the slice 2 source plus its equivalent parser simplification.
+- Plan commit `a8a1035` contains the Astra-approved contract. Slice 1 (`5176746`)
+  and credential correction (`edf4eb2`) passed authentication review, including
+  rejection of OTP/activation credentials and expired ambient-cookie coverage.
+- Slice 2 (`bdd95c0`) passed authentication review across all 22 changed paths.
+  Astra's middleware simplification is in `7c03f66`. Source and client session,
+  cookie cleanup, cache isolation, logout and deletion contracts are implemented.
+- Slice 3 (`09db305`) includes profile recovery. Astra removed redundant derived
+  state in `cc04910`. The reviewer found a transient retry before route readiness;
+  `2dce64a` gates settled recovery surfaces on `router.isReady`, and the same
+  reviewer returned DONE for the correction.
+- Slice 4 (`3cc565b`) adds the dedicated browser harness, documentation and ADR.
+  Astra found no justified simplification. Authentication review returned
+  DONE_WITH_CONCERNS solely because browser proof is absent. The profile
+  assignment correction (`b5e6444`) passes exact-once inventory and selector checks.
 
-Current capability and verification gates:
+Reports remain in gitignored `project/_local/reviews/`. Source review does not
+establish browser acceptance or incident attribution.
 
-- Host Git fetch and individual metadata writes succeed. Task target remains
-  `v3`; `origin/v3` is `6189a7487b912a1d9e95769b2f3bb6434c34ccea`.
-  The primary checkout's unrelated branch and files are preserved.
-- Canonical host Playwright preparation rejects installed Devrouter 0.1.0,
-  below target pin 0.1.2. Doctor also fails closed on host-lock process inspection
-  (`ps spawn failed (EPERM)`). No task managed runtime has been started; all
-  browser checks and screenshots remain pending. Other tasks' runtimes stay
-  outside this task. Disposable test containers are independently owned.
-- Root `check:all` cannot pass in the isolated container because one policy test
-  requires the host Devrouter executable. A separately executed root typecheck
-  concurrently generated Prisma build/check output and left some ignored model
-  files truncated to their injected JSON-types import. Serial generation and
-  Prisma declaration build repaired that ignored output; integrated build and
-  serial typechecks are running to verify the complete source. The integrated build passed 23/23 tasks; serial checks
-  passed 34/35 tasks, with only GraphQL schema Git inspection lacking container
-  metadata. The host schema diff is empty and both standalone GraphQL type
-  checks passed. Root lint passed all seven applicable tasks.
-  No Prisma schema or unrelated source change is included in this repair.
-- The dedicated browser harness now includes runtime-profile and relevance
-  manifest entries required by the existing selector; all 10 selector tests
-  pass. Its TypeScript check passes. The harness is a manual dedicated-config
-  acceptance lane; ordinary CI exclusion or skip is not cross-browser proof.
-- Requested Claude Opus consultation produced no analysis because OAuth refresh
-  failed. No relevant Claude account change is known. AGY's authenticated catalog
-  exposes Gemini 3.8 Flash high for the ordered integrated-review fallback;
-  catalog availability alone is not a completed review.
+### Source verification
 
-Source slices and browser harness are committed. Slice 3 review identified a
-transient retry before route readiness; `2dce64a` now gates both settled surfaces
-on `router.isReady`, with passing PWA check. The same reviewer is validating
-that correction. Slice 4 simplification returned DONE; its authentication review
-is running. The draft branch is published through `3cc565b` and the PR above
-clearly carries pending verification. Finish reviews, update the draft and
-record exact-head CI. Browser acceptance prevents completed-delivery claims. Browser acceptance, exact-head hosted CI and any
-remaining checks must remain explicit. No merge or deployment is included.
-The native goal remains active until the agreed terminal condition or its
-supported blocked-state threshold is reached.
+The integrated production build passed 23/23 tasks. After the route-readiness
+correction, the PWA production build passed independently; all 25 PWA and 31
+backend unit tests passed. Backend tests include 20 signed-bearer/audience cases;
+browser-session/cache coverage adds four contract tests.
+
+The accounts, account-linking and login suites passed 33 tests with zero skips
+in a fresh marked disposable database under the restricted role. Exact database,
+Redis and network resources were removed and verified. No retained database or
+production record was changed.
+
+Serial package checks passed 34/35 tasks. The remaining GraphQL schema diff
+command lacked Git metadata in the container; the host generated schema diff
+is empty, and standalone GraphQL TypeScript and element-import checks pass.
+Root lint passed 7/7 tasks. No schema, dependency or unrelated source change is
+included.
+
+The dedicated harness TypeScript check passes, as do all 18 shard/selector checks
+and 49 selector/host-launcher policy tests. The full host CI-policy run passed
+85/86 tests; its sole failure is the installed Devrouter version below the target
+requirement. Touched-file formatting, syncpack, agent links, retired-artifact
+policy, Prisma sync, documentation links, diff checks and redacted secret scans
+pass. The root `check:all` aggregate remains unpassed; these independent results
+do not substitute for it.
+
+### Open gates and next action
+
+Automated review exposed a registration continuity gap. Edit Profile's bare
+redirect discarded a fresh verified registration launch; Create Account could
+then select an older LTI cookie or lose the LTI context entirely. The local
+correction carries only the already verified signed handoff in the redirect.
+The dedicated browser harness adds old-cookie and missing-cookie registration
+coverage. This correction is uncommitted and needs the integrated review
+correction pass. The separate render-phase session-store concern is under a
+bounded synthetic React experiment; no browser conclusion follows from it.
+
+The canonical host Playwright launcher rejects Devrouter 0.1.0 because this
+checkout requires at least 0.1.2. Doctor also fails closed on host process-owner
+inspection (`ps spawn failed (EPERM)`). No managed task runtime was started;
+other tasks' runtimes were untouched. Global tool/configuration repair is outside
+the approved package.
+
+Chromium/Firefox dedicated journeys, actual native cookie-policy observation,
+agent-browser interactions, and English/German desktop/mobile screenshots remain
+pending. The dedicated browser config starts after verified ltijs handoff and
+cannot establish real OLAT/OIDC launch behavior. Ordinary hosted CI skips this
+manual lane and cannot establish its acceptance.
+
+The requested Claude Opus consultation produced no analysis because OAuth
+refresh failed. The ordered integrated-review fallback tried AGY Gemini 3.8 Flash
+high; its headless read-file permission was denied, producing no qualified review.
+No account or permission configuration was changed. The one permitted GLM 5.3
+Flash max final-review fallback reviewed the entire 36-path committed package
+and returned pass with zero findings. Its output passed the canonical JSON
+schema. This establishes integrated source review, with browser acceptance open.
+
+The task target remains `v3` at `6189a7487b912a1d9e95769b2f3bb6434c34ccea`.
+The draft head `3c7268fc6d05d4bd4b56cd679872babd04140777` is published; exact-head
+hosted CI has a diagnosed unit-test failure: the dependency step omits generated
+GraphQL outputs needed by the PWA tests. The one-line workflow correction is
+prepared locally. With an empty isolated GraphQL output volume, the original
+missing-module failure reproduced; the corrected dependency step passed 7/7
+build tasks and all 25 PWA tests. Publish this correction, continue the same
+integrated reviewer for its one correction pass at the resulting committed
+range, and observe new-head CI after host Git writes return. Preserve the
+primary checkout and retain browser acceptance as an open gate. The latest progress consolidation
+is saved locally but cannot be committed because host Git cannot create the
+worktree index lock (`Operation not permitted`). The workflow correction is
+also uncommitted and absent from the draft PR. Its local checks do not make
+current hosted CI green. No merge, production activation or deployment is included. Mark the native goal
+complete only after its terminal condition is met; use blocked only after the
+supported repeated-blocker threshold is satisfied.

@@ -45,7 +45,11 @@ async function signed(
     .sign(new TextEncoder().encode(process.env.APP_SECRET ?? APP_SECRET))
 }
 
-async function launch(page: Page, destination: string) {
+async function launch(
+  page: Page,
+  destination: string,
+  pathname = '/editProfile'
+) {
   await page.route(`${lms}/**`, (route) =>
     route.fulfill({
       contentType: 'text/html',
@@ -57,11 +61,11 @@ async function launch(page: Page, destination: string) {
     .poll(() =>
       page
         .frames()
-        .find((item) => item.url().includes('/editProfile'))
+        .find((item) => item.url().includes(pathname))
         ?.url()
     )
     .not.toBeUndefined()
-  return page.frames().find((item) => item.url().includes('/editProfile'))!
+  return page.frames().find((item) => item.url().includes(pathname))!
 }
 
 async function profile(frame: Frame) {
@@ -263,6 +267,53 @@ test('fresh embedded launch restores B, supersedes retained A and supports quiz 
     body: await page.screenshot(),
     contentType: 'image/png',
   })
+})
+
+test('registration preserves the fresh launch across a redirect with an old or missing LTI cookie', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const newSsoId = `synthetic-registration-${randomUUID()}`
+  const newEmail = `${randomUUID()}@example.invalid`
+  const jwt = await signed({
+    sub: newSsoId,
+    email: newEmail,
+    scope: 'LTI1.3',
+  })
+  const older = await signed({ sub: ssoId, email, scope: 'LTI1.3' })
+  for (const retainOldCookie of [true, false]) {
+    await context.clearCookies()
+    if (retainOldCookie) {
+      await context.addCookies([
+        {
+          name: 'lti-token',
+          value: older,
+          domain: process.env.COOKIE_DOMAIN!,
+          path: '/',
+          secure: true,
+          httpOnly: true,
+          sameSite: 'None',
+        },
+      ])
+    }
+    const frame = await launch(
+      page,
+      `${baseURL}/editProfile?jwt=${encodeURIComponent(jwt)}`,
+      '/createAccount'
+    )
+    await expect(frame.getByTestId('email-field')).toHaveValue(newEmail)
+    const registration = await frame.evaluate(() => {
+      const data = JSON.parse(
+        document.getElementById('__NEXT_DATA__')!.textContent!
+      )
+      return data.props.pageProps
+    })
+    expect(registration.sessionState).toBe('registration_required')
+    expect(registration.signedLtiData).toBe(jwt)
+    expect(registration.ssoId).toBe(newSsoId)
+    await expect(frame.getByTestId('update-account-email')).toHaveCount(0)
+  }
 })
 
 test('memory-only B survives navigation and full reload settles before a fresh relaunch', async ({
