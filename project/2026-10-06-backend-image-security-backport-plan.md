@@ -49,6 +49,8 @@ Repository: `/Users/rschlae/Git/klicker/klicker-uzh`. Worktree: `trees/backend-i
 ## Progress
 
 - Approval: executable batch approved in this chat; no additional generic approval needed.
-- Plan review: native planner approved after one correction; optional AGY opinion unavailable because headless command permission was denied. Implementation: pending. Tests added/changed/removed: 0/0/0.
+- Plan review: native planner approved after one correction; optional AGY opinion unavailable because headless command permission was denied. Implementation: complete. Tests added/changed/removed: 0/0/0.
+- Verification passed: narrowed graph/frozen install, 902 importer specifiers, new override lifting 41 edges, formatting/syncpack, all ten backend/dependency builds, strict GraphQL/backend typechecks, four schema tests and backend-resolved Yoga query. Generated tracked sources unchanged. Full hosted suite and actual image scan remain separate gates.
+- Substantive size: 16 additions and one deletion outside the generated lockfile and this plan; floor exemption is the image security CI blocker. Existing unrelated override no-ops were preserved.
 - Slice review and final review: pending. Draft PR: none yet.
-- Next action: harden this frozen plan, commit it, then implement the dependency correction.
+- Next action: commit the verified correction, review its immutable range, then publish the approved draft.
