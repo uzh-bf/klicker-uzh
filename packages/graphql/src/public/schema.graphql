@@ -248,14 +248,21 @@ enum ActivityType {
 }
 
 type AdaptiveAttemptDiagnostic {
-  answers: [AdaptiveAttemptDiagnosticAnswer!]!
   levelLabels: [String!]!
   nodes: [AdaptiveAttemptNodeResult!]!
   summary: AdaptiveAttemptDiagnosticSummary!
 }
 
 type AdaptiveAttemptDiagnosticAnswer {
+  competenceLevelAfter: String
+  competenceLevelBefore: String
+  competenceLowerLevelAfter: String
   competenceName: String
+  competenceStandardErrorAfter: Float
+  competenceStandardErrorBefore: Float
+  competenceThetaAfter: Float
+  competenceThetaBefore: Float
+  competenceUpperLevelAfter: String
   correct: Boolean!
   difficulty: Float
   discrimination: Float
@@ -263,32 +270,49 @@ type AdaptiveAttemptDiagnosticAnswer {
   guessing: Float
   itemLevelLabel: String
   levelDistance: Int
+  levelDistanceBefore: Int
   nodeNamePath: [String!]!
   order: Int!
   overallThetaAfter: Float
+  phase: String!
   score: Float!
   subcompetenceName: String
 }
 
 type AdaptiveAttemptDiagnosticSummary {
   answerCount: Int!
+  answers: [AdaptiveAttemptDiagnosticAnswer!]!
   attemptCode: String!
   attemptNumber: Int!
   competences: [AdaptiveAttemptNodeResult!]!
   completedAt: Date
   elapsedSeconds: Int
+  estimatesComplete: Boolean!
   overall: AdaptiveAttemptNodeResult!
   participantCode: String!
   rating: String!
   ratingReasons: [AdaptiveAttemptRatingReason!]!
+  review: AdaptiveAttemptReview
   startedAt: Date!
   stopReason: String
 }
 
 type AdaptiveAttemptDiagnostics {
+  accuracy: AdaptiveAttemptReviewAccuracy!
   attempts: [AdaptiveAttemptDiagnosticSummary!]!
   earlierPublicationAttemptCount: Int!
+  incompleteEstimateAttemptCount: Int!
   levelLabels: [String!]!
+}
+
+type AdaptiveAttemptExpectedLevel {
+  levelLabel: String!
+  nodeId: Int!
+}
+
+input AdaptiveAttemptExpectedLevelInput {
+  levelLabel: String!
+  nodeId: Int!
 }
 
 type AdaptiveAttemptNodeResult {
@@ -313,6 +337,27 @@ type AdaptiveAttemptRatingReason {
   nodeName: String
   severity: String!
   value: Float
+}
+
+type AdaptiveAttemptReview {
+  comment: String
+  expectedCompetenceLevels: [AdaptiveAttemptExpectedLevel!]!
+  expectedOverallLevelLabel: String
+  updatedAt: Date!
+  verdict: String!
+}
+
+type AdaptiveAttemptReviewAccuracy {
+  asExpected: Int!
+  exactShare: Float
+  levelComparisons: Int!
+  meanAbsoluteLevelDifference: Float
+  meanLevelDifference: Float
+  reviewedAttempts: Int!
+  tooHigh: Int!
+  tooLow: Int!
+  unsure: Int!
+  withinOneLevelShare: Float
 }
 
 enum AdaptiveAttemptSelectionPolicy {
@@ -4078,6 +4123,7 @@ type Mutation {
   reviewElementGeneration(input: ReviewElementGenerationInput!): ElementGenerationBuild!
   revokeAssessmentReport(id: String!): CourseAssessmentReportRecord!
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
+  saveAdaptivePracticeQuizAttemptReview(attemptCode: String!, comment: String, expectedCompetenceLevels: [AdaptiveAttemptExpectedLevelInput!], expectedOverallLevelLabel: String, practiceQuizId: String!, verdict: String!): AdaptiveAttemptReview!
   saveChatbotRevision(chatbotId: String!, expectedRevisionVersion: Int!, input: ChatbotRevisionSaveInput!): Chatbot
   saveGeneratedElements(input: ElementGenerationBuildInput!): ElementGenerationSaveResult!
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
