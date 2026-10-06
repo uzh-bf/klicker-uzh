@@ -1715,7 +1715,7 @@ a values edit.
   675590 and 675591) show exactly the burst rule plus the sync option on
   `app-klicker` and no `asyncspot` change; the production half has no
   preview. OpenCodeReview found nothing in the two source files.
-- **Staging-only ruling, 2026-10-02:** #6294, #6293 and !644 can merge
+- **Staging-only analysis, 2026-10-02:** #6294, #6293 and !644 can merge
   without touching production. #6294 reaches staging through the
   `v3-ai` → `v3-audit` sync and the `stg-release` promoter; !644 applies
   through the staging pipeline, and its production half waits for the
@@ -1730,13 +1730,15 @@ a values edit.
   staging drill, not merge blockers. (4) #6293 is docs-only, so the final AI
   review fails on it with an empty OCR selection; that is a workflow limit,
   not a finding.
-- **Next action:** The user merges in this order: !644 to `stg` and applies
-  it; #6294 into `v3-ai`; a `v3` PR that closes the whole `deploy/` parity
-  gap (a refreshed #6332, which already includes the #6308 hunk, would make
-  #6365 redundant); then `v3` into #6295 and its `check` rerun; then #6295.
-  After the live Argo rule reads back, open the staging-enable values pair
-  with the PDB decision, then run the self-heal and eviction drills under
-  A2-style approval.
+- **Next action:** The user merges in this order. First a `v3` PR that
+  closes the whole current `deploy/` parity gap (a #6332 refreshed to
+  today's `origin/v3-ai` tree already includes the #6308 hunk and makes
+  #6365 redundant); only then #6294 into `v3-ai`, because once the burst
+  chart is on `v3-ai` no other `v3` companion can pass the gate; then `v3`
+  merged into #6295 and its `check` rerun; then #6295. !644 is independent:
+  merge it to `stg` and apply it at any point. After the live Argo rule
+  reads back, open the staging-enable values pair with the PDB decision,
+  then run the self-heal and eviction drills under A2-style approval.
 
 ### Cost and spot review — 2026-09-23
 
