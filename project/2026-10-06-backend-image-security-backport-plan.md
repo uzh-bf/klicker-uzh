@@ -52,5 +52,6 @@ Repository: `/Users/rschlae/Git/klicker/klicker-uzh`. Worktree: `trees/backend-i
 - Plan review: native planner approved after one correction; optional AGY opinion unavailable because headless command permission was denied. Implementation: complete. Tests added/changed/removed: 0/0/0.
 - Verification passed: narrowed graph/frozen install, 902 importer specifiers, new override lifting 41 edges, formatting/syncpack, all ten backend/dependency builds, strict GraphQL/backend typechecks, four schema tests and backend-resolved Yoga query. Generated tracked sources unchanged. Full hosted suite and actual image scan remain separate gates.
 - Substantive size: 16 additions and one deletion outside the generated lockfile and this plan; floor exemption is the image security CI blocker. Existing unrelated override no-ops were preserved.
-- Slice review and final review: pending. Draft PR: none yet.
-- Next action: commit the verified correction, review its immutable range, then publish the approved draft.
+- Slice review: native continuity reviewer completed the exact implementation range with no verified findings. Configured GLM executor proxy was unavailable; Luna max preserved the read-only review contract. Integrated final review: pending.
+- Delivery: [draft PR #6407](https://github.com/uzh-bf/klicker-uzh/pull/6407), targeting `v3-ai`; implementation head `d61db9003563aab7fd35eb7134ebcc1c4647e0b3`. Target subsequently advanced to `304a5d1a` through a non-overlapping evaluation-analysis package. No dependency definition changed there.
+- Next action: complete integrated final review, update the draft evidence and report exact-head hosted checks. Ready-head image scanning and marking ready/merge remain separately gated.
