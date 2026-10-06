@@ -58,11 +58,17 @@ export function setParticipantSessionToken(
 
 export function applyParticipantPageSession(
   page: ParticipantPageSession,
-  expectedRevision = revision
+  expectedRevision = revision,
+  baseToken = getParticipantSessionToken()
 ) {
   if (typeof window === 'undefined') return false
   if (expectedRevision !== revision) return false
   if (appliedPages.has(page)) return true
+  if (!loaded) {
+    // Storage changes must not alter the client identity captured during render.
+    token = baseToken
+    loaded = true
+  }
   appliedPages.add(page)
   if (
     page.resetParticipantSession ||
@@ -84,7 +90,7 @@ export function projectParticipantPageSession(page: ParticipantPageSession) {
   const current = getParticipantSessionToken()
   const baseRevision = revision
   if (typeof window === 'undefined' || appliedPages.has(page)) {
-    return { token: current, revision, baseRevision }
+    return { token: current, revision, baseRevision, baseToken: current }
   }
   const invalidate =
     page.resetParticipantSession ||
@@ -100,6 +106,7 @@ export function projectParticipantPageSession(page: ParticipantPageSession) {
     token: next,
     revision: revision + (invalidate || next !== current ? 1 : 0),
     baseRevision,
+    baseToken: current,
   }
 }
 

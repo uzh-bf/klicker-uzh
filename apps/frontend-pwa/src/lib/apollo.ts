@@ -58,6 +58,7 @@ interface ParticipantClientScope {
   token: string | null
   revision: number
   baseRevision: number
+  baseToken: string | null
   retired: boolean
 }
 
@@ -371,6 +372,7 @@ interface ParticipantClientCandidate {
 function createParticipantClientCandidate(
   token: string | null,
   revision: number,
+  baseToken: string | null,
   initialState?: NormalizedCacheObject,
   previous?: ParticipantClientCandidate | null
 ): ParticipantClientCandidate {
@@ -378,6 +380,7 @@ function createParticipantClientCandidate(
     token,
     revision,
     baseRevision: getParticipantSessionRevision(),
+    baseToken,
     retired: false,
   }
   const client = createApolloClient(undefined, scope)
@@ -433,6 +436,7 @@ export function useApollo(pageProps: PageProps) {
       ? createParticipantClientCandidate(
           session.token,
           session.revision,
+          session.baseToken,
           initialState
         )
       : null
@@ -453,6 +457,7 @@ export function useApollo(pageProps: PageProps) {
     candidate = createParticipantClientCandidate(
       session.token,
       session.revision,
+      session.baseToken,
       initialState,
       rendered
     )
@@ -463,10 +468,20 @@ export function useApollo(pageProps: PageProps) {
   useEffect(() => {
     if (!candidate) return
     if (isActiveParticipantScope(candidate.scope)) {
-      applyParticipantPageSession(pageProps, candidate.scope.revision)
+      applyParticipantPageSession(
+        pageProps,
+        candidate.scope.revision,
+        candidate.scope.baseToken
+      )
       return
     }
-    if (!applyParticipantPageSession(pageProps, candidate.scope.baseRevision)) {
+    if (
+      !applyParticipantPageSession(
+        pageProps,
+        candidate.scope.baseRevision,
+        candidate.scope.baseToken
+      )
+    ) {
       retireParticipantClient(candidate)
       return
     }

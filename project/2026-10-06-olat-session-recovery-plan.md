@@ -584,3 +584,44 @@ or new deployment is included. Real OLAT/OIDC validation and incident attributio
 remain unproven. The native goal stays incomplete until Firefox and all other
 terminal requirements are fulfilled. No merge, readiness change or production
 activation is authorized by this package.
+
+### Retained session baseline correction
+
+Hosted shard 7 still failed at `52d3f35bd7`; the exact login helper clears
+storage after navigating to the login page. The local Chromium harness reproduced
+that failure. An initial committed scope could still read storage dynamically,
+so storage clearing changed its identity without a revision notification.
+Projection now captures its baseline token. The guarded commit initializes the
+retained token from that captured value before applying existing replacement
+branches. A stale revision cannot initialize it. This also prevents storage drift
+between render and commit from changing the projected revision delta.
+
+Astra challenged re-reading storage at commit and approved the captured baseline.
+The independent final reviewer returned pass with zero findings for the four
+source/harness changes within the package. Unit coverage exercises precommit drift
+and postcommit clearing/denial. Both native Chromium modes pass all twelve
+journeys with actual destination-path and profile-ownership assertions.
+
+### Regular participant test credential correction
+
+At the same hosted head, shard 5 failed one live-quiz case and shard 8 failed
+one live-quiz case plus eight report-export cases. The O1/O2 live-quiz helpers
+copy synthetic Edu-ID-scoped tokens into the regular participant cookie and
+session storage; the Z report-export helper puts an account-owner-scoped token
+in that regular cookie. The actual regular login issuer creates participant
+tokens without a scope. The report feature runs on the regular student PWA;
+its assessment course name does not select the separate assessment runtime.
+
+The correction changes only these regular-session fixtures in
+`playwright/tests/O1-live-quiz-core.spec.ts`,
+`playwright/tests/O2-live-quiz-collaboration.spec.ts`, and
+`playwright/tests/Z-credential-verification.spec.ts`.
+`playwright/util/types.ts` permits the issuer's unscoped token shape.
+The generic signing helper still preserves all supplied claims. True assessment
+Edu-ID and lecturer credentials retain their scopes. Production verification
+is not relaxed to accommodate synthetic credentials. Focused live-quiz and
+report-export browser checks and corrected-head hosted CI are required.
+
+These corrections supersede earlier unchanged-source and stopped-runtime claims
+until the new checks and final cleanup finish. Firefox launch remains blocked
+on this host, and real OLAT incident attribution remains unproven.

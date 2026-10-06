@@ -521,12 +521,17 @@ test('password, magic-link and activation transitions navigate with the new iden
   }
   for (const id of [otherId, studentId, otherId]) {
     await context.clearCookies()
+    await page.goto('about:blank')
     await page.goto(`${baseURL}/login?redirect_to=/editProfile`)
+    await page.evaluate(() => {
+      localStorage.clear()
+      sessionStorage.clear()
+    })
     const participant = participants.find((item) => item.id === id)!
     await page.getByTestId('username-field').fill(participant.username)
     await page.getByTestId('password-field').fill(STUDENT_PASSWORD)
     await page.getByTestId('submit-login').click()
-    await expect(page).toHaveURL(/\/editProfile(?:\?|$)/)
+    await expect(page).toHaveURL((url) => url.pathname.endsWith('/editProfile'))
     await expectIdentity(id)
   }
   for (const [path, scope, id] of [

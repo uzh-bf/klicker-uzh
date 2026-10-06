@@ -269,7 +269,6 @@ test.describe.serial('Core live-quiz workflows', () => {
       email: env('STUDENT_EMAIL'),
       sub: PARTICIPANT_IDS[0]!,
       role: 'PARTICIPANT' as const,
-      scope: 'EDUID' as const,
     }
 
     await setSessionCookieForUrl({
@@ -369,7 +368,6 @@ test.describe.serial('Core live-quiz workflows', () => {
           email: env('STUDENT_EMAIL'),
           sub: PARTICIPANT_IDS[0]!,
           role: 'PARTICIPANT' as const,
-          scope: 'EDUID' as const,
         },
       })
 

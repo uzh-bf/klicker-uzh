@@ -17,11 +17,15 @@ it('never retains browser credentials in server state', () => {
 
 it('replaces stale state and preserves active identity across ambient navigation', () => {
   const values = new Map([['participant_token', 'participant-a']])
+  let storageDenied = false
   Object.defineProperty(globalThis, 'window', {
     configurable: true,
     value: {
       sessionStorage: {
-        getItem: (key: string) => values.get(key) ?? null,
+        getItem: (key: string) => {
+          if (storageDenied) throw new Error('denied')
+          return values.get(key) ?? null
+        },
         setItem: (key: string, value: string) => values.set(key, value),
         removeItem: (key: string) => values.delete(key),
       },
@@ -31,6 +35,31 @@ it('replaces stale state and preserves active identity across ambient navigation
   assert.equal(getParticipantSessionToken(), 'participant-a')
   values.set('participant_token', 'participant-c')
   assert.equal(getParticipantSessionToken(), 'participant-c')
+  values.set('participant_token', 'participant-a')
+  const bootstrap = { sessionState: 'no_launch' as const }
+  const baseline = projectParticipantPageSession(bootstrap)
+  values.set('participant_token', 'participant-c')
+  assert.equal(getParticipantSessionToken(), 'participant-c')
+  assert.equal(
+    applyParticipantPageSession(
+      bootstrap,
+      baseline.baseRevision,
+      baseline.baseToken
+    ),
+    true
+  )
+  values.delete('participant_token')
+  storageDenied = true
+  assert.equal(getParticipantSessionToken(), 'participant-a')
+  assert.equal(getParticipantSessionRevision(), baseline.revision)
+  storageDenied = false
+  applyParticipantPageSession({
+    participantToken: 'participant-a',
+    tokenSource: 'ambient',
+    sessionState: 'authenticated',
+  })
+  assert.equal(getParticipantSessionToken(), 'participant-a')
+  assert.equal(getParticipantSessionRevision(), baseline.revision)
   values.set('participant_token', 'participant-a')
   const page = {
     participantToken: 'participant-b',
