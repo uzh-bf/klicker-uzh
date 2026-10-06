@@ -9,14 +9,23 @@ export default defineConfig({
       name: 'chromium-allowed',
       use: {
         ...devices['Desktop Chrome'],
-        launchOptions: { args: ['--disable-features=TrackingProtection3pcd'] },
+        launchOptions: {
+          args: [
+            '--disable-features=TrackingProtection3pcd,LocalNetworkAccessChecks',
+          ],
+        },
       },
     },
     {
       name: 'chromium-blocked',
       use: {
         ...devices['Desktop Chrome'],
-        launchOptions: { args: ['--test-third-party-cookie-phaseout'] },
+        launchOptions: {
+          args: [
+            '--test-third-party-cookie-phaseout',
+            '--disable-features=LocalNetworkAccessChecks',
+          ],
+        },
       },
     },
     {
@@ -24,6 +33,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Firefox'],
         launchOptions: {
+          timeout: 30_000,
           firefoxUserPrefs: { 'network.cookie.cookieBehavior': 5 },
         },
       },
@@ -33,6 +43,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Firefox'],
         launchOptions: {
+          timeout: 30_000,
           firefoxUserPrefs: { 'network.cookie.cookieBehavior': 1 },
         },
       },

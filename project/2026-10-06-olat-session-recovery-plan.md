@@ -350,13 +350,14 @@ this new implementation plan. The optional opposing-provider CLI reported missin
 qualified opposing-provider opinion was obtained; unavailable optional consultation does not replace or
 block the required Astra loop.
 
-Status: planned source slices implemented; registration and unit-CI corrections
-committed locally; React correction saved and source checks passed. Committing
-that correction, its immutable source reviews, browser acceptance and publication
-remain pending because host Git index writes and process inspection are denied.
-Execution resumed after the user restored host execution permissions. The full
-goal remains incomplete while correction reviews and browser acceptance run. Draft
-[PR #6414](https://github.com/uzh-bf/klicker-uzh/pull/6414) targets `v3`.
+Status: all planned source slices and the registration, CI and React corrections
+are committed. Host execution permissions were restored; the exact task runtime
+started successfully with installed Devrouter 0.1.3 and Devsy 1.19.0. All ten
+Chromium journeys pass, including observed native third-party-cookie blocking.
+Firefox cannot launch on this host; its browser acceptance remains open. The
+corrected-head integrated review, publication and exact-head CI remain pending.
+Draft [PR #6414](https://github.com/uzh-bf/klicker-uzh/pull/6414) targets `v3`.
+The native goal remains incomplete until every terminal gate is accounted for.
 
 ### Implemented slices and review disposition
 
@@ -423,31 +424,71 @@ check, all 25 PWA tests and lint (zero errors, 12 existing warnings) pass. Pure
 projection and guarded commit regression coverage extends an existing test.
 Astra required reconciliation of a stale candidate even when its desired token
 and revision are unchanged; the concurrent-commit prototype verifies that
-accepted safeguard. Immutable source reviews remain pending until the correction
-can be committed.
+accepted safeguard. React correction `6f048e96bc` passed simplification. The
+independent authentication review found a queued request could pass an early
+guard, then reach transport after retirement. `cc3d8a804f` moves the guard after
+asynchronous auth and persisted-query processing. A frozen-source probe reproduces
+the old request and proves the correction rejects it without fetch or navigation,
+retaining the new identity. The same reviewer returned DONE for the correction.
+Its actual runtime reports GPT-6 with effective provider unknown; no GLM provenance
+is claimed for that pass.
 
-The task shell selects Devrouter 0.1.0, but the already installed
-`/Users/roland/.volta/bin/devrouter` is 0.1.3 and satisfies the version floor.
-A per-command path can select it without a global configuration change. Its
-doctor still fails closed on host process-owner inspection
-(`ps spawn failed (EPERM)`). No managed task runtime was started;
-other tasks' runtimes were untouched. Global tool/configuration repair is outside
-the approved package.
+The task uses the existing `/Users/roland/.volta/bin/devrouter` 0.1.3 through
+per-command selection. No global tool configuration changed. Canonical startup
+proved the `pwa` profile ready at the exact worktree. The host Playwright dependency
+metadata was stale; the locked host-only test dependency set was refreshed after
+stopping the managed runtime, which was then started canonically. Host launcher
+policy tests pass 39/39. The root aggregate still cannot complete in the container:
+its host-only launcher tests correctly reject that execution boundary. This is a
+verification limitation, not an application failure.
 
-Chromium/Firefox dedicated journeys, actual native cookie-policy observation,
-agent-browser interactions, and English/German desktop/mobile screenshots remain
-pending. The dedicated browser config starts after verified ltijs handoff and
-cannot establish real OLAT/OIDC launch behavior. Ordinary hosted CI skips this
-manual lane and cannot establish its acceptance.
+The resumed browser harness exposed two fixture/setup defects: a host-only parent
+domain cookie did not reach the PWA subdomain, and a synthetic practice-question
+instance lacked its normal statistics record. Both are corrected in the harness.
+Chromium's local-network gate also blocked the synthetic public LMS from reaching
+localhost; only that local check is disabled in the test browser. Cookie policy
+must still be observed on the actual launch request. No production source changed
+to accommodate these fixtures.
+
+The dedicated Chromium 145.0.7632.6 lane passes 10/10 journeys with no skips:
+fresh launch replaces retained A with B, quiz submission saves only B's response,
+registration retains the verified launch despite an older or missing LTI cookie,
+injected storage denial supports navigation and anonymous reload, query retry
+recovers B, and successful logout cannot restore the old identity. The blocked
+project observes the exact launch through CDP's network extra-info event: the
+participant cookie is absent and its native blocked-reason list is nonempty.
+Playwright's earlier intercepted request headers retained the cookie before
+policy was applied; the initial restriction failures were an observation defect.
+A separate native network probe confirmed ThirdPartyPhaseout. Experimental CDP
+policy overrides and persistent profiles were removed; the committed harness
+uses the original phaseout flag with post-policy network evidence. Storage and
+query faults remain explicit harness injections, separate from native proof.
+
+Firefox 146.0.1 could not launch headless or headed. The bounded headed retry
+ends after 30 seconds before reaching the application, reporting macOS sandbox
+extension denial for its plugin container and GPU/framebuffer failures. Neither
+Firefox Standard nor explicit blocking acceptance executed. No OS, browser
+security or agent configuration was changed. This is a host capability gap,
+not evidence of an application failure or Firefox-specific incident cause.
+
+Actual agent-browser interactions passed synthetic password login, authenticated
+profile, locale change, compact layout, logout and settled anonymous recovery.
+Eight inspected English desktop/German compact screenshots cover authenticated,
+anonymous, expired embedded launch and query-error states. Captures and their
+manifest remain in ignored project/\_local/screenshots/olat-recovery/; native forge
+publication and rendering verification are pending. Personal incident screenshots
+are excluded from public evidence. The dedicated browser config starts after
+verified ltijs handoff and cannot establish real OLAT/OIDC launch behavior.
+Ordinary hosted CI skips this manual lane and cannot establish its acceptance.
 
 The requested Claude Opus consultation produced no analysis because OAuth
 refresh failed. The ordered integrated-review fallback tried AGY Gemini 3.8 Flash
 high; its headless read-file permission was denied, producing no qualified review.
-No account or permission configuration was changed. The one permitted GLM 5.3
-Flash max final-review fallback reviewed the entire 36-path committed package
-and returned pass with zero findings. Its output passed the canonical JSON
-schema. That review covers the published head only; the saved corrections still
-require their immutable source gates. Browser acceptance remains open.
+No account or permission configuration was changed. The final-review continuity child reviewed the entire 36-path published package
+and returned pass with zero findings; requested GLM 5.3 Flash max provenance
+remains unverified by the native runtime. Its output passed the canonical JSON
+schema. That review covers the published head only; the committed corrections require
+the integrated final correction pass. Browser acceptance remains open.
 
 The task target remains `v3` at `6189a7487b912a1d9e95769b2f3bb6434c34ccea`.
 The draft head `3c7268fc6d05d4bd4b56cd679872babd04140777` is published; its
@@ -458,14 +499,14 @@ output volume reproduced the missing-module failure; the corrected dependency
 step passed 7/7 build tasks and all 25 PWA tests.
 
 Host permissions have been restored and the target was fetched again: `v3`
-is unchanged. The registration and CI correction is local commit `986d2d936c`.
-Commit the saved React correction and complete its source gates, then
-resume the same integrated reviewer for its one correction pass on the complete
-committed range. Publish the reviewed correction through an ordinary task-branch
-push, update the draft description and observe exact-head CI. Preserve the
-primary checkout and retain browser acceptance as an open gate. Current hosted
-CI is not green merely because the corrected dependency step passes locally.
+is unchanged. Registration/CI, React commit ownership and queued transport
+corrections are committed. Commit the corrected browser harness and this evidence,
+then resume the same integrated reviewer for its focused correction pass on the
+complete immutable branch range. Publish through an ordinary task-branch push,
+update the draft with the inspected screenshot gallery, and observe exact-head CI.
+Stop and verify the exact managed runtime and owned browser session after the
+last dependent check. Preserve the primary checkout and leave Firefox acceptance
+as an explicit open gate. Hosted CI is not green merely because local checks pass.
 No merge, production activation or deployment is included. The earlier host
-permission blocker is historical. Reconcile any current runtime admission
-errors through the canonical lifecycle before browser checks. The full goal
-remains incomplete; no browser or completed-delivery claim is justified.
+permission blocker is historical; the native goal remains incomplete until
+Firefox verification and all other terminal requirements are fulfilled.

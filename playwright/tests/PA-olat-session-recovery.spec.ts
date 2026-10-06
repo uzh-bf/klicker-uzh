@@ -156,6 +156,7 @@ test.beforeAll(async ({}, info) => {
               elementData,
               results,
               anonymousResults: results,
+              instanceStatistics: { create: {} },
               ownerId: USER_ID_TEST,
             },
           },
@@ -188,7 +189,7 @@ test('fresh embedded launch restores B, supersedes retained A and supports quiz 
     {
       name: 'participant_token',
       value: a,
-      domain: process.env.COOKIE_DOMAIN!,
+      domain: `.${process.env.COOKIE_DOMAIN!}`,
       path: '/',
       secure: true,
       httpOnly: true,
@@ -204,6 +205,35 @@ test('fresh embedded launch restores B, supersedes retained A and supports quiz 
     }
   }, a)
   const jwt = await signed({ sub: ssoId, email, scope: 'LTI1.3' })
+  const nativeRequests = new Map<
+    string,
+    { url?: string; cookieSent?: boolean; blockedReasons?: string[] }
+  >()
+  const cdp = info.project.name.startsWith('chromium-')
+    ? await context.newCDPSession(page)
+    : undefined
+  if (cdp) {
+    await cdp.send('Network.enable')
+    cdp.on('Network.requestWillBeSent', ({ requestId, request }) => {
+      nativeRequests.set(requestId, {
+        ...nativeRequests.get(requestId),
+        url: request.url,
+      })
+    })
+    cdp.on('Network.requestWillBeSentExtraInfo', (event) => {
+      // These headers reflect cookie policy after the network stack applies it.
+      const cookie = Object.entries(event.headers).find(
+        ([name]) => name.toLowerCase() === 'cookie'
+      )?.[1]
+      nativeRequests.set(event.requestId, {
+        ...nativeRequests.get(event.requestId),
+        cookieSent: /(?:^|;\s*)participant_token=/.test(cookie ?? ''),
+        blockedReasons: event.associatedCookies
+          .filter(({ cookie }) => cookie.name === 'participant_token')
+          .flatMap(({ blockedReasons }) => blockedReasons),
+      })
+    })
+  }
   const launchRequest = page.waitForRequest((request) =>
     request.url().startsWith(`${baseURL}/editProfile?jwt=`)
   )
@@ -211,11 +241,24 @@ test('fresh embedded launch restores B, supersedes retained A and supports quiz 
     page,
     `${baseURL}/editProfile?jwt=${encodeURIComponent(jwt)}`
   )
-  const cookieHeader = (await (await launchRequest).allHeaders()).cookie ?? ''
+  let participantCookieSent: boolean
+  if (cdp) {
+    const nativeLaunch = () =>
+      [...nativeRequests.values()].find((request) =>
+        request.url?.startsWith(`${baseURL}/editProfile?jwt=`)
+      )
+    await expect.poll(() => nativeLaunch()?.cookieSent).not.toBeUndefined()
+    participantCookieSent = nativeLaunch()!.cookieSent!
+    if (info.project.name.endsWith('-blocked'))
+      expect(nativeLaunch()!.blockedReasons?.length).toBeGreaterThan(0)
+  } else {
+    const cookieHeader = (await (await launchRequest).allHeaders()).cookie ?? ''
+    participantCookieSent = /(?:^|;\s*)participant_token=/.test(cookieHeader)
+  }
   if (info.project.name.endsWith('-blocked'))
-    expect(cookieHeader).not.toMatch(/(?:^|;\s*)participant_token=/)
+    expect(participantCookieSent).toBe(false)
   if (info.project.name === 'chromium-allowed')
-    expect(cookieHeader).toMatch(/(?:^|;\s*)participant_token=/)
+    expect(participantCookieSent).toBe(true)
   await profile(frame)
   await info.attach('browser-provenance', {
     body: JSON.stringify({
@@ -253,7 +296,7 @@ test('fresh embedded launch restores B, supersedes retained A and supports quiz 
     {
       name: 'participant_token',
       value: a,
-      domain: process.env.COOKIE_DOMAIN!,
+      domain: `.${process.env.COOKIE_DOMAIN!}`,
       path: '/',
       secure: true,
       httpOnly: true,
@@ -289,7 +332,7 @@ test('registration preserves the fresh launch across a redirect with an old or m
         {
           name: 'lti-token',
           value: older,
-          domain: process.env.COOKIE_DOMAIN!,
+          domain: `.${process.env.COOKIE_DOMAIN!}`,
           path: '/',
           secure: true,
           httpOnly: true,
