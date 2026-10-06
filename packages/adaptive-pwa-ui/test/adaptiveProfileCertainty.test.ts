@@ -204,21 +204,22 @@ describe('marker track rule', () => {
 })
 
 describe('rough estimate display', () => {
-  it('hides a level when the range is too wide', () => {
+  it('still names the level when the range is very wide', () => {
+    // A wide range lowers the certainty badge; it never hides the estimate.
     expect(
       getAdaptiveRoughEstimateDisplay({
-        levelLabel: 'C2.3',
-        width: width('Under A2', 'C2.3'),
+        levelLabel: 'C1.2',
+        width: width('B2.1', 'C2.2'),
         levelBands: cefr,
       })
-    ).toEqual({ kind: 'notEnoughAnswers' })
+    ).toEqual({ kind: 'level', levelLabel: 'C1.2' })
     expect(
       getAdaptiveRoughEstimateDisplay({
         levelLabel: 'A2.3',
         width: width('Under A2', 'B2.1'),
         levelBands: cefr,
       })
-    ).toEqual({ kind: 'notEnoughAnswers' })
+    ).toEqual({ kind: 'level', levelLabel: 'A2.3' })
   })
   it('keeps the sublevel when moderately wide', () => {
     expect(

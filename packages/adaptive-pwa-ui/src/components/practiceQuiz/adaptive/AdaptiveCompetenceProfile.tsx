@@ -318,8 +318,8 @@ function ProfileRow({
   }
   const state = getAdaptiveResultState({ ...estimate, levelBands })
   const width = state.kind === 'NOT_ENOUGH_ANSWERS' ? null : state.width
-  // Estimated, not determined: answers exist and the range is narrow enough
-  // to name a (main) level. Never for placement pilots.
+  // Estimated, not determined: answers and a range exist; a wide range only
+  // lowers the certainty badge. Never for placement pilots.
   const estimated =
     !isPlacementPilot && state.kind === 'ESTIMATED' ? state : null
   const hidesEstimate =

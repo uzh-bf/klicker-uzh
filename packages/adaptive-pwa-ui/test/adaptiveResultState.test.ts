@@ -67,10 +67,14 @@ describe('result presentation state', () => {
     })
   })
 
-  it('is NOT_ENOUGH_ANSWERS only without a usable estimate', () => {
-    expect(state('INSUFFICIENT_EVIDENCE', 'B1.2', 'A2.1', 'C1.3')).toEqual({
-      kind: 'NOT_ENOUGH_ANSWERS',
-    })
+  it('is ESTIMATED with low certainty for a very wide range', () => {
+    // A2.1 - C1.3: far more than a third of the scale.
+    expect(
+      state('INSUFFICIENT_EVIDENCE', 'B1.2', 'A2.1', 'C1.3')
+    ).toMatchObject({ kind: 'ESTIMATED', levelLabel: 'B1.2' })
+  })
+
+  it('is NOT_ENOUGH_ANSWERS only without an estimate', () => {
     expect(
       getAdaptiveResultState({
         classification: 'INSUFFICIENT_EVIDENCE',
