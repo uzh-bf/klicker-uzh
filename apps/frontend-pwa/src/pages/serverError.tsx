@@ -15,16 +15,12 @@ function Index() {
   const t = useTranslations()
   const router = useRouter()
   const [embedded, setEmbedded] = useState(false)
-  const [freshLaunch, setFreshLaunch] = useState(false)
+  const freshLaunch = router.query.freshLaunch === 'true'
 
   // Frame detection only selects recovery guidance; it never grants identity.
   useEffect(() => {
     setEmbedded(window.self !== window.top)
   }, [])
-
-  useEffect(() => {
-    setFreshLaunch(router.query.freshLaunch === 'true')
-  }, [router.query.freshLaunch])
 
   const retry = () => {
     // The shared helper rejects cross-origin destinations and strips
