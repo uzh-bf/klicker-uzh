@@ -6,6 +6,7 @@ type PromptContext = {
   'citation-contract': { maxSources: number }
   'course-data': { courseData: string }
   'course-grounding': Record<string, never>
+  'course-images': { courseImageTool: string }
   'course-policy': Record<string, never>
   'input-context': Record<string, never>
   'language-style': Record<string, never>

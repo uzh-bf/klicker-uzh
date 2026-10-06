@@ -1,5 +1,6 @@
 import { type ToolSet, tool } from 'ai'
 import { z } from 'zod'
+import { courseImageMarker } from '@/src/lib/markdown/remarkCourseImages'
 import { COURSE_IMAGE_DIGEST_REGEX } from '@/src/lib/sources/courseImageIdentity'
 import {
   COURSE_IMAGE_LIMITS,
@@ -108,7 +109,12 @@ export function withCourseImageTool(
       }
       const image = await validation
       if (!image) return { status: 'unavailable' as const }
-      return { status: 'selected' as const, image, reason }
+      return {
+        status: 'selected' as const,
+        image,
+        reason,
+        placement_marker: courseImageMarker(image.asset_id),
+      }
     },
   })
   return wrapped

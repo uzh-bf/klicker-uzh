@@ -1,16 +1,53 @@
 'use client'
 
-import { useAuiState } from '@assistant-ui/react'
+import { useAui, useAuiState } from '@assistant-ui/react'
 import Image from 'next/image'
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import {
+  courseImagePlacements,
+  firstCourseImagePlacementIndex,
+} from '@/src/lib/markdown/remarkCourseImages'
 import {
   type CourseImage,
   selectedCourseImages,
 } from '@/src/lib/sources/courseImages'
 import type { ChatSourcePart } from '@/src/lib/sources/normalizeSources'
 import { useChatStore } from '@/src/stores/chatStore'
+
+function courseImageSrc({
+  chatbotId,
+  threadId,
+  messageId,
+  assetId,
+}: {
+  chatbotId: string
+  threadId: string
+  messageId: string
+  assetId: string
+}) {
+  return `/api/chatbots/${chatbotId}/threads/${threadId}/messages/${messageId}/images/${assetId}`
+}
+
+function usePersistedCourseImageContext() {
+  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const threadId = useChatStore((state) => state.activeThreadId)
+  const message = useAuiState((state) => state.message)
+  if (
+    !chatbotId ||
+    !threadId ||
+    message.status?.type === 'running' ||
+    message.status?.type === 'requires-action'
+  )
+    return null
+  return {
+    chatbotId,
+    threadId,
+    messageId: message.id,
+    content: (message.content ?? []) as readonly ChatSourcePart[],
+  }
+}
 
 export function CourseImageCard({
   image,
@@ -26,10 +63,11 @@ export function CourseImageCard({
     title: image.title,
     page: image.logical_page_number ?? image.physical_page_number,
   })
+  const caption = image.captions?.map((value) => value.text).join(' ')
   return (
     <figure
       data-cy="chat-course-image"
-      className="border-border my-3 overflow-hidden rounded-xl border bg-background"
+      className="my-5 overflow-hidden rounded-lg"
     >
       {failed ? (
         <div role="alert" className="p-4 text-sm">
@@ -49,7 +87,7 @@ export function CourseImageCard({
         <Image
           key={attempt}
           src={src}
-          alt={label}
+          alt={caption || label}
           width={image.width_px}
           height={image.height_px}
           unoptimized
@@ -57,28 +95,75 @@ export function CourseImageCard({
           className="h-auto w-full object-contain"
         />
       )}
-      <figcaption className="border-border border-t px-3 py-2 text-sm text-muted-foreground">
-        {label}
+      <figcaption className="mt-2 text-xs text-muted-foreground">
+        {image.captions?.map((entry) => (
+          <p key={entry.ref}>{entry.text}</p>
+        ))}
+        <p className={caption ? 'mt-1' : undefined}>{label}</p>
       </figcaption>
     </figure>
   )
 }
 
-export function CourseImagesSection() {
-  const { chatbotId } = useParams<{ chatbotId: string }>()
-  const threadId = useChatStore((state) => state.activeThreadId)
-  const message = useAuiState((state) => state.message)
-  const images = selectedCourseImages(
-    (message.content ?? []) as readonly ChatSourcePart[]
+export function InlineCourseImage({ assetId }: { assetId: string }) {
+  const aui = useAui()
+  const context = usePersistedCourseImageContext()
+  const partIndex =
+    aui.part.source === 'message' && aui.part.query.type === 'index'
+      ? aui.part.query.index
+      : -1
+  const firstPlacementIndex = context
+    ? firstCourseImagePlacementIndex(
+        context.content.map((part) =>
+          part.type === 'text' && typeof part.text === 'string'
+            ? part.text
+            : null
+        ),
+        assetId
+      )
+    : -1
+  const image = context
+    ? selectedCourseImages(context.content).find(
+        (candidate) => candidate.asset_id === assetId
+      )
+    : undefined
+  // The image endpoint authorizes against the persisted assistant message.
+  if (!image || !context || partIndex !== firstPlacementIndex) return null
+  return (
+    <CourseImageCard
+      image={image}
+      src={courseImageSrc({
+        ...context,
+        assetId: image.asset_id,
+      })}
+    />
   )
-  if (!chatbotId || !threadId || images.length === 0) return null
+}
+
+export function CourseImagesSection() {
+  const context = usePersistedCourseImageContext()
+  if (!context) return null
+  const placements = new Set(
+    context.content.flatMap((part) =>
+      part.type === 'text' && typeof part.text === 'string'
+        ? courseImagePlacements(part.text)
+        : []
+    )
+  )
+  const images = selectedCourseImages(context.content).filter(
+    (image) => !placements.has(image.asset_id)
+  )
+  if (images.length === 0) return null
   return (
     <div>
       {images.map((image) => (
         <CourseImageCard
-          key={`${message.id}-${image.asset_id}`}
+          key={`${context.messageId}-${image.asset_id}`}
           image={image}
-          src={`/api/chatbots/${chatbotId}/threads/${threadId}/messages/${message.id}/images/${image.asset_id}`}
+          src={courseImageSrc({
+            ...context,
+            assetId: image.asset_id,
+          })}
         />
       ))}
     </div>

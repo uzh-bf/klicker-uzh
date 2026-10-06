@@ -10,6 +10,8 @@ import { withInputContextContract } from '@/src/lib/server/inputContextInstructi
 import { withLanguageStyleContract } from '@/src/lib/server/languageInstructions'
 import { withOutputFormatContract } from '@/src/lib/server/outputFormatInstructions'
 import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
+import { COURSE_IMAGE_TOOL } from '@/src/lib/sources/courseImages'
+import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 
 export type SystemPromptCompilationContext = {
   courseDisplayName: string
@@ -174,5 +176,12 @@ export function compileSystemPrompt(
   const coursePolicy = withCoursePolicyContract(inputContext, context.toolNames)
   const outputFormat = withOutputFormatContract(coursePolicy)
   const citations = withCitationContract(outputFormat, context.toolNames)
-  return withLanguageStyleContract(citations)
+  const images =
+    context.toolNames.includes(COURSE_IMAGE_TOOL) &&
+    context.toolNames.some(isDocQueryToolName)
+      ? `${citations}\n\n${renderPromptTemplate('course-images', {
+          courseImageTool: COURSE_IMAGE_TOOL,
+        })}`
+      : citations
+  return withLanguageStyleContract(images)
 }

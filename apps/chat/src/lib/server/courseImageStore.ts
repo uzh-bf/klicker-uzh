@@ -6,7 +6,7 @@ import { BlobServiceClient } from '@azure/storage-blob'
 import { COURSE_IMAGE_DIGEST_REGEX } from '@/src/lib/sources/courseImageIdentity'
 import type { CourseImage } from '@/src/lib/sources/courseImages'
 
-const PROJECTION_GENERATIONS = ['e4/v3'] as const
+const PROJECTION_GENERATIONS = ['e6/v3', 'e5/v3', 'e4/v3'] as const
 const DEFAULT_PROJECTION_CONTAINER = 'doc-processing'
 const MANIFEST_SIZE_LIMIT = 2_000_000
 const PAYLOAD_SIZE_LIMIT = 10_000_000
@@ -40,8 +40,12 @@ function projectionContainer() {
   )
 }
 
-function projectionObjectPath(kind: string, hash: string, extension: string) {
-  const generation = PROJECTION_GENERATIONS[0]
+function projectionObjectPath(
+  kind: string,
+  hash: string,
+  extension: string,
+  generation: string
+) {
   return `${generation}/${kind}/sha256/${hash.slice(0, 2)}/${hash.slice(2, 4)}/${hash}.${extension}`
 }
 
@@ -51,6 +55,8 @@ export async function readCourseImage(
   root = process.env.CHAT_COURSE_IMAGE_STORE_PATH
 ): Promise<Buffer> {
   const base = root ? await realpath(root) : undefined
+  let generation: (typeof PROJECTION_GENERATIONS)[number] =
+    PROJECTION_GENERATIONS[0]
   async function object(
     kind: string,
     hash: string,
@@ -62,7 +68,7 @@ export async function readCourseImage(
     let bytes: Buffer
     if (base) {
       const filename = await realpath(
-        path.join(base, projectionObjectPath(kind, hash, extension))
+        path.join(base, projectionObjectPath(kind, hash, extension, generation))
       )
       const relative = path.relative(base, filename)
       if (relative.startsWith('..') || path.isAbsolute(relative))
@@ -83,7 +89,7 @@ export async function readCourseImage(
         throw new Error('Course image storage unavailable')
       const client = BlobServiceClient.fromConnectionString(connectionString)
         .getContainerClient(container)
-        .getBlobClient(projectionObjectPath(kind, hash, extension))
+        .getBlobClient(projectionObjectPath(kind, hash, extension, generation))
       const { contentLength, etag } = await client.getProperties()
       if (
         typeof contentLength !== 'number' ||
@@ -106,18 +112,27 @@ export async function readCourseImage(
       throw new Error('Image artifact integrity failed')
     return bytes
   }
-  const manifest = record(
-    JSON.parse(
-      (
-        await object(
-          'manifests',
-          image.manifest_sha256,
-          'json',
-          MANIFEST_SIZE_LIMIT
-        )
-      ).toString()
-    )
-  )
+  let manifestBytes: Buffer | undefined
+  for (const candidate of PROJECTION_GENERATIONS) {
+    generation = candidate
+    try {
+      manifestBytes = await object(
+        'manifests',
+        image.manifest_sha256,
+        'json',
+        MANIFEST_SIZE_LIMIT
+      )
+      break
+    } catch (error) {
+      const missing =
+        error instanceof Error &&
+        (('code' in error && error.code === 'ENOENT') ||
+          ('statusCode' in error && error.statusCode === 404))
+      if (!missing) throw error
+    }
+  }
+  if (!manifestBytes) throw new Error('Image manifest unavailable')
+  const manifest = record(JSON.parse(manifestBytes.toString()))
   const manifestImages = record(manifest?.images)
   if (
     !manifest ||
