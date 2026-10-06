@@ -69,6 +69,14 @@ export default {
       packages: ['**'],
     },
     {
+      // Same class (#5924): the @graphql-tools/utils override rewrites the
+      // lockfile specifier to the exact release.
+      range: '',
+      dependencyTypes: ['dev'],
+      dependencies: ['@graphql-tools/utils'],
+      packages: ['**'],
+    },
+    {
       range: '~',
       dependencyTypes: ['dev'],
       dependencies: ['!@types/**'],
