@@ -20,8 +20,33 @@ import { tryComputeAdaptiveIrtV2ShadowEvent } from './adaptivePracticeQuizShadow
 
 type LegacyAdaptiveResponseEstimateData = Pick<
   DB.Prisma.AdaptivePracticeQuizResponseUncheckedCreateInput,
-  'overallThetaBefore' | 'overallThetaAfter' | 'overallStandardErrorAfter'
+  | 'overallThetaBefore'
+  | 'overallThetaAfter'
+  | 'overallStandardErrorAfter'
+  | 'competenceThetaBefore'
+  | 'competenceStandardErrorBefore'
+  | 'competenceThetaAfter'
+  | 'competenceStandardErrorAfter'
 >
+
+// Stored only when usable; the response check constraint rejects a
+// non-positive standard error.
+function storableCompetenceEstimate(
+  estimate: { theta: number | null; standardError: number | null } | undefined
+) {
+  const theta =
+    typeof estimate?.theta === 'number' && Number.isFinite(estimate.theta)
+      ? estimate.theta
+      : null
+  const standardError =
+    theta !== null &&
+    typeof estimate?.standardError === 'number' &&
+    Number.isFinite(estimate.standardError) &&
+    estimate.standardError > 0
+      ? estimate.standardError
+      : null
+  return { theta, standardError }
+}
 
 type BayesianAdaptiveResponseEstimateData = LegacyAdaptiveResponseEstimateData &
   ReturnType<typeof adaptiveV2ResponseAuditData>
@@ -112,12 +137,30 @@ export function planAdaptivePracticeQuizResponseTransition({
             elapsedSeconds: totalElapsedSeconds,
           }
 
+    // Estimate of the answered item's competence (root) before and after
+    // this answer, for the lecturer attempt diagnostics.
+    const rootId = servedPoolItem.nodePath[0]
+    const competenceBefore = storableCompetenceEstimate(
+      attempt.estimates.find(
+        (estimate) =>
+          estimate.nodeKind !== DB.AdaptiveEstimateNodeKind.OVERALL &&
+          estimate.nodeId === rootId
+      )
+    )
+    const competenceAfter = storableCompetenceEstimate(
+      typeof rootId === 'number' ? estimates.nodes.get(rootId) : undefined
+    )
+
     return {
       measurementVersion: advancedRuntime.measurementVersion,
       responseEstimateData: {
         overallThetaBefore: overallBefore?.theta ?? null,
         overallThetaAfter: estimates.overall.theta,
         overallStandardErrorAfter: estimates.overall.standardError,
+        competenceThetaBefore: competenceBefore.theta,
+        competenceStandardErrorBefore: competenceBefore.standardError,
+        competenceThetaAfter: competenceAfter.theta,
+        competenceStandardErrorAfter: competenceAfter.standardError,
       },
       estimateWrite: buildAdaptiveRuntimeEstimateWrite({
         attempt,
