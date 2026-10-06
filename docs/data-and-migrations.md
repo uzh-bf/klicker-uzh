@@ -99,7 +99,7 @@ WHERE finished_at IS NULL AND rolled_back_at IS NULL;
 SELECT c.relname, i.indisvalid
 FROM pg_index i JOIN pg_class c ON c.oid = i.indexrelid
 WHERE c.relname IN (
-  'QuestionResponse_participationId_lastAnsweredAt_idx',
+  'QuestionResponse_participationId_idx',
   'QuestionResponseDetail_participationId_createdAt_idx'
 );
 ```
