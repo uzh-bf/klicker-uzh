@@ -2956,6 +2956,20 @@ export async function updateCourseSettings(
             },
           }
         : {}),
+      // enabling gamification starts private Study streak tracking for
+      // existing active participants, as enableGamification does; assessment
+      // courses never track streaks
+      ...(newGamificationSetting &&
+      !(isAssessmentEnabled ?? course.isAssessmentEnabled)
+        ? {
+            participations: {
+              updateMany: {
+                where: { isActive: true, studyStreakTrackingStartedAt: null },
+                data: { studyStreakTrackingStartedAt: new Date() },
+              },
+            },
+          }
+        : {}),
     },
   })
 
