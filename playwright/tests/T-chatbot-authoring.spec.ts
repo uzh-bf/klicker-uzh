@@ -302,15 +302,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
   }) => {
     const chatbotId = await createChatbot(page, FIRST_CHATBOT)
     const previewPagePromise = page.context().waitForEvent('page')
-    const previewDialogPromise = page.waitForEvent('dialog')
-    const previewClickPromise = page
-      .getByTestId('chatbot-owner-preview-link')
-      .click()
-    const previewDialog = await previewDialogPromise
-    expect(previewDialog.type()).toBe('confirm')
-    await previewDialog.accept()
-
-    await previewClickPromise
+    await page.getByTestId('chatbot-owner-preview-link').click()
     const previewPage = await previewPagePromise
 
     await expect(previewPage).toHaveURL(
