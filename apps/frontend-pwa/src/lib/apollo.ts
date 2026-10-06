@@ -19,22 +19,31 @@ import { usePregeneratedHashes } from 'graphql-codegen-persisted-query-ids/lib/a
 import { createClient } from 'graphql-ws'
 import { GetServerSidePropsContext } from 'next'
 import Router from 'next/router'
-import { useMemo } from 'react'
+import { useMemo, useSyncExternalStore } from 'react'
 import { isDeepEqual } from 'remeda'
 import util from 'util'
 import {
   participantDataUseReturn,
   storeDataUseReturnTarget,
 } from './participantDataUseReturn'
+import {
+  applyParticipantPageSession,
+  getParticipantSessionRevision,
+  getParticipantSessionToken,
+  observeParticipantSessionResult,
+  type ParticipantPageSession,
+  subscribeParticipantSession,
+} from './participantSession'
 
-interface PageProps {
+interface PageProps extends ParticipantPageSession {
   __APOLLO_STATE__: NormalizedCacheObject
   props?: Record<string, any>
 }
 
 export const APOLLO_STATE_PROP_NAME = '__APOLLO_STATE__'
 
-let apolloClient: ApolloClient<NormalizedCacheObject>
+let apolloClient: ApolloClient<NormalizedCacheObject> | undefined
+let apolloSessionRevision = -1
 
 function createIsomorphLink(ctx?: GetServerSidePropsContext) {
   const isBrowser = typeof window !== 'undefined'
@@ -60,18 +69,22 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
 
   const authLink = setContext((_, { headers }) => {
     if (isBrowser) {
-      // A partitioned or privacy-restricted browser context denies session
-      // storage, and reading it throws. The cookie-authenticated participant
-      // path has to keep working, so the bearer header is skipped instead of
-      // failing the request before it reaches the API.
-      let token: string | null = null
-      try {
-        token = sessionStorage.getItem('participant_token')
-      } catch {
-        token = null
+      let token = getParticipantSessionToken()
+      if (process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true') {
+        // A partitioned or privacy-restricted browser context denies session
+        // storage, and reading it throws. The cookie-authenticated participant
+        // path has to keep working, so the bearer header is skipped instead of
+        // failing the request before it reaches the API.
+
+        try {
+          token = sessionStorage.getItem('participant_token')
+        } catch {
+          token = null
+        }
       }
 
       return {
+        participantSessionRevision: getParticipantSessionRevision(),
         headers: {
           ...headers,
           authorization: token ? `Bearer ${token}` : '',
@@ -88,7 +101,28 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
     }
   })
 
-  const errorLink = onError(({ graphQLErrors, networkError }) => {
+  const sessionResultLink = new ApolloLink((operation, forward) => {
+    const revision = getParticipantSessionRevision()
+    return forward(operation).map((result) => {
+      if (
+        isBrowser &&
+        process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
+        revision === getParticipantSessionRevision()
+      ) {
+        observeParticipantSessionResult(result)
+      }
+      return result
+    })
+  })
+
+  const errorLink = onError(({ graphQLErrors, networkError, operation }) => {
+    if (
+      isBrowser &&
+      process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
+      operation.getContext().participantSessionRevision !==
+        getParticipantSessionRevision()
+    )
+      return
     if (graphQLErrors)
       graphQLErrors.forEach(({ message, locations, path, extensions }) => {
         console.log(
@@ -188,7 +222,14 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
       link
     )
 
-    return from([retryLink, errorLink, authLink, ...persistedLink, link])
+    return from([
+      retryLink,
+      errorLink,
+      sessionResultLink,
+      authLink,
+      ...persistedLink,
+      link,
+    ])
   }
 
   return from([errorLink, authLink, ...persistedLink, link])
@@ -214,11 +255,20 @@ export function initializeApollo(
   initialState?: NormalizedCacheObject,
   ctx?: GetServerSidePropsContext
 ): ApolloClient<NormalizedCacheObject> {
-  const _apolloClient = apolloClient ?? createApolloClient(ctx)
+  const browser = typeof window !== 'undefined'
+  const revision = getParticipantSessionRevision()
+  const sessionChanged =
+    browser && !!apolloClient && revision !== apolloSessionRevision
+  if (sessionChanged) {
+    apolloClient!.stop()
+    apolloClient = undefined
+  }
+  const _apolloClient =
+    (browser ? apolloClient : undefined) ?? createApolloClient(ctx)
 
   // If your page has Next.js data fetching methods that use Apollo Client, the initial state
   // gets hydrated here
-  if (initialState) {
+  if (initialState && !sessionChanged) {
     // Get existing cache, loaded during client side data fetching
     const existingCache = _apolloClient.extract()
 
@@ -240,6 +290,7 @@ export function initializeApollo(
   if (typeof window === 'undefined') return _apolloClient
   // Create the Apollo Client once in the client
   if (!apolloClient) apolloClient = _apolloClient
+  apolloSessionRevision = revision
 
   return _apolloClient
 }
@@ -256,7 +307,20 @@ export function addApolloState(
 }
 
 export function useApollo(pageProps: PageProps) {
+  if (process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true') {
+    applyParticipantPageSession(pageProps)
+  }
+  const revision = useSyncExternalStore(
+    subscribeParticipantSession,
+    getParticipantSessionRevision,
+    () => 0
+  )
   const state = pageProps[APOLLO_STATE_PROP_NAME]
-  const store = useMemo(() => initializeApollo(state), [state])
+  const store = useMemo(() => {
+    const activeToken = getParticipantSessionToken()
+    const compatible =
+      !activeToken || activeToken === pageProps.participantToken
+    return initializeApollo(compatible ? state : undefined)
+  }, [state, revision, pageProps.participantToken])
   return store
 }

@@ -225,15 +225,18 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     const apolloClient = initializeApollo()
 
-    const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
-      courseId: ctx.params.courseId,
-      ctx,
-    })
+    const { participantToken, cookiesAvailable, sessionState, tokenSource } =
+      await getParticipantToken({
+        apolloClient,
+        courseId: ctx.params.courseId,
+        ctx,
+      })
 
     if (participantToken) {
       return {
         props: {
+          sessionState,
+          tokenSource,
           participantToken,
           cookiesAvailable,
           id: ctx.params.id,
@@ -245,6 +248,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     return addApolloState(apolloClient, {
       props: {
+        sessionState,
+        tokenSource,
         id: ctx.params.id,
         courseId: ctx.params.courseId,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))

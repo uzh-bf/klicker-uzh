@@ -5,13 +5,13 @@ import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import { toast } from '@uzh-bf/design-system'
-import { GetServerSidePropsContext } from 'next'
+import type { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
-import Layout from '../components/Layout'
 import AccountDeletionForm from '../components/forms/AccountDeletionForm'
 import AvatarUpdateForm from '../components/forms/AvatarUpdateForm'
 import UpdateAccountInfoForm from '../components/forms/UpdateAccountInfoForm'
+import Layout from '../components/Layout'
 import DataUseSettings from '../components/participant/DataUseSettings'
 
 function EditProfile({
@@ -88,12 +88,16 @@ function EditProfile({
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   try {
     const apolloClient = initializeApollo()
-    const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
-      ctx,
-    })
+    const { participantToken, cookiesAvailable, sessionState, tokenSource } =
+      await getParticipantToken({
+        apolloClient,
+        ctx,
+      })
 
-    if (!participantToken) {
+    if (
+      sessionState === 'registration_required' ||
+      (process.env.ASSESSMENT_MODE === 'true' && !participantToken)
+    ) {
       return {
         redirect: {
           destination: `${ctx.locale ? `/${ctx.locale}` : ''}/createAccount`,
@@ -102,20 +106,12 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    if (participantToken) {
-      return {
-        props: {
-          participantToken,
-          cookiesAvailable,
-          messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
-            .default,
-        },
-      }
-    }
-
     return addApolloState(apolloClient, {
       props: {
+        participantToken,
         cookiesAvailable,
+        sessionState,
+        tokenSource,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },

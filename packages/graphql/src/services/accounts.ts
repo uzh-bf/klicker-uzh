@@ -36,6 +36,32 @@ const COOKIE_SETTINGS: CookieOptions = {
   sameSite: 'lax',
 }
 
+function participantCookieSettings(): CookieOptions {
+  if (process.env.ASSESSMENT_MODE === 'true') return COOKIE_SETTINGS
+  return {
+    ...COOKIE_SETTINGS,
+    maxAge: 1000 * 60 * 60 * 24 * 13,
+    sameSite: COOKIE_SETTINGS.secure ? 'none' : 'lax',
+  }
+}
+
+function expireParticipantCookie(ctx: Context) {
+  // Clear the current partition before issuing the canonical session cookie.
+  if (process.env.ASSESSMENT_MODE !== 'true') {
+    ctx.res.cookie('participant_token', '', {
+      ...participantCookieSettings(),
+      maxAge: 0,
+      secure: true,
+      sameSite: 'none',
+      partitioned: true,
+    })
+  }
+  ctx.res.cookie('participant_token', 'logoutString', {
+    ...participantCookieSettings(),
+    maxAge: 0,
+  })
+}
+
 export async function logoutUser(_: any, ctx: ContextWithUser) {
   ctx.res.cookie('next-auth.session-token', 'logoutString', {
     ...COOKIE_SETTINGS,
@@ -90,7 +116,8 @@ async function doParticipantLogin(
   })
 
   const jwt = await createParticipantToken(participantId)
-  ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
+  if (process.env.ASSESSMENT_MODE !== 'true') expireParticipantCookie(ctx)
+  ctx.res.cookie('participant_token', jwt, participantCookieSettings())
   ctx.res.cookie('lti-token', '', { ...COOKIE_SETTINGS, maxAge: 0 })
   ctx.res.cookie('NEXT_LOCALE', participantLocale, COOKIE_SETTINGS)
 
@@ -390,10 +417,7 @@ export async function activateParticipantAccount(
 
 export async function logoutParticipant(ctx: ContextWithUser) {
   // invalidate regular participant token
-  ctx.res.cookie('participant_token', 'logoutString', {
-    ...COOKIE_SETTINGS,
-    maxAge: 0,
-  })
+  expireParticipantCookie(ctx)
 
   // invalidate assessment / Edu-ID participant token
   ctx.res.cookie('next-auth.participant-session-token', 'logoutString', {
@@ -546,11 +570,6 @@ export async function deleteParticipantAccount(ctx: ContextWithUser) {
 
   if (!participant) return false
 
-  ctx.res.cookie('participant_token', 'logoutString', {
-    ...COOKIE_SETTINGS,
-    maxAge: 0,
-  })
-
   // if a participant group is empty after the participant leaves it, delete the group as well
   let deletionPromises: any[] = []
   for (const group of participant.participantGroups) {
@@ -570,6 +589,7 @@ export async function deleteParticipantAccount(ctx: ContextWithUser) {
   )
 
   await ctx.prisma.$transaction(deletionPromises)
+  expireParticipantCookie(ctx)
   return true
 }
 

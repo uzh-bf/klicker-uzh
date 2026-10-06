@@ -440,15 +440,18 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     const embedded = parseEmbedParam(ctx.query.embed)
     const focusedEmbedRequested = embedded && ctx.query.embedMode === 'focused'
 
-    const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
-      courseId: ctx.params.courseId,
-      ctx,
-    })
+    const { participantToken, cookiesAvailable, sessionState, tokenSource } =
+      await getParticipantToken({
+        apolloClient,
+        courseId: ctx.params.courseId,
+        ctx,
+      })
 
     if (participantToken) {
       return {
         props: {
+          sessionState,
+          tokenSource,
           participantToken,
           cookiesAvailable,
           id: ctx.params.id,
@@ -463,6 +466,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     return addApolloState(apolloClient, {
       props: {
+        sessionState,
+        tokenSource,
         id: ctx.params.id,
         courseId: ctx.params.courseId,
         embedded,

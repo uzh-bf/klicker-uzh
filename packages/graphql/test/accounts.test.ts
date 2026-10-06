@@ -15,7 +15,11 @@ import type {
 } from '@klicker-uzh/types'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
-import { changeInitialSettings } from '../src/services/accounts.js'
+import {
+  changeInitialSettings,
+  deleteParticipantAccount,
+  logoutParticipant,
+} from '../src/services/accounts.js'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
 import { userOne, userTwo } from './userData.js'
 
@@ -642,5 +646,91 @@ describe('Account demo element seeding', () => {
     await expect(
       prisma.liveQuiz.count({ where: { ownerId: userOne.id } })
     ).resolves.toBe(1)
+  })
+})
+
+describe('Participant session cleanup', () => {
+  function syntheticContext() {
+    return {
+      user: { sub: 'synthetic-participant', role: 'PARTICIPANT' },
+      prisma: {
+        participant: {
+          findUnique: vi.fn().mockResolvedValue({ participantGroups: [] }),
+          delete: vi.fn().mockReturnValue(Promise.resolve({})),
+        },
+        $transaction: vi.fn().mockResolvedValue([]),
+      },
+      res: { cookie: vi.fn() },
+    } as unknown as ContextWithUser
+  }
+
+  it('expires canonical and legacy cookies after successful deletion', async () => {
+    const ctx = syntheticContext()
+    expect(await deleteParticipantAccount(ctx)).toBe(true)
+    expect(ctx.res.cookie).toHaveBeenCalledWith(
+      'participant_token',
+      '',
+      expect.objectContaining({
+        maxAge: 0,
+        partitioned: true,
+        secure: true,
+        sameSite: 'none',
+      })
+    )
+    expect(ctx.res.cookie).toHaveBeenCalledWith(
+      'participant_token',
+      'logoutString',
+      expect.objectContaining({ maxAge: 0, path: '/' })
+    )
+    expect(
+      vi.mocked(ctx.prisma.$transaction).mock.invocationCallOrder[0]
+    ).toBeLessThan(vi.mocked(ctx.res.cookie).mock.invocationCallOrder[0]!)
+  })
+
+  it('retains session cookies when deletion is rejected or fails', async () => {
+    const missing = syntheticContext()
+    vi.mocked(missing.prisma.participant.findUnique).mockResolvedValue(null)
+    expect(await deleteParticipantAccount(missing)).toBe(false)
+    expect(missing.res.cookie).not.toHaveBeenCalled()
+    const failed = syntheticContext()
+    vi.mocked(failed.prisma.$transaction).mockRejectedValue(
+      new Error('synthetic transaction failure')
+    )
+    await expect(deleteParticipantAccount(failed)).rejects.toThrow(
+      'synthetic transaction failure'
+    )
+    expect(failed.res.cookie).not.toHaveBeenCalled()
+  })
+
+  it('keeps assessment deletion forbidden and explicit logout clears both cookie audiences', async () => {
+    const original = process.env.ASSESSMENT_MODE
+    try {
+      process.env.ASSESSMENT_MODE = 'true'
+      const ctx = syntheticContext()
+      expect(await deleteParticipantAccount(ctx)).toBe(false)
+      expect(ctx.res.cookie).not.toHaveBeenCalled()
+      expect(await logoutParticipant(ctx)).toBe('synthetic-participant')
+      expect(ctx.res.cookie).toHaveBeenCalledWith(
+        'next-auth.participant-session-token',
+        'logoutString',
+        expect.objectContaining({ maxAge: 0 })
+      )
+      process.env.ASSESSMENT_MODE = 'false'
+      const regular = syntheticContext()
+      await logoutParticipant(regular)
+      expect(regular.res.cookie).toHaveBeenCalledWith(
+        'participant_token',
+        '',
+        expect.objectContaining({ partitioned: true, maxAge: 0 })
+      )
+      expect(regular.res.cookie).toHaveBeenCalledWith(
+        'next-auth.participant-session-token',
+        'logoutString',
+        expect.objectContaining({ maxAge: 0 })
+      )
+    } finally {
+      if (original === undefined) delete process.env.ASSESSMENT_MODE
+      else process.env.ASSESSMENT_MODE = original
+    }
   })
 })

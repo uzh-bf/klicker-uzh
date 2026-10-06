@@ -48,7 +48,8 @@ function AccountDeletionForm() {
               primaryButtonStyle="destructive"
               primaryLoading={deletingAccount || loggingOut}
               onPrimaryAction={async () => {
-                await deleteParticipantAccount()
+                const result = await deleteParticipantAccount()
+                if (result.data?.deleteParticipantAccount !== true) return
                 try {
                   await logoutParticipant()
                 } catch (e) {}
