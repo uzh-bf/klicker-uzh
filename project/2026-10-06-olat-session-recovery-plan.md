@@ -33,7 +33,7 @@ the authority or data boundary. Continue independent approved work.
 - Repository: `uzh-bf/klicker-uzh`; artifacts root: `project/`.
 - Worktree: `trees/rs/olat-session-recovery`; branch: `rs/olat-session-recovery`.
 - Target: `v3`, baseline `6189a7487b912a1d9e95769b2f3bb6434c34ccea`.
-- PR: none created yet.
+- PR: [draft #6414](https://github.com/uzh-bf/klicker-uzh/pull/6414), target `v3`.
 - Production evidence baseline: `v3.4.0-alpha.84`, peeled commit
   `2f8bead95ab47db65db898c0811451077dc187ab`. Production and current `v3`
   differ; this repair must be verified on its actual target.
@@ -375,7 +375,10 @@ Current capability and verification gates:
   concurrently generated Prisma build/check output and left some ignored model
   files truncated to their injected JSON-types import. Serial generation and
   Prisma declaration build repaired that ignored output; integrated build and
-  serial typechecks are running to verify the complete source.
+  serial typechecks are running to verify the complete source. The integrated build passed 23/23 tasks; serial checks
+  passed 34/35 tasks, with only GraphQL schema Git inspection lacking container
+  metadata. The host schema diff is empty and both standalone GraphQL type
+  checks passed. Root lint passed all seven applicable tasks.
   No Prisma schema or unrelated source change is included in this repair.
 - The dedicated browser harness now includes runtime-profile and relevance
   manifest entries required by the existing selector; all 10 selector tests
@@ -386,10 +389,13 @@ Current capability and verification gates:
   exposes Gemini 3.8 Flash high for the ordered integrated-review fallback;
   catalog availability alone is not a completed review.
 
-Next source work: slice 3 executor owns the four named profile/error/i18n files.
-Main owns the disjoint harness and docs. Slice 3 checks passed; its source
-review is running. Finish slice 4 reviews and integrated final review, then ordinary task-branch
-push and draft delivery. Browser acceptance, exact-head hosted CI and any
+Source slices and browser harness are committed. Slice 3 review identified a
+transient retry before route readiness; `2dce64a` now gates both settled surfaces
+on `router.isReady`, with passing PWA check. The same reviewer is validating
+that correction. Slice 4 simplification returned DONE; its authentication review
+is running. The draft branch is published through `3cc565b` and the PR above
+clearly carries pending verification. Finish reviews, update the draft and
+record exact-head CI. Browser acceptance prevents completed-delivery claims. Browser acceptance, exact-head hosted CI and any
 remaining checks must remain explicit. No merge or deployment is included.
 The native goal remains active until the agreed terminal condition or its
 supported blocked-state threshold is reached.
