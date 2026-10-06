@@ -6,4 +6,5 @@ export const {
   AdaptiveAttemptDiagnosticRef,
   AdaptiveAttemptReviewRef,
   AdaptiveAttemptExpectedLevelInput,
+  AdaptiveAttemptEstimateBackfillRef,
 } = createAdaptiveAttemptDiagnosticsSchema(builder)

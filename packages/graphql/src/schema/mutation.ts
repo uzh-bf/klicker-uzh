@@ -37,6 +37,7 @@ import * as SupportService from '../services/support.js'
 import * as TemplateService from '../services/templates.js'
 import { ActivityInfo } from './activities.js'
 import {
+  AdaptiveAttemptEstimateBackfillRef,
   AdaptiveAttemptExpectedLevelInput,
   AdaptiveAttemptReviewRef,
 } from './adaptiveAttemptDiagnostics.js'
@@ -828,6 +829,7 @@ export const Mutation = builder.mutationType({
         withPermission,
         AdaptiveAttemptReviewRef,
         AdaptiveAttemptExpectedLevelInput,
+        AdaptiveAttemptEstimateBackfillRef,
       }),
 
       requestCourseDeletion: t.withAuth(asUser).field({

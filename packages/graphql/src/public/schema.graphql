@@ -305,6 +305,14 @@ type AdaptiveAttemptDiagnostics {
   levelLabels: [String!]!
 }
 
+type AdaptiveAttemptEstimateBackfill {
+  answersUpdated: Int!
+  attemptsFailed: Int!
+  attemptsMissing: Int!
+  attemptsReplayDiffering: Int!
+  attemptsUpdated: Int!
+}
+
 type AdaptiveAttemptExpectedLevel {
   levelLabel: String!
   nodeId: Int!
@@ -3958,6 +3966,7 @@ type Mutation {
   approveResponseExample(id: String!): ResponseExampleSet
   archiveCompetenceTree(id: String!): Boolean!
   attachKbToChatbot(chatbotId: ID!, kbId: ID!): KBChatbotBinding!
+  backfillAdaptivePracticeQuizAttemptEstimates(practiceQuizId: String!): AdaptiveAttemptEstimateBackfill
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelLiveQuiz(id: String!): LiveQuiz
   cancelObjectSharingRequest(objectId: String!, objectType: ObjectType!): Boolean!
@@ -4123,7 +4132,7 @@ type Mutation {
   reviewElementGeneration(input: ReviewElementGenerationInput!): ElementGenerationBuild!
   revokeAssessmentReport(id: String!): CourseAssessmentReportRecord!
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
-  saveAdaptivePracticeQuizAttemptReview(attemptCode: String!, comment: String, expectedCompetenceLevels: [AdaptiveAttemptExpectedLevelInput!], expectedOverallLevelLabel: String, practiceQuizId: String!, verdict: String!): AdaptiveAttemptReview!
+  saveAdaptivePracticeQuizAttemptReview(attemptCode: String!, comment: String, expectedCompetenceLevels: [AdaptiveAttemptExpectedLevelInput!], expectedOverallLevelLabel: String, practiceQuizId: String!, verdict: String!): AdaptiveAttemptReview
   saveChatbotRevision(chatbotId: String!, expectedRevisionVersion: Int!, input: ChatbotRevisionSaveInput!): Chatbot
   saveGeneratedElements(input: ElementGenerationBuildInput!): ElementGenerationSaveResult!
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta

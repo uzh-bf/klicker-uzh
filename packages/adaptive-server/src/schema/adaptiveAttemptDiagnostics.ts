@@ -4,6 +4,8 @@ import type {
 } from '@klicker-uzh/graphql/adaptive-schema-host-types'
 import * as DB from '@klicker-uzh/prisma/client'
 import type { AdaptiveAttemptReviewAccuracy } from '../services/adaptivePracticeQuizAttemptAccuracy.js'
+import type { AdaptiveAttemptEstimateBackfill } from '../services/adaptivePracticeQuizAttemptBackfill.js'
+import * as AdaptiveAttemptBackfillService from '../services/adaptivePracticeQuizAttemptBackfill.js'
 import type {
   AdaptiveAttemptDiagnosticDetail,
   AdaptiveAttemptDiagnosticsList,
@@ -224,11 +226,26 @@ export function createAdaptiveAttemptDiagnosticsSchema(
       }),
     })
 
+  const AdaptiveAttemptEstimateBackfillRef = builder
+    .objectRef<AdaptiveAttemptEstimateBackfill>(
+      'AdaptiveAttemptEstimateBackfill'
+    )
+    .implement({
+      fields: (t) => ({
+        attemptsMissing: t.exposeInt('attemptsMissing'),
+        attemptsUpdated: t.exposeInt('attemptsUpdated'),
+        answersUpdated: t.exposeInt('answersUpdated'),
+        attemptsReplayDiffering: t.exposeInt('attemptsReplayDiffering'),
+        attemptsFailed: t.exposeInt('attemptsFailed'),
+      }),
+    })
+
   return {
     AdaptiveAttemptDiagnosticsRef,
     AdaptiveAttemptDiagnosticRef,
     AdaptiveAttemptReviewRef: ReviewRef,
     AdaptiveAttemptExpectedLevelInput,
+    AdaptiveAttemptEstimateBackfillRef,
   }
 }
 
@@ -240,15 +257,35 @@ export function adaptiveAttemptDiagnosticsMutationFields(
     withPermission,
     AdaptiveAttemptReviewRef,
     AdaptiveAttemptExpectedLevelInput,
+    AdaptiveAttemptEstimateBackfillRef,
   }: {
     withPermission: AdaptivePermissionWrapper
   } & Pick<
     ReturnType<typeof createAdaptiveAttemptDiagnosticsSchema>,
-    'AdaptiveAttemptReviewRef' | 'AdaptiveAttemptExpectedLevelInput'
+    | 'AdaptiveAttemptReviewRef'
+    | 'AdaptiveAttemptExpectedLevelInput'
+    | 'AdaptiveAttemptEstimateBackfillRef'
   >
 ) {
   const asUser = { authenticated: true, role: DB.UserRole.USER }
   return {
+    backfillAdaptivePracticeQuizAttemptEstimates: t.withAuth(asUser).field({
+      nullable: true,
+      type: AdaptiveAttemptEstimateBackfillRef,
+      args: {
+        practiceQuizId: t.arg.string({ required: true }),
+      },
+      resolve: withPermission(
+        (args) => ({ practiceQuizId: args.practiceQuizId }),
+        DB.PermissionLevel.ADMIN,
+        async (_, args, ctx) =>
+          await AdaptiveAttemptBackfillService.backfillAdaptivePracticeQuizAttemptEstimates(
+            args,
+            ctx
+          )
+      ),
+    }),
+
     saveAdaptivePracticeQuizAttemptReview: t.withAuth(asUser).field({
       nullable: true,
       type: AdaptiveAttemptReviewRef,
