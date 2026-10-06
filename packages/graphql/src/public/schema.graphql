@@ -247,10 +247,26 @@ enum ActivityType {
   PRACTICE_QUIZ
 }
 
+type AdaptiveAttemptAnswerReplay {
+  competenceLevelAfter: String
+  competenceLevelBefore: String
+  competenceLowerLevelAfter: String
+  competenceStandardErrorAfter: Float
+  competenceThetaAfter: Float
+  competenceThetaBefore: Float
+  competenceUpperLevelAfter: String
+  levelDistanceBefore: Int
+  order: Int!
+  phase: String!
+  replayMatches: Boolean!
+}
+
 type AdaptiveAttemptDiagnostic {
   answers: [AdaptiveAttemptDiagnosticAnswer!]!
   levelLabels: [String!]!
   nodes: [AdaptiveAttemptNodeResult!]!
+  replay: AdaptiveAttemptReplay
+  replayError: String
   summary: AdaptiveAttemptDiagnosticSummary!
 }
 
@@ -313,6 +329,11 @@ type AdaptiveAttemptRatingReason {
   nodeName: String
   severity: String!
   value: Float
+}
+
+type AdaptiveAttemptReplay {
+  answers: [AdaptiveAttemptAnswerReplay!]!
+  exact: Boolean!
 }
 
 enum AdaptiveAttemptSelectionPolicy {

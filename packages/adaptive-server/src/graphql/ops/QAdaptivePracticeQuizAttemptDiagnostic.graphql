@@ -28,5 +28,22 @@ query QAdaptivePracticeQuizAttemptDiagnostic(
       overallThetaAfter
       levelDistance
     }
+    replay {
+      exact
+      answers {
+        order
+        phase
+        competenceThetaBefore
+        competenceLevelBefore
+        competenceThetaAfter
+        competenceStandardErrorAfter
+        competenceLevelAfter
+        competenceLowerLevelAfter
+        competenceUpperLevelAfter
+        levelDistanceBefore
+        replayMatches
+      }
+    }
+    replayError
   }
 }

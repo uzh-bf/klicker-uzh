@@ -9,6 +9,10 @@ import type {
   AdaptiveDiagnosticSummary,
 } from '../services/adaptivePracticeQuizAttemptDiagnosticsModel.js'
 import type { AdaptiveAttemptRatingReason } from '../services/adaptivePracticeQuizAttemptDiagnosticsRating.js'
+import type {
+  AdaptiveAnswerReplay,
+  AdaptiveAttemptReplay,
+} from '../services/adaptivePracticeQuizAttemptReplay.js'
 
 // Lecturer attempt diagnostics (testing environments only). Enumerations are
 // exposed as plain strings: this is a debugging read model, not a contract
@@ -91,6 +95,50 @@ export function createAdaptiveAttemptDiagnosticsSchema(
       }),
     })
 
+  const AnswerReplayType = builder
+    .objectRef<AdaptiveAnswerReplay>('AdaptiveAttemptAnswerReplay')
+    .implement({
+      fields: (t) => ({
+        order: t.exposeInt('order'),
+        phase: t.exposeString('phase'),
+        competenceThetaBefore: t.exposeFloat('competenceThetaBefore', {
+          nullable: true,
+        }),
+        competenceLevelBefore: t.exposeString('competenceLevelBefore', {
+          nullable: true,
+        }),
+        competenceThetaAfter: t.exposeFloat('competenceThetaAfter', {
+          nullable: true,
+        }),
+        competenceStandardErrorAfter: t.exposeFloat(
+          'competenceStandardErrorAfter',
+          { nullable: true }
+        ),
+        competenceLevelAfter: t.exposeString('competenceLevelAfter', {
+          nullable: true,
+        }),
+        competenceLowerLevelAfter: t.exposeString('competenceLowerLevelAfter', {
+          nullable: true,
+        }),
+        competenceUpperLevelAfter: t.exposeString('competenceUpperLevelAfter', {
+          nullable: true,
+        }),
+        levelDistanceBefore: t.exposeInt('levelDistanceBefore', {
+          nullable: true,
+        }),
+        replayMatches: t.exposeBoolean('replayMatches'),
+      }),
+    })
+
+  const AttemptReplayType = builder
+    .objectRef<AdaptiveAttemptReplay>('AdaptiveAttemptReplay')
+    .implement({
+      fields: (t) => ({
+        exact: t.exposeBoolean('exact'),
+        answers: t.expose('answers', { type: [AnswerReplayType] }),
+      }),
+    })
+
   const AdaptiveAttemptDiagnosticsRef = builder
     .objectRef<AdaptiveAttemptDiagnosticsList>('AdaptiveAttemptDiagnostics')
     .implement({
@@ -111,6 +159,11 @@ export function createAdaptiveAttemptDiagnosticsSchema(
         summary: t.expose('summary', { type: SummaryType }),
         nodes: t.expose('nodes', { type: [NodeResultType] }),
         answers: t.expose('answers', { type: [AnswerType] }),
+        replay: t.expose('replay', {
+          type: AttemptReplayType,
+          nullable: true,
+        }),
+        replayError: t.exposeString('replayError', { nullable: true }),
       }),
     })
 
