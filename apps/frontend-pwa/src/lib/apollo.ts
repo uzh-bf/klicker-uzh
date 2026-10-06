@@ -277,10 +277,10 @@ function createIsomorphLink(
     return from([
       retryLink,
       errorLink,
-      scopeLink,
       sessionResultLink,
       authLink,
       ...persistedLink,
+      scopeLink,
       link,
     ])
   }
