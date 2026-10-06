@@ -1,7 +1,7 @@
-import type { PrismaTransactionClient } from '@klicker-uzh/util'
-import * as DB from '@klicker-uzh/prisma/client'
-import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '@klicker-uzh/graphql/adaptive-context-types'
+import * as DB from '@klicker-uzh/prisma/client'
+import type { PrismaTransactionClient } from '@klicker-uzh/util'
+import { GraphQLError } from 'graphql'
 import { emitAdaptiveOperationalEvent } from './adaptivePracticeQuizEvents.js'
 import {
   isAdaptiveUniqueConstraintConflict,
@@ -52,6 +52,8 @@ type AdaptiveEstimateValues = {
   levelId: number | null
   stopReason: DB.AdaptivePracticeQuizStopReason | null
   resultStatus?: DB.AdaptiveResultStatus | null
+  /** IRT_V1 subcompetence estimates only (see apqe_coverage_status_leaf_check). */
+  coverageStatus?: DB.AdaptiveLeafCoverageStatus | null
   classificationProbability?: number | null
   credibleLower?: number | null
   credibleUpper?: number | null
@@ -265,6 +267,7 @@ export async function persistAdaptivePracticeQuizEstimates(
         "levelId",
         "stopReason",
         "resultStatus",
+        "coverageStatus",
         "classificationProbability",
         "credibleLower",
         "credibleUpper",
@@ -281,6 +284,7 @@ export async function persistAdaptivePracticeQuizEstimates(
         "levelId" = EXCLUDED."levelId",
         "stopReason" = EXCLUDED."stopReason",
         "resultStatus" = EXCLUDED."resultStatus",
+        "coverageStatus" = EXCLUDED."coverageStatus",
         "classificationProbability" = EXCLUDED."classificationProbability",
         "credibleLower" = EXCLUDED."credibleLower",
         "credibleUpper" = EXCLUDED."credibleUpper",
@@ -311,6 +315,7 @@ export async function persistAdaptivePracticeQuizEstimates(
           "levelId",
           "stopReason",
           "resultStatus",
+          "coverageStatus",
           "classificationProbability",
           "credibleLower",
           "credibleUpper",
@@ -327,6 +332,7 @@ export async function persistAdaptivePracticeQuizEstimates(
           "levelId" = EXCLUDED."levelId",
           "stopReason" = EXCLUDED."stopReason",
           "resultStatus" = EXCLUDED."resultStatus",
+          "coverageStatus" = EXCLUDED."coverageStatus",
           "classificationProbability" = EXCLUDED."classificationProbability",
           "credibleLower" = EXCLUDED."credibleLower",
           "credibleUpper" = EXCLUDED."credibleUpper",
@@ -416,6 +422,7 @@ function adaptiveEstimateRows(
           ${estimate.levelId}::integer,
           ${estimate.stopReason}::"AdaptivePracticeQuizStopReason",
           ${estimate.resultStatus ?? null}::"AdaptiveResultStatus",
+          ${estimate.coverageStatus ?? null}::"AdaptiveLeafCoverageStatus",
           ${estimate.classificationProbability ?? null}::double precision,
           ${estimate.credibleLower ?? null}::double precision,
           ${estimate.credibleUpper ?? null}::double precision,

@@ -1,4 +1,7 @@
-import { getAdaptivePresetDefaults } from '@klicker-uzh/adaptive-contract'
+import {
+  getAdaptivePresetDefaults,
+  isValidAdaptiveClassificationToleranceBands,
+} from '@klicker-uzh/adaptive-contract'
 import * as DB from '@klicker-uzh/prisma/client'
 import { GraphQLError } from 'graphql'
 import type { AdaptivePracticeQuizConfigInput } from './adaptivePracticeQuizConfigTypes.js'
@@ -6,6 +9,7 @@ import type { AdaptiveConfiguredSettings } from './adaptivePracticeQuizReadiness
 
 export type ResolvedPresetSettings = AdaptiveConfiguredSettings & {
   minItemsPerCoverageCell: number
+  classificationToleranceBands: number
   preset: DB.AdaptivePracticeQuizPreset
   attemptSelectionPolicy: DB.AdaptiveAttemptSelectionPolicy
   levelMappingRule: DB.AdaptiveLevelMappingRule
@@ -43,6 +47,17 @@ export function resolvePresetSettings(
     )
   }
 
+  const classificationToleranceBands =
+    input.classificationToleranceBands ?? defaults.classificationToleranceBands
+  if (
+    !isValidAdaptiveClassificationToleranceBands(classificationToleranceBands)
+  ) {
+    throw configurationError(
+      'Classification precision must be a whole number of levels from 0 to 5.',
+      'ADAPTIVE_CLASSIFICATION_TOLERANCE_INVALID'
+    )
+  }
+
   return {
     preset: input.preset,
     rootBalancedPlacement: pilot,
@@ -63,6 +78,7 @@ export function resolvePresetSettings(
     minItemsPerCoverageCell:
       input.minItemsPerCoverageCell ?? defaults.minItemsPerCoverageCell,
     classificationZ: input.classificationZ ?? defaults.classificationZ,
+    classificationToleranceBands,
     topInformationRatio: isResearch
       ? (research?.topInformationRatio ?? defaults.topInformationRatio)
       : defaults.topInformationRatio,
@@ -93,6 +109,25 @@ export function assertPlacementPilotSettings(
     throw configurationError(
       'Focused root-balanced placement does not support a per-subcompetence cap.',
       'ADAPTIVE_PLACEMENT_PILOT_LIMITS_INVALID'
+    )
+  }
+}
+
+/**
+ * The tolerance is an IRT_V1 engine setting (Catalyst SEQUENTIAL_ROOTS_V6);
+ * IRT v2 classification is posterior-probability based and rejects it.
+ */
+export function assertClassificationToleranceSupported(
+  measurementVersion: DB.AdaptiveMeasurementVersion,
+  settings: Pick<ResolvedPresetSettings, 'classificationToleranceBands'>
+) {
+  if (
+    settings.classificationToleranceBands > 0 &&
+    measurementVersion !== DB.AdaptiveMeasurementVersion.IRT_V1
+  ) {
+    throw configurationError(
+      'Classification precision is only available for IRT v1 quizzes.',
+      'ADAPTIVE_CLASSIFICATION_TOLERANCE_UNSUPPORTED'
     )
   }
 }

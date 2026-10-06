@@ -5,6 +5,8 @@ import {
   type BankAnalysisRequest,
   createAdaptiveClient,
   type DecisionRequest,
+  type DecisionResponse,
+  decisionRequestSchema,
   type PosteriorBatchRequest,
   type ValidationRequest,
 } from '../index.js'
@@ -299,6 +301,136 @@ test('fails closed for wrong estimator, unknown item, repeated item and inconsis
       responses: [{ order: 1, poolItemId: 1, correct: true }],
     }),
     AdaptiveEngineUnavailableError
+  )
+})
+function coverageStatusOf(response: DecisionResponse, index: number) {
+  assert.equal(response.measurementVersion, 'IRT_V1')
+  return response.measurementVersion === 'IRT_V1'
+    ? response.estimates.nodes[index]!.coverageStatus
+    : undefined
+}
+test('accepts IRT_V1 leaf coverage status from newer engines and its absence from older ones', async () => {
+  // Older engines omit the field entirely.
+  assert.equal(
+    coverageStatusOf(
+      await client(async () => Response.json(result)).decide(request),
+      1
+    ),
+    undefined
+  )
+  for (const coverageStatus of [
+    'COVERED',
+    'OUT_OF_RANGE',
+    'SAMPLED_PENDING',
+    'NOT_SAMPLED',
+  ] as const) {
+    const withStatus = {
+      ...result,
+      estimates: {
+        overall: { ...result.estimates.overall, coverageStatus: null },
+        nodes: [
+          { ...result.estimates.nodes[0]!, coverageStatus: null },
+          { ...result.estimates.nodes[1]!, coverageStatus },
+        ],
+      },
+    }
+    const parsed = await client(async () => Response.json(withStatus)).decide(
+      request
+    )
+    assert.equal(coverageStatusOf(parsed, 1), coverageStatus)
+    assert.equal(coverageStatusOf(parsed, 0), null)
+  }
+})
+test('rejects invalid or misplaced IRT_V1 leaf coverage status', async () => {
+  const withNodes = (
+    overall: Record<string, unknown>,
+    competence: Record<string, unknown>,
+    leaf: Record<string, unknown>
+  ) => ({
+    ...result,
+    estimates: {
+      overall: { ...result.estimates.overall, ...overall },
+      nodes: [
+        { ...result.estimates.nodes[0]!, ...competence },
+        { ...result.estimates.nodes[1]!, ...leaf },
+      ],
+    },
+  })
+  for (const invalid of [
+    withNodes({}, {}, { coverageStatus: 'UNKNOWN' }),
+    withNodes({}, {}, { coverageStatus: 1 }),
+    withNodes({}, { coverageStatus: 'COVERED' }, {}),
+    withNodes({ coverageStatus: 'OUT_OF_RANGE' }, {}, {}),
+  ]) {
+    await assert.rejects(
+      client(async () => Response.json(invalid)).decide(request),
+      AdaptiveEngineUnavailableError
+    )
+  }
+})
+test('sends an IRT_V1 classification tolerance only within 0–5 and never for IRT v2', async () => {
+  const withTolerance = {
+    ...request,
+    settings: { ...request.settings, classificationToleranceBands: 1 },
+  } as DecisionRequest
+  const api = client(async (_url, init) => {
+    assert.equal(
+      JSON.parse(String(init?.body)).settings.classificationToleranceBands,
+      1
+    )
+    return Response.json(result)
+  })
+  await api.decide(withTolerance)
+  for (const invalid of [-1, 6, 1.5])
+    assert.equal(
+      decisionRequestSchema.safeParse({
+        ...request,
+        settings: {
+          ...request.settings,
+          classificationToleranceBands: invalid,
+        },
+      }).success,
+      false
+    )
+  const v2 = {
+    contractVersion: 1,
+    routingSeed: request.routingSeed,
+    measurementVersion: 'IRT_V2_EAP_GRID_1',
+    nodes: request.nodes,
+    responses: [],
+    scale: posteriorRequest.scale,
+    pool: [
+      {
+        ...request.pool[0]!,
+        itemType: 'SC',
+        choiceCount: 4,
+        model: 'THREE_PL_FIXED_C',
+        calibrationId: 'cal-1',
+        contributesToEstimate: true,
+        role: 'SCORING',
+      },
+    ],
+    settings: {
+      ...request.settings,
+      mode: 'DIAGNOSTIC',
+      credibleMass: 0.8,
+      classificationProbabilityThreshold: 0.8,
+      minimumRootResponses: 4,
+      researchPolicy: null,
+    },
+    selection: {
+      eligiblePoolItemIds: [1],
+      servedCounts: [],
+      priorAttemptPoolItemIds: [],
+    },
+  }
+  assert.equal(decisionRequestSchema.safeParse(v2).success, true)
+  assert.equal(
+    decisionRequestSchema.safeParse({
+      ...v2,
+      settings: { ...v2.settings, classificationToleranceBands: 1 },
+    }).success,
+    false
   )
 })
 test('does not leak upstream errors or use a local estimator on service failure', async () => {

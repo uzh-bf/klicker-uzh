@@ -23,7 +23,9 @@ query QAdaptivePracticeQuizResultWithPlacementPilot($attemptId: String!) {
       startPosition
       endPosition
       color
+      hasElements
     }
+    classificationToleranceBands
     trajectory {
       order
       position

@@ -9,6 +9,7 @@ import {
   mapLevelForTheta,
   serializeLevelBands,
 } from './adaptivePracticeQuizLegacyLevelScale.js'
+import { createAdaptiveV1LevelDetermination } from './adaptivePracticeQuizLevelDetermination.js'
 import {
   adaptiveRetakeAvailableAt,
   isAdaptiveRetakeCooldownElapsed,
@@ -85,6 +86,9 @@ export type AdaptiveResultLevelBand = {
   endPosition: number
   /** Lecturer-chosen band color; null uses the default palette. */
   color?: string | null
+  // Whether the published pool has at least one element at this level, so
+  // the result can mark estimates beyond the measurable range.
+  hasElements?: boolean
 }
 
 export type AdaptiveResultTrajectoryPoint = {
@@ -113,6 +117,9 @@ export type AdaptiveStudentResultNode = {
   position: number | null
   lowerPosition: number | null
   upperPosition: number | null
+  // IRT_V1 engine leaf coverage of the persisted decision (subcompetences
+  // only); null for other nodes, IRT v2 and older engines.
+  coverageStatus: DB.AdaptiveLeafCoverageStatus | null
   children: AdaptiveStudentResultNode[]
 }
 
@@ -135,6 +142,8 @@ export type AdaptiveStudentResult = {
   lowerPosition: number | null
   upperPosition: number | null
   levelBands: AdaptiveResultLevelBand[]
+  // IRT_V1 classification tolerance in level bands (0 = exact level).
+  classificationToleranceBands: number
   trajectory: AdaptiveResultTrajectoryPoint[]
   competenceProfile: AdaptiveStudentResultNode[]
   // Debug-only answer history; null unless ADAPTIVE_QUIZ_SHOW_SOLUTIONS=true.
@@ -260,11 +269,37 @@ function serializeAdaptiveStudentResultCore(
       'ADAPTIVE_ATTEMPT_DATA_INVALID'
     )
   }
-  const overallView = serializeEstimateView({
-    estimate: overall,
-    levelsById,
-    settings,
+  // A level is reported (and counted as classified) only when the host rule
+  // shared with the lecturer cohort determines it, not whenever a level id
+  // exists; otherwise it becomes a rough, display-only estimate.
+  const determination = createAdaptiveV1LevelDetermination({
+    runtime,
+    answeredPoolItemIds: attempt.responses.map(({ poolItemId }) => poolItemId),
+    coverageStatusByLeaf: new Map(
+      attempt.estimates.flatMap((estimate) =>
+        estimate.nodeKind === DB.AdaptiveEstimateNodeKind.SUBCOMPETENCE &&
+        estimate.nodeId !== null
+          ? [[estimate.nodeId, estimate.coverageStatus] as const]
+          : []
+      )
+    ),
   })
+  const reportedView = (
+    nodeId: number | null,
+    estimate: (typeof attempt.estimates)[number] | undefined
+  ) => {
+    const view = serializeEstimateView({ estimate, levelsById, settings })
+    return view.levelLabel !== null &&
+      estimate &&
+      determination.isDetermined(nodeId, {
+        theta: estimate.theta!,
+        standardError: estimate.standardError!,
+        stopReason: estimate.stopReason,
+      })
+      ? view
+      : { ...view, levelLabel: null }
+  }
+  const overallView = reportedView(null, overall)
   const childrenByParent = new Map<number | null, AdaptiveRuntimeNode[]>()
   const effectiveNodes = getEffectivelyEnabledRuntimeNodes(
     runtime.algorithm.nodes
@@ -276,11 +311,7 @@ function serializeAdaptiveStudentResultCore(
   }
   const buildNode = (node: AdaptiveRuntimeNode): AdaptiveStudentResultNode => {
     const estimate = estimatesByNode.get(node.id)
-    const view = serializeEstimateView({
-      estimate,
-      levelsById,
-      settings,
-    })
+    const view = reportedView(node.id, estimate)
     const rough =
       view.levelLabel === null
         ? resolveLegacyRoughEstimate({
@@ -306,6 +337,10 @@ function serializeAdaptiveStudentResultCore(
       ...view,
       ...rough,
       roughLevelLabel: rough?.roughLevelLabel ?? null,
+      coverageStatus:
+        node.kind === DB.AdaptiveNodeKind.SUBCOMPETENCE
+          ? (estimate?.coverageStatus ?? null)
+          : null,
       children: (childrenByParent.get(node.id) ?? [])
         .slice()
         .sort((a, b) => a.order - b.order || a.id - b.id)
@@ -371,11 +406,17 @@ function serializeAdaptiveStudentResultCore(
     leadingLevelLabels: [],
     classificationProbability: null,
     ...overallView,
-    levelBands: serializeLevelBands(
-      runtime.algorithm.levels,
-      settings,
-      competenceTreeLevelColorsById(runtime.tree.levels)
+    levelBands: withLevelBandElements(
+      serializeLevelBands(
+        runtime.algorithm.levels,
+        settings,
+        competenceTreeLevelColorsById(runtime.tree.levels)
+      ),
+      runtime.algorithm.levels.filter(({ id }) =>
+        runtime.pool.some(({ levelId }) => levelId === id)
+      )
     ),
+    classificationToleranceBands: settings.classificationToleranceBands ?? 0,
     trajectory,
     competenceProfile: (childrenByParent.get(null) ?? [])
       .slice()
@@ -467,6 +508,7 @@ function serializeAdaptiveV2StudentResult(
               levels,
             })
           : null,
+      coverageStatus: null,
       children: (childrenByParent.get(node.id) ?? [])
         .slice()
         .sort((left, right) => left.order - right.order || left.id - right.id)
@@ -529,13 +571,34 @@ function serializeAdaptiveV2StudentResult(
     levelInterpretation:
       runtime.publication.evidenceMinimumSnapshot.levelMappingRule,
     ...overallView,
-    levelBands: researchOnly ? [] : serializeV2LevelBands(runtime),
+    levelBands: researchOnly
+      ? []
+      : withLevelBandElements(
+          serializeV2LevelBands(runtime),
+          runtime.publication.cutScoreSnapshot
+            .filter(({ scaleLevelId }) =>
+              runtime.pool.some(({ levelId }) => levelId === scaleLevelId)
+            )
+            .map(({ order }) => ({ order }))
+        ),
+    classificationToleranceBands: 0,
     trajectory,
     competenceProfile: (childrenByParent.get(null) ?? [])
       .slice()
       .sort((left, right) => left.order - right.order || left.id - right.id)
       .map(buildNode),
   }
+}
+
+function withLevelBandElements(
+  bands: AdaptiveResultLevelBand[],
+  coveredLevels: ReadonlyArray<{ order: number }>
+): AdaptiveResultLevelBand[] {
+  const covered = new Set(coveredLevels.map(({ order }) => order))
+  return bands.map((band) => ({
+    ...band,
+    hasElements: covered.has(band.order),
+  }))
 }
 
 function legacyClassification(
@@ -587,6 +650,7 @@ function serializeEstimateView({
     range: settings.thetaRange,
     mappingRule: settings.levelMappingRule,
     z: settings.classificationZ,
+    toleranceBands: settings.classificationToleranceBands ?? 0,
   })
   const nearBoundary = isNearLevelBoundary({
     theta: estimate.theta,

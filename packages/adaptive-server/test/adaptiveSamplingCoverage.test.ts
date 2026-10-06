@@ -17,6 +17,7 @@ import type {
 import type { LoadedAdaptiveRuntime } from '../src/services/adaptivePracticeQuizRuntimeData.js'
 import {
   hasAdaptiveV1LeafBreadth,
+  resolveAdaptiveV1EngineLeafBreadth,
   resolveAdaptiveV1LeafCoverage,
 } from '../src/services/adaptivePracticeQuizSamplingCoverage.js'
 
@@ -282,7 +283,11 @@ describe('cohort determined counts under sampling', () => {
     } as unknown as AdaptiveCohortRuntime
   }
   function attempt(
-    stopReason: DB.AdaptivePracticeQuizStopReason | null = null
+    stopReason: DB.AdaptivePracticeQuizStopReason | null = null,
+    leafStatuses: Record<
+      number,
+      { status: DB.AdaptiveLeafCoverageStatus; responseCount: number }
+    > = {}
   ): AdaptiveCohortAttemptRecord {
     const estimate = (
       nodeKind: DB.AdaptiveEstimateNodeKind,
@@ -306,20 +311,31 @@ describe('cohort determined counts under sampling', () => {
         estimate(DB.AdaptiveEstimateNodeKind.OVERALL, null),
         estimate(DB.AdaptiveEstimateNodeKind.COMPETENCE, 1),
         estimate(DB.AdaptiveEstimateNodeKind.COMPETENCE, 2),
+        ...Object.entries(leafStatuses).map(
+          ([leafId, { status, responseCount }]) => ({
+            ...estimate(DB.AdaptiveEstimateNodeKind.SUBCOMPETENCE, +leafId),
+            responseCount,
+            ...(responseCount === 0
+              ? { theta: null, standardError: null }
+              : {}),
+            coverageStatus: status,
+          })
+        ),
       ],
     }
   }
   function determined(
     totalQuestionCap: number,
     answered: number[],
-    stopReason: DB.AdaptivePracticeQuizStopReason | null = null
+    stopReason: DB.AdaptivePracticeQuizStopReason | null = null,
+    leafStatuses: Parameters<typeof attempt>[1] = {}
   ) {
     const cohort = cohortRuntime(totalQuestionCap)
     const accumulator = createAdaptiveCohortAccumulator(cohort)
     accumulateAdaptiveCohortAttempt(
       cohort,
       accumulator,
-      attempt(stopReason),
+      attempt(stopReason, leafStatuses),
       answered.map((poolItemId) => ({ correct: true, poolItemId }))
     )
     const byNode = new Map(
@@ -360,5 +376,199 @@ describe('cohort determined counts under sampling', () => {
     const classified = DB.AdaptivePracticeQuizStopReason.CLASSIFIED
     expect(determined(SAMPLING_CAP, [110], classified).root1).toBe(1)
     expect(determined(FULL_CAP, [110], classified).root1).toBe(0)
+  })
+
+  describe('with engine leaf coverage status', () => {
+    const { COVERED, OUT_OF_RANGE, NOT_SAMPLED, SAMPLED_PENDING } =
+      DB.AdaptiveLeafCoverageStatus
+    const statuses = (
+      overrides: Partial<Record<number, DB.AdaptiveLeafCoverageStatus>> = {}
+    ) =>
+      Object.fromEntries(
+        Object.entries({
+          11: COVERED,
+          12: OUT_OF_RANGE,
+          13: NOT_SAMPLED,
+          21: COVERED,
+          ...overrides,
+        }).map(([leafId, status]) => [
+          leafId,
+          { status: status!, responseCount: status === COVERED ? 2 : 0 },
+        ])
+      )
+
+    it('requires only COVERED and SAMPLED_PENDING leaves', () => {
+      // The count rule would require every leaf without sampling.
+      expect(
+        determined(FULL_CAP, [110, 111, 210, 211], null, statuses())
+      ).toEqual({ root1: 1, root2: 1, overall: 1 })
+      expect(
+        determined(
+          FULL_CAP,
+          [110, 111, 210, 211],
+          null,
+          statuses({ 12: SAMPLED_PENDING })
+        )
+      ).toEqual({ root1: 0, root2: 1, overall: 0 })
+    })
+
+    it('trusts an engine-classified root without sampling', () => {
+      const classified = DB.AdaptivePracticeQuizStopReason.CLASSIFIED
+      expect(
+        determined(FULL_CAP, [110], classified, statuses({ 11: COVERED })).root1
+      ).toBe(1)
+    })
+
+    it('keeps the count rule for a node whose leaves lack a status', () => {
+      // Root 1 falls back (leaf 12 has no status); root 2 keeps its status.
+      const { 12: _withoutStatus, ...partial } = statuses()
+      expect(determined(FULL_CAP, [110, 111, 210, 211], null, partial)).toEqual(
+        { root1: 0, root2: 1, overall: 0 }
+      )
+    })
+
+    it('counts out-of-range leaves as a subset of not tested', () => {
+      const cohort = cohortRuntime(FULL_CAP)
+      const accumulator = createAdaptiveCohortAccumulator(cohort)
+      accumulateAdaptiveCohortAttempt(
+        cohort,
+        accumulator,
+        attempt(null, statuses()),
+        [110, 111, 210, 211].map((poolItemId) => ({
+          correct: true,
+          poolItemId,
+        }))
+      )
+      const byNode = new Map(
+        finalizeAdaptiveCohort(cohort, accumulator).distributions.map(
+          (distribution) => [distribution.nodeId, distribution]
+        )
+      )
+      const leaf = (id: number) => ({
+        notTestedCount: byNode.get(id)?.notTestedCount,
+        outOfRangeCount: byNode.get(id)?.outOfRangeCount,
+      })
+      expect(leaf(12)).toEqual({ notTestedCount: 1, outOfRangeCount: 1 })
+      expect(leaf(13)).toEqual({ notTestedCount: 1, outOfRangeCount: 0 })
+      expect(leaf(11)).toEqual({ notTestedCount: 0, outOfRangeCount: 0 })
+    })
+  })
+})
+
+describe('engine leaf coverage status breadth', () => {
+  const statusMap = (entries: Array<[number, DB.AdaptiveLeafCoverageStatus]>) =>
+    new Map(entries)
+
+  it('requires COVERED and SAMPLED_PENDING leaves only', () => {
+    expect(
+      resolveAdaptiveV1EngineLeafBreadth({
+        leafIds: [11, 12, 13],
+        coverageStatusByLeaf: statusMap([
+          [11, 'COVERED'],
+          [12, 'OUT_OF_RANGE'],
+          [13, 'NOT_SAMPLED'],
+        ]),
+      })
+    ).toBe(true)
+    expect(
+      resolveAdaptiveV1EngineLeafBreadth({
+        leafIds: [11, 12],
+        coverageStatusByLeaf: statusMap([
+          [11, 'COVERED'],
+          [12, 'SAMPLED_PENDING'],
+        ]),
+      })
+    ).toBe(false)
+  })
+
+  it('needs at least one required leaf', () => {
+    expect(
+      resolveAdaptiveV1EngineLeafBreadth({
+        leafIds: [12, 13],
+        coverageStatusByLeaf: statusMap([
+          [12, 'OUT_OF_RANGE'],
+          [13, 'NOT_SAMPLED'],
+        ]),
+      })
+    ).toBe(false)
+  })
+
+  it('returns null when a leaf has no status', () => {
+    expect(
+      resolveAdaptiveV1EngineLeafBreadth({
+        leafIds: [11, 12],
+        coverageStatusByLeaf: new Map([
+          [11, 'COVERED' as const],
+          [12, null],
+        ]),
+      })
+    ).toBeNull()
+    expect(
+      resolveAdaptiveV1EngineLeafBreadth({
+        leafIds: [11, 12],
+        coverageStatusByLeaf: statusMap([[11, 'COVERED']]),
+      })
+    ).toBeNull()
+  })
+})
+
+describe('markClassifiedAdaptiveRootEstimates with engine leaf coverage status', () => {
+  function withLeafStatuses(
+    statuses: Partial<Record<number, DB.AdaptiveLeafCoverageStatus>>
+  ) {
+    const estimates = rootEstimates()
+    for (const [leafId, coverageStatus] of Object.entries(statuses)) {
+      estimates.nodes.set(+leafId, {
+        nodeKind: 'SUBCOMPETENCE',
+        nodeId: +leafId,
+        theta: null,
+        standardError: null,
+        responseCount: coverageStatus === 'COVERED' ? 2 : 0,
+        levelId: null,
+        stopReason: null,
+        coverageStatus,
+      })
+    }
+    return estimates
+  }
+
+  it('does not require OUT_OF_RANGE or NOT_SAMPLED leaves', () => {
+    // Without sampling the count rule would need leaves 12 and 13 as well.
+    const estimates = withLeafStatuses({
+      11: 'COVERED',
+      12: 'OUT_OF_RANGE',
+      13: 'NOT_SAMPLED',
+    })
+    markClassifiedAdaptiveRootEstimates(
+      runtime(FULL_CAP),
+      responses([item(110), item(111)]),
+      estimates
+    )
+    expect(estimates.nodes.get(1)?.stopReason).toBe('CLASSIFIED')
+  })
+
+  it('does not classify while a required leaf is SAMPLED_PENDING', () => {
+    // The sampling count rule alone would classify on leaf 11.
+    const estimates = withLeafStatuses({
+      11: 'COVERED',
+      12: 'SAMPLED_PENDING',
+      13: 'NOT_SAMPLED',
+    })
+    markClassifiedAdaptiveRootEstimates(
+      runtime(SAMPLING_CAP),
+      responses([item(110), item(111)]),
+      estimates
+    )
+    expect(estimates.nodes.get(1)?.stopReason).toBe('TOTAL_QUESTION_CAP')
+  })
+
+  it('keeps the count rules when any leaf has no status', () => {
+    const estimates = withLeafStatuses({ 11: 'COVERED', 12: 'OUT_OF_RANGE' })
+    markClassifiedAdaptiveRootEstimates(
+      runtime(FULL_CAP),
+      responses([item(110), item(111)]),
+      estimates
+    )
+    expect(estimates.nodes.get(1)?.stopReason).toBe('TOTAL_QUESTION_CAP')
   })
 })

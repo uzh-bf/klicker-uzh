@@ -22,7 +22,9 @@ query QAdaptivePracticeQuizResult($attemptId: String!) {
       startPosition
       endPosition
       color
+      hasElements
     }
+    classificationToleranceBands
     trajectory {
       order
       position
@@ -84,4 +86,5 @@ fragment FAdaptivePracticeQuizResultNodeFields on AdaptivePracticeQuizResultNode
   position
   lowerPosition
   upperPosition
+  coverageStatus
 }

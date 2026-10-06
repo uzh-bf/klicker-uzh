@@ -271,6 +271,15 @@ const messages = {
             '{count, plural, one {# Kompetenz in diesem Versuch nicht geprüft} other {# Kompetenzen in diesem Versuch nicht geprüft}}',
           notTestedSubcompetences:
             '{count, plural, one {# Teilkompetenz in diesem Versuch nicht geprüft} other {# Teilkompetenzen in diesem Versuch nicht geprüft}}',
+          notTestedOutOfRange:
+            'Nicht geprüft – außerhalb deines Niveaubereichs',
+          levelExact: '{level}',
+          levelWithTolerance:
+            '{level} (±{count, plural, one {# Stufe} other {# Stufen}})',
+          levelBelowRange:
+            '{level} oder tiefer (unterhalb des messbaren Bereichs)',
+          levelAboveRange:
+            '{level} oder höher (oberhalb des messbaren Bereichs)',
           evidenceHelp:
             'Jede Zeile zeigt dein geschätztes Niveau in diesem Bereich und wie sicher die Schätzung ist. Mit mehr Antworten wird die Schätzung sicherer.',
           title: 'Kompetenzprofil',
@@ -428,6 +437,12 @@ const messages = {
           customInterval: 'Bestehende individuelle Einstellung (z = {value})',
           intervalHint:
             'Ein höherer Prozentsatz ergibt ein breiteres Unsicherheitsintervall und benötigt meist mehr Fragen. Dies ist ein modellbasiertes Intervall, keine Garantie für die Richtigkeit der angezeigten Stufe.',
+          precision: 'Bestimmungsgenauigkeit',
+          precisionExact: 'Exakte Stufe',
+          precisionTolerance:
+            '{count, plural, one {±# Stufe} other {±# Stufen}}',
+          precisionHint:
+            'Mit „±1 Stufe“ gilt eine Stufe als bestimmt, wenn das Unsicherheitsintervall höchstens eine Stufe von der angezeigten Stufe abweicht; Ergebnisse zeigen dann z. B. „B1.2 (±1 Stufe)“. Empfohlen für Skalen mit {levelCount} oder mehr Stufen, bei denen eine exakte Stufe selten erreichbar ist. Erfordert die aktualisierte adaptive Engine; andernfalls schlägt die Veröffentlichung mit einer klaren Meldung fehl.',
           scalePolicy:
             'Konfidenz und vorzeitiges Beenden folgen der genehmigten Regel der gewählten kalibrierten Skala. Die Frage- und Zeitlimits gelten weiterhin.',
           enableTimeLimit: 'Zusätzlich ein Zeitlimit setzen',
@@ -629,6 +644,8 @@ const messages = {
               'Die Kompetenz "{rootName}" erhält nur {allocatedQuestionCount} der insgesamt verfügbaren Fragen, weniger als die {questionsPerLeaf} Fragen, die für eine Unterkompetenz nötig sind. Erhöhen Sie das Gesamtlimit, senken Sie die minimale Fragenzahl pro Unterkompetenz oder passen Sie die Gewichtung der Kompetenzen an.',
             ADAPTIVE_CLASSIFICATION_BANDS_UNREACHABLE:
               'Die Planungsschätzung unterstützt für "{nodeName}" ein präzises Ergebnis in {classifiableLevelCount} von {levelCount} Stufen. Mit diesem Fragelimit können Ergebnisse unsicher bleiben.',
+            ADAPTIVE_CLASSIFICATION_TOLERANCE_SUGGESTED:
+              'Mit diesen Fragen kann für "{nodeName}" ({levelCount} Stufen) keine Stufe exakt bestimmt werden. Erwägen Sie, die Bestimmungsgenauigkeit auf „±1 Stufe“ zu setzen.',
             ADAPTIVE_TIME_BUDGET_EXCEEDED:
               'Die Abdeckung dauert voraussichtlich etwa {estimatedDurationMinutes} Minuten bei {secondsPerItem} Sekunden pro Item.',
             ADAPTIVE_CONFIG_INTEGER_RANGE:
@@ -759,6 +776,8 @@ const messages = {
             '{count} Ergebnisse ohne verwendbare Schätzung für diesen Bereich werden nicht angezeigt.',
           notTested:
             '{count, plural, one {# Ergebnis hat diesen Bereich nicht geprüft} other {# Ergebnisse haben diesen Bereich nicht geprüft}} (es wurden keine Fragen gestellt, z. B. wegen der Stichprobe von Unterkompetenzen). Nicht geprüfte Ergebnisse zählen nicht als Schätzung.',
+          outOfRange:
+            '{count, plural, one {Davon hat # Ergebnis diesen Bereich übersprungen, weil er außerhalb des Niveaubereichs der Person lag.} other {Davon haben # Ergebnisse diesen Bereich übersprungen, weil er außerhalb des Niveaubereichs der Person lag.}}',
         },
         distributionStatuses: {
           betweenLevels: 'Zwischen Stufen',

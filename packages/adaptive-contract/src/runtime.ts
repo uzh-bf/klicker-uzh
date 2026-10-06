@@ -19,6 +19,11 @@ export type AdaptiveRuntimeSettings = {
   topInformationRatio: number
   levelMappingRule: LevelMappingRule
   thetaRange: ThetaRange
+  /**
+   * IRT_V1 only: classify within ±t bands of the band containing θ (Catalyst
+   * SEQUENTIAL_ROOTS_V6). Absent or 0 is the exact rule; never sent as 0.
+   */
+  classificationToleranceBands?: number
 }
 
 export type AdaptiveRuntimeLevel = LevelDefinition & {
@@ -61,6 +66,19 @@ export type AdaptiveRuntimeResponse<
   poolItem: TPoolItem
 }
 
+/**
+ * IRT_V1 leaf coverage reported by the engine for the decision state an
+ * estimate belongs to: COVERED (>= minQuestionsPerLeaf answers), OUT_OF_RANGE
+ * (no eligible item difficulty within the root's interval), SAMPLED_PENDING
+ * (required, still below the minimum) or NOT_SAMPLED (not chosen by
+ * subcompetence sampling).
+ */
+export type AdaptiveLeafCoverageStatus =
+  | 'COVERED'
+  | 'OUT_OF_RANGE'
+  | 'SAMPLED_PENDING'
+  | 'NOT_SAMPLED'
+
 export type AdaptiveRuntimeEstimate = {
   nodeKind: 'OVERALL' | 'COMPETENCE' | 'SUBCOMPETENCE'
   nodeId: number | null
@@ -69,6 +87,8 @@ export type AdaptiveRuntimeEstimate = {
   responseCount: number
   levelId: number | null
   stopReason: AdaptiveRuntimeStopReason | null
+  /** Leaf (SUBCOMPETENCE) nodes only; absent from engines that predate it. */
+  coverageStatus?: AdaptiveLeafCoverageStatus | null
 }
 
 export type AdaptiveRuntimeEstimates = {

@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma/client'
+import type * as DB from '@klicker-uzh/prisma/client'
 
 export type AdaptivePracticeQuizNodeOverrideInput = {
   nodeId: number
@@ -30,6 +30,7 @@ export type AdaptivePracticeQuizConfigInput = {
   minQuestionsPerLeaf?: number | null
   minItemsPerCoverageCell?: number | null
   classificationZ?: number | null
+  classificationToleranceBands?: number | null
   showTimer?: boolean | null
   nodeOverrides?: AdaptivePracticeQuizNodeOverrideInput[] | null
   elementOverrides?: AdaptivePracticeQuizElementOverrideInput[] | null
@@ -50,6 +51,7 @@ export type AdaptivePracticeQuizConfigView = Pick<
   | 'minQuestionsPerLeaf'
   | 'minItemsPerCoverageCell'
   | 'classificationZ'
+  | 'classificationToleranceBands'
   | 'topInformationRatio'
   | 'defaultDiscrimination'
   | 'levelMappingRule'

@@ -1,5 +1,8 @@
 import { useTranslations } from 'next-intl'
-import { summarizeAdaptiveDistributionCoverage } from './adaptiveDistributionCoverage'
+import {
+  summarizeAdaptiveDistributionCoverage,
+  summarizeAdaptiveDistributionOutOfRange,
+} from './adaptiveDistributionCoverage'
 import type { AdaptiveCohortDistribution } from './types'
 
 function AdaptiveEstimatedDistribution({
@@ -22,6 +25,10 @@ function AdaptiveEstimatedDistribution({
       estimatedCount: total,
       notTestedCount: distribution.notTestedCount,
     })
+  const outOfRange = summarizeAdaptiveDistributionOutOfRange({
+    notTested,
+    outOfRangeCount: distribution.outOfRangeCount,
+  })
   return (
     <div className="space-y-3" data-cy={dataCy}>
       <p className="text-sm text-gray-600">{t('description')}</p>
@@ -86,6 +93,11 @@ function AdaptiveEstimatedDistribution({
       {notTested !== null && notTested > 0 ? (
         <p className="text-sm text-gray-600" data-cy={`${dataCy}-not-tested`}>
           {t('notTested', { count: notTested })}
+        </p>
+      ) : null}
+      {outOfRange !== null && outOfRange > 0 ? (
+        <p className="text-sm text-gray-600" data-cy={`${dataCy}-out-of-range`}>
+          {t('outOfRange', { count: outOfRange })}
         </p>
       ) : null}
       {excluded !== null && excluded > 0 ? (

@@ -1,3 +1,4 @@
+import type { AdaptiveLeafCoverageStatus } from '@klicker-uzh/adaptive-contract'
 import type {
   AdaptiveRuntimeNode,
   AdaptiveRuntimeRoutingPoolItem,
@@ -105,4 +106,39 @@ export function hasAdaptiveV1LeafBreadth({
         (coverage.coverageByLeaf.get(leafId) ?? minQuestionsPerLeaf)
     )
   )
+}
+
+/**
+ * Breadth from the engine's own per-leaf coverage status (Catalyst routing
+ * SEQUENTIAL_ROOTS_V5), persisted with the decision that produced it. A leaf
+ * is required iff it is COVERED or SAMPLED_PENDING; OUT_OF_RANGE and
+ * NOT_SAMPLED leaves are not required. Breadth holds when at least one leaf is
+ * required and no required leaf is still SAMPLED_PENDING, matching the
+ * engine's CLASSIFIED rule.
+ *
+ * Returns null when any of the leaves has no status (an older engine or an
+ * attempt persisted before the field existed); callers then keep the
+ * response-count rules of hasAdaptiveV1LeafBreadth unchanged.
+ */
+export function resolveAdaptiveV1EngineLeafBreadth({
+  leafIds,
+  coverageStatusByLeaf,
+}: {
+  leafIds: readonly number[]
+  coverageStatusByLeaf: ReadonlyMap<
+    number,
+    AdaptiveLeafCoverageStatus | null | undefined
+  >
+}): boolean | null {
+  if (leafIds.length === 0) return null
+  const statuses: AdaptiveLeafCoverageStatus[] = []
+  for (const leafId of leafIds) {
+    const status = coverageStatusByLeaf.get(leafId)
+    if (!status) return null
+    statuses.push(status)
+  }
+  const required = statuses.filter(
+    (status) => status === 'COVERED' || status === 'SAMPLED_PENDING'
+  )
+  return required.length > 0 && required.every((status) => status === 'COVERED')
 }

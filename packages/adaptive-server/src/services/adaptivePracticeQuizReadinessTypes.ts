@@ -61,6 +61,8 @@ export type AdaptiveConfiguredSettings = {
    */
   minItemsPerCoverageCell?: number
   classificationZ: number
+  /** IRT_V1 classification tolerance in level bands (0 = exact level). */
+  classificationToleranceBands?: number
   topInformationRatio: number
   defaultDiscrimination: number
 }

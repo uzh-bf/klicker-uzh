@@ -39,6 +39,22 @@ const legacyEstimate = estimate
     levelId: id.nullable(),
   })
   .strict()
+/**
+ * IRT_V1 leaf coverage of the decision state the estimate was returned with
+ * (Catalyst routing SEQUENTIAL_ROOTS_V5). Only `/adaptive/v1/decide` sends it:
+ * a status for SUBCOMPETENCE (leaf) nodes, `null` for every other node. Older
+ * engines omit it, so it stays optional; the estimates endpoint never has it.
+ */
+export const leafCoverageStatusSchema = z.enum([
+  'COVERED',
+  'OUT_OF_RANGE',
+  'SAMPLED_PENDING',
+  'NOT_SAMPLED',
+])
+export type LeafCoverageStatus = z.infer<typeof leafCoverageStatusSchema>
+const legacyDecisionEstimate = legacyEstimate
+  .extend({ coverageStatus: leafCoverageStatusSchema.nullable().optional() })
+  .strict()
 const bayesianEstimate = estimate
   .extend({
     posterior: z
@@ -80,8 +96,8 @@ export const decisionResponseSchema = z.discriminatedUnion(
         measurementVersion: z.literal('IRT_V1'),
         estimates: z
           .object({
-            overall: legacyEstimate,
-            nodes: z.array(legacyEstimate).max(500),
+            overall: legacyDecisionEstimate,
+            nodes: z.array(legacyDecisionEstimate).max(500),
           })
           .strict(),
       })
@@ -284,6 +300,13 @@ export function parseDecisionResponse(
     fail()
   for (const row of [result.estimates.overall, ...result.estimates.nodes]) {
     if (row.responseCount > request.responses.length) fail()
+    // A leaf coverage status is only meaningful for subcompetence nodes.
+    if (
+      'coverageStatus' in row &&
+      row.coverageStatus != null &&
+      row.nodeKind !== 'SUBCOMPETENCE'
+    )
+      fail()
     if ('posterior' in row) {
       if (
         row.classifiedLevelId !== null &&

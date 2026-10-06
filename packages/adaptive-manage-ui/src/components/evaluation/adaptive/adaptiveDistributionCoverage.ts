@@ -25,3 +25,20 @@ export function summarizeAdaptiveDistributionCoverage({
     withoutUsableEstimate: missing - (notTested ?? 0),
   }
 }
+
+/**
+ * Not-tested results the engine skipped because the subcompetence lay outside
+ * the student's level range (leaf coverage status OUT_OF_RANGE). A subset of
+ * the not-tested results; null when either count is unavailable (older
+ * engines, older snapshots or withheld cells).
+ */
+export function summarizeAdaptiveDistributionOutOfRange({
+  notTested,
+  outOfRangeCount,
+}: {
+  notTested: number | null
+  outOfRangeCount?: number | null
+}): number | null {
+  if (notTested === null || typeof outOfRangeCount !== 'number') return null
+  return Math.min(notTested, Math.max(0, outOfRangeCount))
+}

@@ -88,6 +88,109 @@ host (`adaptivePracticeQuizSamplingCoverage.ts`). Leaves without responses
 in an attempt are "not tested": the student profile labels them so, and cohort
 distributions count them in `notTestedCount`, never as level estimates.
 
+### Leaf coverage status (engine contract)
+
+Catalyst V1 routing `SEQUENTIAL_ROOTS_V5` adds `coverageStatus` to every
+IRT_V1 `/adaptive/v1/decide` node estimate. Subcompetence (leaf) nodes carry
+one of the following values; all other nodes, including the overall estimate,
+carry `null`:
+
+- `COVERED`: the leaf has at least `minQuestionsPerLeaf` answers.
+- `OUT_OF_RANGE`: the leaf is excluded because none of its eligible items has
+  a difficulty within the root's θ ± 1.96·SE. The engine reports this only
+  after four or more root answers, and the status can change in later
+  decisions.
+- `SAMPLED_PENDING`: the leaf is required but still below its minimum.
+- `NOT_SAMPLED`: subcompetence sampling did not choose the leaf.
+
+The engine classifies a root (`CLASSIFIED`) when none of its leaves is
+`SAMPLED_PENDING` and its interval lies within a single band. Each status
+describes the decision it was returned with. IRT v2 and `/adaptive/v1/estimates`
+do not carry the field.
+
+The host client (`packages/adaptive-client/src/response.ts`) uses strict
+schemas. It accepts the field as optional and nullable on IRT_V1 decision
+estimates only, and rejects unknown values and non-null values on
+non-subcompetence nodes. When an older engine omits the field, it parses as
+`undefined`.
+
+The host stores the status of the decision it persists in
+`AdaptivePracticeQuizEstimate.coverageStatus`, a nullable
+`AdaptiveLeafCoverageStatus` column. The CHECK `apqe_coverage_status_leaf_check`
+allows a value on subcompetence rows only. Non-terminal steps update only the
+nodes on the answered item's path. The terminal decision writes every node, so
+the statuses of a completed attempt come from its final decision. Older
+attempts and engines leave the column `NULL`.
+
+Host breadth checks (`resolveAdaptiveV1EngineLeafBreadth`) use the status
+whenever every relevant leaf has one. A leaf is required if and only if it is
+`COVERED` or `SAMPLED_PENDING`. Breadth holds when at least one leaf is
+required and none of the required leaves is `SAMPLED_PENDING`. An
+engine-`CLASSIFIED` root is trusted. When any relevant leaf has no status, the
+response-count rules above apply unchanged. The student profile labels an
+unanswered `OUT_OF_RANGE` leaf "Not tested — outside your level range"; other
+unanswered leaves keep "Not tested". Cohort distributions report
+`outOfRangeCount` as a subset of `notTestedCount`.
+
+### Classification tolerance (engine contract)
+
+Catalyst V1 routing `SEQUENTIAL_ROOTS_V6` adds an optional IRT_V1 request
+setting `settings.classificationToleranceBands`, an integer from 0 to 5. A node
+is classified when θ ± z·SE lies within bands k−t … k+t around the band k that
+contains θ, clipped at both ends of the scale. The reported level stays k. The
+rule applies to root stopping, leaf classification and engine `CLASSIFIED`.
+When the setting is 0 or absent, the engine uses the exact rule. IRT v2
+requests that carry the setting are rejected, and engines older than V6 reject
+it as invalid. V6 also carries a routing prior across roots, which needs no
+host change.
+
+`PracticeQuizAdaptiveConfig.classificationToleranceBands` stores the setting.
+It defaults to 0 and has a CHECK for 0–5. The authoring UI ("classification
+precision") offers exact, ±1 and ±2. New and existing quizzes both default to
+exact, because a tolerance requires the upgraded engine. For scales with ten
+or more levels the UI recommends ±1. With t = 1, about 80% of root estimates
+classify within ±1 sublevel on a 16-level scale. With t = 2, more than 99%
+classify, but the stated band then covers roughly a whole main level.
+
+- **Configuration.** Values must be whole numbers from 0 to 5, and only IRT_V1
+  configurations may use a value above 0
+  (`ADAPTIVE_CLASSIFICATION_TOLERANCE_INVALID` / `_UNSUPPORTED`).
+- **Publication.** An IRT_V1 publication freezes the value in
+  `evidenceMinimumSnapshot.classificationToleranceBands`. Older publications
+  don't have the key, so they read as 0. IRT_V1 has no separate config
+  fingerprint, so the immutable publication snapshot is what pins this
+  stopping input.
+- **Engine requests.** The value is sent only when it is above 0
+  (`v1EngineSettings`). Exact-rule quizzes therefore keep the request shape of
+  older engines.
+- **Publication guard.** Publishing a quiz with t > 0 first validates a
+  synthetic snapshot against the engine, once without the setting and once
+  with it. An engine that rejects only the setting fails with
+  `ADAPTIVE_CLASSIFICATION_TOLERANCE_UNSUPPORTED` and a clear message.
+- **Host rules.** The readiness band planning count, host root classification,
+  cohort "level determined" counts and the student result all use the same
+  rule, `intervalWithinToleranceBands` in `adaptive-contract`. The student
+  result and the cohort also share one determination
+  (`adaptivePracticeQuizLevelDetermination.ts`). A student therefore sees a
+  determined level only when the lecturer cohort would count it, not whenever a
+  level id exists. Classified levels under t > 0 read "B1.2 (±1 level)".
+- **Readiness advisory.** When no band of a root is classifiable at t = 0,
+  readiness adds the advisory warning
+  `ADAPTIVE_CLASSIFICATION_TOLERANCE_SUGGESTED` (IRT_V1 only).
+
+Results also mark the edges of the measurable range. When the bands below the
+lowest band with published elements (or above the highest) have no elements, an
+estimate at or beyond that band reads "A2.1 or below (below the measurable
+range)", not the name of an unmeasured band.
+
+**Deploy order:** merge and deploy the host change that accepts
+`coverageStatus` before bumping the engine image tag to a
+`SEQUENTIAL_ROOTS_V5`/`V6` build. Otherwise the strict host schema rejects
+every IRT_V1 decision, and adaptive quizzes fail with
+`ADAPTIVE_ENGINE_UNAVAILABLE`. Don't publish a quiz with a classification
+tolerance above 0 until the engine runs `SEQUENTIAL_ROOTS_V6`. The publication
+guard refuses it before then.
+
 ## Verification boundaries
 
 Private engine tests verify calculations. Public tests verify authorization,

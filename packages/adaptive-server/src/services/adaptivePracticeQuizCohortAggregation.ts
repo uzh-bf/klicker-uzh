@@ -1,4 +1,3 @@
-import { classificationIntervalWithinLevelBand } from '@klicker-uzh/adaptive-contract'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   type AdaptiveItemDiagnostic,
@@ -9,6 +8,7 @@ import {
   finalizeAdaptiveItemDiagnostics,
   finalizeAdaptivePilotMetrics,
 } from './adaptivePracticeQuizDiagnostics.js'
+import { createAdaptiveV1LevelDetermination } from './adaptivePracticeQuizLevelDetermination.js'
 import {
   type AdaptivePrivacySuppression,
   compactAdaptivePrivacySuppressions,
@@ -21,13 +21,8 @@ import {
   type AdaptiveRuntimeNode,
   type AdaptiveRuntimeRoutingPoolItem,
   type AdaptiveRuntimeSettings,
-  getMappedRuntimeLeafIds,
   MIN_REPORTING_RESPONSES,
 } from './adaptivePracticeQuizRuntime.js'
-import {
-  hasAdaptiveV1LeafBreadth,
-  resolveAdaptiveV1LeafCoverage,
-} from './adaptivePracticeQuizSamplingCoverage.js'
 
 export type AdaptiveCohortLevelBucket = {
   levelLabel: string
@@ -58,6 +53,12 @@ export type AdaptiveCohortNodeDistribution = {
    * cohort snapshots written before this field existed.
    */
   notTestedCount?: number | null
+  /**
+   * Not-tested attempts whose engine excluded this subcompetence because no
+   * eligible item lay within the student's level range (coverage status
+   * OUT_OF_RANGE). A subset of notTestedCount; absent in older snapshots.
+   */
+  outOfRangeCount?: number | null
   buckets: AdaptiveCohortLevelBucket[]
 }
 
@@ -131,6 +132,7 @@ export type AdaptiveCohortAttemptRecord = {
     levelId: number | null
     resultStatus: DB.AdaptiveResultStatus | null
     stopReason?: DB.AdaptivePracticeQuizStopReason | null
+    coverageStatus?: DB.AdaptiveLeafCoverageStatus | null
   }>
 }
 
@@ -160,6 +162,7 @@ export type AdaptiveCohortAccumulator = {
   distributions: Array<{
     insufficientDataCount: number
     notTestedCount: number
+    outOfRangeCount: number
     levelCounts: Map<number, number>
     determinedCounts: Map<number, number>
     classifications: Record<DB.AdaptiveResultStatus, number>
@@ -213,6 +216,7 @@ export function createAdaptiveCohortAccumulator(
     distributions: definitions.map(() => ({
       insufficientDataCount: 0,
       notTestedCount: 0,
+      outOfRangeCount: 0,
       levelCounts: new Map(),
       determinedCounts: new Map(),
       classifications: emptyClassificationCounts(),
@@ -253,46 +257,18 @@ export function accumulateAdaptiveCohortAttempt(
     accumulator.insufficientData += 1
   }
 
-  const enabledNodes = getEffectivelyEnabledRuntimeNodes(
-    runtime.algorithm.nodes
-  )
-  const parentIds = new Set(enabledNodes.map((node) => node.parentId))
-  const enabledNodeIds = new Set(enabledNodes.map(({ id }) => id))
-  // One answer covers every enabled leaf its item is mapped to (once each).
-  const leafCounts = new Map<number, number>()
-  for (const response of responses) {
-    const item =
-      response.poolItemId === null
-        ? undefined
-        : accumulator.diagnostics.poolById.get(response.poolItemId)
-    if (!item) continue
-    for (const leafId of getMappedRuntimeLeafIds(item, enabledNodeIds)) {
-      leafCounts.set(leafId, (leafCounts.get(leafId) ?? 0) + 1)
-    }
-  }
-  const nodesById = new Map(enabledNodes.map((node) => [node.id, node]))
-  const leaves = enabledNodes.filter((node) => !parentIds.has(node.id))
-  const coverage = resolveAdaptiveV1LeafCoverage(runtime, enabledNodeIds)
-  function hasCoverage(nodeId: number | null) {
-    const relevantLeaves = leaves.filter((leaf) => {
-      if (nodeId === null) return true
-      let current: typeof leaf | undefined = leaf
-      while (current) {
-        if (current.id === nodeId) return true
-        current =
-          current.parentId === null
-            ? undefined
-            : nodesById.get(current.parentId)
-      }
-      return false
-    })
-    return hasAdaptiveV1LeafBreadth({
-      leafIds: relevantLeaves.map(({ id }) => id),
-      leafCounts,
-      minQuestionsPerLeaf: runtime.algorithm.settings.minQuestionsPerLeaf,
-      coverage,
-    })
-  }
+  const determination = createAdaptiveV1LevelDetermination({
+    runtime,
+    answeredPoolItemIds: responses.map(({ poolItemId }) => poolItemId),
+    coverageStatusByLeaf: new Map(
+      attempt.estimates.flatMap((estimate) =>
+        estimate.nodeKind === DB.AdaptiveEstimateNodeKind.SUBCOMPETENCE &&
+        estimate.nodeId !== null
+          ? [[estimate.nodeId, estimate.coverageStatus] as const]
+          : []
+      )
+    ),
+  })
 
   for (const [index, definition] of accumulator.definitions.entries()) {
     const estimate = estimates.get(
@@ -313,6 +289,11 @@ export function accumulateAdaptiveCohortAttempt(
       (!estimate || estimate.responseCount === 0)
     ) {
       metric.notTestedCount += 1
+      if (
+        estimate?.coverageStatus === DB.AdaptiveLeafCoverageStatus.OUT_OF_RANGE
+      ) {
+        metric.outOfRangeCount += 1
+      }
     }
     // Each estimate uses its own interval and descendant-leaf coverage.
     const usable =
@@ -334,19 +315,11 @@ export function accumulateAdaptiveCohortAttempt(
         )
         const determined =
           attempt.measurementVersion === DB.AdaptiveMeasurementVersion.IRT_V1
-            ? // Under sampling, trust a root the engine already classified.
-              (coverage.sampling &&
-                estimate.stopReason ===
-                  DB.AdaptivePracticeQuizStopReason.CLASSIFIED) ||
-              (hasCoverage(definition.nodeId) &&
-                classificationIntervalWithinLevelBand({
-                  theta: estimate.theta!,
-                  standardError: estimate.standardError!,
-                  levels: runtime.algorithm.levels,
-                  range: runtime.algorithm.settings.thetaRange,
-                  mappingRule: runtime.algorithm.settings.levelMappingRule,
-                  z: runtime.algorithm.settings.classificationZ,
-                }))
+            ? determination.isDetermined(definition.nodeId, {
+                theta: estimate.theta!,
+                standardError: estimate.standardError!,
+                stopReason: estimate.stopReason,
+              })
             : classification === DB.AdaptiveResultStatus.CLASSIFIED
         if (determined)
           metric.determinedCounts.set(
@@ -531,6 +504,10 @@ function finalizeDistributions(
         withheld || insufficientDataRelease.value === null
           ? null
           : metric.notTestedCount,
+      outOfRangeCount:
+        withheld || insufficientDataRelease.value === null
+          ? null
+          : metric.outOfRangeCount,
       buckets: withheld ? [] : (release.value?.buckets ?? []),
     }
   })

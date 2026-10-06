@@ -50,6 +50,8 @@ export {
   decisionResponseSchema,
   type EstimateResponse,
   estimateResponseSchema,
+  type LeafCoverageStatus,
+  leafCoverageStatusSchema,
   parseDecisionResponse,
   parseEstimateResponse,
   parseValidationResponse,

@@ -263,6 +263,12 @@ const messages = {
             '{count, plural, one {# competence not tested in this attempt} other {# competences not tested in this attempt}}',
           notTestedSubcompetences:
             '{count, plural, one {# subcompetence not tested in this attempt} other {# subcompetences not tested in this attempt}}',
+          notTestedOutOfRange: 'Not tested — outside your level range',
+          levelExact: '{level}',
+          levelWithTolerance:
+            '{level} (±{count, plural, one {# level} other {# levels}})',
+          levelBelowRange: '{level} or below (below the measurable range)',
+          levelAboveRange: '{level} or above (above the measurable range)',
           evidenceHelp:
             'Each row shows your estimated level in that area and how certain it is. The estimate gets more certain with more answers.',
           title: 'Competence profile',
@@ -419,6 +425,12 @@ const messages = {
           customInterval: 'Existing custom setting (z = {value})',
           intervalHint:
             'A higher percentage gives a wider uncertainty interval and usually needs more questions. This is a model-based interval, not a guarantee that the reported level is correct.',
+          precision: 'Classification precision',
+          precisionExact: 'Exact level',
+          precisionTolerance:
+            '{count, plural, one {±# level} other {±# levels}}',
+          precisionHint:
+            'With “±1 level”, a level counts as determined when the uncertainty interval stays within one level of the reported level; results then show, for example, “B1.2 (±1 level)”. Recommended for scales with {levelCount} or more levels, where an exact level is rarely reachable. Requires the upgraded adaptive engine; publishing fails with a clear message otherwise.',
           scalePolicy:
             'Confidence and early stopping follow the approved policy of the selected calibrated scale. The question and time limits below still apply.',
           enableTimeLimit: 'Also set a time limit',
@@ -618,6 +630,8 @@ const messages = {
               'The competence "{rootName}" receives only {allocatedQuestionCount} of the total questions, fewer than the {questionsPerLeaf} needed to test one subcompetence. Increase the total question cap, lower the minimum questions per subcompetence, or adjust the competence weights.',
             ADAPTIVE_CLASSIFICATION_BANDS_UNREACHABLE:
               'The planning estimate supports a precise result in {classifiableLevelCount} of {levelCount} levels for "{nodeName}". With this question limit, some results may remain uncertain.',
+            ADAPTIVE_CLASSIFICATION_TOLERANCE_SUGGESTED:
+              'With these questions, no exact level of "{nodeName}" ({levelCount} levels) can be determined. Consider setting the classification precision to “±1 level”.',
             ADAPTIVE_TIME_BUDGET_EXCEEDED:
               'The coverage is expected to take about {estimatedDurationMinutes} minutes using {secondsPerItem} seconds per item.',
             ADAPTIVE_CONFIG_INTEGER_RANGE:
@@ -744,6 +758,8 @@ const messages = {
             '{count} results without a usable estimate for this area are not shown.',
           notTested:
             '{count, plural, one {# result did not test this area} other {# results did not test this area}} (no questions were served, for example because of subcompetence sampling). Untested results are not counted as estimates.',
+          outOfRange:
+            '{count, plural, one {Of these, # result skipped this area because it was outside the student’s level range.} other {Of these, # results skipped this area because it was outside the student’s level range.}}',
         },
         distributionStatuses: {
           betweenLevels: 'Between levels',

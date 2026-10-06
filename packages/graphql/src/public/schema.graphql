@@ -351,6 +351,13 @@ enum AdaptiveItemModel {
   TWO_PL
 }
 
+enum AdaptiveLeafCoverageStatus {
+  COVERED
+  NOT_SAMPLED
+  OUT_OF_RANGE
+  SAMPLED_PENDING
+}
+
 enum AdaptiveLevelMappingRule {
   MASTERY
   NEAREST
@@ -464,6 +471,7 @@ type AdaptivePracticeQuizCohortResults {
 type AdaptivePracticeQuizConfig {
   attemptSelectionPolicy: AdaptiveAttemptSelectionPolicy!
   calibrationPolicyVersion: Int
+  classificationToleranceBands: Int!
   classificationZ: Float!
   competenceTreeId: String!
   defaultDiscrimination: Float!
@@ -481,6 +489,7 @@ type AdaptivePracticeQuizConfig {
 }
 
 input AdaptivePracticeQuizConfigInput {
+  classificationToleranceBands: Int
   classificationZ: Float
   competenceTreeId: String!
   elementOverrides: [AdaptivePracticeQuizElementOverrideInput!]
@@ -546,6 +555,7 @@ type AdaptivePracticeQuizLevel {
 type AdaptivePracticeQuizLevelBand {
   color: String
   endPosition: Float!
+  hasElements: Boolean!
   label: String!
   order: Int!
   startPosition: Float!
@@ -584,6 +594,7 @@ type AdaptivePracticeQuizNodeDistribution {
   nodeName: String!
   notTestedCount: Int
   order: Int!
+  outOfRangeCount: Int
   parentNodeId: Int
   poolLimitedCount: Int
   researchOnlyCount: Int
@@ -741,6 +752,7 @@ type AdaptivePracticeQuizResult {
   attemptId: String!
   classification: AdaptivePracticeQuizResultClassification!
   classificationProbability: Float
+  classificationToleranceBands: Int!
   competenceProfile: [AdaptivePracticeQuizResultNode!]!
   completedAt: Date!
   confidence: AdaptiveResultConfidence!
@@ -773,6 +785,7 @@ type AdaptivePracticeQuizResultNode {
   classification: AdaptivePracticeQuizResultClassification!
   classificationProbability: Float
   confidence: AdaptiveResultConfidence!
+  coverageStatus: AdaptiveLeafCoverageStatus
   id: Int!
   kind: AdaptiveNodeKind!
   leadingLevelLabels: [String!]!

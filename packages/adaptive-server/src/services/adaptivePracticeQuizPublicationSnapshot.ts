@@ -599,6 +599,15 @@ function buildEvidenceMinimumSnapshot(
       .filter((node) => node.parentId === null && node.enabled)
       .map(({ id }) => id),
     classificationZ: prepared.config.classificationZ,
+    // IRT_V1 stopping rule input, frozen with the publication like the other
+    // stopping settings (there is no separate v1 config fingerprint).
+    ...(prepared.config.measurementVersion ===
+    DB.AdaptiveMeasurementVersion.IRT_V1
+      ? {
+          classificationToleranceBands:
+            prepared.config.classificationToleranceBands,
+        }
+      : {}),
     topInformationRatio: prepared.config.topInformationRatio,
     levelMappingRule: prepared.config.levelMappingRule,
     thetaMin: prepared.tree.thetaMin,

@@ -6,6 +6,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { type ReactNode, useState } from 'react'
+import { getAdaptiveProfileNotTestedLabelKey } from './adaptiveLeafCoverage'
 import {
   ADAPTIVE_LEVEL_MARKER_COLOR,
   getAdaptiveLevelBandColors,
@@ -19,6 +20,7 @@ import {
   getAdaptiveRoughEstimateDisplay,
   showsAdaptiveLevelTrack,
 } from './adaptiveProfileCertainty'
+import { getAdaptiveReportedLevelLabel } from './adaptiveReportedLevel'
 import {
   getAdaptiveProfileIndication,
   isAdaptiveProfileNodeNotTested,
@@ -40,6 +42,7 @@ export type AdaptiveCompetenceProfileNode = {
   position?: number | null
   lowerPosition?: number | null
   upperPosition?: number | null
+  coverageStatus?: string | null
   children?: AdaptiveCompetenceProfileNode[] | null
 }
 
@@ -57,6 +60,8 @@ type ProfileEstimate = {
   position?: number | null
   lowerPosition?: number | null
   upperPosition?: number | null
+  // Engine leaf coverage status (IRT_V1 subcompetences only).
+  coverageStatus?: string | null
 }
 
 type LevelBands = Array<{
@@ -66,6 +71,7 @@ type LevelBands = Array<{
   endPosition: number
   /** Lecturer-chosen band color; null uses the default palette. */
   color?: string | null
+  hasElements?: boolean | null
 }>
 
 interface AdaptiveCompetenceProfileProps {
@@ -73,6 +79,8 @@ interface AdaptiveCompetenceProfileProps {
   overall: ProfileEstimate
   levelBands: LevelBands
   nodes: AdaptiveCompetenceProfileNode[]
+  // Quiz classification tolerance in level bands (0 = exact level).
+  toleranceBands?: number
 }
 
 function AdaptiveCompetenceProfile({
@@ -80,6 +88,7 @@ function AdaptiveCompetenceProfile({
   overall,
   levelBands,
   nodes,
+  toleranceBands = 0,
 }: AdaptiveCompetenceProfileProps) {
   return (
     <div className="border-t" data-cy="adaptive-competence-profile">
@@ -87,12 +96,14 @@ function AdaptiveCompetenceProfile({
         estimate={overall}
         levelBands={levelBands}
         isPlacementPilot={isPlacementPilot}
+        toleranceBands={toleranceBands}
         emphasized
       />
       <ProfileNodeList
         nodes={nodes}
         levelBands={levelBands}
         isPlacementPilot={isPlacementPilot}
+        toleranceBands={toleranceBands}
         depth={0}
       />
     </div>
@@ -107,11 +118,13 @@ function ProfileNodeList({
   nodes,
   levelBands,
   isPlacementPilot,
+  toleranceBands,
   depth,
 }: {
   nodes: AdaptiveCompetenceProfileNode[]
   levelBands: LevelBands
   isPlacementPilot: boolean
+  toleranceBands: number
   depth: number
 }) {
   const sorted = nodes.slice().sort((a, b) => a.order - b.order)
@@ -129,6 +142,7 @@ function ProfileNodeList({
           node={node}
           levelBands={levelBands}
           isPlacementPilot={isPlacementPilot}
+          toleranceBands={toleranceBands}
           depth={depth}
         />
       ))}
@@ -162,7 +176,7 @@ function NotTestedSummary({
       >
         <span className="break-words">{nodes[0]!.name}</span>
         <span className="text-xs">
-          {t('pwa.practiceQuiz.adaptive.profile.notTested')}
+          {t(getAdaptiveProfileNotTestedLabelKey(nodes[0]!.coverageStatus))}
         </span>
       </div>
     )
@@ -201,6 +215,11 @@ function NotTestedSummary({
             data-cy="adaptive-profile-not-tested"
           >
             {node.name}
+            {node.coverageStatus === 'OUT_OF_RANGE' && (
+              <span className="ml-2 text-xs">
+                {t(getAdaptiveProfileNotTestedLabelKey(node.coverageStatus))}
+              </span>
+            )}
           </li>
         ))}
       </ul>
@@ -212,11 +231,13 @@ function ProfileNode({
   node,
   levelBands,
   isPlacementPilot,
+  toleranceBands,
   depth,
 }: {
   node: AdaptiveCompetenceProfileNode
   levelBands: LevelBands
   isPlacementPilot: boolean
+  toleranceBands: number
   depth: number
 }) {
   const [open, setOpen] = useState(false)
@@ -227,6 +248,7 @@ function ProfileNode({
       estimate={node}
       levelBands={levelBands}
       isPlacementPilot={isPlacementPilot}
+      toleranceBands={toleranceBands}
       depth={depth}
     />
   )
@@ -261,6 +283,7 @@ function ProfileNode({
           nodes={children}
           levelBands={levelBands}
           isPlacementPilot={isPlacementPilot}
+          toleranceBands={toleranceBands}
           depth={Math.min(depth + 1, 4)}
         />
       </div>
@@ -272,16 +295,27 @@ function ProfileRow({
   estimate,
   levelBands,
   isPlacementPilot = false,
+  toleranceBands = 0,
   depth = 0,
   emphasized = false,
 }: {
   estimate: ProfileEstimate
   levelBands: LevelBands
   isPlacementPilot?: boolean
+  toleranceBands?: number
   depth?: number
   emphasized?: boolean
 }) {
   const t = useTranslations()
+  const reportedLevel = (levelLabel: string, classified: boolean) => {
+    const label = getAdaptiveReportedLevelLabel({
+      levelLabel,
+      levelBands,
+      toleranceBands,
+      classified,
+    })
+    return t(label.key, label.values)
+  }
   const indication = getAdaptiveProfileIndication({ ...estimate, levelBands })
   const width = indication
     ? getAdaptiveRangeWidth({
@@ -314,7 +348,7 @@ function ProfileRow({
         switch (rough.kind) {
           case 'level':
             return t('pwa.practiceQuiz.adaptive.profile.roughLevel', {
-              level: rough.levelLabel,
+              level: reportedLevel(rough.levelLabel, false),
             })
           case 'mainLevel':
             return t('pwa.practiceQuiz.adaptive.profile.aroundLevel', {
@@ -350,7 +384,7 @@ function ProfileRow({
             case AdaptivePracticeQuizResultClassification.Classified:
               return estimate.levelLabel
                 ? t('pwa.practiceQuiz.adaptive.profile.estimatedLevel', {
-                    level: estimate.levelLabel,
+                    level: reportedLevel(estimate.levelLabel, true),
                   })
                 : t('pwa.practiceQuiz.adaptive.profile.insufficientData')
             case AdaptivePracticeQuizResultClassification.BetweenLevels:

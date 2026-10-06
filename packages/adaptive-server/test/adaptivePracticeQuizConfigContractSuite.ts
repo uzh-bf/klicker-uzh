@@ -1,3 +1,16 @@
+import { updateCourseSettings } from '@klicker-uzh/adaptive-test-host/services/courses'
+import { getPracticeQuizList } from '@klicker-uzh/adaptive-test-host/services/participants'
+import {
+  getCoursePublishedPracticeQuizzes,
+  getPracticeQuizData,
+  manipulatePracticeQuiz,
+  publishPracticeQuiz,
+  unpublishPracticeQuiz,
+} from '@klicker-uzh/adaptive-test-host/services/practiceQuizzes'
+import type {
+  Context,
+  ContextWithUser,
+} from '@klicker-uzh/graphql/adaptive-context-types'
 import { prisma } from '@klicker-uzh/prisma'
 import {
   Locale,
@@ -8,19 +21,6 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma/client'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
-import type {
-  Context,
-  ContextWithUser,
-} from '@klicker-uzh/graphql/adaptive-context-types'
-import { updateCourseSettings } from '@klicker-uzh/adaptive-test-host/services/courses'
-import { getPracticeQuizList } from '@klicker-uzh/adaptive-test-host/services/participants'
-import {
-  getCoursePublishedPracticeQuizzes,
-  getPracticeQuizData,
-  manipulatePracticeQuiz,
-  publishPracticeQuiz,
-  unpublishPracticeQuiz,
-} from '@klicker-uzh/adaptive-test-host/services/practiceQuizzes'
 
 const owner = {
   id: '10000000-0000-4000-8000-000000000001',
@@ -89,6 +89,10 @@ const adaptiveConfigFieldBehavior = {
     kind: 'runtime',
     consumer: 'classification interval width',
   },
+  classificationToleranceBands: {
+    kind: 'runtime',
+    consumer: 'engine classification tolerance bands',
+  },
   topInformationRatio: {
     kind: 'runtime',
     consumer: 'randomesque information band',
@@ -116,6 +120,7 @@ const adaptiveConfigFieldBehavior = {
   }
 >
 
+import { itWithAdaptiveEngine } from './adaptiveEngineTestEnv.js'
 import {
   cleanup,
   contextFor,
@@ -125,7 +130,6 @@ import {
   getSchemaFieldNames,
   quizInput,
 } from './adaptivePracticeQuizConfigTestSupport.js'
-import { itWithAdaptiveEngine } from './adaptiveEngineTestEnv.js'
 
 export function registerAdaptivePracticeQuizConfigContractTests() {
   let ownerCtx: ContextWithUser
@@ -167,6 +171,7 @@ export function registerAdaptivePracticeQuizConfigContractTests() {
       [
         'attemptSelectionPolicy',
         'calibrationPolicyVersion',
+        'classificationToleranceBands',
         'classificationZ',
         'competenceTreeId',
         'defaultDiscrimination',
@@ -193,6 +198,7 @@ export function registerAdaptivePracticeQuizConfigContractTests() {
         'researchSettings',
         'scaleVersionId',
         'showTimer',
+        'classificationToleranceBands',
         'classificationZ',
         'minItemsPerCoverageCell',
         'minQuestionsPerLeaf',
