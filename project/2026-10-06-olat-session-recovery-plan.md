@@ -625,3 +625,13 @@ report-export browser checks and corrected-head hosted CI are required.
 These corrections supersede earlier unchanged-source and stopped-runtime claims
 until the new checks and final cleanup finish. Firefox launch remains blocked
 on this host, and real OLAT incident attribution remains unproven.
+
+### Live-quiz cleanup observation correction
+
+The corrected regular-session fixtures pass the first 38 local O1 cases,
+including saved authenticated responses. Cleanup then checked for confirmation
+before the network-backed deletion dialog existed and incorrectly expected
+zero responses. O1/O2 helpers now wait for that dialog before inspecting its
+confirmation controls. The unnecessary exact no-response prose assertion is
+removed; final deletion still requires the enabled confirmation action and
+completes through the existing cleanup workflow. This is a test-only race fix.
