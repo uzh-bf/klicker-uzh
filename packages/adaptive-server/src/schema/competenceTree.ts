@@ -1,3 +1,4 @@
+import type { AdaptiveSchemaBuilder } from '@klicker-uzh/graphql/adaptive-schema-host-types'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   CompetenceTreeAssignmentInput as CompetenceTreeAssignmentInputType,
@@ -10,6 +11,7 @@ import type {
   CompetenceTreeElementAssignmentCreateInput as CompetenceTreeElementAssignmentCreateInputType,
   CompetenceTreeElementAssignmentUpdateInput as CompetenceTreeElementAssignmentUpdateInputType,
   CompetenceTreeInput as CompetenceTreeInputType,
+  CompetenceTreeLevelColorInput as CompetenceTreeLevelColorInputType,
   CompetenceTreeLevelInput as CompetenceTreeLevelInputType,
   CompetenceTreeLevelView,
   CompetenceTreeMetadataInput as CompetenceTreeMetadataInputType,
@@ -22,7 +24,6 @@ import type {
   CompetenceTreeValidationResult,
   NormalizedCompetenceWeight,
 } from '../services/competenceTrees.js'
-import type { AdaptiveSchemaBuilder } from '@klicker-uzh/graphql/adaptive-schema-host-types'
 
 export function createCompetenceTreeSchema(
   builder: AdaptiveSchemaBuilder,
@@ -56,8 +57,21 @@ export function createCompetenceTreeSchema(
       key: t.string({ required: true }),
       label: t.string({ required: true }),
       order: t.int({ required: true }),
+      color: t.string({ required: false }),
     }),
   })
+  const CompetenceTreeLevelColorInputRef =
+    builder.inputRef<CompetenceTreeLevelColorInputType>(
+      'CompetenceTreeLevelColorInput'
+    )
+  const CompetenceTreeLevelColorInput =
+    CompetenceTreeLevelColorInputRef.implement({
+      fields: (t) => ({
+        levelId: t.int({ required: true }),
+        // Null clears the override (default palette).
+        color: t.string({ required: false }),
+      }),
+    })
   const CompetenceTreeNodeInputRef =
     builder.inputRef<CompetenceTreeNodeInputType>('CompetenceTreeNodeInput')
   const CompetenceTreeNodeInput = CompetenceTreeNodeInputRef.implement({
@@ -171,6 +185,10 @@ export function createCompetenceTreeSchema(
       description: t.string({ required: false }),
       defaultTotalQuestionCap: t.int({ required: false }),
       defaultTimeLimitSeconds: t.int({ required: false }),
+      levelColors: t.field({
+        type: [CompetenceTreeLevelColorInput],
+        required: false,
+      }),
     }),
   })
   const DuplicateCompetenceTreeInputRef =
@@ -252,6 +270,7 @@ export function createCompetenceTreeSchema(
       id: t.exposeInt('id'),
       label: t.exposeString('label'),
       order: t.exposeInt('order'),
+      color: t.exposeString('color', { nullable: true }),
       theta: t.exposeFloat('theta'),
       lowerBound: t.float({
         nullable: true,
@@ -413,6 +432,8 @@ export function createCompetenceTreeSchema(
     CompetenceTreeCatalogOwnership,
     CompetenceTreeLevelInputRef,
     CompetenceTreeLevelInput,
+    CompetenceTreeLevelColorInputRef,
+    CompetenceTreeLevelColorInput,
     CompetenceTreeNodeInputRef,
     CompetenceTreeNodeInput,
     CompetenceTreeCoverageInputRef,

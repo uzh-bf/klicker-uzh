@@ -64,6 +64,8 @@ type LevelBands = Array<{
   order: number
   startPosition: number
   endPosition: number
+  /** Lecturer-chosen band color; null uses the default palette. */
+  color?: string | null
 }>
 
 interface AdaptiveCompetenceProfileProps {

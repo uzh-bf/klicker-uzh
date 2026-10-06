@@ -10,6 +10,7 @@ import type {
   LoadedAdaptiveRuntime,
 } from './adaptivePracticeQuizRuntimeData.js'
 import { buildAdaptiveTestingHistory } from './adaptivePracticeQuizTestingHistory.js'
+import { competenceTreeLevelColorsById } from './competenceTreeLevelColors.js'
 import {
   type AdaptiveTestingLevelResolver,
   mostProbableBandLabel,
@@ -59,7 +60,11 @@ export function buildAttemptTestingHistory(
     estimates: attempt.estimates,
     levelBands: v2
       ? serializeV2LevelBands(runtime)
-      : serializeLevelBands(runtime.algorithm.levels, settings),
+      : serializeLevelBands(
+          runtime.algorithm.levels,
+          settings,
+          competenceTreeLevelColorsById(runtime.tree.levels)
+        ),
     normalizeTheta: v2
       ? (theta) => normalizeV2Position(theta, runtime)
       : (theta) => normalizeThetaForChart(theta, settings.thetaRange),

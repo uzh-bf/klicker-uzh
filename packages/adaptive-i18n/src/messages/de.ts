@@ -1098,7 +1098,7 @@ const messages = {
       readOnlyNotice:
         'Dieser Baum gehört einer anderen Person. Sie können ihn einsehen und duplizieren, aber nur die Eigentümerin oder der Eigentümer kann ihn bearbeiten.',
       lockedNotice:
-        'Dieser Baum wird von einem adaptiven Quiz verwendet. Seine Metadaten können weiterhin bearbeitet werden; duplizieren Sie den Baum, um Stufen, Hierarchie, Abdeckung oder Zuordnungen zu ändern.',
+        'Dieser Baum wird von einem adaptiven Quiz verwendet. Seine Metadaten und Stufenfarben können weiterhin bearbeitet werden; duplizieren Sie den Baum, um Stufen, Hierarchie, Abdeckung oder Zuordnungen zu ändern.',
       defaultLevelLow: 'Tief',
       defaultLevelMedium: 'Mittel',
       defaultLevelHigh: 'Hoch',
@@ -1130,6 +1130,19 @@ const messages = {
       moveUp: 'Nach oben verschieben',
       moveDown: 'Nach unten verschieben',
       deleteLevel: 'Stufe löschen',
+      levelColor: 'Farbe',
+      levelColorPicker: 'Farbe für Stufe {label}',
+      levelColorHex: 'Hex-Farbe für Stufe {label}',
+      levelColorDefault: 'Standard',
+      levelColorCustom: 'Eigene',
+      levelColorReset: 'Auf Standard zurücksetzen',
+      levelColorResetAll: 'Alle Farben zurücksetzen',
+      levelColorInvalid: 'Geben Sie eine Farbe im Format #RRGGBB ein.',
+      levelColorLowContrast:
+        'Geringer Kontrast: Die Schätzungsmarkierung ist auf dieser Farbe möglicherweise schlecht sichtbar. Wählen Sie eine hellere Farbe.',
+      levelColorsDescription:
+        'Farben werden nur für die Darstellung der Ergebnisse verwendet. Stufen ohne eigene Farbe verwenden die Standardpalette (Blau von hell nach dunkel, Grau für eine tiefste Stufe ohne Präfix). Farben können jederzeit geändert werden, auch nachdem der Baum in einem Quiz verwendet wird.',
+      levelColorPreview: 'Vorschau der Stufenfarben in den Ergebnisansichten',
       assignmentsAffectedTitle: 'Zuordnungen werden geändert',
       levelReorderWarning:
         'Durch das Verschieben von Stufen ändern sich deren Schwierigkeitsanker; bestehende Zuordnungen können betroffen sein. Fortfahren?',

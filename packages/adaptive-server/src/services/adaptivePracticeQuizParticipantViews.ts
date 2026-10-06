@@ -41,6 +41,7 @@ import {
   serializeV2EstimateView,
   serializeV2LevelBands,
 } from './adaptivePracticeQuizV2ParticipantViews.js'
+import { competenceTreeLevelColorsById } from './competenceTreeLevelColors.js'
 
 export type AdaptivePracticeQuizAttemptState = {
   attemptId: string
@@ -82,6 +83,8 @@ export type AdaptiveResultLevelBand = {
   order: number
   startPosition: number
   endPosition: number
+  /** Lecturer-chosen band color; null uses the default palette. */
+  color?: string | null
 }
 
 export type AdaptiveResultTrajectoryPoint = {
@@ -368,7 +371,11 @@ function serializeAdaptiveStudentResultCore(
     leadingLevelLabels: [],
     classificationProbability: null,
     ...overallView,
-    levelBands: serializeLevelBands(runtime.algorithm.levels, settings),
+    levelBands: serializeLevelBands(
+      runtime.algorithm.levels,
+      settings,
+      competenceTreeLevelColorsById(runtime.tree.levels)
+    ),
     trajectory,
     competenceProfile: (childrenByParent.get(null) ?? [])
       .slice()

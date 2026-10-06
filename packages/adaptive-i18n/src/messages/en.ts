@@ -1079,7 +1079,7 @@ const messages = {
       readOnlyNotice:
         'This tree belongs to another owner. You can inspect and duplicate it, but only the owner can edit it.',
       lockedNotice:
-        'This tree is used by an adaptive quiz. Its metadata can still be edited; duplicate the tree to change levels, hierarchy, coverage, or assignments.',
+        'This tree is used by an adaptive quiz. Its metadata and level colors can still be edited; duplicate the tree to change levels, hierarchy, coverage, or assignments.',
       defaultLevelLow: 'Low',
       defaultLevelMedium: 'Medium',
       defaultLevelHigh: 'High',
@@ -1111,6 +1111,19 @@ const messages = {
       moveUp: 'Move up',
       moveDown: 'Move down',
       deleteLevel: 'Delete level',
+      levelColor: 'Color',
+      levelColorPicker: 'Color for level {label}',
+      levelColorHex: 'Hex color for level {label}',
+      levelColorDefault: 'Default',
+      levelColorCustom: 'Custom',
+      levelColorReset: 'Reset to default',
+      levelColorResetAll: 'Reset all colors',
+      levelColorInvalid: 'Enter a color as #RRGGBB.',
+      levelColorLowContrast:
+        'Low contrast: the estimate marker may be hard to see on this color. Choose a lighter color.',
+      levelColorsDescription:
+        'Colors are only used to display results. Unset levels use the default palette (blue from light to dark, gray for an unprefixed lowest level). Colors can be changed at any time, also after the tree is used in a quiz.',
+      levelColorPreview: 'Preview of the level colors in result views',
       assignmentsAffectedTitle: 'Assignments will change',
       levelReorderWarning:
         'Reordering levels changes their difficulty anchors and can affect existing assignments. Continue?',
