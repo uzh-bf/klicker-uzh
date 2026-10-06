@@ -24,9 +24,13 @@ function StudyStreakCard({
       ? t('pwa.general.studyStreakNoDailyGoal')
       : qualifiedToday || responsesRemainingToday === 0
         ? t('pwa.general.studyStreakDoneToday')
-        : t('pwa.general.studyStreakKeepGoing', {
-            remaining: responsesRemainingToday,
-          })
+        : current === 0
+          ? t('pwa.general.studyStreakStart', {
+              remaining: responsesRemainingToday,
+            })
+          : t('pwa.general.studyStreakKeepGoing', {
+              remaining: responsesRemainingToday,
+            })
 
   return (
     <section

@@ -910,7 +910,8 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
 `,
       studyStreakCard: 'Lernserie',
       studyStreakDays: '{current, plural, one {# Tag} other {# Tage}}',
-      studyStreakLongest: 'Längste Serie: {longest} Tage',
+      studyStreakLongest:
+        'Längste Serie: {longest, plural, one {# Tag} other {# Tage}}',
       studyStreakFreezeBalance: 'Verfügbare Pausen: {balance}',
       studyStreakDoneToday:
         'Super gemacht – deine Serie ist für heute gesichert.',

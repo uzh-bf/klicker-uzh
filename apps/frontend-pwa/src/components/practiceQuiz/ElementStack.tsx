@@ -111,6 +111,8 @@ function ElementStack({
   const [respondToElementStack, { loading: submittingResponse }] = useMutation(
     RespondToElementStackDocument
   )
+  // keeps submit disabled between the response commit and the streak refresh
+  const [refreshingStudyStreak, setRefreshingStudyStreak] = useState(false)
   const { data: studyStreakData, refetch: refetchStudyStreak } = useQuery(
     QGetStudyStreakParticipationDocument,
     {
@@ -521,12 +523,15 @@ function ElementStack({
     }
 
     if (!previewOnly && withParticipant && !focusedPresentation) {
+      setRefreshingStudyStreak(true)
       try {
         await refetchStudyStreak()
       } catch (error) {
         console.error('Study streak progress refresh failed', {
           error,
         })
+      } finally {
+        setRefreshingStudyStreak(false)
       }
     }
 
@@ -779,8 +784,12 @@ function ElementStack({
         wrapEmbedded(
           <Button
             primary
-            loading={submittingResponse}
-            disabled={!responsesInitialized || responseSubmissionDisabled}
+            loading={submittingResponse || refreshingStudyStreak}
+            disabled={
+              !responsesInitialized ||
+              responseSubmissionDisabled ||
+              refreshingStudyStreak
+            }
             className={{
               root: embeddedButtonClass,
             }}

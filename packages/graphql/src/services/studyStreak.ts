@@ -471,7 +471,7 @@ export async function reconcileStudyStreak(
               })
             }
 
-            let state: StreakState = {
+            const loadedState: StreakState = {
               current: participation.studyStreakCurrent,
               longest: participation.studyStreakLongest,
               freezeBalance: participation.studyStreakFreezeBalance,
@@ -484,6 +484,7 @@ export async function reconcileStudyStreak(
                 ? zurichDate(participation.studyStreakLastProcessedDate)
                 : null,
             }
+            let state = loadedState
 
             const processingThrough =
               today > courseEnd
@@ -527,6 +528,16 @@ export async function reconcileStudyStreak(
               state = applyQualifiedDate(state, today)
             }
 
+            // reads reconcile on every visit; skip the row write when nothing
+            // changed so repeated reads do not contend on the participation
+            if (
+              (Object.keys(state) as (keyof StreakState)[]).every(
+                (key) => state[key] === loadedState[key]
+              )
+            ) {
+              return
+            }
+
             await tx.participation.update({
               where: { id: participation.id },
               data: {
@@ -559,6 +570,14 @@ export async function reconcileStudyStreak(
       }
     }
   } catch (error) {
-    console.error('study streak reconciliation failed (fail-open)', { error })
+    console.error('study streak reconciliation failed (fail-open)', {
+      courseId: input.courseId,
+      participantId: input.participantId,
+      code:
+        typeof error === 'object' && error !== null && 'code' in error
+          ? error.code
+          : undefined,
+      message: error instanceof Error ? error.message : String(error),
+    })
   }
 }

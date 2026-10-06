@@ -3,6 +3,8 @@ query QGetStudyStreakParticipation($courseId: String!) {
     id
     isActive
     studyStreakCurrent
+    studyStreakLongest
+    studyStreakFreezeBalance
     studyStreakQualifiedToday
     studyStreakResponsesRemainingToday
   }

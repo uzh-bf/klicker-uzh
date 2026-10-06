@@ -903,7 +903,8 @@ Other participants will only see your public **participant profile**, including 
 `,
       studyStreakCard: 'Study streak',
       studyStreakDays: '{current, plural, one {# day} other {# days}}',
-      studyStreakLongest: 'Longest streak: {longest} days',
+      studyStreakLongest:
+        'Longest streak: {longest, plural, one {# day} other {# days}}',
       studyStreakFreezeBalance: 'Freezes available: {balance}',
       studyStreakDoneToday: 'Nice work — your streak is secured for today.',
       studyStreakNoDailyGoal:
