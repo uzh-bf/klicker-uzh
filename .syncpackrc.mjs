@@ -69,6 +69,13 @@ export default {
       packages: ['**'],
     },
     {
+      // The utilities override writes an exact lockfile specifier.
+      range: '',
+      dependencyTypes: ['dev'],
+      dependencies: ['@graphql-tools/utils'],
+      packages: ['**'],
+    },
+    {
       range: '~',
       dependencyTypes: ['dev'],
       dependencies: ['!@types/**'],
