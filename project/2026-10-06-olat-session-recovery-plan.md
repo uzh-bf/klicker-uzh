@@ -355,7 +355,9 @@ are committed. Host execution permissions were restored; the exact task runtime
 started successfully with installed Devrouter 0.1.3 and Devsy 1.19.0. All ten
 Chromium journeys pass, including observed native third-party-cookie blocking.
 Firefox cannot launch on this host; its browser acceptance remains open. The
-corrected-head integrated review, publication and exact-head CI remain pending.
+complete corrected source range passed integrated review and was pushed. Eight
+screenshots are published and visually verified in the draft. Hosted CI must be
+read against the exact latest published head.
 Draft [PR #6414](https://github.com/uzh-bf/klicker-uzh/pull/6414) targets `v3`.
 The native goal remains incomplete until every terminal gate is accounted for.
 
@@ -475,8 +477,10 @@ Actual agent-browser interactions passed synthetic password login, authenticated
 profile, locale change, compact layout, logout and settled anonymous recovery.
 Eight inspected English desktop/German compact screenshots cover authenticated,
 anonymous, expired embedded launch and query-error states. Captures and their
-manifest remain in ignored project/\_local/screenshots/olat-recovery/; native forge
-publication and rendering verification are pending. Personal incident screenshots
+manifest remain in ignored project/\_local/screenshots/olat-recovery/. All eight
+were uploaded through the authenticated GitHub CLI to draft #6414, with byte
+receipts and description read-back. The public table renders and all eight
+images decode; the gallery also fits desktop and compact widths locally. Personal incident screenshots
 are excluded from public evidence. The dedicated browser config starts after
 verified ltijs handoff and cannot establish real OLAT/OIDC launch behavior.
 Ordinary hosted CI skips this manual lane and cannot establish its acceptance.
@@ -487,26 +491,58 @@ high; its headless read-file permission was denied, producing no qualified revie
 No account or permission configuration was changed. The final-review continuity child reviewed the entire 36-path published package
 and returned pass with zero findings; requested GLM 5.3 Flash max provenance
 remains unverified by the native runtime. Its output passed the canonical JSON
-schema. That review covers the published head only; the committed corrections require
-the integrated final correction pass. Browser acceptance remains open.
+schema. The same reviewer then completed one focused correction pass over
+`3c7268fc6d..a4dabc67c1` in the complete 37-path target-to-head context and
+returned pass with zero findings. Both reports passed the canonical JSON schema.
+This establishes source review; Firefox acceptance remains open.
 
 The task target remains `v3` at `6189a7487b912a1d9e95769b2f3bb6434c34ccea`.
-The draft head `3c7268fc6d05d4bd4b56cd679872babd04140777` is published; its
-hosted unit-test failure is diagnosed: the dependency step omitted generated
+The earlier draft head `3c7268fc6d05d4bd4b56cd679872babd04140777` had a
+diagnosed hosted unit-test failure: the dependency step omitted generated
 GraphQL outputs needed by the PWA tests. The one-line workflow correction is
-committed locally with the registration correction. An empty isolated GraphQL
+published with the registration correction. An empty isolated GraphQL
 output volume reproduced the missing-module failure; the corrected dependency
 step passed 7/7 build tasks and all 25 PWA tests.
 
 Host permissions have been restored and the target was fetched again: `v3`
-is unchanged. Registration/CI, React commit ownership and queued transport
-corrections are committed. Commit the corrected browser harness and this evidence,
-then resume the same integrated reviewer for its focused correction pass on the
-complete immutable branch range. Publish through an ordinary task-branch push,
-update the draft with the inspected screenshot gallery, and observe exact-head CI.
-Stop and verify the exact managed runtime and owned browser session after the
-last dependent check. Preserve the primary checkout and leave Firefox acceptance
-as an explicit open gate. Hosted CI is not green merely because local checks pass.
-No merge, production activation or deployment is included. The earlier host
-permission blocker is historical; the native goal remains incomplete until
-Firefox verification and all other terminal requirements are fulfilled.
+is unchanged. Registration/CI, React commit ownership, queued transport and native
+browser observation corrections are committed and published through an ordinary
+push to `rs/olat-session-recovery`. The immutable reviewed application/harness
+head is `a4dabc67c1f264fec1bf5d1322b0df10e019d2cf`; later progress-only commits
+reuse its passing verification because source, toolchain and acceptance are
+unchanged. Public PR #6414 retains the inspected screenshot table, actual
+interaction results and the Firefox/real-OLAT evidence limits. Read its latest
+checks against the exact published revision; old-head failures and local build
+success do not establish current hosted acceptance.
+
+The last managed check passed the production-mode PWA build after stopping the
+owned dev process. Initial build attempts used simultaneous dev-generated types,
+then a development NODE_ENV, and failed; correcting the execution context
+required no application-source change. The task runtime was then stopped with
+canonical Devrouter by its exact checkout path. Fresh source-path-matched Devsy
+provider status is Stopped and exact routes are zero. Data and worktree remain
+retained. The owned agent-browser session closed after forge rendering checks.
+Container-dependent checks and builds ran in the container; host-only policy
+checks ran on the host. Host commits/pushes used per-command HUSKY=0 for this
+split toolchain, with scoped formatter, secret/data inspection and the recorded
+container-equivalent checks. The root aggregate remains explicitly unpassed.
+
+Current automated PR feedback was verified against source. Both render-side
+mutation comments are corrected by commit-owned session changes. Assessment
+registration still takes the explicit assessment/no-token redirect, preserving
+its old behavior. Legacy Partitioned expiration requires Secure/SameSite=None
+by that cookie contract; canonical local HTTP issuance stays Lax. URL bearer
+transport and silent verification catches already existed; changing that
+transport/observability is not a change-introduced repair requirement. Retaining
+a verified five-minute LTI registration context is intentional until registration
+or a new launch; invalid context clears it. The nested recovery conditional is
+bounded and source-reviewed; a preference-only rewrite would add unrelated churn.
+No new unresolved source finding was accepted.
+
+Remaining required capability: a host able to execute the Firefox Standard and
+blocked-cookie journeys against this same routed harness. A successful browser
+launch must precede application acceptance; no OS/security configuration bypass
+or new deployment is included. Real OLAT/OIDC validation and incident attribution
+remain unproven. The native goal stays incomplete until Firefox and all other
+terminal requirements are fulfilled. No merge, readiness change or production
+activation is authorized by this package.
