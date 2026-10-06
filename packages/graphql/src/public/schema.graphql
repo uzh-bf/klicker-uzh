@@ -247,6 +247,74 @@ enum ActivityType {
   PRACTICE_QUIZ
 }
 
+type AdaptiveAttemptDiagnostic {
+  answers: [AdaptiveAttemptDiagnosticAnswer!]!
+  levelLabels: [String!]!
+  nodes: [AdaptiveAttemptNodeResult!]!
+  summary: AdaptiveAttemptDiagnosticSummary!
+}
+
+type AdaptiveAttemptDiagnosticAnswer {
+  competenceName: String
+  correct: Boolean!
+  difficulty: Float
+  discrimination: Float
+  elementTitle: String!
+  guessing: Float
+  itemLevelLabel: String
+  levelDistance: Int
+  nodeNamePath: [String!]!
+  order: Int!
+  overallThetaAfter: Float
+  score: Float!
+  subcompetenceName: String
+}
+
+type AdaptiveAttemptDiagnosticSummary {
+  answerCount: Int!
+  attemptCode: String!
+  attemptNumber: Int!
+  competences: [AdaptiveAttemptNodeResult!]!
+  completedAt: Date
+  elapsedSeconds: Int
+  overall: AdaptiveAttemptNodeResult!
+  participantCode: String!
+  rating: String!
+  ratingReasons: [AdaptiveAttemptRatingReason!]!
+  startedAt: Date!
+  stopReason: String
+}
+
+type AdaptiveAttemptDiagnostics {
+  attempts: [AdaptiveAttemptDiagnosticSummary!]!
+  earlierPublicationAttemptCount: Int!
+  levelLabels: [String!]!
+}
+
+type AdaptiveAttemptNodeResult {
+  coverageStatus: String
+  depth: Int!
+  determined: Boolean!
+  kind: String!
+  levelLabel: String
+  lowerLevelLabel: String
+  name: String!
+  nodeId: Int
+  parentId: Int
+  responseCount: Int!
+  standardError: Float
+  theta: Float
+  upperLevelLabel: String
+  weightShare: Float
+}
+
+type AdaptiveAttemptRatingReason {
+  code: String!
+  nodeName: String
+  severity: String!
+  value: Float
+}
+
 enum AdaptiveAttemptSelectionPolicy {
   FIRST_COMPLETED
   LATEST_COMPLETED
@@ -4548,6 +4616,8 @@ type PushSubscription {
 type Query {
   activityDetails(activityId: String!, activityType: ActivityType!): ActivityDetails
   adaptiveCalibrationExportRequest(requestId: String!): AdaptiveCalibrationExportRequest!
+  adaptivePracticeQuizAttemptDiagnostic(attemptCode: String!, practiceQuizId: String!): AdaptiveAttemptDiagnostic
+  adaptivePracticeQuizAttemptDiagnostics(practiceQuizId: String!): AdaptiveAttemptDiagnostics
   adaptivePracticeQuizAttemptState(practiceQuizId: String!): AdaptivePracticeQuizAttemptState
   adaptivePracticeQuizCohortResults(practiceQuizId: String!): AdaptivePracticeQuizCohortResults
   adaptivePracticeQuizItemPreview(poolItemId: Int!, practiceQuizId: String!): AdaptivePracticeQuizServedItem

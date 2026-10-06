@@ -1,0 +1,32 @@
+query QAdaptivePracticeQuizAttemptDiagnostic(
+  $practiceQuizId: String!
+  $attemptCode: String!
+) {
+  adaptivePracticeQuizAttemptDiagnostic(
+    practiceQuizId: $practiceQuizId
+    attemptCode: $attemptCode
+  ) {
+    levelLabels
+    summary {
+      ...FAdaptiveAttemptDiagnosticSummary
+    }
+    nodes {
+      ...FAdaptiveAttemptNodeResult
+    }
+    answers {
+      order
+      competenceName
+      subcompetenceName
+      nodeNamePath
+      elementTitle
+      itemLevelLabel
+      difficulty
+      discrimination
+      guessing
+      correct
+      score
+      overallThetaAfter
+      levelDistance
+    }
+  }
+}
