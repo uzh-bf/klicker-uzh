@@ -165,6 +165,7 @@ model User {
   adaptivePublications            PracticeQuizAdaptivePublication[]         @relation("PracticeQuizAdaptivePublicationPublishedBy")
   adaptiveExportRequests          AdaptiveCalibrationExportRequest[]        @relation("AdaptiveCalibrationExportRequestedBy")
   adaptiveValidationsSubmitted    AdaptivePracticeQuizEmpiricalValidation[] @relation("AdaptiveEmpiricalValidationSubmittedBy")
+  adaptiveAttemptReviews          AdaptivePracticeQuizAttemptReview[]       @relation("AdaptiveAttemptReviewReviewer")
   adaptiveValidationsApproved     AdaptivePracticeQuizEmpiricalValidation[] @relation("AdaptiveEmpiricalValidationApprovedBy")
 
   userGroups                UserGroup[]         @relation("UserGroupMembers")
