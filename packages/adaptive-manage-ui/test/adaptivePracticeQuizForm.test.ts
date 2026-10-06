@@ -11,6 +11,7 @@ import {
   isManageAdaptivePresetSelectable,
   mapAdaptivePracticeQuizPreviewToForm,
   serializeAdaptivePracticeQuizConfig,
+  withoutUnauthorableScale,
 } from '../src/components/activities/creation/practiceQuiz/adaptivePracticeQuizForm'
 
 describe('adaptive practice quiz Manage form', () => {
@@ -211,5 +212,27 @@ describe('adaptive practice quiz Manage form', () => {
     expect(
       serializeAdaptivePracticeQuizConfig(form)?.minItemsPerCoverageCell
     ).toBe(3)
+  })
+})
+
+describe('scale on new quizzes while IRT v2 authoring is disabled', () => {
+  const config = {
+    ...createAdaptivePracticeQuizDefaultConfig(),
+    competenceTreeId: 'tree-id',
+    scaleVersionId: 'stale-scale-id',
+  }
+
+  test('drops a scale restored from a draft or a duplicated quiz', () => {
+    const cleaned = withoutUnauthorableScale(config, false)
+    expect(cleaned.scaleVersionId).toBeUndefined()
+    expect(serializeAdaptivePracticeQuizConfig(cleaned)).toMatchObject({
+      scaleVersionId: undefined,
+    })
+  })
+
+  test('keeps the scale of an existing quiz being edited', () => {
+    expect(withoutUnauthorableScale(config, true).scaleVersionId).toBe(
+      'stale-scale-id'
+    )
   })
 })
