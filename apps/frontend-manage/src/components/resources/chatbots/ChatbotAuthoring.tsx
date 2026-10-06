@@ -1459,11 +1459,7 @@ function ChatbotAuthoring({
                           />
                           <FormikInteractionEffects />
                           <NavigationStateReporter
-                            dirty={
-                              dirty ||
-                              (!disclaimer?.id &&
-                                !getChatbotAuthoringRevision(chatbot))
-                            }
+                            dirty={dirty}
                             pending={isSubmitting}
                             onChange={setDisclaimerNavigationState}
                           />

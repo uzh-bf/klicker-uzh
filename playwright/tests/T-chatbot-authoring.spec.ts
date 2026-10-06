@@ -441,10 +441,6 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     ).toBeVisible()
 
     const chatbotId = new URL(page.url()).searchParams.get('chatbotId')
-    page.once('dialog', (dialog) => {
-      expect(dialog.type()).toBe('beforeunload')
-      void dialog.accept()
-    })
     await page.goto(
       `${process.env.URL_MANAGE ?? URL_MANAGE}/resources/chatbots?chatbotId=${chatbotId}&view=invalid&step=invalid`
     )
@@ -796,18 +792,11 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(page.getByTestId('chatbot-setup-disclaimer')).toBeVisible()
 
     await page.setViewportSize({ width: 800, height: 900 })
-    const secondChatbotDiscardDialogPromise = page
-      .waitForEvent('dialog')
-      .then((dialog) => {
-        expect(dialog.type()).toBe('confirm')
-        return dialog.accept()
-      })
     await selectOption(
       page,
       '[data-cy="chatbot-mobile-selector"]',
       `${FIRST_CHATBOT} · Draft`
     )
-    await secondChatbotDiscardDialogPromise
     await expect(page.getByTestId('chatbot-mobile-selector')).toContainText(
       FIRST_CHATBOT
     )
