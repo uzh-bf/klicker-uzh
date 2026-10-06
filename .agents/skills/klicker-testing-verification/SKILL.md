@@ -96,7 +96,7 @@ the exact checkout and rerun this command. Run the wrapper fake-runtime test
 before credentialed traffic. Set namespaced KLICKER_EVAL_API_ORIGIN and
 KLICKER_EVAL_CHAT_ORIGIN plus seeded participant credentials in the invoking
 shell; the wrapper keeps them out of the evaluator child and creates an
-ephemeral loopback target key. Use --local-target with direct gpt-5.6-luna and
+ephemeral loopback target key. Use --local-target with direct gpt-6-luna and
 one in-flight request.
 
 The KB_doc_query canary is only synthetic transport evidence. It proves the
@@ -164,9 +164,9 @@ value. Keep environment-specific mappings in the app's `.env.stg` and
 `.env.prd` files and add a build failure when silently omitting the value would
 withdraw a user-facing surface.
 
-For Next framework or bundler changes, verify both repository-supported paths. `pnpm run build:test` uses Turbopack in all five Next apps. `pnpm run build` uses Turbopack for auth/chat and Webpack for control/manage/PWA until their service-worker integration moves to Serwist. Confirm standalone server paths for all five apps and `sw.js`, Workbox, and custom worker outputs for the three PWA apps.
+For Next framework or bundler changes, `pnpm run build:test` must delegate to each app's canonical production build with `NODE_ENV=production`: Turbopack for auth/chat and Webpack for control/manage/PWA until their service-worker integration moves to Serwist. Its standalone runtime archive is served by `start:test`; inspect build/start receipts and exercise real browser flows. Confirm standalone server paths for all five apps and `sw.js`, Workbox, and custom worker outputs for the three PWA apps.
 
-The Playwright build job must tar the five `.next` trees before artifact upload and extract them in each shard. Direct artifact upload dereferences Turbopack's `.next/node_modules` symlinks and can omit transitive runtime links, producing HTTP 500 before the suite starts. Each shard restores the generated GraphQL client map from `packages/graphql/dist/client.json` before tests because Turbo cache hits do not restore generated source files.
+The Playwright build job must tar the five `.next` trees before artifact upload and extract them in each shard. Direct artifact upload dereferences Turbopack's `.next/node_modules` symlinks and can omit transitive runtime links, producing HTTP 500 before the suite starts. The archive also carries `.next/playwright-runtime.tar`, which contains each production standalone server and its static/public assets. Verify the relocated server, including service workers; a successful build alone is insufficient. Each shard restores the generated GraphQL client map from `packages/graphql/dist/client.json` before tests because Turbo cache hits do not restore generated source files.
 
 Public PR ARM64 jobs may restore GitHub caches but must use the restore-only
 cache action. They must not spend post-job time uploading pnpm or Turbo caches
@@ -219,7 +219,7 @@ During the live stream, a completed tool chip may precede answer text, but the
 source section must stay absent for the assistant message's entire running
 state, including after answer text begins. A terminal incomplete or aborted
 tool-only turn must still expose valid completed sources after reload.
-Use direct `GPT-5.6 Luna` only to isolate the router from the model/tool path.
+Use direct `GPT-6 Luna` only to isolate the router from the model/tool path.
 
 For source citation presentation changes, the browser pass must verify that
 source cards keep the source name and locator visible while excerpts stay in

@@ -154,7 +154,7 @@ describe('OpenAI exact-response cache policy', () => {
     })
 
     await generateText({
-      model: provider.responses('gpt-5.6-luna'),
+      model: provider.responses('gpt-6-luna'),
       prompt: 'Synthetic prompt.',
       providerOptions: {
         openai: {

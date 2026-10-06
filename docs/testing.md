@@ -166,7 +166,7 @@ does not replace environment values in an existing service container. The
 target adapter reads only namespaced local API/Chat origins and seeded
 participant credentials from the invoking shell, then removes those variables
 from the evaluator child. The wrapper pins a loopback Chat Completions target,
-one in-flight request, direct gpt-5.6-luna, and cleanup on every exit.
+one in-flight request, direct gpt-6-luna, and cleanup on every exit.
 
 The local KB_doc_query canary is a transport check for authentication, thread
 and message persistence, mode handling, and expected-tool evidence. It is not
@@ -267,13 +267,13 @@ provider-level acceptance check. The same harness proves the managed-process
 liveness guard: a process that dies inside the grace interval fails startup
 before any readiness probe, and a survivor advances into the readiness pass.
 
-- The local Chat model simulation includes LiteLLM's `auto-router` and
-  the GPT-5.6 Luna/Sol target aliases. Start it with
+- The local Chat model simulation includes LiteLLM's `auto-router` (v1) and
+  `auto-router-v2`, plus the GPT-6 Luna/Sol target aliases with GPT-5.6 fallbacks. Start it with
   `devrouter ensure . --profile chat,ai`; add `mcp` for the seeded synthetic
   tool path. Then verify the
   LiteLLM liveness endpoint, direct embedding/model probes, expected Auto V2
   routing decisions in LiteLLM logs, and the chat credits response before
-  browser testing the `Auto Mode`/`GPT-5.6 Luna` picker. A real
+  browser testing the `Auto Mode`/`GPT-6 Luna`/`GPT-6 Sol` picker. A real
   `UPSTREAM_OPENAI_API_KEY` is required for these calls; service health alone is
   not classification or answer-stream evidence.
 - Tests that **publish, schedule, or end activities** need the Hatchet **general worker** running on top of the test stack — otherwise mutations fail with `workflow not found`. Use `live-quiz`, `manage,live-quiz`, or `full`; the worker needs `DATABASE_URL` pointed at the test DB ([Async & Workers](./async-and-workers.md)).
@@ -451,7 +451,26 @@ Root typecheck includes the Playwright compiler surface through its package `che
 
 Check-only configs must state their no-output role with `noEmit`. When they extend a declaration-emitting config, `noEmit` alone does not disable declaration portability analysis: GraphQL and Prisma therefore also set `declaration: false` and `declarationMap: false`. Incremental checks use `tsconfig.check.tsbuildinfo` rather than overwriting the emitting compiler's state. The full compiler-role matrix lives in [Getting Started](./getting-started.md#toolchain-verified-2026-07-07).
 
-For framework upgrades, run both bundler paths: `pnpm run build:test` must exercise Turbopack in all five Next apps, while `pnpm run build` must exercise production Turbopack for auth/chat and production Webpack for control/manage/PWA. All five Next builds use their canonical `tsconfig.json`; the three PWA apps reserve `tsconfig.check.json` for raw package checks that must exclude stale development validators. Inspect `.next/standalone` for all five apps and the service worker, Workbox, and custom worker outputs for control/manage/PWA. Treat configuration inspection as **config-derived**; call the artifacts verified only when the command, date, and tested SHA are recorded.
+For framework upgrades, `pnpm run build:test` delegates to each Next app's canonical production build with `NODE_ENV=production`: Turbopack for auth/chat and Webpack for control/manage/PWA. `start:test` serves the resulting standalone server, not a development server or a test-mode Next build. All five Next builds use their canonical `tsconfig.json`; the three PWA apps reserve `tsconfig.check.json` for raw package checks that must exclude stale development validators. Inspect `.next/standalone` for all five apps and the service worker, Workbox, and custom worker outputs for control/manage/PWA. Treat configuration inspection as **config-derived**; call the artifacts verified only when the command, date, and tested SHA are recorded.
+
+### Playwright production frontend artifacts
+
+`util/playwright-next-runtime.mjs` packages each standalone server, `.next/static`,
+and generated public assets into `.next/playwright-runtime.tar`. The existing
+trusted CI archive carries this file even though it excludes `.next/standalone`.
+Each shard extracts it into a fresh temporary directory, verifies its app, build
+command and build ID, and starts `server.js` with `NODE_ENV=production`. Missing
+or inconsistent artifacts fail startup; there is no development fallback. The
+receipt in the build and startup logs identifies the artifact actually served.
+
+The scoped `KLICKER_PLAYWRIGHT_FIXTURES=1` setting enables only local image
+optimization and the existing synthetic GrowthBook proxy. It does not disable
+PWA plugins, service workers, production optimizations, or standalone output.
+Backend test mode still owns synthetic feature flags, coverage instrumentation,
+and arbitrary GraphQL operations used by the harness. CI frontend parity does
+not imply that these backend fixtures or the deployed image digest are identical
+to production. Local `playwright:host` uses the development runtime for fast
+iteration; required CI and explicit production browser checks provide acceptance.
 
 ## Local recovery regression checks
 
