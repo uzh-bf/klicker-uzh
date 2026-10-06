@@ -1,0 +1,40 @@
+fragment FAdaptiveAttemptNodeResult on AdaptiveAttemptNodeResult {
+  nodeId
+  parentId
+  name
+  kind
+  depth
+  theta
+  standardError
+  levelLabel
+  lowerLevelLabel
+  upperLevelLabel
+  responseCount
+  determined
+  coverageStatus
+  weightShare
+}
+
+fragment FAdaptiveAttemptDiagnosticSummary on AdaptiveAttemptDiagnosticSummary {
+  attemptCode
+  participantCode
+  attemptNumber
+  startedAt
+  completedAt
+  elapsedSeconds
+  stopReason
+  answerCount
+  overall {
+    ...FAdaptiveAttemptNodeResult
+  }
+  competences {
+    ...FAdaptiveAttemptNodeResult
+  }
+  rating
+  ratingReasons {
+    code
+    severity
+    nodeName
+    value
+  }
+}
