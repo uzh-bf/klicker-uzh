@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   withChatbotAuth: vi.fn(),
@@ -145,6 +145,10 @@ function createChatbot(overrides: Record<string, unknown> = {}) {
 }
 
 describe('required MCP chat preflight', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.withChatbotAuth.mockResolvedValue({
@@ -393,6 +397,9 @@ describe('required MCP chat preflight', () => {
   })
 
   test('selects and passes the course display name to prompt compilation', async () => {
+    // The practice tool is registered by deployment capability, so the test
+    // pins a practice MCP URL instead of inheriting it from the environment.
+    vi.stubEnv('MCP_STUDENT_URL', 'http://mcp-student.test/mcp')
     const displayName = 'Informatik und Wirtschaft'
     mocks.findUnique.mockResolvedValueOnce(
       createChatbot({ course: { displayName } })
@@ -430,7 +437,7 @@ describe('required MCP chat preflight', () => {
       {
         courseDisplayName: displayName,
         customModeConfig: null,
-        toolNames: [],
+        toolNames: ['start_student_practice_quiz'],
         standardModeConfig: null,
       }
     )
