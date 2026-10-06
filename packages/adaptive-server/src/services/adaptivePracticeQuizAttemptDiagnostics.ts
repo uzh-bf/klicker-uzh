@@ -1,8 +1,10 @@
 import type { ContextWithUser } from '@klicker-uzh/graphql/adaptive-context-types'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
-  type AdaptiveDiagnosticAnswer,
-  type AdaptiveDiagnosticAttemptRecord,
+  type AdaptiveAttemptReviewAccuracy,
+  summarizeAdaptiveReviewAccuracy,
+} from './adaptivePracticeQuizAttemptAccuracy.js'
+import {
   type AdaptiveDiagnosticNodeResult,
   type AdaptiveDiagnosticSummary,
   adaptivePseudonymCode,
@@ -27,49 +29,67 @@ import { getAdaptiveRootWeightShares } from './adaptivePracticeQuizWeightShares.
  * earlier publications are counted.
  */
 
-const attemptSelect = {
-  id: true,
-  participationId: true,
-  measurementVersion: true,
-  stopReason: true,
-  startedAt: true,
-  completedAt: true,
-  elapsedSeconds: true,
-  estimates: {
-    select: {
-      nodeKind: true,
-      nodeId: true,
-      theta: true,
-      standardError: true,
-      responseCount: true,
-      stopReason: true,
-      coverageStatus: true,
+const attemptSelect = (reviewerId: string) =>
+  ({
+    id: true,
+    participationId: true,
+    measurementVersion: true,
+    stopReason: true,
+    startedAt: true,
+    completedAt: true,
+    elapsedSeconds: true,
+    estimates: {
+      select: {
+        nodeKind: true,
+        nodeId: true,
+        theta: true,
+        standardError: true,
+        responseCount: true,
+        stopReason: true,
+        coverageStatus: true,
+      },
     },
-  },
-  responses: {
-    select: {
-      order: true,
-      poolItemId: true,
-      elementId: true,
-      correct: true,
-      score: true,
-      overallThetaAfter: true,
+    responses: {
+      select: {
+        order: true,
+        poolItemId: true,
+        elementId: true,
+        correct: true,
+        score: true,
+        overallThetaAfter: true,
+        competenceThetaBefore: true,
+        competenceStandardErrorBefore: true,
+        competenceThetaAfter: true,
+        competenceStandardErrorAfter: true,
+      },
+      orderBy: { order: 'asc' },
     },
-    orderBy: { order: 'asc' },
-  },
-} satisfies DB.Prisma.AdaptivePracticeQuizAttemptSelect
+    // Only the requesting lecturer's own review.
+    reviews: {
+      where: { reviewerId },
+      select: {
+        verdict: true,
+        expectedOverallLevelLabel: true,
+        expectedCompetenceLevels: true,
+        comment: true,
+        updatedAt: true,
+      },
+    },
+  }) satisfies DB.Prisma.AdaptivePracticeQuizAttemptSelect
 
 export type AdaptiveAttemptDiagnosticsList = {
   levelLabels: string[]
   attempts: AdaptiveDiagnosticSummary[]
   earlierPublicationAttemptCount: number
+  /** Attempts whose answers still lack stored competence estimates. */
+  incompleteEstimateAttemptCount: number
+  accuracy: AdaptiveAttemptReviewAccuracy
 }
 
 export type AdaptiveAttemptDiagnosticDetail = {
   levelLabels: string[]
   summary: AdaptiveDiagnosticSummary
   nodes: AdaptiveDiagnosticNodeResult[]
-  answers: AdaptiveDiagnosticAnswer[]
 }
 
 async function loadDiagnosticsInput(
@@ -86,7 +106,7 @@ async function loadDiagnosticsInput(
         publicationId: runtime.publication.id,
         status: DB.AdaptivePracticeQuizAttemptStatus.COMPLETED,
       },
-      select: attemptSelect,
+      select: attemptSelect(ctx.user.sub),
       orderBy: [{ startedAt: 'asc' }, { id: 'asc' }],
     }),
     ctx.prisma.adaptivePracticeQuizAttempt.count({
@@ -100,9 +120,13 @@ async function loadDiagnosticsInput(
   return { runtime, attempts, earlierPublicationAttemptCount }
 }
 
+type LoadedDiagnosticAttempt = Awaited<
+  ReturnType<typeof loadDiagnosticsInput>
+>['attempts'][number]
+
 function buildDiagnostics(
   runtime: LoadedAdaptiveRuntime,
-  attempts: AdaptiveDiagnosticAttemptRecord[]
+  attempts: LoadedDiagnosticAttempt[]
 ) {
   const nodes = getEffectivelyEnabledRuntimeNodes(runtime.algorithm.nodes)
   const nodeNames = new Map(
@@ -149,7 +173,7 @@ function buildDiagnostics(
         isDetermined: (nodeId, estimate) =>
           determination.isDetermined(nodeId, estimate),
       },
-      attempt,
+      { ...attempt, review: attempt.reviews[0] ?? null },
       attemptNumber
     )
   })
@@ -169,13 +193,21 @@ export async function getAdaptivePracticeQuizAttemptDiagnostics(
   if (!isAdaptiveTestingInfoEnabled(showSolutions)) return null
   const { runtime, attempts, earlierPublicationAttemptCount } =
     await loadDiagnosticsInput(practiceQuizId, ctx)
+  // Newest first for the table.
+  const summaries = buildDiagnostics(runtime, attempts)
+    .map(({ summary }) => summary)
+    .reverse()
   return {
     levelLabels: levelLabelsOf(runtime),
-    // Newest first for the table.
-    attempts: buildDiagnostics(runtime, attempts)
-      .map(({ summary }) => summary)
-      .reverse(),
+    attempts: summaries,
     earlierPublicationAttemptCount,
+    incompleteEstimateAttemptCount: summaries.filter(
+      ({ estimatesComplete }) => !estimatesComplete
+    ).length,
+    accuracy: summarizeAdaptiveReviewAccuracy(
+      summaries,
+      levelLabelsOf(runtime)
+    ),
   }
 }
 

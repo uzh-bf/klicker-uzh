@@ -61,6 +61,30 @@ export type AdaptiveDiagnosticAnswer = {
   overallThetaAfter: number | null
   /** Item level minus the final competence level, in levels. */
   levelDistance: number | null
+  /**
+   * Derived on the host: coverage while the item's subcompetence had fewer
+   * than minQuestionsPerLeaf earlier answers, otherwise precision.
+   */
+  phase: 'COVERAGE' | 'PRECISION'
+  /** Stored competence (root) estimate before and after the answer. */
+  competenceThetaBefore: number | null
+  competenceStandardErrorBefore: number | null
+  competenceLevelBefore: string | null
+  competenceThetaAfter: number | null
+  competenceStandardErrorAfter: number | null
+  competenceLevelAfter: string | null
+  competenceLowerLevelAfter: string | null
+  competenceUpperLevelAfter: string | null
+  /** Item level minus the competence level before the answer, in levels. */
+  levelDistanceBefore: number | null
+}
+
+export type AdaptiveDiagnosticReview = {
+  verdict: DB.AdaptiveAttemptReviewVerdict
+  expectedOverallLevelLabel: string | null
+  expectedCompetenceLevels: Array<{ nodeId: number; levelLabel: string }>
+  comment: string | null
+  updatedAt: Date
 }
 
 export type AdaptiveDiagnosticSummary = {
@@ -76,6 +100,14 @@ export type AdaptiveDiagnosticSummary = {
   competences: AdaptiveDiagnosticNodeResult[]
   rating: AdaptiveAttemptRatingLevel | 'NOT_AVAILABLE'
   ratingReasons: AdaptiveAttemptRatingReason[]
+  answers: AdaptiveDiagnosticAnswer[]
+  /**
+   * Whether every IRT_V1 answer has its stored competence estimate; older
+   * attempts need the diagnostics backfill first.
+   */
+  estimatesComplete: boolean
+  /** The requesting lecturer's review, if any. */
+  review: AdaptiveDiagnosticReview | null
 }
 
 export type AdaptiveDiagnosticAttemptRecord = {
@@ -102,7 +134,12 @@ export type AdaptiveDiagnosticAttemptRecord = {
     correct: boolean
     score: number
     overallThetaAfter: number | null
+    competenceThetaBefore: number | null
+    competenceStandardErrorBefore: number | null
+    competenceThetaAfter: number | null
+    competenceStandardErrorAfter: number | null
   }>
+  review?: AdaptiveDiagnosticReview | null
 }
 
 export type AdaptiveDiagnosticContext = {
@@ -203,6 +240,11 @@ export function buildAdaptiveAttemptDiagnostic(
     })
   )
 
+  const answeredInLeaf = new Map<number, number>()
+  const labelAt = (theta: number | null) =>
+    theta === null || !Number.isFinite(theta)
+      ? null
+      : (levelAt(theta)?.label ?? null)
   const answers: AdaptiveDiagnosticAnswer[] = attempt.responses
     .slice()
     .sort((a, b) => a.order - b.order)
@@ -211,6 +253,23 @@ export function buildAdaptiveAttemptDiagnostic(
         response.poolItemId === null
           ? undefined
           : context.poolById.get(response.poolItemId)
+      const earlierInLeaf = item
+        ? (answeredInLeaf.get(item.leafNodeId) ?? 0)
+        : 0
+      if (item) answeredInLeaf.set(item.leafNodeId, earlierInLeaf + 1)
+      const before = response.competenceThetaBefore
+      const after = response.competenceThetaAfter
+      const spreadAfter =
+        after !== null && response.competenceStandardErrorAfter !== null
+          ? settings.classificationZ * response.competenceStandardErrorAfter
+          : null
+      const beforeLevel =
+        before === null
+          ? undefined
+          : levelAt(clamp(before, settings.thetaRange))
+      const beforeIndex = beforeLevel
+        ? levelIndex.get(beforeLevel.id)
+        : undefined
       const rootId = item?.nodePath[0]
       const itemIndex = item ? levelIndex.get(item.levelId) : undefined
       const rootIndex =
@@ -236,6 +295,24 @@ export function buildAdaptiveAttemptDiagnostic(
         levelDistance:
           itemIndex !== undefined && rootIndex !== undefined
             ? itemIndex - rootIndex
+            : null,
+        phase:
+          earlierInLeaf < settings.minQuestionsPerLeaf
+            ? ('COVERAGE' as const)
+            : ('PRECISION' as const),
+        competenceThetaBefore: before,
+        competenceStandardErrorBefore: response.competenceStandardErrorBefore,
+        competenceLevelBefore: beforeLevel?.label ?? null,
+        competenceThetaAfter: after,
+        competenceStandardErrorAfter: response.competenceStandardErrorAfter,
+        competenceLevelAfter: labelAt(after),
+        competenceLowerLevelAfter:
+          spreadAfter === null ? null : labelAt(after! - spreadAfter),
+        competenceUpperLevelAfter:
+          spreadAfter === null ? null : labelAt(after! + spreadAfter),
+        levelDistanceBefore:
+          itemIndex !== undefined && beforeIndex !== undefined
+            ? itemIndex - beforeIndex
             : null,
       }
     })
@@ -311,6 +388,13 @@ export function buildAdaptiveAttemptDiagnostic(
     competences,
     rating: rating?.level ?? 'NOT_AVAILABLE',
     ratingReasons: rating?.reasons ?? [],
+    answers,
+    estimatesComplete:
+      attempt.measurementVersion !== 'IRT_V1' ||
+      attempt.responses.every(
+        ({ competenceThetaAfter }) => competenceThetaAfter !== null
+      ),
+    review: attempt.review ?? null,
   }
-  return { summary, nodes, answers }
+  return { summary, nodes }
 }
