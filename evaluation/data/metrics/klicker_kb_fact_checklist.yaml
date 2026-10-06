@@ -1,0 +1,24 @@
+# Knowledge-base grounded answers: expected facts, contradictions, unsupported
+# claims and faithfulness to the retrieved passages. Standalone: it carries its
+# own faithfulness metric, so do not combine it with klicker_graph_retrieval.yaml.
+- name: fact_checklist
+  modes: [ground-truth]
+  threshold: 0.7
+  criteria: "Score the assistant's answer against the expected answer as a checklist of facts: reward expected facts that are covered, penalize contradictions and claims that the expected answer does not support."
+  evaluation_steps:
+    - 'List the discrete facts in the expected answer (each number, name, condition or step that a correct answer needs).'
+    - "For each expected fact, decide whether the assistant's answer states it correctly. A paraphrase counts; a missing or wrong value does not."
+    - "Count contradictions: statements in the assistant's answer that conflict with an expected fact. Any contradiction caps the score at 0.4."
+    - "Count unsupported claims: specific factual statements in the assistant's answer that neither appear in nor follow from the expected answer. Penalize each one; generic framing, formatting and tutoring tone are not claims."
+    - 'If the expected answer says the knowledge base does not contain the answer, the assistant must say so and must not invent one.'
+    - 'Score the share of expected facts covered, reduced for contradictions and unsupported claims.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+    - EXPECTED_OUTPUT
+
+- name: faithfulness
+  type: faithfulness
+  modes: [ground-truth]
+  threshold: 0.7
+  diagnostic: true
