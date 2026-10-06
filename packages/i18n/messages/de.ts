@@ -52,7 +52,7 @@ const baseMessages = {
       usingPrimaryModel:
         'Die automatische Auswahl wird verwendet, solange Credits verfügbar sind.',
       usingFallbackModel:
-        'Es sind keine Credits mehr übrig. GPT-5.6 Luna kann als Credit-Fallback verwendet werden.',
+        'Es sind keine Credits mehr übrig. Das Basismodell kann als Credit-Fallback verwendet werden.',
       reasoningEffortLabel: 'Denkaufwand',
       selectReasoningEffort: 'Denkaufwand auswählen',
       reasoningEffortHint:
@@ -2052,6 +2052,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       'Die hochgeladene Datei stimmt nicht mehr mit ihrer Upload-Reservierung überein. Laden Sie sie erneut hoch.',
     ingestionFailed: 'Der Verarbeitungsvorgang ist fehlgeschlagen.',
     ingestionSuperseded: 'Der Verarbeitungsvorgang wurde ersetzt.',
+    ingestionFailureSourceVersionMismatch:
+      'Die Quelle stimmt nicht mehr mit der Version überein, die beim Hinzufügen gespeichert wurde.',
+    ingestionFailureSourceFetch: 'Die Quelle konnte nicht abgerufen werden.',
+    ingestionFailureSourceProcessing:
+      'Der Inhalt der Quelle konnte nicht verarbeitet werden.',
+    ingestionFailureSourceSizeLimit:
+      'Die Quelle überschreitet die unterstützte Grössenbegrenzung.',
+    ingestionFailureActivation:
+      'Der importierte Inhalt konnte nicht aktiviert werden.',
     inspectResource: 'Details',
     inspectorTitle: 'Ressourcendetails',
     sourceType: 'Quelltyp',
