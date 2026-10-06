@@ -14,6 +14,10 @@ minimumReleaseAge: 20160
 minimumReleaseAgeStrict: true
 minimumReleaseAgeIgnoreMissingTime: false
 minimumReleaseAgeExclude:
+  # Reviewed security fix for CVE-2026-93749 (indexed source map DoS): bounds
+  # section offsets plus a CSP-safe sort fallback, same sole maintainer, no
+  # install scripts. Drop once it ages past the 14-day window.
+  - 'source-map-js@1.2.2'
   # Reviewed Next.js 16.3.4 release train; keep the 14-day policy for other releases.
   - 'next@16.3.4'
   - 'eslint-config-next@16.3.4'
@@ -106,6 +110,11 @@ overrides:
   # gave packages/shared-components and the frontends different translation
   # contexts. Consolidate the patch line so every importer resolves one copy.
   '@babel/core@>=7.28.0 <7.29.0': 7.28.6
+  # The @graphql-tools/utils mergeDeep prototype pollution
+  # (GHSA-7mx3-vvmw-hjmv, 2026-10-06 backend image scan) is fixed only in
+  # 12.0.1, so the pin crosses the 8.x/9.x/10.x lines still asked for by
+  # graphql-yoga, the executors, envelop and the codegen loaders.
+  '@graphql-tools/utils@<12.0.1': 12.0.1
 
 packageExtensions:
   # The published stylesheet imports this plugin, but 4.1.8 lists it only as a devDependency.
