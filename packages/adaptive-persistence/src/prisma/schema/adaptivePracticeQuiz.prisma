@@ -429,6 +429,7 @@ model AdaptivePracticeQuizAttempt {
 
   responses AdaptivePracticeQuizResponse[]
   estimates AdaptivePracticeQuizEstimate[]
+  reviews   AdaptivePracticeQuizAttemptReview[]
 
   startedAt   DateTime  @default(now())
   completedAt DateTime?
@@ -468,6 +469,14 @@ model AdaptivePracticeQuizResponse {
 
   /// [PrismaAdaptiveBandProbabilities]
   overallBandProbabilitiesAfter Json?
+
+  // IRT_V1: the engine's estimate of the answered item's competence (root
+  // node) before and after this answer. Null for IRT v2, and for older
+  // answers until the lecturer diagnostics backfill replays them.
+  competenceThetaBefore         Float?
+  competenceStandardErrorBefore Float?
+  competenceThetaAfter          Float?
+  competenceStandardErrorAfter  Float?
 
   administrationProbability Float?
   collectionDesignVersion   String?
@@ -566,4 +575,36 @@ model AdaptivePracticeQuizCohortSnapshot {
   @@unique([publicationId, releaseSize, policyVersion, attemptSelectionPolicy], map: "apqcs_publication_release_policy_key")
   @@index([configId, invalidatedAt, releaseSize], map: "apqcs_config_valid_release_idx")
   @@index([practiceQuizId], map: "apqcs_quiz_retention_idx")
+}
+
+enum AdaptiveAttemptReviewVerdict {
+  AS_EXPECTED
+  TOO_HIGH
+  TOO_LOW
+  UNSURE
+}
+
+// A lecturer's check of one attempt's result in a testing environment
+// (ADAPTIVE_QUIZ_SHOW_SOLUTIONS=true): the expected levels and whether the
+// algorithm's result matched them. Feeds the diagnostics accuracy summary.
+model AdaptivePracticeQuizAttemptReview {
+  id String @id @default(uuid()) @db.Uuid
+
+  attempt   AdaptivePracticeQuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  attemptId String                      @db.Uuid
+
+  reviewer   User   @relation("AdaptiveAttemptReviewReviewer", fields: [reviewerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  reviewerId String @db.Uuid
+
+  verdict                   AdaptiveAttemptReviewVerdict
+  expectedOverallLevelLabel String?
+  /// [PrismaAdaptiveAttemptReviewExpectedLevels]
+  expectedCompetenceLevels  Json                         @default("[]")
+  comment                   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([attemptId, reviewerId], map: "apqar_attempt_reviewer_key")
+  @@index([reviewerId], map: "apqar_reviewer_idx")
 }
