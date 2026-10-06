@@ -108,10 +108,15 @@ stay outside the public repository and specialist scope.
    session is acceptable if that is the smaller correct implementation.
 6. Logout and successful account deletion clear in-memory and stored bearer
    state as well as the existing cookies. Rejected mutations retain the active
-   session. Before child queries or authenticated rendering, `_app.tsx` installs a
-   verified page credential and switches to a fresh Apollo client/cache. Stop
-   the old client; late results can only reach its discarded cache. Invalid
-   launch state clears bearer/cache state before rendering recovery. Ordinary
+   session. Before child queries or authenticated rendering, `_app.tsx` binds a
+   private Apollo client/cache to the projected verified page credential. Render
+   does not mutate retained credentials, notify subscribers or stop the committed
+   client. Commit applies the session with a captured revision guard, then retires
+   the previous client. Abandoned renders leave the active session unchanged.
+   Client generations bind request credentials and gate session-changing results
+   and error redirects; a retired client cannot issue a new authenticated request.
+   Invalid launch state renders recovery with an empty private cache and clears
+   retained bearer state on commit. Ordinary
    cookie-based password/magic/activation login success also clears old bearer
    state before Self refetch. Centralize successful mutation recognition using
    actual response fields, not operation names or HTTP status alone. Move
@@ -345,9 +350,12 @@ this new implementation plan. The optional opposing-provider CLI reported missin
 qualified opposing-provider opinion was obtained; unavailable optional consultation does not replace or
 block the required Astra loop.
 
-Status: planned source slices implemented; automated-review corrections,
-browser acceptance and publication of the CI correction remain pending.
-The native goal remains active. Draft
+Status: planned source slices implemented; registration and unit-CI corrections
+committed locally; React correction saved and source checks passed. Committing
+that correction, its immutable source reviews, browser acceptance and publication
+remain pending because host Git index writes and process inspection are denied.
+Execution resumed after the user restored host execution permissions. The full
+goal remains incomplete while correction reviews and browser acceptance run. Draft
 [PR #6414](https://github.com/uzh-bf/klicker-uzh/pull/6414) targets `v3`.
 
 ### Implemented slices and review disposition
@@ -382,16 +390,18 @@ in a fresh marked disposable database under the restricted role. Exact database,
 Redis and network resources were removed and verified. No retained database or
 production record was changed.
 
-Serial package checks passed 34/35 tasks. The remaining GraphQL schema diff
-command lacked Git metadata in the container; the host generated schema diff
-is empty, and standalone GraphQL TypeScript and element-import checks pass.
+Serial package checks passed 34/35 tasks again after the React correction. The
+remaining GraphQL schema diff command cannot run because the pure-check container
+lacks Git. Git is required to run on the host by repository policy; the host
+generated schema diff is empty, and standalone GraphQL TypeScript and element-import
+checks pass.
 Root lint passed 7/7 tasks. No schema, dependency or unrelated source change is
 included.
 
-The dedicated harness TypeScript check passes, as do all 18 shard/selector checks
-and 49 selector/host-launcher policy tests. The full host CI-policy run passed
-85/86 tests; its sole failure is the installed Devrouter version below the target
-requirement. Touched-file formatting, syncpack, agent links, retired-artifact
+The dedicated harness TypeScript check passes, as do all 18 shard/selector checks.
+The complete CI/host policy selection now passes 125/125 tests using the existing
+Volta-routed tools. The earlier version-selection failure is resolved without a
+global tool change. Touched-file formatting, syncpack, agent links, retired-artifact
 policy, Prisma sync, documentation links, diff checks and redacted secret scans
 pass. The root `check:all` aggregate remains unpassed; these independent results
 do not substitute for it.
@@ -403,13 +413,24 @@ redirect discarded a fresh verified registration launch; Create Account could
 then select an older LTI cookie or lose the LTI context entirely. The local
 correction carries only the already verified signed handoff in the redirect.
 The dedicated browser harness adds old-cookie and missing-cookie registration
-coverage. This correction is uncommitted and needs the integrated review
-correction pass. The separate render-phase session-store concern is under a
-bounded synthetic React experiment; no browser conclusion follows from it.
+coverage. This correction and the unit-CI dependency fix are committed in
+`986d2d936c`. The render-phase correction now projects a private client/session
+and applies retained state only on commit. A React 19.2.8 StrictMode prototype
+using the actual hook passes fresh credential, cache isolation, late-result,
+retired-request and truly abandoned-render checks. This is renderer-level
+evidence, not browser acceptance. The corrected PWA production build, TypeScript
+check, all 25 PWA tests and lint (zero errors, 12 existing warnings) pass. Pure
+projection and guarded commit regression coverage extends an existing test.
+Astra required reconciliation of a stale candidate even when its desired token
+and revision are unchanged; the concurrent-commit prototype verifies that
+accepted safeguard. Immutable source reviews remain pending until the correction
+can be committed.
 
-The canonical host Playwright launcher rejects Devrouter 0.1.0 because this
-checkout requires at least 0.1.2. Doctor also fails closed on host process-owner
-inspection (`ps spawn failed (EPERM)`). No managed task runtime was started;
+The task shell selects Devrouter 0.1.0, but the already installed
+`/Users/roland/.volta/bin/devrouter` is 0.1.3 and satisfies the version floor.
+A per-command path can select it without a global configuration change. Its
+doctor still fails closed on host process-owner inspection
+(`ps spawn failed (EPERM)`). No managed task runtime was started;
 other tasks' runtimes were untouched. Global tool/configuration repair is outside
 the approved package.
 
@@ -425,21 +446,26 @@ high; its headless read-file permission was denied, producing no qualified revie
 No account or permission configuration was changed. The one permitted GLM 5.3
 Flash max final-review fallback reviewed the entire 36-path committed package
 and returned pass with zero findings. Its output passed the canonical JSON
-schema. This establishes integrated source review, with browser acceptance open.
+schema. That review covers the published head only; the saved corrections still
+require their immutable source gates. Browser acceptance remains open.
 
 The task target remains `v3` at `6189a7487b912a1d9e95769b2f3bb6434c34ccea`.
-The draft head `3c7268fc6d05d4bd4b56cd679872babd04140777` is published; exact-head
-hosted CI has a diagnosed unit-test failure: the dependency step omits generated
+The draft head `3c7268fc6d05d4bd4b56cd679872babd04140777` is published; its
+hosted unit-test failure is diagnosed: the dependency step omitted generated
 GraphQL outputs needed by the PWA tests. The one-line workflow correction is
-prepared locally. With an empty isolated GraphQL output volume, the original
-missing-module failure reproduced; the corrected dependency step passed 7/7
-build tasks and all 25 PWA tests. Publish this correction, continue the same
-integrated reviewer for its one correction pass at the resulting committed
-range, and observe new-head CI after host Git writes return. Preserve the
-primary checkout and retain browser acceptance as an open gate. The latest progress consolidation
-is saved locally but cannot be committed because host Git cannot create the
-worktree index lock (`Operation not permitted`). The workflow correction is
-also uncommitted and absent from the draft PR. Its local checks do not make
-current hosted CI green. No merge, production activation or deployment is included. Mark the native goal
-complete only after its terminal condition is met; use blocked only after the
-supported repeated-blocker threshold is satisfied.
+committed locally with the registration correction. An empty isolated GraphQL
+output volume reproduced the missing-module failure; the corrected dependency
+step passed 7/7 build tasks and all 25 PWA tests.
+
+Host permissions have been restored and the target was fetched again: `v3`
+is unchanged. The registration and CI correction is local commit `986d2d936c`.
+Commit the saved React correction and complete its source gates, then
+resume the same integrated reviewer for its one correction pass on the complete
+committed range. Publish the reviewed correction through an ordinary task-branch
+push, update the draft description and observe exact-head CI. Preserve the
+primary checkout and retain browser acceptance as an open gate. Current hosted
+CI is not green merely because the corrected dependency step passes locally.
+No merge, production activation or deployment is included. The earlier host
+permission blocker is historical. Reconcile any current runtime admission
+errors through the canonical lifecycle before browser checks. The full goal
+remains incomplete; no browser or completed-delivery claim is justified.

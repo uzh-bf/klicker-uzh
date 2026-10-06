@@ -5,7 +5,9 @@ import {
   getParticipantSessionRevision,
   getParticipantSessionToken,
   observeParticipantSessionResult,
+  projectParticipantPageSession,
   setParticipantSessionToken,
+  subscribeParticipantSession,
 } from './participantSession'
 
 it('never retains browser credentials in server state', () => {
@@ -25,7 +27,37 @@ it('replaces stale state and preserves active identity across ambient navigation
       },
     },
   })
+  const initialRevision = getParticipantSessionRevision()
   assert.equal(getParticipantSessionToken(), 'participant-a')
+  values.set('participant_token', 'participant-c')
+  assert.equal(getParticipantSessionToken(), 'participant-c')
+  values.set('participant_token', 'participant-a')
+  const page = {
+    participantToken: 'participant-b',
+    tokenSource: 'explicit' as const,
+    sessionState: 'authenticated' as const,
+  }
+  let notifications = 0
+  const unsubscribe = subscribeParticipantSession(() => {
+    notifications += 1
+  })
+  const projected = projectParticipantPageSession(page)
+  assert.equal(projected.token, 'participant-b')
+  assert.equal(projected.revision, initialRevision + 1)
+  assert.equal(getParticipantSessionRevision(), initialRevision)
+  assert.equal(getParticipantSessionToken(), 'participant-a')
+  assert.equal(values.get('participant_token'), 'participant-a')
+  assert.equal(notifications, 0)
+  assert.equal(applyParticipantPageSession(page, initialRevision - 1), false)
+  assert.equal(getParticipantSessionToken(), 'participant-a')
+  assert.equal(applyParticipantPageSession(page, initialRevision), true)
+  assert.equal(notifications, 1)
+  assert.equal(
+    applyParticipantPageSession(page, getParticipantSessionRevision()),
+    true
+  )
+  assert.equal(notifications, 1)
+  unsubscribe()
   applyParticipantPageSession({
     participantToken: 'participant-b',
     tokenSource: 'explicit',

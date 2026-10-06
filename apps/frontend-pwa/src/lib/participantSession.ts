@@ -16,11 +16,10 @@ const appliedPages = new WeakSet<ParticipantPageSession>()
 export function getParticipantSessionToken() {
   if (typeof window === 'undefined') return null
   if (!loaded) {
-    loaded = true
     try {
-      token = window.sessionStorage.getItem('participant_token')
+      return window.sessionStorage.getItem('participant_token')
     } catch {
-      token = null
+      return null
     }
   }
   return token
@@ -57,8 +56,13 @@ export function setParticipantSessionToken(
   }
 }
 
-export function applyParticipantPageSession(page: ParticipantPageSession) {
-  if (typeof window === 'undefined' || appliedPages.has(page)) return
+export function applyParticipantPageSession(
+  page: ParticipantPageSession,
+  expectedRevision = revision
+) {
+  if (typeof window === 'undefined') return false
+  if (expectedRevision !== revision) return false
+  if (appliedPages.has(page)) return true
   appliedPages.add(page)
   if (
     page.resetParticipantSession ||
@@ -73,15 +77,39 @@ export function applyParticipantPageSession(page: ParticipantPageSession) {
   ) {
     setParticipantSessionToken(page.participantToken)
   }
+  return true
 }
 
-export function observeParticipantSessionResult(result: {
+export function projectParticipantPageSession(page: ParticipantPageSession) {
+  const current = getParticipantSessionToken()
+  const baseRevision = revision
+  if (typeof window === 'undefined' || appliedPages.has(page)) {
+    return { token: current, revision, baseRevision }
+  }
+  const invalidate =
+    page.resetParticipantSession ||
+    page.sessionState === 'rejected' ||
+    page.sessionState === 'registration_required' ||
+    page.sessionState === 'exchange_unavailable'
+  const next = invalidate
+    ? null
+    : page.participantToken && (page.tokenSource === 'explicit' || !current)
+      ? page.participantToken
+      : current
+  return {
+    token: next,
+    revision: revision + (invalidate || next !== current ? 1 : 0),
+    baseRevision,
+  }
+}
+
+export function isSuccessfulParticipantSessionResult(result: {
   data?: Record<string, unknown> | null
   errors?: readonly unknown[]
 }) {
   if (result.errors?.length || !result.data) return false
   const data = result.data
-  const success =
+  return (
     data.deleteParticipantAccount === true ||
     data.logoutTemporaryParticipant === true ||
     [
@@ -90,6 +118,13 @@ export function observeParticipantSessionResult(result: {
       'loginParticipantMagicLink',
       'activateParticipantAccount',
     ].some((field) => typeof data[field] === 'string' && !!data[field])
-  if (success) setParticipantSessionToken(null, true)
-  return success
+  )
+}
+
+export function observeParticipantSessionResult(
+  result: Parameters<typeof isSuccessfulParticipantSessionResult>[0]
+) {
+  if (!isSuccessfulParticipantSessionResult(result)) return false
+  setParticipantSessionToken(null, true)
+  return true
 }

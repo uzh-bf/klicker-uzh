@@ -42,7 +42,7 @@ export default function useParticipantToken({
       }
       return
     }
-    // The application boundary installs credentials before child queries run.
+    // The application boundary binds child queries to the verified credential.
     if (typeof participantToken === 'string') {
       if (redirectTo) void router.push(redirectTo)
       else callbackRef.current?.()

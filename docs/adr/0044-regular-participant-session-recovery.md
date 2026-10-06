@@ -15,7 +15,10 @@ A verified OLAT login can coexist with an expired cookie or a previous
 participant's browser bearer. Selecting ambient credentials first prevents the
 fresh login from taking effect and can restore the wrong account. Within the
 existing regular PWA audience, use a verified explicit participant session
-before cookies and replace browser bearer/cache state before child queries.
+before cookies and bind a private client/cache to that identity before child
+queries. Persist the projected session and retire the prior client only after
+React commits; abandoned renders must not change retained identity. Scope
+requests and session-changing responses to the originating client generation.
 Invalid explicit credentials fail closed; scoped OTP/activation credentials
 must undergo their own exchange. Assessment and other origin audiences retain
 their existing credential selection and authorization.

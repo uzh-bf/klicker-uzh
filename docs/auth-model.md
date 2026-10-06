@@ -67,9 +67,12 @@ role does not make them session tokens.
 Edit Profile carries the verified signed handoff through its registration
 redirect, so Create Account does not substitute an older or missing LTI cookie.
 
-The application boundary installs a verified explicit page token before child
-queries. It replaces the old bearer and Apollo cache; late responses stay in
-the discarded client. Ambient SSR credentials seed an empty browser session
+The application boundary binds a private Apollo client to the verified page
+credential before child queries. Rendering only projects the next session;
+React commit installs retained credentials and retires the previous client.
+An abandoned render cannot change the active session. Requests, session changes
+and error redirects are scoped to their client generation; late responses
+cannot affect a newer session. Ambient SSR credentials seed an empty browser session
 but cannot replace an already active bearer. Conflicting SSR hydration is
 ignored. The shared `participantSession` module retains the current token in
 browser memory and writes sessionStorage when available. Cookie presence alone
