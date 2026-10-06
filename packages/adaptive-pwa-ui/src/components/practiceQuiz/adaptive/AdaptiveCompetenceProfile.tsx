@@ -13,18 +13,18 @@ import {
 } from './adaptiveLevelPalette'
 import {
   type AdaptiveCertaintyLevel,
-  type AdaptiveRoughEstimateDisplay,
+  getAdaptiveEstimatedCertainty,
   getAdaptiveMainLevelSegments,
   getAdaptiveProfileCertainty,
-  getAdaptiveRangeWidth,
-  getAdaptiveRoughEstimateDisplay,
   showsAdaptiveLevelTrack,
 } from './adaptiveProfileCertainty'
 import { getAdaptiveReportedLevelLabel } from './adaptiveReportedLevel'
 import {
-  getAdaptiveProfileIndication,
-  isAdaptiveProfileNodeNotTested,
-} from './adaptiveResultUncertainty'
+  getAdaptiveEstimatedLevelText,
+  getAdaptiveRangeText,
+  getAdaptiveResultState,
+} from './adaptiveResultState'
+import { isAdaptiveProfileNodeNotTested } from './adaptiveResultUncertainty'
 import { createEqualLevelScale } from './equalLevelScale'
 
 export type AdaptiveCompetenceProfileNode = {
@@ -316,96 +316,97 @@ function ProfileRow({
     })
     return t(label.key, label.values)
   }
-  const indication = getAdaptiveProfileIndication({ ...estimate, levelBands })
-  const width = indication
-    ? getAdaptiveRangeWidth({
-        lowerPosition: estimate.lowerPosition,
-        upperPosition: estimate.upperPosition,
+  const state = getAdaptiveResultState({ ...estimate, levelBands })
+  const width = state.kind === 'NOT_ENOUGH_ANSWERS' ? null : state.width
+  // Estimated, not determined: answers exist and the range is narrow enough
+  // to name a (main) level. Never for placement pilots.
+  const estimated =
+    !isPlacementPilot && state.kind === 'ESTIMATED' ? state : null
+  const hidesEstimate =
+    !isPlacementPilot &&
+    estimate.classification ===
+      AdaptivePracticeQuizResultClassification.InsufficientEvidence &&
+    state.kind === 'NOT_ENOUGH_ANSWERS'
+  const certainty = hidesEstimate
+    ? null
+    : estimated && !estimate.roughLevelLabel
+      ? getAdaptiveEstimatedCertainty(width)
+      : getAdaptiveProfileCertainty({
+          classification: estimate.classification,
+          width,
+        })
+  const estimatedText = estimated
+    ? getAdaptiveEstimatedLevelText({
+        state: estimated,
         levelBands,
+        rough: Boolean(estimate.roughLevelLabel),
       })
     : null
-  // Rough estimates: answers below the reporting minimum (never the overall).
-  const rough: AdaptiveRoughEstimateDisplay | null =
-    !emphasized &&
-    indication &&
-    estimate.classification ===
-      AdaptivePracticeQuizResultClassification.InsufficientEvidence
-      ? getAdaptiveRoughEstimateDisplay({
-          levelLabel: estimate.roughLevelLabel ?? indication.levelLabel,
-          width,
+  const estimatedLabel = estimatedText
+    ? t(estimatedText.key, {
+        level: t(estimatedText.level.key, estimatedText.level.values),
+      })
+    : null
+  const displayLabel = estimatedLabel
+    ? estimatedLabel
+    : hidesEstimate
+      ? t('pwa.practiceQuiz.adaptive.profile.notEnoughAnswers', {
+          count: estimate.responseCount,
+        })
+      : isPlacementPilot
+        ? (() => {
+            switch (estimate.classification) {
+              case AdaptivePracticeQuizResultClassification.Classified:
+                return t(
+                  'pwa.practiceQuiz.adaptive.result.placementPilot.estimatedLevel',
+                  { level: estimate.levelLabel ?? '' }
+                )
+              case AdaptivePracticeQuizResultClassification.BetweenLevels:
+                return t(
+                  'pwa.practiceQuiz.adaptive.result.placementPilot.adjacentRange',
+                  { levels: estimate.leadingLevelLabels.join(' / ') }
+                )
+              default:
+                return t(
+                  'pwa.practiceQuiz.adaptive.result.placementPilot.noEvidence'
+                )
+            }
+          })()
+        : (() => {
+            switch (estimate.classification) {
+              case AdaptivePracticeQuizResultClassification.Classified:
+                return estimate.levelLabel
+                  ? t('pwa.practiceQuiz.adaptive.profile.determinedLevel', {
+                      level: reportedLevel(estimate.levelLabel, true),
+                    })
+                  : t('pwa.practiceQuiz.adaptive.profile.insufficientData')
+              case AdaptivePracticeQuizResultClassification.BetweenLevels:
+                return t('pwa.practiceQuiz.adaptive.profile.betweenLevels', {
+                  levels: estimate.leadingLevelLabels.join(' / '),
+                })
+              case AdaptivePracticeQuizResultClassification.PoolLimited:
+                return t('pwa.practiceQuiz.adaptive.profile.poolLimited')
+              case AdaptivePracticeQuizResultClassification.ResearchOnly:
+                return t('pwa.practiceQuiz.adaptive.profile.researchOnly')
+              case AdaptivePracticeQuizResultClassification.InsufficientEvidence:
+                return t('pwa.practiceQuiz.adaptive.profile.insufficientData')
+            }
+          })()
+  const rangeText =
+    width && !hidesEstimate
+      ? getAdaptiveRangeText({
+          lowerLevelLabel: width.lowerLevelLabel,
+          upperLevelLabel: width.upperLevelLabel,
           levelBands,
         })
       : null
-  const hidesEstimate = rough?.kind === 'notEnoughAnswers'
-  const certainty = hidesEstimate
-    ? null
-    : getAdaptiveProfileCertainty({
-        classification: estimate.classification,
-        width,
-      })
-  const displayLabel = rough
-    ? (() => {
-        switch (rough.kind) {
-          case 'level':
-            return t('pwa.practiceQuiz.adaptive.profile.roughLevel', {
-              level: reportedLevel(rough.levelLabel, false),
-            })
-          case 'mainLevel':
-            return t('pwa.practiceQuiz.adaptive.profile.aroundLevel', {
-              level: rough.levelLabel,
-            })
-          case 'notEnoughAnswers':
-            return t('pwa.practiceQuiz.adaptive.profile.notEnoughAnswers', {
-              count: estimate.responseCount,
-            })
-        }
-      })()
-    : isPlacementPilot
-      ? (() => {
-          switch (estimate.classification) {
-            case AdaptivePracticeQuizResultClassification.Classified:
-              return t(
-                'pwa.practiceQuiz.adaptive.result.placementPilot.estimatedLevel',
-                { level: estimate.levelLabel ?? '' }
-              )
-            case AdaptivePracticeQuizResultClassification.BetweenLevels:
-              return t(
-                'pwa.practiceQuiz.adaptive.result.placementPilot.adjacentRange',
-                { levels: estimate.leadingLevelLabels.join(' / ') }
-              )
-            default:
-              return t(
-                'pwa.practiceQuiz.adaptive.result.placementPilot.noEvidence'
-              )
-          }
-        })()
-      : (() => {
-          switch (estimate.classification) {
-            case AdaptivePracticeQuizResultClassification.Classified:
-              return estimate.levelLabel
-                ? t('pwa.practiceQuiz.adaptive.profile.estimatedLevel', {
-                    level: reportedLevel(estimate.levelLabel, true),
-                  })
-                : t('pwa.practiceQuiz.adaptive.profile.insufficientData')
-            case AdaptivePracticeQuizResultClassification.BetweenLevels:
-              return t('pwa.practiceQuiz.adaptive.profile.betweenLevels', {
-                levels: estimate.leadingLevelLabels.join(' / '),
-              })
-            case AdaptivePracticeQuizResultClassification.PoolLimited:
-              return t('pwa.practiceQuiz.adaptive.profile.poolLimited')
-            case AdaptivePracticeQuizResultClassification.ResearchOnly:
-              return t('pwa.practiceQuiz.adaptive.profile.researchOnly')
-            case AdaptivePracticeQuizResultClassification.InsufficientEvidence:
-              return t('pwa.practiceQuiz.adaptive.profile.insufficientData')
-          }
-        })()
   const rangeSentence =
-    width && !hidesEstimate && width.lowerLevelLabel !== width.upperLevelLabel
-      ? t('pwa.practiceQuiz.adaptive.profile.likelyRange', {
-          lower: width.lowerLevelLabel,
-          upper: width.upperLevelLabel,
-        })
+    rangeText &&
+    rangeText.key !== 'pwa.practiceQuiz.adaptive.profile.likelyLevel'
+      ? t(rangeText.key, rangeText.values)
       : null
+  // Kept for the response meta line: estimated rows explain themselves.
+  const rough = estimated
   const certaintyLabel = certainty
     ? t(`pwa.practiceQuiz.adaptive.profile.certainty.${certainty}`)
     : null
@@ -429,8 +430,13 @@ function ProfileRow({
               count: estimate.responseCount,
             })}
           </span>
-          {/* Rough rows already explain the missing level on the right. */}
-          {!isPlacementPilot && hasResponses && !rough ? (
+          {/* Estimated and too-wide rows explain the level on the right. */}
+          {emphasized && rough ? (
+            <span>
+              {t('pwa.practiceQuiz.adaptive.result.notDetermined.label')}
+            </span>
+          ) : null}
+          {!isPlacementPilot && hasResponses && !rough && !hidesEstimate ? (
             <span>
               {t(CLASSIFICATION_LABEL_KEYS[estimate.classification])}
               {typeof estimate.classificationProbability === 'number' && (

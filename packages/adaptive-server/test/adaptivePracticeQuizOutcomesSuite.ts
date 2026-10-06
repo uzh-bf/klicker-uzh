@@ -9,12 +9,11 @@ import {
   startAdaptivePracticeQuizAttempt,
   withSerializableRetry,
 } from '../src/services/adaptivePracticeQuizzes.js'
-
+import { itWithAdaptiveEngine } from './adaptiveEngineTestEnv.js'
 import {
   contextFor,
   createRuntimeFixture,
 } from './adaptivePracticeQuizRuntimeTestSupport.js'
-import { itWithAdaptiveEngine } from './adaptiveEngineTestEnv.js'
 
 export function registerAdaptivePracticeQuizOutcomeTests() {
   itWithAdaptiveEngine(
@@ -265,7 +264,7 @@ export function registerAdaptivePracticeQuizOutcomeTests() {
       ).toEqual([
         {
           releaseSize: 5,
-          policyVersion: 6,
+          policyVersion: 8,
           aggregate: expect.objectContaining({ schemaVersion: 2 }),
           invalidatedAt: null,
         },
@@ -316,7 +315,7 @@ export function registerAdaptivePracticeQuizOutcomeTests() {
       expect(
         snapshots.every(
           ({ policyVersion, aggregate }) =>
-            policyVersion === 6 && aggregate.schemaVersion === 2
+            policyVersion === 8 && aggregate.schemaVersion === 2
         )
       ).toBe(true)
       const serializedSnapshots = JSON.stringify(snapshots)
@@ -423,16 +422,20 @@ export function registerAdaptivePracticeQuizOutcomeTests() {
         { practiceQuizId: fixture.quizId },
         contextFor(fixture.ownerId, DB.UserRole.USER)
       )
+      // These attempts have no answers, so the shared determination never
+      // treats their levels as determined: the engine's CLASSIFIED stop is
+      // counted only as a stop reason.
       expect(cohort.attemptSummary).toEqual({
         suppressed: false,
         suppressions: [],
-        classified: 5,
+        classified: 0,
         betweenLevels: 0,
-        insufficientEvidence: 10,
+        insufficientEvidence: 15,
         poolLimited: 5,
         researchOnly: 0,
         capped: 5,
         poolExhausted: 5,
+        stoppedClassified: 5,
         stoppedInsufficientData: 5,
         insufficientData: 0,
         nearBoundary: null,

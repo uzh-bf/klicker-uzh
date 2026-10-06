@@ -195,6 +195,7 @@ describe('adaptive practice quiz participant schema', () => {
       'researchOnly',
       'capped',
       'poolExhausted',
+      'stoppedClassified',
       'stoppedInsufficientData',
       'insufficientData',
       'nearBoundary',

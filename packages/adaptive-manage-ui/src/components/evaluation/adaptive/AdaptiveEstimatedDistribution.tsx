@@ -3,6 +3,7 @@ import {
   summarizeAdaptiveDistributionCoverage,
   summarizeAdaptiveDistributionOutOfRange,
 } from './adaptiveDistributionCoverage'
+import { getAdaptiveDistributionRows } from './adaptiveDistributionEdges'
 import type { AdaptiveCohortDistribution } from './types'
 
 function AdaptiveEstimatedDistribution({
@@ -15,9 +16,8 @@ function AdaptiveEstimatedDistribution({
   dataCy: string
 }) {
   const t = useTranslations('manage.evaluation.adaptive.distributionEstimates')
-  const buckets = distribution.buckets.toSorted(
-    (a, b) => a.levelOrder - b.levelOrder
-  )
+  // Unmeasured edge levels are folded into the nearest measurable level.
+  const buckets = getAdaptiveDistributionRows(distribution.buckets)
   const total = buckets.reduce((sum, bucket) => sum + bucket.count, 0)
   const { notTested, withoutUsableEstimate: excluded } =
     summarizeAdaptiveDistributionCoverage({
@@ -52,17 +52,23 @@ function AdaptiveEstimatedDistribution({
           {buckets.map((bucket) => {
             const determined = bucket.determinedCount
             const provisional = bucket.count - determined
+            const levelName =
+              bucket.edge === 'belowRange'
+                ? t('levelOrBelow', { level: bucket.levelLabel })
+                : bucket.edge === 'aboveRange'
+                  ? t('levelOrAbove', { level: bucket.levelLabel })
+                  : bucket.levelLabel
             const label = t('barLabel', {
-              level: bucket.levelLabel,
+              level: levelName,
               determined,
               provisional,
             })
             return (
               <li
-                key={bucket.levelOrder}
+                key={bucket.key}
                 className="grid grid-cols-[minmax(3rem,6rem)_1fr_3rem] items-center gap-x-3 gap-y-1 text-sm"
               >
-                <span>{bucket.levelLabel}</span>
+                <span>{levelName}</span>
                 <div
                   className="flex h-5 overflow-hidden rounded-sm bg-gray-100"
                   role="img"

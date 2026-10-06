@@ -57,8 +57,7 @@ const messages = {
           },
           testingHistoryChart: 'Item level vs. competence estimate',
           testingHistoryChartNote:
-            'Markers: level of each answered item (filled = correct, half = partially correct, hollow = incorrect), colored by competence. Dashed lines: current estimate per competence; estimates per competence after each answer are not stored. Solid line: overall estimate after each answer, where stored.',
-          testingHistoryCurrentEstimate: 'now {level}',
+            'Each marker is one answered item at its level, colored by competence. Dashed lines show the current estimate per competence; per-answer estimates per competence are not stored.',
           remainingTime: 'Time remaining: {time}',
           timeLimitReached: 'Time is up. Checking your result…',
 
@@ -144,6 +143,11 @@ const messages = {
           title: 'Your result',
           headline: 'Your current level: {level}',
           incompleteHeadline: 'No complete result yet',
+          notDetermined: {
+            label: 'Level not yet determined',
+            description:
+              'This is an estimate, not yet a determined level. More answers would make it more certain.',
+          },
           betweenHeadline: 'Between {levels}',
           poolLimitedHeadline: 'More suitable questions are needed',
           researchHeadline: 'Practice completed',
@@ -198,7 +202,7 @@ const messages = {
                 'The placement rule reports the highest level threshold reached by your estimate. Use the confidence and competence profile when interpreting it.',
             },
             NEAREST: {
-              headline: 'Estimated level: {level}',
+              headline: 'Your level: {level}',
               description:
                 'The diagnostic rule reports the level anchor nearest your current estimate. Use the confidence and competence profile when interpreting it.',
             },
@@ -246,14 +250,20 @@ const messages = {
             '{count, plural, one {After # answered question, your final estimate is {level}.} other {After # answered questions, your final estimate is {level}.}}',
           incompleteSummary:
             '{count, plural, one {After # answered question, there is not enough evidence for an overall level.} other {After # answered questions, there is not enough evidence for an overall level.}}',
+          estimatedSummary:
+            '{count, plural, one {After # answered question: {level}. This level is not yet determined.} other {After # answered questions: {level}. This level is not yet determined.}}',
         },
         profile: {
           estimatedLevel: 'Estimated level: {level}',
+          determinedLevel: 'Your level: {level}',
           roughLevel: 'Rough estimate: {level}',
-          aroundLevel: 'Around {level}',
-          notEnoughAnswers:
-            '{count, plural, one {Not enough answers yet to estimate (# answer)} other {Not enough answers yet to estimate (# answers)}}',
+          notEnoughAnswers: 'Too few answers here for a reliable estimate',
           likelyRange: 'Likely between {lower} and {upper}',
+          likelyLevel: 'Likely {level}',
+          likelyOrBelow: 'Likely {level} or below',
+          likelyOrAbove: 'Likely {level} or above',
+          levelOrBelow: '{level} or below',
+          levelOrAbove: '{level} or above',
           certainty: {
             HIGH: 'High certainty',
             MEDIUM: 'Medium certainty',
@@ -734,11 +744,12 @@ const messages = {
           inProgress: 'In progress',
           abandoned: 'Abandoned',
           classified: 'Level determined',
+          stoppedClassified: 'Stopped early: level determined',
           betweenLevels: 'Between levels',
           insufficientEvidence: 'Insufficient evidence',
           poolLimited: 'Question pool limited',
           researchOnly: 'Research only',
-          capped: 'Question cap reached',
+          capped: 'Stopped at the question cap',
           poolExhausted: 'Question pool exhausted',
           stoppedInsufficientData: 'Stopped with insufficient data',
           insufficientData: 'Insufficient data',
@@ -753,6 +764,8 @@ const messages = {
           barLabel:
             '{level}: {determined} determined, {provisional} provisional',
           counts: '{determined} determined · {provisional} provisional',
+          levelOrBelow: '{level} or below',
+          levelOrAbove: '{level} or above',
           included:
             '{count} results with an estimate for this area. Bar lengths show their share of these results.',
           excluded:

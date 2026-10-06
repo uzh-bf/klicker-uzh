@@ -10,7 +10,7 @@ import { useAdaptiveManageHost } from '../../../ports'
 import AdaptiveCompetenceDistributions from './AdaptiveCompetenceDistributions'
 import AdaptiveDistributionBars from './AdaptiveDistributionBars'
 import AdaptivePilotMetrics from './AdaptivePilotMetrics'
-import { AdaptiveCohortAttemptSummary } from './types'
+import type { AdaptiveCohortAttemptSummary } from './types'
 
 function Metric({
   label,
@@ -123,8 +123,8 @@ function StopAndQualitySummary({
         <H3>{t('manage.evaluation.adaptive.stopSummary')}</H3>
         <div className="space-y-4">
           <SummaryRate
-            label={t('manage.evaluation.adaptive.attempts.classified')}
-            value={summary.classified ?? null}
+            label={t('manage.evaluation.adaptive.attempts.stoppedClassified')}
+            value={summary.stoppedClassified ?? null}
             total={cohortSize}
             dataCy="adaptive-evaluation-stop-classified"
           />

@@ -23,7 +23,9 @@ export type {
 } from './adaptivePracticeQuizDiagnostics.js'
 
 const COHORT_BATCH_SIZE = 250
-const COHORT_SNAPSHOT_POLICY_VERSION = 7 as const
+// 8: outcome counts use the shared level determination, stop reasons are
+// counted separately, and level buckets carry hasElements.
+const COHORT_SNAPSHOT_POLICY_VERSION = 8 as const
 const COHORT_SNAPSHOT_SCHEMA_VERSION = 2 as const
 
 type CanonicalAttemptReference = {

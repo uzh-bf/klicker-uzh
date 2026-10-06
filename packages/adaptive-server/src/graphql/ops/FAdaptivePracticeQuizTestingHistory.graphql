@@ -4,6 +4,8 @@ fragment FAdaptivePracticeQuizTestingHistory on AdaptivePracticeQuizTestingHisto
     order
     startPosition
     endPosition
+    color
+    hasElements
   }
   entries {
     order

@@ -31,12 +31,21 @@ interface AdaptiveResultTrajectoryChartProps {
   levelBands: AdaptiveResultLevelBand[]
   trajectory: AdaptiveResultTrajectoryPoint[]
   overall: AdaptiveResultOverallPoint
+  /** Edge- and tolerance-aware level name; defaults to the band label. */
+  formatLevel?: (levelLabel: string) => string
+  /** Edge-aware range text; defaults to "lower - upper". */
+  formatRange?: (lowerLevelLabel: string, upperLevelLabel: string) => string
+  /** Caption below the chart; defaults to the trajectory summary. */
+  summaryText?: string
 }
 
 function AdaptiveResultTrajectoryChart({
   levelBands,
   trajectory,
   overall,
+  formatLevel = (levelLabel) => levelLabel,
+  formatRange = (lower, upper) => `${lower} - ${upper}`,
+  summaryText,
 }: AdaptiveResultTrajectoryChartProps) {
   const t = useTranslations()
   const { bands, project } = createEqualLevelScale(levelBands)
@@ -202,10 +211,11 @@ function AdaptiveResultTrajectoryChart({
                       })}
                     </div>
                     <div>
-                      {description.levelLabel ??
-                        t(
-                          'pwa.practiceQuiz.adaptive.trajectory.notYetDetermined'
-                        )}
+                      {description.levelLabel
+                        ? formatLevel(description.levelLabel)
+                        : t(
+                            'pwa.practiceQuiz.adaptive.trajectory.notYetDetermined'
+                          )}
                     </div>
                     {description.lowerLevelLabel &&
                       description.upperLevelLabel && (
@@ -214,8 +224,10 @@ function AdaptiveResultTrajectoryChart({
                             'pwa.practiceQuiz.adaptive.trajectory.confidenceRange'
                           )}
                           {': '}
-                          {description.lowerLevelLabel} -{' '}
-                          {description.upperLevelLabel}
+                          {formatRange(
+                            description.lowerLevelLabel,
+                            description.upperLevelLabel
+                          )}
                         </div>
                       )}
                   </div>
@@ -245,14 +257,15 @@ function AdaptiveResultTrajectoryChart({
       </ul>
 
       <p className="text-sm text-slate-700" data-cy="adaptive-result-summary">
-        {summary.finalLevelLabel
-          ? t('pwa.practiceQuiz.adaptive.trajectory.summary', {
-              count: summary.questionCount,
-              level: summary.finalLevelLabel,
-            })
-          : t('pwa.practiceQuiz.adaptive.trajectory.incompleteSummary', {
-              count: summary.questionCount,
-            })}
+        {summaryText ??
+          (summary.finalLevelLabel
+            ? t('pwa.practiceQuiz.adaptive.trajectory.summary', {
+                count: summary.questionCount,
+                level: formatLevel(summary.finalLevelLabel),
+              })
+            : t('pwa.practiceQuiz.adaptive.trajectory.incompleteSummary', {
+                count: summary.questionCount,
+              }))}
       </p>
 
       <ol className="sr-only">
@@ -266,16 +279,18 @@ function AdaptiveResultTrajectoryChart({
               {': '}
               {t('pwa.practiceQuiz.adaptive.trajectory.estimate')}
               {': '}
-              {description.levelLabel ??
-                t('pwa.practiceQuiz.adaptive.trajectory.notYetDetermined')}
+              {description.levelLabel
+                ? formatLevel(description.levelLabel)
+                : t('pwa.practiceQuiz.adaptive.trajectory.notYetDetermined')}
               {'. '}
               {t('pwa.practiceQuiz.adaptive.trajectory.confidenceRange')}
               {': '}
-              {description.lowerLevelLabel ??
-                t('pwa.practiceQuiz.adaptive.trajectory.notYetDetermined')}{' '}
-              -{' '}
-              {description.upperLevelLabel ??
-                t('pwa.practiceQuiz.adaptive.trajectory.notYetDetermined')}
+              {description.lowerLevelLabel && description.upperLevelLabel
+                ? formatRange(
+                    description.lowerLevelLabel,
+                    description.upperLevelLabel
+                  )
+                : t('pwa.practiceQuiz.adaptive.trajectory.notYetDetermined')}
             </li>
           )
         })}

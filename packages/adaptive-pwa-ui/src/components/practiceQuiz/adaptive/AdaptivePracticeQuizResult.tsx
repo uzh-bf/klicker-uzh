@@ -11,6 +11,11 @@ import AdaptiveCompetenceProfile from './AdaptiveCompetenceProfile'
 import AdaptiveResultTrajectoryChart from './AdaptiveResultTrajectoryChart'
 import AdaptiveTestingHistory from './AdaptiveTestingHistory'
 import { getAdaptiveReportedLevelLabel } from './adaptiveReportedLevel'
+import {
+  getAdaptiveEstimatedLevelText,
+  getAdaptiveRangeText,
+  getAdaptiveResultState,
+} from './adaptiveResultState'
 import { getAdaptiveEstimatedLevelRange } from './adaptiveResultUncertainty'
 
 function AdaptivePracticeQuizResult({
@@ -74,6 +79,75 @@ function AdaptivePracticeQuizResult({
           upperPosition: result.upperPosition,
           levelBands: result.levelBands,
         })
+  // Overall presentation state: determined, finished with an estimate that is
+  // not determined, or no usable estimate. Placement pilots keep their copy.
+  const overallState = placementPilot
+    ? null
+    : getAdaptiveResultState({
+        classification: result.classification,
+        levelLabel: result.levelLabel,
+        responseCount: result.answeredQuestions,
+        position: result.position,
+        lowerPosition: result.lowerPosition,
+        upperPosition: result.upperPosition,
+        levelBands: result.levelBands,
+      })
+  const estimatedState =
+    overallState?.kind === 'ESTIMATED' ? overallState : null
+  const estimatedText = estimatedState
+    ? getAdaptiveEstimatedLevelText({
+        state: estimatedState,
+        levelBands: result.levelBands,
+        rough: false,
+      })
+    : null
+  const estimatedLabel = estimatedText
+    ? t(estimatedText.key, {
+        level: t(estimatedText.level.key, estimatedText.level.values),
+      })
+    : null
+  const formatLevel = (levelLabel: string) => {
+    const label = getAdaptiveReportedLevelLabel({
+      levelLabel,
+      levelBands: result.levelBands,
+      toleranceBands: result.classificationToleranceBands,
+      classified: true,
+    })
+    return t(label.key, label.values)
+  }
+  const formatRange = (lowerLevelLabel: string, upperLevelLabel: string) => {
+    const range = getAdaptiveRangeText({
+      lowerLevelLabel,
+      upperLevelLabel,
+      levelBands: result.levelBands,
+    })
+    switch (range.key) {
+      case 'pwa.practiceQuiz.adaptive.profile.likelyRange':
+        return `${range.values.lower} – ${range.values.upper}`
+      case 'pwa.practiceQuiz.adaptive.profile.likelyLevel':
+        return range.values.level
+      case 'pwa.practiceQuiz.adaptive.profile.likelyOrBelow':
+        return t('pwa.practiceQuiz.adaptive.profile.levelOrBelow', range.values)
+      case 'pwa.practiceQuiz.adaptive.profile.likelyOrAbove':
+        return t('pwa.practiceQuiz.adaptive.profile.levelOrAbove', range.values)
+    }
+  }
+  const copy = estimatedState
+    ? NOT_DETERMINED_COPY
+    : CLASSIFICATION_COPY[result.classification]
+  const summaryText =
+    overallState?.kind === 'DETERMINED' && result.levelLabel
+      ? t('pwa.practiceQuiz.adaptive.trajectory.summary', {
+          count: result.answeredQuestions,
+          level: formatLevel(result.levelLabel),
+        })
+      : estimatedText
+        ? t('pwa.practiceQuiz.adaptive.trajectory.estimatedSummary', {
+            count: result.answeredQuestions,
+            // "B1.2" or "A2.1 or below".
+            level: t(estimatedText.level.key, estimatedText.level.values),
+          })
+        : undefined
   const resultLabel = placementPilot
     ? (() => {
         switch (result.classification) {
@@ -118,7 +192,10 @@ function AdaptivePracticeQuizResult({
           case AdaptivePracticeQuizResultClassification.ResearchOnly:
             return t('pwa.practiceQuiz.adaptive.result.researchHeadline')
           case AdaptivePracticeQuizResultClassification.InsufficientEvidence:
-            return t('pwa.practiceQuiz.adaptive.result.incompleteHeadline')
+            return (
+              estimatedLabel ??
+              t('pwa.practiceQuiz.adaptive.result.incompleteHeadline')
+            )
         }
       })()
 
@@ -173,7 +250,7 @@ function AdaptivePracticeQuizResult({
                 className="mt-2 max-w-2xl text-sm text-slate-700"
                 data-cy="adaptive-result-level-interpretation"
               >
-                {t(CLASSIFICATION_COPY[result.classification].description)}
+                {t(copy.description)}
               </p>
             )}
             {estimatedLevelRange && (
@@ -185,10 +262,10 @@ function AdaptivePracticeQuizResult({
                   {t('pwa.practiceQuiz.adaptive.result.uncertainty.title')}
                 </div>
                 <p className="mt-1 text-slate-900">
-                  {estimatedLevelRange.lowerLevelLabel ===
-                  estimatedLevelRange.upperLevelLabel
-                    ? estimatedLevelRange.lowerLevelLabel
-                    : `${estimatedLevelRange.lowerLevelLabel} – ${estimatedLevelRange.upperLevelLabel}`}
+                  {formatRange(
+                    estimatedLevelRange.lowerLevelLabel,
+                    estimatedLevelRange.upperLevelLabel
+                  )}
                 </p>
                 <p className="mt-2 text-sm text-slate-700">
                   {t(
@@ -206,7 +283,7 @@ function AdaptivePracticeQuizResult({
             </div>
             {!placementPilot ? (
               <div>
-                {t(CLASSIFICATION_COPY[result.classification].label)}
+                {t(copy.label)}
                 {typeof result.classificationProbability === 'number' && (
                   <span>
                     {' '}
@@ -256,6 +333,9 @@ function AdaptivePracticeQuizResult({
               levelLabel:
                 result.levelLabel ?? result.leadingLevelLabels.join(' / '),
             }}
+            formatLevel={formatLevel}
+            formatRange={formatRange}
+            summaryText={summaryText}
           />
         </div>
       )}
@@ -308,9 +388,7 @@ function AdaptivePracticeQuizResult({
       {!researchOnly && !placementPilot && (
         <div className="border-t pt-6" data-cy="adaptive-result-next-step">
           <H3>{t('pwa.practiceQuiz.adaptive.result.nextStep.title')}</H3>
-          <p className="mt-2 text-slate-700">
-            {t(CLASSIFICATION_COPY[result.classification].nextStep)}
-          </p>
+          <p className="mt-2 text-slate-700">{t(copy.nextStep)}</p>
         </div>
       )}
 
@@ -348,6 +426,13 @@ function AdaptivePracticeQuizResult({
     </section>
   )
 }
+
+// Finished attempt whose overall estimate exists but is not determined.
+const NOT_DETERMINED_COPY = {
+  label: 'pwa.practiceQuiz.adaptive.result.notDetermined.label',
+  description: 'pwa.practiceQuiz.adaptive.result.notDetermined.description',
+  nextStep: 'pwa.practiceQuiz.adaptive.result.nextStep.INSUFFICIENT_EVIDENCE',
+} as const
 
 const CLASSIFICATION_COPY = {
   [AdaptivePracticeQuizResultClassification.Classified]: {

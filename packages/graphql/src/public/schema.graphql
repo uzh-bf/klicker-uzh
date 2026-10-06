@@ -452,6 +452,7 @@ type AdaptivePracticeQuizCohortAttemptSummary {
   poolExhausted: Int
   poolLimited: Int
   researchOnly: Int
+  stoppedClassified: Int
   stoppedInsufficientData: Int
   suppressed: Boolean!
   suppressions: [AdaptivePracticeQuizPrivacySuppression!]!
@@ -564,6 +565,7 @@ type AdaptivePracticeQuizLevelBand {
 type AdaptivePracticeQuizLevelBucket {
   count: Int!
   determinedCount: Int!
+  hasElements: Boolean!
   levelLabel: String!
   levelOrder: Int!
 }

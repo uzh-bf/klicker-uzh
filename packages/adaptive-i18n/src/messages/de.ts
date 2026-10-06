@@ -57,8 +57,7 @@ const messages = {
           },
           testingHistoryChart: 'Niveau der Frage vs. Kompetenzschätzung',
           testingHistoryChartNote:
-            'Markierungen: Niveau jeder beantworteten Frage (gefüllt = richtig, halb = teilweise richtig, leer = falsch), eingefärbt nach Kompetenz. Gestrichelte Linien: aktuelle Schätzung pro Kompetenz; Schätzungen pro Kompetenz nach jeder Antwort werden nicht gespeichert. Durchgezogene Linie: Gesamtschätzung nach jeder Antwort, sofern gespeichert.',
-          testingHistoryCurrentEstimate: 'aktuell {level}',
+            'Jede Markierung ist eine beantwortete Frage auf ihrem Niveau, eingefärbt nach Kompetenz. Gestrichelte Linien zeigen die aktuelle Schätzung pro Kompetenz; Schätzungen pro Kompetenz nach jeder Antwort werden nicht gespeichert.',
           remainingTime: 'Verbleibende Zeit: {time}',
           timeLimitReached:
             'Die Zeit ist abgelaufen. Dein Ergebnis wird geprüft…',
@@ -150,6 +149,11 @@ const messages = {
           title: 'Dein Ergebnis',
           headline: 'Dein aktuelles Niveau: {level}',
           incompleteHeadline: 'Noch kein vollständiges Ergebnis',
+          notDetermined: {
+            label: 'Niveau noch nicht bestimmt',
+            description:
+              'Dies ist eine Schätzung, noch kein bestimmtes Niveau. Mit mehr Antworten würde sie sicherer.',
+          },
           betweenHeadline: 'Zwischen {levels}',
           poolLimitedHeadline: 'Weitere passende Fragen werden benötigt',
           researchHeadline: 'Übung abgeschlossen',
@@ -204,7 +208,7 @@ const messages = {
                 'Die Einstufungsregel zeigt die höchste Stufenschwelle, die Ihre Schätzung erreicht. Berücksichtigen Sie bei der Interpretation die Aussagekraft und das Kompetenzprofil.',
             },
             NEAREST: {
-              headline: 'Geschätzte Stufe: {level}',
+              headline: 'Dein Niveau: {level}',
               description:
                 'Die Diagnoseregel zeigt den Stufenanker, der Ihrer aktuellen Schätzung am nächsten liegt. Berücksichtigen Sie bei der Interpretation die Aussagekraft und das Kompetenzprofil.',
             },
@@ -254,14 +258,21 @@ const messages = {
             '{count, plural, one {Nach # beantworteter Frage liegt deine abschliessende Schätzung bei {level}.} other {Nach # beantworteten Fragen liegt deine abschliessende Schätzung bei {level}.}}',
           incompleteSummary:
             '{count, plural, one {Nach # beantworteter Frage liegen noch nicht genügend Daten für ein Gesamtniveau vor.} other {Nach # beantworteten Fragen liegen noch nicht genügend Daten für ein Gesamtniveau vor.}}',
+          estimatedSummary:
+            '{count, plural, one {Nach # beantworteter Frage: {level}. Dieses Niveau ist noch nicht bestimmt.} other {Nach # beantworteten Fragen: {level}. Dieses Niveau ist noch nicht bestimmt.}}',
         },
         profile: {
           estimatedLevel: 'Geschätztes Niveau: {level}',
+          determinedLevel: 'Dein Niveau: {level}',
           roughLevel: 'Grobe Schätzung: {level}',
-          aroundLevel: 'Ungefähr {level}',
           notEnoughAnswers:
-            '{count, plural, one {Noch zu wenige Antworten für eine Schätzung (# Antwort)} other {Noch zu wenige Antworten für eine Schätzung (# Antworten)}}',
+            'Zu wenige Antworten für eine verlässliche Schätzung',
           likelyRange: 'Wahrscheinlich zwischen {lower} und {upper}',
+          likelyLevel: 'Wahrscheinlich {level}',
+          likelyOrBelow: 'Wahrscheinlich {level} oder tiefer',
+          likelyOrAbove: 'Wahrscheinlich {level} oder höher',
+          levelOrBelow: '{level} oder tiefer',
+          levelOrAbove: '{level} oder höher',
           certainty: {
             HIGH: 'Hohe Sicherheit',
             MEDIUM: 'Mittlere Sicherheit',
@@ -752,11 +763,12 @@ const messages = {
           inProgress: 'In Bearbeitung',
           abandoned: 'Abgebrochen',
           classified: 'Stufe bestimmt',
+          stoppedClassified: 'Vorzeitig beendet: Stufe bestimmt',
           betweenLevels: 'Zwischen Stufen',
           insufficientEvidence: 'Unzureichende Evidenz',
           poolLimited: 'Fragenpool begrenzt',
           researchOnly: 'Nur Forschung',
-          capped: 'Fragenlimit erreicht',
+          capped: 'Beim Fragenlimit beendet',
           poolExhausted: 'Fragenpool ausgeschöpft',
           stoppedInsufficientData: 'Mit unzureichenden Daten beendet',
           insufficientData: 'Unzureichende Daten',
@@ -771,6 +783,8 @@ const messages = {
             'Für diesen Bereich sind noch keine Stufenschätzungen verfügbar.',
           barLabel: '{level}: {determined} bestimmt, {provisional} vorläufig',
           counts: '{determined} bestimmt · {provisional} vorläufig',
+          levelOrBelow: '{level} oder tiefer',
+          levelOrAbove: '{level} oder höher',
           included:
             '{count} Ergebnisse mit einer Schätzung für diesen Bereich. Die Balken zeigen den Anteil an diesen Ergebnissen.',
           excluded:

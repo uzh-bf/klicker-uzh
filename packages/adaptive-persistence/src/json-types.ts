@@ -163,6 +163,7 @@ declare global {
               researchOnly: number | null
               capped: number | null
               poolExhausted: number | null
+              stoppedClassified: number | null
               stoppedInsufficientData: number | null
               insufficientData: number | null
               nearBoundary: number | null

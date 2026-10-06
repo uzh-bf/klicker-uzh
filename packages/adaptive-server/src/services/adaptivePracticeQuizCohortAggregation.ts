@@ -29,6 +29,9 @@ export type AdaptiveCohortLevelBucket = {
   levelOrder: number
   count: number
   determinedCount?: number
+  // Whether the published pool has at least one element at this level, so
+  // the evaluation can mark buckets beyond the measurable range.
+  hasElements?: boolean
 }
 
 export type AdaptiveCohortNodeDistribution = {
@@ -65,7 +68,11 @@ export type AdaptiveCohortNodeDistribution = {
 export type AdaptiveCohortAttemptSummary = {
   suppressed: boolean
   suppressions: AdaptivePrivacySuppression[]
+  // Results whose overall level is determined (shared host determination,
+  // including the classification tolerance). Not a stop reason.
   classified: number | null
+  // Attempts the engine stopped early because the level was classified.
+  stoppedClassified: number | null
   betweenLevels: number | null
   insufficientEvidence: number | null
   poolLimited: number | null
@@ -243,10 +250,6 @@ export function accumulateAdaptiveCohortAttempt(
   const overall = estimates.get(
     estimateKey(DB.AdaptiveEstimateNodeKind.OVERALL, null)
   )
-  incrementClassification(
-    accumulator.classifications,
-    resultClassification({ attempt, estimate: overall })
-  )
   const diagnostics = accumulateAdaptivePracticeQuizDiagnostics({
     accumulator: accumulator.diagnostics,
     attempt,
@@ -275,7 +278,8 @@ export function accumulateAdaptiveCohortAttempt(
       estimateKey(definition.nodeKind, definition.nodeId)
     )
     const metric = accumulator.distributions[index]!
-    const classification = resultClassification({ attempt, estimate })
+    const storedClassification = resultClassification({ attempt, estimate })
+    let classification = storedClassification
     if (
       !estimate ||
       estimate.responseCount < MIN_REPORTING_RESPONSES ||
@@ -326,9 +330,29 @@ export function accumulateAdaptiveCohortAttempt(
             levelId,
             (metric.determinedCounts.get(levelId) ?? 0) + 1
           )
+        // IRT_V1: the outcome counts follow the same determination as the
+        // level distributions and the student result.
+        if (
+          attempt.measurementVersion === DB.AdaptiveMeasurementVersion.IRT_V1
+        ) {
+          classification = determinedAdaptiveV1Classification(
+            storedClassification,
+            determined
+          )
+        }
       }
+    } else if (
+      attempt.measurementVersion === DB.AdaptiveMeasurementVersion.IRT_V1
+    ) {
+      classification = determinedAdaptiveV1Classification(
+        storedClassification,
+        false
+      )
     }
     incrementClassification(metric.classifications, classification)
+    if (definition.nodeId === null) {
+      incrementClassification(accumulator.classifications, classification)
+    }
   }
 }
 
@@ -412,9 +436,8 @@ function finalizeAttemptSummary(
   return {
     suppressed: hasAdaptivePrivacyWithholding(suppressions),
     suppressions,
-    classified:
-      classifications?.[DB.AdaptiveResultStatus.CLASSIFIED] ??
-      fields.classified.value,
+    classified: classifications?.[DB.AdaptiveResultStatus.CLASSIFIED] ?? null,
+    stoppedClassified: fields.classified.value,
     betweenLevels:
       classifications?.[DB.AdaptiveResultStatus.BETWEEN_LEVELS] ?? null,
     insufficientEvidence:
@@ -435,6 +458,9 @@ function finalizeDistributions(
   runtime: AdaptiveCohortRuntime,
   accumulator: AdaptiveCohortAccumulator
 ): AdaptiveCohortNodeDistribution[] {
+  const levelIdsWithElements = new Set(
+    runtime.pool.map(({ levelId }) => levelId)
+  )
   return accumulator.definitions.map((definition, index) => {
     const metric = accumulator.distributions[index]!
     const buckets = runtime.algorithm.levels.map((level) => ({
@@ -442,6 +468,7 @@ function finalizeDistributions(
       levelOrder: level.order,
       count: metric.levelCounts.get(level.id) ?? 0,
       determinedCount: metric.determinedCounts.get(level.id) ?? 0,
+      hasElements: levelIdsWithElements.has(level.id),
     }))
     const release = releaseAdaptiveCategoricalMetric({
       field: 'DISTRIBUTION',
@@ -558,6 +585,23 @@ function resultClassification({
   return attempt.stopReason === DB.AdaptivePracticeQuizStopReason.POOL_EXHAUSTED
     ? DB.AdaptiveResultStatus.POOL_LIMITED
     : DB.AdaptiveResultStatus.INSUFFICIENT_EVIDENCE
+}
+
+/**
+ * IRT_V1 outcome for one estimate under the shared host determination: a
+ * determined level is CLASSIFIED; a stored CLASSIFIED that the determination
+ * does not confirm (for example a legacy attempt) is INSUFFICIENT_EVIDENCE.
+ * Other outcomes are kept.
+ */
+export function determinedAdaptiveV1Classification(
+  stored: DB.AdaptiveResultStatus,
+  determined: boolean
+): DB.AdaptiveResultStatus {
+  if (stored === DB.AdaptiveResultStatus.RESEARCH_ONLY) return stored
+  if (determined) return DB.AdaptiveResultStatus.CLASSIFIED
+  return stored === DB.AdaptiveResultStatus.CLASSIFIED
+    ? DB.AdaptiveResultStatus.INSUFFICIENT_EVIDENCE
+    : stored
 }
 
 function runtimeLevelIdForStoredLevel(
