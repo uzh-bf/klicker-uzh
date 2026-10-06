@@ -1,0 +1,41 @@
+import { defineConfig, devices } from '@playwright/test'
+import base from './playwright.config.js'
+
+export default defineConfig({
+  ...base,
+  testMatch: '**/PA-olat-session-recovery.spec.ts',
+  projects: [
+    {
+      name: 'chromium-allowed',
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: { args: ['--disable-features=TrackingProtection3pcd'] },
+      },
+    },
+    {
+      name: 'chromium-blocked',
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: { args: ['--test-third-party-cookie-phaseout'] },
+      },
+    },
+    {
+      name: 'firefox-standard',
+      use: {
+        ...devices['Desktop Firefox'],
+        launchOptions: {
+          firefoxUserPrefs: { 'network.cookie.cookieBehavior': 5 },
+        },
+      },
+    },
+    {
+      name: 'firefox-blocked',
+      use: {
+        ...devices['Desktop Firefox'],
+        launchOptions: {
+          firefoxUserPrefs: { 'network.cookie.cookieBehavior': 1 },
+        },
+      },
+    },
+  ],
+})

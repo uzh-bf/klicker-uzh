@@ -2,7 +2,7 @@
 type: Auth Model
 title: Auth Model
 description: Login flows for lecturers and participants, origin-based cookie selection in the backend, JWT scopes, and LTI launch rules.
-timestamp: '2026-09-19'
+timestamp: '2026-10-06'
 tags:
   - backend
   - auth
@@ -11,15 +11,24 @@ tags:
 
 # Auth Model
 
-**The non-obvious core: the backend chooses which auth cookie to read based on the request's `Origin` header.** `jwtMiddleware` (`apps/backend-docker/src/app.ts`) inspects `req.headers.origin` against the `APP_MANAGE_SUBDOMAIN`/`APP_CONTROL_SUBDOMAIN`/`APP_STUDENT_SUBDOMAIN` env vars (defaults `manage`/`control`/`pwa`):
+**The non-obvious core: request `Origin` selects the credential audience.** `jwtMiddleware` (`apps/backend-docker/src/jwtMiddleware.ts`) inspects `req.headers.origin` against the `APP_MANAGE_SUBDOMAIN`/`APP_CONTROL_SUBDOMAIN`/`APP_STUDENT_SUBDOMAIN` env vars (defaults `manage`/`control`/`pwa`):
 
-| Request origin                      | Cookie(s) tried, in order                                                       |
-| ----------------------------------- | ------------------------------------------------------------------------------- |
-| manage / control                    | `next-auth.session-token`                                                       |
-| pwa                                 | `participant_token` → `temporary_participant_token` → `next-auth.session-token` |
-| assessment (`ASSESSMENT_MODE=true`) | `next-auth.participant-session-token`                                           |
+| Request origin                      | Cookie(s) tried, in order                                                                                              |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| manage / control                    | `next-auth.session-token`                                                                                              |
+| pwa                                 | Explicit participant bearer; otherwise `participant_token` → `temporary_participant_token` → `next-auth.session-token` |
+| assessment (`ASSESSMENT_MODE=true`) | `next-auth.participant-session-token`                                                                                  |
 
-A `Bearer` authorization header is always the final fallback (assessment live-quiz mode depends on it — marked `DO NOT TOUCH` in the source). Whatever token is found is verified with `verifyJWT(token, APP_SECRET)`; failure just yields an unauthenticated context, not an error. Consequence for local setups: apps and backend must share `APP_SECRET`, and cookie domains must match the origin the backend expects — this is why the Traefik `*.klicker.com` path mirrors production more faithfully than raw localhost.
+In the regular PWA branch, a nonempty explicit Authorization header takes
+precedence over ambient cookies. It must be a valid Bearer JWT with a nonempty
+subject, future expiry, role PARTICIPANT or TEMPORARY_PARTICIPANT, and no scoped
+purpose. A malformed or invalid explicit bearer yields an unauthenticated
+context without cookie fallback. This lets a fresh participant login supersede
+an expired or different retained session. Cookie-only requests retain the
+existing selection order. Assessment, manager/controller and missing-Origin
+selection retain the final Bearer fallback (assessment live-quiz mode depends
+on it — marked `DO NOT TOUCH` in the source). Every selected token is verified
+with `verifyJWT(token, APP_SECRET)` before entering the context. Consequence for local setups: apps and backend must share `APP_SECRET`, and cookie domains must match the origin the backend expects — this is why the Traefik `*.klicker.com` path mirrors production more faithfully than raw localhost.
 
 ## Lecturer login (`apps/auth`)
 
@@ -34,7 +43,7 @@ The NextAuth cookie domain is derived by stripping the first subdomain label fro
 
 ## Participant login (`apps/frontend-pwa`)
 
-- **Username/password** — PWA `LoginForm` → login mutation → `participant_token` cookie; the PWA Apollo client additionally sends the token as `Bearer` from sessionStorage.
+- **Username/password** — PWA `LoginForm` → login mutation → `participant_token` cookie; the PWA Apollo client sends an active fallback session as `Bearer`. Successful cookie-based login clears any older fallback before subsequent Self queries.
 - **Magic link** — `services/accounts.ts:sendMagicLink` signs a 15-minute JWT and emails `${APP_ORIGIN_PWA}/magicLogin?token=…`; the `magicLogin` page exchanges it via `LoginParticipantMagicLinkDocument` (`loginParticipantMagicLink`).
 - **Edu-ID for participants** — separate NextAuth config in the same auth app (`EduIDParticipantProvider`), same `EDUID_CLIENT_SECRET` gating.
 - **Temporary (anonymous)** — `temporary_participant_token` cookie, role `TEMPORARY_PARTICIPANT`.
@@ -45,6 +54,48 @@ The NextAuth cookie domain is derived by stripping the first subdomain label fro
 Two related properties of that resolver are worth knowing before changing it: it resolves by `ssoId` and then falls back to matching `Participant.email`, and both happen **before** the `allowCreate` gate — so `allowCreate: false` constrains account creation only, never account resolution. Any new launch path must therefore be verified before it reaches this function, not inside it.
 
 Note the account-duplication trap: participant emails are only unique per auth mode (`@@unique([email, isSSOAccount])` — details in [Data & Migrations](./data-and-migrations.md)).
+
+## Regular participant session recovery
+
+A fresh explicit OLAT handoff is selected before retained LTI/participant
+cookies. Competing, repeated, empty, expired or wrong-purpose credentials fail
+closed. The SSR helper verifies one LTI 1.3 context and returns either an
+established participant, verified registration context, rejected state, exchange
+failure, or no launch. It never retries another account after explicit failure.
+OTP and activation credentials require their own exchange; their participant
+role does not make them session tokens.
+
+The application boundary installs a verified explicit page token before child
+queries. It replaces the old bearer and Apollo cache; late responses stay in
+the discarded client. Ambient SSR credentials seed an empty browser session
+but cannot replace an already active bearer. Conflicting SSR hydration is
+ignored. The shared `participantSession` module retains the current token in
+browser memory and writes sessionStorage when available. Cookie presence alone
+never removes a usable bearer. With both cookies and storage unavailable, the
+active document can continue; a credential-free full reload has no identity
+and requires a fresh launch. The SSR-required chatbot bridge cannot use
+browser-only memory and retains explicit login/relaunch recovery.
+
+Successful logout or account deletion clears memory, storage and the client
+cache. False/error responses retain the session. Account-deletion cookies expire
+only after the database transaction succeeds. Direct password, magic-link and
+activation success clear prior bearer state before cookie-authenticated queries.
+
+Registered-session cookies use thirteen-day retention, within the fourteen-day
+signed session. Express accepts milliseconds; nookies/wire Max-Age uses seconds.
+Direct and SSR issuance use the existing domain and root path, HttpOnly,
+unpartitioned, Secure+SameSite=None for secure deployments and SameSite=Lax
+for local HTTP. Known explicitly partitioned cookies expire before canonical
+issuance, in the current partition only. Preserve other Set-Cookie headers;
+nookies 2.5.2 drops unknown Partitioned attributes when reserializing headers,
+so its legacy expiration must be inserted after its serialization work. Lecturer,
+temporary-participant and assessment issuance retain their established settings.
+Explicit participant logout continues expiring the assessment participant cookie.
+
+[ADR 0044](./adr/0044-regular-participant-session-recovery.md) records why explicit
+participant identity takes precedence and why longer handoff lifetimes are not
+used as recovery. Synthetic verification does not establish Firefox-specific
+causality for a reported OLAT incident.
 
 ## Participant account completion
 

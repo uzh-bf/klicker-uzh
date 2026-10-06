@@ -243,11 +243,15 @@ permits. Add an explicit pending gate if unavailable. Include the frame-aware
 fresh-launch instruction on the named existing recovery surfaces.
 
 **Slice 4 — integrate and prove recovery.** Main session owns
-`playwright/tests/PA-olat-session-recovery.spec.ts` and `playwright/olat-session.config.ts`, extending the existing config with
+`playwright/tests/PA-olat-session-recovery.spec.ts` and `playwright/olat-session.config.ts`, plus the existing `playwright/profiles.json`
+and `playwright/relevance-manifest.json` entries required by the runtime selector. Extend the existing config with
 Chromium and Firefox for this spec. Keep fixture and embedding code in the spec;
 create no helper directory. Use host Playwright and the exact routed worktree
 runtime, profile `pwa`; do not modify application code for fixtures. Update the
-named auth doc and ADR. Run affected package checks, formatter/linter and
+named auth doc and ADR. Refresh the existing overlapping lesson at
+`docs/solutions/integration/stale-lti-cookie-login-loop.md` with the explicit
+handoff precedence and evidence boundary, without creating another lesson.
+Run affected package checks, formatter/linter and
 required repository checks once against the integrated source. Independent
 simplification and authentication reviews use exact committed slices;
 integrated review covers correctness, maintainability, security and
@@ -304,6 +308,11 @@ anonymous and error/retry states in English/German at desktop/mobile sizes.
 Missing checks stay pending. Stop and verify the exact managed runtime after
 its final check; the isolated unit-check container exits and is removed.
 
+The quiz fixture includes one synthetic question. The first journey submits an
+answer and checks that only the freshly launched participant owns the saved
+response. The harness captures authenticated, anonymous, retry and expired-launch
+states; captures remain unproduced until the browser lane executes.
+
 Each substantive committed slice receives the required simplifier and bounded
 authentication risk review, with accepted corrections verified before its
 successor. Final review covers the exact committed integrated range after local
@@ -327,41 +336,60 @@ this new implementation plan. The optional opposing-provider CLI reported missin
 qualified opposing-provider opinion was obtained; unavailable optional consultation does not replace or
 block the required Astra loop.
 
-Status: execution active; delivery pending. The plan is committed as
-`a8a1035`. Slice 1 is committed as `5176746`, with reviewed corrections in
-`edf4eb2`. Seven helper contract tests and all twenty-one PWA unit tests pass.
-The fresh-launch and scoped-token regressions failed before their repairs.
-Scoped lint, formatting, PWA typecheck, secret scan and exact diff checks pass.
+Status: execution active; delivery pending. Plan commit `a8a1035` contains the
+Astra-approved contract. Slice 1 is committed as `5176746` with reviewed scoped
+credential corrections in `edf4eb2`. Slice 2 is committed as `bdd95c0`; Astra's
+behavior-preserving middleware simplification is committed as `7c03f66`.
+Slice 3 is committed as `09db305`; Astra removed a redundant route-derived
+state/effect in `cc04910`, with PWA and harness typechecks passing.
 
-Astra simplified the duplicate cookie success sequence. Authentication review
-identified scoped OTP/activation credentials being accepted as sessions and
-requested expired ambient-cookie coverage. Both findings were accepted and
-corrected; the same reviewer validated the correction with verdict DONE and no
-remaining actionable slice finding. Assessment selection and legacy expiry
-remain outside this repair. The reviewer could not rerun Linux-installed tools
-on the macOS host; parent container verification supplies execution evidence.
-Reports are in gitignored `project/_local/reviews/`.
+Slice 1 authentication review returned DONE after OTP/activation scope rejection
+and expired ambient-cookie coverage were corrected. Slice 2 authentication
+review returned DONE with no findings across all 22 immutable changed paths.
+Astra accepted the cookie success-sequence consolidation in slice 1 and removed
+an unnecessary one-caller tagged parser in slice 2. Scoped reports live in
+ignored `project/_local/reviews/`. Native review results establish source review,
+not browser or incident acceptance.
 
-Current capability gates:
+Verification: 25 PWA tests and 31 backend tests pass; backend includes 20 new
+signed bearer/audience cases. Four browser-session/cache contract tests were
+added. Three pure deletion/logout checks and one cookie retention check pass;
+all three database-backed accounts, account-linking and login suites passed
+(33 tests, zero skipped) in a new guarded disposable database. The restricted
+role and disposable markers were verified; exact harness resources were removed. PWA/backend/GraphQL focused typechecks, PWA lint, touched-file format,
+staged secret scan and diff checks passed. The root production build passed all
+23 tasks on the slice 2 source plus its equivalent parser simplification.
 
-- Git metadata writes now succeed with individual host commands. The primary
-  checkout is separate; `origin/v3` remains at the recorded baseline.
-- Devrouter doctor fails closed because sandbox process-owner inspection is
-  denied (`ps spawn failed (EPERM)`). Installed CLI 0.1.0 is below target pin
-  0.1.2. No task managed runtime has been started; browser acceptance is pending.
-- Root checks need the complete toolchain. The richer isolated image has uv and
-  git, but the host Playwright policy check rejects devrouter 0.1.0. A parallel
-  root check attempt was stopped when source changed, so it proves no acceptance
-  at the corrected head. Its exact disposable test container was stopped;
-  another task's runtime was not touched.
+Current capability and verification gates:
+
+- Host Git fetch and individual metadata writes succeed. Task target remains
+  `v3`; `origin/v3` is `6189a7487b912a1d9e95769b2f3bb6434c34ccea`.
+  The primary checkout's unrelated branch and files are preserved.
+- Canonical host Playwright preparation rejects installed Devrouter 0.1.0,
+  below target pin 0.1.2. Doctor also fails closed on host-lock process inspection
+  (`ps spawn failed (EPERM)`). No task managed runtime has been started; all
+  browser checks and screenshots remain pending. Other tasks' runtimes stay
+  outside this task. Disposable test containers are independently owned.
+- Root `check:all` cannot pass in the isolated container because one policy test
+  requires the host Devrouter executable. A separately executed root typecheck
+  concurrently generated Prisma build/check output and left some ignored model
+  files truncated to their injected JSON-types import. Serial generation and
+  Prisma declaration build repaired that ignored output; integrated build and
+  serial typechecks are running to verify the complete source.
+  No Prisma schema or unrelated source change is included in this repair.
+- The dedicated browser harness now includes runtime-profile and relevance
+  manifest entries required by the existing selector; all 10 selector tests
+  pass. Its TypeScript check passes. The harness is a manual dedicated-config
+  acceptance lane; ordinary CI exclusion or skip is not cross-browser proof.
 - Requested Claude Opus consultation produced no analysis because OAuth refresh
-  failed. No relevant route change is known. Optional consultation remains
-  unavailable; required integrated review must follow routing continuity.
+  failed. No relevant Claude account change is known. AGY's authenticated catalog
+  exposes Gemini 3.8 Flash high for the ordered integrated-review fallback;
+  catalog availability alone is not a completed review.
 
-Slice 2 is next: the configured executor owns only the backend middleware
-extraction and audience contract tests; main owns accounts, browser session,
-Apollo and SSR propagation. The explicit credential, scope, failure and audience
-contracts above are settled. Remaining slices, integrated checks, browser proof,
-final review and draft delivery remain required. No merge or deployment is
-included. The native goal remains active until the agreed terminal condition
-or its supported blocked-state threshold is reached.
+Next source work: slice 3 executor owns the four named profile/error/i18n files.
+Main owns the disjoint harness and docs. Slice 3 checks passed; its source
+review is running. Finish slice 4 reviews and integrated final review, then ordinary task-branch
+push and draft delivery. Browser acceptance, exact-head hosted CI and any
+remaining checks must remain explicit. No merge or deployment is included.
+The native goal remains active until the agreed terminal condition or its
+supported blocked-state threshold is reached.

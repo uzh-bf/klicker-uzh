@@ -178,7 +178,8 @@
       "specs": [
         "A-account-production.spec.ts",
         "A-account-registration.spec.ts",
-        "A-account-lti.spec.ts"
+        "A-account-lti.spec.ts",
+        "PA-olat-session-recovery.spec.ts"
       ]
     }
   ]

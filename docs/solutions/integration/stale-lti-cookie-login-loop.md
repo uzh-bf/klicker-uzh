@@ -1,6 +1,6 @@
 ---
 module: participant-authentication
-date: 2026-09-07
+date: 2026-10-06
 problem_type: integration
 severity: medium
 symptoms:
@@ -33,9 +33,18 @@ five-minute lifetime and an explicit root path. The
 [password form](../../../apps/frontend-pwa/src/pages/login.tsx) awaits navigation
 and settles its submitting state even when navigation fails or is cancelled.
 
-Keep identity selection fail-closed: a valid pending LTI identity takes
-precedence, and invalid LTI state must not silently select another signed-in
-participant. Cookie cleanup belongs after successful authentication.
+Keep identity selection fail-closed: a fresh verified explicit handoff supersedes
+retained LTI state. Without a handoff, pending LTI state still precedes ambient
+participant state. Invalid explicit credentials must not silently select another
+signed-in participant. Cookie cleanup belongs after successful authentication.
+
+The same symptom can arise after a successful launch if an old browser bearer
+or API cookie still selects the previous identity. A cookie probe establishes
+transport availability only; it does not prove API identity. Replace browser
+session state before queries and verify the first and subsequent Self results.
+Known cookie variants can be expired only in the current partition. See
+[regular session recovery](../../auth-model.md#regular-participant-session-recovery)
+for the resulting selection and lifetime contract.
 
 ## Verification lessons
 
@@ -49,3 +58,8 @@ Focused authentication tests cover cookie effects for successful and rejected
 login paths. Local browser checks covered stale-cookie recovery, same-page
 return, and cancelled or rejected navigation. These checks do not establish
 production deployment or verify a chatbot answer.
+
+The October recovery repair has signed-token, browser-state and database-backed
+source verification. Its cross-browser embedded journeys and recovery screenshots
+remain pending. Installation-wide expiry counts and anonymous-profile screenshots
+do not identify a browser policy, course-specific failure or broken account link.
