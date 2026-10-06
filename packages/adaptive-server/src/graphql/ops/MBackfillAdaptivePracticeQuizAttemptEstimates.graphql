@@ -1,0 +1,9 @@
+mutation MBackfillAdaptivePracticeQuizAttemptEstimates($practiceQuizId: String!) {
+  backfillAdaptivePracticeQuizAttemptEstimates(practiceQuizId: $practiceQuizId) {
+    attemptsMissing
+    attemptsUpdated
+    answersUpdated
+    attemptsReplayDiffering
+    attemptsFailed
+  }
+}

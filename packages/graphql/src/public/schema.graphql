@@ -247,31 +247,22 @@ enum ActivityType {
   PRACTICE_QUIZ
 }
 
-type AdaptiveAttemptAnswerReplay {
-  competenceLevelAfter: String
-  competenceLevelBefore: String
-  competenceLowerLevelAfter: String
-  competenceStandardErrorAfter: Float
-  competenceThetaAfter: Float
-  competenceThetaBefore: Float
-  competenceUpperLevelAfter: String
-  levelDistanceBefore: Int
-  order: Int!
-  phase: String!
-  replayMatches: Boolean!
-}
-
 type AdaptiveAttemptDiagnostic {
-  answers: [AdaptiveAttemptDiagnosticAnswer!]!
   levelLabels: [String!]!
   nodes: [AdaptiveAttemptNodeResult!]!
-  replay: AdaptiveAttemptReplay
-  replayError: String
   summary: AdaptiveAttemptDiagnosticSummary!
 }
 
 type AdaptiveAttemptDiagnosticAnswer {
+  competenceLevelAfter: String
+  competenceLevelBefore: String
+  competenceLowerLevelAfter: String
   competenceName: String
+  competenceStandardErrorAfter: Float
+  competenceStandardErrorBefore: Float
+  competenceThetaAfter: Float
+  competenceThetaBefore: Float
+  competenceUpperLevelAfter: String
   correct: Boolean!
   difficulty: Float
   discrimination: Float
@@ -279,32 +270,57 @@ type AdaptiveAttemptDiagnosticAnswer {
   guessing: Float
   itemLevelLabel: String
   levelDistance: Int
+  levelDistanceBefore: Int
   nodeNamePath: [String!]!
   order: Int!
   overallThetaAfter: Float
+  phase: String!
   score: Float!
   subcompetenceName: String
 }
 
 type AdaptiveAttemptDiagnosticSummary {
   answerCount: Int!
+  answers: [AdaptiveAttemptDiagnosticAnswer!]!
   attemptCode: String!
   attemptNumber: Int!
   competences: [AdaptiveAttemptNodeResult!]!
   completedAt: Date
   elapsedSeconds: Int
+  estimatesComplete: Boolean!
   overall: AdaptiveAttemptNodeResult!
   participantCode: String!
   rating: String!
   ratingReasons: [AdaptiveAttemptRatingReason!]!
+  review: AdaptiveAttemptReview
   startedAt: Date!
   stopReason: String
 }
 
 type AdaptiveAttemptDiagnostics {
+  accuracy: AdaptiveAttemptReviewAccuracy!
   attempts: [AdaptiveAttemptDiagnosticSummary!]!
   earlierPublicationAttemptCount: Int!
+  incompleteEstimateAttemptCount: Int!
   levelLabels: [String!]!
+}
+
+type AdaptiveAttemptEstimateBackfill {
+  answersUpdated: Int!
+  attemptsFailed: Int!
+  attemptsMissing: Int!
+  attemptsReplayDiffering: Int!
+  attemptsUpdated: Int!
+}
+
+type AdaptiveAttemptExpectedLevel {
+  levelLabel: String!
+  nodeId: Int!
+}
+
+input AdaptiveAttemptExpectedLevelInput {
+  levelLabel: String!
+  nodeId: Int!
 }
 
 type AdaptiveAttemptNodeResult {
@@ -331,9 +347,25 @@ type AdaptiveAttemptRatingReason {
   value: Float
 }
 
-type AdaptiveAttemptReplay {
-  answers: [AdaptiveAttemptAnswerReplay!]!
-  exact: Boolean!
+type AdaptiveAttemptReview {
+  comment: String
+  expectedCompetenceLevels: [AdaptiveAttemptExpectedLevel!]!
+  expectedOverallLevelLabel: String
+  updatedAt: Date!
+  verdict: String!
+}
+
+type AdaptiveAttemptReviewAccuracy {
+  asExpected: Int!
+  exactShare: Float
+  levelComparisons: Int!
+  meanAbsoluteLevelDifference: Float
+  meanLevelDifference: Float
+  reviewedAttempts: Int!
+  tooHigh: Int!
+  tooLow: Int!
+  unsure: Int!
+  withinOneLevelShare: Float
 }
 
 enum AdaptiveAttemptSelectionPolicy {
@@ -3934,6 +3966,7 @@ type Mutation {
   approveResponseExample(id: String!): ResponseExampleSet
   archiveCompetenceTree(id: String!): Boolean!
   attachKbToChatbot(chatbotId: ID!, kbId: ID!): KBChatbotBinding!
+  backfillAdaptivePracticeQuizAttemptEstimates(practiceQuizId: String!): AdaptiveAttemptEstimateBackfill
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelLiveQuiz(id: String!): LiveQuiz
   cancelObjectSharingRequest(objectId: String!, objectType: ObjectType!): Boolean!
@@ -4099,6 +4132,7 @@ type Mutation {
   reviewElementGeneration(input: ReviewElementGenerationInput!): ElementGenerationBuild!
   revokeAssessmentReport(id: String!): CourseAssessmentReportRecord!
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
+  saveAdaptivePracticeQuizAttemptReview(attemptCode: String!, comment: String, expectedCompetenceLevels: [AdaptiveAttemptExpectedLevelInput!], expectedOverallLevelLabel: String, practiceQuizId: String!, verdict: String!): AdaptiveAttemptReview
   saveChatbotRevision(chatbotId: String!, expectedRevisionVersion: Int!, input: ChatbotRevisionSaveInput!): Chatbot
   saveGeneratedElements(input: ElementGenerationBuildInput!): ElementGenerationSaveResult!
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta

@@ -1,21 +1,17 @@
 import type { ContextWithUser } from '@klicker-uzh/graphql/adaptive-context-types'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
-  type AdaptiveDiagnosticAnswer,
-  type AdaptiveDiagnosticAttemptRecord,
+  type AdaptiveAttemptReviewAccuracy,
+  summarizeAdaptiveReviewAccuracy,
+} from './adaptivePracticeQuizAttemptAccuracy.js'
+import {
   type AdaptiveDiagnosticNodeResult,
   type AdaptiveDiagnosticSummary,
   adaptivePseudonymCode,
   buildAdaptiveAttemptDiagnostic,
 } from './adaptivePracticeQuizAttemptDiagnosticsModel.js'
-import {
-  type AdaptiveAttemptReplay,
-  replayAdaptiveAttempt,
-} from './adaptivePracticeQuizAttemptReplay.js'
 import { adaptivePracticeQuizError } from './adaptivePracticeQuizErrors.js'
 import { getEffectivelyEnabledRuntimeNodes } from './adaptivePracticeQuizEstimatePersistence.js'
-import { advanceLoadedAdaptiveRuntime } from './adaptivePracticeQuizEstimatorVersions.js'
-import { mapLevelForTheta } from './adaptivePracticeQuizLegacyLevelScale.js'
 import { createAdaptiveV1LevelDetermination } from './adaptivePracticeQuizLevelDetermination.js'
 import {
   type LoadedAdaptiveRuntime,
@@ -33,52 +29,67 @@ import { getAdaptiveRootWeightShares } from './adaptivePracticeQuizWeightShares.
  * earlier publications are counted.
  */
 
-const attemptSelect = {
-  id: true,
-  participationId: true,
-  measurementVersion: true,
-  stopReason: true,
-  startedAt: true,
-  completedAt: true,
-  elapsedSeconds: true,
-  estimates: {
-    select: {
-      nodeKind: true,
-      nodeId: true,
-      theta: true,
-      standardError: true,
-      responseCount: true,
-      stopReason: true,
-      coverageStatus: true,
+const attemptSelect = (reviewerId: string) =>
+  ({
+    id: true,
+    participationId: true,
+    measurementVersion: true,
+    stopReason: true,
+    startedAt: true,
+    completedAt: true,
+    elapsedSeconds: true,
+    estimates: {
+      select: {
+        nodeKind: true,
+        nodeId: true,
+        theta: true,
+        standardError: true,
+        responseCount: true,
+        stopReason: true,
+        coverageStatus: true,
+      },
     },
-  },
-  responses: {
-    select: {
-      order: true,
-      poolItemId: true,
-      elementId: true,
-      correct: true,
-      score: true,
-      overallThetaAfter: true,
+    responses: {
+      select: {
+        order: true,
+        poolItemId: true,
+        elementId: true,
+        correct: true,
+        score: true,
+        overallThetaAfter: true,
+        competenceThetaBefore: true,
+        competenceStandardErrorBefore: true,
+        competenceThetaAfter: true,
+        competenceStandardErrorAfter: true,
+      },
+      orderBy: { order: 'asc' },
     },
-    orderBy: { order: 'asc' },
-  },
-} satisfies DB.Prisma.AdaptivePracticeQuizAttemptSelect
+    // Only the requesting lecturer's own review.
+    reviews: {
+      where: { reviewerId },
+      select: {
+        verdict: true,
+        expectedOverallLevelLabel: true,
+        expectedCompetenceLevels: true,
+        comment: true,
+        updatedAt: true,
+      },
+    },
+  }) satisfies DB.Prisma.AdaptivePracticeQuizAttemptSelect
 
 export type AdaptiveAttemptDiagnosticsList = {
   levelLabels: string[]
   attempts: AdaptiveDiagnosticSummary[]
   earlierPublicationAttemptCount: number
+  /** Attempts whose answers still lack stored competence estimates. */
+  incompleteEstimateAttemptCount: number
+  accuracy: AdaptiveAttemptReviewAccuracy
 }
 
 export type AdaptiveAttemptDiagnosticDetail = {
   levelLabels: string[]
   summary: AdaptiveDiagnosticSummary
   nodes: AdaptiveDiagnosticNodeResult[]
-  answers: AdaptiveDiagnosticAnswer[]
-  /** IRT_V1 only; null for IRT v2 or when the engine is unavailable. */
-  replay: AdaptiveAttemptReplay | null
-  replayError: string | null
 }
 
 async function loadDiagnosticsInput(
@@ -95,7 +106,7 @@ async function loadDiagnosticsInput(
         publicationId: runtime.publication.id,
         status: DB.AdaptivePracticeQuizAttemptStatus.COMPLETED,
       },
-      select: attemptSelect,
+      select: attemptSelect(ctx.user.sub),
       orderBy: [{ startedAt: 'asc' }, { id: 'asc' }],
     }),
     ctx.prisma.adaptivePracticeQuizAttempt.count({
@@ -109,9 +120,13 @@ async function loadDiagnosticsInput(
   return { runtime, attempts, earlierPublicationAttemptCount }
 }
 
+type LoadedDiagnosticAttempt = Awaited<
+  ReturnType<typeof loadDiagnosticsInput>
+>['attempts'][number]
+
 function buildDiagnostics(
   runtime: LoadedAdaptiveRuntime,
-  attempts: AdaptiveDiagnosticAttemptRecord[]
+  attempts: LoadedDiagnosticAttempt[]
 ) {
   const nodes = getEffectivelyEnabledRuntimeNodes(runtime.algorithm.nodes)
   const nodeNames = new Map(
@@ -158,7 +173,7 @@ function buildDiagnostics(
         isDetermined: (nodeId, estimate) =>
           determination.isDetermined(nodeId, estimate),
       },
-      attempt,
+      { ...attempt, review: attempt.reviews[0] ?? null },
       attemptNumber
     )
   })
@@ -178,13 +193,21 @@ export async function getAdaptivePracticeQuizAttemptDiagnostics(
   if (!isAdaptiveTestingInfoEnabled(showSolutions)) return null
   const { runtime, attempts, earlierPublicationAttemptCount } =
     await loadDiagnosticsInput(practiceQuizId, ctx)
+  // Newest first for the table.
+  const summaries = buildDiagnostics(runtime, attempts)
+    .map(({ summary }) => summary)
+    .reverse()
   return {
     levelLabels: levelLabelsOf(runtime),
-    // Newest first for the table.
-    attempts: buildDiagnostics(runtime, attempts)
-      .map(({ summary }) => summary)
-      .reverse(),
+    attempts: summaries,
     earlierPublicationAttemptCount,
+    incompleteEstimateAttemptCount: summaries.filter(
+      ({ estimatesComplete }) => !estimatesComplete
+    ).length,
+    accuracy: summarizeAdaptiveReviewAccuracy(
+      summaries,
+      levelLabelsOf(runtime)
+    ),
   }
 }
 
@@ -211,87 +234,5 @@ export async function getAdaptivePracticeQuizAttemptDiagnostic(
   const diagnostic = buildDiagnostics(runtime, attempts.slice(0, index + 1)).at(
     -1
   )!
-  const { replay, replayError } = await replayDiagnosticAttempt(
-    runtime,
-    attempts[index]!
-  )
-  return {
-    levelLabels: levelLabelsOf(runtime),
-    ...diagnostic,
-    replay,
-    replayError,
-  }
-}
-
-async function replayDiagnosticAttempt(
-  runtime: LoadedAdaptiveRuntime,
-  attempt: AdaptiveDiagnosticAttemptRecord
-): Promise<{
-  replay: AdaptiveAttemptReplay | null
-  replayError: string | null
-}> {
-  const estimator = runtime.estimator
-  if (
-    attempt.measurementVersion !== DB.AdaptiveMeasurementVersion.IRT_V1 ||
-    estimator.measurementVersion !== 'IRT_V1'
-  ) {
-    return { replay: null, replayError: null }
-  }
-  const settings = runtime.algorithm.settings
-  const levels = runtime.algorithm.levels
-  const levelIndex = new Map(
-    levels
-      .slice()
-      .sort((a, b) => a.order - b.order)
-      .map((level, index) => [level.id, index])
-  )
-  const responses = attempt.responses.flatMap((response) => {
-    const poolItem =
-      response.poolItemId === null
-        ? undefined
-        : runtime.poolById.get(response.poolItemId)
-    return poolItem
-      ? [
-          {
-            order: response.order,
-            poolItemId: poolItem.id,
-            correct: response.correct,
-            poolItem,
-          },
-        ]
-      : []
-  })
-  try {
-    const replay = await replayAdaptiveAttempt({
-      responses,
-      minQuestionsPerLeaf: settings.minQuestionsPerLeaf,
-      classificationZ: settings.classificationZ,
-      levelAt: (theta) => {
-        const clamped = Math.min(
-          settings.thetaRange.max,
-          Math.max(settings.thetaRange.min, theta)
-        )
-        return mapLevelForTheta(clamped, levels, settings)
-      },
-      levelIndexOf: (levelId) => levelIndex.get(levelId),
-      decide: async (prefix) => {
-        const loaded = await advanceLoadedAdaptiveRuntime({
-          attemptId: attempt.id,
-          runtime: estimator,
-          responses: prefix,
-        })
-        if (loaded.measurementVersion !== 'IRT_V1') {
-          throw new Error('Estimator mismatch')
-        }
-        return {
-          nextPoolItemId: loaded.decision.nextPoolItem?.id ?? null,
-          nodes: loaded.decision.estimates.nodes,
-        }
-      },
-    })
-    return { replay, replayError: null }
-  } catch {
-    // The rest of the diagnostics stays useful without the engine.
-    return { replay: null, replayError: 'ENGINE_UNAVAILABLE' }
-  }
+  return { levelLabels: levelLabelsOf(runtime), ...diagnostic }
 }

@@ -1,4 +1,11 @@
-import type { AdaptiveSchemaBuilder } from '@klicker-uzh/graphql/adaptive-schema-host-types'
+import type {
+  AdaptivePermissionWrapper,
+  AdaptiveSchemaBuilder,
+} from '@klicker-uzh/graphql/adaptive-schema-host-types'
+import * as DB from '@klicker-uzh/prisma/client'
+import type { AdaptiveAttemptReviewAccuracy } from '../services/adaptivePracticeQuizAttemptAccuracy.js'
+import type { AdaptiveAttemptEstimateBackfill } from '../services/adaptivePracticeQuizAttemptBackfill.js'
+import * as AdaptiveAttemptBackfillService from '../services/adaptivePracticeQuizAttemptBackfill.js'
 import type {
   AdaptiveAttemptDiagnosticDetail,
   AdaptiveAttemptDiagnosticsList,
@@ -6,13 +13,15 @@ import type {
 import type {
   AdaptiveDiagnosticAnswer,
   AdaptiveDiagnosticNodeResult,
+  AdaptiveDiagnosticReview,
   AdaptiveDiagnosticSummary,
 } from '../services/adaptivePracticeQuizAttemptDiagnosticsModel.js'
 import type { AdaptiveAttemptRatingReason } from '../services/adaptivePracticeQuizAttemptDiagnosticsRating.js'
-import type {
-  AdaptiveAnswerReplay,
-  AdaptiveAttemptReplay,
-} from '../services/adaptivePracticeQuizAttemptReplay.js'
+import * as AdaptiveAttemptReviewService from '../services/adaptivePracticeQuizAttemptReview.js'
+
+type FieldBuilder = Parameters<
+  Parameters<AdaptiveSchemaBuilder['mutationFields']>[0]
+>[0]
 
 // Lecturer attempt diagnostics (testing environments only). Enumerations are
 // exposed as plain strings: this is a debugging read model, not a contract
@@ -52,25 +61,6 @@ export function createAdaptiveAttemptDiagnosticsSchema(
       }),
     })
 
-  const SummaryType = builder
-    .objectRef<AdaptiveDiagnosticSummary>('AdaptiveAttemptDiagnosticSummary')
-    .implement({
-      fields: (t) => ({
-        attemptCode: t.exposeString('attemptCode'),
-        participantCode: t.exposeString('participantCode'),
-        attemptNumber: t.exposeInt('attemptNumber'),
-        startedAt: t.expose('startedAt', { type: 'Date' }),
-        completedAt: t.expose('completedAt', { type: 'Date', nullable: true }),
-        elapsedSeconds: t.exposeInt('elapsedSeconds', { nullable: true }),
-        stopReason: t.exposeString('stopReason', { nullable: true }),
-        answerCount: t.exposeInt('answerCount'),
-        overall: t.expose('overall', { type: NodeResultType }),
-        competences: t.expose('competences', { type: [NodeResultType] }),
-        rating: t.exposeString('rating'),
-        ratingReasons: t.expose('ratingReasons', { type: [RatingReasonType] }),
-      }),
-    })
-
   const AnswerType = builder
     .objectRef<AdaptiveDiagnosticAnswer>('AdaptiveAttemptDiagnosticAnswer')
     .implement({
@@ -92,18 +82,14 @@ export function createAdaptiveAttemptDiagnosticsSchema(
           nullable: true,
         }),
         levelDistance: t.exposeInt('levelDistance', { nullable: true }),
-      }),
-    })
-
-  const AnswerReplayType = builder
-    .objectRef<AdaptiveAnswerReplay>('AdaptiveAttemptAnswerReplay')
-    .implement({
-      fields: (t) => ({
-        order: t.exposeInt('order'),
         phase: t.exposeString('phase'),
         competenceThetaBefore: t.exposeFloat('competenceThetaBefore', {
           nullable: true,
         }),
+        competenceStandardErrorBefore: t.exposeFloat(
+          'competenceStandardErrorBefore',
+          { nullable: true }
+        ),
         competenceLevelBefore: t.exposeString('competenceLevelBefore', {
           nullable: true,
         }),
@@ -126,16 +112,80 @@ export function createAdaptiveAttemptDiagnosticsSchema(
         levelDistanceBefore: t.exposeInt('levelDistanceBefore', {
           nullable: true,
         }),
-        replayMatches: t.exposeBoolean('replayMatches'),
       }),
     })
 
-  const AttemptReplayType = builder
-    .objectRef<AdaptiveAttemptReplay>('AdaptiveAttemptReplay')
+  const ExpectedLevelType = builder
+    .objectRef<{ nodeId: number; levelLabel: string }>(
+      'AdaptiveAttemptExpectedLevel'
+    )
     .implement({
       fields: (t) => ({
-        exact: t.exposeBoolean('exact'),
-        answers: t.expose('answers', { type: [AnswerReplayType] }),
+        nodeId: t.exposeInt('nodeId'),
+        levelLabel: t.exposeString('levelLabel'),
+      }),
+    })
+
+  const ReviewRef = builder.objectRef<AdaptiveDiagnosticReview>(
+    'AdaptiveAttemptReview'
+  )
+  ReviewRef.implement({
+    fields: (t) => ({
+      verdict: t.exposeString('verdict'),
+      expectedOverallLevelLabel: t.exposeString('expectedOverallLevelLabel', {
+        nullable: true,
+      }),
+      expectedCompetenceLevels: t.expose('expectedCompetenceLevels', {
+        type: [ExpectedLevelType],
+      }),
+      comment: t.exposeString('comment', { nullable: true }),
+      updatedAt: t.expose('updatedAt', { type: 'Date' }),
+    }),
+  })
+
+  const SummaryType = builder
+    .objectRef<AdaptiveDiagnosticSummary>('AdaptiveAttemptDiagnosticSummary')
+    .implement({
+      fields: (t) => ({
+        attemptCode: t.exposeString('attemptCode'),
+        participantCode: t.exposeString('participantCode'),
+        attemptNumber: t.exposeInt('attemptNumber'),
+        startedAt: t.expose('startedAt', { type: 'Date' }),
+        completedAt: t.expose('completedAt', { type: 'Date', nullable: true }),
+        elapsedSeconds: t.exposeInt('elapsedSeconds', { nullable: true }),
+        stopReason: t.exposeString('stopReason', { nullable: true }),
+        answerCount: t.exposeInt('answerCount'),
+        overall: t.expose('overall', { type: NodeResultType }),
+        competences: t.expose('competences', { type: [NodeResultType] }),
+        rating: t.exposeString('rating'),
+        ratingReasons: t.expose('ratingReasons', { type: [RatingReasonType] }),
+        answers: t.expose('answers', { type: [AnswerType] }),
+        estimatesComplete: t.exposeBoolean('estimatesComplete'),
+        review: t.expose('review', { type: ReviewRef, nullable: true }),
+      }),
+    })
+
+  const AccuracyType = builder
+    .objectRef<AdaptiveAttemptReviewAccuracy>('AdaptiveAttemptReviewAccuracy')
+    .implement({
+      fields: (t) => ({
+        reviewedAttempts: t.exposeInt('reviewedAttempts'),
+        asExpected: t.exposeInt('asExpected'),
+        tooHigh: t.exposeInt('tooHigh'),
+        tooLow: t.exposeInt('tooLow'),
+        unsure: t.exposeInt('unsure'),
+        levelComparisons: t.exposeInt('levelComparisons'),
+        exactShare: t.exposeFloat('exactShare', { nullable: true }),
+        withinOneLevelShare: t.exposeFloat('withinOneLevelShare', {
+          nullable: true,
+        }),
+        meanLevelDifference: t.exposeFloat('meanLevelDifference', {
+          nullable: true,
+        }),
+        meanAbsoluteLevelDifference: t.exposeFloat(
+          'meanAbsoluteLevelDifference',
+          { nullable: true }
+        ),
       }),
     })
 
@@ -148,6 +198,10 @@ export function createAdaptiveAttemptDiagnosticsSchema(
         earlierPublicationAttemptCount: t.exposeInt(
           'earlierPublicationAttemptCount'
         ),
+        incompleteEstimateAttemptCount: t.exposeInt(
+          'incompleteEstimateAttemptCount'
+        ),
+        accuracy: t.expose('accuracy', { type: AccuracyType }),
       }),
     })
 
@@ -158,14 +212,103 @@ export function createAdaptiveAttemptDiagnosticsSchema(
         levelLabels: t.exposeStringList('levelLabels'),
         summary: t.expose('summary', { type: SummaryType }),
         nodes: t.expose('nodes', { type: [NodeResultType] }),
-        answers: t.expose('answers', { type: [AnswerType] }),
-        replay: t.expose('replay', {
-          type: AttemptReplayType,
-          nullable: true,
-        }),
-        replayError: t.exposeString('replayError', { nullable: true }),
       }),
     })
 
-  return { AdaptiveAttemptDiagnosticsRef, AdaptiveAttemptDiagnosticRef }
+  const AdaptiveAttemptExpectedLevelInput = builder
+    .inputRef<{ nodeId: number; levelLabel: string }>(
+      'AdaptiveAttemptExpectedLevelInput'
+    )
+    .implement({
+      fields: (t) => ({
+        nodeId: t.int({ required: true }),
+        levelLabel: t.string({ required: true }),
+      }),
+    })
+
+  const AdaptiveAttemptEstimateBackfillRef = builder
+    .objectRef<AdaptiveAttemptEstimateBackfill>(
+      'AdaptiveAttemptEstimateBackfill'
+    )
+    .implement({
+      fields: (t) => ({
+        attemptsMissing: t.exposeInt('attemptsMissing'),
+        attemptsUpdated: t.exposeInt('attemptsUpdated'),
+        answersUpdated: t.exposeInt('answersUpdated'),
+        attemptsReplayDiffering: t.exposeInt('attemptsReplayDiffering'),
+        attemptsFailed: t.exposeInt('attemptsFailed'),
+      }),
+    })
+
+  return {
+    AdaptiveAttemptDiagnosticsRef,
+    AdaptiveAttemptDiagnosticRef,
+    AdaptiveAttemptReviewRef: ReviewRef,
+    AdaptiveAttemptExpectedLevelInput,
+    AdaptiveAttemptEstimateBackfillRef,
+  }
+}
+
+// Testing environments only; the service refuses elsewhere. Same lecturer
+// permission as the diagnostics queries.
+export function adaptiveAttemptDiagnosticsMutationFields(
+  t: FieldBuilder,
+  {
+    withPermission,
+    AdaptiveAttemptReviewRef,
+    AdaptiveAttemptExpectedLevelInput,
+    AdaptiveAttemptEstimateBackfillRef,
+  }: {
+    withPermission: AdaptivePermissionWrapper
+  } & Pick<
+    ReturnType<typeof createAdaptiveAttemptDiagnosticsSchema>,
+    | 'AdaptiveAttemptReviewRef'
+    | 'AdaptiveAttemptExpectedLevelInput'
+    | 'AdaptiveAttemptEstimateBackfillRef'
+  >
+) {
+  const asUser = { authenticated: true, role: DB.UserRole.USER }
+  return {
+    backfillAdaptivePracticeQuizAttemptEstimates: t.withAuth(asUser).field({
+      nullable: true,
+      type: AdaptiveAttemptEstimateBackfillRef,
+      args: {
+        practiceQuizId: t.arg.string({ required: true }),
+      },
+      resolve: withPermission(
+        (args) => ({ practiceQuizId: args.practiceQuizId }),
+        DB.PermissionLevel.ADMIN,
+        async (_, args, ctx) =>
+          await AdaptiveAttemptBackfillService.backfillAdaptivePracticeQuizAttemptEstimates(
+            args,
+            ctx
+          )
+      ),
+    }),
+
+    saveAdaptivePracticeQuizAttemptReview: t.withAuth(asUser).field({
+      nullable: true,
+      type: AdaptiveAttemptReviewRef,
+      args: {
+        practiceQuizId: t.arg.string({ required: true }),
+        attemptCode: t.arg.string({ required: true }),
+        verdict: t.arg.string({ required: true }),
+        expectedOverallLevelLabel: t.arg.string({ required: false }),
+        expectedCompetenceLevels: t.arg({
+          type: [AdaptiveAttemptExpectedLevelInput],
+          required: false,
+        }),
+        comment: t.arg.string({ required: false }),
+      },
+      resolve: withPermission(
+        (args) => ({ practiceQuizId: args.practiceQuizId }),
+        DB.PermissionLevel.ADMIN,
+        async (_, args, ctx) =>
+          await AdaptiveAttemptReviewService.saveAdaptivePracticeQuizAttemptReview(
+            args,
+            ctx
+          )
+      ),
+    }),
+  }
 }

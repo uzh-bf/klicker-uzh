@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { summarizeAdaptiveReviewAccuracy } from '../src/services/adaptivePracticeQuizAttemptAccuracy.js'
 import {
   getAdaptivePracticeQuizAttemptDiagnostic,
   getAdaptivePracticeQuizAttemptDiagnostics,
@@ -124,6 +125,12 @@ function attempt(
       correct,
       score: correct ? 1 : 0,
       overallThetaAfter: null,
+      // Stored competence estimate: none before the first answer, then the
+      // final theta (enough for the level columns in these tests).
+      competenceThetaBefore: index === 0 ? null : theta,
+      competenceStandardErrorBefore: index === 0 ? null : 0.4,
+      competenceThetaAfter: theta,
+      competenceStandardErrorAfter: 0.4,
     })),
   }
 }
@@ -138,7 +145,7 @@ describe('adaptive attempt diagnostics', () => {
 
   it('rates a consistent, well-targeted attempt as good', () => {
     // Right below L4, wrong above: consistent with theta in L4.
-    const { summary, answers } = buildAdaptiveAttemptDiagnostic(
+    const { summary } = buildAdaptiveAttemptDiagnostic(
       context,
       attempt(
         [
@@ -154,7 +161,7 @@ describe('adaptive attempt diagnostics', () => {
       1
     )
     expect(summary.overall.levelLabel).toBe('L4')
-    expect(answers.map(({ levelDistance }) => levelDistance)).toEqual([
+    expect(summary.answers.map(({ levelDistance }) => levelDistance)).toEqual([
       -1, 0, 1, -1, 0, 1,
     ])
     expect(summary.ratingReasons.map(({ code }) => code)).not.toContain(
@@ -261,5 +268,77 @@ describe('adaptive attempt diagnostics', () => {
         'false'
       )
     ).resolves.toBeNull()
+  })
+
+  it('reads the stored competence estimates and derives the phase', () => {
+    const { summary } = buildAdaptiveAttemptDiagnostic(
+      context,
+      attempt(
+        [
+          [3, true],
+          [4, true],
+          [5, false],
+        ],
+        0.3
+      ),
+      1
+    )
+    expect(summary.estimatesComplete).toBe(true)
+    expect(summary.answers.map(({ phase }) => phase)).toEqual([
+      'COVERAGE',
+      'COVERAGE',
+      'PRECISION',
+    ])
+    expect(summary.answers[0]).toMatchObject({
+      competenceLevelBefore: null,
+      competenceLevelAfter: 'L4',
+      competenceLowerLevelAfter: 'L3',
+      competenceUpperLevelAfter: 'L4',
+      levelDistanceBefore: null,
+    })
+    // Item L5 against the level before (L4): one level above.
+    expect(summary.answers[2]?.levelDistanceBefore).toBe(1)
+  })
+
+  it('marks attempts without stored estimates as incomplete', () => {
+    const record = attempt([[3, true]], 0.3)
+    record.responses[0]!.competenceThetaAfter = null
+    const { summary } = buildAdaptiveAttemptDiagnostic(context, record, 1)
+    expect(summary.estimatesComplete).toBe(false)
+  })
+
+  it('summarizes the accuracy against lecturer reviews', () => {
+    const base = buildAdaptiveAttemptDiagnostic(
+      context,
+      attempt([[4, true]], 0.3),
+      1
+    ).summary
+    const reviewed = (
+      verdict: 'AS_EXPECTED' | 'TOO_HIGH',
+      expectedOverallLevelLabel: string
+    ) => ({
+      ...base,
+      review: {
+        verdict,
+        expectedOverallLevelLabel,
+        expectedCompetenceLevels: [{ nodeId: 1, levelLabel: 'L4' }],
+        comment: null,
+        updatedAt: new Date(),
+      },
+    })
+    const accuracy = summarizeAdaptiveReviewAccuracy(
+      [reviewed('AS_EXPECTED', 'L4'), reviewed('TOO_HIGH', 'L2'), base],
+      ['L1', 'L2', 'L3', 'L4', 'L5', 'L6']
+    )
+    expect(accuracy).toMatchObject({
+      reviewedAttempts: 2,
+      asExpected: 1,
+      tooHigh: 1,
+      levelComparisons: 4,
+      exactShare: 0.75,
+      withinOneLevelShare: 0.75,
+      meanLevelDifference: 0.5,
+      meanAbsoluteLevelDifference: 0.5,
+    })
   })
 })
