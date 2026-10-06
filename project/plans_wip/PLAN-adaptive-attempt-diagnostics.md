@@ -164,3 +164,10 @@ a short reason, e.g. "Answers in FUNCIONES are inconsistent (lz −2.6)".
 - 2026-10-06: slices 1 and 2 opened as the native stack #6406 → #6408.
   Slice 3 (manage UI + CSV) stacked on top. Browser verification waits for
   the restored local DB.
+- 2026-10-06: redesign after feedback. The export is one row per question
+  (pseudonymous student, item, competence theta before/after ± SE, final
+  results, lecturer review), and the lecturer records expected levels and a
+  verdict per attempt in the app, which feeds an accuracy summary. Stack:
+  #6412 storage (per-answer competence estimates, review table) → #6406
+  read model, review mutation, accuracy → #6408 one-time estimate backfill
+  for older attempts (replaces the per-view replay) → #6410 UI and CSV.

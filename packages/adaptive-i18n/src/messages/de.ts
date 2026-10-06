@@ -882,20 +882,40 @@ const messages = {
         attemptDiagnostics: {
           title: 'Versuche (Testumgebung)',
           description:
-            'Wie jeder Versuch bewertet wurde. Nur in Testumgebungen verfügbar; Studierende erscheinen als pseudonyme Codes. Klicke auf einen Versuch, um jede Antwort und die Nachrechnung der Schätzung zu sehen.',
+            'Wie jeder Versuch bewertet wurde, Frage für Frage. Nur in Testumgebungen verfügbar; Studierende erscheinen als pseudonyme Codes. Öffne einen Versuch, um sein Ergebnis zu prüfen.',
           filter: {
-            ALL: 'Alle Bewertungen',
-            UNRELIABLE: 'Unzuverlässig',
-            CHECK: 'Prüfen',
-            GOOD: 'Gut',
+            ALL: 'Alle Versuche',
+            NOT_REVIEWED: 'Nicht geprüft',
+            REVIEWED: 'Geprüft',
+            UNRELIABLE: 'Qualität: unzuverlässig',
+            CHECK: 'Qualität: prüfen',
+            GOOD: 'Qualität: gut',
           },
-          exportAll: 'Versuche exportieren (CSV)',
+          exportAll: 'Antworten exportieren (CSV)',
           exportAttempt: 'Diesen Versuch exportieren (CSV)',
+          accuracy: {
+            none: 'Noch kein Versuch geprüft. Öffne einen Versuch und erfasse das erwartete Niveau, um die Genauigkeit der Ergebnisse zu messen.',
+            reviewed: 'Geprüfte Versuche',
+            asExpected: 'Wie erwartet',
+            exact: 'Genaues Niveau',
+            withinOne: 'Innerhalb ±1 Niveau',
+            meanDifference: 'Mittlere Abweichung (Niveaus)',
+            help: 'Vergleicht {comparisons, plural, one {# geschätztes Niveau} other {# geschätzte Niveaus}} (gesamt und pro Kompetenz) mit den erwarteten Niveaus. Positive mittlere Abweichung: Ergebnisse zu hoch. Urteile: {tooHigh} zu hoch, {tooLow} zu tief, {unsure} unsicher.',
+          },
+          backfill: {
+            notice:
+              '{count, plural, one {# Versuch stammt} other {# Versuche stammen}} aus der Zeit vor den gespeicherten Schätzungen pro Antwort.',
+            run: 'Fehlende Schätzungen berechnen',
+            result:
+              '{updated, plural, one {# Versuch} other {# Versuche}} aktualisiert; {failed} fehlgeschlagen; {differing} würde der aktuelle Berechnungsdienst anders steuern.',
+            attempt:
+              'Für einige Antworten dieses Versuchs fehlt die gespeicherte Schätzung. Berechne oben die fehlenden Schätzungen.',
+          },
           earlierPublications:
             '{count, plural, one {# Versuch einer früheren Veröffentlichung wird nicht aufgeführt.} other {# Versuche früherer Veröffentlichungen werden nicht aufgeführt.}}',
-          empty: 'Noch keine abgeschlossenen Versuche.',
-          attempt: 'Versuch',
-          participant: 'Teilnehmende {code} · Versuch {number}',
+          empty: 'Keine Versuche für diesen Filter.',
+          attempt: 'Studierende · Versuch',
+          attemptOf: 'Versuch {number} · {code}',
           completedAt: 'Abgeschlossen',
           answers: 'Antworten',
           overall: 'Gesamt',
@@ -922,15 +942,29 @@ const messages = {
             EDGE_UNMEASURED: '{node}: Schätzung in Niveaus ohne Elemente',
             COVERAGE_LOW: '{node}: nur {value} Antworten',
           },
-          detailTitle: 'Versuch {code}',
-          replayUnavailable:
-            'Die Nachrechnung der Schätzung ist nicht verfügbar (Berechnungsdienst nicht erreichbar). Endergebnisse und Antworten werden angezeigt.',
-          replayDiffers:
-            'Der aktuelle Berechnungsdienst hätte einige Fragen anders gewählt (markiert mit ≠): Er hat sich seit diesem Versuch geändert. Die Schätzungen zeigen seine Sicht auf dieselben Antworten.',
-          replayMismatch:
-            'Der aktuelle Berechnungsdienst hätte hier eine andere Frage gestellt.',
+          review: {
+            column: 'Deine Prüfung',
+            none: 'nicht geprüft',
+            title: 'Deine Prüfung',
+            verdict: 'Entspricht das Ergebnis deiner Erwartung?',
+            chooseVerdict: 'Auswählen…',
+            verdicts: {
+              AS_EXPECTED: 'Wie erwartet',
+              TOO_HIGH: 'Zu hoch',
+              TOO_LOW: 'Zu tief',
+              UNSURE: 'Unsicher',
+            },
+            expectedOverall: 'Erwartetes Gesamtniveau (Ergebnis: {level})',
+            expectedCompetence:
+              'Erwartetes Niveau {competence} (Ergebnis: {level})',
+            noLevel: 'Nicht angegeben',
+            comment: 'Kommentar',
+            save: 'Prüfung speichern',
+            saved: 'Gespeichert',
+          },
+          detailTitle: 'Studierende {code} · Versuch {number}',
           node: 'Kompetenz',
-          estimate: 'Schätzung',
+          finalResult: 'Endergebnis',
           range: 'Wahrscheinlicher Bereich',
           status: 'Status',
           coverage: {
@@ -951,12 +985,11 @@ const messages = {
             COVERAGE: 'Abdeckung',
             PRECISION: 'Präzision',
           },
-          levelBefore: 'Niveau davor',
+          thetaBefore: 'Davor (Niveau, θ ± SE)',
           distanceBefore: 'Frage vs. Niveau',
-          levelAfter: 'Niveau danach',
-          distanceFinal: 'Frage vs. Ende',
+          thetaAfter: 'Danach (Niveau, Bereich, θ ± SE)',
           answersHelp:
-            'Niveau davor/danach: die Kompetenzschätzung vor und nach der Antwort, vom Berechnungsdienst nachgerechnet. Frage vs. Niveau: Niveau der Frage minus Niveau vor der Antwort (hervorgehoben bei mehr als 3 Niveaus Abstand). Die Phase ist abgeleitet: Abdeckung, solange die Teilkompetenz weniger als ihre Mindestanzahl Antworten hatte, sonst Präzision.',
+            'Davor/danach: die Kompetenzschätzung, mit der der Berechnungsdienst die Frage gewählt hat, und die nach der Antwort berechnete. Frage vs. Niveau: Niveau der Frage minus Niveau vor der Antwort (hervorgehoben bei mehr als 3 Niveaus Abstand). Die Phase ist abgeleitet: Abdeckung, solange die Teilkompetenz weniger als ihre Mindestanzahl Antworten hatte, sonst Präzision.',
         },
         distributionBarLabel:
           '{level}: {count} {count, plural, one {Versuch} other {Versuche}}',

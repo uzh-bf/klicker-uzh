@@ -864,20 +864,40 @@ const messages = {
         attemptDiagnostics: {
           title: 'Attempts (testing environment)',
           description:
-            'How each attempt was evaluated. Only available in testing environments; students appear as pseudonymous codes. Click an attempt to see every answer and the estimate replay.',
+            'How each attempt was evaluated, question by question. Only available in testing environments; students appear as pseudonymous codes. Open an attempt to review its result.',
           filter: {
-            ALL: 'All ratings',
-            UNRELIABLE: 'Unreliable',
-            CHECK: 'Check',
-            GOOD: 'Good',
+            ALL: 'All attempts',
+            NOT_REVIEWED: 'Not reviewed',
+            REVIEWED: 'Reviewed',
+            UNRELIABLE: 'Quality: unreliable',
+            CHECK: 'Quality: check',
+            GOOD: 'Quality: good',
           },
-          exportAll: 'Export attempts (CSV)',
+          exportAll: 'Export answers (CSV)',
           exportAttempt: 'Export this attempt (CSV)',
+          accuracy: {
+            none: 'No attempt reviewed yet. Open an attempt and record the level you expected to measure how accurate the results are.',
+            reviewed: 'Reviewed attempts',
+            asExpected: 'As expected',
+            exact: 'Exact level',
+            withinOne: 'Within ±1 level',
+            meanDifference: 'Mean difference (levels)',
+            help: 'Compares {comparisons, plural, one {# estimated level} other {# estimated levels}} (overall and per competence) with the levels you expected. Positive mean difference: results too high. Verdicts: {tooHigh} too high, {tooLow} too low, {unsure} unsure.',
+          },
+          backfill: {
+            notice:
+              '{count, plural, one {# attempt predates} other {# attempts predate}} the stored estimates per answer.',
+            run: 'Compute missing estimates',
+            result:
+              'Updated {updated, plural, one {# attempt} other {# attempts}}; {failed} failed; {differing} would be routed differently by the current calculation service.',
+            attempt:
+              'Some answers of this attempt have no stored estimate yet. Compute the missing estimates above.',
+          },
           earlierPublications:
             '{count, plural, one {# attempt of an earlier publication is not listed.} other {# attempts of earlier publications are not listed.}}',
-          empty: 'No completed attempts yet.',
-          attempt: 'Attempt',
-          participant: 'Participant {code} · attempt {number}',
+          empty: 'No attempts match this filter.',
+          attempt: 'Student · attempt',
+          attemptOf: 'attempt {number} · {code}',
           completedAt: 'Completed',
           answers: 'Answers',
           overall: 'Overall',
@@ -904,15 +924,28 @@ const messages = {
             EDGE_UNMEASURED: '{node}: estimate in levels without items',
             COVERAGE_LOW: '{node}: only {value} answers',
           },
-          detailTitle: 'Attempt {code}',
-          replayUnavailable:
-            'The estimate replay is unavailable (calculation service not reachable). Final results and answers are shown.',
-          replayDiffers:
-            'The current calculation service would have chosen some questions differently (marked ≠): it changed since this attempt. Estimates show its view of the same answers.',
-          replayMismatch:
-            'The current calculation service would have served a different question here.',
+          review: {
+            column: 'Your review',
+            none: 'not reviewed',
+            title: 'Your review',
+            verdict: 'Is the result what you expected?',
+            chooseVerdict: 'Choose…',
+            verdicts: {
+              AS_EXPECTED: 'As expected',
+              TOO_HIGH: 'Too high',
+              TOO_LOW: 'Too low',
+              UNSURE: 'Unsure',
+            },
+            expectedOverall: 'Expected overall level (result: {level})',
+            expectedCompetence: 'Expected level {competence} (result: {level})',
+            noLevel: 'Not specified',
+            comment: 'Comment',
+            save: 'Save review',
+            saved: 'Saved',
+          },
+          detailTitle: 'Student {code} · attempt {number}',
           node: 'Competence',
-          estimate: 'Estimate',
+          finalResult: 'Final result',
           range: 'Likely range',
           status: 'Status',
           coverage: {
@@ -933,12 +966,11 @@ const messages = {
             COVERAGE: 'Coverage',
             PRECISION: 'Precision',
           },
-          levelBefore: 'Level before',
+          thetaBefore: 'Before (level, θ ± SE)',
           distanceBefore: 'Item vs. level',
-          levelAfter: 'Level after',
-          distanceFinal: 'Item vs. final',
+          thetaAfter: 'After (level, range, θ ± SE)',
           answersHelp:
-            'Level before/after: the competence estimate before and after the answer, replayed by the calculation service. Item vs. level: item level minus the level before the answer (highlighted when more than 3 levels apart). Phase is derived: coverage while the subcompetence had fewer than its minimum answers, otherwise precision.',
+            'Before/after: the competence estimate the calculation service used to choose the question and the one it computed after the answer. Item vs. level: item level minus the level before the answer (highlighted when more than 3 levels apart). Phase is derived: coverage while the subcompetence had fewer than its minimum answers, otherwise precision.',
         },
         distributionBarLabel:
           '{level}: {count} {count, plural, one {attempt} other {attempts}}',

@@ -2,9 +2,14 @@ import { useQuery } from '@apollo/client'
 import { faDownload } from '@fortawesome/free-solid-svg-icons'
 import { QAdaptivePracticeQuizAttemptDiagnosticDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, H4, UserNotification } from '@uzh-bf/design-system'
+import { Button, H4 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { buildAttemptAnswersCsv, downloadCsv } from './adaptiveAttemptCsv'
+import AdaptiveAttemptReviewForm from './AdaptiveAttemptReviewForm'
+import {
+  type AdaptiveAttemptSummaryData,
+  buildAttemptAnswersCsv,
+  downloadCsv,
+} from './adaptiveAttemptCsv'
 import { formatAdaptiveLevelRange } from './formatAdaptiveLevelRange'
 
 const COVERAGE_KEYS: Record<
@@ -21,45 +26,50 @@ const signed = (value: number | null | undefined) =>
   typeof value === 'number' ? (value > 0 ? `+${value}` : String(value)) : '–'
 const fixed = (value: number | null | undefined, digits = 2) =>
   typeof value === 'number' ? value.toFixed(digits) : '–'
+const estimate = (
+  theta: number | null | undefined,
+  standardError: number | null | undefined
+) =>
+  typeof theta === 'number' ? `${fixed(theta)} ± ${fixed(standardError)}` : '–'
 
 function AdaptiveAttemptDiagnosticDetail({
   practiceQuizId,
-  attemptCode,
+  attempt,
+  levelLabels,
+  onReviewSaved,
 }: {
   practiceQuizId: string
-  attemptCode: string
+  attempt: AdaptiveAttemptSummaryData
+  levelLabels: string[]
+  onReviewSaved: () => void
 }) {
   const t = useTranslations()
-  const { data, loading, error } = useQuery(
+  const { data, loading } = useQuery(
     QAdaptivePracticeQuizAttemptDiagnosticDocument,
-    { variables: { practiceQuizId, attemptCode }, fetchPolicy: 'network-only' }
+    {
+      variables: { practiceQuizId, attemptCode: attempt.attemptCode },
+      fetchPolicy: 'network-only',
+    }
   )
-
-  if (loading) return <Loader />
-  if (error) return <UserNotification type="error" message={error.message} />
-  const detail = data?.adaptivePracticeQuizAttemptDiagnostic
-  if (!detail) return null
-
-  const replayByOrder = new Map(
-    (detail.replay?.answers ?? []).map((answer) => [answer.order, answer])
-  )
+  const nodes = data?.adaptivePracticeQuizAttemptDiagnostic?.nodes ?? []
 
   return (
     <div
       className="space-y-4"
-      data-cy={`adaptive-attempt-detail-${attemptCode}`}
+      data-cy={`adaptive-attempt-detail-${attempt.attemptCode}`}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <H4 className={{ root: 'mb-0' }}>
           {t('manage.evaluation.adaptive.attemptDiagnostics.detailTitle', {
-            code: attemptCode,
+            code: attempt.participantCode,
+            number: attempt.attemptNumber,
           })}
         </H4>
         <Button
           onClick={() =>
             downloadCsv(
-              `adaptive-attempt-${attemptCode}.csv`,
-              buildAttemptAnswersCsv(detail)
+              `adaptive-answers-${attempt.participantCode}-${attempt.attemptNumber}.csv`,
+              buildAttemptAnswersCsv([attempt])
             )
           }
           data={{ cy: 'adaptive-attempt-export' }}
@@ -71,95 +81,101 @@ function AdaptiveAttemptDiagnosticDetail({
         </Button>
       </div>
 
-      {detail.replayError ? (
-        <UserNotification
-          type="warning"
-          message={t(
-            'manage.evaluation.adaptive.attemptDiagnostics.replayUnavailable'
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <div className="overflow-x-auto rounded border border-gray-200 bg-white">
+          {loading && !data ? (
+            <Loader />
+          ) : (
+            <table className="w-full text-left text-xs">
+              <thead className="bg-gray-50 text-gray-700">
+                <tr>
+                  <th className="px-2 py-1">
+                    {t('manage.evaluation.adaptive.attemptDiagnostics.node')}
+                  </th>
+                  <th className="px-2 py-1">
+                    {t(
+                      'manage.evaluation.adaptive.attemptDiagnostics.finalResult'
+                    )}
+                  </th>
+                  <th className="px-2 py-1">
+                    {t('manage.evaluation.adaptive.attemptDiagnostics.range')}
+                  </th>
+                  <th className="px-2 py-1 text-right">
+                    {t('manage.evaluation.adaptive.attemptDiagnostics.answers')}
+                  </th>
+                  <th className="px-2 py-1">
+                    {t('manage.evaluation.adaptive.attemptDiagnostics.status')}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {[attempt.overall, ...nodes].map((node) => (
+                  <tr
+                    key={node.nodeId ?? 'overall'}
+                    className="border-t border-gray-100"
+                  >
+                    <td
+                      className="px-2 py-1"
+                      style={{ paddingLeft: `${0.5 + node.depth * 1}rem` }}
+                    >
+                      <span className={node.depth <= 1 ? 'font-semibold' : ''}>
+                        {node.kind === 'OVERALL'
+                          ? t(
+                              'manage.evaluation.adaptive.attemptDiagnostics.overall'
+                            )
+                          : node.name}
+                      </span>
+                      {typeof node.weightShare === 'number' &&
+                      node.weightShare < 1 ? (
+                        <span className="ml-1 text-gray-500">
+                          {`(${Math.round(node.weightShare * 100)}%)`}
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="px-2 py-1">
+                      {node.levelLabel ?? '–'}
+                      <span className="ml-1 text-gray-500">
+                        {`θ ${estimate(node.theta, node.standardError)}`}
+                      </span>
+                    </td>
+                    <td className="px-2 py-1">
+                      {formatAdaptiveLevelRange(node)}
+                    </td>
+                    <td className="px-2 py-1 text-right tabular-nums">
+                      {node.responseCount}
+                    </td>
+                    <td className="px-2 py-1">
+                      {node.determined
+                        ? t(
+                            'manage.evaluation.adaptive.attemptDiagnostics.determined'
+                          )
+                        : node.responseCount === 0
+                          ? t(
+                              `manage.evaluation.adaptive.attemptDiagnostics.coverage.${COVERAGE_KEYS[node.coverageStatus ?? ''] ?? 'NOT_TESTED'}`
+                            )
+                          : t(
+                              'manage.evaluation.adaptive.attemptDiagnostics.notDetermined'
+                            )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
+        </div>
+        <AdaptiveAttemptReviewForm
+          practiceQuizId={practiceQuizId}
+          attempt={attempt}
+          levelLabels={levelLabels}
+          onSaved={onReviewSaved}
         />
-      ) : detail.replay && !detail.replay.exact ? (
-        <UserNotification
-          type="info"
-          message={t(
-            'manage.evaluation.adaptive.attemptDiagnostics.replayDiffers'
-          )}
-        />
-      ) : null}
-
-      <div className="overflow-x-auto rounded border border-gray-200 bg-white">
-        <table className="w-full min-w-[44rem] text-left text-xs">
-          <thead className="bg-gray-50 text-gray-700">
-            <tr>
-              <th className="px-2 py-1">
-                {t('manage.evaluation.adaptive.attemptDiagnostics.node')}
-              </th>
-              <th className="px-2 py-1">
-                {t('manage.evaluation.adaptive.attemptDiagnostics.estimate')}
-              </th>
-              <th className="px-2 py-1">
-                {t('manage.evaluation.adaptive.attemptDiagnostics.range')}
-              </th>
-              <th className="px-2 py-1 text-right">
-                {t('manage.evaluation.adaptive.attemptDiagnostics.answers')}
-              </th>
-              <th className="px-2 py-1">
-                {t('manage.evaluation.adaptive.attemptDiagnostics.status')}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {[detail.summary.overall, ...detail.nodes].map((node) => (
-              <tr
-                key={node.nodeId ?? 'overall'}
-                className="border-t border-gray-100"
-              >
-                <td
-                  className="px-2 py-1"
-                  style={{ paddingLeft: `${0.5 + node.depth * 1}rem` }}
-                >
-                  <span className={node.depth <= 1 ? 'font-semibold' : ''}>
-                    {node.kind === 'OVERALL'
-                      ? t(
-                          'manage.evaluation.adaptive.attemptDiagnostics.overall'
-                        )
-                      : node.name}
-                  </span>
-                  {typeof node.weightShare === 'number' &&
-                  node.weightShare < 1 ? (
-                    <span className="ml-1 text-gray-500">
-                      {`(${Math.round(node.weightShare * 100)}%)`}
-                    </span>
-                  ) : null}
-                </td>
-                <td className="px-2 py-1">
-                  {node.levelLabel ?? '–'}
-                  <span className="ml-1 text-gray-500">
-                    {`θ ${fixed(node.theta)} ± ${fixed(node.standardError)}`}
-                  </span>
-                </td>
-                <td className="px-2 py-1">{formatAdaptiveLevelRange(node)}</td>
-                <td className="px-2 py-1 text-right tabular-nums">
-                  {node.responseCount}
-                </td>
-                <td className="px-2 py-1">
-                  {node.determined
-                    ? t(
-                        'manage.evaluation.adaptive.attemptDiagnostics.determined'
-                      )
-                    : node.responseCount === 0
-                      ? t(
-                          `manage.evaluation.adaptive.attemptDiagnostics.coverage.${COVERAGE_KEYS[node.coverageStatus ?? ''] ?? 'NOT_TESTED'}`
-                        )
-                      : t(
-                          'manage.evaluation.adaptive.attemptDiagnostics.notDetermined'
-                        )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
+
+      {!attempt.estimatesComplete ? (
+        <p className="text-xs text-amber-800">
+          {t('manage.evaluation.adaptive.attemptDiagnostics.backfill.attempt')}
+        </p>
+      ) : null}
 
       <div className="max-h-[32rem] overflow-auto rounded border border-gray-200 bg-white">
         <table className="w-full min-w-[64rem] text-left text-xs tabular-nums">
@@ -182,7 +198,7 @@ function AdaptiveAttemptDiagnosticDetail({
                 {t('manage.evaluation.adaptive.attemptDiagnostics.phase')}
               </th>
               <th className="px-2 py-1">
-                {t('manage.evaluation.adaptive.attemptDiagnostics.levelBefore')}
+                {t('manage.evaluation.adaptive.attemptDiagnostics.thetaBefore')}
               </th>
               <th className="px-2 py-1 text-right">
                 {t(
@@ -190,19 +206,13 @@ function AdaptiveAttemptDiagnosticDetail({
                 )}
               </th>
               <th className="px-2 py-1">
-                {t('manage.evaluation.adaptive.attemptDiagnostics.levelAfter')}
-              </th>
-              <th className="px-2 py-1 text-right">
-                {t(
-                  'manage.evaluation.adaptive.attemptDiagnostics.distanceFinal'
-                )}
+                {t('manage.evaluation.adaptive.attemptDiagnostics.thetaAfter')}
               </th>
             </tr>
           </thead>
           <tbody>
-            {detail.answers.map((answer) => {
-              const replay = replayByOrder.get(answer.order)
-              const offLevel = Math.abs(replay?.levelDistanceBefore ?? 0) > 3
+            {attempt.answers.map((answer) => {
+              const offLevel = Math.abs(answer.levelDistanceBefore ?? 0) > 3
               return (
                 <tr
                   key={answer.order}
@@ -221,9 +231,6 @@ function AdaptiveAttemptDiagnosticDetail({
                   <td className="break-all px-2 py-1">{answer.elementTitle}</td>
                   <td className="px-2 py-1 font-medium">
                     {answer.itemLevelLabel ?? '–'}
-                    <span className="ml-1 font-normal text-gray-500">
-                      {`b ${fixed(answer.difficulty)}`}
-                    </span>
                   </td>
                   <td
                     className={`px-2 py-1 ${answer.correct ? 'text-green-800' : 'text-red-800'}`}
@@ -235,41 +242,36 @@ function AdaptiveAttemptDiagnosticDetail({
                     )}
                   </td>
                   <td className="px-2 py-1">
-                    {replay
-                      ? t(
-                          `manage.evaluation.adaptive.attemptDiagnostics.phases.${replay.phase === 'PRECISION' ? 'PRECISION' : 'COVERAGE'}`
-                        )
-                      : '–'}
-                    {replay && !replay.replayMatches ? (
-                      <span
-                        className="ml-1 text-amber-700"
-                        title={t(
-                          'manage.evaluation.adaptive.attemptDiagnostics.replayMismatch'
-                        )}
-                      >
-                        ≠
-                      </span>
-                    ) : null}
+                    {t(
+                      `manage.evaluation.adaptive.attemptDiagnostics.phases.${answer.phase === 'PRECISION' ? 'PRECISION' : 'COVERAGE'}`
+                    )}
                   </td>
                   <td className="px-2 py-1">
-                    {replay?.competenceLevelBefore ?? '–'}
+                    {answer.competenceLevelBefore ?? '–'}
+                    <div className="text-gray-500">
+                      {estimate(
+                        answer.competenceThetaBefore,
+                        answer.competenceStandardErrorBefore
+                      )}
+                    </div>
                   </td>
                   <td className="px-2 py-1 text-right">
-                    {signed(replay?.levelDistanceBefore)}
+                    {signed(answer.levelDistanceBefore)}
                   </td>
                   <td className="px-2 py-1">
-                    {replay?.competenceLevelAfter ?? '–'}
-                    {replay?.competenceLowerLevelAfter ? (
-                      <div className="text-gray-500">
-                        {formatAdaptiveLevelRange({
-                          lowerLevelLabel: replay.competenceLowerLevelAfter,
-                          upperLevelLabel: replay.competenceUpperLevelAfter,
-                        })}
-                      </div>
-                    ) : null}
-                  </td>
-                  <td className="px-2 py-1 text-right">
-                    {signed(answer.levelDistance)}
+                    {answer.competenceLevelAfter ?? '–'}
+                    <span className="ml-1 text-gray-500">
+                      {formatAdaptiveLevelRange({
+                        lowerLevelLabel: answer.competenceLowerLevelAfter,
+                        upperLevelLabel: answer.competenceUpperLevelAfter,
+                      })}
+                    </span>
+                    <div className="text-gray-500">
+                      {estimate(
+                        answer.competenceThetaAfter,
+                        answer.competenceStandardErrorAfter
+                      )}
+                    </div>
                   </td>
                 </tr>
               )

@@ -1,20 +1,46 @@
-import { useQuery } from '@apollo/client'
-import { faDownload } from '@fortawesome/free-solid-svg-icons'
-import { QAdaptivePracticeQuizAttemptDiagnosticsDocument } from '@klicker-uzh/graphql/dist/ops'
+import { useMutation, useQuery } from '@apollo/client'
+import { faDownload, faRotate } from '@fortawesome/free-solid-svg-icons'
+import {
+  MBackfillAdaptivePracticeQuizAttemptEstimatesDocument,
+  QAdaptivePracticeQuizAttemptDiagnosticsDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3, Select, UserNotification } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useState } from 'react'
+import AdaptiveAttemptAccuracy from './AdaptiveAttemptAccuracy'
 import AdaptiveAttemptDiagnosticDetail from './AdaptiveAttemptDiagnosticDetail'
 import AdaptiveAttemptRating from './AdaptiveAttemptRating'
 import {
   type AdaptiveAttemptSummaryData,
-  buildAttemptSummaryCsv,
+  buildAttemptAnswersCsv,
   downloadCsv,
 } from './adaptiveAttemptCsv'
 import { formatAdaptiveLevelRange } from './formatAdaptiveLevelRange'
+import { verdictKey } from './reviewVerdicts'
 
-const RATING_FILTERS = ['ALL', 'UNRELIABLE', 'CHECK', 'GOOD'] as const
+const FILTERS = [
+  'ALL',
+  'NOT_REVIEWED',
+  'REVIEWED',
+  'UNRELIABLE',
+  'CHECK',
+  'GOOD',
+] as const
+type Filter = (typeof FILTERS)[number]
+
+const matchesFilter = (attempt: AdaptiveAttemptSummaryData, filter: Filter) => {
+  switch (filter) {
+    case 'ALL':
+      return true
+    case 'NOT_REVIEWED':
+      return !attempt.review
+    case 'REVIEWED':
+      return Boolean(attempt.review)
+    default:
+      return attempt.rating === filter
+  }
+}
 
 // Per-attempt debugging for testing environments. The server returns null
 // unless ADAPTIVE_QUIZ_SHOW_SOLUTIONS=true, and then nothing is rendered:
@@ -26,32 +52,35 @@ function AdaptiveAttemptDiagnostics({
 }) {
   const t = useTranslations()
   const formatter = useFormatter()
-  const [ratingFilter, setRatingFilter] =
-    useState<(typeof RATING_FILTERS)[number]>('ALL')
+  const [filter, setFilter] = useState<Filter>('ALL')
   const [openCode, setOpenCode] = useState<string | null>(null)
-  const { data, loading, error } = useQuery(
+  const { data, loading, error, refetch } = useQuery(
     QAdaptivePracticeQuizAttemptDiagnosticsDocument,
     { variables: { practiceQuizId }, fetchPolicy: 'network-only' }
   )
+  const [backfill, backfillState] = useMutation(
+    MBackfillAdaptivePracticeQuizAttemptEstimatesDocument
+  )
 
-  if (loading) return <Loader />
+  if (loading && !data) return <Loader />
   if (error) {
     return <UserNotification type="error" message={error.message} />
   }
   const diagnostics = data?.adaptivePracticeQuizAttemptDiagnostics
   if (!diagnostics) return null
 
-  const attempts = diagnostics.attempts.filter(
-    (attempt: AdaptiveAttemptSummaryData) =>
-      ratingFilter === 'ALL' || attempt.rating === ratingFilter
+  const attempts = diagnostics.attempts.filter((attempt) =>
+    matchesFilter(attempt, filter)
   )
+  const backfillResult =
+    backfillState.data?.backfillAdaptivePracticeQuizAttemptEstimates
 
   return (
     <section
       className="border-t border-gray-200 py-6"
       data-cy="adaptive-attempts"
     >
-      <div className="mb-2 flex flex-wrap items-end justify-between gap-3">
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div>
           <H3 className={{ root: 'mb-1' }}>
             {t('manage.evaluation.adaptive.attemptDiagnostics.title')}
@@ -62,11 +91,9 @@ function AdaptiveAttemptDiagnostics({
         </div>
         <div className="flex items-end gap-2">
           <Select
-            value={ratingFilter}
-            onChange={(value) =>
-              setRatingFilter(value as (typeof RATING_FILTERS)[number])
-            }
-            items={RATING_FILTERS.map((value) => ({
+            value={filter}
+            onChange={(value) => setFilter(value as Filter)}
+            items={FILTERS.map((value) => ({
               value,
               label: t(
                 `manage.evaluation.adaptive.attemptDiagnostics.filter.${value}`
@@ -75,11 +102,11 @@ function AdaptiveAttemptDiagnostics({
             data={{ cy: 'adaptive-attempts-filter' }}
           />
           <Button
-            disabled={diagnostics.attempts.length === 0}
+            disabled={attempts.length === 0}
             onClick={() =>
               downloadCsv(
-                `adaptive-attempts-${practiceQuizId.slice(0, 8)}.csv`,
-                buildAttemptSummaryCsv(diagnostics.attempts)
+                `adaptive-answers-${practiceQuizId.slice(0, 8)}.csv`,
+                buildAttemptAnswersCsv(attempts)
               )
             }
             data={{ cy: 'adaptive-attempts-export' }}
@@ -92,13 +119,50 @@ function AdaptiveAttemptDiagnostics({
         </div>
       </div>
 
+      <AdaptiveAttemptAccuracy accuracy={diagnostics.accuracy} />
+
+      {diagnostics.incompleteEstimateAttemptCount > 0 ? (
+        <div
+          className="my-3 flex flex-wrap items-center justify-between gap-2 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+          data-cy="adaptive-attempts-backfill"
+        >
+          <span>
+            {t(
+              'manage.evaluation.adaptive.attemptDiagnostics.backfill.notice',
+              {
+                count: diagnostics.incompleteEstimateAttemptCount,
+              }
+            )}
+          </span>
+          <Button
+            loading={backfillState.loading}
+            onClick={async () => {
+              await backfill({ variables: { practiceQuizId } })
+              await refetch()
+            }}
+            data={{ cy: 'adaptive-attempts-backfill-run' }}
+          >
+            <Button.Icon icon={faRotate} />
+            <Button.Label>
+              {t('manage.evaluation.adaptive.attemptDiagnostics.backfill.run')}
+            </Button.Label>
+          </Button>
+        </div>
+      ) : null}
+      {backfillResult ? (
+        <p className="mb-3 text-xs text-gray-600">
+          {t('manage.evaluation.adaptive.attemptDiagnostics.backfill.result', {
+            updated: backfillResult.attemptsUpdated,
+            failed: backfillResult.attemptsFailed,
+            differing: backfillResult.attemptsReplayDiffering,
+          })}
+        </p>
+      ) : null}
       {diagnostics.earlierPublicationAttemptCount > 0 ? (
         <p className="mb-2 text-xs text-gray-600">
           {t(
             'manage.evaluation.adaptive.attemptDiagnostics.earlierPublications',
-            {
-              count: diagnostics.earlierPublicationAttemptCount,
-            }
+            { count: diagnostics.earlierPublicationAttemptCount }
           )}
         </p>
       ) : null}
@@ -109,7 +173,7 @@ function AdaptiveAttemptDiagnostics({
         </p>
       ) : (
         <div className="overflow-x-auto rounded border border-gray-200">
-          <table className="w-full min-w-[56rem] text-left text-sm">
+          <table className="w-full min-w-[60rem] text-left text-sm">
             <thead className="bg-gray-50 text-xs text-gray-700">
               <tr>
                 <th className="px-3 py-2">
@@ -134,6 +198,11 @@ function AdaptiveAttemptDiagnostics({
                 <th className="px-3 py-2">
                   {t('manage.evaluation.adaptive.attemptDiagnostics.rating')}
                 </th>
+                <th className="px-3 py-2">
+                  {t(
+                    'manage.evaluation.adaptive.attemptDiagnostics.review.column'
+                  )}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -150,12 +219,12 @@ function AdaptiveAttemptDiagnostics({
                     data-cy={`adaptive-attempt-row-${attempt.attemptCode}`}
                   >
                     <td className="px-3 py-2 font-mono text-xs">
-                      {attempt.attemptCode}
+                      {attempt.participantCode}
                       <div className="text-gray-500">
                         {t(
-                          'manage.evaluation.adaptive.attemptDiagnostics.participant',
+                          'manage.evaluation.adaptive.attemptDiagnostics.attemptOf',
                           {
-                            code: attempt.participantCode,
+                            code: attempt.attemptCode,
                             number: attempt.attemptNumber,
                           }
                         )}
@@ -175,9 +244,6 @@ function AdaptiveAttemptDiagnostics({
                     <td className="px-3 py-2">
                       <div className="font-medium">
                         {attempt.overall.levelLabel ?? '–'}
-                        {attempt.overall.determined
-                          ? ` · ${t('manage.evaluation.adaptive.attemptDiagnostics.determined')}`
-                          : ''}
                       </div>
                       <div className="text-xs text-gray-600">
                         {formatAdaptiveLevelRange(attempt.overall)}
@@ -187,7 +253,7 @@ function AdaptiveAttemptDiagnostics({
                       {attempt.competences.map((competence) => (
                         <div key={competence.nodeId ?? competence.name}>
                           <span className="font-medium">{competence.name}</span>
-                          {`: ${competence.levelLabel ?? '–'} (${formatAdaptiveLevelRange(competence)})`}
+                          {`: ${competence.levelLabel ?? '–'}`}
                         </div>
                       ))}
                     </td>
@@ -197,13 +263,24 @@ function AdaptiveAttemptDiagnostics({
                         reasons={attempt.ratingReasons}
                       />
                     </td>
+                    <td className="px-3 py-2 text-xs">
+                      {attempt.review
+                        ? t(
+                            `manage.evaluation.adaptive.attemptDiagnostics.review.verdicts.${verdictKey(attempt.review.verdict)}`
+                          )
+                        : t(
+                            'manage.evaluation.adaptive.attemptDiagnostics.review.none'
+                          )}
+                    </td>
                   </tr>,
                   open ? (
                     <tr key={`${attempt.attemptCode}-detail`}>
-                      <td colSpan={6} className="bg-gray-50 px-3 py-4">
+                      <td colSpan={7} className="bg-gray-50 px-3 py-4">
                         <AdaptiveAttemptDiagnosticDetail
                           practiceQuizId={practiceQuizId}
-                          attemptCode={attempt.attemptCode}
+                          attempt={attempt}
+                          levelLabels={diagnostics.levelLabels}
+                          onReviewSaved={() => refetch()}
                         />
                       </td>
                     </tr>
