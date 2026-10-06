@@ -34,6 +34,11 @@ declare global {
     }
 
     type PrismaAdaptiveBandProbabilities = Record<string, number>
+    // Lecturer review: expected level per competence (root node).
+    type PrismaAdaptiveAttemptReviewExpectedLevels = Array<{
+      nodeId: number
+      levelLabel: string
+    }>
 
     type PrismaAdaptiveCutRationale = Array<{
       scaleLevelOrder: number
