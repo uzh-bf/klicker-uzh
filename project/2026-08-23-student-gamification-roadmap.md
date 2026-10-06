@@ -175,6 +175,13 @@ commit on the PR branch before the `/final-review`:
 - Watch ArgoCD during the rollout. The only failure signals are the two
   fail-open log strings; there is no Sentry or OpenTelemetry coverage.
 
+**Rulings (2026-10-06)** — The user approved the "do before merge" set, the
+narrowed `QuestionResponse` index, image rollback as the documented off switch
+(ADR-0009), and deferring the no-content-day and broken-versus-never-started
+questions to the term review. One item was not changed: `CourseElement.tsx`
+keeps `de-CH` dates, because `v3` already showed `DD.MM.YYYY` in both locales
+and the `en` locale would switch English students to US month-first dates.
+
 **After merge** — shrink the reconciliation transaction, return streak fields
 from `respondToElementStack`, bound the landing-page fan-out in
 `participants.ts`, and the UX minors (gap marker, snowflake glyph, the
