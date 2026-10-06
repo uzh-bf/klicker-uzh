@@ -151,8 +151,8 @@ spec:
   {{- end }}
   # The tier label keeps baseline pods out of this selector; the baseline
   # selector cannot gain the label because selectors are immutable, so it also
-  # matches burst pods. The shared component label lets the PWA Service and
-  # disruption budget cover both tiers.
+  # matches burst pods. The shared component label lets the PWA Service cover
+  # both tiers; the disruption budgets select each tier separately.
   selector:
     matchLabels:
       {{- include "chart.selectorLabels" . | nindent 6 }}

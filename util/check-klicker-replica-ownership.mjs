@@ -272,6 +272,30 @@ function hasSpotToleration(podSpec, { key, value }) {
   )
 }
 
+function selectorMatches(selector, labels) {
+  const matchLabels = Object.entries(selector?.matchLabels ?? {}).every(
+    ([key, value]) => labels?.[key] === value
+  )
+  const matchExpressions = (selector?.matchExpressions ?? []).every(
+    ({ key, operator, values = [] }) => {
+      const present = Object.hasOwn(labels ?? {}, key)
+      switch (operator) {
+        case 'In':
+          return present && values.includes(labels[key])
+        case 'NotIn':
+          return !present || !values.includes(labels[key])
+        case 'Exists':
+          return present
+        case 'DoesNotExist':
+          return !present
+        default:
+          throw new Error(`unsupported selector operator ${operator}`)
+      }
+    }
+  )
+  return matchLabels && matchExpressions
+}
+
 function assertPwaBurstTier(resources, source) {
   const deployments = resources.filter(({ kind }) => kind === 'Deployment')
   const burst = deployments.find(
@@ -359,6 +383,34 @@ function assertPwaBurstTier(resources, source) {
       false,
       `${source}: baseline PWA pods must not tolerate ${toleration.key}`
     )
+  }
+
+  // The eviction API rejects pods that match more than one budget, so each
+  // tier needs exactly one, and the burst budget must still permit evictions
+  // so a single burst pod cannot pin its spot node during a drain.
+  const disruptionBudgets = resources.filter(
+    ({ kind }) => kind === 'PodDisruptionBudget'
+  )
+  for (const [tier, deployment] of [
+    ['baseline', baseline],
+    ['burst', burst],
+  ]) {
+    const podLabels = deployment.spec?.template?.metadata?.labels
+    const matching = disruptionBudgets.filter((budget) =>
+      selectorMatches(budget.spec?.selector, podLabels)
+    )
+    assert.equal(
+      matching.length,
+      1,
+      `${source}: PWA ${tier} pods must match exactly one PodDisruptionBudget`
+    )
+    if (tier === 'burst') {
+      assert.equal(
+        matching[0].spec?.maxUnavailable,
+        1,
+        `${source}: PWA burst PodDisruptionBudget must set maxUnavailable to 1`
+      )
+    }
   }
 }
 
