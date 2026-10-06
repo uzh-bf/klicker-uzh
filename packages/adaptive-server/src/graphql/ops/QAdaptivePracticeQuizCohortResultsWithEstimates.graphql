@@ -88,6 +88,7 @@ query QAdaptivePracticeQuizCohortResultsWithEstimates(
       insufficientDataCount
       notTestedCount
       outOfRangeCount
+      weightShare
       classifiedCount
       betweenLevelsCount
       insufficientEvidenceCount

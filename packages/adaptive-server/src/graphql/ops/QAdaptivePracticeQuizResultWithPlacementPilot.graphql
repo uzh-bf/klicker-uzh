@@ -26,13 +26,6 @@ query QAdaptivePracticeQuizResultWithPlacementPilot($attemptId: String!) {
       hasElements
     }
     classificationToleranceBands
-    trajectory {
-      order
-      position
-      lowerPosition
-      upperPosition
-      levelLabel
-    }
     competenceProfile {
       ...FAdaptivePracticeQuizResultNodeLevel1
     }

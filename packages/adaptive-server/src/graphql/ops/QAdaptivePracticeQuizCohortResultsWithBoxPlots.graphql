@@ -86,6 +86,7 @@ query QAdaptivePracticeQuizCohortResultsWithBoxPlots($practiceQuizId: String!) {
       insufficientDataCount
       notTestedCount
       outOfRangeCount
+      weightShare
       classifiedCount
       betweenLevelsCount
       insufficientEvidenceCount

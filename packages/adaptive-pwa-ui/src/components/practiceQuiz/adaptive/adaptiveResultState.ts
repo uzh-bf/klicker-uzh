@@ -19,7 +19,7 @@ import { getAdaptiveProfileIndication } from './adaptiveResultUncertainty'
  * - ESTIMATED: not determined, but an estimate with a usable range exists.
  *   Always the estimated level itself; the certainty badge and range
  *   sentence carry the uncertainty.
- * - NOT_ENOUGH_ANSWERS: no estimate, or a range too wide to name a level.
+ * - NOT_ENOUGH_ANSWERS: no estimate at all (no answers or no range).
  * - OTHER: between levels, pool limited, research only (existing copy).
  */
 export type AdaptiveResultState =

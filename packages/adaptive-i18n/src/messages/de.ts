@@ -242,25 +242,6 @@ const messages = {
           INSUFFICIENT_DATA:
             'Es lagen nicht genügend Daten für ein vollständiges Ergebnis vor.',
         },
-        trajectory: {
-          evidenceHelp:
-            'Die Linie zeigt, wie sich Ihre Schätzung mit den Antworten verändert hat. Frühe Schätzungen sind vorläufig: Zu diesem Zeitpunkt kann die Stufe noch offen sein, obwohl inzwischen ein Endergebnis vorliegt. Der schattierte Bereich zeigt die verbleibende Unsicherheit.',
-          notYetDetermined: 'Noch nicht bestimmt',
-          title: 'Verlauf der Schätzung',
-          questionAxis: 'Beantwortete Fragen',
-          levelAxis: 'Geschätztes Niveau',
-          question: 'Frage {number}',
-          estimate: 'Schätzung',
-          confidenceRange: 'Unsicherheitsbereich',
-          finalResult: 'Endergebnis',
-          noData: 'Es sind keine Verlaufsdaten verfügbar.',
-          summary:
-            '{count, plural, one {Nach # beantworteter Frage liegt deine abschliessende Schätzung bei {level}.} other {Nach # beantworteten Fragen liegt deine abschliessende Schätzung bei {level}.}}',
-          incompleteSummary:
-            '{count, plural, one {Nach # beantworteter Frage liegen noch nicht genügend Daten für ein Gesamtniveau vor.} other {Nach # beantworteten Fragen liegen noch nicht genügend Daten für ein Gesamtniveau vor.}}',
-          estimatedSummary:
-            '{count, plural, one {Nach # beantworteter Frage: {level}. Dieses Niveau ist noch nicht bestimmt.} other {Nach # beantworteten Fragen: {level}. Dieses Niveau ist noch nicht bestimmt.}}',
-        },
         profile: {
           estimatedLevel: 'Geschätztes Niveau: {level}',
           determinedLevel: 'Dein Niveau: {level}',
@@ -297,6 +278,7 @@ const messages = {
           title: 'Kompetenzprofil',
           overall: 'Gesamt',
           responses: '{count, plural, one {# Antwort} other {# Antworten}}',
+          weightShare: 'Gewicht: {share}% des Gesamtniveaus',
           insufficientData: 'Unzureichende Daten',
           betweenLevels: 'Zwischen {levels}',
           poolLimited: 'Fragenpool begrenzt',
@@ -896,6 +878,7 @@ const messages = {
         noDistributionData: 'Es sind noch keine Verteilungsdaten verfügbar.',
         expandNode: '{node} aufklappen',
         collapseNode: '{node} zuklappen',
+        weightShare: 'Gewicht: {share}% des Gesamtniveaus',
         distributionBarLabel:
           '{level}: {count} {count, plural, one {Versuch} other {Versuche}}',
       },

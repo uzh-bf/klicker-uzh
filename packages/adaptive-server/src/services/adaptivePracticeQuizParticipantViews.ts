@@ -42,6 +42,7 @@ import {
   serializeV2EstimateView,
   serializeV2LevelBands,
 } from './adaptivePracticeQuizV2ParticipantViews.js'
+import { getAdaptiveRootWeightShares } from './adaptivePracticeQuizWeightShares.js'
 import { competenceTreeLevelColorsById } from './competenceTreeLevelColors.js'
 
 export type AdaptivePracticeQuizAttemptState = {
@@ -120,6 +121,8 @@ export type AdaptiveStudentResultNode = {
   // IRT_V1 engine leaf coverage of the persisted decision (subcompetences
   // only); null for other nodes, IRT v2 and older engines.
   coverageStatus: DB.AdaptiveLeafCoverageStatus | null
+  // Competences only: share of this competence in the overall level.
+  weightShare: number | null
   children: AdaptiveStudentResultNode[]
 }
 
@@ -304,6 +307,7 @@ function serializeAdaptiveStudentResultCore(
   const effectiveNodes = getEffectivelyEnabledRuntimeNodes(
     runtime.algorithm.nodes
   )
+  const weightShares = getAdaptiveRootWeightShares(runtime.algorithm.nodes)
   for (const node of effectiveNodes) {
     const siblings = childrenByParent.get(node.parentId) ?? []
     siblings.push(node)
@@ -341,6 +345,7 @@ function serializeAdaptiveStudentResultCore(
         node.kind === DB.AdaptiveNodeKind.SUBCOMPETENCE
           ? (estimate?.coverageStatus ?? null)
           : null,
+      weightShare: weightShares.get(node.id) ?? null,
       children: (childrenByParent.get(node.id) ?? [])
         .slice()
         .sort((a, b) => a.order - b.order || a.id - b.id)
@@ -464,6 +469,7 @@ function serializeAdaptiveV2StudentResult(
   const effectiveNodes = getEffectivelyEnabledRuntimeNodes(
     runtime.algorithm.nodes
   )
+  const weightShares = getAdaptiveRootWeightShares(runtime.algorithm.nodes)
   for (const node of effectiveNodes) {
     const siblings = childrenByParent.get(node.parentId) ?? []
     siblings.push(node)
@@ -509,6 +515,7 @@ function serializeAdaptiveV2StudentResult(
             })
           : null,
       coverageStatus: null,
+      weightShare: weightShares.get(node.id) ?? null,
       children: (childrenByParent.get(node.id) ?? [])
         .slice()
         .sort((left, right) => left.order - right.order || left.id - right.id)

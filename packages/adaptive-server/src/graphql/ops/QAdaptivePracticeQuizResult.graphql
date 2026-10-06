@@ -25,13 +25,6 @@ query QAdaptivePracticeQuizResult($attemptId: String!) {
       hasElements
     }
     classificationToleranceBands
-    trajectory {
-      order
-      position
-      lowerPosition
-      upperPosition
-      levelLabel
-    }
     competenceProfile {
       ...FAdaptivePracticeQuizResultNodeLevel1
     }
@@ -87,4 +80,5 @@ fragment FAdaptivePracticeQuizResultNodeFields on AdaptivePracticeQuizResultNode
   lowerPosition
   upperPosition
   coverageStatus
+  weightShare
 }

@@ -190,20 +190,17 @@ export function showsAdaptiveLevelTrack(
 }
 
 export type AdaptiveRoughEstimateDisplay =
-  /** Narrow or moderately wide range: the estimated level itself. */
+  /** Any range: the estimated level itself. */
   | { kind: 'level'; levelLabel: string }
-  /** Too wide: no level is shown at all. */
+  /** No estimate (no answers, no range, or an unknown level). */
   | { kind: 'notEnoughAnswers' }
 
 /**
- * What a rough estimate (answers, but below the reporting minimum) may show.
- * Uses the same width thresholds as the certainty indicator:
- * - width HIGH or MEDIUM -> the estimated level itself (e.g. "B2.3"); the
- *   certainty badge and range sentence carry the uncertainty. Levels are
- *   never coarsened, because scale labels need not follow a main.sub pattern
- * - width LOW (more than 1/3 of the scale or 3+ main levels, e.g. "Under A2 -
- *   C2.3" after 2 answers) -> "not enough answers yet"; never an extreme
- *   sublevel from a handful of answers
+ * What an estimate that is not determined shows: always the estimated level
+ * itself (e.g. "B2.3"), whatever the width of its range. The certainty badge
+ * (low for a wide range) and the range sentence carry the uncertainty, so a
+ * wide range never hides an estimate that exists. Levels are never coarsened,
+ * because scale labels need not follow a main.sub pattern.
  */
 export function getAdaptiveRoughEstimateDisplay({
   levelLabel,
@@ -215,8 +212,6 @@ export function getAdaptiveRoughEstimateDisplay({
   levelBands: AdaptiveResultLevelBand[]
 }): AdaptiveRoughEstimateDisplay {
   if (!levelLabel || !width) return { kind: 'notEnoughAnswers' }
-  const widthCertainty = getAdaptiveWidthCertainty(width)
-  if (widthCertainty === 'LOW') return { kind: 'notEnoughAnswers' }
   const known = levelBands.some((band) => band.label === levelLabel)
   return known ? { kind: 'level', levelLabel } : { kind: 'notEnoughAnswers' }
 }

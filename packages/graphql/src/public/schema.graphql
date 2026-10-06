@@ -602,6 +602,7 @@ type AdaptivePracticeQuizNodeDistribution {
   researchOnlyCount: Int
   suppressed: Boolean!
   suppressions: [AdaptivePracticeQuizPrivacySuppression!]!
+  weightShare: Float
 }
 
 input AdaptivePracticeQuizNodeOverrideInput {
@@ -800,6 +801,7 @@ type AdaptivePracticeQuizResultNode {
   responseCount: Int!
   roughLevelLabel: String
   upperPosition: Float
+  weightShare: Float
 }
 
 type AdaptivePracticeQuizRootReachability {

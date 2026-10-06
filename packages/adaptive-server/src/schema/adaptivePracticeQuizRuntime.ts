@@ -475,6 +475,7 @@ export function createAdaptivePracticeQuizRuntimeSchema(
         type: AdaptiveLeafCoverageStatus,
         nullable: true,
       }),
+      weightShare: t.exposeFloat('weightShare', { nullable: true }),
       children: t.expose('children', {
         type: [AdaptiveStudentResultNodeRef],
       }),
@@ -570,6 +571,7 @@ export function createAdaptivePracticeQuizRuntimeSchema(
         }),
         notTestedCount: t.exposeInt('notTestedCount', { nullable: true }),
         outOfRangeCount: t.exposeInt('outOfRangeCount', { nullable: true }),
+        weightShare: t.exposeFloat('weightShare', { nullable: true }),
         classifiedCount: t.exposeInt('classifiedCount', { nullable: true }),
         betweenLevelsCount: t.exposeInt('betweenLevelsCount', {
           nullable: true,

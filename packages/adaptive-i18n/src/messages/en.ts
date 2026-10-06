@@ -234,25 +234,6 @@ const messages = {
           INSUFFICIENT_DATA:
             'There was not enough evidence for a complete result.',
         },
-        trajectory: {
-          evidenceHelp:
-            'The line shows how your estimate changed as you answered. Early estimates are provisional: a level may not yet be determined at that point, even when your final result is available. The shaded range shows the remaining uncertainty.',
-          notYetDetermined: 'Not yet determined',
-          title: 'Estimate over time',
-          questionAxis: 'Answered questions',
-          levelAxis: 'Estimated level',
-          question: 'Question {number}',
-          estimate: 'Estimate',
-          confidenceRange: 'Confidence range',
-          finalResult: 'Final result',
-          noData: 'No trajectory data is available.',
-          summary:
-            '{count, plural, one {After # answered question, your final estimate is {level}.} other {After # answered questions, your final estimate is {level}.}}',
-          incompleteSummary:
-            '{count, plural, one {After # answered question, there is not enough evidence for an overall level.} other {After # answered questions, there is not enough evidence for an overall level.}}',
-          estimatedSummary:
-            '{count, plural, one {After # answered question: {level}. This level is not yet determined.} other {After # answered questions: {level}. This level is not yet determined.}}',
-        },
         profile: {
           estimatedLevel: 'Estimated level: {level}',
           determinedLevel: 'Your level: {level}',
@@ -285,6 +266,7 @@ const messages = {
           title: 'Competence profile',
           overall: 'Overall',
           responses: '{count, plural, one {# response} other {# responses}}',
+          weightShare: 'Weight: {share}% of the overall level',
           insufficientData: 'Insufficient data',
           betweenLevels: 'Between {levels}',
           poolLimited: 'Question pool limited',
@@ -878,6 +860,7 @@ const messages = {
         noDistributionData: 'No distribution data is available yet.',
         expandNode: 'Expand {node}',
         collapseNode: 'Collapse {node}',
+        weightShare: 'Weight: {share}% of the overall level',
         distributionBarLabel:
           '{level}: {count} {count, plural, one {attempt} other {attempts}}',
       },

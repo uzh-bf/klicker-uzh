@@ -264,7 +264,7 @@ export function registerAdaptivePracticeQuizOutcomeTests() {
       ).toEqual([
         {
           releaseSize: 5,
-          policyVersion: 8,
+          policyVersion: 9,
           aggregate: expect.objectContaining({ schemaVersion: 2 }),
           invalidatedAt: null,
         },
@@ -315,7 +315,7 @@ export function registerAdaptivePracticeQuizOutcomeTests() {
       expect(
         snapshots.every(
           ({ policyVersion, aggregate }) =>
-            policyVersion === 8 && aggregate.schemaVersion === 2
+            policyVersion === 9 && aggregate.schemaVersion === 2
         )
       ).toBe(true)
       const serializedSnapshots = JSON.stringify(snapshots)

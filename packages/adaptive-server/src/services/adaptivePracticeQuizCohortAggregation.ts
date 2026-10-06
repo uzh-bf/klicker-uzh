@@ -23,6 +23,7 @@ import {
   type AdaptiveRuntimeSettings,
   MIN_REPORTING_RESPONSES,
 } from './adaptivePracticeQuizRuntime.js'
+import { getAdaptiveRootWeightShares } from './adaptivePracticeQuizWeightShares.js'
 
 export type AdaptiveCohortLevelBucket = {
   levelLabel: string
@@ -62,6 +63,8 @@ export type AdaptiveCohortNodeDistribution = {
    * OUT_OF_RANGE). A subset of notTestedCount; absent in older snapshots.
    */
   outOfRangeCount?: number | null
+  /** Competences only: share in the overall level; absent in older snapshots. */
+  weightShare?: number | null
   buckets: AdaptiveCohortLevelBucket[]
 }
 
@@ -155,6 +158,7 @@ type DistributionDefinition = {
   nodeKind: DB.AdaptiveEstimateNodeKind
   depth: number
   order: number
+  weightShare: number | null
 }
 
 export type AdaptiveCohortAccumulator = {
@@ -187,6 +191,7 @@ export function createAdaptiveCohortAccumulator(
       node,
     ])
   )
+  const weightShares = getAdaptiveRootWeightShares(runtime.algorithm.nodes)
   const definitions: DistributionDefinition[] = [
     {
       nodeId: null,
@@ -195,6 +200,7 @@ export function createAdaptiveCohortAccumulator(
       nodeKind: DB.AdaptiveEstimateNodeKind.OVERALL,
       depth: 0,
       order: 0,
+      weightShare: null,
     },
     ...getEffectivelyEnabledRuntimeNodes(runtime.algorithm.nodes).map(
       (node) => ({
@@ -208,6 +214,7 @@ export function createAdaptiveCohortAccumulator(
             : DB.AdaptiveEstimateNodeKind.SUBCOMPETENCE,
         depth: nodesById.get(node.id)!.depth,
         order: nodesById.get(node.id)!.order,
+        weightShare: weightShares.get(node.id) ?? null,
       })
     ),
   ]
