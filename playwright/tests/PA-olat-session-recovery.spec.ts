@@ -15,6 +15,7 @@ import {
   APP_SECRET,
   COURSE_ID_TEST,
   PARTICIPANT_IDS,
+  STUDENT_PASSWORD,
   USER_ID_TEST,
 } from '../util/constants.js'
 
@@ -498,4 +499,44 @@ test('successful explicit logout cannot restore the former profile on navigation
   await page.goto(`${baseURL}/editProfile`)
   await expect(page.getByTestId('participant-session-recovery')).toBeVisible()
   await expect(page.getByTestId('update-account-email')).toHaveCount(0)
+})
+
+test('password, magic-link and activation transitions navigate with the new identity', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const prisma = await getPrisma()
+  const participants = await prisma.participant.findMany({
+    where: { id: { in: [otherId, studentId] } },
+  })
+  const expectIdentity = async (id: string) => {
+    const participant = participants.find((item) => item.id === id)!
+    await expect(page.getByTestId('update-account-email')).toHaveValue(
+      participant.email!
+    )
+    await expect(page.getByTestId('update-account-username')).toHaveValue(
+      participant.username
+    )
+  }
+  for (const id of [otherId, studentId, otherId]) {
+    await context.clearCookies()
+    await page.goto(`${baseURL}/login?redirect_to=/editProfile`)
+    const participant = participants.find((item) => item.id === id)!
+    await page.getByTestId('username-field').fill(participant.username)
+    await page.getByTestId('password-field').fill(STUDENT_PASSWORD)
+    await page.getByTestId('submit-login').click()
+    await expect(page).toHaveURL(/\/editProfile(?:\?|$)/)
+    await expectIdentity(id)
+  }
+  for (const [path, scope, id] of [
+    ['magicLogin', 'OTP', studentId],
+    ['activation', 'ACTIVATION', otherId],
+  ] as const) {
+    const token = await signed({ sub: id, scope })
+    await page.goto(`${baseURL}/${path}?token=${encodeURIComponent(token)}`)
+    await expect(page.getByTestId('homepage')).toBeVisible()
+    await page.goto(`${baseURL}/editProfile`)
+    await expectIdentity(id)
+  }
 })

@@ -91,7 +91,7 @@ function Login({ redirectPath }: Readonly<LoginProps>) {
         })
         resetForm()
       } else {
-        await fetchSelf()
+        if (process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true') await fetchSelf()
 
         // redirect to the specified redirect path (default: question pool)
         if (redirectPath.startsWith('/')) {

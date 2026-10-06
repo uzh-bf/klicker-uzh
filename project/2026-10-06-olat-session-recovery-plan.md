@@ -561,6 +561,22 @@ predicates and ternary style establish no current defect. Cookie-only registrati
 would break the approved restricted-cookie handoff. Hosted checks must be read
 against the new correction head; the old-head results cannot certify it.
 
+### Ordinary login transition correction
+
+Hosted Playwright shard 7 on the earlier published head failed password login.
+Its retained synthetic trace shows `ApolloError: Participant session changed`:
+after a successful login retires the originating client, the page awaited a
+Self query on that retired client before navigating. Password, magic-link and
+activation success now navigate directly in the regular PWA; assessment retains
+its existing Self-query sequence. The destination loads the replacement session.
+The browser regression checks password A/B/A and both OTP and activation profile
+ownership. All twelve allowed/native-blocked Chromium journeys pass with no
+skips or flakes, all 26 PWA unit tests and the type check pass, and scoped ESLint
+reports zero errors with two inherited dependency warnings. The same final
+reviewer verified the trace and the three page changes within the 40-path package,
+returning pass with zero findings; the report validates against its JSON schema.
+The hosted failure is diagnosed, but new-head hosted acceptance remains required.
+
 Remaining required capability: a host able to execute the Firefox Standard and
 blocked-cookie journeys against this same routed harness. A successful browser
 launch must precede application acceptance; no OS/security configuration bypass
