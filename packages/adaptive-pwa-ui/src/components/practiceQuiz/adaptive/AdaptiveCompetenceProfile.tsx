@@ -43,6 +43,7 @@ export type AdaptiveCompetenceProfileNode = {
   lowerPosition?: number | null
   upperPosition?: number | null
   coverageStatus?: string | null
+  weightShare?: number | null
   children?: AdaptiveCompetenceProfileNode[] | null
 }
 
@@ -62,6 +63,8 @@ type ProfileEstimate = {
   upperPosition?: number | null
   // Engine leaf coverage status (IRT_V1 subcompetences only).
   coverageStatus?: string | null
+  // Competences only: share in the overall level (0-1).
+  weightShare?: number | null
 }
 
 type LevelBands = Array<{
@@ -430,6 +433,15 @@ function ProfileRow({
               count: estimate.responseCount,
             })}
           </span>
+          {/* A sole competence is the whole overall level: no share shown. */}
+          {typeof estimate.weightShare === 'number' &&
+          estimate.weightShare < 1 ? (
+            <span data-cy="adaptive-profile-weight-share">
+              {t('pwa.practiceQuiz.adaptive.profile.weightShare', {
+                share: Math.round(estimate.weightShare * 100),
+              })}
+            </span>
+          ) : null}
           {/* Estimated and too-wide rows explain the level on the right. */}
           {emphasized && rough ? (
             <span>

@@ -25,7 +25,8 @@ export type {
 const COHORT_BATCH_SIZE = 250
 // 8: outcome counts use the shared level determination, stop reasons are
 // counted separately, and level buckets carry hasElements.
-const COHORT_SNAPSHOT_POLICY_VERSION = 8 as const
+// 9: competence distributions carry their weight share in the overall level.
+const COHORT_SNAPSHOT_POLICY_VERSION = 9 as const
 const COHORT_SNAPSHOT_SCHEMA_VERSION = 2 as const
 
 type CanonicalAttemptReference = {

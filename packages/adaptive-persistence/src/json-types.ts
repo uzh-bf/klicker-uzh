@@ -230,6 +230,8 @@ declare global {
               notTestedCount?: number | null
               // Absent in snapshots written before leaf coverage status.
               outOfRangeCount?: number | null
+              // Absent in snapshots written before weight shares.
+              weightShare?: number | null
               buckets: Array<{
                 levelLabel: string
                 levelOrder: number

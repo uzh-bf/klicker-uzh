@@ -720,7 +720,7 @@ test.describe('Adaptive PracticeQuiz production workflow', () => {
         ).toContainText('diagnostic rule')
         await expect(
           page.getByTestId('adaptive-result-trajectory')
-        ).toBeVisible()
+        ).toHaveCount(0)
         await expect(
           page.getByTestId('adaptive-competence-profile')
         ).toBeVisible()

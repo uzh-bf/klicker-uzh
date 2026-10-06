@@ -55,6 +55,18 @@ function NestedDistribution({
           <H4 className={{ root: 'mb-2 mt-1 break-words' }}>
             {distribution.nodeName}
           </H4>
+          {/* Competences only; a sole competence is the whole overall level. */}
+          {typeof distribution.weightShare === 'number' &&
+          distribution.weightShare < 1 ? (
+            <p
+              className="-mt-1 mb-2 text-xs text-slate-600"
+              data-cy={`adaptive-evaluation-weight-share-${nodeId}`}
+            >
+              {t('manage.evaluation.adaptive.weightShare', {
+                share: Math.round(distribution.weightShare * 100),
+              })}
+            </p>
+          ) : null}
           <AdaptiveDistributionBars
             distribution={distribution}
             cohortSize={cohortSize}

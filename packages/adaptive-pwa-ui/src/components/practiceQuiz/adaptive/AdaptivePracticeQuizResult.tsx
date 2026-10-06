@@ -8,7 +8,6 @@ import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useEffect, useRef } from 'react'
 import AdaptiveCompetenceProfile from './AdaptiveCompetenceProfile'
-import AdaptiveResultTrajectoryChart from './AdaptiveResultTrajectoryChart'
 import AdaptiveTestingHistory from './AdaptiveTestingHistory'
 import { getAdaptiveReportedLevelLabel } from './adaptiveReportedLevel'
 import {
@@ -106,15 +105,6 @@ function AdaptivePracticeQuizResult({
         level: t(estimatedText.level.key, estimatedText.level.values),
       })
     : null
-  const formatLevel = (levelLabel: string) => {
-    const label = getAdaptiveReportedLevelLabel({
-      levelLabel,
-      levelBands: result.levelBands,
-      toleranceBands: result.classificationToleranceBands,
-      classified: true,
-    })
-    return t(label.key, label.values)
-  }
   const formatRange = (lowerLevelLabel: string, upperLevelLabel: string) => {
     const range = getAdaptiveRangeText({
       lowerLevelLabel,
@@ -135,19 +125,6 @@ function AdaptivePracticeQuizResult({
   const copy = estimatedState
     ? NOT_DETERMINED_COPY
     : CLASSIFICATION_COPY[result.classification]
-  const summaryText =
-    overallState?.kind === 'DETERMINED' && result.levelLabel
-      ? t('pwa.practiceQuiz.adaptive.trajectory.summary', {
-          count: result.answeredQuestions,
-          level: formatLevel(result.levelLabel),
-        })
-      : estimatedText
-        ? t('pwa.practiceQuiz.adaptive.trajectory.estimatedSummary', {
-            count: result.answeredQuestions,
-            // "B1.2" or "A2.1 or below".
-            level: t(estimatedText.level.key, estimatedText.level.values),
-          })
-        : undefined
   const resultLabel = placementPilot
     ? (() => {
         switch (result.classification) {
@@ -318,27 +295,6 @@ function AdaptivePracticeQuizResult({
             )}
         </div>
       </div>
-
-      {!researchOnly && (
-        <div className="space-y-3">
-          <H3>{t('pwa.practiceQuiz.adaptive.trajectory.title')}</H3>
-          <AdaptiveResultTrajectoryChart
-            levelBands={result.levelBands}
-            trajectory={result.trajectory}
-            overall={{
-              answeredQuestions: result.answeredQuestions,
-              position: result.position,
-              lowerPosition: result.lowerPosition,
-              upperPosition: result.upperPosition,
-              levelLabel:
-                result.levelLabel ?? result.leadingLevelLabels.join(' / '),
-            }}
-            formatLevel={formatLevel}
-            formatRange={formatRange}
-            summaryText={summaryText}
-          />
-        </div>
-      )}
 
       {!researchOnly && (
         <div className="space-y-3 border-t pt-6">

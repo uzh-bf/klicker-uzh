@@ -304,7 +304,9 @@ test.describe('Adaptive PracticeQuiz IRT v2 evidence', () => {
       await expect(
         page.getByTestId('adaptive-result-overall-level')
       ).toHaveText(representative.headline)
-      await expect(page.getByTestId('adaptive-result-trajectory')).toBeVisible()
+      await expect(page.getByTestId('adaptive-result-trajectory')).toHaveCount(
+        0
+      )
       await expect(
         page.getByTestId('adaptive-competence-profile')
       ).toBeVisible()
