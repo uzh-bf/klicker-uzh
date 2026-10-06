@@ -150,12 +150,17 @@ a short reason, e.g. "Answers in FUNCIONES are inconsistent (lz −2.6)".
      (rating, competence).
    - A detail view: final nodes, then the answers table with the replay
      columns.
-   - CSV: "Export all attempts" (summary + answers, two files or one combined
-     file with a `row_type` column) and "Export this attempt".
-     UTF-8 with BOM, `;`-safe quoting.
+   - CSV: "Export attempts" writes the summary (one row per attempt,
+     one column group per competence). "Export this attempt" writes every
+     answer with the replay columns. Per-answer rows for all attempts would
+     need one replay per attempt, so they are left out of the bulk export.
+     UTF-8 with BOM, RFC 4180 quoting.
    - i18n de/en, data-cy hooks, browser evidence.
 
 ## Progress
 
 - 2026-10-06: design agreed with the user. Testing environments only;
   pseudonymous codes; host-side replay; lecturer evaluation.
+- 2026-10-06: slices 1 and 2 opened as the native stack #6406 → #6408.
+  Slice 3 (manage UI + CSV) stacked on top. Browser verification waits for
+  the restored local DB.

@@ -861,6 +861,85 @@ const messages = {
         expandNode: 'Expand {node}',
         collapseNode: 'Collapse {node}',
         weightShare: 'Weight: {share}% of the overall level',
+        attemptDiagnostics: {
+          title: 'Attempts (testing environment)',
+          description:
+            'How each attempt was evaluated. Only available in testing environments; students appear as pseudonymous codes. Click an attempt to see every answer and the estimate replay.',
+          filter: {
+            ALL: 'All ratings',
+            UNRELIABLE: 'Unreliable',
+            CHECK: 'Check',
+            GOOD: 'Good',
+          },
+          exportAll: 'Export attempts (CSV)',
+          exportAttempt: 'Export this attempt (CSV)',
+          earlierPublications:
+            '{count, plural, one {# attempt of an earlier publication is not listed.} other {# attempts of earlier publications are not listed.}}',
+          empty: 'No completed attempts yet.',
+          attempt: 'Attempt',
+          participant: 'Participant {code} · attempt {number}',
+          completedAt: 'Completed',
+          answers: 'Answers',
+          overall: 'Overall',
+          competences: 'Competences',
+          rating: 'Quality',
+          determined: 'determined',
+          notDetermined: 'not determined',
+          ratings: {
+            GOOD: 'Good',
+            CHECK: 'Check',
+            UNRELIABLE: 'Unreliable',
+            NOT_AVAILABLE: 'Not available',
+          },
+          reasons: {
+            PRECISION_MEDIUM:
+              'Overall level not determined; likely range spans {value} levels',
+            PRECISION_WIDE:
+              'Overall level not determined; likely range is wide ({value} levels)',
+            PERSON_FIT:
+              '{node}: answers are inconsistent with one level (lz {value})',
+            TARGETING:
+              '{node}: {value}% of the questions were more than 3 levels from the estimate',
+            EDGE_CLAMP: '{node}: estimate at the end of the scale',
+            EDGE_UNMEASURED: '{node}: estimate in levels without items',
+            COVERAGE_LOW: '{node}: only {value} answers',
+          },
+          detailTitle: 'Attempt {code}',
+          replayUnavailable:
+            'The estimate replay is unavailable (calculation service not reachable). Final results and answers are shown.',
+          replayDiffers:
+            'The current calculation service would have chosen some questions differently (marked ≠): it changed since this attempt. Estimates show its view of the same answers.',
+          replayMismatch:
+            'The current calculation service would have served a different question here.',
+          node: 'Competence',
+          estimate: 'Estimate',
+          range: 'Likely range',
+          status: 'Status',
+          coverage: {
+            COVERED: 'covered',
+            OUT_OF_RANGE: 'not tested – outside the range',
+            SAMPLED_PENDING: 'not tested yet',
+            NOT_SAMPLED: 'not sampled',
+            NOT_TESTED: 'not tested',
+          },
+          competence: 'Competence › subcompetence',
+          element: 'Element',
+          itemLevel: 'Item level',
+          result: 'Result',
+          correct: 'correct',
+          incorrect: 'incorrect',
+          phase: 'Phase',
+          phases: {
+            COVERAGE: 'Coverage',
+            PRECISION: 'Precision',
+          },
+          levelBefore: 'Level before',
+          distanceBefore: 'Item vs. level',
+          levelAfter: 'Level after',
+          distanceFinal: 'Item vs. final',
+          answersHelp:
+            'Level before/after: the competence estimate before and after the answer, replayed by the calculation service. Item vs. level: item level minus the level before the answer (highlighted when more than 3 levels apart). Phase is derived: coverage while the subcompetence had fewer than its minimum answers, otherwise precision.',
+        },
         distributionBarLabel:
           '{level}: {count} {count, plural, one {attempt} other {attempts}}',
       },

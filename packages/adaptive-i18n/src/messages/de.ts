@@ -879,6 +879,85 @@ const messages = {
         expandNode: '{node} aufklappen',
         collapseNode: '{node} zuklappen',
         weightShare: 'Gewicht: {share}% des Gesamtniveaus',
+        attemptDiagnostics: {
+          title: 'Versuche (Testumgebung)',
+          description:
+            'Wie jeder Versuch bewertet wurde. Nur in Testumgebungen verfügbar; Studierende erscheinen als pseudonyme Codes. Klicke auf einen Versuch, um jede Antwort und die Nachrechnung der Schätzung zu sehen.',
+          filter: {
+            ALL: 'Alle Bewertungen',
+            UNRELIABLE: 'Unzuverlässig',
+            CHECK: 'Prüfen',
+            GOOD: 'Gut',
+          },
+          exportAll: 'Versuche exportieren (CSV)',
+          exportAttempt: 'Diesen Versuch exportieren (CSV)',
+          earlierPublications:
+            '{count, plural, one {# Versuch einer früheren Veröffentlichung wird nicht aufgeführt.} other {# Versuche früherer Veröffentlichungen werden nicht aufgeführt.}}',
+          empty: 'Noch keine abgeschlossenen Versuche.',
+          attempt: 'Versuch',
+          participant: 'Teilnehmende {code} · Versuch {number}',
+          completedAt: 'Abgeschlossen',
+          answers: 'Antworten',
+          overall: 'Gesamt',
+          competences: 'Kompetenzen',
+          rating: 'Qualität',
+          determined: 'bestimmt',
+          notDetermined: 'nicht bestimmt',
+          ratings: {
+            GOOD: 'Gut',
+            CHECK: 'Prüfen',
+            UNRELIABLE: 'Unzuverlässig',
+            NOT_AVAILABLE: 'Nicht verfügbar',
+          },
+          reasons: {
+            PRECISION_MEDIUM:
+              'Gesamtniveau nicht bestimmt; wahrscheinlicher Bereich umfasst {value} Niveaus',
+            PRECISION_WIDE:
+              'Gesamtniveau nicht bestimmt; wahrscheinlicher Bereich ist breit ({value} Niveaus)',
+            PERSON_FIT:
+              '{node}: Antworten passen nicht zu einem Niveau (lz {value})',
+            TARGETING:
+              '{node}: {value}% der Fragen lagen mehr als 3 Niveaus von der Schätzung entfernt',
+            EDGE_CLAMP: '{node}: Schätzung am Ende der Skala',
+            EDGE_UNMEASURED: '{node}: Schätzung in Niveaus ohne Elemente',
+            COVERAGE_LOW: '{node}: nur {value} Antworten',
+          },
+          detailTitle: 'Versuch {code}',
+          replayUnavailable:
+            'Die Nachrechnung der Schätzung ist nicht verfügbar (Berechnungsdienst nicht erreichbar). Endergebnisse und Antworten werden angezeigt.',
+          replayDiffers:
+            'Der aktuelle Berechnungsdienst hätte einige Fragen anders gewählt (markiert mit ≠): Er hat sich seit diesem Versuch geändert. Die Schätzungen zeigen seine Sicht auf dieselben Antworten.',
+          replayMismatch:
+            'Der aktuelle Berechnungsdienst hätte hier eine andere Frage gestellt.',
+          node: 'Kompetenz',
+          estimate: 'Schätzung',
+          range: 'Wahrscheinlicher Bereich',
+          status: 'Status',
+          coverage: {
+            COVERED: 'abgedeckt',
+            OUT_OF_RANGE: 'nicht getestet – ausserhalb des Bereichs',
+            SAMPLED_PENDING: 'noch nicht getestet',
+            NOT_SAMPLED: 'nicht ausgewählt',
+            NOT_TESTED: 'nicht getestet',
+          },
+          competence: 'Kompetenz › Teilkompetenz',
+          element: 'Element',
+          itemLevel: 'Niveau der Frage',
+          result: 'Ergebnis',
+          correct: 'richtig',
+          incorrect: 'falsch',
+          phase: 'Phase',
+          phases: {
+            COVERAGE: 'Abdeckung',
+            PRECISION: 'Präzision',
+          },
+          levelBefore: 'Niveau davor',
+          distanceBefore: 'Frage vs. Niveau',
+          levelAfter: 'Niveau danach',
+          distanceFinal: 'Frage vs. Ende',
+          answersHelp:
+            'Niveau davor/danach: die Kompetenzschätzung vor und nach der Antwort, vom Berechnungsdienst nachgerechnet. Frage vs. Niveau: Niveau der Frage minus Niveau vor der Antwort (hervorgehoben bei mehr als 3 Niveaus Abstand). Die Phase ist abgeleitet: Abdeckung, solange die Teilkompetenz weniger als ihre Mindestanzahl Antworten hatte, sonst Präzision.',
+        },
         distributionBarLabel:
           '{level}: {count} {count, plural, one {Versuch} other {Versuche}}',
       },
