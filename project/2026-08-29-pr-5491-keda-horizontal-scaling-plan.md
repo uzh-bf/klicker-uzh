@@ -25,7 +25,7 @@ regular nodes (W4).
 | W4 — Assessment staging pilot and later packages | Not activated | Close the named evidence and authority gates before staging, spot, or production claims |
 | W10 — Chat and MCP multi-replica readiness | Source scan only; no implementation | Prove or replace the stateful MCP transport, add a chat drain contract, then feed W9 |
 | W11 — Production capacity baseline | Request corrections ([#6283](https://github.com/uzh-bf/klicker-uzh/pull/6283), [#6284](https://github.com/uzh-bf/klicker-uzh/pull/6284)), replica restore ([#6278](https://github.com/uzh-bf/klicker-uzh/pull/6278), [#6279](https://github.com/uzh-bf/klicker-uzh/pull/6279)) and chat at 3 ([#6291](https://github.com/uzh-bf/klicker-uzh/pull/6291), [#6292](https://github.com/uzh-bf/klicker-uzh/pull/6292)) merged 2026-09-23 and live; the 2026-10-06 read-only read found every Deployment at its desired count with no restarts or Pending Pods | General-worker restore after queue evidence; explain why the `apps` pool still runs 4 nodes |
-| W12 — HTTP spot burst tier | Chart pair ready: [#6294](https://github.com/uzh-bf/klicker-uzh/pull/6294) (`v3-ai`, final AI review clean) and [#6295](https://github.com/uzh-bf/klicker-uzh/pull/6295) (`v3`); platform half drafted as df-cloud !644 with staging previews | Merge order under the deploy-parity gate, apply !644 to staging and read the live Argo rule back, settle the PDB question, then the staging-enable values pair and the self-heal drill |
+| W12 — HTTP spot burst tier | Chart pair ready: [#6294](https://github.com/uzh-bf/klicker-uzh/pull/6294) (`v3-ai`, final AI review clean) and [#6295](https://github.com/uzh-bf/klicker-uzh/pull/6295) (`v3`); platform half drafted as df-cloud !644 with staging previews | Merge order under the deploy-parity gate, apply !644 to staging and read the live Argo rule back, then the staging-enable values pair and the self-heal drill |
 | W13 — Staging capacity on spot | Added 2026-09-23; !644 keeps the staging `asyncspot` maximum at 7 | Move staging Klicker workloads onto `asyncspot` under A6 |
 
 Merge, new upstream integration, deployment, cluster connectivity or changes,
@@ -1521,15 +1521,15 @@ replica-ownership package W0 and the dependent worker-runtime package W1.
   API. Assessment frontends, backends, and response APIs never burst to spot.
 - **Check:** Fixtures and Helm lint; staging load below and above the
   baseline; one approved spot eviction; Argo stays `Synced` while the
-  autoscaler changes burst replicas under self-heal. Before the staging
-  enable, settle item (5): the PWA PDB keeps `minAvailable: 2` and selects by
-  component, so it counts burst Pods. In staging, where the baseline runs one
-  replica, one baseline Pod plus one burst Pod exactly meet the budget, so the
-  cluster autoscaler can never evict the last burst Pod and the spot node
-  stays pinned. In production, a drain can evict baseline Pods while burst
-  Pods satisfy the budget. Options are a tier-scoped baseline selector, a
-  separate burst budget with `maxUnavailable`, or an explicit decision that
-  the pinned node is acceptable while the HPA minimum is 1.
+  autoscaler changes burst replicas under self-heal. Item (5) is settled in
+  the chart pair (2026-10-06, #6294 `7e7d30f4b3`, #6295 `436a217620`): with
+  the tier enabled, the baseline PWA PDB keeps `minAvailable: 2` but adds
+  `klicker.uzh.ch/tier DoesNotExist`, and a separate `-frontend-pwa-burst`
+  PDB sets `maxUnavailable: 1`, so each Pod matches exactly one budget and
+  the last burst Pod no longer pins its spot node. The replica ownership
+  checker asserts both. The staging baseline still runs one replica against
+  `minAvailable: 2`, which blocks voluntary baseline evictions there; that
+  predates W12. Topology spread still selects by component.
 - **Working context:** Branches `rs/http-spot-burst-tier` (#6294, off
   `v3-ai`) and `rs/http-spot-burst-tier-v3` (#6295, off `v3`) in the
   repository's `trees/` worktrees. The platform half is df-cloud MR !644 on
@@ -1721,10 +1721,9 @@ a values edit.
   through the staging pipeline, and its production half waits for the
   `stg` → `prd` promotion. #6295 and #6365 are `v3` merges and restart the
   production PWA Pods once; they wait for the production rollout decision.
-- **Review before merging:** (1) The PDB question in W12 item (5) is open and
-  is recorded under the W12 check; it does not block the chart pair, because
-  the tier is disabled by default, but it must be settled before the staging
-  enable. (2) The KEDA 2.17 scale-to-zero confirmation from W12 item (2) is
+- **Review before merging:** (1) The PDB question in W12 item (5) is settled
+  in the chart pair with tier-scoped budgets; disabled renders are unchanged.
+  (2) The KEDA 2.17 scale-to-zero confirmation from W12 item (2) is
   still open. (3) The burst HPA uses default scale-down stabilization and the
   burst Pod has no `preStop` delay; both are optional refinements for the
   staging drill, not merge blockers. (4) #6293 is docs-only, so the final AI
@@ -1737,7 +1736,7 @@ a values edit.
   chart is on `v3-ai` no other `v3` companion can pass the gate; then `v3`
   merged into #6295 and its `check` rerun; then #6295. !644 is independent:
   merge it to `stg` and apply it at any point. After the live Argo rule
-  reads back, open the staging-enable values pair with the PDB decision,
+  reads back, open the staging-enable values pair,
   then run the self-heal and eviction drills under A2-style approval.
 
 ### Cost and spot review — 2026-09-23
