@@ -515,7 +515,9 @@ async function runPersistenceTransaction({
           await persistAdaptivePracticeQuizEstimates(estimateInput, countingTx)
         },
         {
-          isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable,
+          // Mirrors withAdaptiveAttemptTransaction: attempt commands rely on
+          // the attempt row lock, not on serializable predicate locks.
+          isolationLevel: DB.Prisma.TransactionIsolationLevel.ReadCommitted,
           maxWait: 5_000,
           timeout: 20_000,
         }

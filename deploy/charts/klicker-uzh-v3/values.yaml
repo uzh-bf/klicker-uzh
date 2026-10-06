@@ -387,6 +387,8 @@ adaptiveEngine:
   enabled: false
   priorityClassName: production-workload
 
+  # Static replicas. One pod computes at most four requests at once; the
+  # backend retries the engine's 503 overload answers with a short backoff.
   replicaCount: 1
 
   image:

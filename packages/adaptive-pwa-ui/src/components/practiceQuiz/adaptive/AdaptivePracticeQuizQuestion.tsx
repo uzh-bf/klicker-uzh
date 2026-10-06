@@ -31,6 +31,7 @@ interface AdaptivePracticeQuizQuestionProps {
   showTimer: boolean
   submitting: boolean
   submissionError?: boolean
+  submissionBusy?: boolean
   onSubmit: (
     response: AdaptivePracticeQuizResponseInput,
     elapsedSeconds: number
@@ -46,6 +47,7 @@ function AdaptivePracticeQuizQuestion({
   showTimer,
   submitting,
   submissionError = false,
+  submissionBusy = false,
   onSubmit,
 }: AdaptivePracticeQuizQuestionProps) {
   const { scrollContainerId } = useAdaptivePwaHost()
@@ -166,8 +168,12 @@ function AdaptivePracticeQuizQuestion({
 
       {submissionError && (
         <UserNotification
-          type="error"
-          message={t('pwa.practiceQuiz.adaptive.errors.submit')}
+          type={submissionBusy ? 'warning' : 'error'}
+          message={t(
+            submissionBusy
+              ? 'pwa.practiceQuiz.adaptive.errors.busy'
+              : 'pwa.practiceQuiz.adaptive.errors.submit'
+          )}
         />
       )}
 

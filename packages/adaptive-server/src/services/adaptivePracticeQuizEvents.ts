@@ -16,6 +16,13 @@ export type AdaptiveOperationalEvent =
       retryNumber: number
     }
   | {
+      name: 'adaptive_engine_retry'
+      operation: 'VALIDATE' | 'DECIDE'
+      outcome: 'RETRYING' | 'EXHAUSTED'
+      reason: 'OVERLOADED' | 'CONNECTION'
+      retryNumber?: number
+    }
+  | {
       name: 'adaptive_integrity_rejection'
       reason:
         | 'REPLAYED_RESPONSE'
@@ -123,6 +130,7 @@ export function emitAdaptiveOperationalEvent(event: AdaptiveOperationalEvent) {
     console.error(line)
   } else if (
     event.name === 'adaptive_integrity_rejection' ||
+    (event.name === 'adaptive_engine_retry' && event.outcome === 'EXHAUSTED') ||
     event.name === 'adaptive_publication_blocked' ||
     event.name === 'adaptive_sharing_revoked' ||
     event.name === 'adaptive_irt_shadow_failed' ||
@@ -156,6 +164,14 @@ export function serializeAdaptiveOperationalEvent(
         event: event.name,
         operation: event.operation,
         outcome: event.outcome,
+        retryNumber: event.retryNumber,
+      }
+    case 'adaptive_engine_retry':
+      return {
+        event: event.name,
+        operation: event.operation,
+        outcome: event.outcome,
+        reason: event.reason,
         retryNumber: event.retryNumber,
       }
     case 'adaptive_integrity_rejection':

@@ -438,6 +438,22 @@ mcpStudent:
 adaptiveEngine:
   enabled: true
   priorityClassName: staging-workload
+  # Each engine pod computes at most four requests at once (fixed in the
+  # Catalyst runner) and answers 503 beyond that. Two pods behind the Service
+  # double the burst capacity for a class starting a quiz together.
+  replicaCount: 2
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - adaptive-engine
+            topologyKey: kubernetes.io/hostname
   image:
     tag: 43005ae3781b4205094b826e456e4a4979e9d695-arm
   resources:

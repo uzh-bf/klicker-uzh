@@ -12,6 +12,7 @@ import {
   type AdaptiveAttemptLifecycleIdentity,
   lockAdaptiveAttemptForUpdate,
   lockAdaptiveCourseForShare,
+  lockAdaptiveParticipantQuizAttempts,
   lockAdaptivePracticeQuizConfigForShare,
   lockPracticeQuizForShare,
 } from './adaptivePracticeQuizRepository.js'
@@ -209,20 +210,26 @@ async function prepareAdaptiveRuntime(
     const estimator =
       publication.measurementVersion ===
       DB.AdaptiveMeasurementVersion.IRT_V2_EAP_GRID_1
-        ? await prepareLoadedAdaptiveEstimator({
-            measurementVersion: publication.measurementVersion,
-            nodes,
-            scale: preparePublishedV2Scale(publication),
-            pool: pool as AdaptiveV2RoutingPoolItem[],
-            settings: preparePublishedV2Settings(publication),
-          })
-        : await prepareLoadedAdaptiveEstimator({
-            measurementVersion: DB.AdaptiveMeasurementVersion.IRT_V1,
-            nodes,
-            levels,
-            pool,
-            settings: legacySettings,
-          })
+        ? await prepareLoadedAdaptiveEstimator(
+            {
+              measurementVersion: publication.measurementVersion,
+              nodes,
+              scale: preparePublishedV2Scale(publication),
+              pool: pool as AdaptiveV2RoutingPoolItem[],
+              settings: preparePublishedV2Settings(publication),
+            },
+            { publicationId: publication.id }
+          )
+        : await prepareLoadedAdaptiveEstimator(
+            {
+              measurementVersion: DB.AdaptiveMeasurementVersion.IRT_V1,
+              nodes,
+              levels,
+              pool,
+              settings: legacySettings,
+            },
+            { publicationId: publication.id }
+          )
     const algorithm: RuntimeAlgorithmView =
       estimator.measurementVersion ===
       DB.AdaptiveMeasurementVersion.IRT_V2_EAP_GRID_1
@@ -337,6 +344,9 @@ export async function loadAdaptiveV2SelectionContext({
     return undefined
   }
 
+  // The publication-wide exposure lock keeps the exposure ceiling exact for
+  // IRT v2: selections of one publication queue here (READ COMMITTED waits
+  // and then reads the latest counters) instead of aborting each other.
   const exposureRows = await prisma.$queryRaw<
     Array<{ poolItemId: number; servedCount: bigint }>
   >`
@@ -567,6 +577,11 @@ export async function lockAdaptiveAttemptLifecycle({
     )
   }
 
+  await lockAdaptiveParticipantQuizAttempts(
+    identity.practiceQuizId,
+    participantId,
+    prisma
+  )
   const locked = await lockAdaptiveAttemptForUpdate(
     identity,
     participantId,

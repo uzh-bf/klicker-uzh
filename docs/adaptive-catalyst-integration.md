@@ -191,6 +191,49 @@ every IRT_V1 decision, and adaptive quizzes fail with
 tolerance above 0 until the engine runs `SEQUENTIAL_ROOTS_V6`. The publication
 guard refuses it before then.
 
+## Attempt concurrency
+
+Participant attempt commands (start, resume, restart, submit, abandon and
+time-limit expiry) run at READ COMMITTED in `withAdaptiveAttemptTransaction`,
+not SERIALIZABLE. Under SSI, predicate locks on the shared attempt, response
+and estimate tables are page- or relation-granular, so attempts of different
+participants aborted each other with SQLSTATE 40001 when a class worked on one
+quiz together. Correctness instead comes from one lock order: course, quiz and
+config `FOR SHARE`, then a per-participant-and-quiz transaction advisory lock,
+then the attempt `FOR UPDATE`, then (IRT v2 only) the publication exposure rows
+`FOR UPDATE`. The one-in-progress and response-order unique indexes are the
+backstop. The advisory lock serializes one participant's commands on one quiz,
+so double submits and duplicate starts stay safe. IRT v2 selections of one
+publication queue on the exposure lock to keep the exposure ceiling exact.
+Read-mostly snapshots such as cohort results keep `withSerializableRetry`.
+New attempt writers must take the same locks in that order.
+
+Each start and submit calls the engine inside that transaction, so engine
+capacity bounds a class burst. One engine pod computes at most four requests
+at once and answers 503 beyond that; the limit is hard-coded in the Catalyst
+runner, not an environment knob, so capacity scales with
+`adaptiveEngine.replicaCount` (two on staging). The host adds three measures:
+
+- `prepareLoadedAdaptiveEstimator` validates a published bank once per API
+  process (`adaptiveEngineValidationCache.ts`). The key is the engine URL, the
+  engine build (`ADAPTIVE_ENGINE_REVISION`, set by the chart from the engine
+  image tag), the publication id and a SHA-256 of the exact validation request,
+  so republishes and engine upgrades revalidate. Successes are kept for at most
+  10 minutes in a 256-entry LRU, failures are never cached, and concurrent cold
+  callers share one request.
+- `@klicker-uzh/adaptive-client` retries 503/429 answers and refused
+  connections with equal-jitter backoff: four requests and at most 1.5 s of
+  backoff, within the call deadline. Deadline aborts and other 4xx answers are
+  not retried. The retries run while the attempt transaction holds its locks,
+  which adds at most 1.5 s. The locks involved are the participant's own
+  advisory and attempt locks, the shared course, quiz and config `FOR SHARE`
+  locks (which only delay admin writers), and, for IRT v2, the publication
+  exposure rows.
+- Sustained overload surfaces as `ADAPTIVE_ENGINE_BUSY`, and other engine
+  failures as `ADAPTIVE_ENGINE_UNAVAILABLE`, including from validation. The PWA
+  then shows a "quiz is busy" message with a retry button instead of a
+  generic error.
+
 ## Verification boundaries
 
 Private engine tests verify calculations. Public tests verify authorization,

@@ -164,8 +164,42 @@ const posteriorResult = {
   ],
 }
 function client(fetch: typeof globalThis.fetch) {
-  return createAdaptiveClient({ baseUrl: 'http://adaptive.test', token, fetch })
+  return createAdaptiveClient({
+    baseUrl: 'http://adaptive.test',
+    token,
+    fetch,
+    overloadRetry: false,
+  })
 }
+function retryingClient(
+  responses: Array<() => Response | Promise<Response>>,
+  {
+    timeoutMs = 12000,
+    clock = { now: 0 },
+  }: { timeoutMs?: number; clock?: { now: number } } = {}
+) {
+  const sleeps: number[] = []
+  let calls = 0
+  const api = createAdaptiveClient({
+    baseUrl: 'http://adaptive.test',
+    token,
+    timeoutMs,
+    fetch: async () => {
+      const next = responses[Math.min(calls, responses.length - 1)]!
+      calls++
+      return next()
+    },
+    sleep: async (ms) => {
+      sleeps.push(ms)
+      clock.now += ms
+    },
+    random: () => 0.5,
+    now: () => clock.now,
+  })
+  return { api, sleeps, calls: () => calls }
+}
+const busy = () =>
+  Response.json({ code: 'ADAPTIVE_ENGINE_COMPUTATION_FAILED' }, { status: 503 })
 test('sends only the strict scored DTO with authentication and a deadline', async () => {
   const api = client(async (url, init) => {
     assert.equal(String(url), 'http://adaptive.test/adaptive/v1/decide')
@@ -508,4 +542,77 @@ test('sends IRT_V1 additional leaves in the same root and rejects other roots lo
     )
   }
   assert.equal(calls, 1)
+})
+
+test('retries engine overload with jittered backoff and then succeeds', async () => {
+  const { api, sleeps, calls } = retryingClient([
+    busy,
+    busy,
+    () => Response.json(result),
+  ])
+  assert.deepEqual(await api.decide(request), result)
+  assert.equal(calls(), 3)
+  // Equal jitter with random() = 0.5 sleeps 75% of each exponential step.
+  assert.deepEqual(sleeps, [113, 225])
+})
+test('reports overload after the bounded retry budget is spent', async () => {
+  const { api, sleeps, calls } = retryingClient([busy])
+  await assert.rejects(api.validate(validationRequest), (error) => {
+    assert.ok(error instanceof AdaptiveEngineUnavailableError)
+    assert.equal(error.overloaded, true)
+    assert.equal(error.message.includes('COMPUTATION'), false)
+    return true
+  })
+  assert.equal(calls(), 4)
+  assert.ok(sleeps.reduce((sum, ms) => sum + ms, 0) <= 1500)
+})
+test('does not retry validation errors or other client errors', async () => {
+  for (const status of [400, 401, 413]) {
+    const { api, calls } = retryingClient([
+      () =>
+        Response.json({ code: 'ADAPTIVE_ENGINE_INVALID_REQUEST' }, { status }),
+    ])
+    await assert.rejects(api.decide(request), (error) => {
+      assert.ok(error instanceof AdaptiveEngineUnavailableError)
+      assert.equal(error.overloaded, false)
+      return true
+    })
+    assert.equal(calls(), 1)
+  }
+})
+test('stops retrying when the call deadline would be exceeded', async () => {
+  const clock = { now: 0 }
+  const { api, calls } = retryingClient(
+    [
+      () => {
+        clock.now += 400
+        return busy()
+      },
+    ],
+    { timeoutMs: 700, clock }
+  )
+  await assert.rejects(api.decide(request), AdaptiveEngineUnavailableError)
+  // 400 ms spent + 113 ms backoff leaves < 250 ms, so no second request.
+  assert.equal(calls(), 1)
+})
+test('retries a refused connection but not a deadline abort', async () => {
+  const refused = retryingClient([
+    () => {
+      throw new TypeError('fetch failed')
+    },
+    () => Response.json(result),
+  ])
+  assert.deepEqual(await refused.api.decide(request), result)
+  assert.equal(refused.calls(), 2)
+  const timedOut = retryingClient([
+    () => {
+      throw new DOMException('deadline', 'TimeoutError')
+    },
+  ])
+  await assert.rejects(timedOut.api.decide(request), (error) => {
+    assert.ok(error instanceof AdaptiveEngineUnavailableError)
+    assert.equal(error.overloaded, false)
+    return true
+  })
+  assert.equal(timedOut.calls(), 1)
 })

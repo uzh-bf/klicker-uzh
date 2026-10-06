@@ -12,6 +12,11 @@ data:
   # ADAPTIVE_ENGINE_TOKEN is provisioned in the backend secret.
   ADAPTIVE_ENGINE_URL: {{ . | quote }}
   {{- end }}
+  {{- if and .Values.adaptiveEngine.enabled (not .Values.backendGraphql.adaptiveEngine.url) }}
+  # Keys the backend's cached engine validations to the deployed engine build,
+  # so an engine upgrade revalidates published banks.
+  ADAPTIVE_ENGINE_REVISION: {{ .Values.adaptiveEngine.image.tag | quote }}
+  {{- end }}
   {{- if .Values.assessmentAudit.enabled }}
   ASSESSMENT_AUDIT_ENVIRONMENT: {{ required "assessmentAudit.environment is required when assessment audit is enabled" .Values.assessmentAudit.environment | quote }}
   ASSESSMENT_AUDIT_ROLLOUT: {{ .Values.assessmentAudit.rollout | quote }}

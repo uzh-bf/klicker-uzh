@@ -1,4 +1,6 @@
 import type { ContextWithUser } from '@klicker-uzh/graphql/adaptive-context-types'
+import * as DB from '@klicker-uzh/prisma/client'
+import { withAdaptiveAttemptTransaction } from '../src/services/adaptivePracticeQuizRepository.js'
 import { withSerializableRetry } from '../src/services/adaptivePracticeQuizzes.js'
 
 export function registerAdaptivePracticeQuizRetryTests() {
@@ -63,5 +65,32 @@ export function registerAdaptivePracticeQuizRetryTests() {
       withSerializableRetry(ctx, async () => 'ignored')
     ).rejects.toBe(failure)
     expect(transaction).toHaveBeenCalledTimes(1)
+  })
+
+  it('runs attempt commands at READ COMMITTED with a longer jittered retry budget', async () => {
+    const deadlock = Object.assign(new Error('PostgreSQL deadlock'), {
+      code: 'P2010',
+      meta: {
+        driverAdapterError: {
+          cause: { kind: 'TransactionWriteConflict', originalCode: '40P01' },
+        },
+      },
+    })
+    const transaction = vi.fn().mockRejectedValue(deadlock)
+    const ctx = {
+      prisma: { $transaction: transaction },
+    } as unknown as ContextWithUser
+
+    await expect(
+      withAdaptiveAttemptTransaction(ctx, async () => undefined)
+    ).rejects.toMatchObject({
+      extensions: { code: 'ADAPTIVE_ATTEMPT_CONFLICT' },
+    })
+    expect(transaction).toHaveBeenCalledTimes(5)
+    for (const [, options] of transaction.mock.calls) {
+      expect(options).toMatchObject({
+        isolationLevel: DB.Prisma.TransactionIsolationLevel.ReadCommitted,
+      })
+    }
   })
 }

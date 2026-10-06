@@ -17,9 +17,14 @@ export async function assertAdaptiveLearningCourseEnabled(
 
 export async function lockAdaptiveLearningCourseEnabled(
   courseId: string,
-  prisma: PrismaTransactionClient
+  prisma: PrismaTransactionClient,
+  { onMissing }: { onMissing?: () => Error } = {}
 ): Promise<void> {
-  assertEnabled(courseId, await lockAdaptiveCourseForShare(courseId, prisma))
+  const course = await lockAdaptiveCourseForShare(courseId, prisma)
+  // At READ COMMITTED a course deleted while this lock waited is simply
+  // absent; callers that resolved it from another record can say so.
+  if (!course && onMissing) throw onMissing()
+  assertEnabled(courseId, course)
 }
 
 function assertEnabled(

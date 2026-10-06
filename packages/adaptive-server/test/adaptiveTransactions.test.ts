@@ -1,5 +1,8 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import { withAdaptiveOperationalTransaction } from '../src/services/adaptiveTransactions.js'
+import {
+  isRetryableAdaptiveTransactionConflict,
+  withAdaptiveOperationalTransaction,
+} from '../src/services/adaptiveTransactions.js'
 
 describe('adaptive operational transactions', () => {
   it('retries a transient deadlock and returns the successful result', async () => {
@@ -46,6 +49,25 @@ describe('adaptive operational transactions', () => {
       })
       expect(transaction).toHaveBeenCalledTimes(expectedCalls)
     }
+  })
+
+  it('classifies a bare driver adapter conflict raised at commit as retryable', () => {
+    const commitConflict = Object.assign(
+      new Error('TransactionWriteConflict'),
+      {
+        name: 'DriverAdapterError',
+        cause: { kind: 'TransactionWriteConflict', originalCode: '40001' },
+      }
+    )
+    expect(isRetryableAdaptiveTransactionConflict(commitConflict)).toBe(true)
+    expect(
+      isRetryableAdaptiveTransactionConflict(
+        Object.assign(new Error('unique'), {
+          name: 'DriverAdapterError',
+          cause: { kind: 'UniqueConstraintViolation', originalCode: '23505' },
+        })
+      )
+    ).toBe(false)
   })
 
   it('passes non-transaction errors through unchanged', async () => {

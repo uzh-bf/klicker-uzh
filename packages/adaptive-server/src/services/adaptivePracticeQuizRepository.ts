@@ -9,7 +9,11 @@ import {
   waitForAdaptiveTransactionRetry,
 } from './adaptiveTransactions.js'
 
-const ADAPTIVE_RUNTIME_TRANSACTION_RETRIES = 3
+const ADAPTIVE_SERIALIZABLE_TRANSACTION_ATTEMPTS = 3
+// Attempt commands run at READ COMMITTED and only contend with the same
+// participant's work on one quiz, so a retry is rare; the extra jittered
+// attempts absorb lock-ordering deadlocks and duplicate-start races.
+const ADAPTIVE_ATTEMPT_TRANSACTION_ATTEMPTS = 5
 
 export type LockedAdaptiveCourse = {
   id: string
@@ -84,7 +88,8 @@ export type PersistAdaptivePracticeQuizEstimatesInput = {
 // target, so 250-row node chunks bound persistence to at most three queries.
 const ADAPTIVE_ESTIMATE_NODE_CHUNK_SIZE = 250
 
-// Participant lifecycle order: Course -> PracticeQuiz -> config -> attempt.
+// Participant lifecycle order: Course -> PracticeQuiz -> config ->
+// participant-quiz advisory lock -> attempt -> publication exposure rows.
 // Administrative rollout prepends User. Quiz deletion inserts direct
 // Permission rows before its persisted DerivedPermission authorization check.
 export async function lockAdaptiveCourseForShare(
@@ -202,6 +207,28 @@ export async function lockAdaptiveAttemptForUpdate(
     FOR UPDATE
   `
   return Boolean(rows[0])
+}
+
+/**
+ * Serializes every attempt command of one participant on one quiz (start,
+ * resume, restart, submit, abandon, time-limit expiry). Attempt commands run
+ * at READ COMMITTED, so after this lock each statement observes everything
+ * the participant's previous command committed. Different participants never
+ * share this lock, which keeps a whole class starting together conflict-free.
+ */
+export async function lockAdaptiveParticipantQuizAttempts(
+  practiceQuizId: string,
+  participantId: string,
+  prisma: PrismaTransactionClient
+): Promise<void> {
+  await prisma.$executeRaw`
+    SELECT pg_advisory_xact_lock(
+      hashtextextended(
+        ${`adaptive-attempt:${practiceQuizId}:${participantId}`},
+        0
+      )
+    )
+  `
 }
 
 export async function lockPracticeQuizAdminPermissionForShare(
@@ -342,7 +369,51 @@ export async function persistAdaptivePracticeQuizEstimates(
   }
 }
 
+type AdaptiveRetryOptions = {
+  retryOnUniqueConstraint?: boolean
+  conflictCode?: string
+  conflictMessage?: string
+  operation?: 'ATTEMPT' | 'COHORT_SNAPSHOT' | 'PUBLICATION'
+}
+
+/**
+ * Serializable transaction for read-mostly snapshots (cohort results) whose
+ * correctness depends on one consistent view of many attempts. Do not use it
+ * for participant attempt commands: predicate locks on shared attempt,
+ * response and estimate pages make independent attempts abort each other.
+ */
 export async function withSerializableRetry<T>(
+  ctx: ContextWithUser,
+  operation: (prisma: PrismaTransactionClient) => Promise<T>,
+  options: AdaptiveRetryOptions = {}
+): Promise<T> {
+  return runAdaptiveTransactionWithRetry(ctx, operation, {
+    ...options,
+    isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable,
+    maxAttempts: ADAPTIVE_SERIALIZABLE_TRANSACTION_ATTEMPTS,
+  })
+}
+
+/**
+ * READ COMMITTED transaction for participant attempt commands. Correctness for
+ * one attempt comes from the explicit lock protocol (course, quiz and config
+ * FOR SHARE, the participant-quiz advisory lock, the attempt FOR UPDATE and,
+ * for IRT v2, the publication exposure rows FOR UPDATE) and from the
+ * one-in-progress and response-order unique indexes, not from SSI.
+ */
+export async function withAdaptiveAttemptTransaction<T>(
+  ctx: ContextWithUser,
+  operation: (prisma: PrismaTransactionClient) => Promise<T>,
+  options: AdaptiveRetryOptions = {}
+): Promise<T> {
+  return runAdaptiveTransactionWithRetry(ctx, operation, {
+    ...options,
+    isolationLevel: DB.Prisma.TransactionIsolationLevel.ReadCommitted,
+    maxAttempts: ADAPTIVE_ATTEMPT_TRANSACTION_ATTEMPTS,
+  })
+}
+
+async function runAdaptiveTransactionWithRetry<T>(
   ctx: ContextWithUser,
   operation: (prisma: PrismaTransactionClient) => Promise<T>,
   {
@@ -350,21 +421,17 @@ export async function withSerializableRetry<T>(
     conflictCode = 'ADAPTIVE_ATTEMPT_CONFLICT',
     conflictMessage = 'The adaptive attempt could not be updated due to concurrent activity.',
     operation: eventOperation = 'ATTEMPT',
-  }: {
-    retryOnUniqueConstraint?: boolean
-    conflictCode?: string
-    conflictMessage?: string
-    operation?: 'ATTEMPT' | 'COHORT_SNAPSHOT' | 'PUBLICATION'
-  } = {}
+    isolationLevel,
+    maxAttempts,
+  }: AdaptiveRetryOptions & {
+    isolationLevel: DB.Prisma.TransactionIsolationLevel
+    maxAttempts: number
+  }
 ): Promise<T> {
-  for (
-    let attempt = 0;
-    attempt < ADAPTIVE_RUNTIME_TRANSACTION_RETRIES;
-    attempt++
-  ) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
       return await ctx.prisma.$transaction(operation, {
-        isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable,
+        isolationLevel,
         maxWait: 5_000,
         timeout: 20_000,
       })
@@ -373,7 +440,7 @@ export async function withSerializableRetry<T>(
         isRetryableAdaptiveTransactionConflict(error) ||
         (retryOnUniqueConstraint && isAdaptiveUniqueConstraintConflict(error))
       ) {
-        if (attempt < ADAPTIVE_RUNTIME_TRANSACTION_RETRIES - 1) {
+        if (attempt < maxAttempts - 1) {
           emitAdaptiveOperationalEvent({
             name: 'adaptive_transaction_retry',
             operation: eventOperation,
