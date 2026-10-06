@@ -74,6 +74,16 @@ it('rejects competing, repeated, expired and wrong-role handoffs instead of usin
     secret,
     { expiresIn: '14d' }
   )
+  const otp = await signJWT(
+    { sub: 'participant-b', role: 'PARTICIPANT', scope: 'OTP' },
+    secret,
+    { expiresIn: '15m' }
+  )
+  const activation = await signJWT(
+    { sub: 'participant-b', role: 'PARTICIPANT', scope: 'ACTIVATION' },
+    secret,
+    { expiresIn: '60m' }
+  )
   const expired = await signJWT(
     { sub: 'participant-b', role: 'PARTICIPANT' },
     secret,
@@ -95,6 +105,8 @@ it('rejects competing, repeated, expired and wrong-role handoffs instead of usin
   } as unknown as ApolloClient<NormalizedCacheObject>
   for (const query of [
     { participantToken: wrongRole },
+    { participantToken: otp },
+    { participantToken: activation },
     { participantToken: expired },
     { participantToken: noExpiry },
     { participantToken: '' },
@@ -212,4 +224,26 @@ it('retains assessment credential selection without applying regular participant
     if (previous === undefined) delete process.env.ASSESSMENT_MODE
     else process.env.ASSESSMENT_MODE = previous
   }
+})
+
+it('rejects and expires a retained invalid participant cookie without a launch', async () => {
+  const expired = await signJWT(
+    { sub: 'participant-a', role: 'PARTICIPANT' },
+    secret,
+    { expiresIn: Math.floor(Date.now() / 1000) - 120 }
+  )
+  const { ctx, headers } = context({}, `participant_token=${expired}`)
+  const result = await getParticipantToken({
+    apolloClient: {} as ApolloClient<NormalizedCacheObject>,
+    ctx,
+  })
+  assert.equal(result.sessionState, 'rejected')
+  assert.equal(result.participantToken, null)
+  const canonical = (headers.get('Set-Cookie') as string[]).find(
+    (value) =>
+      value.startsWith('participant_token=;') &&
+      !value.includes('; Partitioned')
+  )
+  assert.ok(canonical)
+  assert.ok(Number(canonical.match(/Max-Age=(-?\d+)/)?.[1]) <= 0)
 })

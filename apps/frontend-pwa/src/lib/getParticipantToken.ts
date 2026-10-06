@@ -53,6 +53,25 @@ function clearParticipantCookie(ctx: GetServerSidePropsContext) {
   nookies.destroy(ctx, 'participant_token', participantCookieOptions())
 }
 
+function setParticipantCookie(
+  ctx: GetServerSidePropsContext,
+  token: string,
+  maxAge: number
+) {
+  clearParticipantCookie(ctx)
+  // set a proper participant_token
+  nookies.set(ctx, 'participant_token', token, {
+    ...participantCookieOptions(),
+    maxAge,
+  })
+  // remove the lti-token cookie since we now have a proper participant_token
+  nookies.destroy(ctx, 'lti-token', {
+    domain: process.env.COOKIE_DOMAIN,
+    path: '/',
+  })
+  expirePartitionedParticipantCookie(ctx)
+}
+
 export default async function getParticipantToken({
   apolloClient,
   courseId,
@@ -99,6 +118,7 @@ export default async function getParticipantToken({
       typeof claims.sub !== 'string' ||
       !claims.sub.trim() ||
       claims.role !== 'PARTICIPANT' ||
+      claims.scope !== undefined ||
       !Number.isFinite(claims.exp) ||
       claims.exp! <= Date.now() / 1000
     ) {
@@ -120,16 +140,7 @@ export default async function getParticipantToken({
     }
     try {
       const maxAge = await verifyParticipant(query.participantToken)
-      clearParticipantCookie(ctx)
-      nookies.set(ctx, 'participant_token', query.participantToken, {
-        ...participantCookieOptions(),
-        maxAge,
-      })
-      nookies.destroy(ctx, 'lti-token', {
-        domain: process.env.COOKIE_DOMAIN,
-        path: '/',
-      })
-      expirePartitionedParticipantCookie(ctx)
+      setParticipantCookie(ctx, query.participantToken, maxAge)
       return {
         participantToken: query.participantToken,
         cookiesAvailable: false,
@@ -191,18 +202,7 @@ export default async function getParticipantToken({
       return { ...base, sessionState: 'registration_required', signedLtiData }
     }
     const maxAge = await verifyParticipant(token)
-    clearParticipantCookie(ctx)
-    // set a proper participant_token
-    nookies.set(ctx, 'participant_token', token, {
-      ...participantCookieOptions(),
-      maxAge,
-    })
-    // remove the lti-token cookie since we now have a proper participant_token
-    nookies.destroy(ctx, 'lti-token', {
-      domain: process.env.COOKIE_DOMAIN,
-      path: '/',
-    })
-    expirePartitionedParticipantCookie(ctx)
+    setParticipantCookie(ctx, token, maxAge)
     return {
       participantToken: token,
       cookiesAvailable: !!cookies['lti-token'],
