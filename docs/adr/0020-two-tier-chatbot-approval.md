@@ -56,9 +56,10 @@ remains a separate lifecycle decision; it does not serve as a usage funding or
 per-model approval.
 
 Usage is tracked in two explicit model classes. Registry entries are classified
-as `BASE` or `ADVANCED`. GPT-5.6 Luna is the only `BASE` model and the
-participant-credit fallback. Every other current registry entry, including
-`Auto`, is `ADVANCED`. Exhausting participant credits intentionally replaces
+as `BASE` or `ADVANCED`. GPT-6 Luna (`gpt-6-luna`, which replaced
+`gpt-5.6-luna` on 2026-09-29) is the required `BASE` model and the
+participant-credit fallback. `Auto` is also `BASE` since the 2026-09-28
+amendment below; every other current registry entry is `ADVANCED`. Exhausting participant credits intentionally replaces
 the selected entry with Luna and therefore meters that effective turn as
 `BASE`, independently of the chatbot allow-list. Account-budget exhaustion
 remains class-specific and never switches classes. Provider-level LiteLLM
@@ -79,6 +80,12 @@ participant-credit fallback. Directly selected Sol models (GPT-6 Sol and
 GPT-5.6 Sol) remain `ADVANCED`. GPT-4.1, GPT-5.1, GPT-5.4 and GPT-5.5 are
 retired from the deployed registries. `Auto` keeps its 1 input / 5 output
 accounting rate, although its tiers now route to GPT-6 Luna and GPT-6 Sol.
+
+Amendment, 2026-10-03: migration `20260929120000_chat_gpt6_base_model` moves
+the participant-credit fallback from GPT-5.6 Luna to GPT-6 Luna and retires
+GPT-5.6 Luna from the deployed registries. GPT-6 Luna is therefore both the
+automatic primary and the only fallback. GPT-6.1 Sol joins as an `ADVANCED`
+model, and staging `Auto` routes through `auto-router-v2`.
 
 The original design assigned one account-wide monthly budget per class to the
 lecturer. ADR 0041 supersedes that write ownership for the trusted pilot:
@@ -112,8 +119,8 @@ to the v3-ai workflow.
 - Post-publication edits to non-gated knobs (knowledge, standard-mode fields,
   and model choices within the account authorization) take effect
   without another approval; this bounded risk is accepted.
-- Both registry consumers reject configurations that do not make GPT-5.6 Luna
-  the sole `BASE` model and participant-credit fallback. CI pins registry
+- Both registry consumers reject configurations that do not make GPT-6 Luna
+  a `BASE` model and the participant-credit fallback. CI pins registry
   class, fallback, and accounting-rate parity across built-in, staging, and
   production declarations.
 - Base and advanced budgets are visible as separate usage lanes, while the
