@@ -327,53 +327,41 @@ this new implementation plan. The optional opposing-provider CLI reported missin
 qualified opposing-provider opinion was obtained; unavailable optional consultation does not replace or
 block the required Astra loop.
 
-Status: execution started; delivery pending; Git writes restored during continuation. Completed:
-read-only production investigation, current-target/source reconciliation,
-task-worktree creation, persisted plan and three-round Astra approval. Slice 1
-has an uncommitted draft in `getParticipantToken.ts`, its named test, and
-`createAccount.tsx`. The draft reproduces and repairs fresh-launch precedence,
-verifies regular participant claims, classifies registration/rejection/exchange
-failure, bounds cookie retention by signed expiry, and preserves the assessment
-implementation in the same helper. Create Account consumes the selected verified
-registration context and forwards an explicit session through its redirect.
+Status: execution active; delivery pending. The plan is committed as
+`a8a1035`. Slice 1 is committed as `5176746`, with reviewed corrections in
+`edf4eb2`. Seven helper contract tests and all twenty-one PWA unit tests pass.
+The fresh-launch and scoped-token regressions failed before their repairs.
+Scoped lint, formatting, PWA typecheck, secret scan and exact diff checks pass.
 
-Verification: the fresh-launch tracer failed on baseline and passed after the
-repair. Six new contract tests and all twenty PWA unit tests pass. The cookie
-serializer test caught dropped Partitioned attributes; expiration is inserted
-after nookies serialization but precedes canonical issuance in the final header
-order, including for browsers that ignore the attribute. Biome formatting and
-exact diff inspection ran; the PWA package typecheck passed; its output is recorded locally.
-No browser acceptance, committed slice review, or completed repair is claimed.
+Astra simplified the duplicate cookie success sequence. Authentication review
+identified scoped OTP/activation credentials being accepted as sessions and
+requested expired ambient-cookie coverage. Both findings were accepted and
+corrected; the same reviewer validated the correction with verdict DONE and no
+remaining actionable slice finding. Assessment selection and legacy expiry
+remain outside this repair. The reviewer could not rerun Linux-installed tools
+on the macOS host; parent container verification supplies execution evidence.
+Reports are in gitignored `project/_local/reviews/`.
 
 Current capability gates:
 
-- Host Git staging initially failed with `Operation not permitted` under
-  `.git/worktrees/olat-session-recovery/index.lock`. Continuation revalidation
-  succeeded: fetch and plan staging work; `origin/v3` is unchanged at the recorded
-  baseline. First commit is the plan alone, followed by the repair.
-- Devrouter doctor fails closed because process-owner inspection is denied by
-  the execution sandbox (`ps spawn failed (EPERM)`). CLI 0.1.0 is installed versus
-  the target's 0.1.2 pin. No managed task runtime has been started. Earlier
-  browser launches aborted; restored production tunnels do not resolve this.
-- The root pre-implementation `check:all` attempt cannot complete in the minimal
-  Node container: `uv` and `git` are absent, blocking analytics lint and Git-based
-  schema/identity checks. These are unavailable checks, not baseline source
-  defects. Focused checks remain separate evidence.
-- Claude's earlier requested Opus consultation produced no analysis because OAuth
-  refresh failed. No relevant account/route change has been observed. Optional
-  consultation is not a completed opinion or a required review substitute.
+- Git metadata writes now succeed with individual host commands. The primary
+  checkout is separate; `origin/v3` remains at the recorded baseline.
+- Devrouter doctor fails closed because sandbox process-owner inspection is
+  denied (`ps spawn failed (EPERM)`). Installed CLI 0.1.0 is below target pin
+  0.1.2. No task managed runtime has been started; browser acceptance is pending.
+- Root checks need the complete toolchain. The richer isolated image has uv and
+  git, but the host Playwright policy check rejects devrouter 0.1.0. A parallel
+  root check attempt was stopped when source changed, so it proves no acceptance
+  at the corrected head. Its exact disposable test container was stopped;
+  another task's runtime was not touched.
+- Requested Claude Opus consultation produced no analysis because OAuth refresh
+  failed. No relevant route change is known. Optional consultation remains
+  unavailable; required integrated review must follow routing continuity.
 
-Git metadata writes are available again. Complete the committed-slice review
-prerequisite before advancing to slices 2–4. Required review inputs are immutable commit
-ranges; do not replace them with this uncommitted draft. Remaining work is the
-plan commit, slice 1 commit and simplifier/authentication review, browser/API/UI
-continuity slices, integrated checks, final review and draft delivery. Production
-evidence is time-specific and is not local acceptance. No infrastructure, global
-configuration or production repair is authorized by these capability failures.
-
-Required delivery layer: reviewed draft source PR. Achieved: approved persisted
-plan, task branch, native goal and a tested first-slice draft. Next action when
-capability is restored: commit the plan alone, complete the slice 1 commit/checks
-and dispatch its configured reviews, then continue the approved package without
-another approval checkpoint. The native goal remains active until the agreed
-terminal condition or its supported blocked-state threshold is reached.
+Slice 2 is next: the configured executor owns only the backend middleware
+extraction and audience contract tests; main owns accounts, browser session,
+Apollo and SSR propagation. The explicit credential, scope, failure and audience
+contracts above are settled. Remaining slices, integrated checks, browser proof,
+final review and draft delivery remain required. No merge or deployment is
+included. The native goal remains active until the agreed terminal condition
+or its supported blocked-state threshold is reached.
