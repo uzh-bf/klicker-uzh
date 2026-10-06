@@ -2,33 +2,6 @@ import { verifyJWT } from '@klicker-uzh/util'
 
 const EXPLICIT_BEARER_PATTERN = /^Bearer\s+(\S+)$/i
 
-type ExplicitAuthorization =
-  | { kind: 'absent' }
-  | { kind: 'malformed' }
-  | { kind: 'bearer'; token: string }
-
-// The regular PWA sends an empty Authorization header when it only carries
-// cookies; every other present authorization must be a usable explicit bearer
-// and fails closed otherwise.
-function selectExplicitAuthorization(
-  authorization: unknown
-): ExplicitAuthorization {
-  if (authorization === undefined || authorization === '') {
-    return { kind: 'absent' }
-  }
-
-  if (typeof authorization !== 'string') {
-    return { kind: 'malformed' }
-  }
-
-  const bearerToken = EXPLICIT_BEARER_PATTERN.exec(authorization.trim())?.[1]
-  if (bearerToken) {
-    return { kind: 'bearer', token: bearerToken }
-  }
-
-  return { kind: 'malformed' }
-}
-
 // Explicit bearer credentials must carry participant claims: a nonempty
 // subject, a finite future expiration, a participant role and no scope.
 async function verifyExplicitBearer(token: string) {
@@ -91,20 +64,19 @@ async function jwtMiddleware(req: any, res: any, next: any) {
     } else if (
       req.headers.origin?.includes(process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa')
     ) {
-      const authorization = selectExplicitAuthorization(
-        req.headers['authorization']
-      )
+      const authorization = req.headers['authorization']
 
       // A present authorization is authoritative: a value that is not a
       // usable explicit bearer fails closed instead of falling back to
       // ambient cookies.
-      if (authorization.kind === 'malformed') {
-        req.locals = { user: null }
-        return next()
-      }
-
-      if (authorization.kind === 'bearer') {
-        req.locals = { user: await verifyExplicitBearer(authorization.token) }
+      if (authorization !== undefined && authorization !== '') {
+        const bearerToken =
+          typeof authorization === 'string'
+            ? EXPLICIT_BEARER_PATTERN.exec(authorization.trim())?.[1]
+            : undefined
+        req.locals = {
+          user: bearerToken ? await verifyExplicitBearer(bearerToken) : null,
+        }
         return next()
       }
 
