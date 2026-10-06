@@ -186,6 +186,38 @@ it('returns one verified registration context and classifies exchange failure wi
   assert.equal(result.participantToken, null)
 })
 
+it('authenticates a linked LTI subject without email but refuses registration without email', async () => {
+  const fresh = await signJWT(
+    { sub: 'linked-student-b', scope: 'LTI1.3' },
+    secret,
+    { expiresIn: '5m' }
+  )
+  const participantToken = await signJWT(
+    { sub: 'participant-b', role: 'PARTICIPANT' },
+    secret,
+    { expiresIn: '14d' }
+  )
+  let exchanged: string | undefined
+  const client = {
+    mutate: async ({ variables }: { variables: { signedLtiData: string } }) => {
+      exchanged = variables.signedLtiData
+      return { data: { loginParticipantWithLti: { participantToken } } }
+    },
+  } as unknown as ApolloClient<NormalizedCacheObject>
+  const { ctx } = context({ jwt: fresh })
+  const result = await getParticipantToken({ apolloClient: client, ctx })
+  assert.equal(result.sessionState, 'authenticated')
+  assert.equal(result.participantToken, participantToken)
+  assert.equal(exchanged, fresh)
+  const missing = {
+    mutate: async () => ({ data: { loginParticipantWithLti: null } }),
+  } as unknown as ApolloClient<NormalizedCacheObject>
+  const unlinked = await getParticipantToken({ apolloClient: missing, ctx })
+  assert.equal(unlinked.sessionState, 'rejected')
+  assert.equal(unlinked.participantToken, null)
+  assert.equal(unlinked.signedLtiData, undefined)
+})
+
 it('never retains a handoff cookie beyond the signed session expiry', async () => {
   const fresh = await signJWT(
     { sub: 'participant-b', role: 'PARTICIPANT' },

@@ -539,6 +539,28 @@ or a new launch; invalid context clears it. The nested recovery conditional is
 bounded and source-reviewed; a preference-only rewrite would add unrelated churn.
 No new unresolved source finding was accepted.
 
+### Linked launch compatibility correction
+
+Final source inspection found that an already-linked LTI subject can authenticate
+without an email claim: the backend resolves its stored SSO identity first.
+The frontend now permits that verified launch to reach the exchange. A returned
+participant token still requires all participant-session claims; an unresolved
+launch without an email is rejected instead of offering incomplete registration.
+The focused unit regression covers both outcomes. The first native Chromium
+journey now omits email and still requires profile B and a quiz response saved
+only for B. Other journeys retain their email-bearing launch fixtures.
+This source correction supersedes the earlier unchanged-source reuse statement.
+All 26 PWA unit tests, the type check, scoped lint and formatting pass. Both
+native Chromium projects pass all ten journeys, with no skips or flakes. The
+same final reviewer checked the three source/test changes against the earlier
+integrated review and returned pass with zero findings; its JSON schema validates.
+Latest automated feedback was also checked: origin selection and assessment
+storage are inherited, false deletion results preserve the active account, and
+the lazy WebSocket client has no demonstrated active subscription leak. Duplicate
+predicates and ternary style establish no current defect. Cookie-only registration
+would break the approved restricted-cookie handoff. Hosted checks must be read
+against the new correction head; the old-head results cannot certify it.
+
 Remaining required capability: a host able to execute the Firefox Standard and
 blocked-cookie journeys against this same routed harness. A successful browser
 launch must precede application acceptance; no OS/security configuration bypass

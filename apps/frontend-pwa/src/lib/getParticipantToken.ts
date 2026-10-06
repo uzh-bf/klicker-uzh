@@ -178,13 +178,16 @@ export default async function getParticipantToken({
       claims.scope !== 'LTI1.3' ||
       typeof claims.sub !== 'string' ||
       !claims.sub.trim() ||
-      typeof claims.email !== 'string' ||
-      !claims.email ||
+      (claims.email !== undefined && typeof claims.email !== 'string') ||
       !Number.isFinite(claims.exp) ||
       claims.exp! <= Date.now() / 1000
     )
       return reject()
-    signedLtiData = { token: ltiToken, ssoId: claims.sub, email: claims.email }
+    signedLtiData = {
+      token: ltiToken,
+      ssoId: claims.sub,
+      email: typeof claims.email === 'string' ? claims.email : '',
+    }
   } catch {
     return reject()
   }
@@ -197,6 +200,7 @@ export default async function getParticipantToken({
     if (result.errors?.length) throw new Error('Participant exchange failed')
     const token = result.data?.loginParticipantWithLti?.participantToken
     if (!token) {
+      if (!signedLtiData.email.trim()) return reject()
       clearParticipantCookie(ctx)
       expirePartitionedParticipantCookie(ctx)
       return { ...base, sessionState: 'registration_required', signedLtiData }

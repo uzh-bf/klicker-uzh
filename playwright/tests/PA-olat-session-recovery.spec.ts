@@ -177,7 +177,7 @@ test.afterAll(async ({}, info) => {
   if (elementId) await prisma.element.deleteMany({ where: { id: elementId } })
 })
 
-test('fresh embedded launch restores B, supersedes retained A and supports quiz access', async ({
+test('fresh embedded launch without email restores linked B, supersedes retained A and supports quiz access', async ({
   page,
   context,
   baseURL,
@@ -204,7 +204,7 @@ test('fresh embedded launch restores B, supersedes retained A and supports quiz 
       } catch {}
     }
   }, a)
-  const jwt = await signed({ sub: ssoId, email, scope: 'LTI1.3' })
+  const jwt = await signed({ sub: ssoId, scope: 'LTI1.3' })
   const nativeRequests = new Map<
     string,
     { url?: string; cookieSent?: boolean; blockedReasons?: string[] }
