@@ -695,8 +695,8 @@ The existing `ChatUsageCredits` balance remains a separate participant
 allowance. Its decrement is part of the `finalizeChatTurn` transaction together
 with the completed message and account usage, so a failed debit rolls back the
 other two writes and a duplicate completion cannot debit twice. At zero
-participant credits, the route switches from any effective model to GPT-6
-Luna and clamps its effective usage class to `BASE` before enforcement; Luna is
+participant credits, the route switches to the configured `CHAT_FALLBACK_MODEL_ID`
+entry, which startup validation requires to be `BASE`. The effective model is
 therefore charged only through its `BASE` account lane and the participant
 allowance. This fallback intentionally does not require the chatbot allow-list
 to contain Luna. New browser sessions start with Auto Mode. Saved unavailable selections use
