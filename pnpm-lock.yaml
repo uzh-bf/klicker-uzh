@@ -924,6 +924,9 @@ importers:
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
+      '@klicker-uzh/product-updates':
+        specifier: workspace:*
+        version: link:../../packages/product-updates
       '@klicker-uzh/shared-components':
         specifier: workspace:*
         version: link:../../packages/shared-components
@@ -2346,6 +2349,9 @@ importers:
 
   packages/shared-components:
     dependencies:
+      '@apollo/client':
+        specifier: ^3.13.8
+        version: 3.13.8(@types/react@19.2.18)(graphql-ws@5.16.0(graphql@16.11.0))(graphql@16.11.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@fortawesome/fontawesome-svg-core':
         specifier: ^6.7.2
         version: 6.7.2
@@ -2358,6 +2364,9 @@ importers:
       '@fortawesome/react-fontawesome':
         specifier: ^0.2.2
         version: 0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.2.8)
+      '@socialgouv/matomo-next':
+        specifier: ^1.9.1
+        version: 1.9.1(next@16.3.4(@babel/core@7.28.3(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(@types/node@24.12.4)(babel-plugin-macros@3.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))
       '@tailwindcss/postcss':
         specifier: ^4.3.3
         version: 4.3.3
@@ -2407,9 +2416,15 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1
     devDependencies:
+      '@klicker-uzh/feature-flags':
+        specifier: workspace:*
+        version: link:../feature-flags
       '@klicker-uzh/graphql':
         specifier: workspace:*
         version: link:../graphql
+      '@klicker-uzh/product-updates':
+        specifier: workspace:*
+        version: link:../product-updates
       '@klicker-uzh/markdown':
         specifier: workspace:*
         version: link:../markdown
