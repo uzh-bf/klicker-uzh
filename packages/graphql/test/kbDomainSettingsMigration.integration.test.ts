@@ -136,10 +136,7 @@ describe('KB subject and language initialization', () => {
 
   it('keeps the served legacy default when only an unpublished build chose', async () => {
     const [observed] = await initialize([
-      [
-        { triple: null, published: true },
-        { triple: ['economics', 1, 'de'] },
-      ],
+      [{ triple: null, published: true }, { triple: ['economics', 1, 'de'] }],
     ])
     expect(observed).toBeNull()
   })
