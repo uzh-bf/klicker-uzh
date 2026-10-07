@@ -157,6 +157,14 @@ vi.mock('ai', async (importOriginal) => {
 })
 
 import { POST } from '../src/app/api/chatbots/[chatbotId]/chat/route'
+import { stepReminder } from '../src/lib/server/calculatorTool'
+
+// Tutor and quizzer steps end with one system message that carries the
+// precision rule and the reply-language reminder.
+const STEP_REMINDER = {
+  role: 'system',
+  content: expect.stringContaining(stepReminder('tutor').content),
+}
 
 type StreamCallbacks = {
   onEnd: (result: {
@@ -687,10 +695,13 @@ describe('account usage chat route', () => {
       initialMessages?: unknown[]
       responseMessages?: unknown[]
     }) => unknown
-    expect(prepareStep({ stepNumber: 0 })).toEqual({
-      toolChoice: { type: 'tool', toolName: 'KB_doc_query' },
-    })
     const initialMessages = [{ role: 'user', content: 'Question' }]
+    expect(
+      prepareStep({ stepNumber: 0, initialMessages, responseMessages: [] })
+    ).toEqual({
+      toolChoice: { type: 'tool', toolName: 'KB_doc_query' },
+      messages: [initialMessages[0], STEP_REMINDER],
+    })
     const raw = {
       mode: 'documents',
       sources: [{ reference: 'urn:source:a', chunks: [] }],
@@ -750,7 +761,35 @@ describe('account usage chat route', () => {
             },
           ],
         },
+        STEP_REMINDER,
       ],
+    })
+  })
+
+  test('ends every model step with the precision and language reminders', async () => {
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.streamConfig?.allowSystemInMessages).toBe(true)
+    const prepareStep = mocks.streamConfig?.prepareStep as (input: {
+      stepNumber: number
+      steps: unknown[]
+      initialMessages: unknown[]
+      responseMessages: unknown[]
+    }) => unknown
+    const initialMessages = [{ role: 'user', content: 'Question' }]
+    const toolMessage = { role: 'tool', content: [] }
+    expect(
+      prepareStep({
+        stepNumber: 1,
+        steps: [],
+        initialMessages,
+        responseMessages: [toolMessage],
+      })
+    ).toEqual({
+      messages: [initialMessages[0], toolMessage, STEP_REMINDER],
     })
   })
 

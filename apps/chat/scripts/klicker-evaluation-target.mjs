@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { randomUUID, timingSafeEqual } from 'node:crypto'
-import { readFile, readdir } from 'node:fs/promises'
+import { readdir, readFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { basename, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -24,7 +24,7 @@ const LOGIN_MUTATION = `
 
 const RESPONSE_TIMEOUT_CLEANUP = Symbol('responseTimeoutCleanup')
 
-function evaluationError(code) {
+export function evaluationError(code) {
   const error = new Error(code)
   error.code = code
   return error
@@ -267,12 +267,26 @@ function requestHeaders(cookie) {
   }
 }
 
+export function finiteCredits(value) {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+    ? value
+    : null
+}
+
 async function drainResponse(response, maxBytes) {
   try {
     if (!response.body) throw evaluationError('chat_stream_missing')
     const reader = response.body.getReader()
     const decoder = new TextDecoder()
     const streamState = { done: false, events: 0, finished: false }
+    const visible = {
+      text: '',
+      toolCalls: [],
+      creditsUsed: null,
+      chatMode: null,
+      modelId: null,
+      finishReason: null,
+    }
     let bytes = 0
     let buffer = ''
     let completed = false
@@ -306,6 +320,40 @@ async function drainResponse(response, maxBytes) {
       if (['abort', 'error', 'tool-output-error'].includes(event.type)) {
         throw evaluationError('chat_stream_error')
       }
+      if (event.type === 'text-delta' && typeof event.delta === 'string') {
+        visible.text += event.delta
+      } else if (
+        event.type === 'tool-input-start' &&
+        typeof event.toolName === 'string'
+      ) {
+        visible.toolCalls.push({
+          toolCallId:
+            typeof event.toolCallId === 'string' ? event.toolCallId : null,
+          toolName: event.toolName,
+          output: false,
+        })
+      } else if (event.type === 'tool-output-available') {
+        const toolCall = visible.toolCalls.find(
+          (call) =>
+            call.toolCallId !== null && call.toolCallId === event.toolCallId
+        )
+        if (toolCall) toolCall.output = true
+      } else if (
+        event.type === 'finish' &&
+        event.messageMetadata &&
+        typeof event.messageMetadata === 'object'
+      ) {
+        const metadata = event.messageMetadata
+        visible.creditsUsed = finiteCredits(metadata.creditsUsed)
+        visible.chatMode =
+          typeof metadata.chatMode === 'string' ? metadata.chatMode : null
+        visible.modelId =
+          typeof metadata.modelId === 'string' ? metadata.modelId : null
+        visible.finishReason =
+          typeof metadata.finishReason === 'string'
+            ? metadata.finishReason
+            : null
+      }
       streamState.events += 1
     }
 
@@ -323,7 +371,7 @@ async function drainResponse(response, maxBytes) {
             throw evaluationError('chat_stream_incomplete')
           }
           completed = true
-          return bytes
+          return { ...visible, bytes }
         }
         bytes += value?.byteLength || 0
         if (bytes > maxBytes) {
@@ -559,6 +607,8 @@ export class KlickerEvaluationTarget {
     userMessageId,
     assistantMessageId,
     maxStreamBytes,
+    history = [],
+    parentId = null,
   }) {
     const response = await fetchWithTimeout(
       urlFor(this.chatOrigin, `/api/chatbots/${this.chatbotId}/chat`),
@@ -569,12 +619,15 @@ export class KlickerEvaluationTarget {
           Accept: 'text/event-stream',
         },
         body: JSON.stringify({
-          messages: [{ id: userMessageId, role: 'user', content: question }],
+          messages: [
+            ...history,
+            { id: userMessageId, role: 'user', content: question },
+          ],
           threadId,
           selectedModel: this.modelId,
           selectedMode: mode,
           reasoningEffort: 'low',
-          parentId: null,
+          parentId,
           assistantMessageId,
           images: [],
         }),
@@ -585,10 +638,10 @@ export class KlickerEvaluationTarget {
       response[RESPONSE_TIMEOUT_CLEANUP]?.()
       throw safeStatusError('chat_submit', response)
     }
-    await drainResponse(response, maxStreamBytes)
+    return drainResponse(response, maxStreamBytes)
   }
 
-  async readCompletedMessage(threadId, assistantMessageId, mode) {
+  async pollThreadMessages(threadId, messageId) {
     const deadline = Date.now() + this.pollTimeoutMs
     while (Date.now() < deadline) {
       const response = await fetchWithTimeout(
@@ -604,22 +657,30 @@ export class KlickerEvaluationTarget {
         )
       )
       const body = await readJsonResponse(response, 'message_read')
-      const message = Array.isArray(body)
-        ? body.find((candidate) => candidate?.id === assistantMessageId)
-        : null
-      if (message) {
-        if (message.chatMode !== mode)
-          throw evaluationError('chat_mode_mismatch')
-        if (message.modelId !== this.modelId) {
-          throw evaluationError('chat_model_mismatch')
-        }
-        return message
+      if (
+        Array.isArray(body) &&
+        body.some((candidate) => candidate?.id === messageId)
+      ) {
+        return body
       }
       await new Promise((resolvePromise) =>
         setTimeout(resolvePromise, this.pollIntervalMs)
       )
     }
     throw evaluationError('assistant_message_timeout')
+  }
+
+  async readCompletedMessage(threadId, assistantMessageId, mode) {
+    const messages = await this.pollThreadMessages(threadId, assistantMessageId)
+    const message = messages.find(
+      (candidate) => candidate?.id === assistantMessageId
+    )
+    if (!message) throw evaluationError('assistant_message_timeout')
+    if (message.chatMode !== mode) throw evaluationError('chat_mode_mismatch')
+    if (message.modelId !== this.modelId) {
+      throw evaluationError('chat_model_mismatch')
+    }
+    return message
   }
 
   async runQuestion(question) {

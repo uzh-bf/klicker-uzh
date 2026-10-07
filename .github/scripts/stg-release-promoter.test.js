@@ -485,7 +485,7 @@ test('rejects unsafe workflow publication changes', () => {
   reject(
     'reduced pull-request types',
     mutate(
-      'types: [opened, synchronize, reopened, edited, ready_for_review]',
+      'types: [opened, synchronize, reopened, ready_for_review]',
       'types: [opened]'
     ),
     /approved pull-request triggers/
@@ -493,8 +493,8 @@ test('rejects unsafe workflow publication changes', () => {
   reject(
     'workflow-level path filter',
     mutate(
-      '    types: [opened, synchronize, reopened, edited, ready_for_review]',
-      '    paths:\n      - apps/auth/**\n    types: [opened, synchronize, reopened, edited, ready_for_review]'
+      '    types: [opened, synchronize, reopened, ready_for_review]',
+      '    paths:\n      - apps/auth/**\n    types: [opened, synchronize, reopened, ready_for_review]'
     ),
     /must not filter pull-request paths/
   )
