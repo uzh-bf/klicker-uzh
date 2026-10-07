@@ -28,6 +28,8 @@ an expired or different retained session. Cookie-only requests retain the
 existing selection order. The PWA branch also requires the origin host to lie
 inside `COOKIE_DOMAIN`: participant cookies are SameSite=None and CORS reflects
 any origin, so a foreign host that merely contains `pwa` must not select them.
+A deployment without `COOKIE_DOMAIN` skips this origin check, so every
+production-like environment must set it.
 Assessment, manager/controller and missing-Origin
 selection retain the final Bearer fallback (assessment live-quiz mode depends
 on it — marked `DO NOT TOUCH` in the source). Every selected token is verified

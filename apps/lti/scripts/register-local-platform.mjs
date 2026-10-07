@@ -9,8 +9,13 @@ const require = createRequire(import.meta.url)
 const { Provider } = require('ltijs')
 const Database = require('ltijs-sequelize')
 
-if (process.env.LTI_DEV_MODE !== 'true') {
-  console.error('Refusing to register a platform outside LTI dev mode')
+// Deployed LTI services also run ltijs in dev mode, so require a development
+// runtime as well.
+if (
+  process.env.LTI_DEV_MODE !== 'true' ||
+  process.env.NODE_ENV !== 'development'
+) {
+  console.error('Refusing to register a platform outside local development')
   process.exit(1)
 }
 
