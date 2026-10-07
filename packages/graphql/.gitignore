@@ -13,3 +13,6 @@ hive.json
 *_data.json
 *dump*.json
 !invitations_dev.csv
+
+# Local ownership-transfer receipts (identifiers, never commit)
+.transfer-activity/
