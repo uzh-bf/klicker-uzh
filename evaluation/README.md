@@ -293,6 +293,11 @@ does not change the target effort. Auto normalizes its target effort separately.
 Use the repository's restricted host-side secret operator for live injection,
 with only the approved names; no raw secret fetch or dotenv copy is needed.
 
+The target accepts only loopback origins. To run against a remote deployment,
+set `KLICKER_EVAL_ALLOWED_ORIGINS` to a comma-separated list of exact `https`
+origins (no path); an origin is accepted only if it matches an entry exactly.
+`KLICKER_EVAL_CHATBOT_ID` selects the chatbot instead of the built-in default.
+
 After setting the local participant/origin variables and approved judge route
 as above, run inside the existing task container with paths visible there:
 

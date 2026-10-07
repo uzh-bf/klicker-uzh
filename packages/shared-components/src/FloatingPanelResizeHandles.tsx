@@ -40,14 +40,20 @@ export default function FloatingPanelResizeHandles({
     y: number
     size: Size
   } | null>(null)
+  // The size this component last measured or requested. Keyboard steps build on
+  // it because the observed measurement only catches up on the next frame, so
+  // a second key press before then would otherwise undo the first one.
+  const latestSize = useRef<Size | null>(null)
 
   useEffect(() => {
     const panel = panelRef.current
     if (!active || !panel) return
     const measure = () => {
       const { width, height } = panel.getBoundingClientRect()
+      const size = { width: Math.round(width), height: Math.round(height) }
+      latestSize.current = size
       setMeasurement({
-        size: { width: Math.round(width), height: Math.round(height) },
+        size,
         viewport: { width: window.innerWidth, height: window.innerHeight },
       })
     }
@@ -68,7 +74,7 @@ export default function FloatingPanelResizeHandles({
   const maxWidth = Math.max(0, measurement.viewport.width - margin)
   const maxHeight = Math.max(0, measurement.viewport.height - margin)
   const resize = (size: Size) => {
-    onResize({
+    const nextSize = {
       width: Math.min(
         maxWidth,
         Math.max(Math.min(minWidth, maxWidth), size.width)
@@ -77,7 +83,9 @@ export default function FloatingPanelResizeHandles({
         maxHeight,
         Math.max(Math.min(minHeight, maxHeight), size.height)
       ),
-    })
+    }
+    latestSize.current = nextSize
+    onResize(nextSize)
   }
   const end = (event: PointerEvent<HTMLDivElement>) => {
     if (session.current?.id !== event.pointerId) return
@@ -162,9 +170,10 @@ export default function FloatingPanelResizeHandles({
                   : undefined
             if (delta === undefined || axis === 'both') return
             event.preventDefault()
+            const baseSize = latestSize.current ?? measurement.size
             resize({
-              ...measurement.size,
-              [axis]: measurement.size[axis] + delta,
+              ...baseSize,
+              [axis]: baseSize[axis] + delta,
             })
           }}
         />
