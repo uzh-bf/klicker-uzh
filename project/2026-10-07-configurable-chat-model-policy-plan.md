@@ -2,11 +2,13 @@
 
 ## Approval summary
 
-Model settings currently require source changes because the participant fallback and new-chatbot default require a particular vendor model ID. This package makes automatic selection, credit-safe fallback and new-chatbot creation resolve configurable IDs against the existing model registry. After one enabling release, supported model settings can change through configuration and a same-image rolling restart.
+Model settings currently require source changes because the participant fallback and new-chatbot default require a particular vendor model ID. This package makes automatic selection, credit-safe fallback and new-chatbot creation resolve configurable policies against the existing model registry. After one enabling release, supported model settings can change through configuration and a same-image rolling restart.
 
 Both Chat and GraphQL validate the same policy at startup. Invalid references and an ADVANCED credit fallback fail closed. The Manage assistant uses that validated BASE fallback instead of escaping to the first registry entry. Existing explicit chatbot selections, pending revisions, historical accounting and stored reasoning restrictions remain intact. Registry IDs retain their meaning; operators keep referenced IDs when changing defaults. New adapters, model retirement and funding-policy changes remain separate work.
 
 The user approved implementation with “so lets do that” after the Astra investigation. This is an executable batch authorizing implementation, focused verification, independent review, commits, ordinary task-branch push and one draft PR. Marking ready, merging, releases, promotion, live configuration, deployment and production data changes are withheld. The terminal condition is a reviewed draft package with evidence and any verification limitations recorded.
+
+The user subsequently agreed to multi-model defaults and consistent guest/credit fallback selection. New-chatbot configuration now specifies the existing model-selection switch and allowed model IDs instead of a single ID. The global primary remains the preferred automatic choice within that list; an existing valid participant choice takes precedence. Unset configuration preserves fixed creation on the BASE fallback. This amendment requires no stored-policy rewrite, API addition or migration. One ruling remains open: whether anonymous guests share the existing global BASE safety exception or credit fallback becomes restricted to the lecturer's list. Implement the independent new-chatbot policy first; hold that fallback change until the ruling arrives. Provider outage failover is outside this package.
 
 ## Execution details
 
@@ -16,8 +18,9 @@ The user approved implementation with “so lets do that” after the Astra inve
 - Execution mode: standard. Ceremony: full path because defaults cross consumers and affect credit-safe selection. Boundary owner: self.
 - Existing model registry and OpenAI-compatible adapter remain the sole catalog and transport. No dependency, service, schema migration or database rewrite.
 - Keep both existing Zod parsers. Extend the dependency-free shared policy helpers in `packages/util/src/chatModelRegistry.ts`.
-- Retain `CHAT_PRIMARY_MODEL_ID` and enable `CHAT_FALLBACK_MODEL_ID`; add `CHAT_NEW_CHATBOT_MODEL_ID`. Both consumer ConfigMaps receive identical effective policy and registry settings.
-- Without explicit settings, primary resolves to canonical `auto`, fallback uses the valid legacy fallback or requires exactly one eligible BASE fallback, and new-chatbot default resolves to that fallback. Zero or ambiguous eligible fallbacks fail startup. Explicit fallback configuration selects one eligible entry regardless of registry ordering. An explicitly configured ID must exist. The selected fallback must have BASE usage and `fallback: true`.
+- Retain `CHAT_PRIMARY_MODEL_ID` and enable `CHAT_FALLBACK_MODEL_ID`; replace the draft-only `CHAT_NEW_CHATBOT_MODEL_ID` with `CHAT_NEW_CHATBOT_MODEL_POLICY_JSON`. Both consumer ConfigMaps receive identical effective policy and registry settings. Helm exposes `chat.newChatbotModelPolicy` as an optional object.
+- Without explicit settings, primary resolves to canonical `auto`, fallback uses the valid legacy fallback or requires exactly one eligible BASE fallback, and new-chatbot creation remains fixed on that fallback. Zero or ambiguous eligible fallbacks fail startup. Explicit fallback configuration selects one eligible entry regardless of registry ordering. An explicitly configured ID must exist. The selected fallback must have BASE usage and `fallback: true`.
+- The optional new-chatbot policy contains exactly `modelSelection` (boolean) and `allowedModelIds` (nonempty unique model-ID list). Every ID must exist in the effective registry. Fixed mode requires exactly one ID; participant-selection mode allows one or more. Malformed JSON, unknown fields, wrong types, duplicate IDs, empty lists and unknown references fail startup. The existing reasoning initialization remains unchanged. The global primary is the existing initial-choice preference when needed; this policy does not add an independently persisted preference.
 - Built-in catalogs parse without process settings. Startup validates settings against the effective registry, preventing custom settings from invalidating an unused built-in catalog during import.
 - A configured global primary outside a particular bot's allow-list does not widen that list. Nonempty stale allow-lists retain only the configured BASE fallback. Empty legacy lists keep existing compatibility behavior.
 - New-chatbot default affects only new records. Preserve the existing initial reasoning configuration semantics; no new reasoning-default setting. Supported reasoning values stay configuration-driven. A nonempty stored restriction with no supported intersection returns an empty allowed set and the chat route rejects before calling the provider; it never expands efforts or omits effort to permit a provider default.
@@ -29,7 +32,7 @@ The user approved implementation with “so lets do that” after the Astra inve
 | Primitive            | Disposition | Contract                                                                                                                     |
 | -------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | Model registry       | Extend      | Validate configurable policy references while retaining immutable catalog identities and existing capability/pricing fields. |
-| Chatbot model policy | Reuse       | Preserve explicit selections and pending revisions; configured defaults apply only at the existing default-selection seams.  |
+| Chatbot model policy | Extend      | Reuse existing selection mode and model-ID list for new-bot defaults; preserve existing rows, explicit choices and pending revisions. |
 | Credit fallback      | Extend      | Configured BASE-only fallback across participant chat, stale policies and Manage assistant.                                  |
 
 The existing registry architecture is retained, so no new ADR is required. Amend ADR 0020's vendor-specific defaults and cross-environment catalog equality to reflect this approved configuration policy while preserving its BASE-only funding semantics. A separate runtime catalog service, hot reload, floating version aliases, pricing-policy automation or model retirement would reopen architecture and authority decisions. Full Zod consolidation was rejected because util currently has no Zod dependency. External documentation is unnecessary for existing code and Helm mechanisms; Astra's source-backed investigation is the design input.
@@ -45,6 +48,17 @@ Route: executor for util helper implementation; main for coupled consumer integr
 1. Freeze and harden this derived execution plan with the existing configured Astra planner; commit the plan after approval.
 2. Implement shared validation/resolution, integrate Chat, GraphQL and Manage assistant, wire Helm/public environment settings and update affected documentation. Commit one substantive integrated slice after focused verification.
 3. Run simplifier and risk-selected slice review on the immutable slice; apply verified corrections. Run one integrated final review, then publish the coherent draft PR and read back its metadata.
+
+### Approved multi-model amendment
+
+Planning baseline: `436d5970075ebc6df2dfe4208ad11cb5b664d717`, existing [draft PR #6423](https://github.com/uzh-bf/klicker-uzh/pull/6423). Previous checks and reviews remain evidence for unchanged behavior only. The amendment materially changes the creation configuration contract and requires a fresh bounded planner pass, then slice and integrated final review. Optional opposing-provider planning is unavailable from the preserved terminal route failure; keep the trusted required planner.
+
+The main session owns product decisions, configuration wiring, both consumers, documentation and delivery. The existing helper executor owns only the dependency-free util resolver once the amended plan is hardened; it returns uncommitted work for integration. Acceptance uses the existing Chat and GraphQL registry suites and creation-call assertion. This delegation preserves one writer per path set.
+
+1. Replace the unpublished scalar creation default with a validated policy object. Extend `packages/util/src/chatModelRegistry.ts`, wire the existing Chat/GraphQL startup getters and Manage assistant, and create new bot rows using that object's existing fields. Update the existing registry/parity tests, Helm consumers/default values, devcontainer environment, Turbo environment and configuration guide/ADR 0020. Commit and review this coherent creation-policy slice. No new implementation files or dependencies.
+2. After the outstanding fallback ruling, use one eligible BASE selection rule across anonymous guests, participant credit exhaustion and the credits bootstrap. Preserve account eligibility, budgets and stored reasoning restrictions. Extend the existing Chat registry and route tests at their current seams; the credits route is an additional bounded path `apps/chat/src/app/api/chatbots/[chatbotId]/credits/route.ts`. Resolve the allow-list exception in ADR 0020 before implementation. Commit/review the material correction and complete one integrated final review before updating the same draft.
+
+Amendment acceptance: unset policy preserves old creation behavior; configured fixed and multi-model policies produce correct existing row fields; invalid policy fails before serving; consumer policy resolution and Helm JSON agree. A valid previously selected participant model remains selected. The new object does not become an ordered outage retry list. Browser/database acceptance remains a required but previously blocked boundary; do not restart or repair managed runtime merely to run static tests.
 
 ### Feature-wide test portfolio
 
@@ -70,7 +84,7 @@ Pause only for a material product/configuration change, missing independent revi
 
 ## Progress
 
-Status: source implementation, simplification and independent reviews complete; draft delivery active. [PR #6423](https://github.com/uzh-bf/klicker-uzh/pull/6423) targets `v3-ai`. Next action: publish final disclosure and complete pending hosted/browser acceptance before any ready or merge decision. Broad production goal and separate deployment prep remain outside this package.
+Status: earlier reviewed source published at `436d5970075ebc6df2dfe4208ad11cb5b664d717`; multi-model amendment planning active. [PR #6423](https://github.com/uzh-bf/klicker-uzh/pull/6423) remains draft to `v3-ai`. Next action: harden the amendment, implement independent creation policy, then apply the separately clarified fallback rule. Hosted/browser acceptance remains incomplete. Broad production goal and separate deployment prep remain outside this package.
 
 Planning evidence: configured Astra child `/root/configurable_chat_models_astra` completed the initial investigation and architecture refinement. Runtime model provenance is unavailable; this records configured routing rather than verified model identity. Optional opposing-provider route previously failed terminally in this parent task and is not re-probed.
 
