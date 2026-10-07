@@ -36,3 +36,40 @@ export function sanitizeDocQueryResult(value: unknown): unknown {
   }
   return value
 }
+
+// A queue belongs to one discovered tool/client. Keep its slot until the raw
+// provider operation settles, even if an outer graph deadline returns first.
+export function serializeDocQueryExecution<
+  Options extends { abortSignal?: AbortSignal },
+  Result,
+>(
+  execute: (input: unknown, options: Options) => Result | PromiseLike<Result>
+): (input: unknown, options: Options) => Promise<Result> {
+  let pending = Promise.resolve()
+  return (input, options) => {
+    const result = pending.then(async () => {
+      options.abortSignal?.throwIfAborted()
+      const output = await execute(input, options)
+      options.abortSignal?.throwIfAborted()
+      if (output === null || output === undefined) {
+        throw new Error('Document retrieval returned no result')
+      }
+      return output
+    })
+    pending = result.then(
+      () => undefined,
+      () => undefined
+    )
+    const signal = options.abortSignal
+    if (!signal) return result
+    if (signal.aborted) return Promise.reject(signal.reason)
+    let abort: () => void = () => undefined
+    const aborted = new Promise<never>((_, reject) => {
+      abort = () => reject(signal.reason)
+      signal.addEventListener('abort', abort, { once: true })
+    })
+    return Promise.race([result, aborted]).finally(() => {
+      signal.removeEventListener('abort', abort)
+    })
+  }
+}
