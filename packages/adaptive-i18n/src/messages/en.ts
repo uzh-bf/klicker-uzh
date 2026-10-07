@@ -445,6 +445,9 @@ const messages = {
           preset: 'Preset',
           totalQuestionCap: 'Maximum questions',
           showTimer: 'Show timer',
+          repetitionInterval: 'Retake after (days)',
+          repetitionIntervalHelp:
+            'Days a student waits after finishing before taking the quiz again; 0 allows an immediate retake. The latest completed attempt counts.',
           attemptPolicy: 'Attempt used for results',
           advanced: 'Advanced adaptive settings',
           perLeafQuestionCap: 'Maximum questions per leaf',
