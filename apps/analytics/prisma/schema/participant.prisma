@@ -105,6 +105,7 @@ model Participant {
   chatThreads                     ChatThread[]
   chatUsageCredits                ChatUsageCredits[]
   invitations                     ParticipantInvitation[]
+  productUpdateStates             ParticipantProductUpdateState[]
   pointCorrections                PointCorrection[]
   individualPointCorrections      PointCorrection[]                @relation("PointCorrectionParticipants")
   verificationRecords             VerifiableCredential[]
