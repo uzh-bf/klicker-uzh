@@ -186,6 +186,47 @@ the helper and its tests have no task-relative delta, and the merged service
 still calls that helper for temporary participants. This static seam inspection
 does not replace integrated review or runtime verification.
 
+### Publication checkpoint — 2026-10-07
+
+The normal target integration is committed through `bf114e6f247c99cd6fb36a7c0f3e480fe2040d51`.
+Implementation head `1780156761ed4d6b182af4f3f564ccb12a96fdd6` includes the
+restart synchronization correction, disposable-database admission guard, formatter
+correction and durable cached-cockpit diagnosis. The task checkout is clean.
+The synthetic source matches the reviewed application/test bytes despite its
+historical pending integration; it must not be pushed or have its stash applied
+wholesale. Hosted CI still describes the previous remote head until publication.
+
+Completed local proof: serial Chromium O1 40/40, combined evaluation/aggregation
+5/5 + 22/22, root typecheck 35/35, lint 7/7 and production build 23/23.
+GraphQL generation/drift, Prisma sync, Syncpack, retired paths, AGENTS.md and
+host launcher/identity checks passed. Root check:all was split between host
+and container as recorded above; do not relabel that interrupted combined run
+as passing. No repeated runtime tests are required for this documentation update.
+
+Independent integrated final review passed the complete 38-path range
+`bf114e6f24..1780156761` with no introduced findings. Simplification found no
+justified reduction. Reports are in the existing ignored review directory.
+The package has 3,669 substantive changed lines after excluding project docs
+and generated SDL. It remains the existing cohesive approved evaluation PR;
+no new topology or decomposition was introduced.
+
+Real agent-browser captures cover signed pre-start metadata, active default-off
+controls and rendered reveals, closed authenticated evaluation, and unavailable
+evaluation at 1440×900 and 390×844 in English/German. Closed evaluation contains
+two tabs for two blocks and no mobile document overflow. Terminal-null observation
+recorded zero GraphQL requests in twelve seconds. Screenshots use synthetic
+zero-submission fixtures; actual submissions and result aggregation are covered
+by the full O1 producing run. Firefox/WebKit were not run locally.
+
+Remaining delivery: publish this exact task branch with an ordinary non-force
+push, update the whole-branch PR description and native screenshot attachments,
+complete required exact-head CI and repository final AI review. All 31 review
+threads remain resolved; two historical human changes-requested reviews still
+block merge readiness. No replies or human review requests are authorized.
+Queue-drain and rollback qualification remain later release obligations.
+The same native goal still reports blocked; source progress does not claim
+that the goal-control state was resumed or that the terminal condition is met.
+
 ### Evidence that can be reused
 
 The implementation includes metadata-only signed DRAFT/SCHEDULED evaluation,
