@@ -4,9 +4,9 @@ import {
   getEnrolledParticipantId,
   mockChatStream,
   resetChatState,
-  setParticipantToken,
 } from '../util/chat.js'
 import { COURSE_ID_TEST } from '../util/constants.js'
+import { loginStudent } from '../util/workflow.js'
 
 type CourseState = {
   gamification?: boolean
@@ -228,20 +228,7 @@ test('the guide preserves embedded disclosure refusal and normal-view recovery',
 }) => {
   const participantId = await getEnrolledParticipantId()
   await resetChatState(participantId)
-  await setParticipantToken(page, participantId)
-  const tokenCookie = (await page.context().cookies()).find(
-    (cookie) => cookie.name === 'participant_token'
-  )
-  expect(tokenCookie).toBeDefined()
-  await page.context().addCookies([
-    {
-      name: 'participant_token',
-      value: tokenCookie!.value,
-      url: test.info().project.use.baseURL,
-      httpOnly: true,
-      sameSite: 'Lax',
-    },
-  ])
+  await loginStudent(page)
   await page.goto(`/docs?courseId=${COURSE_ID_TEST}`)
   const selector = page.getByTestId('docs-prototype-chatbot-select')
   if (await selector.count()) await selector.selectOption(CHATBOT_ID)
