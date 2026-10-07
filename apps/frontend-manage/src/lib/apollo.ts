@@ -3,7 +3,6 @@ import {
   ApolloLink,
   from,
   HttpLink,
-  InMemoryCache,
   NormalizedCacheObject,
   split,
 } from '@apollo/client'
@@ -21,6 +20,7 @@ import Router from 'next/router'
 import { useMemo } from 'react'
 import { isDeepEqual } from 'remeda'
 import util from 'util'
+import { createManageApolloCache } from './apolloCache'
 
 interface PageProps {
   __APOLLO_STATE__: NormalizedCacheObject
@@ -174,7 +174,7 @@ function createApolloClient(ctx?: GetServerSidePropsContext) {
   return new ApolloClient({
     ssrMode: typeof window === 'undefined',
     link: createIsomorphLink(),
-    cache: new InMemoryCache(),
+    cache: createManageApolloCache(),
     connectToDevTools: process.env.NODE_ENV === 'development',
   })
 }

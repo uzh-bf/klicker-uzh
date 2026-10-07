@@ -2,11 +2,20 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { asSchema, generateText, jsonSchema, type ToolSet, tool } from 'ai'
 import { describe, expect, test } from 'vitest'
 import { z } from 'zod'
-import { buildPromptCacheRequest } from '../src/lib/server/promptCacheIdentity'
+import {
+  buildPromptCacheRequest,
+  type PromptCacheScope,
+} from '../src/lib/server/promptCacheIdentity'
+
+const SCOPE: PromptCacheScope = {
+  chatbotId: 'synthetic-chatbot',
+  mode: 'tutor',
+  threadId: 'synthetic-thread',
+}
 
 type StablePrefixChange = {
   deploymentId?: string
-  instructions?: string
+  cacheScope?: Partial<PromptCacheScope>
   transport?: 'chat' | 'responses'
 }
 
@@ -58,7 +67,7 @@ function responsesResponse() {
     object: 'response',
     created_at: 1,
     status: 'completed',
-    model: 'gpt-5.6-luna',
+    model: 'gpt-6-luna',
     output: [
       {
         type: 'message',
@@ -98,15 +107,15 @@ function captureFetch(
 describe('prompt cache identity', () => {
   test('is stable across tool insertion order and returns one provider order', async () => {
     const first = await buildPromptCacheRequest({
-      deploymentId: 'gpt-5.6-luna',
+      deploymentId: 'gpt-6-luna',
       transport: 'responses',
-      instructions: 'Synthetic instructions.',
+      cacheScope: SCOPE,
       tools: createTools('first'),
     })
     const second = await buildPromptCacheRequest({
-      deploymentId: 'gpt-5.6-luna',
+      deploymentId: 'gpt-6-luna',
       transport: 'responses',
-      instructions: 'Synthetic instructions.',
+      cacheScope: SCOPE,
       tools: createTools('second'),
     })
 
@@ -116,21 +125,40 @@ describe('prompt cache identity', () => {
     expect(second.toolOrder).toEqual(first.toolOrder)
   })
 
+  test('keeps one key for a thread and separates threads without exposing the id', async () => {
+    const request = (threadId: string) =>
+      buildPromptCacheRequest({
+        deploymentId: 'gpt-5.6-luna',
+        transport: 'responses',
+        cacheScope: { ...SCOPE, threadId },
+        tools: createTools(),
+      })
+    const turnOne = await request('thread-a')
+    const turnTwo = await request('thread-a')
+    const otherThread = await request('thread-b')
+
+    expect(turnTwo.promptCacheKey).toBe(turnOne.promptCacheKey)
+    expect(otherThread.promptCacheKey).not.toBe(turnOne.promptCacheKey)
+    expect(turnOne.promptCacheKey).not.toContain('thread-a')
+  })
+
   test.each<[string, StablePrefixChange]>([
-    ['instructions', { instructions: 'Changed instructions.' }],
+    ['thread', { cacheScope: { threadId: 'other-thread' } }],
+    ['chatbot', { cacheScope: { chatbotId: 'other-chatbot' } }],
+    ['mode', { cacheScope: { mode: 'explainer' } }],
     ['deployment', { deploymentId: 'auto-router' }],
     ['transport', { transport: 'chat' as const }],
   ])('changes the key when the stable prefix %s changes', async (_, change) => {
     const base = await buildPromptCacheRequest({
-      deploymentId: 'gpt-5.6-luna',
+      deploymentId: 'gpt-6-luna',
       transport: 'responses',
-      instructions: 'Synthetic instructions.',
+      cacheScope: SCOPE,
       tools: createTools(),
     })
     const changed = await buildPromptCacheRequest({
-      deploymentId: change.deploymentId ?? 'gpt-5.6-luna',
+      deploymentId: change.deploymentId ?? 'gpt-6-luna',
       transport: change.transport ?? 'responses',
-      instructions: change.instructions ?? 'Synthetic instructions.',
+      cacheScope: { ...SCOPE, ...change.cacheScope },
       tools: createTools(),
     })
 
@@ -140,15 +168,15 @@ describe('prompt cache identity', () => {
   test('changes the key for provider-visible tool changes but not runtime functions', async () => {
     const baseTools = createTools()
     const base = await buildPromptCacheRequest({
-      deploymentId: 'gpt-5.6-luna',
+      deploymentId: 'gpt-6-luna',
       transport: 'responses',
-      instructions: 'Synthetic instructions.',
+      cacheScope: SCOPE,
       tools: baseTools,
     })
     const changed = await buildPromptCacheRequest({
-      deploymentId: 'gpt-5.6-luna',
+      deploymentId: 'gpt-6-luna',
       transport: 'responses',
-      instructions: 'Synthetic instructions.',
+      cacheScope: SCOPE,
       tools: {
         ...createTools(),
         search: tool<{ query: string }, { ok: boolean }, Record<never, never>>({
@@ -166,9 +194,9 @@ describe('prompt cache identity', () => {
 
   test('changes the key for serialized tool strictness', async () => {
     const base = await buildPromptCacheRequest({
-      deploymentId: 'gpt-5.6-luna',
+      deploymentId: 'gpt-6-luna',
       transport: 'responses',
-      instructions: 'Synthetic instructions.',
+      cacheScope: SCOPE,
       tools: {
         search: tool<{ query: string }, { ok: boolean }, Record<never, never>>({
           description: 'Search the synthetic corpus.',
@@ -179,9 +207,9 @@ describe('prompt cache identity', () => {
       },
     })
     const changed = await buildPromptCacheRequest({
-      deploymentId: 'gpt-5.6-luna',
+      deploymentId: 'gpt-6-luna',
       transport: 'responses',
-      instructions: 'Synthetic instructions.',
+      cacheScope: SCOPE,
       tools: {
         search: tool<{ query: string }, { ok: boolean }, Record<never, never>>({
           description: 'Search the synthetic corpus.',
@@ -213,43 +241,43 @@ describe('prompt cache identity', () => {
     const baseChat = await buildPromptCacheRequest({
       deploymentId: 'gpt-4.1',
       transport: 'chat',
-      instructions: 'Synthetic instructions.',
+      cacheScope: SCOPE,
       tools: baseTools,
     })
     const inputExampleChat = await buildPromptCacheRequest({
       deploymentId: 'gpt-4.1',
       transport: 'chat',
-      instructions: 'Synthetic instructions.',
+      cacheScope: SCOPE,
       tools: inputExampleTools,
     })
     const unrelatedProviderChat = await buildPromptCacheRequest({
       deploymentId: 'gpt-4.1',
       transport: 'chat',
-      instructions: 'Synthetic instructions.',
+      cacheScope: SCOPE,
       tools: unrelatedProviderTools,
     })
     const baseResponses = await buildPromptCacheRequest({
-      deploymentId: 'gpt-5.6-luna',
+      deploymentId: 'gpt-6-luna',
       transport: 'responses',
-      instructions: 'Synthetic instructions.',
+      cacheScope: SCOPE,
       tools: baseTools,
     })
     const inputExampleResponses = await buildPromptCacheRequest({
-      deploymentId: 'gpt-5.6-luna',
+      deploymentId: 'gpt-6-luna',
       transport: 'responses',
-      instructions: 'Synthetic instructions.',
+      cacheScope: SCOPE,
       tools: inputExampleTools,
     })
     const unrelatedProviderResponses = await buildPromptCacheRequest({
-      deploymentId: 'gpt-5.6-luna',
+      deploymentId: 'gpt-6-luna',
       transport: 'responses',
-      instructions: 'Synthetic instructions.',
+      cacheScope: SCOPE,
       tools: unrelatedProviderTools,
     })
     const wireChangedResponses = await buildPromptCacheRequest({
-      deploymentId: 'gpt-5.6-luna',
+      deploymentId: 'gpt-6-luna',
       transport: 'responses',
-      instructions: 'Synthetic instructions.',
+      cacheScope: SCOPE,
       tools: wireChangedTools,
     })
 
@@ -272,7 +300,7 @@ describe('prompt cache identity', () => {
       fetch: captureFetch(responsesResponse(), captures),
     })
     await generateText({
-      model: provider.responses('gpt-5.6-luna'),
+      model: provider.responses('gpt-6-luna'),
       prompt: 'Synthetic prompt.',
       tools: wireChangedResponses.tools,
       toolOrder: wireChangedResponses.toolOrder,
@@ -289,7 +317,7 @@ describe('prompt cache identity', () => {
     const request = await buildPromptCacheRequest({
       deploymentId: 'gpt-4.1',
       transport: 'chat',
-      instructions: 'Synthetic instructions.',
+      cacheScope: SCOPE,
       tools: {
         inspect: tool({
           inputSchema: jsonSchema(
@@ -316,15 +344,15 @@ describe('prompt cache identity', () => {
     secondTools.search.execute = async () => ({ ok: true })
 
     const first = await buildPromptCacheRequest({
-      deploymentId: 'gpt-5.6-luna',
+      deploymentId: 'gpt-6-luna',
       transport: 'responses',
-      instructions: 'Synthetic instructions.',
+      cacheScope: SCOPE,
       tools: firstTools,
     })
     const second = await buildPromptCacheRequest({
-      deploymentId: 'gpt-5.6-luna',
+      deploymentId: 'gpt-6-luna',
       transport: 'responses',
-      instructions: 'Synthetic instructions.',
+      cacheScope: SCOPE,
       tools: secondTools,
     })
 
@@ -335,8 +363,6 @@ describe('prompt cache identity', () => {
   test.each([
     ['userId', 'synthetic-user'],
     ['participantId', 'synthetic-participant'],
-    ['chatbotId', 'synthetic-chatbot'],
-    ['threadId', 'synthetic-thread'],
     ['assistantMessageId', 'synthetic-assistant'],
     ['messageId', 'synthetic-message'],
     ['requestId', 'synthetic-request'],
@@ -344,15 +370,15 @@ describe('prompt cache identity', () => {
     ['mcpServerId', 'synthetic-mcp-server'],
   ])('does not accept %s as a stable identity input', async (field, value) => {
     const base = await buildPromptCacheRequest({
-      deploymentId: 'gpt-5.6-luna',
+      deploymentId: 'gpt-6-luna',
       transport: 'responses',
-      instructions: 'Synthetic instructions.',
+      cacheScope: SCOPE,
       tools: createTools(),
     })
     const inputWithRequestIdentifier = {
-      deploymentId: 'gpt-5.6-luna',
+      deploymentId: 'gpt-6-luna',
       transport: 'responses' as const,
-      instructions: 'Synthetic instructions.',
+      cacheScope: SCOPE,
       tools: createTools(),
       [field]: value,
     }
@@ -369,7 +395,7 @@ describe('prompt cache identity', () => {
     const chatRequest = await buildPromptCacheRequest({
       deploymentId: 'gpt-4.1',
       transport: 'chat',
-      instructions: 'Synthetic instructions.',
+      cacheScope: SCOPE,
       tools: createTools(),
     })
     const chatProvider = createOpenAI({
@@ -415,9 +441,9 @@ describe('prompt cache identity', () => {
     })
     const responsesCaptures: Record<string, unknown>[] = []
     const responsesRequest = await buildPromptCacheRequest({
-      deploymentId: 'gpt-5.6-luna',
+      deploymentId: 'gpt-6-luna',
       transport: 'responses',
-      instructions: 'Synthetic instructions.',
+      cacheScope: SCOPE,
       tools: createTools(),
     })
     const responsesProvider = createOpenAI({
@@ -427,7 +453,7 @@ describe('prompt cache identity', () => {
     })
 
     await generateText({
-      model: responsesProvider.responses('gpt-5.6-luna'),
+      model: responsesProvider.responses('gpt-6-luna'),
       prompt: 'Synthetic prompt.',
       instructions: 'Synthetic instructions.',
       tools: responsesRequest.tools,

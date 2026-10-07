@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/shared-components",
-  "version": "3.4.0-alpha.81",
+  "version": "3.4.0-alpha.84",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "dependencies": {
@@ -57,7 +57,7 @@
     "yup": "^1.6.1"
   },
   "scripts": {
-    "check": "tsc --noEmit"
+    "check": "node --test test/react-runtime.test.mjs && tsc --noEmit"
   },
   "engines": {
     "node": "=24"

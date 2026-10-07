@@ -31,6 +31,7 @@ import {
 } from './generatedQuestionTags.js'
 import {
   getQuestionGenerationBuild,
+  retryQuestionGeneration,
   reviewQuestionGenerationDesign,
   reviewQuestionGenerationPlan,
   saveGeneratedQuestions,
@@ -258,10 +259,13 @@ export async function retryElementGeneration(
   ctx: ContextWithUser
 ) {
   const elementType = await ownedBuildType(buildId, ctx)
-  if (elementType !== DB.ElementType.FLASHCARD) {
-    return serviceError('This element-generation workflow is not retryable')
+  if (elementType === DB.ElementType.FLASHCARD) {
+    return retryFlashcardGeneration(buildId, ctx)
   }
-  return retryFlashcardGeneration(buildId, ctx)
+  if (QUESTION_TYPES.has(elementType)) {
+    return retryQuestionGeneration(buildId, ctx)
+  }
+  return serviceError('This element-generation workflow is not retryable')
 }
 
 export async function publishIncompleteElementGeneration(
@@ -840,7 +844,9 @@ export async function getElementGenerationCapabilities(ctx: ContextWithUser) {
         supportsDifficulty: elementType !== 'FLASHCARD',
         supportsBloomLevels: elementType !== 'FLASHCARD',
         supportsFocusTopic: elementType !== 'FLASHCARD' && focusTopicEnabled,
-        supportsRetry: elementType === 'FLASHCARD',
+        // Questions retry a failed build whose reasons the system can resolve;
+        // errorRetryable decides whether the retry is offered for one build.
+        supportsRetry: true,
         supportsIncompletePublication: elementType === 'FLASHCARD',
       })
     ),

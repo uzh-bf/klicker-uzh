@@ -149,7 +149,11 @@ async function deleteFixtureTags() {
 function questionChoices(type: 'SC' | 'MC' | 'KPRIM', index: number) {
   const count = type === 'SC' ? 2 : type === 'MC' ? 5 : 4
   return Array.from({ length: count }, (_, choiceIndex) => ({
-    id: `choice-${type}-${index}-${choiceIndex}`,
+    // The artifact parser identifies a choice by its question-scoped label, so
+    // the same ids repeat across the drafts of a build and between a draft's
+    // original and current view. The fixture mirrors that shape; globally
+    // unique ids would hide review-cache collisions from this suite.
+    id: String.fromCharCode(65 + choiceIndex),
     label: String.fromCharCode(65 + choiceIndex),
     text: `Synthetic ${type} choice ${choiceIndex + 1}`,
     correct: type === 'MC' ? choiceIndex < 2 : choiceIndex === 0,

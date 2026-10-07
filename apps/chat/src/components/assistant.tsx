@@ -19,6 +19,7 @@ import { useEmbedded } from '../hooks/useEmbedded'
 import { useEmbeddedChatContext } from '../hooks/useEmbeddedChatContext'
 import { usePwaEmbedTokenBootstrap } from '../hooks/usePwaEmbedTokenBootstrap'
 import { authedFetch } from '../lib/client/authedFetch'
+import type { ChatModeOptions } from '../lib/config/modes'
 import type { ChatDataUseState } from '../lib/dataUse'
 import { getKlickerChatContextLabel } from '../services/chatContext'
 import { useChatContextStore } from '../stores/chatContextStore'
@@ -58,7 +59,7 @@ interface DisclaimerStatus {
 
 interface AssistantProps {
   readonly chatbot: { id: string; name: string; avatar?: string }
-  readonly initialModeOptions: Record<string, string>
+  readonly initialModeOptions: ChatModeOptions
   readonly initialModeOptionsAreFallback?: boolean
   readonly knowledgeGraphVisible: boolean
   /**
@@ -539,7 +540,7 @@ function SidebarMain({
   chatbot: { id: string; name: string; avatar?: string }
   graphPanel: ReturnType<typeof useChatGraphPanel>
   knowledgeGraphVisible: boolean
-  initialModeOptions: Record<string, string>
+  initialModeOptions: ChatModeOptions
   initialModeOptionsAreFallback: boolean
 }) {
   const t = useTranslations()
@@ -658,7 +659,7 @@ function AssistantLayout({
   knowledgeGraphVisible,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
-  initialModeOptions: Record<string, string>
+  initialModeOptions: ChatModeOptions
   initialModeOptionsAreFallback: boolean
   knowledgeGraphVisible: boolean
 }) {

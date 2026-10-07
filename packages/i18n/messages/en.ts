@@ -60,7 +60,7 @@ export default {
       usingPrimaryModel:
         'The automatic choice is used while credits are available.',
       usingFallbackModel:
-        'No credits remain. GPT-5.6 Luna may be used as the credit fallback.',
+        'No credits remain. The base model may be used as the credit fallback.',
       reasoningEffortLabel: 'Reasoning Effort',
       selectReasoningEffort: 'Select reasoning effort',
       reasoningEffortHint:
@@ -2036,6 +2036,14 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       'The uploaded file no longer matches its upload reservation. Please upload it again.',
     ingestionFailed: 'The ingestion operation failed.',
     ingestionSuperseded: 'The ingestion operation was superseded.',
+    ingestionFailureSourceVersionMismatch:
+      'The source no longer matches the version recorded when it was added.',
+    ingestionFailureSourceFetch: 'The source could not be retrieved.',
+    ingestionFailureSourceProcessing:
+      'The source content could not be processed.',
+    ingestionFailureSourceSizeLimit:
+      'The source is larger than the supported size limit.',
+    ingestionFailureActivation: 'The imported content could not be activated.',
     inspectResource: 'Inspect',
     inspectorTitle: 'Resource details',
     sourceType: 'Source type',
@@ -2234,6 +2242,38 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       nextPage: 'Next',
     },
     admin: {
+      chatbotRejectionReason: 'Reason for rejection',
+      chatbotRejectConsequence:
+        'The owner will see this reason and can revise the chatbot before requesting approval again.',
+      chatbotReject: 'Reject request',
+      chatbotRejected:
+        '“{name}” was rejected. The owner can revise and resubmit it.',
+      chatbotRejectionError:
+        'Rejection could not be confirmed. Refresh the list and check the current status before trying again.',
+      chatbotAllTools: 'All tools',
+      chatbotDefaultReasoning: 'All reasoning levels supported by the model',
+      adminOnly: 'This page is available to administrators only.',
+      chatbotApprovals: 'Chatbot approvals',
+      chatbotApprovalsDescription:
+        'Review pending publication requests. Open a chatbot to check its configuration before approving participant access.',
+      chatbotOwner: 'Owner',
+      chatbotAccountApproval: 'Account publishing permission',
+      chatbotAccountApproved: 'Approved',
+      chatbotAccountNotApproved: 'Not approved',
+      chatbotConnectedTools: 'Connected tools',
+      chatbotNoConnectedTools: 'No connected tools.',
+      chatbotRefresh: 'Refresh requests',
+      chatbotQueueEmpty: 'No chatbots are awaiting approval.',
+      chatbotQueueError:
+        'Could not load publication requests. Refresh to try again.',
+      chatbotOwnerBlocked:
+        'The owner is not currently approved for chatbot publishing. Account approval is required before this chatbot can be published.',
+      chatbotApproveConsequence:
+        'Approving publishes this chatbot immediately for participants in its course. Account usage budgets remain unchanged.',
+      chatbotApprove: 'Approve and publish',
+      chatbotPublished: '“{name}” has been published.',
+      chatbotApprovalError:
+        'Publication could not be confirmed. The request list has been refreshed; check the current status before trying again.',
       pageName: 'Admin Panel',
       privatePreviewAvailability: 'Availability: Private Features',
       privatePreviewDescription:
@@ -2641,6 +2681,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatAccountUsageTitle: 'Chatbot usage',
       chatAccountUsageUnauthorized:
         'Chatbot usage is not authorized for this account.',
+      chatAccountUsageSubscriptionLabel: 'Plan',
+      chatAccountUsageTierBase: 'Base models',
+      chatAccountUsageTierAdvanced: 'Base and advanced models',
+      chatAccountUsageClassUnavailable:
+        'This usage class is not enabled for your account.',
+      chatAccountUsageAdvancedCostCenter:
+        'Advanced models require a cost center that AI usage can be billed to.',
       chatAccountUsageRefreshing: 'Refreshing usage…',
       chatAccountUsageStale:
         'The latest usage could not be loaded. The values below may be out of date.',
@@ -4961,6 +5008,31 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Quizzer may still be hidden when its course-material capability is unavailable.',
       chatbotModeEnabled: 'Enabled',
       chatbotModeDisabled: 'Disabled',
+      chatbotCustomModesTitle: 'Custom modes',
+      chatbotCustomModesDescription:
+        'Add up to {count} custom modes with their own name, description, and persona text. Custom modes are reviewed together with the chatbot revision.',
+      chatbotCustomModesEmpty:
+        'No custom modes yet. Add one to offer participants an additional mode.',
+      chatbotCustomModesNone: 'No custom modes are configured.',
+      chatbotCustomModesCount: '{count} of {max} custom modes used',
+      chatbotCustomMode: 'Custom mode {number}',
+      chatbotCustomModeName: 'Mode name',
+      chatbotCustomModeNameRequired: 'Each custom mode needs a name.',
+      chatbotCustomModeDescription: 'Short description',
+      chatbotCustomModePersonaText: 'Persona and instructions',
+      chatbotCustomModePersonaPlaceholder:
+        'Describe how this mode should respond to participants.',
+      chatbotCustomModeAdd: 'Add custom mode',
+      chatbotCustomModeRemove: 'Remove',
+      chatbotCustomModesLimit: 'At most {count} custom modes are supported.',
+      chatbotCustomModesDuplicate: 'Each custom mode needs a unique name.',
+      chatbotCustomModesReadonly:
+        'Custom modes cannot be edited in this chatbot status.',
+      chatbotCustomModesSave: 'Save custom modes',
+      chatbotCustomModesSaving: 'Saving…',
+      chatbotCustomModesSaveSuccess: 'Custom modes saved.',
+      chatbotCustomModesSaveError:
+        'Could not save the custom modes. Please try again.',
       chatbotFraming: 'Chatbot framing',
       chatbotFramingDescription:
         'Briefly describe the course, audience, or intended focus. This context is used in the standard learning modes.',

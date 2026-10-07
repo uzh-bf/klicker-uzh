@@ -37,10 +37,13 @@ workers|yes|no|yes|$B $A $W1 $W2|auth
 ai|no|no|no|||
 mcp|no|yes|no|||
 email|no|no|no|||
+eduid|no|no|no|||
+full,eduid|yes|yes|yes||auth chat frontend-control frontend-manage frontend-pwa response-api
 chat,mcp|yes|yes|no|$B $A $C $P|auth chat frontend-pwa
 mcp,chat|yes|yes|no|$B $A $C $P|auth chat frontend-pwa
 chat,chat|yes|no|no|$B $A $C $P|auth chat frontend-pwa
 manage,email|yes|no|no|$B $A $M|auth frontend-manage
+manage,eduid|yes|no|no|$B $A $M|auth frontend-manage
 ai,chat|yes|no|no|$B $A $C $P|auth chat frontend-pwa
 chat,pwa|yes|no|no|$B $A $C $P|auth chat frontend-pwa
 pwa,chat|yes|no|no|$B $A $C $P|auth chat frontend-pwa

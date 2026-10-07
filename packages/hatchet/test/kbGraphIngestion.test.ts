@@ -179,6 +179,7 @@ function createMonitorPrisma(
     ambiguousBuildCount = ambiguousBuilds.length,
     heldBuilds = [],
     heldBuildCount = heldBuilds.length,
+    heldCostStatus = KBGraphCostStatus.NEEDS_HUMAN_REVIEW,
   }: {
     activeBuildCount?: number
     timedOutBuilds?: Array<Record<string, unknown>>
@@ -192,6 +193,7 @@ function createMonitorPrisma(
     ambiguousBuildCount?: number
     heldBuilds?: Array<Record<string, unknown>>
     heldBuildCount?: number
+    heldCostStatus?: KBGraphCostStatus
   } = {}
 ) {
   const prisma = {
@@ -212,7 +214,7 @@ function createMonitorPrisma(
       findUnique: vi.fn().mockResolvedValue({
         quotaId: QUOTA_ID,
         estimatedCostMinorUnits: 100,
-        costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW,
+        costStatus: heldCostStatus,
       }),
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
@@ -1487,5 +1489,50 @@ describe('KB graph build failure guard', () => {
 
     expect(prisma.kBGraphQuota.updateMany).not.toHaveBeenCalled()
     expect(prisma.kB.updateMany).not.toHaveBeenCalled()
+  })
+})
+
+describe('KB graph unmetered reservation release', () => {
+  it('releases a reservation held by a terminal result that could not be metered', async () => {
+    const prisma = createMonitorPrisma([], {
+      heldBuilds: [{ id: BUILD_ID, kbId: KB_ID }],
+    })
+
+    await monitorActiveKBGraphBuilds({
+      prisma: prisma as never,
+      client: createClient(),
+      env: externalEnv,
+      now: () => NOW,
+    })
+
+    expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith({
+      where: { id: BUILD_ID, costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW },
+      data: { costStatus: KBGraphCostStatus.RELEASED },
+    })
+    expect(prisma.kBGraphQuota.updateMany).toHaveBeenCalledWith({
+      where: { id: QUOTA_ID, reservedMinorUnits: { gte: 100 } },
+      data: { reservedMinorUnits: { decrement: 100 } },
+    })
+  })
+
+  it('keeps a hold that is not parked for review', async () => {
+    const prisma = createMonitorPrisma([], {
+      heldBuilds: [{ id: BUILD_ID, kbId: KB_ID }],
+      heldCostStatus: KBGraphCostStatus.RESERVED,
+    })
+
+    await monitorActiveKBGraphBuilds({
+      prisma: prisma as never,
+      client: createClient(),
+      env: externalEnv,
+      now: () => NOW,
+    })
+
+    expect(prisma.kBGraphBuild.updateMany).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { costStatus: KBGraphCostStatus.RELEASED },
+      })
+    )
+    expect(prisma.kBGraphQuota.updateMany).not.toHaveBeenCalled()
   })
 })

@@ -214,6 +214,7 @@ mkdir -p \
 write_file "$ROOT/.devcontainer/devcontainer.env" ''
 cp "$RUNTIME_SCRIPT" "$ROOT/util/dev-runtime.sh"
 cp "$REPO_ROOT/util/check-dev-pages-manifest.mjs" "$ROOT/util/check-dev-pages-manifest.mjs"
+cp "$REPO_ROOT/util/local-eduid-issuer.sh" "$ROOT/util/local-eduid-issuer.sh"
 bash "$RUNTIME_SCRIPT" complete-bootstrap >/dev/null
 if KLICKER_DEVCONTAINER_ROOT="$TEST_ROOT/missing-root" \
   bash "$REPO_ROOT/.devcontainer/post-create.sh" >/dev/null 2>&1; then

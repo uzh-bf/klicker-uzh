@@ -86,8 +86,18 @@ async function logMaintenanceError(
   message: string,
   identifiers: Record<string, string>
 ) {
+  // The worker's task logger records the message alone, so the identifiers of
+  // the failing row are part of the text; without them a repeated failure keeps
+  // hiding which record it belongs to.
+  const details = Object.entries(identifiers)
+    .map(([name, value]) => `${name}=${value}`)
+    .join(' ')
+
   try {
-    await logger?.error?.(message, identifiers)
+    await logger?.error?.(
+      details === '' ? message : `${message} [${details}]`,
+      identifiers
+    )
   } catch {
     // Maintenance must remain retryable when logging is unavailable.
   }

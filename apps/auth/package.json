@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/auth",
-  "version": "3.4.0-alpha.81",
+  "version": "3.4.0-alpha.84",
   "license": "AGPL-3.0",
   "dependencies": {
     "@auth/prisma-adapter": "2.11.2",
@@ -12,7 +12,7 @@
     "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
     "@uzh-bf/design-system": "4.1.8",
-    "axios": "1.18.0",
+    "axios": "1.20.0",
     "bcryptjs": "2.4.3",
     "js-cookie": "3.0.7",
     "localforage": "1.10.0",
@@ -50,7 +50,7 @@
   },
   "scripts": {
     "build": "next build --turbopack",
-    "build:test": "cross-env NODE_ENV=test next build --turbopack",
+    "build:test": "node ../../util/playwright-next-runtime.mjs build",
     "check": "next typegen && tsc --noEmit",
     "dev": "next dev --turbopack --port 3010",
     "dev:assessment": "pnpm run dev",
@@ -60,7 +60,7 @@
     "dev:webpack": "next dev --webpack --port 3010",
     "lint": "eslint .",
     "start": "next start --port 3010",
-    "start:test": "cross-env NODE_ENV=test pnpm start",
+    "start:test": "node ../../util/playwright-next-runtime.mjs start 3010",
     "test": "vitest run --project unit --project integration",
     "test:built": "vitest run --project built",
     "test:integration": "vitest run --project integration",
