@@ -32,10 +32,11 @@ async function verifyExplicitBearer(token: string) {
 
 // Regular participant cookies are SameSite=None so embedded LMS launches work,
 // and CORS reflects any origin. Only an origin inside the cookie domain may
-// select them; a foreign host that merely contains the subdomain cannot.
+// select them; a foreign host that merely contains the subdomain cannot, and
+// without a configured cookie domain no origin can.
 function isCookieDomainOrigin(origin: unknown) {
   const cookieDomain = process.env.COOKIE_DOMAIN?.replace(/^\./, '')
-  if (!cookieDomain) return true
+  if (!cookieDomain) return false
   if (typeof origin !== 'string') return false
   try {
     const { hostname } = new URL(origin)

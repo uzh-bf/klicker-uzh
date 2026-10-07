@@ -308,6 +308,20 @@ describe('jwtMiddleware', () => {
       assert.equal(user, null)
     })
 
+    it('ignores participant cookies when no cookie domain is configured', async () => {
+      process.env.COOKIE_DOMAIN = ''
+      try {
+        const { user } = await runMiddleware({
+          headers: { origin: PWA_ORIGIN },
+          cookies: { participant_token: validCookieToken },
+        })
+
+        assert.equal(user, null)
+      } finally {
+        process.env.COOKIE_DOMAIN = '.klicker.localhost'
+      }
+    })
+
     it('treats an empty authorization header as absent for cookie-only requests', async () => {
       const { user } = await runMiddleware({
         headers: { origin: PWA_ORIGIN, authorization: '' },
