@@ -1,6 +1,17 @@
+import {
+  PRODUCT_UPDATES,
+  selectLatestReleasedUpdate,
+} from '@klicker-uzh/product-updates'
 import { Button } from '@uzh-bf/design-system'
 
 export function TitleImage() {
+  // The homepage is public and English-only, so it shows the newest released
+  // catalog entry rather than evaluating eligibility for an actor.
+  const latestRelease = selectLatestReleasedUpdate({
+    updates: PRODUCT_UPDATES,
+    surface: 'docs',
+  })
+
   return (
     <div className="bg-white">
       <div className="relative">
@@ -17,20 +28,22 @@ export function TitleImage() {
 
             <div className="relative px-6 py-12 sm:py-40 md:py-32 lg:px-8 lg:py-56 lg:pr-0">
               <div className="mx-auto max-w-2xl lg:mx-0 lg:max-w-xl">
-                <div className="hidden sm:mb-10 sm:flex">
-                  <div className="relative rounded-full px-3 py-1 text-sm leading-6 text-gray-500 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
-                    KlickerUZH v3.2 has been released with brand new features
-                    <a
-                      href="https://community.klicker.uzh.ch/t/klickeruzh-v3-2-release-information/388"
-                      className="whitespace-nowrap font-semibold"
-                      target="_blank"
-                      style={{ marginLeft: '0.75rem' }}
-                    >
-                      <span className="absolute inset-0" aria-hidden="true" />
-                      What's new? <span aria-hidden="true">&rarr;</span>
-                    </a>
+                {latestRelease?.detailsUrl ? (
+                  <div className="hidden sm:mb-10 sm:flex">
+                    <div className="relative rounded-full px-3 py-1 text-sm leading-6 text-gray-500 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
+                      {latestRelease.title.en}
+                      <a
+                        href={latestRelease.detailsUrl}
+                        className="whitespace-nowrap font-semibold"
+                        target="_blank"
+                        style={{ marginLeft: '0.75rem' }}
+                      >
+                        <span className="absolute inset-0" aria-hidden="true" />
+                        What's new? <span aria-hidden="true">&rarr;</span>
+                      </a>
+                    </div>
                   </div>
-                </div>
+                ) : null}
 
                 <img className="-ml-2 w-80" src="/img/logos/KlickerLogo.png" />
                 <p className="mt-1 text-2xl leading-8 text-gray-600">
