@@ -32,7 +32,7 @@ The user approved implementation with “so lets do that” after the Astra inve
 | Chatbot model policy | Reuse | Preserve explicit selections and pending revisions; configured defaults apply only at the existing default-selection seams. |
 | Credit fallback | Extend | Configured BASE-only fallback across participant chat, stale policies and Manage assistant. |
 
-The existing registry architecture is retained, so no new ADR is required. A separate runtime catalog service, hot reload, floating version aliases, pricing-policy automation or model retirement would reopen architecture and authority decisions. Full Zod consolidation was rejected because util currently has no Zod dependency. External documentation is unnecessary for existing code and Helm mechanisms; Astra's source-backed investigation is the design input.
+The existing registry architecture is retained, so no new ADR is required. Amend ADR 0020's vendor-specific defaults and cross-environment catalog equality to reflect this approved configuration policy while preserving its BASE-only funding semantics. A separate runtime catalog service, hot reload, floating version aliases, pricing-policy automation or model retirement would reopen architecture and authority decisions. Full Zod consolidation was rejected because util currently has no Zod dependency. External documentation is unnecessary for existing code and Helm mechanisms; Astra's source-backed investigation is the design input.
 
 ### Delegation map and sequence
 
@@ -70,7 +70,7 @@ Pause only for a material product/configuration change, missing independent revi
 
 ## Progress
 
-Status: implementation and focused source verification complete; independent slice and final reviews pending. Required delivery: reviewed draft PR; PR: none yet. Next action: review the integrated committed slice. Broad production goal and separate deployment prep remain outside this package.
+Status: implementation and focused source verification complete; slice-review disposition and final review pending. Required delivery: reviewed draft PR; early draft: [PR #6423](https://github.com/uzh-bf/klicker-uzh/pull/6423), target `v3-ai`. Next action: finish independent review and runtime acceptance. Broad production goal and separate deployment prep remain outside this package.
 
 Planning evidence: configured Astra child `/root/configurable_chat_models_astra` completed the initial investigation and architecture refinement. Runtime model provenance is unavailable; this records configured routing rather than verified model identity. Optional opposing-provider route previously failed terminally in this parent task and is not re-probed.
 
@@ -79,3 +79,7 @@ The same Astra planner returned `APPROVED` after one correction round. Main acce
 Verification: 50 focused Chat tests and five GraphQL registry tests pass in a network-disabled Node 24.21.0 / Vitest 3.2.4 container using retained dependencies. Chat and GraphQL repository type-checks pass. Scoped Biome lint passes with three existing warnings and one existing informational suggestion. Both STG and PRD Helm renders prove identical consumer policy/registry settings, unchanged workload images and changed checksums on both consumer deployments after a default-setting change. This is static rollout proof only.
 
 Local browser acceptance and the database-backed management suite remain pending: the exact task runtime's managed startup has not produced a readiness receipt. A broader util type-check is still running without terminal evidence; the focused helper check and util build passed. No full monorepo check/build or hosted CI success is claimed. Container checks use existing installed executables because the isolated dependency mounts cannot satisfy pnpm's whole-workspace dependency verification. Host Git identity and staged secret checks remain mandatory before publication.
+
+The simplifier's unused GraphQL wrapper removal was accepted and verified with five passing registry tests and the GraphQL type-check. The slice reviewer identified stale ADR 0020 wording; its amendment records the already-approved policy. Its claimed missing backend startup check was disproved by `apps/backend-docker/src/index.ts:130`, which calls the registry getter before listening. Its request to restore vendor-price pins and cross-environment equality conflicts with the approved configuration contract; per-environment structured consumer parity remains protected. The same reviewer verifies this disposition.
+
+Source delivery: ordinary task-branch push and draft creation succeeded. Exact-head hosted CI started; required gates remain pending. Full runtime-backed Git hooks were unavailable, so focused container checks, staged gitleaks and host identity checks ran separately. The data-hygiene gate falsely flagged unchanged credentials in the management test; its inspected six-line diff adds no credentials, and the documented false-positive override was used. No new secret or personal data was committed.
