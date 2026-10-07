@@ -98,8 +98,11 @@ must be `BASE` with `fallback: true`; it never selects an ADVANCED entry.
 Without explicit fallback configuration, an eligible legacy GPT-6 Luna entry
 is preferred; otherwise exactly one eligible BASE fallback is required. A new
 chatbot starts with the configured fixed default, or that fallback when unset.
-Current deployed defaults remain unchanged. Existing explicit policies,
-pending revisions and historical accounting retain their meaning.
+Current participant defaults remain unchanged. GraphQL now receives the
+configured primary too, so legacy fixed rows with empty or multiple model IDs
+may show a different effective model to their owner, aligned with Chat's
+existing runtime choice. Existing explicit single-model policies, pending
+revisions and historical accounting retain their meaning; no records are rewritten.
 
 CI verifies that Chat and GraphQL interpret each environment's configured
 registry identically, including classes, fallback eligibility and accounting

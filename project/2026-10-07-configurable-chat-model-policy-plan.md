@@ -26,11 +26,11 @@ The user approved implementation with “so lets do that” after the Astra inve
 
 ### Primitive impact and decisions
 
-| Primitive | Disposition | Contract |
-| --- | --- | --- |
-| Model registry | Extend | Validate configurable policy references while retaining immutable catalog identities and existing capability/pricing fields. |
-| Chatbot model policy | Reuse | Preserve explicit selections and pending revisions; configured defaults apply only at the existing default-selection seams. |
-| Credit fallback | Extend | Configured BASE-only fallback across participant chat, stale policies and Manage assistant. |
+| Primitive            | Disposition | Contract                                                                                                                     |
+| -------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Model registry       | Extend      | Validate configurable policy references while retaining immutable catalog identities and existing capability/pricing fields. |
+| Chatbot model policy | Reuse       | Preserve explicit selections and pending revisions; configured defaults apply only at the existing default-selection seams.  |
+| Credit fallback      | Extend      | Configured BASE-only fallback across participant chat, stale policies and Manage assistant.                                  |
 
 The existing registry architecture is retained, so no new ADR is required. Amend ADR 0020's vendor-specific defaults and cross-environment catalog equality to reflect this approved configuration policy while preserving its BASE-only funding semantics. A separate runtime catalog service, hot reload, floating version aliases, pricing-policy automation or model retirement would reopen architecture and authority decisions. Full Zod consolidation was rejected because util currently has no Zod dependency. External documentation is unnecessary for existing code and Helm mechanisms; Astra's source-backed investigation is the design input.
 
@@ -48,13 +48,13 @@ Route: executor for util helper implementation; main for coupled consumer integr
 
 ### Feature-wide test portfolio
 
-| Consequential behavior | Obligation and existing seam | Distinct failure |
-| --- | --- | --- |
-| Config-only model change | Extend Chat and GraphQL registry tests using minimal synthetic catalogs | New IDs require vendor-specific code or import-time defaults reject valid external configuration. |
-| Credit-safe fallback | Extend registry and Manage assistant tests | Invalid/ADVANCED fallback or first-entry escape spends the wrong credit class. |
-| Existing bot policy preservation | Extend management and Chat policy tests | New defaults rewrite fixed selections or stale lists widen to the full catalog. |
-| Reasoning restrictions | Extend existing Chat effort test | Capability changes silently widen a stored nonempty restriction. |
-| Consumer/deployment parity | Replace catalog-content assertions in `modelRegistryParity.test.ts`; render both consumer ConfigMaps | Config differs across services, configured caps are lost or variable wiring is missing. |
+| Consequential behavior           | Obligation and existing seam                                                                         | Distinct failure                                                                                  |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Config-only model change         | Extend Chat and GraphQL registry tests using minimal synthetic catalogs                              | New IDs require vendor-specific code or import-time defaults reject valid external configuration. |
+| Credit-safe fallback             | Extend registry and Manage assistant tests                                                           | Invalid/ADVANCED fallback or first-entry escape spends the wrong credit class.                    |
+| Existing bot policy preservation | Extend management and Chat policy tests                                                              | New defaults rewrite fixed selections or stale lists widen to the full catalog.                   |
+| Reasoning restrictions           | Extend existing Chat effort test                                                                     | Capability changes silently widen a stored nonempty restriction.                                  |
+| Consumer/deployment parity       | Replace catalog-content assertions in `modelRegistryParity.test.ts`; render both consumer ConfigMaps | Config differs across services, configured caps are lost or variable wiring is missing.           |
 
 Retain duplicate-ID, auto semantics, capability validation, output bounds and cost validation coverage. Remove incidental vendor lists/prices and cross-environment equality assertions; assert structured consumer parity per environment and test-owned synthetic configuration instead.
 
@@ -70,7 +70,7 @@ Pause only for a material product/configuration change, missing independent revi
 
 ## Progress
 
-Status: implementation and focused source verification complete; slice-review disposition and final review pending. Required delivery: reviewed draft PR; early draft: [PR #6423](https://github.com/uzh-bf/klicker-uzh/pull/6423), target `v3-ai`. Next action: finish independent review and runtime acceptance. Broad production goal and separate deployment prep remain outside this package.
+Status: source implementation, simplification and independent reviews complete; draft delivery active. [PR #6423](https://github.com/uzh-bf/klicker-uzh/pull/6423) targets `v3-ai`. Next action: publish final disclosure and complete pending hosted/browser acceptance before any ready or merge decision. Broad production goal and separate deployment prep remain outside this package.
 
 Planning evidence: configured Astra child `/root/configurable_chat_models_astra` completed the initial investigation and architecture refinement. Runtime model provenance is unavailable; this records configured routing rather than verified model identity. Optional opposing-provider route previously failed terminally in this parent task and is not re-probed.
 
@@ -82,4 +82,10 @@ Local browser acceptance and the database-backed management suite remain pending
 
 The simplifier's unused GraphQL wrapper removal was accepted and verified with five passing registry tests and the GraphQL type-check. The slice reviewer identified stale ADR 0020 wording; its amendment records the already-approved policy. Its claimed missing backend startup check was disproved by `apps/backend-docker/src/index.ts:130`, which calls the registry getter before listening. Its request to restore vendor-price pins and cross-environment equality conflicts with the approved configuration contract; per-environment structured consumer parity remains protected. The same reviewer verifies this disposition.
 
+The same slice reviewer returned `DONE`. Integrated Claude review of `570af489d..f0f2e6c4ee` completed with one low-severity advisory: GraphQL's newly shared primary setting aligns legacy fixed-row owner projections with Chat, which can change their displayed effective model. Main verified and documented that effect. No source correction was requested. Browser acceptance and the database-backed management suite remain incomplete.
+
+Runtime closure: managed startup did not reach readiness and ended with context cancellation through the exact task's supported stop. The owner-tool receipt reports workspace `enhance-configurable-chat-model` stopped and zero freed routes; fresh source-path workspace inventory confirms zero routes. Independent container-state verification was unavailable after two automatic permission-review timeouts. The isolated broader util type-check was stopped without terminal success. Worktree and managed runtime data remain preserved; no full runtime or broad util-check success is claimed.
+
 Source delivery: ordinary task-branch push and draft creation succeeded. Exact-head hosted CI started; required gates remain pending. Full runtime-backed Git hooks were unavailable, so focused container checks, staged gitleaks and host identity checks ran separately. The data-hygiene gate falsely flagged unchanged credentials in the management test; its inspected six-line diff adds no credentials, and the documented false-positive override was used. No new secret or personal data was committed.
+
+The final source-CI freshness read was unavailable after its automatic permission approval review timed out twice; this is a capability gap, not a CI failure. Keep the draft and verify current checks when CLI reads are available. Optional compound capture was not needed: configuration guidance and the ADR amendment already hold the policy, and no separate incident-derived lesson justified another solution document.

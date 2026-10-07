@@ -721,6 +721,11 @@ and pending revisions when changing defaults. Model retirement is a separate
 compatibility operation. A stored reasoning restriction with no supported
 intersection rejects the turn before generation instead of widening it.
 
+GraphQL now receives the configured primary as well. Legacy fixed rows with
+empty or multiple model IDs may show a different effective model to their
+owner, aligned with Chat's existing runtime choice. Explicit single-model
+policies remain unchanged, and this projection does not rewrite stored rows.
+
 Settings are validated at process startup. Both deployment ConfigMaps have
 checksum annotations, so a configuration change uses the same image in a
 rolling restart; there is no hot reload. Keep old referenced IDs through the
