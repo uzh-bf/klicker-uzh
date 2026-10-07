@@ -141,6 +141,30 @@ describe('settingsStore credits loading', () => {
     expect(useSettingsStore.getState().modelOptions).toHaveLength(2)
   })
 
+  test('uses the configured primary on first load instead of an incidental Auto selection', async () => {
+    useSettingsStore.setState({
+      ...useSettingsStore.getInitialState(),
+      modelSelectionEnabled: true,
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValueOnce(
+        creditsResponse(20, {
+          automaticModelId: 'base-a',
+          availableModels: ['auto', 'base-a'].map((id) => ({
+            id,
+            supportsReasoning: false,
+            allowedReasoningEfforts: [],
+          })),
+        })
+      )
+    )
+
+    await useSettingsStore.getState().loadCredits('chatbot-initial-selection')
+
+    expect(useSettingsStore.getState().selectedModel).toBe('base-a')
+  })
+
   test.each([
     ['gpt-5.5', 'auto'],
     ['gpt-6-luna', 'gpt-6-luna'],

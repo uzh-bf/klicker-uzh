@@ -229,7 +229,7 @@ export function getChatModelRegistry(): ChatModelConfig[] {
   const policy = resolveChatModelPolicy(registry, {
     primaryModelId: process.env.CHAT_PRIMARY_MODEL_ID,
     fallbackModelId: process.env.CHAT_FALLBACK_MODEL_ID,
-    newChatbotModelId: process.env.CHAT_NEW_CHATBOT_MODEL_ID,
+    newChatbotModelPolicyJson: process.env.CHAT_NEW_CHATBOT_MODEL_POLICY_JSON,
   })
   cachedPolicy = policy
   cachedRegistry = registry

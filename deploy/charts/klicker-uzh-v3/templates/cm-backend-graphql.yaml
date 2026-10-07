@@ -32,8 +32,8 @@ data:
   {{- if and .Values.chat.automaticModels .Values.chat.automaticModels.fallbackId }}
   CHAT_FALLBACK_MODEL_ID: {{ .Values.chat.automaticModels.fallbackId | quote }}
   {{- end }}
-  {{- if .Values.chat.newChatbotModelId }}
-  CHAT_NEW_CHATBOT_MODEL_ID: {{ .Values.chat.newChatbotModelId | quote }}
+  {{- if ne .Values.chat.newChatbotModelPolicy nil }}
+  CHAT_NEW_CHATBOT_MODEL_POLICY_JSON: {{ .Values.chat.newChatbotModelPolicy | toJson | quote }}
   {{- end }}
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
   # Deprecated - kept for backward compatibility during transition

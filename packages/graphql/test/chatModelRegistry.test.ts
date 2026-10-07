@@ -40,11 +40,18 @@ describe('GraphQL chat model registry startup validation', () => {
     },
   ]
 
-  test('creates a new fixed bot on the configured default without modifying existing policies', async () => {
+  test.each([
+    { modelSelection: false, allowedModelIds: ['advanced-a'] },
+    { modelSelection: true, allowedModelIds: ['advanced-a', 'auto', 'base-a'] },
+    undefined,
+  ])('creates a new bot using the configured selection policy: %j', async (policy) => {
     vi.stubEnv('CHAT_MODEL_REGISTRY_JSON', JSON.stringify(registry))
     vi.stubEnv('CHAT_PRIMARY_MODEL_ID', 'auto')
     vi.stubEnv('CHAT_FALLBACK_MODEL_ID', 'base-a')
-    vi.stubEnv('CHAT_NEW_CHATBOT_MODEL_ID', 'advanced-a')
+    vi.stubEnv(
+      'CHAT_NEW_CHATBOT_MODEL_POLICY_JSON',
+      policy ? JSON.stringify(policy) : undefined
+    )
     const { createChatbot, getChatModelRegistry } = await import(
       '../src/services/chatbots.js'
     )
@@ -67,8 +74,7 @@ describe('GraphQL chat model registry startup validation', () => {
     expect(create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          modelSelection: false,
-          allowedModelIds: ['advanced-a'],
+          ...(policy ?? { modelSelection: false, allowedModelIds: ['base-a'] }),
         }),
       })
     )
@@ -77,10 +83,22 @@ describe('GraphQL chat model registry startup validation', () => {
   test.each([
     'CHAT_PRIMARY_MODEL_ID',
     'CHAT_FALLBACK_MODEL_ID',
-    'CHAT_NEW_CHATBOT_MODEL_ID',
   ])('rejects an unknown %s at startup', async (variable) => {
     vi.stubEnv('CHAT_MODEL_REGISTRY_JSON', JSON.stringify(registry))
     vi.stubEnv(variable, 'missing-model')
+    const { getChatModelRegistry } = await import('../src/services/chatbots.js')
+    expect(() => getChatModelRegistry()).toThrow()
+  })
+
+  test('rejects an unknown model in the creation policy before serving', async () => {
+    vi.stubEnv('CHAT_MODEL_REGISTRY_JSON', JSON.stringify(registry))
+    vi.stubEnv(
+      'CHAT_NEW_CHATBOT_MODEL_POLICY_JSON',
+      JSON.stringify({
+        modelSelection: true,
+        allowedModelIds: ['auto', 'missing'],
+      })
+    )
     const { getChatModelRegistry } = await import('../src/services/chatbots.js')
     expect(() => getChatModelRegistry()).toThrow()
   })

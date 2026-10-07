@@ -98,7 +98,7 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       // initial state
-      selectedModel: 'auto',
+      selectedModel: '',
       selectedMode: 'tutor',
       selectedReasoningEffort: 'none',
       credits: {

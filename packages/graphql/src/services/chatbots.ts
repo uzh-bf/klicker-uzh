@@ -326,7 +326,7 @@ function getChatModelPolicyOptions() {
   return {
     primaryModelId: process.env.CHAT_PRIMARY_MODEL_ID,
     fallbackModelId: process.env.CHAT_FALLBACK_MODEL_ID,
-    newChatbotModelId: process.env.CHAT_NEW_CHATBOT_MODEL_ID,
+    newChatbotModelPolicyJson: process.env.CHAT_NEW_CHATBOT_MODEL_POLICY_JSON,
   }
 }
 
@@ -2166,10 +2166,7 @@ export async function createChatbot(
   }
 
   getChatModelRegistry()
-  const defaultModelId = cachedChatModelPolicy!.newChatbotModelId
-  if (!defaultModelId) {
-    throw new GraphQLError('Chatbot default model is unavailable')
-  }
+  const defaultModelPolicy = cachedChatModelPolicy!.newChatbotModelPolicy
 
   const created = await ctx.prisma.chatbot.create({
     data: {
@@ -2177,8 +2174,8 @@ export async function createChatbot(
       description: args.description ?? null,
       avatar: args.avatar ?? null,
       status: DB.ChatbotStatus.DRAFT,
-      modelSelection: false,
-      allowedModelIds: [defaultModelId],
+      modelSelection: defaultModelPolicy.modelSelection,
+      allowedModelIds: [...defaultModelPolicy.allowedModelIds],
       allowedReasoningEffortsByModel: Prisma.DbNull,
       // New chatbots start with the participant map off (lecturer opts in).
       knowledgeGraphVisible: false,

@@ -14,13 +14,18 @@ export type ChatModelBasePolicyIssue = {
 export type ChatModelPolicyOptions = {
   primaryModelId?: string
   fallbackModelId?: string
-  newChatbotModelId?: string
+  newChatbotModelPolicyJson?: string
+}
+
+export type ChatModelNewChatbotPolicy = {
+  modelSelection: boolean
+  allowedModelIds: string[]
 }
 
 export type ChatModelPolicy = {
   primaryModelId: string
   fallbackModelId: string
-  newChatbotModelId: string
+  newChatbotModelPolicy: ChatModelNewChatbotPolicy
 }
 
 export type ChatModelAutoPolicyModel = {
@@ -85,6 +90,79 @@ export function getChatModelBasePolicyIssues(
   return issues
 }
 
+/** Parses and validates the optional JSON policy for newly created chatbots. */
+function resolveNewChatbotModelPolicy(
+  models: readonly ChatModelBasePolicyModel[],
+  policyJson: string | undefined,
+  fallbackModelId: string
+): ChatModelNewChatbotPolicy {
+  if (!policyJson) {
+    return { modelSelection: false, allowedModelIds: [fallbackModelId] }
+  }
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(policyJson)
+  } catch {
+    throw new Error('Configured new-chatbot model policy is not valid JSON.')
+  }
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error(
+      'Configured new-chatbot model policy must be a JSON object.'
+    )
+  }
+
+  const policy = parsed as Record<string, unknown>
+  const unknownKeys = Object.keys(policy).filter(
+    (key) => key !== 'modelSelection' && key !== 'allowedModelIds'
+  )
+  if (unknownKeys.length > 0) {
+    throw new Error(
+      `Configured new-chatbot model policy has unknown fields: ${unknownKeys.join(', ')}.`
+    )
+  }
+  if (typeof policy.modelSelection !== 'boolean') {
+    throw new Error(
+      'Configured new-chatbot model policy requires a boolean "modelSelection".'
+    )
+  }
+
+  const allowedModelIds = policy.allowedModelIds
+  if (!Array.isArray(allowedModelIds) || allowedModelIds.length === 0) {
+    throw new Error(
+      'Configured new-chatbot model policy requires a nonempty "allowedModelIds" list.'
+    )
+  }
+  if (!allowedModelIds.every((id): id is string => typeof id === 'string')) {
+    throw new Error(
+      'Configured new-chatbot model policy requires string model IDs.'
+    )
+  }
+  if (new Set(allowedModelIds).size !== allowedModelIds.length) {
+    throw new Error(
+      'Configured new-chatbot model policy requires unique model IDs.'
+    )
+  }
+  const unknownModelIds = allowedModelIds.filter(
+    (id) => !models.some((model) => model.id === id)
+  )
+  if (unknownModelIds.length > 0) {
+    throw new Error(
+      `Configured new-chatbot model policy references unknown models: ${unknownModelIds.join(', ')}.`
+    )
+  }
+  if (!policy.modelSelection && allowedModelIds.length !== 1) {
+    throw new Error(
+      'Configured new-chatbot model policy requires exactly one allowed model when "modelSelection" is false.'
+    )
+  }
+
+  return {
+    modelSelection: policy.modelSelection,
+    allowedModelIds: [...allowedModelIds],
+  }
+}
+
 /** Resolves the shared automatic, fallback, and new-chatbot model policy. */
 export function resolveChatModelPolicy(
   models: readonly ChatModelBasePolicyModel[],
@@ -139,16 +217,11 @@ export function resolveChatModelPolicy(
     }
   }
 
-  const configuredNewChatbot = options.newChatbotModelId
-  if (
-    configuredNewChatbot &&
-    !models.some((model) => model.id === configuredNewChatbot)
-  ) {
-    throw new Error(
-      `Configured new-chatbot model "${configuredNewChatbot}" does not exist in the registry.`
-    )
-  }
-  const newChatbotModelId = configuredNewChatbot || fallbackModelId
+  const newChatbotModelPolicy = resolveNewChatbotModelPolicy(
+    models,
+    options.newChatbotModelPolicyJson,
+    fallbackModelId
+  )
 
-  return { primaryModelId, fallbackModelId, newChatbotModelId }
+  return { primaryModelId, fallbackModelId, newChatbotModelPolicy }
 }

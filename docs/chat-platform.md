@@ -296,8 +296,15 @@ GPT-6 Sol, GPT-6.1 Sol and GPT-5.6 Sol stay `ADVANCED`.
 External registry JSON that omits `usageClass` normalizes to `ADVANCED` —
 conservative, because a missing class must never imply base usage.
 
-New chatbots use a fixed policy selected by `CHAT_NEW_CHATBOT_MODEL_ID`,
-defaulting to the validated BASE fallback, with no initial reasoning restrictions.
+New chatbots use `CHAT_NEW_CHATBOT_MODEL_POLICY_JSON` (Helm
+`chat.newChatbotModelPolicy`) when configured. Its object contains
+`modelSelection` and `allowedModelIds`: fixed mode requires exactly one active
+model; participant-choice mode accepts a nonempty unique list of active models.
+Invalid types, references, cardinality or unknown fields fail startup. Unset
+configuration creates a fixed bot on the validated BASE fallback, with no
+initial reasoning restrictions. The global primary remains the preferred
+initial choice when available; a participant's existing valid selection is
+retained. The list is a set of choices, not an outage retry chain.
 Changing this default does not rewrite existing bots or pending revisions. Staging sets
 `auto` as the automatic primary so existing automatic-selection chatbots
 exercise `auto-router-v2`; production keeps GPT-6 Luna. The strict owner-only
@@ -712,8 +719,8 @@ participant-credit migration remain deferred.
   `CHAT_PRIMARY_MODEL_ID` controls automatic primary selection; the participant
   safety fallback remains BASE-only. The Manage assistant uses the same fallback.
 
-The chart exposes these IDs through `chat.automaticModels.primaryId`,
-`chat.automaticModels.fallbackId` and `chat.newChatbotModelId` to both Chat and
+The chart exposes these defaults through `chat.automaticModels.primaryId`,
+`chat.automaticModels.fallbackId` and `chat.newChatbotModelPolicy` to both Chat and
 GraphQL. Configure the catalog through `chat.modelRegistry`. Policy validation
 uses the effective registry, so custom catalogs need no built-in vendor IDs.
 Registry IDs must retain their meaning; keep IDs referenced by existing bots

@@ -80,7 +80,7 @@ export function selectManageAssistantModel(
   const { fallbackModelId } = resolveChatModelPolicy(registry, {
     primaryModelId: process.env.CHAT_PRIMARY_MODEL_ID,
     fallbackModelId: process.env.CHAT_FALLBACK_MODEL_ID,
-    newChatbotModelId: process.env.CHAT_NEW_CHATBOT_MODEL_ID,
+    newChatbotModelPolicyJson: process.env.CHAT_NEW_CHATBOT_MODEL_POLICY_JSON,
   })
   return registry.find((model) => model.id === fallbackModelId)!
 }

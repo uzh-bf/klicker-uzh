@@ -39,7 +39,13 @@ describe('chat model registry provider protocol', () => {
     vi.stubEnv('CHAT_MODEL_REGISTRY_JSON', JSON.stringify(customRegistry))
     vi.stubEnv('CHAT_PRIMARY_MODEL_ID', 'advanced-a')
     vi.stubEnv('CHAT_FALLBACK_MODEL_ID', 'base-a')
-    vi.stubEnv('CHAT_NEW_CHATBOT_MODEL_ID', 'auto')
+    vi.stubEnv(
+      'CHAT_NEW_CHATBOT_MODEL_POLICY_JSON',
+      JSON.stringify({
+        modelSelection: true,
+        allowedModelIds: ['auto', 'base-a'],
+      })
+    )
     const {
       getChatModelRegistry,
       getAutomaticModelId,
@@ -87,10 +93,38 @@ describe('chat model registry provider protocol', () => {
   test.each([
     'CHAT_PRIMARY_MODEL_ID',
     'CHAT_FALLBACK_MODEL_ID',
-    'CHAT_NEW_CHATBOT_MODEL_ID',
   ])('rejects an unknown %s at startup', async (variable) => {
     vi.stubEnv('CHAT_MODEL_REGISTRY_JSON', JSON.stringify(customRegistry))
     vi.stubEnv(variable, 'missing')
+    const { getChatModelRegistry } = await import(
+      '../src/lib/server/chatModelRegistry'
+    )
+    expect(() => getChatModelRegistry()).toThrow()
+  })
+
+  test.each([
+    '{',
+    'null',
+    '[]',
+    JSON.stringify({ modelSelection: 'true', allowedModelIds: ['base-a'] }),
+    JSON.stringify({ modelSelection: true, allowedModelIds: [] }),
+    JSON.stringify({ modelSelection: true, allowedModelIds: ['missing'] }),
+    JSON.stringify({
+      modelSelection: true,
+      allowedModelIds: ['base-a', 'base-a'],
+    }),
+    JSON.stringify({
+      modelSelection: false,
+      allowedModelIds: ['auto', 'base-a'],
+    }),
+    JSON.stringify({
+      modelSelection: false,
+      allowedModelIds: ['base-a'],
+      extra: true,
+    }),
+  ])('rejects invalid new-chatbot policy at startup: %s', async (policy) => {
+    vi.stubEnv('CHAT_MODEL_REGISTRY_JSON', JSON.stringify(customRegistry))
+    vi.stubEnv('CHAT_NEW_CHATBOT_MODEL_POLICY_JSON', policy)
     const { getChatModelRegistry } = await import(
       '../src/lib/server/chatModelRegistry'
     )

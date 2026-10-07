@@ -49,8 +49,8 @@ data:
   {{- if and .Values.chat.automaticModels .Values.chat.automaticModels.fallbackId }}
   CHAT_FALLBACK_MODEL_ID: {{ .Values.chat.automaticModels.fallbackId | quote }}
   {{- end }}
-  {{- if .Values.chat.newChatbotModelId }}
-  CHAT_NEW_CHATBOT_MODEL_ID: {{ .Values.chat.newChatbotModelId | quote }}
+  {{- if ne .Values.chat.newChatbotModelPolicy nil }}
+  CHAT_NEW_CHATBOT_MODEL_POLICY_JSON: {{ .Values.chat.newChatbotModelPolicy | toJson | quote }}
   {{- end }}
   {{- if .Values.chat.allowedFrameAncestors }}
   ALLOWED_FRAME_ANCESTORS: {{ .Values.chat.allowedFrameAncestors | quote }}

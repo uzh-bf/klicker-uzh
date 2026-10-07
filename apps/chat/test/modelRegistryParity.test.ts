@@ -75,7 +75,10 @@ describe('chat model consumer parity', () => {
     const options = {
       primaryModelId: 'advanced-a',
       fallbackModelId: 'base-a',
-      newChatbotModelId: 'auto',
+      newChatbotModelPolicyJson: JSON.stringify({
+        modelSelection: true,
+        allowedModelIds: ['auto', 'base-a'],
+      }),
     }
     expect(resolveChatModelPolicy(chat, options)).toEqual(
       resolveChatModelPolicy(backend, options)
@@ -83,7 +86,10 @@ describe('chat model consumer parity', () => {
     expect(resolveChatModelPolicy(chat, options)).toEqual({
       primaryModelId: 'advanced-a',
       fallbackModelId: 'base-a',
-      newChatbotModelId: 'auto',
+      newChatbotModelPolicy: {
+        modelSelection: true,
+        allowedModelIds: ['auto', 'base-a'],
+      },
     })
   })
 
@@ -144,7 +150,9 @@ describe('chat model consumer parity', () => {
       const options = {
         primaryModelId: values.chat.automaticModels?.primaryId,
         fallbackModelId: values.chat.automaticModels?.fallbackId,
-        newChatbotModelId: values.chat.newChatbotModelId,
+        newChatbotModelPolicyJson: values.chat.newChatbotModelPolicy
+          ? JSON.stringify(values.chat.newChatbotModelPolicy)
+          : undefined,
       }
       expect(resolveChatModelPolicy(chat, options)).toEqual(
         resolveChatModelPolicy(backend, options)

@@ -91,13 +91,17 @@ GPT-5.6 Luna from the deployed registries. GPT-6 Luna is therefore both the
 automatic primary and the only fallback. GPT-6.1 Sol joins as an `ADVANCED`
 model, and staging `Auto` routes through `auto-router-v2`.
 
-Amendment, 2026-10-07: automatic primary, participant-credit fallback and
-new-chatbot default IDs are configuration references into the effective model
+Amendment, 2026-10-07: automatic primary and participant-credit fallback
+IDs are configuration references into the effective model
 registry. Both consumers validate these references at startup. The fallback
 must be `BASE` with `fallback: true`; it never selects an ADVANCED entry.
 Without explicit fallback configuration, an eligible legacy GPT-6 Luna entry
 is preferred; otherwise exactly one eligible BASE fallback is required. A new
-chatbot starts with the configured fixed default, or that fallback when unset.
+chatbot starts with the configured selection mode and allowed model IDs,
+or a fixed policy on that fallback when unset. The policy uses existing row
+fields and may offer multiple models for participant choice. The global primary
+is the preferred initial choice when available; existing participant selections
+remain authoritative. There is no provider outage failover policy in this change.
 Current participant defaults remain unchanged. GraphQL now receives the
 configured primary too, so legacy fixed rows with empty or multiple model IDs
 may show a different effective model to their owner, aligned with Chat's

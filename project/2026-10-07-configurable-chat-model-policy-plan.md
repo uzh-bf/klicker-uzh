@@ -60,6 +60,8 @@ The main session owns product decisions, configuration wiring, both consumers, d
 
 Amendment acceptance: unset policy preserves old creation behavior; configured fixed and multi-model policies produce correct existing row fields; invalid policy fails before serving; consumer policy resolution and Helm JSON agree. A valid previously selected participant model remains selected. The new object does not become an ordered outage retry list. Browser/database acceptance remains a required but previously blocked boundary; do not restart or repair managed runtime merely to run static tests.
 
+Initial-choice correction: the participant settings store initializes `selectedModel` to `auto`, so a first-time participant can keep that incidental value even when the configured primary differs. Start unselected until credits bootstrap supplies the effective primary. Extend the existing settings-store credits test to prove first-load primary selection with Auto available, while retaining the existing saved-selection coverage. Additional bounded paths are `apps/chat/src/stores/settingsStore.ts` and `apps/chat/test/settings-store-credits.test.ts`. No storage key or persisted choice is changed; owner preview already uses the effective primary. This closes the approved initial-choice contract rather than introducing another default setting.
+
 ### Feature-wide test portfolio
 
 | Consequential behavior           | Obligation and existing seam                                                                         | Distinct failure                                                                                  |
@@ -84,7 +86,9 @@ Pause only for a material product/configuration change, missing independent revi
 
 ## Progress
 
-Status: earlier reviewed source published at `436d5970075ebc6df2dfe4208ad11cb5b664d717`; multi-model amendment planning active. [PR #6423](https://github.com/uzh-bf/klicker-uzh/pull/6423) remains draft to `v3-ai`. Next action: harden the amendment, implement independent creation policy, then apply the separately clarified fallback rule. Hosted/browser acceptance remains incomplete. Broad production goal and separate deployment prep remain outside this package.
+Status: earlier reviewed source published at `436d5970075ebc6df2dfe4208ad11cb5b664d717`; multi-model creation amendment implemented, slice review pending. [PR #6423](https://github.com/uzh-bf/klicker-uzh/pull/6423) remains draft to `v3-ai`. Next action: review/publish the independent creation-policy slice, then apply the separately clarified fallback rule. Hosted/browser acceptance remains incomplete. Broad production goal and separate deployment prep remain outside this package.
+
+Amendment evidence: the existing Astra planner approved the creation policy and the bounded first-load correction. Main's network-disabled Node 24.21.0 / Vitest 3.2.4 container ran 73 Chat tests and seven GraphQL registry tests successfully. Chat and repository-native GraphQL typechecks, focused strict util compilation, util build and scoped Biome checks pass; two existing type-import warnings in the settings store are unchanged. STG/PRD Helm renders verify identical policy JSON in both consumers, omission when unset, two changed consumer checksums and unchanged images. First-load primary selection is newly covered; existing saved-choice tests still pass. DB/browser acceptance is not claimed, and the prior stopped managed runtime is not restarted. Required amendment reviews are not yet complete; earlier reviews only apply to unchanged contracts. The global fallback exception ruling remains outstanding.
 
 Planning evidence: configured Astra child `/root/configurable_chat_models_astra` completed the initial investigation and architecture refinement. Runtime model provenance is unavailable; this records configured routing rather than verified model identity. Optional opposing-provider route previously failed terminally in this parent task and is not re-probed.
 
