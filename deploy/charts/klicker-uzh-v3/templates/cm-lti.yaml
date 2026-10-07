@@ -9,6 +9,7 @@ data:
   DF_DOMAIN: {{ .Values.dfDomain | quote }}
   LTI_PORT: {{ .Values.lti.port | quote }}
   LTI_REDIRECT_URL: {{ .Values.lti.redirectURL | quote }}
+  LTI_ADDITIONAL_PLATFORMS: {{ .Values.lti.additionalPlatforms | default list | toJson | quote }}
   LTI_URL: {{ .Values.lti.url | quote }}
   LTI_NAME: {{ .Values.lti.name | quote }}
   LTI_AUTH_ENDPOINT: {{ .Values.lti.authEndpoint | quote }}

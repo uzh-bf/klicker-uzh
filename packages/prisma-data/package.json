@@ -34,7 +34,7 @@
     "turndown": "~7.2.4",
     "typescript": "~6.0.3",
     "uuid": "~10.0.0",
-    "vitest": "~3.2.4",
+    "vitest": "3.2.4",
     "xml2js": "~0.6.2"
   },
   "scripts": {
@@ -53,6 +53,7 @@
     "seed:course-duplication-stress": "ENV=development tsx src/data/seedCourseDuplicationStress.ts",
     "seed:demo-participants": "tsx src/scripts/2026-08-24_seed_demo_participants.ts",
     "seed:flashcards": "ENV=development ../../util/_run_with_infisical.sh --env dev tsx src/data/seedFlashcards.ts",
+    "seed:local-eduid-link": "ENV=development tsx src/scripts/local-eduid-link.ts",
     "seed:prod:achievements": "ENV=production ../../util/_run_with_infisical.sh --env prd tsx src/data/seedAchievements.ts",
     "seed:prod:course-awards": "ENV=production ../../util/_run_with_infisical.sh --env prd tsx src/data/seedCourseAwards.ts",
     "seed:prod:course-awards:prepare": "ENV=production ../../util/_run_with_infisical.sh --env prd tsx src/data/prepareMicrolearningAwards.ts",

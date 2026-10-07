@@ -141,6 +141,15 @@ profiles:
 
 ### Managed devcontainer resources
 
+Host-generated Compose inputs use `managedRuntime.devcontainer.prepareCommand`
+as literal argv with Devrouter 0.0.58 or newer. It runs from the checkout root
+once per ensure before Compose inspection, under lifecycle serialization and a
+sixty-second timeout. Keep `.devrouter.yml` unchanged; diagnostics do not run it.
+Klicker generates its dependency overlay through this hook and native
+`initialize.sh`. This proves generation only: applying changed mounts to retained
+containers requires separate qualification. Never recreate or reset retained
+data to bypass that boundary.
+
 The optional `managedRuntime` registry separates the primary container's base
 Compose services, optional profile services, and repository-owned process
 markers. Profiles select those dimensions independently:

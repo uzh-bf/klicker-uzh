@@ -2,6 +2,13 @@ import { RequiredMCPUnavailableError } from '@/src/lib/server/mcpRuntimePolicy'
 
 export const DOC_QUERY_MCP_SERVER_NAME = 'KB'
 export const DOC_QUERY_SCOPE_TOKEN_HEADER = 'X-Doc-Query-Scope-Token'
+export const DOC_QUERY_SCOPED_ROUTE_PATH = '/mcp/klicker/kb'
+
+const DOC_QUERY_SCOPED_ROUTE_ENV = {
+  serverId: 'DOC_QUERY_SCOPED_MCP_SERVER_ID',
+  legacyUrl: 'DOC_QUERY_SCOPED_MCP_LEGACY_URL',
+  url: 'DOC_QUERY_SCOPED_MCP_URL',
+} as const
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -151,6 +158,71 @@ export function assertDocQueryTransportSecurity(rawUrl: string): void {
     return
   }
   throw new Error('Doc Query transport requires HTTPS')
+}
+
+function canonicalEndpointUrl(value: unknown): URL {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    requiredScopeError()
+  }
+
+  let url: URL
+  try {
+    url = new URL(value.trim())
+  } catch {
+    requiredScopeError()
+  }
+
+  // Credentials are attached to an exact, unambiguous destination only.
+  if (url.username || url.password || url.search || url.hash) {
+    requiredScopeError()
+  }
+
+  return url
+}
+
+/**
+ * Resolves the deployment-controlled destination of the scoped KB route.
+ * Attendance of all three variables activates scope-only transport
+ * authentication; a partial or inconsistent configuration fails closed
+ * before any credential is minted. The stored knowledge-base URL is only a
+ * binding check, so a database URL edit cannot redirect a scope token.
+ */
+export function resolveDocQueryScopedRoute(server: {
+  id?: unknown
+  name?: unknown
+  url?: unknown
+  isActive?: unknown
+}): URL | undefined {
+  if (!isRecord(server) || server.name !== DOC_QUERY_MCP_SERVER_NAME) {
+    return undefined
+  }
+
+  const configured = {
+    serverId: process.env[DOC_QUERY_SCOPED_ROUTE_ENV.serverId]?.trim() ?? '',
+    legacyUrl: process.env[DOC_QUERY_SCOPED_ROUTE_ENV.legacyUrl]?.trim() ?? '',
+    url: process.env[DOC_QUERY_SCOPED_ROUTE_ENV.url]?.trim() ?? '',
+  }
+  const present = Object.values(configured).filter(
+    (value) => value.length > 0
+  ).length
+
+  if (present === 0) return undefined
+  if (present !== Object.keys(configured).length) requiredScopeError()
+
+  if (server.isActive === false) requiredScopeError()
+  if (server.id !== configured.serverId) requiredScopeError()
+
+  const boundRowUrl = canonicalEndpointUrl(server.url)
+  const expectedRowUrl = canonicalEndpointUrl(configured.legacyUrl)
+  if (boundRowUrl.href !== expectedRowUrl.href) requiredScopeError()
+
+  const targetUrl = canonicalEndpointUrl(configured.url)
+  if (targetUrl.origin !== expectedRowUrl.origin) requiredScopeError()
+  if (targetUrl.pathname !== DOC_QUERY_SCOPED_ROUTE_PATH) requiredScopeError()
+
+  assertDocQueryTransportSecurity(targetUrl.href)
+
+  return targetUrl
 }
 
 function resolveKbConfiguration(

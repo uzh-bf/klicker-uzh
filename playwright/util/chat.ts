@@ -259,6 +259,9 @@ export type SeedMessage = {
   // Mode the message was sent/answered in ('tutor' | 'explainer' | ...). The
   // most recent message's chatMode becomes the thread's `lastChatMode` (D6).
   chatMode?: string | null
+  // Sibling branches inserted back to back can share a millisecond; the chat
+  // opens the newest sibling, so tests that depend on it set explicit times.
+  createdAt?: Date
 }
 
 // 1x1 PNG as a test image
@@ -307,6 +310,7 @@ export async function seedThread(
         content: m.content,
         parentId: m.parentId !== undefined ? m.parentId : previousId,
         chatMode: m.chatMode ?? null,
+        ...(m.createdAt ? { createdAt: m.createdAt } : {}),
       },
     })
     if (m.attachments?.length) {
@@ -376,8 +380,8 @@ export type StreamOptions = {
   textChunks?: string[]
   /** Delays each streamed SSE line by this many milliseconds. */
   chunkDelayMs?: number
-  /** Pauses after this many text deltas until the test releases the stream. */
-  pauseAfterTextChunk?: number
+  /** Pauses at each specified text-delta count until the test releases the stream. */
+  pauseAfterTextChunk?: number | number[]
   /** Pauses after the first tool output, before answer text starts. */
   pauseAfterToolOutput?: boolean
   /** Payload of the `finish` part; omitted entirely when not given. */
@@ -536,7 +540,11 @@ export async function mockChatStream(page: Page, options: StreamOptions = {}) {
 
               if (eventType === 'text-delta') {
                 textChunkCount += 1
-                if (textChunkCount === pauseAfterTextChunk) {
+                if (
+                  Array.isArray(pauseAfterTextChunk)
+                    ? pauseAfterTextChunk.includes(textChunkCount)
+                    : textChunkCount === pauseAfterTextChunk
+                ) {
                   if (signal?.aborted) {
                     controller.error(abortError())
                     return

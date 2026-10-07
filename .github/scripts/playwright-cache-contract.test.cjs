@@ -173,3 +173,63 @@ test('the fingerprint is deterministic and includes the image digest', (t) => {
   fs.writeFileSync(path.join(root, 'turbo.json'), '{"tasks":{"build":{}}}')
   assert.notEqual(fingerprint, buildFingerprint({ root, files }))
 })
+
+test('telemetry and scheduling edits keep build artifacts cache-compatible', (t) => {
+  const root = fixtureRoot({
+    'package.json': '{"engines":{"node":"24"}}',
+    'pnpm-lock.yaml': 'lockfileVersion: 9.0',
+    'turbo.json': '{"tasks":{}}',
+    '.github/actions/playwright-build/action.yml': 'build-action',
+    '.github/workflows/playwright-cache-seed.yml': 'seed',
+    '.github/scripts/playwright-cache-contract.cjs': 'contract',
+    '.github/scripts/playwright-telemetry.cjs': 'telemetry',
+    '.github/scripts/turbo-telemetry.cjs': 'turbo-telemetry',
+    '.github/workflows/public-pr-playwright-shards.yml': 'public',
+    '.github/workflows/test-playwright.yml': 'hosted',
+  })
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  const input = { root, files: SCAFFOLD_FILES }
+  const fingerprint = buildFingerprint(input)
+
+  for (const file of [
+    '.github/scripts/playwright-telemetry.cjs',
+    '.github/scripts/turbo-telemetry.cjs',
+    '.github/workflows/public-pr-playwright-shards.yml',
+    '.github/workflows/test-playwright.yml',
+  ]) {
+    fs.writeFileSync(path.join(root, file), `${file} changed for telemetry`)
+    assert.equal(
+      buildFingerprint(input),
+      fingerprint,
+      `${file} must not invalidate cached build artifacts`
+    )
+  }
+
+  for (const file of [
+    '.github/actions/playwright-build/action.yml',
+    '.github/workflows/playwright-cache-seed.yml',
+    '.github/scripts/playwright-cache-contract.cjs',
+  ]) {
+    const previous = fs.readFileSync(path.join(root, file), 'utf8')
+    fs.writeFileSync(path.join(root, file), `${previous}\nchanged build inputs`)
+    assert.notEqual(
+      buildFingerprint(input),
+      fingerprint,
+      `${file} must invalidate cached build artifacts`
+    )
+    fs.writeFileSync(path.join(root, file), previous)
+  }
+})
+
+const SCAFFOLD_FILES = [
+  'package.json',
+  'pnpm-lock.yaml',
+  'turbo.json',
+  '.github/actions/playwright-build/action.yml',
+  '.github/workflows/playwright-cache-seed.yml',
+  '.github/scripts/playwright-cache-contract.cjs',
+  '.github/scripts/playwright-telemetry.cjs',
+  '.github/scripts/turbo-telemetry.cjs',
+  '.github/workflows/public-pr-playwright-shards.yml',
+  '.github/workflows/test-playwright.yml',
+]

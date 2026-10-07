@@ -215,28 +215,150 @@ test('maps known feature paths, skips documentation, and fails unknown paths clo
   assert.ok(empty.reasonCodes.includes('empty-diff'))
 })
 
-test('ready state overrides a documentation-only diff with the full candidate suite', () => {
-  const plan = buildSelectionPlan({
+test('a CI-only change narrows to the bounded smoke selection in both states', () => {
+  const manifest = fixtureManifest()
+  const base = {
+    candidateSpecs: [
+      'A-login.spec.ts',
+      'Y-chat.spec.ts',
+      '0-baseline-ops.spec.ts',
+    ],
+    manifest: { ...manifest, draftBoundedSpecs: ['0-baseline-ops.spec.ts'] },
+  }
+  const ciOnly = [change('M', '.github/workflows/test-playwright.yml')]
+
+  const draft = selectFromChanges({
+    ...base,
+    changes: ciOnly,
+    prState: 'draft',
+  })
+  assert.equal(draft.mode, 'selected')
+  assert.equal(draft.envelopeClass, 'ci-orchestration')
+  assert.deepEqual(draft.selectedSpecs, ['0-baseline-ops.spec.ts'])
+  assert.ok(draft.reasonCodes.includes('draft-bounded-surface'))
+  assert.ok(!draft.reasonCodes.includes('global-surface'))
+
+  // The same change on a ready pull request runs the same bounded smoke
+  // selection: a CI definition cannot reach application behaviour, so the
+  // ready state no longer expands it to the full wave. The class, not the
+  // draft flag, is what carries the decision.
+  const ready = selectFromChanges({
+    ...base,
+    changes: ciOnly,
+    prState: 'ready',
+  })
+  assert.equal(ready.mode, 'selected')
+  assert.equal(ready.envelopeClass, 'ci-orchestration')
+  assert.deepEqual(ready.selectedSpecs, ['0-baseline-ops.spec.ts'])
+  assert.ok(ready.reasonCodes.includes('envelope-ci-orchestration'))
+  assert.ok(!ready.reasonCodes.includes('ready-for-review'))
+
+  // An application change in the same workflow-adjacent shape keeps the full
+  // wave in both states: only the classifier's bounded classes narrow.
+  const application = selectFromChanges({
+    ...base,
+    changes: [change('M', 'apps/frontend-manage/pages/index.tsx')],
+    prState: 'ready',
+  })
+  assert.equal(application.mode, 'full')
+  assert.equal(application.envelopeClass, 'application')
+  assert.deepEqual(application.selectedSpecs, base.candidateSpecs)
+  assert.ok(application.reasonCodes.includes('ready-for-review'))
+
+  // Any full-surface path in the same change set still wins over the bound.
+  const mixed = selectFromChanges({
+    ...base,
+    changes: [
+      change('M', '.github/workflows/test-playwright.yml'),
+      change('M', 'pnpm-lock.yaml'),
+    ],
+    prState: 'draft',
+  })
+  assert.equal(mixed.mode, 'full')
+  assert.deepEqual(mixed.selectedSpecs, base.candidateSpecs)
+  assert.ok(mixed.reasonCodes.includes('global-surface'))
+
+  // A bounded surface whose smoke spec is missing from the candidate tree must
+  // run the full suite. Falling through to the empty selection would report a
+  // documentation-only skip for a change that is not documentation.
+  const missingBounded = selectFromChanges({
+    ...base,
+    changes: ciOnly,
+    candidateSpecs: ['A-login.spec.ts', 'Y-chat.spec.ts'],
+    prState: 'draft',
+  })
+  assert.equal(missingBounded.mode, 'full')
+  assert.deepEqual(missingBounded.selectedSpecs, [
+    'A-login.spec.ts',
+    'Y-chat.spec.ts',
+  ])
+  assert.ok(missingBounded.reasonCodes.includes('draft-bounded-fallback'))
+  assert.ok(!missingBounded.reasonCodes.includes('documentation-only'))
+})
+
+test('a documentation-only plan skips the candidate suite in both states', () => {
+  for (const prState of ['draft', 'ready']) {
+    const plan = buildSelectionPlan({
+      controlRoot: repositoryRoot,
+      candidateSpecs: trustedCandidateSpecs,
+      changes: [change('M', 'docs/ci.md')],
+      baseSha: 'base',
+      headSha: 'head',
+      mergeBase: 'merge',
+      prState,
+    })
+
+    assert.equal(plan.mode, 'skip', prState)
+    assert.equal(plan.envelopeClass, 'documentation-and-planning', prState)
+    assert.deepEqual(plan.selectedSpecs, [], prState)
+    assert.equal(plan.shardCount, 0, prState)
+    assert.deepEqual(plan.shards, [], prState)
+    assert.ok(plan.reasonCodes.includes('documentation-only'), prState)
+    assert.ok(
+      plan.reasonCodes.includes('envelope-documentation-and-planning'),
+      prState
+    )
+  }
+})
+
+test('production-designated specs stay out of ordinary plans', () => {
+  // The trusted manifest designates account specs as production-webpack
+  // before their files exist on this branch; the dedicated production
+  // workflow owns them and ordinary lanes must ignore their changes.
+  const productionSpec = 'A-account-lti.spec.ts'
+  const candidateSpecs = [...trustedCandidateSpecs, productionSpec]
+
+  const added = buildSelectionPlan({
     controlRoot: repositoryRoot,
-    candidateSpecs: trustedCandidateSpecs,
-    changes: [change('M', 'docs/ci.md')],
+    candidateSpecs,
+    changes: [change('A', `playwright/tests/${productionSpec}`)],
+    baseSha: 'base',
+    headSha: 'head',
+    mergeBase: 'merge',
+    prState: 'draft',
+  })
+  assert.equal(added.mode, 'skip')
+  assert.ok(!added.candidateSpecs.includes(`tests/${productionSpec}`))
+  assert.deepEqual(added.selectedSpecs, [])
+  assert.ok(!added.reasonCodes.includes('spec-deleted'))
+
+  const ready = buildSelectionPlan({
+    controlRoot: repositoryRoot,
+    candidateSpecs,
+    changes: [change('M', 'packages/util/src/time.ts')],
     baseSha: 'base',
     headSha: 'head',
     mergeBase: 'merge',
     prState: 'ready',
   })
-
-  assert.equal(plan.mode, 'full')
+  assert.equal(ready.mode, 'full')
+  assert.ok(!ready.candidateSpecs.includes(`tests/${productionSpec}`))
+  assert.ok(!ready.selectedSpecs.includes(`tests/${productionSpec}`))
+  assert.equal(ready.shardCount, 8)
   assert.deepEqual(
-    plan.selectedSpecs,
-    trustedCandidateSpecs.map((spec) => `tests/${spec}`)
+    ready.shards.flatMap((shard) => shard.files).sort(),
+    ready.selectedSpecs.slice().sort()
   )
-  assert.equal(plan.shardCount, 8)
-  assert.deepEqual(
-    plan.shards.flatMap((shard) => shard.files).sort(),
-    plan.selectedSpecs.slice().sort()
-  )
-  assert.ok(plan.reasonCodes.includes('ready-for-review'))
 })
 
 test('new and renamed specs receive the maximal trusted runtime profile', () => {

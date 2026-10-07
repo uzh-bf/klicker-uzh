@@ -63,7 +63,6 @@ const expectedDeployedCosts = {
   'gpt-4.1': { input: 2, output: 8 },
   'gpt-5.1': { input: 1.25, output: 10 },
   'gpt-5.4': { input: 2.5, output: 15 },
-  'gpt-5.5': { input: 5, output: 30 },
 }
 
 const chatModels: ParityModel[] = DEFAULT_MODEL_REGISTRY
@@ -73,6 +72,11 @@ describe('default chat model registry parity', () => {
   test('retired GPT-4.1 Mini is absent from active registries', () => {
     expect([...byId(chatModels).keys()]).not.toContain('gpt-4.1-mini')
     expect([...byId(backendModels).keys()]).not.toContain('gpt-4.1-mini')
+  })
+
+  test('retired GPT-5.5 is absent from active registries', () => {
+    expect([...byId(chatModels).keys()]).not.toContain('gpt-5.5')
+    expect([...byId(backendModels).keys()]).not.toContain('gpt-5.5')
   })
 
   test('both registries expose the same model ids', () => {
@@ -246,6 +250,19 @@ describe('deployed chat model registry parity (values.yaml)', () => {
     for (const { chat, backend } of deployed) {
       expect(chat.length).toBeGreaterThan(0)
       expect(backend.length).toBeGreaterThan(0)
+    }
+  })
+
+  test('retired GPT-5.5 is absent from both deployment registries', () => {
+    for (const { name, chat, backend } of deployed) {
+      expect(
+        chat.map((model) => model.id),
+        name
+      ).not.toContain('gpt-5.5')
+      expect(
+        backend.map((model) => model.id),
+        name
+      ).not.toContain('gpt-5.5')
     }
   })
 

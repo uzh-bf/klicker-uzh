@@ -57,6 +57,16 @@ const receiptSources = createProofReceiptSources({
     '{kbExpected:15,kbPassed:15,chatbotsInScope:22,representativeChatbotsExpected:15,representativeChatbotsPassed:15,excludedExpected:2,positivePassed:15,isolationPassed:15,rejectionsPassed:7,directCallsAttempted:37}',
   failedCounts:
     '{kbExpected:15,kbPassed:0,chatbotsInScope:22,representativeChatbotsExpected:15,representativeChatbotsPassed:0,excludedExpected:2,positivePassed:0,isolationPassed:0,rejectionsPassed:0,directCallsAttempted:0}',
+  proofMode: 'full',
+})
+const canaryReceiptSources = createProofReceiptSources({
+  environment: 'prd',
+  collection: 'klicker_course_materials_v1',
+  passedCounts:
+    '{kbExpected:15,kbPassed:1,chatbotsInScope:22,representativeChatbotsExpected:15,representativeChatbotsPassed:1,excludedExpected:2,positivePassed:1,isolationPassed:1,rejectionsPassed:7,directCallsAttempted:9}',
+  failedCounts:
+    '{kbExpected:15,kbPassed:0,chatbotsInScope:22,representativeChatbotsExpected:15,representativeChatbotsPassed:0,excludedExpected:2,positivePassed:0,isolationPassed:0,rejectionsPassed:0,directCallsAttempted:0}',
+  proofMode: 'canary-only',
 })
 const proofRegistry = createTemporaryDirectoryRegistry()
 const writeDummy = createProofChildWriter(proofRegistry)
@@ -156,6 +166,70 @@ describe('PRD Doc Query proof transport', () => {
 })
 
 describe('PRD Doc Query proof matrix', () => {
+  test('runs only the singleton canary in canary-only mode', async () => {
+    const validated = validateTestManifest(manifest())
+    const environment = {
+      ...(await proofDummyEnvironmentWithPin()),
+      DOC_QUERY_PROOF_MODE: 'canary-only',
+    }
+    const questions = new Set<string>()
+    let call = 0
+    const receipt = await runProofMatrix({
+      manifest: validated,
+      environment,
+      invoke: async ({ question, override }) => {
+        call += 1
+        questions.add(question)
+        if ((call >= 3 && call <= 8) || override) {
+          return override ? rejected('invalid arguments') : rejected()
+        }
+        const positive = question.startsWith('positive')
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                mode: 'documents',
+                summary: { sources_returned: 1, chunks_returned: 1 },
+                sources: [
+                  positive
+                    ? {
+                        reference: 'safe-positive-reference',
+                        chunks: [{ content: 'positive-marker-1' }],
+                      }
+                    : { reference: 'safe-foreign-reference', chunks: [] },
+                ],
+              }),
+            },
+          ],
+        }
+      },
+    })
+
+    expect(call).toBe(9)
+    expect([...questions].sort()).toEqual([
+      'foreign fixture 1',
+      'positive fixture 1',
+    ])
+    expect(receipt).toMatchObject({
+      mode: 'canary-only',
+      phase: 'complete',
+      result: 'passed',
+      counts: {
+        kbExpected: 15,
+        kbPassed: 1,
+        chatbotsInScope: 22,
+        representativeChatbotsExpected: 15,
+        representativeChatbotsPassed: 1,
+        excludedExpected: 2,
+        positivePassed: 1,
+        isolationPassed: 1,
+        rejectionsPassed: 7,
+        directCallsAttempted: 9,
+      },
+    })
+  })
+
   test('does not accept an unrelated tool error as an auth rejection', async () => {
     const validated = validateTestManifest(manifest())
     const environment = await proofDummyEnvironmentWithPin()
@@ -247,6 +321,7 @@ defineProofMatrixSuite(
     rejection: rejected,
     rejectionWithArguments: () => rejected('invalid arguments'),
     expectedDirectCalls: 37,
+    expectedMode: 'full',
     expectedCounts: {
       kbPassed: 15,
       chatbotsInScope: 22,
@@ -273,10 +348,99 @@ defineProofSupervisorSuite(
     passedReceiptSource: receiptSources.passedReceiptSource,
     failedReceiptSource: receiptSources.failedReceiptSource,
     expectProofManifestFingerprint: true,
+    expectedProofMode: 'full',
   }
 )
 
 describe('PRD Doc Query proof supervisor', () => {
+  test('rejects an invalid mode before lock acquisition or child spawn', async () => {
+    const dummy = await writeDummy(receiptSources.passedReceiptSource())
+    let acquired = false
+    let spawned = false
+    const receipt = await superviseProof({
+      sourceEnvironment: {
+        ...(await proofProcessEnvironment()),
+        DOC_QUERY_PROOF_MODE: 'canary',
+      },
+      childPath: dummy.path,
+      childArgs: [],
+      lockPath: dummy.lockPath,
+      acquireLockForProof: async () => {
+        acquired = true
+        return { close: async () => undefined }
+      },
+      spawnForProof: (() => {
+        spawned = true
+        throw new Error('must not spawn')
+      }) as unknown as typeof import('node:child_process').spawn,
+    })
+
+    expect(receipt).toMatchObject({
+      mode: 'full',
+      result: 'failed',
+      failureClass: 'protocol_failed',
+      exitCode: null,
+    })
+    expect(acquired).toBe(false)
+    expect(spawned).toBe(false)
+  })
+
+  test('accepts a mode-bound canary-only receipt', async () => {
+    const dummy = await writeDummy(canaryReceiptSources.passedReceiptSource())
+    const receipt = await superviseProof({
+      sourceEnvironment: {
+        ...(await proofProcessEnvironment()),
+        DOC_QUERY_PROOF_MODE: 'canary-only',
+      },
+      childPath: dummy.path,
+      childArgs: [],
+      lockPath: dummy.lockPath,
+      deadlineMs: 2_000,
+    })
+
+    expect(receipt).toMatchObject({
+      mode: 'canary-only',
+      result: 'passed',
+      failureClass: 'none',
+      counts: { kbPassed: 1, directCallsAttempted: 9 },
+    })
+  })
+
+  test.each([
+    [
+      'a different receipt mode',
+      () => canaryReceiptSources.passedReceiptSource(),
+      'full',
+    ],
+    [
+      'canary counters outside the nine-call contract',
+      () =>
+        canaryReceiptSources
+          .passedReceiptSource()
+          .replace('directCallsAttempted:9', 'directCallsAttempted:10'),
+      'canary-only',
+    ],
+  ])('rejects %s', async (_name, source, selectedMode) => {
+    const dummy = await writeDummy(source())
+    const receipt = await superviseProof({
+      sourceEnvironment: {
+        ...(await proofProcessEnvironment()),
+        DOC_QUERY_PROOF_MODE: selectedMode,
+      },
+      childPath: dummy.path,
+      childArgs: [],
+      lockPath: dummy.lockPath,
+      deadlineMs: 2_000,
+    })
+
+    expect(receipt).toMatchObject({
+      mode: selectedMode,
+      result: 'failed',
+      failureClass: 'child_failed',
+      diagnosticClass: 'worker_protocol',
+    })
+  })
+
   test('does not preserve a failed receipt when the child exit is unknown', async () => {
     const dummy = await writeDummy(receiptSources.failedReceiptSource())
     const child = new EventEmitter() as EventEmitter & { pid: number }
@@ -285,6 +449,7 @@ describe('PRD Doc Query proof supervisor', () => {
       receiptVersion: 1,
       environment: 'prd',
       collection: 'klicker_course_materials_v1',
+      mode: 'full',
       phase: 'canary',
       result: 'failed',
       failureClass: 'canary_positive_failed',

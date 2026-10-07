@@ -1,13 +1,15 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   ChatbotStatus,
-  PrismaClient,
+  type PrismaClient,
   UserRole,
 } from '@klicker-uzh/prisma/client'
-import { EventEmitter } from 'events'
+import type { EventEmitter } from 'events'
+import { onTestFinished } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
   approveChatbotPublication,
+  getPendingChatbotPublications,
   rejectChatbotPublication,
   requestChatbotPublication,
 } from '../src/services/chatbots.js'
@@ -62,7 +64,7 @@ describe('Integration tests for the chatbot publication workflow', () => {
   async function enablePublishing() {
     await prisma.user.update({
       where: { id: userOneCtx.user.sub },
-      data: { aiChatbotPublishingEnabled: true },
+      data: { aiFeaturesEnabled: true },
     })
   }
 
@@ -93,6 +95,113 @@ describe('Integration tests for the chatbot publication workflow', () => {
       },
     })
   }
+
+  describe('getPendingChatbotPublications', () => {
+    it('rejects non-admin callers', async () => {
+      await seedChatbot(ChatbotStatus.PENDING_APPROVAL)
+      await expect(getPendingChatbotPublications(userOneCtx)).rejects.toThrow(
+        'Not authorized'
+      )
+      await expect(getPendingChatbotPublications(userTwoCtx)).rejects.toThrow(
+        'Not authorized'
+      )
+    })
+
+    it('lists pending requests across owners with review details but no credentials', async () => {
+      await enablePublishing()
+      const pending = await seedChatbot(ChatbotStatus.PENDING_APPROVAL, {
+        name: 'Synthetic review bot',
+        publicationUseCase: 'Practice course concepts',
+        expectedStudentCount: 40,
+        creditInitialCredits: 25,
+        updatedAt: new Date('2026-01-01T00:00:00Z'),
+        openaiApiKey: 'synthetic-secret-not-for-review',
+        openaiBaseUrl: 'https://synthetic.invalid',
+        standardModeConfig: {
+          tutorEnabled: true,
+          explainerEnabled: true,
+          quizzerEnabled: false,
+          scopeNote: 'Synthetic course framing',
+        },
+      })
+      const server = await prisma.chatbotMCPServer.create({
+        data: {
+          name: `Synthetic review tools ${pending.id}`,
+          url: 'https://synthetic-tool.invalid',
+          authType: 'bearer',
+          authSecret: 'synthetic-tool-secret-not-for-review',
+          configurations: {
+            create: {
+              chatbotId: pending.id,
+              chatMode: 'tutor',
+              allowedTools: ['doc_query'],
+            },
+          },
+        },
+      })
+      onTestFinished(async () => {
+        await prisma.chatbotMCPServer.delete({ where: { id: server.id } })
+      })
+      const otherCourse = await seedCourse({}, userTwoCtx)
+      const second = await prisma.chatbot.create({
+        data: {
+          name: 'Another owner request',
+          updatedAt: new Date('2026-01-02T00:00:00Z'),
+          courseId: otherCourse.id,
+          ownerId: userTwoCtx.user.sub,
+          status: ChatbotStatus.PENDING_APPROVAL,
+        },
+      })
+      await seedChatbot(ChatbotStatus.DRAFT)
+      await seedChatbot(ChatbotStatus.PUBLISHED)
+      await seedChatbot(ChatbotStatus.REJECTED)
+      await seedChatbot(ChatbotStatus.PAUSED)
+
+      const reviews = await getPendingChatbotPublications(adminCtx)
+      expect(reviews.map(({ chatbot }) => chatbot.id)).toEqual([
+        pending.id,
+        second.id,
+      ])
+      expect(reviews[0]).toMatchObject({
+        ownerPublishingEnabled: true,
+        tools: [
+          {
+            serverName: server.name,
+            chatMode: 'tutor',
+            enabled: true,
+            allowedTools: ['doc_query'],
+          },
+        ],
+        disclaimerTitle: 'Course chatbot disclaimer',
+        disclaimerIntroText: 'Course-specific introduction',
+        chatbot: {
+          id: pending.id,
+          name: 'Synthetic review bot',
+          publicationUseCase: 'Practice course concepts',
+          expectedStudentCount: 40,
+          creditInitialCredits: 25,
+          courses: [{ id: pending.courseId }],
+          standardModeConfig: { scopeNote: 'Synthetic course framing' },
+        },
+      })
+      expect(reviews[0]?.ownerShortname).toBeTruthy()
+      expect(reviews[0]?.tools[0]).not.toHaveProperty('authSecret')
+      expect(reviews[0]?.tools[0]).not.toHaveProperty('url')
+      expect(reviews[0]?.chatbot).not.toHaveProperty('openaiApiKey')
+      expect(reviews[0]?.chatbot).not.toHaveProperty('openaiBaseUrl')
+      expect(reviews[0]?.chatbot).not.toHaveProperty('systemPrompts')
+      expect(reviews[0]?.chatbot).not.toHaveProperty('threads')
+      expect(reviews[1]?.ownerPublishingEnabled).toBe(false)
+
+      await approveChatbotPublication({ id: pending.id }, adminCtx)
+      const remaining = await getPendingChatbotPublications(adminCtx)
+      expect(remaining.map(({ chatbot }) => chatbot.id)).toEqual([second.id])
+    })
+
+    it('returns an empty queue when nothing is awaiting approval', async () => {
+      expect(await getPendingChatbotPublications(adminCtx)).toEqual([])
+    })
+  })
 
   describe('requestChatbotPublication', () => {
     it('moves a DRAFT bot to PENDING_APPROVAL and records the request', async () => {
@@ -349,7 +458,7 @@ describe('Integration tests for the chatbot publication workflow', () => {
     })
 
     it('rejects when the account is not approved for publishing', async () => {
-      // aiChatbotPublishingEnabled defaults to false — do not enable it.
+      // aiFeaturesEnabled defaults to false — do not enable it.
       const bot = await seedChatbot(ChatbotStatus.DRAFT)
 
       await expect(
@@ -469,7 +578,7 @@ describe('Integration tests for the chatbot publication workflow', () => {
 
     it('refuses to publish when the owner lost publishing capability while pending', async () => {
       // The bot reached PENDING via a request that required the capability, but
-      // ops revoked aiChatbotPublishingEnabled before the admin acted. The
+      // ops revoked aiFeaturesEnabled before the admin acted. The
       // account-level gate must still hold at the moment the bot goes live, so
       // enablePublishing() is deliberately NOT called here.
       const bot = await seedChatbot(ChatbotStatus.PENDING_APPROVAL)
