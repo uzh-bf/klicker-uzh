@@ -2,7 +2,7 @@
   "version": 1,
   "groups": [
     {
-      "profile": "pwa",
+      "profile": "chat",
       "specs": ["Y-student-docs.spec.ts"]
     },
     {

@@ -1,4 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
+import {
+  CHATBOT_ID,
+  getEnrolledParticipantId,
+  mockChatStream,
+  resetChatState,
+  setParticipantToken,
+} from '../util/chat.js'
+import { COURSE_ID_TEST } from '../util/constants.js'
 
 type CourseState = {
   gamification?: boolean
@@ -213,4 +221,61 @@ test.describe('Student guide course context', () => {
     await expect(page).toHaveURL(/courseId=enabled&view=progress/)
     await expect(page.locator('#learning-analytics')).toHaveCount(0)
   })
+})
+
+test('the guide preserves embedded disclosure refusal and normal-view recovery', async ({
+  page,
+}) => {
+  const participantId = await getEnrolledParticipantId()
+  await resetChatState(participantId)
+  await setParticipantToken(page, participantId)
+  const tokenCookie = (await page.context().cookies()).find(
+    (cookie) => cookie.name === 'participant_token'
+  )
+  expect(tokenCookie).toBeDefined()
+  await page.context().addCookies([
+    {
+      name: 'participant_token',
+      value: tokenCookie!.value,
+      url: test.info().project.use.baseURL,
+      httpOnly: true,
+      sameSite: 'Lax',
+    },
+  ])
+  await page.goto(`/docs?courseId=${COURSE_ID_TEST}`)
+  const selector = page.getByTestId('docs-prototype-chatbot-select')
+  if (await selector.count()) await selector.selectOption(CHATBOT_ID)
+  await page.getByTestId('docs-prototype-chatbot-try').click()
+  const chat = page.frameLocator('#ai-tutor iframe')
+  await expect(chat.getByTestId('chat-disclaimer-content')).toBeVisible()
+  await chat.getByTestId('chat-disclaimer-decline').click()
+  await expect(chat.getByTestId('chat-disclaimer-declined')).toBeVisible()
+  await expect(chat.getByTestId('chat-composer')).toHaveCount(0)
+  await expect(chat.getByTestId('chat-show-disclaimer-again')).toHaveCount(0)
+
+  const popup = page.waitForEvent('popup')
+  await page.locator(`a[href$="/chatbot/${CHATBOT_ID}"]`).click()
+  const normal = await popup
+  await expect(normal.getByTestId('chat-disclaimer-declined')).toBeVisible()
+  expect(new URL(normal.url()).searchParams.has('embed')).toBe(false)
+  await normal.getByTestId('chat-show-disclaimer-again').click()
+  await normal.getByTestId('chat-disclaimer-accept').click()
+  await expect(normal.getByTestId('chat-composer')).toBeVisible()
+
+  await mockChatStream(normal, { text: 'Synthetic guide reply' })
+  await normal
+    .getByTestId('chat-composer-input')
+    .fill('Synthetic guide question')
+  await normal.getByTestId('chat-send-button').click()
+  await expect(normal.getByTestId('chat-assistant-message')).toContainText(
+    'Synthetic guide reply'
+  )
+  await expect(normal).toHaveURL(/\/threads\//)
+  await normal.reload()
+  await expect(normal.getByTestId('chat-composer')).toBeVisible()
+  await expect(normal.getByTestId('chat-disclaimer-content')).toHaveCount(0)
+  await expect(normal.getByTestId('chat-thread-item')).toHaveCount(1)
+  // POST /chat is intercepted, so this checks thread and disclosure persistence;
+  // persistence of generated messages requires separate server-side evidence.
+  await normal.close()
 })
