@@ -8,7 +8,7 @@
     "dist"
   ],
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.30.0",
+    "@modelcontextprotocol/sdk": "1.31.0",
     "jose": "5.9.4"
   },
   "devDependencies": {
