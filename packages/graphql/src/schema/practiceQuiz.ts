@@ -206,6 +206,7 @@ export interface IPracticeQuiz
   isOwner?: boolean
   isPreview?: boolean
   adaptiveMaximumQuestions?: number | null
+  adaptiveRetakeCooldownDays?: number | null
 }
 export const PracticeQuizRef = builder.objectRef<IPracticeQuiz>('PracticeQuiz')
 export const PracticeQuiz = PracticeQuizRef.implement({
@@ -233,6 +234,9 @@ export const PracticeQuiz = PracticeQuizRef.implement({
     isOwner: t.exposeBoolean('isOwner', { nullable: true }),
     isPreview: t.exposeBoolean('isPreview', { nullable: true }),
     adaptiveMaximumQuestions: t.exposeInt('adaptiveMaximumQuestions', {
+      nullable: true,
+    }),
+    adaptiveRetakeCooldownDays: t.exposeInt('adaptiveRetakeCooldownDays', {
       nullable: true,
     }),
 

@@ -21,6 +21,10 @@ const messages = {
           resumable: 'Du kannst das Quiz verlassen und später fortsetzen.',
           privacy:
             'Dein Ergebnis zeigt dir, was du als Nächstes üben kannst. Kursdozierende sehen nur anonymisierte Gruppenergebnisse.',
+          repetitionAnytime: 'Wiederholung: jederzeit',
+          singleAttempt: 'Ein Versuch',
+          unfinishedAttempt:
+            'Du hast einen unvollständigen Versuch. Setze ihn fort oder beginne neu.',
         },
         question: {
           testingInfo: 'Testinformationen — für Studierende nicht sichtbar',

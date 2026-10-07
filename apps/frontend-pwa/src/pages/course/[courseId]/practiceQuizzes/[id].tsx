@@ -443,6 +443,7 @@ function PracticeQuizPage({
           maximumQuestions={
             data.practiceQuiz.adaptiveMaximumQuestions ?? totalSteps
           }
+          retakeCooldownDays={data.practiceQuiz.adaptiveRetakeCooldownDays}
           previewOnly={data.practiceQuiz.isPreview ?? undefined}
           embedded={embedded}
           onProgressChange={setAdaptiveProgress}

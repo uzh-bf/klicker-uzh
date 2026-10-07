@@ -10,6 +10,7 @@ fragment PracticeQuizDataWithoutSolutions on PracticeQuiz {
   orderType
   mode
   adaptiveMaximumQuestions
+  adaptiveRetakeCooldownDays
   numOfStacks
   # previouslyAnswered
   # previousScore

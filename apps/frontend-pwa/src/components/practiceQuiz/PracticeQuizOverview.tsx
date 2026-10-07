@@ -4,16 +4,21 @@ import {
   faTimesCircle,
 } from '@fortawesome/free-regular-svg-icons'
 import { faRepeat, faShuffle } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ElementOrderType,
+  type ElementOrderType,
   SelfDocument,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
-import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
-import { Button, H3, UserNotification } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
+import {
+  PracticeQuizOverviewFact,
+  PracticeQuizOverviewFactColumn,
+  PracticeQuizOverviewFacts,
+  PracticeQuizOverviewHeader,
+  PracticeQuizStartButton,
+} from '@klicker-uzh/shared-components/src/practiceQuiz/PracticeQuizOverviewParts'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 
 interface PracticeQuizOverviewProps {
   displayName: string
@@ -81,36 +86,30 @@ function PracticeQuizOverview({
           </UserNotification>
         )}
 
-      <div className="border-b">
-        <H3 className={{ root: 'mb-0' }}>{displayName}</H3>
-      </div>
+      <PracticeQuizOverviewHeader
+        displayName={displayName}
+        description={description}
+      />
 
-      {!description?.match(/^(<br>(\n)*)$/g) && description !== '' ? (
-        <DynamicMarkdown content={description} />
-      ) : null}
-
-      <div className="flex flex-col gap-2 text-sm md:flex-row md:gap-16">
-        <div className="flex-1 space-y-2">
-          <div className="flex flex-row items-center gap-2">
-            <FontAwesomeIcon icon={faQuestionCircle} />
+      <PracticeQuizOverviewFacts>
+        <PracticeQuizOverviewFactColumn>
+          <PracticeQuizOverviewFact icon={faQuestionCircle}>
             <div>
               {t('pwa.microLearning.numOfQuestionSets', {
                 number: numOfStacks ?? 0,
               })}
             </div>
-          </div>
+          </PracticeQuizOverviewFact>
           {typeof orderType !== 'undefined' && (
-            <div className="flex flex-row items-center gap-2">
-              <FontAwesomeIcon icon={faShuffle} />
+            <PracticeQuizOverviewFact icon={faShuffle}>
               <div>{t(`pwa.practiceQuiz.order${orderType}`)}</div>
-            </div>
+            </PracticeQuizOverviewFact>
           )}
-        </div>
+        </PracticeQuizOverviewFactColumn>
 
-        <div className="flex-1 space-y-2">
+        <PracticeQuizOverviewFactColumn>
           {typeof resetTimeDays !== 'undefined' && (
-            <div className="flex flex-row items-center gap-2">
-              <FontAwesomeIcon icon={faRepeat} />
+            <PracticeQuizOverviewFact icon={faRepeat}>
               {resetTimeDays === 1 ? (
                 <>{t('pwa.practiceQuiz.repetitionDaily')}</>
               ) : (
@@ -120,55 +119,25 @@ function PracticeQuizOverview({
                   })}
                 </>
               )}
-            </div>
+            </PracticeQuizOverviewFact>
           )}
-          {/* <div className="flex flex-row items-center gap-2">
-        <div>
-          Punkte (berechnet): {previousScore}
-        </div>
-      </div>
-      <div className="flex flex-row items-center gap-2">
-        <div>
-          Punkte (gesammelt):{' '}
-          {previousPointsAwarded}
-        </div>
-      </div> */}
-          {/* {typeof previouslyAnswered !== 'undefined' && (
-            <div className="flex flex-row items-center gap-2">
-              <FontAwesomeIcon icon={faCheck} />
-              <div>
-                {t('pwa.practiceQuiz.answeredMinOnce', {
-                  answered: previouslyAnswered,
-                  total: stacksWithQuestions,
-                })}
-              </div>
-            </div>
-          )} */}
-          {/* <div className="flex flex-row items-center gap-2">
-        Anzahl Antworten:{' '}
-        <div>{totalTrials}</div>
-      </div> */}
           {typeof pointsMultiplier !== 'undefined' && (
-            <div className="flex flex-row items-center gap-2">
-              <FontAwesomeIcon icon={faTimesCircle} />
+            <PracticeQuizOverviewFact icon={faTimesCircle}>
               <div>
                 {t('pwa.practiceQuiz.multiplicatorPoints', {
                   mult: pointsMultiplier,
                 })}
               </div>
-            </div>
+            </PracticeQuizOverviewFact>
           )}
-        </div>
-      </div>
+        </PracticeQuizOverviewFactColumn>
+      </PracticeQuizOverviewFacts>
 
-      <Button
-        primary
-        className={{ root: 'h-9 self-end text-lg' }}
+      <PracticeQuizStartButton
+        label={t('shared.generic.start')}
         onClick={() => setCurrentIx(0)}
-        data={{ cy: 'start-practice-quiz' }}
-      >
-        <Button.Label>{t('shared.generic.start')}</Button.Label>
-      </Button>
+        cy="start-practice-quiz"
+      />
     </div>
   )
 }

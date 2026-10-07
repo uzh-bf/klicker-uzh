@@ -1,8 +1,8 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   AdaptivePracticeQuizAttemptStatus,
-  AdaptivePracticeQuizResponseInput,
-  FAdaptivePracticeQuizAttemptStateWithRuntimeLimitsFragment,
+  type AdaptivePracticeQuizResponseInput,
+  type FAdaptivePracticeQuizAttemptStateWithRuntimeLimitsFragment,
   MRestartAdaptivePracticeQuizAttemptWithRuntimeLimitsDocument,
   MResumeAdaptivePracticeQuizAttemptWithRuntimeLimitsDocument,
   MStartAdaptivePracticeQuizAttemptWithRuntimeLimitsDocument,
@@ -10,14 +10,15 @@ import {
   QAdaptivePracticeQuizAttemptStateWithRuntimeLimitsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { PracticeQuizCard } from '@klicker-uzh/shared-components/src/practiceQuiz/PracticeQuizOverviewParts'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useRef, useState } from 'react'
 import { useAdaptivePwaHost } from '../../../ports'
-import { isAdaptiveBusyError } from './adaptiveBusyError'
 import AdaptivePracticeQuizIntro from './AdaptivePracticeQuizIntro'
 import AdaptivePracticeQuizQuestion from './AdaptivePracticeQuizQuestion'
 import AdaptivePracticeQuizResult from './AdaptivePracticeQuizResult'
+import { isAdaptiveBusyError } from './adaptiveBusyError'
 
 export type AdaptivePracticeQuizProgress = {
   status: 'overview' | 'in-progress' | 'completed'
@@ -31,6 +32,7 @@ interface AdaptivePracticeQuizProps {
   displayName: string
   description?: string | null
   maximumQuestions: number
+  retakeCooldownDays?: number | null
   previewOnly?: boolean
   embedded?: boolean
   onProgressChange?: (progress: AdaptivePracticeQuizProgress) => void
@@ -44,6 +46,7 @@ function AdaptivePracticeQuiz({
   displayName,
   description,
   maximumQuestions,
+  retakeCooldownDays,
   previewOnly = false,
   embedded = false,
   onProgressChange,
@@ -278,182 +281,171 @@ function AdaptivePracticeQuiz({
   const actionLoading = starting || resuming || restarting
 
   return (
-    <div className="flex-1">
-      <div
-        className={`w-full space-y-5 md:mx-auto md:mb-4 md:max-w-6xl md:rounded md:p-8 md:pt-6 ${
-          embedded ? '' : 'md:border'
-        }`}
-      >
-        {previewOnly && (
-          <PreviewMessage
-            activityType={t('shared.generic.practiceQuiz')}
-            name={name}
-            displayName={displayName}
+    <PracticeQuizCard embedded={embedded}>
+      {previewOnly && (
+        <PreviewMessage
+          activityType={t('shared.generic.practiceQuiz')}
+          name={name}
+          displayName={displayName}
+        />
+      )}
+
+      {!previewOnly && loading && <Loader />}
+
+      {!previewOnly && error && (
+        <div className="flex flex-col items-start gap-3">
+          <UserNotification
+            type="error"
+            message={t('pwa.practiceQuiz.adaptive.unavailable.description')}
           />
-        )}
+          <Button
+            type="button"
+            onClick={() => void refetch()}
+            disabled={loading}
+            loading={loading}
+            data={{ cy: 'retry-adaptive-practice-quiz-state' }}
+          >
+            <Button.Label>{t('shared.generic.tryAgain')}</Button.Label>
+          </Button>
+        </div>
+      )}
 
-        {!previewOnly && loading && <Loader />}
-
-        {!previewOnly && error && (
+      {actionError &&
+        actionError !== 'submit' &&
+        !showQuestion &&
+        (actionBusy ? (
           <div className="flex flex-col items-start gap-3">
             <UserNotification
-              type="error"
-              message={t('pwa.practiceQuiz.adaptive.unavailable.description')}
+              type="warning"
+              message={t('pwa.practiceQuiz.adaptive.errors.busy')}
+              data={{ cy: 'adaptive-practice-quiz-busy' }}
             />
             <Button
               type="button"
-              onClick={() => void refetch()}
-              disabled={loading}
-              loading={loading}
-              data={{ cy: 'retry-adaptive-practice-quiz-state' }}
+              onClick={() =>
+                void {
+                  start: handleStart,
+                  resume: handleResume,
+                  startOver: handleRestart,
+                }[actionError]()
+              }
+              disabled={actionLoading}
+              loading={actionLoading}
+              data={{ cy: 'retry-adaptive-practice-quiz-action' }}
             >
               <Button.Label>{t('shared.generic.tryAgain')}</Button.Label>
             </Button>
           </div>
-        )}
+        ) : (
+          <UserNotification
+            type="error"
+            message={t(`pwa.practiceQuiz.adaptive.errors.${actionError}`)}
+          />
+        ))}
 
-        {actionError &&
-          actionError !== 'submit' &&
-          !showQuestion &&
-          (actionBusy ? (
-            <div className="flex flex-col items-start gap-3">
-              <UserNotification
-                type="warning"
-                message={t('pwa.practiceQuiz.adaptive.errors.busy')}
-                data={{ cy: 'adaptive-practice-quiz-busy' }}
-              />
-              <Button
-                type="button"
-                onClick={() =>
-                  void {
-                    start: handleStart,
-                    resume: handleResume,
-                    startOver: handleRestart,
-                  }[actionError]()
-                }
-                disabled={actionLoading}
-                loading={actionLoading}
-                data={{ cy: 'retry-adaptive-practice-quiz-action' }}
-              >
-                <Button.Label>{t('shared.generic.tryAgain')}</Button.Label>
-              </Button>
-            </div>
-          ) : (
-            <UserNotification
-              type="error"
-              message={t(`pwa.practiceQuiz.adaptive.errors.${actionError}`)}
-            />
-          ))}
-
-        {(previewOnly || (!loading && !error)) &&
-          attempt?.status !== AdaptivePracticeQuizAttemptStatus.Completed &&
-          (!showQuestion || !attempt?.servedItem) && (
-            <AdaptivePracticeQuizIntro
-              displayName={displayName}
-              description={description}
-              maximumQuestions={attempt?.maximumQuestions ?? maximumQuestions}
-              hasAttempt={
-                attempt?.status === AdaptivePracticeQuizAttemptStatus.InProgress
-              }
-              previewOnly={previewOnly}
-              loading={actionLoading}
-              onStart={handleStart}
-              onResume={handleResume}
-              onRestart={handleRestart}
-            />
-          )}
-
-        {attempt?.status === AdaptivePracticeQuizAttemptStatus.InProgress &&
-          remainingSeconds !== null && (
-            <div
-              className="rounded border border-gray-200 px-4 py-3 text-sm"
-              data-cy="adaptive-time-remaining"
-            >
-              <p className="font-semibold tabular-nums">
-                {t('pwa.practiceQuiz.adaptive.question.remainingTime', {
-                  time: formatCountdown(remainingSeconds),
-                })}
-              </p>
-              {expired && (
-                <p>
-                  {t('pwa.practiceQuiz.adaptive.question.timeLimitReached')}
-                </p>
-              )}
-              {expired && actionError && (
-                <p role="alert">
-                  {t('pwa.practiceQuiz.adaptive.errors.resume')}
-                </p>
-              )}
-            </div>
-          )}
-        {attempt?.status === AdaptivePracticeQuizAttemptStatus.InProgress &&
-          !expired &&
-          showQuestion &&
-          attempt.servedItem && (
-            <div className="space-y-4">
-              {attempt.submittedResponseFeedback && (
-                <UserNotification
-                  type={
-                    attempt.submittedResponseFeedback.correct
-                      ? 'success'
-                      : 'info'
-                  }
-                  data={{ cy: 'adaptive-submitted-response-feedback' }}
-                >
-                  <div className="space-y-1">
-                    <div className="font-semibold">
-                      {t(
-                        `pwa.practiceQuiz.adaptive.feedback.${
-                          attempt.submittedResponseFeedback.correct
-                            ? 'correct'
-                            : 'incorrect'
-                        }`
-                      )}
-                    </div>
-                    <div>
-                      {t('pwa.practiceQuiz.adaptive.feedback.score', {
-                        score: Math.round(
-                          attempt.submittedResponseFeedback.score * 100
-                        ),
-                      })}
-                    </div>
-                    {attempt.submittedResponseFeedback.feedback.map(
-                      (feedback, index) => (
-                        <div key={`${index}-${feedback}`}>{feedback}</div>
-                      )
-                    )}
-                  </div>
-                </UserNotification>
-              )}
-              <AdaptivePracticeQuizQuestion
-                key={attempt.servedItem.poolItemId}
-                item={attempt.servedItem}
-                questionNumber={
-                  attempt.questionNumber ?? attempt.answeredQuestions + 1
-                }
-                answeredQuestions={attempt.answeredQuestions}
-                maximumQuestions={attempt.maximumQuestions}
-                elapsedSeconds={attempt.elapsedSeconds ?? null}
-                showTimer={attempt.showTimer}
-                submitting={submitting}
-                submissionError={actionError === 'submit'}
-                submissionBusy={actionError === 'submit' && actionBusy}
-                onSubmit={handleSubmit}
-              />
-            </div>
-          )}
-
-        {attempt?.status === AdaptivePracticeQuizAttemptStatus.Completed && (
-          <AdaptivePracticeQuizResult
-            attemptId={attempt.attemptId}
-            canStartNewAttempt={attempt.canStartNewAttempt}
-            nextAttemptAvailableAt={attempt.nextAttemptAvailableAt}
-            startingNewAttempt={starting}
-            onStartNewAttempt={handleStart}
+      {(previewOnly || (!loading && !error)) &&
+        attempt?.status !== AdaptivePracticeQuizAttemptStatus.Completed &&
+        (!showQuestion || !attempt?.servedItem) && (
+          <AdaptivePracticeQuizIntro
+            displayName={displayName}
+            description={description}
+            maximumQuestions={attempt?.maximumQuestions ?? maximumQuestions}
+            retakeCooldownDays={retakeCooldownDays}
+            hasAttempt={
+              attempt?.status === AdaptivePracticeQuizAttemptStatus.InProgress
+            }
+            previewOnly={previewOnly}
+            loading={actionLoading}
+            onStart={handleStart}
+            onResume={handleResume}
+            onRestart={handleRestart}
           />
         )}
-      </div>
-    </div>
+
+      {attempt?.status === AdaptivePracticeQuizAttemptStatus.InProgress &&
+        remainingSeconds !== null && (
+          <div
+            className="rounded border border-gray-200 px-4 py-3 text-sm"
+            data-cy="adaptive-time-remaining"
+          >
+            <p className="font-semibold tabular-nums">
+              {t('pwa.practiceQuiz.adaptive.question.remainingTime', {
+                time: formatCountdown(remainingSeconds),
+              })}
+            </p>
+            {expired && (
+              <p>{t('pwa.practiceQuiz.adaptive.question.timeLimitReached')}</p>
+            )}
+            {expired && actionError && (
+              <p role="alert">{t('pwa.practiceQuiz.adaptive.errors.resume')}</p>
+            )}
+          </div>
+        )}
+      {attempt?.status === AdaptivePracticeQuizAttemptStatus.InProgress &&
+        !expired &&
+        showQuestion &&
+        attempt.servedItem && (
+          <div className="space-y-4">
+            {attempt.submittedResponseFeedback && (
+              <UserNotification
+                type={
+                  attempt.submittedResponseFeedback.correct ? 'success' : 'info'
+                }
+                data={{ cy: 'adaptive-submitted-response-feedback' }}
+              >
+                <div className="space-y-1">
+                  <div className="font-semibold">
+                    {t(
+                      `pwa.practiceQuiz.adaptive.feedback.${
+                        attempt.submittedResponseFeedback.correct
+                          ? 'correct'
+                          : 'incorrect'
+                      }`
+                    )}
+                  </div>
+                  <div>
+                    {t('pwa.practiceQuiz.adaptive.feedback.score', {
+                      score: Math.round(
+                        attempt.submittedResponseFeedback.score * 100
+                      ),
+                    })}
+                  </div>
+                  {attempt.submittedResponseFeedback.feedback.map(
+                    (feedback, index) => (
+                      <div key={`${index}-${feedback}`}>{feedback}</div>
+                    )
+                  )}
+                </div>
+              </UserNotification>
+            )}
+            <AdaptivePracticeQuizQuestion
+              key={attempt.servedItem.poolItemId}
+              item={attempt.servedItem}
+              questionNumber={
+                attempt.questionNumber ?? attempt.answeredQuestions + 1
+              }
+              answeredQuestions={attempt.answeredQuestions}
+              maximumQuestions={attempt.maximumQuestions}
+              elapsedSeconds={attempt.elapsedSeconds ?? null}
+              showTimer={attempt.showTimer}
+              submitting={submitting}
+              submissionError={actionError === 'submit'}
+              submissionBusy={actionError === 'submit' && actionBusy}
+              onSubmit={handleSubmit}
+            />
+          </div>
+        )}
+
+      {attempt?.status === AdaptivePracticeQuizAttemptStatus.Completed && (
+        <AdaptivePracticeQuizResult
+          attemptId={attempt.attemptId}
+          canStartNewAttempt={attempt.canStartNewAttempt}
+          nextAttemptAvailableAt={attempt.nextAttemptAvailableAt}
+          startingNewAttempt={starting}
+          onStartNewAttempt={handleStart}
+        />
+      )}
+    </PracticeQuizCard>
   )
 }
 
