@@ -33,7 +33,7 @@ it('never retains browser credentials in server state', () => {
   assert.equal(getParticipantSessionToken(), null)
 })
 
-it('keeps only explicit credentials and never copies a cookie session into the tab', () => {
+it('keeps only explicit credentials, ahead of any cookie session', () => {
   const values = installWindow()
   const explicit = {
     participantToken: 'participant-b',
@@ -61,11 +61,10 @@ it('keeps only explicit credentials and never copies a cookie session into the t
     'participant-b'
   )
 
-  // A working cookie session supersedes the tab credential.
-  assert.equal(resolveParticipantPageToken(ambient), null)
+  // A cookie session for another participant cannot replace the launch.
+  assert.equal(resolveParticipantPageToken(ambient), 'participant-b')
   applyParticipantPageSession(ambient)
-  assert.equal(getParticipantSessionToken(), null)
-  assert.equal(values.has('participant_token'), false)
+  assert.equal(values.get('participant_token'), 'participant-b')
   removeWindow()
 })
 

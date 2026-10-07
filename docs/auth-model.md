@@ -76,10 +76,11 @@ The application boundary binds an Apollo client to the page credential before
 child queries. Only explicit credentials, from an LTI exchange or from account
 creation, are kept in the tab (memory, plus sessionStorage when available).
 They let a frame that refuses cookies keep its identity across navigation.
-Cookie-authenticated pages send no bearer and clear a kept credential, so a
-logout in one tab reaches every cookie-authenticated tab on its next request.
-A frame holding an explicit credential keeps it until it relaunches or logs
-out itself. A page that ends the
+A kept credential takes precedence over any cookie session, and server-rendered
+data from a different cookie session is not shown in its place. Tabs without
+one send no bearer, so a logout in one tab reaches every cookie-authenticated
+tab on its next request. A frame holding an explicit credential keeps it until
+it relaunches or logs out itself. A page that ends the
 identity, or a successful session-changing mutation, retires the client;
 retired clients ignore late results and error redirects. With both cookies and
 storage unavailable, the active document can continue; a credential-free full

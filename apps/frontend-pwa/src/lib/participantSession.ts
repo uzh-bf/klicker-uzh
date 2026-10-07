@@ -87,11 +87,10 @@ export function endsParticipantSession(page: ParticipantPageSession) {
 }
 
 // The bearer a page's client sends: the page's own explicit credential, none
-// when the page is cookie-authenticated or ends the session, and otherwise the
-// credential this tab received earlier.
+// when the page ends the session, and otherwise the explicit credential this
+// tab received earlier, which takes precedence over any cookie session.
 export function resolveParticipantPageToken(page: ParticipantPageSession) {
-  if (endsParticipantSession(page) || page.tokenSource === 'ambient')
-    return null
+  if (endsParticipantSession(page)) return null
   if (page.tokenSource === 'explicit' && page.participantToken)
     return page.participantToken
   return getParticipantSessionToken()
@@ -101,7 +100,6 @@ export function applyParticipantPageSession(page: ParticipantPageSession) {
   if (endsParticipantSession(page)) invalidateParticipantSession()
   else if (page.tokenSource === 'explicit' && page.participantToken)
     setParticipantSessionToken(page.participantToken)
-  else if (page.tokenSource === 'ambient') setParticipantSessionToken(null)
 }
 
 export function isSuccessfulParticipantSessionResult(result: {

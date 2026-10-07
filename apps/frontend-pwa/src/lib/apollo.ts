@@ -340,7 +340,14 @@ export function useApollo(pageProps: PageProps) {
   // of a launch already carries it.
   const token = regular ? resolveParticipantPageToken(pageProps) : null
   const generation = getParticipantSessionGeneration()
-  const state = pageProps[APOLLO_STATE_PROP_NAME]
+  // Server-rendered data belongs to the page's cookie session, which a tab
+  // holding another explicit credential must not show.
+  const state =
+    token &&
+    pageProps.tokenSource === 'ambient' &&
+    pageProps.participantToken !== token
+      ? undefined
+      : pageProps[APOLLO_STATE_PROP_NAME]
   const client = useMemo(
     () =>
       initializeApollo(
