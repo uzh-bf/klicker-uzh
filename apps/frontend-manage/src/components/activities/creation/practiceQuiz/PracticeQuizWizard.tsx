@@ -1,5 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
+  ADAPTIVE_MAX_RETAKE_START_MAX_AGE_DAYS,
+  ADAPTIVE_MIN_RETAKE_START_MAX_AGE_DAYS,
   MAX_CONFIGURABLE_ITEMS_PER_COVERAGE_CELL,
   MIN_CONFIGURABLE_ITEMS_PER_COVERAGE_CELL,
 } from '@klicker-uzh/adaptive-contract'
@@ -14,8 +16,7 @@ import {
 import { asAdaptiveTranslator } from '@klicker-uzh/adaptive-manage-ui/source/components/activities/creation/practiceQuiz/adaptiveReadinessIssue.ts'
 import {
   AdaptivePracticeQuizPreset,
-  QAdaptivePracticeQuizPreviewWithRuntimeLimitsDocument,
-  AdaptivePracticeQuizPreviewQuery,
+  type AdaptivePracticeQuizPreviewQuery,
   CreatePracticeQuizDocument,
   EditPracticeQuizDocument,
   type Element,
@@ -24,6 +25,7 @@ import {
   type PracticeQuiz,
   PracticeQuizMode,
   type PublicationStatus,
+  QAdaptivePracticeQuizPreviewWithRuntimeLimitsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
@@ -243,6 +245,22 @@ function PracticeQuizWizard({
         .max(
           ADAPTIVE_MAX_QUESTION_CAP,
           t('manage.activityWizard.adaptive.validation.questionCapMax')
+        ),
+      retakeStartMaxAgeDays: requiredNumber()
+        .integer(t('manage.activityWizard.adaptive.validation.integer'))
+        .min(
+          ADAPTIVE_MIN_RETAKE_START_MAX_AGE_DAYS,
+          t('manage.activityWizard.adaptive.validation.cellMinimumRange', {
+            min: ADAPTIVE_MIN_RETAKE_START_MAX_AGE_DAYS,
+            max: ADAPTIVE_MAX_RETAKE_START_MAX_AGE_DAYS,
+          })
+        )
+        .max(
+          ADAPTIVE_MAX_RETAKE_START_MAX_AGE_DAYS,
+          t('manage.activityWizard.adaptive.validation.cellMinimumRange', {
+            min: ADAPTIVE_MIN_RETAKE_START_MAX_AGE_DAYS,
+            max: ADAPTIVE_MAX_RETAKE_START_MAX_AGE_DAYS,
+          })
         ),
       minItemsPerCoverageCell: requiredNumber()
         .integer(t('manage.activityWizard.adaptive.validation.integer'))

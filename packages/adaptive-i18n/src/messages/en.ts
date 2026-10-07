@@ -448,6 +448,15 @@ const messages = {
           repetitionInterval: 'Retake after (days)',
           repetitionIntervalHelp:
             'Days a student waits after finishing before taking the quiz again; 0 allows an immediate retake. The latest completed attempt counts.',
+          retakeStartFromPreviousResult: 'Start a retake at the last result',
+          retakeStartFromPreviousResultHelp:
+            "A retake begins with questions near the student's last result instead of the middle of the scale. The new result is calculated from the new answers only.",
+          retakeStartMaxAgeDays: 'Use the last result for (days)',
+          retakeStartMaxAgeDaysHelp:
+            'An older result is ignored and the retake starts in the middle of the scale (1 to 365 days).',
+          retakePreferNewQuestions: 'Prefer new questions on a retake',
+          retakePreferNewQuestionsHelp:
+            'Questions the student answered before come back only when no suitable new question is left. Subcompetences that do not fit the current level are still skipped.',
           attemptPolicy: 'Attempt used for results',
           advanced: 'Advanced adaptive settings',
           perLeafQuestionCap: 'Maximum questions per leaf',

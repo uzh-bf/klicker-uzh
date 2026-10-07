@@ -20,6 +20,7 @@ import {
 } from './adaptiveEngineValidationCache.js'
 import { adaptivePracticeQuizError } from './adaptivePracticeQuizErrors.js'
 import { emitAdaptiveOperationalEvent } from './adaptivePracticeQuizEvents.js'
+import type { AdaptiveRetakeRequest } from './adaptivePracticeQuizRetakeContext.js'
 import type {
   AdaptiveRuntimeLevel,
   AdaptiveRuntimeResponse,
@@ -201,11 +202,14 @@ export async function advanceLoadedAdaptiveRuntime({
   responses,
   selectionContext,
   terminalStopReason,
+  retake,
 }: {
   attemptId: string
   runtime: LoadedAdaptiveEstimator
   responses: AdaptiveRuntimeResponse[]
   terminalStopReason?: 'INSUFFICIENT_DATA'
+  /** IRT_V1 retake context of the attempt (Catalyst SEQUENTIAL_ROOTS_V7). */
+  retake?: AdaptiveRetakeRequest
   selectionContext?: {
     isExposureEligible: AdaptiveV2SelectionContext['isExposureEligible']
     servedCountByPoolItem: ReadonlyMap<number, number>
@@ -226,6 +230,7 @@ export async function advanceLoadedAdaptiveRuntime({
     responses,
     selectionContext,
     terminalStopReason,
+    retake,
   })
   try {
     const result = await createAdaptiveClient({
@@ -289,6 +294,7 @@ export function buildAdaptiveDecisionRequest({
   responses,
   selectionContext,
   terminalStopReason,
+  retake,
 }: Omit<Parameters<typeof advanceLoadedAdaptiveRuntime>[0], 'responses'> & {
   responses: readonly Pick<
     AdaptiveRuntimeResponse,
@@ -346,6 +352,12 @@ export function buildAdaptiveDecisionRequest({
           : {}),
       })),
       settings: v1EngineSettings(runtime.algorithm.settings),
+      // Sent only on a retake with context, so first attempts keep the
+      // request shape accepted by engines before SEQUENTIAL_ROOTS_V7.
+      ...(retake &&
+      (retake.startingEstimates.length > 0 || retake.seenPoolItemIds.length > 0)
+        ? { retake }
+        : {}),
     }
   } else {
     const algorithm = runtime.algorithm

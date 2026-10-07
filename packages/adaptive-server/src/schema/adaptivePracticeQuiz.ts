@@ -115,6 +115,9 @@ export function createAdaptivePracticeQuizSchema(
         classificationToleranceBands: t.int({ required: false }),
         classificationZ: t.float({ required: false }),
         showTimer: t.boolean({ required: false }),
+        retakeStartFromPreviousResult: t.boolean({ required: false }),
+        retakeStartMaxAgeDays: t.int({ required: false }),
+        retakePreferNewQuestions: t.boolean({ required: false }),
         nodeOverrides: t.field({
           type: [AdaptivePracticeQuizNodeOverrideInput],
           required: false,
@@ -163,6 +166,11 @@ export function createAdaptivePracticeQuizSchema(
         type: AdaptiveLevelMappingRule,
       }),
       showTimer: t.exposeBoolean('showTimer'),
+      retakeStartFromPreviousResult: t.exposeBoolean(
+        'retakeStartFromPreviousResult'
+      ),
+      retakeStartMaxAgeDays: t.exposeInt('retakeStartMaxAgeDays'),
+      retakePreferNewQuestions: t.exposeBoolean('retakePreferNewQuestions'),
     }),
   })
 

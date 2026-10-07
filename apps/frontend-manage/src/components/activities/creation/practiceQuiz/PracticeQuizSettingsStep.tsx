@@ -301,6 +301,51 @@ function PracticeQuizSettingsStep({
                         hideError={true}
                         data={{ cy: 'adaptive-reset-time-days' }}
                       />
+                      {values.adaptiveConfig.preset !==
+                        AdaptivePracticeQuizPreset.Placement && (
+                        <>
+                          <FormikSwitchField
+                            name="adaptiveConfig.retakeStartFromPreviousResult"
+                            label={t(
+                              'manage.activityWizard.adaptive.settings.retakeStartFromPreviousResult'
+                            )}
+                            tooltip={t(
+                              'manage.activityWizard.adaptive.settings.retakeStartFromPreviousResultHelp'
+                            )}
+                            data={{ cy: 'adaptive-retake-start-previous' }}
+                          />
+                          {values.adaptiveConfig
+                            .retakeStartFromPreviousResult && (
+                            <FormikNumberField
+                              name="adaptiveConfig.retakeStartMaxAgeDays"
+                              label={t(
+                                'manage.activityWizard.adaptive.settings.retakeStartMaxAgeDays'
+                              )}
+                              tooltip={t(
+                                'manage.activityWizard.adaptive.settings.retakeStartMaxAgeDaysHelp'
+                              )}
+                              className={{
+                                root: 'w-full',
+                                field: 'w-full',
+                                tooltip: 'z-20',
+                              }}
+                              required
+                              hideError={true}
+                              data={{ cy: 'adaptive-retake-start-max-age' }}
+                            />
+                          )}
+                          <FormikSwitchField
+                            name="adaptiveConfig.retakePreferNewQuestions"
+                            label={t(
+                              'manage.activityWizard.adaptive.settings.retakePreferNewQuestions'
+                            )}
+                            tooltip={t(
+                              'manage.activityWizard.adaptive.settings.retakePreferNewQuestionsHelp'
+                            )}
+                            data={{ cy: 'adaptive-retake-prefer-new' }}
+                          />
+                        </>
+                      )}
                     </div>
 
                     {values.adaptiveConfig.preset ===

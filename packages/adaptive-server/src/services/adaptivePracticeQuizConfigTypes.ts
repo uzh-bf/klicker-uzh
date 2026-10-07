@@ -32,6 +32,9 @@ export type AdaptivePracticeQuizConfigInput = {
   classificationZ?: number | null
   classificationToleranceBands?: number | null
   showTimer?: boolean | null
+  retakeStartFromPreviousResult?: boolean | null
+  retakeStartMaxAgeDays?: number | null
+  retakePreferNewQuestions?: boolean | null
   nodeOverrides?: AdaptivePracticeQuizNodeOverrideInput[] | null
   elementOverrides?: AdaptivePracticeQuizElementOverrideInput[] | null
   researchSettings?: AdaptivePracticeQuizResearchSettingsInput | null
@@ -56,4 +59,7 @@ export type AdaptivePracticeQuizConfigView = Pick<
   | 'defaultDiscrimination'
   | 'levelMappingRule'
   | 'showTimer'
+  | 'retakeStartFromPreviousResult'
+  | 'retakeStartMaxAgeDays'
+  | 'retakePreferNewQuestions'
 >

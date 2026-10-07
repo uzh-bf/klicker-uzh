@@ -33,6 +33,20 @@ export function isValidAdaptiveClassificationToleranceBands(value: number) {
   )
 }
 
+// Retakes (IRT_V1, Catalyst routing SEQUENTIAL_ROOTS_V7): a retake starts at
+// the learner's previous result when it is at most this many days old.
+export const ADAPTIVE_DEFAULT_RETAKE_START_MAX_AGE_DAYS = 30
+export const ADAPTIVE_MIN_RETAKE_START_MAX_AGE_DAYS = 1
+export const ADAPTIVE_MAX_RETAKE_START_MAX_AGE_DAYS = 365
+
+export function isValidAdaptiveRetakeStartMaxAgeDays(value: number) {
+  return (
+    Number.isInteger(value) &&
+    value >= ADAPTIVE_MIN_RETAKE_START_MAX_AGE_DAYS &&
+    value <= ADAPTIVE_MAX_RETAKE_START_MAX_AGE_DAYS
+  )
+}
+
 export type AdaptivePresetName = 'PLACEMENT' | 'DIAGNOSTIC' | 'RESEARCH'
 export type AdaptiveAttemptSelectionPolicyName =
   | 'FIRST_COMPLETED'
@@ -50,6 +64,9 @@ export type AdaptivePresetDefaults = {
   levelMappingRule: 'NEAREST' | 'MASTERY'
   attemptSelectionPolicy: AdaptiveAttemptSelectionPolicyName
   showTimer: boolean
+  retakeStartFromPreviousResult: boolean
+  retakeStartMaxAgeDays: number
+  retakePreferNewQuestions: boolean
 }
 
 const SHARED_PRESET_DEFAULTS = {
@@ -62,6 +79,10 @@ const SHARED_PRESET_DEFAULTS = {
   topInformationRatio: DEFAULT_TOP_INFORMATION_RATIO,
   defaultDiscrimination: DEFAULT_DISCRIMINATION,
   showTimer: true,
+  // Only used where retakes are allowed (LATEST_COMPLETED).
+  retakeStartFromPreviousResult: true,
+  retakeStartMaxAgeDays: ADAPTIVE_DEFAULT_RETAKE_START_MAX_AGE_DAYS,
+  retakePreferNewQuestions: true,
 } as const
 
 export const ADAPTIVE_PRESET_DEFAULTS = {

@@ -66,6 +66,9 @@ export async function replaceAdaptivePracticeQuizConfig(
       defaultDiscrimination: settings.defaultDiscrimination,
       levelMappingRule: settings.levelMappingRule,
       showTimer: settings.showTimer,
+      retakeStartFromPreviousResult: settings.retakeStartFromPreviousResult,
+      retakeStartMaxAgeDays: settings.retakeStartMaxAgeDays,
+      retakePreferNewQuestions: settings.retakePreferNewQuestions,
     },
     select: { id: true },
   })

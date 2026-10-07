@@ -248,6 +248,9 @@ export async function prepareStoredConfiguration(
     levelMappingRule: config.levelMappingRule,
     showTimer: config.showTimer,
     timeLimitSeconds: config.timeLimitSeconds,
+    retakeStartFromPreviousResult: config.retakeStartFromPreviousResult,
+    retakeStartMaxAgeDays: config.retakeStartMaxAgeDays,
+    retakePreferNewQuestions: config.retakePreferNewQuestions,
   }
   assertPlacementPilotSettings(config, settings)
   const prepared = await prepareConfiguration({
@@ -290,6 +293,9 @@ export async function prepareStoredConfiguration(
       levelMappingRule: config.levelMappingRule,
       showTimer: config.showTimer,
       timeLimitSeconds: config.timeLimitSeconds,
+      retakeStartFromPreviousResult: config.retakeStartFromPreviousResult,
+      retakeStartMaxAgeDays: config.retakeStartMaxAgeDays,
+      retakePreferNewQuestions: config.retakePreferNewQuestions,
     },
   }
 }

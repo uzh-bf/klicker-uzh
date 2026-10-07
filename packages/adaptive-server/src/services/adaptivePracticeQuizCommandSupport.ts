@@ -18,6 +18,10 @@ import {
   type AdaptivePracticeQuizAttemptState,
   serializeAdaptiveAttemptState as serializeAttemptState,
 } from './adaptivePracticeQuizParticipantViews.js'
+import {
+  loadAdaptiveRetakeContext,
+  toAdaptiveRetakeRequest,
+} from './adaptivePracticeQuizRetakeContext.js'
 import type {
   AdaptivePracticeQuizResponseInput,
   AdaptiveRuntimePoolItem,
@@ -101,6 +105,11 @@ export async function createAdaptiveAttempt({
     attemptId,
     startingAttempt: true,
   })
+  const retakeContext = await loadAdaptiveRetakeContext({
+    prisma,
+    runtime,
+    participantId,
+  })
   const loadedDecision = await advanceAdaptiveRuntimeWithTelemetry({
     loadedRuntime: runtime,
     operation: 'START',
@@ -108,6 +117,7 @@ export async function createAdaptiveAttempt({
       attemptId,
       responses: [],
       selectionContext,
+      retake: toAdaptiveRetakeRequest(retakeContext),
     },
   })
   const decision = loadedDecision.decision
@@ -135,6 +145,7 @@ export async function createAdaptiveAttempt({
       participantId,
       participationId,
       nextPoolItemId: decision.nextPoolItem.id,
+      ...(retakeContext ? { retakeContext } : {}),
       ...nextAdaptiveV2DeliveryData(loadedDecision),
     },
     include: attemptRuntimeInclude,

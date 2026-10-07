@@ -3,6 +3,7 @@ import * as DB from '@klicker-uzh/prisma/client'
 import { replayAdaptiveAttempt } from './adaptivePracticeQuizAttemptReplay.js'
 import { adaptivePracticeQuizError } from './adaptivePracticeQuizErrors.js'
 import { advanceLoadedAdaptiveRuntime } from './adaptivePracticeQuizEstimatorVersions.js'
+import { toAdaptiveRetakeRequest } from './adaptivePracticeQuizRetakeContext.js'
 import { loadAdaptiveRuntime } from './adaptivePracticeQuizRuntimeData.js'
 import { isAdaptiveTestingInfoEnabled } from './adaptivePracticeQuizTestingInfo.js'
 
@@ -79,6 +80,7 @@ export async function backfillAdaptivePracticeQuizAttemptEstimates(
     },
     select: {
       id: true,
+      retakeContext: true,
       responses: {
         select: {
           id: true,
@@ -121,6 +123,7 @@ export async function backfillAdaptivePracticeQuizAttemptEstimates(
             attemptId: attempt.id,
             runtime: estimator,
             responses: prefix,
+            retake: toAdaptiveRetakeRequest(attempt.retakeContext),
           })
           if (loaded.measurementVersion !== 'IRT_V1') {
             throw new Error('Estimator mismatch')

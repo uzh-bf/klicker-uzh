@@ -65,6 +65,9 @@ export function createAdaptivePracticeQuizDefaultConfig(): AdaptivePracticeQuizC
     // explicit authoring choice.
     classificationToleranceBands: String(defaults.classificationToleranceBands),
     showTimer: defaults.showTimer,
+    retakeStartFromPreviousResult: defaults.retakeStartFromPreviousResult,
+    retakeStartMaxAgeDays: String(defaults.retakeStartMaxAgeDays),
+    retakePreferNewQuestions: defaults.retakePreferNewQuestions,
     attemptSelectionPolicy: toAttemptSelectionPolicy(
       defaults.attemptSelectionPolicy
     ),
@@ -194,6 +197,13 @@ export function serializeAdaptivePracticeQuizConfig(
           defaults.classificationToleranceBands
         ),
     showTimer: config.showTimer,
+    // IRT_V1 retake settings; calibrated-scale (IRT v2) quizzes ignore them.
+    retakeStartFromPreviousResult: config.retakeStartFromPreviousResult,
+    retakeStartMaxAgeDays: requiredNumber(
+      config.retakeStartMaxAgeDays,
+      defaults.retakeStartMaxAgeDays
+    ),
+    retakePreferNewQuestions: config.retakePreferNewQuestions,
     nodeOverrides: config.nodeOverrides.map((override) => ({
       nodeId: override.nodeId,
       enabled: override.enabled,
@@ -289,6 +299,9 @@ export function mapAdaptivePracticeQuizPreviewToForm(
       preview.config.classificationToleranceBands
     ),
     showTimer: preview.config.showTimer,
+    retakeStartFromPreviousResult: preview.config.retakeStartFromPreviousResult,
+    retakeStartMaxAgeDays: String(preview.config.retakeStartMaxAgeDays),
+    retakePreferNewQuestions: preview.config.retakePreferNewQuestions,
     attemptSelectionPolicy: preview.config.attemptSelectionPolicy,
     levelMappingRule: preview.config.levelMappingRule,
     topInformationRatio: String(preview.config.topInformationRatio),
