@@ -93,8 +93,9 @@ illustrative rather than real student records or measured learning outcomes.
 
 ## Open Decisions
 
-The production integration of the redesigned documentation remains separate
-from this prototype. Learning Analytics choice controls require the implemented
-account choice and course gate before they can become functional. A formal
+The redesigned guide is wired into production `/docs`; live verification remains
+pending. Course Learning Analytics remains hidden until its capability and
+processing contracts are released. Existing account-wide choices are reachable
+through account settings. A formal
 product-specific accessibility conformance target has not been established in
 this discussion.
