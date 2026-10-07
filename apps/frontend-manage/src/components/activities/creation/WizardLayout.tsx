@@ -110,6 +110,9 @@ export interface PracticeQuizFormValues extends CommonFormValues {
     classificationToleranceBands: string
     classificationZ: string
     showTimer: boolean
+    retakeStartFromPreviousResult: boolean
+    retakeStartMaxAgeDays: string
+    retakePreferNewQuestions: boolean
     attemptSelectionPolicy: AdaptiveAttemptSelectionPolicy
     levelMappingRule: AdaptiveLevelMappingRule
     topInformationRatio: string

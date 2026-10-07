@@ -35,6 +35,13 @@ declare global {
 
     type PrismaAdaptiveBandProbabilities = Record<string, number>
     // Lecturer review: expected level per competence (root node).
+    type PrismaAdaptiveRetakeContext = {
+      /** The completed attempt whose result is the starting point, if any. */
+      sourceAttemptId: string | null
+      startingEstimates: Array<{ nodeId: number; theta: number }>
+      seenPoolItemIds: number[]
+    }
+
     type PrismaAdaptiveAttemptReviewExpectedLevels = Array<{
       nodeId: number
       levelLabel: string

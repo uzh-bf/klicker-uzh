@@ -1,6 +1,7 @@
 import {
   getAdaptivePresetDefaults,
   isValidAdaptiveClassificationToleranceBands,
+  isValidAdaptiveRetakeStartMaxAgeDays,
 } from '@klicker-uzh/adaptive-contract'
 import * as DB from '@klicker-uzh/prisma/client'
 import { GraphQLError } from 'graphql'
@@ -15,6 +16,9 @@ export type ResolvedPresetSettings = AdaptiveConfiguredSettings & {
   levelMappingRule: DB.AdaptiveLevelMappingRule
   showTimer: boolean
   timeLimitSeconds: number | null
+  retakeStartFromPreviousResult: boolean
+  retakeStartMaxAgeDays: number
+  retakePreferNewQuestions: boolean
 }
 
 export function resolvePresetSettings(
@@ -58,6 +62,15 @@ export function resolvePresetSettings(
     )
   }
 
+  const retakeStartMaxAgeDays =
+    input.retakeStartMaxAgeDays ?? defaults.retakeStartMaxAgeDays
+  if (!isValidAdaptiveRetakeStartMaxAgeDays(retakeStartMaxAgeDays)) {
+    throw configurationError(
+      'The age limit of the previous result must be a whole number of days from 1 to 365.',
+      'ADAPTIVE_RETAKE_START_MAX_AGE_INVALID'
+    )
+  }
+
   return {
     preset: input.preset,
     rootBalancedPlacement: pilot,
@@ -86,6 +99,12 @@ export function resolvePresetSettings(
       ? (research?.defaultDiscrimination ?? defaults.defaultDiscrimination)
       : defaults.defaultDiscrimination,
     showTimer: input.showTimer ?? defaults.showTimer,
+    retakeStartFromPreviousResult:
+      input.retakeStartFromPreviousResult ??
+      defaults.retakeStartFromPreviousResult,
+    retakeStartMaxAgeDays,
+    retakePreferNewQuestions:
+      input.retakePreferNewQuestions ?? defaults.retakePreferNewQuestions,
   }
 }
 

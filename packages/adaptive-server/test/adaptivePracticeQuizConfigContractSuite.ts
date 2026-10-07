@@ -106,6 +106,18 @@ const adaptiveConfigFieldBehavior = {
     consumer: 'level bands and result mapping',
   },
   showTimer: { kind: 'display', consumer: 'participant timer visibility' },
+  retakeStartFromPreviousResult: {
+    kind: 'runtime',
+    consumer: 'retake routing starts at the previous result',
+  },
+  retakeStartMaxAgeDays: {
+    kind: 'runtime',
+    consumer: 'age limit of the previous result for a retake start',
+  },
+  retakePreferNewQuestions: {
+    kind: 'runtime',
+    consumer: 'retake item choice prefers unseen items',
+  },
   poolPublishedAt: {
     kind: 'audit',
     consumer: 'published-pool availability marker',
@@ -181,6 +193,9 @@ export function registerAdaptivePracticeQuizConfigContractTests() {
         'minQuestionsPerLeaf',
         'perLeafQuestionCap',
         'preset',
+        'retakePreferNewQuestions',
+        'retakeStartFromPreviousResult',
+        'retakeStartMaxAgeDays',
         'scaleVersionId',
         'showTimer',
         'topInformationRatio',
@@ -196,6 +211,9 @@ export function registerAdaptivePracticeQuizConfigContractTests() {
         'nodeOverrides',
         'preset',
         'researchSettings',
+        'retakePreferNewQuestions',
+        'retakeStartFromPreviousResult',
+        'retakeStartMaxAgeDays',
         'scaleVersionId',
         'showTimer',
         'classificationToleranceBands',

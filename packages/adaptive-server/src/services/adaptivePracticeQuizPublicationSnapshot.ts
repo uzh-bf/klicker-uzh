@@ -120,6 +120,7 @@ export async function prepareAdaptivePublicationSnapshot({
       overlapPolicyVersion: 'irt-v1-no-exposure-control',
       retakePolicy: config.attemptSelectionPolicy,
       retakeCooldownDays,
+      ...adaptiveV1RetakeSnapshot(config),
       researchAllocationPolicy: DB.Prisma.JsonNull,
       stoppingPolicyVersion: 'irt-v1-z-interval',
       rolloutPolicyVersion: 1,
@@ -582,6 +583,31 @@ function buildWeightSnapshot(
     visit(root.id, [], 1)
   }
   return snapshot
+}
+
+/**
+ * IRT_V1 retake settings (Catalyst SEQUENTIAL_ROOTS_V7). Only quizzes that
+ * allow retakes use them; IRT v2 keeps the publication defaults (off) and its
+ * own seen-item preference.
+ */
+function adaptiveV1RetakeSnapshot(
+  config: Pick<
+    DB.PracticeQuizAdaptiveConfig,
+    | 'attemptSelectionPolicy'
+    | 'retakeStartFromPreviousResult'
+    | 'retakeStartMaxAgeDays'
+    | 'retakePreferNewQuestions'
+  >
+) {
+  const retakesAllowed =
+    config.attemptSelectionPolicy !==
+    DB.AdaptiveAttemptSelectionPolicy.FIRST_COMPLETED
+  return {
+    retakeStartFromPreviousResult:
+      retakesAllowed && config.retakeStartFromPreviousResult,
+    retakeStartMaxAgeDays: config.retakeStartMaxAgeDays,
+    retakePreferNewQuestions: retakesAllowed && config.retakePreferNewQuestions,
+  }
 }
 
 function buildEvidenceMinimumSnapshot(

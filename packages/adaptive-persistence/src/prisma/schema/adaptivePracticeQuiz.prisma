@@ -33,6 +33,13 @@ model PracticeQuizAdaptiveConfig {
 
   showTimer Boolean @default(true)
 
+  /// Retakes (IRT_V1, Catalyst SEQUENTIAL_ROOTS_V7): start questioning at the
+  /// learner's previous result when it is at most retakeStartMaxAgeDays old,
+  /// and prefer questions the learner has not answered before.
+  retakeStartFromPreviousResult Boolean @default(true)
+  retakeStartMaxAgeDays         Int     @default(30)
+  retakePreferNewQuestions      Boolean @default(true)
+
   nodeOverrides        PracticeQuizAdaptiveNodeOverride[]
   elementOverrides     PracticeQuizAdaptiveElementOverride[]
   publishedPool        PracticeQuizAdaptivePoolItem[]
@@ -101,6 +108,11 @@ model PracticeQuizAdaptivePublication {
   overlapPolicyVersion       String
   retakePolicy               AdaptiveAttemptSelectionPolicy
   retakeCooldownDays         Int
+  // Frozen retake settings (see PracticeQuizAdaptiveConfig). Publications
+  // from before these settings keep the previous behaviour (off).
+  retakeStartFromPreviousResult Boolean @default(false)
+  retakeStartMaxAgeDays         Int     @default(30)
+  retakePreferNewQuestions      Boolean @default(false)
 
   /// [PrismaAdaptiveResearchAllocationPolicy]
   researchAllocationPolicy Json?
@@ -393,6 +405,12 @@ model AdaptivePracticeQuizAttempt {
 
   /// [PrismaAdaptiveBandProbabilities]
   bandProbabilities Json?
+
+  /// Retake context snapshotted when the attempt starts and sent with every
+  /// decision of the attempt; null on a first attempt or when retake settings
+  /// are off.
+  /// [PrismaAdaptiveRetakeContext]
+  retakeContext Json?
 
   config           PracticeQuizAdaptiveConfig @relation(fields: [configId, practiceQuizId, competenceTreeId], references: [id, practiceQuizId, competenceTreeId], onDelete: Restrict, onUpdate: Cascade)
   configId         String                     @db.Uuid

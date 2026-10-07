@@ -3,7 +3,10 @@ import type { PrismaTransactionClient } from '@klicker-uzh/util'
 import { processElementData } from '@klicker-uzh/util'
 import { adaptiveServiceError } from './adaptivePracticeQuizConfigPreparation.js'
 import { loadAdaptiveConfigurationForQuiz } from './adaptivePracticeQuizConfigViews.js'
-import { assertAdaptiveEngineSupportsClassificationTolerance } from './adaptivePracticeQuizEngineCapabilities.js'
+import {
+  assertAdaptiveEngineSupportsClassificationTolerance,
+  assertAdaptiveEngineSupportsRetakeContext,
+} from './adaptivePracticeQuizEngineCapabilities.js'
 import { emitAdaptiveOperationalEvent } from './adaptivePracticeQuizEvents.js'
 import {
   assertAdaptivePublicationSourceElementsAuthorized,
@@ -97,6 +100,12 @@ export async function materializeAdaptivePracticeQuizPool(
   ) {
     await assertAdaptiveEngineSupportsClassificationTolerance(
       loaded.prepared.config.classificationToleranceBands
+    )
+    await assertAdaptiveEngineSupportsRetakeContext(
+      loaded.prepared.config.attemptSelectionPolicy !==
+        DB.AdaptiveAttemptSelectionPolicy.FIRST_COMPLETED &&
+        (loaded.prepared.config.retakeStartFromPreviousResult ||
+          loaded.prepared.config.retakePreferNewQuestions)
     )
   }
   const poolAssignments = selectedPoolAssignments.filter(

@@ -8,6 +8,7 @@ import {
 } from './adaptivePracticeQuizEstimatePersistence.js'
 import { advanceLoadedAdaptiveRuntime } from './adaptivePracticeQuizEstimatorVersions.js'
 import { persistAdaptivePracticeQuizEstimates } from './adaptivePracticeQuizRepository.js'
+import { toAdaptiveRetakeRequest } from './adaptivePracticeQuizRetakeContext.js'
 import type {
   AdaptiveAttemptRuntimeRecord,
   LoadedAdaptiveRuntime,
@@ -77,6 +78,7 @@ export async function completeAdaptiveAttemptForTimeLimit({
     runtime: runtime.estimator,
     responses,
     terminalStopReason: 'INSUFFICIENT_DATA',
+    retake: toAdaptiveRetakeRequest(attempt.retakeContext),
   })
 
   if (decision.measurementVersion === 'IRT_V1') {

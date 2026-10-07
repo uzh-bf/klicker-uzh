@@ -603,6 +603,9 @@ type AdaptivePracticeQuizConfig {
   minQuestionsPerLeaf: Int!
   perLeafQuestionCap: Int
   preset: AdaptivePracticeQuizPreset!
+  retakePreferNewQuestions: Boolean!
+  retakeStartFromPreviousResult: Boolean!
+  retakeStartMaxAgeDays: Int!
   scaleVersionId: String
   showTimer: Boolean!
   timeLimitSeconds: Int
@@ -621,6 +624,9 @@ input AdaptivePracticeQuizConfigInput {
   perLeafQuestionCap: Int
   preset: AdaptivePracticeQuizPreset!
   researchSettings: AdaptivePracticeQuizResearchSettingsInput
+  retakePreferNewQuestions: Boolean
+  retakeStartFromPreviousResult: Boolean
+  retakeStartMaxAgeDays: Int
   scaleVersionId: String
   showTimer: Boolean
   timeLimitSeconds: Int

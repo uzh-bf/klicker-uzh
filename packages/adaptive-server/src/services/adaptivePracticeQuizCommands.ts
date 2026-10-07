@@ -22,6 +22,7 @@ import {
   withAdaptiveAttemptTransaction,
 } from './adaptivePracticeQuizRepository.js'
 import { planAdaptivePracticeQuizResponseTransition } from './adaptivePracticeQuizResponseTransition.js'
+import { toAdaptiveRetakeRequest } from './adaptivePracticeQuizRetakeContext.js'
 import { isAdaptiveRetakeCooldownElapsed } from './adaptivePracticeQuizRetakes.js'
 import {
   type AdaptivePracticeQuizResponseInput,
@@ -479,6 +480,7 @@ export async function submitAdaptivePracticeQuizResponse(
         attemptId,
         responses: evidence,
         selectionContext,
+        retake: toAdaptiveRetakeRequest(attempt.retakeContext),
       },
     })
     const totalElapsedSeconds =

@@ -160,6 +160,14 @@ const runtimeStopReason = z.enum([
   'INSUFFICIENT_DATA',
   'ABANDONED',
 ])
+const v1Retake = z
+  .object({
+    startingEstimates: z
+      .array(z.object({ nodeId: id, theta }).strict())
+      .max(500),
+    seenPoolItemIds: ids,
+  })
+  .strict()
 export const decisionRequestSchema = z
   .discriminatedUnion('measurementVersion', [
     z
@@ -169,6 +177,9 @@ export const decisionRequestSchema = z
         levels: z.array(level).min(2).max(50),
         pool: z.array(poolItem).min(1).max(10000),
         settings: v1Settings,
+        // Earlier attempts of the learner (Catalyst SEQUENTIAL_ROOTS_V7).
+        // Omitted on a first attempt so requests stay valid for older engines.
+        retake: v1Retake.optional(),
       })
       .strict(),
     z
@@ -264,6 +275,22 @@ export const decisionRequestSchema = z
       reject('Invalid response ledger')
     if (request.settings.thetaRange.min >= request.settings.thetaRange.max)
       reject('Invalid theta range')
+    if (request.measurementVersion === 'IRT_V1' && request.retake) {
+      const startingNodeIds = request.retake.startingEstimates.map(
+        ({ nodeId }) => nodeId
+      )
+      if (
+        new Set(startingNodeIds).size !== startingNodeIds.length ||
+        startingNodeIds.some((id) => nodesById.get(id)?.parentId !== null)
+      )
+        reject('Invalid retake starting estimate')
+      if (
+        new Set(request.retake.seenPoolItemIds).size !==
+          request.retake.seenPoolItemIds.length ||
+        request.retake.seenPoolItemIds.some((id) => !poolIds.has(id))
+      )
+        reject('Invalid retake item')
+    }
     if (request.measurementVersion === 'IRT_V2_EAP_GRID_1') {
       if (
         (request.scale.gridMax - request.scale.gridMin) /

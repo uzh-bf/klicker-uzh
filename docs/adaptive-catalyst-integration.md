@@ -191,6 +191,46 @@ every IRT_V1 decision, and adaptive quizzes fail with
 tolerance above 0 until the engine runs `SEQUENTIAL_ROOTS_V6`. The publication
 guard refuses it before then.
 
+### Retake context (engine contract)
+
+Catalyst V1 routing `SEQUENTIAL_ROOTS_V7` adds an optional IRT_V1 decision
+field `retake` with `startingEstimates` (`{ nodeId, theta }` per root) and
+`seenPoolItemIds`. A root with a starting estimate routes from
+N(previous θ, 1) instead of N(0, 1) or the V6 carried prior. Inside the chosen
+leaf, an unseen item within one level of the routing level is preferred, and a
+seen item is served only when no such item is left. Root and leaf choice, range
+exclusion and the reported estimates are unchanged. Engines older than V7 and
+IRT v2 requests reject the field.
+
+- **Configuration.** `PracticeQuizAdaptiveConfig.retakeStartFromPreviousResult`
+  (default on), `retakeStartMaxAgeDays` (default 30, CHECK 1–365) and
+  `retakePreferNewQuestions` (default on). The authoring UI shows them next to
+  "Retake after (days)" for presets that allow retakes.
+- **Publication.** An IRT_V1 publication freezes the three values; they are
+  off when only the first attempt counts (`FIRST_COMPLETED`). Publications
+  created before the columns existed default to off, so their attempts keep
+  the earlier behaviour. IRT v2 keeps them off and uses its own
+  `priorAttemptPoolItemIds` preference.
+- **Attempt snapshot.** `loadAdaptiveRetakeContext` builds the context when an
+  attempt starts (start, retake or start over). It uses the per-competence θ
+  of the latest completed attempt on the quiz when that attempt completed
+  within the age limit, and the current pool items whose assignment and
+  element the learner answered in any earlier attempt, in any publication and
+  any element version. The context is stored as
+  `AdaptivePracticeQuizAttempt.retakeContext` and sent unchanged with every
+  decision of that attempt (start, advance, time-limit completion, estimate
+  backfill), so replay stays deterministic. A first attempt stores null and
+  sends no field.
+- **Publication guard.** Publishing a quiz with either setting on (and
+  retakes allowed) first decides a synthetic snapshot without and then with a
+  retake context. An engine that rejects only the context fails with
+  `ADAPTIVE_RETAKE_CONTEXT_UNSUPPORTED`.
+
+**Deploy order:** deploy the `SEQUENTIAL_ROOTS_V7` engine image before the
+host change. New quizzes default to the retake settings, so with an older
+engine the publication guard refuses to publish them until the settings are
+turned off.
+
 ## Attempt concurrency
 
 Participant attempt commands (start, resume, restart, submit, abandon and

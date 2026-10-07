@@ -19,6 +19,9 @@ fragment AdaptivePracticeQuizPreviewData on AdaptivePracticeQuizPreview {
     defaultDiscrimination
     levelMappingRule
     showTimer
+    retakeStartFromPreviousResult
+    retakeStartMaxAgeDays
+    retakePreferNewQuestions
   }
   competenceTree {
     id
