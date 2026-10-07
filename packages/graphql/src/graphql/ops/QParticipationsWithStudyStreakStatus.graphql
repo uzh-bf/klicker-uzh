@@ -1,0 +1,36 @@
+query QParticipationsWithStudyStreakStatus(
+  $endpoint: String
+  $assessmentOnly: Boolean
+) {
+  participations(endpoint: $endpoint, assessmentOnly: $assessmentOnly) {
+    id
+    isActive
+    studyStreakCurrent
+    studyStreakQualifiedToday
+    studyStreakResponsesRemainingToday
+    studyStreakFreezeBalance
+    completedMicroLearnings
+    subscriptions {
+      id
+      endpoint
+    }
+    course {
+      id
+      displayName
+      startDate
+      endDate
+      description
+      isGamificationEnabled
+      microLearnings {
+        id
+        displayName
+        scheduledStartAt
+        scheduledEndAt
+      }
+      liveQuizzes {
+        id
+        displayName
+      }
+    }
+  }
+}
