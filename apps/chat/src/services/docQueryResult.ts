@@ -48,9 +48,9 @@ export function serializeDocQueryExecution<
   let pending = Promise.resolve()
   return (input, options) => {
     const result = pending.then(async () => {
-      options.abortSignal?.throwIfAborted()
+      options?.abortSignal?.throwIfAborted()
       const output = await execute(input, options)
-      options.abortSignal?.throwIfAborted()
+      options?.abortSignal?.throwIfAborted()
       if (output === null || output === undefined) {
         throw new Error('Document retrieval returned no result')
       }
@@ -60,7 +60,7 @@ export function serializeDocQueryExecution<
       () => undefined,
       () => undefined
     )
-    const signal = options.abortSignal
+    const signal = options?.abortSignal
     if (!signal) return result
     if (signal.aborted) return Promise.reject(signal.reason)
     let abort: () => void = () => undefined
