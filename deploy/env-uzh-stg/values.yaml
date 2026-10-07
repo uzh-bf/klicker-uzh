@@ -455,7 +455,7 @@ adaptiveEngine:
                     - adaptive-engine
             topologyKey: kubernetes.io/hostname
   image:
-    tag: 43005ae3781b4205094b826e456e4a4979e9d695-arm
+    tag: d9e21d16c2161f6fa6404d7b63746120533e19e5-arm
   resources:
     requests:
       cpu: 100m
