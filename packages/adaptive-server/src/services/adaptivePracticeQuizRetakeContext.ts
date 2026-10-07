@@ -1,14 +1,9 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import type { PrismaTransactionClient } from '@klicker-uzh/util'
+import type { AdaptiveRetakeRequest } from './adaptivePracticeQuizEstimatorVersions.js'
 import type { LoadedAdaptiveRuntime } from './adaptivePracticeQuizRuntimeData.js'
 
 const DAY_MS = 24 * 60 * 60 * 1000
-
-/** The retake part of an IRT_V1 decision request (Catalyst SEQUENTIAL_ROOTS_V7). */
-export type AdaptiveRetakeRequest = {
-  startingEstimates: Array<{ nodeId: number; theta: number }>
-  seenPoolItemIds: number[]
-}
 
 /**
  * Snapshot of the learner's earlier attempts, taken when an IRT_V1 attempt

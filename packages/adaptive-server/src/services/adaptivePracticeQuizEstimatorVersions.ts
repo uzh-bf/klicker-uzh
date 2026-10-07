@@ -20,13 +20,18 @@ import {
 } from './adaptiveEngineValidationCache.js'
 import { adaptivePracticeQuizError } from './adaptivePracticeQuizErrors.js'
 import { emitAdaptiveOperationalEvent } from './adaptivePracticeQuizEvents.js'
-import type { AdaptiveRetakeRequest } from './adaptivePracticeQuizRetakeContext.js'
 import type {
   AdaptiveRuntimeLevel,
   AdaptiveRuntimeResponse,
   AdaptiveRuntimeRoutingPoolItem,
 } from './adaptivePracticeQuizRuntime.js'
 import type { AdaptiveV2RoutingPoolItem } from './adaptivePracticeQuizRuntimeV2.js'
+
+/** The retake part of an IRT_V1 decision request (Catalyst SEQUENTIAL_ROOTS_V7). */
+export type AdaptiveRetakeRequest = {
+  startingEstimates: Array<{ nodeId: number; theta: number }>
+  seenPoolItemIds: number[]
+}
 
 export {
   ADAPTIVE_V2_CANDIDATE_SET_POLICY_VERSION,
