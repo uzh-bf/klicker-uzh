@@ -207,24 +207,39 @@ chat:
     enabled: true
     environment: 'staging'
 
+  # Account usage has two independent switches: lifecycle writes record attempt
+  # markers and credit counters, and enforcement rejects a participant request
+  # before the provider call when the selected class has no available budget.
+  # STG ships both switches disabled. The release that carries them stays
+  # deployable without usage data; each switch is activated separately only
+  # after the base-budget backfill and cohort evidence for this environment.
+  # Order, rollback, and partial-failure recovery: docs/chat-platform.md,
+  # "Account usage activation".
+  lifecycleWritersEnabled: false
+  accountUsageEnforcementEnabled: false
+
   automaticModels:
     primaryId: auto
     fallbackId: gpt-6-luna
 
   modelRegistry:
+    # Staging makes Auto the global automatic-model primary, so chatbots using
+    # automatic model selection exercise auto-router-v2; production keeps GPT-6
+    # Luna there. Explicit model selections remain respected, and new chatbots
+    # still start fixed on GPT-6 Luna. GPT-6 Luna is the participant-credit
+    # fallback.
     # "Auto" routes through the LiteLLM auto-router-v2, which self-selects the
     # tier per request (SIMPLE=gpt-6-luna-high, MEDIUM=gpt-6.1-sol-low,
     # COMPLEX=gpt-6.1-sol-medium, REASONING=gpt-6.1-sol-high; match_threshold
     # 0.55). The v1 auto-router (MEDIUM=gpt-6-luna-xhigh, COMPLEX=
     # gpt-6.1-sol-high, REASONING=gpt-6.1-sol-medium) stays deployed beside it
-    # for evaluation. It is a normal selectable model (fallback: false) and is also the
-    # global automatic-model primary. Chatbots using automatic model selection
-    # therefore use Auto by default; explicit model selections remain respected.
+    # for evaluation. Auto is a BASE model; Sol selected directly stays
+    # ADVANCED.
     # A chatbot can be pinned to Auto-only via its DB columns
     # (modelSelection=false + allowedModelIds=["auto"]); see the vorkurs chatbot.
-    # The accounting rate matches a generation mix of about 50% Luna and 50%
-    # Sol at GPT-6 list prices. With v2, Sol serves most routed requests, so
-    # the rate is below list cost until prompt-cache data justify a new
+    # Auto's accounting rate matches a generation mix of about 50% Luna and
+    # 50% Sol at GPT-6 list prices. With v2, Sol serves most routed requests,
+    # so the rate is below list cost until prompt-cache data justify a new
     # price. Classifier and embedding overhead remain outside the
     # registry's selected-model token fields.
     - id: auto
@@ -234,7 +249,7 @@ chat:
       supportsImageAttachments: true
       usesResponsesApi: true
       fallback: false
-      usageClass: ADVANCED
+      usageClass: BASE
       maxOutputTokens: 4096
       cost:
         input: 1.0
@@ -259,7 +274,7 @@ chat:
     - id: gpt-6-sol
       deploymentId: klickeruzh/azure/gpt-6-sol
       name: GPT-6 Sol
-      description: OpenAI reasoning model
+      description: OpenAI frontier reasoning model
       supportsImageAttachments: true
       supportsReasoning: true
       supportedReasoningEfforts:
@@ -275,7 +290,7 @@ chat:
     - id: gpt-6.1-sol
       deploymentId: klickeruzh/azure/gpt-6.1-sol
       name: GPT-6.1 Sol
-      description: OpenAI reasoning model
+      description: OpenAI frontier reasoning model
       supportsImageAttachments: true
       supportsReasoning: true
       supportedReasoningEfforts:
@@ -288,35 +303,21 @@ chat:
       cost:
         input: 2.0
         output: 10.0
-    - id: gpt-4.1
-      deploymentId: klickeruzh/azure/gpt-4.1
-      name: GPT-4.1
-      description: OpenAI model
-      supportsImageAttachments: true
-      fallback: false
-      usageClass: ADVANCED
-      maxOutputTokens: 4096
-      cost:
-        input: 2.0
-        output: 8.0
-    - id: gpt-5.4
-      deploymentId: klickeruzh/azure/gpt-5.4
-      name: GPT-5.4
-      description: OpenAI reasoning model
+    - id: gpt-5.6-sol
+      deploymentId: klickeruzh/azure/gpt-5.6-sol
+      name: GPT-5.6 Sol
+      description: OpenAI frontier reasoning model
       supportsImageAttachments: true
       supportsReasoning: true
       supportedReasoningEfforts:
-        - minimal
         - low
         - medium
-        - high
-        - xhigh
       fallback: false
       usageClass: ADVANCED
       maxOutputTokens: 4096
       cost:
-        input: 2.5
-        output: 15.0
+        input: 5.0
+        output: 30.0
   replicaCount: 1
 
   affinity:
