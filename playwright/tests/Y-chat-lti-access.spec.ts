@@ -64,8 +64,13 @@ async function expectChatbotReached(page: Page) {
     // the chatbot disclaimer. Every guest persona and every synthetic account
     // this spec creates starts in that state.
     if (await dataUseSubmit.isVisible()) {
-      await page.getByTestId('chat-data-use-analytics-false').click()
-      await page.getByTestId('chat-data-use-acknowledged').click()
+      // The policy links render only on the client; wait for hydration before
+      // interacting with controls that are already present in the server HTML.
+      await expect(
+        dataUseSubmit.locator('..').locator('a[href$="/privacy_policy"]')
+      ).toBeVisible()
+      await page.getByTestId('chat-data-use-analytics-false').check()
+      await page.getByTestId('chat-data-use-acknowledged').check()
       await dataUseSubmit.click()
     }
     if (await accept.isVisible()) await accept.click()
@@ -214,12 +219,15 @@ test.describe('LTI chatbot launch identity resolution', () => {
     await launchChatbot(page, { sub: LTI_SUB_GUEST })
     const submit = page.getByTestId('chat-data-use-submit')
     const acknowledge = page.getByTestId('chat-data-use-acknowledged')
-    await page.getByTestId('chat-data-use-analytics-false').click()
-    await acknowledge.click()
+    await expect(
+      submit.locator('..').locator('a[href$="/privacy_policy"]')
+    ).toBeVisible()
+    await page.getByTestId('chat-data-use-analytics-false').check()
+    await acknowledge.check()
     await submit.click()
     await expect(acknowledge).not.toBeChecked()
     await expect(submit).toBeDisabled()
-    await acknowledge.click()
+    await acknowledge.check()
     await expect(submit).toBeEnabled()
     await submit.click()
     await expect(submit).toBeHidden()
