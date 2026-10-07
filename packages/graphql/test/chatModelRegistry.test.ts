@@ -45,12 +45,12 @@ describe('GraphQL chat model registry startup validation', () => {
     vi.stubEnv('CHAT_PRIMARY_MODEL_ID', 'auto')
     vi.stubEnv('CHAT_FALLBACK_MODEL_ID', 'base-a')
     vi.stubEnv('CHAT_NEW_CHATBOT_MODEL_ID', 'advanced-a')
-    const { createChatbot, getChatModelRegistry, getNewChatbotModelId } =
-      await import('../src/services/chatbots.js')
+    const { createChatbot, getChatModelRegistry } = await import(
+      '../src/services/chatbots.js'
+    )
     expect(getChatModelRegistry().map((model) => model.id)).toEqual(
       registry.map((model) => model.id)
     )
-    expect(getNewChatbotModelId(getChatModelRegistry())).toBe('advanced-a')
     const create = vi.fn(async ({ data }) => ({
       id: 'new-bot',
       ...data,

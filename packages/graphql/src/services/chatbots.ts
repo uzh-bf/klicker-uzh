@@ -2147,13 +2147,6 @@ type CreateChatbotArgs = {
   courseId: string
 }
 
-export function getNewChatbotModelId(
-  registry: readonly ChatModelCapability[]
-): string | null {
-  return resolveChatModelPolicy(registry, getChatModelPolicyOptions())
-    .newChatbotModelId
-}
-
 export async function createChatbot(
   args: CreateChatbotArgs,
   ctx: ContextWithUser
