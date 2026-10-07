@@ -117,5 +117,11 @@ Fresh forge and Git state match the source and target above. Worktree is clean.
 Planning review: APPROVED after one correction round covering exact-source
 parity, migrator coupling, both parser consumers and bounded verification scope.
 The optional AGY rival pass has a previously recorded terminal permission failure
-in this task and is unpassed. Status: implementation starting. Publication and
-runtime gates are unresolved. Review receipts belong in project/_local/reviews/.
+in this task and is unpassed. Preparation changed exactly seventeen production
+tag lines; staging is byte-identical. Both Helm lint/render checks pass; rendered
+production contains seventeen application images plus one alpha.85 PreSync
+migrator. Both rendered registries equal the values accepted by the candidate's
+two parsers (22 existing tests passed). Disabled usage switches are preserved.
+Formatting and diff checks pass. Status: independent final review and draft
+delivery pending. Publication and runtime gates remain unresolved. Review
+receipts belong in project/_local/reviews/.
