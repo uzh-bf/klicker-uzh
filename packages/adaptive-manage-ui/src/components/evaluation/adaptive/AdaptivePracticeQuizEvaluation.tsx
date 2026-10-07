@@ -10,6 +10,7 @@ import { useAdaptiveManageHost } from '../../../ports'
 import AdaptiveCompetenceDistributions from './AdaptiveCompetenceDistributions'
 import AdaptiveDistributionBars from './AdaptiveDistributionBars'
 import AdaptivePilotMetrics from './AdaptivePilotMetrics'
+import AdaptiveAttemptDiagnostics from './attemptDiagnostics/AdaptiveAttemptDiagnostics'
 import type { AdaptiveCohortAttemptSummary } from './types'
 
 function Metric({
@@ -271,6 +272,7 @@ function AdaptivePracticeQuizEvaluation({
           summary={results.attemptSummary}
           cohortSize={results.cohortSize ?? null}
         />
+        <AdaptiveAttemptDiagnostics practiceQuizId={practiceQuizId} />
       </main>
     </Layout>
   )

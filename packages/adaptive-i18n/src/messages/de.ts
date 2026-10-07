@@ -879,6 +879,118 @@ const messages = {
         expandNode: '{node} aufklappen',
         collapseNode: '{node} zuklappen',
         weightShare: 'Gewicht: {share}% des Gesamtniveaus',
+        attemptDiagnostics: {
+          title: 'Versuche (Testumgebung)',
+          description:
+            'Wie jeder Versuch bewertet wurde, Frage für Frage. Nur in Testumgebungen verfügbar; Studierende erscheinen als pseudonyme Codes. Öffne einen Versuch, um sein Ergebnis zu prüfen.',
+          filter: {
+            ALL: 'Alle Versuche',
+            NOT_REVIEWED: 'Nicht geprüft',
+            REVIEWED: 'Geprüft',
+            UNRELIABLE: 'Qualität: unzuverlässig',
+            CHECK: 'Qualität: prüfen',
+            GOOD: 'Qualität: gut',
+          },
+          exportAll: 'Antworten exportieren (CSV)',
+          exportAttempt: 'Diesen Versuch exportieren (CSV)',
+          accuracy: {
+            none: 'Noch kein Versuch geprüft. Öffne einen Versuch und erfasse das erwartete Niveau, um die Genauigkeit der Ergebnisse zu messen.',
+            reviewed: 'Geprüfte Versuche',
+            asExpected: 'Wie erwartet',
+            exact: 'Genaues Niveau',
+            withinOne: 'Innerhalb ±1 Niveau',
+            meanDifference: 'Mittlere Abweichung (Niveaus)',
+            help: 'Vergleicht {comparisons, plural, one {# geschätztes Niveau} other {# geschätzte Niveaus}} (gesamt und pro Kompetenz) mit den erwarteten Niveaus. Positive mittlere Abweichung: Ergebnisse zu hoch. Urteile: {tooHigh} zu hoch, {tooLow} zu tief, {unsure} unsicher.',
+          },
+          backfill: {
+            notice:
+              '{count, plural, one {# Versuch stammt} other {# Versuche stammen}} aus der Zeit vor den gespeicherten Schätzungen pro Antwort.',
+            run: 'Fehlende Schätzungen berechnen',
+            result:
+              '{updated, plural, one {# Versuch} other {# Versuche}} aktualisiert; {failed} fehlgeschlagen; {differing} würde der aktuelle Berechnungsdienst anders steuern.',
+            attempt:
+              'Für einige Antworten dieses Versuchs fehlt die gespeicherte Schätzung. Berechne oben die fehlenden Schätzungen.',
+          },
+          earlierPublications:
+            '{count, plural, one {# Versuch einer früheren Veröffentlichung wird nicht aufgeführt.} other {# Versuche früherer Veröffentlichungen werden nicht aufgeführt.}}',
+          empty: 'Keine Versuche für diesen Filter.',
+          attempt: 'Studierende · Versuch',
+          attemptOf: 'Versuch {number} · {code}',
+          completedAt: 'Abgeschlossen',
+          answers: 'Antworten',
+          overall: 'Gesamt',
+          competences: 'Kompetenzen',
+          rating: 'Qualität',
+          determined: 'bestimmt',
+          notDetermined: 'nicht bestimmt',
+          ratings: {
+            GOOD: 'Gut',
+            CHECK: 'Prüfen',
+            UNRELIABLE: 'Unzuverlässig',
+            NOT_AVAILABLE: 'Nicht verfügbar',
+          },
+          reasons: {
+            PRECISION_MEDIUM:
+              'Gesamtniveau nicht bestimmt; wahrscheinlicher Bereich umfasst {value} Niveaus',
+            PRECISION_WIDE:
+              'Gesamtniveau nicht bestimmt; wahrscheinlicher Bereich ist breit ({value} Niveaus)',
+            PERSON_FIT:
+              '{node}: Antworten passen nicht zu einem Niveau (lz {value})',
+            TARGETING:
+              '{node}: {value}% der Fragen lagen mehr als 3 Niveaus von der Schätzung entfernt',
+            EDGE_CLAMP: '{node}: Schätzung am Ende der Skala',
+            EDGE_UNMEASURED: '{node}: Schätzung in Niveaus ohne Elemente',
+            COVERAGE_LOW: '{node}: nur {value} Antworten',
+          },
+          review: {
+            column: 'Deine Prüfung',
+            none: 'nicht geprüft',
+            title: 'Deine Prüfung',
+            verdict: 'Entspricht das Ergebnis deiner Erwartung?',
+            chooseVerdict: 'Auswählen…',
+            verdicts: {
+              AS_EXPECTED: 'Wie erwartet',
+              TOO_HIGH: 'Zu hoch',
+              TOO_LOW: 'Zu tief',
+              UNSURE: 'Unsicher',
+            },
+            expectedOverall: 'Erwartetes Gesamtniveau (Ergebnis: {level})',
+            expectedCompetence:
+              'Erwartetes Niveau {competence} (Ergebnis: {level})',
+            noLevel: 'Nicht angegeben',
+            comment: 'Kommentar',
+            save: 'Prüfung speichern',
+            saved: 'Gespeichert',
+          },
+          detailTitle: 'Studierende {code} · Versuch {number}',
+          node: 'Kompetenz',
+          finalResult: 'Endergebnis',
+          range: 'Wahrscheinlicher Bereich',
+          status: 'Status',
+          coverage: {
+            COVERED: 'abgedeckt',
+            OUT_OF_RANGE: 'nicht getestet – ausserhalb des Bereichs',
+            SAMPLED_PENDING: 'noch nicht getestet',
+            NOT_SAMPLED: 'nicht ausgewählt',
+            NOT_TESTED: 'nicht getestet',
+          },
+          competence: 'Kompetenz › Teilkompetenz',
+          element: 'Element',
+          itemLevel: 'Niveau der Frage',
+          result: 'Ergebnis',
+          correct: 'richtig',
+          incorrect: 'falsch',
+          phase: 'Phase',
+          phases: {
+            COVERAGE: 'Abdeckung',
+            PRECISION: 'Präzision',
+          },
+          thetaBefore: 'Davor (Niveau, θ ± SE)',
+          distanceBefore: 'Frage vs. Niveau',
+          thetaAfter: 'Danach (Niveau, Bereich, θ ± SE)',
+          answersHelp:
+            'Davor/danach: die Kompetenzschätzung, mit der der Berechnungsdienst die Frage gewählt hat, und die nach der Antwort berechnete. Frage vs. Niveau: Niveau der Frage minus Niveau vor der Antwort (hervorgehoben bei mehr als 3 Niveaus Abstand). Die Phase ist abgeleitet: Abdeckung, solange die Teilkompetenz weniger als ihre Mindestanzahl Antworten hatte, sonst Präzision.',
+        },
         distributionBarLabel:
           '{level}: {count} {count, plural, one {Versuch} other {Versuche}}',
       },

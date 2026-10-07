@@ -1,0 +1,17 @@
+query QAdaptivePracticeQuizAttemptDiagnostic(
+  $practiceQuizId: String!
+  $attemptCode: String!
+) {
+  adaptivePracticeQuizAttemptDiagnostic(
+    practiceQuizId: $practiceQuizId
+    attemptCode: $attemptCode
+  ) {
+    levelLabels
+    summary {
+      ...FAdaptiveAttemptDiagnosticSummary
+    }
+    nodes {
+      ...FAdaptiveAttemptNodeResult
+    }
+  }
+}
