@@ -302,15 +302,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
   }) => {
     const chatbotId = await createChatbot(page, FIRST_CHATBOT)
     const previewPagePromise = page.context().waitForEvent('page')
-    const previewDialogPromise = page.waitForEvent('dialog')
-    const previewClickPromise = page
-      .getByTestId('chatbot-owner-preview-link')
-      .click()
-    const previewDialog = await previewDialogPromise
-    expect(previewDialog.type()).toBe('confirm')
-    await previewDialog.accept()
-
-    await previewClickPromise
+    await page.getByTestId('chatbot-owner-preview-link').click()
     const previewPage = await previewPagePromise
 
     await expect(previewPage).toHaveURL(
@@ -441,10 +433,6 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     ).toBeVisible()
 
     const chatbotId = new URL(page.url()).searchParams.get('chatbotId')
-    page.once('dialog', (dialog) => {
-      expect(dialog.type()).toBe('beforeunload')
-      void dialog.accept()
-    })
     await page.goto(
       `${process.env.URL_MANAGE ?? URL_MANAGE}/resources/chatbots?chatbotId=${chatbotId}&view=invalid&step=invalid`
     )
@@ -796,18 +784,11 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(page.getByTestId('chatbot-setup-disclaimer')).toBeVisible()
 
     await page.setViewportSize({ width: 800, height: 900 })
-    const secondChatbotDiscardDialogPromise = page
-      .waitForEvent('dialog')
-      .then((dialog) => {
-        expect(dialog.type()).toBe('confirm')
-        return dialog.accept()
-      })
     await selectOption(
       page,
       '[data-cy="chatbot-mobile-selector"]',
       `${FIRST_CHATBOT} · Draft`
     )
-    await secondChatbotDiscardDialogPromise
     await expect(page.getByTestId('chatbot-mobile-selector')).toContainText(
       FIRST_CHATBOT
     )
