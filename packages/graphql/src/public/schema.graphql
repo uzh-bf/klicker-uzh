@@ -4123,7 +4123,7 @@ type Mutation {
   reviewElementGeneration(input: ReviewElementGenerationInput!): ElementGenerationBuild!
   revokeAssessmentReport(id: String!): CourseAssessmentReportRecord!
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
-  saveAdaptivePracticeQuizAttemptReview(attemptCode: String!, comment: String, expectedCompetenceLevels: [AdaptiveAttemptExpectedLevelInput!], expectedOverallLevelLabel: String, practiceQuizId: String!, verdict: String!): AdaptiveAttemptReview!
+  saveAdaptivePracticeQuizAttemptReview(attemptCode: String!, comment: String, expectedCompetenceLevels: [AdaptiveAttemptExpectedLevelInput!], expectedOverallLevelLabel: String, practiceQuizId: String!, verdict: String!): AdaptiveAttemptReview
   saveChatbotRevision(chatbotId: String!, expectedRevisionVersion: Int!, input: ChatbotRevisionSaveInput!): Chatbot
   saveGeneratedElements(input: ElementGenerationBuildInput!): ElementGenerationSaveResult!
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
