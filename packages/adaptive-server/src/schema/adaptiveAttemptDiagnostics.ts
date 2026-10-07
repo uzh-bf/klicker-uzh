@@ -3,21 +3,18 @@ import type {
   AdaptiveSchemaBuilder,
 } from '@klicker-uzh/graphql/adaptive-schema-host-types'
 import * as DB from '@klicker-uzh/prisma/client'
-import type { AdaptiveAttemptReviewAccuracy } from '../services/adaptivePracticeQuizAttemptAccuracy.js'
-import type { AdaptiveAttemptEstimateBackfill } from '../services/adaptivePracticeQuizAttemptBackfill.js'
-import * as AdaptiveAttemptBackfillService from '../services/adaptivePracticeQuizAttemptBackfill.js'
 import type {
   AdaptiveAttemptDiagnosticDetail,
   AdaptiveAttemptDiagnosticsList,
-} from '../services/adaptivePracticeQuizAttemptDiagnostics.js'
-import type {
+  AdaptiveAttemptEstimateBackfill,
+  AdaptiveAttemptRatingReason,
+  AdaptiveAttemptReviewAccuracy,
   AdaptiveDiagnosticAnswer,
   AdaptiveDiagnosticNodeResult,
   AdaptiveDiagnosticReview,
   AdaptiveDiagnosticSummary,
-} from '../services/adaptivePracticeQuizAttemptDiagnosticsModel.js'
-import type { AdaptiveAttemptRatingReason } from '../services/adaptivePracticeQuizAttemptDiagnosticsRating.js'
-import * as AdaptiveAttemptReviewService from '../services/adaptivePracticeQuizAttemptReview.js'
+} from '../services/adaptivePracticeQuizzes.js'
+import * as AdaptivePracticeQuizRuntimeService from '../services/adaptivePracticeQuizzes.js'
 
 type FieldBuilder = Parameters<
   Parameters<AdaptiveSchemaBuilder['mutationFields']>[0]
@@ -279,7 +276,7 @@ export function adaptiveAttemptDiagnosticsMutationFields(
         (args) => ({ practiceQuizId: args.practiceQuizId }),
         DB.PermissionLevel.ADMIN,
         async (_, args, ctx) =>
-          await AdaptiveAttemptBackfillService.backfillAdaptivePracticeQuizAttemptEstimates(
+          await AdaptivePracticeQuizRuntimeService.backfillAdaptivePracticeQuizAttemptEstimates(
             args,
             ctx
           )
@@ -304,7 +301,7 @@ export function adaptiveAttemptDiagnosticsMutationFields(
         (args) => ({ practiceQuizId: args.practiceQuizId }),
         DB.PermissionLevel.ADMIN,
         async (_, args, ctx) =>
-          await AdaptiveAttemptReviewService.saveAdaptivePracticeQuizAttemptReview(
+          await AdaptivePracticeQuizRuntimeService.saveAdaptivePracticeQuizAttemptReview(
             args,
             ctx
           )

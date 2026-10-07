@@ -3,7 +3,6 @@ import type {
   AdaptiveSchemaBuilder,
 } from '@klicker-uzh/graphql/adaptive-schema-host-types'
 import * as DB from '@klicker-uzh/prisma/client'
-import * as AdaptiveAttemptDiagnosticsService from '../services/adaptivePracticeQuizAttemptDiagnostics.js'
 import * as AdaptivePracticeQuizService from '../services/adaptivePracticeQuizConfig.js'
 import * as AdaptivePracticeQuizRuntimeService from '../services/adaptivePracticeQuizzes.js'
 import * as CompetenceTreeCalibrationService from '../services/competenceTreeCalibration.js'
@@ -311,7 +310,7 @@ export function adaptiveQueryFields(
         (args) => ({ practiceQuizId: args.practiceQuizId }),
         DB.PermissionLevel.ADMIN,
         async (_, args, ctx) =>
-          await AdaptiveAttemptDiagnosticsService.getAdaptivePracticeQuizAttemptDiagnostics(
+          await AdaptivePracticeQuizRuntimeService.getAdaptivePracticeQuizAttemptDiagnostics(
             args,
             ctx
           )
@@ -329,7 +328,7 @@ export function adaptiveQueryFields(
         (args) => ({ practiceQuizId: args.practiceQuizId }),
         DB.PermissionLevel.ADMIN,
         async (_, args, ctx) =>
-          await AdaptiveAttemptDiagnosticsService.getAdaptivePracticeQuizAttemptDiagnostic(
+          await AdaptivePracticeQuizRuntimeService.getAdaptivePracticeQuizAttemptDiagnostic(
             args,
             ctx
           )
