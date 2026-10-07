@@ -635,3 +635,33 @@ zero responses. O1/O2 helpers now wait for that dialog before inspecting its
 confirmation controls. The unnecessary exact no-response prose assertion is
 removed; final deletion still requires the enabled confirmation action and
 completes through the existing cleanup workflow. This is a test-only race fix.
+
+### Review fixes and cross-browser LTI verification (2026-10-07)
+
+Review fixes landed in `e56cb35a41`: the URL participant token no longer
+replaces or creates a session, only an origin inside the cookie domain selects
+participant cookies, cookie sessions are no longer copied into the tab, and the
+Apollo client is reused per identity. A follow-up restores the ADR 0044 rule
+that a kept explicit credential takes precedence over a cookie session for
+another participant. It also stops hydrating server-rendered data from that
+cookie session into the explicit client.
+
+Firefox now launches on this host. Firefox 1509 and WebKit 2248 builds were
+installed outside the hanging `playwright install` extraction. The PA spec
+runs in five projects: Chromium with third-party cookies allowed and blocked,
+Firefox Standard, Firefox with all third-party cookies blocked, and WebKit
+(Desktop Safari). A new test drives a complete LTI 1.3 launch: a synthetic LMS
+initiates OIDC login, the real ltijs service redirects to a mocked
+authorization endpoint, an RS256 id_token is posted back and verified, and the
+PWA receives its one-time jwt in the frame and at top level. A token signed by
+an unregistered key is rejected with 401. The test registers its synthetic
+platform through `apps/lti/scripts/register-local-platform.mjs` and needs
+`--runtime-profile full`; without the routed LTI service it skips.
+
+Result: 42 passed, 3 skipped. WebKit discards every cookie the local
+`*.localhost` stack sets, so its three cookie-only tests skip; its explicit
+launch, registration and LTI tests pass. Firefox with all third-party cookies
+blocked denies the frame `localStorage`, and the practice quiz then crashes in
+`useLocalStorage`. This predates the PR; the spec skips the quiz steps there
+with an annotation and a separate task tracks the fix. Real OLAT incident
+attribution remains unproven.
