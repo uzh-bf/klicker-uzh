@@ -96,7 +96,6 @@ export default async function getParticipantToken({
   const { query } = ctx
   const cookies = nookies.get(ctx)
   const ambient = cookies.participant_token
-  const hasParticipantHandoff = Object.hasOwn(query, 'participantToken')
   const hasLtiHandoff = Object.hasOwn(query, 'jwt')
   const base = {
     participantToken: null,
@@ -128,28 +127,6 @@ export default async function getParticipantToken({
       60 * 60 * 24 * 13,
       Math.floor(claims.exp! - Date.now() / 1000)
     )
-  }
-
-  if (hasParticipantHandoff) {
-    if (
-      hasLtiHandoff ||
-      typeof query.participantToken !== 'string' ||
-      !query.participantToken
-    ) {
-      return reject()
-    }
-    try {
-      const maxAge = await verifyParticipant(query.participantToken)
-      setParticipantCookie(ctx, query.participantToken, maxAge)
-      return {
-        participantToken: query.participantToken,
-        cookiesAvailable: false,
-        tokenSource: 'explicit',
-        sessionState: 'authenticated',
-      }
-    } catch {
-      return reject()
-    }
   }
 
   const ltiToken = hasLtiHandoff ? query.jwt : cookies['lti-token']

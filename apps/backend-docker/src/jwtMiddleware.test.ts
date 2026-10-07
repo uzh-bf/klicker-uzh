@@ -18,6 +18,7 @@ const MANAGED_ENV_KEYS = [
   'APP_CONTROL_SUBDOMAIN',
   'APP_ASSESSMENT_SUBDOMAIN',
   'ASSESSMENT_MODE',
+  'COOKIE_DOMAIN',
 ] as const
 
 const savedEnv: Record<string, string | undefined> = {}
@@ -80,6 +81,7 @@ describe('jwtMiddleware', () => {
     process.env.APP_MANAGE_SUBDOMAIN = 'manage'
     process.env.APP_CONTROL_SUBDOMAIN = 'control'
     process.env.APP_ASSESSMENT_SUBDOMAIN = 'assessment'
+    process.env.COOKIE_DOMAIN = '.klicker.localhost'
     delete process.env.ASSESSMENT_MODE
 
     validCookieToken = await signParticipantToken({
@@ -295,6 +297,15 @@ describe('jwtMiddleware', () => {
       })
 
       assert.equal(user?.sub, 'cookie-user')
+    })
+
+    it('ignores participant cookies for a foreign origin containing the subdomain', async () => {
+      const { user } = await runMiddleware({
+        headers: { origin: 'https://pwa.attacker.example' },
+        cookies: { participant_token: validCookieToken },
+      })
+
+      assert.equal(user, null)
     })
 
     it('treats an empty authorization header as absent for cookie-only requests', async () => {

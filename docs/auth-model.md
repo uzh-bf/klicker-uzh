@@ -25,7 +25,10 @@ subject, future expiry, role PARTICIPANT or TEMPORARY_PARTICIPANT, and no scoped
 purpose. A malformed or invalid explicit bearer yields an unauthenticated
 context without cookie fallback. This lets a fresh participant login supersede
 an expired or different retained session. Cookie-only requests retain the
-existing selection order. Assessment, manager/controller and missing-Origin
+existing selection order. The PWA branch also requires the origin host to lie
+inside `COOKIE_DOMAIN`: participant cookies are SameSite=None and CORS reflects
+any origin, so a foreign host that merely contains `pwa` must not select them.
+Assessment, manager/controller and missing-Origin
 selection retain the final Bearer fallback (assessment live-quiz mode depends
 on it — marked `DO NOT TOUCH` in the source). Every selected token is verified
 with `verifyJWT(token, APP_SECRET)` before entering the context. Consequence for local setups: apps and backend must share `APP_SECRET`, and cookie domains must match the origin the backend expects — this is why the Traefik `*.klicker.com` path mirrors production more faithfully than raw localhost.
@@ -43,7 +46,7 @@ The NextAuth cookie domain is derived by stripping the first subdomain label fro
 
 ## Participant login (`apps/frontend-pwa`)
 
-- **Username/password** — PWA `LoginForm` → login mutation → `participant_token` cookie; the PWA Apollo client sends an active fallback session as `Bearer`. Successful cookie-based login clears any older fallback before subsequent Self queries.
+- **Username/password** — PWA `LoginForm` → login mutation → `participant_token` cookie; successful login clears any explicit tab credential and replaces the Apollo client before subsequent Self queries.
 - **Magic link** — `services/accounts.ts:sendMagicLink` signs a 15-minute JWT and emails `${APP_ORIGIN_PWA}/magicLogin?token=…`; the `magicLogin` page exchanges it via `LoginParticipantMagicLinkDocument` (`loginParticipantMagicLink`).
 - **Edu-ID for participants** — separate NextAuth config in the same auth app (`EduIDParticipantProvider`), same `EDUID_CLIENT_SECRET` gating.
 - **Temporary (anonymous)** — `temporary_participant_token` cookie, role `TEMPORARY_PARTICIPANT`.
@@ -64,22 +67,25 @@ established participant, verified registration context, rejected state, exchange
 failure, or no launch. It never retries another account after explicit failure.
 OTP and activation credentials require their own exchange; their participant
 role does not make them session tokens.
-Edit Profile carries the verified signed handoff through its registration
+A `participantToken` URL parameter is ignored in the regular PWA: a session
+token in a link would let one participant place another in their account.
+Edit Profile carries the verified signed LTI handoff through its registration
 redirect, so Create Account does not substitute an older or missing LTI cookie.
 
-The application boundary binds a private Apollo client to the verified page
-credential before child queries. Rendering only projects the next session;
-React commit installs retained credentials and retires the previous client.
-An abandoned render cannot change the active session. Requests, session changes
-and error redirects are scoped to their client generation; late responses
-cannot affect a newer session. Ambient SSR credentials seed an empty browser session
-but cannot replace an already active bearer. Conflicting SSR hydration is
-ignored. The shared `participantSession` module retains the current token in
-browser memory and writes sessionStorage when available. Cookie presence alone
-never removes a usable bearer. With both cookies and storage unavailable, the
-active document can continue; a credential-free full reload has no identity
-and requires a fresh launch. The SSR-required chatbot bridge cannot use
-browser-only memory and retains explicit login/relaunch recovery.
+The application boundary binds an Apollo client to the page credential before
+child queries. Only explicit credentials, from an LTI exchange or from account
+creation, are kept in the tab (memory, plus sessionStorage when available).
+They let a frame that refuses cookies keep its identity across navigation.
+Cookie-authenticated pages send no bearer and clear a kept credential, so a
+logout in one tab reaches every cookie-authenticated tab on its next request.
+A frame holding an explicit credential keeps it until it relaunches or logs
+out itself. A page that ends the
+identity, or a successful session-changing mutation, retires the client;
+retired clients ignore late results and error redirects. With both cookies and
+storage unavailable, the active document can continue; a credential-free full
+reload has no identity and requires a fresh launch. The SSR-required chatbot
+bridge cannot use browser-only memory and retains explicit login/relaunch
+recovery.
 
 Successful logout or account deletion clears memory, storage and the client
 cache. False/error responses retain the session. Account-deletion cookies expire

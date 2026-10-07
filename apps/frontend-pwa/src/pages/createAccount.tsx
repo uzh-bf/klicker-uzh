@@ -5,7 +5,7 @@ import { CreateParticipantAccountWithDataUseDocument } from '@klicker-uzh/graphq
 import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
-import useParticipantToken from '@lib/useParticipantToken'
+import { setParticipantSessionToken } from '@lib/participantSession'
 import { toast } from '@uzh-bf/design-system'
 import generatePassword from 'generate-password'
 import type { GetServerSidePropsContext } from 'next'
@@ -18,8 +18,6 @@ interface Props {
   ssoId?: string
   email?: string
   username: string
-  participantToken?: string
-  cookiesAvailable?: boolean
   dataUseDisclosureVersion: string
 }
 
@@ -27,8 +25,6 @@ function CreateAccount({
   signedLtiData,
   email,
   username,
-  participantToken,
-  cookiesAvailable,
   dataUseDisclosureVersion,
 }: Props) {
   const t = useTranslations()
@@ -36,12 +32,6 @@ function CreateAccount({
   const [createParticipantAccount] = useMutation(
     CreateParticipantAccountWithDataUseDocument
   )
-
-  useParticipantToken({
-    participantToken,
-    cookiesAvailable,
-    redirectTo: '/editProfile',
-  })
 
   return (
     <Layout displayName={t('pwa.createAccount.signup.submit')}>
@@ -71,16 +61,10 @@ function CreateAccount({
           const participantToken = createResult?.participantToken ?? null
 
           if (participantToken) {
-            await router.replace(
-              `/editProfile?newAccount=true&participantToken=${participantToken}`,
-              {
-                pathname: '/editProfile',
-                query: {
-                  newAccount: true,
-                  participantToken,
-                },
-              }
-            )
+            // The account cookie may be refused inside an LMS frame, so this
+            // tab keeps the new credential instead of passing it in the URL.
+            setParticipantSessionToken(participantToken)
+            await router.replace('/editProfile?newAccount=true')
             return
           }
 
@@ -120,28 +104,13 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   try {
     const { query } = ctx
     const apolloClient = initializeApollo()
-    const {
-      participantToken,
-      cookiesAvailable,
-      sessionState,
-      tokenSource,
-      signedLtiData,
-    } = await getParticipantToken({
-      apolloClient,
-      ctx,
-    })
+    const { participantToken, sessionState, signedLtiData } =
+      await getParticipantToken({
+        apolloClient,
+        ctx,
+      })
 
     if (participantToken) {
-      if (tokenSource === 'explicit' || !cookiesAvailable) {
-        return {
-          redirect: {
-            destination: `${ctx.locale ? `/${ctx.locale}` : ''}/editProfile?participantToken=${participantToken}`,
-            permanent: false,
-            query: { participantToken },
-          },
-        }
-      }
-
       return {
         redirect: {
           destination: `${ctx.locale ? `/${ctx.locale}` : ''}/editProfile`,

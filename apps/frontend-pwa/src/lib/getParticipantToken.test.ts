@@ -63,7 +63,7 @@ it('exchanges a fresh explicit launch instead of an expired retained launch', as
   assert.match(String(headers.get('Set-Cookie')), /Max-Age=1123200(?:;|,)/)
 })
 
-it('rejects competing, repeated, expired and wrong-role handoffs instead of using an ambient account', async () => {
+it('rejects malformed launches and unusable participant cookies instead of using an ambient account', async () => {
   const ambient = await signJWT(
     { sub: 'participant-a', role: 'PARTICIPANT' },
     secret,
@@ -103,19 +103,16 @@ it('rejects competing, repeated, expired and wrong-role handoffs instead of usin
       throw new Error('Must not exchange rejected handoff')
     },
   } as unknown as ApolloClient<NormalizedCacheObject>
-  for (const query of [
-    { participantToken: wrongRole },
-    { participantToken: otp },
-    { participantToken: activation },
-    { participantToken: expired },
-    { participantToken: noExpiry },
-    { participantToken: '' },
-    { participantToken: [ambient, ambient] },
-    { participantToken: ambient, jwt: lti },
-    { jwt: ['', lti] },
-    { jwt: '' },
-  ]) {
-    const { ctx, headers } = context(query, `participant_token=${ambient}`)
+  for (const [query, cookie] of [
+    [{ jwt: ['', lti] }, ambient],
+    [{ jwt: '' }, ambient],
+    [{}, wrongRole],
+    [{}, otp],
+    [{}, activation],
+    [{}, expired],
+    [{}, noExpiry],
+  ] as [GetServerSidePropsContext['query'], string][]) {
+    const { ctx, headers } = context(query, `participant_token=${cookie}`)
     const result = await getParticipantToken({ apolloClient: client, ctx })
     assert.equal(result.sessionState, 'rejected')
     assert.equal(result.participantToken, null)
@@ -126,37 +123,37 @@ it('rejects competing, repeated, expired and wrong-role handoffs instead of usin
   }
 })
 
-it('verifies a participant handoff before replacing a different ambient participant and retains legacy expiration', async () => {
+it('ignores participant tokens in the URL and keeps the ambient account', async () => {
   const ambient = await signJWT(
     { sub: 'participant-a', role: 'PARTICIPANT' },
     secret,
     { expiresIn: '14d' }
   )
-  const fresh = await signJWT(
+  const other = await signJWT(
     { sub: 'participant-b', role: 'PARTICIPANT' },
     secret,
     { expiresIn: '14d' }
   )
   const client = {
     mutate: async () => {
-      throw new Error('Must not exchange participant handoff')
+      throw new Error('Must not exchange a URL participant token')
     },
   } as unknown as ApolloClient<NormalizedCacheObject>
-  const { ctx, headers } = context(
-    { participantToken: fresh },
-    `participant_token=${ambient}`
-  )
-  const result = await getParticipantToken({ apolloClient: client, ctx })
-  assert.equal(result.participantToken, fresh)
-  assert.equal(result.tokenSource, 'explicit')
-  const values = headers.get('Set-Cookie') as string[]
-  assert.ok(
-    values.findIndex((value) => value.includes('; Partitioned')) <
-      values.findIndex((value) =>
-        value.startsWith(`participant_token=${fresh}`)
-      )
-  )
-  assert.match(String(values), /Partitioned/)
+  for (const participantToken of [other, 'not-a-jwt', '', [other, other]]) {
+    const { ctx, headers } = context(
+      { participantToken },
+      `participant_token=${ambient}`
+    )
+    const result = await getParticipantToken({ apolloClient: client, ctx })
+    assert.equal(result.sessionState, 'authenticated')
+    assert.equal(result.tokenSource, 'ambient')
+    assert.equal(result.participantToken, ambient)
+    assert.equal(headers.get('Set-Cookie'), undefined)
+  }
+  const { ctx } = context({ participantToken: other })
+  const anonymous = await getParticipantToken({ apolloClient: client, ctx })
+  assert.equal(anonymous.sessionState, 'no_launch')
+  assert.equal(anonymous.participantToken, null)
 })
 
 it('returns one verified registration context and classifies exchange failure without exposing ambient identity', async () => {
@@ -218,17 +215,24 @@ it('authenticates a linked LTI subject without email but refuses registration wi
   assert.equal(unlinked.signedLtiData, undefined)
 })
 
-it('never retains a handoff cookie beyond the signed session expiry', async () => {
+it('never retains an exchanged session cookie beyond the signed session expiry', async () => {
+  const launch = await signJWT(
+    { sub: 'student-b', email: 'b@example.invalid', scope: 'LTI1.3' },
+    secret,
+    { expiresIn: '5m' }
+  )
   const fresh = await signJWT(
     { sub: 'participant-b', role: 'PARTICIPANT' },
     secret,
     { expiresIn: '10m' }
   )
-  const { ctx, headers } = context({ participantToken: fresh })
-  await getParticipantToken({
-    apolloClient: {} as ApolloClient<NormalizedCacheObject>,
-    ctx,
-  })
+  const client = {
+    mutate: async () => ({
+      data: { loginParticipantWithLti: { participantToken: fresh } },
+    }),
+  } as unknown as ApolloClient<NormalizedCacheObject>
+  const { ctx, headers } = context({ jwt: launch })
+  await getParticipantToken({ apolloClient: client, ctx })
   const values = headers.get('Set-Cookie') as string[]
   const cookie = values.find((value) =>
     value.startsWith(`participant_token=${fresh}`)
@@ -236,6 +240,11 @@ it('never retains a handoff cookie beyond the signed session expiry', async () =
   assert.ok(cookie)
   const seconds = Number(cookie.match(/Max-Age=(\d+)/)?.[1])
   assert.ok(seconds > 0 && seconds <= 600)
+  // The partitioned expiration precedes the new cookie so it cannot erase it.
+  assert.ok(
+    values.findIndex((value) => value.includes('; Partitioned')) <
+      values.indexOf(cookie)
+  )
 })
 
 it('retains assessment credential selection without applying regular participant verification', async () => {

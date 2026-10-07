@@ -30,6 +30,21 @@ async function verifyExplicitBearer(token: string) {
   }
 }
 
+// Regular participant cookies are SameSite=None so embedded LMS launches work,
+// and CORS reflects any origin. Only an origin inside the cookie domain may
+// select them; a foreign host that merely contains the subdomain cannot.
+function isCookieDomainOrigin(origin: unknown) {
+  const cookieDomain = process.env.COOKIE_DOMAIN?.replace(/^\./, '')
+  if (!cookieDomain) return true
+  if (typeof origin !== 'string') return false
+  try {
+    const { hostname } = new URL(origin)
+    return hostname === cookieDomain || hostname.endsWith(`.${cookieDomain}`)
+  } catch {
+    return false
+  }
+}
+
 async function jwtMiddleware(req: any, res: any, next: any) {
   let token = null
 
@@ -62,7 +77,10 @@ async function jwtMiddleware(req: any, res: any, next: any) {
     ) {
       token = req.cookies?.['next-auth.session-token']
     } else if (
-      req.headers.origin?.includes(process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa')
+      req.headers.origin?.includes(
+        process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa'
+      ) &&
+      isCookieDomainOrigin(req.headers.origin)
     ) {
       const authorization = req.headers['authorization']
 

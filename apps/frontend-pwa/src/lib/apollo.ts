@@ -5,7 +5,6 @@ import {
   HttpLink,
   InMemoryCache,
   NormalizedCacheObject,
-  Observable,
   split,
 } from '@apollo/client'
 import { setContext } from '@apollo/client/link/context'
@@ -20,13 +19,7 @@ import { usePregeneratedHashes } from 'graphql-codegen-persisted-query-ids/lib/a
 import { createClient } from 'graphql-ws'
 import { GetServerSidePropsContext } from 'next'
 import Router from 'next/router'
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from 'react'
+import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
 import { isDeepEqual } from 'remeda'
 import util from 'util'
 import {
@@ -35,12 +28,12 @@ import {
 } from './participantDataUseReturn'
 import {
   applyParticipantPageSession,
-  getParticipantSessionRevision,
-  getParticipantSessionToken,
+  getParticipantSessionGeneration,
+  getParticipantSessionVersion,
+  invalidateParticipantSession,
   isSuccessfulParticipantSessionResult,
-  observeParticipantSessionResult,
   type ParticipantPageSession,
-  projectParticipantPageSession,
+  resolveParticipantPageToken,
   subscribeParticipantSession,
 } from './participantSession'
 
@@ -51,31 +44,24 @@ interface PageProps extends ParticipantPageSession {
 
 export const APOLLO_STATE_PROP_NAME = '__APOLLO_STATE__'
 
-let apolloClient: ApolloClient<NormalizedCacheObject> | undefined
-let apolloSessionRevision = -1
-
-interface ParticipantClientScope {
+// A regular browser client is bound to one participant credential. Once that
+// identity ends, the client is retired and its late results are ignored.
+interface ParticipantBinding {
   token: string | null
-  revision: number
-  baseRevision: number
-  baseToken: string | null
+  key: string
   retired: boolean
 }
 
-let activeParticipantScope: ParticipantClientScope | undefined
-
-function isActiveParticipantScope(scope: ParticipantClientScope) {
-  return (
-    !scope.retired &&
-    activeParticipantScope === scope &&
-    scope.revision === getParticipantSessionRevision() &&
-    scope.token === getParticipantSessionToken()
-  )
-}
+let apolloClient: ApolloClient<NormalizedCacheObject> | undefined
+let apolloBinding: ParticipantBinding | undefined
+const bindings = new WeakMap<
+  ApolloClient<NormalizedCacheObject>,
+  ParticipantBinding
+>()
 
 function createIsomorphLink(
   ctx?: GetServerSidePropsContext,
-  scope?: ParticipantClientScope
+  binding?: ParticipantBinding
 ) {
   const isBrowser = typeof window !== 'undefined'
 
@@ -100,8 +86,8 @@ function createIsomorphLink(
 
   const authLink = setContext((_, { headers }) => {
     if (isBrowser) {
-      let token = scope ? scope.token : getParticipantSessionToken()
-      if (process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true') {
+      let token = binding?.token ?? null
+      if (!binding) {
         // A partitioned or privacy-restricted browser context denies session
         // storage, and reading it throws. The cookie-authenticated participant
         // path has to keep working, so the bearer header is skipped instead of
@@ -115,8 +101,6 @@ function createIsomorphLink(
       }
 
       return {
-        participantSessionRevision:
-          scope?.revision ?? getParticipantSessionRevision(),
         headers: {
           ...headers,
           authorization: token ? `Bearer ${token}` : '',
@@ -133,34 +117,24 @@ function createIsomorphLink(
     }
   })
 
-  const sessionResultLink = new ApolloLink((operation, forward) => {
-    const revision = getParticipantSessionRevision()
-    return forward(operation).map((result) => {
+  // A successful login, logout or account deletion changes the cookie
+  // identity, so the client bound to the previous identity is replaced.
+  const sessionResultLink = new ApolloLink((operation, forward) =>
+    forward(operation).map((result) => {
       if (
-        isBrowser &&
-        process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
-        (scope
-          ? isActiveParticipantScope(scope)
-          : revision === getParticipantSessionRevision())
+        binding &&
+        !binding.retired &&
+        isSuccessfulParticipantSessionResult(result)
       ) {
-        if (scope && isSuccessfulParticipantSessionResult(result))
-          scope.retired = true
-        observeParticipantSessionResult(result)
+        binding.retired = true
+        invalidateParticipantSession()
       }
       return result
     })
-  })
+  )
 
-  const errorLink = onError(({ graphQLErrors, networkError, operation }) => {
-    if (
-      isBrowser &&
-      process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
-      (scope
-        ? !isActiveParticipantScope(scope)
-        : operation.getContext().participantSessionRevision !==
-          getParticipantSessionRevision())
-    )
-      return
+  const errorLink = onError(({ graphQLErrors, networkError }) => {
+    if (binding?.retired) return
     if (graphQLErrors)
       graphQLErrors.forEach(({ message, locations, path, extensions }) => {
         console.log(
@@ -260,28 +234,12 @@ function createIsomorphLink(
       link
     )
 
-    const scopeLink = new ApolloLink((operation, forward) => {
-      if (
-        scope &&
-        (scope.retired ||
-          (!isActiveParticipantScope(scope) &&
-            (activeParticipantScope === scope ||
-              scope.baseRevision !== getParticipantSessionRevision())))
-      ) {
-        return new Observable((observer) => {
-          observer.error(new Error('Participant session changed'))
-        })
-      }
-      return forward(operation)
-    })
-
     return from([
       retryLink,
       errorLink,
-      sessionResultLink,
+      ...(binding ? [sessionResultLink] : []),
       authLink,
       ...persistedLink,
-      scopeLink,
       link,
     ])
   }
@@ -292,7 +250,7 @@ function createIsomorphLink(
 // TODO: use the schema link when working on the server?
 function createApolloClient(
   ctx?: GetServerSidePropsContext,
-  scope?: ParticipantClientScope
+  binding?: ParticipantBinding
 ) {
   // TODO: switch to yoga link
   // const yogaLink = new YogaLink({
@@ -300,32 +258,36 @@ function createApolloClient(
   //   credentials: true
   // })
 
-  return new ApolloClient({
+  const client = new ApolloClient({
     ssrMode: typeof window === 'undefined',
-    link: createIsomorphLink(ctx, scope),
+    link: createIsomorphLink(ctx, binding),
     cache: new InMemoryCache(),
     connectToDevTools: process.env.NODE_ENV === 'development',
   })
+  if (binding) bindings.set(client, binding)
+  return client
 }
 
 export function initializeApollo(
   initialState?: NormalizedCacheObject,
-  ctx?: GetServerSidePropsContext
+  ctx?: GetServerSidePropsContext,
+  session?: Pick<ParticipantBinding, 'token' | 'key'>
 ): ApolloClient<NormalizedCacheObject> {
   const browser = typeof window !== 'undefined'
-  const revision = getParticipantSessionRevision()
-  const sessionChanged =
-    browser && !!apolloClient && revision !== apolloSessionRevision
-  if (sessionChanged) {
-    apolloClient!.stop()
+  // A different participant binding needs a client with an empty cache.
+  if (browser && session && apolloBinding?.key !== session.key) {
     apolloClient = undefined
   }
   const _apolloClient =
-    (browser ? apolloClient : undefined) ?? createApolloClient(ctx)
+    (browser ? apolloClient : undefined) ??
+    createApolloClient(
+      ctx,
+      browser && session ? { ...session, retired: false } : undefined
+    )
 
   // If your page has Next.js data fetching methods that use Apollo Client, the initial state
   // gets hydrated here
-  if (initialState && !sessionChanged) {
+  if (initialState) {
     // Get existing cache, loaded during client side data fetching
     const existingCache = _apolloClient.extract()
 
@@ -346,8 +308,10 @@ export function initializeApollo(
   // For SSG and SSR always create a new Apollo Client
   if (typeof window === 'undefined') return _apolloClient
   // Create the Apollo Client once in the client
-  if (!apolloClient) apolloClient = _apolloClient
-  apolloSessionRevision = revision
+  if (!apolloClient) {
+    apolloClient = _apolloClient
+    apolloBinding = bindings.get(_apolloClient)
+  }
 
   return _apolloClient
 }
@@ -363,146 +327,43 @@ export function addApolloState(
   return pageProps
 }
 
-interface ParticipantClientCandidate {
-  client: ApolloClient<NormalizedCacheObject>
-  scope: ParticipantClientScope
-  initialState?: NormalizedCacheObject
-}
-
-function createParticipantClientCandidate(
-  token: string | null,
-  revision: number,
-  baseToken: string | null,
-  initialState?: NormalizedCacheObject,
-  previous?: ParticipantClientCandidate | null
-): ParticipantClientCandidate {
-  const scope: ParticipantClientScope = {
-    token,
-    revision,
-    baseRevision: getParticipantSessionRevision(),
-    baseToken,
-    retired: false,
-  }
-  const client = createApolloClient(undefined, scope)
-  const existing =
-    previous?.scope.token === token && previous.scope.revision === revision
-      ? previous.client.extract()
-      : {}
-  client.cache.restore(
-    merge(existing, initialState ?? {}, {
-      arrayMerge: (destinationArray, sourceArray) => [
-        ...sourceArray,
-        ...destinationArray.filter((d) =>
-          sourceArray.every((s) => !isDeepEqual(d, s))
-        ),
-      ],
-    })
-  )
-  return { client, scope, initialState }
-}
-
-function retireParticipantClient(candidate: ParticipantClientCandidate) {
-  candidate.scope.retired = true
-  if (activeParticipantScope === candidate.scope)
-    activeParticipantScope = undefined
-  candidate.client.stop()
-}
-
 export function useApollo(pageProps: PageProps) {
-  useSyncExternalStore(
-    subscribeParticipantSession,
-    getParticipantSessionRevision,
-    () => 0
-  )
-  const regularBrowser =
+  const regular =
     typeof window !== 'undefined' &&
     process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true'
-  const session = projectParticipantPageSession(pageProps)
+  useSyncExternalStore(
+    subscribeParticipantSession,
+    getParticipantSessionVersion,
+    () => 0
+  )
+  // The page's credential is resolved during render so that the first query
+  // of a launch already carries it.
+  const token = regular ? resolveParticipantPageToken(pageProps) : null
+  const generation = getParticipantSessionGeneration()
   const state = pageProps[APOLLO_STATE_PROP_NAME]
-  const initialState =
-    session.token === (pageProps.participantToken ?? null) &&
-    !pageProps.resetParticipantSession &&
-    pageProps.sessionState !== 'rejected' &&
-    pageProps.sessionState !== 'registration_required' &&
-    pageProps.sessionState !== 'exchange_unavailable'
-      ? state
-      : undefined
-  const legacyClient = useMemo(
-    () => (regularBrowser ? null : initializeApollo(state)),
-    [regularBrowser, state]
+  const client = useMemo(
+    () =>
+      initializeApollo(
+        state,
+        undefined,
+        regular ? { token, key: `${generation}:${token ?? ''}` } : undefined
+      ),
+    [regular, state, token, generation]
   )
-  const [rendered, setRendered] = useState(() =>
-    regularBrowser
-      ? createParticipantClientCandidate(
-          session.token,
-          session.revision,
-          session.baseToken,
-          initialState
-        )
-      : null
-  )
-  let candidate = rendered
-  if (
-    regularBrowser &&
-    (!candidate ||
-      candidate.scope.retired ||
-      (!isActiveParticipantScope(candidate.scope) &&
-        candidate.scope.baseRevision !== session.baseRevision) ||
-      candidate.scope.token !== session.token ||
-      candidate.scope.revision !== session.revision ||
-      candidate.initialState !== initialState)
-  ) {
-    // Adjust only this component's private client during render. Retained
-    // credentials and the committed client change only after React commits.
-    candidate = createParticipantClientCandidate(
-      session.token,
-      session.revision,
-      session.baseToken,
-      initialState,
-      rendered
-    )
-    setRendered(candidate)
-  }
 
-  const committed = useRef<ParticipantClientCandidate | null>(null)
   useEffect(() => {
-    if (!candidate) return
-    if (isActiveParticipantScope(candidate.scope)) {
-      applyParticipantPageSession(
-        pageProps,
-        candidate.scope.revision,
-        candidate.scope.baseToken
-      )
-      return
-    }
-    if (
-      !applyParticipantPageSession(
-        pageProps,
-        candidate.scope.baseRevision,
-        candidate.scope.baseToken
-      )
-    ) {
-      retireParticipantClient(candidate)
-      return
-    }
-    const previous = committed.current
-    committed.current = candidate
-    activeParticipantScope = candidate.scope
-    if (previous && previous !== candidate) retireParticipantClient(previous)
-  }, [candidate, pageProps])
+    if (regular) applyParticipantPageSession(pageProps)
+  }, [regular, pageProps])
 
-  const mounted = useRef(false)
+  const previous = useRef(client)
   useEffect(() => {
-    mounted.current = true
-    return () => {
-      mounted.current = false
-      queueMicrotask(() => {
-        if (mounted.current) return
-        const current = committed.current
-        if (current) retireParticipantClient(current)
-      })
-    }
-  }, [])
+    const replaced = previous.current
+    previous.current = client
+    if (replaced === client) return
+    const binding = bindings.get(replaced)
+    if (binding) binding.retired = true
+    replaced.stop()
+  }, [client])
 
-  return candidate?.client ?? legacyClient!
+  return client
 }

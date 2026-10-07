@@ -2,211 +2,154 @@ import assert from 'node:assert/strict'
 import { it } from 'node:test'
 import {
   applyParticipantPageSession,
-  getParticipantSessionRevision,
+  getParticipantSessionGeneration,
   getParticipantSessionToken,
-  observeParticipantSessionResult,
-  projectParticipantPageSession,
+  invalidateParticipantSession,
+  isSuccessfulParticipantSessionResult,
+  resolveParticipantPageToken,
   setParticipantSessionToken,
-  subscribeParticipantSession,
 } from './participantSession'
+
+function installWindow(values = new Map<string, string>()) {
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: {
+      sessionStorage: {
+        getItem: (key: string) => values.get(key) ?? null,
+        setItem: (key: string, value: string) => values.set(key, value),
+        removeItem: (key: string) => values.delete(key),
+      },
+    },
+  })
+  return values
+}
+
+function removeWindow() {
+  delete (globalThis as { window?: unknown }).window
+}
 
 it('never retains browser credentials in server state', () => {
   setParticipantSessionToken('server-token')
   assert.equal(getParticipantSessionToken(), null)
 })
 
-it('replaces stale state and preserves active identity across ambient navigation', () => {
-  const values = new Map([['participant_token', 'participant-a']])
-  let storageDenied = false
-  Object.defineProperty(globalThis, 'window', {
-    configurable: true,
-    value: {
-      sessionStorage: {
-        getItem: (key: string) => {
-          if (storageDenied) throw new Error('denied')
-          return values.get(key) ?? null
-        },
-        setItem: (key: string, value: string) => values.set(key, value),
-        removeItem: (key: string) => values.delete(key),
-      },
-    },
-  })
-  const initialRevision = getParticipantSessionRevision()
-  assert.equal(getParticipantSessionToken(), 'participant-a')
-  values.set('participant_token', 'participant-c')
-  assert.equal(getParticipantSessionToken(), 'participant-c')
-  values.set('participant_token', 'participant-a')
-  const bootstrap = { sessionState: 'no_launch' as const }
-  const baseline = projectParticipantPageSession(bootstrap)
-  values.set('participant_token', 'participant-c')
-  assert.equal(getParticipantSessionToken(), 'participant-c')
-  assert.equal(
-    applyParticipantPageSession(
-      bootstrap,
-      baseline.baseRevision,
-      baseline.baseToken
-    ),
-    true
-  )
-  values.delete('participant_token')
-  storageDenied = true
-  assert.equal(getParticipantSessionToken(), 'participant-a')
-  assert.equal(getParticipantSessionRevision(), baseline.revision)
-  storageDenied = false
-  applyParticipantPageSession({
-    participantToken: 'participant-a',
-    tokenSource: 'ambient',
-    sessionState: 'authenticated',
-  })
-  assert.equal(getParticipantSessionToken(), 'participant-a')
-  assert.equal(getParticipantSessionRevision(), baseline.revision)
-  values.set('participant_token', 'participant-a')
-  const page = {
+it('keeps only explicit credentials and never copies a cookie session into the tab', () => {
+  const values = installWindow()
+  const explicit = {
     participantToken: 'participant-b',
     tokenSource: 'explicit' as const,
     sessionState: 'authenticated' as const,
   }
-  let notifications = 0
-  const unsubscribe = subscribeParticipantSession(() => {
-    notifications += 1
-  })
-  const projected = projectParticipantPageSession(page)
-  assert.equal(projected.token, 'participant-b')
-  assert.equal(projected.revision, initialRevision + 1)
-  assert.equal(getParticipantSessionRevision(), initialRevision)
-  assert.equal(getParticipantSessionToken(), 'participant-a')
-  assert.equal(values.get('participant_token'), 'participant-a')
-  assert.equal(notifications, 0)
-  assert.equal(applyParticipantPageSession(page, initialRevision - 1), false)
-  assert.equal(getParticipantSessionToken(), 'participant-a')
-  assert.equal(applyParticipantPageSession(page, initialRevision), true)
-  assert.equal(notifications, 1)
-  assert.equal(
-    applyParticipantPageSession(page, getParticipantSessionRevision()),
-    true
-  )
-  assert.equal(notifications, 1)
-  unsubscribe()
-  applyParticipantPageSession({
-    participantToken: 'participant-b',
-    tokenSource: 'explicit',
-    sessionState: 'authenticated',
-  })
-  assert.equal(getParticipantSessionToken(), 'participant-b')
-  assert.equal(values.get('participant_token'), 'participant-b')
-  applyParticipantPageSession({
+  const ambient = {
     participantToken: 'participant-a',
-    tokenSource: 'ambient',
-    sessionState: 'authenticated',
-  })
-  applyParticipantPageSession({ sessionState: 'no_launch' })
-  assert.equal(getParticipantSessionToken(), 'participant-b')
-  applyParticipantPageSession({ sessionState: 'rejected' })
+    tokenSource: 'ambient' as const,
+    sessionState: 'authenticated' as const,
+  }
+
+  assert.equal(resolveParticipantPageToken(ambient), null)
+  applyParticipantPageSession(ambient)
+  assert.equal(values.has('participant_token'), false)
+
+  assert.equal(resolveParticipantPageToken(explicit), 'participant-b')
+  applyParticipantPageSession(explicit)
+  assert.equal(values.get('participant_token'), 'participant-b')
+
+  // A page without a launch, such as one inside a cookie-blocking frame,
+  // keeps the credential this tab received.
+  assert.equal(
+    resolveParticipantPageToken({ sessionState: 'no_launch' }),
+    'participant-b'
+  )
+
+  // A working cookie session supersedes the tab credential.
+  assert.equal(resolveParticipantPageToken(ambient), null)
+  applyParticipantPageSession(ambient)
   assert.equal(getParticipantSessionToken(), null)
   assert.equal(values.has('participant_token'), false)
+  removeWindow()
 })
 
-it('retains memory when storage is denied and clears only successful mutation results', () => {
-  Object.defineProperty(window, 'sessionStorage', {
-    configurable: true,
-    get() {
-      throw new Error('denied')
-    },
-  })
-  const page = {
-    participantToken: 'participant-b',
-    tokenSource: 'explicit' as const,
-    sessionState: 'authenticated' as const,
-  }
-  applyParticipantPageSession(page)
-  assert.equal(getParticipantSessionToken(), 'participant-b')
-  assert.equal(
-    observeParticipantSessionResult({
-      data: { deleteParticipantAccount: false },
-    }),
-    false
-  )
-  assert.equal(
-    observeParticipantSessionResult({ data: { logoutParticipant: null } }),
-    false
-  )
-  assert.equal(
-    observeParticipantSessionResult({
-      errors: [{}],
-      data: { logoutParticipant: 'participant-b' },
-    }),
-    false
-  )
-  assert.equal(getParticipantSessionToken(), 'participant-b')
-  assert.equal(
-    observeParticipantSessionResult({
-      data: { logoutParticipant: 'participant-b' },
-    }),
-    true
-  )
-  assert.equal(getParticipantSessionToken(), null)
-  applyParticipantPageSession(page)
-  assert.equal(getParticipantSessionToken(), null)
-  for (const field of [
-    'loginParticipant',
-    'loginParticipantMagicLink',
-    'activateParticipantAccount',
+it('ends the identity for rejected, unregistered, failed and reset launches', () => {
+  installWindow()
+  for (const page of [
+    { sessionState: 'rejected' as const },
+    { sessionState: 'registration_required' as const },
+    { sessionState: 'exchange_unavailable' as const },
+    { resetParticipantSession: true },
   ]) {
-    const before = getParticipantSessionRevision()
-    assert.equal(
-      observeParticipantSessionResult({ data: { [field]: 'participant-c' } }),
-      true
-    )
-    assert.ok(getParticipantSessionRevision() > before)
+    setParticipantSessionToken('participant-b')
+    const before = getParticipantSessionGeneration()
+    assert.equal(resolveParticipantPageToken(page), null)
+    applyParticipantPageSession(page)
+    assert.equal(getParticipantSessionToken(), null)
+    assert.ok(getParticipantSessionGeneration() > before)
   }
-  applyParticipantPageSession({
-    participantToken: 'participant-c',
-    tokenSource: 'explicit',
-    sessionState: 'authenticated',
-  })
-  observeParticipantSessionResult({ data: { deleteParticipantAccount: true } })
-  assert.equal(getParticipantSessionToken(), null)
-  applyParticipantPageSession({
-    participantToken: 'participant-c',
-    tokenSource: 'explicit',
-    sessionState: 'authenticated',
-  })
-  applyParticipantPageSession({ sessionState: 'registration_required' })
-  assert.equal(getParticipantSessionToken(), null)
-  delete (globalThis as { window?: unknown }).window
+  removeWindow()
 })
 
-it('replaces the Apollo cache on identity changes and cannot rehydrate the former identity', async () => {
-  process.env.NEXT_PUBLIC_API_URL = 'https://api.example.invalid/api/graphql'
-  const { initializeApollo } = await import('./apollo')
+it('retains the credential in memory when session storage is denied', () => {
   Object.defineProperty(globalThis, 'window', {
     configurable: true,
     value: {
-      sessionStorage: {
-        getItem: () => null,
-        setItem: () => {},
-        removeItem: () => {},
+      get sessionStorage() {
+        throw new Error('denied')
       },
     },
   })
-  setParticipantSessionToken('participant-a')
-  const first = initializeApollo({
+  setParticipantSessionToken('participant-c')
+  assert.equal(getParticipantSessionToken(), 'participant-c')
+  invalidateParticipantSession()
+  assert.equal(getParticipantSessionToken(), null)
+  removeWindow()
+})
+
+it('recognizes only successful session-changing mutation results', () => {
+  for (const result of [
+    { data: { deleteParticipantAccount: false } },
+    { data: { logoutParticipant: null } },
+    { errors: [{}], data: { logoutParticipant: 'participant-b' } },
+    { data: null },
+  ]) {
+    assert.equal(isSuccessfulParticipantSessionResult(result), false)
+  }
+  for (const data of [
+    { deleteParticipantAccount: true },
+    { logoutTemporaryParticipant: true },
+    { logoutParticipant: 'participant-b' },
+    { loginParticipant: 'participant-c' },
+    { loginParticipantMagicLink: 'participant-c' },
+    { activateParticipantAccount: 'participant-c' },
+  ]) {
+    assert.equal(isSuccessfulParticipantSessionResult({ data }), true)
+  }
+})
+
+it('gives each participant binding its own Apollo cache', async () => {
+  process.env.NEXT_PUBLIC_API_URL = 'https://api.example.invalid/api/graphql'
+  const { initializeApollo } = await import('./apollo')
+  installWindow()
+  const state = {
     ROOT_QUERY: { __typename: 'Query', self: { __ref: 'Participant:a' } },
     'Participant:a': { __typename: 'Participant', id: 'a' },
+  }
+  const first = initializeApollo(state, undefined, {
+    token: 'participant-a',
+    key: '0:participant-a',
   })
-  assert.ok(first.extract()['Participant:a'])
-  setParticipantSessionToken('participant-b')
-  const second = initializeApollo(first.extract())
+  assert.equal(
+    initializeApollo(undefined, undefined, {
+      token: 'participant-a',
+      key: '0:participant-a',
+    }),
+    first
+  )
+  const second = initializeApollo(undefined, undefined, {
+    token: null,
+    key: '1:',
+  })
   assert.notEqual(second, first)
   assert.equal(second.extract()['Participant:a'], undefined)
-  observeParticipantSessionResult({
-    data: { logoutParticipant: 'participant-b' },
-  })
-  const anonymous = initializeApollo(second.extract())
-  assert.notEqual(anonymous, second)
-  assert.equal(getParticipantSessionToken(), null)
   first.stop()
   second.stop()
-  anonymous.stop()
-  delete (globalThis as { window?: unknown }).window
+  removeWindow()
 })

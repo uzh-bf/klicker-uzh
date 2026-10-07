@@ -7,22 +7,53 @@ export type ParticipantPageSession = Partial<
   >
 > & { resetParticipantSession?: boolean }
 
-let token: string | null = null
-let loaded = false
-let revision = 0
+// Only explicit credentials are kept here: an LTI exchange or account creation
+// whose cookie the browser may refuse. Cookie sessions are never copied into
+// the tab, so a logout in one tab reaches every cookie-authenticated tab on
+// its next request. A frame that holds an explicit credential keeps it until
+// it relaunches or logs out itself.
+const STORAGE_KEY = 'participant_token'
+
+let token: string | null | undefined
+let generation = 0
+let version = 0
 const listeners = new Set<() => void>()
-const appliedPages = new WeakSet<ParticipantPageSession>()
+
+function store(next: string | null) {
+  token = next
+  try {
+    if (next) window.sessionStorage.setItem(STORAGE_KEY, next)
+    else window.sessionStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // A denied storage area must not discard the current document's session.
+  }
+}
+
+function notify() {
+  version += 1
+  listeners.forEach((listener) => listener())
+}
 
 export function getParticipantSessionToken() {
   if (typeof window === 'undefined') return null
-  if (!loaded) {
+  if (token === undefined) {
     try {
-      return window.sessionStorage.getItem('participant_token')
+      token = window.sessionStorage.getItem(STORAGE_KEY)
     } catch {
-      return null
+      token = null
     }
   }
   return token
+}
+
+// Changes whenever the identity ends; clients bound to an older generation
+// must not be reused.
+export function getParticipantSessionGeneration() {
+  return generation
+}
+
+export function getParticipantSessionVersion() {
+  return version
 }
 
 export function subscribeParticipantSession(listener: () => void) {
@@ -32,82 +63,45 @@ export function subscribeParticipantSession(listener: () => void) {
   }
 }
 
-export function getParticipantSessionRevision() {
-  return revision
+export function setParticipantSessionToken(next: string | null) {
+  if (typeof window === 'undefined' || getParticipantSessionToken() === next)
+    return
+  store(next)
+  notify()
 }
 
-export function setParticipantSessionToken(
-  next: string | null,
-  invalidate = false
-) {
+export function invalidateParticipantSession() {
   if (typeof window === 'undefined') return
-  const previous = getParticipantSessionToken()
-  token = next
-  loaded = true
-  try {
-    if (next) window.sessionStorage.setItem('participant_token', next)
-    else window.sessionStorage.removeItem('participant_token')
-  } catch {
-    // A denied storage area must not discard the current document's session.
-  }
-  if (previous !== next || invalidate) {
-    revision += 1
-    listeners.forEach((listener) => listener())
-  }
+  store(null)
+  generation += 1
+  notify()
 }
 
-export function applyParticipantPageSession(
-  page: ParticipantPageSession,
-  expectedRevision = revision,
-  baseToken = getParticipantSessionToken()
-) {
-  if (typeof window === 'undefined') return false
-  if (expectedRevision !== revision) return false
-  if (appliedPages.has(page)) return true
-  if (!loaded) {
-    // Storage changes must not alter the client identity captured during render.
-    token = baseToken
-    loaded = true
-  }
-  appliedPages.add(page)
-  if (
-    page.resetParticipantSession ||
+export function endsParticipantSession(page: ParticipantPageSession) {
+  return (
+    !!page.resetParticipantSession ||
     page.sessionState === 'rejected' ||
     page.sessionState === 'registration_required' ||
     page.sessionState === 'exchange_unavailable'
-  ) {
-    setParticipantSessionToken(null, true)
-  } else if (
-    page.participantToken &&
-    (page.tokenSource === 'explicit' || !getParticipantSessionToken())
-  ) {
+  )
+}
+
+// The bearer a page's client sends: the page's own explicit credential, none
+// when the page is cookie-authenticated or ends the session, and otherwise the
+// credential this tab received earlier.
+export function resolveParticipantPageToken(page: ParticipantPageSession) {
+  if (endsParticipantSession(page) || page.tokenSource === 'ambient')
+    return null
+  if (page.tokenSource === 'explicit' && page.participantToken)
+    return page.participantToken
+  return getParticipantSessionToken()
+}
+
+export function applyParticipantPageSession(page: ParticipantPageSession) {
+  if (endsParticipantSession(page)) invalidateParticipantSession()
+  else if (page.tokenSource === 'explicit' && page.participantToken)
     setParticipantSessionToken(page.participantToken)
-  }
-  return true
-}
-
-export function projectParticipantPageSession(page: ParticipantPageSession) {
-  const current = getParticipantSessionToken()
-  const baseRevision = revision
-  if (typeof window === 'undefined' || appliedPages.has(page)) {
-    return { token: current, revision, baseRevision, baseToken: current }
-  }
-  const invalidate =
-    page.resetParticipantSession ||
-    page.sessionState === 'rejected' ||
-    page.sessionState === 'registration_required' ||
-    page.sessionState === 'exchange_unavailable'
-  const next = invalidate
-    ? null
-    : page.participantToken && (page.tokenSource === 'explicit' || !current)
-      ? page.participantToken
-      : current
-  return {
-    token: next,
-    revision: revision + (invalidate || next !== current ? 1 : 0),
-    baseRevision,
-    baseToken: current,
-  }
+  else if (page.tokenSource === 'ambient') setParticipantSessionToken(null)
 }
 
 export function isSuccessfulParticipantSessionResult(result: {
@@ -126,12 +120,4 @@ export function isSuccessfulParticipantSessionResult(result: {
       'activateParticipantAccount',
     ].some((field) => typeof data[field] === 'string' && !!data[field])
   )
-}
-
-export function observeParticipantSessionResult(
-  result: Parameters<typeof isSuccessfulParticipantSessionResult>[0]
-) {
-  if (!isSuccessfulParticipantSessionResult(result)) return false
-  setParticipantSessionToken(null, true)
-  return true
 }
