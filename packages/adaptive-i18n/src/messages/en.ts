@@ -21,6 +21,10 @@ const messages = {
           resumable: 'You can leave the quiz and resume it later.',
           privacy:
             'Your result helps you choose what to practise next. Course instructors see only anonymous group results.',
+          repetitionAnytime: 'Repetition: any time',
+          singleAttempt: 'One attempt',
+          unfinishedAttempt:
+            'You have an unfinished attempt. Resume it or start over.',
         },
         question: {
           testingInfo: 'Testing info — not shown to students',

@@ -4598,6 +4598,7 @@ enum PointCorrectionType {
 
 type PracticeQuiz {
   adaptiveMaximumQuestions: Int
+  adaptiveRetakeCooldownDays: Int
   availableFrom: Date
   course: Course
   courseId: String
