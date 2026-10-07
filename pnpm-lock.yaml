@@ -23,6 +23,8 @@ overrides:
   '@opentelemetry/propagator-jaeger@>=1.0.0 <2.9.0': 2.9.0
   '@babel/core@>=7.28.0 <7.29.0': 7.28.6
   '@graphql-tools/utils@<12.0.1': 12.0.1
+  sharp@>=0.35.0 <0.35.5: 0.35.5
+  '@modelcontextprotocol/sdk@>=1.12.0 <1.31.0': 1.31.0
 
 packageExtensionsChecksum: sha256-s/ooLXnMhO2/8mE41K9oqC0IHe6a+O640oG3HJJvnNk=
 
@@ -5067,7 +5069,7 @@ packages:
     engines: {node: '>=12'}
     peerDependencies:
       jimp: '*'
-      sharp: '*'
+      sharp: 0.35.5
     peerDependenciesMeta:
       jimp:
         optional: true
