@@ -44,6 +44,12 @@ connectivity remain separate gates.
 - The deployment branch's v3 application code is not the released binary.
   Its skipped unit/GraphQL checks do not prove the candidate's compatibility.
 
+The proposed v3-ai release lineage follows current practice documented in
+docs/ci-and-deployment.md, but conflicts with accepted ADR 0028's qualified RC
+and merged-v3 release path. Preparation does not approve that departure or
+supersede the ADR. Resolve the release path explicitly before publication or
+readiness; retain candidate application-source equality under the chosen path.
+
 ### Ownership, package and sequence
 
 Execution mode: standard. Full-path configuration/release seam package. The
@@ -122,6 +128,12 @@ tag lines; staging is byte-identical. Both Helm lint/render checks pass; rendere
 production contains seventeen application images plus one alpha.85 PreSync
 migrator. Both rendered registries equal the values accepted by the candidate's
 two parsers (22 existing tests passed). Disabled usage switches are preserved.
-Formatting and diff checks pass. Status: independent final review and draft
-delivery pending. Publication and runtime gates remain unresolved. Review
-receipts belong in project/_local/reviews/.
+Formatting and diff checks pass. Independent final review covered the complete
+committed range 6189a748..6ee5fb40. Its one low-severity finding was the release
+path conflict with ADR 0028. Main verified both documents and recorded explicit
+resolution as a pre-publication gate, without changing policy or values.
+This non-behavioral correction closes through main-session verification under
+the Finish Gate; the checked source and configuration are unchanged.
+Status: source preparation complete; exact-head hosted CI pending.
+Publication and runtime gates remain unresolved. Review receipts belong in
+project/_local/reviews/.
