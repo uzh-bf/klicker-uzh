@@ -458,6 +458,9 @@ const messages = {
           preset: 'Voreinstellung',
           totalQuestionCap: 'Maximale Fragenzahl',
           showTimer: 'Timer anzeigen',
+          repetitionInterval: 'Wiederholen nach (Tagen)',
+          repetitionIntervalHelp:
+            'Tage, die Studierende nach dem Abschluss warten, bevor sie das Quiz erneut lösen können; 0 erlaubt eine sofortige Wiederholung. Es zählt der letzte abgeschlossene Versuch.',
           attemptPolicy: 'Versuch für die Auswertung',
           advanced: 'Erweiterte adaptive Einstellungen',
           perLeafQuestionCap: 'Maximale Fragen pro Blatt',

@@ -284,6 +284,23 @@ function PracticeQuizSettingsStep({
                         )}
                         data={{ cy: 'adaptive-show-timer' }}
                       />
+                      <FormikNumberField
+                        name="resetTimeDays"
+                        label={t(
+                          'manage.activityWizard.adaptive.settings.repetitionInterval'
+                        )}
+                        tooltip={t(
+                          'manage.activityWizard.adaptive.settings.repetitionIntervalHelp'
+                        )}
+                        className={{
+                          root: 'w-full',
+                          field: 'w-full',
+                          tooltip: 'z-20',
+                        }}
+                        required
+                        hideError={true}
+                        data={{ cy: 'adaptive-reset-time-days' }}
+                      />
                     </div>
 
                     {values.adaptiveConfig.preset ===
