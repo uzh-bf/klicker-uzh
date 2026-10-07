@@ -32,7 +32,6 @@ import {
   getAllowedReasoningEffortsForModel,
   getAutomaticModelId,
   getChatModelRegistry,
-  getModelsForChatbot,
   getParticipantFallbackModelId,
   parseReasoningEffortByModel,
 } from '@/src/lib/server/chatModelRegistry'
@@ -769,11 +768,42 @@ export async function POST(
   // widen later uses back to `undefined`; every assignment below is checked.
   let selectedModelConfig: ChatModelConfig = initialModelConfig
 
+  let usingSafetyFallback = false
+  const selectParticipantFallback = () => {
+    const fallbackModelId = getParticipantFallbackModelId()
+    const fallbackModelConfig = modelRegistry.find(
+      (modelConfig) => modelConfig.id === fallbackModelId
+    )
+    if (!fallbackModelId || !fallbackModelConfig) return false
+
+    selectedModel = fallbackModelId
+    selectedModelConfig = fallbackModelConfig
+    usingSafetyFallback = true
+    return true
+  }
+
+  // Guest access and exhausted participant credits select the configured BASE
+  // safety model independently of the lecturer's model list.
+  if (authMode === 'anonymous') {
+    if (!selectParticipantFallback()) {
+      return chatModelUnavailableResponse('BASE')
+    }
+  } else {
+    const creditPreview = await CreditsService.previewUserCredits(
+      participantId,
+      chatbotId
+    )
+    if (creditPreview.current <= 0 && !selectParticipantFallback()) {
+      return chatModelUnavailableResponse('BASE')
+    }
+  }
+
   // Enforce per-chatbot model allow-list
   // Automatic selection is authoritative when a persisted allow-list contains
   // only retired models: getAutomaticModelId resolves that state to the
   // unconditional base fallback, so the stale list must not reject the turn.
   if (
+    !usingSafetyFallback &&
     allowedIds &&
     !allowedIds.has(selectedModelConfig.id) &&
     selectedModelConfig.id !== automaticModelId &&
@@ -784,45 +814,6 @@ export async function POST(
       { error: `Model not available for this chatbot: ${selectedModel}` },
       { status: 400 }
     )
-  }
-
-  const selectParticipantFallback = () => {
-    const fallbackModelId = getParticipantFallbackModelId()
-    const fallbackModelConfig = modelRegistry.find(
-      (modelConfig) => modelConfig.id === fallbackModelId
-    )
-    if (!fallbackModelId || !fallbackModelConfig) return false
-
-    selectedModel = fallbackModelId
-    selectedModelConfig = fallbackModelConfig
-    return true
-  }
-
-  // Anonymous LTI guests stay on the chatbot's allowed fallback model. Apply
-  // this after automatic and explicit selection so later credit handling
-  // cannot restore an advanced model for a guest with remaining credits.
-  if (authMode === 'anonymous' && !selectedModelConfig.fallback) {
-    const guestFallback = getModelsForChatbot(chatbot).find(
-      (modelConfig) => modelConfig.fallback
-    )
-    if (!guestFallback) {
-      return NextResponse.json(
-        { error: 'No fallback model available for guest access' },
-        { status: 503 }
-      )
-    }
-    selectedModel = guestFallback.id
-    selectedModelConfig = guestFallback
-  }
-
-  if (!selectedModelConfig.fallback) {
-    const creditPreview = await CreditsService.previewUserCredits(
-      participantId,
-      chatbotId
-    )
-    if (creditPreview.current <= 0 && !selectParticipantFallback()) {
-      return chatModelUnavailableResponse('BASE')
-    }
   }
 
   const accountUsageAvailableForSelectedModel = async () => {

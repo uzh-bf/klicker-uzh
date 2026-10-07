@@ -1,4 +1,3 @@
-import type { AppendMessage } from '@assistant-ui/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useThreadManagement } from '../src/hooks/useThreadManagement'
 import { getEditedMessageSource } from '../src/lib/attachments/attachmentState'
@@ -110,7 +109,15 @@ describe('getEditedMessageSource', () => {
     const attempt =
       operation === 'onReload'
         ? callbacks.onReload(null)
-        : callbacks[operation]({ content: [], parentId: null } as AppendMessage)
+        : callbacks[operation]({
+            role: 'user',
+            content: [],
+            parentId: null,
+            sourceId: null,
+            runConfig: undefined,
+            createdAt: new Date(),
+            metadata: { custom: {} },
+          })
 
     await expect(attempt).rejects.toThrow('offline')
     expect(chatActions.createThread).not.toHaveBeenCalled()
@@ -134,7 +141,15 @@ describe('getEditedMessageSource', () => {
     const { onNew } = useThreadManagement(generateChatResponse, {
       current: null,
     })
-    const attempt = onNew({ content: [], parentId: null } as AppendMessage)
+    const attempt = onNew({
+      role: 'user',
+      content: [],
+      parentId: null,
+      sourceId: null,
+      runConfig: undefined,
+      createdAt: new Date(),
+      metadata: { custom: {} },
+    })
 
     expect(chatActions.createThread).not.toHaveBeenCalled()
     resolveSelection({ modelId: 'configured-model', reasoningEffort: 'none' })

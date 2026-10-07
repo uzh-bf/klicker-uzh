@@ -711,13 +711,17 @@ immutable ledgers, automated refunds, invoices, per-chatbot allocation, and
 participant-credit migration remain deferred.
 
 - Omitted `supportsImageAttachments` defaults to **false** — every image-capable model must set it explicitly in deployment values or the attach button disappears.
-- The zero-credit participant path uses `CHAT_FALLBACK_MODEL_ID` as the base-lane fallback
+- Guest access and the zero-credit participant path use `CHAT_FALLBACK_MODEL_ID` as the base-lane fallback
   even when the chatbot allow-list excludes it. The registry must contain a
   matching `fallback: true`, `BASE` entry; invalid settings fail startup.
   If unset, a valid legacy fallback is preferred; otherwise exactly one eligible
   BASE fallback is required. Retired-only allow-lists resolve to that fallback.
   `CHAT_PRIMARY_MODEL_ID` controls automatic primary selection; the participant
   safety fallback remains BASE-only. The Manage assistant uses the same fallback.
+  Guest bootstrap exposes only that model with stored reasoning restrictions.
+  Account bootstrap retains the lecturer's model options independently of balance;
+  the server selects the safety fallback when credits are exhausted. Account
+  eligibility and BASE budget checks still apply.
 
 The chart exposes these defaults through `chat.automaticModels.primaryId`,
 `chat.automaticModels.fallbackId` and `chat.newChatbotModelPolicy` to both Chat and

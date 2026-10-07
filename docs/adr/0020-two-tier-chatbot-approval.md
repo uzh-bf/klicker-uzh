@@ -154,8 +154,10 @@ to the v3-ai workflow.
 - Base and advanced budgets are visible as separate usage lanes, while the
   teaching center's base contribution and internal settlement remain hidden.
 - Class-specific account-budget exhaustion does not disable the other class or
-  trigger a cross-class switch. Zero participant credits are the deliberate
-  exception: the effective turn uses and is metered as the configured BASE fallback. Participant
+  trigger a cross-class switch. Guest access and zero participant credits are
+  deliberate model-list exceptions: the effective turn uses and is metered as
+  the configured BASE fallback, retaining reasoning restrictions and account
+  eligibility and budget checks. Participant
   clients never receive cost-center or funding details.
 - Draft-config machinery for live bots is deliberately deferred until editing
   live bots proves painful.
