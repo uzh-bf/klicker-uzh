@@ -51,7 +51,7 @@ export async function getPracticeQuizData(
     include: {
       course: true,
       adaptiveConfig: {
-        select: { totalQuestionCap: true },
+        select: { totalQuestionCap: true, attemptSelectionPolicy: true },
       },
       stacks: {
         include: {
@@ -133,6 +133,12 @@ export async function getPracticeQuizData(
       stacks: [],
       numOfStacks: 0,
       adaptiveMaximumQuestions: quiz.adaptiveConfig?.totalQuestionCap ?? null,
+      // null when the quiz counts only the first attempt (no retakes)
+      adaptiveRetakeCooldownDays:
+        quiz.adaptiveConfig?.attemptSelectionPolicy ===
+        DB.AdaptiveAttemptSelectionPolicy.FIRST_COMPLETED
+          ? null
+          : (quiz.resetTimeDays ?? null),
     }
   }
 

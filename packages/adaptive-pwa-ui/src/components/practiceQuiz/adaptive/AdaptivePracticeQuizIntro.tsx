@@ -2,11 +2,17 @@ import {
   faArrowRotateLeft,
   faClock,
   faLock,
+  faRepeat,
   faRightToBracket,
 } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Markdown } from '@klicker-uzh/markdown'
-import { Button, H2, Modal } from '@uzh-bf/design-system'
+import {
+  PracticeQuizOverviewFact,
+  PracticeQuizOverviewFactColumn,
+  PracticeQuizOverviewFacts,
+  PracticeQuizOverviewHeader,
+  PracticeQuizStartButton,
+} from '@klicker-uzh/shared-components/src/practiceQuiz/PracticeQuizOverviewParts'
+import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
@@ -14,6 +20,9 @@ interface AdaptivePracticeQuizIntroProps {
   displayName: string
   description?: string | null
   maximumQuestions: number
+  // Days until a retake: 0 = any time, null = one attempt only,
+  // undefined = unknown (not shown).
+  retakeCooldownDays?: number | null
   hasAttempt?: boolean
   previewOnly?: boolean
   loading?: boolean
@@ -22,10 +31,13 @@ interface AdaptivePracticeQuizIntroProps {
   onRestart: () => void
 }
 
+// The adaptive start screen, built from the same overview parts as the
+// standard practice quiz so both stay visually aligned.
 function AdaptivePracticeQuizIntro({
   displayName,
   description,
   maximumQuestions,
+  retakeCooldownDays,
   hasAttempt = false,
   previewOnly = false,
   loading = false,
@@ -38,79 +50,67 @@ function AdaptivePracticeQuizIntro({
 
   return (
     <section
-      className="mx-auto w-full max-w-4xl space-y-6"
+      className="flex flex-col space-y-4"
       data-cy="adaptive-practice-quiz-intro"
     >
-      <div className="space-y-2 border-b pb-5">
-        <H2>{displayName}</H2>
-        {description ? (
-          <Markdown
-            content={description}
-            className={{ root: 'prose-p:my-2 max-w-none text-slate-700' }}
-          />
-        ) : (
-          <p className="text-slate-700">
-            {t('pwa.practiceQuiz.adaptive.intro.purpose')}
-          </p>
-        )}
-      </div>
+      <PracticeQuizOverviewHeader
+        displayName={displayName}
+        description={
+          description || t('pwa.practiceQuiz.adaptive.intro.purpose')
+        }
+      />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <IntroFact
-          icon={faClock}
-          text={t('pwa.practiceQuiz.adaptive.intro.expectedLength', {
-            maximum: maximumQuestions,
-          })}
-        />
-        <IntroFact
-          icon={faRightToBracket}
-          text={t('pwa.practiceQuiz.adaptive.intro.noBacktracking')}
-        />
-        <IntroFact
-          icon={faArrowRotateLeft}
-          text={t('pwa.practiceQuiz.adaptive.intro.resumable')}
-        />
-        <IntroFact
-          icon={faLock}
-          text={t('pwa.practiceQuiz.adaptive.intro.privacy')}
-        />
-      </div>
+      <PracticeQuizOverviewFacts>
+        <PracticeQuizOverviewFactColumn>
+          <PracticeQuizOverviewFact icon={faClock}>
+            <div>
+              {t('pwa.practiceQuiz.adaptive.intro.expectedLength', {
+                maximum: maximumQuestions,
+              })}
+            </div>
+          </PracticeQuizOverviewFact>
+          {typeof retakeCooldownDays !== 'undefined' && (
+            <PracticeQuizOverviewFact
+              icon={faRepeat}
+              cy="adaptive-practice-quiz-repetition"
+            >
+              <div>
+                {retakeCooldownDays === null
+                  ? t('pwa.practiceQuiz.adaptive.intro.singleAttempt')
+                  : retakeCooldownDays === 0
+                    ? t('pwa.practiceQuiz.adaptive.intro.repetitionAnytime')
+                    : retakeCooldownDays === 1
+                      ? t('pwa.practiceQuiz.repetitionDaily')
+                      : t('pwa.practiceQuiz.repetitionXDays', {
+                          days: retakeCooldownDays,
+                        })}
+              </div>
+            </PracticeQuizOverviewFact>
+          )}
+        </PracticeQuizOverviewFactColumn>
+        <PracticeQuizOverviewFactColumn>
+          <PracticeQuizOverviewFact icon={faRightToBracket}>
+            <div>{t('pwa.practiceQuiz.adaptive.intro.noBacktracking')}</div>
+          </PracticeQuizOverviewFact>
+          <PracticeQuizOverviewFact icon={faArrowRotateLeft}>
+            <div>{t('pwa.practiceQuiz.adaptive.intro.resumable')}</div>
+          </PracticeQuizOverviewFact>
+          <PracticeQuizOverviewFact icon={faLock}>
+            <div>{t('pwa.practiceQuiz.adaptive.intro.privacy')}</div>
+          </PracticeQuizOverviewFact>
+        </PracticeQuizOverviewFactColumn>
+      </PracticeQuizOverviewFacts>
 
       {hasAttempt && (
-        <div
-          className="border-primary-100 bg-primary-20 border-l-4 p-4"
-          data-cy="adaptive-practice-quiz-resume-info"
+        <UserNotification
+          type="info"
+          data={{ cy: 'adaptive-practice-quiz-resume-info' }}
         >
-          <div className="font-semibold">
-            {t('pwa.practiceQuiz.adaptive.actions.resume')}
-          </div>
-          <div className="mt-1 text-sm text-slate-700">
-            {t('pwa.practiceQuiz.adaptive.intro.resumable')}
-          </div>
-        </div>
+          {t('pwa.practiceQuiz.adaptive.intro.unfinishedAttempt')}
+        </UserNotification>
       )}
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <Button
-          primary
-          fluid
-          disabled={previewOnly}
-          loading={loading}
-          onClick={hasAttempt ? onResume : onStart}
-          data={{
-            cy: hasAttempt
-              ? 'resume-adaptive-practice-quiz'
-              : 'start-adaptive-practice-quiz',
-          }}
-          className={{ root: 'sm:w-auto' }}
-        >
-          <Button.Label>
-            {hasAttempt
-              ? t('pwa.practiceQuiz.adaptive.actions.resume')
-              : t('pwa.practiceQuiz.adaptive.actions.start')}
-          </Button.Label>
-        </Button>
-
+      <div className="flex flex-row items-center justify-end gap-2">
         {hasAttempt && !previewOnly && (
           <Button
             basic
@@ -124,6 +124,21 @@ function AdaptivePracticeQuizIntro({
             </Button.Label>
           </Button>
         )}
+        <PracticeQuizStartButton
+          label={
+            hasAttempt
+              ? t('pwa.practiceQuiz.adaptive.actions.resume')
+              : t('pwa.practiceQuiz.adaptive.actions.start')
+          }
+          onClick={hasAttempt ? onResume : onStart}
+          cy={
+            hasAttempt
+              ? 'resume-adaptive-practice-quiz'
+              : 'start-adaptive-practice-quiz'
+          }
+          disabled={previewOnly}
+          loading={loading}
+        />
       </div>
 
       {previewOnly && (
@@ -155,18 +170,6 @@ function AdaptivePracticeQuizIntro({
         </Modal>
       )}
     </section>
-  )
-}
-
-function IntroFact({ icon, text }: { icon: typeof faClock; text: string }) {
-  return (
-    <div className="flex min-w-0 items-start gap-3 border-t pt-3 sm:border-l sm:border-t-0 sm:pl-4">
-      <FontAwesomeIcon
-        icon={icon}
-        className="text-primary-100 mt-0.5 h-4 w-4 shrink-0"
-      />
-      <span className="text-sm leading-5 text-slate-700">{text}</span>
-    </div>
   )
 }
 
