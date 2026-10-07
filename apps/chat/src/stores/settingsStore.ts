@@ -18,10 +18,20 @@ export interface ModeOption {
 
 export type AuthMode = 'account' | 'anonymous'
 
+export type ChatModelSelection = {
+  modelId: ModelID
+  reasoningEffort: ReasoningEffort
+}
+
 const DEFAULT_REASONING_EFFORT: ReasoningEffort = 'none'
 let creditsRequestGeneration = 0
 let creditsLoadedChatbotId: string | null = null
 let modeOptionsRequestGeneration = 0
+let modeOptionsLoadedChatbotId: string | null = null
+let modelSelectionLoad: {
+  chatbotId: string
+  promise: Promise<boolean>
+} | null = null
 const SAFE_FALLBACK_MODE_OPTIONS = {
   tutor: { description: DEFAULT_MODE_DESCRIPTIONS.tutor },
 }
@@ -88,15 +98,19 @@ interface SettingsState {
   loadModeOptions: (
     chatbotId: string,
     initialModeOptions?: ChatModeOptions
-  ) => Promise<void>
-  loadCredits: (chatbotId: string) => Promise<void>
+  ) => Promise<boolean>
+  loadCredits: (chatbotId: string) => Promise<boolean>
+  ensureModelSelection: (
+    chatbotId: string,
+    initialModeOptions?: ChatModeOptions
+  ) => Promise<ChatModelSelection>
   decrementCredits: (amount: number) => void
   resetCredits: () => void
 }
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       // initial state
       selectedModel: '',
       selectedMode: 'tutor',
@@ -149,6 +163,7 @@ export const useSettingsStore = create<SettingsState>()(
         initialModeOptions?: ChatModeOptions
       ) => {
         const requestGeneration = ++modeOptionsRequestGeneration
+        modeOptionsLoadedChatbotId = null
         const hasInitialModeOptions = initialModeOptions !== undefined
         const fallbackModeOptions = hasInitialModeOptions
           ? initialModeOptions
@@ -172,14 +187,14 @@ export const useSettingsStore = create<SettingsState>()(
         try {
           const response = await authedFetch(`/api/chatbots/${chatbotId}`)
           const responseData = await response.json()
-          if (requestGeneration !== modeOptionsRequestGeneration) return
+          if (requestGeneration !== modeOptionsRequestGeneration) return false
 
           if (!response.ok) {
             console.warn(
               'No valid mode options found, falling back to initial or default mode options.'
             )
             applyFallbackModeOptions()
-            return
+            return false
           }
 
           const modelSelectionEnabled = responseData.modelSelection ?? false
@@ -190,6 +205,7 @@ export const useSettingsStore = create<SettingsState>()(
           }
 
           set((state) => {
+            modeOptionsLoadedChatbotId = chatbotId
             return {
               modeOptions: resolvedModeOptions,
               modeOptionsChatbotId: chatbotId,
@@ -200,11 +216,13 @@ export const useSettingsStore = create<SettingsState>()(
               ),
             }
           })
+          return true
         } catch (error) {
           console.error('Error fetching mode options:', error)
-          if (requestGeneration !== modeOptionsRequestGeneration) return
+          if (requestGeneration !== modeOptionsRequestGeneration) return false
 
           applyFallbackModeOptions()
+          return false
         }
       },
 
@@ -227,11 +245,11 @@ export const useSettingsStore = create<SettingsState>()(
           const response = await authedFetch(
             `/api/chatbots/${chatbotId}/credits`
           )
-          if (requestGeneration !== creditsRequestGeneration) return
+          if (requestGeneration !== creditsRequestGeneration) return false
 
           if (!response.ok) {
             console.error('Failed to load credits:', response.statusText)
-            return
+            return false
           }
 
           const data = await response.json()
@@ -281,8 +299,65 @@ export const useSettingsStore = create<SettingsState>()(
               authMode,
             }
           })
+          return requestGeneration === creditsRequestGeneration
         } catch (error) {
           console.error('Error loading credits:', error)
+          return false
+        }
+      },
+
+      ensureModelSelection: async (chatbotId, initialModeOptions) => {
+        const hasCurrentSelection = () => {
+          const state = get()
+          return (
+            state.modeOptionsChatbotId === chatbotId &&
+            modeOptionsLoadedChatbotId === chatbotId &&
+            creditsLoadedChatbotId === chatbotId &&
+            state.creditsLoaded &&
+            state.modelOptions.some((model) => model.id === state.selectedModel)
+          )
+        }
+
+        if (!hasCurrentSelection()) {
+          if (modelSelectionLoad?.chatbotId !== chatbotId) {
+            if (creditsLoadedChatbotId !== chatbotId) {
+              set({ creditsLoaded: false })
+            }
+            // Keep a known balance visible, but qualify sending only after
+            // this required mode-and-credits bootstrap succeeds.
+            creditsLoadedChatbotId = null
+            const promise = (async () => {
+              if (modeOptionsLoadedChatbotId !== chatbotId) {
+                const loaded = await get().loadModeOptions(
+                  chatbotId,
+                  initialModeOptions
+                )
+                if (!loaded) return false
+              }
+              if (get().modeOptionsChatbotId === chatbotId) {
+                return get().loadCredits(chatbotId)
+              }
+              return false
+            })()
+            modelSelectionLoad = { chatbotId, promise }
+          }
+          const load = modelSelectionLoad
+          try {
+            if (!(await load.promise)) {
+              throw new Error('Chat model selection could not be loaded')
+            }
+          } finally {
+            if (modelSelectionLoad === load) modelSelectionLoad = null
+          }
+        }
+
+        if (!hasCurrentSelection()) {
+          throw new Error('Chat model selection could not be loaded')
+        }
+        const state = get()
+        return {
+          modelId: state.selectedModel,
+          reasoningEffort: state.selectedReasoningEffort,
         }
       },
 
