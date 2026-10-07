@@ -9,6 +9,9 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 
 type FeatureKind = 'live' | 'practice' | 'chat'
@@ -18,66 +21,39 @@ type DocsView = 'guide' | 'progress'
 export type StudentDocsPrototypeProps = {
   gamificationEnabled: boolean
   learningAnalyticsEnabled: boolean
-  chatbot?: { name: string; href: string }
   previewChatbot?: boolean
+  preview?: boolean
+  chatbots?: Array<{
+    id: string
+    name: string
+    href: string
+    embeddedHref: string
+  }>
 }
 
-const modeExamples: Record<
-  Mode,
-  { label: string; prompt: string; response: string }
-> = {
-  tutor: {
-    label: 'Tutor',
-    prompt:
-      'I think opportunity cost is the price I pay. Can you give me a hint?',
-    response:
-      'Imagine you spend a free hour studying instead of working. What have you given up?',
-  },
-  explainer: {
-    label: 'Explainer',
-    prompt: 'Explain opportunity cost using an example with my time.',
-    response:
-      'Opportunity cost is the value of the next-best alternative you give up. An hour spent studying cannot also be spent working.',
-  },
-  quizzer: {
-    label: 'Quizzer',
-    prompt: 'Ask me a question to check my understanding of opportunity cost.',
-    response:
-      'You spend an hour studying instead of earning CHF 25 at work. What is the opportunity cost of that hour?',
-  },
-}
+const chatbotModes: Mode[] = ['tutor', 'explainer', 'quizzer']
 
-const featureCards: {
-  href: string
-  kind: FeatureKind
-  title: string
-  description: string
-  linkLabel: string
-}[] = [
-  {
-    href: '#live-quizzes',
-    kind: 'live',
-    title: 'Participate in class',
-    description: 'Answer live questions and discuss the results.',
-    linkLabel: 'About live quizzes',
-  },
-  {
-    href: '#practice',
-    kind: 'practice',
-    title: 'Practise between sessions',
-    description: 'Use quizzes and flashcards to check what you know.',
-    linkLabel: 'About practice activities',
-  },
-  {
-    href: '#ai-tutor',
-    kind: 'chat',
-    title: 'Work through questions',
-    description: 'Ask the AI tutor for hints, explanations, or practice.',
-    linkLabel: 'About the AI tutor',
-  },
+const progressSectionIds = ['gamification', 'learning-analytics']
+
+const analyticsDayKeys = [
+  ['mon', 'h-8'],
+  ['tue', 'h-14'],
+  ['wed', 'h-10'],
+  ['thu', 'h-20'],
+  ['fri', 'h-12'],
+  ['sat', 'h-6'],
+  ['sun', 'h-16'],
+] as const
+
+const featureCards: Array<{ href: string; kind: FeatureKind }> = [
+  { href: '#live-quizzes', kind: 'live' },
+  { href: '#practice', kind: 'practice' },
+  { href: '#ai-tutor', kind: 'chat' },
 ]
 
 function FeatureIllustration({ kind }: { kind: FeatureKind }) {
+  const t = useTranslations()
+
   if (kind === 'live') {
     return (
       <div className="flex h-20 w-full items-center justify-center gap-2">
@@ -114,10 +90,10 @@ function FeatureIllustration({ kind }: { kind: FeatureKind }) {
   return (
     <div className="flex h-20 w-full flex-col justify-center gap-2 px-4">
       <span className="ml-7 block max-w-36 rounded-lg border border-primary-20 bg-primary-20 px-2.5 py-1.5 text-left text-[11px] text-slate-800">
-        A hint?
+        {t('pwa.studentGuide.featureIllustration.hint')}
       </span>
       <span className="block max-w-40 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-left text-[11px] text-slate-700">
-        What have you tried?
+        {t('pwa.studentGuide.featureIllustration.reply')}
       </span>
     </div>
   )
@@ -244,8 +220,13 @@ function ViewNavigation({
   onChange: (view: DocsView) => void
   progressAvailable: boolean
 }) {
+  const t = useTranslations()
+
   return (
-    <nav className="flex flex-wrap gap-2" aria-label="Documentation views">
+    <nav
+      className="flex flex-wrap gap-2"
+      aria-label={t('pwa.studentGuide.viewsAriaLabel')}
+    >
       <Button
         type="button"
         active={activeView === 'guide'}
@@ -254,7 +235,7 @@ function ViewNavigation({
         onClick={() => onChange('guide')}
         className={{ root: 'min-h-11 rounded-lg' }}
       >
-        Student guide
+        {t('pwa.studentGuide.guideViewLabel')}
       </Button>
       {progressAvailable && (
         <Button
@@ -265,7 +246,7 @@ function ViewNavigation({
           onClick={() => onChange('progress')}
           className={{ root: 'min-h-11 rounded-lg' }}
         >
-          Progress &amp; data
+          {t('pwa.studentGuide.progressViewLabel')}
         </Button>
       )}
     </nav>
@@ -275,53 +256,200 @@ function ViewNavigation({
 export default function StudentDocsPrototype({
   gamificationEnabled,
   learningAnalyticsEnabled,
-  chatbot,
   previewChatbot = false,
+  preview = false,
+  chatbots = [],
 }: StudentDocsPrototypeProps) {
+  const t = useTranslations()
+  const router = useRouter()
   const [isAnswerRevealed, setIsAnswerRevealed] = useState(false)
   const [selectedMode, setSelectedMode] = useState<Mode>('tutor')
+  const [selectedChatbotId, setSelectedChatbotId] = useState<string>()
   const [isChatbotOpen, setIsChatbotOpen] = useState(false)
   const [activeView, setActiveView] = useState<DocsView>('guide')
   const viewHeadingRef = useRef<HTMLHeadingElement>(null)
   const prototypeRef = useRef<HTMLElement>(null)
   const previousViewRef = useRef<DocsView>('guide')
-  const selectedExample = modeExamples[selectedMode]
-  const chatbotEnabled = chatbot !== undefined || previewChatbot
+  const initialViewResolvedRef = useRef(false)
+  const progressDeepLinkHashRef = useRef<string | null>(null)
+  const chatbotEnabled = chatbots.length > 0 || previewChatbot
   const progressAvailable = gamificationEnabled || learningAnalyticsEnabled
+  const selectedChatbot =
+    chatbots.find((chatbot) => chatbot.id === selectedChatbotId) ?? chatbots[0]
+  const chatbotIds = chatbots.map((chatbot) => chatbot.id).join('|')
+  const courseContext =
+    typeof router.query.courseId === 'string' ? router.query.courseId : ''
+  const modeExamples: Record<
+    Mode,
+    { label: string; prompt: string; response: string }
+  > = {
+    tutor: {
+      label: t('pwa.studentGuide.chatbot.modes.tutor'),
+      prompt: t('pwa.studentGuide.chatbot.examples.tutor.prompt'),
+      response: t('pwa.studentGuide.chatbot.examples.tutor.response'),
+    },
+    explainer: {
+      label: t('pwa.studentGuide.chatbot.modes.explainer'),
+      prompt: t('pwa.studentGuide.chatbot.examples.explainer.prompt'),
+      response: t('pwa.studentGuide.chatbot.examples.explainer.response'),
+    },
+    quizzer: {
+      label: t('pwa.studentGuide.chatbot.modes.quizzer'),
+      prompt: t('pwa.studentGuide.chatbot.examples.quizzer.prompt'),
+      response: t('pwa.studentGuide.chatbot.examples.quizzer.response'),
+    },
+  }
+  const selectedExample = modeExamples[selectedMode]
+  const featureCardLabels: Record<
+    FeatureKind,
+    { title: string; description: string; linkLabel: string }
+  > = {
+    live: {
+      title: t('pwa.studentGuide.features.live.title'),
+      description: t('pwa.studentGuide.features.live.description'),
+      linkLabel: t('pwa.studentGuide.features.live.linkLabel'),
+    },
+    practice: {
+      title: t('pwa.studentGuide.features.practice.title'),
+      description: t('pwa.studentGuide.features.practice.description'),
+      linkLabel: t('pwa.studentGuide.features.practice.linkLabel'),
+    },
+    chat: {
+      title: t('pwa.studentGuide.features.chat.title'),
+      description: t('pwa.studentGuide.features.chat.description'),
+      linkLabel: t('pwa.studentGuide.features.chat.linkLabel'),
+    },
+  }
   const progressTopics = [
-    ...(gamificationEnabled ? ['course points and global XP'] : []),
-    ...(learningAnalyticsEnabled ? ['Learning Analytics'] : []),
-    'privacy and support',
+    ...(gamificationEnabled
+      ? [t('pwa.studentGuide.progressTopics.gamification')]
+      : []),
+    ...(learningAnalyticsEnabled
+      ? [t('pwa.studentGuide.progressTopics.analytics')]
+      : []),
+    t('pwa.studentGuide.progressTopics.privacyHelp'),
   ].join(', ')
+  const progressIntro = t('pwa.studentGuide.heroProgressIntro', {
+    topics: progressTopics,
+  })
+  const selectedChatbotIframeTitle = selectedChatbot
+    ? t('pwa.studentGuide.chatbot.iframeTitle', { name: selectedChatbot.name })
+    : ''
+  const selectedChatbotLinkLabel = selectedChatbot
+    ? t('pwa.studentGuide.chatbot.openInNewTab', { name: selectedChatbot.name })
+    : ''
+  const chatbotIllustrationAriaLabel = t(
+    'pwa.studentGuide.chatbot.illustrationAriaLabel'
+  )
+  const exampleResponseLabel = t(
+    'pwa.studentGuide.chatbot.exampleResponseLabel',
+    { mode: selectedExample.label }
+  )
+  const leaderboardYou = t('pwa.studentGuide.progress.leaderboardYou')
+  const pointsLabel = (points: number) =>
+    t('pwa.studentGuide.progress.pointsValue', { points })
+  const rankedName = (rank: number, name: string) =>
+    t('pwa.studentGuide.progress.leaderboardRow', { rank, name })
+  const analyticsDayLabels: Record<string, string> = {
+    mon: t('pwa.studentGuide.analytics.dayMon'),
+    tue: t('pwa.studentGuide.analytics.dayTue'),
+    wed: t('pwa.studentGuide.analytics.dayWed'),
+    thu: t('pwa.studentGuide.analytics.dayThu'),
+    fri: t('pwa.studentGuide.analytics.dayFri'),
+    sat: t('pwa.studentGuide.analytics.daySat'),
+    sun: t('pwa.studentGuide.analytics.daySun'),
+  }
   const visibleFeatureCards = featureCards.filter((feature) => {
     if (feature.kind === 'chat') return chatbotEnabled
     return true
   })
   const guideNavItems: Array<[string, string, string]> = [
-    ['#get-started', 'Get started', 'get-started'],
-    ['#live-quizzes', 'In class', 'live-quizzes'],
-    ['#practice', 'Practise', 'practice'],
-    ['#common-questions-title', 'FAQs', 'common-questions'],
+    ['#get-started', t('pwa.studentGuide.nav.getStarted'), 'get-started'],
+    ['#live-quizzes', t('pwa.studentGuide.nav.liveQuizzes'), 'live-quizzes'],
+    ['#practice', t('pwa.studentGuide.nav.practice'), 'practice'],
   ]
-  if (!progressAvailable) {
-    guideNavItems.push(['#progress-help', 'Privacy & help', 'progress-help'])
-  }
   if (chatbotEnabled) {
-    guideNavItems.splice(3, 0, ['#ai-tutor', 'AI tutor', 'ai-tutor'])
+    guideNavItems.push([
+      '#ai-tutor',
+      t('pwa.studentGuide.nav.aiTutor'),
+      'ai-tutor',
+    ])
   }
+  guideNavItems.push([
+    '#progress-help',
+    t('pwa.studentGuide.nav.privacyHelp'),
+    'progress-help',
+  ])
+  guideNavItems.push([
+    '#common-questions-title',
+    t('pwa.studentGuide.nav.faqs'),
+    'common-questions',
+  ])
   const progressNavItems: Array<[string, string, string]> = [
-    ['#progress-help', 'Privacy & help', 'progress-help'],
+    ['#progress-help', t('pwa.studentGuide.nav.privacyHelp'), 'progress-help'],
   ]
   if (learningAnalyticsEnabled) {
     progressNavItems.unshift([
       '#learning-analytics',
-      'Learning analytics',
+      t('pwa.studentGuide.nav.learningAnalytics'),
       'learning-analytics',
     ])
   }
   if (gamificationEnabled) {
-    progressNavItems.unshift(['#gamification', 'Points & XP', 'gamification'])
+    progressNavItems.unshift([
+      '#gamification',
+      t('pwa.studentGuide.nav.gamification'),
+      'gamification',
+    ])
   }
+
+  // A changed course or chatbot list invalidates the selected and mounted bot
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Changed course and chatbot identities invalidate the open conversation.
+  useEffect(() => {
+    setSelectedChatbotId(undefined)
+    setIsChatbotOpen(false)
+  }, [chatbotIds, courseContext])
+
+  // Only after mount, capture a progress deep link without reading the URL
+  // during server rendering. A course capability may still be loading, so the
+  // captured hash is applied below once a progress view becomes available.
+  useEffect(() => {
+    if (!router.isReady || initialViewResolvedRef.current) return
+
+    initialViewResolvedRef.current = true
+    const hash = window.location.hash.replace(/^#/, '')
+    if (progressSectionIds.includes(hash)) {
+      progressDeepLinkHashRef.current = hash
+    }
+  }, [router.isReady])
+
+  // Reveal a captured progress deep link as soon as progress is available,
+  // and keep the view in sync with ?view=progress
+  useEffect(() => {
+    if (!router.isReady || !initialViewResolvedRef.current) return
+
+    const deepLinkHash = progressDeepLinkHashRef.current
+    if (deepLinkHash !== null && progressAvailable) {
+      progressDeepLinkHashRef.current = null
+      setActiveView('progress')
+      router.replace(
+        {
+          pathname: router.pathname,
+          query: { ...router.query, view: 'progress' },
+          hash: `#${deepLinkHash}`,
+        },
+        undefined,
+        { shallow: true }
+      )
+      return
+    }
+
+    const urlView: DocsView =
+      router.query.view === 'progress' && progressAvailable
+        ? 'progress'
+        : 'guide'
+    setActiveView((view) => (view === urlView ? view : urlView))
+  }, [progressAvailable, router, router.isReady])
 
   useEffect(() => {
     if (!progressAvailable && activeView === 'progress') {
@@ -346,6 +474,15 @@ export default function StudentDocsPrototype({
   const handleViewChange = (view: DocsView) => {
     if (view === 'progress' && !progressAvailable) return
     setActiveView(view)
+    const query = { ...router.query }
+    if (view === 'progress') {
+      query.view = 'progress'
+    } else {
+      delete query.view
+    }
+    router.push({ pathname: router.pathname, query }, undefined, {
+      shallow: true,
+    })
   }
 
   return (
@@ -363,7 +500,9 @@ export default function StudentDocsPrototype({
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div>
             <div className="mb-3 text-sm font-semibold text-slate-500">
-              {currentView === 'guide' ? 'Student guide' : 'Progress & data'}
+              {currentView === 'guide'
+                ? t('pwa.studentGuide.guideViewLabel')
+                : t('pwa.studentGuide.progressViewLabel')}
             </div>
             {currentView === 'guide' ? (
               <>
@@ -373,16 +512,15 @@ export default function StudentDocsPrototype({
                   tabIndex={-1}
                   className="max-w-[44ch] text-balance text-2xl font-bold leading-tight tracking-tight text-slate-800"
                 >
-                  KlickerUZH in your course
+                  {t('pwa.studentGuide.heroGuideTitle')}
                 </h1>
                 <p className="mt-3 max-w-[44ch] text-base leading-7 text-slate-600">
-                  Participate in class and practise course material
                   {chatbotEnabled
-                    ? ', then work through questions with AI support.'
-                    : '.'}
+                    ? t('pwa.studentGuide.heroGuideIntroChatbot')
+                    : t('pwa.studentGuide.heroGuideIntro')}
                 </p>
                 <p className="mt-3 max-w-[44ch] text-sm leading-6 text-slate-500">
-                  Available activities and tools depend on your course.
+                  {t('pwa.studentGuide.heroGuideAvailability')}
                 </p>
               </>
             ) : (
@@ -393,10 +531,10 @@ export default function StudentDocsPrototype({
                   tabIndex={-1}
                   className="max-w-[44ch] text-balance text-2xl font-bold leading-tight tracking-tight text-slate-800"
                 >
-                  Understand progress and data
+                  {t('pwa.studentGuide.heroProgressTitle')}
                 </h1>
                 <p className="mt-3 max-w-[44ch] text-base leading-7 text-slate-600">
-                  Learn about {progressTopics}.
+                  {progressIntro}
                 </p>
               </>
             )}
@@ -409,39 +547,42 @@ export default function StudentDocsPrototype({
         </div>
 
         {currentView === 'guide' ? (
-          <>
-            <div className="mt-8 grid gap-3 md:grid-cols-3">
-              {visibleFeatureCards.map((feature) => (
-                <a
-                  key={feature.href}
-                  href={feature.href}
-                  data-cy={`docs-prototype-feature-${feature.kind}`}
-                  className="group min-w-0 rounded-lg border border-slate-200 bg-slate-50 p-3 transition-colors hover:border-primary-60 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-100 focus-visible:ring-offset-2"
-                >
-                  <div className="flex items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white text-slate-800">
-                    <FeatureIllustration kind={feature.kind} />
-                  </div>
-                  <h2 className="mt-3 text-base font-bold tracking-tight text-slate-800">
-                    {feature.title}
-                  </h2>
-                  <p className="mt-1 text-sm leading-6 text-slate-600">
-                    {feature.description}
-                  </p>
-                  <span className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-primary-100 group-hover:text-primary-100">
-                    {feature.linkLabel}
-                    <FontAwesomeIcon icon={faArrowDown} aria-hidden="true" />
-                  </span>
-                </a>
-              ))}
+          <div className="mt-8 flex flex-col gap-3 md:block">
+            <div className="order-2 grid gap-3 md:grid-cols-3">
+              {visibleFeatureCards.map((feature) => {
+                const labels = featureCardLabels[feature.kind]
+
+                return (
+                  <a
+                    key={feature.href}
+                    href={feature.href}
+                    data-cy={`docs-prototype-feature-${feature.kind}`}
+                    className="group min-w-0 rounded-lg border border-slate-200 bg-slate-50 p-3 transition-colors hover:border-primary-60 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-100 focus-visible:ring-offset-2"
+                  >
+                    <div className="flex items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white text-slate-800">
+                      <FeatureIllustration kind={feature.kind} />
+                    </div>
+                    <h2 className="mt-3 text-base font-bold tracking-tight text-slate-800">
+                      {labels.title}
+                    </h2>
+                    <p className="mt-1 text-sm leading-6 text-slate-600">
+                      {labels.description}
+                    </p>
+                    <span className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-primary-100 group-hover:text-primary-100">
+                      {labels.linkLabel}
+                      <FontAwesomeIcon icon={faArrowDown} aria-hidden="true" />
+                    </span>
+                  </a>
+                )
+              })}
             </div>
-            <div className="mt-6 flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="order-1 flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between md:mt-6">
               <div>
                 <strong className="font-semibold text-slate-800">
-                  Set up access
+                  {t('pwa.studentGuide.setup.title')}
                 </strong>
                 <p className="mt-1 text-sm leading-6 text-slate-600">
-                  Open your course link, sign in, and install the app only if
-                  you want it on your phone.
+                  {t('pwa.studentGuide.setup.description')}
                 </p>
               </div>
               <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold">
@@ -450,7 +591,7 @@ export default function StudentDocsPrototype({
                   data-cy="docs-prototype-first-visit"
                   className="inline-flex min-h-11 items-center gap-1.5 text-slate-700 underline decoration-slate-300 underline-offset-4 hover:decoration-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-100"
                 >
-                  First visit? Account setup
+                  {t('pwa.studentGuide.setup.firstVisit')}
                   <FontAwesomeIcon icon={faArrowDown} aria-hidden="true" />
                 </a>
                 <a
@@ -460,7 +601,7 @@ export default function StudentDocsPrototype({
                   data-cy="docs-prototype-android-app"
                   className="inline-flex min-h-11 items-center gap-1.5 text-slate-700 underline decoration-slate-300 underline-offset-4 hover:decoration-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-100"
                 >
-                  Android app
+                  {t('pwa.studentGuide.setup.android')}
                   <FontAwesomeIcon
                     icon={faArrowUpRightFromSquare}
                     aria-hidden="true"
@@ -473,7 +614,7 @@ export default function StudentDocsPrototype({
                   data-cy="docs-prototype-iphone-guide"
                   className="inline-flex min-h-11 items-center gap-1.5 text-slate-700 underline decoration-slate-300 underline-offset-4 hover:decoration-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-100"
                 >
-                  iPhone setup
+                  {t('pwa.studentGuide.setup.iphone')}
                   <FontAwesomeIcon
                     icon={faArrowUpRightFromSquare}
                     aria-hidden="true"
@@ -481,12 +622,11 @@ export default function StudentDocsPrototype({
                 </a>
               </div>
             </div>
-          </>
+          </div>
         ) : (
           <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
             <p className="text-sm leading-6 text-slate-600">
-              Available sections reflect this course and account’s enabled
-              capabilities.
+              {t('pwa.studentGuide.progressSetup.description')}
             </p>
             <Button
               type="button"
@@ -495,7 +635,7 @@ export default function StudentDocsPrototype({
               className={{ root: 'min-h-11 rounded-lg' }}
             >
               <FontAwesomeIcon icon={faArrowLeft} aria-hidden="true" />
-              <span>Back to student guide</span>
+              <span>{t('pwa.studentGuide.progressSetup.backToGuide')}</span>
             </Button>
           </div>
         )}
@@ -504,7 +644,9 @@ export default function StudentDocsPrototype({
       <SectionNavigation
         items={currentView === 'guide' ? guideNavItems : progressNavItems}
         label={
-          currentView === 'guide' ? 'In this guide' : 'In progress and data'
+          currentView === 'guide'
+            ? t('pwa.studentGuide.inGuideAriaLabel')
+            : t('pwa.studentGuide.inProgressAriaLabel')
         }
       />
       <div
@@ -516,46 +658,51 @@ export default function StudentDocsPrototype({
           className="scroll-mt-20 border-b border-slate-200 py-10"
         >
           <GuideSectionHeading
-            label="Get started"
-            title="Course access and accounts"
+            label={t('pwa.studentGuide.getStarted.label')}
+            title={t('pwa.studentGuide.getStarted.title')}
           />
           <div className="space-y-6">
             <div className="grid gap-4 text-base leading-7 text-slate-600 sm:grid-cols-2">
+              <p>{t('pwa.studentGuide.getStarted.access')}</p>
               <p>
-                Open the course link shared by your teaching team or learning
-                platform, then sign in or follow the registration steps. You may
-                need a course PIN.
-              </p>
-              <p>
-                An account is needed for personal bookmarks and repetition
-                {chatbotEnabled ? ', and for course chatbots.' : '.'} Some
-                activities allow guest participation. Use KlickerUZH in your
-                browser; phone installation is optional.
+                {chatbotEnabled
+                  ? t('pwa.studentGuide.getStarted.accountChatbot')
+                  : t('pwa.studentGuide.getStarted.account')}{' '}
+                {t('pwa.studentGuide.getStarted.guestNote')}
               </p>
             </div>
             <TutorialLink slug="student_accounts">
-              Account and sign-in guide
+              {t('pwa.studentGuide.getStarted.tutorialLink')}
             </TutorialLink>
 
             <figure className="rounded-lg bg-slate-50 p-4 sm:p-5">
               <div className="mb-3 text-xs font-semibold text-slate-600">
-                Your first visit
+                {t('pwa.studentGuide.getStarted.firstVisit')}
               </div>
               <ol className="m-0 grid list-none gap-3 p-0 md:grid-cols-3">
-                <Step number="1" title="Open your course">
-                  Use the course link or learning platform provided to you.
+                <Step
+                  number="1"
+                  title={t('pwa.studentGuide.getStarted.stepOpenTitle')}
+                >
+                  {t('pwa.studentGuide.getStarted.stepOpenBody')}
                 </Step>
-                <Step number="2" title="Sign in when prompted">
-                  Use an existing account or follow the registration steps.
+                <Step
+                  number="2"
+                  title={t('pwa.studentGuide.getStarted.stepSignInTitle')}
+                >
+                  {t('pwa.studentGuide.getStarted.stepSignInBody')}
                 </Step>
-                <Step number="3" title="Choose an activity">
-                  Open a live quiz or practice material
-                  {chatbotEnabled ? ', or the AI tutor' : ''} when available.
+                <Step
+                  number="3"
+                  title={t('pwa.studentGuide.getStarted.stepChooseTitle')}
+                >
+                  {chatbotEnabled
+                    ? t('pwa.studentGuide.getStarted.stepChooseBodyChatbot')
+                    : t('pwa.studentGuide.getStarted.stepChooseBody')}
                 </Step>
               </ol>
               <figcaption className="mt-4 text-xs leading-5 text-slate-500">
-                Your teaching team provides the course link and any required
-                PIN.
+                {t('pwa.studentGuide.getStarted.firstVisitCaption')}
               </figcaption>
             </figure>
           </div>
@@ -566,70 +713,73 @@ export default function StudentDocsPrototype({
           className="scroll-mt-20 border-b border-slate-200 py-10"
         >
           <GuideSectionHeading
-            label="In class"
-            title="Live quizzes and feedback"
+            label={t('pwa.studentGuide.live.label')}
+            title={t('pwa.studentGuide.live.title')}
           />
           <div className="grid gap-6 lg:grid-cols-[1fr_0.94fr] lg:items-start lg:gap-10">
             <ul className="m-0 list-none space-y-4 p-0 text-base leading-7 text-slate-600">
               <li>
-                <strong className="text-slate-800">Live quizzes.</strong> Open
-                the session shared by your lecturer and submit your answer while
-                the question is open. Anonymous answers may be available.
+                <strong className="text-slate-800">
+                  {t('pwa.studentGuide.live.quizTitle')}
+                </strong>{' '}
+                {t('pwa.studentGuide.live.quizBody')}
               </li>
               <li>
                 <strong className="text-slate-800">
-                  Questions and feedback.
+                  {t('pwa.studentGuide.live.feedbackTitle')}
                 </strong>{' '}
-                Use live Q&amp;A or rate pace and difficulty when those features
-                are enabled.
+                {t('pwa.studentGuide.live.feedbackBody')}
               </li>
               <li>
                 <strong className="text-slate-800">
-                  Follow the activity rules.
+                  {t('pwa.studentGuide.live.rulesTitle')}
                 </strong>{' '}
-                Your teaching team decides the timing, attempts, and available
-                feedback for each activity.
+                {t('pwa.studentGuide.live.rulesBody')}
               </li>
               <li>
-                <TutorialLink slug="live_quiz">Live quiz guide</TutorialLink>
+                <TutorialLink slug="live_quiz">
+                  {t('pwa.studentGuide.live.tutorialLink')}
+                </TutorialLink>
               </li>
             </ul>
 
             <figure className="rounded-lg bg-slate-50 p-4 sm:p-5">
               <div className="mb-3 text-xs font-semibold text-slate-600">
-                Illustrative live quiz
+                {t('pwa.studentGuide.live.illustrationLabel')}
               </div>
               <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
                 <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-3.5 py-2.5 text-xs text-slate-500">
-                  <strong className="text-slate-800">Live quiz</strong>
-                  <span>Question open</span>
+                  <strong className="text-slate-800">
+                    {t('pwa.studentGuide.live.mock.header')}
+                  </strong>
+                  <span>{t('pwa.studentGuide.live.mock.status')}</span>
                 </div>
                 <div className="p-4">
                   <h3 className="text-base font-bold text-slate-800">
-                    What is opportunity cost?
+                    {t('pwa.studentGuide.live.mock.question')}
                   </h3>
                   <div className="mt-3 space-y-2 text-sm">
                     <div className="rounded-md border border-slate-200 px-3 py-2.5 text-slate-600">
-                      The money already spent on a choice
+                      {t('pwa.studentGuide.live.mock.optionSpent')}
                     </div>
                     <div className="rounded-md border border-primary-100 bg-slate-50 px-3 py-2.5 text-slate-800">
                       <span aria-hidden="true">◉ </span>
-                      The value of the next-best alternative forgone
+                      {t('pwa.studentGuide.live.mock.optionBest')}
                     </div>
                     <div className="rounded-md border border-slate-200 px-3 py-2.5 text-slate-600">
-                      The sum of all available alternatives
+                      {t('pwa.studentGuide.live.mock.optionAll')}
                     </div>
                   </div>
                   <div className="mt-4 border-t border-slate-200 pt-3 text-sm text-slate-500">
                     <strong className="text-slate-700">
-                      Something unclear?
+                      {t('pwa.studentGuide.live.mock.unclear')}
                     </strong>{' '}
-                    Ask in Q&amp;A: “Could you show another example?”
+                    {t('pwa.studentGuide.live.mock.askQa')}
                   </div>
                 </div>
               </div>
               <figcaption className="mt-3 text-xs leading-5 text-slate-500">
-                An example of answering a question and asking for clarification.
+                {t('pwa.studentGuide.live.illustrationCaption')}
               </figcaption>
             </figure>
           </div>
@@ -640,60 +790,86 @@ export default function StudentDocsPrototype({
           className="scroll-mt-20 border-b border-slate-200 py-10"
         >
           <GuideSectionHeading
-            label="Independent practice"
-            title="Practice quizzes and repetition"
+            label={t('pwa.studentGuide.practice.label')}
+            title={t('pwa.studentGuide.practice.title')}
           />
           <div className="grid gap-6 lg:grid-cols-[1fr_0.94fr] lg:items-start lg:gap-10">
             <ul className="m-0 list-none space-y-4 p-0 text-base leading-7 text-slate-600">
               <li>
-                <strong className="text-slate-800">Practice quizzes.</strong>{' '}
-                Answer course questions, read the feedback, and repeat available
-                quizzes. Points depend on the activity rules.
+                <strong className="text-slate-800">
+                  {t('pwa.studentGuide.practice.quizTitle')}
+                </strong>{' '}
+                {t('pwa.studentGuide.practice.quizBody')}
               </li>
               <li>
-                <strong className="text-slate-800">Flashcards.</strong> Recall
-                an answer, reveal it, then assess how well you knew it.
+                <strong className="text-slate-800">
+                  {t('pwa.studentGuide.practice.flashcardsTitle')}
+                </strong>{' '}
+                {t('pwa.studentGuide.practice.flashcardsBody')}
               </li>
               <li>
-                <strong className="text-slate-800">Bookmarks.</strong> Logged-in
-                participants can save questions for a private study pool.
+                <strong className="text-slate-800">
+                  {t('pwa.studentGuide.practice.coursePoolTitle')}
+                </strong>{' '}
+                {t('pwa.studentGuide.practice.coursePoolBody')}
               </li>
               <li>
-                <strong className="text-slate-800">Microlearnings.</strong>{' '}
-                Complete short activities within their availability window. Each
-                is intended for one attempt.
+                <strong className="text-slate-800">
+                  {t('pwa.studentGuide.practice.bookmarksTitle')}
+                </strong>{' '}
+                {t('pwa.studentGuide.practice.bookmarksBody')}
               </li>
               <li>
-                <strong className="text-slate-800">Group activities.</strong>{' '}
-                Work through tasks with your group when your course offers them.
+                <strong className="text-slate-800">
+                  {t('pwa.studentGuide.practice.microlearningTitle')}
+                </strong>{' '}
+                {t('pwa.studentGuide.practice.microlearningBody')}
+              </li>
+              <li>
+                <strong className="text-slate-800">
+                  {t('pwa.studentGuide.practice.groupTitle')}
+                </strong>{' '}
+                {t('pwa.studentGuide.practice.groupBody')}
+              </li>
+              <li>
+                <strong className="text-slate-800">
+                  {t('pwa.studentGuide.practice.flagTitle')}
+                </strong>{' '}
+                {t('pwa.studentGuide.practice.flagBody')}
               </li>
               <li className="flex flex-wrap gap-x-5 gap-y-2">
-                <TutorialLink slug="practice_quiz">Practice guide</TutorialLink>
-                <TutorialLink slug="microlearning">Microlearnings</TutorialLink>
+                <TutorialLink slug="practice_quiz">
+                  {t('pwa.studentGuide.practice.tutorialPractice')}
+                </TutorialLink>
+                <TutorialLink slug="microlearning">
+                  {t('pwa.studentGuide.practice.tutorialMicrolearning')}
+                </TutorialLink>
                 <TutorialLink slug="groups_activities">
-                  Group activities
+                  {t('pwa.studentGuide.practice.tutorialGroups')}
                 </TutorialLink>
               </li>
             </ul>
 
             <figure className="rounded-lg bg-slate-50 p-4 sm:p-5">
               <div className="mb-3 text-xs font-semibold text-slate-600">
-                Try the example
+                {t('pwa.studentGuide.practice.illustrationLabel')}
               </div>
               <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
                 <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-3.5 py-2.5 text-xs text-slate-500">
-                  <strong className="text-slate-800">Flashcard</strong>
+                  <strong className="text-slate-800">
+                    {t('pwa.studentGuide.practice.flashcardLabel')}
+                  </strong>
                   <span className="rounded bg-slate-100 px-2 py-1">
-                    Illustration
+                    {t('pwa.studentGuide.practice.flashcardTag')}
                   </span>
                 </div>
                 <div className="p-4">
                   <div className="flex min-h-32 flex-col justify-center gap-2">
                     <span className="text-sm text-slate-500">
-                      Think of an answer before revealing it.
+                      {t('pwa.studentGuide.practice.flashcardHint')}
                     </span>
                     <h3 className="text-base font-bold text-slate-800">
-                      What does opportunity cost mean?
+                      {t('pwa.studentGuide.practice.flashcardQuestion')}
                     </h3>
                     <div
                       id="flashcard-answer"
@@ -701,13 +877,9 @@ export default function StudentDocsPrototype({
                       hidden={!isAnswerRevealed}
                       className="border-t border-slate-200 pt-3 text-sm leading-6 text-slate-600"
                     >
-                      <p>
-                        The value of the next-best alternative you give up when
-                        making a choice.
-                      </p>
+                      <p>{t('pwa.studentGuide.practice.flashcardAnswer')}</p>
                       <p className="mt-2 text-slate-500">
-                        For example, an hour spent studying cannot also be spent
-                        working.
+                        {t('pwa.studentGuide.practice.flashcardExample')}
                       </p>
                     </div>
                   </div>
@@ -720,12 +892,14 @@ export default function StudentDocsPrototype({
                     primary
                     className={{ root: 'mt-4 min-h-11' }}
                   >
-                    {isAnswerRevealed ? 'Hide answer' : 'Reveal answer'}
+                    {isAnswerRevealed
+                      ? t('pwa.studentGuide.practice.hideAnswer')
+                      : t('pwa.studentGuide.practice.revealAnswer')}
                   </Button>
                 </div>
               </div>
               <figcaption className="mt-3 text-xs leading-5 text-slate-500">
-                Reveal the answer after making your own attempt.
+                {t('pwa.studentGuide.practice.illustrationCaption')}
               </figcaption>
             </figure>
           </div>
@@ -736,94 +910,128 @@ export default function StudentDocsPrototype({
             id="ai-tutor"
             className="scroll-mt-20 border-b border-slate-200 py-10"
           >
-            <GuideSectionHeading label="AI study support" title="AI tutor" />
+            <GuideSectionHeading
+              label={t('pwa.studentGuide.chatbot.label')}
+              title={t('pwa.studentGuide.chatbot.title')}
+            />
             <div className="grid gap-6 lg:grid-cols-[1fr_0.94fr] lg:items-start lg:gap-10">
               <div className="space-y-4 text-base leading-7 text-slate-600">
-                <p>
-                  Open the course chatbot when it is available. You need a
-                  KlickerUZH account and Participation in the course; joining a
-                  leaderboard is not required.
-                </p>
+                <p>{t('pwa.studentGuide.chatbot.intro')}</p>
                 <ul className="m-0 list-none space-y-3 p-0">
                   <li>
-                    <strong className="text-slate-800">Tutor</strong> guides you
-                    with questions, hints, and feedback.
+                    <strong className="text-slate-800">
+                      {t('pwa.studentGuide.chatbot.tutorTitle')}
+                    </strong>{' '}
+                    {t('pwa.studentGuide.chatbot.tutorBody')}
                   </li>
                   <li>
-                    <strong className="text-slate-800">Explainer</strong>{' '}
-                    explains a concept directly with examples.
+                    <strong className="text-slate-800">
+                      {t('pwa.studentGuide.chatbot.explainerTitle')}
+                    </strong>{' '}
+                    {t('pwa.studentGuide.chatbot.explainerBody')}
                   </li>
                   <li>
-                    <strong className="text-slate-800">Quizzer</strong> asks
-                    practice questions to check your understanding.
+                    <strong className="text-slate-800">
+                      {t('pwa.studentGuide.chatbot.quizzerTitle')}
+                    </strong>{' '}
+                    {t('pwa.studentGuide.chatbot.quizzerBody')}
                   </li>
                 </ul>
-                <p>
-                  Modes vary by course. Include your own attempt when asking for
-                  help, and check answers against course material because AI can
-                  be wrong or incomplete.
-                </p>
+                <p>{t('pwa.studentGuide.chatbot.guidance')}</p>
                 <p className="rounded-lg bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-800">
-                  Your existing account, credits, and privacy arrangements
-                  apply. The balance shows allowance and refill information;
-                  cost depends on the configured model and conversation length.
-                  Avoid sensitive personal information.
+                  {t('pwa.studentGuide.chatbot.conditions')}
                 </p>
-                <TutorialLink slug="chatbot">Chatbot guide</TutorialLink>
+                <TutorialLink slug="chatbot">
+                  {t('pwa.studentGuide.chatbot.tutorialLink')}
+                </TutorialLink>
               </div>
 
               <figure className="rounded-lg bg-slate-50 p-4 sm:p-5">
-                {chatbot ? (
+                {chatbots.length > 0 ? (
                   <>
-                    <div className="mb-3 text-xs font-semibold text-slate-600">
-                      {chatbot.name}
-                    </div>
-                    {!isChatbotOpen ? (
-                      <div className="rounded-lg border border-slate-200 bg-white p-4">
-                        <p className="text-sm leading-6 text-slate-600">
-                          Open the embedded course chatbot when you are ready to
-                          try it.
-                        </p>
-                        <Button
-                          type="button"
-                          data-cy="docs-prototype-chatbot-try"
-                          onClick={() => setIsChatbotOpen(true)}
-                          primary
-                          className={{ root: 'mt-4 min-h-11' }}
+                    {chatbots.length > 1 && (
+                      <div className="mb-3">
+                        <label
+                          htmlFor="docs-prototype-chatbot-select"
+                          className="text-xs font-semibold text-slate-600"
                         >
-                          Try the course chatbot
-                        </Button>
+                          {t('pwa.studentGuide.chatbot.selectLabel')}
+                        </label>
+                        <select
+                          id="docs-prototype-chatbot-select"
+                          data-cy="docs-prototype-chatbot-select"
+                          value={selectedChatbot?.id ?? ''}
+                          onChange={(event) => {
+                            setSelectedChatbotId(event.target.value)
+                            setIsChatbotOpen(false)
+                          }}
+                          className="mt-1 min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-100"
+                        >
+                          {chatbots.map((courseChatbot) => (
+                            <option
+                              key={courseChatbot.id}
+                              value={courseChatbot.id}
+                            >
+                              {courseChatbot.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
-                    ) : (
-                      <iframe
-                        src={chatbot.href}
-                        title={`${chatbot.name} course chatbot`}
-                        className="h-[32rem] w-full rounded-lg border border-slate-200 bg-white"
-                      />
                     )}
-                    <a
-                      href={chatbot.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-slate-700 underline decoration-slate-300 underline-offset-4 hover:decoration-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-100"
-                    >
-                      Open {chatbot.name} in a new tab
-                      <FontAwesomeIcon
-                        icon={faArrowUpRightFromSquare}
-                        aria-hidden="true"
-                      />
-                    </a>
+                    {chatbots.length === 1 && (
+                      <div className="mb-3 text-xs font-semibold text-slate-600">
+                        {selectedChatbot?.name}
+                      </div>
+                    )}
+                    {selectedChatbot && (
+                      <>
+                        {!isChatbotOpen ? (
+                          <div className="rounded-lg border border-slate-200 bg-white p-4">
+                            <p className="text-sm leading-6 text-slate-600">
+                              {t('pwa.studentGuide.chatbot.tryPrompt')}
+                            </p>
+                            <Button
+                              type="button"
+                              data-cy="docs-prototype-chatbot-try"
+                              onClick={() => setIsChatbotOpen(true)}
+                              primary
+                              className={{ root: 'mt-4 min-h-11' }}
+                            >
+                              {t('pwa.studentGuide.chatbot.tryButton')}
+                            </Button>
+                          </div>
+                        ) : (
+                          <iframe
+                            src={selectedChatbot.embeddedHref}
+                            title={selectedChatbotIframeTitle}
+                            className="h-[32rem] w-full rounded-lg border border-slate-200 bg-white"
+                          />
+                        )}
+                        <a
+                          href={selectedChatbot.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-slate-700 underline decoration-slate-300 underline-offset-4 hover:decoration-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-100"
+                        >
+                          {selectedChatbotLinkLabel}
+                          <FontAwesomeIcon
+                            icon={faArrowUpRightFromSquare}
+                            aria-hidden="true"
+                          />
+                        </a>
+                      </>
+                    )}
                   </>
                 ) : (
                   <>
                     <div className="mb-3 text-xs font-semibold text-slate-600">
-                      Illustration — select a course to try its chatbot
+                      {t('pwa.studentGuide.chatbot.illustrationLabel')}
                     </div>
                     <fieldset
                       className="mb-4 flex flex-wrap gap-2"
-                      aria-label="Illustrative chatbot mode"
+                      aria-label={chatbotIllustrationAriaLabel}
                     >
-                      {(Object.keys(modeExamples) as Mode[]).map((mode) => (
+                      {chatbotModes.map((mode) => (
                         <Button
                           key={mode}
                           type="button"
@@ -840,19 +1048,19 @@ export default function StudentDocsPrototype({
                     <div aria-live="polite">
                       <div className="ml-6 rounded-lg bg-primary-20 p-3 text-sm leading-6 text-slate-800">
                         <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.1em] text-slate-500">
-                          Example student prompt
+                          {t('pwa.studentGuide.chatbot.examplePromptLabel')}
                         </div>
                         {selectedExample.prompt}
                       </div>
                       <div className="mt-3 rounded-lg bg-white p-3 text-sm leading-6 text-slate-700 shadow-sm">
                         <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.1em] text-slate-500">
-                          Illustrative response · {selectedExample.label}
+                          {exampleResponseLabel}
                         </div>
                         {selectedExample.response}
                       </div>
                     </div>
                     <figcaption className="mt-3 text-xs leading-5 text-slate-500">
-                      Synthetic illustration only; no chatbot is running here.
+                      {t('pwa.studentGuide.chatbot.illustrationCaption')}
                     </figcaption>
                   </>
                 )}
@@ -872,58 +1080,48 @@ export default function StudentDocsPrototype({
             className="scroll-mt-20 border-b border-slate-200 py-10"
           >
             <GuideSectionHeading
-              label="Learning progress"
-              title="Course points, global XP, and milestones"
+              label={t('pwa.studentGuide.progress.label')}
+              title={t('pwa.studentGuide.progress.title')}
             />
             <div className="grid gap-6 lg:grid-cols-[1fr_0.94fr] lg:items-start lg:gap-10">
               <div className="space-y-4 text-base leading-7 text-slate-600">
-                <p>
-                  Course points show your progress in this course. When the
-                  course offers a leaderboard, joining it is optional; leaving
-                  the leaderboard does not remove your course access or
-                  collected points.
-                </p>
-                <p>
-                  Global XP and levels are a separate participant-wide track. XP
-                  can accrue independently of course leaderboard opt-in, with
-                  award rules depending on the activities available to you.
-                </p>
-                <p>
-                  Achievements mark milestones such as completing a practice
-                  goal. These examples are synthetic and do not show your data.
-                </p>
+                <p>{t('pwa.studentGuide.progress.body')}</p>
+                <p>{t('pwa.studentGuide.progress.xp')}</p>
+                <p>{t('pwa.studentGuide.progress.achievements')}</p>
                 <TutorialLink slug="course_leaderboard">
-                  Leaderboards and achievements
+                  {t('pwa.studentGuide.progress.tutorialLink')}
                 </TutorialLink>
               </div>
 
               <figure className="rounded-lg bg-slate-50 p-4 sm:p-5">
                 <div className="mb-3 text-xs font-semibold text-slate-600">
-                  Illustrative progress view
+                  {t('pwa.studentGuide.progress.illustrationLabel')}
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
                     <div className="text-xs font-semibold text-slate-500">
-                      This course
+                      {t('pwa.studentGuide.progress.thisCourse')}
                     </div>
                     <div className="mt-1 text-2xl font-bold text-slate-800">
-                      420 points
+                      {pointsLabel(420)}
                     </div>
 
                     <div className="mt-2 text-xs text-slate-500">
-                      Course points · synthetic
+                      {t('pwa.studentGuide.progress.coursePointsSynthetic')}
                     </div>
                   </div>
                   <div className="rounded-lg border border-slate-200 bg-slate-800 p-3 text-white shadow-sm">
                     <div className="text-xs font-semibold text-slate-300">
-                      Across your account
+                      {t('pwa.studentGuide.progress.acrossAccount')}
                     </div>
-                    <div className="mt-1 text-2xl font-bold">Level 4</div>
+                    <div className="mt-1 text-2xl font-bold">
+                      {t('pwa.studentGuide.progress.levelValue', { level: 4 })}
+                    </div>
                     <div className="mt-3 h-2 rounded-full bg-slate-600">
                       <div className="h-2 w-2/5 rounded-full bg-primary-60" />
                     </div>
                     <div className="mt-2 text-xs text-slate-300">
-                      Global XP · synthetic
+                      {t('pwa.studentGuide.progress.globalXpSynthetic')}
                     </div>
                   </div>
                 </div>
@@ -934,10 +1132,10 @@ export default function StudentDocsPrototype({
                     </span>
                     <div>
                       <div className="text-sm font-bold text-slate-800">
-                        Practice milestone
+                        {t('pwa.studentGuide.progress.practiceMilestone')}
                       </div>
                       <div className="text-xs text-slate-600">
-                        Complete 5 practice activities · illustrative
+                        {t('pwa.studentGuide.progress.practiceMilestoneBody')}
                       </div>
                     </div>
                   </div>
@@ -945,29 +1143,29 @@ export default function StudentDocsPrototype({
                 <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
                   <div className="flex items-center justify-between gap-3 text-sm">
                     <strong className="text-slate-800">
-                      Optional course leaderboard
+                      {t('pwa.studentGuide.progress.leaderboardTitle')}
                     </strong>
                     <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">
-                      Example
+                      {t('pwa.studentGuide.progress.exampleTag')}
                     </span>
                   </div>
                   <ol className="mt-3 space-y-2 text-xs text-slate-600">
                     <li className="flex justify-between gap-3">
-                      <span>1 · Alex</span>
-                      <span>510 points</span>
+                      <span>{rankedName(1, 'Alex')}</span>
+                      <span>{pointsLabel(510)}</span>
                     </li>
                     <li className="flex justify-between gap-3 rounded-md bg-primary-20 px-2 py-1.5 text-slate-800">
-                      <span>2 · You</span>
-                      <span>420 points</span>
+                      <span>{rankedName(2, leaderboardYou)}</span>
+                      <span>{pointsLabel(420)}</span>
                     </li>
                     <li className="flex justify-between gap-3">
-                      <span>3 · Sam</span>
-                      <span>390 points</span>
+                      <span>{rankedName(3, 'Sam')}</span>
+                      <span>{pointsLabel(390)}</span>
                     </li>
                   </ol>
                 </div>
                 <figcaption className="mt-3 text-xs leading-5 text-slate-500">
-                  Illustrative cards only; values and names are synthetic.
+                  {t('pwa.studentGuide.progress.illustrationCaption')}
                 </figcaption>
               </figure>
             </div>
@@ -979,46 +1177,29 @@ export default function StudentDocsPrototype({
             id="learning-analytics"
             className="scroll-mt-20 border-b border-slate-200 py-10"
           >
-            <div className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-              Planned behavior · no preference is saved here
-            </div>
+            {preview && (
+              <div className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                {t('pwa.studentGuide.analytics.plannedBadge')}
+              </div>
+            )}
             <GuideSectionHeading
-              label="Learning analytics"
-              title="Turn activity into useful next steps"
+              label={t('pwa.studentGuide.analytics.label')}
+              title={t('pwa.studentGuide.analytics.title')}
             />
             <div className="grid gap-6 lg:grid-cols-[1fr_0.94fr] lg:items-start lg:gap-10">
               <div className="space-y-4 text-base leading-7 text-slate-600">
-                <p>
-                  Learning analytics can help you spot practice gaps, reflect on
-                  your study activity, and help the teaching team identify
-                  topics that may need support.
-                </p>
-                <p>
-                  Your course must offer analytics, and you choose whether to
-                  take part across your account.
-                </p>
-                <p>
-                  If you opt out, individual derived Learning Analytics data is
-                  removed and future aggregates exclude you. Existing aggregate
-                  results are not promised to be recomputed or removed.
-                </p>
+                <p>{t('pwa.studentGuide.analytics.intro')}</p>
+                <p>{t('pwa.studentGuide.analytics.accountChoice')}</p>
+                <p>{t('pwa.studentGuide.analytics.optOutNote')}</p>
               </div>
 
               <div className="space-y-4">
                 <figure className="rounded-lg bg-slate-50 p-4 sm:p-5">
                   <div className="mb-3 text-xs font-semibold text-slate-600">
-                    Illustrative weekly activity
+                    {t('pwa.studentGuide.analytics.chartLabel')}
                   </div>
                   <div className="flex h-32 items-end justify-between gap-2 rounded-lg border border-slate-200 bg-white px-4 pb-4 pt-5">
-                    {[
-                      ['Mon', 'h-8'],
-                      ['Tue', 'h-14'],
-                      ['Wed', 'h-10'],
-                      ['Thu', 'h-20'],
-                      ['Fri', 'h-12'],
-                      ['Sat', 'h-6'],
-                      ['Sun', 'h-16'],
-                    ].map(([day, height]) => (
+                    {analyticsDayKeys.map(([day, height]) => (
                       <div
                         key={day}
                         className="flex h-full flex-1 flex-col items-center justify-end gap-2"
@@ -1027,47 +1208,45 @@ export default function StudentDocsPrototype({
                           className={`w-full max-w-7 rounded-t bg-primary-60 ${height}`}
                         />
                         <span className="text-[10px] text-slate-500">
-                          {day}
+                          {analyticsDayLabels[day]}
                         </span>
                       </div>
                     ))}
                   </div>
                   <figcaption className="mt-3 text-xs leading-5 text-slate-500">
-                    Illustrative pattern only — this is not real student data or
-                    a measurement of your activity.
+                    {t('pwa.studentGuide.analytics.chartCaption')}
                   </figcaption>
                 </figure>
 
-                <fieldset
-                  disabled
-                  className="rounded-lg border border-slate-200 bg-white p-4 sm:p-5"
-                >
-                  <legend className="px-1 text-sm font-bold text-slate-800">
-                    Planned choice controls — no preference is saved here
-                  </legend>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">
-                    This future choice will apply account-wide and remains
-                    separate from whether each course offers Learning Analytics.
-                    These controls are disabled in this prototype; no choice is
-                    recorded.
-                  </p>
-                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                    <Button
-                      type="button"
-                      disabled
-                      className={{ root: 'min-h-11' }}
-                    >
-                      Opt in
-                    </Button>
-                    <Button
-                      type="button"
-                      disabled
-                      className={{ root: 'min-h-11' }}
-                    >
-                      Opt out
-                    </Button>
-                  </div>
-                </fieldset>
+                {preview && (
+                  <fieldset
+                    disabled
+                    className="rounded-lg border border-slate-200 bg-white p-4 sm:p-5"
+                  >
+                    <legend className="px-1 text-sm font-bold text-slate-800">
+                      {t('pwa.studentGuide.analytics.plannedLegend')}
+                    </legend>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                      {t('pwa.studentGuide.analytics.plannedBody')}
+                    </p>
+                    <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                      <Button
+                        type="button"
+                        disabled
+                        className={{ root: 'min-h-11' }}
+                      >
+                        {t('pwa.studentGuide.analytics.optIn')}
+                      </Button>
+                      <Button
+                        type="button"
+                        disabled
+                        className={{ root: 'min-h-11' }}
+                      >
+                        {t('pwa.studentGuide.analytics.optOut')}
+                      </Button>
+                    </div>
+                  </fieldset>
+                )}
               </div>
             </div>
           </section>
@@ -1076,40 +1255,67 @@ export default function StudentDocsPrototype({
 
       <section
         id="progress-help"
-        hidden={currentView === 'guide' && progressAvailable}
         className="scroll-mt-20 border-b border-slate-200 py-10"
       >
         <GuideSectionHeading
-          label="Progress & help"
-          title="Feedback, privacy, and support"
+          label={t('pwa.studentGuide.privacyHelp.label')}
+          title={t('pwa.studentGuide.privacyHelp.title')}
         />
         <div className="grid gap-6 lg:grid-cols-[1fr_0.94fr] lg:items-start lg:gap-10">
           <div className="space-y-4 text-base leading-7 text-slate-600">
-            <p>
-              Manage visibility in your profile privacy settings. Course
-              notifications and feedback are available when supported by the
-              activity.
-            </p>
-            <p>
-              Contact your teaching team about access, deadlines, and course
-              rules.
-            </p>
+            <p>{t('pwa.studentGuide.privacyHelp.profileNote')}</p>
+            <p>{t('pwa.studentGuide.privacyHelp.contactNote')}</p>
+            <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold">
+              <Link
+                href="/editProfile"
+                data-cy="docs-prototype-edit-profile"
+                className="inline-flex min-h-11 items-center gap-2 text-slate-700 underline decoration-slate-300 underline-offset-4 hover:decoration-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-100"
+              >
+                {t('pwa.studentGuide.privacyHelp.editProfileLink')}
+              </Link>
+              <Link
+                href="/account/data-use"
+                data-cy="docs-prototype-data-use-settings"
+                className="inline-flex min-h-11 items-center gap-2 text-slate-700 underline decoration-slate-300 underline-offset-4 hover:decoration-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-100"
+              >
+                {t('pwa.studentGuide.privacyHelp.dataUseLink')}
+              </Link>
+              <a
+                href={t('auth.privacyUrl')}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-cy="docs-prototype-privacy-policy"
+                className="inline-flex min-h-11 items-center gap-2 text-slate-700 underline decoration-slate-300 underline-offset-4 hover:decoration-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-100"
+              >
+                {t('pwa.studentGuide.privacyHelp.privacyPolicyLink')}
+                <FontAwesomeIcon
+                  icon={faArrowUpRightFromSquare}
+                  aria-hidden="true"
+                />
+              </a>
+            </div>
           </div>
 
           <figure className="rounded-lg bg-slate-50 p-4 sm:p-5">
             <div className="mb-3 text-xs font-semibold text-slate-600">
-              Feedback and support
+              {t('pwa.studentGuide.privacyHelp.illustrationLabel')}
             </div>
             <div className="grid gap-2">
-              <ProgressItem icon={faCommentDots} title="Activity feedback">
-                Feedback on your answers when provided.
+              <ProgressItem
+                icon={faCommentDots}
+                title={t('pwa.studentGuide.privacyHelp.feedbackTitle')}
+              >
+                {t('pwa.studentGuide.privacyHelp.feedbackBody')}
               </ProgressItem>
-              <ProgressItem icon={faChartLine} title="Course support">
-                Ask your teaching team about course rules and access.
+              <ProgressItem
+                icon={faChartLine}
+                title={t('pwa.studentGuide.privacyHelp.supportTitle')}
+              >
+                {t('pwa.studentGuide.privacyHelp.supportBody')}
               </ProgressItem>
             </div>
             <figcaption className="mt-3 text-xs leading-5 text-slate-500">
-              Available support depends on the course.
+              {t('pwa.studentGuide.privacyHelp.illustrationCaption')}
             </figcaption>
           </figure>
         </div>
@@ -1124,7 +1330,7 @@ export default function StudentDocsPrototype({
           id="common-questions-title"
           className="text-xl font-bold text-slate-800 sm:text-2xl"
         >
-          Common questions
+          {t('pwa.studentGuide.faq.title')}
         </h2>
         <div className="mt-4">
           <details className="border-t border-slate-200">
@@ -1132,27 +1338,33 @@ export default function StudentDocsPrototype({
               data-cy="docs-prototype-help-sign-in"
               className="cursor-pointer py-4 pr-8 text-base font-semibold text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-100"
             >
-              I cannot sign in or find my course.
+              {t('pwa.studentGuide.faq.signIn.question')}
             </summary>
             <p className="pb-4 text-sm leading-6 text-slate-600">
-              Use the original course link and your existing account. Ask your
-              teaching team for a missing PIN or access instructions. Use the
-              recovery option on the sign-in page when it is offered.
+              {t('pwa.studentGuide.faq.signIn.answer')}
+            </p>
+          </details>
+          <details className="border-t border-slate-200">
+            <summary
+              data-cy="docs-prototype-help-missing-activity"
+              className="cursor-pointer py-4 pr-8 text-base font-semibold text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-100"
+            >
+              {t('pwa.studentGuide.faq.missingActivity.question')}
+            </summary>
+            <p className="pb-4 text-sm leading-6 text-slate-600">
+              {t('pwa.studentGuide.faq.missingActivity.answer')}
             </p>
           </details>
           {chatbotEnabled && (
             <details className="border-t border-slate-200">
               <summary
-                data-cy="docs-prototype-help-missing-activity"
+                data-cy="docs-prototype-help-chatbot"
                 className="cursor-pointer py-4 pr-8 text-base font-semibold text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-100"
               >
-                An activity or the course chatbot is missing.
+                {t('pwa.studentGuide.faq.chatbot.question')}
               </summary>
               <p className="pb-4 text-sm leading-6 text-slate-600">
-                The activity may be unpublished, closed, or require sign-in.
-                Check your course instructions. For the chatbot, sign in and
-                join its course. If credits are exhausted, check the displayed
-                refill information.
+                {t('pwa.studentGuide.faq.chatbot.answer')}
               </p>
             </details>
           )}
@@ -1161,17 +1373,14 @@ export default function StudentDocsPrototype({
               data-cy="docs-prototype-help-install"
               className="cursor-pointer py-4 pr-8 text-base font-semibold text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-100"
             >
-              How do I install KlickerUZH and enable notifications?
+              {t('pwa.studentGuide.faq.install.question')}
             </summary>
             <p className="pb-4 text-sm leading-6 text-slate-600">
-              Look for “Install app” or “Add to Home Screen” in your browser’s
-              menu or share menu. Enable notifications in your course when
-              available, and allow them on your device. Support varies by device
-              and browser.
+              {t('pwa.studentGuide.faq.install.answer')}
             </p>
             <div className="pb-4">
               <TutorialLink slug="klickeruzh_app">
-                Installation and notifications guide
+                {t('pwa.studentGuide.faq.install.linkLabel')}
               </TutorialLink>
             </div>
           </details>
@@ -1181,12 +1390,10 @@ export default function StudentDocsPrototype({
                 data-cy="docs-prototype-help-points"
                 className="cursor-pointer py-4 pr-8 text-base font-semibold text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-100"
               >
-                Why did I receive different points this time?
+                {t('pwa.studentGuide.faq.points.question')}
               </summary>
               <p className="pb-4 text-sm leading-6 text-slate-600">
-                Points can depend on correctness, response time, multipliers,
-                and repetition rules. Check the activity instructions or ask
-                your teaching team.
+                {t('pwa.studentGuide.faq.points.answer')}
               </p>
             </details>
           )}
@@ -1196,12 +1403,10 @@ export default function StudentDocsPrototype({
                 data-cy="docs-prototype-help-leaderboard"
                 className="cursor-pointer py-4 pr-8 text-base font-semibold text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-100"
               >
-                Do I have to appear on the leaderboard?
+                {t('pwa.studentGuide.faq.leaderboard.question')}
               </summary>
               <p className="pb-4 text-sm leading-6 text-slate-600">
-                No. Course leaderboards are opt-in. Leaving a leaderboard does
-                not remove course access. Check your profile privacy settings
-                for visibility options.
+                {t('pwa.studentGuide.faq.leaderboard.answer')}
               </p>
             </details>
           )}
@@ -1218,18 +1423,19 @@ export default function StudentDocsPrototype({
             </span>
             <span>
               <strong className="block font-semibold text-slate-800">
-                Progress &amp; data
+                {t('pwa.studentGuide.faq.progressTeaserTitle')}
               </strong>
               <span className="text-sm leading-6 text-slate-700">
-                Learn about {progressTopics}.
+                {progressIntro}
               </span>
             </span>
           </button>
         )}
-        <p className="pt-6 text-xs leading-5 text-slate-500">
-          Student guide prototype · Examples are synthetic and illustrate
-          concepts rather than exact current screens.
-        </p>
+        {preview && (
+          <p className="pt-6 text-xs leading-5 text-slate-500">
+            {t('pwa.studentGuide.previewFooter')}
+          </p>
+        )}
       </section>
     </main>
   )

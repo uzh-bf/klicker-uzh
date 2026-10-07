@@ -17,7 +17,7 @@ AI-generated answers can be wrong or incomplete. Always verify important informa
 The chatbot belongs to one course, so you need to be logged in with your KlickerUZH account and be enrolled in that course.
 
 1. **Open the link:** Your lecturer shares a chatbot link, either directly or embedded in a page of the learning management system of the course (for example OpenOLAT or Moodle).
-2. **Get enrolled automatically:** If you are logged in and not yet part of the course, opening the link enrols you and redirects you into the chat interface.
+2. **Confirm course access:** For ordinary courses, opening the link can create your course participation before redirecting you into the chat. Courses with restricted access still require their admission rules to be satisfied. Joining or leaving the leaderboard does not control chatbot access.
 3. **Accept the disclaimer:** Before your first message, you have to accept a short disclaimer. If you decline, the chatbot stays blocked; you can change that decision later when you open the chatbot directly (the corresponding button is not shown in a view embedded in the learning management system).
 
 If you do not have a KlickerUZH account yet, please refer to the [tutorial on participant accounts](/student_tutorials/student_accounts/) first.
@@ -38,15 +38,15 @@ If your lecturer has enabled model selection, you can choose the AI model in the
 
 ![Settings panel of the chat with the model selection; the offered models depend on the course configuration](/img/chatbot/chat_settings.png)
 
-- **Without model selection:** The model is chosen automatically. If your credits run out, the chatbot falls back to a smaller model.
-- **With model selection:** You pick a model from the list your lecturer has allowed. In addition, a small fallback model always stays available, so you are never left without an option.
+- **Without model selection:** The model is chosen automatically. If your credits run out, access depends on the fallback models allowed for that chatbot. Check the balance and refill information shown in the chat.
+- **With model selection:** You pick a model from the list your lecturer has allowed. A fallback model may be available when credits run out, depending on the course configuration.
 - **Reasoning effort:** Models that support reasoning additionally offer a choice of effort level. A higher effort can improve answers to difficult questions, but the answer takes longer and consumes more credits.
 
 ## How do credits work?
 
 You have your own credit balance for each chatbot. The cost of a turn depends on the selected model and on the length of the conversation, so it is not one credit per message. A long conversation with a lot of previous messages consumes more credits than a short question, which is another good reason to start a new conversation for a new topic.
 
-At the bottom of the sidebar, you see your remaining balance together with the date of the next refill, or the information that your credits do not refill automatically. If your balance reaches zero, the chatbot keeps working and answers with a smaller model.
+At the bottom of the sidebar, you see your remaining balance together with the date of the next refill, or the information that your credits do not refill automatically. If your balance reaches zero, the chatbot may offer a configured fallback model or ask you to wait for a refill. Follow the information displayed for your chatbot.
 
 ## How do I rate an answer?
 
@@ -64,4 +64,4 @@ The chat interface follows the language of the KlickerUZH application you came f
 
 ## What happens with my data?
 
-Your conversations are processed by an AI model provider and may be reviewed in anonymised form to improve the offering. Please do not share personal data in your prompts, neither your own nor that of other people. The binding privacy statement is provided separately from this documentation.
+The chatbot’s disclosure and the KlickerUZH privacy policy explain how your conversations are processed and whether they may be reviewed. Read them before accepting the disclosure. Please do not share personal data in your prompts, neither your own nor that of other people. The binding privacy statement is provided separately from this documentation.

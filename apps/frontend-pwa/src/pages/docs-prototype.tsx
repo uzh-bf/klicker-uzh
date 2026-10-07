@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import {
   GetCourseChatbotsDocument,
-  GetCourseOverviewDataDocument,
+  GetStudentDocsCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import type { GetStaticPropsContext } from 'next'
@@ -20,35 +20,43 @@ function StudentDocsPrototypePage() {
     setIsHydrated(true)
   }, [])
   const courseId =
-    typeof router.query.courseId === 'string'
+    router.isReady &&
+    typeof router.query.courseId === 'string' &&
+    router.query.courseId.trim() !== ''
       ? router.query.courseId
       : undefined
   const assessment = process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
   const [previewGamification, setPreviewGamification] = useState(true)
   const [previewAnalytics, setPreviewAnalytics] = useState(true)
   const [previewChatbot, setPreviewChatbot] = useState(true)
-  const { data, loading, error } = useQuery(GetCourseOverviewDataDocument, {
-    variables: { courseId: courseId ?? '' },
-    skip: !courseId,
-  })
-  const { data: chatbotData } = useQuery(GetCourseChatbotsDocument, {
+  const { data, loading, error } = useQuery(GetStudentDocsCourseDocument, {
     variables: { courseId: courseId ?? '' },
     skip: !courseId || assessment,
+    fetchPolicy: 'network-only',
   })
-  const course = data?.getCourseOverviewData?.course
-  const chatbot = chatbotData?.courseChatbots?.[0]
+  const loadedCourse = data?.getCourseOverviewData?.course
+  const course =
+    !loading && !error && loadedCourse?.id === courseId
+      ? loadedCourse
+      : undefined
+  const restricted = assessment || course?.isAssessmentEnabled === true
+  const chatbotResult = useQuery(GetCourseChatbotsDocument, {
+    variables: { courseId: courseId ?? '' },
+    skip: !course || restricted,
+    fetchPolicy: 'network-only',
+  })
   const preview =
     isHydrated &&
     router.isReady &&
     router.query.courseId === undefined &&
-    !assessment
+    !restricted
 
   return (
     <Layout
       displayName={t('shared.generic.documentation')}
       course={course ?? undefined}
     >
-      {assessment && (
+      {restricted && (
         <UserNotification
           type="warning"
           className={{ root: 'mx-auto mb-3 w-full max-w-5xl text-base' }}
@@ -61,20 +69,30 @@ function StudentDocsPrototypePage() {
       <StudentDocsPrototype
         key={courseId ?? 'design-preview'}
         gamificationEnabled={
-          !assessment &&
+          !restricted &&
           (preview
             ? previewGamification
             : course?.isGamificationEnabled === true)
         }
+        preview={preview}
         learningAnalyticsEnabled={preview && previewAnalytics}
         previewChatbot={preview && previewChatbot}
-        chatbot={
-          course && chatbot && !assessment
-            ? {
-                name: chatbot.name,
-                href: `/${router.locale ?? 'en'}/course/${encodeURIComponent(course.id)}/chatbot/${encodeURIComponent(chatbot.id)}?embed=true`,
-              }
-            : undefined
+        chatbots={
+          course &&
+          !restricted &&
+          !chatbotResult.loading &&
+          !chatbotResult.error &&
+          chatbotResult.variables?.courseId === courseId
+            ? (chatbotResult.data?.courseChatbots ?? []).map((bot) => {
+                const href = `/${router.locale ?? 'en'}/course/${encodeURIComponent(course.id)}/chatbot/${encodeURIComponent(bot.id)}`
+                return {
+                  id: bot.id,
+                  name: bot.name,
+                  href,
+                  embeddedHref: `${href}?embed=true`,
+                }
+              })
+            : []
         }
       />
       <aside className="mx-auto mt-8 w-full max-w-5xl border-t border-dashed border-slate-300 py-4 text-sm text-slate-600">

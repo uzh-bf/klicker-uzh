@@ -1008,6 +1008,331 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
         dataUseChoiceRequired: 'Bitte wähle Ja oder Nein.',
       },
     },
+    studentGuide: {
+      viewsAriaLabel: 'Dokumentationsansichten',
+      guideViewLabel: 'Studierenden-Guide',
+      progressViewLabel: 'Fortschritt & Daten',
+      heroGuideTitle: 'KlickerUZH in deinem Kurs',
+      heroGuideIntro: 'Mach im Unterricht mit und übe den Kursstoff.',
+      heroGuideIntroChatbot:
+        'Mach im Unterricht mit, übe den Kursstoff und arbeite anschliessend Fragen mit KI-Unterstützung durch.',
+      heroGuideAvailability:
+        'Verfügbare Aktivitäten und Werkzeuge hängen von deinem Kurs ab.',
+      heroProgressTitle: 'Fortschritt und Daten verstehen',
+      heroProgressIntro: 'Erfahre mehr über {topics}.',
+      inGuideAriaLabel: 'In diesem Guide',
+      inProgressAriaLabel: 'In Fortschritt und Daten',
+      previewFooter:
+        'Prototyp des Studierenden-Guides · Beispiele sind synthetisch und veranschaulichen Konzepte statt exakter aktueller Ansichten.',
+      progressSetup: {
+        description:
+          'Verfügbare Abschnitte richten sich nach den aktivierten Funktionen dieses Kurses und Kontos.',
+        backToGuide: 'Zurück zum Studierenden-Guide',
+      },
+      nav: {
+        getStarted: 'Erste Schritte',
+        liveQuizzes: 'Im Unterricht',
+        practice: 'Üben',
+        aiTutor: 'KI-Tutor',
+        privacyHelp: 'Datenschutz & Hilfe',
+        faqs: 'FAQs',
+        gamification: 'Punkte & XP',
+        learningAnalytics: 'Learning Analytics',
+      },
+      features: {
+        live: {
+          title: 'Im Unterricht mitmachen',
+          description: 'Beantworte Live-Fragen und diskutiere die Ergebnisse.',
+          linkLabel: 'Mehr zu Live Quizzes',
+        },
+        practice: {
+          title: 'Zwischen den Sitzungen üben',
+          description:
+            'Nutze Quizzes und Flashcards, um dein Wissen zu prüfen.',
+          linkLabel: 'Mehr zu Übungsaktivitäten',
+        },
+        chat: {
+          title: 'Fragen durcharbeiten',
+          description:
+            'Frage den KI-Tutor nach Hinweisen, Erklärungen oder Übungen.',
+          linkLabel: 'Mehr zum KI-Tutor',
+        },
+      },
+      featureIllustration: {
+        hint: 'Ein Hinweis?',
+        reply: 'Was hast du bereits versucht?',
+      },
+      setup: {
+        title: 'Zugang einrichten',
+        description:
+          'Öffne deinen Kurslink, melde dich an und installiere die App nur, wenn du sie auf dem Handy möchtest.',
+        firstVisit: 'Erster Besuch? Konto einrichten',
+        android: 'Android-App',
+        iphone: 'iPhone-Einrichtung',
+      },
+      getStarted: {
+        label: 'Erste Schritte',
+        title: 'Kurszugang und Konten',
+        access:
+          'Öffne den Kurslink, den dir deine Dozierenden oder die Lernplattform geteilt haben, und melde dich an oder folge den Registrierungsschritten. Eventuell brauchst du eine Kurs-PIN.',
+        account:
+          'Ein Konto brauchst du für persönliche Lesezeichen und Wiederholungen.',
+        accountChatbot:
+          'Ein Konto brauchst du für persönliche Lesezeichen und Wiederholungen sowie für Kurs-Chatbots.',
+        guestNote:
+          'Bei einigen Aktivitäten kannst du als Gast teilnehmen. Nutze KlickerUZH im Browser; die Installation auf dem Handy ist optional.',
+        tutorialLink: 'Guide zu Konto und Anmeldung',
+        firstVisit: 'Dein erster Besuch',
+        stepOpenTitle: 'Kurs öffnen',
+        stepOpenBody:
+          'Nutze den Kurslink oder die Lernplattform, die dir zur Verfügung gestellt wurde.',
+        stepSignInTitle: 'Bei Aufforderung anmelden',
+        stepSignInBody:
+          'Nutze ein bestehendes Konto oder folge den Registrierungsschritten.',
+        stepChooseTitle: 'Aktivität wählen',
+        stepChooseBody:
+          'Öffne ein Live Quiz oder Übungsmaterial, wenn es verfügbar ist.',
+        stepChooseBodyChatbot:
+          'Öffne ein Live Quiz, Übungsmaterial oder den KI-Tutor, wenn es verfügbar ist.',
+        firstVisitCaption:
+          'Deine Dozierenden stellen den Kurslink und eine allfällige PIN bereit.',
+      },
+      live: {
+        label: 'Im Unterricht',
+        title: 'Live Quizzes und Feedback',
+        quizTitle: 'Live Quizzes.',
+        quizBody:
+          'Öffne die Sitzung, die deine Dozierenden geteilt haben, und gib deine Antwort ab, solange die Frage offen ist. Anonyme Antworten sind möglich.',
+        feedbackTitle: 'Fragen und Feedback.',
+        feedbackBody:
+          'Nutze die Live-Fragen oder bewerte Tempo und Schwierigkeit, wenn diese Funktionen aktiviert sind.',
+        rulesTitle: 'Beachte die Regeln der Aktivität.',
+        rulesBody:
+          'Deine Dozierenden legen Zeitpunkt, Versuche und verfügbares Feedback für jede Aktivität fest.',
+        tutorialLink: 'Guide zu Live Quizzes',
+        illustrationLabel: 'Illustratives Live Quiz',
+        illustrationCaption:
+          'Ein Beispiel dafür, wie du eine Frage beantwortest und nachfragst.',
+        mock: {
+          header: 'Live Quiz',
+          status: 'Frage offen',
+          question: 'Was sind Opportunitätskosten?',
+          optionSpent: 'Das Geld, das bereits ausgegeben wurde',
+          optionBest:
+            'Der Wert der nächstbesten Alternative, auf die du verzichtest',
+          optionAll: 'Die Summe aller verfügbaren Alternativen',
+          unclear: 'Etwas unklar?',
+          askQa:
+            'Frag im Q&A nach: «Könntest du ein weiteres Beispiel zeigen?»',
+        },
+      },
+      practice: {
+        label: 'Selbstständiges Üben',
+        title: 'Übungsquizzes und Wiederholung',
+        quizTitle: 'Übungsquizzes.',
+        quizBody:
+          'Beantworte Kursfragen, lies das Feedback und wiederhole verfügbare Quizzes. Punkte hängen von den Regeln der Aktivität ab.',
+        flashcardsTitle: 'Flashcards.',
+        flashcardsBody:
+          'Überlege dir eine Antwort, decke sie auf und schätze ein, wie gut du sie wusstest.',
+        coursePoolTitle: 'Kurspool.',
+        coursePoolBody:
+          'Fragen, die du falsch beantwortet hast, können für die verteilte Wiederholung in deinen Kurspool zurückkehren.',
+        bookmarksTitle: 'Lesezeichen.',
+        bookmarksBody:
+          'Angemeldete Teilnehmende können Fragen in einem privaten Übungspool speichern.',
+        microlearningTitle: 'Microlearnings.',
+        microlearningBody:
+          'Erledige kurze Aktivitäten innerhalb ihres Verfügbarkeitsfensters. Jede ist für einen Versuch gedacht.',
+        groupTitle: 'Gruppenaktivitäten.',
+        groupBody:
+          'Bearbeite Aufgaben mit deiner Gruppe, wenn dein Kurs sie anbietet.',
+        flagTitle: 'Fehlerhafte Fragen melden.',
+        flagBody:
+          'Melde ein Problem bei einer Frage über die Melde-Funktion an deine Dozierenden.',
+        tutorialPractice: 'Guide zum Üben',
+        tutorialMicrolearning: 'Microlearnings',
+        tutorialGroups: 'Gruppenaktivitäten',
+        illustrationLabel: 'Beispiel ausprobieren',
+        flashcardLabel: 'Flashcard',
+        flashcardTag: 'Illustration',
+        flashcardHint: 'Überlege dir zuerst eine Antwort.',
+        flashcardQuestion: 'Was bedeutet Opportunitätskosten?',
+        flashcardAnswer:
+          'Der Wert der nächstbesten Alternative, auf die du bei einer Entscheidung verzichtest.',
+        flashcardExample:
+          'Zum Beispiel kann eine Stunde Lernen nicht gleichzeitig für Arbeit genutzt werden.',
+        revealAnswer: 'Antwort aufdecken',
+        hideAnswer: 'Antwort verbergen',
+        illustrationCaption:
+          'Decke die Antwort erst nach einem eigenen Versuch auf.',
+      },
+      chatbot: {
+        label: 'KI-Lernunterstützung',
+        title: 'KI-Tutor',
+        intro:
+          'Öffne den Kurs-Chatbot, wenn er verfügbar ist. Du brauchst ein KlickerUZH-Konto und die Teilnahme am Kurs; ein Beitritt zur Rangliste ist nicht nötig.',
+        tutorTitle: 'Tutor',
+        tutorBody: 'begleitet dich mit Fragen, Hinweisen und Feedback.',
+        explainerTitle: 'Erklärer',
+        explainerBody: 'erklärt ein Konzept direkt mit Beispielen.',
+        quizzerTitle: 'Quiz',
+        quizzerBody: 'stellt Übungsfragen, um dein Verständnis zu prüfen.',
+        guidance:
+          'Die Modi unterscheiden sich je nach Kurs. Gib beim Fragen nach Hilfe deinen eigenen Versuch an und prüfe Antworten anhand des Kursmaterials, denn KI kann falsch oder unvollständig sein.',
+        conditions:
+          'Dein bestehendes Konto, deine Credits und deine Datenschutzeinstellungen gelten weiter. Das Guthaben zeigt Freibetrag und Aufladeinformationen; die Kosten hängen vom konfigurierten Modell und der Gesprächslänge ab. Vermeide sensible persönliche Informationen.',
+        tutorialLink: 'Guide zum Chatbot',
+        selectLabel: 'Kurs-Chatbot',
+        tryPrompt:
+          'Öffne den eingebetteten Kurs-Chatbot, wenn du ihn ausprobieren möchtest.',
+        tryButton: 'Kurs-Chatbot ausprobieren',
+        iframeTitle: '{name} Kurs-Chatbot',
+        openInNewTab: '{name} in neuem Tab öffnen',
+        illustrationLabel:
+          'Illustration — wähle einen Kurs, um seinen Chatbot auszuprobieren',
+        illustrationAriaLabel: 'Illustrativer Chatbot-Modus',
+        illustrationCaption:
+          'Nur eine synthetische Illustration; hier läuft kein Chatbot.',
+        examplePromptLabel: 'Beispiel einer Studierendenfrage',
+        exampleResponseLabel: 'Illustrative Antwort · {mode}',
+        modes: {
+          tutor: 'Tutor',
+          explainer: 'Erklärer',
+          quizzer: 'Quiz',
+        },
+        examples: {
+          tutor: {
+            prompt:
+              'Ich glaube, Opportunitätskosten sind der Preis, den ich zahle. Kannst du mir einen Hinweis geben?',
+            response:
+              'Stell dir vor, du lernst eine Stunde statt zu arbeiten. Worauf hast du dabei verzichtet?',
+          },
+          explainer: {
+            prompt:
+              'Erkläre Opportunitätskosten mit einem Beispiel aus meinem Alltag.',
+            response:
+              'Opportunitätskosten sind der Wert der nächstbesten Alternative, auf die du verzichtest. Eine Stunde Lernen kann nicht gleichzeitig für Arbeit genutzt werden.',
+          },
+          quizzer: {
+            prompt:
+              'Stell mir eine Frage, um mein Verständnis von Opportunitätskosten zu prüfen.',
+            response:
+              'Du lernst eine Stunde, statt CHF 25 zu verdienen. Wie hoch sind die Opportunitätskosten dieser Stunde?',
+          },
+        },
+      },
+      progress: {
+        label: 'Lernfortschritt',
+        title: 'Kurspunkte, Erfahrungspunkte und Meilensteine',
+        body: 'Kurspunkte zeigen deinen Fortschritt in diesem Kurs. Wenn der Kurs eine Rangliste anbietet, ist der Beitritt freiwillig. Beim Verlassen werden die gesammelten Kurspunkte und deine Ranglisten-Einträge zurückgesetzt; dein Kurszugang bleibt bestehen.',
+        xp: 'Globale XP und Level sind ein separater kontoweiter Fortschritt; ein Austritt aus einer Kursrangliste ändert daran nichts. XP können unabhängig vom Beitritt zu einer Kursrangliste anfallen; die Vergaberegeln hängen von den verfügbaren Aktivitäten ab.',
+        achievements:
+          'Errungenschaften markieren Meilensteine wie ein erreichtes Übungsziel. Die Beispiele sind synthetisch und zeigen keine echten Daten.',
+        tutorialLink: 'Ranglisten und Errungenschaften',
+        illustrationLabel: 'Illustrative Fortschrittsansicht',
+        thisCourse: 'Dieser Kurs',
+        pointsValue: '{points} Punkte',
+        coursePointsSynthetic: 'Kurspunkte · synthetisch',
+        acrossAccount: 'Über dein Konto',
+        levelValue: 'Level {level}',
+        globalXpSynthetic: 'Globale XP · synthetisch',
+        practiceMilestone: 'Übungsmeilenstein',
+        practiceMilestoneBody: '5 Übungsaktivitäten absolvieren · illustrativ',
+        leaderboardTitle: 'Optionale Kursrangliste',
+        exampleTag: 'Beispiel',
+        leaderboardYou: 'Du',
+        leaderboardRow: '{rank} · {name}',
+        illustrationCaption:
+          'Nur illustrative Karten; Werte und Namen sind synthetisch.',
+      },
+      analytics: {
+        label: 'Learning Analytics',
+        title: 'Aktivität in hilfreiche nächste Schritte verwandeln',
+        intro:
+          'Learning Analytics hilft dir, Lücken beim Üben zu erkennen und deine Lernaktivität zu reflektieren, und unterstützt die Dozierenden dabei, Themen mit Unterstützungsbedarf zu erkennen.',
+        accountChoice:
+          'Dein Kurs muss Learning Analytics anbieten, und du entscheidest kontoweit, ob du teilnimmst.',
+        optOutNote:
+          'Wenn du nicht teilnimmst, werden individuelle abgeleitete Learning-Analytics-Daten entfernt und künftige Aggregate schliessen dich aus. Bestehende aggregierte Ergebnisse werden nicht zugesichert neu berechnet oder entfernt.',
+        chartLabel: 'Illustrative Wochenaktivität',
+        chartCaption:
+          'Nur ein illustratives Muster — dies sind keine echten Studierendendaten und keine Messung deiner Aktivität.',
+        plannedBadge:
+          'Geplantes Verhalten · keine Einstellung wird gespeichert',
+        plannedLegend: 'Geplante Auswahl — keine Einstellung wird gespeichert',
+        plannedBody:
+          'Diese künftige Auswahl gilt kontoweit und bleibt davon getrennt, ob ein Kurs Learning Analytics anbietet. Im Prototyp sind diese Steuerelemente deaktiviert; es wird keine Auswahl gespeichert.',
+        optIn: 'Teilnehmen',
+        optOut: 'Nicht teilnehmen',
+        dayMon: 'Mo',
+        dayTue: 'Di',
+        dayWed: 'Mi',
+        dayThu: 'Do',
+        dayFri: 'Fr',
+        daySat: 'Sa',
+        daySun: 'So',
+      },
+      privacyHelp: {
+        label: 'Fortschritt & Hilfe',
+        title: 'Feedback, Datenschutz und Unterstützung',
+        profileNote:
+          'Verwalte deine Sichtbarkeit in den Datenschutzeinstellungen deines Profils. Kurs-Benachrichtigungen und Feedback sind verfügbar, wenn die Aktivität sie unterstützt.',
+        contactNote:
+          'Wende dich bei Fragen zu Zugang, Fristen und Kursregeln an deine Dozierenden.',
+        editProfileLink: 'Datenschutzeinstellungen im Profil',
+        dataUseLink: 'Datennutzung deines Kontos verwalten',
+        privacyPolicyLink: 'Datenschutzerklärung',
+        illustrationLabel: 'Feedback und Unterstützung',
+        feedbackTitle: 'Feedback zu Aktivitäten',
+        feedbackBody: 'Feedback zu deinen Antworten, sofern vorhanden.',
+        supportTitle: 'Unterstützung im Kurs',
+        supportBody: 'Frage deine Dozierenden zu Kursregeln und Zugang.',
+        illustrationCaption: 'Die verfügbare Unterstützung hängt vom Kurs ab.',
+      },
+      faq: {
+        title: 'Häufige Fragen',
+        signIn: {
+          question:
+            'Ich kann mich nicht anmelden oder finde meinen Kurs nicht.',
+          answer:
+            'Nutze den ursprünglichen Kurslink und dein bestehendes Konto. Frage deine Dozierenden nach einer fehlenden PIN oder Zugangshinweisen. Nutze die Wiederherstellungsoption auf der Anmeldeseite, wenn sie angeboten wird.',
+        },
+        missingActivity: {
+          question: 'Eine Aktivität fehlt in meinem Kurs.',
+          answer:
+            'Vielleicht ist die Aktivität unveröffentlicht, geschlossen oder erfordert eine Anmeldung. Öffne den Kurslink deiner Dozierenden und prüfe deine Kursanweisungen. Frage deine Dozierenden, wenn du sie weiterhin nicht findest.',
+        },
+        chatbot: {
+          question: 'Der Kurs-Chatbot fehlt.',
+          answer:
+            'Der Chatbot erscheint, wenn er für deinen Kurs veröffentlicht ist. Melde dich an und öffne den Kurs-Chatbot aus deinem Kurs. Wenn das Guthaben aufgebraucht ist, prüfe die angezeigten Aufladeinformationen.',
+        },
+        install: {
+          question:
+            'Wie installiere ich KlickerUZH und aktiviere Benachrichtigungen?',
+          answer:
+            'Suche in deinem Browser- oder Teilen-Menü nach «App installieren» oder «Zum Startbildschirm hinzufügen». Aktiviere Benachrichtigungen in deinem Kurs, wenn sie verfügbar sind, und erlaube sie auf deinem Gerät. Die Unterstützung variiert je nach Gerät und Browser.',
+          linkLabel: 'Guide zu Installation und Benachrichtigungen',
+        },
+        points: {
+          question: 'Warum habe ich diesmal andere Punkte erhalten?',
+          answer:
+            'Punkte können von Richtigkeit, Antwortzeit, Multiplikatoren und Wiederholungsregeln abhängen. Prüfe die Anweisungen der Aktivität oder frage deine Dozierenden.',
+        },
+        leaderboard: {
+          question: 'Muss ich in der Rangliste erscheinen?',
+          answer:
+            'Nein. Die Teilnahme an Kursranglisten ist freiwillig. Beim Verlassen werden die gesammelten Kurspunkte zurückgesetzt und deine Ranglisten-Einträge für diesen Kurs entfernt; dein Kurszugang und deine kontoweiten XP bleiben erhalten.',
+        },
+        progressTeaserTitle: 'Fortschritt & Daten',
+      },
+      progressTopics: {
+        gamification: 'Kurspunkte und globale XP',
+        analytics: 'Learning Analytics',
+        privacyHelp: 'Datenschutz und Unterstützung',
+      },
+    },
     studentDocs: {
       assessmentInstanceWarning:
         'Bitte beachten Sie, dass Sie sich aktuell in der <b>Assessment-Instanz</b> von KlickerUZH befinden. Die nachfolgende Dokumentation bezieht sich auf die reguläre Studierenden-Applikation, welche sich von der Assessment-Instanz unterscheiden kann.',
