@@ -33,7 +33,6 @@ export default defineConfig({
       use: {
         ...devices['Desktop Firefox'],
         launchOptions: {
-          timeout: 30_000,
           firefoxUserPrefs: { 'network.cookie.cookieBehavior': 5 },
         },
       },
@@ -43,7 +42,6 @@ export default defineConfig({
       use: {
         ...devices['Desktop Firefox'],
         launchOptions: {
-          timeout: 30_000,
           firefoxUserPrefs: { 'network.cookie.cookieBehavior': 1 },
         },
       },
