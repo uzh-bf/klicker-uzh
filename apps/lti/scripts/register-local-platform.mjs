@@ -44,5 +44,6 @@ Provider.setup(
 
 await Provider.deploy({ serverless: true, silent: true })
 const registered = await Provider.registerPlatform(platform)
+if (!registered) throw new Error('Failed to register the local platform')
 console.log(JSON.stringify({ kid: await registered.platformKid() }))
 await Provider.close({ silent: true })

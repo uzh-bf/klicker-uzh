@@ -11,6 +11,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         launchOptions: {
           args: [
+            '--lang=en-US',
             '--disable-features=TrackingProtection3pcd,LocalNetworkAccessChecks',
           ],
         },
@@ -22,6 +23,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         launchOptions: {
           args: [
+            '--lang=en-US',
             '--test-third-party-cookie-phaseout',
             '--disable-features=LocalNetworkAccessChecks',
           ],
