@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   claimChatTurn: vi.fn(),
   failChatTurn: vi.fn(),
   compileSystemPrompt: vi.fn(),
+  getChatModel: vi.fn(),
 }))
 
 vi.mock('@/src/lib/server/apiGuards', () => ({
@@ -74,6 +75,10 @@ vi.mock('@/src/services/accountUsage', () => ({
 
 vi.mock('@/src/lib/server/systemPromptCompiler', () => ({
   compileSystemPrompt: mocks.compileSystemPrompt,
+}))
+
+vi.mock('@/src/lib/server/chatModelProvider', () => ({
+  getChatModel: mocks.getChatModel,
 }))
 
 import { POST } from '../src/app/api/chatbots/[chatbotId]/chat/route'
@@ -178,6 +183,26 @@ describe('required MCP chat preflight', () => {
     mocks.getAggregatedMCPTools.mockRejectedValue(
       new RequiredMCPUnavailableError()
     )
+  })
+
+  test('rejects unsupported stored reasoning restrictions before provider generation', async () => {
+    mocks.findUnique.mockResolvedValue(
+      createChatbot({
+        allowedModelIds: ['gpt-6-luna'],
+        modelSelection: false,
+        allowedReasoningEffortsByModel: { 'gpt-6-luna': ['retired-effort'] },
+      })
+    )
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(response.status).toBe(503)
+    expect(await response.json()).toMatchObject({
+      code: 'CHAT_MODEL_POLICY_UNAVAILABLE',
+    })
+    expect(mocks.getChatModel).not.toHaveBeenCalled()
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.createThread).not.toHaveBeenCalled()
   })
 
   test('refuses a thread id the caller does not own before MCP work', async () => {

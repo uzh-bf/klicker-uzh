@@ -7,7 +7,6 @@ import type {
   ChatbotStandardModeConfigInput,
 } from '@klicker-uzh/types'
 import {
-  CHAT_BASE_MODEL_ID,
   CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH,
   CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH,
   getChatModelAutoPolicyIssues,
@@ -16,6 +15,7 @@ import {
   normalizeChatbotStandardModeConfig,
   parseChatbotCustomModeConfigInput,
   parseChatbotStandardModeConfigInput,
+  resolveChatModelPolicy,
 } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
 import remarkGfm from 'remark-gfm'
@@ -208,6 +208,8 @@ export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] =
   parseChatModelRegistry(DEFAULT_CHAT_MODEL_REGISTRY_INPUT)
 
 let cachedChatModelRegistry: ChatModelCapability[] | null = null
+let cachedChatModelPolicy: ReturnType<typeof resolveChatModelPolicy> | null =
+  null
 
 function dedupeStrings(values: readonly string[]) {
   return Array.from(new Set(values))
@@ -311,13 +313,21 @@ export function getChatModelRegistry(): ChatModelCapability[] {
   if (cachedChatModelRegistry) return cachedChatModelRegistry
 
   const rawRegistry = process.env.CHAT_MODEL_REGISTRY_JSON
-  if (!rawRegistry) {
-    cachedChatModelRegistry = DEFAULT_CHAT_MODEL_REGISTRY
-    return cachedChatModelRegistry
-  }
-
-  cachedChatModelRegistry = parseChatModelRegistry(JSON.parse(rawRegistry))
+  const registry = rawRegistry
+    ? parseChatModelRegistry(JSON.parse(rawRegistry))
+    : DEFAULT_CHAT_MODEL_REGISTRY
+  const policy = resolveChatModelPolicy(registry, getChatModelPolicyOptions())
+  cachedChatModelPolicy = policy
+  cachedChatModelRegistry = registry
   return cachedChatModelRegistry
+}
+
+function getChatModelPolicyOptions() {
+  return {
+    primaryModelId: process.env.CHAT_PRIMARY_MODEL_ID,
+    fallbackModelId: process.env.CHAT_FALLBACK_MODEL_ID,
+    newChatbotModelId: process.env.CHAT_NEW_CHATBOT_MODEL_ID,
+  }
 }
 
 function parseAllowedReasoningEffortsByModel(
@@ -501,15 +511,17 @@ function resolveLegacyFixedModelId(allowedModelIds: readonly string[]) {
       ? registry.filter((model) => normalized.includes(model.id))
       : allowedModelIds.length === 0
         ? registry
-        : registry.filter((model) => model.id === CHAT_BASE_MODEL_ID)
+        : registry.filter(
+            (model) => model.id === cachedChatModelPolicy!.fallbackModelId
+          )
 
-  const configuredPrimary = process.env.CHAT_PRIMARY_MODEL_ID
+  const configuredPrimary = cachedChatModelPolicy!.primaryModelId
   const defaultPrimary = candidates.find((model) => !model.fallback)
   return (
     candidates.find((model) => model.id === configuredPrimary)?.id ??
     defaultPrimary?.id ??
     candidates[0]?.id ??
-    CHAT_BASE_MODEL_ID
+    cachedChatModelPolicy!.fallbackModelId
   )
 }
 
@@ -536,7 +548,7 @@ function normalizeAllowedModelIds(
   // Keep a chatbot with an allow-list made entirely of retired or unknown
   // models on the narrowest current model instead of silently widening it to
   // every active model.
-  return [CHAT_BASE_MODEL_ID]
+  return [cachedChatModelPolicy!.fallbackModelId]
 }
 
 function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(
@@ -2135,22 +2147,11 @@ type CreateChatbotArgs = {
   courseId: string
 }
 
-// New chatbots start on GPT-6 Luna, the BASE default model, which is also the
-// participant-credit fallback. A registry without it keeps the single-Auto
-// default.
-const NEW_CHATBOT_MODEL_ID = 'gpt-6-luna'
-
 export function getNewChatbotModelId(
   registry: readonly ChatModelCapability[]
 ): string | null {
-  const preferred = registry.find((model) => model.id === NEW_CHATBOT_MODEL_ID)
-  if (preferred?.usageClass === 'BASE') {
-    return preferred.id
-  }
-  const auto = registry.find((model) => model.id === 'auto')
-  return auto && getChatModelAutoPolicyIssues(registry).length === 0
-    ? auto.id
-    : null
+  return resolveChatModelPolicy(registry, getChatModelPolicyOptions())
+    .newChatbotModelId
 }
 
 export async function createChatbot(
@@ -2171,11 +2172,10 @@ export async function createChatbot(
     throw chatbotError('Chatbot name must not be empty', 'BAD_USER_INPUT')
   }
 
-  const defaultModelId = getNewChatbotModelId(getChatModelRegistry())
+  getChatModelRegistry()
+  const defaultModelId = cachedChatModelPolicy!.newChatbotModelId
   if (!defaultModelId) {
-    throw new GraphQLError(
-      'Chatbot defaults require a BASE GPT-6 Luna model or exactly one valid Auto model'
-    )
+    throw new GraphQLError('Chatbot default model is unavailable')
   }
 
   const created = await ctx.prisma.chatbot.create({

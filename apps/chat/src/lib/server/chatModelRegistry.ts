@@ -1,7 +1,7 @@
 import {
-  CHAT_BASE_MODEL_ID,
   getChatModelAutoPolicyIssues,
   getChatModelBasePolicyIssues,
+  resolveChatModelPolicy,
 } from '@klicker-uzh/util'
 import { z } from 'zod'
 import type { ReasoningEffort } from '../config/reasoning'
@@ -217,17 +217,22 @@ export const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = parseRegistryValue([
 ])
 
 let cachedRegistry: ChatModelConfig[] | null = null
+let cachedPolicy: ReturnType<typeof resolveChatModelPolicy> | null = null
 
 export function getChatModelRegistry(): ChatModelConfig[] {
   if (cachedRegistry) return cachedRegistry
 
   const raw = process.env.CHAT_MODEL_REGISTRY_JSON
-  if (!raw) {
-    cachedRegistry = DEFAULT_MODEL_REGISTRY
-    return cachedRegistry
-  }
-
-  cachedRegistry = parseRegistryValue(JSON.parse(raw))
+  const registry = raw
+    ? parseRegistryValue(JSON.parse(raw))
+    : DEFAULT_MODEL_REGISTRY
+  const policy = resolveChatModelPolicy(registry, {
+    primaryModelId: process.env.CHAT_PRIMARY_MODEL_ID,
+    fallbackModelId: process.env.CHAT_FALLBACK_MODEL_ID,
+    newChatbotModelId: process.env.CHAT_NEW_CHATBOT_MODEL_ID,
+  })
+  cachedPolicy = policy
+  cachedRegistry = registry
   return cachedRegistry
 }
 
@@ -280,7 +285,7 @@ export function getAllowedReasoningEffortsForModel(
     allowedSet.has(effort)
   )
 
-  return intersection.length > 0 ? intersection : supportedEfforts
+  return intersection
 }
 
 function filterRegistryByAllowList(
@@ -322,7 +327,7 @@ export function getAutomaticModelId(allowedModelIds?: string[]): string | null {
   const registry = filterRegistryByAllowList(allowedModelIds)
   if (registry.length === 0) return null
 
-  const configuredPrimary = process.env.CHAT_PRIMARY_MODEL_ID
+  const configuredPrimary = cachedPolicy!.primaryModelId
 
   const defaultPrimary = registry.find((model) => model.fallback === false)
 
@@ -332,9 +337,9 @@ export function getAutomaticModelId(allowedModelIds?: string[]): string | null {
     defaultPrimary ||
     registry[0]
 
-  if (configuredPrimary && primary.id !== configuredPrimary) {
+  if (process.env.CHAT_PRIMARY_MODEL_ID && primary.id !== configuredPrimary) {
     console.warn(
-      `[chat] CHAT_PRIMARY_MODEL_ID="${configuredPrimary}" is not in the registry; using "${primary.id}".`
+      `[chat] CHAT_PRIMARY_MODEL_ID="${configuredPrimary}" is outside this chatbot's allow-list; using "${primary.id}".`
     )
   }
 
@@ -342,11 +347,6 @@ export function getAutomaticModelId(allowedModelIds?: string[]): string | null {
 }
 
 export function getParticipantFallbackModelId(): string | null {
-  const fallback = getChatModelRegistry().find(
-    (model) =>
-      model.id === CHAT_BASE_MODEL_ID &&
-      model.usageClass === 'BASE' &&
-      model.fallback
-  )
-  return fallback?.id ?? null
+  getChatModelRegistry()
+  return cachedPolicy!.fallbackModelId
 }

@@ -219,6 +219,8 @@ auth:
   affinity: {}
 
 chat:
+  # A catalog ID for newly created chatbots; empty uses the validated BASE fallback.
+  newChatbotModelId: ""
   priorityClassName: production-workload
   accountUsageEnforcementEnabled: false
   lifecycleWritersEnabled: false

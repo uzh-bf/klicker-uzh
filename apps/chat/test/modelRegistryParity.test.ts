@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs'
+import { resolveChatModelPolicy } from '@klicker-uzh/util'
 import { describe, expect, test } from 'vitest'
 import { parse as parseYaml } from 'yaml'
 import {
   DEFAULT_CHAT_MODEL_REGISTRY,
-  getNewChatbotModelId,
   parseChatModelRegistry as parseBackendRegistry,
 } from '../../../packages/graphql/src/services/chatbots'
 import {
@@ -11,328 +11,147 @@ import {
   parseChatModelRegistry as parseChatRegistry,
 } from '../src/lib/server/chatModelRegistry'
 
-// The chat app and the GraphQL backend each carry their own built-in chat model
-// registry (both overridable through CHAT_MODEL_REGISTRY_JSON). The backend copy
-// drives the lecturer-facing allow-list in manage, the chat copy drives what
-// students actually get. When they drift, lecturers can allow-list models that
-// never reach students. The chat side is the source of truth. Deployment
-// registries come from the one .Values.chat.modelRegistry source in
-// deploy/env-uzh-{stg,prd}/values.yaml and are parsed here through BOTH
-// consumers to prove repository-declared parity.
-
-type ParityModel = {
-  id: string
-  deploymentId: string
-  fallback: boolean
-  supportsReasoning: boolean
-  usesResponsesApi: boolean
-  supportedReasoningEfforts: string[]
-  maxOutputTokens: number
-  usageClass: 'BASE' | 'ADVANCED'
-  cost: { input: number; output: number }
-}
-
-function byId(models: readonly ParityModel[]) {
-  return new Map(models.map((model) => [model.id, model]))
-}
-
-function fallbackIds(models: readonly ParityModel[]) {
-  return models.filter((model) => model.fallback).map((model) => model.id)
-}
-
-function baseModelIds(models: readonly ParityModel[]) {
-  return models
-    .filter((model) => model.usageClass === 'BASE')
-    .map((model) => model.id)
-}
-
-function costsById(models: readonly ParityModel[]) {
-  return Object.fromEntries(
-    models.map((model) => [model.id, model.cost] as const)
+// Both consumers must expose the same capabilities and accounting policy for
+// each environment. Environments may deliberately use different catalogs.
+function expectParity(raw: unknown) {
+  const chat = parseChatRegistry(raw)
+  const backend = parseBackendRegistry(raw)
+  expect(backend).toEqual(
+    chat.map(({ supportsImageAttachments: _, ...model }) => model)
   )
+  for (const model of chat) {
+    expect(Number.isInteger(model.maxOutputTokens)).toBe(true)
+    expect(model.maxOutputTokens).toBeGreaterThanOrEqual(1)
+    expect(model.maxOutputTokens).toBeLessThanOrEqual(4096)
+  }
+  return { chat, backend }
 }
 
-const expectedDefaultCosts = {
-  auto: { input: 1, output: 5 },
-  'gpt-6-luna': { input: 0.1, output: 0.5 },
-  'gpt-6-sol': { input: 2, output: 10 },
-  'gpt-6.1-sol': { input: 2, output: 10 },
-  'gpt-5.4': { input: 2.5, output: 15 },
-  'gpt-4.1': { input: 2, output: 8 },
+function syntheticModel(id: string, overrides: Record<string, unknown> = {}) {
+  return {
+    id,
+    deploymentId: `${id}-deployment`,
+    name: id,
+    fallback: false,
+    supportsReasoning: false,
+    maxOutputTokens: 2048,
+    usageClass: 'ADVANCED',
+    cost: { input: 0.2, output: 0.8 },
+    ...overrides,
+  }
 }
 
-const expectedDeployedCosts = {
-  auto: { input: 1, output: 5 },
-  'gpt-6-luna': { input: 0.1, output: 0.5 },
-  'gpt-6-sol': { input: 2, output: 10 },
-  'gpt-6.1-sol': { input: 2, output: 10 },
-  'gpt-5.6-sol': { input: 5, output: 30 },
-}
+const syntheticRegistry = [
+  syntheticModel('auto', { usesResponsesApi: true }),
+  syntheticModel('base-a', {
+    fallback: true,
+    usageClass: 'BASE',
+    maxOutputTokens: 1024,
+  }),
+  syntheticModel('advanced-a', {
+    supportsReasoning: true,
+    supportedReasoningEfforts: ['low', 'high'],
+  }),
+]
 
-const chatModels: ParityModel[] = DEFAULT_MODEL_REGISTRY
-const backendModels: ParityModel[] = DEFAULT_CHAT_MODEL_REGISTRY
-
-describe('default chat model registry parity', () => {
-  test('retired GPT-4.1 Mini is absent from active registries', () => {
-    expect([...byId(chatModels).keys()]).not.toContain('gpt-4.1-mini')
-    expect([...byId(backendModels).keys()]).not.toContain('gpt-4.1-mini')
-  })
-
-  test('retired GPT-5.5 is absent from active registries', () => {
-    expect([...byId(chatModels).keys()]).not.toContain('gpt-5.5')
-    expect([...byId(backendModels).keys()]).not.toContain('gpt-5.5')
-  })
-
-  test('both registries expose the same model ids', () => {
-    expect([...byId(backendModels).keys()].sort()).toEqual(
-      [...byId(chatModels).keys()].sort()
-    )
-  })
-
-  test('every model maps to the same deployment id', () => {
-    const backendById = byId(backendModels)
-    for (const model of chatModels) {
-      expect(backendById.get(model.id)?.deploymentId).toBe(model.deploymentId)
-    }
-  })
-
-  test('every model supports the same reasoning efforts', () => {
-    const backendById = byId(backendModels)
-    for (const model of chatModels) {
-      expect(
-        [...(backendById.get(model.id)?.supportedReasoningEfforts ?? [])]
-          .sort()
-          .join(',')
-      ).toBe([...model.supportedReasoningEfforts].sort().join(','))
-    }
-  })
-
-  test('every model uses the same OpenAI API adapter', () => {
-    const backendById = byId(backendModels)
-    for (const model of chatModels) {
-      expect(backendById.get(model.id)?.supportsReasoning).toBe(
-        model.supportsReasoning
+describe('chat model consumer parity', () => {
+  test('built-in registries have identical structured contracts', () => {
+    expectParity(DEFAULT_MODEL_REGISTRY)
+    expect(
+      DEFAULT_CHAT_MODEL_REGISTRY.map(({ apiVersion: _, ...model }) => model)
+    ).toEqual(
+      DEFAULT_MODEL_REGISTRY.map(
+        ({ supportsImageAttachments: _, apiVersion: _apiVersion, ...model }) =>
+          model
       )
-      expect(backendById.get(model.id)?.usesResponsesApi).toBe(
-        model.usesResponsesApi
-      )
-    }
-  })
-
-  test('every model uses the bounded output-token ceiling', () => {
-    for (const model of [...chatModels, ...backendModels]) {
-      expect(model.maxOutputTokens).toBe(4096)
-    }
-  })
-
-  test('both registries designate the same fallback model', () => {
-    expect(fallbackIds(chatModels)).toHaveLength(1)
-    expect(fallbackIds(backendModels)).toEqual(fallbackIds(chatModels))
-    expect(fallbackIds(chatModels)).toEqual(['gpt-6-luna'])
-  })
-
-  test('every model carries the same explicit usage class in both copies', () => {
-    const backendById = byId(backendModels)
-    for (const model of chatModels) {
-      expect(backendById.get(model.id)?.usageClass).toBe(model.usageClass)
-    }
-    expect(chatModels.find((m) => m.id === 'auto')?.usageClass).toBe('ADVANCED')
-    expect(baseModelIds(chatModels)).toEqual(['gpt-6-luna'])
-    expect(baseModelIds(backendModels)).toEqual(['gpt-6-luna'])
-  })
-
-  test('every model carries the same verified input and output cost', () => {
-    expect(costsById(chatModels)).toEqual(expectedDefaultCosts)
-    expect(costsById(backendModels)).toEqual(expectedDefaultCosts)
-  })
-
-  test('new chatbots start on GPT-6 Luna in the default registry', () => {
-    expect(getNewChatbotModelId(DEFAULT_CHAT_MODEL_REGISTRY)).toBe('gpt-6-luna')
-  })
-
-  test('both consumers reject duplicate model ids', () => {
-    const duplicateRegistry = [
-      ...chatModels,
-      { ...chatModels.find((model) => model.id === 'gpt-6-luna')! },
-    ]
-
-    expect(() => parseChatRegistry(duplicateRegistry)).toThrow(
-      /Duplicate model id/
-    )
-    expect(() => parseBackendRegistry(duplicateRegistry)).toThrow(
-      /Duplicate model id/
     )
   })
 
-  test('both consumers reject invalid output-token caps', () => {
-    const invalidRegistries = [
-      chatModels.map(
-        ({ maxOutputTokens: _maxOutputTokens, ...model }) => model
+  test('both consumers preserve configured IDs, capabilities, costs and individual caps', () => {
+    const { chat, backend } = expectParity(syntheticRegistry)
+    expect(chat.map((model) => model.maxOutputTokens)).toEqual([
+      2048, 1024, 2048,
+    ])
+    const options = {
+      primaryModelId: 'advanced-a',
+      fallbackModelId: 'base-a',
+      newChatbotModelId: 'auto',
+    }
+    expect(resolveChatModelPolicy(chat, options)).toEqual(
+      resolveChatModelPolicy(backend, options)
+    )
+    expect(resolveChatModelPolicy(chat, options)).toEqual({
+      primaryModelId: 'advanced-a',
+      fallbackModelId: 'base-a',
+      newChatbotModelId: 'auto',
+    })
+  })
+
+  test('both consumers reject duplicate IDs, invalid caps and unsafe BASE policy', () => {
+    const invalid = [
+      [...syntheticRegistry, syntheticRegistry[0]],
+      ...[undefined, 0, 1.5, 4097].map((maxOutputTokens) =>
+        syntheticRegistry.map((model) => ({ ...model, maxOutputTokens }))
       ),
-      chatModels.map((model) => ({ ...model, maxOutputTokens: 1.5 })),
-      chatModels.map((model) => ({ ...model, maxOutputTokens: 4097 })),
+      syntheticRegistry.map((model) => ({ ...model, usageClass: 'ADVANCED' })),
+      syntheticRegistry.map((model) => ({ ...model, fallback: false })),
     ]
-
-    for (const invalidRegistry of invalidRegistries) {
-      expect(() => parseChatRegistry(invalidRegistry)).toThrow()
-      expect(() => parseBackendRegistry(invalidRegistry)).toThrow()
+    for (const parse of [parseChatRegistry, parseBackendRegistry]) {
+      for (const registry of invalid) expect(() => parse(registry)).toThrow()
     }
   })
 
-  test('both consumers reject invalid participant-credit base policy', () => {
-    const soleNonLunaBaseRegistry = chatModels.map((model) => {
-      if (model.id === 'gpt-6-luna') {
-        return { ...model, usageClass: 'ADVANCED' as const }
-      }
-      if (model.id === 'gpt-4.1') {
-        return { ...model, usageClass: 'BASE' as const }
-      }
-      return model
-    })
-    const nonFallbackLunaRegistry = chatModels.map((model) =>
-      model.id === 'gpt-6-luna' ? { ...model, fallback: false } : model
-    )
+  test('both consumers retain canonical Auto invariants', () => {
+    for (const parse of [parseChatRegistry, parseBackendRegistry]) {
+      expect(() =>
+        parse(syntheticRegistry.filter((model) => model.id !== 'auto'))
+      ).toThrow()
+      expect(() =>
+        parse(
+          syntheticRegistry.map((model) =>
+            model.id === 'auto' ? { ...model, fallback: true } : model
+          )
+        )
+      ).toThrow()
+      expect(() =>
+        parse(
+          syntheticRegistry.map((model) =>
+            model.id === 'auto'
+              ? {
+                  ...model,
+                  supportsReasoning: true,
+                  supportedReasoningEfforts: ['low'],
+                }
+              : model
+          )
+        )
+      ).toThrow()
+    }
+  })
 
-    for (const parseRegistry of [parseChatRegistry, parseBackendRegistry]) {
-      expect(() => parseRegistry(soleNonLunaBaseRegistry)).toThrow(
-        /gpt-6-luna.*BASE model/
+  for (const environment of ['stg', 'prd']) {
+    test(`${environment}: registry and effective policy are valid for both consumers`, () => {
+      const values = parseYaml(
+        readFileSync(
+          new URL(
+            `../../../deploy/env-uzh-${environment}/values.yaml`,
+            import.meta.url
+          ),
+          'utf8'
+        )
       )
-      expect(() => parseRegistry(nonFallbackLunaRegistry)).toThrow(
-        /participant-credit fallback/
+      const { chat, backend } = expectParity(values.chat.modelRegistry)
+      const options = {
+        primaryModelId: values.chat.automaticModels?.primaryId,
+        fallbackModelId: values.chat.automaticModels?.fallbackId,
+        newChatbotModelId: values.chat.newChatbotModelId,
+      }
+      expect(resolveChatModelPolicy(chat, options)).toEqual(
+        resolveChatModelPolicy(backend, options)
       )
-    }
-  })
-
-  test('both consumers reject invalid Auto registry policy', () => {
-    const withoutAuto = chatModels.filter((model) => model.id !== 'auto')
-    const autoFallback = chatModels.map((model) =>
-      model.id === 'auto' ? { ...model, fallback: true } : model
-    )
-    const autoReasoning = chatModels.map((model) =>
-      model.id === 'auto' ? { ...model, supportsReasoning: true } : model
-    )
-
-    for (const parseRegistry of [parseChatRegistry, parseBackendRegistry]) {
-      expect(() => parseRegistry(withoutAuto)).toThrow(/auto.*exactly once/i)
-      expect(() => parseRegistry(autoFallback)).toThrow(/auto.*fallback/i)
-      expect(() => parseRegistry(autoReasoning)).toThrow(/auto.*reasoning/i)
-    }
-  })
-})
-
-function loadDeployedRegistries() {
-  const valuesFiles = [
-    {
-      name: 'env-uzh-stg',
-      url: new URL('../../../deploy/env-uzh-stg/values.yaml', import.meta.url),
-    },
-    {
-      name: 'env-uzh-prd',
-      url: new URL('../../../deploy/env-uzh-prd/values.yaml', import.meta.url),
-    },
-  ]
-
-  return valuesFiles.map(({ name, url }) => {
-    const parsed = parseYaml(readFileSync(url, 'utf8')) as {
-      chat?: { modelRegistry?: unknown[] }
-    }
-    const entries = parsed.chat?.modelRegistry ?? []
-    return {
-      name,
-      raw: entries,
-      chat: parseChatRegistry(entries),
-      backend: parseBackendRegistry(entries),
-    }
-  })
-}
-
-describe('deployed chat model registry parity (values.yaml)', () => {
-  const deployed = loadDeployedRegistries()
-
-  test('loads both deployment registries', () => {
-    expect(deployed).toHaveLength(2)
-    for (const { chat, backend } of deployed) {
-      expect(chat.length).toBeGreaterThan(0)
-      expect(backend.length).toBeGreaterThan(0)
-    }
-  })
-
-  test('retired GPT-5.5 is absent from both deployment registries', () => {
-    for (const { name, chat, backend } of deployed) {
-      expect(
-        chat.map((model) => model.id),
-        name
-      ).not.toContain('gpt-5.5')
-      expect(
-        backend.map((model) => model.id),
-        name
-      ).not.toContain('gpt-5.5')
-    }
-  })
-
-  for (const { name, raw, chat, backend } of deployed) {
-    test(`${name}: every entry declares an explicit usage class`, () => {
-      for (const [index, entry] of raw.entries()) {
-        const usageClass = (entry as { usageClass?: unknown } | null)
-          ?.usageClass
-        expect(
-          usageClass,
-          `${name} modelRegistry[${index}] must declare an explicit usageClass`
-        ).toMatch(/^(BASE|ADVANCED)$/)
-        expect(
-          (entry as { maxOutputTokens?: unknown } | null)?.maxOutputTokens,
-          `${name} modelRegistry[${index}] must declare maxOutputTokens=4096`
-        ).toBe(4096)
+      for (const model of values.chat.modelRegistry) {
+        expect(['BASE', 'ADVANCED']).toContain(model.usageClass)
       }
-    })
-
-    test(`${name}: both consumers accept every entry and classify identically`, () => {
-      const backendById = byId(backend)
-      for (const model of chat) {
-        const backendModel = backendById.get(model.id)
-        expect(
-          backendModel,
-          `missing backend entry for ${model.id}`
-        ).toBeDefined()
-        expect(backendModel?.usageClass).toBe(model.usageClass)
-        expect(backendModel?.fallback).toBe(model.fallback)
-        expect(backendModel?.cost).toEqual(model.cost)
-        expect(model.maxOutputTokens).toBe(4096)
-        expect(backendModel?.maxOutputTokens).toBe(4096)
-      }
-      expect(chat.find((m) => m.id === 'auto')?.usageClass).toBe('BASE')
-      expect(baseModelIds(chat)).toEqual(['auto', 'gpt-6-luna'])
-      expect(fallbackIds(chat)).toEqual(['gpt-6-luna'])
-      expect(costsById(chat)).toEqual(expectedDeployedCosts)
-      expect(getNewChatbotModelId(backend)).toBe('gpt-6-luna')
     })
   }
-
-  test('staging and production expose the same accounting policy', () => {
-    const [staging, production] = deployed
-    expect(staging).toBeDefined()
-    expect(production).toBeDefined()
-
-    expect(
-      staging!.chat.map(
-        ({ id, usageClass, fallback, cost, maxOutputTokens }) => ({
-          id,
-          usageClass,
-          fallback,
-          cost,
-          maxOutputTokens,
-        })
-      )
-    ).toEqual(
-      production!.chat.map(
-        ({ id, usageClass, fallback, cost, maxOutputTokens }) => ({
-          id,
-          usageClass,
-          fallback,
-          cost,
-          maxOutputTokens,
-        })
-      )
-    )
-  })
 })

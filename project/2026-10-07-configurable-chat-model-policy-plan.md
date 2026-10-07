@@ -70,6 +70,12 @@ Pause only for a material product/configuration change, missing independent revi
 
 ## Progress
 
-Status: derived implementation plan drafted; no implementation changes yet. Required delivery: reviewed draft PR; achieved: clean task worktree. PR: none yet. Next action: Astra plan-hardening pass. Broad production goal and separate deployment prep remain outside this package.
+Status: implementation and focused source verification complete; independent slice and final reviews pending. Required delivery: reviewed draft PR; PR: none yet. Next action: review the integrated committed slice. Broad production goal and separate deployment prep remain outside this package.
 
 Planning evidence: configured Astra child `/root/configurable_chat_models_astra` completed the initial investigation and architecture refinement. Runtime model provenance is unavailable; this records configured routing rather than verified model identity. Optional opposing-provider route previously failed terminally in this parent task and is not re-probed.
+
+The same Astra planner returned `APPROVED` after one correction round. Main accepted its reasoning-intersection guard, deterministic fallback selection, explicit ownership and incomplete-browser acceptance requirements. The bounded helper executor completed its util change; main integrated and verified the consumers.
+
+Verification: 50 focused Chat tests and five GraphQL registry tests pass in a network-disabled Node 24.21.0 / Vitest 3.2.4 container using retained dependencies. Chat and GraphQL repository type-checks pass. Scoped Biome lint passes with three existing warnings and one existing informational suggestion. Both STG and PRD Helm renders prove identical consumer policy/registry settings, unchanged workload images and changed checksums on both consumer deployments after a default-setting change. This is static rollout proof only.
+
+Local browser acceptance and the database-backed management suite remain pending: the exact task runtime's managed startup has not produced a readiness receipt. A broader util type-check is still running without terminal evidence; the focused helper check and util build passed. No full monorepo check/build or hosted CI success is claimed. Container checks use existing installed executables because the isolated dependency mounts cannot satisfy pnpm's whole-workspace dependency verification. Host Git identity and staged secret checks remain mandatory before publication.

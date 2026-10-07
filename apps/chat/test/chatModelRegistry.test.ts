@@ -1,3 +1,4 @@
+import { resolveChatModelPolicy } from '@klicker-uzh/util'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 
 afterEach(() => {
@@ -6,6 +7,95 @@ afterEach(() => {
 })
 
 describe('chat model registry provider protocol', () => {
+  const customRegistry = [
+    {
+      id: 'auto',
+      deploymentId: 'router-a',
+      name: 'Auto',
+      maxOutputTokens: 512,
+      cost: { input: 0, output: 0 },
+    },
+    {
+      id: 'base-a',
+      deploymentId: 'base-deployment',
+      name: 'Base',
+      usageClass: 'BASE',
+      fallback: true,
+      supportsReasoning: true,
+      supportedReasoningEfforts: ['low', 'high'],
+      maxOutputTokens: 1024,
+      cost: { input: 0.1, output: 0.2 },
+    },
+    {
+      id: 'advanced-a',
+      deploymentId: 'advanced-deployment',
+      name: 'Advanced',
+      maxOutputTokens: 2048,
+      cost: { input: 1, output: 2 },
+    },
+  ]
+
+  test('uses configured defaults without built-in vendor IDs and preserves fixed allow-lists', async () => {
+    vi.stubEnv('CHAT_MODEL_REGISTRY_JSON', JSON.stringify(customRegistry))
+    vi.stubEnv('CHAT_PRIMARY_MODEL_ID', 'advanced-a')
+    vi.stubEnv('CHAT_FALLBACK_MODEL_ID', 'base-a')
+    vi.stubEnv('CHAT_NEW_CHATBOT_MODEL_ID', 'auto')
+    const {
+      getChatModelRegistry,
+      getAutomaticModelId,
+      getParticipantFallbackModelId,
+      getModelsForChatbot,
+      getAllowedReasoningEffortsForModel,
+    } = await import('../src/lib/server/chatModelRegistry')
+    const registry = getChatModelRegistry()
+    expect(getAutomaticModelId()).toBe('advanced-a')
+    expect(getParticipantFallbackModelId()).toBe('base-a')
+    expect(getAutomaticModelId(['auto'])).toBe('auto')
+    expect(
+      getModelsForChatbot({ allowedModelIds: ['retired'] }).map(
+        (model) => model.id
+      )
+    ).toEqual(['base-a'])
+    expect(
+      getAllowedReasoningEffortsForModel(
+        registry.find((model) => model.id === 'base-a')!,
+        { 'base-a': ['retired-effort'] }
+      )
+    ).toEqual([])
+  })
+
+  test('requires an explicit fallback for ambiguous catalogs and ignores registry order', async () => {
+    const { parseChatModelRegistry } = await import(
+      '../src/lib/server/chatModelRegistry'
+    )
+    const registry = parseChatModelRegistry([
+      ...customRegistry,
+      { ...customRegistry[1], id: 'base-b' },
+    ])
+    expect(() => resolveChatModelPolicy(registry)).toThrow()
+    expect(
+      resolveChatModelPolicy(registry, { fallbackModelId: 'base-b' })
+        .fallbackModelId
+    ).toBe('base-b')
+    expect(
+      resolveChatModelPolicy([...registry].reverse(), {
+        fallbackModelId: 'base-b',
+      }).fallbackModelId
+    ).toBe('base-b')
+  })
+
+  test.each([
+    'CHAT_PRIMARY_MODEL_ID',
+    'CHAT_FALLBACK_MODEL_ID',
+    'CHAT_NEW_CHATBOT_MODEL_ID',
+  ])('rejects an unknown %s at startup', async (variable) => {
+    vi.stubEnv('CHAT_MODEL_REGISTRY_JSON', JSON.stringify(customRegistry))
+    vi.stubEnv(variable, 'missing')
+    const { getChatModelRegistry } = await import(
+      '../src/lib/server/chatModelRegistry'
+    )
+    expect(() => getChatModelRegistry()).toThrow()
+  })
   test('preserves the legacy reasoning-based Responses default while allowing Auto to opt in', async () => {
     vi.stubEnv(
       'CHAT_MODEL_REGISTRY_JSON',
@@ -132,7 +222,7 @@ describe('chat model registry provider protocol', () => {
     expect(getAutomaticModelId(['gpt-4.1-mini'])).toBe('gpt-6-luna')
   })
 
-  test('always selects Luna as the participant fallback', async () => {
+  test('rejects an ADVANCED configured participant fallback', async () => {
     vi.stubEnv('CHAT_FALLBACK_MODEL_ID', 'advanced-fallback')
     vi.stubEnv(
       'CHAT_MODEL_REGISTRY_JSON',
@@ -177,7 +267,7 @@ describe('chat model registry provider protocol', () => {
       '../src/lib/server/chatModelRegistry'
     )
 
-    expect(getParticipantFallbackModelId()).toBe('gpt-6-luna')
+    expect(() => getParticipantFallbackModelId()).toThrow()
     vi.stubEnv('CHAT_FALLBACK_MODEL_ID', 'gpt-6-luna')
     expect(getParticipantFallbackModelId()).toBe('gpt-6-luna')
   })
@@ -207,7 +297,7 @@ describe('chat model registry provider protocol', () => {
           cost: { input: 1, output: 1 },
         },
       ])
-    ).toThrow(/gpt-6-luna.*BASE model/)
+    ).toThrow(/BASE.*fallback/)
 
     expect(() =>
       parseChatModelRegistry([
@@ -220,7 +310,7 @@ describe('chat model registry provider protocol', () => {
           cost: { input: 0.2, output: 1.2 },
         },
       ])
-    ).toThrow(/participant-credit fallback/)
+    ).toThrow(/fallback/)
   })
 
   test('fails closed when supplied registry JSON is invalid', async () => {

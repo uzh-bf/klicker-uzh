@@ -34,6 +34,7 @@ import {
   getChatModelRegistry,
   getModelsForChatbot,
   getParticipantFallbackModelId,
+  parseReasoningEffortByModel,
 } from '@/src/lib/server/chatModelRegistry'
 import { buildChatTurnRequest } from '@/src/lib/server/chatTurnRequest'
 import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
@@ -770,7 +771,7 @@ export async function POST(
 
   // Enforce per-chatbot model allow-list
   // Automatic selection is authoritative when a persisted allow-list contains
-  // only retired models: getAutomaticModelId resolves that state to Luna, the
+  // only retired models: getAutomaticModelId resolves that state to the
   // unconditional base fallback, so the stale list must not reject the turn.
   if (
     allowedIds &&
@@ -877,6 +878,28 @@ export async function POST(
         return chatModelUnavailableResponse(selectedModelConfig.usageClass)
       }
     }
+  }
+
+  const allowedReasoningEfforts = getAllowedReasoningEffortsForModel(
+    selectedModelConfig,
+    chatbot.allowedReasoningEffortsByModel
+  )
+  if (
+    (selectedModelConfig.supportsReasoning ||
+      Boolean(
+        parseReasoningEffortByModel(chatbot.allowedReasoningEffortsByModel)[
+          selectedModelConfig.id
+        ]?.length
+      )) &&
+    allowedReasoningEfforts.length === 0
+  ) {
+    return NextResponse.json(
+      {
+        error: 'No configured reasoning level is supported by this model',
+        code: 'CHAT_MODEL_POLICY_UNAVAILABLE',
+      },
+      { status: 503 }
+    )
   }
 
   const enabledMCPConfigurations = (chatbot.mcpConfigurations ?? []).filter(
@@ -1485,10 +1508,6 @@ export async function POST(
 
     const maxOutputTokens = selectedModelConfig.maxOutputTokens
 
-    const allowedReasoningEfforts = getAllowedReasoningEffortsForModel(
-      selectedModelConfig,
-      chatbot.allowedReasoningEffortsByModel
-    )
     const appliedReasoningEffort: ReasoningEffort | null =
       allowedReasoningEfforts.length > 0
         ? allowedReasoningEfforts.includes(requestedReasoningEffort)
