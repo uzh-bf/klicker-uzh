@@ -44,6 +44,22 @@ function commitPackageChange(root, name) {
   return git(root, 'rev-parse', 'HEAD')
 }
 
+// A rename is the case the downstream classifier cannot reconstruct from a
+// name-only diff: the old path disappears from the list and only the
+// destination remains, which would read as an added application file.
+function commitPackageRename(root, from, to) {
+  fs.mkdirSync(path.join(root, 'packages'), { recursive: true })
+  fs.writeFileSync(path.join(root, 'packages', from), 'x\n')
+  git(root, 'add', '.')
+  git(root, 'commit', '-q', '-m', `add ${from}`)
+  git(root, 'push', '-q', 'origin', 'HEAD')
+  const base = git(root, 'rev-parse', 'HEAD')
+  git(root, 'mv', `packages/${from}`, `packages/${to}`)
+  git(root, 'commit', '-q', '-m', `rename ${from}`)
+  git(root, 'push', '-q', 'origin', 'HEAD')
+  return { base, head: git(root, 'rev-parse', 'HEAD') }
+}
+
 // One mock server per runAction call: it stands in for the GitHub check-run
 // endpoint the composite queries before honouring a metadata-only skip. The
 // action runs the step script through an asynchronous child, because the mock
@@ -363,4 +379,112 @@ test('an empty diff still fails open on a push event', async () => {
     checkRuns: [],
   })
   assert.equal(out.should_run, 'true')
+})
+
+// A consumer classifier needs the records for the exact diff the filter decided
+// on. A rename reaches it as a rename, so it can see that a path left the tree
+// instead of reading the destination as a newly added file.
+test('a pull request records the rename-aware diff for its consumer', async () => {
+  const root = makeRepo()
+  const { base, head } = commitPackageRename(root, 'graphql.txt', 'grading.txt')
+  const records = path.join(root, 'changed-records.bin')
+  const out = await runAction(root, {
+    env: {
+      GITHUB_EVENT_NAME: 'pull_request',
+      BASE_REF: base,
+      HEAD_SHA: head,
+      ACTION: 'synchronize',
+      EDITED_BASE_FROM: '',
+      PRIOR_CHECK_NAME: 'suite',
+      RECORDS_PATH: records,
+    },
+    checkRuns: [],
+  })
+
+  assert.equal(out.should_run, 'true')
+  assert.equal(out.records_path, records)
+  const fields = fs.readFileSync(records, 'utf8').split('\0').filter(Boolean)
+  assert.match(fields[0], /^R\d+$/)
+  assert.deepEqual(fields.slice(1), [
+    'packages/graphql.txt',
+    'packages/grading.txt',
+  ])
+})
+
+test('a push records the diff of the complete pushed range', async () => {
+  const root = makeRepo()
+  const before = git(root, 'rev-parse', 'HEAD')
+  const head = commitPackageChange(root, 'graphql.txt')
+  const records = path.join(root, 'changed-records.bin')
+  const out = await runAction(root, {
+    env: {
+      GITHUB_EVENT_NAME: 'push',
+      BEFORE_SHA: before,
+      BASE_REF: before,
+      HEAD_SHA: head,
+      ACTION: '',
+      EDITED_BASE_FROM: '',
+      PRIOR_CHECK_NAME: 'suite',
+      RECORDS_PATH: records,
+    },
+    checkRuns: [],
+  })
+
+  assert.equal(out.should_run, 'true')
+  assert.deepEqual(
+    fs.readFileSync(records, 'utf8').split('\0').filter(Boolean),
+    ['A', 'packages/graphql.txt']
+  )
+})
+
+// An undeterminable diff must stay unproven. Writing an empty file would let a
+// consumer read "no changed paths" from a diff that was never computed.
+test('an undeterminable diff writes no records', async () => {
+  const root = makeRepo()
+  const sha = git(root, 'rev-parse', 'HEAD')
+  const records = path.join(root, 'changed-records.bin')
+  const out = await runAction(root, {
+    env: {
+      GITHUB_EVENT_NAME: 'push',
+      BEFORE_SHA: '0000000000000000000000000000000000000000',
+      BASE_REF: sha,
+      HEAD_SHA: sha,
+      ACTION: '',
+      EDITED_BASE_FROM: '',
+      PRIOR_CHECK_NAME: 'suite',
+      RECORDS_PATH: records,
+    },
+    checkRuns: [],
+  })
+
+  assert.equal(out.should_run, 'true')
+  assert.equal(out.records_path, undefined)
+  assert.equal(fs.existsSync(records), false)
+})
+
+// The records are opt-in: a caller that only needs the boolean decision must not
+// leave a file behind next to its checkout.
+test('records stay unwritten when the caller does not ask for them', async () => {
+  const root = makeRepo()
+  const base = git(root, 'rev-parse', 'HEAD')
+  const head = commitPackageChange(root, 'graphql.txt')
+  const out = await runAction(root, {
+    env: {
+      GITHUB_EVENT_NAME: 'pull_request',
+      BASE_REF: base,
+      HEAD_SHA: head,
+      ACTION: 'synchronize',
+      EDITED_BASE_FROM: '',
+      PRIOR_CHECK_NAME: 'suite',
+      RECORDS_PATH: '',
+    },
+    checkRuns: [],
+  })
+
+  assert.equal(out.should_run, 'true')
+  assert.equal(out.records_path, undefined)
+  assert.deepEqual(
+    fs.readdirSync(root).filter((entry) => entry.endsWith('.bin')),
+    []
+  )
 })

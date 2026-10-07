@@ -1,0 +1,59 @@
+name: Maintain draft sync PRs
+
+on:
+  # Run from v3 even before the controller has propagated to v3-ai.
+  workflow_run:
+    workflows: ['Check codebase']
+    types: [completed]
+    branches: ['v3', 'v3-ai']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Preview missing sync PRs without creating them'
+        type: boolean
+        default: true
+        required: true
+
+concurrency:
+  group: maintain-draft-sync-prs
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  maintain:
+    if: >-
+      github.repository == 'uzh-bf/klicker-uzh' &&
+      github.ref == 'refs/heads/v3' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_repository.full_name == github.repository))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout trusted controller
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+
+      - name: Maintain draft sync PRs
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        with:
+          script: |
+            const { maintainDraftSyncPrs } = require('./.github/scripts/draft-sync-prs.cjs')
+            const results = await maintainDraftSyncPrs({
+              github,
+              context,
+              dryRun: process.env.DRY_RUN !== 'false',
+            })
+            for (const { head, base, action, number } of results) {
+              core.info(`${head} -> ${base}: ${action}${number ? ` #${number}` : ''}`)
+            }

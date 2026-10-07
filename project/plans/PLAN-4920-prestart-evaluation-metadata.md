@@ -1,6 +1,355 @@
 # PR 4920: evaluation metadata and active-block reveal controls
 
-## Approved follow-up
+## Current roadmap — 2026-10-07
+
+### Outcome and authority
+
+Complete the existing [evaluation PR](https://github.com/uzh-bf/klicker-uzh/pull/4920)
+with reliable evaluation rendering, active presenter controls, and execution-bound
+result aggregation. This section supersedes dated next-action and readiness
+claims below; the older entries retain the decisions and historical evidence.
+
+The user approved execution of this roadmap with a native goal, explicitly
+excluding PR merging. The approved batch covers corrections, verification, one
+readiness-driven `v3` integration into the task branch, ordinary commits/pushes
+to the existing task branch, and PR-description updates. PR merging, PR approval,
+force-push, deployment, additional data deletion, and messages to human reviewers
+remain separately gated. The user requested verification of review comments
+without replies. The user separately approved a pinned devrouter 0.2.0
+installation in a task-only temporary directory. Later named approval covered
+one auxiliary journal quarantine and exact synthetic runtime recreation, as
+recorded below. Global CLI/MCP configuration, further shared-state repair and
+other runtime/data deletion remain outside that approval.
+
+Terminal condition: the verified integrated source is published to this PR,
+required exact-head CI passes, final review has actually completed, and the
+remaining human-review requirement is reported accurately. Merge readiness is
+not established while GitHub retains blocking changes-requested reviews.
+Release queue compatibility is recorded separately from source merge readiness.
+
+### Reconciled baseline
+
+| Item               | Current evidence                                                                                                                                                                                                                                                                                                                                                               | Consequence                                                                                                                                                                                                            |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Source and target  | Task checkout `trees/activity-info-on-eval` was clean before this roadmap update. Branch `audit-pr4920-merge`, HEAD and `origin/activity-info-on-eval` both `e84668825c048f1d69f3e66e197938455e29bec9`. PR targets `v3`, freshly fetched at `103255c85db481d9ea4f854bd350e69446b43bd5`. Task is 54 commits ahead and 62 behind target; its configured upstream is `origin/v3`. | No source commit is waiting to be pushed; this roadmap update remains local. Use the existing checkout, and push explicitly to `origin/activity-info-on-eval` during delivery. Target drift is not task-upstream loss. |
+| Package scope      | Target-relative merge-base diff contains 37 files, 3,538 additions and 705 deletions; excluding project documents and generated SDL gives 3,515 substantive changed lines (2,811 additions and 704 deletions).                                                                                                                                                                 | Keep the existing cohesive approved PR. Its size requires a complete integrated review of metadata/UI, HMAC shaping, and aggregation/cache lifecycle. No new stack or decomposition is authorized by this review.      |
+| Required CI        | Six required contexts pass: OLAT API, GraphQL, production i18n, unit tests, Gitleaks, and image build. `check` and `test-playwright-status` fail on this exact PR head.                                                                                                                                                                                                        | Passing contexts do not establish whole-package acceptance.                                                                                                                                                            |
+| Formatting failure | Check run `35362612797`, job `105662152922`, fails Prettier on `playwright/tests/O1-live-quiz-core.spec.ts`.                                                                                                                                                                                                                                                                   | Run the repository formatter on this file and inspect its complete diff. The failure is not a typecheck diagnosis.                                                                                                     |
+| Browser failure    | Run `35362613133`, shard 8 job `105661553707`: 162 tests pass, one fails, 26 do not run. The activation/restart regression fails at O1 line 3308, missing `evaluation-footer-show-solution` after abort, restart, activation and reopening the signed link; retry also fails.                                                                                                  | Reproduce and inspect rendered state, query results and lifecycle before choosing a test or application correction. No proven root cause yet.                                                                          |
+| Forge reviews      | All 31 discussion threads are resolved. Two historical changes-requested reviews remain. The `final-ai-review` pending context is stale: run `35362609854` completed, but review/start/finalize jobs were skipped.                                                                                                                                                             | Thread resolution is not reviewer approval; skipped review jobs are not a successful final review.                                                                                                                     |
+| PR description     | Body still describes `fec32afea` and its older target, earlier verification, and an old GitGuardian blocker.                                                                                                                                                                                                                                                                   | Replace stale coverage and evidence claims after the corrected integrated package is verified. Current required Gitleaks passes; historical incident disposition is not established by this check.                     |
+| Runtime            | Source-bound `devrouter status --repo <exact-path> --json` reports synthetic `trees/pr4920-devsy-browser` as `failed-transition` and manual `trees/activity-info-on-eval` as `drifted`. Both have missing managed services/processes. Owner inventory reports zero exact routes for each.                                                                                      | Neither is a running manual-test environment. Preserve owner records and retained data; no deletion or recreation occurred during this review. Provider shutdown completion remains unverified.                        |
+| Toolchain          | The approved task-only installation provides devrouter 0.2.0 at `/private/tmp/pr4920-devrouter-0.2.0.onpjXp/bin/devrouter`, qualified with existing Node 24.21.0. The integrated task repository requires 0.2.0. Global binaries remain unchanged.                                                                                                                             | Tool acquisition is complete. Select the qualified binary through the scoped `PATH` and `KLICKER_DEVROUTER_BIN`; do not change global configuration.                                                                   |
+| Native goal        | The goal was marked blocked after three consecutive tool-acquisition blocker turns. Human approval allowed the scoped installation and recovery investigation to continue; the goal tool still reports blocked.                                                                                                                                                                | Preserve the same objective. Do not create a replacement goal or claim completion. Runtime recovery now has different, concrete authority gates below.                                                                 |
+
+### Execution checkpoint — 2026-10-07
+
+- Applied a normal, conflict-free `origin/v3` integration at
+  `103255c85db481d9ea4f854bd350e69446b43bd5` with `--no-commit --no-ff`.
+  The merge remains pending in `trees/activity-info-on-eval`; no commit or push
+  occurred. Inherited target changes remain distinct from task corrections.
+- Corrected the reported O1 Prettier failure with one formatting-only hunk.
+  The focused repository Prettier check passes. No functional test or application
+  correction has been inferred from the timeout alone.
+- Added diagnostic contract assertions inside the existing restart regression.
+  It now checks publication, the original block's activation response, a changed
+  activation timestamp and the same question's presence before reveal controls.
+  GET persisted queries and POST operations are both observed. Existing reveal
+  expectations and the 500 ms diagnostic journey remain intact. TypeScript
+  syntax parsing and Prettier pass; runtime execution remains outstanding.
+  Source inspection confirms `useStartLiveQuiz` publishes an optimistic response,
+  so cockpit visibility alone cannot prove the restart mutation completed. The
+  new response assertion observes server completion; its effect on the CI
+  failure still requires a producing browser run.
+- CI trace/screenshot artifacts are no longer retained. The failed job log
+  confirms the missing controls after restart, but does not establish the failed
+  block transition or rendered-state cause. Reproduction remains required.
+- Installed approved `@devrouter/cli@0.2.0` only under
+  `/private/tmp/pr4920-devrouter-0.2.0.onpjXp`. Its version check qualifies the
+  integrated task repository when run with existing Node 24.21.0. Volta 0.1.3
+  and the local 0.1.0 installation remain unchanged.
+- The supported exact-owner `stop` fails with: `Managed stop requires unchanged
+recorded resources and configuration.` The subsequent `ensure --repair`
+  fails lifecycle admission because the owner remains `stopping` with desired
+  `stopped-by-user`. Both commands terminated; no live stop watcher is waiting.
+  The CLI identifies exact-owner deletion as the next recovery branch. That
+  deletion/recreation still requires named authority.
+- Devsy 1.19.0 reports synthetic owner `rs-pr4920-devsy-browser` as `NotFound`.
+  There are zero exact routes, zero containers with the exact source-path label,
+  and no containers or volumes labelled with compose project `default-rs-4cec0`.
+  This does not prove absence of unlabelled retained data. The synthetic Git
+  checkout and diagnostic changes remain intact; manual runtime/data is excluded.
+- The pinned CLI doctor also blocks shared capacity admission on
+  `journal-entry-unsupported`. The rejected regular file is
+  `f254a6019fcc298158687a3f1ccd0c619646ba1f16e847aac41f4d7398b8c989-key-50ca81249fb3430af42c7c4cf132b5aa49f84587e4459d1dd1f300765883fe2a.json`
+  under `/Users/roland/.config/devrouter/reliability/`. Values-free inspection
+  identifies a completed auxiliary record for `trees/codex/dpo-verification`;
+  its separate canonical version-2 journal exists with matching identity.
+  Both local 0.1.0 and pinned 0.2.0 accept only 64-hex journal filenames, so this
+  is not established as a new-version regression. Doctor prescribes moving the
+  unrecognised entry out while preserving contents. No file was moved or edited:
+  shared-state repair needs separate authority and must preserve canonical owner
+  journals and unrelated runtimes.
+- Fresh fetch advances `origin/v3` to
+  `bf114e6f247c99cd6fb36a7c0f3e480fe2040d51`. The one new commit changes
+  `playwright/global-setup.ts` to derive seeded participant-group codes
+  deterministically. The pending merge still records `103255c85d`; account for
+  this test-relevant target drift through normal integration before final proof.
+
+The user approved quarantining the exact auxiliary journal above and deleting
+and recreating only the synthetic runtime. Both operations completed. The
+journal bytes are preserved under
+`/private/tmp/pr4920-devrouter-journal-quarantine.QXsFYf/`; its SHA-256 remains
+`2a46d6702c10295df1a17f0f0f3d73366900b56d6dc9eb606510ada149800fe0`.
+The separate canonical journal remains unchanged. Doctor then identified a
+second version-1 DPO auxiliary journal with an `-id-` suffix; that file is
+outside the single-file approval and remains untouched. No shared capacity
+policy is configured, and supported startup succeeded despite that doctor gap.
+
+Synthetic Git edits were preserved in stash
+`f345c0be4cd1d929d8e6a2ebcd65b1dbf6229d12` before source alignment. Do not
+apply it wholesale: it includes historical copied source and MCP diagnostics.
+The synthetic checkout now holds task head `e84668825c` plus a conflict-free,
+uncommitted normal merge of `bf114e6f24` and the task's current regression edits.
+The task's pending merge still names `103255c85d`; the deterministic group-code
+change is byte-identical to the latest target. Complete the pending integration,
+then record latest-target ancestry through a normal merge before publication.
+
+The recreated synthetic owner `rs-pr4920-devsy-browser` started successfully
+with the manage profile and no drift. The new primary container is
+`2c00b81b326d64d0d600b7349cb5f7d8509d2f9f1676f58431ea4b4926198531`.
+The first combined regression run passed 22 aggregation tests but exposed an
+unguarded shared Prisma singleton before evaluation setup. An isolated
+evaluation run then exposed application seed rows in the suite's empty-database
+assumption. Existing guarded cleanup acted only on this newly disposable
+synthetic database. Adding `requireDisposableDatabase(prisma)` before the
+aggregation suite's first database operation resolves the shared-client issue.
+The combined producing run passes all five evaluation and 22 aggregation tests.
+Evaluation helper Redis connections still warn about unavailable localhost
+ports; the aggregation suite uses the actual `redis_exec` service and passes.
+
+The host browser launch initially refused stale pnpm dependency metadata.
+Following the documented warm-tree recovery, supported stop completed and
+freed three exact routes, then the filtered frozen host Playwright dependency
+install succeeded. No lockfile delta resulted. The full serial Chromium O1
+workflow is running through the supported host launcher. Its selected
+`live-quiz,manage` startup proves response API readiness and both Hatchet worker
+processes. Browser acceptance, remaining container checks/build, integration
+commits, final review, push and exact-head CI remain outstanding.
+The native goal still reports blocked from the earlier capability failure;
+only the product's user control can resume it. Authorized execution continues
+without replacing that goal. The original manual runtime/data remains excluded.
+
+The first fresh O1 reproduction passed 13 scenarios and failed the restart
+regression; 26 later serial scenarios did not run. Its producing trace shows
+`StartLiveQuiz` completing, followed by `DeactivateLiveQuizBlock`, rather than
+the intended activation. The cockpit rendered an old active-block control from
+Apollo cache before a fresh query returned scheduled blocks. The corrected
+journey observes completed restart and fresh scheduled-block query responses,
+waits for the play control, then verifies the original block's activation and
+new timestamp. It no longer relies on the 500 ms delay. No application repair
+is justified by this reproduced test transition.
+
+Expanded rendered-content assertions initially used a missing `.prose` class.
+The second run's screenshot and DOM show explanation content and solution
+markers visibly rendered; Markdown defaults to `withProse=false`. The assertion
+now selects the observed Markdown root inside the explanation notification.
+The third full Chromium O1 producing run passes all 40 scenarios in six minutes.
+Both task and synthetic copies contain the same focused correction. This proves
+the restart journey, rendered reveal persistence, actual submissions, closed
+results and the existing responsive/deletion interactions on the integrated
+source; it does not establish Firefox/WebKit or full CI coverage.
+
+Host Playwright CI contracts and launcher checks pass. GraphQL generation,
+schema drift and typechecks pass in the container. The combined root check was
+not successful: host-specific launcher tests need the host CLI, and analytics
+lint could not download `jupyter-client` because container DNS resolution for
+`files.pythonhosted.org` failed. The independent root typecheck passes all 35
+tasks, and the subsequent root lint passes all seven tasks, superseding the
+earlier analytics download gap. Focused Prettier checks pass. The root production
+build failed because the concurrently running dev server and production build
+generated duplicate `PagesPageConfig` types under `.next/dev/types` and
+`.next/types`. The next verification stops the exact synthetic managed app group
+before isolating generated development output and rerunning the build. This is
+a generated-state diagnosis, not an application repair. Remaining host/container
+split checks, captures and final review remain outstanding.
+
+The isolated root production build then passes all 23 tasks (15 cached) after
+the exact synthetic app group stopped and the five apps' `.next/dev` directories
+were moved to recoverable ignored artifacts. No output or source was deleted.
+Syncpack, AGENTS.md, retired-document-path and Prisma-sync checks also pass;
+host identity and Playwright launcher tests pass all 44 tests. Synthetic runtime
+restart and final real-browser captures are the next authorized checks.
+
+The integration preserves upstream's deterministic temporary leaderboard IDs:
+the helper and its tests have no task-relative delta, and the merged service
+still calls that helper for temporary participants. This static seam inspection
+does not replace integrated review or runtime verification.
+
+### Evidence that can be reused
+
+The implementation includes metadata-only signed DRAFT/SCHEDULED evaluation,
+identity-only invalid-HMAC rejection, active-block deduplication, unavailable-state
+polling handling, enabled/default-off presenter controls, responsive layout and
+leaderboard-deletion confirmation. Later aggregation corrections bind work to
+block execution/start identity and protect rollback, reactivation and cache
+expiry. These are implemented source changes, not a fresh browser verdict.
+
+The recorded 39-test Chromium O1 pass covers `20087b66a`, before the activation
+identity extension. The five evaluation and 22 PostgreSQL/Redis aggregation tests
+recorded on `39d33ccd48` cover the later API correction. Prior slice reviews remain
+useful for unchanged contracts. The final-review report still requires correction
+verification for activation-scoped reveal persistence. Current failing CI and
+target/runtime changes prevent reusing those historical runs as final acceptance.
+
+### Test portfolio
+
+| Consequential risk                                                               | Test obligation | Existing protection and acceptance seam                                                                                       | Owner  |
+| -------------------------------------------------------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------ |
+| Reveal choices leak between activations or disappear in the same activation      | extend existing | O1 restart regression: actual rendered solution/explanation across polling, question navigation, reload and confirmed restart | Step 3 |
+| Signed evaluation exposes unpublished content or accepts an invalid signature    | none            | Reuse the five evaluation regressions plus current signed/authenticated browser proof                                         | Step 3 |
+| Delayed aggregation overwrites another execution or loses results during closure | none            | Reuse the 22 PostgreSQL/Redis regressions for identity, rollback and cache expiry                                             | Step 3 |
+| Polling/navigation/layout/deletion regresses despite controls appearing correct  | none            | Existing O1 coverage plus explicit interaction, poll completion and responsive browser proof below                            | Step 3 |
+| Legacy queued work fails across producer/worker deployment or rollback           | none            | Existing fail-visible payload contract; release transition qualification remains separately gated                             | Step 5 |
+
+The known correction path is `playwright/tests/O1-live-quiz-core.spec.ts`.
+If reproduction establishes an application defect, use the affected existing
+evaluation components under `apps/frontend-manage/src/components/evaluation/`
+or `packages/graphql/src/services/liveQuizzes.ts`; identify the exact file and
+failed behavior before editing. Add no production modules, dependencies, schema
+migrations or separate suite. Persist the integrated review under
+`project/_local/reviews/2026-10-07-pr4920-integrated-final.md`, naming its actual
+review date and immutable range if execution occurs later.
+
+### Delegation map
+
+| Step                              | Owner | Dependencies                                                                 | Acceptance                                                                             |
+| --------------------------------- | ----- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| 1: Restart diagnosis              | main  | CI/source evidence; isolated runtime from step 2 when reproduction is needed | Establish failed transition or application defect with exact block/activation evidence |
+| 2: Target integration and runtime | main  | Verified task/target and qualified host toolchain                            | Supported startup proves isolated apps, services and workers                           |
+| 3: Correction and proof           | main  | Steps 1–2                                                                    | Existing regression, rendered behavior, responsive captures and applicable checks pass |
+| 4: Review and publication         | main  | Step 3                                                                       | Complete integrated review and published exact-head CI pass                            |
+| 5: Human/release gates            | main  | Step 4 for readiness report; separate authority for live release work        | Report blocking reviews and documented queue/rollback obligations accurately           |
+
+Main retains this tightly coupled diagnosis, integration and final-proof sequence.
+No executor is reserved or implicitly authorized to change shared paths.
+
+### Remaining sequence and acceptance
+
+1. **Diagnose the failing restart journey.**
+   Capture the failure's selected question/block, publication status, activation
+   timestamp, query response and browser screenshot before changing behavior.
+   Recover CI trace/screenshot if retained; otherwise reproduce with the same
+   serial setup after step 2 establishes the isolated workspace. The current test
+   clicks a control that can open, close or end a block and waits 500 ms without
+   proving activation. Establish the intended block's active status, non-null
+   activation identity and expected instances before interpreting the missing
+   reveal control. Do not substitute a longer sleep, another link or a product
+   change for that diagnosis. Preserve the restart invariant:
+   reveal choices persist within one activation and reset after restart. Initial
+   URL flags stay off while active. Inspect actual rendered solution/explanation,
+   not switches alone. Acceptance: evidence distinguishes an incomplete test
+   transition from an application defect and identifies the smallest correction.
+   If CI artifacts have expired, carry that reproduction into steps 2–3 rather
+   than blocking independent target/runtime preparation.
+
+2. **Integrate the current target once and establish an isolated test runtime.**
+   Main owns both seams. A normal `origin/v3` merge is warranted because this PR
+   is behind and upstream changes its runtime/toolchain inputs. Record the target
+   SHA; preserve all task and unrelated primary-checkout changes. Inspect the
+   upstream leaderboard redesign where it meets evaluation UI, preserving its
+   deterministic temporary leaderboard identities. Align the
+   synthetic checkout with the intended tested source and account for its local
+   diagnostic edits before changing it. Use exact source-bound owner commands
+   and first qualify the host binary against the integrated repository's minimum
+   devrouter 0.2.0. Inventory exact ownership and supported recovery before
+   startup. Complete supported recovery
+   without ownership bypass or data deletion. If recreation is required, request
+   exact-target/data-loss authority before that branch. Acceptance: a producing
+   startup run proves the selected apps plus the general and response-processor
+   workers, and synthetic
+   test/database isolation is established. Manual retained data remains excluded
+   from destructive O1 setup/cleanup.
+
+3. **Correct the established defect and prove the integrated behavior.**
+   Main owns final proof; container checks and host browser runs follow the
+   repository's launchers. Apply the focused O1 formatting correction. Repair the
+   diagnosed transition or application defect without weakening the invariant.
+   Extend that existing regression to prove rendered solution and explanation
+   content follows the controls across a completed poll and reload in the same
+   activation. Another question remains unrevealed; returning to the original
+   question preserves its selection. Confirmed reactivation resets both off.
+   Preserve closed-block URL precedence and separate results confirmation.
+   Run the existing five evaluation and 22 aggregation
+   regressions against marked disposable resources, applicable checks/build, and
+   the complete serial O1 workflow, including the restart regression. Verify
+   signed and authenticated evaluation, real submissions and closed results,
+   duplicate-free block tabs, invalid/unpublished payload
+   boundaries, default-off/manual reveal, navigation/reload/restart persistence,
+   unavailable routes and deletion confirmation reset. Unchanged successful
+   polling advances the refresh timestamp; a completed null evaluation stops
+   subsequent polls. At 390px, document overflow is at most 1px, controls remain
+   reachable and evaluation content is unobscured. Local automated O1 proof is
+   Chromium; do not imply Firefox/WebKit coverage without an actual run.
+   Use agent-browser for real desktop/mobile captures, with English/German
+   variants for changed labels and layout. Record source, viewport, locale and
+   interactions in `project/_local/pr4920-browser-verification/index.md`;
+   explicitly report any uncovered
+   state. Acceptance: relevant automated checks and browser interactions pass on
+   the recorded integrated source. Release the synthetic runtime through its
+   owner and verify provider stopped plus zero exact routes. Preserve the manual
+   runtime/data; restore it only through an authorized supported path.
+
+4. **Complete review and publish the whole verified package.** Main owns delivery.
+   Reuse prior reviews where their contract/evidence remains valid. After local
+   proof, inspect staged data/secrets and commit the complete integrated state.
+   Run one complete integrated review across correctness, HMAC/data exposure,
+   aggregation integrity, compatibility and maintainability, including the
+   activation correction. Use the existing final reviewer if its lifecycle is
+   available; otherwise record that limitation and use one eligible replacement.
+   Record the immutable reviewed range and disposition of earlier findings.
+   Any subsequent material correction receives affected verification and review
+   before delivery. Make the ordinary non-force push to the existing
+   PR branch. Refresh the complete PR description and inline screenshot table.
+   Read back uploaded captures at the intended audience. After exact-head CI and
+   feedback are settled, obtain the repository's actually executed `/final-review`
+   result. Require all eight Playwright CI shards, required checks and image
+   builds on the published head; a focused O1 pass cannot replace the full suite.
+   Monitor each running operation through one supported watcher; the stale
+   review context is not a running operation. Acceptance: published head matches
+   verified source, all required CI passes and completed final review covers it.
+
+5. **Report the remaining human gate and separate release obligations.** Main
+   reports the exact blocking changes-requested review state; the user decides
+   reviewer communication and merge authority. Do not reply to old comments or
+   request human reviewers. Before deployment, stop further old-format enqueueing
+   and drain scheduled, running and retryable execution-less aggregation jobs
+   through a compatible old worker. Coordinate producer/worker activation only
+   after that condition holds, and qualify rollback compatibility explicitly.
+   Retain the existing one-day cache retention and fail-visible legacy-payload
+   contract. Queue inspection/draining, rollout and rollback qualification are
+   release work requiring their own authority, not accomplished by merging source.
+   HMAC secret rotation/design hardening and broader Redis-outage recovery remain
+   separate follow-ups unless a reproduced package defect requires a scoped ruling.
+
+### Current review disposition
+
+Execution mode for this review is `standard` because runtime model identity is
+not available. Main owns live Git/CI/runtime evidence and roadmap edits. Astra
+planner `01a1177b-30c0-7762-9fa9-e7c6c3a3e65e` owns the read-only source/roadmap
+challenge. This materially differs from the September review: the activation
+extension is implemented, CI now reproduces a restart failure, and the target
+and runtime inputs moved. Astra returned **APPROVED** in round 3 after two
+correction rounds. All findings were accepted: restart diagnosis, qualified
+toolchain, rendered-content proof, explicit owners and observable acceptance,
+commit-before-review ordering, full CI and queue/rollback boundaries. The
+[review transcript](../_local/reviews/2026-10-07-pr4920-roadmap-plan-hardening.md)
+records the scope and dispositions. Approval covers this remaining-work roadmap,
+not the current implementation's merge readiness.
+No source correction, target merge, runtime mutation, commit or push occurred
+in this state-review pass.
+
+## Historical approved follow-up
 
 The user requested usable solution and explanation controls while a block runs,
 and resolution of the remaining merge blockers. Active questions initialize both
@@ -33,8 +382,9 @@ simplification and security review, integrated final review and current-head CI.
 Stop only at a real capability, authority or semantic conflict boundary.
 
 The older scope below records the original pre-start fix. This follow-up
-supersedes its no-UI-change restriction. No new schema, dependencies, production
-data or authorization model is introduced.
+supersedes its no-UI-change restriction. The later approved activation extension
+adds a nullable GraphQL field and a separate operation; no Prisma migration,
+dependencies, production data or authorization model is introduced.
 
 Progress: the worktree was fast-forwarded to the pushed head `6484e56bc6`.
 The old runtime lacks devrouter's required waitFor configuration, so the single
@@ -210,7 +560,7 @@ notification.
   checking that claim against the approved execution/start ownership contract;
   no supported same-identity closure rewrite has been established. The same
   reviewer `01a07d9f-a93f-7682-8288-597523157d73` is active on that clarification.
-  Its report is project/_local/reviews/2026-09-07-pr4920-integrated-final.md.
+  Its report is project/\_local/reviews/2026-09-07-pr4920-integrated-final.md.
   Upstream overlap review found disjoint hunks, not a new integration blocker.
   No push or PR-body update occurred. Existing synthetic runtime remains stopped;
   no runtime was touched in this continuation. Original manual runtime untouched.
@@ -281,7 +631,7 @@ notification.
   synthetic runtime, finish required review and publish. Retained manual runtime
   untouched. Independent slice reviewer found the end race after its correction
   pass; reassess recovery scope before further review loops. Its report and the
-  simplifier result are saved under project/_local/reviews. Both children closed.
+  simplifier result are saved under project/\_local/reviews. Both children closed.
 
 - 2026-09-07 restored-runtime checkpoint: managed stop reconciled three stale
   synthetic routes, then manage ensure succeeded without recreation using host
@@ -293,7 +643,7 @@ notification.
   minimal follow-up permits ENDED with unchanged block identity and suppresses
   stale running-state publication. All 22 aggregation tests, formatting and
   GraphQL check pass with that follow-up. The independent thirteen-file
-  simplifier found no justified reduction. Reports are in project/_local/reviews.
+  simplifier found no justified reduction. Reports are in project/\_local/reviews.
   The approved exact synthetic MCP fixture restoration passed its dry-run and
   ownership guards; no real data or global configuration changed. A fresh
   39-test host Chromium O1 run is active on the corrected source. Runtime release,

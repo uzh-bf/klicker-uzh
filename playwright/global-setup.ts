@@ -18,6 +18,7 @@ import {
 } from '@klicker-uzh/prisma/client'
 import bcrypt from 'bcryptjs'
 import fs from 'node:fs'
+import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '../packages/util/src/participantAccountDataUse.js'
 import { preserveLocalDatabase } from '../util/playwright-host-policy.mjs'
 import {
   COURSE_ID_TEST,
@@ -108,6 +109,30 @@ export async function cleanupDatabase() {
 // ---------------------------------------------------------------------------
 // seedDatabase — identical logic to cypress.config.ts seedDatabase()
 // ---------------------------------------------------------------------------
+// Synthetic participants used across the Playwright suite must satisfy the
+// persisted account data-use gate. A recorded refusal of both optional
+// purposes is a valid, complete state; only the metadata marks onboarding.
+const acknowledgedParticipantDataUse = {
+  researchConsent: false,
+  learningAnalyticsConsent: false,
+  researchConsentChoiceAt: new Date(),
+  researchConsentDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  learningAnalyticsChoiceAt: new Date(),
+  learningAnalyticsDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  dataUseAcknowledgedAt: new Date(),
+  dataUseAcknowledgedVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  dataUseRevision: 1,
+  dataUseEvents: {
+    create: {
+      revision: 1,
+      disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+      researchConsent: false,
+      learningAnalyticsConsent: false,
+      acknowledged: true,
+    },
+  },
+}
+
 export async function seedDatabase() {
   const prisma = await getPrisma()
   try {
@@ -323,6 +348,7 @@ export async function seedDatabase() {
             password: participantPassword,
             username,
             email: `${username}@test.uzh.ch`,
+            ...acknowledgedParticipantDataUse,
             participations: { create: { courseId: COURSE_ID_TEST } },
           },
           update: {},
@@ -333,7 +359,11 @@ export async function seedDatabase() {
     // Participant groups (multi-member)
     await Promise.all(
       PARTICIPANT_GROUP_IDS.map(async (id, ix) => {
-        const code = 100000 + Math.floor(Math.random() * 900000)
+        // A group code is unique per course, so it is derived from the group's
+        // position instead of being drawn at random: two draws could collide
+        // and fail the seed on the [courseId, code] constraint. The ranges
+        // match packages/prisma-data/src/data/seedTEST.ts.
+        const code = 900200 + ix
         return prisma.participantGroup.upsert({
           where: { id },
           create: {
@@ -360,7 +390,8 @@ export async function seedDatabase() {
     // Participant groups (single-member)
     await Promise.all(
       PARTICIPANT_GROUP_IDS_SINGLE.map(async (id, ix) => {
-        const code = 100000 + Math.floor(Math.random() * 900000)
+        // Same derivation as the multi-member groups, in its own range.
+        const code = 900100 + ix
         return prisma.participantGroup.upsert({
           where: { id },
           create: {

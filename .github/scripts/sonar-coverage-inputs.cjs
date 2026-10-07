@@ -46,6 +46,78 @@ const FAILING_REASONS = new Set([
   REASON.runIdentityMismatch,
 ])
 
+// One analysis is published per pull request, head, and base. A run either
+// publishes it or defers to the run that observes every producer terminal, so
+// no job ever occupies a runner while a queued test run finishes.
+const DECISION = Object.freeze({ scan: 'scan', defer: 'defer' })
+
+const DEFER_REASON = Object.freeze({
+  draft: 'draft-pull-request',
+  closed: 'closed-pull-request',
+  changeClass: 'change-class-excludes-analysis',
+  producerPending: 'producer-pending',
+  analysisPublished: 'analysis-already-published',
+})
+
+function deferDecision(reason, detail) {
+  return { action: DECISION.defer, reason, detail: detail || '' }
+}
+
+// Decide whether this run may analyze, from already-resolved facts only. The
+// table is ordered so the cheapest and most decisive reason wins: a pull request
+// that must not be analyzed first, then a producer that has not finished, then a
+// revision whose analysis already exists. An explicit re-run of the analysis
+// ignores the published receipt, because repeating a published analysis is what
+// a re-run asks for.
+function decideAnalysisAction(input) {
+  const {
+    pullRequest,
+    staticAnalysis,
+    pendingProducers,
+    publishedAnalysis,
+    isRerun,
+  } = input || {}
+  // A branch run has no pull request and no coverage to import; it analyzes.
+  if (!pullRequest) {
+    return { action: DECISION.scan, reason: 'branch-analysis', detail: '' }
+  }
+  if (pullRequest.draft) {
+    return deferDecision(
+      DEFER_REASON.draft,
+      'the pull request is still a draft'
+    )
+  }
+  if (pullRequest.state && pullRequest.state !== 'open') {
+    return deferDecision(
+      DEFER_REASON.closed,
+      'the pull request is ' + pullRequest.state
+    )
+  }
+  if (staticAnalysis === 'skip') {
+    return deferDecision(
+      DEFER_REASON.changeClass,
+      'this change class cannot alter analyzed source'
+    )
+  }
+  if (pendingProducers && pendingProducers.length > 0) {
+    return deferDecision(
+      DEFER_REASON.producerPending,
+      pendingProducers.join(', ') + ' has not finished'
+    )
+  }
+  if (publishedAnalysis && !isRerun) {
+    return deferDecision(
+      DEFER_REASON.analysisPublished,
+      'run ' + publishedAnalysis.runId + ' already analyzed this revision'
+    )
+  }
+  return {
+    action: DECISION.scan,
+    reason: isRerun ? 'rerun' : 'all-producers-terminal',
+    detail: '',
+  }
+}
+
 function parseProducerWorkflows(value) {
   return (value || '')
     .split(',')
@@ -145,7 +217,7 @@ function buildScannerArgs(lcovPaths) {
   return '-Dsonar.javascript.lcov.reportPaths=' + lcovPaths.join(',')
 }
 
-function formatSummary(results) {
+function formatSummary(results, decision) {
   const lines = [
     '### SonarCloud coverage inputs',
     '',
@@ -169,6 +241,10 @@ function formatSummary(results) {
   if (results.length === 0) {
     lines.push('| none | none | unknown | ' + REASON.noProducers + ' |')
   }
+  if (decision) {
+    lines.push('')
+    lines.push('Decision: ' + decision.action + ' (' + decision.reason + ')')
+  }
   lines.push('')
   lines.push(
     'Coverage is imported only when the producing run belongs to this revision'
@@ -184,45 +260,120 @@ function summarizeFailures(results) {
   return results.filter((result) => FAILING_REASONS.has(result.state))
 }
 
-// Fetch the newest completed attempt of a producer workflow for one head,
-// waiting through a bounded window while a producer is still running so the
-// analysis does not race the tests it consumes. The deadline is shared by every
-// producer, so the whole collection spends one budget instead of one per
-// producer: a per-producer window grows with the producer count and can consume
-// the analysis job's own timeout before the scanner starts.
-async function awaitProducerRun(
-  transport,
-  workflowPath,
-  headSha,
-  limits,
-  deadline
-) {
-  let run = null
-  for (;;) {
-    const runs = await transport.listRuns(
-      workflowFileName(workflowPath),
-      headSha
-    )
-    run = selectNewestRun(runs)
-    if (run && run.status === 'completed') return run
-    if ((await transport.now()) >= deadline) return run
-    await transport.sleep(limits.pollMs)
-  }
+// The receipt is addressed by revision, so its artifact name alone proves that
+// a run analyzed this exact head and base. The payload stays an audit record and
+// never has to be downloaded to answer the question.
+function analysisReceiptArtifactName(prefix, headSha, baseSha) {
+  return [
+    prefix || 'sonar-analysis-receipt',
+    String(headSha || '').slice(0, 12),
+    String(baseSha || '').slice(0, 12),
+  ].join('-')
 }
 
-async function collectCoverage(deps) {
-  const { transport, producers, headSha, baseSha, treeSha, limits } = deps
+// Look for a receipt published by an earlier run of any analysis host for this
+// head. An unreadable history leaves the answer unknown and the analysis runs:
+// this lookup may only ever suppress a duplicate, never a first analysis.
+async function findPublishedAnalysis(deps) {
+  const { transport, workflows, headSha, baseSha, prefix, runLimit } = deps
+  const name = analysisReceiptArtifactName(prefix, headSha, baseSha)
+  const candidates = []
+  for (const workflow of workflows || []) {
+    let runs = []
+    try {
+      runs = await transport.listRuns(workflowFileName(workflow), headSha)
+    } catch (error) {
+      continue
+    }
+    for (const run of runs || []) {
+      if (run && run.id && run.status === 'completed') candidates.push(run)
+    }
+  }
+  candidates.sort(
+    (left, right) => (right.run_number || 0) - (left.run_number || 0)
+  )
+  for (const run of candidates.slice(0, Number(runLimit || 5))) {
+    let artifacts = []
+    try {
+      artifacts = await transport.listArtifacts(run.id)
+    } catch (error) {
+      continue
+    }
+    if ((artifacts || []).some((artifact) => artifact.name === name)) {
+      return { runId: run.id, name }
+    }
+  }
+  return null
+}
+
+function appendSummary(text) {
+  if (!process.env.GITHUB_STEP_SUMMARY) return
+  require('node:fs').appendFileSync(
+    process.env.GITHUB_STEP_SUMMARY,
+    text + '\n'
+  )
+}
+
+function setOutput(name, value) {
+  if (!process.env.GITHUB_OUTPUT) return
+  require('node:fs').appendFileSync(
+    process.env.GITHUB_OUTPUT,
+    name + '=' + String(value == null ? '' : value) + '\n'
+  )
+}
+
+function writeReceipt(filePath, receipt) {
+  if (!filePath) return false
+  require('node:fs').writeFileSync(
+    filePath,
+    JSON.stringify(receipt, null, 2) + '\n'
+  )
+  return true
+}
+
+// A deferred run states what it waited for and where the analysis will happen,
+// so a reader of the pull request never has to guess whether a missing
+// SonarCloud result was a skip or a failure.
+function formatDeferredSummary(decision) {
+  return [
+    '### SonarCloud analysis deferred',
+    '',
+    '- Reason: ' +
+      decision.reason +
+      (decision.detail ? ' - ' + decision.detail : ''),
+    '- The analysis runs in the producer run that observes all coverage',
+    '  producers terminal for this revision. No runner waits for a queued one.',
+    '',
+  ].join('\n')
+}
+
+// Read the newest attempt of every producer workflow for one head without
+// waiting for it. A producer that is still queued or running is reported as
+// pending and the run defers to the producer that finishes last, so no runner
+// is occupied while another queued run completes.
+async function resolveProducers(transport, producers, headSha) {
+  const resolved = []
+  for (const producer of producers) {
+    const runs = await transport.listRuns(workflowFileName(producer), headSha)
+    const run = selectNewestRun(runs)
+    resolved.push({
+      producer,
+      run,
+      pending: !run || run.status !== 'completed',
+    })
+  }
+  return resolved
+}
+
+// Import the coverage of a revision whose producers are all terminal. Every
+// report is still checked against the analyzed head, base, and tested source
+// tree before it becomes a scanner input; only the waiting is gone.
+async function importCoverage(deps) {
+  const { transport, resolved, headSha, baseSha, treeSha } = deps
   const results = []
   const lcovPaths = []
-  const deadline = (await transport.now()) + limits.waitMs
-  for (const producer of producers) {
-    const run = await awaitProducerRun(
-      transport,
-      producer,
-      headSha,
-      limits,
-      deadline
-    )
+  for (const entry of resolved) {
+    const { producer, run } = entry
     const artifacts = run ? await transport.listArtifacts(run.id) : []
     // One malformed artifact must not abort the collection or discard the
     // other producer's verified input: the failure is reported for this
@@ -300,9 +451,13 @@ async function main() {
   )
   const headSha = process.env.HEAD_SHA || ''
   const baseSha = process.env.BASE_SHA || ''
-  if (producers.length === 0 || !headSha || !baseSha) {
+  const pullRequestNumber = Number(process.env.PR_NUMBER || 0) || 0
+  if (producers.length === 0) {
+    throw new Error('COVERAGE_PRODUCER_WORKFLOWS is required')
+  }
+  if (pullRequestNumber && (!headSha || !baseSha)) {
     throw new Error(
-      'COVERAGE_PRODUCER_WORKFLOWS, HEAD_SHA, and BASE_SHA are required'
+      'HEAD_SHA and BASE_SHA are required to analyze a pull request'
     )
   }
   const transport = require('./sonar-coverage-transport.cjs')({
@@ -310,31 +465,83 @@ async function main() {
     repository: process.env.GITHUB_REPOSITORY,
   })
   const treeSha = transport.treeSha()
-  const { results, scannerArgs } = await collectCoverage({
+  const receiptPrefix =
+    process.env.ANALYSIS_RECEIPT_PREFIX || 'sonar-analysis-receipt'
+  // The live pull-request state decides, not the payload: a producer's job is
+  // evaluated minutes after its event, so a pull request that became ready or
+  // closed in between must be judged as it is now.
+  const pullRequest = pullRequestNumber
+    ? await transport.getPullRequest(pullRequestNumber)
+    : null
+  const resolved = pullRequest
+    ? await resolveProducers(transport, producers, headSha)
+    : []
+  const runAttempt = Number(process.env.RUN_ATTEMPT || 1)
+  const isRerun = Number.isFinite(runAttempt) && runAttempt > 1
+  const pendingProducers = resolved
+    .filter((entry) => entry.pending)
+    .map((entry) => workflowFileName(entry.producer))
+  const publishedAnalysis =
+    pullRequest && !isRerun
+      ? await findPublishedAnalysis({
+          transport,
+          workflows: parseProducerWorkflows(
+            process.env.ANALYSIS_WORKFLOW_FILES
+          ),
+          headSha,
+          baseSha,
+          prefix: receiptPrefix,
+          runLimit: Number(process.env.ANALYSIS_HISTORY_LIMIT || 5),
+        })
+      : null
+  const decision = decideAnalysisAction({
+    pullRequest,
+    staticAnalysis: process.env.CHANGE_STATIC_ANALYSIS || '',
+    pendingProducers,
+    publishedAnalysis,
+    isRerun,
+  })
+  setOutput('decision', decision.action)
+  setOutput('defer_reason', decision.reason)
+  if (decision.action === DECISION.defer) {
+    const deferred = formatDeferredSummary(decision)
+    process.stdout.write(deferred)
+    appendSummary(deferred)
+    return 0
+  }
+  const { results, scannerArgs } = await importCoverage({
     transport,
-    producers,
+    resolved,
     headSha,
     baseSha,
     treeSha,
-    limits: {
-      waitMs: Number(process.env.COVERAGE_WAIT_SECONDS || 600) * 1000,
-      pollMs: Number(process.env.COVERAGE_POLL_SECONDS || 30) * 1000,
-    },
   })
-  const summary = formatSummary(results)
+  const summary = formatSummary(results, decision)
   process.stdout.write(summary + '\n')
-  if (process.env.GITHUB_STEP_SUMMARY) {
-    require('node:fs').appendFileSync(
-      process.env.GITHUB_STEP_SUMMARY,
-      summary + '\n'
-    )
-  }
-  if (process.env.GITHUB_OUTPUT) {
-    require('node:fs').appendFileSync(
-      process.env.GITHUB_OUTPUT,
-      'scannerArgs=' + scannerArgs + '\n'
-    )
-  }
+  appendSummary(summary)
+  setOutput('scanner_args', scannerArgs)
+  setOutput(
+    'receipt_name',
+    analysisReceiptArtifactName(receiptPrefix, headSha, baseSha)
+  )
+  writeReceipt(process.env.ANALYSIS_RECEIPT_PATH, {
+    schemaVersion: 1,
+    event: process.env.GITHUB_EVENT_NAME || '',
+    runId: Number(process.env.GITHUB_RUN_ID || 0),
+    runAttempt: Number.isFinite(runAttempt) ? runAttempt : 1,
+    pullRequest: pullRequestNumber || null,
+    headSha: headSha || null,
+    baseSha: baseSha || null,
+    treeSha,
+    decision: decision.reason,
+    coverage: results.map((result) => ({
+      producer: result.producer,
+      runId: result.runId,
+      selection: result.selection,
+      state: result.state,
+      importable: Boolean(result.importable),
+    })),
+  })
   const failures = summarizeFailures(results)
   if (failures.length > 0) {
     for (const failure of failures) {
@@ -370,16 +577,24 @@ if (require.main === module) {
 }
 
 module.exports = {
+  DECISION,
+  DEFER_REASON,
   FAILING_REASONS,
   REASON,
+  analysisReceiptArtifactName,
   buildScannerArgs,
-  collectCoverage,
+  decideAnalysisAction,
   decideProducer,
+  findPublishedAnalysis,
+  formatDeferredSummary,
   formatSummary,
+  importCoverage,
   parseProducerWorkflows,
+  resolveProducers,
   resolveSelection,
   selectNewestRun,
   summarizeFailures,
   validateTestedTree,
+  writeReceipt,
   workflowFileName,
 }

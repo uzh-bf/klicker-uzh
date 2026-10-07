@@ -2930,9 +2930,11 @@ test.describe('Chatbot Source Citations', () => {
         ...[
           'An answer without a citation.',
           'A supported answer [1] and [1].',
-        ].map((text) => ({
+        ].map((text, ix) => ({
           role: 'assistant' as const,
           parentId: userId,
+          // The cited answer must be the newest sibling so it opens first.
+          createdAt: new Date(Date.now() + ix * 1000),
           content: [
             docQueryPart({
               toolCallId: text.includes('[1]') ? 'call-cited' : 'call-uncited',

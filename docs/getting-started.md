@@ -57,7 +57,7 @@ Postgres and Hatchet as the boot-critical base.
    ```
    The same command owns primary and linked checkout startup. It prints the exact DevPod ID when an interactive shell is needed.
 2. **Accessing the apps:**
-   - **Mode 1 (Primary checkout):** Stable routes such as `https://manage.klicker.localhost` plus the fixed localhost ports. Lecturer login is `lecturer`/`abcd`.
+   - **Mode 1 (Primary checkout):** Stable routes such as `https://manage.klicker.localhost` plus the fixed localhost application ports; the database listens on an ephemeral loopback port or `db.klicker.localhost:5432` through the router. Lecturer login is `lecturer`/`abcd`.
    - **Mode 2 (linked checkout):** Routes linked-worktree traffic over HTTPS at `https://manage.klicker.<workspace>.localhost`. Requires:
      1. Install devrouter ≥ 0.0.55 and run `devrouter setup --yes` once. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery, 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime, and 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct retained-runtime configuration and mount comparison.
      2. From an existing linked worktree, start and prove the environment with:
@@ -69,20 +69,22 @@ Postgres and Hatchet as the boot-critical base.
 3. **Logs:** The dev servers auto-start inside the container. View logs via `devrouter exec . -- tail -f /tmp/dev.log`.
 
 Choose an application profile such as `manage`, `pwa`, `chat`, or
-`live-quiz`. Add the orthogonal `ai`, `mcp`, or `email` capability only when
-needed; for example, `devrouter ensure . --profile chat,ai,mcp`. Capability-only
-profiles run no Turbo app process. Omitting `--profile` keeps the compatibility
-default `full`. Profile unions are additive and order-insensitive, and a warm
-transition does not recreate the app container or reset persistent data.
+`live-quiz`. Add the orthogonal `ai`, `mcp`, `email`, or `eduid` capability
+only when needed; for example, `devrouter ensure . --profile chat,ai,mcp`, or
+`devrouter ensure . --profile manage,eduid` for Edu-ID login through the
+local OIDC mock. Capability-only profiles run no Turbo app process. Omitting
+`--profile` keeps the compatibility default `full`. Profile unions are additive
+and order-insensitive, and a warm transition does not recreate the app
+container or reset persistent data.
 
 Parallel task work should use one linked worktree per task and the smallest
 matching profile. A Manage-only task uses `manage`; Chat AI uses `chat,ai`;
-tool-calling work adds `mcp`; email work adds `email`. Independent worktrees
-keep separate app caches, database state, routes, and processes while sharing
-only the package-download cache. Do not default every parallel worktree to
-`full`, because that starts LiteLLM, MCP, MailHog, every routed app, and both
-workers in each environment. The Turbo local cache is shared across all
-worktrees and bounded in size/age; see
+tool-calling work adds `mcp`; email work adds `email`; Edu-ID login work adds
+`eduid`. Independent worktrees keep separate app caches, database state,
+routes, and processes while sharing only the package-download cache. Do not
+default every parallel worktree to `full`, because that starts LiteLLM, MCP,
+MailHog, every routed app, and both workers in each environment. The Turbo
+local cache is shared across all worktrees and bounded in size/age; see
 [Local Disk and Caches](./local-disk-and-caches.md) for the cache layout and
 the `clean:cache` / `clean:generated` / `clean:worktree` / `disk:usage`
 commands.
@@ -178,13 +180,15 @@ pnpm run build        # 21 production-mode turbo tasks, ~1.5min; needs NO secret
 pnpm run check        # typecheck — only passes AFTER build (generated artifacts)
 ```
 
-Order matters: on a fresh clone, `pnpm run check` fails in ~19 packages until `pnpm run build` has produced the Prisma client, GraphQL codegen output, and package dists. The root build script forces `NODE_ENV=production`, even when the devcontainer exports `NODE_ENV=development` for live apps. Direct checks for the five Next apps are self-contained with respect to Next-generated route types: each app runs `next typegen` before `tsc --noEmit`, so those ignored types do not require a prior app build. Workspace dependency builds are still required; CI builds changed packages before checking them. Git hooks depend on the same broader workspace state: pre-commit runs `check:all`, pre-push runs `build` — both fail hard without `node_modules` and the required workspace-generated artifacts.
+Order matters: on a fresh clone, `pnpm run check` fails in ~19 packages until `pnpm run build` has produced the Prisma client, GraphQL codegen output, and package dists. The root build script forces `NODE_ENV=production`, even when the devcontainer exports `NODE_ENV=development` for live apps. Direct checks for the five Next apps are self-contained with respect to Next-generated route types: each app runs `next typegen` before `tsc --noEmit`, so those ignored types do not require a prior app build. Workspace dependency builds are still required; CI builds changed packages before checking them. Git hooks depend on the same broader workspace state: pre-commit runs `check:all`, pre-push runs `build`. Both fail hard when the host has a dependency install but lacks the required workspace-generated artifacts.
+
+Devcontainer checkouts keep `node_modules` in container volumes, so the host copy has no install. Host `pnpm` would then fail its `verifyDepsBeforeRun` check, and a host `pnpm install` would build a second, platform-specific dependency tree. `util/run-hook-pnpm.sh` therefore skips the `pnpm` step with a notice when `node_modules/.modules.yaml` is absent. The Gitleaks scan and Git identity guards still run, and required CI runs the same checks and build. To run them before pushing, use `devrouter exec . -- pnpm run check:all` or `devrouter exec . -- pnpm run build`. Run `check:all` with the dev servers stopped: its `next typegen` step rewrites `.next/` output that running Next dev servers own (see [Chat Platform](chat-platform.md)).
 
 ## Failure signatures (fresh clone / wrong state)
 
 | Exact error                                                                                                                   | Cause                                                                                    | Fix                                                               |
 | ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `sh: run-p: command not found` + `husky - pre-commit script failed`                                                           | `node_modules` missing                                                                   | `pnpm install` (pnpm 11)                                          |
+| `sh: run-p: command not found` + `husky - pre-commit script failed`                                                           | `node_modules` missing on a legacy host checkout                                         | `pnpm install` (pnpm 11)                                          |
 | `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`                                                                                  | pnpm 11 found `node_modules` from another pnpm major; headless shell can't confirm purge | `pnpm install --config.confirmModulesPurge=false`                 |
 | `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` … `"overrides" configuration doesn't match`                                               | `CI=true` forces frozen install after a wrong-major pnpm rewrote the lockfile            | `git checkout pnpm-lock.yaml`, non-frozen install with pnpm 11    |
 | `Bind for :::5432 failed: port is already allocated`                                                                          | another stack holds the host port (also seen on 6379, 7077/8888, 80/443)                 | `lsof -nP -iTCP:5432 -sTCP:LISTEN`, stop the other stack          |

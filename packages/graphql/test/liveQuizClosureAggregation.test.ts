@@ -1,30 +1,31 @@
 import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
-import { prisma } from '@klicker-uzh/prisma'
+import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import type { Prisma } from '@klicker-uzh/prisma/client'
 import type { HatchetHandlers } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
   processElementData,
 } from '@klicker-uzh/util'
-import { Redis } from 'ioredis'
 import { GraphQLError } from 'graphql'
+import { Redis } from 'ioredis'
 import {
   afterAll,
   afterEach,
+  beforeAll,
   beforeEach,
   describe,
   expect,
   it,
   vi,
 } from 'vitest'
+import type { ContextWithUser } from '../src/lib/context.js'
 import {
   activateLiveQuizBlock,
   deactivateLiveQuizBlock,
   handleAssessmentLiveQuizBlockClosureAggregation,
   handleStandardLiveQuizBlockClosureAggregation,
 } from '../src/services/liveQuizzes.js'
-import type { ContextWithUser } from '../src/lib/context.js'
 
 vi.mock('../src/services/notifications.js', () => ({
   sendTeamsNotification: vi.fn(),
@@ -236,6 +237,10 @@ describe('Closed live quiz aggregation ownership', () => {
     )
     expect(schedule).toHaveBeenCalledExactlyOnceWith(expect.any(Date), input())
     expect(publish).not.toHaveBeenCalled()
+  })
+
+  beforeAll(async () => {
+    await requireDisposableDatabase(prisma)
   })
 
   beforeEach(async () => {

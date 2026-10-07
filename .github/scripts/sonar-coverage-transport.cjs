@@ -220,6 +220,14 @@ function createTransport(options) {
       return result.artifacts || []
     },
 
+    // The analysis reads the live pull-request state rather than the event
+    // payload: a producer's job is evaluated minutes after its event, and a
+    // draft that became ready in between must be analyzed while one that is
+    // still a draft must not.
+    async getPullRequest(number) {
+      return requestJson(API + '/repos/' + repository + '/pulls/' + number)
+    },
+
     async readJsonArtifact(artifacts, name) {
       const artifact = (artifacts || []).find((entry) => entry.name === name)
       if (!artifact) return null

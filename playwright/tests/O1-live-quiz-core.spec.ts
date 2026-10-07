@@ -3256,20 +3256,74 @@ test.describe.serial('Core live-quiz workflows', () => {
     expect(activeQuestionUrl.searchParams.get('showSolution')).toBe('true')
     expect(activeQuestionUrl.searchParams.get('showExplanation')).toBe('true')
 
+    function waitForOperation(operationName: string) {
+      return page.waitForResponse((response) => {
+        if (!response.url().includes('/graphql')) return false
+
+        const request = response.request()
+        return request.method() === 'GET'
+          ? new URL(response.url()).searchParams.get('operationName') ===
+              operationName
+          : request.postDataJSON()?.operationName === operationName
+      })
+    }
+
     const solutionToggle = page.getByTestId('evaluation-footer-show-solution')
     const explanationToggle = page.getByTestId(
       'evaluation-footer-show-explanation'
     )
+    async function expectRenderedReveals(revealed: boolean) {
+      await page.getByTestId('change-chart-type').click()
+      await page
+        .getByTestId('change-chart-type-manage.evaluation.table')
+        .click()
+      await expect(page.getByRole('table')).toBeVisible()
+      const correctness = page.locator('table tbody svg[data-icon="check"]')
+      const explanation = page.locator('.my-2.items-center .max-w-none')
+      if (revealed) {
+        await expect(correctness.first()).toBeVisible()
+        await expect(explanation).toBeVisible()
+        expect(await explanation.innerText()).not.toBe('')
+      } else {
+        await expect(correctness).toHaveCount(0)
+        await expect(explanation).toHaveCount(0)
+      }
+    }
+    const initialEvaluationResponse = waitForOperation(
+      'GetLiveQuizEvaluationWithActivation'
+    )
     await gotoEmbeddingLink(page, activeQuestionLink)
+    const initialEvaluation = await (await initialEvaluationResponse).json()
+    expect(initialEvaluation.errors).toBeUndefined()
+    expect(initialEvaluation.data?.liveQuizEvaluation?.status).toBe('PUBLISHED')
+    const initialStack = initialEvaluation.data.liveQuizEvaluation.results.find(
+      (stack) => stack.stackActive
+    )
+    expect(initialStack).toMatchObject({
+      status: 'ACTIVE',
+      startedAt: expect.any(String),
+    })
+    expect(initialStack.instances[0]?.id).toEqual(expect.any(Number))
     await expect(solutionToggle).toBeVisible()
     await expect(explanationToggle).toBeVisible()
     await expect(solutionToggle).not.toBeChecked()
     await expect(explanationToggle).not.toBeChecked()
+    await expectRenderedReveals(false)
 
     await solutionToggle.click()
     await explanationToggle.click()
     await expect(solutionToggle).toBeChecked()
     await expect(explanationToggle).toBeChecked()
+    await expectRenderedReveals(true)
+    const pollResponse = await waitForOperation(
+      'GetLiveQuizEvaluationWithActivation'
+    )
+    const polledEvaluation = await pollResponse.json()
+    expect(polledEvaluation.errors).toBeUndefined()
+    expect(polledEvaluation.data.liveQuizEvaluation.results).toEqual(
+      initialEvaluation.data.liveQuizEvaluation.results
+    )
+    await expectRenderedReveals(true)
 
     await gotoEmbeddingLink(page, neighbouringQuestionLink)
     await expect(
@@ -3278,12 +3332,15 @@ test.describe.serial('Core live-quiz workflows', () => {
     await expect(
       page.getByTestId('evaluation-footer-show-explanation')
     ).not.toBeChecked()
+    await expectRenderedReveals(false)
     await gotoEmbeddingLink(page, activeQuestionLink)
     await expect(solutionToggle).toBeChecked()
     await expect(explanationToggle).toBeChecked()
+    await expectRenderedReveals(true)
     await page.reload({ waitUntil: 'domcontentloaded' })
     await expect(solutionToggle).toBeChecked()
     await expect(explanationToggle).toBeChecked()
+    await expectRenderedReveals(true)
 
     await openActivitiesListForQuiz(page, data.course2.quiz.name)
     await page
@@ -3297,18 +3354,63 @@ test.describe.serial('Core live-quiz workflows', () => {
     await expect(
       page.getByTestId(`start-live-quiz-${data.course2.quiz.name}`)
     ).toBeVisible()
-    await page
-      .getByTestId(`start-live-quiz-${data.course2.quiz.name}`)
-      .click()
+    const restartResponse = waitForOperation('StartLiveQuiz')
+    const cockpitResponse = waitForOperation('GetCockpitQuiz')
+    await page.getByTestId(`start-live-quiz-${data.course2.quiz.name}`).click()
+    const restartedQuiz = await (await restartResponse).json()
+    expect(restartedQuiz.errors).toBeUndefined()
+    expect(restartedQuiz.data?.startLiveQuiz).toMatchObject({
+      id: initialEvaluation.data.liveQuizEvaluation.id,
+      status: 'PUBLISHED',
+    })
+    const restartedCockpit = await (await cockpitResponse).json()
+    expect(restartedCockpit.errors).toBeUndefined()
+    expect(restartedCockpit.data.cockpitQuiz.blocks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: initialStack.stackId,
+          status: 'SCHEDULED',
+        }),
+      ])
+    )
     await expect(page.getByTestId('abort-live-quiz-cockpit')).toBeVisible()
+    await expect(
+      page.getByTestId('next-block-timeline').locator('svg[data-icon="play"]')
+    ).toBeVisible()
+    const activationResponse = waitForOperation('ActivateLiveQuizBlock')
     await page.getByTestId('next-block-timeline').click()
-    await page.waitForTimeout(500)
+    const activatedQuiz = await (await activationResponse).json()
+    expect(activatedQuiz.errors).toBeUndefined()
+    expect(activatedQuiz.data?.activateLiveQuizBlock?.blocks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: initialStack.stackId, status: 'ACTIVE' }),
+      ])
+    )
 
+    const restartedEvaluationResponse = waitForOperation(
+      'GetLiveQuizEvaluationWithActivation'
+    )
     await gotoEmbeddingLink(page, activeQuestionLink)
+    const restartedEvaluation = await (await restartedEvaluationResponse).json()
+    expect(restartedEvaluation.errors).toBeUndefined()
+    const restartedStack =
+      restartedEvaluation.data?.liveQuizEvaluation?.results.find(
+        (stack) => stack.stackId === initialStack.stackId
+      )
+    expect(restartedStack).toMatchObject({
+      stackActive: true,
+      status: 'ACTIVE',
+      startedAt: expect.any(String),
+    })
+    expect(restartedStack.startedAt).not.toBe(initialStack.startedAt)
+    expect(restartedStack.instances.map((instance) => instance.id)).toContain(
+      initialStack.instances[0].id
+    )
     await expect(solutionToggle).toBeVisible()
     await expect(explanationToggle).toBeVisible()
     await expect(solutionToggle).not.toBeChecked()
     await expect(explanationToggle).not.toBeChecked()
+    await expectRenderedReveals(false)
   })
 
   test('Respond to the first block of the running live quiz from the student view', async ({
