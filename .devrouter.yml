@@ -21,9 +21,16 @@
 # maps a selection to exact turbo roots, readiness apps, and process markers.
 version: 1
 devrouter:
-  version: 0.1.2
+  version: 0.2.0
 project:
   name: klicker-uzh
+# Reproducible ignored state for `workspace cleanup`, `reclaim` and `trim`.
+# `disposable` adds build outputs beyond devrouter's built-in cache patterns so
+# they do not keep a merged worktree; `trim` lists what `workspace trim` may
+# remove from kept worktrees. Never list `project/_local`: it holds local notes.
+worktrees:
+  disposable: ['**/.docusaurus', '**/.nyc_output']
+  trim: ['**/node_modules', '**/.next', '**/.turbo']
 managedRuntime:
   devcontainer:
     prepareCommand: [node, util/generate-dependency-mounts.mjs]
