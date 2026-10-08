@@ -1803,6 +1803,8 @@ describe('Integration tests for knowledge base CRUD', () => {
       sizeBytes: 1024,
     }
 
+    const runNoWait = vi.spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
+
     const first = await confirmKbFileUpload(args, userOneCtx)
     const second = await confirmKbFileUpload(args, userOneCtx)
     await expect(
@@ -1824,6 +1826,91 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expect(
       prisma.kBUploadTicket.findUnique({ where: { id: first.id } })
     ).resolves.toBeNull()
+
+    // Confirmation now starts ingestion immediately instead of waiting for a
+    // separate manual trigger: the resource is claimed for its first upsert
+    // and the same attempt id backs both the resource and its run row.
+    expect(first).toMatchObject({
+      status: KBResourceStatus.QUEUED,
+      ingestionAttemptId: expect.any(String),
+      resourceVersion: 1,
+      ingestionOperation: KBIngestionOperation.UPSERT,
+    })
+    await expect(
+      prisma.kBIngestionRun.count({
+        where: { id: first.ingestionAttemptId!, resourceId: first.id },
+      })
+    ).resolves.toBe(1)
+    expect(runNoWait).toHaveBeenCalledOnce()
+    expect(runNoWait).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resourceId: first.id,
+        resourceVersion: 1,
+      })
+    )
+
+    // Closing the rollout after a confirmation succeeded must not turn a
+    // client retry into a refusal: the resource exists and is already queued,
+    // so the retry is asking for nothing new.
+    await expect(
+      confirmKbFileUpload(
+        args,
+        withDeniedFeatureFlag(userOneCtx, 'kb-ingestion')
+      )
+    ).resolves.toMatchObject({ id: first.id })
+    expect(runNoWait).toHaveBeenCalledOnce()
+  })
+
+  it('leaves a confirmed upload queue-failed rather than stranded in QUEUED when dispatch is rejected', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const ticket = await requestKbFileUpload(
+      {
+        kbId: created.id,
+        fileName: 'notes.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 1024,
+      },
+      userOneCtx
+    )
+    const runNoWait = vi
+      .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
+      .mockRejectedValueOnce(new Error('queue unavailable'))
+
+    await expect(
+      confirmKbFileUpload(
+        {
+          kbId: created.id,
+          blobName: ticket.blobName,
+          title: 'Finance notes',
+          originalFilename: 'notes.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 1024,
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_INGESTION_QUEUE_FAILED' },
+    })
+    expect(runNoWait).toHaveBeenCalledOnce()
+
+    const blobId = ticket.blobName.slice(0, -4)
+    const failed = await prisma.kBResource.findUniqueOrThrow({
+      where: { id: blobId },
+    })
+    expect(failed).toMatchObject({
+      status: KBResourceStatus.FAILED,
+      statusMessage: 'The ingestion operation could not be queued.',
+      errorCode: 'QUEUE_DISPATCH_FAILED',
+    })
+    await expect(
+      prisma.kBIngestionRun.findUniqueOrThrow({
+        where: { id: failed.ingestionAttemptId! },
+      })
+    ).resolves.toMatchObject({
+      status: KBIngestionStatus.FAILED,
+      resourceId: blobId,
+      errorCode: 'QUEUE_DISPATCH_FAILED',
+    })
   })
 
   it('safely converts a legacy zero-size upload ticket under the KB quota lock', async () => {
@@ -2045,6 +2132,8 @@ describe('Integration tests for knowledge base CRUD', () => {
       sizeBytes: 1024,
     }
 
+    const runNoWait = vi.spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
+
     const [first, second] = await Promise.all([
       confirmKbFileUpload(args, userOneCtx),
       confirmKbFileUpload(args, userOneCtx),
@@ -2054,6 +2143,10 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expect(
       prisma.kBResource.count({ where: { blobName: ticket.blobName } })
     ).resolves.toBe(1)
+    // The race must dispatch ingestion exactly once: whichever call loses
+    // the claim returns the winner's already-dispatched resource instead of
+    // queuing a second, duplicate attempt.
+    expect(runNoWait).toHaveBeenCalledOnce()
   })
 
   it('rejects absent blobs and deletes mismatched uploads', async () => {
@@ -2262,7 +2355,9 @@ describe('Integration tests for knowledge base CRUD', () => {
       })
     ).resolves.toBeNull()
     await expect(
-      prisma.kBIngestionRun.count({ where: { resourceId: resource.id } })
+      prisma.kBIngestionRun.count({
+        where: { resourceId: resource.id, resourceVersion: 2 },
+      })
     ).resolves.toBe(1)
     expect(deleteBlobIfExists).toHaveBeenCalledOnce()
     expect(requestedBlobName).toBe(originalTicket.blobName)
@@ -2286,7 +2381,9 @@ describe('Integration tests for knowledge base CRUD', () => {
     })
     expect(runNoWait).toHaveBeenCalledOnce()
     await expect(
-      prisma.kBIngestionRun.count({ where: { resourceId: resource.id } })
+      prisma.kBIngestionRun.count({
+        where: { resourceId: resource.id, resourceVersion: 2 },
+      })
     ).resolves.toBe(1)
   })
 
@@ -2354,7 +2451,9 @@ describe('Integration tests for knowledge base CRUD', () => {
       status: KBResourceStatus.QUEUED,
     })
     await expect(
-      prisma.kBIngestionRun.count({ where: { resourceId: resource.id } })
+      prisma.kBIngestionRun.count({
+        where: { resourceId: resource.id, resourceVersion: 2 },
+      })
     ).resolves.toBe(1)
     expect(runNoWait).toHaveBeenCalledOnce()
   })
@@ -2543,6 +2642,7 @@ describe('Integration tests for knowledge base CRUD', () => {
 
   it('creates and deletes an owned URL resource', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const runNoWait = vi.spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
     const resource = await createKbUrlResource(
       {
         kbId: created.id,
@@ -2557,10 +2657,34 @@ describe('Integration tests for knowledge base CRUD', () => {
       title: 'Lecture recording',
       type: KBResourceType.URL,
       sourceUrl: 'https://video.example.com/watch?id=123',
+      status: KBResourceStatus.QUEUED,
+      ingestionAttemptId: expect.any(String),
+      resourceVersion: 1,
+      ingestionOperation: KBIngestionOperation.UPSERT,
     })
+    await expect(
+      prisma.kBIngestionRun.count({
+        where: { id: resource.ingestionAttemptId!, resourceId: resource.id },
+      })
+    ).resolves.toBe(1)
+    expect(runNoWait).toHaveBeenCalledOnce()
+    expect(runNoWait).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resourceId: resource.id,
+        resourceVersion: 1,
+      })
+    )
     await expect(
       deleteKbResource({ id: resource.id }, userTwoCtx)
     ).rejects.toThrow('KB resource not found')
+
+    // Creation auto-starts ingestion, so the resource must settle out of
+    // QUEUED before deletion is permitted; this update stands in for that
+    // completed ingestion rather than exercising deletion timing itself.
+    await prisma.kBResource.update({
+      where: { id: resource.id },
+      data: { status: KBResourceStatus.READY },
+    })
 
     await deleteKbResource({ id: resource.id }, userOneCtx)
     await expect(
@@ -2570,11 +2694,50 @@ describe('Integration tests for knowledge base CRUD', () => {
       deletedAt: expect.any(Date),
       ingestionOperation: KBIngestionOperation.DELETE,
       status: KBResourceStatus.QUEUED,
-      resourceVersion: 1,
+      resourceVersion: 2,
     })
     await expect(
       getKbResourcesConnection({ kbId: created.id }, userOneCtx)
     ).resolves.toMatchObject({ items: [] })
+  })
+
+  it('leaves a created URL resource queue-failed rather than stranded in QUEUED when dispatch is rejected', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const runNoWait = vi
+      .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
+      .mockRejectedValueOnce(new Error('queue unavailable'))
+
+    await expect(
+      createKbUrlResource(
+        {
+          kbId: created.id,
+          title: 'Lecture recording',
+          url: 'https://video.example.com/watch?id=123',
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_INGESTION_QUEUE_FAILED' },
+    })
+    expect(runNoWait).toHaveBeenCalledOnce()
+
+    const failed = await prisma.kBResource.findFirstOrThrow({
+      where: { kbId: created.id },
+    })
+    expect(failed).toMatchObject({
+      status: KBResourceStatus.FAILED,
+      statusMessage: 'The ingestion operation could not be queued.',
+      errorCode: 'QUEUE_DISPATCH_FAILED',
+    })
+    await expect(
+      prisma.kBIngestionRun.findUniqueOrThrow({
+        where: { id: failed.ingestionAttemptId! },
+      })
+    ).resolves.toMatchObject({
+      status: KBIngestionStatus.FAILED,
+      resourceId: failed.id,
+      errorCode: 'QUEUE_DISPATCH_FAILED',
+    })
   })
 
   it('keeps a tombstone hidden when queueing its delete task fails', async () => {
@@ -2587,6 +2750,13 @@ describe('Integration tests for knowledge base CRUD', () => {
       },
       userOneCtx
     )
+    // Creation auto-starts ingestion, so the resource must settle out of
+    // QUEUED before deletion is permitted; this update stands in for that
+    // completed ingestion rather than exercising deletion timing itself.
+    await prisma.kBResource.update({
+      where: { id: resource.id },
+      data: { status: KBResourceStatus.READY },
+    })
     vi.spyOn(
       userOneCtx.tasks.deleteKBResource,
       'runNoWait'
@@ -2620,14 +2790,12 @@ describe('Integration tests for knowledge base CRUD', () => {
 
   it('returns only the five newest ingestion runs to the resource owner', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
-    const resource = await createKbUrlResource(
-      {
-        kbId: created.id,
-        title: 'Lecture recording',
-        url: 'https://video.example.com/watch?id=123',
-      },
-      userOneCtx
-    )
+    // A direct create keeps this resource free of the automatic ingestion
+    // run that the ordinary creation mutation would enqueue, so the six
+    // runs seeded below are the only ones competing for the top five.
+    const resource = await prisma.kBResource.create({
+      data: legacyUrlResources(created.id, 1)[0]!,
+    })
     const runIds = Array.from({ length: 6 }, () => randomUUID())
 
     for (const [index, id] of runIds.entries()) {
@@ -3335,6 +3503,13 @@ describe('Integration tests for knowledge base CRUD', () => {
         )
       )
     )
+    // Creation auto-started ingestion, so each resource must settle out of
+    // QUEUED before bulk deletion is permitted; this stands in for that
+    // completed ingestion rather than exercising deletion timing itself.
+    await prisma.kBResource.updateMany({
+      where: { id: { in: resources.map(({ id }) => id) } },
+      data: { status: KBResourceStatus.READY },
+    })
     const runNoWait = vi
       .spyOn(userOneCtx.tasks.deleteKBResource, 'runNoWait')
       .mockRejectedValueOnce(new Error('queue unavailable'))
@@ -3502,6 +3677,7 @@ describe('Integration tests for knowledge base CRUD', () => {
       userOneCtx
     )
     const deniedCtx = withDeniedFeatureFlag(userOneCtx, 'kb-ingestion')
+    const deniedUploadBlobId = randomUUID()
 
     const blockedCalls: Array<() => Promise<unknown>> = [
       () =>
@@ -3510,6 +3686,18 @@ describe('Integration tests for knowledge base CRUD', () => {
             kbId: kb.id,
             title: 'Blocked',
             url: 'https://example.com/blocked',
+          },
+          deniedCtx
+        ),
+      () =>
+        confirmKbFileUpload(
+          {
+            kbId: kb.id,
+            blobName: `${deniedUploadBlobId}.pdf`,
+            title: 'Blocked upload',
+            originalFilename: 'blocked.pdf',
+            mimeType: 'application/pdf',
+            sizeBytes: 1024,
           },
           deniedCtx
         ),
@@ -3554,6 +3742,12 @@ describe('Integration tests for knowledge base CRUD', () => {
         extensions: { code: 'KB_INGESTION_DISABLED' },
       })
     }
+    // Upload confirmation starts real ingestion work, so a refusal must also
+    // leave no resource row behind rather than parking one that depends on a
+    // manual trigger the lecturer can no longer reach.
+    await expect(
+      prisma.kBResource.findUnique({ where: { id: deniedUploadBlobId } })
+    ).resolves.toBeNull()
 
     // The denied actor keeps everything it already owns: reads, deletion and
     // the graph lifecycle configuration stay independent of new-work admission.
@@ -3575,6 +3769,13 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expect(
       getKbKnowledgeGraphConfig({ kbId: kb.id }, deniedCtx)
     ).resolves.toMatchObject({ isEnabled: false })
+    // Creation auto-started ingestion, so the resource must settle out of
+    // QUEUED before deletion is permitted; this stands in for that
+    // completed ingestion rather than exercising deletion timing itself.
+    await prisma.kBResource.update({
+      where: { id: existingResource.id },
+      data: { status: KBResourceStatus.READY },
+    })
     const deleted = await deleteKbResource(
       { id: existingResource.id },
       deniedCtx
@@ -3584,13 +3785,18 @@ describe('Integration tests for knowledge base CRUD', () => {
 
   it('classifies resources and keeps complete-KB ingestion counts across filters', async () => {
     const kb = await createKb({ name: 'Material categories' }, userOneCtx)
+    // Direct creation keeps these resources at their pre-ingestion ADDED
+    // status so the reconciliation counts below reflect the classification
+    // and status overrides this test applies, not the ordinary creation
+    // mutation's automatic QUEUED transition.
     const resources = await Promise.all(
       ['content', 'administrative', 'unclassified'].map((title) =>
-        createKbUrlResource(
-          {
+        prisma.kBResource.create({
+          data: {
             kbId: kb.id,
+            type: KBResourceType.URL,
             title,
-            url: `https://example.com/${title}`,
+            sourceUrl: `https://example.com/${title}`,
             materialType:
               title === 'content'
                 ? KBResourceMaterialType.COURSE_CONTENT
@@ -3598,8 +3804,7 @@ describe('Integration tests for knowledge base CRUD', () => {
                   ? KBResourceMaterialType.ADMINISTRATIVE
                   : undefined,
           },
-          userOneCtx
-        )
+        })
       )
     )
     const [content, administrative, unclassified] = resources as [
