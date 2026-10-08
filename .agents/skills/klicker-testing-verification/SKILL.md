@@ -97,7 +97,7 @@ the exact checkout and rerun this command. Run the wrapper fake-runtime test
 before credentialed traffic. Set namespaced KLICKER_EVAL_API_ORIGIN and
 KLICKER_EVAL_CHAT_ORIGIN plus seeded participant credentials in the invoking
 shell; the wrapper keeps them out of the evaluator child and creates an
-ephemeral loopback target key. Use --local-target with direct gpt-5.6-luna and
+ephemeral loopback target key. Use --local-target with direct gpt-6-luna and
 one in-flight request.
 
 The KB_doc_query canary is only synthetic transport evidence. It proves the
@@ -220,7 +220,7 @@ During the live stream, a completed tool chip may precede answer text, but the
 source section must stay absent for the assistant message's entire running
 state, including after answer text begins. A terminal incomplete or aborted
 tool-only turn must still expose valid completed sources after reload.
-Use direct `GPT-5.6 Luna` only to isolate the router from the model/tool path.
+Use direct `GPT-6 Luna` only to isolate the router from the model/tool path.
 
 For source citation presentation changes, the browser pass must verify that
 source cards keep the source name and locator visible while excerpts stay in
