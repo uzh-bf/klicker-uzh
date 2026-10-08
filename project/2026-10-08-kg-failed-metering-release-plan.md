@@ -48,11 +48,26 @@ final review are main-session self-reviews; they are not independent evidence.
   changed tests, no new suite. The complete accounting integration suite passed
   all 13 tests in the worktree's disposable PostgreSQL runtime on 2026-10-08.
   The later test-title correction does not change its behavior or assertions.
-- Biome checks, Prettier checks and `git diff --check` passed. Required Git-hook
-  checks and build, committed-scope self-review, and draft delivery remain pending.
+- Biome checks, Prettier checks, staged Gitleaks and `git diff --check` passed.
+  Source commit `24fd146c1a` passed the complete pre-commit hook: all 42 workspace
+  check tasks, seven lint tasks, syncpack, formatting and host contract checks.
+  The host CI/runner contracts and local-KB contracts also passed separately
+  (133 and 94 tests).
 - Installed devrouter is 0.1.0; this target requires 0.1.2. The pinned CLI from a
   temporary npm cache successfully started the exact worktree with profile
   `email`. Workspace/provider identity: `rs-kg-failed-metering-release`.
   No application routes or background app processes were selected.
-- No model call, production mutation, commit or PR has occurred. Stop the exact
-  runtime after the last container check and verify provider state and routes.
+- The first hook attempt selected the older globally installed CLI in a host
+  contract test. The documented `KLICKER_DEVROUTER_BIN` override to a temporary
+  host launcher for the pinned CLI resolves that failure. Automatic permission
+  review timed out before a commit retry; the bounded retry succeeded. No hook
+  or runtime lock was bypassed, and no global CLI configuration changed.
+- Main performed simplification and final self-review of
+  `a36af5e6af09e3fa801b521beca6f14f265aee38..24fd146c1a`. This is self-review,
+  not independent review. Validation, quota locking, one-time settlement,
+  publication preservation and successful/superseded charging remain intact;
+  no findings remain. Package size: 68 changed source/test lines, excluding
+  project artifacts and the seven-line ADR clarification.
+- Pre-push build and draft delivery remain pending. No model call or production
+  mutation occurred. Stop the exact runtime after the last container check and
+  verify provider state and routes.
