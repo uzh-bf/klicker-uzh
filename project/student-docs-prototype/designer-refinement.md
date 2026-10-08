@@ -1,6 +1,6 @@
 # Student documentation roadmap and review
 
-Updated: 2026-10-07. Status: visual prototype implemented locally; production integration remains open.
+Updated: 2026-10-08. Status: production `/docs` implementation verified and delivered as draft PR #6428; runtime release is blocked by a foreign container collision. Historical findings below are retained as the roadmap baseline; the final checkpoint supersedes their open states.
 
 ## Outcome and agreed scope
 
@@ -213,3 +213,22 @@ Slice review confirmed capability/access composition and content corrections. It
 Configured final review failed before work on expired Claude authentication; the AGY fallback could not read files in headless mode. Ordered GLM fallback is running with the complete final-review contract. Exact runtime recreation approval remains pending; the failed non-destructive stop has not been bypassed.
 
 Final source review completed through the ordered GLM fallback with no threshold findings. Canonical result schema validated; completed report is in the ignored review directory. Slice review accepted the integrated test correction as source coverage. Neither gate proves browser acceptance; five browser cases have not executed. The exact provider reports `Running` after the failed guarded stop, with no matching task routes returned by devrouter. Runtime release remains unverified. The pending exact recreation request is the next human authority boundary. CI remains pending; draft delivery is in progress, and the native goal is not complete.
+
+
+### Final application acceptance checkpoint — 2026-10-08
+
+Application implementation is complete in draft [PR #6428](https://github.com/uzh-bf/klicker-uzh/pull/6428), with browser fixture corrections through `74f4ad707e64cf384ce3a4c493b58edb3bcbe2d8`. Core guide, current course capability gates, all accessible chatbots, English/German messages, URL views/history, compact mobile setup, factual tutorial corrections, and production `/docs` handoff are implemented. Account data-use settings remain available; course Learning Analytics activation stays deferred.
+
+All five `Y-student-docs` cases passed locally in 27.4 seconds and in CI shard 7. The shared build and all eight browser shards passed in [run 37752879523](https://github.com/uzh-bf/klicker-uzh/actions/runs/37752879523). Previously recorded native source checks, production build and source reviews remain applicable. Further AI review was waived by the user; cancelled or pending AI statuses have not been overridden.
+
+Agent-browser captures were inspected at 1280px, 390px and 360px in English/German, with actual enabled and disabled synthetic course settings, embedded chat and account choice access. No horizontal overflow or browser errors were observed; an existing logo-loading warning remains. Guide/progress navigation moved heading focus and preserved course context through browser back; flashcard reveal worked. The chatbot mounted only on request. Test-owned fixtures additionally verified malformed/error/stale/assessment states, multiple bots, disclosure refusal, recovery, acceptance, and saved thread/disclosure reload. Generated output is intercepted at the chat endpoint, so server-side generated-message persistence and live model quality remain unproven.
+
+A fresh synthetic signed LTI handoff on `/docs` discovered course features, set the participant cookie, and survived a token-free reload without an automatic iframe. This verifies the PWA handoff, not a real external OLAT launch. The public leaderboard tutorial URL timed out again; its source builds. Website tutorial corrections require normal website delivery.
+
+Seventeen synthetic screenshot attachments are published in the draft description and read back; all seventeen images and five tables render in the public PR. Current English/German guide/progress HTML exports include the PWA shell, fonts, images and styles, plus an explicitly labelled future analytics design. The offline export was inspected at desktop/mobile with no Next runtime or session tokens. Local gallery and upload receipts live in the existing ignored artifact area; the refreshed designer package lives in the existing visualization export directory. September exports remain historical.
+
+The separately approved devrouter repair added an explicit ownership-checked, volume-preserving replacement-population stop recovery in its isolated tool worktree. Its local native checks and 2,834 tests passed; Linux process tests were unavailable on macOS. The repaired CLI recovered and started this exact task's `chat` profile for the producing browser run.
+
+After all runtime-dependent checks, canonical stop failed with `Managed stop Docker inspection returned an invalid field.` Read-only inspection identified a foreign app container sharing Compose project `default-rs-77525`: its checkout mount belongs to `trees/rs/graphrag-staging-conflicts`, not this task. No foreign container, shared volume, ownership record, or guard was changed. The task provider still reports `Running` with four exact routes. Runtime release remains blocked until the competing population is resolved through its owning lifecycle; the docs draft and review artifacts are delivered, but the native goal is not marked complete.
+
+Next application stage is human/design review of the draft. Merge, readiness changes, deployment, Learning Analytics activation, external OLAT acceptance and live model-backed chat qualification remain outside this execution batch. No further application redesign or backend consent system is needed to finish the core guide.
