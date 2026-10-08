@@ -212,18 +212,20 @@ upstream and the Azure-specific chatbot disclaimer does not describe this
 local path.
 
 Local Auto Mode is selected by `CHAT_PRIMARY_MODEL_ID=auto`. Chat sends the
-`auto-router` deployment to LiteLLM at `http://litellm:4000`; LiteLLM classifies
-the request with the current Auto V2 policy in `util/litellm/config.yaml`.
-Classification uses Luna low; semantic corpus matching uses
-`openai/text-embedding-3-small`; SIMPLE, MEDIUM, and COMPLEX route to Luna
-medium, high, and xhigh; REASONING routes to Sol medium. LiteLLM then forwards
-all three request types through OpenRouter's OpenAI-compatible endpoint;
-OpenRouter supplies the selected models but does not make the routing decision.
-This adds one classifier request and, for semantic matching, one embedding
-request to the same external OpenRouter data boundary. It therefore adds local
-latency and usage cost. LiteLLM falls back from Sol medium to `gpt-5.1` on an
-upstream failure. Separately, zero-credit fallback remains within the selected
-usage class. Chat can select allow-listed Luna for a BASE selection before
+`auto-router-v2` deployment to LiteLLM at `http://litellm:4000`; LiteLLM
+classifies the request with the current Auto V2 policy in
+`util/litellm/config.yaml`. Classification uses GPT-6 Luna low; semantic corpus
+matching uses `openai/text-embedding-3-small`; SIMPLE routes to GPT-6 Luna
+high, and MEDIUM, COMPLEX and REASONING route to GPT-6.1 Sol low, medium and
+high. The v1 `auto-router` remains available for comparison. LiteLLM then
+forwards all three request types through OpenRouter's OpenAI-compatible
+endpoint; OpenRouter supplies the selected models but does not make the
+routing decision. This adds one classifier request and, for semantic matching,
+one embedding request to the same external OpenRouter data boundary. It
+therefore adds local latency and usage cost. Each GPT-6 alias falls back to its
+GPT-5.6 twin, and each GPT-6.1 Sol alias to its GPT-6 Sol twin, on an upstream
+failure. Separately, zero-credit fallback remains within the selected usage
+class. Chat can select allow-listed Luna for a BASE selection before
 calling LiteLLM; current ADVANCED selections such as Auto are denied while no
 ADVANCED fallback is allow-listed.
 
@@ -238,7 +240,7 @@ Search for `portfolio diversification` and tell me the exact marker it
 returns.” A successful turn calls `KB_doc_query` and shows
 `KLICKER_LOCAL_MCP_OK` in a non-empty final answer plus the synthetic source
 card. Reload the thread and require the tool result, answer, and source to
-remain visible. Use the direct `GPT-5.6 Luna` option only when isolating the
+remain visible. Use the direct `GPT-6 Luna` option only when isolating the
 router from the model/tool integration.
 
 **Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.1.2 fronts the stack over the shared `devnet` network. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery, 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime, and 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct retained-runtime configuration and mount comparison. One-time host setup must happen **before** the container starts:

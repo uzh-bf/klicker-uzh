@@ -150,6 +150,22 @@ that signature and performs one bounded repair for the affected `.next` cache.
 If the route remains unhealthy, inspect `/tmp/dev.log` before diagnosing the
 upstream.
 
+When a production build follows live verification in the same checkout, the
+PWA can include both `.next/dev/types/validator.ts` and
+`.next/types/validator.ts`. If TypeScript reports duplicate `PagesPageConfig`
+identifiers in those generated files, stop the exact owned development process
+through the delivered managed process helper before building again. Preserve
+the affected generated dev-type directory outside the application's compiler
+inputs, then rerun the build. The collision does not require changing application
+source or disabling type checking. Finalize the exact runtime through
+`devrouter stop <checkout-path>` after the last check.
+
+Prompt-template comparisons also need a real process restart: the server caches
+loaded template text. Record the request context's compiled prompt fingerprint
+for each arm rather than assuming an edited `.hbs` file is already serving.
+See [the bounded attribution experiment](../../../project/2026-09-28-tutor-attribution-evaluation.md)
+for the observed failure, acceptance limits and verified recovery.
+
 ## Examples
 
 - The repository startup contract and synthetic prompt are kept together in

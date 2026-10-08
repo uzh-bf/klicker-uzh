@@ -40,6 +40,11 @@ RUN printf '%s\n' \
 # packages/prisma devDependency.
 RUN npm install prisma@7.8.0 --no-package-lock --no-audit --no-fund
 
+# npm's vendored undici and brace-expansion carry fixable HIGH advisories that no
+# npm release has picked up yet. The migration command runs the local binary, so
+# npm is removed once the install is done.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx /root/.npm
+
 # Prisma 7 keeps the datasource URL out of the schema: prisma.config.ts supplies it
 # from DATABASE_URL and points at the schema/migrations paths (relative to /app).
 COPY packages/prisma/prisma.config.ts ./prisma.config.ts

@@ -7,7 +7,8 @@ import {
   type ToolSet,
 } from 'ai'
 
-const PROMPT_CACHE_KEY_VERSION = 'klicker:pc:v1'
+const PROMPT_CACHE_KEY_VERSION = 'klicker:pc:v2'
+const PROMPT_CACHE_THREAD_SEED = 'klicker:prompt-cache:thread:v1:'
 const PROMPT_CACHE_KEY_MAX_LENGTH = 64
 const PROMPT_CACHE_KEY_DIGEST_LENGTH =
   PROMPT_CACHE_KEY_MAX_LENGTH - PROMPT_CACHE_KEY_VERSION.length - 1
@@ -36,10 +37,19 @@ function compareStrings(left: string, right: string) {
   return left.localeCompare(right, 'en-US')
 }
 
+// Identifies the conversation whose turns share one cached prefix. The prompt
+// text is deliberately absent: the per-turn context no longer sits in the
+// prefix, so the key stays constant across the turns of a thread.
+export type PromptCacheScope = {
+  chatbotId: string
+  mode: string
+  threadId: string
+}
+
 export type PromptCacheIdentityInput = {
   deploymentId: string
   transport: PromptCacheTransport
-  instructions: string
+  cacheScope: PromptCacheScope
   tools: ToolSet
 }
 
@@ -213,7 +223,13 @@ export async function buildPromptCacheRequest(
     version: PROMPT_CACHE_KEY_VERSION,
     deploymentId: input.deploymentId,
     transport: input.transport,
-    instructions: input.instructions,
+    chatbotId: input.cacheScope.chatbotId,
+    mode: input.cacheScope.mode,
+    // Hashed with a domain-separated seed so the raw thread id never reaches
+    // the provider.
+    thread: createHash('sha256')
+      .update(`${PROMPT_CACHE_THREAD_SEED}${input.cacheScope.threadId}`)
+      .digest('hex'),
     tools: providerTools,
   })
   const digest = createHash('sha256')

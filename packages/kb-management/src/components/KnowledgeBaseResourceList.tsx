@@ -15,10 +15,10 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  GetKbResourceIngestionRunsDocument,
-  GetKbResourcesDocument,
-  type GetKbResourcesQuery,
-  type GetKbResourcesQueryVariables,
+  GetKbResourceIngestionRunsWithFailureDetailDocument as GetKbResourceIngestionRunsDocument,
+  GetKbResourcesWithFailureDetailDocument as GetKbResourcesDocument,
+  type GetKbResourcesWithFailureDetailQuery as GetKbResourcesQuery,
+  type GetKbResourcesWithFailureDetailQueryVariables as GetKbResourcesQueryVariables,
   IngestAllKbResourcesDocument,
   IngestKbResourceDocument,
   KbIngestionStatus,
@@ -149,11 +149,13 @@ function RunStatusBadge({
 function RunStatusMessage({
   status,
   errorCode,
+  statusMessage,
   className,
   dataCy,
 }: {
   status: KbIngestionStatus
   errorCode?: string | null
+  statusMessage?: string | null
   className?: string
   dataCy?: string
 }) {
@@ -169,7 +171,20 @@ function RunStatusMessage({
       return t('kb.storageLimitError')
     }
     if (status === KbIngestionStatus.Failed) {
-      return t('kb.ingestionFailed')
+      switch (statusMessage) {
+        case 'The fetched source did not match the version recorded when the source was added, so the import was rejected.':
+          return t('kb.ingestionFailureSourceVersionMismatch')
+        case 'The source could not be fetched.':
+          return t('kb.ingestionFailureSourceFetch')
+        case 'The source content could not be processed.':
+          return t('kb.ingestionFailureSourceProcessing')
+        case 'The source is larger than the supported size limit.':
+          return t('kb.ingestionFailureSourceSizeLimit')
+        case 'The imported content could not be activated.':
+          return t('kb.ingestionFailureActivation')
+        default:
+          return t('kb.ingestionFailed')
+      }
     }
     if (status === KbIngestionStatus.Superseded) {
       return t('kb.ingestionSuperseded')
@@ -250,6 +265,7 @@ function KnowledgeBaseResourceHistory({
                 <RunStatusMessage
                   status={run.status}
                   errorCode={run.errorCode}
+                  statusMessage={run.statusMessage}
                   className="mt-1"
                 />
               </div>
@@ -447,6 +463,7 @@ function ResourceTableRow({
           <RunStatusMessage
             status={resource.latestIngestionRun.status}
             errorCode={resource.latestIngestionRun.errorCode}
+            statusMessage={resource.latestIngestionRun.statusMessage}
             className="mt-1 text-sm text-slate-600"
             dataCy={`kb-resource-status-message-${resource.id}`}
           />

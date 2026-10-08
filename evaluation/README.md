@@ -293,6 +293,11 @@ does not change the target effort. Auto normalizes its target effort separately.
 Use the repository's restricted host-side secret operator for live injection,
 with only the approved names; no raw secret fetch or dotenv copy is needed.
 
+The target accepts only loopback origins. To run against a remote deployment,
+set `KLICKER_EVAL_ALLOWED_ORIGINS` to a comma-separated list of exact `https`
+origins (no path); an origin is accepted only if it matches an entry exactly.
+`KLICKER_EVAL_CHATBOT_ID` selects the chatbot instead of the built-in default.
+
 After setting the local participant/origin variables and approved judge route
 as above, run inside the existing task container with paths visible there:
 
@@ -339,7 +344,11 @@ translations/paraphrases in the same split. Compare ordinary RAG and graph
 expansion under one model, prompt, mode, context budget and corpus. Add a
 non-graph second-search control if the provider exposes it. Otherwise retain
 retrieval-spend and context-size confounds in the report. Persisted tool names
-do not prove internal expansion counts. Record actual context sizes, per-case
+do not prove internal expansion counts. Use the server's content-free `[chat.graph_retrieval]` event to distinguish an attempted second search from successful compatible fusion. Check captured passage locators/support separately: fusion does not prove useful new evidence. A null count is unavailable, not an empty result or a pass.
+
+Successful fusion applies 12 passages/16,000 content characters, while baseline and fallback preserve the provider payload. Verify actual context sizes for every arm; do not infer matched budgets from the wrapper. Keep budget enforcement in the provider or evaluation harness rather than changing production retrieval only for tests. A three-question off/on run proves mechanism only; quality qualification needs a fresh frozen family-separated set and predeclared acceptance criteria.
+
+Record actual context sizes, per-case
 metric outcomes and skips, errors, latency and spend. The existing quality
 reports/dashboard consume evaluator output; `compare_runs` is for load metrics.
 No additional evaluation engine is needed.
