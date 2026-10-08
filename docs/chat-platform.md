@@ -487,6 +487,9 @@ router's effort targets remain internal. Before 2026-09-29 the base model id
 was `gpt-5.6-luna`; migration `20260929120000_chat_gpt6_base_model` rewrote
 stored chatbot allow-lists, while historical message `modelId` values keep the
 id that answered.
+Migration `20261008120000_chat_drop_retired_model_ids` later removed the
+retired `gpt-4.1` and `gpt-5.4` ids from live and draft chatbot policies, so
+edits to those chatbots still pass registry validation.
 Both staging and production now use `auto` as the global automatic-model
 primary, so chatbots using automatic model selection use Auto by default.
 Chatbots with an explicit model selection can continue using that selection.
