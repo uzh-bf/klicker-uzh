@@ -18,6 +18,7 @@ describe('feature flag contracts', () => {
       'kb-graph-domain-selection': false,
       'question-focus-topic': false,
       'chatbot-long-custom-prompts': false,
+      'kb-auto-graph-preparation': false,
     })
   })
 
