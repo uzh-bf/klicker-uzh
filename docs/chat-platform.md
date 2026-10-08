@@ -129,15 +129,24 @@ no custom base URL and therefore still reaches the shared gateway. That
 key-only path intentionally receives neither the default exact-response bypass
 nor the default prompt-cache identity.
 
-For default requests, `POST` passes the final `systemPrompt`, requested
-deployment identity, transport family, and request tools (the MCP tools plus
-the Tutor and Quizzer `calculate` tool) to
-`buildPromptCacheRequest`. The helper hashes only a versioned canonical
-provider-visible projection with SHA-256, then emits the provider-safe
-`klicker:pc:v1:<50-hex-character-digest>` key and
-passes it to the OpenAI provider. Tool execution functions, MCP clients,
-participant/user/chatbot/thread/message/request identifiers, and raw tool-call
-identifiers are not identity inputs. Tool input examples are excluded because
+For default requests, `POST` passes the requested deployment identity,
+transport family, cache scope (chatbot, mode and thread) and request tools (the
+MCP tools plus the Tutor and Quizzer `calculate` tool) to
+`buildPromptCacheRequest`. The stable instructions stay in the request's
+`instructions`, and per-turn context sits in a message before the new user
+message, so the prefix of instructions and tools is identical for every thread
+of a chatbot and mode. The helper hashes a versioned canonical projection of
+the deployment, transport, chatbot, mode, provider-visible tools and a thread
+bucket with SHA-256, then emits the provider-safe
+`klicker:pc:v3:<50-hex-character-digest>` key and passes it to the OpenAI
+provider. The bucket is one of four values derived from a seeded hash of the
+thread id: threads share the cached prefix, a thread keeps its key on every
+turn, and a busy chatbot spreads its traffic over a few keys instead of
+pushing one key past the provider's per-key rate of about 15 requests per
+minute. The owner preview uses the fixed `owner-preview` thread scope. Tool
+execution functions, MCP clients, participant, user, message and request
+identifiers, raw thread ids and raw tool-call identifiers are not identity
+inputs. Tool input examples are excluded because
 neither OpenAI transport serializes them. Tool provider options are excluded
 for Chat Completions and limited to the OpenAI Responses options that reach the
 request. The rebuilt tools retain runtime execution, and the route supplies
