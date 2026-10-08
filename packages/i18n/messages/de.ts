@@ -2836,12 +2836,43 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       configure: {
         sourceTitle: 'Wissensquelle',
         sourceHelp:
-          'Wählen Sie eine Wissensbasis mit einem veröffentlichten Graphen. Die Generierung bleibt für die Nachvollziehbarkeit mit diesem Graph-Build verknüpft.',
+          'Wählen Sie eine Wissensbasis. Die Generierung bleibt für die Nachvollziehbarkeit mit dem vorbereiteten Material verknüpft, das sie verwendet.',
         sourceCount: '{count, plural, one {# Quelle} other {# Quellen}}',
-        indexedAt: 'Veröffentlicht {date}',
-        staleGraph: 'Aktualisierung verfügbar',
+        indexedAt: 'Vorbereitet {date}',
+        staleGraph: 'Neueste Änderungen noch nicht enthalten',
         staleGraphHelp:
-          'Dieser veröffentlichte Graph kann weiterhin verwendet werden, aber die Wissensbasis enthält neuere Änderungen. Erstellen Sie ihn zuerst neu, wenn diese Änderungen einbezogen werden sollen.',
+          'Diese Wissensbasis enthält neuere Änderungen, die noch vorbereitet werden. Jetzt generierte Fragen verwenden das zuvor vorbereitete Material.',
+        basisLanguage: 'Fragen auf {language}',
+        settingsChangedHelp:
+          'Das Fachgebiet oder die Sprache dieser Wissensbasis wurde geändert. Neue Fragen warten auf eine Vorbereitung, die den neuen Einstellungen entspricht. Bestehende Fragen bleiben unverändert.',
+        contactSupport: 'Kontakt: {email}',
+        preparation: {
+          WAITING_FOR_MATERIALS: 'Wartet auf die Verarbeitung der Materialien',
+          QUEUED: 'Wird automatisch vorbereitet',
+          PROCESSING: 'Wird automatisch vorbereitet',
+          READY: 'Bereit',
+          DELAYED: 'Vorbereitung verzögert',
+          NEEDS_ATTENTION: 'Vorbereitung erfordert Aufmerksamkeit',
+          UNAVAILABLE: 'Automatische Vorbereitung nicht verfügbar',
+          NO_ELIGIBLE_MATERIALS: 'Noch kein Kursmaterial',
+        },
+        preparationHelp: {
+          WAITING_FOR_MATERIALS:
+            'Die hochgeladenen Materialien werden noch verarbeitet. Die Vorbereitung der Fragengenerierung beginnt danach automatisch.',
+          QUEUED:
+            'Die Fragengenerierung wird automatisch vorbereitet. Schauen Sie innerhalb von 24 Stunden wieder vorbei.',
+          PROCESSING:
+            'Die Fragengenerierung wird automatisch vorbereitet. Schauen Sie innerhalb von 24 Stunden wieder vorbei.',
+          READY: 'Bereit für die Fragengenerierung.',
+          DELAYED:
+            'Die Vorbereitung dauert länger als erwartet. Kontaktieren Sie uns, damit wir es prüfen können.',
+          NEEDS_ATTENTION:
+            'Die Vorbereitung konnte nicht automatisch abgeschlossen werden. Prüfen Sie die Materialien dieser Wissensbasis oder kontaktieren Sie uns.',
+          UNAVAILABLE:
+            'Die automatische Vorbereitung ist für diese Wissensbasis nicht aktiviert. Kontaktieren Sie uns, um die Fragengenerierung zu aktivieren.',
+          NO_ELIGIBLE_MATERIALS:
+            'Fügen Sie dieser Wissensbasis Kursmaterial hinzu. Administrative Dokumente werden für die Fragengenerierung nicht verwendet.',
+        },
         sourceDetails: 'Enthaltene Quellen',
         completeSource: 'Die vollständige Quelle wird verwendet.',
         pageFrom: 'Von Seite',
