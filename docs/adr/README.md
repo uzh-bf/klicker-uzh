@@ -30,11 +30,12 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 - [0025](./0025-assessment-account-usability-gate.md) — Assessment accounts remain unusable until required choices are complete
 - [0026](./0026-personal-elements-separate-participant-owned-model.md) — Personal elements are a separate participant-owned model
 - [0027](./0027-plan-first-retrieval-backed-card-generation.md) — Student card generation is plan-first and retrieval-backed per card
-- [0028](./0028-short-lived-qualified-rc-branch-for-ai-releases.md) — AI releases ship from a short-lived qualified RC branch with a clean-schema gate
+- [0028](./0028-short-lived-qualified-rc-branch-for-ai-releases.md) — AI releases ship from a short-lived qualified RC branch with a clean-schema gate (superseded by 0051)
 - [0037](./0037-standard-activity-formats.md) — Practice quizzes, microlearnings, and group activities are standard capabilities
 - [0041](./0041-chatbot-trusted-pilot-boundary.md) — Stage chatbot usage enforcement and keep the trusted pilot operations-assisted
 - [0042](./0042-version-chatbot-disclaimers-by-replacement.md) — Version lecturer-edited chatbot disclaimers by transactional replacement
 - [0043](./0043-sonar-analysis-credential-and-coverage-input-boundary.md) — Sonar analysis credentials stay out of contributor-controlled execution
+- [0051](./0051-ai-releases-tag-v3-ai-with-deploy-parity.md) — AI releases are tagged on `v3-ai` and rendered from `v3` under deploy parity
 
 `0001`, `0003`, and `0008` are each used twice — their lines were numbered
 independently before this index existed. Numbers are not reassigned, because
