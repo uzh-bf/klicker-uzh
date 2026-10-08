@@ -1861,6 +1861,21 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       'Chatbot materials: {available} of {total} available',
     materialsReadinessProcessing: '{count} processing',
     materialsReadinessFailed: '{count} failed',
+    questionReadiness: {
+      WAITING_FOR_MATERIALS:
+        'Question generation: waiting for materials to finish processing',
+      QUEUED:
+        'Question generation: preparing automatically. Check back within 24 hours.',
+      PROCESSING:
+        'Question generation: preparing automatically. Check back within 24 hours.',
+      READY: 'Question generation: ready',
+      DELAYED: 'Question generation: preparation is delayed.',
+      NEEDS_ATTENTION: 'Question generation: preparation needs attention.',
+      UNAVAILABLE:
+        'Question generation: automatic preparation is not available.',
+      NO_ELIGIBLE_MATERIALS: 'Question generation: no course material yet',
+      contact: 'Contact us',
+    },
     loadMore: 'Load more knowledge bases',
     notFound: 'The knowledge base could not be found.',
     detailFallbackTitle: 'Knowledge base',

@@ -2381,6 +2381,7 @@ type KB {
   materialsReadiness: KBMaterialsReadiness
   metrics: KBMetrics
   name: String!
+  questionPreparation: KBQuestionPreparation
   updatedAt: Date!
 }
 
@@ -2568,6 +2569,13 @@ type KBMetrics {
 type KBPageInfo {
   endCursor: String
   hasNextPage: Boolean!
+}
+
+type KBQuestionPreparation {
+  basisIndexedAt: Date
+  hasBasis: Boolean!
+  pendingReason: ElementGenerationPreparationPendingReason
+  state: ElementGenerationPreparationState!
 }
 
 type KBResource {
