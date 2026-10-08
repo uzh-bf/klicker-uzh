@@ -17,7 +17,7 @@ import {
 import { Button, H2, Select, toast } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ChatbotCreateModal from './chatbots/ChatbotCreateModal'
 import ChatbotDetails from './chatbots/ChatbotDetails'
 import ChatbotList from './chatbots/ChatbotList'
@@ -40,6 +40,9 @@ function Chatbots() {
   const t = useTranslations()
   const router = useRouter()
   const [createModalOpen, setCreateModalOpen] = useState(false)
+  // Set from a completed creation until its navigation to the new chatbot
+  // settles, so the query canonicalization below cannot replace that target.
+  const createdChatbotNavigationRef = useRef(false)
   const [navigationState, setNavigationState] =
     useState<ChatbotNavigationState>(cleanNavigationState)
   // GrowthBook reports every flag as off until evaluation settles, so reading
@@ -149,8 +152,15 @@ function Chatbots() {
     [router.query]
   )
 
+  const createModalShown =
+    createModalOpen || Boolean(kbForNewChatbot && courseData)
+
   useEffect(() => {
     if (!router.isReady || loading || !selectedChatbot) return
+    // The creation refetch can select a first chatbot as the list fallback
+    // before its creator navigates; canonicalizing then would open the
+    // default view instead of Materials.
+    if (createModalShown || createdChatbotNavigationRef.current) return
 
     const queryIsCanonical =
       selectedId === selectedChatbot.id &&
@@ -169,6 +179,7 @@ function Chatbots() {
       )
     )
   }, [
+    createModalShown,
     loading,
     buildWorkspaceQuery,
     requestedStep,
@@ -237,21 +248,26 @@ function Chatbots() {
 
   const handleSelect = (chatbot: Chatbot) => selectChatbot(chatbot.id)
 
-  const selectCreatedChatbot = (
-    chatbotId: string,
-    view: ChatbotWorkspaceView = 'disclaimer'
-  ) => {
+  // A new chatbot continues into Materials; the Materials view then points to
+  // the student information that still has to be saved before publication.
+  const selectCreatedChatbot = (chatbotId: string) => {
     runInternalNavigation(() => {
-      // The creation refetch may already have mounted the new draft and
-      // reported its unsaved disclaimer. Preserve that editor state.
-      return router.push(
-        {
-          pathname: router.pathname,
-          query: buildWorkspaceQuery(chatbotId, { view }),
-        },
-        undefined,
-        { shallow: true }
-      )
+      // The creation refetch may already have mounted the new draft with its
+      // unsaved suggested student information. Skipping the discard prompt
+      // loses nothing, because the suggestion is offered again whenever
+      // Student information opens.
+      return router
+        .push(
+          {
+            pathname: router.pathname,
+            query: buildWorkspaceQuery(chatbotId, { view: 'knowledge' }),
+          },
+          undefined,
+          { shallow: true }
+        )
+        .finally(() => {
+          createdChatbotNavigationRef.current = false
+        })
     })
   }
 
@@ -275,6 +291,7 @@ function Chatbots() {
 
   const handleChatbotCreated = async (chatbotId: string) => {
     const kbId = kbForNewChatbot?.id
+    createdChatbotNavigationRef.current = true
     // Clearing both triggers closes the modal before the connection runs, so
     // the form cannot create a second chatbot meanwhile.
     setCreateModalOpen(false)
@@ -301,7 +318,7 @@ function Chatbots() {
     }
     // The Knowledge view shows the connection, or offers to connect the
     // knowledge base again when the attempt failed.
-    selectCreatedChatbot(chatbotId, 'knowledge')
+    selectCreatedChatbot(chatbotId)
   }
 
   return (
@@ -371,7 +388,7 @@ function Chatbots() {
           />
         </main>
       </div>
-      {createModalOpen || (kbForNewChatbot && courseData) ? (
+      {createModalShown ? (
         <ChatbotCreateModal
           courses={ownedCourses}
           requireCourseChoice={kbForNewChatbot != null}

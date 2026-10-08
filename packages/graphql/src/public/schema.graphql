@@ -847,6 +847,7 @@ type ChatbotDisclaimerSummary {
 
 type ChatbotKnowledgeBaseSummary {
   id: ID!
+  materialsReadiness: KBMaterialsReadiness
   name: String!
 }
 
@@ -2353,6 +2354,7 @@ type KB {
   domainPolicyLanguage: String
   domainPolicyVersion: Int
   id: ID!
+  materialsReadiness: KBMaterialsReadiness
   metrics: KBMetrics
   name: String!
   updatedAt: Date!
@@ -2361,6 +2363,7 @@ type KB {
 type KBChatbotBinding {
   chatbotId: ID!
   chatbotName: String!
+  chatbotStatus: ChatbotStatus!
   enabledKbId: ID @deprecated(reason: "Use enabledKbs for all attached knowledge bases.")
   enabledKbName: String @deprecated(reason: "Use enabledKbs for all attached knowledge bases.")
   enabledKbs: [ChatbotKnowledgeBaseSummary!]!
@@ -2514,6 +2517,13 @@ type KBKnowledgeGraphDomainOption {
   labelKey: String!
   languages: [KBKnowledgeGraphDomainLanguage!]!
   version: Int!
+}
+
+type KBMaterialsReadiness {
+  failedResourceCount: Int!
+  processingResourceCount: Int!
+  servingResourceCount: Int!
+  visibleResourceCount: Int!
 }
 
 type KBMetrics {

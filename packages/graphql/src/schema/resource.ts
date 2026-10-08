@@ -13,6 +13,7 @@ import type {
   ChatAccountUsageOverview,
 } from '../services/chatAccountUsage.js'
 import type { ChatbotRevisionSaveInput as ChatbotRevisionSaveInputShape } from '../services/chatbots.js'
+import type { KBMetrics } from '../services/knowledge.js'
 import { CourseListEntryRef, type ICourseListEntry } from './course.js'
 import { PermissionLevel, SharingType } from './sharing.js'
 import { AiSubscriptionTier, LocaleType } from './user.js'
@@ -478,6 +479,7 @@ export interface IChatbot {
 export interface IChatbotKnowledgeBaseSummary {
   id: string
   name: string
+  metrics?: KBMetrics | null
 }
 
 export const ChatbotKnowledgeBaseSummaryRef =
