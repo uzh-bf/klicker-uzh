@@ -5,6 +5,127 @@ Status: roadmap direction reviewed; approved checkpoint A source package and con
 Scope: graph generation and its use in content generation, chatbot retrieval, and lecturer review.  
 Parent: [six-domain selection plan](2026-09-11-kg-domain-selection-plan.md).
 
+## Current delivery checkpoint — 2026-10-08
+
+This update supersedes the October 7 runtime and failure-charging blockers below.
+The existing graph-control PR [#6229](https://github.com/uzh-bf/klicker-uzh/pull/6229)
+now contains the normal target integration at `8f42c93d5f`. A fresh isolated
+verification worktree resolved the older retained runtime mismatch without
+changing the global CLI or the old runtime. At 649 pixels the historical layout
+intercepted the Build button centre with the quality dropdown and dispatched no
+request. The fixed layout receives that click and submits Business v1, English
+and HIGH exactly once, with no graph-focus field. English desktop and German
+mobile captures are available; mocked graph configuration and requests prove
+UI behavior, not paid generation quality. All 42 workspace check tasks, seven
+lint tasks, host contracts and the 27-task pre-push build passed. All five synthetic captures are published inline in #6229 and render
+in the public PR. All eight currently reported required hosted checks pass; hosted
+Playwright and final AI review remain pending.
+
+The approved failed-build policy is implemented in draft
+[#6431](https://github.com/uzh-bf/klicker-uzh/pull/6431) at `9df10b4553`:
+valid failed results and stale late successes release quota with zero user
+charge while retaining provider metering and token diagnostics. The complete
+PostgreSQL accounting suite passes all 13 tests. Full hooks and the 27-task
+build passed; all nine required hosted checks pass at `9df10b4553`. Both
+OpenCodeReview attempts stopped at the tool-request-round limit with zero
+findings and no verdict. This is an unfinished review, not a passing review.
+Historical refunds, ambiguous holds, maximum-cost settlement, size-aware
+estimates and paid calibration remain outside this fix. Merge and deployment
+are still separate delivery steps.
+
+A fresh GrowthBook read of `chatbot-graphrag` still returns
+`Request failed: fetch failed`. The exact synthetic chatbot participant entry
+still redirects to Login Required in the in-app browser. The existing
+four-turn/CHF 2 acceptance approval remains valid, but neither activation nor a
+model turn was attempted. Restore authenticated GrowthBook management access
+and an authenticated staging test-participant session to unblock GraphRAG.
+Focused versus unfocused question comparisons still require a named spend cap.
+
+### Previous delivery checkpoint — 2026-10-07
+
+This checkpoint supersedes the delivery-status claims in the dated sections
+below. Those sections retain the original experiments and their limitations.
+
+The six-domain selector, generation language, question focus and GrowthBook
+admission controls are merged into `v3-ai` through PRs [#5904](https://github.com/uzh-bf/klicker-uzh/pull/5904), [#5906](https://github.com/uzh-bf/klicker-uzh/pull/5906), [#6032](https://github.com/uzh-bf/klicker-uzh/pull/6032) and
+[#6178](https://github.com/uzh-bf/klicker-uzh/pull/6178). The staging comparison below proves policy-dependent type distributions
+and language propagation on synthetic input. It does not establish improved
+question or chatbot quality. Graph builds continue to cover eligible course
+content; question focus narrows one question-generation batch.
+
+Preview refresh ([#6237](https://github.com/uzh-bf/klicker-uzh/pull/6237)), unmetered-terminal reservation release ([#6238](https://github.com/uzh-bf/klicker-uzh/pull/6238)), cleanup
+of already-removed graphs ([#6272](https://github.com/uzh-bf/klicker-uzh/pull/6272)), monotonic quota adoption ([#6299](https://github.com/uzh-bf/klicker-uzh/pull/6299)) and the CHF 50
+staging allowance ([#6308](https://github.com/uzh-bf/klicker-uzh/pull/6308)) are merged. The September 24 probe build succeeded,
+became published and settled after its owner's quota rose from 1000 to 5000.
+Other owners adopt the configured grant on their next admission.
+
+The existing staging tunnel is available. STG Chat serves
+`ef015bd7bb6347668e0d37bda6caa4a5bc78f133` with one ready replica, matching
+`stg-release`. The backend ConfigMap carries a 5000-minor-unit semester grant
+and the configured domain-catalog revision. Earlier scoped reads verified the
+synthetic probe's published, non-stale graph and backend search hints.
+
+[Infrastructure MR !652](https://gitlab.uzh.ch/uzh-bf/cloud/df-cloud-klickeruzh/-/merge_requests/652)
+merged at `5711d5804ae4867ab4b0fd167d14e584b20fa786`. The approved
+[STG apply](https://gitlab.uzh.ch/uzh-bf/cloud/df-cloud-klickeruzh/-/jobs/2167373)
+succeeded. Dedicated reader credentials are prepared for STG and PRD; only STG
+was applied. STG Chat passes a constant read against the synthetic graph and
+cannot list graphs. Credential projection and reader authorization are verified;
+participant GraphRAG acceptance remains open.
+
+The in-app browser is accessible. The existing synthetic test chatbot has a
+saved disclaimer as draft revision 1. A temporary probe binding saved and read
+back correctly, then the original KB binding was restored. Retrieval remains
+disabled and no publication request was submitted. GrowthBook management reads
+fail at the connector, the configured management API returns HTTP 404, and the
+private UI fails DNS resolution. The public SDK payload lacks
+`chatbot-graphrag`. The participant entry redirects to Student Login; there is
+no authenticated STG test participant session. Owner preview does not exercise
+the participant GraphRAG path.
+
+The approved GraphRAG test permits at most four synthetic participant turns
+with a CHF 2 cumulative usage cap, owner-only STG activation, normal publication
+approval and configuration restoration. No model turn or test spend occurred.
+Restore the existing authenticated GrowthBook management access and a STG test
+participant session before resuming that sequence. The approval remains valid.
+The managed local runtime still has its recorded baseline-mismatch blocker;
+fixed-layout browser proof and required application hooks remain unavailable.
+
+Continue in this order, with the main session owning the approved solo package:
+
+1. Finish browser evidence for the narrow-width graph control fix ([#6229](https://github.com/uzh-bf/klicker-uzh/pull/6229)).
+   Its current target was integrated without conflicts; browser proof and
+   required CI on the unpublished local head remain missing. The `v3`
+   staging-quota parity companion ([#6365](https://github.com/uzh-bf/klicker-uzh/pull/6365)) is open; its current `check` fails
+   because additional model and usage settings have diverged between branches.
+   Resolving that drift must not silently promote production model settings.
+2. On the existing synthetic probe, compare question batches with and without
+   focus, verify language and source grounding, then test GraphRAG citations,
+   scope, stale-build handling, fallback and thread persistence. Correlate UI
+   outcomes with the producing runs; mocks and successful graph builds alone
+   do not complete W8/W9. The credential repair is applied. Resume the approved
+   GraphRAG test once flag management, participant authentication and normal
+   publication review are available. Question-batch comparisons and broader
+   quality evaluations still need their own named spend ceilings.
+3. Continue the accounting packages in [#6236](https://github.com/uzh-bf/klicker-uzh/pull/6236) after resolving their recorded
+   decisions. Quota adoption is complete; failed builds must not be charged.
+   Provider metering, the maximum-cost settlement contract, size-aware estimates
+   and calibration remain open. Current `origin/v3-ai` still settles valid
+   metered failed results against user quota; its existing accounting test
+   explicitly expects a 60-minor-unit failure charge. The no-charge rule is
+   therefore approved policy, not complete implementation. Repair that path
+   while retaining partial usage as diagnostics, and assert zero quota charge,
+   reservation release and duplicate-result idempotency. Configured flat
+   charges are not measured spend.
+4. Use paired, held-out consumer scorecards to choose further W4–W9 changes.
+   Runtime catalog discovery and broader W10/W11 work remain future packages,
+   rather than claims that the complete quality roadmap has shipped.
+
+The terminal condition for this delivery package is verified browser evidence,
+real synthetic consumer acceptance and reconciled project progress. Missing
+access, unresolved accounting decisions and new evaluation spend are explicit
+dependencies; merges and deployments keep their named authorization boundaries.
+
 ## Execution status — 2026-09-12
 
 The user approved checkpoint A implementation, its controlled reruns, and a comprehensive review. Source delivery is in generator MR !17, stacked on the domain selection MR !15; Klicker foundation PR #5904 and selector PR #5906 remain drafts. This status records achieved evidence without expanding the roadmap's remaining scope.
