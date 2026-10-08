@@ -241,7 +241,7 @@ test('the guide preserves embedded disclosure refusal and normal-view recovery',
   await expect(chat.getByTestId('chat-show-disclaimer-again')).toHaveCount(0)
 
   const popup = page.waitForEvent('popup')
-  await page.locator(`a[href$="/chatbot/${CHATBOT_ID}"]`).click()
+  await page.locator(`#ai-tutor a[href$="/chatbot/${CHATBOT_ID}"]`).click()
   const normal = await popup
   await expect(normal.getByTestId('chat-disclaimer-declined')).toBeVisible()
   expect(new URL(normal.url()).searchParams.has('embed')).toBe(false)
