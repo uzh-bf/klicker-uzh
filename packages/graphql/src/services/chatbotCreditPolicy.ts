@@ -10,6 +10,17 @@ export type ChatbotCreditPolicy = {
   creditMaxCredits: number
 }
 
+// What a chatbot starts with when its owner never touches the credit
+// controls. One credit is one participant message. The daily refill means
+// the chatbot is usable by participants on the day it is created, rather
+// than waiting for a longer reset period to elapse.
+export const DEFAULT_CHATBOT_CREDIT_POLICY: ChatbotCreditPolicy = {
+  creditInitialCredits: 3,
+  creditResetPeriod: DB.CreditResetPeriod.DAILY,
+  creditResetAmount: 3,
+  creditMaxCredits: 3,
+}
+
 function invalidCreditPolicy(message: string) {
   return new GraphQLError(message, {
     extensions: { code: 'BAD_USER_INPUT' },
