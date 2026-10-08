@@ -68,6 +68,14 @@ final review are main-session self-reviews; they are not independent evidence.
   publication preservation and successful/superseded charging remain intact;
   no findings remain. Package size: 68 changed source/test lines, excluding
   project artifacts and the seven-line ADR clarification.
-- Pre-push build and draft delivery remain pending. No model call or production
-  mutation occurred. Stop the exact runtime after the last container check and
-  verify provider state and routes.
+- The 27-task pre-push build passed and draft [PR #6431](https://github.com/uzh-bf/klicker-uzh/pull/6431)
+  is published at source `24fd146c1a` (documentation head `9df10b4553`). All nine
+  required hosted checks pass. Both OpenCodeReview attempts ended at
+  the maximum tool-request-round limit with zero findings and no verdict;
+  automated review remains incomplete. Hosted Playwright passed; final AI review
+  remains pending. No further retry was attempted.
+- The exact verification worktree resolves to Devsy workspace
+  `rs-kg-failed-metering-release`; fresh provider status is Stopped and
+  devrouter reports zero routes. The older provider identity label above is
+  devrouter's shared registry field. No runtime deletion, paid model call,
+  historical refund, production mutation or global CLI change occurred.
