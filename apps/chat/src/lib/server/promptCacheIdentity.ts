@@ -7,8 +7,14 @@ import {
   type ToolSet,
 } from 'ai'
 
-const PROMPT_CACHE_KEY_VERSION = 'klicker:pc:v2'
+const PROMPT_CACHE_KEY_VERSION = 'klicker:pc:v3'
 const PROMPT_CACHE_THREAD_SEED = 'klicker:prompt-cache:thread:v1:'
+// Threads of one chatbot and mode share the instructions and tool prefix, so
+// they share a key. The provider spreads a key across more cache machines once
+// it receives more than about 15 requests per minute; spreading threads over a
+// few fixed buckets keeps busy chatbots below that rate while a thread still
+// lands in the same bucket on every turn.
+const PROMPT_CACHE_THREAD_BUCKETS = 4
 const PROMPT_CACHE_KEY_MAX_LENGTH = 64
 const PROMPT_CACHE_KEY_DIGEST_LENGTH =
   PROMPT_CACHE_KEY_MAX_LENGTH - PROMPT_CACHE_KEY_VERSION.length - 1
@@ -37,9 +43,9 @@ function compareStrings(left: string, right: string) {
   return left.localeCompare(right, 'en-US')
 }
 
-// Identifies the conversation whose turns share one cached prefix. The prompt
-// text is deliberately absent: the per-turn context no longer sits in the
-// prefix, so the key stays constant across the turns of a thread.
+// Identifies the conversations that share one cached prefix. The prompt text
+// is deliberately absent: the per-turn context no longer sits in the prefix,
+// so the key stays constant across the turns of a thread.
 export type PromptCacheScope = {
   chatbotId: string
   mode: string
@@ -225,11 +231,13 @@ export async function buildPromptCacheRequest(
     transport: input.transport,
     chatbotId: input.cacheScope.chatbotId,
     mode: input.cacheScope.mode,
-    // Hashed with a domain-separated seed so the raw thread id never reaches
-    // the provider.
-    thread: createHash('sha256')
-      .update(`${PROMPT_CACHE_THREAD_SEED}${input.cacheScope.threadId}`)
-      .digest('hex'),
+    // Only the bucket of a domain-separated thread hash enters the key, so the
+    // raw thread id never reaches the provider.
+    threadBucket:
+      createHash('sha256')
+        .update(`${PROMPT_CACHE_THREAD_SEED}${input.cacheScope.threadId}`)
+        .digest()
+        .readUInt32BE(0) % PROMPT_CACHE_THREAD_BUCKETS,
     tools: providerTools,
   })
   const digest = createHash('sha256')

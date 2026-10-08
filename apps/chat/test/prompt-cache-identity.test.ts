@@ -125,7 +125,7 @@ describe('prompt cache identity', () => {
     expect(second.toolOrder).toEqual(first.toolOrder)
   })
 
-  test('keeps one key for a thread and separates threads without exposing the id', async () => {
+  test('keeps one key for a thread and shares a bounded set of keys across threads', async () => {
     const request = (threadId: string) =>
       buildPromptCacheRequest({
         deploymentId: 'gpt-5.6-luna',
@@ -135,15 +135,21 @@ describe('prompt cache identity', () => {
       })
     const turnOne = await request('thread-a')
     const turnTwo = await request('thread-a')
-    const otherThread = await request('thread-b')
+    const keys = new Set(
+      await Promise.all(
+        Array.from({ length: 64 }, (_, index) =>
+          request(`thread-${index}`).then((r) => r.promptCacheKey)
+        )
+      )
+    )
 
     expect(turnTwo.promptCacheKey).toBe(turnOne.promptCacheKey)
-    expect(otherThread.promptCacheKey).not.toBe(turnOne.promptCacheKey)
+    expect(keys.size).toBeGreaterThan(1)
+    expect(keys.size).toBeLessThanOrEqual(4)
     expect(turnOne.promptCacheKey).not.toContain('thread-a')
   })
 
   test.each<[string, StablePrefixChange]>([
-    ['thread', { cacheScope: { threadId: 'other-thread' } }],
     ['chatbot', { cacheScope: { chatbotId: 'other-chatbot' } }],
     ['mode', { cacheScope: { mode: 'explainer' } }],
     ['deployment', { deploymentId: 'auto-router' }],
