@@ -2,6 +2,7 @@ import { useMutation } from '@apollo/client'
 import CreateAccountForm from '@components/forms/CreateAccountForm'
 import Layout from '@components/Layout'
 import { CreateParticipantAccountWithDataUseDocument } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
@@ -12,8 +13,10 @@ import type { GetServerSidePropsContext } from 'next'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
+import { useEffect } from 'react'
 
 interface Props {
+  participantToken?: string
   signedLtiData?: string
   ssoId?: string
   email?: string
@@ -22,6 +25,7 @@ interface Props {
 }
 
 function CreateAccount({
+  participantToken: linkedParticipantToken,
   signedLtiData,
   email,
   username,
@@ -32,6 +36,16 @@ function CreateAccount({
   const [createParticipantAccount] = useMutation(
     CreateParticipantAccountWithDataUseDocument
   )
+
+  useEffect(() => {
+    if (!linkedParticipantToken) return
+    // A launch for an already linked account continues to the profile. The
+    // frame may refuse the exchanged cookie, so the tab keeps the credential.
+    setParticipantSessionToken(linkedParticipantToken)
+    void router.replace('/editProfile')
+  }, [linkedParticipantToken, router])
+
+  if (linkedParticipantToken) return <Loader />
 
   return (
     <Layout displayName={t('pwa.createAccount.signup.submit')}>
@@ -104,11 +118,23 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   try {
     const { query } = ctx
     const apolloClient = initializeApollo()
-    const { participantToken, sessionState, signedLtiData } =
+    const { participantToken, sessionState, signedLtiData, tokenSource } =
       await getParticipantToken({
         apolloClient,
         ctx,
       })
+
+    if (participantToken && tokenSource === 'explicit') {
+      return {
+        props: {
+          participantToken,
+          sessionState,
+          tokenSource,
+          messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+            .default,
+        },
+      }
+    }
 
     if (participantToken) {
       return {
