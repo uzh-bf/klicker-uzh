@@ -37,3 +37,27 @@ export const participantDataUseSelect = {
 export function isLearningAnalyticsEnabled(): boolean {
   return false
 }
+
+/**
+ * Advance the shared analytics eligibility generation after a
+ * learning-analytics choice changes, and mark stored course analytics that
+ * were computed under the previous choice set for recomputation.
+ *
+ * The generation counter is the contract with the analytics service: it
+ * captures the counter before reading participant data and revalidates it
+ * before publishing. Callers must hold the learning-analytics advisory lock,
+ * so a bump cannot slip between another writer's validation and its commit.
+ */
+export async function invalidateAnalyticsEligibility(
+  prisma: DB.Prisma.TransactionClient
+) {
+  await prisma.analyticsEligibilityGeneration.upsert({
+    where: { id: 0 },
+    create: { id: 0, generation: 1 },
+    update: { generation: { increment: 1 } },
+  })
+  await prisma.course.updateMany({
+    where: { areAnalyticsValid: true },
+    data: { areAnalyticsValid: false },
+  })
+}

@@ -13,9 +13,11 @@ sys.path.append("../../")
 from src.modules.aggregated_analytics.compute_aggregated_analytics import (
     compute_aggregated_analytics,
 )
+from src.modules.analytics_eligibility import capture_analytics_eligibility
 
 db = Prisma()
 db.connect()
+eligibility = capture_analytics_eligibility(db)
 
 # Script settings
 verbose = False
@@ -43,7 +45,15 @@ if compute_daily:
 
         # compute aggregated analytics for a specific day
         timestamp = day_start
-        compute_aggregated_analytics(db, day_start, day_end, timestamp, "DAILY", verbose)
+        compute_aggregated_analytics(
+            db,
+            day_start,
+            day_end,
+            timestamp,
+            "DAILY",
+            verbose,
+            eligibility,
+        )
 
 
 if compute_weekly:
@@ -56,7 +66,15 @@ if compute_weekly:
 
         # compute aggregated analytics for a specific week
         timestamp = week_end
-        compute_aggregated_analytics(db, week_start, week_end, timestamp, "WEEKLY", verbose)
+        compute_aggregated_analytics(
+            db,
+            week_start,
+            week_end,
+            timestamp,
+            "WEEKLY",
+            verbose,
+            eligibility,
+        )
 
 
 if compute_monthly:
@@ -69,7 +87,15 @@ if compute_monthly:
 
         # compute aggregated analytics for a specific month
         timestamp = month_end
-        compute_aggregated_analytics(db, month_start, month_end, timestamp, "MONTHLY", verbose)
+        compute_aggregated_analytics(
+            db,
+            month_start,
+            month_end,
+            timestamp,
+            "MONTHLY",
+            verbose,
+            eligibility,
+        )
 
 
 if compute_course:
@@ -79,7 +105,15 @@ if compute_course:
     # (a constant timestamp is used here, since the data combination has to be unique
     # during querying, but only one entry per course is available by definition)
     timestamp = "1970-01-01T00:00:00.000Z"
-    compute_aggregated_analytics(db, timestamp, timestamp, timestamp, "COURSE", verbose)
+    compute_aggregated_analytics(
+        db,
+        timestamp,
+        timestamp,
+        timestamp,
+        "COURSE",
+        verbose,
+        eligibility,
+    )
 
 # Disconnect from the database
 db.disconnect()

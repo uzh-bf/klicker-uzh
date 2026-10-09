@@ -1,8 +1,17 @@
 from datetime import datetime
 import pandas as pd
 
+from ..analytics_eligibility import AnalyticsEligibilityContext, ensure_analytics_eligibility
 
-def get_running_past_courses(db):
+
+def get_running_past_courses(
+    db,
+    eligibility: AnalyticsEligibilityContext | None = None,
+):
+    eligibility = ensure_analytics_eligibility(db, eligibility)
+    if not eligibility.participant_ids:
+        return pd.DataFrame(columns=["id", "participations"])
+
     curr_date = datetime.now().strftime("%Y-%m-%d")
     courses = db.course.find_many(
         where={
@@ -12,7 +21,7 @@ def get_running_past_courses(db):
             # }
             "startDate": {"lte": curr_date + "T23:59:59.999Z"},
         },
-        include={"participations": True},
+        include={"participations": {"where": {"participantId": {"in": list(eligibility.participant_ids)}}}},
     )
 
     df_courses = pd.DataFrame(list(map(lambda x: x.dict(), courses)))
