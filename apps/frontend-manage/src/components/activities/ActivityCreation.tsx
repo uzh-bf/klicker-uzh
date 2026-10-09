@@ -286,8 +286,16 @@ function ActivityCreation({
                   ? ({
                       ...dataPracticeQuiz.getSinglePracticeQuiz,
                       name: `${dataPracticeQuiz.getSinglePracticeQuiz.name} (Copy)`,
-                      // do not link previous course during duplication -> might not be available to user / not running anymore
-                      course: { id: '' },
+                      // do not link previous course during duplication -> might not be available to user / not running anymore.
+                      // Adaptive quizzes keep it while it is still active and
+                      // enabled for adaptive learning: their competence tree
+                      // is linked to that course.
+                      course: {
+                        id: adaptiveDuplicationCourseId(
+                          dataPracticeQuiz.getSinglePracticeQuiz,
+                          courseSelection
+                        ),
+                      },
                     } as PracticeQuiz)
                   : (dataPracticeQuiz.getSinglePracticeQuiz as PracticeQuiz)
                 : initialDataPracticeQuiz
@@ -326,3 +334,12 @@ function ActivityCreation({
 }
 
 export default ActivityCreation
+
+function adaptiveDuplicationCourseId(
+  quiz: Pick<PracticeQuiz, 'mode'> & { course?: { id: string } | null },
+  courses: ElementSelectCourse[] | undefined
+) {
+  if (quiz.mode !== PracticeQuizMode.Adaptive || !quiz.course?.id) return ''
+  const course = courses?.find(({ value }) => value === quiz.course?.id)
+  return course?.isAdaptiveLearningEnabled ? course.value : ''
+}
