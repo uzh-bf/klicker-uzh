@@ -28,6 +28,10 @@ an expired or different retained session. Cookie-only requests retain the
 existing selection order. The PWA branch also requires the origin host to lie
 inside `COOKIE_DOMAIN`: participant cookies are SameSite=None and CORS reflects
 any origin, so a foreign host that merely contains `pwa` must not select them.
+For the same reason, participant login issues a SameSite=None cookie only to an
+origin inside `COOKIE_DOMAIN`. Any other origin receives a Lax cookie, which a
+browser does not store from a cross-site response, so a foreign page cannot
+place a visitor in another participant's session.
 Without `COOKIE_DOMAIN` no origin qualifies, so participant cookies are never
 selected and every deployment that relies on them must set it.
 Assessment, manager/controller and missing-Origin

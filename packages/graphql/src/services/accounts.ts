@@ -3,6 +3,7 @@ import { DisplayMode } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
   getInitialInstanceStatistics,
+  isCookieDomainOrigin,
   normalizeEmail,
   processElementData,
   recomputeDerivedPermissions,
@@ -36,12 +37,19 @@ const COOKIE_SETTINGS: CookieOptions = {
   sameSite: 'lax',
 }
 
-function participantCookieSettings(): CookieOptions {
+// Participant cookies are SameSite=None so a PWA embedded in an LMS frame can
+// keep its session. CORS reflects any origin, so only a request from inside
+// the cookie domain may receive such a cookie; any other origin gets a Lax
+// cookie, which a browser refuses to store from a cross-site response.
+function participantCookieSettings(ctx: Context): CookieOptions {
   if (process.env.ASSESSMENT_MODE === 'true') return COOKIE_SETTINGS
   return {
     ...COOKIE_SETTINGS,
     maxAge: 1000 * 60 * 60 * 24 * 13,
-    sameSite: COOKIE_SETTINGS.secure ? 'none' : 'lax',
+    sameSite:
+      COOKIE_SETTINGS.secure && isCookieDomainOrigin(ctx.req?.headers?.origin)
+        ? 'none'
+        : 'lax',
   }
 }
 
@@ -49,7 +57,7 @@ function expireParticipantCookie(ctx: Context) {
   // Clear the current partition before issuing the canonical session cookie.
   if (process.env.ASSESSMENT_MODE !== 'true') {
     ctx.res.cookie('participant_token', '', {
-      ...participantCookieSettings(),
+      ...participantCookieSettings(ctx),
       maxAge: 0,
       secure: true,
       sameSite: 'none',
@@ -57,7 +65,7 @@ function expireParticipantCookie(ctx: Context) {
     })
   }
   ctx.res.cookie('participant_token', 'logoutString', {
-    ...participantCookieSettings(),
+    ...participantCookieSettings(ctx),
     maxAge: 0,
   })
 }
@@ -117,7 +125,7 @@ async function doParticipantLogin(
 
   const jwt = await createParticipantToken(participantId)
   if (process.env.ASSESSMENT_MODE !== 'true') expireParticipantCookie(ctx)
-  ctx.res.cookie('participant_token', jwt, participantCookieSettings())
+  ctx.res.cookie('participant_token', jwt, participantCookieSettings(ctx))
   ctx.res.cookie('lti-token', '', { ...COOKIE_SETTINGS, maxAge: 0 })
   ctx.res.cookie('NEXT_LOCALE', participantLocale, COOKIE_SETTINGS)
 

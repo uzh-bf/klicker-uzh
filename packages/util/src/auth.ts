@@ -23,6 +23,23 @@ export function parseCookiesHeader(
 }
 
 /**
+ * Whether a request origin's host lies inside the configured cookie domain.
+ * A foreign host that merely contains a subdomain name does not qualify, and
+ * without a configured cookie domain no origin does.
+ */
+export function isCookieDomainOrigin(origin: unknown): boolean {
+  const cookieDomain = process.env.COOKIE_DOMAIN?.replace(/^\./, '')
+  if (!cookieDomain) return false
+  if (typeof origin !== 'string') return false
+  try {
+    const { hostname } = new URL(origin)
+    return hostname === cookieDomain || hostname.endsWith(`.${cookieDomain}`)
+  } catch {
+    return false
+  }
+}
+
+/**
  * Parse a comma-separated host list into an array, trimming whitespace and removing empties.
  */
 export function parseCsvHosts(value?: string | null): string[] {

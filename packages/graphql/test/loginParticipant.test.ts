@@ -457,11 +457,8 @@ describe('Participant session cookie retention', () => {
       maxAge: 1000 * 60 * 60 * 24 * 13,
       httpOnly: true,
       path: '/',
-      sameSite:
-        process.env.NODE_ENV === 'production' &&
-        process.env.COOKIE_DOMAIN !== '127.0.0.1'
-          ? 'none'
-          : 'lax',
+      // A request without a cookie-domain origin never receives SameSite=None.
+      sameSite: 'lax',
     })
     expect(issuance[2]!.maxAge! / 1000).toBeLessThanOrEqual(
       claims.exp! - Date.now() / 1000
@@ -479,5 +476,51 @@ describe('Participant session cookie retention', () => {
       '',
       expect.objectContaining({ maxAge: 0 })
     )
+  })
+
+  it('issues cross-site-capable cookies only to origins inside the cookie domain', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('COOKIE_DOMAIN', '.klicker.test')
+    vi.stubEnv('APP_SECRET', 'synthetic-participant-cookie-secret')
+    vi.resetModules()
+    try {
+      const accounts = await import('../src/services/accounts.js')
+      const sameSiteFor = async (origin: string) => {
+        const ctx = createCtx()
+        ctx.req = { locals: {}, headers: { origin } } as any
+        ctx.prisma = {
+          participant: {
+            findUnique: vi.fn().mockResolvedValue({
+              id: 'synthetic-participant',
+              locale: 'en',
+              password: await bcrypt.hash('synthetic-password', 4),
+            }),
+            update: vi.fn().mockResolvedValue({}),
+          },
+        } as any
+        await accounts.loginParticipant(
+          {
+            usernameOrEmail: 'synthetic-user',
+            password: 'synthetic-password',
+          },
+          ctx
+        )
+        const calls = vi.mocked(ctx.res.cookie).mock.calls as unknown as [
+          string,
+          unknown,
+          CookieOptions,
+        ][]
+        return calls.find(
+          ([name, , options]) =>
+            name === 'participant_token' && options?.maxAge! > 0
+        )?.[2].sameSite
+      }
+      expect(await sameSiteFor('https://pwa.klicker.test')).toBe('none')
+      expect(await sameSiteFor('https://pwa.klicker.test.example')).toBe('lax')
+      expect(await sameSiteFor('https://foreign.example')).toBe('lax')
+    } finally {
+      vi.unstubAllEnvs()
+      vi.resetModules()
+    }
   })
 })

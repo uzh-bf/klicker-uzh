@@ -23,8 +23,8 @@ A URL never carries a participant session token. Retire the client of an ended
 identity and ignore its late responses. Invalid explicit credentials fail
 closed; scoped OTP/activation credentials must undergo their own exchange.
 Because participant cookies are SameSite=None and CORS reflects any origin,
-only an origin inside the cookie domain may select them. Manage and control
-cookies stay SameSite=Lax. Assessment and other origin audiences retain their
+only an origin inside the cookie domain may select or receive them. Manage and
+control cookies stay SameSite=Lax. Assessment and other origin audiences retain their
 existing credential selection and authorization.
 
 Keep the established cookie name/domain/path and bound registered retention by

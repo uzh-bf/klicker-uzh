@@ -1,4 +1,4 @@
-import { verifyJWT } from '@klicker-uzh/util'
+import { isCookieDomainOrigin, verifyJWT } from '@klicker-uzh/util'
 
 const EXPLICIT_BEARER_PATTERN = /^Bearer\s+(\S+)$/i
 
@@ -27,22 +27,6 @@ async function verifyExplicitBearer(token: string) {
     return payload
   } catch {
     return null
-  }
-}
-
-// Regular participant cookies are SameSite=None so embedded LMS launches work,
-// and CORS reflects any origin. Only an origin inside the cookie domain may
-// select them; a foreign host that merely contains the subdomain cannot, and
-// without a configured cookie domain no origin can.
-function isCookieDomainOrigin(origin: unknown) {
-  const cookieDomain = process.env.COOKIE_DOMAIN?.replace(/^\./, '')
-  if (!cookieDomain) return false
-  if (typeof origin !== 'string') return false
-  try {
-    const { hostname } = new URL(origin)
-    return hostname === cookieDomain || hostname.endsWith(`.${cookieDomain}`)
-  } catch {
-    return false
   }
 }
 
@@ -81,6 +65,9 @@ async function jwtMiddleware(req: any, res: any, next: any) {
       req.headers.origin?.includes(
         process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa'
       ) &&
+      // Regular participant cookies are SameSite=None so embedded LMS
+      // launches work, and CORS reflects any origin. Only an origin inside
+      // the cookie domain may select them.
       isCookieDomainOrigin(req.headers.origin)
     ) {
       const authorization = req.headers['authorization']
