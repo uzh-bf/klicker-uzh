@@ -108,7 +108,11 @@ Registered-session cookies use thirteen-day retention, within the fourteen-day
 signed session. Express accepts milliseconds; nookies/wire Max-Age uses seconds.
 Direct and SSR issuance use the existing domain and root path, HttpOnly,
 unpartitioned, Secure+SameSite=None for secure deployments and SameSite=Lax
-for local HTTP. Known explicitly partitioned cookies expire before canonical
+for local HTTP. Direct issuance to an origin outside `COOKIE_DOMAIN` uses Lax,
+as described above. SSR issuance cannot apply that origin rule: a navigation
+into an LMS frame carries no Origin header, yet the frame needs SameSite=None
+to store the cookie. SSR issues a participant cookie only after exchanging a
+verified signed LTI handoff. Known explicitly partitioned cookies expire before canonical
 issuance, in the current partition only. Preserve other Set-Cookie headers;
 nookies 2.5.2 drops unknown Partitioned attributes when reserializing headers,
 so its legacy expiration must be inserted after its serialization work. Lecturer,

@@ -1100,13 +1100,16 @@ test('a live quiz answer counts for the participant the frame shows, not a later
       studentId,
     ])
   } finally {
-    await lecturer(
-      request,
-      baseURL!,
-      'mutation ($id: String!) { endLiveQuiz(id: $id) { id } }',
-      { id: liveQuizId }
-    )
-    for (const { id, isActive } of participations)
-      await prisma.participation.update({ where: { id }, data: { isActive } })
+    try {
+      await lecturer(
+        request,
+        baseURL!,
+        'mutation ($id: String!) { endLiveQuiz(id: $id) { id } }',
+        { id: liveQuizId }
+      )
+    } finally {
+      for (const { id, isActive } of participations)
+        await prisma.participation.update({ where: { id }, data: { isActive } })
+    }
   }
 })
