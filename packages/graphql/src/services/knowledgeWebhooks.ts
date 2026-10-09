@@ -384,6 +384,7 @@ export async function handleKBIngestionWebhook({
           id: string
           deletedAt: Date | null
           activeResourceVersion: number | null
+          resourceVersion: number
           ingestedAt: Date | null
         }>
       >`
@@ -391,6 +392,7 @@ export async function handleKBIngestionWebhook({
           resource."id",
           resource."deletedAt",
           resource."activeResourceVersion",
+          resource."resourceVersion",
           resource."ingestedAt"
         FROM "public"."KBResource" AS resource
         WHERE resource."id" = CAST(${payload.external_resource_id} AS UUID)
@@ -447,7 +449,8 @@ export async function handleKBIngestionWebhook({
               ? {
                   activeCanonicalInput:
                     payload.canonical_input ?? Prisma.JsonNull,
-                  ...(payload.serving_source_metadata
+                  ...(payload.serving_source_metadata &&
+                  activeResourceVersion >= resource.resourceVersion
                     ? {
                         sizeBytes: payload.serving_source_metadata.byte_count,
                         mimeType: payload.serving_source_metadata.mime_type,
@@ -514,7 +517,9 @@ export async function handleKBIngestionWebhook({
       ...(payload.contract_version
         ? {
             activeCanonicalInput: payload.canonical_input ?? Prisma.JsonNull,
-            ...(payload.serving_source_metadata
+            ...(payload.serving_source_metadata &&
+            (servingMatchesCurrent ||
+              transition?.resourceStatus === KBResourceStatus.FAILED)
               ? {
                   sizeBytes: payload.serving_source_metadata.byte_count,
                   mimeType: payload.serving_source_metadata.mime_type,
