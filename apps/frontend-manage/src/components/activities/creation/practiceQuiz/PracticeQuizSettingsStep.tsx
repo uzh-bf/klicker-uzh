@@ -312,6 +312,7 @@ function PracticeQuizSettingsStep({
                             tooltip={t(
                               'manage.activityWizard.adaptive.settings.retakeStartFromPreviousResultHelp'
                             )}
+                            className={{ element: 'shrink-0' }}
                             data={{ cy: 'adaptive-retake-start-previous' }}
                           />
                           {values.adaptiveConfig
@@ -342,6 +343,7 @@ function PracticeQuizSettingsStep({
                             tooltip={t(
                               'manage.activityWizard.adaptive.settings.retakePreferNewQuestionsHelp'
                             )}
+                            className={{ element: 'shrink-0' }}
                             data={{ cy: 'adaptive-retake-prefer-new' }}
                           />
                         </>

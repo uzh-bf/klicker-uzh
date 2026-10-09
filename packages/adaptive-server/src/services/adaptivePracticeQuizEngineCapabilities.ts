@@ -141,7 +141,7 @@ export async function assertAdaptiveEngineSupportsRetakeContext(
     })
   } catch {
     throw new GraphQLError(
-      'The adaptive engine does not support the retake settings yet. Turn off "Start a retake at the previous result" and "Prefer new questions", or publish again after the engine upgrade.',
+      'The adaptive engine does not support the retake settings yet. Turn off "Start at last result" and "Prefer new questions", or publish again after the engine upgrade.',
       { extensions: { code: 'ADAPTIVE_RETAKE_CONTEXT_UNSUPPORTED' } }
     )
   }

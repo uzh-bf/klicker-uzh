@@ -465,14 +465,13 @@ const messages = {
           repetitionInterval: 'Wiederholen nach (Tagen)',
           repetitionIntervalHelp:
             'Tage, die Studierende nach dem Abschluss warten, bevor sie das Quiz erneut lösen können; 0 erlaubt eine sofortige Wiederholung. Es zählt der letzte abgeschlossene Versuch.',
-          retakeStartFromPreviousResult:
-            'Wiederholung beim letzten Ergebnis beginnen',
+          retakeStartFromPreviousResult: 'Beim letzten Ergebnis starten',
           retakeStartFromPreviousResultHelp:
             'Eine Wiederholung beginnt mit Fragen nahe am letzten Ergebnis statt in der Mitte der Skala. Das neue Ergebnis wird nur aus den neuen Antworten berechnet.',
           retakeStartMaxAgeDays: 'Letztes Ergebnis verwenden für (Tage)',
           retakeStartMaxAgeDaysHelp:
             'Ein älteres Ergebnis wird ignoriert und die Wiederholung beginnt in der Mitte der Skala (1 bis 365 Tage).',
-          retakePreferNewQuestions: 'Bei Wiederholung neue Fragen bevorzugen',
+          retakePreferNewQuestions: 'Neue Fragen bevorzugen',
           retakePreferNewQuestionsHelp:
             'Bereits beantwortete Fragen kommen nur wieder, wenn keine passende neue Frage übrig ist. Unterkompetenzen, die nicht zum aktuellen Niveau passen, werden weiterhin übersprungen.',
           attemptPolicy: 'Versuch für die Auswertung',
