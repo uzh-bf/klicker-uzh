@@ -1,4 +1,10 @@
-import { expect, test, type Frame, type Page } from '@playwright/test'
+import {
+  type APIRequestContext,
+  expect,
+  type Frame,
+  type Page,
+  test,
+} from '@playwright/test'
 import {
   ElementInstanceType,
   ElementStackType,
@@ -16,6 +22,7 @@ import { getPrisma } from '../global-setup.js'
 import {
   APP_SECRET,
   COURSE_ID_TEST,
+  LECTURER_EMAIL,
   PARTICIPANT_IDS,
   STUDENT_PASSWORD,
   USER_ID_TEST,
@@ -33,6 +40,8 @@ test.beforeEach(async ({}, info) => {
 const lms = 'https://lms.example.invalid'
 const ssoId = `synthetic-olat-recovery-${randomUUID()}`
 const quizId = randomUUID()
+const liveQuizId = randomUUID()
+let liveQuizBlockId: number
 let email: string
 let username: string
 let elementId: number
@@ -110,6 +119,39 @@ function skipWithoutLocalCookies(projectName: string) {
     projectName.startsWith('webkit-'),
     'WebKit discards cookies scoped to the local *.localhost domain'
   )
+}
+
+// Lecturer operations go through the API so the live quiz state in the cache
+// is the one the response pipeline relies on.
+async function lecturer(
+  request: APIRequestContext,
+  baseURL: string,
+  query: string,
+  variables: Record<string, unknown>
+) {
+  const token = await signed({
+    email: LECTURER_EMAIL,
+    sub: USER_ID_TEST,
+    role: 'ADMIN',
+    scope: 'ACCOUNT_OWNER',
+    catalystInstitutional: true,
+    catalystIndividual: true,
+  })
+  const response = await request.post(
+    `${baseURL.replace('://pwa.', '://api.')}/api/graphql`,
+    {
+      headers: {
+        origin: process.env.URL_MANAGE!,
+        cookie: `next-auth.session-token=${token}`,
+        'x-graphql-yoga-csrf': '1',
+      },
+      data: { query, variables },
+    }
+  )
+  expect(response.ok()).toBe(true)
+  const body = await response.json()
+  expect(body.errors).toBeUndefined()
+  return body.data
 }
 
 test.beforeAll(async ({}, info) => {
@@ -192,6 +234,40 @@ test.beforeAll(async ({}, info) => {
       },
     },
   })
+  const liveQuiz = await prisma.liveQuiz.create({
+    data: {
+      id: liveQuizId,
+      name: 'Synthetic session recovery live quiz',
+      displayName: 'Synthetic session recovery live quiz',
+      status: 'PUBLISHED',
+      isGamificationEnabled: true,
+      courseId: COURSE_ID_TEST,
+      ownerId: USER_ID_TEST,
+      blocks: {
+        create: {
+          order: 0,
+          elements: {
+            create: {
+              order: 0,
+              type: ElementInstanceType.LIVE_QUIZ,
+              elementType: ElementType.SC,
+              elementData,
+              options: { basePoints: true, pointsMultiplier: 1 },
+              results,
+              anonymousResults: results,
+              element: { connect: { id: elementId } },
+              owner: { connect: { id: USER_ID_TEST } },
+            },
+          },
+        },
+      },
+      permissions: {
+        create: { permissionLevel: 'OWNER', userId: USER_ID_TEST },
+      },
+    },
+    include: { blocks: true },
+  })
+  liveQuizBlockId = liveQuiz.blocks[0]!.id
 })
 
 test.afterAll(async ({}, info) => {
@@ -204,6 +280,7 @@ test.afterAll(async ({}, info) => {
   const prisma = await getPrisma()
   await prisma.participantAccount.deleteMany({ where: { ssoId } })
   await prisma.practiceQuiz.deleteMany({ where: { id: quizId } })
+  await prisma.liveQuiz.deleteMany({ where: { id: liveQuizId } })
   if (elementId) await prisma.element.deleteMany({ where: { id: elementId } })
 })
 
@@ -894,5 +971,142 @@ test('password, magic-link and activation transitions navigate with the new iden
     await expect(page.getByTestId('homepage')).toBeVisible()
     await page.goto(`${baseURL}/editProfile`)
     await expectIdentity(id)
+  }
+})
+
+test('a live quiz answer counts for the participant the frame shows, not a later cookie session', async ({
+  page,
+  context,
+  baseURL,
+  request,
+}, info) => {
+  const prisma = await getPrisma()
+  const participations = await prisma.participation.findMany({
+    where: {
+      courseId: COURSE_ID_TEST,
+      participantId: { in: [studentId, otherId] },
+    },
+  })
+  expect(participations).toHaveLength(2)
+  const responseApi = `${baseURL!.replace('://pwa.', '://response-api.')}/AddResponse`
+  const a = await signed({ sub: otherId, role: 'PARTICIPANT' }, '14d')
+  const frame = await launch(
+    page,
+    `${baseURL}/editProfile?jwt=${encodeURIComponent(await signed({ sub: ssoId, scope: 'LTI1.3' }))}`
+  )
+  await profile(frame)
+  // A cookie session for another participant established after the launch,
+  // e.g. by a login in another tab, reaches the response API on every answer
+  // the browser sends with cookies.
+  await context.addCookies([
+    {
+      name: 'participant_token',
+      value: a,
+      domain: `.${process.env.COOKIE_DOMAIN!}`,
+      path: '/',
+      secure: true,
+      httpOnly: true,
+      sameSite: 'None',
+    },
+  ])
+  const started = await lecturer(
+    request,
+    baseURL!,
+    'mutation ($id: String!) { startLiveQuiz(id: $id) { id } }',
+    { id: liveQuizId }
+  )
+  expect(started.startLiveQuiz.id).toBe(liveQuizId)
+  const instanceId = (
+    await prisma.elementInstance.findFirstOrThrow({
+      where: { elementBlockId: liveQuizBlockId },
+    })
+  ).id
+  try {
+    // Leaderboard rows only exist for participants who opted in.
+    await prisma.participation.updateMany({
+      where: { id: { in: participations.map(({ id }) => id) } },
+      data: { isActive: true },
+    })
+    await lecturer(
+      request,
+      baseURL!,
+      'mutation ($quizId: String!, $blockId: Int!) { activateLiveQuizBlock(quizId: $quizId, blockId: $blockId) { id } }',
+      { quizId: liveQuizId, blockId: liveQuizBlockId }
+    )
+    // A credential the response API cannot use is refused instead of being
+    // recorded under the cookie identity.
+    const refused = await request.post(responseApi, {
+      headers: {
+        origin: new URL(baseURL!).origin,
+        authorization: 'Bearer invalid',
+        cookie: `participant_token=${a}`,
+      },
+      data: {
+        response: { choices: [1] },
+        liveQuizId,
+        instanceId,
+      },
+    })
+    expect(refused.status()).toBe(401)
+    if (await localStorageDenied(frame)) {
+      info.annotations.push({
+        type: 'skipped-step',
+        description: 'live quiz needs localStorage, which this frame is denied',
+      })
+      return
+    }
+    await navigate(frame, `/session/${liveQuizId}`)
+    const answer = page.waitForRequest(
+      (item) => item.url() === responseApi && item.method() === 'POST'
+    )
+    await frame.getByTestId('sc-0-answer-option-1').click()
+    await frame.getByTestId('student-submit-answer').click()
+    const sent = await answer
+    const bearer = /^Bearer (\S+)$/.exec(
+      (await sent.allHeaders()).authorization ?? ''
+    )?.[1]
+    expect(bearer).toBeDefined()
+    expect(
+      JSON.parse(Buffer.from(bearer!.split('.')[1]!, 'base64url').toString())
+        .sub
+    ).toBe(studentId)
+    expect((await sent.response())?.status()).toBe(200)
+    await expect
+      .poll(
+        async () =>
+          (
+            await lecturer(
+              request,
+              baseURL!,
+              'query ($id: String!) { cockpitQuiz(id: $id) { blocks { id numOfParticipants } } }',
+              { id: liveQuizId }
+            )
+          ).cockpitQuiz.blocks.find(
+            ({ id }: { id: number }) => id === liveQuizBlockId
+          )?.numOfParticipants
+      )
+      .toBe(1)
+    await lecturer(
+      request,
+      baseURL!,
+      'mutation ($quizId: String!, $blockId: Int!) { deactivateLiveQuizBlock(quizId: $quizId, blockId: $blockId) }',
+      { quizId: liveQuizId, blockId: liveQuizBlockId }
+    )
+    const scored = await prisma.leaderboardEntry.findMany({
+      where: { liveQuizId },
+      select: { participantId: true },
+    })
+    expect(scored.map(({ participantId }) => participantId)).toEqual([
+      studentId,
+    ])
+  } finally {
+    await lecturer(
+      request,
+      baseURL!,
+      'mutation ($id: String!) { endLiveQuiz(id: $id) { id } }',
+      { id: liveQuizId }
+    )
+    for (const { id, isActive } of participations)
+      await prisma.participation.update({ where: { id }, data: { isActive } })
   }
 })

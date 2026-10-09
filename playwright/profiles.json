@@ -70,7 +70,7 @@
       "specs": ["A-account-lti.spec.ts"]
     },
     {
-      "profile": "pwa",
+      "profile": "live-quiz",
       "specs": ["PA-olat-session-recovery.spec.ts"]
     }
   ]
