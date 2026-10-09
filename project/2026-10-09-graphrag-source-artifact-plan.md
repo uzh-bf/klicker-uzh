@@ -368,3 +368,44 @@ on `rs/canonical-ingestion-input`, fresh `origin/main` baseline
 and branch name at `94a0e0aab082a6381d2d77e7582eeabeb2c2899b`.
 Ingestion's newer catalog recovery changes replace the earlier inspection
 baseline without changing this package's source contract.
+
+October 10 source checkpoint: all three source packages are implemented and
+published as drafts: [ingestion !229](https://gitlab.uzh.ch/ai-infrastructure/services/data-ingestion/-/merge_requests/229),
+[KG !36](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/36)
+and [Klicker #6460](https://github.com/uzh-bf/klicker-uzh/pull/6460).
+The source implementation freezes `canonical-document/v1`, adds Resource API
+v2 admission/status, scoped artifact reads, active-version retention and cleanup,
+and pins KG dispatch/terminal/publication/consumption to canonical lineage.
+One generated Prisma migration is
+`packages/prisma/src/prisma/schema/migrations/20261009205103_canonical_ingestion_lineage/migration.sql`;
+analytics mirrors the schema. Runtime admission defaults off.
+
+Source owners remain main for integration and lifecycle. Independent Astra
+simplifiers covered all three committed slices. Their three accepted reductions
+remove an unused serialized reference, duplicate fixture type and hand-built
+preparation fixture. Corrections pass their affected checks. Risk reviews and
+trusted integrated final review remain pending; the first KG reviewer returned
+a terminal rate limit and the permitted trusted continuity reviewer now owns it.
+The user's OpenRouter review waiver remains binding.
+
+Local evidence: 189 focused Hatchet tests, 82 real-PostgreSQL GraphQL contracts,
+18 knowledge-graph tests, repository check:all and full production build pass.
+Ingestion qualification includes 86 API and 132 worker regressions plus 38
+resource PostgreSQL tests. KG qualification includes 103 workflow, recipe,
+provenance and terminal tests. Later corrections pass 20 ingestion lifecycle
+checks, 74 KG workflow tests and 20 Klicker graph accounting tests. API and KG
+workflow/terminal type checks pass; this is not a claim that all optional legacy
+KG modules typecheck. Integrated synthetic proof uses native ingestion capture,
+Klicker dispatch and KG preparation/attempt code with a mocked artifact HTTP
+transport: one origin capture, matching input tuple and removed scratch. API
+scope and durable-state behavior are checked independently; no deployed end-to-end
+or paid-model evidence is claimed.
+
+Ingestion pipeline 680287 passed at `4fcfd66`. Corrected task heads are ingestion
+`2659d224615339590b9a118bdf2019aae6db9dd0`, KG
+`efc3e9e612c01af784e2344a9ed10b9c03ec18ec` and Klicker source
+`abc22a3ae2` (final documentation receipt will follow). Exact-head CI and review
+qualification remain open. The initial KG pipeline failed on workflow return
+annotations; the correction carries the new v2 terminal union through that seam.
+No merge, deployment, reader provisioning, source refresh, graph rebuild,
+GraphRAG activation or evaluation spend occurred.

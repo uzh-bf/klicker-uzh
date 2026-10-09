@@ -1,5 +1,14 @@
 # Graph-assisted retrieval reliability and staging qualification
 
+October 10: canonical input source packages are now drafted in
+[ingestion !229](https://gitlab.uzh.ch/ai-infrastructure/services/data-ingestion/-/merge_requests/229),
+[KG !36](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/36)
+and [Klicker #6460](https://github.com/uzh-bf/klicker-uzh/pull/6460).
+The [source plan](2026-10-09-graphrag-source-artifact-plan.md) records verification
+and remaining independent review/CI. Next comes source qualification, then
+separately authorized reader-first deployment and finite refresh/build acceptance.
+Live GraphRAG quality and student-map acceptance remain separate receipts.
+
 ## Current state and next decision
 
 October 9 planning checkpoint: [PR #6421](https://github.com/uzh-bf/klicker-uzh/pull/6421)
