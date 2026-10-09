@@ -5015,6 +5015,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotWorkspaceNavigation: 'Chatbot workspace',
       chatbotWorkspaceOverview: 'Overview',
       chatbotWorkspaceKnowledge: 'Knowledge',
+      chatbotDraftStepMaterials: 'Materials',
+      chatbotDraftStepMaterialsDescription:
+        'Choose the knowledge base the chatbot answers from. It connects as soon as you select it.',
+      chatbotDraftStepStudents: 'Student information',
+      chatbotDraftStepStudentsDescription:
+        'Students read this text before they start chatting. We prepared a suggestion for you.',
+      chatbotDraftStepPublication: 'Request publication',
+      chatbotDraftStepPublicationDescription:
+        'Check the prefilled details and send the request for review.',
+      chatbotDraftBehaviorTitle: 'Teaching modes and framing (optional)',
+      chatbotDraftBehaviorDescription:
+        'The defaults suit most courses. Adjust them only if you need to.',
       chatbotWorkspaceBehavior: 'Behavior',
       chatbotWorkspaceDisclaimer: 'Disclaimer',
       chatbotWorkspaceSetup: 'Setup',

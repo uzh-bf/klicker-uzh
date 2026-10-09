@@ -31,11 +31,13 @@ function ChatbotKnowledgeBaseSetup({
   chatbotStatus,
   courseIds,
   connectedKnowledgeBase,
+  connectOnSelect = false,
 }: {
   chatbotId: string
   chatbotStatus: ChatbotStatus
   courseIds: string[]
   connectedKnowledgeBase?: { id: string; name: string }
+  connectOnSelect?: boolean
 }) {
   const t = useTranslations()
   const router = useRouter()
@@ -99,6 +101,10 @@ function ChatbotKnowledgeBaseSetup({
     selectedValue != null &&
     selectedValue !== connectedKnowledgeBase?.id &&
     !mutating
+  // Bindings sit outside the chatbot revision, so a choice only has a live
+  // effect on a published chatbot. Elsewhere the host may connect on select.
+  const connectsOnSelect =
+    connectOnSelect && chatbotStatus !== ChatbotStatus.Published
 
   const attach = async (kbId: string) => {
     try {
@@ -110,10 +116,8 @@ function ChatbotKnowledgeBaseSetup({
     }
   }
 
-  const handleConnect = async () => {
-    if (!canConnect || !selectedValue) return
-
-    if (!(await attach(selectedValue))) {
+  const connect = async (kbId: string) => {
+    if (!(await attach(kbId))) {
       toast({
         type: 'error',
         message: t('manage.resources.chatbotKnowledgeBaseConnectError'),
@@ -127,6 +131,18 @@ function ChatbotKnowledgeBaseSetup({
       type: 'success',
       message: t('manage.resources.chatbotKnowledgeBaseConnectSuccess'),
     })
+  }
+
+  const handleConnect = async () => {
+    if (!canConnect || !selectedValue) return
+    await connect(selectedValue)
+  }
+
+  const handleSelect = (kbId: string) => {
+    setSelectedKbId(kbId)
+    if (connectsOnSelect && kbId !== connectedKnowledgeBase?.id && !mutating) {
+      void connect(kbId)
+    }
   }
 
   const handleDisconnect = async () => {
@@ -196,7 +212,7 @@ function ChatbotKnowledgeBaseSetup({
             label={t('manage.resources.knowledgeBase')}
             items={selectItems}
             value={selectedValue}
-            onChange={setSelectedKbId}
+            onChange={handleSelect}
             placeholder={t(
               'manage.resources.chatbotKnowledgeBaseSelectPlaceholder'
             )}
@@ -204,20 +220,24 @@ function ChatbotKnowledgeBaseSetup({
             data={{ cy: 'chatbot-kb-select' }}
           />
         </div>
-        <Button
-          primary
-          disabled={!canConnect}
-          onClick={handleConnect}
-          data={{ cy: 'chatbot-kb-connect' }}
-        >
-          <Button.Label>
-            {retrying
-              ? t('manage.resources.chatbotKnowledgeBaseRetryConnection')
-              : replacing
-                ? t('manage.resources.chatbotKnowledgeBaseReplace')
-                : t('manage.resources.chatbotKnowledgeBaseConnect')}
-          </Button.Label>
-        </Button>
+        {!connectsOnSelect || canConnect ? (
+          // Without a live effect the button only remains to retry a
+          // connection that failed.
+          <Button
+            primary
+            disabled={!canConnect}
+            onClick={handleConnect}
+            data={{ cy: 'chatbot-kb-connect' }}
+          >
+            <Button.Label>
+              {retrying
+                ? t('manage.resources.chatbotKnowledgeBaseRetryConnection')
+                : replacing
+                  ? t('manage.resources.chatbotKnowledgeBaseReplace')
+                  : t('manage.resources.chatbotKnowledgeBaseConnect')}
+            </Button.Label>
+          </Button>
+        ) : null}
         {connectedKnowledgeBase ? (
           <Button
             disabled={mutating}
@@ -247,7 +267,7 @@ function ChatbotKnowledgeBaseSetup({
           data={{ cy: 'chatbot-kb-created-not-connected' }}
         />
       ) : null}
-      {replacing ? (
+      {replacing && !connectsOnSelect ? (
         <UserNotification
           type="warning"
           message={t(
