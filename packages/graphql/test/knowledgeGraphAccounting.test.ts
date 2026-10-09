@@ -13,6 +13,7 @@ import {
   KBResourceStatus,
   KBResourceType,
 } from '@klicker-uzh/prisma/client'
+import type { CanonicalInputReference } from '@klicker-uzh/types'
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   releaseKBGraphCostReservation,
@@ -165,19 +166,6 @@ function successfulResult({
   }
 }
 
-type CanonicalInputReferenceFixture = {
-  contract_version: 'canonical-document/v1'
-  producer_id: string
-  project_id: string
-  kb_id: string
-  external_resource_id: string
-  resource_version: number
-  source_sha256: string
-  canonical_sha256: string
-  parser_recipe_sha256: string
-  byte_count: number
-}
-
 function canonicalReference({
   resourceId,
   resourceVersion,
@@ -188,7 +176,7 @@ function canonicalReference({
   resourceVersion: number
   sourceSha256: string
   parserRecipeSha256?: string
-}): CanonicalInputReferenceFixture {
+}): CanonicalInputReference {
   return {
     contract_version: 'canonical-document/v1',
     producer_id: 'klicker',
