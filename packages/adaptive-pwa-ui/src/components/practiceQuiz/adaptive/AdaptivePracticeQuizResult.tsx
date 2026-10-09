@@ -116,10 +116,6 @@ function AdaptivePracticeQuizResult({
         return `${range.values.lower} – ${range.values.upper}`
       case 'pwa.practiceQuiz.adaptive.profile.likelyLevel':
         return range.values.level
-      case 'pwa.practiceQuiz.adaptive.profile.likelyOrBelow':
-        return t('pwa.practiceQuiz.adaptive.profile.levelOrBelow', range.values)
-      case 'pwa.practiceQuiz.adaptive.profile.likelyOrAbove':
-        return t('pwa.practiceQuiz.adaptive.profile.levelOrAbove', range.values)
     }
   }
   const copy = estimatedState

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
-  getAdaptiveEdgeBandText,
   getAdaptiveEstimatedLevelText,
   getAdaptiveRangeText,
   getAdaptiveResultState,
+  isAdaptiveLevelAtUnmeasuredEdge,
 } from '../src/components/practiceQuiz/adaptive/adaptiveResultState'
 
 const LABELS = [
@@ -90,22 +90,20 @@ describe('result presentation state', () => {
 })
 
 describe('edge-aware labels', () => {
-  it('names the lowest measurable band for an unmeasured edge band', () => {
+  it('marks only levels beyond the levels with elements', () => {
     expect(
-      getAdaptiveEdgeBandText({ levelLabel: 'Under A2', levelBands: bands })
-    ).toEqual({
-      key: 'pwa.practiceQuiz.adaptive.profile.levelOrBelow',
-      values: { level: 'A2.1' },
-    })
-    expect(
-      getAdaptiveEdgeBandText({ levelLabel: 'B1.2', levelBands: bands })
-    ).toEqual({
-      key: 'pwa.practiceQuiz.adaptive.profile.levelExact',
-      values: { level: 'B1.2' },
-    })
+      isAdaptiveLevelAtUnmeasuredEdge({
+        levelLabel: 'Under A2',
+        levelBands: bands,
+      })
+    ).toBe(true)
+    for (const levelLabel of ['A2.1', 'B1.2'])
+      expect(
+        isAdaptiveLevelAtUnmeasuredEdge({ levelLabel, levelBands: bands })
+      ).toBe(false)
   })
 
-  it('folds an unmeasured edge band into the range sentence', () => {
+  it('names the real bands in the range sentence', () => {
     expect(
       getAdaptiveRangeText({
         lowerLevelLabel: 'Under A2',
@@ -113,8 +111,8 @@ describe('edge-aware labels', () => {
         levelBands: bands,
       })
     ).toEqual({
-      key: 'pwa.practiceQuiz.adaptive.profile.likelyOrBelow',
-      values: { level: 'A2.3' },
+      key: 'pwa.practiceQuiz.adaptive.profile.likelyRange',
+      values: { lower: 'Under A2', upper: 'A2.3' },
     })
     expect(
       getAdaptiveRangeText({
@@ -128,7 +126,7 @@ describe('edge-aware labels', () => {
     })
   })
 
-  it('never names an unmeasured edge band for an estimate', () => {
+  it('names an estimate below the levels with elements and marks it', () => {
     const estimate = state(
       'INSUFFICIENT_EVIDENCE',
       'Under A2',
@@ -146,7 +144,7 @@ describe('edge-aware labels', () => {
       key: 'pwa.practiceQuiz.adaptive.profile.estimatedLevel',
       level: {
         key: 'pwa.practiceQuiz.adaptive.profile.levelBelowRange',
-        values: { level: 'A2.1' },
+        values: { level: 'Under A2' },
       },
     })
   })

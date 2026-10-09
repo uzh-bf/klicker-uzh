@@ -254,10 +254,6 @@ const messages = {
             'Zu wenige Antworten für eine verlässliche Schätzung',
           likelyRange: 'Wahrscheinlich zwischen {lower} und {upper}',
           likelyLevel: 'Wahrscheinlich {level}',
-          likelyOrBelow: 'Wahrscheinlich {level} oder tiefer',
-          likelyOrAbove: 'Wahrscheinlich {level} oder höher',
-          levelOrBelow: '{level} oder tiefer',
-          levelOrAbove: '{level} oder höher',
           certainty: {
             HIGH: 'Hohe Sicherheit',
             MEDIUM: 'Mittlere Sicherheit',
@@ -274,9 +270,9 @@ const messages = {
           levelWithTolerance:
             '{level} (±{count, plural, one {# Stufe} other {# Stufen}})',
           levelBelowRange:
-            '{level} oder tiefer (unterhalb des messbaren Bereichs)',
+            '{level} (unterhalb der Niveaus mit Fragen in diesem Quiz)',
           levelAboveRange:
-            '{level} oder höher (oberhalb des messbaren Bereichs)',
+            '{level} (oberhalb der Niveaus mit Fragen in diesem Quiz)',
           evidenceHelp:
             'Jede Zeile zeigt dein geschätztes Niveau in diesem Bereich und wie sicher die Schätzung ist. Mit mehr Antworten wird die Schätzung sicherer.',
           title: 'Kompetenzprofil',
@@ -781,8 +777,8 @@ const messages = {
             'Für diesen Bereich sind noch keine Stufenschätzungen verfügbar.',
           barLabel: '{level}: {determined} bestimmt, {provisional} vorläufig',
           counts: '{determined} bestimmt · {provisional} vorläufig',
-          levelOrBelow: '{level} oder tiefer',
-          levelOrAbove: '{level} oder höher',
+          levelBelowRange: '{level} (unterhalb der Niveaus mit Fragen)',
+          levelAboveRange: '{level} (oberhalb der Niveaus mit Fragen)',
           included:
             '{count} Ergebnisse mit einer Schätzung für diesen Bereich. Die Balken zeigen den Anteil an diesen Ergebnissen.',
           excluded:
