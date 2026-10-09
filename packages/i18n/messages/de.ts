@@ -1880,9 +1880,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       WAITING_FOR_MATERIALS:
         'Fragengenerierung: wartet auf die Verarbeitung der Materialien',
       QUEUED:
-        'Fragengenerierung: wird automatisch vorbereitet. Schauen Sie innerhalb von 24 Stunden wieder vorbei.',
+        'Fragengenerierung: wird automatisch über Nacht vorbereitet; in der Regel am nächsten Morgen bereit.',
       PROCESSING:
-        'Fragengenerierung: wird automatisch vorbereitet. Schauen Sie innerhalb von 24 Stunden wieder vorbei.',
+        'Fragengenerierung: wird automatisch über Nacht vorbereitet; in der Regel am nächsten Morgen bereit.',
       READY: 'Fragengenerierung: bereit',
       DELAYED: 'Fragengenerierung: Vorbereitung verzögert.',
       NEEDS_ATTENTION:
@@ -2876,9 +2876,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
           WAITING_FOR_MATERIALS:
             'Die hochgeladenen Materialien werden noch verarbeitet. Die Vorbereitung der Fragengenerierung beginnt danach automatisch.',
           QUEUED:
-            'Die Fragengenerierung wird automatisch vorbereitet. Schauen Sie innerhalb von 24 Stunden wieder vorbei.',
+            'Die Fragengenerierung wird automatisch über Nacht vorbereitet; in der Regel am nächsten Morgen bereit.',
           PROCESSING:
-            'Die Fragengenerierung wird automatisch vorbereitet. Schauen Sie innerhalb von 24 Stunden wieder vorbei.',
+            'Die Fragengenerierung wird automatisch über Nacht vorbereitet; in der Regel am nächsten Morgen bereit.',
           READY: 'Bereit für die Fragengenerierung.',
           DELAYED:
             'Die Vorbereitung dauert länger als erwartet. Kontaktieren Sie uns, damit wir es prüfen können.',

@@ -49,6 +49,64 @@ export interface KBGraphPreparationScheduleConfig {
   concurrencyCap: number
   /** Semester quota each owner keeps free for interactive generation. */
   headroomMinorUnits: number
+  /** Nightly window opening, in minutes after local midnight. */
+  windowStartMinutes: number
+  /** Nightly window closing; at or before the opening, the window wraps. */
+  windowEndMinutes: number
+  /** IANA time zone in which the window is read. */
+  windowTimeZone: string
+}
+
+const DEFAULT_WINDOW = '22:00-06:00'
+const DEFAULT_WINDOW_TIME_ZONE = 'Europe/Zurich'
+
+function parseWindow(value: string | undefined): [number, number] {
+  const match = /^([01]\d|2[0-3]):([0-5]\d)-([01]\d|2[0-3]):([0-5]\d)$/.exec(
+    value?.trim() ?? ''
+  )
+  const minutes = match
+    ? [
+        Number(match[1]) * 60 + Number(match[2]),
+        Number(match[3]) * 60 + Number(match[4]),
+      ]
+    : null
+  // An empty window would silently stop preparation, so it is invalid too.
+  if (minutes && minutes[0] !== minutes[1]) return [minutes[0]!, minutes[1]!]
+  return parseWindow(DEFAULT_WINDOW)
+}
+
+function parseWindowTimeZone(value: string | undefined): string {
+  const zone = value?.trim()
+  if (!zone) return DEFAULT_WINDOW_TIME_ZONE
+  try {
+    new Intl.DateTimeFormat('en-GB', { timeZone: zone })
+    return zone
+  } catch {
+    return DEFAULT_WINDOW_TIME_ZONE
+  }
+}
+
+/** Whether `now` falls inside the nightly window, read in its time zone. */
+export function isInKBGraphPreparationWindow(
+  config: Pick<
+    KBGraphPreparationScheduleConfig,
+    'windowStartMinutes' | 'windowEndMinutes' | 'windowTimeZone'
+  >,
+  now: Date
+): boolean {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: config.windowTimeZone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(now)
+  const part = (type: string) =>
+    Number(parts.find((entry) => entry.type === type)?.value)
+  const minute = part('hour') * 60 + part('minute')
+  const { windowStartMinutes: start, windowEndMinutes: end } = config
+  return start < end
+    ? minute >= start && minute < end
+    : minute >= start || minute < end
 }
 
 function parseBoundedInteger(
@@ -91,7 +149,15 @@ export function getKBGraphPreparationScheduleConfig(
     15,
     24 * 60
   )
+  const [windowStartMinutes, windowEndMinutes] = parseWindow(
+    env.KB_GRAPH_AUTO_PREPARATION_WINDOW
+  )
   return {
+    windowStartMinutes,
+    windowEndMinutes,
+    windowTimeZone: parseWindowTimeZone(
+      env.KB_GRAPH_AUTO_PREPARATION_WINDOW_TIMEZONE
+    ),
     quietPeriodMs: quietPeriodMinutes * MINUTE_MS,
     maxDeferralMs: maxDeferralMinutes * MINUTE_MS,
     failureBackoffMs: failureBackoffMinutes * MINUTE_MS,
@@ -538,7 +604,11 @@ export type KBGraphPreparationLogger = {
 }
 
 export interface KBGraphPreparationSweepSummary {
-  status: 'COMPLETED' | 'CONFIGURATION_INVALID' | 'COST_CONFIGURATION_MISSING'
+  status:
+    | 'COMPLETED'
+    | 'CONFIGURATION_INVALID'
+    | 'OUTSIDE_WINDOW'
+    | 'COST_CONFIGURATION_MISSING'
   scanned: number
   due: number
   admitted: number
@@ -931,6 +1001,13 @@ export async function sweepKbGraphPreparation(
       error: error instanceof Error ? error.message : 'unknown',
     })
     summary.status = 'CONFIGURATION_INVALID'
+    return finish()
+  }
+  // Checked before any scan so the quiet period, deferral bound and backoff
+  // keep their meaning inside the window. Manual lecturer builds never pass
+  // through the sweep and are not bound by it.
+  if (!isInKBGraphPreparationWindow(config, now)) {
+    summary.status = 'OUTSIDE_WINDOW'
     return finish()
   }
   let costConfiguration: ReturnType<typeof requireKBGraphCostConfiguration>
