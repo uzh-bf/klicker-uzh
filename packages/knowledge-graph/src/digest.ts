@@ -1,8 +1,12 @@
+import { createHash } from 'node:crypto'
 import {
   KBResourceMaterialType,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
-import { createHash } from 'node:crypto'
+import {
+  type CanonicalInputReference,
+  isCanonicalInputReference,
+} from '@klicker-uzh/types'
 
 type KBContentDigestPrisma = Pick<PrismaClient, 'kBResource'>
 
@@ -74,4 +78,81 @@ export async function computeKBContentDigest(
   return hashKBContentDigestEntries(
     await readKBContentDigestEntries(prisma, kbId)
   )
+}
+
+export function hashKBCanonicalInputReferences(
+  references: CanonicalInputReference[]
+): string {
+  const hash = createHash('sha256')
+  const sorted = [...references].sort((a, b) =>
+    a.external_resource_id < b.external_resource_id
+      ? -1
+      : a.external_resource_id > b.external_resource_id
+        ? 1
+        : 0
+  )
+  if (
+    new Set(sorted.map((item) => item.external_resource_id)).size !==
+    sorted.length
+  ) {
+    throw new Error('Canonical sources must not repeat a resource')
+  }
+  for (const reference of sorted) {
+    if (!isCanonicalInputReference(reference))
+      throw new Error('Invalid canonical source lineage')
+    hash.update(
+      JSON.stringify([
+        reference.contract_version,
+        reference.producer_id,
+        reference.project_id,
+        reference.kb_id,
+        reference.external_resource_id,
+        reference.resource_version,
+        reference.source_sha256,
+        reference.canonical_sha256,
+        reference.parser_recipe_sha256,
+        reference.byte_count,
+      ]) + '\n'
+    )
+  }
+  return hash.digest('hex')
+}
+
+export async function computeKBCanonicalInputDigest(
+  prisma: KBContentDigestPrisma,
+  kbId: string
+): Promise<string | null> {
+  const resources = await prisma.kBResource.findMany({
+    where: {
+      kbId,
+      deletedAt: null,
+      activeContentSha256: { not: null },
+      materialType: KBResourceMaterialType.COURSE_CONTENT,
+    },
+    select: {
+      id: true,
+      activeResourceVersion: true,
+      activeContentSha256: true,
+      activeCanonicalInput: true,
+      ingestionOperation: true,
+    },
+    orderBy: { id: 'asc' },
+  })
+  const references: CanonicalInputReference[] = []
+  for (const resource of resources) {
+    const reference = resource.activeCanonicalInput
+    if (
+      !isCanonicalInputReference(reference) ||
+      reference.kb_id !== kbId ||
+      reference.external_resource_id !== resource.id ||
+      reference.source_sha256 !== resource.activeContentSha256 ||
+      reference.resource_version !== resource.activeResourceVersion ||
+      resource.ingestionOperation === 'DELETE'
+    )
+      return null
+    references.push(reference)
+  }
+  return references.length > 0
+    ? hashKBCanonicalInputReferences(references)
+    : null
 }

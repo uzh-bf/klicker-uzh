@@ -9,6 +9,7 @@ import {
   getDefaultKBGraphDomainCatalog,
   getKnowledgeGraphName,
   getPublishedKnowledgeGraph,
+  hashKBCanonicalInputReferences,
   hashKBContentDigestEntries,
   isKBGraphDomainCapabilityEnabled,
   KB_GRAPH_DOMAIN_ERROR_CODES,
@@ -30,6 +31,7 @@ import type {
   KnowledgeGraphResponse,
 } from '@klicker-uzh/types'
 import {
+  isCanonicalInputReference,
   MAX_KB_RESOURCE_COUNT,
   MAX_KB_SOURCE_SIZE_BYTES,
   MAX_KB_TOTAL_SIZE_BYTES,
@@ -3264,6 +3266,10 @@ export async function rebuildKbKnowledgeGraph(
         sourceUrl: true,
         blobName: true,
         activeContentSha256: true,
+        activeResourceVersion: true,
+        activeCanonicalInput: true,
+        inputContract: true,
+        ingestionOperation: true,
       },
       orderBy: { id: 'asc' },
     })
@@ -3280,6 +3286,39 @@ export async function rebuildKbKnowledgeGraph(
       resource,
       contentSha256: validateGraphBuildSnapshotResource(resource),
     }))
+    const canonical =
+      process.env.KB_CANONICAL_INPUT_ENABLED === 'true' ||
+      resources.some(
+        (resource) => resource.inputContract === 'knowledge-source/v2'
+      )
+    if (canonical && process.env.KB_CANONICAL_INPUT_ENABLED !== 'true') {
+      throw new GraphQLError('Canonical KG input is unavailable', {
+        extensions: { code: 'KB_CANONICAL_INPUT_DISABLED' },
+      })
+    }
+    const canonicalReferences = canonical
+      ? resources.map((resource) => {
+          const reference = resource.activeCanonicalInput
+          if (
+            !isCanonicalInputReference(reference) ||
+            reference.producer_id !== 'klicker' ||
+            reference.project_id !==
+              (process.env.KB_INGESTION_PROJECT_ID?.trim() ||
+                'klicker-course-materials') ||
+            reference.kb_id !== kbId ||
+            reference.external_resource_id !== resource.id ||
+            reference.resource_version !== resource.activeResourceVersion ||
+            reference.source_sha256 !== resource.activeContentSha256 ||
+            resource.ingestionOperation === DB.KBIngestionOperation.DELETE
+          ) {
+            throw new GraphQLError(
+              'A current canonical source artifact is required',
+              { extensions: { code: 'KB_CANONICAL_INPUT_UNAVAILABLE' } }
+            )
+          }
+          return reference
+        })
+      : []
     const sourceContentDigest = hashKBContentDigestEntries(
       validatedResources.map(({ resource, contentSha256 }) => ({
         resourceId: resource.id,
@@ -3310,6 +3349,13 @@ export async function rebuildKbKnowledgeGraph(
         ...domainFields,
         focusTopic: requestedFocusTopic,
         sourceContentDigest,
+        ...(canonical
+          ? {
+              sourceInputContract: 'canonical-document/v1',
+              sourceInputDigest:
+                hashKBCanonicalInputReferences(canonicalReferences),
+            }
+          : {}),
         graphName: getKnowledgeGraphName(kbId, buildId),
         graphmlBlobName: getKBGraphArtifactBlobName(buildId),
         graphBundleContainerName: graphBundleCoordinates.containerName,
@@ -3321,14 +3367,19 @@ export async function rebuildKbKnowledgeGraph(
         semesterKey: reservation.semesterKey,
         quotaId: reservation.quotaId,
         sources: {
-          create: validatedResources.map(({ resource, contentSha256 }) => ({
-            resourceId: resource.id,
-            title: resource.title,
-            type: resource.type,
-            sourceUrl: resource.sourceUrl,
-            blobName: resource.blobName,
-            contentSha256,
-          })),
+          create: validatedResources.map(
+            ({ resource, contentSha256 }, index) => ({
+              resourceId: resource.id,
+              title: resource.title,
+              type: resource.type,
+              sourceUrl: resource.sourceUrl,
+              blobName: resource.blobName,
+              contentSha256,
+              ...(canonical
+                ? { canonicalInput: canonicalReferences[index] }
+                : {}),
+            })
+          ),
         },
       },
       select: KB_GRAPH_BUILD_CONFIG_SELECT,

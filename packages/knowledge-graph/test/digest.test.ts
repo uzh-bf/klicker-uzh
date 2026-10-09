@@ -5,7 +5,9 @@ import {
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+  computeKBCanonicalInputDigest,
   computeKBContentDigest,
+  hashKBCanonicalInputReferences,
   hashKBContentDigestEntries,
 } from '../src/digest.js'
 
@@ -114,5 +116,56 @@ describe('KB content digest', () => {
     await expect(computeKBContentDigest(prisma, 'kb-id')).resolves.toBe(
       hashKBContentDigestEntries([{ resourceId: 'a', contentSha256: 'sha-a' }])
     )
+  })
+})
+
+describe('canonical graph source lineage', () => {
+  const reference = {
+    contract_version: 'canonical-document/v1' as const,
+    producer_id: 'klicker',
+    project_id: 'project',
+    kb_id: 'kb-id',
+    external_resource_id: 'resource-a',
+    resource_version: 1,
+    source_sha256: 'a'.repeat(64),
+    canonical_sha256: 'b'.repeat(64),
+    parser_recipe_sha256: 'c'.repeat(64),
+    byte_count: 100,
+  }
+
+  it('changes identity when parsing changes despite identical original bytes', () => {
+    expect(
+      hashKBCanonicalInputReferences([
+        { ...reference, parser_recipe_sha256: 'd'.repeat(64) },
+      ])
+    ).not.toBe(hashKBCanonicalInputReferences([reference]))
+    expect(() =>
+      hashKBCanonicalInputReferences([reference, reference])
+    ).toThrow()
+  })
+
+  it.each([
+    { activeResourceVersion: 2 },
+    { activeContentSha256: 'd'.repeat(64) },
+    { activeCanonicalInput: null },
+    { ingestionOperation: 'DELETE' },
+  ])('declines lineage that no longer serves: %o', async (change) => {
+    const prisma = {
+      kBResource: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: reference.external_resource_id,
+            activeResourceVersion: reference.resource_version,
+            activeContentSha256: reference.source_sha256,
+            activeCanonicalInput: reference,
+            ingestionOperation: 'UPSERT',
+            ...change,
+          },
+        ]),
+      },
+    } as unknown as PrismaClient
+    await expect(
+      computeKBCanonicalInputDigest(prisma, 'kb-id')
+    ).resolves.toBeNull()
   })
 })

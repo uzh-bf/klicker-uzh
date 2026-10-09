@@ -1,6 +1,9 @@
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 
-import { computeKBContentDigest } from './digest.js'
+import {
+  computeKBCanonicalInputDigest,
+  computeKBContentDigest,
+} from './digest.js'
 
 export type KnowledgeGraphSourceMetadata = {
   resourceId: string
@@ -94,6 +97,8 @@ export async function getPublishedKnowledgeGraph(
       status: true,
       graphName: true,
       sourceContentDigest: true,
+      sourceInputContract: true,
+      sourceInputDigest: true,
       sources: {
         select: { resourceId: true, title: true },
         orderBy: { resourceId: 'asc' },
@@ -107,13 +112,18 @@ export async function getPublishedKnowledgeGraph(
     throw new KnowledgeGraphNotPublishedError('EMPTY')
   }
 
+  const isStale =
+    build.sourceContentDigest !==
+      (await computeKBContentDigest(prisma, kbId)) ||
+    (build.sourceInputContract === 'canonical-document/v1' &&
+      build.sourceInputDigest !==
+        (await computeKBCanonicalInputDigest(prisma, kbId)))
+
   return {
     kbId,
     buildId: build.id,
     graphName: build.graphName,
-    isStale:
-      build.sourceContentDigest !==
-      (await computeKBContentDigest(prisma, kbId)),
+    isStale,
     sources: build.sources.map((source) => ({
       resourceId: source.resourceId,
       title: source.title,

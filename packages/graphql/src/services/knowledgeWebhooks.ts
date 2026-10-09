@@ -1,11 +1,16 @@
+import { timingSafeEqual } from 'node:crypto'
 import {
   KBIngestionOperation,
   KBIngestionStatus,
   KBResourceStatus,
+  Prisma,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
+import {
+  type CanonicalInputReference,
+  isCanonicalInputReference,
+} from '@klicker-uzh/types'
 import { createKBIngestionWebhookSignature } from '@klicker-uzh/util'
-import { timingSafeEqual } from 'node:crypto'
 
 export { signKBIngestionWebhook } from '@klicker-uzh/util'
 
@@ -29,6 +34,8 @@ type WebhookHeaders = Record<string, string | string[] | undefined>
 type OperationStatusEventType = (typeof EVENT_TYPES)[number]
 
 type OperationStatusEvent = {
+  contract_version?: 'knowledge-source/v2'
+  canonical_input?: CanonicalInputReference | null
   eventId: string
   eventType: OperationStatusEventType
   occurredAt: string
@@ -143,7 +150,13 @@ function parsePayload(rawBody: Buffer): OperationStatusEvent | null {
       'error_code',
       'statusDetail',
       'correlation_id',
+      ...(payload.contract_version === 'knowledge-source/v2'
+        ? ['contract_version', 'canonical_input']
+        : []),
     ]) ||
+    (payload.contract_version === 'knowledge-source/v2' &&
+      payload.canonical_input !== null &&
+      !isCanonicalInputReference(payload.canonical_input)) ||
     typeof payload.eventId !== 'string' ||
     !UUID_PATTERN.test(payload.eventId) ||
     !EVENT_TYPES.includes(payload.eventType as OperationStatusEventType) ||
@@ -173,6 +186,16 @@ function parsePayload(rawBody: Buffer): OperationStatusEvent | null {
   }
 
   const parsed = payload as OperationStatusEvent
+  if (
+    parsed.canonical_input &&
+    (parsed.canonical_input.producer_id !== 'klicker' ||
+      parsed.canonical_input.external_resource_id !==
+        parsed.external_resource_id ||
+      parsed.canonical_input.resource_version !==
+        parsed.serving.active_resource_version ||
+      parsed.canonical_input.source_sha256 !== parsed.serving.active_sha256)
+  )
+    return null
   if (Buffer.from(canonicalJson(parsed), 'utf8').compare(rawBody) !== 0) {
     return null
   }
@@ -307,6 +330,36 @@ export async function handleKBIngestionWebhook({
 
   const transition = transitionForEvent(payload)
   await prisma.$transaction(async (tx) => {
+    const scope = await tx.kBResource.findUnique({
+      where: { id: payload.external_resource_id },
+      select: {
+        kbId: true,
+        inputContract: true,
+        activeCanonicalInput: true,
+      },
+    })
+    if (!scope) return
+    await tx.$queryRaw`SELECT "id" FROM "public"."KB" WHERE "id" = CAST(${scope.kbId} AS UUID) AND "deletedAt" IS NULL FOR UPDATE`
+    if (
+      (scope.inputContract === 'knowledge-source/v2') !==
+      (payload.contract_version === 'knowledge-source/v2')
+    )
+      return
+    if (
+      payload.canonical_input &&
+      (payload.canonical_input.kb_id !== scope.kbId ||
+        payload.canonical_input.project_id !==
+          (env.KB_INGESTION_PROJECT_ID?.trim() || 'klicker-course-materials'))
+    )
+      return
+    if (
+      payload.contract_version === 'knowledge-source/v2' &&
+      !payload.canonical_input &&
+      (payload.eventType === 'resource.content_refreshed' ||
+        (isCanonicalInputReference(scope.activeCanonicalInput) &&
+          payload.serving.active_resource_version !== null))
+    )
+      return
     if (payload.eventType === 'resource.content_refreshed') {
       const activeResourceVersion = payload.serving.active_resource_version
       const activeContentSha256 = payload.serving.active_sha256
@@ -383,6 +436,12 @@ export async function handleKBIngestionWebhook({
           data: {
             activeResourceVersion,
             activeContentSha256,
+            ...(payload.contract_version
+              ? {
+                  activeCanonicalInput:
+                    payload.canonical_input ?? Prisma.JsonNull,
+                }
+              : {}),
             ingestedAt: occurredAt,
           },
         })
@@ -409,6 +468,14 @@ export async function handleKBIngestionWebhook({
     if (!resource?.ingestionAttemptId) {
       return
     }
+    if (
+      payload.contract_version === 'knowledge-source/v2' &&
+      payload.eventType === 'resource.processing_succeeded' &&
+      resource.ingestionOperation !== KBIngestionOperation.DELETE &&
+      !payload.canonical_input
+    ) {
+      return
+    }
 
     const run = await tx.kBIngestionRun.findUnique({
       where: { id: resource.ingestionAttemptId },
@@ -424,10 +491,21 @@ export async function handleKBIngestionWebhook({
         : payload.serving.active_resource_version ===
             payload.resource_version &&
           payload.serving.active_sha256 !== null &&
-          payload.serving.active_sha256 === resource.contentSha256
+          (payload.contract_version
+            ? payload.canonical_input?.source_sha256 ===
+              payload.serving.active_sha256
+            : payload.serving.active_sha256 === resource.contentSha256)
     const servingState = {
       activeResourceVersion: payload.serving.active_resource_version,
       activeContentSha256: payload.serving.active_sha256,
+      ...(payload.contract_version
+        ? {
+            activeCanonicalInput: payload.canonical_input ?? Prisma.JsonNull,
+            ...(servingMatchesCurrent
+              ? { contentSha256: payload.serving.active_sha256 }
+              : {}),
+          }
+        : {}),
     }
 
     if (!transition) {
@@ -506,6 +584,9 @@ export async function handleKBIngestionWebhook({
         status: transition.runStatus,
         statusMessage: transition.statusMessage,
         errorCode: payload.error_code,
+        ...(payload.contract_version && servingMatchesCurrent
+          ? { contentSha256: payload.serving.active_sha256 }
+          : {}),
         ...(payload.eventType === 'resource.processing_started'
           ? { startedAt: new Date(payload.occurredAt) }
           : {}),

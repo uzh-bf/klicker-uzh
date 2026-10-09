@@ -52,6 +52,7 @@ function canonicalJson(value: unknown): string {
 describe('KB ingestion webhook contract', () => {
   let prisma: PrismaClient
   let resourceId: string
+  let kbId: string
 
   function event(
     eventType: EventType,
@@ -110,6 +111,47 @@ describe('KB ingestion webhook contract', () => {
     return prisma.kBResource.findUniqueOrThrow({ where: { id: resourceId } })
   }
 
+  function canonicalReference({
+    resourceVersion = RESOURCE_VERSION,
+    sourceSha256 = CONTENT_SHA256,
+    projectId = 'klicker-course-materials',
+    kbIdValue = kbId,
+    canonicalSha256 = '1'.repeat(64),
+    parserRecipeSha256 = '2'.repeat(64),
+  }: {
+    resourceVersion?: number
+    sourceSha256?: string
+    projectId?: string
+    kbIdValue?: string
+    canonicalSha256?: string
+    parserRecipeSha256?: string
+  } = {}) {
+    return {
+      contract_version: 'canonical-document/v1',
+      producer_id: 'klicker',
+      project_id: projectId,
+      kb_id: kbIdValue,
+      external_resource_id: resourceId,
+      resource_version: resourceVersion,
+      source_sha256: sourceSha256,
+      canonical_sha256: canonicalSha256,
+      parser_recipe_sha256: parserRecipeSha256,
+      byte_count: 2048,
+    }
+  }
+
+  function canonicalEvent(
+    eventType: EventType,
+    overrides: Record<string, unknown> = {}
+  ) {
+    return {
+      ...event(eventType),
+      contract_version: 'knowledge-source/v2',
+      canonical_input: null,
+      ...overrides,
+    }
+  }
+
   async function getRun() {
     return prisma.kBIngestionRun.findUniqueOrThrow({
       where: { id: INGESTION_ATTEMPT_ID },
@@ -138,6 +180,7 @@ describe('KB ingestion webhook contract', () => {
     const kb = await prisma.kB.create({
       data: { name: 'Webhook test KB', ownerId: OWNER_ID },
     })
+    kbId = kb.id
     const resource = await prisma.kBResource.create({
       data: {
         kbId: kb.id,
@@ -732,6 +775,233 @@ describe('KB ingestion webhook contract', () => {
     })
     await expect(getResource()).resolves.toMatchObject({
       status: KBResourceStatus.QUEUED,
+    })
+  })
+
+  describe('canonical v2 webhook contract', () => {
+    async function prepareCanonicalAttempt() {
+      await prisma.kBResource.update({
+        where: { id: resourceId },
+        data: {
+          inputContract: 'knowledge-source/v2',
+          status: KBResourceStatus.PROCESSING,
+          contentSha256: null,
+        },
+      })
+      await prisma.kBIngestionRun.update({
+        where: { id: INGESTION_ATTEMPT_ID },
+        data: {
+          status: KBIngestionStatus.PROCESSING,
+          contentSha256: null,
+        },
+      })
+    }
+
+    async function expectCanonicalAttemptUnchanged() {
+      await expect(getResource()).resolves.toMatchObject({
+        status: KBResourceStatus.PROCESSING,
+        activeResourceVersion: null,
+        activeContentSha256: null,
+        activeCanonicalInput: null,
+        contentSha256: null,
+        ingestedAt: null,
+      })
+      await expect(getRun()).resolves.toMatchObject({
+        status: KBIngestionStatus.PROCESSING,
+        contentSha256: null,
+        finishedAt: null,
+      })
+    }
+
+    it('persists the canonical lineage and learns the served digest on success', async () => {
+      await prepareCanonicalAttempt()
+      const reference = canonicalReference()
+      const request = createRequest(
+        canonicalEvent('resource.processing_succeeded', {
+          canonical_input: reference,
+        })
+      )
+
+      await expect(
+        handleKBIngestionWebhook({
+          prisma,
+          ...request,
+          env: { KB_WEBHOOK_SECRET: SECRET },
+        })
+      ).resolves.toEqual({ statusCode: 200, body: { ok: true } })
+
+      await expect(getResource()).resolves.toMatchObject({
+        status: KBResourceStatus.READY,
+        activeResourceVersion: RESOURCE_VERSION,
+        activeContentSha256: CONTENT_SHA256,
+        activeCanonicalInput: reference,
+        contentSha256: CONTENT_SHA256,
+        ingestedAt: new Date(OCCURRED_AT),
+      })
+      await expect(getRun()).resolves.toMatchObject({
+        status: KBIngestionStatus.SUCCEEDED,
+        contentSha256: CONTENT_SHA256,
+        finishedAt: new Date(OCCURRED_AT),
+      })
+    })
+
+    it('fails closed when a successful v2 event carries no canonical input', async () => {
+      await prepareCanonicalAttempt()
+      const request = createRequest(
+        canonicalEvent('resource.processing_succeeded')
+      )
+
+      await expect(
+        handleKBIngestionWebhook({
+          prisma,
+          ...request,
+          env: { KB_WEBHOOK_SECRET: SECRET },
+        })
+      ).resolves.toEqual({ statusCode: 200, body: { ok: true } })
+      await expectCanonicalAttemptUnchanged()
+    })
+
+    it.each([
+      'resource.processing_failed',
+      'resource.processing_progress',
+    ] satisfies EventType[])('preserves the prior canonical lineage when %s arrives without canonical input', async (eventType) => {
+      const priorSha256 = 'a'.repeat(64)
+      const priorReference = canonicalReference({
+        resourceVersion: RESOURCE_VERSION - 1,
+        sourceSha256: priorSha256,
+      })
+      await prisma.kBResource.update({
+        where: { id: resourceId },
+        data: {
+          inputContract: 'knowledge-source/v2',
+          status: KBResourceStatus.PROCESSING,
+          contentSha256: null,
+          activeResourceVersion: RESOURCE_VERSION - 1,
+          activeContentSha256: priorSha256,
+          activeCanonicalInput: priorReference,
+          ingestedAt: new Date('2026-07-11T14:04:52Z'),
+        },
+      })
+      await prisma.kBIngestionRun.update({
+        where: { id: INGESTION_ATTEMPT_ID },
+        data: {
+          status: KBIngestionStatus.PROCESSING,
+          contentSha256: null,
+        },
+      })
+      const request = createRequest(
+        canonicalEvent(eventType, {
+          serving: {
+            active_resource_version: RESOURCE_VERSION - 1,
+            active_sha256: priorSha256,
+          },
+        })
+      )
+
+      await expect(
+        handleKBIngestionWebhook({
+          prisma,
+          ...request,
+          env: { KB_WEBHOOK_SECRET: SECRET },
+        })
+      ).resolves.toEqual({ statusCode: 200, body: { ok: true } })
+
+      await expect(getResource()).resolves.toMatchObject({
+        status: KBResourceStatus.PROCESSING,
+        activeResourceVersion: RESOURCE_VERSION - 1,
+        activeContentSha256: priorSha256,
+        activeCanonicalInput: priorReference,
+        contentSha256: null,
+        ingestedAt: new Date('2026-07-11T14:04:52Z'),
+      })
+      await expect(getRun()).resolves.toMatchObject({
+        status: KBIngestionStatus.PROCESSING,
+        contentSha256: null,
+        finishedAt: null,
+      })
+    })
+
+    it('rejects a v2 platform refresh that carries no canonical input', async () => {
+      await prisma.kBResource.update({
+        where: { id: resourceId },
+        data: {
+          inputContract: 'knowledge-source/v2',
+          status: KBResourceStatus.READY,
+          activeResourceVersion: RESOURCE_VERSION,
+          activeContentSha256: CONTENT_SHA256,
+        },
+      })
+      const request = createRequest(
+        canonicalEvent('resource.content_refreshed', {
+          eventId: REFRESH_EVENT_ID,
+          operation_id: REFRESH_OPERATION_ID,
+          serving: {
+            active_resource_version: RESOURCE_VERSION,
+            active_sha256: CONTENT_SHA256,
+          },
+        })
+      )
+
+      await expect(
+        handleKBIngestionWebhook({
+          prisma,
+          ...request,
+          env: { KB_WEBHOOK_SECRET: SECRET },
+        })
+      ).resolves.toEqual({ statusCode: 200, body: { ok: true } })
+
+      await expect(
+        prisma.kBIngestionRun.count({
+          where: {
+            resourceId,
+            externalOperationId: REFRESH_OPERATION_ID,
+          },
+        })
+      ).resolves.toBe(0)
+      await expect(getResource()).resolves.toMatchObject({
+        activeResourceVersion: RESOURCE_VERSION,
+        activeContentSha256: CONTENT_SHA256,
+        activeCanonicalInput: null,
+        ingestedAt: null,
+      })
+    })
+
+    it('ignores a canonical reference scoped to another project', async () => {
+      await prepareCanonicalAttempt()
+      const request = createRequest(
+        canonicalEvent('resource.processing_succeeded', {
+          canonical_input: canonicalReference({ projectId: 'another-project' }),
+        })
+      )
+
+      await expect(
+        handleKBIngestionWebhook({
+          prisma,
+          ...request,
+          env: { KB_WEBHOOK_SECRET: SECRET },
+        })
+      ).resolves.toEqual({ statusCode: 200, body: { ok: true } })
+      await expectCanonicalAttemptUnchanged()
+    })
+
+    it('ignores a canonical reference scoped to another KB', async () => {
+      await prepareCanonicalAttempt()
+      const request = createRequest(
+        canonicalEvent('resource.processing_succeeded', {
+          canonical_input: canonicalReference({
+            kbIdValue: '11111111-1111-4111-8111-111111111111',
+          }),
+        })
+      )
+
+      await expect(
+        handleKBIngestionWebhook({
+          prisma,
+          ...request,
+          env: { KB_WEBHOOK_SECRET: SECRET },
+        })
+      ).resolves.toEqual({ statusCode: 200, body: { ok: true } })
+      await expectCanonicalAttemptUnchanged()
     })
   })
 })

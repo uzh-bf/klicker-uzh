@@ -1,5 +1,6 @@
 import {
   getDefaultKBGraphDomainCatalog,
+  hashKBCanonicalInputReferences,
   hashKBContentDigestEntries,
 } from '@klicker-uzh/knowledge-graph'
 import {
@@ -62,6 +63,100 @@ const externalEnv = {
   KB_FALKORDB_TLS: 'false',
   KB_FALKORDB_QUERY_TIMEOUT_MS: '5000',
 }
+
+function createCanonicalBuild() {
+  const reference = {
+    contract_version: 'canonical-document/v1' as const,
+    producer_id: 'klicker',
+    project_id: 'klicker-course-materials',
+    kb_id: KB_ID,
+    external_resource_id: RESOURCE_ID,
+    resource_version: 3,
+    source_sha256: CONTENT_SHA256,
+    canonical_sha256: 'b'.repeat(64),
+    parser_recipe_sha256: 'c'.repeat(64),
+    byte_count: 1024,
+  }
+  const legacy = createBuild()
+  return {
+    ...legacy,
+    sourceInputContract: 'canonical-document/v1',
+    sourceInputDigest: hashKBCanonicalInputReferences([reference]),
+    sources: [{ ...legacy.sources[0]!, canonicalInput: reference }],
+  }
+}
+
+describe('canonical KG dispatch', () => {
+  it('pins the selected source artifact and keeps credentials out of the payload', () => {
+    const build = createCanonicalBuild()
+    const payload = buildExternalKBGraphPayload(build, [SOURCE_URL], {
+      ...externalEnv,
+      KB_CANONICAL_INPUT_ENABLED: 'true',
+      KB_CANONICAL_INPUT_API_TOKEN: 'synthetic-reader-token',
+    })
+    expect(payload.source_input_contract).toBe('canonical-document/v1')
+    expect(payload.klicker_graph_build.source_input_digest).toBe(
+      build.sourceInputDigest
+    )
+    expect(payload.sources[0]?.canonical_input).toEqual(
+      build.sources[0]?.canonicalInput
+    )
+    expect(payload.upload_markdown).toBe(false)
+    expect(JSON.stringify(payload)).not.toContain('synthetic-reader-token')
+  })
+
+  it('refuses canonical dispatch while disabled and rejects altered frozen lineage', () => {
+    const build = createCanonicalBuild()
+    expect(() =>
+      buildExternalKBGraphPayload(build, [SOURCE_URL], externalEnv)
+    ).toThrow()
+    const enabledEnv = { ...externalEnv, KB_CANONICAL_INPUT_ENABLED: 'true' }
+    expect(() =>
+      buildExternalKBGraphPayload(
+        { ...build, sourceInputDigest: 'd'.repeat(64) },
+        [SOURCE_URL],
+        enabledEnv
+      )
+    ).toThrow()
+    expect(() =>
+      buildExternalKBGraphPayload(
+        { ...build, sourceInputContract: null },
+        [SOURCE_URL],
+        enabledEnv
+      )
+    ).toThrow()
+  })
+
+  it('dispatches a private blob through its artifact reference without minting a source URL', async () => {
+    const canonical = createCanonicalBuild()
+    const build = {
+      ...canonical,
+      sources: canonical.sources.map((source) => ({
+        ...source,
+        type: KBResourceType.BLOB,
+        sourceUrl: null,
+        blobName: 'synthetic.pdf',
+      })),
+    }
+    const prisma = createDispatchPrisma({ build: build as never })
+    const client = createClient()
+    const getSourceUrl = vi.fn(() => {
+      throw new Error('canonical dispatch must not mint an origin URL')
+    })
+    await dispatchKBGraphBuild(
+      { buildId: BUILD_ID },
+      {
+        prisma: prisma as never,
+        client,
+        env: { ...externalEnv, KB_CANONICAL_INPUT_ENABLED: 'true' },
+        now: () => NOW,
+        getSourceUrl,
+      }
+    )
+    expect(getSourceUrl).not.toHaveBeenCalled()
+    expect(client.runNoWait).toHaveBeenCalledOnce()
+  })
+})
 
 function createBuild(overrides: Record<string, unknown> = {}) {
   return {

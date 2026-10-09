@@ -7,7 +7,11 @@ import {
   BlobServiceClient,
   StorageSharedKeyCredential,
 } from '@azure/storage-blob'
-import type { IngestKBResourceInput } from '@klicker-uzh/types'
+import {
+  type CanonicalInputReference,
+  type IngestKBResourceInput,
+  isCanonicalInputReference,
+} from '@klicker-uzh/types'
 import { getBlobStorageAccountUrl } from '@klicker-uzh/util'
 import {
   isPublicIPv4Address,
@@ -43,10 +47,10 @@ const SHA256_PATTERN = /^[a-f0-9]{64}$/
 export type KBIngestionSource = {
   kind: 'blob' | 'url'
   url: string
-  mimeType: string
+  mimeType: string | null
   displayName: string
-  contentSha256: string
-  sizeBytes: number
+  contentSha256: string | null
+  sizeBytes: number | null
 }
 
 export type KBOperationStatus =
@@ -57,6 +61,8 @@ export type KBOperationStatus =
   | 'superseded'
 
 export type KBOperationStatusResponse = {
+  inputContract?: 'knowledge-source/v2'
+  canonicalInput?: CanonicalInputReference | null
   operationId: string
   status: KBOperationStatus
   operation: 'create' | 'update' | 'delete'
@@ -82,6 +88,7 @@ export type AcceptKBResourceInput = {
   resourceVersion: number
   ingestionAttemptId: string
   source: KBIngestionSource
+  inputContract?: 'knowledge-source/v2'
 }
 
 export type DeleteKBResourceInput = {
@@ -89,12 +96,16 @@ export type DeleteKBResourceInput = {
   kbId: string
   resourceVersion: number
   deletionAttemptId: string
+  inputContract?: 'knowledge-source/v2'
 }
 
 export type KBIngestionApiClient = {
   acceptResource: (input: AcceptKBResourceInput) => Promise<string>
   deleteResource: (input: DeleteKBResourceInput) => Promise<string>
-  getOperation: (operationId: string) => Promise<KBOperationStatusResponse>
+  getOperation: (
+    operationId: string,
+    inputContract?: 'knowledge-source/v2'
+  ) => Promise<KBOperationStatusResponse>
 }
 
 export type KBSourcePreparationDependencies = {
@@ -220,7 +231,10 @@ function parseAcceptedOperation(value: unknown): string {
   return operationId
 }
 
-function parseOperationStatus(value: unknown): KBOperationStatusResponse {
+function parseOperationStatus(
+  value: unknown,
+  inputContract?: 'knowledge-source/v2'
+): KBOperationStatusResponse {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error('Ingestion API returned an invalid response')
   }
@@ -241,7 +255,12 @@ function parseOperationStatus(value: unknown): KBOperationStatusResponse {
       'correlation_id',
       'created_at',
       'updated_at',
+      ...(inputContract ? ['contract_version', 'canonical_input'] : []),
     ]) ||
+    (inputContract &&
+      (operation.contract_version !== inputContract ||
+        (operation.canonical_input !== null &&
+          !isCanonicalInputReference(operation.canonical_input)))) ||
     !isBoundedString(operation.operation_id, 255) ||
     typeof operation.status !== 'string' ||
     !['accepted', 'running', 'succeeded', 'failed', 'superseded'].includes(
@@ -278,7 +297,24 @@ function parseOperationStatus(value: unknown): KBOperationStatusResponse {
   }
 
   const serving = operation.serving as Record<string, unknown>
+  const reference = operation.canonical_input
+  if (
+    isCanonicalInputReference(reference) &&
+    (reference.producer_id !== operation.producer ||
+      reference.project_id !== operation.project_id ||
+      reference.external_resource_id !== operation.external_resource_id ||
+      reference.resource_version !== serving.active_resource_version ||
+      reference.source_sha256 !== serving.active_sha256)
+  ) {
+    throw new Error('Ingestion API returned invalid canonical lineage')
+  }
   return {
+    ...(inputContract
+      ? {
+          inputContract,
+          canonicalInput: reference as CanonicalInputReference | null,
+        }
+      : {}),
     operationId: operation.operation_id,
     status: operation.status as KBOperationStatus,
     operation: operation.operation as KBOperationStatusResponse['operation'],
@@ -335,8 +371,16 @@ export function createKBIngestionApiClient({
 
   return {
     async acceptResource(input) {
+      if (
+        (!input.inputContract || input.source.kind === 'blob') &&
+        (!input.source.mimeType ||
+          !input.source.contentSha256 ||
+          !SHA256_PATTERN.test(input.source.contentSha256))
+      ) {
+        throw new Error('Ingestion source requires a MIME type and digest')
+      }
       const value = await request(
-        '/v1/resources',
+        input.inputContract ? '/v2/resources' : '/v1/resources',
         {
           method: 'POST',
           headers: {
@@ -344,6 +388,9 @@ export function createKBIngestionApiClient({
             'Idempotency-Key': input.ingestionAttemptId,
           },
           body: JSON.stringify({
+            ...(input.inputContract
+              ? { contract_version: input.inputContract }
+              : {}),
             project_id: projectId,
             producer: KB_INGESTION_PRODUCER,
             external_resource_id: input.resourceId,
@@ -352,10 +399,14 @@ export function createKBIngestionApiClient({
             source: {
               kind: input.source.kind,
               url: input.source.url,
-              mime_type: input.source.mimeType,
+              ...(input.source.mimeType
+                ? { mime_type: input.source.mimeType }
+                : {}),
               display_name: input.source.displayName,
             },
-            content_sha256: input.source.contentSha256,
+            ...(input.source.contentSha256
+              ? { content_sha256: input.source.contentSha256 }
+              : {}),
           }),
         },
         202
@@ -365,7 +416,7 @@ export function createKBIngestionApiClient({
 
     async deleteResource(input) {
       const value = await request(
-        `/v1/resources/${encodeURIComponent(input.resourceId)}`,
+        `/${input.inputContract ? 'v2' : 'v1'}/resources/${encodeURIComponent(input.resourceId)}`,
         {
           method: 'DELETE',
           headers: {
@@ -373,6 +424,9 @@ export function createKBIngestionApiClient({
             'Idempotency-Key': input.deletionAttemptId,
           },
           body: JSON.stringify({
+            ...(input.inputContract
+              ? { contract_version: input.inputContract }
+              : {}),
             project_id: projectId,
             producer: KB_INGESTION_PRODUCER,
             resource_version: input.resourceVersion,
@@ -384,13 +438,13 @@ export function createKBIngestionApiClient({
       return parseAcceptedOperation(value)
     },
 
-    async getOperation(operationId) {
+    async getOperation(operationId, inputContract) {
       const value = await request(
-        `/v1/operations/${encodeURIComponent(operationId)}`,
+        `/${inputContract ? 'v2' : 'v1'}/operations/${encodeURIComponent(operationId)}`,
         { method: 'GET' },
         200
       )
-      return parseOperationStatus(value)
+      return parseOperationStatus(value, inputContract)
     },
   }
 }

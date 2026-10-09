@@ -1,6 +1,7 @@
 import {
   getDefaultKBGraphDomainCatalog,
   getKnowledgeGraphName,
+  hashKBCanonicalInputReferences,
   isKBGraphDomainCapabilityEnabled,
   KB_GRAPH_DOMAIN_ERROR_CODES,
   type KBGraphDomainSelectionRejectionReason,
@@ -14,7 +15,10 @@ import {
   type Prisma,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
-import type { BuildKBGraphInput } from '@klicker-uzh/types'
+import {
+  type BuildKBGraphInput,
+  isCanonicalInputReference,
+} from '@klicker-uzh/types'
 import {
   cancelExternalKBGraphRunBestEffort,
   type ExternalKBGraphClient,
@@ -88,6 +92,8 @@ type KBGraphDispatchRecord = {
   id: string
   kbId: string
   sourceContentDigest: string
+  sourceInputContract: string | null
+  sourceInputDigest: string | null
   graphName: string
   graphmlBlobName: string | null
   qualityTier: Parameters<typeof getKBGraphQualityConfig>[0]
@@ -103,7 +109,12 @@ type KBGraphDispatchRecord = {
   sources: Array<
     Pick<
       KBGraphBuildSource,
-      'resourceId' | 'type' | 'sourceUrl' | 'blobName' | 'contentSha256'
+      | 'resourceId'
+      | 'type'
+      | 'sourceUrl'
+      | 'blobName'
+      | 'contentSha256'
+      | 'canonicalInput'
     >
   >
 }
@@ -468,9 +479,19 @@ function getProviderContractGateFailure(
     | 'domainPolicyVersion'
     | 'domainPolicyLanguage'
     | 'focusTopic'
+    | 'sourceInputContract'
   >,
   env: NodeJS.ProcessEnv
 ): { statusMessage: string; errorCode: string } | null {
+  if (
+    build.sourceInputContract === 'canonical-document/v1' &&
+    env.KB_CANONICAL_INPUT_ENABLED !== 'true'
+  ) {
+    return {
+      statusMessage: 'Canonical KG input is unavailable.',
+      errorCode: 'KB_CANONICAL_INPUT_DISABLED',
+    }
+  }
   const catalog = getDefaultKBGraphDomainCatalog()
   const capabilityEnabled = isKBGraphDomainCapabilityEnabled(
     catalog.revision,
@@ -616,6 +637,9 @@ export function buildExternalKBGraphPayload(
       source_id: source.resourceId,
       source_url: sourceUrls[index]!,
       expected_content_sha256: source.contentSha256,
+      ...(build.sourceInputContract === 'canonical-document/v1'
+        ? { canonical_input: requireCanonicalBuildSource(build, source) }
+        : {}),
     })),
     upload_markdown: false,
     upload_graph_artifacts: env.KB_GRAPH_UPLOAD_GENERATION_ARTIFACTS === 'true',
@@ -632,6 +656,19 @@ export function buildExternalKBGraphPayload(
       graphml_container_name: getKBGraphOwnerContainerName(build.kb.ownerId),
       graphml_blob_name: build.graphmlBlobName,
     },
+  }
+  if (build.sourceInputContract === 'canonical-document/v1') {
+    if (env.KB_CANONICAL_INPUT_ENABLED !== 'true')
+      throw new Error('Canonical KG input is unavailable')
+    const references = build.sources.map((source) =>
+      requireCanonicalBuildSource(build, source)
+    )
+    if (hashKBCanonicalInputReferences(references) !== build.sourceInputDigest)
+      throw new Error('Canonical KG input digest mismatch')
+    payload.source_input_contract = 'canonical-document/v1'
+    payload.klicker_graph_build.source_input_digest = build.sourceInputDigest!
+  } else if (build.sources.some((source) => source.canonicalInput != null)) {
+    throw new Error('Canonical sources cannot use legacy KG dispatch')
   }
   // The dispatch gate has already re-validated the frozen selection, so a
   // complete triple here is a supported policy. The legacy all-null build adds
@@ -653,6 +690,22 @@ export function buildExternalKBGraphPayload(
     payload.focus_topic = build.focusTopic
   }
   return payload
+}
+
+function requireCanonicalBuildSource(
+  build: Pick<KBGraphDispatchRecord, 'kbId'>,
+  source: KBGraphDispatchRecord['sources'][number]
+) {
+  const reference = source.canonicalInput
+  if (
+    !isCanonicalInputReference(reference) ||
+    reference.kb_id !== build.kbId ||
+    reference.external_resource_id !== source.resourceId ||
+    reference.source_sha256 !== source.contentSha256
+  ) {
+    throw new Error('Canonical KG source is invalid')
+  }
+  return reference
 }
 
 function validateBuildIdentity(build: KBGraphDispatchRecord): void {
@@ -819,6 +872,8 @@ export async function dispatchKBGraphBuild(
       id: true,
       kbId: true,
       sourceContentDigest: true,
+      sourceInputContract: true,
+      sourceInputDigest: true,
       graphName: true,
       graphmlBlobName: true,
       qualityTier: true,
@@ -861,6 +916,7 @@ export async function dispatchKBGraphBuild(
           sourceUrl: true,
           blobName: true,
           contentSha256: true,
+          canonicalInput: true,
         },
         orderBy: { resourceId: 'asc' },
       },
@@ -920,6 +976,8 @@ export async function dispatchKBGraphBuild(
     id: build.id,
     kbId: build.kbId,
     sourceContentDigest: build.sourceContentDigest,
+    sourceInputContract: build.sourceInputContract,
+    sourceInputDigest: build.sourceInputDigest,
     graphName: build.graphName,
     graphmlBlobName: build.graphmlBlobName,
     qualityTier: build.qualityTier,
@@ -993,6 +1051,7 @@ export async function dispatchKBGraphBuild(
           domainPolicyVersion: true,
           domainPolicyLanguage: true,
           focusTopic: true,
+          sourceInputContract: true,
           quota: {
             select: {
               id: true,
@@ -1035,11 +1094,14 @@ export async function dispatchKBGraphBuild(
       }
       const getSourceUrl = dependencies.getSourceUrl ?? getKBGraphSourceUrl
       const sourceUrls = dispatchBuild.sources.map((source) =>
-        getSourceUrl(source, {
-          ownerId: dispatchBuild.kb.ownerId,
-          env,
-          now,
-        })
+        dispatchBuild.sourceInputContract === 'canonical-document/v1'
+          ? (source.sourceUrl ??
+            `https://klicker.uzh.ch/knowledge-sources/${source.resourceId}`)
+          : getSourceUrl(source, {
+              ownerId: dispatchBuild.kb.ownerId,
+              env,
+              now,
+            })
       )
       const payload = buildExternalKBGraphPayload(
         dispatchBuild,
@@ -1322,6 +1384,8 @@ export async function monitorActiveKBGraphBuilds(
       id: true,
       kbId: true,
       sourceContentDigest: true,
+      sourceInputContract: true,
+      sourceInputDigest: true,
       createdAt: true,
       externalOperationId: true,
     },

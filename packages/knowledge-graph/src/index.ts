@@ -7,23 +7,14 @@ export {
   searchKnowledgeGraph,
 } from './client.js'
 export * from './config.js'
+export type { KBContentDigestEntry } from './digest.js'
 export {
+  computeKBCanonicalInputDigest,
   computeKBContentDigest,
+  hashKBCanonicalInputReferences,
   hashKBContentDigestEntries,
   readKBContentDigestEntries,
 } from './digest.js'
-export type { KBContentDigestEntry } from './digest.js'
-export {
-  KnowledgeGraphNotPublishedError,
-  getKnowledgeGraphName,
-  getPublishedKnowledgeGraph,
-} from './publication.js'
-export type {
-  KnowledgeGraphPublicationCode,
-  KnowledgeGraphSourceMetadata,
-  PublishedKnowledgeGraph,
-} from './publication.js'
-
 export type {
   KBGraphDomainCatalog,
   KBGraphDomainCategory,
@@ -43,3 +34,13 @@ export {
   KB_GRAPH_DOMAIN_LANGUAGES,
   resolveKBGraphDomainSelection,
 } from './domainCatalog.js'
+export type {
+  KnowledgeGraphPublicationCode,
+  KnowledgeGraphSourceMetadata,
+  PublishedKnowledgeGraph,
+} from './publication.js'
+export {
+  getKnowledgeGraphName,
+  getPublishedKnowledgeGraph,
+  KnowledgeGraphNotPublishedError,
+} from './publication.js'

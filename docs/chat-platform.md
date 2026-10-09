@@ -1635,3 +1635,19 @@ grading, and util once before the four suites because
 import ([Testing](./testing.md)).
 
 > **Do not run `pnpm --filter @klicker-uzh/chat check` while the devcontainer dev stack is up.** `check` is `next typegen && tsc --noEmit`, and typegen rewrites the same `.next/` the running dev server owns: from the next `✓ Compiled` line onward every chat route returns a bare Next 404 with nothing in `/tmp/dev.log`, including routes that just served 200. It is not a code bug — restart with `devrouter ensure .` from the host. Typecheck before the browser pass, not during it.
+
+## Version-pinned graph inputs
+
+Graph generation can consume the same canonical parsed document as indexing.
+The ingestion service owns its active-version artifact and a separate scoped
+reader identity. Klicker freezes the content-free reference into the build and
+checks it again before publication. See [canonical input ownership](./adr/canonical-ingestion-input-ownership.md)
+for retention, revocation and rollout boundaries.
+
+`KB_CANONICAL_INPUT_ENABLED` defaults false and gates v2 ingestion admission and
+canonical graph dispatch. Durable canonical records fail closed while disabled,
+including retries. Their deletion and status reconciliation still use v2.
+The graph worker receives `KB_CANONICAL_INPUT_API_URL` and
+`KB_CANONICAL_INPUT_API_TOKEN` directly at runtime; neither belongs in a workflow
+payload. The existing `chatbot-graphrag` GrowthBook flag and lecturer controls
+continue to govern student graph retrieval independently.
