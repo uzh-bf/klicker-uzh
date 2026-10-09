@@ -4,9 +4,10 @@
  */
 import { expect, type Page } from '@playwright/test'
 import fs from 'node:fs'
+import { getPrisma } from '../global-setup.js'
 import { chooseActionByTestId } from '../util/actions.js'
 import { setSessionCookieForUrl } from '../util/authSession.js'
-import { PARTICIPANT_IDS } from '../util/constants.js'
+import { PARTICIPANT_IDS, USER_ID_TEST } from '../util/constants.js'
 import { test } from '../util/fixtures.js'
 import { getDatetimeValidationString, getFutureDate } from '../util/helpers.js'
 import { enMessages as messages } from '../util/messages.js'
@@ -91,33 +92,13 @@ let studentPwaWebStorage: {
 const liveQuizPins = new Map<string, string>()
 let liveQuizPinRoutePage: Page | null = null
 
-async function confirmResponseDeletionIfAvailable(
-  page: Page,
-  expectedResponsesText?: string
-) {
+async function confirmResponseDeletionIfAvailable(page: Page) {
   const dialog = page.getByRole('dialog', { name: 'Delete Live Quiz' })
-  const responseSummary = dialog.getByText(
-    /\d+ response\(s\) in this live quiz/
-  )
-  const confirmResponses = page.getByTestId('confirm-deletion-responses')
-
-  if (await confirmResponses.isVisible().catch(() => false)) {
-    if (expectedResponsesText) {
-      await expect(page.locator('body')).toContainText(expectedResponsesText)
-    }
+  // The summary query must finish before the dialog and its confirmations mount.
+  await expect(dialog).toBeVisible()
+  const confirmResponses = dialog.getByTestId('confirm-deletion-responses')
+  if (await confirmResponses.isVisible()) {
     await confirmResponses.click()
-  } else if (await responseSummary.isVisible().catch(() => false)) {
-    if (expectedResponsesText) {
-      await expect(responseSummary).toContainText(expectedResponsesText)
-    }
-    await responseSummary
-      .locator('xpath=ancestor::*[.//button][1]')
-      .getByRole('button', { name: 'Confirm' })
-      .click()
-  } else {
-    await expect(dialog).toContainText(
-      'For this live quiz no responses have been collected yet.'
-    )
   }
 }
 
@@ -3246,6 +3227,192 @@ test.describe.serial('Core live-quiz workflows', () => {
     await page.waitForTimeout(500)
   })
 
+  test('Keep active evaluation reveals scoped to a live quiz activation', async ({
+    page: testPage,
+  }, testInfo) => {
+    page = testPage
+    aliases.clear()
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+    await loginLecturer(page)
+    await openActivitiesListForQuiz(page, data.course2.quiz.name)
+    await page
+      .getByTestId(`live-quiz-cockpit-${data.course2.quiz.name}`)
+      .click()
+    await page.waitForTimeout(1000)
+    await page.getByTestId('embed-evaluation-cockpit').click()
+    await page.getByTestId('embedding-show-solution-switch').click()
+    await page.getByTestId('embedding-show-explanation-switch').click()
+
+    const activeQuestionLink = await readEmbeddingLink(
+      page,
+      'open-embedding-link-question-0'
+    )
+    const neighbouringQuestionLink = await readEmbeddingLink(
+      page,
+      'open-embedding-link-question-1'
+    )
+    const activeQuestionUrl = new URL(activeQuestionLink)
+    expect(activeQuestionUrl.searchParams.get('showSolution')).toBe('true')
+    expect(activeQuestionUrl.searchParams.get('showExplanation')).toBe('true')
+
+    function waitForOperation(operationName: string) {
+      return page.waitForResponse((response) => {
+        if (!response.url().includes('/graphql')) return false
+
+        const request = response.request()
+        return request.method() === 'GET'
+          ? new URL(response.url()).searchParams.get('operationName') ===
+              operationName
+          : request.postDataJSON()?.operationName === operationName
+      })
+    }
+
+    const solutionToggle = page.getByTestId('evaluation-footer-show-solution')
+    const explanationToggle = page.getByTestId(
+      'evaluation-footer-show-explanation'
+    )
+    async function expectRenderedReveals(revealed: boolean) {
+      await page.getByTestId('change-chart-type').click()
+      await page
+        .getByTestId('change-chart-type-manage.evaluation.table')
+        .click()
+      await expect(page.getByRole('table')).toBeVisible()
+      const correctness = page.locator('table tbody svg[data-icon="check"]')
+      const explanation = page.locator('.my-2.items-center .max-w-none')
+      if (revealed) {
+        await expect(correctness.first()).toBeVisible()
+        await expect(explanation).toBeVisible()
+        expect(await explanation.innerText()).not.toBe('')
+      } else {
+        await expect(correctness).toHaveCount(0)
+        await expect(explanation).toHaveCount(0)
+      }
+    }
+    const initialEvaluationResponse = waitForOperation(
+      'GetLiveQuizEvaluationWithActivation'
+    )
+    await gotoEmbeddingLink(page, activeQuestionLink)
+    const initialEvaluation = await (await initialEvaluationResponse).json()
+    expect(initialEvaluation.errors).toBeUndefined()
+    expect(initialEvaluation.data?.liveQuizEvaluation?.status).toBe('PUBLISHED')
+    const initialStack = initialEvaluation.data.liveQuizEvaluation.results.find(
+      (stack) => stack.stackActive
+    )
+    expect(initialStack).toMatchObject({
+      status: 'ACTIVE',
+      startedAt: expect.any(String),
+    })
+    expect(initialStack.instances[0]?.id).toEqual(expect.any(Number))
+    await expect(solutionToggle).toBeVisible()
+    await expect(explanationToggle).toBeVisible()
+    await expect(solutionToggle).not.toBeChecked()
+    await expect(explanationToggle).not.toBeChecked()
+    await expectRenderedReveals(false)
+
+    await solutionToggle.click()
+    await explanationToggle.click()
+    await expect(solutionToggle).toBeChecked()
+    await expect(explanationToggle).toBeChecked()
+    await expectRenderedReveals(true)
+    const pollResponse = await waitForOperation(
+      'GetLiveQuizEvaluationWithActivation'
+    )
+    const polledEvaluation = await pollResponse.json()
+    expect(polledEvaluation.errors).toBeUndefined()
+    expect(polledEvaluation.data.liveQuizEvaluation.results).toEqual(
+      initialEvaluation.data.liveQuizEvaluation.results
+    )
+    await expectRenderedReveals(true)
+
+    await gotoEmbeddingLink(page, neighbouringQuestionLink)
+    await expect(
+      page.getByTestId('evaluation-footer-show-solution')
+    ).not.toBeChecked()
+    await expect(
+      page.getByTestId('evaluation-footer-show-explanation')
+    ).not.toBeChecked()
+    await expectRenderedReveals(false)
+    await gotoEmbeddingLink(page, activeQuestionLink)
+    await expect(solutionToggle).toBeChecked()
+    await expect(explanationToggle).toBeChecked()
+    await expectRenderedReveals(true)
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await expect(solutionToggle).toBeChecked()
+    await expect(explanationToggle).toBeChecked()
+    await expectRenderedReveals(true)
+
+    await openActivitiesListForQuiz(page, data.course2.quiz.name)
+    await page
+      .getByTestId(`live-quiz-cockpit-${data.course2.quiz.name}`)
+      .click()
+    await expect(page.getByTestId('abort-live-quiz-cockpit')).toBeVisible()
+    await page.getByTestId('abort-live-quiz-cockpit').click()
+    await expect(page.getByTestId('confirm-cancel-live-quiz')).toBeEnabled()
+    await page.getByTestId('confirm-cancel-live-quiz').click()
+
+    await expect(
+      page.getByTestId(`start-live-quiz-${data.course2.quiz.name}`)
+    ).toBeVisible()
+    const restartResponse = waitForOperation('StartLiveQuiz')
+    const cockpitResponse = waitForOperation('GetCockpitQuiz')
+    await page.getByTestId(`start-live-quiz-${data.course2.quiz.name}`).click()
+    const restartedQuiz = await (await restartResponse).json()
+    expect(restartedQuiz.errors).toBeUndefined()
+    expect(restartedQuiz.data?.startLiveQuiz).toMatchObject({
+      id: initialEvaluation.data.liveQuizEvaluation.id,
+      status: 'PUBLISHED',
+    })
+    const restartedCockpit = await (await cockpitResponse).json()
+    expect(restartedCockpit.errors).toBeUndefined()
+    expect(restartedCockpit.data.cockpitQuiz.blocks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: initialStack.stackId,
+          status: 'SCHEDULED',
+        }),
+      ])
+    )
+    await expect(page.getByTestId('abort-live-quiz-cockpit')).toBeVisible()
+    await expect(
+      page.getByTestId('next-block-timeline').locator('svg[data-icon="play"]')
+    ).toBeVisible()
+    const activationResponse = waitForOperation('ActivateLiveQuizBlock')
+    await page.getByTestId('next-block-timeline').click()
+    const activatedQuiz = await (await activationResponse).json()
+    expect(activatedQuiz.errors).toBeUndefined()
+    expect(activatedQuiz.data?.activateLiveQuizBlock?.blocks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: initialStack.stackId, status: 'ACTIVE' }),
+      ])
+    )
+
+    const restartedEvaluationResponse = waitForOperation(
+      'GetLiveQuizEvaluationWithActivation'
+    )
+    await gotoEmbeddingLink(page, activeQuestionLink)
+    const restartedEvaluation = await (await restartedEvaluationResponse).json()
+    expect(restartedEvaluation.errors).toBeUndefined()
+    const restartedStack =
+      restartedEvaluation.data?.liveQuizEvaluation?.results.find(
+        (stack) => stack.stackId === initialStack.stackId
+      )
+    expect(restartedStack).toMatchObject({
+      stackActive: true,
+      status: 'ACTIVE',
+      startedAt: expect.any(String),
+    })
+    expect(restartedStack.startedAt).not.toBe(initialStack.startedAt)
+    expect(restartedStack.instances.map((instance) => instance.id)).toContain(
+      initialStack.instances[0].id
+    )
+    await expect(solutionToggle).toBeVisible()
+    await expect(explanationToggle).toBeVisible()
+    await expect(solutionToggle).not.toBeChecked()
+    await expect(explanationToggle).not.toBeChecked()
+    await expectRenderedReveals(false)
+  })
+
   test('Respond to the first block of the running live quiz from the student view', async ({
     page: testPage,
   }, testInfo) => {
@@ -3836,18 +4003,46 @@ test.describe.serial('Core live-quiz workflows', () => {
       'data-state',
       'unchecked'
     )
-    await expectByAssertion(
-      page.getByTestId('evaluation-footer-show-solution'),
-      'have.attr',
-      'disabled',
-      'disabled'
+    const solutionToggle = page.getByTestId('evaluation-footer-show-solution')
+    const explanationToggle = page.getByTestId(
+      'evaluation-footer-show-explanation'
     )
-    await expectByAssertion(
-      page.getByTestId('evaluation-footer-show-explanation'),
-      'have.attr',
-      'disabled',
-      'disabled'
-    )
+    await expect(solutionToggle).toBeEnabled()
+    await expect(explanationToggle).toBeEnabled()
+    await solutionToggle.click()
+    await explanationToggle.click()
+    await expect(solutionToggle).toBeChecked()
+    await expect(explanationToggle).toBeChecked()
+    await page.reload()
+    await expect(solutionToggle).toBeChecked()
+    await expect(explanationToggle).toBeChecked()
+    await solutionToggle.click()
+    await explanationToggle.click()
+    await expect(solutionToggle).not.toBeChecked()
+    await expect(explanationToggle).not.toBeChecked()
+    const originalViewport = page.viewportSize()
+    try {
+      await page.setViewportSize({ width: 390, height: 844 })
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () =>
+              document.documentElement.scrollWidth -
+              document.documentElement.clientWidth
+          )
+        )
+        .toBeLessThanOrEqual(1)
+      await solutionToggle.scrollIntoViewIfNeeded()
+      await solutionToggle.click()
+      await expect(solutionToggle).toBeChecked()
+      await solutionToggle.click()
+      await explanationToggle.scrollIntoViewIfNeeded()
+      await explanationToggle.click()
+      await expect(explanationToggle).toBeChecked()
+      await explanationToggle.click()
+    } finally {
+      if (originalViewport) await page.setViewportSize(originalViewport)
+    }
   })
 
   test('Check out the evaluation view of the live quiz and its content', async ({
@@ -4699,13 +4894,59 @@ test.describe.serial('Core live-quiz workflows', () => {
     aliases.clear()
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
+    const prisma = await getPrisma()
+    const quiz = await prisma.liveQuiz.findFirstOrThrow({
+      where: {
+        name: data.liveQuiz.name,
+        ownerId: USER_ID_TEST,
+        isDeleted: false,
+      },
+      select: { id: true },
+    })
+    await prisma.temporaryLeaderboardEntry.create({
+      data: {
+        quizId: quiz.id,
+        username: 'Synthetic deletion participant',
+        score: 1,
+      },
+    })
     await loginLecturer(page)
     await page.getByTestId('activities').click()
     await page.getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.name}`).click()
     await page.getByTestId(`delete-live-quiz-${data.liveQuiz.name}`).click()
+    await expectByAssertion(
+      page.getByTestId(`confirm-deletion-responses`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`confirmation-modal-confirm`),
+      'be.disabled'
+    )
+    await page.getByTestId(`confirm-deletion-responses`).click()
+    await page.getByTestId(`confirmation-modal-cancel`).click()
+    await page.getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.name}`).click()
+    await page.getByTestId(`delete-live-quiz-${data.liveQuiz.name}`).click()
+    await expectByAssertion(
+      page.getByTestId(`confirm-deletion-responses`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`confirmation-modal-confirm`),
+      'be.disabled'
+    )
+    await expectByAssertion(
+      page.getByTestId(`confirm-deletion-leaderboard-entries`),
+      'exist'
+    )
     await confirmResponseDeletionIfAvailable(page)
     await clickIfVisible(page, 'confirm-deletion-qa-feedbacks')
     await clickIfVisible(page, 'confirm-deletion-confusion-feedbacks')
+    await expect(page.getByTestId('confirmation-modal-confirm')).toBeDisabled()
+    await page.getByTestId(`confirm-deletion-leaderboard-entries`).click()
+    await expectByAssertion(
+      page.getByTestId(`confirmation-modal-confirm`),
+      'not.be.disabled'
+    )
     await page.getByTestId(`confirmation-modal-confirm`).click()
     await page
       .getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.duplicateName}`)
@@ -4716,6 +4957,11 @@ test.describe.serial('Core live-quiz workflows', () => {
     await confirmResponseDeletionIfAvailable(page)
     await clickIfVisible(page, 'confirm-deletion-qa-feedbacks')
     await clickIfVisible(page, 'confirm-deletion-confusion-feedbacks')
+    await clickIfVisible(page, 'confirm-deletion-leaderboard-entries')
+    await expectByAssertion(
+      page.getByTestId(`confirmation-modal-confirm`),
+      'not.be.disabled'
+    )
     await page.getByTestId(`confirmation-modal-confirm`).click()
   })
 })

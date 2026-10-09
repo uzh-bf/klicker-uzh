@@ -1,5 +1,8 @@
 import { useQuery } from '@apollo/client'
-import { GetPracticeQuizEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ActivityType,
+  GetPracticeQuizEvaluationDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -38,6 +41,7 @@ function PracticeQuizEvaluation() {
       courseId={evaluation?.courseId}
       activityId={router.query.id as string}
       activityName={evaluation?.displayName ?? ''}
+      activityType={ActivityType.PracticeQuiz}
       stacks={evaluation?.results ?? []}
     />
   )
