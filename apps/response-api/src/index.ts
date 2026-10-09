@@ -1,6 +1,10 @@
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
+import {
+  type JWTPayload,
+  verifyExplicitParticipantBearer,
+  verifyJWT,
+} from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import { createServer, IncomingMessage, ServerResponse } from 'http'
 import { Redis } from 'ioredis'
@@ -37,7 +41,10 @@ function setCorsHeaders(req: IncomingMessage, res: ServerResponse) {
     res.setHeader('Access-Control-Allow-Credentials', 'true')
   }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Cookie')
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Cookie, Authorization'
+  )
 }
 
 function sendJson(
@@ -113,7 +120,21 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
 
   // Only forward participant-related cookies. If both exist, include both.
   let cookie: string | undefined
-  if (typeof req.headers['cookie'] === 'string') {
+  const authorization = req.headers['authorization']
+  if (authorization !== undefined && authorization !== '') {
+    // The PWA sends the participant credential its tab holds, which takes
+    // precedence over cookies as it does for the GraphQL API. An unusable
+    // credential is refused rather than recorded under the cookie identity
+    // or anonymously.
+    const bearer = await verifyExplicitParticipantBearer(
+      authorization,
+      process.env.APP_SECRET as string
+    )
+    if (bearer?.payload.role !== 'PARTICIPANT') {
+      return sendJson(req, res, 401, { error: 'invalid_participant_session' })
+    }
+    cookie = `participant_token=${bearer.token}`
+  } else if (typeof req.headers['cookie'] === 'string') {
     const raw = req.headers['cookie']
     const parts = raw.split(';').map((s) => s.trim())
     const participantPair = parts.find((p) =>

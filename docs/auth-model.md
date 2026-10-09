@@ -85,7 +85,10 @@ child queries. Only explicit credentials, from an LTI exchange or from account
 creation, are kept in the tab (memory, plus sessionStorage when available).
 They let a frame that refuses cookies keep its identity across navigation.
 A kept credential takes precedence over any cookie session, and server-rendered
-data from a different cookie session is not shown in its place. Tabs without
+data from a different cookie session is not shown in its place. Live-quiz
+answers carry the kept credential to the response API as a bearer. The API
+verifies it as it does for GraphQL, queues the answer for that participant in
+place of any cookie identity, and refuses an unusable credential with 401. Tabs without
 one send no bearer, so a logout in one tab reaches every cookie-authenticated
 tab on its next request. A frame holding an explicit credential keeps it until
 it relaunches or logs out itself. A page that ends the

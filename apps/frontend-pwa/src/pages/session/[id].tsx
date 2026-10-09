@@ -18,6 +18,7 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import { addApolloState, initializeApollo } from '@lib/apollo'
+import { getParticipantSessionToken } from '@lib/participantSession'
 import {
   Button,
   FormikAlphaNumericPinField,
@@ -58,9 +59,18 @@ async function handleNewResponse({
   correlationKey?: string | null
 }): // statusCode: 0 = client-side invalid input / general error; otherwise HTTP status codes 200, 208, 400, 401, 404, 500
 Promise<{ statusCode: number; responseTimestamp?: number }> {
+  // The tab's explicit credential takes precedence over cookies, so the
+  // answer is recorded for the participant the page shows.
+  const participantToken =
+    process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true'
+      ? getParticipantSessionToken()
+      : null
   let requestOptions: RequestInit = {
     method: 'POST',
     credentials: 'include',
+    ...(participantToken && {
+      headers: { Authorization: `Bearer ${participantToken}` },
+    }),
   }
 
   if (QUESTION_GROUPS.CHOICES.includes(type)) {

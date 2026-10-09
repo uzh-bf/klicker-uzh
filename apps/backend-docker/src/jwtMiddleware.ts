@@ -1,34 +1,8 @@
-import { isCookieDomainOrigin, verifyJWT } from '@klicker-uzh/util'
-
-const EXPLICIT_BEARER_PATTERN = /^Bearer\s+(\S+)$/i
-
-// Explicit bearer credentials must carry participant claims: a nonempty
-// subject, a finite future expiration, a participant role and no scope.
-async function verifyExplicitBearer(token: string) {
-  try {
-    const payload = await verifyJWT(token, process.env.APP_SECRET as string, {
-      algorithms: ['HS256'],
-    })
-
-    const expiresAt = payload.exp
-    if (
-      typeof payload.sub !== 'string' ||
-      payload.sub.trim().length === 0 ||
-      typeof expiresAt !== 'number' ||
-      !Number.isFinite(expiresAt) ||
-      expiresAt <= Date.now() / 1000 ||
-      (payload.role !== 'PARTICIPANT' &&
-        payload.role !== 'TEMPORARY_PARTICIPANT') ||
-      payload.scope !== undefined
-    ) {
-      return null
-    }
-
-    return payload
-  } catch {
-    return null
-  }
-}
+import {
+  isCookieDomainOrigin,
+  verifyExplicitParticipantBearer,
+  verifyJWT,
+} from '@klicker-uzh/util'
 
 async function jwtMiddleware(req: any, res: any, next: any) {
   let token = null
@@ -76,13 +50,11 @@ async function jwtMiddleware(req: any, res: any, next: any) {
       // usable explicit bearer fails closed instead of falling back to
       // ambient cookies.
       if (authorization !== undefined && authorization !== '') {
-        const bearerToken =
-          typeof authorization === 'string'
-            ? EXPLICIT_BEARER_PATTERN.exec(authorization.trim())?.[1]
-            : undefined
-        req.locals = {
-          user: bearerToken ? await verifyExplicitBearer(bearerToken) : null,
-        }
+        const bearer = await verifyExplicitParticipantBearer(
+          authorization,
+          process.env.APP_SECRET as string
+        )
+        req.locals = { user: bearer?.payload ?? null }
         return next()
       }
 
