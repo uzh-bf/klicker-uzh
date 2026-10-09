@@ -2,7 +2,7 @@
 type: Auth Model
 title: Auth Model
 description: Login flows for lecturers and participants, origin-based cookie selection in the backend, JWT scopes, and LTI launch rules.
-timestamp: '2026-09-19'
+timestamp: '2026-10-06'
 tags:
   - backend
   - auth
@@ -11,15 +11,33 @@ tags:
 
 # Auth Model
 
-**The non-obvious core: the backend chooses which auth cookie to read based on the request's `Origin` header.** `jwtMiddleware` (`apps/backend-docker/src/app.ts`) inspects `req.headers.origin` against the `APP_MANAGE_SUBDOMAIN`/`APP_CONTROL_SUBDOMAIN`/`APP_STUDENT_SUBDOMAIN` env vars (defaults `manage`/`control`/`pwa`):
+**The non-obvious core: request `Origin` selects the credential audience.** `jwtMiddleware` (`apps/backend-docker/src/jwtMiddleware.ts`) inspects `req.headers.origin` against the `APP_MANAGE_SUBDOMAIN`/`APP_CONTROL_SUBDOMAIN`/`APP_STUDENT_SUBDOMAIN` env vars (defaults `manage`/`control`/`pwa`):
 
-| Request origin                      | Cookie(s) tried, in order                                                       |
-| ----------------------------------- | ------------------------------------------------------------------------------- |
-| manage / control                    | `next-auth.session-token`                                                       |
-| pwa                                 | `participant_token` → `temporary_participant_token` → `next-auth.session-token` |
-| assessment (`ASSESSMENT_MODE=true`) | `next-auth.participant-session-token`                                           |
+| Request origin                      | Cookie(s) tried, in order                                                                                              |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| manage / control                    | `next-auth.session-token`                                                                                              |
+| pwa                                 | Explicit participant bearer; otherwise `participant_token` → `temporary_participant_token` → `next-auth.session-token` |
+| assessment (`ASSESSMENT_MODE=true`) | `next-auth.participant-session-token`                                                                                  |
 
-A `Bearer` authorization header is always the final fallback (assessment live-quiz mode depends on it — marked `DO NOT TOUCH` in the source). Whatever token is found is verified with `verifyJWT(token, APP_SECRET)`; failure just yields an unauthenticated context, not an error. Consequence for local setups: apps and backend must share `APP_SECRET`, and cookie domains must match the origin the backend expects — this is why the Traefik `*.klicker.com` path mirrors production more faithfully than raw localhost.
+In the regular PWA branch, a nonempty explicit Authorization header takes
+precedence over ambient cookies. It must be a valid Bearer JWT with a nonempty
+subject, future expiry, role PARTICIPANT or TEMPORARY_PARTICIPANT, and no scoped
+purpose. A malformed or invalid explicit bearer yields an unauthenticated
+context without cookie fallback. This lets a fresh participant login supersede
+an expired or different retained session. Cookie-only requests retain the
+existing selection order. The PWA branch also requires the origin host to lie
+inside `COOKIE_DOMAIN`: participant cookies are SameSite=None and CORS reflects
+any origin, so a foreign host that merely contains `pwa` must not select them.
+For the same reason, participant login issues a SameSite=None cookie only to an
+origin inside `COOKIE_DOMAIN`. Any other origin receives a Lax cookie, which a
+browser does not store from a cross-site response, so a foreign page cannot
+place a visitor in another participant's session.
+Without `COOKIE_DOMAIN` no origin qualifies, so participant cookies are never
+selected and every deployment that relies on them must set it.
+Assessment, manager/controller and missing-Origin
+selection retain the final Bearer fallback (assessment live-quiz mode depends
+on it — marked `DO NOT TOUCH` in the source). Every selected token is verified
+with `verifyJWT(token, APP_SECRET)` before entering the context. Consequence for local setups: apps and backend must share `APP_SECRET`, and cookie domains must match the origin the backend expects — this is why the Traefik `*.klicker.com` path mirrors production more faithfully than raw localhost.
 
 ## Lecturer login (`apps/auth`)
 
@@ -34,7 +52,7 @@ The NextAuth cookie domain is derived by stripping the first subdomain label fro
 
 ## Participant login (`apps/frontend-pwa`)
 
-- **Username/password** — PWA `LoginForm` → login mutation → `participant_token` cookie; the PWA Apollo client additionally sends the token as `Bearer` from sessionStorage.
+- **Username/password** — PWA `LoginForm` → login mutation → `participant_token` cookie; successful login clears any explicit tab credential and replaces the Apollo client before subsequent Self queries.
 - **Magic link** — `services/accounts.ts:sendMagicLink` signs a 15-minute JWT and emails `${APP_ORIGIN_PWA}/magicLogin?token=…`; the `magicLogin` page exchanges it via `LoginParticipantMagicLinkDocument` (`loginParticipantMagicLink`).
 - **Edu-ID for participants** — separate NextAuth config in the same auth app (`EduIDParticipantProvider`), same `EDUID_CLIENT_SECRET` gating.
 - **Temporary (anonymous)** — `temporary_participant_token` cookie, role `TEMPORARY_PARTICIPANT`.
@@ -45,6 +63,66 @@ The NextAuth cookie domain is derived by stripping the first subdomain label fro
 Two related properties of that resolver are worth knowing before changing it: it resolves by `ssoId` and then falls back to matching `Participant.email`, and both happen **before** the `allowCreate` gate — so `allowCreate: false` constrains account creation only, never account resolution. Any new launch path must therefore be verified before it reaches this function, not inside it.
 
 Note the account-duplication trap: participant emails are only unique per auth mode (`@@unique([email, isSSOAccount])` — details in [Data & Migrations](./data-and-migrations.md)).
+
+## Regular participant session recovery
+
+A fresh explicit OLAT handoff is selected before retained LTI/participant
+cookies. Competing, repeated, empty, expired or wrong-purpose credentials fail
+closed. The SSR helper verifies one LTI 1.3 context and returns either an
+established participant, verified registration context, rejected state, exchange
+failure, or no launch. It never retries another account after explicit failure.
+An unusable participant cookie without a launch is expired and reported as no
+launch, so an explicit credential the tab already holds remains selected.
+OTP and activation credentials require their own exchange; their participant
+role does not make them session tokens.
+A `participantToken` URL parameter is ignored in the regular PWA: a session
+token in a link would let one participant place another in their account.
+Edit Profile carries the verified signed LTI handoff through its registration
+redirect, so Create Account does not substitute an older or missing LTI cookie.
+
+The application boundary binds an Apollo client to the page credential before
+child queries. Only explicit credentials, from an LTI exchange or from account
+creation, are kept in the tab (memory, plus sessionStorage when available).
+They let a frame that refuses cookies keep its identity across navigation.
+A kept credential takes precedence over any cookie session, and server-rendered
+data from a different cookie session is not shown in its place. Live-quiz
+answers carry the kept credential to the response API as a bearer. The API
+verifies it as it does for GraphQL, queues the answer for that participant in
+place of any cookie identity, and refuses an unusable credential with 401. Tabs without
+one send no bearer, so a logout in one tab reaches every cookie-authenticated
+tab on its next request. A frame holding an explicit credential keeps it until
+it relaunches or logs out itself. A page that ends the
+identity, or a successful session-changing mutation, retires the client;
+retired clients ignore late results and error redirects. With both cookies and
+storage unavailable, the active document can continue; a credential-free full
+reload has no identity and requires a fresh launch. The SSR-required chatbot
+bridge cannot use browser-only memory and retains explicit login/relaunch
+recovery.
+
+Successful logout or account deletion clears memory, storage and the client
+cache. False/error responses retain the session. Account-deletion cookies expire
+only after the database transaction succeeds. Direct password, magic-link and
+activation success clear prior bearer state before cookie-authenticated queries.
+
+Registered-session cookies use thirteen-day retention, within the fourteen-day
+signed session. Express accepts milliseconds; nookies/wire Max-Age uses seconds.
+Direct and SSR issuance use the existing domain and root path, HttpOnly,
+unpartitioned, Secure+SameSite=None for secure deployments and SameSite=Lax
+for local HTTP. Direct issuance to an origin outside `COOKIE_DOMAIN` uses Lax,
+as described above. SSR issuance cannot apply that origin rule: a navigation
+into an LMS frame carries no Origin header, yet the frame needs SameSite=None
+to store the cookie. SSR issues a participant cookie only after exchanging a
+verified signed LTI handoff. Known explicitly partitioned cookies expire before canonical
+issuance, in the current partition only. Preserve other Set-Cookie headers;
+nookies 2.5.2 drops unknown Partitioned attributes when reserializing headers,
+so its legacy expiration must be inserted after its serialization work. Lecturer,
+temporary-participant and assessment issuance retain their established settings.
+Explicit participant logout continues expiring the assessment participant cookie.
+
+[ADR 0044](./adr/0044-regular-participant-session-recovery.md) records why explicit
+participant identity takes precedence and why longer handoff lifetimes are not
+used as recovery. Synthetic verification does not establish Firefox-specific
+causality for a reported OLAT incident.
 
 ## Participant account completion
 

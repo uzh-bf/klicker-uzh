@@ -38,7 +38,8 @@ function Activation() {
         if (result?.data?.activateParticipantAccount) {
           clearTimeout(loginTimeout.current)
           clearTimeout(redirectionTimeout.current)
-          await fetchSelf()
+          if (process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true')
+            await fetchSelf()
           router.push('/')
         } else {
           toast({

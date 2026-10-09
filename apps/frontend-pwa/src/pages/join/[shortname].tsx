@@ -196,14 +196,17 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
-      ctx,
-    })
+    const { participantToken, cookiesAvailable, sessionState, tokenSource } =
+      await getParticipantToken({
+        apolloClient,
+        ctx,
+      })
 
     if (participantToken) {
       return {
         props: {
+          sessionState,
+          tokenSource,
           participantToken,
           cookiesAvailable,
           shortname: ctx.params.shortname,
@@ -215,6 +218,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     return addApolloState(apolloClient, {
       props: {
+        sessionState,
+        tokenSource,
         shortname: ctx.params.shortname,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,

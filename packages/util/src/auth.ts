@@ -1,3 +1,5 @@
+import { type JWTPayload, verifyJWT } from './jwt.js'
+
 /**
  * Parse a Cookie header string into a key-value map.
  * Decodes URL-encoded values, keeps raw value if decoding fails.
@@ -20,6 +22,63 @@ export function parseCookiesHeader(
     }
   })
   return map
+}
+
+const EXPLICIT_BEARER_PATTERN = /^Bearer\s+(\S+)$/i
+
+/**
+ * Verify an `Authorization: Bearer <token>` value as an explicit participant
+ * credential. It must carry participant claims: a nonempty subject, a finite
+ * future expiration, a participant role and no scope. Returns null for any
+ * other value, so callers can fail closed instead of falling back to cookies.
+ */
+export async function verifyExplicitParticipantBearer(
+  authorization: unknown,
+  secret: string
+): Promise<{ token: string; payload: JWTPayload } | null> {
+  const token =
+    typeof authorization === 'string'
+      ? EXPLICIT_BEARER_PATTERN.exec(authorization.trim())?.[1]
+      : undefined
+  if (!token) return null
+  try {
+    const payload = await verifyJWT(token, secret, { algorithms: ['HS256'] })
+
+    const expiresAt = payload.exp
+    if (
+      typeof payload.sub !== 'string' ||
+      payload.sub.trim().length === 0 ||
+      typeof expiresAt !== 'number' ||
+      !Number.isFinite(expiresAt) ||
+      expiresAt <= Date.now() / 1000 ||
+      (payload.role !== 'PARTICIPANT' &&
+        payload.role !== 'TEMPORARY_PARTICIPANT') ||
+      payload.scope !== undefined
+    ) {
+      return null
+    }
+
+    return { token, payload }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Whether a request origin's host lies inside the configured cookie domain.
+ * A foreign host that merely contains a subdomain name does not qualify, and
+ * without a configured cookie domain no origin does.
+ */
+export function isCookieDomainOrigin(origin: unknown): boolean {
+  const cookieDomain = process.env.COOKIE_DOMAIN?.replace(/^\./, '')
+  if (!cookieDomain) return false
+  if (typeof origin !== 'string') return false
+  try {
+    const { hostname } = new URL(origin)
+    return hostname === cookieDomain || hostname.endsWith(`.${cookieDomain}`)
+  } catch {
+    return false
+  }
 }
 
 /**

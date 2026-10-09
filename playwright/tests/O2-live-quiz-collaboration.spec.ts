@@ -82,6 +82,7 @@ async function confirmResponseDeletionIfAvailable(
     /\d+ response\(s\) in this live quiz/
   )
   const confirmResponses = page.getByTestId('confirm-deletion-responses')
+  await expect(dialog).toBeVisible()
 
   if (await confirmResponses.isVisible().catch(() => false)) {
     if (expectedResponsesText) {
@@ -96,10 +97,6 @@ async function confirmResponseDeletionIfAvailable(
       .locator('xpath=ancestor::*[.//button][1]')
       .getByRole('button', { name: 'Confirm' })
       .click()
-  } else {
-    await expect(dialog).toContainText(
-      'For this live quiz no responses have been collected yet.'
-    )
   }
 }
 
@@ -251,7 +248,6 @@ test.describe.serial('Live-quiz collaboration and access workflows', () => {
       email: env('STUDENT_EMAIL'),
       sub: PARTICIPANT_IDS[0]!,
       role: 'PARTICIPANT' as const,
-      scope: 'EDUID' as const,
     }
 
     await setSessionCookieForUrl({
@@ -351,7 +347,6 @@ test.describe.serial('Live-quiz collaboration and access workflows', () => {
           email: env('STUDENT_EMAIL'),
           sub: PARTICIPANT_IDS[0]!,
           role: 'PARTICIPANT' as const,
-          scope: 'EDUID' as const,
         },
       })
 

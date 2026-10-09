@@ -68,6 +68,10 @@
       "profile": "pwa",
       "runtime": "production-webpack",
       "specs": ["A-account-lti.spec.ts"]
+    },
+    {
+      "profile": "live-quiz",
+      "specs": ["PA-olat-session-recovery.spec.ts"]
     }
   ]
 }

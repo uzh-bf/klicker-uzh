@@ -10,13 +10,14 @@ import { config } from '@fortawesome/fontawesome-svg-core'
 import '@fortawesome/fontawesome-svg-core/styles.css'
 import { getMessageFallback, onError, routing } from '@klicker-uzh/i18n'
 import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useApollo } from '@lib/apollo'
 import { init } from '@socialgouv/matomo-next'
 import { Toaster } from '@uzh-bf/design-system'
-import { Locale, NextIntlClientProvider } from 'next-intl'
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
-import { useEffect } from 'react'
+import { Locale, NextIntlClientProvider } from 'next-intl'
+import { useEffect, useMemo } from 'react'
 
 import 'katex/dist/katex.min.css'
 import '../globals.css'
@@ -27,9 +28,26 @@ const MATOMO_URL = process.env.NEXT_PUBLIC_MATOMO_URL
 const MATOMO_SITE_ID = process.env.NEXT_PUBLIC_MATOMO_SITE_ID
 
 function App({ Component, pageProps }: AppProps) {
-  const { locale } = useRouter()
+  const router = useRouter()
+  const { locale } = router
 
-  const apolloClient = useApollo(pageProps)
+  const sessionProps = useMemo(
+    () => ({
+      ...pageProps,
+      resetParticipantSession:
+        router.pathname === '/serverError' &&
+        router.query.freshLaunch === 'true',
+    }),
+    [pageProps, router.pathname, router.query.freshLaunch]
+  )
+  const apolloClient = useApollo(sessionProps)
+  const recovering =
+    process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
+    (pageProps.sessionState === 'rejected' ||
+      pageProps.sessionState === 'exchange_unavailable')
+  useEffect(() => {
+    if (recovering) void router.replace('/serverError?freshLaunch=true')
+  }, [recovering, router])
 
   useEffect(() => {
     if (MATOMO_URL && MATOMO_SITE_ID) {
@@ -102,7 +120,7 @@ function App({ Component, pageProps }: AppProps) {
       >
         <ApolloProvider client={apolloClient}>
           <Toaster closeButton position="top-right" />
-          <Component {...pageProps} />
+          {recovering ? <Loader /> : <Component {...pageProps} />}
         </ApolloProvider>
       </NextIntlClientProvider>
       <style>{`

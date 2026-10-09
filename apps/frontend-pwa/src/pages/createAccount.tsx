@@ -1,38 +1,34 @@
-import {
-  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
-  verifyJWT,
-} from '@klicker-uzh/util'
-import { toast } from '@uzh-bf/design-system'
-import generatePassword from 'generate-password'
-import { GetServerSidePropsContext } from 'next'
-import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/router'
-import nookies from 'nookies'
-
 import { useMutation } from '@apollo/client'
-import Layout from '@components/Layout'
 import CreateAccountForm from '@components/forms/CreateAccountForm'
+import Layout from '@components/Layout'
 import { CreateParticipantAccountWithDataUseDocument } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
-import useParticipantToken from '@lib/useParticipantToken'
+import { setParticipantSessionToken } from '@lib/participantSession'
+import { toast } from '@uzh-bf/design-system'
+import generatePassword from 'generate-password'
+import type { GetServerSidePropsContext } from 'next'
+import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
+import nookies from 'nookies'
+import { useEffect } from 'react'
 
 interface Props {
+  participantToken?: string
   signedLtiData?: string
   ssoId?: string
   email?: string
   username: string
-  participantToken?: string
-  cookiesAvailable?: boolean
   dataUseDisclosureVersion: string
 }
 
 function CreateAccount({
+  participantToken: linkedParticipantToken,
   signedLtiData,
   email,
   username,
-  participantToken,
-  cookiesAvailable,
   dataUseDisclosureVersion,
 }: Props) {
   const t = useTranslations()
@@ -41,11 +37,15 @@ function CreateAccount({
     CreateParticipantAccountWithDataUseDocument
   )
 
-  useParticipantToken({
-    participantToken,
-    cookiesAvailable,
-    redirectTo: '/editProfile',
-  })
+  useEffect(() => {
+    if (!linkedParticipantToken) return
+    // A launch for an already linked account continues to the profile. The
+    // frame may refuse the exchanged cookie, so the tab keeps the credential.
+    setParticipantSessionToken(linkedParticipantToken)
+    void router.replace('/editProfile')
+  }, [linkedParticipantToken, router])
+
+  if (linkedParticipantToken) return <Loader />
 
   return (
     <Layout displayName={t('pwa.createAccount.signup.submit')}>
@@ -75,16 +75,10 @@ function CreateAccount({
           const participantToken = createResult?.participantToken ?? null
 
           if (participantToken) {
-            await router.replace(
-              `/editProfile?newAccount=true&participantToken=${participantToken}`,
-              {
-                pathname: '/editProfile',
-                query: {
-                  newAccount: true,
-                  participantToken,
-                },
-              }
-            )
+            // The account cookie may be refused inside an LMS frame, so this
+            // tab keeps the new credential instead of passing it in the URL.
+            setParticipantSessionToken(participantToken)
+            await router.replace('/editProfile?newAccount=true')
             return
           }
 
@@ -124,22 +118,25 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   try {
     const { query } = ctx
     const apolloClient = initializeApollo()
-    const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
-      ctx,
-    })
+    const { participantToken, sessionState, signedLtiData, tokenSource } =
+      await getParticipantToken({
+        apolloClient,
+        ctx,
+      })
+
+    if (participantToken && tokenSource === 'explicit') {
+      return {
+        props: {
+          participantToken,
+          sessionState,
+          tokenSource,
+          messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+            .default,
+        },
+      }
+    }
 
     if (participantToken) {
-      if (!cookiesAvailable) {
-        return {
-          redirect: {
-            destination: `${ctx.locale ? `/${ctx.locale}` : ''}/editProfile?participantToken=${participantToken}`,
-            permanent: false,
-            query: { participantToken },
-          },
-        }
-      }
-
       return {
         redirect: {
           destination: `${ctx.locale ? `/${ctx.locale}` : ''}/editProfile`,
@@ -148,33 +145,23 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    const cookies = nookies.get(ctx)
-    const signedLtiData = { token: '', ssoId: '', email: '' }
-
-    // LTI 1.3 authentication flow
-    if (cookies['lti-token'] || query.jwt) {
-      const token = cookies['lti-token'] ?? query.jwt
-
-      const parsedToken = (await verifyJWT(
-        token,
-        process.env.APP_SECRET as string
-      )) as {
-        sub: string
-        email: string
-        scope: string
-      }
-
-      if (parsedToken.scope === 'LTI1.3') {
-        signedLtiData.token = token
-        signedLtiData.ssoId = parsedToken.sub
-        signedLtiData.email = parsedToken.email
+    if (
+      sessionState === 'rejected' ||
+      sessionState === 'exchange_unavailable'
+    ) {
+      return {
+        redirect: {
+          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/serverError?freshLaunch=true`,
+          permanent: false,
+        },
       }
     }
 
-    if (!query?.disableLti && signedLtiData.token !== '') {
+    if (!query?.disableLti && signedLtiData) {
       return addApolloState(apolloClient, {
         props: {
           signedLtiData: signedLtiData.token,
+          sessionState,
           ssoId: signedLtiData.ssoId,
           email: signedLtiData.email,
           dataUseDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
@@ -192,6 +179,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     return {
       props: {
+        sessionState,
         dataUseDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
         username: generatePassword.generate({
           length: 10,

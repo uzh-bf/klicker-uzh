@@ -1338,6 +1338,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       createProfileFailed:
         'Unfortunately, your account could not be created or linked. Please check your entries and try again.',
       editProfileSuccess: 'Your profile has been updated successfully.',
+      sessionError: 'Your profile could not be loaded. Please try again.',
+      sessionErrorRetry: 'Try again',
+      sessionRecovery:
+        'You are currently not signed in, so your profile is not available. Sign in to manage your profile, or reopen this Klicker activity from OLAT or your learning platform to start a fresh session.',
+      sessionRecoveryEmbedded:
+        'This page is embedded in your learning platform. Start a fresh session by reopening the Klicker activity in OLAT or your learning platform.',
       dataUseTitle: 'Research and learning analytics',
       dataUseDescription:
         'These choices apply to your entire KlickerUZH account. You can change them at any time.',
@@ -1404,6 +1410,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       serverSideError:
         'An unexpected error occurred while processing your request. Please reset your cookies and try again. If the problem persists, contact your course instructor.',
       tryAgain: 'Try Again',
+      freshLaunchRecovery:
+        'Your session could not be started because the launch from your learning platform is invalid or has expired. To start a fresh session, reopen this Klicker activity from OLAT or your learning platform.',
+      freshLaunchRecoveryEmbedded:
+        'This page is embedded in your learning platform; a fresh session has to be started from there.',
     },
     avatar: {
       hair: 'Hair',

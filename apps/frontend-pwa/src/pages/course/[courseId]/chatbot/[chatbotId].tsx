@@ -34,7 +34,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     const embedded = parseEmbedParam(ctx.query.embed)
     const handoffParameters = buildChatbotRedirectParams(ctx.query, embedded)
 
-    const { participantToken } = await getParticipantToken({
+    const { participantToken, sessionState } = await getParticipantToken({
       apolloClient,
       courseId,
       ctx,
@@ -42,6 +42,18 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     const localePrefix = ctx.locale ? `/${ctx.locale}` : ''
     const coursePath = `${localePrefix}/course/${courseId}`
+
+    if (
+      sessionState === 'rejected' ||
+      sessionState === 'exchange_unavailable'
+    ) {
+      return {
+        redirect: {
+          destination: `${localePrefix}/serverError?freshLaunch=true`,
+          permanent: false,
+        },
+      }
+    }
 
     if (!participantToken) {
       const handoffQuery = handoffParameters.toString()

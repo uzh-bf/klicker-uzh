@@ -15,6 +15,8 @@ export default function useParticipantToken({
   const router = useRouter()
 
   useEffect(() => {
+    // Regular clients carry the page's credential before their first query.
+    if (process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true') return
     if (typeof participantToken === 'string') {
       if (!cookiesAvailable) {
         if (!sessionStorage.getItem('participant_token')) {
