@@ -1622,7 +1622,10 @@ function ChatbotAuthoring({
                 className="space-y-5"
                 data-cy="chatbot-setup-review"
               >
-                <div>
+                {/* On the single draft page the step headings, the student-information
+                    step and the optional behavior section already show these, so the
+                    review keeps only the basics and the request. */}
+                <div hidden={embedded}>
                   <H4>{t('manage.resources.chatbotSetupReviewTitle')}</H4>
                   <p className="mt-1 text-sm text-gray-600">
                     {t('manage.resources.chatbotSetupReviewDescriptionLong')}
@@ -1630,6 +1633,7 @@ function ChatbotAuthoring({
                 </div>
 
                 <div
+                  hidden={embedded}
                   className="rounded-md border border-gray-200 bg-gray-50 p-4"
                   data-cy="chatbot-review-modes"
                 >
@@ -1664,7 +1668,10 @@ function ChatbotAuthoring({
                   </dl>
                 </div>
 
-                <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
+                <div
+                  hidden={embedded}
+                  className="rounded-md border border-gray-200 bg-gray-50 p-4"
+                >
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <h5 className="font-semibold text-gray-900">
                       {t('manage.resources.chatbotFraming')}
@@ -1689,6 +1696,7 @@ function ChatbotAuthoring({
                 </div>
 
                 <div
+                  hidden={embedded}
                   className="rounded-md border border-gray-200 bg-gray-50 p-4"
                   data-cy="chatbot-review-custom-modes"
                 >
@@ -1792,7 +1800,10 @@ function ChatbotAuthoring({
                   </dl>
                 </div>
 
-                <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
+                <div
+                  hidden={embedded}
+                  className="rounded-md border border-gray-200 bg-gray-50 p-4"
+                >
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <h5 className="font-semibold text-gray-900">
                       {t('manage.resources.chatbotSetupDisclaimerTitle')}
