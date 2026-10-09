@@ -661,6 +661,9 @@ function ChatbotAuthoring({
   publishingAuthorized,
   publishingAuthorizationLoading,
   publishingAuthorizationError,
+  embedded = false,
+  siblingDirty = false,
+  siblingPending = false,
   onNavigateSection,
   onNavigationStateChange,
 }: {
@@ -668,6 +671,12 @@ function ChatbotAuthoring({
   advancedManagement: boolean
   step: ChatbotSetupStep
   sections?: readonly ChatbotSetupStep[]
+  // The host page supplies the section titles and keeps the sections open, so
+  // the headings and accordion triggers are omitted.
+  embedded?: boolean
+  // Unsaved or pending edits in other editors on the same page.
+  siblingDirty?: boolean
+  siblingPending?: boolean
   publishingAuthorized: boolean
   publishingAuthorizationLoading: boolean
   publishingAuthorizationError: boolean
@@ -739,11 +748,13 @@ function ChatbotAuthoring({
   ]
   const published = chatbot.status === ChatbotStatus.Published
   const setupDirty =
+    siblingDirty ||
     metadataNavigationState.dirty ||
     modeNavigationState.dirty ||
     customModeNavigationState.dirty ||
     disclaimerNavigationState.dirty
   const setupPending =
+    siblingPending ||
     metadataNavigationState.pending ||
     modeNavigationState.pending ||
     customModeNavigationState.pending ||
@@ -812,7 +823,7 @@ function ChatbotAuthoring({
 
   return (
     <div className="space-y-6" data-cy="chatbot-authoring">
-      {visibleSections.length === 1 ? (
+      {visibleSections.length === 1 && !embedded ? (
         <div data-cy="chatbot-setup">
           <H4>
             {visibleSections.length === 1 && visibleSections[0] === 'modes'
@@ -853,7 +864,7 @@ function ChatbotAuthoring({
             data-cy="chatbot-setup-item-basics"
           >
             <AccordionTrigger
-              className="py-3 hover:no-underline"
+              className={embedded ? 'hidden' : 'py-3 hover:no-underline'}
               data-cy="chatbot-setup-trigger-basics"
             >
               <span className="flex flex-col gap-1">
@@ -1042,7 +1053,7 @@ function ChatbotAuthoring({
             data-cy="chatbot-setup-item-modes"
           >
             <AccordionTrigger
-              className="py-3 hover:no-underline"
+              className={embedded ? 'hidden' : 'py-3 hover:no-underline'}
               data-cy="chatbot-setup-trigger-modes"
             >
               <span className="flex flex-col gap-1">
@@ -1345,7 +1356,7 @@ function ChatbotAuthoring({
             data-cy="chatbot-setup-item-disclaimer"
           >
             <AccordionTrigger
-              className="py-3 hover:no-underline"
+              className={embedded ? 'hidden' : 'py-3 hover:no-underline'}
               data-cy="chatbot-setup-trigger-disclaimer"
             >
               <span className="flex flex-col gap-1">
@@ -1595,7 +1606,7 @@ function ChatbotAuthoring({
             data-cy="chatbot-setup-item-review"
           >
             <AccordionTrigger
-              className="py-3 hover:no-underline"
+              className={embedded ? 'hidden' : 'py-3 hover:no-underline'}
               data-cy="chatbot-setup-trigger-review"
             >
               <span className="flex flex-col gap-1">

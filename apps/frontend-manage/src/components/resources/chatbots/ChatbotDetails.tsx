@@ -10,6 +10,7 @@ import {
   QGetCatalystRequestAccessDocument,
   QGetChatbotsInfoWithKnowledgeBasesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Accordion,
@@ -200,8 +201,15 @@ function ChatbotDetails({
   const t = useTranslations()
   // Usage holds operational quota settings that only advanced management
   // exposes; older links to it fall back to the overview.
-  const view: ChatbotWorkspaceView =
-    !advancedManagement && requestedView === 'usage'
+  // A draft or rejected chatbot is set up on one page without tabs, so it has
+  // no workspace view.
+  const singlePageSetup =
+    !advancedManagement &&
+    (chatbot?.status === ChatbotStatus.Draft ||
+      chatbot?.status === ChatbotStatus.Rejected)
+  const view: ChatbotWorkspaceView | undefined = singlePageSetup
+    ? undefined
+    : !advancedManagement && requestedView === 'usage'
       ? 'overview'
       : requestedView
   const graphRetrievalAvailable = useFeatureFlag('chatbot-graphrag')
@@ -225,6 +233,15 @@ function ChatbotDetails({
     {}
   )
   const [authoringNavigationState, setAuthoringNavigationState] =
+    useState<ChatbotNavigationState>({ dirty: false, pending: false })
+  const [editingBasics, setEditingBasics] = useState(false)
+  const [editingDisclaimer, setEditingDisclaimer] = useState(false)
+  const [behaviorOpen, setBehaviorOpen] = useState(false)
+  const [basicsNavigationState, setBasicsNavigationState] =
+    useState<ChatbotNavigationState>({ dirty: false, pending: false })
+  const [disclaimerNavigationState, setDisclaimerNavigationState] =
+    useState<ChatbotNavigationState>({ dirty: false, pending: false })
+  const [behaviorNavigationState, setBehaviorNavigationState] =
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
   // Staged through the chatbot revision and promoted on approval.
   const [knowledgeGraphPolicy, setKnowledgeGraphPolicy] = useState<{
@@ -390,6 +407,22 @@ function ChatbotDetails({
   }, [modelSettingsDirty])
 
   const viewNavigationState = useMemo<ChatbotNavigationState>(() => {
+    if (view === undefined) {
+      const editorStates = [
+        basicsNavigationState,
+        disclaimerNavigationState,
+        behaviorNavigationState,
+      ]
+      return {
+        dirty:
+          authoringNavigationState.dirty ||
+          editorStates.some(({ dirty }) => dirty),
+        pending:
+          authoringNavigationState.pending ||
+          editorStates.some(({ pending }) => pending),
+      }
+    }
+
     if (view === 'behavior') {
       return {
         dirty:
@@ -411,6 +444,9 @@ function ChatbotDetails({
     return { dirty: false, pending: false }
   }, [
     authoringNavigationState,
+    basicsNavigationState,
+    behaviorNavigationState,
+    disclaimerNavigationState,
     isSaving,
     knowledgeGraphDirty,
     modelSettingsDirty,
@@ -808,12 +844,196 @@ function ChatbotDetails({
           </div>
         )}
 
-        <ChatbotWorkspaceNavigation
-          view={view}
-          step={step}
-          showUsage={advancedManagement}
-          onNavigate={onNavigate}
-        />
+        {view ? (
+          <ChatbotWorkspaceNavigation
+            view={view}
+            step={step}
+            showUsage={advancedManagement}
+            onNavigate={onNavigate}
+          />
+        ) : null}
+
+        {singlePageSetup ? (
+          <div className="space-y-6" data-cy="chatbot-draft-setup">
+            <section
+              className="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+              data-cy="chatbot-setup-step-materials"
+            >
+              <div>
+                <H4>
+                  {`1. ${t('manage.resources.chatbotDraftStepMaterials')}`}
+                </H4>
+                <p className="text-sm text-gray-600">
+                  {t('manage.resources.chatbotDraftStepMaterialsDescription')}
+                </p>
+              </div>
+              <ChatbotKnowledgeBaseSetup
+                key={chatbot.id}
+                chatbotId={chatbot.id}
+                chatbotStatus={chatbot.status}
+                courseIds={chatbot.courses?.map(({ id }) => id) ?? []}
+                connectedKnowledgeBase={enabledKnowledgeBases[0]}
+                connectOnSelect
+              />
+              {editingBasics ? (
+                <ChatbotAuthoring
+                  key={`${chatbot.id}:basics`}
+                  chatbot={chatbot}
+                  advancedManagement={advancedManagement}
+                  step="basics"
+                  sections={['basics']}
+                  embedded
+                  publishingAuthorized={publishingAuthorized}
+                  publishingAuthorizationLoading={
+                    publishingAuthorizationLoading
+                  }
+                  publishingAuthorizationError={publishingAuthorizationError}
+                  onNavigationStateChange={setBasicsNavigationState}
+                />
+              ) : null}
+            </section>
+
+            <section
+              className="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+              data-cy="chatbot-setup-step-students"
+            >
+              <div>
+                <H4>
+                  {`2. ${t('manage.resources.chatbotDraftStepStudents')}`}
+                </H4>
+                <p className="text-sm text-gray-600">
+                  {t('manage.resources.chatbotDraftStepStudentsDescription')}
+                </p>
+              </div>
+              {editingDisclaimer ? (
+                <ChatbotAuthoring
+                  key={`${chatbot.id}:disclaimer`}
+                  chatbot={chatbot}
+                  advancedManagement={advancedManagement}
+                  step="disclaimer"
+                  sections={['disclaimer']}
+                  embedded
+                  publishingAuthorized={publishingAuthorized}
+                  publishingAuthorizationLoading={
+                    publishingAuthorizationLoading
+                  }
+                  publishingAuthorizationError={publishingAuthorizationError}
+                  onNavigationStateChange={setDisclaimerNavigationState}
+                />
+              ) : (
+                <div
+                  className="space-y-3 rounded-md border border-gray-200 bg-gray-50 p-4"
+                  data-cy="chatbot-setup-students-summary"
+                >
+                  <h6 className="font-medium text-gray-900">
+                    {getChatbotRevisionValues(chatbot).disclaimerTitle ||
+                      t('manage.resources.chatbotDisclaimerTitlePlaceholder')}
+                  </h6>
+                  <div className="text-sm text-gray-700">
+                    {getChatbotRevisionValues(chatbot).disclaimerIntroText ? (
+                      <Markdown
+                        content={
+                          getChatbotRevisionValues(chatbot)
+                            .disclaimerIntroText ?? ''
+                        }
+                        withProse
+                        className={{ root: 'prose prose-sm max-w-none' }}
+                      />
+                    ) : (
+                      t('manage.resources.chatbotDisclaimerIntroPlaceholder')
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={() => setEditingDisclaimer(true)}
+                    data={{ cy: 'chatbot-setup-students-edit' }}
+                  >
+                    <Button.Label>
+                      {t('manage.resources.chatbotSetupEdit')}
+                    </Button.Label>
+                  </Button>
+                </div>
+              )}
+            </section>
+
+            <section
+              className="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+              data-cy="chatbot-setup-step-publication"
+            >
+              <div>
+                <H4>
+                  {`3. ${t('manage.resources.chatbotDraftStepPublication')}`}
+                </H4>
+                <p className="text-sm text-gray-600">
+                  {t('manage.resources.chatbotDraftStepPublicationDescription')}
+                </p>
+              </div>
+              <ChatbotAuthoring
+                key={`${chatbot.id}:publication`}
+                chatbot={chatbot}
+                advancedManagement={advancedManagement}
+                step="review"
+                sections={['review']}
+                embedded
+                siblingDirty={
+                  basicsNavigationState.dirty ||
+                  disclaimerNavigationState.dirty ||
+                  behaviorNavigationState.dirty
+                }
+                siblingPending={
+                  basicsNavigationState.pending ||
+                  disclaimerNavigationState.pending ||
+                  behaviorNavigationState.pending
+                }
+                publishingAuthorized={publishingAuthorized}
+                publishingAuthorizationLoading={publishingAuthorizationLoading}
+                publishingAuthorizationError={publishingAuthorizationError}
+                onNavigateSection={(section) => {
+                  if (section === 'basics') setEditingBasics(true)
+                  if (section === 'disclaimer') setEditingDisclaimer(true)
+                  if (section === 'modes') setBehaviorOpen(true)
+                }}
+                onNavigationStateChange={setAuthoringNavigationState}
+              />
+            </section>
+
+            <section
+              className="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+              data-cy="chatbot-setup-behavior"
+            >
+              <button
+                type="button"
+                aria-expanded={behaviorOpen}
+                className="flex w-full flex-col items-start gap-1 text-left"
+                data-cy="chatbot-setup-behavior-toggle"
+                onClick={() => setBehaviorOpen((open) => !open)}
+              >
+                <span className="font-medium text-gray-900">
+                  {t('manage.resources.chatbotDraftBehaviorTitle')}
+                </span>
+                <span className="text-sm text-gray-600">
+                  {t('manage.resources.chatbotDraftBehaviorDescription')}
+                </span>
+              </button>
+              <div hidden={!behaviorOpen}>
+                <ChatbotAuthoring
+                  key={`${chatbot.id}:behavior`}
+                  chatbot={chatbot}
+                  advancedManagement={advancedManagement}
+                  step="modes"
+                  sections={['modes']}
+                  embedded
+                  publishingAuthorized={publishingAuthorized}
+                  publishingAuthorizationLoading={
+                    publishingAuthorizationLoading
+                  }
+                  publishingAuthorizationError={publishingAuthorizationError}
+                  onNavigationStateChange={setBehaviorNavigationState}
+                />
+              </div>
+            </section>
+          </div>
+        ) : null}
 
         {view === 'overview' ? (
           <section className="space-y-6" data-cy="chatbot-overview">

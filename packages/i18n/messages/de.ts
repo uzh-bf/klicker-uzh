@@ -5122,6 +5122,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotWorkspaceNavigation: 'Chatbot-Arbeitsbereich',
       chatbotWorkspaceOverview: 'Übersicht',
       chatbotWorkspaceKnowledge: 'Wissensbasis',
+      chatbotDraftStepMaterials: 'Materialien',
+      chatbotDraftStepMaterialsDescription:
+        'Wählen Sie die Wissensbasis, aus der der Chatbot antwortet. Sie wird sofort verbunden, sobald Sie sie auswählen.',
+      chatbotDraftStepStudents: 'Information für Studierende',
+      chatbotDraftStepStudentsDescription:
+        'Studierende lesen diesen Text, bevor sie den Chat starten. Wir haben einen Vorschlag für Sie vorbereitet.',
+      chatbotDraftStepPublication: 'Veröffentlichung beantragen',
+      chatbotDraftStepPublicationDescription:
+        'Prüfen Sie die vorausgefüllten Angaben und senden Sie die Anfrage zur Prüfung.',
+      chatbotDraftBehaviorTitle: 'Lernmodi und Rahmung (optional)',
+      chatbotDraftBehaviorDescription:
+        'Die Standardwerte passen für die meisten Kurse. Passen Sie sie nur bei Bedarf an.',
       chatbotWorkspaceBehavior: 'Verhalten',
       chatbotWorkspaceDisclaimer: 'Disclaimer',
       chatbotWorkspaceSetup: 'Einrichtung',
