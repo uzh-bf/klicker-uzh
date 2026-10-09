@@ -424,3 +424,43 @@ printed-page-label consumer gap. Canonical preparation retains both identities;
 existing physical-page citation navigation is intact. The adoption roadmap now
 tracks printed-label citation extraction/display before widening. This source
 package does not add a new question citation API.
+
+
+October 10 qualification hold: final source heads are ingestion
+`ea4a88a0911fb97eb83b7acf1306a08cbe2ce193`, KG
+`efc3e9e612c01af784e2344a9ed10b9c03ec18ec` and Klicker
+`5e9207a562538a9903aba4ad1e2ddad9e638e018`. Ingestion
+[pipeline 680298](https://gitlab.uzh.ch/ai-infrastructure/services/data-ingestion/-/pipelines/680298)
+and KG
+[pipeline 680295](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/pipelines/680295)
+pass at those exact heads. Klicker's full local production build and required
+hooks pass at the source head; hosted CI remains pending. The task Devsy runtime
+`rs-graphrag-source-artifact-plan` is stopped with zero exact routes; data and
+worktree are retained.
+
+The permitted final-review correction pass independently confirms the byte cap,
+paired raw metadata/canonical descriptor, opt-in reader and pending success-path
+reservation fixes. Its response fails the canonical review schema and is not a
+passing gate. Main verified its new consequential finding directly: a failed
+BLOB replacement keeps the new `blobName`, but reconciliation and the signed
+webhook copy the old serving version's `sizeBytes` and `mimeType`. Manual retry
+validates the new blob against that old metadata and can fail; storage accounting
+can understate the retained blob. The source draft is not merge-ready.
+
+Next bounded correction: update source metadata only when the serving version
+matches the desired version in both reconciliation paths. Preserve desired BLOB
+metadata on failure and pending operations. Extend the existing reconciliation
+and real-PostgreSQL signed-webhook regressions with distinct old/new byte counts
+and MIME types; verify retry uses the retained blob's matching tuple. No new
+schema, provider, endpoint or live operation is needed. Retain conservative URL
+reservations until current activation; avoid borrowing old serving metadata for
+a different desired input. Then run affected checks, source publication and one
+focused independent final qualification on the corrected complete package.
+
+This is a second substantive correction cycle. The package pauses at the workflow's
+scope/risk reassessment boundary; the independent review correction budget is
+spent. Existing source, data, cost and rollout boundaries remain unchanged.
+Main owns this correction. No merge, deployment, live refresh, graph rebuild,
+activation or paid evaluation is authorized by this checkpoint. The goal remains
+active and unachieved. Raw review, validation failure and verified disposition live
+in ignored `project/_local/reviews/2026-10-10-canonical-integrated-final-review.md`.

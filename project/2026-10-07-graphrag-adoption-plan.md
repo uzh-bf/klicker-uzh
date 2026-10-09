@@ -4,10 +4,15 @@ October 10: canonical input source packages are now drafted in
 [ingestion !229](https://gitlab.uzh.ch/ai-infrastructure/services/data-ingestion/-/merge_requests/229),
 [KG !36](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/36)
 and [Klicker #6460](https://github.com/uzh-bf/klicker-uzh/pull/6460).
-The [source plan](2026-10-09-graphrag-source-artifact-plan.md) records verification
-and remaining independent review/CI. Next comes source qualification, then
-separately authorized reader-first deployment and finite refresh/build acceptance.
-Live GraphRAG quality and student-map acceptance remain separate receipts.
+The [source plan](2026-10-09-graphrag-source-artifact-plan.md) records the current
+qualification hold. Ingestion and KG exact-head CI pass. Klicker still needs a
+failed BLOB replacement correction: retain the new blob's size/MIME for retries
+and quota accounting instead of copying the old serving version's metadata.
+The final review correction budget is spent, so the next source correction and
+focused qualification require scope/risk reassessment before execution.
+Reader-first deployment and finite refresh/build acceptance follow source
+qualification. Live GraphRAG quality and student-map acceptance remain separate
+receipts.
 
 ## Current state and next decision
 
