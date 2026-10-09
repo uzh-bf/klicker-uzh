@@ -266,11 +266,11 @@ chat:
     # GPT-6 Luna is the global automatic-model primary and the
     # participant-credit fallback, so chatbots using automatic model selection
     # use it by default; explicit model selections remain respected.
-    # "Auto" routes through the LiteLLM auto-router, which self-selects the
-    # tier per request (SIMPLE=gpt-6-luna-high, MEDIUM=gpt-6-luna-xhigh,
-    # COMPLEX=gpt-6.1-sol-high, REASONING=gpt-6.1-sol-medium). Staging runs
-    # auto-router-v2 (Sol for MEDIUM and above) for comparison; production
-    # stays on v1 until that comparison justifies v2's cost. Auto is a BASE
+    # "Auto" routes through the LiteLLM auto-router-v2, which self-selects the
+    # tier per request (SIMPLE=gpt-6-luna-high, MEDIUM=gpt-6.1-sol-low,
+    # COMPLEX=gpt-6.1-sol-medium, REASONING=gpt-6.1-sol-high), as on staging.
+    # The v1 auto-router (MEDIUM=gpt-6-luna-xhigh, COMPLEX=gpt-6.1-sol-high,
+    # REASONING=gpt-6.1-sol-medium) stays deployed beside it. Auto is a BASE
     # model; Sol selected directly stays ADVANCED.
     # A chatbot can be pinned to Auto-only via its DB columns
     # (modelSelection=false + allowedModelIds=["auto"]).
@@ -278,7 +278,7 @@ chat:
     # 50% Sol at GPT-6 list prices. Classifier and embedding overhead remain
     # outside the registry's selected-model token fields.
     - id: auto
-      deploymentId: klickeruzh/azure/auto-router
+      deploymentId: klickeruzh/azure/auto-router-v2
       name: Auto
       description: Automatic model selection (routes to the best model per request)
       supportsImageAttachments: true
