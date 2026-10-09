@@ -70,16 +70,19 @@ async function createChatbot(
   await selectOption(page, '[data-cy="create-chatbot-course"]', 'Testkurs')
   await page.getByTestId('submit-create-chatbot').click()
   await expect(page.getByTestId(`chatbot-${name}`)).toBeVisible()
-  // A new chatbot continues into its materials and points to the student
-  // information that publication still requires.
+  // A new chatbot continues into its materials and already has a complete
+  // disclaimer, so no disclaimer hint is shown. Tests that edit the
+  // disclaimer open its view explicitly.
   await expect(page.getByTestId('chatbot-knowledge')).toBeVisible()
-  await page.getByTestId('chatbot-knowledge-open-disclaimer').click()
+  await expect(
+    page.getByTestId('chatbot-knowledge-next-disclaimer')
+  ).toHaveCount(0)
+  await page.getByTestId('chatbot-view-disclaimer').click()
   await expect(page.getByTestId('chatbot-setup-disclaimer')).toBeVisible()
   await expect(page.getByTestId('chatbot-disclaimer-title')).not.toHaveValue('')
   await expect(
     page.getByTestId('chatbot-disclaimer-suggested-unsaved')
-  ).toBeVisible()
-  await expect(page.getByTestId('save-chatbot-disclaimer')).toBeEnabled()
+  ).toHaveCount(0)
 
   const chatbotId = new URL(page.url()).searchParams.get('chatbotId')
   expect(chatbotId).toBeTruthy()
@@ -434,7 +437,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       .toBeNull()
     await expect(
       page.getByTestId('chatbot-knowledge-next-disclaimer')
-    ).toBeVisible()
+    ).toHaveCount(0)
 
     const chatbotId = new URL(page.url()).searchParams.get('chatbotId')
     await page.goto(
@@ -442,10 +445,10 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     )
     await expect
       .poll(() => new URL(page.url()).searchParams.get('view'))
-      .toBe('disclaimer')
+      .toBe('overview')
     await expect
       .poll(() => new URL(page.url()).searchParams.get('step'))
-      .toBeNull()
+      .toBe('review')
   })
 
   test('creates, edits, previews, switches, and reloads draft chatbots', async ({

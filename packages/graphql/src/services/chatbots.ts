@@ -1884,7 +1884,14 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
     where: { ownerId: ctx.user.sub },
     select: {
       ...chatbotOwnerSelect,
-      course: { select: { id: true, name: true } },
+      course: {
+        select: {
+          id: true,
+          name: true,
+          // Prefills the expected student count of a publication request.
+          _count: { select: { participations: true } },
+        },
+      },
       disclaimer: {
         select: { id: true, name: true, title: true, introText: true },
       },
@@ -2051,6 +2058,15 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
 
     return {
       ...shapeChatbotResponse(chatbot),
+      courses: chatbot.course
+        ? [
+            {
+              id: chatbot.course.id,
+              name: chatbot.course.name,
+              numOfParticipants: chatbot.course._count.participations,
+            },
+          ]
+        : [],
       usageSummary,
       disclaimerSummary,
       mcpConfigurations,
@@ -2147,6 +2163,8 @@ type CreateChatbotArgs = {
   description?: string | null
   avatar?: string | null
   courseId: string
+  disclaimerTitle?: string | null
+  disclaimerIntroText?: string | null
 }
 
 // New chatbots start on GPT-6 Luna, the BASE default model, which is also the
@@ -2185,6 +2203,19 @@ export async function createChatbot(
     throw chatbotError('Chatbot name must not be empty', 'BAD_USER_INPUT')
   }
 
+  // The client passes its localized suggested disclaimer so a new chatbot can
+  // request publication without a separate disclaimer step. Both texts are
+  // required together; omitting them keeps the chatbot without a disclaimer.
+  const hasDisclaimer =
+    args.disclaimerTitle != null || args.disclaimerIntroText != null
+  const disclaimerTitle = normalizeDisclaimerText(args.disclaimerTitle ?? '')
+  const disclaimerIntroText = normalizeDisclaimerText(
+    args.disclaimerIntroText ?? ''
+  )
+  if (hasDisclaimer) {
+    validateDisclaimerContent(disclaimerTitle, disclaimerIntroText)
+  }
+
   const defaultModelId = getNewChatbotModelId(getChatModelRegistry())
   if (!defaultModelId) {
     throw new GraphQLError(
@@ -2207,6 +2238,18 @@ export async function createChatbot(
       ...DEFAULT_CHATBOT_CREDIT_POLICY,
       owner: { connect: { id: ctx.user.sub } },
       course: { connect: { id: args.courseId } },
+      ...(hasDisclaimer
+        ? {
+            disclaimer: {
+              create: {
+                name: `${args.name} disclaimer`,
+                title: disclaimerTitle,
+                introText: disclaimerIntroText,
+                owner: { connect: { id: ctx.user.sub } },
+              },
+            },
+          }
+        : {}),
       // systemPrompts intentionally left unset (null): the chat runtime
       // composes its Tutor and Explainer platform defaults and exposes Quizzer
       // only when course retrieval is available. Custom modes are added and

@@ -241,9 +241,15 @@ function ChatbotPublicationRequest({
     !setupDirty &&
     !setupPending
 
+  // A first request starts from the chatbot description and the enrolled
+  // participant count; the lecturer still confirms both before submitting.
+  const enrolledParticipants = chatbot.courses?.[0]?.numOfParticipants
   const publicationValues: PublicationFormValues = {
-    useCase: revisionValues.publicationUseCase ?? '',
-    expectedStudentCount: revisionValues.expectedStudentCount?.toString() ?? '',
+    useCase:
+      revisionValues.publicationUseCase ?? chatbot.description?.trim() ?? '',
+    expectedStudentCount:
+      revisionValues.expectedStudentCount?.toString() ??
+      (enrolledParticipants ? enrolledParticipants.toString() : ''),
   }
 
   useEffect(() => {

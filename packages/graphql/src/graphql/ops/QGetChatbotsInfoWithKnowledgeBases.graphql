@@ -46,6 +46,7 @@ query QGetChatbotsInfoWithKnowledgeBases {
     courses {
       id
       name
+      numOfParticipants
     }
     usageSummary {
       threadCount

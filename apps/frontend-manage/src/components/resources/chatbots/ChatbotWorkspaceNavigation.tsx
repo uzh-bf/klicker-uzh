@@ -22,10 +22,12 @@ const viewItems = [
 function ChatbotWorkspaceNavigation({
   view,
   step,
+  showUsage,
   onNavigate,
 }: {
   view: ChatbotWorkspaceView
   step?: ChatbotSetupStep
+  showUsage: boolean
   onNavigate: (view: ChatbotWorkspaceView, step?: ChatbotSetupStep) => void
 }) {
   const t = useTranslations()
@@ -37,28 +39,30 @@ function ChatbotWorkspaceNavigation({
       data-cy="chatbot-workspace-navigation"
     >
       <div className="flex gap-1 overflow-x-auto">
-        {viewItems.map((item) => {
-          const active = item.view === view
-          const requestedStep = item.view === 'overview' ? step : undefined
+        {viewItems
+          .filter((item) => showUsage || item.view !== 'usage')
+          .map((item) => {
+            const active = item.view === view
+            const requestedStep = item.view === 'overview' ? step : undefined
 
-          return (
-            <button
-              key={item.view}
-              type="button"
-              aria-current={active ? 'page' : undefined}
-              className={twMerge(
-                'min-h-11 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors',
-                active
-                  ? 'border-primary-600 text-primary-700'
-                  : 'border-transparent text-gray-600 hover:border-gray-300 hover:text-gray-900'
-              )}
-              data-cy={`chatbot-view-${item.view}`}
-              onClick={() => onNavigate(item.view, requestedStep)}
-            >
-              {t(item.label)}
-            </button>
-          )
-        })}
+            return (
+              <button
+                key={item.view}
+                type="button"
+                aria-current={active ? 'page' : undefined}
+                className={twMerge(
+                  'min-h-11 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors',
+                  active
+                    ? 'border-primary-600 text-primary-700'
+                    : 'border-transparent text-gray-600 hover:border-gray-300 hover:text-gray-900'
+                )}
+                data-cy={`chatbot-view-${item.view}`}
+                onClick={() => onNavigate(item.view, requestedStep)}
+              >
+                {t(item.label)}
+              </button>
+            )
+          })}
       </div>
     </nav>
   )
