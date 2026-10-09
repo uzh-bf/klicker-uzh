@@ -2,6 +2,22 @@
 
 ## Current state and next decision
 
+October 9 planning checkpoint: [PR #6421](https://github.com/uzh-bf/klicker-uzh/pull/6421)
+is merged into `v3-ai` at `b6b580585e78500afa11e7a1db28bcabc273abe8`.
+The October 7 failure table below is historical. The next identified acceptance
+blocker is source fidelity: KG re-downloads mutable URLs instead of consuming
+the version ingested for document retrieval. A scoped staging investigation
+confirmed changed bytes, per-request variation and a provider download rejection.
+The [canonical-input implementation plan](2026-10-09-graphrag-source-artifact-plan.md)
+owns the approved source repair across ingestion, KG generation and Klicker.
+Astra approved its revised source and verification contract on October 9.
+Its source delivery precedes a separately authorized refresh/build of the
+controlled KB and student-map acceptance. Existing immutable-input fixtures can
+still qualify map interaction independently. No fresh deployment or retrieval-
+quality claim is made by this planning checkpoint.
+
+### Historical October 7 review
+
 October 7 review, observed at 19:45 Europe/Zurich. This revision reconciles the existing package and refines its remaining roadmap; it does not activate features or execute a new experiment. Source repair stays within the previously approved reliability scope. Merge, ready status, deployment, activation, rebuilds and new spend retain their separate authority boundaries.
 
 | Boundary | Verified state | Consequence |
@@ -20,13 +36,22 @@ Each milestone ends with a disposition and evidence, rather than an automatic tu
 
 | Milestone | Dependency and owner | Acceptance and stop condition |
 | --- | --- | --- |
-| 1. Restore document-tool compatibility | Chat maintainer; existing approved reliability package | Preserve omitted and supplied execution options, raw-provider slot lifetime, cancellation, null handling and queue recovery. Extend existing aggregation protection only where real-HTTP/compatibility tests do not cover the contract. Run full Chat `test:run`, applicable checks, exact-head CI and complete review. Stop for a broader provider-contract change; keep the PR draft until qualified |
-| 2. Verify deployed boundaries and student map | Main/operator; qualified source plus named merge/promotion authority for the follow-up; controlled actor and published KB | Record exact revision/digest/migration proof and a separate map scorecard: map/retrieval policy combinations, direct-route enforcement, autocomplete/exploration, sidebar/fullscreen, ask-about-this prefill without automatic send, thread preservation, mobile/keyboard behavior and publication replacement/staleness. Reuse existing browser harness and synthetic fixtures. A map failure blocks map rollout; a retrieval failure does not by itself invalidate independent map availability |
-| 3. Prove retrieval mechanism, persistence and disablement | Main; deployed qualified follow-up, controlled chatbot/KB, approved provider/data boundary, fresh total spend ceiling and named activation/disablement authority | Run the six-turn probe below, then synthetic failure/withdrawal checks. Require actual provider dispatch, useful new bridge evidence, correct persisted citations after reload and verified safe disablement. Stop activation on scope leakage, invalid citations, bounded-termination failure or unusable evidence receipts. Six turns qualify mechanism only |
+| 1. Restore document-tool compatibility | Chat maintainer; merged [PR #6421](https://github.com/uzh-bf/klicker-uzh/pull/6421) | Source repair delivered. Retain omitted/supplied options, raw-provider lifetime, cancellation, null handling and queue regression checks. Serving and persisted-message proof remain separate acceptance receipts |
+| 1a. Share a canonical ingestion input | Ingestion, KG and Klicker owners; [source-artifact plan](2026-10-09-graphrag-source-artifact-plan.md), source repair approved and Astra plan review passed | Normal retrieval and KG preparation use one active resource version. Prove origin drift, digest/version enforcement, scoped access, deletion and legacy compatibility with synthetic fixtures. Source delivery ends at reviewed draft changes and CI; merge/deployment and live refresh/build remain gated |
+| 2. Verify deployed boundaries and student map | Main/operator; qualified source and serving proof; milestone 1a for the identified mutable-URL KB; controlled actor and current published graph | Record exact revision/digest/migration proof and a separate map scorecard: map/retrieval policy combinations, direct-route enforcement, autocomplete/exploration, sidebar/fullscreen, ask-about-this prefill without automatic send, thread preservation, mobile/keyboard behavior and publication replacement/staleness. Reuse existing browser harness and synthetic fixtures. A map failure blocks map rollout; a retrieval failure does not by itself invalidate independent map availability |
+| 3. Prove retrieval mechanism, persistence and disablement | Main; deployed qualified follow-up and milestone 1a contract; controlled chatbot/KB with a current canonical-input graph; approved provider/data boundary, fresh total spend ceiling and named activation/disablement authority | Run the six-turn probe below, then synthetic failure/withdrawal checks. Require actual provider dispatch, useful new bridge evidence, correct persisted citations after reload and verified safe disablement. Stop activation on scope leakage, invalid citations, bounded-termination failure or unusable evidence receipts. Six turns qualify mechanism only |
 | 4. Measure incremental graph value | Evaluation owner; milestone 3, private artifact paths, frozen reviewed cases and accepted decision criteria | One frozen, paired comparison using the existing framework and the three arms below. Report family-level uncertainty, errors/skips, coverage, latency and cost. End with adopt for named query classes, retain disabled, or inconclusive. Unmatched controls permit an operational comparison only; they do not qualify graph-specific uplift |
 | 5. Decide a bounded pilot and later improvements | Main/product owner; independent map results and retrieval evidence; separately named activation authority | Define the cohort, operator, support route, observation window and stop triggers before widening. Preserve [ADR 0014](../docs/adr/0014-beta-learns-before-quality-thresholds.md)'s distinction between initial beta and quality claims/widening. Choose follow-on work from observed failures, with a new bounded contract when scope changes |
 
-No new dependency, retrieval library, schema, source module or production test hook is proposed. Failure-driven candidates are alias/inflection/bilingual anchoring, indexed search for demonstrated scan/coverage limits, graph-to-passage provenance/reranking for evidence-selection failures, and distributed admission for observed multi-replica pressure. Multi-KB graphs, community summaries and adaptive multi-hop search remain later contract decisions. Current exact-label, one-hop, single-graph expansion and overflow fallback are limits to measure, not evidence that all these additions are needed.
+Milestone 1a introduces the explicitly versioned artifact, scoped read and
+retention contracts described in its implementation plan. The original retrieval
+reliability package introduced no new schema or retrieval library. Failure-driven
+candidates remain alias/inflection/bilingual anchoring, indexed search for
+demonstrated scan/coverage limits, graph-to-passage provenance/reranking for
+evidence-selection failures, and distributed admission for observed multi-replica
+pressure. Multi-KB graphs, community summaries and adaptive multi-hop search
+remain later contract decisions. Current exact-label, one-hop, single-graph
+expansion and overflow fallback are limits to measure.
 
 ### Operational acceptance
 
@@ -126,6 +151,12 @@ A passing six-turn result qualifies the mechanism only. The frozen quality compa
 Update the graph section of `docs/chat-platform.md` for request-local serialization, absent-result errors and diagnostics. Update `evaluation/README.md` only for diagnostic interpretation and equal-budget limitations. No ADR is needed: this fixes reliability and observability within the established adapter architecture. Broader indexing, semantic anchoring, provenance, distributed admission and cost accounting remain separate failure-driven milestones.
 
 ## Progress
+
+October 9: approved source-artifact repair is planned in the linked implementation
+plan and added as milestone 1a. Historical source and review receipts below remain
+dated evidence. The new package has no PR/MR or implementation yet. Astra approved
+the revised plan in round 2; scoped Markdown, new-link, secret and diff checks
+pass. The planning checkpoint is complete; source and live acceptance remain open.
 
 Approved by user: October 7 proceed following October 5 Astra-reviewed roadmap. Astra approved the bounded contract after raw-provider queue lifetime, null-envelope handling, diagnostic limits and independent source delivery were clarified. Implemented in `cc91d74504100f51a4ea213e9c31db82a44f3b48`; [draft PR #6421](https://github.com/uzh-bf/klicker-uzh/pull/6421) targets `v3-ai`. No paid model experiment has run. Remote target was unchanged at the recorded base during source qualification.
 
