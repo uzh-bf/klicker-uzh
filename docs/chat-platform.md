@@ -499,6 +499,9 @@ id that answered.
 Migration `20261008120000_chat_drop_retired_model_ids` later removed the
 retired `gpt-4.1` and `gpt-5.4` ids from live and draft chatbot policies, so
 edits to those chatbots still pass registry validation.
+Migration `20261009120000_chat_drop_unregistered_model_ids` does the same for
+`gpt-4.1-mini` and `gpt-5.5`, which published chatbots still named although
+neither registry lists them.
 Both staging and production now use `auto` as the global automatic-model
 primary, so chatbots using automatic model selection use Auto by default.
 Chatbots with an explicit model selection can continue using that selection.
