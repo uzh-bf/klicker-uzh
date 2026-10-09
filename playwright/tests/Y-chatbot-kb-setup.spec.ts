@@ -67,6 +67,8 @@ test.describe('Chatbot knowledge base setup', () => {
     ).toBeVisible()
     // A draft change is reviewed with the next publication request.
     await expect(page.getByTestId('chatbot-kb-live-change-note')).toHaveCount(0)
+    // The advanced-management flag is on by default in this mock.
+    await expect(page.getByTestId('chatbot-view-usage')).toBeVisible()
 
     // Creating from the chatbot connects the new knowledge base and opens it
     // with a way back to the chatbot.
@@ -182,5 +184,71 @@ test.describe('Chatbot knowledge base setup', () => {
     )
     await expect(page.getByTestId('knowledge-base-detail')).toBeVisible()
     await expect(page.getByTestId('kb-back-to-chatbot')).toHaveCount(0)
+  })
+
+  test('requests publication of a new chatbot without opening the disclaimer', async ({
+    page,
+  }) => {
+    const prisma = await getPrisma()
+    await prisma.user.update({
+      where: { id: USER_ID_TEST },
+      data: { aiFeaturesEnabled: true },
+    })
+    await prisma.kB.create({ data: { name: KB_NAME, ownerId: USER_ID_TEST } })
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+
+    // Without the advanced-management flag the lecturer sees the reduced
+    // workspace.
+    await mockGrowthBookFeatureFlags(page, {
+      aiBeta: true,
+      aiAdvancedManagement: false,
+    })
+    await page.goto(`${manageUrl}/resources/chatbots`)
+    await expect(page.getByTestId('create-chatbot')).toBeVisible()
+
+    const chatbotId = await createDraftChatbot(page)
+    await expect(page.getByTestId('chatbot-knowledge')).toBeVisible()
+    await expect(
+      page.getByTestId('chatbot-knowledge-next-disclaimer')
+    ).toHaveCount(0)
+    await expect(page.getByTestId('chatbot-view-usage')).toHaveCount(0)
+    await expect(page.getByTestId('chatbot-technical-details')).toHaveCount(0)
+
+    await selectOption(page, '[data-cy="chatbot-kb-select"]', KB_NAME)
+    await page.getByTestId('chatbot-kb-connect').click()
+    await expect(page.getByTestId('chatbot-enabled-knowledge-base')).toHaveText(
+      KB_NAME
+    )
+
+    // An old link to the Usage view falls back to the overview.
+    await page.goto(
+      `${manageUrl}/resources/chatbots?chatbotId=${chatbotId}&view=usage`
+    )
+    await expect(page.getByTestId('chatbot-overview')).toBeVisible()
+    await expect(page.getByTestId('chatbot-view-usage')).toHaveCount(0)
+
+    await page.goto(
+      `${manageUrl}/resources/chatbots?chatbotId=${chatbotId}&view=overview&step=review`
+    )
+    await expect(page.getByTestId('chatbot-setup-review')).toBeVisible()
+    await expect(page.getByTestId('chatbot-publication-use-case')).toHaveValue(
+      `${CHATBOT_NAME} description`
+    )
+    await page
+      .getByTestId('chatbot-publication-expected-student-count')
+      .fill('40')
+    const submitButton = page.getByTestId('request-chatbot-publication')
+    await expect(submitButton).toBeEnabled()
+    await submitButton.click()
+
+    await expect
+      .poll(async () => {
+        const chatbot = await prisma.chatbot.findUniqueOrThrow({
+          where: { id: chatbotId },
+          select: { status: true, disclaimerId: true },
+        })
+        return chatbot.disclaimerId !== null && chatbot.status
+      })
+      .toBe('PENDING_APPROVAL')
   })
 })

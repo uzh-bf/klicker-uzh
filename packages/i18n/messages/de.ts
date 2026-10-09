@@ -5134,7 +5134,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotWorkspaceDisclaimerDescription:
         'Bearbeiten Sie die Einleitung für Teilnehmende und prüfen Sie die festen institutionellen Abschnitte.',
       chatbotWorkspaceKnowledgeDescription:
-        'Prüfen Sie die aktive Wissensbasis und öffnen Sie deren Verwaltung. Mehrere Wissensbasen werden in diesem Editor derzeit noch nicht unterstützt.',
+        'Prüfen Sie die aktive Wissensbasis und öffnen Sie deren Verwaltung.',
       chatbotKnowledgeSingleActive:
         'Hier wird derzeit eine aktive Wissensbasis unterstützt.',
       chatbotKnowledgeEmptyDescription:
@@ -5285,6 +5285,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte warten Sie, bis die aktuelle Chatbot-Änderung gespeichert wurde.',
       chatbotPreviewUnsavedConfirmation:
         'Diese Vorschau öffnet die zuletzt gespeicherte Live-Konfiguration des Chatbots. Möchten Sie trotz ungespeicherter Änderungen fortfahren?',
+      chatbotRevisionDraftOnly:
+        'Dieser Chatbot ist ein Entwurf und für Teilnehmende noch nicht sichtbar.',
       chatbotRevisionLiveOnly:
         'Die Live-Konfiguration ist für Teilnehmende aktiv. Speichern Sie eine Revision, um Änderungen zur Prüfung vorzubereiten.',
       chatbotRevisionSaved:

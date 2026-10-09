@@ -173,7 +173,7 @@ function ChatbotDetails({
   modelRegistry,
   loading,
   advancedManagement,
-  view,
+  view: requestedView,
   step,
   onNavigate,
   onNavigationStateChange,
@@ -198,6 +198,12 @@ function ChatbotDetails({
   publishingAuthorizationError: boolean
 }) {
   const t = useTranslations()
+  // Usage holds operational quota settings that only advanced management
+  // exposes; older links to it fall back to the overview.
+  const view: ChatbotWorkspaceView =
+    !advancedManagement && requestedView === 'usage'
+      ? 'overview'
+      : requestedView
   const graphRetrievalAvailable = useFeatureFlag('chatbot-graphrag')
   const { locale } = useRouter()
   const { data: scopeData } = useQuery(QGetCatalystRequestAccessDocument)
@@ -711,8 +717,10 @@ function ChatbotDetails({
                   >
                     <span className="font-medium text-gray-700">
                       {t('manage.resources.chatbotOwnerPreviewLive')}
-                    </span>{' '}
-                    {t('manage.resources.chatbotOwnerPreviewLiveDescription')}
+                    </span>
+                    {advancedManagement
+                      ? ` ${t('manage.resources.chatbotOwnerPreviewLiveDescription')}`
+                      : null}
                   </span>
                 </div>
               )}
@@ -723,34 +731,36 @@ function ChatbotDetails({
               {chatbot.description}
             </div>
           )}
-          <details
-            className="mt-2 text-xs text-gray-500"
-            data-cy="chatbot-technical-details"
-          >
-            <summary
-              className="cursor-pointer select-none font-medium text-gray-600"
-              data-cy="chatbot-technical-details-trigger"
+          {advancedManagement && (
+            <details
+              className="mt-2 text-xs text-gray-500"
+              data-cy="chatbot-technical-details"
             >
-              {t('manage.resources.chatbotTechnicalDetails')}
-            </summary>
-            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono">
-              <div>
-                {t('manage.resources.chatbotTechnicalId')}:{' '}
-                <span className="select-all">{chatbot.id}</span>
-              </div>
-              {chatbot.avatar && (
-                <div className="flex max-w-full items-center gap-1">
-                  <span>{t('manage.resources.chatbotTechnicalAvatar')}:</span>
-                  <span
-                    className="max-w-[200px] truncate"
-                    title={chatbot.avatar}
-                  >
-                    {chatbot.avatar}
-                  </span>
+              <summary
+                className="cursor-pointer select-none font-medium text-gray-600"
+                data-cy="chatbot-technical-details-trigger"
+              >
+                {t('manage.resources.chatbotTechnicalDetails')}
+              </summary>
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono">
+                <div>
+                  {t('manage.resources.chatbotTechnicalId')}:{' '}
+                  <span className="select-all">{chatbot.id}</span>
                 </div>
-              )}
-            </div>
-          </details>
+                {chatbot.avatar && (
+                  <div className="flex max-w-full items-center gap-1">
+                    <span>{t('manage.resources.chatbotTechnicalAvatar')}:</span>
+                    <span
+                      className="max-w-[200px] truncate"
+                      title={chatbot.avatar}
+                    >
+                      {chatbot.avatar}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </details>
+          )}
         </div>
 
         {chatbot.courses && chatbot.courses.length > 0 && (
@@ -801,6 +811,7 @@ function ChatbotDetails({
         <ChatbotWorkspaceNavigation
           view={view}
           step={step}
+          showUsage={advancedManagement}
           onNavigate={onNavigate}
         />
 
@@ -899,7 +910,7 @@ function ChatbotDetails({
                       {knowledgeBase.name}
                     </Link>
                   ))}
-                  {enabledKnowledgeBases.length === 1 ? (
+                  {advancedManagement && enabledKnowledgeBases.length === 1 ? (
                     <span className="text-sm text-gray-600">
                       {t('manage.resources.chatbotKnowledgeSingleActive')}
                     </span>
@@ -950,18 +961,20 @@ function ChatbotDetails({
               courseIds={chatbot.courses?.map(({ id }) => id) ?? []}
               connectedKnowledgeBase={enabledKnowledgeBases[0]}
             />
-            <div className="flex flex-wrap items-center gap-3 border-t border-gray-200 pt-4">
-              <p className="text-sm text-gray-600">
-                {t('manage.resources.chatbotKnowledgeManagementLink')}
-              </p>
-              <Link
-                href="/resources/knowledgeBases"
-                className="text-primary-100 hover:underline"
-                data-cy="chatbot-knowledge-base-management"
-              >
-                {t('manage.resources.knowledgeBase')}
-              </Link>
-            </div>
+            {advancedManagement && (
+              <div className="flex flex-wrap items-center gap-3 border-t border-gray-200 pt-4">
+                <p className="text-sm text-gray-600">
+                  {t('manage.resources.chatbotKnowledgeManagementLink')}
+                </p>
+                <Link
+                  href="/resources/knowledgeBases"
+                  className="text-primary-100 hover:underline"
+                  data-cy="chatbot-knowledge-base-management"
+                >
+                  {t('manage.resources.knowledgeBase')}
+                </Link>
+              </div>
+            )}
             {advancedManagement && (
               // Concept-map visibility and graph-retrieval tuning assume the
               // reader understands how the knowledge graph is built and

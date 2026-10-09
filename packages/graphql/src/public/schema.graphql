@@ -1290,6 +1290,7 @@ type CourseLeaderboard {
 type CourseListEntry {
   id: ID!
   name: String!
+  numOfParticipants: Int
 }
 
 type CourseOverview {
@@ -2870,7 +2871,7 @@ type Mutation {
   createAnswerCollection(answers: [String!]!, description: String!, name: String!): AnswerCollection
   createAssessmentParticipantInvitations(courseId: String!, invitations: [AssessmentParticipantInvitationInput!]!): CreateAssessmentParticipantInvitationsPayload
   createCatalogCollection(access: ObjectAccess!, name: String!): CatalogCollection
-  createChatbot(avatar: String, courseId: String!, description: String, name: String!): Chatbot!
+  createChatbot(avatar: String, courseId: String!, description: String, disclaimerIntroText: String, disclaimerTitle: String, name: String!): Chatbot!
   createCourse(color: String, description: String, displayName: String!, duplicateGroupActivities: Boolean, duplicateLiveQuizzes: Boolean, duplicateMicrolearnings: Boolean, duplicatePracticeQuizzes: Boolean, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, sourceCourseId: String, startDate: Date!): Course
   createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): ActivityInfo

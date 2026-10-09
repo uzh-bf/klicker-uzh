@@ -1683,6 +1683,8 @@ export const Mutation = builder.mutationType({
           description: t.arg.string({ required: false }),
           avatar: t.arg.string({ required: false }),
           courseId: t.arg.string({ required: true }),
+          disclaimerTitle: t.arg.string({ required: false }),
+          disclaimerIntroText: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await ChatbotsService.createChatbot(args, ctx)

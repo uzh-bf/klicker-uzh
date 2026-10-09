@@ -812,24 +812,26 @@ function ChatbotAuthoring({
 
   return (
     <div className="space-y-6" data-cy="chatbot-authoring">
-      <div data-cy="chatbot-setup">
-        <H4>
-          {visibleSections.length === 1 && visibleSections[0] === 'modes'
-            ? t('manage.resources.chatbotWorkspaceBehavior')
-            : visibleSections.length === 1 &&
-                visibleSections[0] === 'disclaimer'
-              ? t('manage.resources.chatbotWorkspaceDisclaimer')
-              : t('manage.resources.chatbotWorkspaceOverview')}
-        </H4>
-        <p className="mt-1 text-sm text-gray-600">
-          {visibleSections.length === 1 && visibleSections[0] === 'modes'
-            ? t('manage.resources.chatbotWorkspaceBehaviorDescription')
-            : visibleSections.length === 1 &&
-                visibleSections[0] === 'disclaimer'
-              ? t('manage.resources.chatbotWorkspaceDisclaimerDescription')
-              : t('manage.resources.chatbotWorkspaceOverviewDescription')}
-        </p>
-      </div>
+      {visibleSections.length === 1 ? (
+        <div data-cy="chatbot-setup">
+          <H4>
+            {visibleSections.length === 1 && visibleSections[0] === 'modes'
+              ? t('manage.resources.chatbotWorkspaceBehavior')
+              : visibleSections.length === 1 &&
+                  visibleSections[0] === 'disclaimer'
+                ? t('manage.resources.chatbotWorkspaceDisclaimer')
+                : t('manage.resources.chatbotWorkspaceOverview')}
+          </H4>
+          <p className="mt-1 text-sm text-gray-600">
+            {visibleSections.length === 1 && visibleSections[0] === 'modes'
+              ? t('manage.resources.chatbotWorkspaceBehaviorDescription')
+              : visibleSections.length === 1 &&
+                  visibleSections[0] === 'disclaimer'
+                ? t('manage.resources.chatbotWorkspaceDisclaimerDescription')
+                : t('manage.resources.chatbotWorkspaceOverviewDescription')}
+          </p>
+        </div>
+      ) : null}
 
       <Accordion
         type="multiple"
