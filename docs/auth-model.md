@@ -67,6 +67,8 @@ cookies. Competing, repeated, empty, expired or wrong-purpose credentials fail
 closed. The SSR helper verifies one LTI 1.3 context and returns either an
 established participant, verified registration context, rejected state, exchange
 failure, or no launch. It never retries another account after explicit failure.
+An unusable participant cookie without a launch is expired and reported as no
+launch, so an explicit credential the tab already holds remains selected.
 OTP and activation credentials require their own exchange; their participant
 role does not make them session tokens.
 A `participantToken` URL parameter is ignored in the regular PWA: a session

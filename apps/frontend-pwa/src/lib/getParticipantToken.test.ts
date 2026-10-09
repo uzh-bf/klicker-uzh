@@ -114,7 +114,11 @@ it('rejects malformed launches and unusable participant cookies instead of using
   ] as [GetServerSidePropsContext['query'], string][]) {
     const { ctx, headers } = context(query, `participant_token=${cookie}`)
     const result = await getParticipantToken({ apolloClient: client, ctx })
-    assert.equal(result.sessionState, 'rejected')
+    // Only a launch is rejected; an unusable cookie alone means no session.
+    assert.equal(
+      result.sessionState,
+      Object.hasOwn(query, 'jwt') ? 'rejected' : 'no_launch'
+    )
     assert.equal(result.participantToken, null)
     assert.match(
       String(headers.get('Set-Cookie')),
@@ -267,7 +271,7 @@ it('retains assessment credential selection without applying regular participant
   }
 })
 
-it('rejects and expires a retained invalid participant cookie without a launch', async () => {
+it('expires a retained invalid participant cookie without a launch and reports no session', async () => {
   const expired = await signJWT(
     { sub: 'participant-a', role: 'PARTICIPANT' },
     secret,
@@ -278,7 +282,7 @@ it('rejects and expires a retained invalid participant cookie without a launch',
     apolloClient: {} as ApolloClient<NormalizedCacheObject>,
     ctx,
   })
-  assert.equal(result.sessionState, 'rejected')
+  assert.equal(result.sessionState, 'no_launch')
   assert.equal(result.participantToken, null)
   const canonical = (headers.get('Set-Cookie') as string[]).find(
     (value) =>

@@ -102,13 +102,16 @@ export default async function getParticipantToken({
     cookiesAvailable: !!ambient,
     tokenSource: null,
   } as const
-  const reject = (): ParticipantSessionResult => {
+  const expireRetainedSession = () => {
     clearParticipantCookie(ctx)
     nookies.destroy(ctx, 'lti-token', {
       domain: process.env.COOKIE_DOMAIN,
       path: '/',
     })
     expirePartitionedParticipantCookie(ctx)
+  }
+  const reject = (): ParticipantSessionResult => {
+    expireRetainedSession()
     return { ...base, sessionState: 'rejected' }
   }
   const verifyParticipant = async (token: string) => {
@@ -134,7 +137,7 @@ export default async function getParticipantToken({
     const token = ambient
     if (!token) return { ...base, sessionState: 'no_launch' }
     try {
-      if (typeof token !== 'string') return reject()
+      if (typeof token !== 'string') throw new Error('Invalid cookie')
       await verifyParticipant(token)
       return {
         participantToken: token,
@@ -143,7 +146,10 @@ export default async function getParticipantToken({
         sessionState: 'authenticated',
       }
     } catch {
-      return reject()
+      // An unusable cookie is not a launch: expire it and continue without an
+      // ambient session, so an explicit credential this tab holds stays valid.
+      expireRetainedSession()
+      return { ...base, sessionState: 'no_launch' }
     }
   }
 
