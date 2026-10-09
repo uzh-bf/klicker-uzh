@@ -16,7 +16,6 @@ function AdaptiveEstimatedDistribution({
   dataCy: string
 }) {
   const t = useTranslations('manage.evaluation.adaptive.distributionEstimates')
-  // Unmeasured edge levels are folded into the nearest measurable level.
   const buckets = getAdaptiveDistributionRows(distribution.buckets)
   const total = buckets.reduce((sum, bucket) => sum + bucket.count, 0)
   const { notTested, withoutUsableEstimate: excluded } =
@@ -54,9 +53,9 @@ function AdaptiveEstimatedDistribution({
             const provisional = bucket.count - determined
             const levelName =
               bucket.edge === 'belowRange'
-                ? t('levelOrBelow', { level: bucket.levelLabel })
+                ? t('levelBelowRange', { level: bucket.levelLabel })
                 : bucket.edge === 'aboveRange'
-                  ? t('levelOrAbove', { level: bucket.levelLabel })
+                  ? t('levelAboveRange', { level: bucket.levelLabel })
                   : bucket.levelLabel
             const label = t('barLabel', {
               level: levelName,

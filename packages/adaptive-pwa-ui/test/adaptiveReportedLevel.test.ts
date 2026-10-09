@@ -11,21 +11,31 @@ const levelBands = [
 ]
 
 describe('reported level label', () => {
-  it('names the lowest measurable band at or below the bottom edge', () => {
-    for (const levelLabel of ['Under A2', 'A2.1'])
-      expect(
-        getAdaptiveReportedLevelLabel({
-          levelLabel,
-          levelBands,
-          classified: true,
-        })
-      ).toEqual({
-        key: 'pwa.practiceQuiz.adaptive.profile.levelBelowRange',
-        values: { level: 'A2.1' },
+  it('names a level below the levels with elements and marks it', () => {
+    expect(
+      getAdaptiveReportedLevelLabel({
+        levelLabel: 'Under A2',
+        levelBands,
+        classified: true,
       })
+    ).toEqual({
+      key: 'pwa.practiceQuiz.adaptive.profile.levelBelowRange',
+      values: { level: 'Under A2' },
+    })
+    // The lowest level with elements is a measured level of its own.
+    expect(
+      getAdaptiveReportedLevelLabel({
+        levelLabel: 'A2.1',
+        levelBands,
+        classified: true,
+      })
+    ).toEqual({
+      key: 'pwa.practiceQuiz.adaptive.profile.levelExact',
+      values: { level: 'A2.1' },
+    })
   })
 
-  it('names the highest measurable band at or above the top edge', () => {
+  it('names a level above the levels with elements and marks it', () => {
     expect(
       getAdaptiveReportedLevelLabel({
         levelLabel: 'Above B1',
@@ -34,8 +44,15 @@ describe('reported level label', () => {
       })
     ).toEqual({
       key: 'pwa.practiceQuiz.adaptive.profile.levelAboveRange',
-      values: { level: 'B1.1' },
+      values: { level: 'Above B1' },
     })
+    expect(
+      getAdaptiveReportedLevelLabel({
+        levelLabel: 'B1.1',
+        levelBands,
+        classified: false,
+      }).key
+    ).toBe('pwa.practiceQuiz.adaptive.profile.levelExact')
   })
 
   it('adds the tolerance only to classified levels inside the range', () => {

@@ -82,48 +82,7 @@ export function getAdaptiveResultState({
   return { kind: 'ESTIMATED', levelLabel: rough.levelLabel, width }
 }
 
-export type AdaptiveLevelText = {
-  key:
-    | 'pwa.practiceQuiz.adaptive.profile.levelExact'
-    | 'pwa.practiceQuiz.adaptive.profile.levelOrBelow'
-    | 'pwa.practiceQuiz.adaptive.profile.levelOrAbove'
-  values: { level: string }
-}
-
-/**
- * Short edge-aware name of one band for ranges and coarse labels: a band
- * below the lowest (or above the highest) band with published elements reads
- * "A2.1 or below" ("C2.3 or above") instead of an unmeasured band such as
- * "Under A2". Bands inside the measurable range keep their label.
- */
-export function getAdaptiveEdgeBandText({
-  levelLabel,
-  levelBands,
-}: {
-  levelLabel: string
-  levelBands: readonly AdaptiveReportedLevelBand[]
-}): AdaptiveLevelText {
-  const edge = measurableEdges(levelBands)
-  const band = levelBands.find(({ label }) => label === levelLabel)
-  if (edge && band) {
-    if (band.order < edge.lowest.order)
-      return {
-        key: 'pwa.practiceQuiz.adaptive.profile.levelOrBelow',
-        values: { level: edge.lowest.label },
-      }
-    if (band.order > edge.highest.order)
-      return {
-        key: 'pwa.practiceQuiz.adaptive.profile.levelOrAbove',
-        values: { level: edge.highest.label },
-      }
-  }
-  return {
-    key: 'pwa.practiceQuiz.adaptive.profile.levelExact',
-    values: { level: levelLabel },
-  }
-}
-
-/** True when a level lies at or beyond an unmeasured edge of the scale. */
+/** True when a level lies beyond the bands with published elements. */
 export function isAdaptiveLevelAtUnmeasuredEdge({
   levelLabel,
   levelBands,
@@ -131,9 +90,12 @@ export function isAdaptiveLevelAtUnmeasuredEdge({
   levelLabel: string
   levelBands: readonly AdaptiveReportedLevelBand[]
 }) {
-  return (
-    getAdaptiveEdgeBandText({ levelLabel, levelBands }).key !==
-    'pwa.practiceQuiz.adaptive.profile.levelExact'
+  const edge = measurableEdges(levelBands)
+  const band = levelBands.find(({ label }) => label === levelLabel)
+  return Boolean(
+    edge &&
+      band &&
+      (band.order < edge.lowest.order || band.order > edge.highest.order)
   )
 }
 
@@ -143,58 +105,23 @@ export type AdaptiveRangeText =
       values: { lower: string; upper: string }
     }
   | {
-      key:
-        | 'pwa.practiceQuiz.adaptive.profile.likelyOrBelow'
-        | 'pwa.practiceQuiz.adaptive.profile.likelyOrAbove'
-      values: { level: string }
-    }
-  | {
       key: 'pwa.practiceQuiz.adaptive.profile.likelyLevel'
       values: { level: string }
     }
 
 /**
- * Edge-aware range sentence. Unmeasured edge bands are folded into the
- * neighbouring measurable band: "Under A2 – A2.3" reads "Likely A2.3 or
- * below", "C2.2 – Above C2" reads "Likely C2.2 or above".
+ * Range sentence with the real band names, including bands beyond the
+ * levels with published elements ("Under A2 – A2.2"); the headline level
+ * carries the note for an estimate outside that range.
  */
 export function getAdaptiveRangeText({
   lowerLevelLabel,
   upperLevelLabel,
-  levelBands,
 }: {
   lowerLevelLabel: string
   upperLevelLabel: string
-  levelBands: readonly AdaptiveReportedLevelBand[]
+  levelBands?: readonly AdaptiveReportedLevelBand[]
 }): AdaptiveRangeText {
-  const edge = measurableEdges(levelBands)
-  const lower = levelBands.find(({ label }) => label === lowerLevelLabel)
-  const upper = levelBands.find(({ label }) => label === upperLevelLabel)
-  if (edge && lower && upper) {
-    const below = lower.order < edge.lowest.order
-    const above = upper.order > edge.highest.order
-    const clampLabel = (band: AdaptiveReportedLevelBand) =>
-      band.order < edge.lowest.order
-        ? edge.lowest.label
-        : band.order > edge.highest.order
-          ? edge.highest.label
-          : band.label
-    if (below && !above)
-      return {
-        key: 'pwa.practiceQuiz.adaptive.profile.likelyOrBelow',
-        values: { level: clampLabel(upper) },
-      }
-    if (above && !below)
-      return {
-        key: 'pwa.practiceQuiz.adaptive.profile.likelyOrAbove',
-        values: { level: clampLabel(lower) },
-      }
-    if (below && above)
-      return {
-        key: 'pwa.practiceQuiz.adaptive.profile.likelyRange',
-        values: { lower: edge.lowest.label, upper: edge.highest.label },
-      }
-  }
   return lowerLevelLabel === upperLevelLabel
     ? {
         key: 'pwa.practiceQuiz.adaptive.profile.likelyLevel',

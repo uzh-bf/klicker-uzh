@@ -10,7 +10,7 @@ const bucket = (
 ) => ({ levelLabel, levelOrder, count, determinedCount, hasElements })
 
 describe('cohort distribution rows', () => {
-  it('folds unmeasured edge levels into the nearest measurable level', () => {
+  it('keeps every level and marks those beyond the levels with elements', () => {
     expect(
       getAdaptiveDistributionRows([
         bucket('A2.2', 2, 4, 2, true),
@@ -20,18 +20,32 @@ describe('cohort distribution rows', () => {
       ])
     ).toEqual([
       {
+        key: '0',
+        levelLabel: 'Under A2',
+        edge: 'belowRange',
+        count: 3,
+        determinedCount: 2,
+      },
+      {
         key: '1',
         levelLabel: 'A2.1',
-        edge: 'belowRange',
-        count: 5,
-        determinedCount: 3,
+        edge: 'none',
+        count: 2,
+        determinedCount: 1,
       },
       {
         key: '2',
         levelLabel: 'A2.2',
-        edge: 'aboveRange',
-        count: 5,
+        edge: 'none',
+        count: 4,
         determinedCount: 2,
+      },
+      {
+        key: '3',
+        levelLabel: 'Above',
+        edge: 'aboveRange',
+        count: 1,
+        determinedCount: 0,
       },
     ])
   })

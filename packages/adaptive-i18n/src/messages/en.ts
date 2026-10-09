@@ -245,10 +245,6 @@ const messages = {
           notEnoughAnswers: 'Too few answers here for a reliable estimate',
           likelyRange: 'Likely between {lower} and {upper}',
           likelyLevel: 'Likely {level}',
-          likelyOrBelow: 'Likely {level} or below',
-          likelyOrAbove: 'Likely {level} or above',
-          levelOrBelow: '{level} or below',
-          levelOrAbove: '{level} or above',
           certainty: {
             HIGH: 'High certainty',
             MEDIUM: 'Medium certainty',
@@ -263,8 +259,10 @@ const messages = {
           levelExact: '{level}',
           levelWithTolerance:
             '{level} (±{count, plural, one {# level} other {# levels}})',
-          levelBelowRange: '{level} or below (below the measurable range)',
-          levelAboveRange: '{level} or above (above the measurable range)',
+          levelBelowRange:
+            '{level} (below the levels this quiz has questions for)',
+          levelAboveRange:
+            '{level} (above the levels this quiz has questions for)',
           evidenceHelp:
             'Each row shows your estimated level in that area and how certain it is. The estimate gets more certain with more answers.',
           title: 'Competence profile',
@@ -762,8 +760,8 @@ const messages = {
           barLabel:
             '{level}: {determined} determined, {provisional} provisional',
           counts: '{determined} determined · {provisional} provisional',
-          levelOrBelow: '{level} or below',
-          levelOrAbove: '{level} or above',
+          levelBelowRange: '{level} (below the levels with questions)',
+          levelAboveRange: '{level} (above the levels with questions)',
           included:
             '{count} results with an estimate for this area. Bar lengths show their share of these results.',
           excluded:

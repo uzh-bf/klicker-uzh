@@ -18,11 +18,10 @@ export type AdaptiveReportedLevelLabel = {
  * Presentation of a reported (or rough) level label. Never changes the
  * classification itself.
  *
- * - Bottom/top edge: when bands below the lowest (or above the highest) band
- *   with published elements exist and the level is at or beyond that band,
- *   the result cannot tell how far below/above it lies, so it reads
- *   "A2.1 or below (below the measurable range)" instead of naming an
- *   unmeasured band such as "Under A2".
+ * - Bottom/top edge: a level below the lowest (or above the highest) band
+ *   with published elements keeps its own name and gets a note, e.g.
+ *   "Under A2 (below the levels this quiz has questions for)". The estimate
+ *   there rests on answers to questions of other levels.
  * - Tolerance: a classified level under a quiz tolerance of t > 0 bands reads
  *   "B1.2 (±1 level)".
  */
@@ -43,16 +42,16 @@ export function getAdaptiveReportedLevelLabel({
   const lowest = measurable[0]
   const highest = measurable.at(-1)
   if (level && lowest && highest) {
-    if (bands[0]!.order < lowest.order && level.order <= lowest.order) {
+    if (level.order < lowest.order) {
       return {
         key: 'pwa.practiceQuiz.adaptive.profile.levelBelowRange',
-        values: { level: lowest.label },
+        values: { level: level.label },
       }
     }
-    if (bands.at(-1)!.order > highest.order && level.order >= highest.order) {
+    if (level.order > highest.order) {
       return {
         key: 'pwa.practiceQuiz.adaptive.profile.levelAboveRange',
-        values: { level: highest.label },
+        values: { level: level.label },
       }
     }
   }
