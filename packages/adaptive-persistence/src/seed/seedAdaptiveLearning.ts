@@ -1023,6 +1023,13 @@ Enter the percentage as a number.`
           overlapPolicyVersion: 'irt-v1-no-exposure-control',
           retakePolicy: Prisma.AdaptiveAttemptSelectionPolicy.LATEST_COMPLETED,
           retakeCooldownDays: practiceQuiz.resetTimeDays,
+          // Same retake settings as a published Diagnostic quiz.
+          retakeStartFromPreviousResult:
+            ADAPTIVE_DIAGNOSTIC_SEED_DEFAULTS.retakeStartFromPreviousResult,
+          retakeStartMaxAgeDays:
+            ADAPTIVE_DIAGNOSTIC_SEED_DEFAULTS.retakeStartMaxAgeDays,
+          retakePreferNewQuestions:
+            ADAPTIVE_DIAGNOSTIC_SEED_DEFAULTS.retakePreferNewQuestions,
           researchAllocationPolicy: Prisma.Prisma.JsonNull,
           stoppingPolicyVersion: 'irt-v1-z-interval',
           rolloutPolicyVersion: 1,
