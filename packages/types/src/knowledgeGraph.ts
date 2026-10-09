@@ -90,3 +90,24 @@ export function isCanonicalInputReference(
     reference.byte_count <= 64 * 1024 * 1024
   )
 }
+
+export type ServingSourceMetadata = {
+  byte_count: number
+  mime_type: string
+}
+
+export function isServingSourceMetadata(
+  value: unknown
+): value is ServingSourceMetadata {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  const metadata = value as Record<string, unknown>
+  return (
+    Object.keys(metadata).length === 2 &&
+    typeof metadata.byte_count === 'number' &&
+    Number.isSafeInteger(metadata.byte_count) &&
+    metadata.byte_count > 0 &&
+    metadata.byte_count <= 25 * 1024 * 1024 &&
+    typeof metadata.mime_type === 'string' &&
+    ['application/pdf', 'text/plain', 'text/html'].includes(metadata.mime_type)
+  )
+}

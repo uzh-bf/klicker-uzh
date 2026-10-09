@@ -1047,6 +1047,12 @@ async function reconcileResource({
           ...(canonical
             ? {
                 activeCanonicalInput: reference ?? Prisma.JsonNull,
+                ...(operation.servingSourceMetadata
+                  ? {
+                      sizeBytes: operation.servingSourceMetadata.byte_count,
+                      mimeType: operation.servingSourceMetadata.mime_type,
+                    }
+                  : {}),
                 ...(operation.observedSha256
                   ? { contentSha256: operation.observedSha256 }
                   : {}),

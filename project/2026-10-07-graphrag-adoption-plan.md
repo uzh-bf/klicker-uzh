@@ -92,6 +92,12 @@ Record expansion decisions, candidate/result passage counts and elapsed time wit
 
 Acceptance requires a synthetic concurrent regression at the MCP aggregation boundary, existing scope/graph/citation tests, applicable repository checks, and a draft PR. Read-only staging verification proceeds independently. Real-data model experiments require an identified controlled chatbot/corpus, approved provider and explicit fresh spend ceiling; historical budgets do not carry forward. Live activation, graph rebuilds, merging and deployment are separately gated.
 
+Before widening adoption, preserve printed page labels through graph citation
+extraction and display. Canonical input keeps both physical pages and printed
+labels; current question citation readers keep physical pages only. Physical
+PDF navigation remains correct. Add a synthetic Roman-label citation check
+when extending that consumer contract, and verify source navigation separately.
+
 ## Execution details
 
 Authority: executable batch; source changes, local commits, ordinary task-branch push and draft PR delivery, scoped read-only staging metadata. No flag changes, cluster writes, data discovery, release or production activation.

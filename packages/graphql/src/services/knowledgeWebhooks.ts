@@ -9,6 +9,8 @@ import {
 import {
   type CanonicalInputReference,
   isCanonicalInputReference,
+  isServingSourceMetadata,
+  type ServingSourceMetadata,
 } from '@klicker-uzh/types'
 import { createKBIngestionWebhookSignature } from '@klicker-uzh/util'
 
@@ -36,6 +38,7 @@ type OperationStatusEventType = (typeof EVENT_TYPES)[number]
 type OperationStatusEvent = {
   contract_version?: 'knowledge-source/v2'
   canonical_input?: CanonicalInputReference | null
+  serving_source_metadata?: ServingSourceMetadata | null
   eventId: string
   eventType: OperationStatusEventType
   occurredAt: string
@@ -151,12 +154,16 @@ function parsePayload(rawBody: Buffer): OperationStatusEvent | null {
       'statusDetail',
       'correlation_id',
       ...(payload.contract_version === 'knowledge-source/v2'
-        ? ['contract_version', 'canonical_input']
+        ? ['contract_version', 'canonical_input', 'serving_source_metadata']
         : []),
     ]) ||
     (payload.contract_version === 'knowledge-source/v2' &&
-      payload.canonical_input !== null &&
-      !isCanonicalInputReference(payload.canonical_input)) ||
+      ((payload.canonical_input !== null &&
+        !isCanonicalInputReference(payload.canonical_input)) ||
+        (payload.serving_source_metadata !== null &&
+          !isServingSourceMetadata(payload.serving_source_metadata)) ||
+        (payload.canonical_input === null) !==
+          (payload.serving_source_metadata === null))) ||
     typeof payload.eventId !== 'string' ||
     !UUID_PATTERN.test(payload.eventId) ||
     !EVENT_TYPES.includes(payload.eventType as OperationStatusEventType) ||
@@ -440,6 +447,12 @@ export async function handleKBIngestionWebhook({
               ? {
                   activeCanonicalInput:
                     payload.canonical_input ?? Prisma.JsonNull,
+                  ...(payload.serving_source_metadata
+                    ? {
+                        sizeBytes: payload.serving_source_metadata.byte_count,
+                        mimeType: payload.serving_source_metadata.mime_type,
+                      }
+                    : {}),
                 }
               : {}),
             ingestedAt: occurredAt,
@@ -501,6 +514,12 @@ export async function handleKBIngestionWebhook({
       ...(payload.contract_version
         ? {
             activeCanonicalInput: payload.canonical_input ?? Prisma.JsonNull,
+            ...(payload.serving_source_metadata
+              ? {
+                  sizeBytes: payload.serving_source_metadata.byte_count,
+                  mimeType: payload.serving_source_metadata.mime_type,
+                }
+              : {}),
             ...(servingMatchesCurrent
               ? { contentSha256: payload.serving.active_sha256 }
               : {}),

@@ -1429,6 +1429,7 @@ describe('KB ingestion reconciliation', () => {
         },
         inputContract: 'knowledge-source/v2',
         canonicalInput: canonicalInputReference,
+        servingSourceMetadata: { byte_count: 4096, mime_type: 'text/html' },
       })
     )
 
@@ -1461,6 +1462,8 @@ describe('KB ingestion reconciliation', () => {
         activeResourceVersion: 3,
         activeContentSha256: CONTENT_SHA256,
         activeCanonicalInput: canonicalInputReference,
+        sizeBytes: 4096,
+        mimeType: 'text/html',
         contentSha256: CONTENT_SHA256,
         ingestedAt: new Date('2026-07-26T12:00:00Z'),
       },

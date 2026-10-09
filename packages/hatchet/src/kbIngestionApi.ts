@@ -11,6 +11,8 @@ import {
   type CanonicalInputReference,
   type IngestKBResourceInput,
   isCanonicalInputReference,
+  isServingSourceMetadata,
+  type ServingSourceMetadata,
 } from '@klicker-uzh/types'
 import { getBlobStorageAccountUrl } from '@klicker-uzh/util'
 import {
@@ -63,6 +65,7 @@ export type KBOperationStatus =
 export type KBOperationStatusResponse = {
   inputContract?: 'knowledge-source/v2'
   canonicalInput?: CanonicalInputReference | null
+  servingSourceMetadata?: ServingSourceMetadata | null
   operationId: string
   status: KBOperationStatus
   operation: 'create' | 'update' | 'delete'
@@ -255,12 +258,18 @@ function parseOperationStatus(
       'correlation_id',
       'created_at',
       'updated_at',
-      ...(inputContract ? ['contract_version', 'canonical_input'] : []),
+      ...(inputContract
+        ? ['contract_version', 'canonical_input', 'serving_source_metadata']
+        : []),
     ]) ||
     (inputContract &&
       (operation.contract_version !== inputContract ||
         (operation.canonical_input !== null &&
-          !isCanonicalInputReference(operation.canonical_input)))) ||
+          !isCanonicalInputReference(operation.canonical_input)) ||
+        (operation.serving_source_metadata !== null &&
+          !isServingSourceMetadata(operation.serving_source_metadata)) ||
+        (operation.canonical_input === null) !==
+          (operation.serving_source_metadata === null))) ||
     !isBoundedString(operation.operation_id, 255) ||
     typeof operation.status !== 'string' ||
     !['accepted', 'running', 'succeeded', 'failed', 'superseded'].includes(
@@ -313,6 +322,8 @@ function parseOperationStatus(
       ? {
           inputContract,
           canonicalInput: reference as CanonicalInputReference | null,
+          servingSourceMetadata:
+            operation.serving_source_metadata as ServingSourceMetadata | null,
         }
       : {}),
     operationId: operation.operation_id,
@@ -389,7 +400,10 @@ export function createKBIngestionApiClient({
           },
           body: JSON.stringify({
             ...(input.inputContract
-              ? { contract_version: input.inputContract }
+              ? {
+                  contract_version: input.inputContract,
+                  max_bytes: MAX_KB_SOURCE_BYTES,
+                }
               : {}),
             project_id: projectId,
             producer: KB_INGESTION_PRODUCER,

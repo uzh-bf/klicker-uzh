@@ -66,6 +66,7 @@ const operationResponse = {
 const v2OperationResponse = {
   ...operationResponse,
   contract_version: 'knowledge-source/v2',
+  serving_source_metadata: { byte_count: 4096, mime_type: 'text/html' },
   canonical_input: {
     contract_version: 'canonical-document/v1',
     producer_id: 'klicker',
@@ -176,6 +177,7 @@ describe('canonical ingestion API client', () => {
     expect(url.toString()).toBe('https://ingestion.example/v2/resources')
     expect(JSON.parse(request.body)).toEqual({
       contract_version: 'knowledge-source/v2',
+      max_bytes: 25 * 1024 * 1024,
       project_id: 'klicker-course-materials',
       producer: 'klicker',
       external_resource_id: RESOURCE_ID,
@@ -214,6 +216,7 @@ describe('canonical ingestion API client', () => {
     expect(url.toString()).toBe('https://ingestion.example/v2/resources')
     expect(JSON.parse(request.body)).toEqual({
       contract_version: 'knowledge-source/v2',
+      max_bytes: 25 * 1024 * 1024,
       project_id: 'klicker-course-materials',
       producer: 'klicker',
       external_resource_id: RESOURCE_ID,
@@ -347,6 +350,7 @@ describe('canonical ingestion API client', () => {
     expect(operation).toEqual({
       inputContract: 'knowledge-source/v2',
       canonicalInput: v2OperationResponse.canonical_input,
+      servingSourceMetadata: v2OperationResponse.serving_source_metadata,
       operationId: 'op_01J2X8K3M9QZ4R7T6V5W1Y0BND',
       status: 'succeeded',
       operation: 'update',
@@ -373,6 +377,7 @@ describe('canonical ingestion API client', () => {
       status: 'failed',
       observed_sha256: null,
       canonical_input: null,
+      serving_source_metadata: null,
     })
 
     await expect(
@@ -407,6 +412,27 @@ describe('canonical ingestion API client', () => {
       response: {
         ...v2OperationResponse,
         contract_version: 'knowledge-source/v1',
+      },
+    },
+    {
+      name: 'an oversized served source',
+      response: {
+        ...v2OperationResponse,
+        serving_source_metadata: {
+          byte_count: 25 * 1024 * 1024 + 1,
+          mime_type: 'text/html',
+        },
+      },
+    },
+    {
+      name: 'missing served metadata',
+      response: { ...v2OperationResponse, serving_source_metadata: null },
+    },
+    {
+      name: 'an unsupported served MIME',
+      response: {
+        ...v2OperationResponse,
+        serving_source_metadata: { byte_count: 4096, mime_type: 'image/png' },
       },
     },
     {

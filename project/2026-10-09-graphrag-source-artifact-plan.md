@@ -409,3 +409,18 @@ qualification remain open. The initial KG pipeline failed on workflow return
 annotations; the correction carries the new v2 terminal union through that seam.
 No merge, deployment, reader provisioning, source refresh, graph rebuild,
 GraphRAG activation or evaluation spend occurred.
+
+October 10 final review correction: accepted the missing raw-size/MIME lineage
+and unconditional artifact-reader startup findings. V2 admission now supplies
+Klicker's 25 MiB cap, bounded by the producer policy. V2 status and signed events
+carry active-version `serving_source_metadata` alongside canonical lineage;
+Klicker reconciles actual sizes and MIME without origin probes. V1 shapes remain
+unchanged. Synthetic tests cover the wire cap, invalid metadata, activation,
+replacement and persisted quota accounting. Reader startup correction and
+same-reviewer qualification remain in progress.
+
+KG slice review passed its isolation/integrity/lifecycle checks and reported a
+printed-page-label consumer gap. Canonical preparation retains both identities;
+existing physical-page citation navigation is intact. The adoption roadmap now
+tracks printed-label citation extraction/display before widening. This source
+package does not add a new question citation API.

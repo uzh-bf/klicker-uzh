@@ -148,6 +148,9 @@ describe('KB ingestion webhook contract', () => {
       ...event(eventType),
       contract_version: 'knowledge-source/v2',
       canonical_input: null,
+      serving_source_metadata: overrides.canonical_input
+        ? { byte_count: 4096, mime_type: 'text/html' }
+        : null,
       ...overrides,
     }
   }
@@ -835,6 +838,8 @@ describe('KB ingestion webhook contract', () => {
         activeResourceVersion: RESOURCE_VERSION,
         activeContentSha256: CONTENT_SHA256,
         activeCanonicalInput: reference,
+        sizeBytes: 4096,
+        mimeType: 'text/html',
         contentSha256: CONTENT_SHA256,
         ingestedAt: new Date(OCCURRED_AT),
       })
