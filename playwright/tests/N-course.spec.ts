@@ -2359,6 +2359,9 @@ test.describe('Part 3: Course overview, editing, and archiving', () => {
 
     // Leave and rejoin leaderboard
     await page.getByTestId('student-course-join-leaderboard').click()
+    await page.getByTestId('cancel-join-course-leaderboard').click()
+    await page.getByTestId('student-course-join-leaderboard').click()
+    await page.getByTestId('confirm-join-course-leaderboard').click()
     await page.getByTestId('leave-leaderboard').click()
     await page.getByTestId('cancel-leave-course-leaderboard').click()
     await page.getByTestId('leave-leaderboard').click()
@@ -2368,6 +2371,7 @@ test.describe('Part 3: Course overview, editing, and archiving', () => {
     ).toBeVisible()
 
     await page.getByTestId('student-course-join-leaderboard').click()
+    await page.getByTestId('confirm-join-course-leaderboard').click()
     await expect(page.getByTestId('leave-leaderboard')).toBeVisible()
   })
 
