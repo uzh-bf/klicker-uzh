@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import { GetKbDocument } from '@klicker-uzh/graphql/dist/ops'
 import { H1, Skeleton, UserNotification } from '@uzh-bf/design-system'
 import Link from 'next/link'
@@ -24,6 +25,7 @@ function KnowledgeBaseDetail({
 }) {
   const t = useTranslations()
   const format = useFormatter()
+  const advancedManagementEnabled = useFeatureFlag('ai-advanced-management')
   const [resourceRefreshKey, setResourceRefreshKey] = useState(0)
   const [addResourceOpen, setAddResourceOpen] = useState(false)
   const addResourceTriggerRef = useRef<HTMLElement | null>(null)
@@ -232,7 +234,7 @@ function KnowledgeBaseDetail({
       />
       <KnowledgeBaseImportedSourceList kbId={kbId} />
       <KnowledgeBaseChatbotBindings kbId={kbId} onChanged={refreshMetrics} />
-      <KnowledgeGraphPanel kbId={kbId} />
+      {advancedManagementEnabled ? <KnowledgeGraphPanel kbId={kbId} /> : null}
       {addResourceOpen ? (
         <KnowledgeBaseAddResourceModal
           kbId={kbId}

@@ -1400,6 +1400,13 @@ export async function createKb(
     ctx
   )
 
+  // Scheduled preparation needs the per-KB opt-in, so an owner admitted to it
+  // starts enabled instead of having to switch the graph on.
+  const knowledgeGraphEnabled = await isFeatureFlagEnabled(
+    ctx,
+    'kb-auto-graph-preparation'
+  )
+
   return ctx.prisma.kB.create({
     data: {
       name: normalizedName,
@@ -1408,6 +1415,7 @@ export async function createKb(
       domainPolicyId: domain?.domainPolicyId ?? null,
       domainPolicyVersion: domain?.domainPolicyVersion ?? null,
       domainPolicyLanguage: domain?.language ?? null,
+      knowledgeGraphEnabled,
     },
   })
 }
@@ -3674,10 +3682,11 @@ export interface KBQuestionPreparationInput {
 }
 
 /**
- * Lecturers are told to check back within 24 hours; a preparation pending
- * longer reports delayed instead of queued or processing.
+ * Lecturers are told preparation runs overnight and is usually ready the next
+ * morning; a preparation pending longer reports delayed instead of queued or
+ * processing.
  */
-export const KB_QUESTION_PREPARATION_DELAYED_AFTER_MS = 24 * 60 * 60_000
+export const KB_QUESTION_PREPARATION_DELAYED_AFTER_MS = 36 * 60 * 60_000
 
 export interface KBQuestionPreparation {
   state: KBQuestionPreparationState

@@ -41,17 +41,17 @@ and worker-only KB settlement are unaffected.
 
 ## Active flags
 
-| Key                           | Consumer                                                | Fallback | Disabled behavior                                                                                                                    |
-| ----------------------------- | ------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `learning-analytics`          | Lecturer UI/Manage                                      | `false`  | Analytics controls remain visible but are not usable                                                                                 |
-| `ai-beta`                     | Server-side chatbot authoring and account-usage rollout | `false`  | Authoring UI is not mounted; authoring API calls are denied and protected reads return no data                                       |
-| `ai-advanced-management`      | Lecturer Manage UI                                      | `false`  | Manage shows the simplified chatbot surface; the advanced controls are not mounted                                                   |
-| `kb-ingestion`                | Lecturer KB ingestion admission                         | `false`  | New upload, upload confirmation, URL, replacement and ingest requests are refused; reads, deletion, cleanup and queued work continue |
-| `kb-graph-builds`             | Lecturer graph opt-in and rebuilds                      | `false`  | New opt-ins and rebuilds are refused before any cost reservation; published graphs and accepted builds continue                      |
-| `kb-graph-domain-selection`   | Explicit graph-domain and graph-focus requests          | `false`  | The capability handshake advertises no options and a complete selection is refused                                                   |
-| `question-focus-topic`        | Per-batch question-generation focus                     | `false`  | `supportsFocusTopic` is false and a requested focus is refused                                                                       |
-| `kb-auto-graph-preparation`   | System-triggered (scheduled) graph preparation          | `false`  | No automatic graph build is admitted; lecturer-requested builds are unaffected                                                       |
-| `chatbot-long-custom-prompts` | Custom chat mode persona length in Manage and on save   | `false`  | New or edited persona text is capped at 10,000 characters; stored longer text keeps compiling and saves unchanged                    |
+| Key                           | Consumer                                                               | Fallback | Disabled behavior                                                                                                                    |
+| ----------------------------- | ---------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `learning-analytics`          | Lecturer UI/Manage                                                     | `false`  | Analytics controls remain visible but are not usable                                                                                 |
+| `ai-beta`                     | Server-side chatbot authoring and account-usage rollout                | `false`  | Authoring UI is not mounted; authoring API calls are denied and protected reads return no data                                       |
+| `ai-advanced-management`      | Lecturer Manage UI                                                     | `false`  | Manage shows the simplified chatbot surface; the advanced controls are not mounted                                                   |
+| `kb-ingestion`                | Lecturer KB ingestion admission                                        | `false`  | New upload, upload confirmation, URL, replacement and ingest requests are refused; reads, deletion, cleanup and queued work continue |
+| `kb-graph-builds`             | Lecturer graph opt-in and rebuilds                                     | `false`  | New opt-ins and rebuilds are refused before any cost reservation; published graphs and accepted builds continue                      |
+| `kb-graph-domain-selection`   | Explicit graph-domain and graph-focus requests                         | `false`  | The capability handshake advertises no options and a complete selection is refused                                                   |
+| `question-focus-topic`        | Per-batch question-generation focus                                    | `false`  | `supportsFocusTopic` is false and a requested focus is refused                                                                       |
+| `kb-auto-graph-preparation`   | System-triggered (scheduled) graph preparation; new KBs start opted in | `false`  | No automatic graph build is admitted; lecturer-requested builds are unaffected                                                       |
+| `chatbot-long-custom-prompts` | Custom chat mode persona length in Manage and on save                  | `false`  | New or edited persona text is capped at 10,000 characters; stored longer text keeps compiling and saves unchanged                    |
 
 Beta Features is discoverable in account settings and the first-login dialog
 regardless of Catalyst, login scope, or rollout availability. The information
@@ -571,7 +571,7 @@ The architectural rationale is recorded in
 `ai-advanced-management` defaults off. It reveals the advanced
 chatbot-management surface in Manage: model selection, reasoning effort,
 credit editing, usage summary, MCP configuration, knowledge-graph controls
-and response examples. Off is the ordinary lecturer surface, not a
+(the knowledge-graph panel on the knowledge-base page) and response examples. Off is the ordinary lecturer surface, not a
 degradation — every lecturer sees the simplified chatbot surface by default,
 and turning the flag on only adds controls on top of it. Evaluation happens
 in the browser inside Manage, so this is a UI reveal and not an authorization
@@ -600,13 +600,13 @@ backend-enforced entitlements under [ADR 0038](./adr/0038-backend-enforced-featu
 the capability queries advertise what the requesting actor's own evaluation
 allows, and every entry point re-evaluates the flag before it accepts work.
 
-| Key                         | Admits                                                                                      | Closed or unavailable behavior                                                                                                              |
-| --------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `kb-ingestion`              | Upload tickets, upload confirmation, URL resources, file replacement, and ingest/retry work | `KB_INGESTION_DISABLED` on new requests only; reads, deletion, cleanup and queued reconciliation stay live                                  |
-| `kb-graph-builds`           | Graph opt-in, rebuild and focus requests, before any cost reservation                       | `KB_GRAPH_DISABLED` on new requests only; a published graph keeps being served and an accepted build keeps running, settling and publishing |
-| `kb-graph-domain-selection` | Explicit domain selection and the graph build focus                                         | `KB_GRAPH_DOMAIN_CAPABILITY_DISABLED`; the capability handshake advertises no options                                                       |
-| `question-focus-topic`      | A per-batch question-generation focus                                                       | `CONFIGURATION_INVALID` for a requested focus, and `supportsFocusTopic: false` in the capability query                                      |
-| `kb-auto-graph-preparation` | Scheduled graph preparation for the KB owner, in addition to `kb-graph-builds`              | The worker sweep skips the owner's KBs before any reservation; lecturer requests and accepted builds are unaffected                         |
+| Key                         | Admits                                                                                                                     | Closed or unavailable behavior                                                                                                              |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `kb-ingestion`              | Upload tickets, upload confirmation, URL resources, file replacement, and ingest/retry work                                | `KB_INGESTION_DISABLED` on new requests only; reads, deletion, cleanup and queued reconciliation stay live                                  |
+| `kb-graph-builds`           | Graph opt-in, rebuild and focus requests, before any cost reservation                                                      | `KB_GRAPH_DISABLED` on new requests only; a published graph keeps being served and an accepted build keeps running, settling and publishing |
+| `kb-graph-domain-selection` | Explicit domain selection and the graph build focus                                                                        | `KB_GRAPH_DOMAIN_CAPABILITY_DISABLED`; the capability handshake advertises no options                                                       |
+| `question-focus-topic`      | A per-batch question-generation focus                                                                                      | `CONFIGURATION_INVALID` for a requested focus, and `supportsFocusTopic: false` in the capability query                                      |
+| `kb-auto-graph-preparation` | Scheduled graph preparation for the KB owner, in addition to `kb-graph-builds`; also opts newly created KBs into the graph | The worker sweep skips the owner's KBs before any reservation; lecturer requests and accepted builds are unaffected                         |
 
 These flags narrow existing provider contracts and never replace them. Explicit
 domain selection still requires `KB_GRAPH_DOMAIN_CATALOG_REVISION` to match the
