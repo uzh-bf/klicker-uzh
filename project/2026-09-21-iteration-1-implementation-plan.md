@@ -11,9 +11,22 @@
 - **General academic** is the visible default subject suggestion for a KB created outside a course context. It is shown and editable, never applied silently.
 - **Participant credits** for the sponsored cohort are a daily allowance of a few credits per student, applied as a server-side default in chatbot creation, so the Usage view can be hidden without leaving students on one advanced turn per week. A credit is debited by the turn's registry-priced cost in USD, so one credit is roughly one US dollar of model usage. [E26a] Starting value: 3 initial credits, daily reset, reset amount 3, maximum 3, held as one server-side constant that operations tune as needed. The overall sponsored budget is high; the allowance bounds a single account's daily spend rather than rationing normal use.
 - **Sponsored usage** in iteration 1 is the existing operator-controlled account usage configuration. The entitlement tiers and monthly base budget in PR #6046 (with #6049 stacked on it) follow this plan; when they land, their lecturer-facing surface sits behind `ai-advanced-management`.
-- **Graph preparation** runs as one periodic sweep with a quiet period, a backoff and a concurrency cap. Six-hour admission windows are dropped.
+- **Graph preparation** runs as one periodic sweep with a quiet period, a backoff and a concurrency cap. Six-hour admission windows are dropped. Revised 9 October 2026: the sweep admits automatic builds only inside a nightly window (section 5.2).
 - **Automatic ingestion is what upload means.** The existing `kb-ingestion` flag governs it; there is no `kb-auto-ingestion` flag.
 - **Delivery order** is S1, S3, S2, S6, then S4, then S5. S1 and S3 are small.
+
+### Decisions after local testing on 9 October 2026
+
+The S1–S6 stack (#6254 to #6367) was tested end to end locally. Hiding worked, but creating a chatbot still felt complex: the draft is a five-tab workspace with three separate saves, a required detour to the disclaimer and a collapsed submit step. The product owner decided:
+
+- **Follow-up layers S7–S9 go on the same UX stack**, on top of #6367 and before the stack merges. See [section 7.1](#71-follow-up-layers-on-the-ux-stack).
+- **A normal lecturer prepares a draft chatbot on one setup page** with three steps: materials, student information and request publication. Defaults are created rather than offered. The tabbed workspace stays for published chatbots and for advanced users.
+- **The knowledge graph is hidden for normal users.** Its panel is mounted only with `ai-advanced-management`. Graphs are prepared automatically overnight, with no lecturer action.
+
+Two gaps found in the stack during the review are fixed in S8, because without them hiding the panel would leave normal users with no way to prepare a graph:
+
+- `createKb` never sets `knowledgeGraphEnabled`, so new KBs never become sweep candidates. Section 5.2 already required cohort KBs to default to enabled.
+- The sweep needs a stored subject and language, and these are stored only when the lecturer accepts the suggestion. The suggestion appears only with `kb-graph-domain-selection` on and the catalog revision set. Both are now activation prerequisites for the nightly preparation.
 
 ## At a glance
 
@@ -31,6 +44,9 @@
 | 4 | **S6** | KB select and create from the chatbot; list readiness; lean publication path | medium | S1 surface; S2 metadata; S3 for the complete upload journey |
 | 5 | **S4** | Scheduled graph preparation; preparation fingerprint; generation readiness | medium | S2 settings; S3 serving-change semantics; the #6236 quota-lockstep fix |
 | 6 | **S5** | KB-first question generation with waiting states | medium | S2 and S4 contracts |
+| 7 | **S7** | Draft defaults: disclaimer at creation, Usage tab hidden, publication prefill, wording | small | S6 |
+| 8 | **S8** | Knowledge graph hidden; KB opt-in default; nightly preparation window; readiness wording | medium | S4, S5 |
+| 9 | **S9** | Single-page draft setup for normal lecturers | medium | S7 |
 
 **Sequence:** S1 and S3 first, in parallel. S2 follows on its own schema slice. S6 delivers the useful chatbot path as soon as S1, S2 and S3 have landed, and does not wait for S4 or S5. S4 then S5 complete graph-backed question generation. Activation order is in section 10.
 
@@ -209,6 +225,16 @@ Operating policy, configured in operator settings and validated before activatio
 
 Coalescing comes from the quiet period plus the single slot: a dozen uploads inside one quiet period yield one build. The 24-hour user expectation is elapsed time and is conservative under this policy rather than a target to measure into.
 
+**Nightly window (added 9 October 2026, S8).** Automatic builds are admitted only inside a nightly window:
+
+- The window is configured as `KB_GRAPH_AUTO_PREPARATION_WINDOW` (default `22:00-06:00`) in `KB_GRAPH_AUTO_PREPARATION_WINDOW_TIMEZONE` (default `Europe/Zurich`).
+- The sweep keeps its 15-minute cron and returns early with an outside-window status before scanning. Keeping the window out of the cron expression avoids daylight-saving drift, because the Hatchet SDK takes no timezone for crons.
+- The window check runs before classification, so the quiet period, the maximum deferral and the backoff keep their meaning inside the window.
+- A retry due in the daytime waits for the next night. Three failures inside one night still reach the attempt limit and show "needs attention" by morning.
+- Manual builds by advanced users bypass the window.
+- Throughput per night is the concurrency cap times the window length divided by the build duration, and lecturer builds share the cap. Build duration is not yet measured, so staging starts with a cap of 4 and watches the graph provider's limits. The sweep task's 10-minute timeout is not a constraint, because it only dispatches; builds run externally under their own timeout.
+- The question-readiness delay threshold rises from 24 to 36 hours. Otherwise an upload just after 06:00 shows as delayed before its first night.
+
 The per-KB opt-in `knowledgeGraphEnabled` [E21] becomes the operator hold for the cohort. Enrollment sets it for the cohort's existing KBs through a dry-run inventory and a separately authorized backfill; KBs created by cohort members default to enabled. Accounts outside the cohort keep the current manual behavior.
 
 #### Fingerprint
@@ -379,6 +405,57 @@ Keep the preview truthfully named: it uses the active configuration, not the dra
 
 **Dependencies:** S2 and S4 contracts landed.
 
+### 7.1 Follow-up layers on the UX stack
+
+Added on 9 October 2026 after local end-to-end testing (see [Decisions after local testing](#decisions-after-local-testing-on-9-october-2026)). Each layer is a reviewable PR on top of #6367. S7 and S8 block the staging deploy. S9 lands before the merge if the product owner retests it in time; otherwise it follows directly. S8 comes before S9 so the two blocking layers can merge if S9 slips.
+
+Since the original plan, `createChatbot` defaults to the BASE GPT-6 Luna model instead of Auto, and credits come from one shared default policy. Sections 2 and 3 describe the state at the original baseline.
+
+#### S7 — Draft defaults and wording
+
+**Outcome:** A normal lecturer can request publication without opening the disclaimer, and sees no usage, revision or technical wording.
+
+**Scope:**
+- `createChatbot` creates the disclaimer from the suggested title and intro. The modal passes them in the course language, because the GraphQL package has no i18n dependency. The server reuses the existing disclaimer creation.
+- The Usage tab is unmounted for normal users, and old `usage` links fall back to Overview.
+- The publication form prefills the use case from the description and the expected student count from the course's participant count. Both fields stay required on the server.
+- Normal users no longer see the duplicate Overview heading, the Technical details expander, the owner-preview revision sentence, or the notes on multiple knowledge bases and on managing ingestion.
+- The live-configuration notice gets wording per status, because a never-published draft has no live configuration.
+
+**Acceptance:** In Playwright, create a chatbot, connect a KB and request publication without opening the disclaimer. Usage is absent with the advanced flag off and present with it on. EN and DE browser captures.
+
+#### S8 — Knowledge graph hidden, prepared overnight
+
+**Outcome:** A normal lecturer never sees a graph control and still gets questions prepared automatically.
+
+**Scope:**
+- `KnowledgeGraphPanel` is mounted only with `ai-advanced-management`. `kb-graph-builds` stays on, because the scheduler needs it.
+- `createKb` sets `knowledgeGraphEnabled` when the owner's `kb-auto-graph-preparation` is on. Existing cohort KBs need a separately authorized backfill.
+- The nightly window from section 5.2 and the 36-hour delay threshold.
+- New readiness wording: "Prepared automatically overnight; usually ready the next morning." The UI promises an exact time only if it derives one from the window.
+- Updates to the worker and feature-flag docs.
+
+**Acceptance:**
+- Vitest on the sweep with a deterministic clock inside and outside the window, including across a daylight-saving change.
+- No graph panel with the advanced flag off.
+- A fresh normal-user KB with materials reports "queued", not "unavailable".
+
+#### S9 — Single-page draft setup
+
+**Outcome:** A normal lecturer prepares a draft chatbot on one page, in three steps.
+
+**Scope:**
+- For a normal user on a draft or rejected chatbot, `ChatbotDetails` shows one setup page without a tab bar. It is a recomposition of the existing sections, not a new component.
+- Step 1 is materials. On a draft, choosing a KB connects it immediately, because bindings sit outside the revision and a draft has no live effect. Published chatbots keep the explicit Connect button and the live-change note.
+- Step 2 is student information, shown as a collapsed and prefilled summary with an Edit option.
+- Step 3 is the publication request, open by default and prefilled.
+- Behavior becomes an optional collapsed section, "Teaching modes and framing".
+- Published, paused and pending chatbots keep the tabs, minus Usage, for normal users. Advanced users keep all tabs in every status.
+
+**Acceptance:** In Playwright, the draft journey takes three screens. Published chatbots keep the tabs without Usage. The advanced view is unchanged. EN and DE captures.
+
+**Unchanged by S7–S9:** ADMIN publication review, server-side draft/live revision semantics and immediate KB bindings on published chatbots.
+
 ## 8. Ownership, stacks and merge discipline
 
 Before dispatch, record the baseline SHA, one accountable owner per package and the overlap table in [Related work](#related-work). Adopt an existing equivalent PR instead of opening a duplicate.
@@ -418,7 +495,7 @@ Release in this order:
 1. **Foundations:** S1 slice 1 (flag key, credit default, dead code) and S2 slice 1 (additive schema, initialization, update mutation). Migrations start no model work.
 2. **Working chatbot path:** S1 slice 2, S3 and S6. Enable `ai-advanced-management` for the internal cohort. The graph panel stays mounted for normal users because it is still the only preparation path.
 3. **Automatic question preparation:** after the #6236 quota-lockstep fix and provider, domain and cost readiness, enroll a bounded KB set, enable `kb-auto-graph-preparation` for the cohort, then land S5.
-4. **Complete normal-user surface:** remove the graph panel from the normal cohort once automatic preparation and its status and recovery route work.
+4. **Complete normal-user surface:** remove the graph panel from the normal cohort once automatic preparation and its status and recovery route work. S8 does this together with the nightly window. Its prerequisites are `kb-auto-graph-preparation` and `kb-graph-domain-selection` on for the cohort, the catalog revision set, and the backfill of existing cohort KBs.
 
 UI code may land earlier than its activation step. No screen claims a job is scheduled before the policy and worker registration exist, and no cohort loses its only working preparation path.
 
@@ -426,7 +503,7 @@ Rollback for automatic admission: turn the flag off, preserve pending evidence, 
 
 Measure upload-to-retrieval-ready time, oldest-unmet-intention-to-ready time, overdue and failed KBs, prevented duplicate builds, graph spend versus generation spend, and wrong-source regressions, from operational metadata only. If capacity cannot sustain the 24-hour expectation, adjust schedule, capacity or wording before widening the cohort.
 
-Deferred: full workspace redesign, autosave coordinator, exact draft-runtime preview, staged KB bindings, immutable historical retrieval, multiple active KBs, reviewer workbench, review-event engine, notification platform, billing or credit redesign, automatic question generation after preparation, graph-engine replacement and mobile redesign.
+Deferred: full workspace redesign beyond the S9 draft setup page, autosave coordinator, exact draft-runtime preview, staged KB bindings, immutable historical retrieval, multiple active KBs, reviewer workbench, review-event engine, notification platform, billing or credit redesign, automatic question generation after preparation, graph-engine replacement and mobile redesign.
 
 **Exit criterion:** A normal approved lecturer adds materials, prepares and connects a chatbot, understands what is ready and uses question generation when preparation completes, without documentation on pipeline controls or cost configuration.
 
