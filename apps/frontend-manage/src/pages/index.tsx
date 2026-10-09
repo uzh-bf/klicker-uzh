@@ -326,7 +326,7 @@ function Index() {
     <Layout
       displayName={t('manage.general.questionPool')}
       data={{ cy: 'homepage' }}
-      className={{ children: 'pb-2 sm:overflow-y-auto' }}
+      className={{ children: 'relative pb-2 sm:overflow-y-auto' }}
     >
       {typeof creationMode === 'undefined' && (
         <Suspense fallback={<div />}>
