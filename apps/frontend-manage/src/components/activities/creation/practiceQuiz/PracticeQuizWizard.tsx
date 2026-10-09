@@ -316,10 +316,16 @@ function PracticeQuizWizard({
         .required(t('manage.activityWizard.adaptive.validation.treeRequired')),
       nodeOverrides: yup.array().of(
         yup.object().shape({
-          weight: optionalNumber().moreThan(
-            0,
-            t('manage.activityWizard.adaptive.validation.positive')
-          ),
+          // A switched-off node keeps no weight; only enabled ones need > 0.
+          weight: optionalNumber().when('enabled', {
+            is: false,
+            then: () => optionalNumber(),
+            otherwise: () =>
+              optionalNumber().moreThan(
+                0,
+                t('manage.activityWizard.adaptive.validation.positive')
+              ),
+          }),
           questionCap: optionalNumber()
             .integer(t('manage.activityWizard.adaptive.validation.integer'))
             .min(1, t('manage.activityWizard.adaptive.validation.positive'))
