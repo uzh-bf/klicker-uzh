@@ -12,6 +12,10 @@ import React, { useEffect, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { getGraphQLErrorCode } from '../graphqlError'
 import { refreshAfterMutation } from '../refreshAfterMutation'
+import KnowledgeBaseMaterialConfirmation, {
+  EMPTY_KB_TRANSFER_ATTESTATION,
+  isKbTransferAttestationGiven,
+} from './KnowledgeBaseMaterialConfirmation'
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024
 const CONTENT_TYPES: Record<string, string> = {
@@ -40,7 +44,8 @@ function KnowledgeBaseFileDropzone({
 }) {
   const t = useTranslations()
   const [uploading, setUploading] = useState(false)
-  const [replacementFile, setReplacementFile] = useState<File | null>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [attestation, setAttestation] = useState(EMPTY_KB_TRANSFER_ATTESTATION)
   const [materialType, setMaterialType] = useState(
     KbResourceMaterialType.CourseContent
   )
@@ -72,6 +77,8 @@ function KnowledgeBaseFileDropzone({
           fileName: file.name,
           contentType,
           sizeBytes: file.size,
+          rightsConfirmed: attestation.rightsConfirmed,
+          personalDataConfirmed: attestation.personalDataConfirmed,
         }
         const uploadReservation = replaceResource
           ? (
@@ -130,7 +137,8 @@ function KnowledgeBaseFileDropzone({
             onResourceCreated,
             'KB resources after replacement queue failure'
           )
-          setReplacementFile(null)
+          setSelectedFile(null)
+          setAttestation(EMPTY_KB_TRANSFER_ATTESTATION)
         }
         let message = t('kb.fileUploadError')
         switch (code) {
@@ -155,10 +163,10 @@ function KnowledgeBaseFileDropzone({
       }
 
       await refreshAfterMutation(onResourceCreated, 'KB resources after upload')
+      setSelectedFile(null)
+      setAttestation(EMPTY_KB_TRANSFER_ATTESTATION)
       if (!replaceResource) {
         setMaterialType(KbResourceMaterialType.CourseContent)
-      } else {
-        setReplacementFile(null)
       }
       toast({
         type: 'success',
@@ -177,11 +185,8 @@ function KnowledgeBaseFileDropzone({
     maxSize: MAX_FILE_SIZE,
     multiple: false,
     onDropAccepted: (files) => {
-      if (replaceResource) {
-        setReplacementFile(files[0] ?? null)
-        return
-      }
-      void uploadFile(files)
+      setSelectedFile(files[0] ?? null)
+      setAttestation(EMPTY_KB_TRANSFER_ATTESTATION)
     },
     onDropRejected: () =>
       toast({ type: 'error', message: t('kb.fileRejected') }),
@@ -203,9 +208,10 @@ function KnowledgeBaseFileDropzone({
             id="kb-file-material-type"
             label={t('kb.materialType')}
             value={materialType}
-            onChange={(value) =>
+            onChange={(value) => {
+              setAttestation(EMPTY_KB_TRANSFER_ATTESTATION)
               setMaterialType(value as KbResourceMaterialType)
-            }
+            }}
             items={[
               {
                 value: KbResourceMaterialType.Unclassified,
@@ -225,6 +231,11 @@ function KnowledgeBaseFileDropzone({
           />
         </>
       )}
+      <KnowledgeBaseMaterialConfirmation
+        attestation={attestation}
+        onChange={setAttestation}
+        disabled={uploading}
+      />
       <div
         {...getRootProps({
           role: 'button',
@@ -242,21 +253,40 @@ function KnowledgeBaseFileDropzone({
         <span className="font-medium" aria-live="polite">
           {uploading
             ? t('kb.uploading')
-            : (replacementFile?.name ?? t('kb.fileDropPrompt'))}
+            : (selectedFile?.name ?? t('kb.fileDropPrompt'))}
         </span>
         <span className="mt-1 text-xs text-slate-500">
           {t('kb.fileUploadFormats')}
         </span>
       </div>
-      {replaceResource && replacementFile ? (
-        <Button
-          onClick={() => void uploadFile([replacementFile])}
-          disabled={uploading}
-          data={{ cy: 'confirm-kb-file-replacement' }}
-          className={{ root: 'mt-4 w-full justify-center' }}
-        >
-          <Button.Label>{t('kb.replaceAndIngest')}</Button.Label>
-        </Button>
+      {selectedFile ? (
+        <>
+          <Button
+            onClick={() => void uploadFile([selectedFile])}
+            disabled={uploading || !isKbTransferAttestationGiven(attestation)}
+            data={{
+              cy: replaceResource
+                ? 'confirm-kb-file-replacement'
+                : 'confirm-kb-file-upload',
+            }}
+            className={{ root: 'mt-4 w-full justify-center' }}
+          >
+            <Button.Label>
+              {replaceResource
+                ? t('kb.replaceAndIngest')
+                : t('kb.fileUploadTitle')}
+            </Button.Label>
+          </Button>
+          {!isKbTransferAttestationGiven(attestation) ? (
+            <p
+              role="status"
+              className="mt-2 text-sm text-slate-600"
+              data-cy="kb-material-confirmation-hint"
+            >
+              {t('kb.materialConfirmationRequired')}
+            </p>
+          ) : null}
+        </>
       ) : null}
     </>
   )
