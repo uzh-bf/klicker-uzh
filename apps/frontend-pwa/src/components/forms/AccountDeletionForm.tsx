@@ -3,7 +3,7 @@ import {
   DeleteParticipantAccountDocument,
   LogoutParticipantDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H3, Modal } from '@uzh-bf/design-system'
+import { Button, H3, Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
@@ -48,8 +48,19 @@ function AccountDeletionForm() {
               primaryButtonStyle="destructive"
               primaryLoading={deletingAccount || loggingOut}
               onPrimaryAction={async () => {
-                const result = await deleteParticipantAccount()
-                if (result.data?.deleteParticipantAccount !== true) return
+                const result = await deleteParticipantAccount().catch(
+                  () => undefined
+                )
+                if (result?.data?.deleteParticipantAccount !== true) {
+                  // The session stays active, so the participant can retry.
+                  toast({
+                    type: 'error',
+                    message: t('shared.generic.systemError'),
+                    options: { duration: 6000 },
+                  })
+                  setDeleteModalOpen(false)
+                  return
+                }
                 try {
                   await logoutParticipant()
                 } catch (e) {}
