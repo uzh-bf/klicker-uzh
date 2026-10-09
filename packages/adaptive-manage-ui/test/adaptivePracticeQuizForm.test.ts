@@ -215,6 +215,55 @@ describe('adaptive practice quiz Manage form', () => {
   })
 })
 
+describe('switched-off competences in a stored quiz', () => {
+  test('keep no weight, so editing or duplicating stays valid', () => {
+    const preview = {
+      config: {
+        competenceTreeId: 'tree-id',
+        scaleVersionId: null,
+        preset: AdaptivePracticeQuizPreset.Diagnostic,
+        totalQuestionCap: 20,
+        timeLimitSeconds: null,
+        perLeafQuestionCap: null,
+        minQuestionsPerLeaf: 2,
+        minItemsPerCoverageCell: 5,
+        classificationZ: 1.28,
+        classificationToleranceBands: 0,
+        showTimer: true,
+        retakeStartFromPreviousResult: true,
+        retakeStartMaxAgeDays: 30,
+        retakePreferNewQuestions: true,
+        attemptSelectionPolicy: 'LATEST_COMPLETED',
+        levelMappingRule: 'NEAREST',
+        topInformationRatio: 0.8,
+        defaultDiscrimination: 1.2,
+      },
+      // Competence 1 is on, competence 2 is switched off; the server reports
+      // the normalized share of the overall level, 0 for a switched-off one.
+      nodes: [
+        { id: 1, overrideEnabled: true, weight: 1, questionCap: null },
+        { id: 2, overrideEnabled: false, weight: 0, questionCap: null },
+        { id: 3, overrideEnabled: true, weight: null, questionCap: null },
+      ],
+      assignments: [],
+    } as unknown as Parameters<typeof mapAdaptivePracticeQuizPreviewToForm>[0]
+
+    const form = mapAdaptivePracticeQuizPreviewToForm(preview)
+    expect(
+      form.nodeOverrides.map(({ nodeId, weight }) => [nodeId, weight])
+    ).toEqual([
+      [1, '1'],
+      [2, ''],
+      [3, ''],
+    ])
+    expect(
+      serializeAdaptivePracticeQuizConfig(form)?.nodeOverrides?.find(
+        ({ nodeId }) => nodeId === 2
+      )
+    ).toMatchObject({ enabled: false, weight: undefined })
+  })
+})
+
 describe('scale on new quizzes while IRT v2 authoring is disabled', () => {
   const config = {
     ...createAdaptivePracticeQuizDefaultConfig(),

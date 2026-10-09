@@ -309,7 +309,12 @@ export function mapAdaptivePracticeQuizPreviewToForm(
     nodeOverrides: preview.nodes.map((node) => ({
       nodeId: node.id,
       enabled: node.overrideEnabled,
-      weight: nullableNumberToString(node.weight),
+      // A switched-off competence reports weight 0 (it has no share of the
+      // overall level); it keeps no weight of its own in the form.
+      weight:
+        node.overrideEnabled && node.weight !== 0
+          ? nullableNumberToString(node.weight)
+          : '',
       questionCap: nullableNumberToString(node.questionCap),
     })),
     elementOverrides: preview.assignments.map((assignment) => ({
