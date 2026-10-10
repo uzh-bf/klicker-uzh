@@ -1248,6 +1248,7 @@ async function finishKBGraphBuild({
   finishedAt: Date
 }) {
   await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT "id" FROM "public"."KB" WHERE "id" = CAST(${build.kbId} AS UUID) FOR UPDATE`
     const updated = await tx.kBGraphBuild.updateMany({
       where: {
         id: build.id,

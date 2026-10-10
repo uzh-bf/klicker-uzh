@@ -451,12 +451,12 @@ export async function settleKBGraphBuildCost(
       usage.requestCount += component.request_count
     }
 
+    await prisma.$queryRaw`SELECT "id" FROM "public"."KB" WHERE "id" = CAST(${build.kbId} AS UUID) FOR UPDATE`
     let sourceCurrent = true
     if (
       result.status === 'SUCCEEDED' &&
       result.contract_version === 'klicker-kb-graph/v2'
     ) {
-      await prisma.$queryRaw`SELECT "id" FROM "public"."KB" WHERE "id" = CAST(${build.kbId} AS UUID) FOR UPDATE`
       await prisma.$queryRaw`SELECT "id" FROM "public"."KBResource" WHERE "kbId" = CAST(${build.kbId} AS UUID) ORDER BY "id" FOR UPDATE`
       sourceCurrent =
         build.sourceContentDigest ===

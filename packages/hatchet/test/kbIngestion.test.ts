@@ -27,7 +27,10 @@ import type {
   KBIngestionSource,
   KBOperationStatusResponse,
 } from '../src/kbIngestionApi.js'
-import { getKBIngestionTimeoutSeconds } from '../src/kbIngestionApi.js'
+import {
+  createKBIngestionApiClient,
+  getKBIngestionTimeoutSeconds,
+} from '../src/kbIngestionApi.js'
 
 const RESOURCE_ID = '7f3e2a10-9c4b-4d8e-b1a6-5e0f9d2c7b3a'
 const KB_ID = 'c2a91f74-6e0b-4c3d-8f5a-1b9e7d4a2c60'
@@ -1804,6 +1807,69 @@ describe('KB ingestion reconciliation', () => {
         }),
       })
     )
+  })
+
+  it.each([
+    true,
+    false,
+  ])('recovers a pinned blob through the legacy reader after disablement with matching digest %s', async (matches) => {
+    const servedSha256 = matches ? CONTENT_SHA256 : 'f'.repeat(64)
+    const prisma = monitorPrisma([
+      { ...activeResource, contentSha256: CONTENT_SHA256 },
+    ])
+    const logger = { error: vi.fn() }
+    const fetchRequest = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        operation_id: OPERATION_ID,
+        status: 'succeeded',
+        operation: 'update',
+        project_id: 'klicker-course-materials',
+        producer: 'klicker',
+        external_resource_id: RESOURCE_ID,
+        resource_version: 3,
+        expected_sha256: CONTENT_SHA256,
+        observed_sha256: servedSha256,
+        serving: {
+          active_resource_version: 3,
+          active_sha256: servedSha256,
+        },
+        error_code: null,
+        correlation_id: ATTEMPT_ID,
+        created_at: NOW.toISOString(),
+        updated_at: NOW.toISOString(),
+      }),
+    })
+    const env = {
+      KB_CANONICAL_INPUT_ENABLED: 'false',
+      KB_INGESTION_API_URL: 'https://ingestion.example',
+      KB_INGESTION_API_KEY: 'synthetic-api-key',
+    }
+    await monitorActiveKBIngestions({
+      prisma: prisma as never,
+      client: createKBIngestionApiClient({ env, fetchRequest }),
+      env,
+      logger,
+      now: () => NOW,
+    })
+    expect(fetchRequest.mock.calls[0]?.[0].toString()).toBe(
+      `https://ingestion.example/v1/operations/${OPERATION_ID}`
+    )
+    if (matches) {
+      expect(logger.error).not.toHaveBeenCalled()
+      expect(prisma.kBResource.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: KBResourceStatus.READY,
+            activeContentSha256: CONTENT_SHA256,
+          }),
+        })
+      )
+    } else {
+      expect(prisma.kBResource.updateMany).not.toHaveBeenCalled()
+      expect(logger.error).toHaveBeenCalledOnce()
+    }
   })
 
   it('bounds concurrent operation polls to eight', async () => {

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { monitorActiveKBGraphBuilds } from '@klicker-uzh/hatchet'
 import {
   hashKBCanonicalInputReferences,
   hashKBContentDigestEntries,
@@ -17,12 +18,25 @@ import {
   KBResourceType,
 } from '@klicker-uzh/prisma/client'
 import type { CanonicalInputReference } from '@klicker-uzh/types'
-import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 import {
   releaseKBGraphCostReservation,
   reserveKBGraphCost,
   settleKBGraphBuildCost,
 } from '../src/services/knowledgeGraphAccounting.js'
+
+vi.mock('@hatchet-dev/typescript-sdk', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@hatchet-dev/typescript-sdk')>()),
+  HatchetClient: { init: vi.fn().mockReturnValue({}) },
+}))
 
 const NOW = new Date('2026-08-15T19:30:00.000Z')
 const SOURCE_CONTENT_DIGEST =
@@ -1167,6 +1181,113 @@ describe('KB graph cost accounting', () => {
         activeGraphBuildId: null,
         publishedGraphBuildId: build.id,
       })
+    })
+
+    it('settles completion while an overlapping monitor attempts to time out the same build', async () => {
+      await reserveCanonicalBuild()
+      const source = await createCanonicalSource()
+      const { build, runId, graphmlBlobName } = await createBuild({
+        sourceContentDigest: source.sourceContentDigest,
+      })
+      await prisma.kBGraphBuild.update({
+        where: { id: build.id },
+        data: { externalStartedAt: new Date(NOW.getTime() - 7200_000) },
+      })
+
+      let completionLocked!: () => void
+      let timeoutStarted!: () => void
+      const completionLock = new Promise<void>((resolve) => {
+        completionLocked = resolve
+      })
+      const timeoutStart = new Promise<void>((resolve) => {
+        timeoutStarted = resolve
+      })
+      // Hold completion's first lock until timeout reaches its first write.
+      // This forces the conflicting interleaving without timing-based sleeps.
+      let firstLock = true
+      const completion = prisma.$transaction(async (tx) =>
+        settleKBGraphBuildCost(
+          {
+            ...tx,
+            $queryRaw: async (...args: Parameters<typeof tx.$queryRaw>) => {
+              const value = await tx.$queryRaw(...args)
+              if (firstLock) {
+                firstLock = false
+                completionLocked()
+                await timeoutStart
+              }
+              return value
+            },
+          } as typeof tx,
+          {
+            buildId: build.id,
+            result: successfulCanonicalResult({
+              buildId: build.id,
+              runId,
+              graphmlBlobName,
+              sourceContentDigest: source.sourceContentDigest,
+              sourceInputDigest: source.sourceInputDigest,
+            }),
+            finishedAt: NOW,
+          }
+        )
+      )
+      await completionLock
+      const logger = { error: vi.fn() }
+      const timeout = monitorActiveKBGraphBuilds({
+        prisma: {
+          ...prisma,
+          $transaction: (callback: (tx: unknown) => Promise<unknown>) =>
+            prisma.$transaction((tx) =>
+              callback({
+                ...tx,
+                $queryRaw: (...args: Parameters<typeof tx.$queryRaw>) => {
+                  timeoutStarted()
+                  return tx.$queryRaw(...args)
+                },
+                kBGraphBuild: {
+                  ...tx.kBGraphBuild,
+                  updateMany: async (
+                    args: Parameters<typeof tx.kBGraphBuild.updateMany>[0]
+                  ) => {
+                    const updated = await tx.kBGraphBuild.updateMany(args)
+                    timeoutStarted()
+                    return updated
+                  },
+                },
+              })
+            ),
+        } as never,
+        client: {
+          runs: {
+            get_status: vi.fn().mockResolvedValue('RUNNING'),
+            cancel: vi.fn().mockResolvedValue(undefined),
+          },
+        } as never,
+        env: { KB_GRAPH_TIMEOUT_SECONDS: '3600' },
+        now: () => NOW,
+        logger,
+      })
+      await expect(Promise.all([completion, timeout])).resolves.toEqual([
+        'SETTLED',
+        undefined,
+      ])
+      expect(logger.error).not.toHaveBeenCalled()
+      await expect(
+        prisma.kBGraphBuild.findUniqueOrThrow({ where: { id: build.id } })
+      ).resolves.toMatchObject({
+        status: KBGraphBuildStatus.SUCCEEDED,
+        costStatus: KBGraphCostStatus.SETTLED,
+        actualCostMinorUnits: 60,
+      })
+      await expect(
+        prisma.kBGraphQuota.findUniqueOrThrow({
+          where: { ownerId_semesterKey: { ownerId, semesterKey: '2026-H2' } },
+        })
+      ).resolves.toMatchObject({ reservedMinorUnits: 0, settledMinorUnits: 60 })
+      await expect(
+        prisma.kB.findUniqueOrThrow({ where: { id: kbId } })
+      ).resolves.toMatchObject({ publishedGraphBuildId: build.id })
     })
 
     it('withholds publication but retains metering after the served version was replaced', async () => {

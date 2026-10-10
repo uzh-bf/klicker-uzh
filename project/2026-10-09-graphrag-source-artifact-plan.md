@@ -192,6 +192,15 @@ from Turbo's global environment, and consolidate v2 schema rejection cases.
 Both focused suites pass (51 dispatch and 31 contract tests), with unchanged
 coverage. Final-review correction verification and exact-head CI remain.
 
-Next: verify the final-review correction, qualify exact-head CI, and refresh
-the draft evidence. No merge, deployment,
+Final-review correction verification passed at `34b59213ee`. New automated
+feedback then identified conflicting KB/build lock order between timeout and
+completion. A deterministic two-transaction test reproduced a PostgreSQL
+deadlock. Completion and timeout now both acquire the KB lock first; the
+same test and all 17 accounting tests pass. The rollback coverage now uses the
+actual ingestion API client with the legacy response shape after disablement;
+matching blob digests settle and mismatches are rejected. All 190 affected
+worker tests pass. Independent correction review and final-head CI follow.
+
+Next: qualify the correction, exact-head CI, and refresh the draft evidence.
+The exact runtime stop exception is awaiting the user's answer. No merge, deployment,
 live refresh/rebuild, activation or paid evaluation is admitted.
