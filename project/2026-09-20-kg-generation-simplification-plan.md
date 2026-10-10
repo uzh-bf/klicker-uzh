@@ -165,6 +165,11 @@ Additive language metadata requires no migration. New files beyond the operation
   targeting `v3-ai`. Final self-review found no unresolved issue in the complete
   three-file package; hosted CI and final AI review remain pending. Merge,
   staging promotion and repeated participant acceptance are subsequent gates.
+  Ordinary automated review identified an unusable `question` value suppressing
+  a valid legacy `query`. The generic wrapper now prefers a nonblank string
+  `question` and otherwise selects `query`, preserving both original keys.
+  Five compatibility cases failed before that correction; all 79 focused
+  retrieval, scope, flag and result tests pass afterward.
   The separate question comparison still requires attributable provider-cost
   visibility or an enforceable bound before its two approved batches can run.
 - Acceptance correction — 2026-10-09: the first real synthetic participant

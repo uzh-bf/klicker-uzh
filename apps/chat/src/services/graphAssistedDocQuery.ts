@@ -297,7 +297,11 @@ export function graphAssistedDocumentQuery<
       signal?.throwIfAborted()
       const initial = await dependencies.validateScope()
       const queryField =
-        record(input) && 'question' in input ? 'question' : 'query'
+        record(input) &&
+        typeof input.question === 'string' &&
+        input.question.trim()
+          ? 'question'
+          : 'query'
       const query = record(input) ? input[queryField] : undefined
       const eligible =
         !augmentationUsed &&

@@ -173,6 +173,29 @@ describe('graph-assisted document retrieval', () => {
   })
 
   it.each([
+    undefined,
+    null,
+    '',
+    '  ',
+    1,
+  ])('expands a legacy query when question is unusable (%j)', async (question) => {
+    const execute = vi.fn().mockResolvedValue(documents('Synthetic passage.'))
+    const deps = dependencies()
+    const input = { query: 'risk', question }
+    await graphAssistedDocumentQuery(execute, deps)(input, {})
+    expect(deps.hints).toHaveBeenCalledWith('risk')
+    expect(execute).toHaveBeenCalledTimes(2)
+    expect(execute.mock.calls[0]?.[0]).toEqual(input)
+    expect(execute.mock.calls[1]?.[0]).toMatchObject({
+      query: expect.stringContaining('Covariance'),
+      question,
+    })
+    expect(Object.keys(execute.mock.calls[1]![0]).sort()).toEqual(
+      Object.keys(input).sort()
+    )
+  })
+
+  it.each([
     'question',
     'query',
   ] as const)('preserves the original %s and expands the same field for additional passage retrieval', async (field) => {
