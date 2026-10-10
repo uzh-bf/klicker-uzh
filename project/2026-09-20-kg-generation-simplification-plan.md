@@ -159,7 +159,14 @@ Additive language metadata requires no migration. New files beyond the operation
   repository's existing Blob port override for the isolated verification
   runtime; no runtime configuration source change is included. The reviewed
   retrieval code and tests are unchanged, so their passing focused evidence is
-  reusable. Full hook checks, build and draft delivery are in progress.
+  reusable. Full native hook checks pass (42 check tasks and 7 KB-contract
+  tasks), and all 27 production build tasks pass. The input correction is
+  committed and pushed in [draft PR #6461](https://github.com/uzh-bf/klicker-uzh/pull/6461),
+  targeting `v3-ai`. Final self-review found no unresolved issue in the complete
+  three-file package; hosted CI and final AI review remain pending. Merge,
+  staging promotion and repeated participant acceptance are subsequent gates.
+  The separate question comparison still requires attributable provider-cost
+  visibility or an enforceable bound before its two approved batches can run.
 - Acceptance correction — 2026-10-09: the first real synthetic participant
   turn returned a cited German answer and survived reload, but producing logs
   showed graph retrieval was ineligible. The live `doc_query` input uses
