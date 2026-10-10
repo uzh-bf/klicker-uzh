@@ -410,6 +410,7 @@ export async function settleKBGraphBuildCost(
     )
   }
 
+  await prisma.$queryRaw`SELECT "id" FROM "public"."KB" WHERE "id" = CAST(${build.kbId} AS UUID) FOR UPDATE`
   if (result.metered_cost !== null) {
     if (result.metered_cost.currency !== build.costCurrency) {
       return markCostNeedsHumanReview(
@@ -451,6 +452,25 @@ export async function settleKBGraphBuildCost(
       usage.requestCount += component.request_count
     }
 
+    let sourceCurrent = true
+    if (
+      result.status === 'SUCCEEDED' &&
+      result.contract_version === 'klicker-kb-graph/v2'
+    ) {
+      await prisma.$queryRaw`SELECT "id" FROM "public"."KBResource" WHERE "kbId" = CAST(${build.kbId} AS UUID) ORDER BY "id" FOR UPDATE`
+      sourceCurrent =
+        build.sourceContentDigest ===
+          (await computeKBContentDigest(prisma, build.kbId)) &&
+        (await prisma.kBResource.count({
+          where: {
+            kbId: build.kbId,
+            deletedAt: null,
+            materialType: DB.KBResourceMaterialType.COURSE_CONTENT,
+            activeContentSha256: { not: null },
+            ingestionOperation: DB.KBIngestionOperation.DELETE,
+          },
+        })) === 0
+    }
     const lateSuccess =
       allowLateSuccess &&
       result.status === 'SUCCEEDED' &&
@@ -462,23 +482,32 @@ export async function settleKBGraphBuildCost(
     const lateRejection = lateSuccess?.eligible === false ? lateSuccess : null
     let publishSuccess =
       succeeded &&
+      sourceCurrent &&
       lateRejection === null &&
       (build.kb.activeGraphBuildId === build.id ||
         lateSuccess?.eligible === true)
     const settledStatus = publishSuccess
       ? DB.KBGraphBuildStatus.SUCCEEDED
-      : (lateRejection?.status ??
-        (succeeded
-          ? DB.KBGraphBuildStatus.SUCCEEDED
-          : DB.KBGraphBuildStatus.FAILED))
+      : !sourceCurrent && succeeded
+        ? DB.KBGraphBuildStatus.SUPERSEDED
+        : (lateRejection?.status ??
+          (succeeded
+            ? DB.KBGraphBuildStatus.SUCCEEDED
+            : DB.KBGraphBuildStatus.FAILED))
     const settledStatusMessage = publishSuccess
       ? null
-      : (lateRejection?.statusMessage ??
-        (succeeded ? null : terminalResultError(result)))
+      : !sourceCurrent && succeeded
+        ? 'The knowledge base sources changed while this graph was being built. Rebuild the graph using the current sources.'
+        : (lateRejection?.statusMessage ??
+          (succeeded ? null : terminalResultError(result)))
     const settledErrorCode = publishSuccess
       ? null
-      : (lateRejection?.errorCode ??
-        (succeeded ? null : (result.error_code ?? `KB_GRAPH_${result.status}`)))
+      : !sourceCurrent && succeeded
+        ? 'KB_GRAPH_SOURCE_STALE'
+        : (lateRejection?.errorCode ??
+          (succeeded
+            ? null
+            : (result.error_code ?? `KB_GRAPH_${result.status}`)))
     const failed = settledStatus === DB.KBGraphBuildStatus.FAILED
     // Failed builds retain provider usage as diagnostics without consuming quota.
     const chargeMinorUnits = failed ? 0 : result.metered_cost.amount_minor_units

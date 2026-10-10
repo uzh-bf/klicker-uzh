@@ -1,5 +1,6 @@
 import {
   getDefaultKBGraphDomainCatalog,
+  hashKBCanonicalInputReferences,
   hashKBContentDigestEntries,
 } from '@klicker-uzh/knowledge-graph'
 import {
@@ -62,6 +63,185 @@ const externalEnv = {
   KB_FALKORDB_TLS: 'false',
   KB_FALKORDB_QUERY_TIMEOUT_MS: '5000',
 }
+
+function canonicalReference() {
+  return {
+    contract_version: 'canonical-document/v1' as const,
+    producer_id: 'klicker',
+    project_id: 'klicker-course-materials',
+    kb_id: KB_ID,
+    external_resource_id: RESOURCE_ID,
+    resource_version: 3,
+    source_sha256: CONTENT_SHA256,
+    canonical_sha256: 'b'.repeat(64),
+    parser_recipe_sha256: 'c'.repeat(64),
+    byte_count: 1024,
+  }
+}
+
+function ingestionClient(reference: unknown = canonicalReference()) {
+  return {
+    acceptResource: vi.fn(),
+    deleteResource: vi.fn(),
+    getOperation: vi.fn().mockResolvedValue({
+      operationId: 'source-operation',
+      producer: 'klicker',
+      projectId: 'klicker-course-materials',
+      externalResourceId: RESOURCE_ID,
+      canonicalInput: reference,
+      serving: { activeResourceVersion: 3, activeSha256: CONTENT_SHA256 },
+    }),
+  }
+}
+
+describe('canonical KG dispatch', () => {
+  it('pins the resolved artifact without credentials or database lineage', () => {
+    const reference = canonicalReference()
+    const payload = buildExternalKBGraphPayload(
+      createBuild(),
+      [SOURCE_URL],
+      {
+        ...externalEnv,
+        KB_CANONICAL_INPUT_ENABLED: 'true',
+        KB_GRAPH_API_TOKEN: 'synthetic-provider-token',
+      },
+      [reference]
+    )
+    expect(payload.source_input_contract).toBe('canonical-document/v1')
+    expect(payload.klicker_graph_build.source_input_digest).toBe(
+      hashKBCanonicalInputReferences([reference])
+    )
+    expect(payload.sources[0]?.canonical_input).toEqual(reference)
+    expect(payload.upload_markdown).toBe(false)
+    expect(JSON.stringify(payload)).not.toContain('synthetic-provider-token')
+  })
+
+  it('rejects mismatched canonical references and a disabled canonical payload', () => {
+    expect(() =>
+      buildExternalKBGraphPayload(createBuild(), [SOURCE_URL], externalEnv, [
+        canonicalReference(),
+      ])
+    ).toThrow()
+    for (const change of [
+      { source_sha256: 'd'.repeat(64) },
+      { kb_id: OWNER_ID },
+      { project_id: 'another-project' },
+      { external_resource_id: OWNER_ID },
+    ]) {
+      expect(() =>
+        buildExternalKBGraphPayload(
+          createBuild(),
+          [SOURCE_URL],
+          { ...externalEnv, KB_CANONICAL_INPUT_ENABLED: 'true' },
+          [{ ...canonicalReference(), ...change }]
+        )
+      ).toThrow()
+    }
+  })
+
+  it('resolves a private blob without minting a source URL', async () => {
+    const build = createBuild({
+      sources: [
+        {
+          ...createBuild().sources[0]!,
+          type: KBResourceType.BLOB,
+          sourceUrl: null,
+          blobName: 'synthetic.pdf',
+        },
+      ],
+    })
+    const prisma = createDispatchPrisma({ build })
+    const client = createClient()
+    const getSourceUrl = vi.fn(() => {
+      throw new Error('must not mint an origin URL')
+    })
+    const ingestion = ingestionClient()
+    await dispatchKBGraphBuild(
+      { buildId: BUILD_ID },
+      {
+        prisma: prisma as never,
+        client,
+        ingestionClient: ingestion as never,
+        env: { ...externalEnv, KB_CANONICAL_INPUT_ENABLED: 'true' },
+        now: () => NOW,
+        getSourceUrl,
+      }
+    )
+    expect(getSourceUrl).not.toHaveBeenCalled()
+    expect(ingestion.getOperation).toHaveBeenCalledWith(
+      'source-operation',
+      'knowledge-source/v2'
+    )
+    expect(client.runNoWait).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        sources: [
+          expect.objectContaining({ canonical_input: canonicalReference() }),
+        ],
+      }),
+      expect.anything()
+    )
+  })
+
+  it.each([
+    null,
+    { ...canonicalReference(), resource_version: 4 },
+    { ...canonicalReference(), source_sha256: 'd'.repeat(64) },
+  ])('fails before provider dispatch when serving input is unavailable or mismatched: %o', async (reference) => {
+    const prisma = createDispatchPrisma()
+    const client = createClient()
+    const getSourceUrl = vi.fn()
+    await expect(
+      dispatchKBGraphBuild(
+        { buildId: BUILD_ID },
+        {
+          prisma: prisma as never,
+          client,
+          ingestionClient: ingestionClient(reference) as never,
+          env: { ...externalEnv, KB_CANONICAL_INPUT_ENABLED: 'true' },
+          now: () => NOW,
+          getSourceUrl,
+        }
+      )
+    ).rejects.toThrow()
+    expect(client.runNoWait).not.toHaveBeenCalled()
+    expect(getSourceUrl).not.toHaveBeenCalled()
+  })
+
+  it('recovers an accepted run after disablement without resolving or fetching input', async () => {
+    const prisma = createDispatchPrisma()
+    const client = createClient({
+      rows: [
+        {
+          workflowRunExternalId: 'accepted-canonical-run',
+          createdAt: CREATED_AT.toISOString(),
+          additionalMetadata: {
+            [KB_GRAPH_BUILD_METADATA_KEY]: BUILD_ID,
+            [KB_GRAPH_KB_METADATA_KEY]: KB_ID,
+          },
+        },
+      ],
+    })
+    const ingestion = ingestionClient()
+    const getSourceUrl = vi.fn()
+    await expect(
+      dispatchKBGraphBuild(
+        { buildId: BUILD_ID },
+        {
+          prisma: prisma as never,
+          client,
+          ingestionClient: ingestion as never,
+          env: { ...externalEnv, KB_CANONICAL_INPUT_ENABLED: 'false' },
+          now: () => NOW,
+          getSourceUrl,
+        }
+      )
+    ).resolves.toBe('accepted-canonical-run')
+    expect(ingestion.getOperation).not.toHaveBeenCalled()
+    expect(getSourceUrl).not.toHaveBeenCalled()
+    expect(client.runNoWait).not.toHaveBeenCalled()
+  })
+})
 
 function createBuild(overrides: Record<string, unknown> = {}) {
   return {
@@ -152,6 +332,16 @@ function createDispatchPrisma({
       .mockResolvedValueOnce({ externalOperationId: rereadExternalOperationId })
   }
   const prisma = {
+    kBResource: {
+      findMany: vi.fn().mockResolvedValue([
+        {
+          id: RESOURCE_ID,
+          activeResourceVersion: 3,
+          activeContentSha256: CONTENT_SHA256,
+          externalOperationId: 'source-operation',
+        },
+      ]),
+    },
     kBGraphBuild: {
       findUnique,
       updateMany: vi.fn().mockResolvedValue({ count: updateCount }),

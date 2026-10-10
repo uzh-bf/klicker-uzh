@@ -1,20 +1,42 @@
 import { randomUUID } from 'node:crypto'
-import { hashKBContentDigestEntries } from '@klicker-uzh/knowledge-graph'
-import { prisma as prismaClient } from '@klicker-uzh/prisma'
+import { monitorActiveKBGraphBuilds } from '@klicker-uzh/hatchet'
+import {
+  hashKBCanonicalInputReferences,
+  hashKBContentDigestEntries,
+} from '@klicker-uzh/knowledge-graph'
+import {
+  prisma as prismaClient,
+  requireDisposableDatabase,
+} from '@klicker-uzh/prisma'
 import {
   KBGraphBuildStatus,
   KBGraphCostStatus,
   KBGraphQualityTier,
+  KBIngestionOperation,
   KBResourceMaterialType,
   KBResourceStatus,
   KBResourceType,
 } from '@klicker-uzh/prisma/client'
-import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
+import type { CanonicalInputReference } from '@klicker-uzh/types'
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 import {
   releaseKBGraphCostReservation,
   reserveKBGraphCost,
   settleKBGraphBuildCost,
 } from '../src/services/knowledgeGraphAccounting.js'
+
+vi.mock('@hatchet-dev/typescript-sdk', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@hatchet-dev/typescript-sdk')>()),
+  HatchetClient: { init: vi.fn().mockReturnValue({}) },
+}))
 
 const NOW = new Date('2026-08-15T19:30:00.000Z')
 const SOURCE_CONTENT_DIGEST =
@@ -155,8 +177,102 @@ function successfulResult({
   }
 }
 
+function canonicalReference({
+  resourceId,
+  resourceVersion,
+  sourceSha256,
+  parserRecipeSha256 = '2'.repeat(64),
+}: {
+  resourceId: string
+  resourceVersion: number
+  sourceSha256: string
+  parserRecipeSha256?: string
+}): CanonicalInputReference {
+  return {
+    contract_version: 'canonical-document/v1',
+    producer_id: 'klicker',
+    project_id: 'klicker-course-materials',
+    kb_id: kbId,
+    external_resource_id: resourceId,
+    resource_version: resourceVersion,
+    source_sha256: sourceSha256,
+    canonical_sha256: '1'.repeat(64),
+    parser_recipe_sha256: parserRecipeSha256,
+    byte_count: 2048,
+  }
+}
+
+function successfulCanonicalResult({
+  buildId,
+  runId,
+  graphmlBlobName,
+  sourceContentDigest = SOURCE_CONTENT_DIGEST,
+  sourceInputDigest,
+  amountMinorUnits = 60,
+}: {
+  buildId: string
+  runId: string
+  graphmlBlobName: string
+  sourceContentDigest?: string
+  sourceInputDigest: string
+  amountMinorUnits?: number
+}) {
+  return {
+    ...successfulResult({
+      buildId,
+      runId,
+      graphmlBlobName,
+      sourceContentDigest,
+      amountMinorUnits,
+    }),
+    contract_version: 'klicker-kb-graph/v2' as const,
+    source_input_contract: 'canonical-document/v1' as const,
+    source_input_digest: sourceInputDigest,
+  }
+}
+
+async function createCanonicalSource({
+  sourceSha256 = 'f'.repeat(64),
+  parserRecipeSha256 = '2'.repeat(64),
+  resourceVersion = 1,
+}: {
+  sourceSha256?: string
+  parserRecipeSha256?: string
+  resourceVersion?: number
+} = {}) {
+  const resourceId = randomUUID()
+  const reference = canonicalReference({
+    resourceId,
+    resourceVersion,
+    sourceSha256,
+    parserRecipeSha256,
+  })
+  await prisma.kBResource.create({
+    data: {
+      id: resourceId,
+      kbId,
+      type: KBResourceType.URL,
+      title: 'Canonical source',
+      sourceUrl: 'https://content.example.org/canonical.pdf',
+      materialType: KBResourceMaterialType.COURSE_CONTENT,
+      status: KBResourceStatus.READY,
+      activeResourceVersion: resourceVersion,
+      activeContentSha256: sourceSha256,
+    },
+  })
+  return {
+    resourceId,
+    reference,
+    sourceContentDigest: hashKBContentDigestEntries([
+      { resourceId, contentSha256: sourceSha256 },
+    ]),
+    sourceInputDigest: hashKBCanonicalInputReferences([reference]),
+  }
+}
+
 describe('KB graph cost accounting', () => {
   beforeEach(async () => {
+    await requireDisposableDatabase(prisma)
     ownerId = randomUUID()
     kbId = randomUUID()
     await prisma.user.create({
@@ -176,6 +292,7 @@ describe('KB graph cost accounting', () => {
   })
 
   afterEach(async () => {
+    await requireDisposableDatabase(prisma)
     await prisma.user.delete({ where: { id: ownerId } })
   })
 
@@ -939,5 +1056,301 @@ describe('KB graph cost accounting', () => {
     await expect(
       prisma.kB.findUniqueOrThrow({ where: { id: kbId } })
     ).resolves.toMatchObject({ publishedGraphBuildId: null })
+  })
+
+  describe('canonical source accounting', () => {
+    type CanonicalSourceFixture = Awaited<
+      ReturnType<typeof createCanonicalSource>
+    >
+
+    const originalCanonicalInputEnabled = process.env.KB_CANONICAL_INPUT_ENABLED
+
+    afterEach(() => {
+      if (originalCanonicalInputEnabled === undefined) {
+        delete process.env.KB_CANONICAL_INPUT_ENABLED
+      } else {
+        process.env.KB_CANONICAL_INPUT_ENABLED = originalCanonicalInputEnabled
+      }
+    })
+
+    async function reserveCanonicalBuild() {
+      await prisma.$transaction((tx) =>
+        reserveKBGraphCost(tx, {
+          ownerId,
+          qualityTier: KBGraphQualityTier.STANDARD,
+          env: costEnv,
+          now: NOW,
+        })
+      )
+    }
+
+    async function settleStaleCanonicalSource(
+      mutate: (source: CanonicalSourceFixture) => Promise<void>
+    ) {
+      process.env.KB_CANONICAL_INPUT_ENABLED = 'true'
+      await reserveCanonicalBuild()
+      const source = await createCanonicalSource()
+      const { build, runId, graphmlBlobName } = await createBuild({
+        sourceContentDigest: source.sourceContentDigest,
+      })
+      await mutate(source)
+
+      await expect(
+        prisma.$transaction((tx) =>
+          settleKBGraphBuildCost(tx, {
+            buildId: build.id,
+            result: successfulCanonicalResult({
+              buildId: build.id,
+              runId,
+              graphmlBlobName,
+              sourceContentDigest: source.sourceContentDigest,
+              sourceInputDigest: source.sourceInputDigest,
+            }),
+            finishedAt: NOW,
+          })
+        )
+      ).resolves.toBe('SETTLED')
+
+      await expect(
+        prisma.kBGraphBuild.findUniqueOrThrow({ where: { id: build.id } })
+      ).resolves.toMatchObject({
+        status: KBGraphBuildStatus.SUPERSEDED,
+        costStatus: KBGraphCostStatus.SETTLED,
+        errorCode: 'KB_GRAPH_SOURCE_STALE',
+        statusMessage: expect.any(String),
+        actualCostMinorUnits: 60,
+      })
+      await expect(
+        prisma.kBGraphQuota.findUniqueOrThrow({
+          where: { ownerId_semesterKey: { ownerId, semesterKey: '2026-H2' } },
+        })
+      ).resolves.toMatchObject({
+        reservedMinorUnits: 0,
+        settledMinorUnits: 60,
+      })
+      await expect(
+        prisma.kB.findUniqueOrThrow({ where: { id: kbId } })
+      ).resolves.toMatchObject({
+        activeGraphBuildId: null,
+        publishedGraphBuildId: null,
+      })
+    }
+
+    it('settles and publishes an accepted canonical result after disablement', async () => {
+      process.env.KB_CANONICAL_INPUT_ENABLED = 'false'
+      await reserveCanonicalBuild()
+      const source = await createCanonicalSource()
+      const { build, runId, graphmlBlobName } = await createBuild({
+        sourceContentDigest: source.sourceContentDigest,
+      })
+
+      await expect(
+        prisma.$transaction((tx) =>
+          settleKBGraphBuildCost(tx, {
+            buildId: build.id,
+            result: successfulCanonicalResult({
+              buildId: build.id,
+              runId,
+              graphmlBlobName,
+              sourceContentDigest: source.sourceContentDigest,
+              sourceInputDigest: source.sourceInputDigest,
+            }),
+            finishedAt: NOW,
+          })
+        )
+      ).resolves.toBe('SETTLED')
+
+      await expect(
+        prisma.kBGraphBuild.findUniqueOrThrow({ where: { id: build.id } })
+      ).resolves.toMatchObject({
+        status: KBGraphBuildStatus.SUCCEEDED,
+        costStatus: KBGraphCostStatus.SETTLED,
+        errorCode: null,
+        actualCostMinorUnits: 60,
+      })
+      await expect(
+        prisma.kBGraphQuota.findUniqueOrThrow({
+          where: { ownerId_semesterKey: { ownerId, semesterKey: '2026-H2' } },
+        })
+      ).resolves.toMatchObject({
+        reservedMinorUnits: 0,
+        settledMinorUnits: 60,
+      })
+      await expect(
+        prisma.kB.findUniqueOrThrow({ where: { id: kbId } })
+      ).resolves.toMatchObject({
+        activeGraphBuildId: null,
+        publishedGraphBuildId: build.id,
+      })
+    })
+
+    it.each([
+      'SUCCEEDED',
+      'FAILED',
+    ] as const)('settles %s while an overlapping monitor attempts to time out the same build', async (status) => {
+      await reserveCanonicalBuild()
+      const source = await createCanonicalSource()
+      const { build, runId, graphmlBlobName } = await createBuild({
+        sourceContentDigest: source.sourceContentDigest,
+      })
+      await prisma.kBGraphBuild.update({
+        where: { id: build.id },
+        data: { externalStartedAt: new Date(NOW.getTime() - 7200_000) },
+      })
+
+      let completionLocked!: () => void
+      let timeoutStarted!: () => void
+      const completionLock = new Promise<void>((resolve) => {
+        completionLocked = resolve
+      })
+      const timeoutStart = new Promise<void>((resolve) => {
+        timeoutStarted = resolve
+      })
+      // Hold completion's first lock until timeout reaches its first write.
+      // This forces the conflicting interleaving without timing-based sleeps.
+      let firstLock = true
+      async function rendezvous() {
+        if (firstLock) {
+          firstLock = false
+          completionLocked()
+          await timeoutStart
+        }
+      }
+      const completion = prisma.$transaction(async (tx) =>
+        settleKBGraphBuildCost(
+          {
+            ...tx,
+            $queryRaw: async (...args: Parameters<typeof tx.$queryRaw>) => {
+              const value = await tx.$queryRaw(...args)
+              if (
+                (args[0] as TemplateStringsArray)
+                  .join('')
+                  .includes('"public"."KB"')
+              ) {
+                await rendezvous()
+              }
+              return value
+            },
+            kBGraphBuild: {
+              ...tx.kBGraphBuild,
+              updateMany: async (
+                args: Parameters<typeof tx.kBGraphBuild.updateMany>[0]
+              ) => {
+                const updated = await tx.kBGraphBuild.updateMany(args)
+                await rendezvous()
+                return updated
+              },
+            },
+          } as unknown as typeof tx,
+          {
+            buildId: build.id,
+            result: {
+              ...successfulCanonicalResult({
+                buildId: build.id,
+                runId,
+                graphmlBlobName,
+                sourceContentDigest: source.sourceContentDigest,
+                sourceInputDigest: source.sourceInputDigest,
+              }),
+              ...(status === 'FAILED'
+                ? {
+                    status,
+                    error_code: 'KB_GRAPH_PROVIDER_FAILED',
+                    metered_cost: null,
+                    graphml_artifact: null,
+                  }
+                : {}),
+            },
+            finishedAt: NOW,
+          }
+        )
+      )
+      await completionLock
+      const logger = { error: vi.fn() }
+      const timeout = monitorActiveKBGraphBuilds({
+        prisma: {
+          ...prisma,
+          $transaction: (callback: (tx: unknown) => Promise<unknown>) =>
+            prisma.$transaction((tx) =>
+              callback({
+                ...tx,
+                $queryRaw: (...args: Parameters<typeof tx.$queryRaw>) => {
+                  timeoutStarted()
+                  return tx.$queryRaw(...args)
+                },
+                kBGraphBuild: {
+                  ...tx.kBGraphBuild,
+                  updateMany: async (
+                    args: Parameters<typeof tx.kBGraphBuild.updateMany>[0]
+                  ) => {
+                    const updated = await tx.kBGraphBuild.updateMany(args)
+                    timeoutStarted()
+                    return updated
+                  },
+                },
+              })
+            ),
+        } as never,
+        client: {
+          runs: {
+            get_status: vi.fn().mockResolvedValue('RUNNING'),
+            cancel: vi.fn().mockResolvedValue(undefined),
+          },
+        } as never,
+        env: { KB_GRAPH_TIMEOUT_SECONDS: '3600' },
+        now: () => NOW,
+        logger,
+      })
+      await expect(Promise.all([completion, timeout])).resolves.toEqual([
+        status === 'SUCCEEDED' ? 'SETTLED' : 'RELEASED',
+        undefined,
+      ])
+      expect(logger.error).not.toHaveBeenCalled()
+      await expect(
+        prisma.kBGraphBuild.findUniqueOrThrow({ where: { id: build.id } })
+      ).resolves.toMatchObject({
+        status,
+        costStatus:
+          status === 'SUCCEEDED'
+            ? KBGraphCostStatus.SETTLED
+            : KBGraphCostStatus.RELEASED,
+        actualCostMinorUnits: status === 'SUCCEEDED' ? 60 : null,
+      })
+      await expect(
+        prisma.kBGraphQuota.findUniqueOrThrow({
+          where: { ownerId_semesterKey: { ownerId, semesterKey: '2026-H2' } },
+        })
+      ).resolves.toMatchObject({
+        reservedMinorUnits: 0,
+        settledMinorUnits: status === 'SUCCEEDED' ? 60 : 0,
+      })
+      await expect(
+        prisma.kB.findUniqueOrThrow({ where: { id: kbId } })
+      ).resolves.toMatchObject({
+        publishedGraphBuildId: status === 'SUCCEEDED' ? build.id : null,
+      })
+    })
+
+    it('withholds publication but retains metering after the served version was replaced', async () => {
+      await settleStaleCanonicalSource(async ({ resourceId, reference }) => {
+        const replacedSha256 = '9'.repeat(64)
+        await prisma.kBResource.update({
+          where: { id: resourceId },
+          data: {
+            activeResourceVersion: reference.resource_version + 1,
+            activeContentSha256: replacedSha256,
+          },
+        })
+      })
+    })
+
+    it('withholds publication but retains metering when the source is admitted for deletion', async () => {
+      await settleStaleCanonicalSource(async ({ resourceId }) => {
+        await prisma.kBResource.update({
+          where: { id: resourceId },
+          data: { ingestionOperation: KBIngestionOperation.DELETE },
+        })
+      })
+    })
   })
 })

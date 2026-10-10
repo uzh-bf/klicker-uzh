@@ -1,11 +1,34 @@
 # Knowledge graph quality roadmap
 
-Date: 2026-09-12  
-Status: roadmap direction reviewed; approved checkpoint A source package and controlled evaluation delivered on 2026-09-12; a 2026-09-13 investigation added the focus-topic control design to W8 and the improvement levers; a 2026-09-14 follow-up delivered the lecturer-facing generation-language selector. Remaining roadmap acceptance work is listed below.  
-Scope: graph generation and its use in content generation, chatbot retrieval, and lecturer review.  
-Parent: [six-domain selection plan](2026-09-11-kg-domain-selection-plan.md).
+October 10 scope revision: the user approved simplifying
+[Klicker #6460](https://github.com/uzh-bf/klicker-uzh/pull/6460) to add no database
+columns or migration. Canonical references are resolved at dispatch and pinned
+in the provider workflow. Klicker retains content-hash freshness checks;
+automatic parser-only drift detection is deferred, so parser changes require a
+controlled graph rebuild. The revised
+[source plan](2026-10-09-graphrag-source-artifact-plan.md) owns implementation
+and renewed qualification. Earlier reviews and CI qualify the superseded design.
 
-## Current delivery checkpoint — 2026-10-08
+The canonical reader and consumer source packages remain drafted in
+[ingestion !229](https://gitlab.uzh.ch/ai-infrastructure/services/data-ingestion/-/merge_requests/229)
+and [KG !36](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/36).
+Reader provisioning, physical cleanup convergence, reader-first deployment and
+a finite refresh/build batch remain separately gated. Live GraphRAG quality and
+student-map acceptance remain separate receipts. The OpenRouter review remains
+waived by the user.
+
+## Current planning checkpoint — 2026-10-09
+
+The approved source-artifact repair is added below as W9a, with its
+[implementation plan](2026-10-09-graphrag-source-artifact-plan.md), approved by
+Astra after the initial-fetch, lineage and publication-race corrections. It repairs
+the mutable-URL input boundary before this controlled KB's next graph build
+and real-data retrieval comparison. The document-tool reliability repair is
+merged through [PR #6421](https://github.com/uzh-bf/klicker-uzh/pull/6421).
+This update changes planning documents only. It makes no fresh claim about
+other workstreams, deployment, flag access, participant login or evaluation.
+
+### Previous delivery checkpoint — 2026-10-08
 
 This update supersedes the October 7 runtime and failure-charging blockers below.
 The existing graph-control PR [#6229](https://github.com/uzh-bf/klicker-uzh/pull/6229)
@@ -302,9 +325,43 @@ The focus arm is accepted only when a paired same-graph comparison shows the int
 
 Completion: blinded educator review demonstrates a meaningful gain in predeclared measures, with no critical grounding or format regression. Report usable drafts per attempted batch and editing effort, not just quality of retained items. Preserve explicit review/approval before publication. Deterministic generation contracts and focused end-to-end synthetic jobs support, but do not replace, content review.
 
-**W9 — Chat retrieval and answer quality.** Owner: chat/retrieval engineer. Dependency: W1 chat cases and qualified document-tool execution. Size: medium initially; advanced approaches conditional. The [October adoption plan](2026-10-07-graphrag-adoption-plan.md) owns current source/staging status and the finite qualification protocol. The earlier graph feature is serving on staging; its reliability follow-up, draft PR #6421, is blocked by three hosted compatibility-test failures. Source presence, map availability and answer quality remain separate acceptance boundaries.
+**W9 — Chat retrieval and answer quality.** Owner: chat/retrieval engineer.
+Dependency: W1 chat cases, qualified document-tool execution and consistent
+ingestion/graph source versions. Size: medium initially; advanced approaches
+conditional. The [October adoption plan](2026-10-07-graphrag-adoption-plan.md)
+owns the finite qualification protocol. The document-tool reliability repair
+merged through [PR #6421](https://github.com/uzh-bf/klicker-uzh/pull/6421).
+Source presence, map availability and answer quality remain separate acceptance
+boundaries; merge does not prove serving or participant acceptance.
 
-First repair the existing omitted-options document-tool contract and qualify the full Chat suite, then prove mechanism, persisted citations and operational disablement on a controlled target. Compare ordinary document retrieval, the existing bounded graph query expansion and a frozen non-graph second search. Match answering model, effort, prompt, mode, corpus/publication, history and actual evidence budgets; apply the same fusion to the two-search arms. If the matched control is unavailable, report operational differences with confounds rather than graph-specific uplift. Preserve original-query evidence so graph hints cannot crowd it out.
+**W9a — Canonical ingestion input for KG generation.** Owner: ingestion engineer,
+with KG and Klicker owners responsible for their consumers. October 9 source
+implementation is approved; Astra approved the revised plan in round 2. The
+[source-artifact plan](2026-10-09-graphrag-source-artifact-plan.md) owns the
+input/retention/access contract, source packages and verification. A controlled
+staging build exposed mutable URL drift: the original-byte hash guard correctly
+rejected changed input. A dynamic page changes between requests, and a separate
+provider download encounters an admission rejection. A blind refresh/retry is
+not a deterministic repair.
+
+Completion: indexing and KG preparation share a canonical document bound to the
+active resource version, with checked digests, scoped reads, original citation
+identity and resource-owned deletion. Prove this using synthetic origins and
+existing suites before live refresh/build. This unblocks the identified KB's
+current graph and real-data comparison; an immutable-input map fixture can be
+qualified independently. No new retrieval framework or graph algorithm is needed.
+Source delivery ends at reviewed draft PRs/MRs and CI. Deployment, re-ingestion,
+paid rebuilding, GraphRAG activation and evaluation spend remain separate gates.
+
+After W9a qualifies the target input and a current graph is available, prove
+mechanism, persisted citations and operational disablement on a controlled
+target. Compare ordinary document retrieval, the existing bounded graph query
+expansion and a frozen non-graph second search. Match answering model, effort,
+prompt, mode, corpus/publication, history and actual evidence budgets; apply the
+same fusion to the two-search arms. Freeze canonical-input, parser and graph
+lineage in the private run manifest. If the matched control is unavailable,
+report operational differences with confounds rather than graph-specific uplift.
+Preserve original-query evidence so graph hints cannot crowd it out.
 
 Freeze development/holdout by concept, document and evidence family before tuning, with paraphrases/translations together. Measure factual lookup, terminology/bilingual variants, bridges, comparison, multi-hop evidence needs, whole-topic synthesis, irrelevant hubs and unanswerable/conflicting questions separately. The existing one-hop mechanism does not itself establish multi-hop or whole-topic capability. Use the existing evaluation framework; text-only captures require separate persisted-source/browser checks for locators. Report family-level paired uncertainty, all-attempt coverage, fallback, errors/skips, actual requests/context, latency and total spend. Predeclare useful gain, tolerated regressions and operational limits; existing metric thresholds are diagnostic configuration, not a rollout decision.
 
@@ -373,6 +430,8 @@ flowchart TD
   R --> W7[W7 Model and compute calibration]
   R --> W8[W8 Content outcomes]
   R --> W9[W9 Chat outcomes]
+  W4 -. source fidelity .-> W9a[W9a Canonical ingestion input]
+  W9a --> W9
   W5 -. richer evidence .-> W8
   W5 -. passage retrieval .-> W9
   W1 --> W10[W10 Lecturer corrections]

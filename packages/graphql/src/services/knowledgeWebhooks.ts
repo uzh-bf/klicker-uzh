@@ -1,11 +1,17 @@
+import { timingSafeEqual } from 'node:crypto'
 import {
   KBIngestionOperation,
   KBIngestionStatus,
   KBResourceStatus,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
+import {
+  type CanonicalInputReference,
+  isCanonicalInputReference,
+  isServingSourceMetadata,
+  type ServingSourceMetadata,
+} from '@klicker-uzh/types'
 import { createKBIngestionWebhookSignature } from '@klicker-uzh/util'
-import { timingSafeEqual } from 'node:crypto'
 
 export { signKBIngestionWebhook } from '@klicker-uzh/util'
 
@@ -29,6 +35,9 @@ type WebhookHeaders = Record<string, string | string[] | undefined>
 type OperationStatusEventType = (typeof EVENT_TYPES)[number]
 
 type OperationStatusEvent = {
+  contract_version?: 'knowledge-source/v2'
+  canonical_input?: CanonicalInputReference | null
+  serving_source_metadata?: ServingSourceMetadata | null
   eventId: string
   eventType: OperationStatusEventType
   occurredAt: string
@@ -143,7 +152,17 @@ function parsePayload(rawBody: Buffer): OperationStatusEvent | null {
       'error_code',
       'statusDetail',
       'correlation_id',
+      ...(payload.contract_version === 'knowledge-source/v2'
+        ? ['contract_version', 'canonical_input', 'serving_source_metadata']
+        : []),
     ]) ||
+    (payload.contract_version === 'knowledge-source/v2' &&
+      ((payload.canonical_input !== null &&
+        !isCanonicalInputReference(payload.canonical_input)) ||
+        (payload.serving_source_metadata !== null &&
+          !isServingSourceMetadata(payload.serving_source_metadata)) ||
+        (payload.canonical_input === null) !==
+          (payload.serving_source_metadata === null))) ||
     typeof payload.eventId !== 'string' ||
     !UUID_PATTERN.test(payload.eventId) ||
     !EVENT_TYPES.includes(payload.eventType as OperationStatusEventType) ||
@@ -173,6 +192,16 @@ function parsePayload(rawBody: Buffer): OperationStatusEvent | null {
   }
 
   const parsed = payload as OperationStatusEvent
+  if (
+    parsed.canonical_input &&
+    (parsed.canonical_input.producer_id !== 'klicker' ||
+      parsed.canonical_input.external_resource_id !==
+        parsed.external_resource_id ||
+      parsed.canonical_input.resource_version !==
+        parsed.serving.active_resource_version ||
+      parsed.canonical_input.source_sha256 !== parsed.serving.active_sha256)
+  )
+    return null
   if (Buffer.from(canonicalJson(parsed), 'utf8').compare(rawBody) !== 0) {
     return null
   }
@@ -307,6 +336,34 @@ export async function handleKBIngestionWebhook({
 
   const transition = transitionForEvent(payload)
   await prisma.$transaction(async (tx) => {
+    const scope = await tx.kBResource.findUnique({
+      where: { id: payload.external_resource_id },
+      select: {
+        kbId: true,
+      },
+    })
+    if (!scope) return
+    await tx.$queryRaw`SELECT "id" FROM "public"."KB" WHERE "id" = CAST(${scope.kbId} AS UUID) AND "deletedAt" IS NULL FOR UPDATE`
+    // Signed callbacks are accepted for both contracts independently of the
+    // canonical admission flag. The canonical reference is scoped to the
+    // resource's knowledge base and to the configured ingestion project.
+    if (
+      payload.canonical_input &&
+      (payload.canonical_input.kb_id !== scope.kbId ||
+        payload.canonical_input.project_id !==
+          (env.KB_INGESTION_PROJECT_ID?.trim() || 'klicker-course-materials'))
+    )
+      return
+    // A v2 event without a canonical reference cannot be validated against a
+    // serving artifact; only a pending attempt with an empty serving state may
+    // proceed without one.
+    if (
+      payload.contract_version === 'knowledge-source/v2' &&
+      !payload.canonical_input &&
+      (payload.eventType === 'resource.content_refreshed' ||
+        payload.serving.active_resource_version !== null)
+    )
+      return
     if (payload.eventType === 'resource.content_refreshed') {
       const activeResourceVersion = payload.serving.active_resource_version
       const activeContentSha256 = payload.serving.active_sha256
@@ -324,6 +381,7 @@ export async function handleKBIngestionWebhook({
           id: string
           deletedAt: Date | null
           activeResourceVersion: number | null
+          resourceVersion: number
           ingestedAt: Date | null
         }>
       >`
@@ -331,6 +389,7 @@ export async function handleKBIngestionWebhook({
           resource."id",
           resource."deletedAt",
           resource."activeResourceVersion",
+          resource."resourceVersion",
           resource."ingestedAt"
         FROM "public"."KBResource" AS resource
         WHERE resource."id" = CAST(${payload.external_resource_id} AS UUID)
@@ -383,6 +442,13 @@ export async function handleKBIngestionWebhook({
           data: {
             activeResourceVersion,
             activeContentSha256,
+            ...(payload.serving_source_metadata &&
+            activeResourceVersion >= resource.resourceVersion
+              ? {
+                  sizeBytes: payload.serving_source_metadata.byte_count,
+                  mimeType: payload.serving_source_metadata.mime_type,
+                }
+              : {}),
             ingestedAt: occurredAt,
           },
         })
@@ -409,6 +475,26 @@ export async function handleKBIngestionWebhook({
     if (!resource?.ingestionAttemptId) {
       return
     }
+    if (
+      payload.contract_version === 'knowledge-source/v2' &&
+      payload.eventType === 'resource.processing_succeeded' &&
+      resource.ingestionOperation !== KBIngestionOperation.DELETE &&
+      !payload.canonical_input
+    ) {
+      return
+    }
+    // A pinned desired digest (a blob upload or another caller-known hash)
+    // must not accept a v2 event that serves this attempt's version with
+    // different bytes; the digest is learned only when it matches.
+    if (
+      payload.contract_version === 'knowledge-source/v2' &&
+      resource.contentSha256 !== null &&
+      payload.serving.active_resource_version === payload.resource_version &&
+      payload.serving.active_sha256 !== null &&
+      payload.serving.active_sha256 !== resource.contentSha256
+    ) {
+      return
+    }
 
     const run = await tx.kBIngestionRun.findUnique({
       where: { id: resource.ingestionAttemptId },
@@ -424,11 +510,29 @@ export async function handleKBIngestionWebhook({
         : payload.serving.active_resource_version ===
             payload.resource_version &&
           payload.serving.active_sha256 !== null &&
-          payload.serving.active_sha256 === resource.contentSha256
+          (payload.contract_version
+            ? payload.canonical_input?.source_sha256 ===
+              payload.serving.active_sha256
+            : payload.serving.active_sha256 === resource.contentSha256)
     const servingState = {
       activeResourceVersion: payload.serving.active_resource_version,
       activeContentSha256: payload.serving.active_sha256,
+      ...(payload.contract_version &&
+      payload.serving_source_metadata &&
+      servingMatchesCurrent
+        ? {
+            sizeBytes: payload.serving_source_metadata.byte_count,
+            mimeType: payload.serving_source_metadata.mime_type,
+          }
+        : {}),
     }
+    // The desired raw digest is learned from a successful cutover only; a
+    // pending attempt keeps its caller hash until then.
+    const learnedContentSha256 =
+      payload.contract_version === 'knowledge-source/v2' &&
+      servingMatchesCurrent
+        ? { contentSha256: payload.serving.active_sha256 }
+        : {}
 
     if (!transition) {
       await tx.kBResource.updateMany({
@@ -446,6 +550,7 @@ export async function handleKBIngestionWebhook({
           servingMatchesCurrent && run.status === KBIngestionStatus.SUCCEEDED
             ? {
                 ...servingState,
+                ...learnedContentSha256,
                 status: KBResourceStatus.READY,
                 statusMessage: null,
                 errorCode: null,
@@ -474,6 +579,9 @@ export async function handleKBIngestionWebhook({
       },
       data: {
         ...servingState,
+        ...(payload.eventType === 'resource.processing_succeeded'
+          ? learnedContentSha256
+          : {}),
         status: resourceStatus,
         statusMessage: transition.statusMessage,
         errorCode: payload.error_code,
@@ -506,6 +614,9 @@ export async function handleKBIngestionWebhook({
         status: transition.runStatus,
         statusMessage: transition.statusMessage,
         errorCode: payload.error_code,
+        ...(payload.eventType === 'resource.processing_succeeded'
+          ? learnedContentSha256
+          : {}),
         ...(payload.eventType === 'resource.processing_started'
           ? { startedAt: new Date(payload.occurredAt) }
           : {}),

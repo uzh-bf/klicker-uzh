@@ -55,6 +55,20 @@ const validExpectation = {
   estimatedMinorUnits: 200,
 }
 
+const validCanonicalResult = {
+  ...validResult,
+  contract_version: 'klicker-kb-graph/v2',
+  source_input_contract: 'canonical-document/v1',
+  source_input_digest:
+    'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
+}
+
+function withoutKey(value: object, key: string) {
+  const copy = { ...value } as Record<string, unknown>
+  delete copy[key]
+  return copy
+}
+
 describe('kbGraphContract', () => {
   it('exports the v1 contract version constant', () => {
     expect(KB_GRAPH_CONTRACT_VERSION).toBe('klicker-kb-graph/v1')
@@ -343,7 +357,7 @@ describe('kbGraphContract', () => {
 
   it('rejects a result with an unknown contract version', () => {
     const validation = validateKbGraphTerminalResult(
-      { ...validResult, contract_version: 'klicker-kb-graph/v2' },
+      { ...validResult, contract_version: 'klicker-kb-graph/v3' },
       validExpectation
     )
 
@@ -422,6 +436,92 @@ describe('kbGraphContract', () => {
       expect(validation.errors.join(' ')).toContain(
         'amount_minor_units must equal the component total'
       )
+    }
+  })
+
+  it('parses a v1 terminal result without adding canonical lineage fields', () => {
+    const validation = validateKbGraphTerminalResult(
+      validResult,
+      validExpectation
+    )
+
+    expect(validation.ok).toBe(true)
+    if (!validation.ok) {
+      throw new Error('expected the legacy terminal result to validate')
+    }
+    expect(validation.result.contract_version).toBe('klicker-kb-graph/v1')
+    expect('source_input_contract' in validation.result).toBe(false)
+    expect('source_input_digest' in validation.result).toBe(false)
+  })
+
+  it('rejects a v1 terminal result that carries canonical source lineage', () => {
+    const validation = validateKbGraphTerminalResult(
+      {
+        ...validResult,
+        source_input_contract: validCanonicalResult.source_input_contract,
+        source_input_digest: validCanonicalResult.source_input_digest,
+      },
+      validExpectation
+    )
+
+    expect(validation.ok).toBe(false)
+    if (!validation.ok) {
+      expect(validation.errors.join(' ')).toContain('source_input_contract')
+    }
+  })
+
+  it('accepts a v2 terminal result that pins the canonical source contract', () => {
+    const validation = validateKbGraphTerminalResult(
+      validCanonicalResult,
+      validExpectation
+    )
+
+    expect(validation.ok).toBe(true)
+    if (
+      !validation.ok ||
+      validation.result.contract_version !== 'klicker-kb-graph/v2'
+    ) {
+      throw new Error('expected the canonical terminal result to validate')
+    }
+    expect(validation.result.source_input_contract).toBe(
+      'canonical-document/v1'
+    )
+    expect(validation.result.source_input_digest).toBe(
+      validCanonicalResult.source_input_digest
+    )
+    expect(validation.result.build_id).toBe(validCanonicalResult.build_id)
+  })
+
+  it.each([
+    {
+      shape: 'missing contract',
+      result: withoutKey(validCanonicalResult, 'source_input_contract'),
+      field: 'source_input_contract',
+    },
+    {
+      shape: 'missing digest',
+      result: withoutKey(validCanonicalResult, 'source_input_digest'),
+      field: 'source_input_digest',
+    },
+    {
+      shape: 'legacy contract',
+      result: {
+        ...validCanonicalResult,
+        source_input_contract: 'knowledge-source/v2',
+      },
+      field: 'source_input_contract',
+    },
+    {
+      shape: 'malformed digest',
+      result: { ...validCanonicalResult, source_input_digest: 'not-a-sha256' },
+      field: 'source_input_digest',
+    },
+  ])('rejects a v2 terminal result with $shape', ({ result, field }) => {
+    const validation = validateKbGraphTerminalResult(result, validExpectation)
+
+    expect(validation.ok).toBe(false)
+    if (!validation.ok) {
+      expect(validation.errors.join(' ')).toContain(field)
     }
   })
 })

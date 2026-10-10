@@ -1,8 +1,12 @@
+import { createHash } from 'node:crypto'
 import {
   KBResourceMaterialType,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
-import { createHash } from 'node:crypto'
+import {
+  type CanonicalInputReference,
+  isCanonicalInputReference,
+} from '@klicker-uzh/types'
 
 type KBContentDigestPrisma = Pick<PrismaClient, 'kBResource'>
 
@@ -74,4 +78,42 @@ export async function computeKBContentDigest(
   return hashKBContentDigestEntries(
     await readKBContentDigestEntries(prisma, kbId)
   )
+}
+
+export function hashKBCanonicalInputReferences(
+  references: CanonicalInputReference[]
+): string {
+  const hash = createHash('sha256')
+  const sorted = [...references].sort((a, b) =>
+    a.external_resource_id < b.external_resource_id
+      ? -1
+      : a.external_resource_id > b.external_resource_id
+        ? 1
+        : 0
+  )
+  if (
+    new Set(sorted.map((item) => item.external_resource_id)).size !==
+    sorted.length
+  ) {
+    throw new Error('Canonical sources must not repeat a resource')
+  }
+  for (const reference of sorted) {
+    if (!isCanonicalInputReference(reference))
+      throw new Error('Invalid canonical source lineage')
+    hash.update(
+      JSON.stringify([
+        reference.contract_version,
+        reference.producer_id,
+        reference.project_id,
+        reference.kb_id,
+        reference.external_resource_id,
+        reference.resource_version,
+        reference.source_sha256,
+        reference.canonical_sha256,
+        reference.parser_recipe_sha256,
+        reference.byte_count,
+      ]) + '\n'
+    )
+  }
+  return hash.digest('hex')
 }

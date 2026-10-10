@@ -133,7 +133,7 @@ const meteredCostSchema = z
     }
   })
 
-export const kbGraphTerminalResultSchema = z
+const kbGraphTerminalResultBaseSchema = z
   .object({
     contract_version: z.literal(KB_GRAPH_CONTRACT_VERSION),
     result_id: z.string().trim().min(1),
@@ -160,6 +160,18 @@ export const kbGraphTerminalResultSchema = z
     processed_document_count: z.number().int().min(0).default(0),
   })
   .strict()
+
+export const kbGraphTerminalResultSchema = z
+  .discriminatedUnion('contract_version', [
+    kbGraphTerminalResultBaseSchema,
+    kbGraphTerminalResultBaseSchema
+      .extend({
+        contract_version: z.literal('klicker-kb-graph/v2'),
+        source_input_contract: z.literal('canonical-document/v1'),
+        source_input_digest: sha256String,
+      })
+      .strict(),
+  ])
   .superRefine((value, context) => {
     if (value.result_id !== `${value.build_id}:${value.run_id}`) {
       context.addIssue({

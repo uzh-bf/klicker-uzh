@@ -63,6 +63,32 @@ const operationResponse = {
   updated_at: '2026-07-12T14:04:52Z',
 }
 
+const v2OperationResponse = {
+  ...operationResponse,
+  contract_version: 'knowledge-source/v2',
+  serving_source_metadata: { byte_count: 4096, mime_type: 'text/html' },
+  canonical_input: {
+    contract_version: 'canonical-document/v1',
+    producer_id: 'klicker',
+    project_id: 'klicker-course-materials',
+    kb_id: KB_ID,
+    external_resource_id: RESOURCE_ID,
+    resource_version: 3,
+    source_sha256: CONTENT_SHA256,
+    canonical_sha256: 'a'.repeat(64),
+    parser_recipe_sha256: 'b'.repeat(64),
+    byte_count: 1024,
+  },
+}
+
+function statusFetch(payload: unknown) {
+  return vi.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    json: vi.fn().mockResolvedValue(payload),
+  })
+}
+
 afterEach(() => {
   vi.restoreAllMocks()
   httpsRequest.mockReset()
@@ -119,6 +145,93 @@ describe('canonical ingestion API client', () => {
     })
   })
 
+  it('sends the v2 URL acceptance without probed MIME or digest fields', async () => {
+    const fetchRequest = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 202,
+      json: vi.fn().mockResolvedValue({
+        operation_id: 'op_01J2X8K3M9QZ4R7T6V5W1Y0BND',
+      }),
+    })
+    const client = createKBIngestionApiClient({ env, fetchRequest })
+
+    await expect(
+      client.acceptResource({
+        resourceId: RESOURCE_ID,
+        kbId: KB_ID,
+        resourceVersion: 3,
+        ingestionAttemptId: ATTEMPT_ID,
+        inputContract: 'knowledge-source/v2',
+        source: {
+          kind: 'url',
+          url: 'https://example.com/notes',
+          mimeType: null,
+          displayName: 'Lecture notes',
+          contentSha256: null,
+          sizeBytes: null,
+        },
+      })
+    ).resolves.toBe('op_01J2X8K3M9QZ4R7T6V5W1Y0BND')
+
+    const [url, request] = fetchRequest.mock.calls[0]!
+    expect(url.toString()).toBe('https://ingestion.example/v2/resources')
+    expect(JSON.parse(request.body)).toEqual({
+      contract_version: 'knowledge-source/v2',
+      max_bytes: 25 * 1024 * 1024,
+      project_id: 'klicker-course-materials',
+      producer: 'klicker',
+      external_resource_id: RESOURCE_ID,
+      resource_version: 3,
+      scope: { kb_id: KB_ID },
+      source: {
+        kind: 'url',
+        url: 'https://example.com/notes',
+        display_name: 'Lecture notes',
+      },
+    })
+  })
+
+  it('keeps the verified blob digest and MIME type under the v2 contract', async () => {
+    const fetchRequest = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 202,
+      json: vi.fn().mockResolvedValue({
+        operation_id: 'op_01J2X8K3M9QZ4R7T6V5W1Y0BND',
+      }),
+    })
+    const client = createKBIngestionApiClient({ env, fetchRequest })
+
+    await expect(
+      client.acceptResource({
+        resourceId: RESOURCE_ID,
+        kbId: KB_ID,
+        resourceVersion: 3,
+        ingestionAttemptId: ATTEMPT_ID,
+        inputContract: 'knowledge-source/v2',
+        source,
+      })
+    ).resolves.toBe('op_01J2X8K3M9QZ4R7T6V5W1Y0BND')
+
+    const [url, request] = fetchRequest.mock.calls[0]!
+    expect(url.toString()).toBe('https://ingestion.example/v2/resources')
+    expect(JSON.parse(request.body)).toEqual({
+      contract_version: 'knowledge-source/v2',
+      max_bytes: 25 * 1024 * 1024,
+      project_id: 'klicker-course-materials',
+      producer: 'klicker',
+      external_resource_id: RESOURCE_ID,
+      resource_version: 3,
+      scope: { kb_id: KB_ID },
+      source: {
+        kind: 'blob',
+        url: source.url,
+        mime_type: 'application/pdf',
+        display_name: 'Lecture 1',
+      },
+      content_sha256: CONTENT_SHA256,
+    })
+  })
+
   it('sends the canonical delete request with a stable idempotency key', async () => {
     const fetchRequest = vi.fn().mockResolvedValue({
       ok: true,
@@ -158,6 +271,39 @@ describe('canonical ingestion API client', () => {
     })
   })
 
+  it('sends the v2 delete with the contract discriminator', async () => {
+    const fetchRequest = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 202,
+      json: vi.fn().mockResolvedValue({
+        operation_id: 'op_01J2X8K3M9QZ4R7T6V5W1Y0BND',
+      }),
+    })
+    const client = createKBIngestionApiClient({ env, fetchRequest })
+
+    await expect(
+      client.deleteResource({
+        resourceId: RESOURCE_ID,
+        kbId: KB_ID,
+        resourceVersion: 4,
+        deletionAttemptId: ATTEMPT_ID,
+        inputContract: 'knowledge-source/v2',
+      })
+    ).resolves.toBe('op_01J2X8K3M9QZ4R7T6V5W1Y0BND')
+
+    const [url, request] = fetchRequest.mock.calls[0]!
+    expect(url.toString()).toBe(
+      `https://ingestion.example/v2/resources/${RESOURCE_ID}`
+    )
+    expect(JSON.parse(request.body)).toEqual({
+      contract_version: 'knowledge-source/v2',
+      project_id: 'klicker-course-materials',
+      producer: 'klicker',
+      resource_version: 4,
+      scope: { kb_id: KB_ID },
+    })
+  })
+
   it('parses the canonical operation response for reconciliation', async () => {
     const fetchRequest = vi.fn().mockResolvedValue({
       ok: true,
@@ -188,6 +334,169 @@ describe('canonical ingestion API client', () => {
       createdAt: '2026-07-12T14:03:21Z',
       updatedAt: '2026-07-12T14:04:52Z',
     })
+  })
+
+  it('parses the v2 operation status with canonical lineage', async () => {
+    const fetchRequest = statusFetch(v2OperationResponse)
+
+    const operation = await createKBIngestionApiClient({
+      env,
+      fetchRequest,
+    }).getOperation(operationResponse.operation_id, 'knowledge-source/v2')
+
+    expect(fetchRequest.mock.calls[0]![0].toString()).toBe(
+      `https://ingestion.example/v2/operations/${operationResponse.operation_id}`
+    )
+    expect(operation).toEqual({
+      inputContract: 'knowledge-source/v2',
+      canonicalInput: v2OperationResponse.canonical_input,
+      servingSourceMetadata: v2OperationResponse.serving_source_metadata,
+      operationId: 'op_01J2X8K3M9QZ4R7T6V5W1Y0BND',
+      status: 'succeeded',
+      operation: 'update',
+      projectId: 'klicker-course-materials',
+      producer: 'klicker',
+      externalResourceId: RESOURCE_ID,
+      resourceVersion: 3,
+      expectedSha256: CONTENT_SHA256,
+      observedSha256: CONTENT_SHA256,
+      serving: {
+        activeResourceVersion: 3,
+        activeSha256: CONTENT_SHA256,
+      },
+      errorCode: null,
+      correlationId: ATTEMPT_ID,
+      createdAt: '2026-07-12T14:03:21Z',
+      updatedAt: '2026-07-12T14:04:52Z',
+    })
+  })
+
+  it('parses a failed v2 status with a null canonical input', async () => {
+    const fetchRequest = statusFetch({
+      ...v2OperationResponse,
+      status: 'failed',
+      observed_sha256: null,
+      canonical_input: null,
+      serving_source_metadata: null,
+    })
+
+    await expect(
+      createKBIngestionApiClient({ env, fetchRequest }).getOperation(
+        operationResponse.operation_id,
+        'knowledge-source/v2'
+      )
+    ).resolves.toMatchObject({
+      inputContract: 'knowledge-source/v2',
+      canonicalInput: null,
+      status: 'failed',
+    })
+  })
+
+  it.each([
+    {
+      name: 'a missing contract discriminator',
+      response: {
+        ...operationResponse,
+        canonical_input: v2OperationResponse.canonical_input,
+      },
+    },
+    {
+      name: 'a missing canonical input slot',
+      response: {
+        ...operationResponse,
+        contract_version: 'knowledge-source/v2',
+      },
+    },
+    {
+      name: 'an unexpected contract version',
+      response: {
+        ...v2OperationResponse,
+        contract_version: 'knowledge-source/v1',
+      },
+    },
+    {
+      name: 'an oversized served source',
+      response: {
+        ...v2OperationResponse,
+        serving_source_metadata: {
+          byte_count: 25 * 1024 * 1024 + 1,
+          mime_type: 'text/html',
+        },
+      },
+    },
+    {
+      name: 'missing served metadata',
+      response: { ...v2OperationResponse, serving_source_metadata: null },
+    },
+    {
+      name: 'an unsupported served MIME',
+      response: {
+        ...v2OperationResponse,
+        serving_source_metadata: { byte_count: 4096, mime_type: 'image/png' },
+      },
+    },
+    {
+      name: 'a malformed canonical reference',
+      response: {
+        ...v2OperationResponse,
+        canonical_input: {
+          ...v2OperationResponse.canonical_input,
+          byte_count: 0,
+        },
+      },
+    },
+  ])('rejects a v2 status with $name', async ({ response }) => {
+    const fetchRequest = statusFetch(response)
+
+    await expect(
+      createKBIngestionApiClient({ env, fetchRequest }).getOperation(
+        operationResponse.operation_id,
+        'knowledge-source/v2'
+      )
+    ).rejects.toThrow('Ingestion API returned an invalid response')
+  })
+
+  it.each([
+    { field: 'producer_id', value: 'other-producer' },
+    { field: 'project_id', value: 'other-project' },
+    {
+      field: 'external_resource_id',
+      value: 'f4d1c0a2-1111-4333-a00b-1f50ed9bf61e',
+    },
+    { field: 'resource_version', value: 2 },
+    { field: 'source_sha256', value: 'b'.repeat(64) },
+  ])('rejects canonical lineage that disagrees on $field', async ({
+    field,
+    value,
+  }) => {
+    const fetchRequest = statusFetch({
+      ...v2OperationResponse,
+      canonical_input: {
+        ...v2OperationResponse.canonical_input,
+        [field]: value,
+      },
+    })
+
+    await expect(
+      createKBIngestionApiClient({ env, fetchRequest }).getOperation(
+        operationResponse.operation_id,
+        'knowledge-source/v2'
+      )
+    ).rejects.toThrow('Ingestion API returned invalid canonical lineage')
+  })
+
+  it('refuses v2 status keys under the default v1 contract', async () => {
+    const fetchRequest = statusFetch(v2OperationResponse)
+
+    await expect(
+      createKBIngestionApiClient({ env, fetchRequest }).getOperation(
+        operationResponse.operation_id
+      )
+    ).rejects.toThrow('Ingestion API returned an invalid response')
+
+    expect(fetchRequest.mock.calls[0]![0].toString()).toBe(
+      `https://ingestion.example/v1/operations/${operationResponse.operation_id}`
+    )
   })
 
   it('rejects response drift and hides remote response details', async () => {
