@@ -163,8 +163,13 @@ Additive language metadata requires no migration. New files beyond the operation
   tasks), and all 27 production build tasks pass. The input correction is
   committed and pushed in [draft PR #6461](https://github.com/uzh-bf/klicker-uzh/pull/6461),
   targeting `v3-ai`. Final self-review found no unresolved issue in the complete
-  three-file package; hosted CI and final AI review remain pending. Merge,
-  staging promotion and repeated participant acceptance are subsequent gates.
+  three-file package. All nine required hosted checks passed for the corrected
+  source at `bdeaf3a2107bb7783323ae6ca8ec4ff9d4b91265`, including the actual
+  [Playwright build and test run](https://github.com/uzh-bf/klicker-uzh/actions/runs/38039231202).
+  Ordinary automated review reports zero findings. The final AI workflow
+  requires a non-draft PR, so it awaits named ready-status authority. Merge,
+  staging promotion through the live `v3-adaptive-learning` source and repeated
+  participant acceptance are subsequent gates.
   Ordinary automated review identified an unusable `question` value suppressing
   a valid legacy `query`. The generic wrapper now prefers a nonblank string
   `question` and otherwise selects `query`, preserving both original keys.
