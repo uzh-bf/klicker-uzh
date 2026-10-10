@@ -153,23 +153,35 @@ seven paths are excluded by existing ignore rules. A final source comparison
 matches the verification checkout except for import ordering in one test.
 Staged Gitleaks review passes with no leaks.
 
-The commit did not execute: automatic approval review failed internally with
-`missing field outcome`. The user explicitly approved retrying the commit. The staged
-source remains intact at local/remote HEAD `4ca084fa2c`. Required exact-range
-simplification, risk review, final review, push and new-head CI remain pending.
-The revised draft description is prepared outside Git and has not been published.
+The initial commit was not executed because approval review failed internally.
+The user approved a retry, which succeeded at `7c6357f68f`. A conflict-free
+normal merge of current `v3-ai` (`4a7040ee36`) produced `cdc0bad98b`. This removes
+the misleading reverse diff of two upstream chat fixes. All net Prisma/schema
+and migration differences against the actual target are zero.
 
-Canonical shutdown of the disposable verification checkout also failed:
+Integrated verification passes: 63 affected chat tests, chat type checks and the
+full production build (27/27). The no-database source matches the previously
+tested verification checkout; one test differs only in import ordering.
+Substantive package size against target is 2,657 added and 65 removed lines,
+mostly existing regression suites. Keep the single cohesive canonical adapter
+PR; no new feature or stack is introduced by this simplification.
+
+Native simplifier Ampere completed the immutable no-database slice with no
+further evidence-backed reduction. Independent risk review is running on that
+same slice. Final integrated review follows; CI is watching the published head.
+The updated draft description states no migration, provider-owned canonical
+pinning and deferred parser-only freshness. OpenRouter review remains waived.
+
+Canonical shutdown of the disposable verification checkout failed:
 `Initial managed stop requires the drained ensure's recorded profile.` Fresh
-provider status remains `Running`; fresh route inspection finds zero exact
-routes for both the verification checkout and the original task checkout.
-No raw-provider stop, configuration repair or deletion was used to bypass it.
-The retained original task runtime remains stopped. Finish canonical shutdown
-when the lifecycle tool can recover its recorded profile.
+provider status is `Running`; route inspection finds zero exact routes for both
+the verification checkout and original task checkout. Canonical repair is denied
+while lifecycle phase is `stopping`; the latest recorded operation is a completed
+`exec`, not `ensure`. No stop worker is running. No raw-provider stop, lifecycle
+record edits, configuration changes or deletion were used to bypass it. The
+original retained task runtime is stopped. This operational limitation remains
+separate from the source-contract checks and unqualified routed E2E.
 
-The user approved the commit retry after the approval service failed. Resume
-this existing package with the verified staged source and verification receipts.
-
-Next: resolve commit retry, integrate the current `v3-ai` head normally into the
-task branch, complete exact-range reviews, push, update the draft and verify CI.
-No merge, deploy, live refresh/rebuild, activation or paid evaluation is admitted.
+Next: disposition independent risk review, complete integrated final review,
+verify exact-head CI, and refresh the draft evidence. No merge, deployment,
+live refresh/rebuild, activation or paid evaluation is admitted.
