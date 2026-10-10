@@ -103,7 +103,7 @@ describe('canonical KG dispatch', () => {
       {
         ...externalEnv,
         KB_CANONICAL_INPUT_ENABLED: 'true',
-        KB_CANONICAL_INPUT_API_TOKEN: 'synthetic-reader-token',
+        KB_GRAPH_API_TOKEN: 'synthetic-provider-token',
       },
       [reference]
     )
@@ -113,7 +113,7 @@ describe('canonical KG dispatch', () => {
     )
     expect(payload.sources[0]?.canonical_input).toEqual(reference)
     expect(payload.upload_markdown).toBe(false)
-    expect(JSON.stringify(payload)).not.toContain('synthetic-reader-token')
+    expect(JSON.stringify(payload)).not.toContain('synthetic-provider-token')
   })
 
   it('rejects mismatched canonical references and a disabled canonical payload', () => {

@@ -492,51 +492,36 @@ describe('kbGraphContract', () => {
     expect(validation.result.build_id).toBe(validCanonicalResult.build_id)
   })
 
-  it('rejects a v2 terminal result without the canonical source contract', () => {
-    const validation = validateKbGraphTerminalResult(
-      withoutKey(validCanonicalResult, 'source_input_contract'),
-      validExpectation
-    )
+  it.each([
+    {
+      shape: 'missing contract',
+      result: withoutKey(validCanonicalResult, 'source_input_contract'),
+      field: 'source_input_contract',
+    },
+    {
+      shape: 'missing digest',
+      result: withoutKey(validCanonicalResult, 'source_input_digest'),
+      field: 'source_input_digest',
+    },
+    {
+      shape: 'legacy contract',
+      result: {
+        ...validCanonicalResult,
+        source_input_contract: 'knowledge-source/v2',
+      },
+      field: 'source_input_contract',
+    },
+    {
+      shape: 'malformed digest',
+      result: { ...validCanonicalResult, source_input_digest: 'not-a-sha256' },
+      field: 'source_input_digest',
+    },
+  ])('rejects a v2 terminal result with $shape', ({ result, field }) => {
+    const validation = validateKbGraphTerminalResult(result, validExpectation)
 
     expect(validation.ok).toBe(false)
     if (!validation.ok) {
-      expect(validation.errors.join(' ')).toContain('source_input_contract')
-    }
-  })
-
-  it('rejects a v2 terminal result without the canonical source digest', () => {
-    const validation = validateKbGraphTerminalResult(
-      withoutKey(validCanonicalResult, 'source_input_digest'),
-      validExpectation
-    )
-
-    expect(validation.ok).toBe(false)
-    if (!validation.ok) {
-      expect(validation.errors.join(' ')).toContain('source_input_digest')
-    }
-  })
-
-  it('rejects a v2 terminal result with a legacy source-input contract', () => {
-    const validation = validateKbGraphTerminalResult(
-      { ...validCanonicalResult, source_input_contract: 'knowledge-source/v2' },
-      validExpectation
-    )
-
-    expect(validation.ok).toBe(false)
-    if (!validation.ok) {
-      expect(validation.errors.join(' ')).toContain('source_input_contract')
-    }
-  })
-
-  it('rejects a v2 terminal result with a malformed canonical source digest', () => {
-    const validation = validateKbGraphTerminalResult(
-      { ...validCanonicalResult, source_input_digest: 'not-a-sha256' },
-      validExpectation
-    )
-
-    expect(validation.ok).toBe(false)
-    if (!validation.ok) {
-      expect(validation.errors.join(' ')).toContain('source_input_digest')
+      expect(validation.errors.join(' ')).toContain(field)
     }
   })
 })

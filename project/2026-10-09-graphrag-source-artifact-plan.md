@@ -186,6 +186,12 @@ record edits, configuration changes or deletion were used to bypass it. The
 original retained task runtime is stopped. This operational limitation remains
 separate from the source-contract checks and unqualified routed E2E.
 
-Next: verify the risk-review correction, complete integrated final review,
-verify exact-head CI, and refresh the draft evidence. No merge, deployment,
+Integrated final review found no correctness or security defects. Two small
+maintainability findings were accepted: remove unused provider-only reader keys
+from Turbo's global environment, and consolidate v2 schema rejection cases.
+Both focused suites pass (51 dispatch and 31 contract tests), with unchanged
+coverage. Final-review correction verification and exact-head CI remain.
+
+Next: verify the final-review correction, qualify exact-head CI, and refresh
+the draft evidence. No merge, deployment,
 live refresh/rebuild, activation or paid evaluation is admitted.
