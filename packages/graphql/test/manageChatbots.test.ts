@@ -1416,7 +1416,11 @@ describe('Integration tests for lecturer chatbot management', () => {
       process.env.CHAT_PRIMARY_MODEL_ID = 'gpt-4.1'
 
       try {
-        const [info] = (await getChatbotsInfo(userOneCtx)) ?? []
+        vi.resetModules()
+        const { getChatbotsInfo: getConfiguredChatbotsInfo } = await import(
+          '../src/services/chatbots.js'
+        )
+        const [info] = (await getConfiguredChatbotsInfo(userOneCtx)) ?? []
         expect(info).toMatchObject({
           id: chatbot.id,
           allowedModelIds: ['gpt-4.1'],

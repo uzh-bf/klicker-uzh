@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useChatResponse } from '../src/hooks/useChatResponse'
+import type { ExtendedThreadMessageLike } from '../src/stores/chatStore'
 
 const { mockUseChatContextStore, mockUseChatStore } = vi.hoisted(() => ({
   // The real store is a zustand store, so the stand-in carries the same
@@ -82,6 +83,33 @@ function createStreamingResponse(lines: string[]) {
 }
 
 describe('useChatResponse attachment hydration', () => {
+  test('uses the bootstrapped model instead of a stale pre-bootstrap closure', async () => {
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValue(createStreamingResponse(['data: [DONE]']))
+    vi.stubGlobal('fetch', fetchSpy)
+    const { generateChatResponse } = useChatResponse('', 'chat', 'medium')
+    await generateChatResponse(
+      [
+        {
+          id: 'user-1',
+          role: 'user',
+          content: [{ type: 'text', text: 'synthetic question' }],
+        },
+      ] as ExtendedThreadMessageLike[],
+      'thread-1',
+      {
+        modelSelection: {
+          modelId: 'configured-model',
+          reasoningEffort: 'none',
+        },
+      }
+    )
+    const body = JSON.parse(fetchSpy.mock.calls[0]?.[1].body)
+    expect(body.selectedModel).toBe('configured-model')
+    expect(body.reasoningEffort).toBe('none')
+  })
+
   beforeEach(() => {
     vi.restoreAllMocks()
 

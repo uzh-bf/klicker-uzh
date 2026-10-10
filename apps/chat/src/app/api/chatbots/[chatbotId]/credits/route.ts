@@ -2,6 +2,7 @@ import { getChatbotOr404, withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
   getAutomaticModelId,
   getModelsForChatbot,
+  getParticipantFallbackModelId,
 } from '@/src/lib/server/chatModelRegistry'
 import { CreditsService } from '@/src/services/credits'
 import { getNextResetTime } from '@/src/utils/creditPeriods'
@@ -39,11 +40,15 @@ export async function GET(
 
     let availableModels = getModelsForChatbot(chatbotResult.chatbot)
 
-    // Phase A: anonymous (LTI guest) restricted to fallback models only.
-    // Phase B replaces this with reasoning-effort tier gating so guests can
-    // use the flagship model at free effort levels.
+    // Guests use the global BASE safety model, retaining the chatbot's
+    // reasoning restrictions even when its model list omits that fallback.
     if (authMode === 'anonymous') {
-      availableModels = availableModels.filter((m) => m.fallback)
+      const fallbackModelId = getParticipantFallbackModelId()
+      if (!fallbackModelId) throw new Error('Participant fallback unavailable')
+      availableModels = getModelsForChatbot({
+        ...chatbotResult.chatbot,
+        allowedModelIds: [fallbackModelId],
+      })
     }
 
     const automaticModelId =

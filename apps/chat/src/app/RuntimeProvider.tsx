@@ -82,8 +82,9 @@ export function RuntimeProvider({
     activeModeOptions,
     selectedMode
   )
-  const loadCredits = useSettingsStore((state) => state.loadCredits)
-  const loadModeOptions = useSettingsStore((state) => state.loadModeOptions)
+  const ensureModelSelection = useSettingsStore(
+    (state) => state.ensureModelSelection
+  )
   const router = useRouter()
   const searchParams = useSearchParams()
   const queryString = searchParams.toString()
@@ -122,10 +123,11 @@ export function RuntimeProvider({
       // No thread yet: skip thread loading, but chatbot-scoped settings
       // (mode options, credits) are still needed for the embedded chrome.
       previousRuntimeContext.current = { chatbotId, embedded, threadId }
-      void (async () => {
-        await loadModeOptions(chatbotId, initialModeOptions)
-        await loadCredits(chatbotId)
-      })()
+      void ensureModelSelection(chatbotId, initialModeOptions).catch(
+        (error) => {
+          console.error('Failed to load chat settings:', error)
+        }
+      )
       return
     }
 
@@ -165,16 +167,14 @@ export function RuntimeProvider({
       }
     })()
 
-    void (async () => {
-      await loadModeOptions(chatbotId, initialModeOptions)
-      await loadCredits(chatbotId)
-    })()
+    void ensureModelSelection(chatbotId, initialModeOptions).catch((error) => {
+      console.error('Failed to load chat settings:', error)
+    })
   }, [
     chatbotId,
     embedded,
     initialModeOptions,
-    loadCredits,
-    loadModeOptions,
+    ensureModelSelection,
     loadThreads,
     threadId,
   ])

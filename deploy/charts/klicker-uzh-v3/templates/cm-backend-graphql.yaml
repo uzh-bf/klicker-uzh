@@ -26,6 +26,15 @@ data:
   # allow-list offers exactly the models the chat app can actually serve.
   CHAT_MODEL_REGISTRY_JSON: {{ .Values.chat.modelRegistry | toJson | quote }}
   {{- end }}
+  {{- if and .Values.chat.automaticModels .Values.chat.automaticModels.primaryId }}
+  CHAT_PRIMARY_MODEL_ID: {{ .Values.chat.automaticModels.primaryId | quote }}
+  {{- end }}
+  {{- if and .Values.chat.automaticModels .Values.chat.automaticModels.fallbackId }}
+  CHAT_FALLBACK_MODEL_ID: {{ .Values.chat.automaticModels.fallbackId | quote }}
+  {{- end }}
+  {{- if ne .Values.chat.newChatbotModelPolicy nil }}
+  CHAT_NEW_CHATBOT_MODEL_POLICY_JSON: {{ .Values.chat.newChatbotModelPolicy | toJson | quote }}
+  {{- end }}
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
   # Deprecated - kept for backward compatibility during transition
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}

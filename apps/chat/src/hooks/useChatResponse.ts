@@ -13,11 +13,15 @@ import {
   type ExtendedThreadMessageLike,
   type ThreadRunOutcome,
 } from '../stores/chatStore'
-import { useSettingsStore } from '../stores/settingsStore'
+import {
+  type ChatModelSelection,
+  useSettingsStore,
+} from '../stores/settingsStore'
 import { requestFreshElearningChatContext } from './useEmbeddedChatContext'
 
 type GenerateChatResponseOptions = {
   allowRegeneration?: boolean
+  modelSelection?: ChatModelSelection
 }
 
 /**
@@ -232,9 +236,11 @@ export function useChatResponse(
                 content: serializeMessageContent(m),
               })),
             threadId,
-            selectedModel,
+            selectedModel: options.modelSelection?.modelId ?? selectedModel,
             selectedMode,
-            reasoningEffort: selectedReasoningEffort,
+            reasoningEffort:
+              options.modelSelection?.reasoningEffort ??
+              selectedReasoningEffort,
             chatContext: requestChatContext ?? undefined,
             parentId: parentId || undefined,
             // A branch (edit) keeps the original question's learning context

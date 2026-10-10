@@ -1,9 +1,10 @@
 import { NextRequest } from 'next/server'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   getChatbotOr404: vi.fn(),
   withChatbotAuth: vi.fn(),
+  getUserCredits: vi.fn(),
 }))
 
 vi.mock('@/src/lib/server/apiGuards', () => ({
@@ -11,11 +12,17 @@ vi.mock('@/src/lib/server/apiGuards', () => ({
   withChatbotAuth: mocks.withChatbotAuth,
 }))
 
+vi.mock('@/src/services/credits', () => ({
+  CreditsService: { getUserCredits: mocks.getUserCredits },
+}))
+
+import { GET as getCredits } from '../src/app/api/chatbots/[chatbotId]/credits/route'
 import { GET } from '../src/app/api/chatbots/[chatbotId]/route'
 
 const CHATBOT_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
 
 describe('chatbot bootstrap route', () => {
+  afterEach(() => vi.unstubAllEnvs())
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.withChatbotAuth.mockResolvedValue({
@@ -36,6 +43,75 @@ describe('chatbot bootstrap route', () => {
         mcpConfigurations: [],
       },
     })
+  })
+
+  test.each([
+    'anonymous',
+    'account',
+  ])('exposes the safety model only for %s bootstrap', async (authMode) => {
+    vi.stubEnv(
+      'CHAT_MODEL_REGISTRY_JSON',
+      JSON.stringify([
+        {
+          id: 'auto',
+          name: 'Auto',
+          deploymentId: 'router',
+          maxOutputTokens: 512,
+          cost: { input: 1, output: 1 },
+        },
+        {
+          id: 'advanced-choice',
+          name: 'Primary',
+          deploymentId: 'primary',
+          maxOutputTokens: 512,
+          usageClass: 'ADVANCED',
+          fallback: true,
+          cost: { input: 1, output: 1 },
+        },
+        {
+          id: 'safe-base',
+          name: 'Safety',
+          deploymentId: 'base',
+          maxOutputTokens: 512,
+          usageClass: 'BASE',
+          fallback: true,
+          supportsReasoning: true,
+          supportedReasoningEfforts: ['low', 'high'],
+          cost: { input: 0, output: 0 },
+        },
+      ])
+    )
+    vi.stubEnv('CHAT_FALLBACK_MODEL_ID', 'safe-base')
+    vi.stubEnv('CHAT_PRIMARY_MODEL_ID', 'advanced-choice')
+    mocks.withChatbotAuth.mockResolvedValue({
+      participantId: 'participant-1',
+      authMode,
+    })
+    mocks.getUserCredits.mockResolvedValue({ current: 0, total: 5 })
+    mocks.getChatbotOr404.mockResolvedValue({
+      chatbot: {
+        allowedModelIds: ['advanced-choice'],
+        allowedReasoningEffortsByModel: { 'safe-base': ['low'] },
+        creditResetPeriod: null,
+      },
+    })
+    const response = await getCredits(
+      new NextRequest(`http://localhost/api/chatbots/${CHATBOT_ID}/credits`),
+      {
+        params: Promise.resolve({ chatbotId: CHATBOT_ID }),
+      }
+    )
+    expect(response.status).toBe(200)
+    const payload = await response.json()
+    expect(payload.availableModels).toHaveLength(1)
+    expect(payload.automaticModelId).toBe(
+      authMode === 'anonymous' ? 'safe-base' : 'advanced-choice'
+    )
+    expect(payload.availableModels[0].id).toBe(payload.automaticModelId)
+    if (authMode === 'anonymous')
+      expect(payload.availableModels[0].allowedReasoningEfforts).toEqual([
+        'low',
+      ])
   })
 
   test('returns only participant-safe bootstrap data', async () => {

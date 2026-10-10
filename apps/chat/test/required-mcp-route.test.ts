@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   claimChatTurn: vi.fn(),
   failChatTurn: vi.fn(),
   compileSystemPrompt: vi.fn(),
+  getChatModel: vi.fn(),
 }))
 
 vi.mock('@/src/lib/server/apiGuards', () => ({
@@ -60,7 +61,10 @@ vi.mock('@/src/services/credits', () => ({
   },
 }))
 
-vi.mock('@/src/services/accountUsage', () => ({
+vi.mock('@/src/services/accountUsage', async (importOriginal) => ({
+  chatModelUnavailableResponse: (
+    await importOriginal<typeof import('@/src/services/accountUsage')>()
+  ).chatModelUnavailableResponse,
   CHAT_TURN_ALREADY_COMPLETED_CODE: 'CHAT_TURN_ALREADY_COMPLETED',
   ChatTurnConflictError: class ChatTurnConflictError extends Error {},
   claimChatTurn: mocks.claimChatTurn,
@@ -76,6 +80,10 @@ vi.mock('@/src/lib/server/systemPromptCompiler', () => ({
   compileSystemPrompt: mocks.compileSystemPrompt,
 }))
 
+vi.mock('@/src/lib/server/chatModelProvider', () => ({
+  getChatModel: mocks.getChatModel,
+}))
+
 import { POST } from '../src/app/api/chatbots/[chatbotId]/chat/route'
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
@@ -84,7 +92,11 @@ import {
 
 const KB_ID = '7016810d-31e9-4b39-9529-cd46feb2bf63'
 
-function createRequest(selectedMode?: string, threadId?: string) {
+function createRequest(
+  selectedMode?: string,
+  threadId?: string,
+  selectedModel = 'gpt-4.1'
+) {
   return new NextRequest('http://localhost/api/chatbots/chatbot-1/chat', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -92,7 +104,7 @@ function createRequest(selectedMode?: string, threadId?: string) {
       messages: [
         { id: 'message-1', role: 'user', content: 'Find the relevant video.' },
       ],
-      selectedModel: 'gpt-4.1',
+      selectedModel,
       ...(selectedMode ? { selectedMode } : {}),
       ...(threadId ? { threadId } : {}),
       assistantMessageId: 'assistant-1',
@@ -178,6 +190,157 @@ describe('required MCP chat preflight', () => {
     mocks.getAggregatedMCPTools.mockRejectedValue(
       new RequiredMCPUnavailableError()
     )
+  })
+
+  test.each([
+    ['anonymous', true],
+    ['anonymous', false],
+    ['account', true],
+    ['account', false],
+  ])('uses global BASE outside the model list for %s selection=%s', async (authMode, modelSelection) => {
+    mocks.withChatbotAuth.mockResolvedValue({
+      participantId: 'participant-1',
+      authMode,
+      chatbot: { courseId: 'course-1' },
+    })
+    mocks.findUnique.mockResolvedValue(createChatbot({ modelSelection }))
+    mocks.previewUserCredits.mockResolvedValue({ current: 0, total: 5 })
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(response.status).toBe(503)
+    expect(await response.json()).toMatchObject({
+      code: REQUIRED_MCP_UNAVAILABLE_CODE,
+    })
+    expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledWith({
+      ownerId: 'owner-1',
+      usageClass: 'BASE',
+    })
+    if (authMode === 'anonymous')
+      expect(mocks.previewUserCredits).not.toHaveBeenCalled()
+  })
+
+  test('still rejects a positive-credit model outside the lecturer list', async () => {
+    const response = await POST(
+      createRequest(undefined, undefined, 'gpt-6-luna'),
+      {
+        params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+      }
+    )
+    expect(response.status).toBe(400)
+    expect(mocks.isChatAccountUsageAvailable).not.toHaveBeenCalled()
+    expect(mocks.createThread).not.toHaveBeenCalled()
+  })
+
+  test.each([
+    'anonymous',
+    'account',
+  ])('does not treat an ADVANCED fallback flag as the safety model for %s', async (authMode) => {
+    vi.stubEnv(
+      'CHAT_MODEL_REGISTRY_JSON',
+      JSON.stringify([
+        {
+          id: 'auto',
+          name: 'Auto',
+          deploymentId: 'router',
+          maxOutputTokens: 512,
+          cost: { input: 1, output: 1 },
+        },
+        {
+          id: 'advanced-choice',
+          deploymentId: 'advanced',
+          name: 'Advanced',
+          usageClass: 'ADVANCED',
+          fallback: true,
+          maxOutputTokens: 512,
+          cost: { input: 1, output: 1 },
+        },
+        {
+          id: 'safe-base',
+          deploymentId: 'base',
+          name: 'Safety',
+          usageClass: 'BASE',
+          fallback: true,
+          maxOutputTokens: 512,
+          cost: { input: 0, output: 0 },
+        },
+      ])
+    )
+    vi.stubEnv('CHAT_PRIMARY_MODEL_ID', 'advanced-choice')
+    vi.stubEnv('CHAT_FALLBACK_MODEL_ID', 'safe-base')
+    vi.resetModules()
+    const { POST: postConfiguredTurn } = await import(
+      '../src/app/api/chatbots/[chatbotId]/chat/route'
+    )
+    const { RequiredMCPUnavailableError: ConfiguredMCPError } = await import(
+      '../src/lib/server/mcpRuntimePolicy'
+    )
+    mocks.getAggregatedMCPTools.mockRejectedValue(new ConfiguredMCPError())
+    mocks.withChatbotAuth.mockResolvedValue({
+      participantId: 'participant-1',
+      authMode,
+      chatbot: { courseId: 'course-1' },
+    })
+    mocks.findUnique.mockResolvedValue(
+      createChatbot({ allowedModelIds: ['advanced-choice'] })
+    )
+    mocks.previewUserCredits.mockResolvedValue({ current: 0, total: 5 })
+    const response = await postConfiguredTurn(
+      createRequest(undefined, undefined, 'advanced-choice'),
+      {
+        params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+      }
+    )
+    expect(await response.json()).toMatchObject({
+      code: REQUIRED_MCP_UNAVAILABLE_CODE,
+    })
+    expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledWith({
+      ownerId: 'owner-1',
+      usageClass: 'BASE',
+    })
+  })
+
+  test('keeps the BASE budget and stored reasoning restrictions blocking safety fallback', async () => {
+    mocks.previewUserCredits.mockResolvedValue({ current: 0, total: 5 })
+    mocks.isChatAccountUsageAvailable.mockResolvedValue(false)
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(response.status).toBe(403)
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    mocks.isChatAccountUsageAvailable.mockResolvedValue(true)
+    mocks.findUnique.mockResolvedValue(
+      createChatbot({
+        allowedReasoningEffortsByModel: { 'gpt-6-luna': ['retired-effort'] },
+      })
+    )
+    const restricted = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(await restricted.json()).toMatchObject({
+      code: 'CHAT_MODEL_POLICY_UNAVAILABLE',
+    })
+    expect(mocks.createThread).not.toHaveBeenCalled()
+  })
+
+  test('rejects unsupported stored reasoning restrictions before provider generation', async () => {
+    mocks.findUnique.mockResolvedValue(
+      createChatbot({
+        allowedModelIds: ['gpt-6-luna'],
+        modelSelection: false,
+        allowedReasoningEffortsByModel: { 'gpt-6-luna': ['retired-effort'] },
+      })
+    )
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(response.status).toBe(503)
+    expect(await response.json()).toMatchObject({
+      code: 'CHAT_MODEL_POLICY_UNAVAILABLE',
+    })
+    expect(mocks.getChatModel).not.toHaveBeenCalled()
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.createThread).not.toHaveBeenCalled()
   })
 
   test('refuses a thread id the caller does not own before MCP work', async () => {
