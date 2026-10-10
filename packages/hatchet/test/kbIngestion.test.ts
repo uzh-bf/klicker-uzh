@@ -1706,23 +1706,27 @@ describe('KB ingestion reconciliation', () => {
     })
   })
 
-  it.each([
-    {
-      shape: 'a different observed digest',
-      observedSha256: 'f'.repeat(64),
-      activeSha256: 'f'.repeat(64),
-      message: 'KB ingestion operation correlation failed',
-    },
-    {
-      shape: 'a missing observed digest while different bytes serve',
-      observedSha256: null,
-      activeSha256: 'f'.repeat(64),
-      message: 'KB ingestion observed digest correlation failed',
-    },
-  ])('refuses a pinned v2 blob success reporting $shape', async ({
+  it.each(
+    (
+      ['accepted', 'running', 'succeeded', 'failed', 'superseded'] as const
+    ).flatMap((status) =>
+      [
+        {
+          shape: 'a different observed digest',
+          observedSha256: 'f'.repeat(64),
+          activeSha256: 'f'.repeat(64),
+        },
+        {
+          shape: 'a missing observed digest while different bytes serve',
+          observedSha256: null,
+          activeSha256: 'f'.repeat(64),
+        },
+      ].map((response) => ({ status, ...response }))
+    )
+  )('refuses a pinned v2 blob $status reporting $shape', async ({
+    status,
     observedSha256,
     activeSha256,
-    message,
   }) => {
     const pinnedResource = {
       ...activeResource,
@@ -1732,7 +1736,7 @@ describe('KB ingestion reconciliation', () => {
     const logger = { error: vi.fn() }
     const getOperation = vi.fn().mockResolvedValue(
       operation({
-        status: 'succeeded',
+        status,
         observedSha256,
         serving: {
           activeResourceVersion: 3,
@@ -1758,7 +1762,7 @@ describe('KB ingestion reconciliation', () => {
       'knowledge-source/v2'
     )
     expect(prisma.kBResource.updateMany).not.toHaveBeenCalled()
-    expect(logger.error).toHaveBeenCalledWith(message, {
+    expect(logger.error).toHaveBeenCalledWith(expect.any(String), {
       resourceId: RESOURCE_ID,
       kbId: KB_ID,
       ingestionAttemptId: ATTEMPT_ID,

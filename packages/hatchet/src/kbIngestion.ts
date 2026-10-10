@@ -915,16 +915,15 @@ async function reconcileResource({
       return
     }
 
-    // A canonical upsert whose desired raw digest is already pinned (blob
-    // upload or caller-known hash) must not settle a success whose observed or
-    // active raw digest disagrees with that pin. A null desired digest is a
-    // canonical URL admission that learns its digest on success.
+    // A pinned raw digest must match any serving cutover to the desired
+    // version, regardless of the operation status. A canonical URL with no
+    // caller hash learns its digest only after a successful cutover.
     if (
       canonical &&
       ingestionOperation === KBIngestionOperation.UPSERT &&
       contentSha256 !== null &&
-      operation.status === 'succeeded' &&
-      operation.observedSha256 !== contentSha256 &&
+      operation.serving.activeResourceVersion === resource.resourceVersion &&
+      operation.serving.activeSha256 !== null &&
       operation.serving.activeSha256 !== contentSha256
     ) {
       await logErrorBestEffort(
