@@ -129,7 +129,7 @@ serving-version and flag-independent recovery requirements. Implementation is
 complete locally: both schemas match the target, the migration is removed, and
 canonical references remain transient until the provider accepts its input.
 
-Focused verification passes: 51 dispatch tests, 129 ingestion/API/maintenance
+Focused verification passes: 51 dispatch tests, 137 ingestion/API/maintenance
 tests, 47 terminal/accounting tests and 31 signed-webhook tests. The graph package
 passes 93 unit tests; its two real-FalkorDB integration tests remain skipped.
 All records are synthetic. Initial dispatch negative tests failed because they
@@ -167,8 +167,12 @@ mostly existing regression suites. Keep the single cohesive canonical adapter
 PR; no new feature or stack is introduced by this simplification.
 
 Native simplifier Ampere completed the immutable no-database slice with no
-further evidence-backed reduction. Independent risk review is running on that
-same slice. Final integrated review follows; CI is watching the published head.
+further evidence-backed reduction. Independent risk review identified a polling hash-correlation defect on that
+slice. Four synthetic non-success cases reproduced it. Correction `1255164af4`
+rejects any desired-version serving mismatch against a pinned caller hash; all
+137 ingestion/API/maintenance tests, Hatchet type checks and Biome pass. The
+same reviewer returned PASS for the correction, with no remaining finding. Final integrated review follows; CI
+must qualify the final published source.
 The updated draft description states no migration, provider-owned canonical
 pinning and deferred parser-only freshness. OpenRouter review remains waived.
 
@@ -182,6 +186,6 @@ record edits, configuration changes or deletion were used to bypass it. The
 original retained task runtime is stopped. This operational limitation remains
 separate from the source-contract checks and unqualified routed E2E.
 
-Next: disposition independent risk review, complete integrated final review,
+Next: verify the risk-review correction, complete integrated final review,
 verify exact-head CI, and refresh the draft evidence. No merge, deployment,
 live refresh/rebuild, activation or paid evaluation is admitted.
