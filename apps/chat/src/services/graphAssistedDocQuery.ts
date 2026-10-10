@@ -296,7 +296,9 @@ export function graphAssistedDocumentQuery<
     try {
       signal?.throwIfAborted()
       const initial = await dependencies.validateScope()
-      const query = record(input) ? input.query : undefined
+      const queryField =
+        record(input) && 'question' in input ? 'question' : 'query'
+      const query = record(input) ? input[queryField] : undefined
       const eligible =
         !augmentationUsed &&
         initial.enabled &&
@@ -355,7 +357,7 @@ export function graphAssistedDocumentQuery<
             execute(
               {
                 ...(input as RecordValue),
-                query: `${query}\nRelated concepts: ${safeHints.join(', ')}`,
+                [queryField]: `${query}\nRelated concepts: ${safeHints.join(', ')}`,
               },
               { ...options, abortSignal: augmentationSignal }
             )

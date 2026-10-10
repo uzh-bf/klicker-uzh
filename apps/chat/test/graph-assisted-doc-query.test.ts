@@ -172,7 +172,10 @@ describe('graph-assisted document retrieval', () => {
     expect(execute).toHaveBeenCalledTimes(1)
   })
 
-  it('preserves the original query and uses a traversed concept for additional passage retrieval', async () => {
+  it.each([
+    'question',
+    'query',
+  ] as const)('preserves the original %s and expands the same field for additional passage retrieval', async (field) => {
     const original = documents('Diversification spreads investments.')
     const expanded = documents(
       'Covariance determines how holdings move together.',
@@ -184,18 +187,24 @@ describe('graph-assisted document retrieval', () => {
       .mockResolvedValueOnce(expanded)
     const deps = dependencies()
     const signal = new AbortController().signal
-    const result = (await graphAssistedDocumentQuery(execute, deps)(
-      { query: 'Why diversify?', limit: 6 },
-      { abortSignal: signal, toolCallId: 'call-1' }
-    )) as any
+    const input = { [field]: 'Why diversify?', expand: false, limit: 6 }
+    const result = (await graphAssistedDocumentQuery(execute, deps)(input, {
+      abortSignal: signal,
+      toolCallId: 'call-1',
+    })) as any
     expect(execute.mock.calls[0]).toEqual([
-      { query: 'Why diversify?', limit: 6 },
+      input,
       { abortSignal: signal, toolCallId: 'call-1' },
     ])
     expect(execute.mock.calls[1]?.[0]).toMatchObject({
-      query: expect.stringContaining('Covariance'),
+      [field]: expect.stringContaining('Covariance'),
+      expand: false,
       limit: 6,
     })
+    expect(Object.keys(execute.mock.calls[1]![0]).sort()).toEqual(
+      Object.keys(input).sort()
+    )
+    expect(deps.hints).toHaveBeenCalledWith(input[field])
     expect(execute.mock.calls[1]?.[1].toolCallId).toBe('call-1')
     expect(
       result.structuredContent.sources.flatMap((source: any) =>

@@ -152,6 +152,34 @@ Additive language metadata requires no migration. New files beyond the operation
 
 ## Progress
 
+- Delivery continuation — 2026-10-10: the sandbox restriction is lifted. Source
+  delivery continues on `rs/kg-graphrag-input-contract`, in the matching fresh
+  task worktree, at the same `v3-ai` baseline. The previous checkout's retained
+  runtime could not reconcile its changed managed configuration. Use the
+  repository's existing Blob port override for the isolated verification
+  runtime; no runtime configuration source change is included. The reviewed
+  retrieval code and tests are unchanged, so their passing focused evidence is
+  reusable. Full hook checks, build and draft delivery are in progress.
+- Acceptance correction — 2026-10-09: the first real synthetic participant
+  turn returned a cited German answer and survived reload, but producing logs
+  showed graph retrieval was ineligible. The live `doc_query` input uses
+  `question`; the wrapper read only `query`. Main owns a bounded correction in
+  `graphAssistedDocQuery.ts` and the existing `graph-assisted-doc-query.test.ts`
+  on `rs/kg-graphrag-question-contract`, based on `v3-ai` at
+  `d06cc9054ceaaff69f30794f94fde445f7c9f571`. Expand the selected input field,
+  retain `query` compatibility, and preserve scope, cancellation, budgets and
+  citation behavior. The new `question` case failed before the fix; all 74
+  focused retrieval, scope, flag and result tests pass after it, as does the
+  isolated Chat TypeScript check. No new module, dependency or contract is added.
+  The original KB and retrieval-off settings were restored through normal
+  publication controls. The updated Volta CLI now reports devrouter 0.2.0 and
+  accepts the worktree configuration. Required container checks remain pending:
+  this exact checkout has no running app container, and sandbox-denied process
+  inspection prevents canonical runtime-lock validation. Fetch and staging succeed
+  from the task worktree, and the recorded `v3-ai` baseline is unchanged.
+  Source delivery and repeated STG acceptance remain pending. The separate
+  question comparison is approved but still awaits attributable provider-cost
+  visibility or an enforceable bound.
 - Updated checkpoint — 2026-10-08: graph-control PR #6229 now carries the
   verified normal integration `8f42c93d5f`; the fresh isolated UI runtime passed
   the complete hooks and build. The historical 649-pixel click opened the
