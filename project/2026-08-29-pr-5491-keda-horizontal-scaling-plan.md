@@ -24,9 +24,9 @@ regular nodes (W4).
 | W3a–W3c — Platform, capacity, and observability | Planned; the 2026-09-23 review supplies live pool and usage evidence for W3b | Secret projection, exact Argo ownership, versioned capacity, metrics, and alerts |
 | W4 — Assessment staging pilot and later packages | Not activated | Close the named evidence and authority gates before staging, spot, or production claims |
 | W10 — Chat and MCP multi-replica readiness | Source scan only; no implementation | Prove or replace the stateful MCP transport, add a chat drain contract, then feed W9 |
-| W11 — Production capacity baseline | Request corrections merged 2026-09-23 ([#6283](https://github.com/uzh-bf/klicker-uzh/pull/6283), [#6284](https://github.com/uzh-bf/klicker-uzh/pull/6284)) and live in production | Restore the temporary replicas under A5 ([#6278](https://github.com/uzh-bf/klicker-uzh/pull/6278), [#6279](https://github.com/uzh-bf/klicker-uzh/pull/6279)) |
-| W12 — HTTP spot burst tier | Added 2026-09-23; elearning pattern exists but is not deployed | Chart support, PWA pilot in staging, then GraphQL and response API |
-| W13 — Staging capacity on spot | Added 2026-09-23 | Move staging Klicker workloads onto `asyncspot` under A6 |
+| W11 — Production capacity baseline | Request corrections ([#6283](https://github.com/uzh-bf/klicker-uzh/pull/6283), [#6284](https://github.com/uzh-bf/klicker-uzh/pull/6284)), replica restore ([#6278](https://github.com/uzh-bf/klicker-uzh/pull/6278), [#6279](https://github.com/uzh-bf/klicker-uzh/pull/6279)) and chat at 3 ([#6291](https://github.com/uzh-bf/klicker-uzh/pull/6291), [#6292](https://github.com/uzh-bf/klicker-uzh/pull/6292)) merged 2026-09-23 and live; the 2026-10-06 read-only read found every Deployment at its desired count with no restarts or Pending Pods | General-worker restore after queue evidence; explain why the `apps` pool still runs 4 nodes |
+| W12 — HTTP spot burst tier | Chart pair ready: [#6294](https://github.com/uzh-bf/klicker-uzh/pull/6294) (`v3-ai`, final AI review clean) and [#6295](https://github.com/uzh-bf/klicker-uzh/pull/6295) (`v3`); platform half drafted as df-cloud !644 with staging previews | Merge order under the deploy-parity gate, apply !644 to staging and read the live Argo rule back, then the staging-enable values pair and the self-heal drill |
+| W13 — Staging capacity on spot | Added 2026-09-23; !644 keeps the staging `asyncspot` maximum at 7 | Move staging Klicker workloads onto `asyncspot` under A6 |
 
 Merge, new upstream integration, deployment, cluster connectivity or changes,
 infrastructure changes, secret writes, load generation, and pod eviction
@@ -632,6 +632,7 @@ Prometheus scrape state, node readiness, or Argo configuration.
 | General-worker scaler floods Hatchet API | Every task/state/profile/Deployment becomes a separate polling trigger | Measure pilot fan-out; introduce one cached profile adapter before general activation if needed |
 | A PodDisruptionBudget blocks node scale-down but does not protect spot eviction | PDB expectations are applied to involuntary spot loss | Keep the reliable floor on regular nodes; avoid restrictive PDBs on disposable burst Deployments |
 | Green manifests are reported as live autoscaling proof | Source/render, Argo, and runtime evidence were conflated | Record each proof layer separately and require a controlled staging exercise |
+| A `v3` companion PR fails deploy parity although its own hunk matches `v3-ai` | `v3-ai` accumulated more than one `deploy/` change without its `v3` mirror, and the gate compares the whole `deploy/` tree, so no single companion can pass | Merge each companion pair in lockstep, or let one `v3` PR carry the whole current `v3-ai` `deploy/` tree before the next pair |
 
 ## Delivery topology
 
@@ -1453,7 +1454,8 @@ replica-ownership package W0 and the dependent worker-runtime package W1.
   its build and monitor tasks run on the general worker. That restore
   therefore needs queue evidence as well as CPU evidence.
 - **Do:** (1) Restore PWA, GraphQL, response API, and the response worker to
-  4, and OLAT API and chat to 1. Restore the general worker to 2 only after
+  4, and OLAT API and chat to 1 (the user later ruled chat to 3 for
+  redundancy). Restore the general worker to 2 only after
   its Hatchet queue wait and slot occupancy with the knowledge-graph tasks
   fit two workers. (2) Set each
   non-assessment CPU request to about twice its 14-day per-Pod p99, rounded up
@@ -1494,7 +1496,11 @@ replica-ownership package W0 and the dependent worker-runtime package W1.
   the exact Argo exception list. The baseline must keep static replicas and no
   spot toleration.
 - **Commit:** Chart support with fixtures in one PR; staging values for the
-  PWA pilot in a second; each later service in its own values PR.
+  PWA pilot in a second; each later service in its own values PR. Every one
+  of these is a companion pair (`v3-ai` first, then `v3`), because the
+  deploy-parity gate compares a `v3` PR's whole `deploy/` tree with
+  `origin/v3-ai`. Staging-only values changes need the `v3` mirror too, as
+  #6308 needed #6365.
 - **Problem:** The HTTP services run all replicas on on-demand nodes, sized for
   lecture peaks. The elearning workload already proves a baseline-plus-burst
   pattern, but Klicker's chart cannot express it, and the burst Deployment's
@@ -1515,8 +1521,19 @@ replica-ownership package W0 and the dependent worker-runtime package W1.
   API. Assessment frontends, backends, and response APIs never burst to spot.
 - **Check:** Fixtures and Helm lint; staging load below and above the
   baseline; one approved spot eviction; Argo stays `Synced` while the
-  autoscaler changes burst replicas under self-heal.
-- **Working context:** New `rs/http-spot-burst-tier` branch off `v3-ai`.
+  autoscaler changes burst replicas under self-heal. Item (5) is settled in
+  the chart pair (2026-10-06, #6294 `7e7d30f4b3`, #6295 `436a217620`): with
+  the tier enabled, the baseline PWA PDB keeps `minAvailable: 2` but adds
+  `klicker.uzh.ch/tier DoesNotExist`, and a separate `-frontend-pwa-burst`
+  PDB sets `maxUnavailable: 1`, so each Pod matches exactly one budget and
+  the last burst Pod no longer pins its spot node. The replica ownership
+  checker asserts both. The staging baseline still runs one replica against
+  `minAvailable: 2`, which blocks voluntary baseline evictions there; that
+  predates W12. Topology spread still selects by component.
+- **Working context:** Branches `rs/http-spot-burst-tier` (#6294, off
+  `v3-ai`) and `rs/http-spot-burst-tier-v3` (#6295, off `v3`) in the
+  repository's `trees/` worktrees. The platform half is df-cloud MR !644 on
+  `rs/klicker-pwa-burst-argo`.
 - **Authority and terminal:** A6 grants the Argo exceptions and spot capacity.
   Staging load and eviction need A2-style explicit approval; production needs
   A4-style approval per service. Terminal is PWA `live_proven` in staging,
@@ -1595,7 +1612,7 @@ questions.
 | A4 — Production rollout | Approve exact revisions, capacity artifact, values, alert ownership, load/observation window, and rollback transaction per profile | Promote assessment first, then regular live-response, burst, and general profiles | Park at `delivery_pending` if any revision, owner, rollback, or evidence layer is missing |
 
 | A5 — Temporary replica restore | Confirm the 72-hour window is over and approve restoring the normal production replica counts and rolling them out | Restore the HTTP services and response worker now, since the fleet CPU peak of 1.46 cores fits the normal counts. Restore the general worker after checking its queue wait and slot occupancy with the knowledge-graph tasks enabled | Keep the temporary counts if a named teaching event still needs them, with a new end date |
-| A6 — Spot infrastructure grant | Approve exact Argo `/spec/replicas` exceptions with `RespectIgnoreDifferences=true` for each burst Deployment, a higher `asyncspot` maximum, and staging Klicker on spot. These live in `df/df-cloud` | Ruled 2026-09-23: keep one shared `asyncspot` pool and raise its maximum when W12 needs capacity. Copy the `app-video-processing` exception pattern | Do not activate a burst Deployment until its exact exception is live |
+| A6 — Spot infrastructure grant | Approve exact Argo `/spec/replicas` exceptions with `RespectIgnoreDifferences=true` for each burst Deployment, a higher `asyncspot` maximum, and staging Klicker on spot. These live in `df/df-cloud` | Ruled 2026-09-23: keep one shared `asyncspot` pool and raise its maximum when W12 needs capacity. Copy the `app-video-processing` exception pattern. Drafted 2026-10-02 as df-cloud !644: the PWA burst exception on `app-klicker` in both environments and a production maximum of 7; merging to `stg` and applying remain the user's | Do not activate a burst Deployment until its exact exception is live |
 | A7 — Assessment pool sizing | Rule whether the reserved assessment pool keeps two always-on nodes at 22% CPU requested | Ruled 2026-09-23: keep the two reserved nodes for now. A later change may lower the minimum during semester breaks | No change without an exam-owner ruling |
 
 No gate permits assessment on spot. Changing that boundary conflicts with the
@@ -1613,7 +1630,7 @@ a values edit.
 | Guaranteed regular capacity and `asyncspot` health | AKS/cost owner | Threshold and burst promises | Lower caps or increase approved capacity; never let spot replace the critical floor |
 | Argo exact replica ownership | GitOps platform owner | Self-healed KEDA targets | Do not activate until exact ignore rules and sync options are live |
 | Existing PRs #5491 and #5492 | Klicker maintainers | Ownership and worker lifecycle foundations | Merged into `v3-ai` on 2026-09-08; the worker-runtime source and ownership checker still need a `v3-ai` → `v3` promotion PR |
-| Argo Applications and AKS node pools in `df/df-cloud` | GitOps and AKS platform owner | W12 exact burst exceptions, spot capacity, and W13 staging placement | Hold W12 and W13 at chart and values readiness until A6 lands |
+| Argo Applications and AKS node pools in `df/df-cloud` | GitOps and AKS platform owner | W12 exact burst exceptions, spot capacity, and W13 staging placement | Hold W12 and W13 at chart and values readiness until A6 lands. !644 carries the W12 half; its production rule and pool maximum have no preview, because the preview tooling covers staging only |
 | Elearning burst pattern in the separate elearning repository | Elearning owners | Reference design for W12 | Reuse the pattern only; its unmerged changes and OOM risk stay with its owners |
 
 ## Review and evidence expectations
@@ -1638,6 +1655,89 @@ a values edit.
   node pools](https://learn.microsoft.com/en-us/azure/architecture/aws-professional/eks-to-aks/node-pools).
 
 ## Progress
+
+### W12 chart pair, platform MR, and the W11 read — 2026-10-06
+
+- **Chat pair merged 2026-09-23:** #6291 into `v3-ai` (`6c656761f2`) and
+  #6292 into `v3` (`85d03bb488`). Production chat runs 3 replicas with its
+  disruption budget.
+- **W11 read, 2026-10-06, read-only, 13 days after the restore:** every
+  production Deployment is at its desired count (PWA, GraphQL, response API,
+  both response workers and the general worker at 4, chat at 3, OLAT API at
+  1). All 55 current Pods have zero container restarts, which is the OOM
+  evidence here because AKS keeps events for about an hour. No Pod is
+  Pending; the one `Failed` response-api Pod dates from 2026-09-21 and
+  predates the rollout. The `apps` pool still runs 4 nodes, so the cluster
+  autoscaler did not release one after the request corrections; that is an
+  open question, not a pass. `asyncspot` runs 1 node. The general-worker
+  restore to 2 still waits for queue evidence.
+- **W12 chart pair:** #6294 (`rs/http-spot-burst-tier` against `v3-ai`, head
+  `05667b4b46`) and #6295 (`rs/http-spot-burst-tier-v3` against `v3`, head
+  `917d6d2ef5`) carry an identical `deploy/` diff. The chart adds
+  `frontendPWA.burst`, disabled by default: a second Deployment
+  `-frontend-pwa-burst` with the `klicker.uzh.ch/tier: burst` selector
+  label, required spot node affinity, both `asyncspot` tolerations, a
+  25-second termination grace period, and its own CPU HPA (minimum 1,
+  maximum 4). The baseline pod spec and annotations moved into two helpers
+  so both tiers render the same container. The template fails when the burst
+  tier is combined with the baseline HPA or when its HPA bounds are invalid.
+  `util/check-klicker-replica-ownership.mjs` gained the W12 fixtures,
+  including the expected Argo replica-exception list. Required CI is green
+  on both heads and the final AI review on #6294 reported no findings.
+- **Token mount, same pair:** SonarCloud flagged the automounted service
+  account token on the PWA Deployment. Both PRs now set
+  `automountServiceAccountToken: false` in the shared PWA pod spec, as the
+  MCP servers and the migration job already do. This is the one baseline
+  manifest change the pair ships: with the tier disabled, staging and
+  production renders differ from before by that single line, and PWA Pods
+  restart once when it deploys.
+- **Promotion test fix, #6294 only:** the stg-release promotion test scanned
+  only `.yaml` templates and missed the PWA image line after it moved into
+  `_helpers.tpl`; it now scans `.tpl` files too (`aa97d69a6c`).
+- **Parity companions:** #6308 raised the staging KB graph quota on `v3-ai`
+  without a `v3` mirror; #6365 (`rs/stg-graph-quota-v3`, draft) carries that
+  hunk. Since then #6330 landed the GPT-6 chat values on `v3-ai`, mirrored
+  on `v3` only by #6332, which is open with failing unit and Playwright
+  checks and a stale `deploy/` tree. Because the gate compares the whole
+  `deploy/` tree, neither #6365 nor #6295 can pass on its own until `v3`
+  carries the current `v3-ai` `deploy/` tree (see the new known-trap row).
+  The parity failure on #6295 is therefore expected, and a plain rerun will
+  not clear it: after the gap closes and #6294 merges, `v3` must be merged
+  into `rs/http-spot-burst-tier-v3` before its `check` runs again.
+- **Platform half (A6):** df-cloud !644 (`rs/klicker-pwa-burst-argo`,
+  `6219317e`, draft against `stg`) hands `/spec/replicas` of
+  `app-klicker-klicker-uzh-v2-frontend-pwa-burst` in `<env>-klicker` to its
+  HPA with `withArgoCDReplicaOwnership`, which also sets
+  `RespectIgnoreDifferences=true`, and raises the production `asyncspot`
+  maximum from 6 to 7. Staging stays at 7, because the guarded capacity job
+  requires that value. Unit tests pass (18 Argo source tests, 3 pool tests,
+  11 capacity tests, 102 inventory rows). The staging previews (pipelines
+  675590 and 675591) show exactly the burst rule plus the sync option on
+  `app-klicker` and no `asyncspot` change; the production half has no
+  preview. OpenCodeReview found nothing in the two source files.
+- **Staging-only analysis, 2026-10-02:** #6294, #6293 and !644 can merge
+  without touching production. #6294 reaches staging through the
+  `v3-ai` → `v3-audit` sync and the `stg-release` promoter; !644 applies
+  through the staging pipeline, and its production half waits for the
+  `stg` → `prd` promotion. #6295 and #6365 are `v3` merges and restart the
+  production PWA Pods once; they wait for the production rollout decision.
+- **Review before merging:** (1) The PDB question in W12 item (5) is settled
+  in the chart pair with tier-scoped budgets; disabled renders are unchanged.
+  (2) The KEDA 2.17 scale-to-zero confirmation from W12 item (2) is
+  still open. (3) The burst HPA uses default scale-down stabilization and the
+  burst Pod has no `preStop` delay; both are optional refinements for the
+  staging drill, not merge blockers. (4) #6293 is docs-only, so the final AI
+  review fails on it with an empty OCR selection; that is a workflow limit,
+  not a finding.
+- **Next action:** The user merges in this order. First a `v3` PR that
+  closes the whole current `deploy/` parity gap (a #6332 refreshed to
+  today's `origin/v3-ai` tree already includes the #6308 hunk and makes
+  #6365 redundant); only then #6294 into `v3-ai`, because once the burst
+  chart is on `v3-ai` no other `v3` companion can pass the gate; then `v3`
+  merged into #6295 and its `check` rerun; then #6295. !644 is independent:
+  merge it to `stg` and apply it at any point. After the live Argo rule
+  reads back, open the staging-enable values pair,
+  then run the self-heal and eviction drills under A2-style approval.
 
 ### Cost and spot review — 2026-09-23
 
@@ -1680,12 +1780,26 @@ a values edit.
   no container restarts. The readiness-probe failures in the events came from
   containers still starting. The Pods in `Error` state are 10 hours to almost 6 days
   old and predate the rollout.
-- **Next action:** The restore pair #6278/#6279 still merges cleanly onto
-  both bases. Before it merges, update both branches so CI and the parity
-  check run against the new requests. Merging it needs its own production
-  approval. W12 chart work and W2 can proceed in parallel; W12 activation
-  waits for the exact Argo exceptions and a larger `asyncspot` maximum in
-  `df/df-cloud`.
+- **Restore pair merged, same day:** The user merged #6279 into `v3-ai` and
+  #6278 into `v3` (`b4f9db90c0`), with the roadmap PR #6277. `deploy/` is
+  identical on both branches. Argo CD synced the commit, and a read-only
+  check found PWA, GraphQL, the response API, and the live response worker at
+  4 Ready replicas and OLAT API and chat at 1, with the corrected requests,
+  no Pending Pods, no OOM kills, and no restarts. The `apps` pool still had 4
+  nodes right after the rollout; a later read confirms whether the cluster
+  autoscaler removes one.
+- **Chat ruling and staging read, same day:** The user ruled that production
+  chat needs more than one replica, about three. Chat keeps no cross-request
+  state, so it is open as a companion pair (#6292 against `v3`, #6291 against
+  `v3-ai`) that raises it to 3 and adds a chat PDB with `maxUnavailable: 1`.
+  W10's drain contract still decides whether a stream survives a restart.
+  Staging runs every Klicker service at 1 replica with no HPA or
+  ScaledObject, and its Argo application is Synced and Healthy.
+- **Next action:** Merge the chat pair after CI and its production approval,
+  then take the seven-day W11 read. W12 chart support proceeds as its own
+  companion pair, because the deploy-parity check requires `deploy/` to match
+  on `v3` and `v3-ai`; its activation waits for the exact Argo exceptions and
+  a larger `asyncspot` maximum in `df/df-cloud`.
 
 ### Roadmap extension — 2026-09-06, later
 
