@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.86](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.85...v3.4.0-alpha.86) (2026-10-10)
+
+
+### Bug Fixes
+
+* **chat:** honor doc_query question input in GraphRAG ([#6461](https://github.com/uzh-bf/klicker-uzh/issues/6461)) ([4a7040e](https://github.com/uzh-bf/klicker-uzh/commit/4a7040ee3612ab1b6c5ccc822c8226ba1c997022))
+* **chat:** supply citation indices in the owner preview ([#6123](https://github.com/uzh-bf/klicker-uzh/issues/6123)) ([9892fcb](https://github.com/uzh-bf/klicker-uzh/commit/9892fcb70cc98f62b11900143e708aec530c935d))
+
 ## [3.4.0-alpha.85](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.84...v3.4.0-alpha.85) (2026-10-09)
 
 
