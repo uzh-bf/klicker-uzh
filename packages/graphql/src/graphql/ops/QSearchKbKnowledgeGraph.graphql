@@ -1,0 +1,30 @@
+query SearchKbKnowledgeGraph($kbId: ID!, $query: String!) {
+  searchKbKnowledgeGraph(kbId: $kbId, query: $query) {
+    kbId
+    buildId
+    isStale
+    nodes {
+      id
+      labels
+      kind
+      displayLabel
+      summary
+      content
+      degree
+      sourceReferences {
+        resourceId
+        title
+        reference
+      }
+    }
+    edges {
+      id
+      source
+      target
+      type
+      label
+      properties
+    }
+    truncated
+  }
+}

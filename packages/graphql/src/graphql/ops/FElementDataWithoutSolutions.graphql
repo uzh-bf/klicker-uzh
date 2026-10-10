@@ -95,7 +95,6 @@ fragment ElementDataWithoutSolutions on ElementInstance {
       pointsMultiplier
       options {
         hasSampleSolution
-        hasSampleSolution
         items {
           id
           value
@@ -122,6 +121,7 @@ fragment ElementDataWithoutSolutions on ElementInstance {
     }
 
     ... on FlashcardElementData {
+      __typename
       id
       elementId
       name

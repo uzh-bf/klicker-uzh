@@ -28,23 +28,25 @@ describe('thread suggestions', () => {
     expect(suggestionIds).not.toContain('examPrep')
   })
 
-  test('falls back to Tutor starters for unknown chatbot modes', () => {
-    expect(getThreadSuggestions('custom-mode')).toEqual(
-      getThreadSuggestions('tutor')
-    )
+  test('offers no starters for chatbot-defined modes', () => {
+    expect(getThreadSuggestions('custom-mode')).toEqual([])
+    expect(getThreadSuggestions('ethik-rollenspiel')).toEqual([])
   })
 
   test('accepts only server-resolved mode description records', () => {
     expect(
       parseModeOptions({
-        tutor: 'Tutor description',
-        explainer: 'Explainer description',
+        tutor: { description: 'Tutor description' },
+        explainer: { description: 'Explainer description' },
       })
     ).toEqual({
-      tutor: 'Tutor description',
-      explainer: 'Explainer description',
+      tutor: { description: 'Tutor description' },
+      explainer: { description: 'Explainer description' },
     })
-    expect(parseModeOptions({ tutor: { description: 'Tutor' } })).toBeNull()
+    expect(parseModeOptions({ tutor: 'Tutor description' })).toEqual({
+      tutor: { description: 'Tutor description' },
+    })
+    expect(parseModeOptions({ tutor: { name: 'Tutor' } })).toBeNull()
     expect(parseModeOptions({ '': 'Blank mode' })).toBeNull()
     expect(parseModeOptions({ '   ': 'Whitespace mode' })).toBeNull()
     expect(parseModeOptions(null)).toBeNull()
@@ -52,7 +54,10 @@ describe('thread suggestions', () => {
 
   test('resolves a selected mode by key even when its description is empty', () => {
     expect(
-      resolveSelectedMode({ tutor: 'Tutor mode', custom: '' }, 'custom')
+      resolveSelectedMode(
+        { tutor: { description: 'Tutor mode' }, custom: { description: '' } },
+        'custom'
+      )
     ).toBe('custom')
     expect(resolveSelectedMode({}, 'tutor')).toBe('')
   })

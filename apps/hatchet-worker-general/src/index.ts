@@ -1,64 +1,31 @@
 // basic structure according to https://github.com/hatchet-dev/hatchet-typescript-quickstart/tree/main/monorepo
 
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
-import { handlers } from '@klicker-uzh/graphql'
-import type { PreparedHatchetTasks } from '@klicker-uzh/hatchet'
-import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
+import { handlers, settleKbKnowledgeGraphResult } from '@klicker-uzh/graphql'
+import {
+  createHatchetWorkerRuntime,
+  getKBGraphTerminalResult,
+  hatchetClient,
+  prepareHatchetTasks,
+  resolveWorkerRuntimeConfig,
+} from '@klicker-uzh/hatchet'
+import { prisma } from '@klicker-uzh/prisma'
 import EventEmitter from 'events'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
 import logger from './logger.js'
-
-const HATCHET_WORKER_NAME =
-  process.env.HATCHET_WORKER_NAME ?? 'hatchet-worker-general'
-
-function selectWorkflows(workflows: PreparedHatchetTasks) {
-  // Select which workflows to load using an env var and keep it type-safe.
-  // If no env var is provided, default to ALL available workflows dynamically.
-  const defaultWorkflowKeys = Object.keys(workflows) as Array<
-    keyof PreparedHatchetTasks
-  >
-
-  // Parse requested keys; treat empty/whitespace as "unset" so we default to all
-  const envRaw = process.env.HATCHET_WORKFLOWS
-  const requestedKeysRaw = envRaw
-    ? envRaw
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean)
-    : undefined
-
-  const hasRequested =
-    Array.isArray(requestedKeysRaw) && requestedKeysRaw.length > 0
-
-  const validSelectedKeys = (
-    hasRequested
-      ? requestedKeysRaw.filter(
-          (k): k is keyof PreparedHatchetTasks => k in workflows
-        )
-      : defaultWorkflowKeys
-  ) as Array<keyof PreparedHatchetTasks>
-
-  if (hasRequested) {
-    const unknown = requestedKeysRaw.filter((k) => !(k in workflows))
-    if (unknown.length) {
-      logger.warn(
-        {
-          unknownKeys: unknown,
-          availableKeys: Object.keys(workflows),
-        },
-        'HATCHET_WORKFLOWS contains unknown task keys'
-      )
-    }
-  }
-
-  const selectedWorkflows = validSelectedKeys.map((k) => workflows[k])
-
-  return selectedWorkflows
-}
+import {
+  selectWorkflows,
+  validateKBWorkerConfiguration,
+} from './workflowSelection.js'
 
 async function main() {
-  logger.info({ workerName: HATCHET_WORKER_NAME }, 'Starting Hatchet worker')
+  const integrationState = validateKBWorkerConfiguration()
+  const runtimeConfig = resolveWorkerRuntimeConfig('general')
+  logger.info(
+    { workerName: runtimeConfig.name, ...integrationState },
+    'Starting Hatchet worker'
+  )
 
   const redisExec = new Redis({
     family: 4,
@@ -119,27 +86,63 @@ async function main() {
     redisAssessmentExec,
     redisCache,
     handlers,
+    getKBGraphTerminalResult,
+    kbIngestionDispatchEnabled: !integrationState.ingestionDisabled,
+    kbGraphDispatchEnabled: !integrationState.graphDisabled,
+    settleKBGraphTerminalResult: ({
+      buildId,
+      result,
+      finishedAt,
+      allowLateSuccess,
+    }) =>
+      settleKbKnowledgeGraphResult(
+        prisma,
+        { buildId, result, allowLateSuccess },
+        finishedAt
+      ),
   })
 
-  const workflows = selectWorkflows(preparedWorkflows)
-  const selectedKeys = Object.keys(preparedWorkflows).filter((k) =>
-    workflows.includes((preparedWorkflows as any)[k])
-  )
+  const selection = selectWorkflows(preparedWorkflows, {
+    ...integrationState,
+    requestedWorkflowNames: process.env.HATCHET_WORKFLOWS,
+  })
+  if (selection.unknownKeys.length > 0) {
+    logger.warn(
+      {
+        unknownKeys: selection.unknownKeys,
+        availableKeys: Object.keys(preparedWorkflows),
+      },
+      'HATCHET_WORKFLOWS contains unknown task keys'
+    )
+  }
+  if (selection.disabledKeys.length > 0) {
+    logger.info(
+      { disabledKeys: selection.disabledKeys },
+      'KB integration gates excluded workflows'
+    )
+  }
+  const { workflows, selectedKeys } = selection
   logger.info({ selectedKeys }, 'Selected workflows')
 
   logger.info(
-    { workerName: HATCHET_WORKER_NAME, workflowCount: workflows.length },
+    { workerName: runtimeConfig.name, workflowCount: workflows.length },
     'Creating Hatchet worker'
   )
 
-  const worker = await hatchetClient.worker(HATCHET_WORKER_NAME, {
+  const runtime = createHatchetWorkerRuntime({
+    config: runtimeConfig,
     workflows,
+    workerFactory: (name, options) => hatchetClient.worker(name, options),
   })
 
   logger.info('Starting worker to process jobs...')
-  await worker.start()
+  await runtime.start()
 
-  logger.info('Worker started successfully and ready to process jobs')
+  logger.info('Worker runtime stopped after termination')
+  // The drain is complete here, but the Redis and Prisma clients opened above
+  // keep the event loop alive and node runs as PID 1, so exit explicitly
+  // instead of waiting for the kubelet's SIGKILL at the end of the grace period.
+  process.exit(0)
 }
 
 process.on('unhandledRejection', (reason) => {

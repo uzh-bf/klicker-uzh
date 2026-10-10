@@ -9,6 +9,7 @@ import { useTranslations } from 'next-intl'
 import { useParams, useRouter } from 'next/navigation'
 import { formatModeLabel, getModeIcon } from '../lib/config/modes'
 import { useChatStore, type Thread } from '../stores/chatStore'
+import { useEffectiveModeOptions } from './mode-options-context'
 import {
   transitionDeleteConfirm,
   type DeleteConfirmPhase,
@@ -206,6 +207,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
   onDelete,
 }) => {
   const t = useTranslations()
+  const modeOptions = useEffectiveModeOptions()
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState('')
@@ -387,7 +389,17 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
             aria-current={isActive ? 'page' : undefined}
             className="flex min-w-0 flex-grow flex-col gap-0.5 px-3 py-1 text-start"
           >
-            <p className="truncate text-sm">{getThreadTitle()}</p>
+            <p className="truncate text-sm">
+              {thread.origin === 'elearning' && (
+                <span
+                  data-cy="chat-thread-origin"
+                  className="text-muted-foreground border-input mr-1 inline-flex shrink-0 items-center rounded border px-1 align-middle text-[10px] font-medium uppercase"
+                >
+                  {t('chat.threadList.elearningTag')}
+                </span>
+              )}
+              {getThreadTitle()}
+            </p>
             {/* Second line: the icon + name of the mode the thread was last
                 used in (D6). Rendered via createElement rather than bound to a
                 capitalized local: assigning the looked-up icon in the render
@@ -404,7 +416,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
                   className: 'size-3 shrink-0',
                 })}
                 <span className="truncate">
-                  {formatModeLabel(t, thread.lastChatMode)}
+                  {formatModeLabel(t, thread.lastChatMode, modeOptions)}
                 </span>
               </p>
             )}

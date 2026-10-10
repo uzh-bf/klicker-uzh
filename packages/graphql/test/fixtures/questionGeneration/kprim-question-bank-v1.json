@@ -1,0 +1,50 @@
+{
+  "metadata": {
+    "format": "KPRIM",
+    "item_format": "kprim",
+    "assessment_profile": "klicker_live",
+    "total_questions": 1,
+    "artifact_version": { "number": 1 }
+  },
+  "questions": [
+    {
+      "id": "q-M1-002",
+      "module_id": "M1",
+      "objective_id": "M1-LZ01",
+      "content_type": "verständnis",
+      "bloom_level": "understand",
+      "origin_mode": "new",
+      "item_format": "kprim",
+      "difficulty_scale": 3,
+      "target_difficulty_scale": 3,
+      "predicted_difficulty_scale": 3.2,
+      "difficulty_status": "llm_reviewed",
+      "stem": "Beurteilen Sie die Aussagen zur Liquidität.",
+      "context_inline": null,
+      "explanation": "Liquidität betrifft die fristgerechte Zahlungsfähigkeit.",
+      "statements": [
+        {
+          "text": "Liquide Mittel können kurzfristige Verpflichtungen decken.",
+          "is_correct": true,
+          "explanation": "Das entspricht der Zahlungsfähigkeit."
+        },
+        {
+          "text": "Hohe Rentabilität garantiert jederzeit Liquidität.",
+          "is_correct": false,
+          "explanation": "Rentabilität und Zahlungsfähigkeit sind verschieden."
+        },
+        {
+          "text": "Fälligkeiten beeinflussen den Liquiditätsbedarf.",
+          "is_correct": true,
+          "explanation": "Der Zeitpunkt von Zahlungen ist relevant."
+        },
+        {
+          "text": "Liquidität ist unabhängig von Zahlungsströmen.",
+          "is_correct": false,
+          "explanation": "Zahlungsströme sind zentral."
+        }
+      ],
+      "citations": []
+    }
+  ]
+}

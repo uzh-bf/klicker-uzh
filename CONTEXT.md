@@ -127,9 +127,29 @@ name; it never contains an email address or a matriculation number.
 (derived from edu-ID affiliation) or individual (subscribed). It gates feature
 limits and capacities, and is a property of the user rather than of any course.
 
+**Feature entitlement**: An account-level condition for using a
+rollout-controlled capability. It is additional to role, scope, and resource
+permissions and never replaces them.
+
 **Delegated login**: Signing in as a user through a `UserLogin` record with a
 scope, rather than through edu-ID. The scope becomes the session's authority
 and is enforced field-by-field in the API layer.
+
+## AI usage and quotas
+
+**Chat account usage budget**: A User's monthly allowance for participant
+chatbot model usage, split into base-model and advanced-model lanes and shared
+by that User's chatbots.
+_Avoid_: Balance, chatbot credits
+
+**Chatbot credit policy**: The per-chatbot allowance granted to each
+Participant, defined by initial credits, reset period, reset amount, and maximum
+credits.
+_Avoid_: Chat account usage budget
+
+**KB graph semester quota**: A User's semester allowance shared by knowledge
+graph construction and graph-backed element-generation actions.
+_Avoid_: Balance, chatbot credits, chat account usage budget
 
 ## Boundary rules
 

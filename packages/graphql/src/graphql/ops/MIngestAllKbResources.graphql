@@ -1,0 +1,9 @@
+mutation IngestAllKbResources($kbId: ID!) {
+  ingestAllKbResources(kbId: $kbId) {
+    queuedCount
+    retriedFailedCount
+    alreadyCurrentCount
+    alreadyInProgressCount
+    queueFailureCount
+  }
+}

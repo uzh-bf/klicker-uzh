@@ -1,0 +1,1626 @@
+import {
+  getDefaultKBGraphDomainCatalog,
+  getKnowledgeGraphName,
+  isKBGraphDomainCapabilityEnabled,
+  KB_GRAPH_DOMAIN_ERROR_CODES,
+  type KBGraphDomainSelectionRejectionReason,
+  type KBGraphDomainSelectionResolution,
+  resolveKBGraphDomainSelection,
+} from '@klicker-uzh/knowledge-graph'
+import {
+  type KBGraphBuildSource,
+  KBGraphBuildStatus,
+  KBGraphCostStatus,
+  type Prisma,
+  type PrismaClient,
+} from '@klicker-uzh/prisma/client'
+import type { BuildKBGraphInput } from '@klicker-uzh/types'
+import {
+  cancelExternalKBGraphRunBestEffort,
+  type ExternalKBGraphClient,
+  type ExternalKBGraphPayload,
+  type ExternalKBGraphRequestOptions,
+  getExternalKBGraphClient,
+  getExternalKBGraphConfig,
+  getKBGraphArtifactBlobName,
+  getKBGraphOwnerContainerName,
+  getKBGraphQualityConfig,
+  getKBGraphSourceUrl,
+  getKBGraphTimeoutSeconds,
+  KB_GRAPH_BUILD_METADATA_KEY,
+  KB_GRAPH_KB_METADATA_KEY,
+  type KBGraphLogger,
+  recoverExternalKBGraphRun,
+} from './kbGraphIngestionApi.js'
+
+const KB_GRAPH_MONITOR_BATCH_SIZE = 32
+const KB_GRAPH_MONITOR_CONCURRENCY = 8
+const KB_GRAPH_MONITOR_INTERVAL_MS = 15 * 60 * 1000
+const KB_GRAPH_MONITOR_PROVIDER_TIMEOUT_MS = 10_000
+const activeProviderOperations = new Set<Promise<unknown>>()
+
+class ProviderOperationLimitError extends Error {
+  constructor() {
+    super('KB graph provider operation concurrency limit reached')
+    this.name = 'ProviderOperationLimitError'
+  }
+}
+
+export const KB_GRAPH_DISPATCH_AMBIGUOUS_CODE = 'KB_GRAPH_DISPATCH_AMBIGUOUS'
+const KB_GRAPH_DISPATCH_FAILED_CODE = 'KB_GRAPH_DISPATCH_FAILED'
+// A dispatch claim is written just before the provider call, so a claimed build
+// with no external operation id is ambiguous for as long as the first attempt may
+// still be inside that call. Within this window a duplicate task run must leave
+// the build alone: asking the provider too early answers "no run yet", and acting
+// on that answer would release the reservation while the real run is starting and
+// goes on to spend. Only a claim older than the window is treated as abandoned.
+const KB_GRAPH_DISPATCH_CLAIM_GRACE_MS = 15 * 60 * 1000
+
+// A build whose provider run finished but whose terminal result could not be
+// metered keeps its reservation parked for review. The hold is bounded: after
+// this window the platform absorbs the provider cost instead of leaving the
+// lecturer's semester quota reduced for a graph that was never served, and the
+// build keeps its failure code as the record of why nothing was charged.
+const KB_GRAPH_COST_HOLD_RELEASE_MS = 24 * 60 * 60 * 1000
+
+// Terminal results that arrived but could not become metered spend. The dispatch
+// sweep owns the ambiguous-dispatch hold, and a result parked after cleanup
+// belongs to the build that already replaced it, so neither code is listed here.
+export const KB_GRAPH_UNMETERED_RESULT_CODES = [
+  'KB_GRAPH_RESULT_CONTRACT_INVALID',
+  'KB_GRAPH_RESULT_IDENTITY_INVALID',
+  'KB_GRAPH_RESULT_METERING_MISSING',
+  'KB_GRAPH_RESULT_METERING_OVERFLOW',
+  'KB_GRAPH_RESULT_CURRENCY_MISMATCH',
+] as const
+
+type KBGraphPrisma = Pick<
+  PrismaClient,
+  | '$queryRaw'
+  | '$transaction'
+  | 'kB'
+  | 'kBGraphBuild'
+  | 'kBGraphQuota'
+  | 'kBResource'
+>
+
+type KBGraphDispatchRecord = {
+  id: string
+  kbId: string
+  sourceContentDigest: string
+  graphName: string
+  graphmlBlobName: string | null
+  qualityTier: Parameters<typeof getKBGraphQualityConfig>[0]
+  domainPolicyId: string | null
+  domainPolicyVersion: number | null
+  domainPolicyLanguage: string | null
+  focusTopic: string | null
+  createdAt: Date
+  kb: {
+    ownerId: string
+    knowledgeGraphEnabled: boolean
+  }
+  sources: Array<
+    Pick<
+      KBGraphBuildSource,
+      'resourceId' | 'type' | 'sourceUrl' | 'blobName' | 'contentSha256'
+    >
+  >
+}
+
+type KBGraphReservationRecord = {
+  estimatedCostMinorUnits: number | null
+  costCurrency: string | null
+  costPricingVersion: string | null
+  semesterKey: string | null
+  costStatus: KBGraphCostStatus | null
+  quotaId: string | null
+  quota: {
+    id: string
+    ownerId: string
+    semesterKey: string
+    currency: string
+    limitMinorUnits: number
+    reservedMinorUnits: number
+  } | null
+  kb: { ownerId: string }
+}
+
+export type DispatchKBGraphDependencies = {
+  prisma: KBGraphPrisma
+  client?: ExternalKBGraphClient
+  env?: NodeJS.ProcessEnv
+  now?: () => Date
+  logger?: KBGraphLogger
+  providerOperationTimeoutMs?: number
+  getSourceUrl?: (
+    source: KBGraphDispatchRecord['sources'][number],
+    options: { ownerId: string; env: NodeJS.ProcessEnv; now: () => Date }
+  ) => string
+}
+
+export type MonitorKBGraphBuildsDependencies = {
+  prisma: KBGraphPrisma
+  client?: ExternalKBGraphClient
+  env?: NodeJS.ProcessEnv
+  now?: () => Date
+  logger?: KBGraphLogger
+  providerOperationTimeoutMs?: number
+  getTerminalResult?: (
+    runId: string,
+    options?: ExternalKBGraphRequestOptions
+  ) => Promise<unknown>
+  settleTerminalResult?: (input: {
+    buildId: string
+    result: unknown
+    finishedAt: Date
+    allowLateSuccess?: boolean
+  }) => Promise<'SETTLED' | 'RELEASED' | 'NEEDS_HUMAN_REVIEW' | 'DUPLICATE'>
+}
+
+function graphIdentifiers(build: Pick<KBGraphDispatchRecord, 'id' | 'kbId'>) {
+  return { buildId: build.id, kbId: build.kbId }
+}
+
+async function logInfoBestEffort(
+  logger: KBGraphLogger | undefined,
+  message: string,
+  identifiers: Record<string, string>
+): Promise<void> {
+  try {
+    await logger?.info?.(message, identifiers)
+  } catch {
+    // External state has already been persisted; logging must not undo it.
+  }
+}
+
+async function logErrorBestEffort(
+  logger: KBGraphLogger | undefined,
+  message: string,
+  identifiers: Record<string, string>
+): Promise<void> {
+  try {
+    await logger?.error?.(message, identifiers)
+  } catch {
+    // Reconciliation must remain retryable when the logger is unavailable.
+  }
+}
+
+function isActiveBuildStatus(status: KBGraphBuildStatus) {
+  return (
+    status === KBGraphBuildStatus.QUEUED ||
+    status === KBGraphBuildStatus.PROCESSING
+  )
+}
+
+async function releaseKBGraphReservationInTransaction(
+  prisma: Prisma.TransactionClient,
+  buildId: string,
+  // A held reservation normally only leaves RESERVED. Resolving an ambiguous
+  // dispatch also has to unwind a hold that was already parked for review, once
+  // the provider has confirmed that no run of that build id ever existed.
+  releasableCostStatuses: KBGraphCostStatus[] = [KBGraphCostStatus.RESERVED]
+): Promise<boolean> {
+  const build = await prisma.kBGraphBuild.findUnique({
+    where: { id: buildId },
+    select: {
+      quotaId: true,
+      estimatedCostMinorUnits: true,
+      costStatus: true,
+    },
+  })
+  if (
+    !build ||
+    build.costStatus === null ||
+    !releasableCostStatuses.includes(build.costStatus) ||
+    build.estimatedCostMinorUnits === null
+  ) {
+    return false
+  }
+
+  if (build.quotaId) {
+    await prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT "id"
+      FROM "public"."KBGraphQuota"
+      WHERE "id" = CAST(${build.quotaId} AS UUID)
+      FOR UPDATE
+    `
+  }
+  const updated = await prisma.kBGraphBuild.updateMany({
+    where: {
+      id: buildId,
+      costStatus: build.costStatus,
+    },
+    data: { costStatus: KBGraphCostStatus.RELEASED },
+  })
+  if (updated.count !== 1 || !build.quotaId) return updated.count === 1
+
+  const quotaUpdated = await prisma.kBGraphQuota.updateMany({
+    where: {
+      id: build.quotaId,
+      reservedMinorUnits: { gte: build.estimatedCostMinorUnits },
+    },
+    data: {
+      reservedMinorUnits: { decrement: build.estimatedCostMinorUnits },
+    },
+  })
+  if (quotaUpdated.count !== 1) {
+    throw new Error('KB graph quota reservation could not be released')
+  }
+
+  return true
+}
+
+function getGraphMonitorBatchOffset(total: number, now: Date) {
+  if (total <= KB_GRAPH_MONITOR_BATCH_SIZE) {
+    return 0
+  }
+  const runNumber = Math.floor(now.getTime() / KB_GRAPH_MONITOR_INTERVAL_MS)
+  const pageCount = Math.ceil(total / KB_GRAPH_MONITOR_BATCH_SIZE)
+  return (runNumber % pageCount) * KB_GRAPH_MONITOR_BATCH_SIZE
+}
+
+async function withProviderTimeout<T>(
+  operationFactory: (signal: AbortSignal) => Promise<T>,
+  timeoutMilliseconds: number | undefined
+): Promise<T> {
+  if (activeProviderOperations.size >= KB_GRAPH_MONITOR_CONCURRENCY) {
+    throw new ProviderOperationLimitError()
+  }
+
+  const abortController = new AbortController()
+  const operation = operationFactory(abortController.signal)
+  let trackedOperation: Promise<T>
+  trackedOperation = operation.finally(() => {
+    activeProviderOperations.delete(trackedOperation)
+  })
+  activeProviderOperations.add(trackedOperation)
+
+  if (timeoutMilliseconds === undefined) {
+    return trackedOperation
+  }
+
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  let timedOut = false
+  const timeoutError = new Error('KB graph provider operation timed out')
+  try {
+    return await Promise.race([
+      trackedOperation,
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(() => {
+          timedOut = true
+          abortController.abort(timeoutError)
+          reject(timeoutError)
+        }, timeoutMilliseconds)
+      }),
+    ])
+  } catch (error) {
+    if (!timedOut) {
+      throw error
+    }
+    // The transport must honor the signal before capacity can be reused. This
+    // keeps the worker-wide ceiling valid even when a request times out.
+    await trackedOperation.catch(() => undefined)
+    throw timeoutError
+  } finally {
+    if (timeout) clearTimeout(timeout)
+  }
+}
+
+async function runWithConcurrency<T>(
+  items: T[],
+  task: (item: T) => Promise<void>
+): Promise<void> {
+  let nextIndex = 0
+  const workerCount = Math.min(KB_GRAPH_MONITOR_CONCURRENCY, items.length)
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (nextIndex < items.length) {
+        const item = items[nextIndex]!
+        nextIndex += 1
+        await task(item)
+      }
+    })
+  )
+}
+
+function isDispatchableBuild(build: {
+  id: string
+  status: KBGraphBuildStatus
+  externalOperationId: string | null
+  dispatchClaimedAt: Date | null
+  graphmlBlobName: string | null
+  estimatedCostMinorUnits: number | null
+  costCurrency: string | null
+  costPricingVersion: string | null
+  semesterKey: string | null
+  costStatus: KBGraphCostStatus | null
+  quotaId: string | null
+  quota: KBGraphReservationRecord['quota']
+  kb: {
+    ownerId: string
+    deletedAt: Date | null
+    activeGraphBuildId: string | null
+    knowledgeGraphEnabled: boolean
+  }
+  sources: KBGraphDispatchRecord['sources']
+}) {
+  return (
+    isActiveBuildStatus(build.status) &&
+    build.externalOperationId === null &&
+    build.dispatchClaimedAt === null &&
+    hasCompleteKBGraphReservation(build) &&
+    build.kb.deletedAt === null &&
+    build.kb.activeGraphBuildId === build.id &&
+    build.kb.knowledgeGraphEnabled &&
+    build.sources.length > 0 &&
+    build.graphmlBlobName !== null
+  )
+}
+
+function hasCompleteKBGraphReservation(
+  build: Pick<
+    KBGraphReservationRecord,
+    | 'estimatedCostMinorUnits'
+    | 'costCurrency'
+    | 'costPricingVersion'
+    | 'semesterKey'
+    | 'costStatus'
+    | 'quotaId'
+    | 'quota'
+    | 'kb'
+  >
+): boolean {
+  return (
+    build.costStatus === KBGraphCostStatus.RESERVED &&
+    build.estimatedCostMinorUnits !== null &&
+    build.estimatedCostMinorUnits > 0 &&
+    build.costCurrency !== null &&
+    build.costCurrency.length > 0 &&
+    build.costPricingVersion !== null &&
+    build.costPricingVersion.length > 0 &&
+    build.semesterKey !== null &&
+    build.semesterKey.length > 0 &&
+    build.quotaId !== null &&
+    build.quota !== null &&
+    build.quota.id === build.quotaId &&
+    build.quota.ownerId === build.kb.ownerId &&
+    build.quota.semesterKey === build.semesterKey &&
+    build.quota.currency === build.costCurrency &&
+    build.quota.limitMinorUnits > 0 &&
+    build.quota.reservedMinorUnits >= build.estimatedCostMinorUnits
+  )
+}
+
+function isUnstartedActiveBuild(build: {
+  id: string
+  status: KBGraphBuildStatus
+  externalOperationId: string | null
+  dispatchClaimedAt: Date | null
+  kb: { deletedAt: Date | null; activeGraphBuildId: string | null }
+}) {
+  return (
+    isActiveBuildStatus(build.status) &&
+    build.externalOperationId === null &&
+    build.dispatchClaimedAt === null &&
+    build.kb.deletedAt === null &&
+    build.kb.activeGraphBuildId === build.id
+  )
+}
+
+function getDispatchGateFailure(
+  build: KBGraphReservationRecord & {
+    kb: KBGraphReservationRecord['kb'] & { knowledgeGraphEnabled: boolean }
+  },
+  env: NodeJS.ProcessEnv
+): { statusMessage: string; errorCode: string } | null {
+  if (env.KB_GRAPH_DISABLED === 'true') {
+    return {
+      statusMessage: 'KB graph generation is currently disabled.',
+      errorCode: 'KB_GRAPH_DISABLED',
+    }
+  }
+  if (!build.kb.knowledgeGraphEnabled) {
+    return {
+      statusMessage: 'KB graph generation is not enabled for this KB.',
+      errorCode: 'KB_GRAPH_NOT_ENABLED',
+    }
+  }
+  if (!hasCompleteKBGraphReservation(build)) {
+    return {
+      statusMessage:
+        'The KB graph build has no complete cost reservation and requires review.',
+      errorCode: 'KB_GRAPH_RESERVATION_INCOMPLETE',
+    }
+  }
+  return null
+}
+
+function kbGraphDomainRejectionMessage(
+  reason: KBGraphDomainSelectionRejectionReason
+): string {
+  switch (reason) {
+    case 'INCOMPLETE':
+      return 'The KB graph build has an incomplete domain selection and requires review.'
+    case 'CAPABILITY_DISABLED':
+      return 'This deployment does not support the domain selection frozen on the KB graph build.'
+    case 'UNKNOWN_POLICY':
+      return 'The domain policy frozen on the KB graph build is not part of this deployment catalog.'
+    case 'UNSUPPORTED_VERSION':
+      return 'The domain policy version frozen on the KB graph build is not supported.'
+    case 'UNSUPPORTED_LANGUAGE':
+      return 'The domain language frozen on the KB graph build is not provided by its policy.'
+  }
+}
+
+/**
+ * Re-resolves the provider inputs frozen at rebuild time against the catalog and
+ * capability gate this worker is running with. Dispatch happens in a separate
+ * process from the lecturer request, so a rollout that narrowed the catalog or
+ * disabled the gate must fail the build here, before the provider call spends
+ * reservation money on a policy it cannot honor or silently drops a recorded
+ * focus.
+ */
+function getProviderContractGateFailure(
+  build: Pick<
+    KBGraphDispatchRecord,
+    | 'domainPolicyId'
+    | 'domainPolicyVersion'
+    | 'domainPolicyLanguage'
+    | 'focusTopic'
+  >,
+  env: NodeJS.ProcessEnv
+): { statusMessage: string; errorCode: string } | null {
+  const catalog = getDefaultKBGraphDomainCatalog()
+  const capabilityEnabled = isKBGraphDomainCapabilityEnabled(
+    catalog.revision,
+    env
+  )
+  // A focus travels on the same provider contract the capability gate
+  // advertises, so a rollout that closed the gate must fail the build here
+  // rather than record a focus the provider never applied.
+  if (build.focusTopic != null && !capabilityEnabled) {
+    return {
+      statusMessage:
+        'This deployment does not support the focus topic frozen on the KB graph build.',
+      errorCode: KB_GRAPH_DOMAIN_ERROR_CODES.CAPABILITY_DISABLED,
+    }
+  }
+  if (
+    build.domainPolicyId == null &&
+    build.domainPolicyVersion == null &&
+    build.domainPolicyLanguage == null
+  ) {
+    return null
+  }
+  const resolution: KBGraphDomainSelectionResolution =
+    resolveKBGraphDomainSelection(
+      {
+        domainPolicyId: build.domainPolicyId,
+        domainPolicyVersion: build.domainPolicyVersion,
+        language: build.domainPolicyLanguage,
+      },
+      {
+        catalog,
+        capabilityEnabled,
+      }
+    )
+  if (resolution.ok) {
+    return null
+  }
+  return {
+    statusMessage: kbGraphDomainRejectionMessage(resolution.reason),
+    errorCode: KB_GRAPH_DOMAIN_ERROR_CODES[resolution.reason],
+  }
+}
+
+async function failKBGraphBuildBeforeDispatch(
+  prisma: KBGraphPrisma,
+  {
+    buildId,
+    kbId,
+    statusMessage,
+    errorCode,
+  }: {
+    buildId: string
+    kbId: string
+    statusMessage: string
+    errorCode: string
+  },
+  finishedAt: Date
+): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    const current = await tx.kBGraphBuild.findUnique({
+      where: { id: buildId },
+      select: {
+        externalOperationId: true,
+        dispatchClaimedAt: true,
+        costStatus: true,
+        status: true,
+        kb: {
+          select: { deletedAt: true, activeGraphBuildId: true },
+        },
+      },
+    })
+    if (
+      !current ||
+      !isUnstartedActiveBuild({
+        id: buildId,
+        status: current.status,
+        externalOperationId: current.externalOperationId,
+        dispatchClaimedAt: current.dispatchClaimedAt,
+        kb: current.kb,
+      })
+    ) {
+      return
+    }
+
+    const failed = await tx.kBGraphBuild.updateMany({
+      where: {
+        id: buildId,
+        kbId,
+        externalOperationId: null,
+        dispatchClaimedAt: null,
+        status: {
+          in: [KBGraphBuildStatus.QUEUED, KBGraphBuildStatus.PROCESSING],
+        },
+      },
+      data: {
+        status: KBGraphBuildStatus.FAILED,
+        statusMessage,
+        errorCode,
+        finishedAt,
+      },
+    })
+    if (failed.count !== 1) return
+
+    if (
+      current.costStatus === KBGraphCostStatus.RESERVED &&
+      errorCode !== 'KB_GRAPH_RESERVATION_INCOMPLETE'
+    ) {
+      await releaseKBGraphReservationInTransaction(tx, buildId)
+    } else if (
+      current.costStatus === null ||
+      (current.costStatus === KBGraphCostStatus.RESERVED &&
+        errorCode === 'KB_GRAPH_RESERVATION_INCOMPLETE')
+    ) {
+      await tx.kBGraphBuild.updateMany({
+        where: { id: buildId, costStatus: current.costStatus },
+        data: { costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW },
+      })
+    }
+    await tx.kB.updateMany({
+      where: { id: kbId, activeGraphBuildId: buildId },
+      data: { activeGraphBuildId: null },
+    })
+  })
+}
+
+export function buildExternalKBGraphPayload(
+  build: KBGraphDispatchRecord,
+  sourceUrls: string[],
+  env: NodeJS.ProcessEnv = process.env
+): ExternalKBGraphPayload {
+  if (sourceUrls.length !== build.sources.length) {
+    throw new Error('KB graph source URL count does not match')
+  }
+  if (build.graphmlBlobName !== getKBGraphArtifactBlobName(build.id)) {
+    throw new Error('KB graph artifact path is invalid')
+  }
+
+  const quality = getKBGraphQualityConfig(build.qualityTier, env)
+  const payload: ExternalKBGraphPayload = {
+    course_id: build.id,
+    storage_name: build.id,
+    sources: build.sources.map((source, index) => ({
+      source_id: source.resourceId,
+      source_url: sourceUrls[index]!,
+      expected_content_sha256: source.contentSha256,
+    })),
+    upload_markdown: false,
+    upload_graph_artifacts: env.KB_GRAPH_UPLOAD_GENERATION_ARTIFACTS === 'true',
+    export_to_falkordb: true,
+    falkordb_graph_name: build.graphName,
+    speed_mode: quality.speedMode,
+    generation_model: quality.generationModel,
+    cleaning_model: quality.cleaningModel,
+    klicker_graph_build: {
+      build_id: build.id,
+      kb_id: build.kbId,
+      owner_id: build.kb.ownerId,
+      source_content_digest: build.sourceContentDigest,
+      graphml_container_name: getKBGraphOwnerContainerName(build.kb.ownerId),
+      graphml_blob_name: build.graphmlBlobName,
+    },
+  }
+  // The dispatch gate has already re-validated the frozen selection, so a
+  // complete triple here is a supported policy. The legacy all-null build adds
+  // no keys and keeps the provider manifest byte-identical.
+  if (
+    build.domainPolicyId != null &&
+    build.domainPolicyVersion != null &&
+    build.domainPolicyLanguage != null
+  ) {
+    payload.domain_policy = {
+      template_id: build.domainPolicyId,
+      template_version: build.domainPolicyVersion,
+    }
+    payload.language = build.domainPolicyLanguage
+  }
+  // A focus is prompt guidance the provider applies on top of the policy, so it
+  // is dispatched independently of an explicit domain selection.
+  if (build.focusTopic != null) {
+    payload.focus_topic = build.focusTopic
+  }
+  return payload
+}
+
+function validateBuildIdentity(build: KBGraphDispatchRecord): void {
+  if (build.graphmlBlobName !== getKBGraphArtifactBlobName(build.id)) {
+    throw new Error('KB graph artifact path is invalid')
+  }
+  if (
+    build.graphName !== getKnowledgeGraphName(build.kbId, build.id) ||
+    build.sources.some(
+      (source) =>
+        !source.contentSha256 ||
+        (source.type === 'BLOB' && !source.blobName) ||
+        (source.type === 'URL' && !source.sourceUrl)
+    )
+  ) {
+    throw new Error('KB graph build snapshot is invalid')
+  }
+}
+
+/**
+ * Outcome of asking the provider whether an accepted-but-uncorrelated dispatch
+ * actually produced a run.
+ *
+ * - `CORRELATED`: the run exists and the build now carries its id again.
+ * - `RELEASED`: the provider has no such run, so nothing external is spending;
+ *   the reservation is released and the KB build slot is freed for a rebuild.
+ * - `HELD`: the provider could not be asked, so a run may still be spending and
+ *   both the reservation and the build slot stay fenced until the next attempt.
+ */
+export type KBGraphDispatchAmbiguityResolution =
+  | 'CORRELATED'
+  | 'RELEASED'
+  | 'HELD'
+
+/**
+ * Resolves a build whose dispatch was claimed but never correlated. The provider
+ * lookup decides: only a definitive "no run for this build id" may unwind the
+ * hold, because releasing a reservation for a run that is still generating would
+ * both under-charge the lecturer's quota and allow a second external run.
+ */
+export async function resolveAmbiguousKBGraphDispatch(
+  build: { id: string; kbId: string; createdAt: Date },
+  dependencies: Pick<
+    DispatchKBGraphDependencies,
+    | 'prisma'
+    | 'client'
+    | 'env'
+    | 'logger'
+    | 'now'
+    | 'providerOperationTimeoutMs'
+  >
+): Promise<KBGraphDispatchAmbiguityResolution> {
+  const env = dependencies.env ?? process.env
+  const now = dependencies.now ?? (() => new Date())
+  const identifiers = graphIdentifiers(build)
+
+  let recoveredRun: Awaited<ReturnType<typeof recoverExternalKBGraphRun>>
+  try {
+    const config = getExternalKBGraphConfig(env)
+    const client = dependencies.client ?? getExternalKBGraphClient(env)
+    recoveredRun = await withProviderTimeout(
+      (signal) =>
+        recoverExternalKBGraphRun({
+          client,
+          workflowName: config.workflowName,
+          additionalMetadata: {
+            [KB_GRAPH_BUILD_METADATA_KEY]: build.id,
+            [KB_GRAPH_KB_METADATA_KEY]: build.kbId,
+          },
+          recoveryAnchor: build.createdAt,
+          requestOptions: { signal },
+        }),
+      dependencies.providerOperationTimeoutMs
+    )
+  } catch {
+    await logErrorBestEffort(
+      dependencies.logger,
+      'KB graph dispatch ambiguity could not be resolved against the provider',
+      identifiers
+    )
+    return 'HELD'
+  }
+
+  if (recoveredRun) {
+    const correlated = await dependencies.prisma.kBGraphBuild.updateMany({
+      where: {
+        id: build.id,
+        kbId: build.kbId,
+        externalOperationId: null,
+        dispatchClaimedAt: { not: null },
+        kb: { deletedAt: null, activeGraphBuildId: build.id },
+      },
+      data: {
+        externalOperationId: recoveredRun.runId,
+        dispatchClaimedAt: null,
+        externalStartedAt: recoveredRun.startedAt,
+        startedAt: recoveredRun.startedAt,
+        status: KBGraphBuildStatus.PROCESSING,
+        statusMessage: null,
+        errorCode: null,
+        finishedAt: null,
+      },
+    })
+    if (correlated.count !== 1) {
+      return 'HELD'
+    }
+    await logInfoBestEffort(
+      dependencies.logger,
+      'KB graph dispatch ambiguity resolved by correlating the external run',
+      identifiers
+    )
+    return 'CORRELATED'
+  }
+
+  await dependencies.prisma.$transaction(async (tx) => {
+    const failed = await tx.kBGraphBuild.updateMany({
+      where: {
+        id: build.id,
+        kbId: build.kbId,
+        externalOperationId: null,
+        // Second money fence: re-checked at write time so a claim refreshed by a
+        // concurrent dispatch between the provider lookup and this update keeps
+        // its reservation instead of being released underneath a starting run.
+        dispatchClaimedAt: {
+          lte: new Date(now().getTime() - KB_GRAPH_DISPATCH_CLAIM_GRACE_MS),
+        },
+      },
+      data: {
+        status: KBGraphBuildStatus.FAILED,
+        statusMessage: 'The external KB graph workflow could not be started.',
+        errorCode: KB_GRAPH_DISPATCH_FAILED_CODE,
+        finishedAt: new Date(),
+      },
+    })
+    if (failed.count !== 1) {
+      return
+    }
+    await releaseKBGraphReservationInTransaction(tx, build.id, [
+      KBGraphCostStatus.RESERVED,
+      KBGraphCostStatus.NEEDS_HUMAN_REVIEW,
+    ])
+    await tx.kB.updateMany({
+      where: { id: build.kbId, activeGraphBuildId: build.id },
+      data: { activeGraphBuildId: null },
+    })
+  })
+  await logInfoBestEffort(
+    dependencies.logger,
+    'KB graph dispatch ambiguity resolved: the provider has no run for this build',
+    identifiers
+  )
+  return 'RELEASED'
+}
+
+export async function dispatchKBGraphBuild(
+  input: BuildKBGraphInput,
+  dependencies: DispatchKBGraphDependencies
+): Promise<string | undefined> {
+  const env = dependencies.env ?? process.env
+  const now = dependencies.now ?? (() => new Date())
+  const build = await dependencies.prisma.kBGraphBuild.findUnique({
+    where: { id: input.buildId },
+    select: {
+      id: true,
+      kbId: true,
+      sourceContentDigest: true,
+      graphName: true,
+      graphmlBlobName: true,
+      qualityTier: true,
+      domainPolicyId: true,
+      domainPolicyVersion: true,
+      domainPolicyLanguage: true,
+      focusTopic: true,
+      status: true,
+      externalOperationId: true,
+      dispatchClaimedAt: true,
+      estimatedCostMinorUnits: true,
+      costCurrency: true,
+      costPricingVersion: true,
+      semesterKey: true,
+      costStatus: true,
+      quotaId: true,
+      quota: {
+        select: {
+          id: true,
+          ownerId: true,
+          semesterKey: true,
+          currency: true,
+          limitMinorUnits: true,
+          reservedMinorUnits: true,
+        },
+      },
+      createdAt: true,
+      kb: {
+        select: {
+          ownerId: true,
+          deletedAt: true,
+          activeGraphBuildId: true,
+          knowledgeGraphEnabled: true,
+        },
+      },
+      sources: {
+        select: {
+          resourceId: true,
+          type: true,
+          sourceUrl: true,
+          blobName: true,
+          contentSha256: true,
+        },
+        orderBy: { resourceId: 'asc' },
+      },
+    },
+  })
+  if (!build) {
+    return undefined
+  }
+  if (build.dispatchClaimedAt !== null && build.externalOperationId === null) {
+    if (
+      now().getTime() - build.dispatchClaimedAt.getTime() <
+      KB_GRAPH_DISPATCH_CLAIM_GRACE_MS
+    ) {
+      // A sibling task run for the same build is probably still inside the
+      // provider call. Leave its claim, its reservation, and its status exactly
+      // as they are; the graph monitor revisits the build once the claim ages
+      // past the grace.
+      await logInfoBestEffort(
+        dependencies.logger,
+        'KB graph dispatch is already claimed and may still be in flight',
+        graphIdentifiers(build)
+      )
+      return undefined
+    }
+    // Ask the provider before parking the build for review: the earlier attempt
+    // may have produced a run that simply lost its id, and an unresolvable hold
+    // fences the KB slot and the lecturer's quota with no way out.
+    const resolution = await resolveAmbiguousKBGraphDispatch(
+      build,
+      dependencies
+    )
+    if (resolution === 'HELD') {
+      await markKBGraphBuildDispatchFailed(input, dependencies.prisma)
+    }
+    return undefined
+  }
+  if (isUnstartedActiveBuild(build)) {
+    const gateFailure =
+      getDispatchGateFailure(build, env) ??
+      getProviderContractGateFailure(build, env)
+    if (gateFailure) {
+      await failKBGraphBuildBeforeDispatch(
+        dependencies.prisma,
+        {
+          buildId: build.id,
+          kbId: build.kbId,
+          ...gateFailure,
+        },
+        now()
+      )
+      return undefined
+    }
+  }
+  if (!isDispatchableBuild(build)) return undefined
+
+  const dispatchBuild: KBGraphDispatchRecord = {
+    id: build.id,
+    kbId: build.kbId,
+    sourceContentDigest: build.sourceContentDigest,
+    graphName: build.graphName,
+    graphmlBlobName: build.graphmlBlobName,
+    qualityTier: build.qualityTier,
+    domainPolicyId: build.domainPolicyId,
+    domainPolicyVersion: build.domainPolicyVersion,
+    domainPolicyLanguage: build.domainPolicyLanguage,
+    focusTopic: build.focusTopic,
+    createdAt: build.createdAt,
+    kb: {
+      ownerId: build.kb.ownerId,
+      knowledgeGraphEnabled: build.kb.knowledgeGraphEnabled,
+    },
+    sources: build.sources,
+  }
+  const identifiers = graphIdentifiers(dispatchBuild)
+
+  try {
+    validateBuildIdentity(dispatchBuild)
+    const config = getExternalKBGraphConfig(env)
+    const client = dependencies.client ?? getExternalKBGraphClient(env)
+    const additionalMetadata = {
+      [KB_GRAPH_BUILD_METADATA_KEY]: dispatchBuild.id,
+      [KB_GRAPH_KB_METADATA_KEY]: dispatchBuild.kbId,
+    }
+    const recoveredRun = await recoverExternalKBGraphRun({
+      client,
+      workflowName: config.workflowName,
+      additionalMetadata,
+      recoveryAnchor: dispatchBuild.createdAt,
+    })
+
+    let runId: string
+    let startedAt: Date
+    if (recoveredRun) {
+      runId = recoveredRun.runId
+      startedAt = recoveredRun.startedAt
+      const claimed = await dependencies.prisma.kBGraphBuild.updateMany({
+        where: {
+          id: dispatchBuild.id,
+          kbId: dispatchBuild.kbId,
+          status: {
+            in: [KBGraphBuildStatus.QUEUED, KBGraphBuildStatus.PROCESSING],
+          },
+          externalOperationId: null,
+          dispatchClaimedAt: null,
+          kb: {
+            deletedAt: null,
+            activeGraphBuildId: dispatchBuild.id,
+          },
+        },
+        data: { dispatchClaimedAt: startedAt },
+      })
+      if (claimed.count !== 1) {
+        return undefined
+      }
+    } else {
+      const current = await dependencies.prisma.kBGraphBuild.findUnique({
+        where: { id: dispatchBuild.id },
+        select: {
+          id: true,
+          status: true,
+          externalOperationId: true,
+          dispatchClaimedAt: true,
+          estimatedCostMinorUnits: true,
+          costCurrency: true,
+          costPricingVersion: true,
+          semesterKey: true,
+          costStatus: true,
+          quotaId: true,
+          domainPolicyId: true,
+          domainPolicyVersion: true,
+          domainPolicyLanguage: true,
+          focusTopic: true,
+          quota: {
+            select: {
+              id: true,
+              ownerId: true,
+              semesterKey: true,
+              currency: true,
+              limitMinorUnits: true,
+              reservedMinorUnits: true,
+            },
+          },
+          kb: {
+            select: {
+              ownerId: true,
+              deletedAt: true,
+              activeGraphBuildId: true,
+              knowledgeGraphEnabled: true,
+            },
+          },
+        },
+      })
+      // The provider effect is immediately below this point, so the frozen
+      // provider inputs are validated here for the last time.
+      const gateFailure = current
+        ? (getDispatchGateFailure(current, env) ??
+          getProviderContractGateFailure(current, env))
+        : null
+      if (!current || !isUnstartedActiveBuild(current) || gateFailure) {
+        if (current && isUnstartedActiveBuild(current) && gateFailure) {
+          await failKBGraphBuildBeforeDispatch(
+            dependencies.prisma,
+            {
+              buildId: current.id,
+              kbId: dispatchBuild.kbId,
+              ...gateFailure,
+            },
+            now()
+          )
+        }
+        return undefined
+      }
+      const getSourceUrl = dependencies.getSourceUrl ?? getKBGraphSourceUrl
+      const sourceUrls = dispatchBuild.sources.map((source) =>
+        getSourceUrl(source, {
+          ownerId: dispatchBuild.kb.ownerId,
+          env,
+          now,
+        })
+      )
+      const payload = buildExternalKBGraphPayload(
+        dispatchBuild,
+        sourceUrls,
+        env
+      )
+      startedAt = now()
+      const claimed = await dependencies.prisma.kBGraphBuild.updateMany({
+        where: {
+          id: dispatchBuild.id,
+          kbId: dispatchBuild.kbId,
+          status: {
+            in: [KBGraphBuildStatus.QUEUED, KBGraphBuildStatus.PROCESSING],
+          },
+          externalOperationId: null,
+          dispatchClaimedAt: null,
+          kb: {
+            deletedAt: null,
+            activeGraphBuildId: dispatchBuild.id,
+          },
+        },
+        data: { dispatchClaimedAt: startedAt },
+      })
+      if (claimed.count !== 1) {
+        return undefined
+      }
+      const run = await client.runNoWait(config.workflowName, payload, {
+        additionalMetadata,
+      })
+      runId = await run.getWorkflowRunId()
+    }
+
+    const persisted = await dependencies.prisma.kBGraphBuild.updateMany({
+      where: {
+        id: dispatchBuild.id,
+        kbId: dispatchBuild.kbId,
+        status: {
+          in: [KBGraphBuildStatus.QUEUED, KBGraphBuildStatus.PROCESSING],
+        },
+        externalOperationId: null,
+        dispatchClaimedAt: startedAt,
+        kb: {
+          deletedAt: null,
+          activeGraphBuildId: dispatchBuild.id,
+        },
+      },
+      data: {
+        externalOperationId: runId,
+        dispatchClaimedAt: null,
+        externalStartedAt: startedAt,
+        startedAt,
+        statusMessage: null,
+        errorCode: null,
+      },
+    })
+    if (persisted.count === 1) {
+      await logInfoBestEffort(
+        dependencies.logger,
+        'External KB graph build dispatched',
+        identifiers
+      )
+      return runId
+    }
+
+    const current = await dependencies.prisma.kBGraphBuild.findUnique({
+      where: { id: dispatchBuild.id },
+      select: { externalOperationId: true },
+    })
+    if (current?.externalOperationId === runId) {
+      return runId
+    }
+
+    await cancelExternalKBGraphRunBestEffort({
+      client,
+      runId,
+      identifiers,
+      logger: dependencies.logger,
+    })
+    return undefined
+  } catch {
+    await logErrorBestEffort(
+      dependencies.logger,
+      'External KB graph build dispatch failed',
+      identifiers
+    )
+    throw new Error('External KB graph build dispatch failed')
+  }
+}
+
+async function finishKBGraphBuild({
+  build,
+  status,
+  statusMessage,
+  errorCode,
+  prisma,
+  finishedAt,
+}: {
+  build: {
+    id: string
+    kbId: string
+    externalOperationId: string
+  }
+  status: typeof KBGraphBuildStatus.SUCCEEDED | typeof KBGraphBuildStatus.FAILED
+  statusMessage: string | null
+  errorCode: string | null
+  prisma: KBGraphPrisma
+  finishedAt: Date
+}) {
+  await prisma.$transaction(async (tx) => {
+    const updated = await tx.kBGraphBuild.updateMany({
+      where: {
+        id: build.id,
+        kbId: build.kbId,
+        externalOperationId: build.externalOperationId,
+        status: {
+          in: [KBGraphBuildStatus.QUEUED, KBGraphBuildStatus.PROCESSING],
+        },
+      },
+      data: {
+        status,
+        statusMessage,
+        errorCode,
+        finishedAt,
+      },
+    })
+    if (updated.count !== 1) {
+      return
+    }
+
+    await tx.kBGraphBuild.updateMany({
+      where: {
+        id: build.id,
+        costStatus: {
+          in: [
+            KBGraphCostStatus.RESERVED,
+            KBGraphCostStatus.NEEDS_HUMAN_REVIEW,
+          ],
+        },
+      },
+      data: { costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW },
+    })
+
+    await tx.kB.updateMany({
+      where: { id: build.kbId, activeGraphBuildId: build.id },
+      data: { activeGraphBuildId: null },
+    })
+  })
+}
+
+type TimedOutKBGraphBuild = {
+  id: string
+  kbId: string
+  sourceContentDigest: string
+  createdAt: Date
+  externalOperationId: string
+}
+
+async function recordIneligibleLateSuccess(
+  build: TimedOutKBGraphBuild,
+  prisma: Pick<KBGraphPrisma, 'kBGraphBuild'>,
+  status:
+    | typeof KBGraphBuildStatus.FAILED
+    | typeof KBGraphBuildStatus.SUPERSEDED,
+  statusMessage: string,
+  errorCode: string
+): Promise<void> {
+  await prisma.kBGraphBuild.updateMany({
+    where: {
+      id: build.id,
+      kbId: build.kbId,
+      externalOperationId: build.externalOperationId,
+      status: KBGraphBuildStatus.FAILED,
+      errorCode: 'KB_GRAPH_TIMEOUT',
+      cleanedAt: null,
+      cleanupStartedAt: null,
+    },
+    data: { status, statusMessage, errorCode },
+  })
+}
+
+async function monitorTimedOutKBGraphBuilds(
+  builds: TimedOutKBGraphBuild[],
+  dependencies: MonitorKBGraphBuildsDependencies,
+  client: ExternalKBGraphClient,
+  now: () => Date,
+  providerOperationTimeoutMs: number
+): Promise<void> {
+  await runWithConcurrency(builds, async (build) => {
+    const identifiers = graphIdentifiers(build)
+    try {
+      const externalStatus = await withProviderTimeout(
+        (signal) =>
+          client.runs.get_status(build.externalOperationId, { signal }),
+        providerOperationTimeoutMs
+      )
+      if (externalStatus !== 'COMPLETED') {
+        return
+      }
+
+      if (dependencies.getTerminalResult && dependencies.settleTerminalResult) {
+        const terminalResult = await withProviderTimeout(
+          (signal) =>
+            dependencies.getTerminalResult!(build.externalOperationId, {
+              signal,
+            }),
+          providerOperationTimeoutMs
+        )
+        await dependencies.settleTerminalResult({
+          buildId: build.id,
+          result: terminalResult,
+          finishedAt: now(),
+          allowLateSuccess: true,
+        })
+      } else {
+        await recordIneligibleLateSuccess(
+          build,
+          dependencies.prisma,
+          KBGraphBuildStatus.FAILED,
+          'The external workflow completed after timeout without a versioned terminal result.',
+          'KB_GRAPH_RESULT_REQUIRED'
+        )
+      }
+    } catch {
+      await logErrorBestEffort(
+        dependencies.logger,
+        'Timed-out external KB graph build monitor failed',
+        identifiers
+      )
+    }
+  })
+}
+
+export async function monitorActiveKBGraphBuilds(
+  dependencies: MonitorKBGraphBuildsDependencies
+): Promise<void> {
+  const env = dependencies.env ?? process.env
+  const now = dependencies.now ?? (() => new Date())
+  const timeoutMilliseconds = getKBGraphTimeoutSeconds(env) * 1000
+  const providerOperationTimeoutMs =
+    dependencies.providerOperationTimeoutMs ??
+    KB_GRAPH_MONITOR_PROVIDER_TIMEOUT_MS
+  const sweepNow = now()
+  const activeWhere = {
+    status: {
+      in: [KBGraphBuildStatus.QUEUED, KBGraphBuildStatus.PROCESSING],
+    },
+    externalOperationId: { not: null },
+    externalStartedAt: { not: null },
+  } satisfies Prisma.KBGraphBuildWhereInput
+  const activeCount = await dependencies.prisma.kBGraphBuild.count({
+    where: activeWhere,
+  })
+  const activeOffset = getGraphMonitorBatchOffset(activeCount, sweepNow)
+  const builds = await dependencies.prisma.kBGraphBuild.findMany({
+    where: activeWhere,
+    select: {
+      id: true,
+      kbId: true,
+      externalOperationId: true,
+      externalStartedAt: true,
+    },
+    orderBy: { createdAt: 'asc' },
+    ...(activeOffset > 0 ? { skip: activeOffset } : {}),
+    take: KB_GRAPH_MONITOR_BATCH_SIZE,
+  })
+  const timedOutWhere = {
+    status: KBGraphBuildStatus.FAILED,
+    errorCode: 'KB_GRAPH_TIMEOUT',
+    externalOperationId: { not: null },
+    cleanedAt: null,
+    cleanupStartedAt: null,
+  } satisfies Prisma.KBGraphBuildWhereInput
+  const timedOutCount = await dependencies.prisma.kBGraphBuild.count({
+    where: timedOutWhere,
+  })
+  const timedOutOffset = getGraphMonitorBatchOffset(timedOutCount, sweepNow)
+  const timedOutBuilds = await dependencies.prisma.kBGraphBuild.findMany({
+    where: timedOutWhere,
+    select: {
+      id: true,
+      kbId: true,
+      sourceContentDigest: true,
+      createdAt: true,
+      externalOperationId: true,
+    },
+    orderBy: { createdAt: 'asc' },
+    ...(timedOutOffset > 0 ? { skip: timedOutOffset } : {}),
+    take: KB_GRAPH_MONITOR_BATCH_SIZE,
+  })
+  // Runs ahead of the early return: a build parked on an ambiguous dispatch has
+  // neither a correlated run nor a timeout, so no other sweep would revisit it.
+  await recheckAmbiguousKBGraphDispatches(
+    { ...dependencies, providerOperationTimeoutMs },
+    sweepNow
+  )
+  // A held cost reservation has neither an active status nor a timeout, so this
+  // sweep also has to run before the early return.
+  await releaseUnmeteredKBGraphReservations(
+    { prisma: dependencies.prisma, logger: dependencies.logger },
+    sweepNow
+  )
+
+  if (builds.length === 0 && timedOutBuilds.length === 0) {
+    return
+  }
+
+  const client = dependencies.client ?? getExternalKBGraphClient(env)
+  await runWithConcurrency(builds, async (build) => {
+    if (!build.externalOperationId || !build.externalStartedAt) {
+      return
+    }
+    const externalOperationId = build.externalOperationId
+    const identifiers = graphIdentifiers(build)
+    try {
+      const externalStatus = await withProviderTimeout(
+        (signal) => client.runs.get_status(externalOperationId, { signal }),
+        providerOperationTimeoutMs
+      )
+      const observedAt = now()
+      if (
+        externalStatus === 'COMPLETED' ||
+        externalStatus === 'FAILED' ||
+        externalStatus === 'CANCELLED'
+      ) {
+        if (
+          !dependencies.getTerminalResult ||
+          !dependencies.settleTerminalResult
+        ) {
+          const statusMessage =
+            externalStatus === 'COMPLETED'
+              ? 'The external workflow completed without a versioned terminal result.'
+              : `The external workflow ended with ${externalStatus.toLowerCase()} without a versioned terminal result.`
+          await finishKBGraphBuild({
+            build: {
+              ...build,
+              externalOperationId,
+            },
+            status: KBGraphBuildStatus.FAILED,
+            statusMessage,
+            errorCode: 'KB_GRAPH_RESULT_REQUIRED',
+            prisma: dependencies.prisma,
+            finishedAt: observedAt,
+          })
+          return
+        }
+
+        const terminalResult = await withProviderTimeout(
+          (signal) =>
+            dependencies.getTerminalResult!(externalOperationId, { signal }),
+          providerOperationTimeoutMs
+        )
+        await dependencies.settleTerminalResult({
+          buildId: build.id,
+          result: terminalResult,
+          finishedAt: observedAt,
+        })
+        return
+      }
+
+      if (
+        observedAt.getTime() - build.externalStartedAt.getTime() >
+        timeoutMilliseconds
+      ) {
+        await withProviderTimeout(
+          (signal) =>
+            cancelExternalKBGraphRunBestEffort({
+              client,
+              runId: externalOperationId,
+              identifiers,
+              logger: dependencies.logger,
+              requestOptions: { signal },
+            }),
+          providerOperationTimeoutMs
+        )
+        await finishKBGraphBuild({
+          build: {
+            ...build,
+            externalOperationId,
+          },
+          status: KBGraphBuildStatus.FAILED,
+          statusMessage: 'External KB graph workflow timed out.',
+          errorCode: 'KB_GRAPH_TIMEOUT',
+          prisma: dependencies.prisma,
+          finishedAt: observedAt,
+        })
+        return
+      }
+
+      if (externalStatus === 'RUNNING') {
+        await dependencies.prisma.kBGraphBuild.updateMany({
+          where: {
+            id: build.id,
+            kbId: build.kbId,
+            externalOperationId,
+            status: KBGraphBuildStatus.QUEUED,
+          },
+          data: {
+            status: KBGraphBuildStatus.PROCESSING,
+            statusMessage: null,
+          },
+        })
+      }
+    } catch {
+      await logErrorBestEffort(
+        dependencies.logger,
+        'External KB graph build monitor failed',
+        identifiers
+      )
+    }
+  })
+  await monitorTimedOutKBGraphBuilds(
+    timedOutBuilds.flatMap((build) =>
+      build.externalOperationId === null
+        ? []
+        : [{ ...build, externalOperationId: build.externalOperationId }]
+    ),
+    dependencies,
+    client,
+    now,
+    providerOperationTimeoutMs
+  )
+}
+
+/**
+ * Retries the provider lookup for every build still parked on an ambiguous
+ * dispatch. A provider outage is transient, so the hold is a waiting state rather
+ * than a permanent one: each sweep either correlates the run or, once the
+ * provider is reachable and reports no run, releases the reservation and frees
+ * the KB build slot so the lecturer can rebuild without an operator.
+ */
+export async function recheckAmbiguousKBGraphDispatches(
+  dependencies: Pick<
+    MonitorKBGraphBuildsDependencies,
+    'prisma' | 'client' | 'env' | 'logger' | 'providerOperationTimeoutMs'
+  >,
+  sweepNow: Date
+): Promise<void> {
+  const ambiguousWhere = {
+    errorCode: KB_GRAPH_DISPATCH_AMBIGUOUS_CODE,
+    externalOperationId: null,
+    // Only claims older than the in-flight grace are candidates: a fresher claim
+    // may belong to a dispatch that is still inside the provider call.
+    dispatchClaimedAt: {
+      lte: new Date(sweepNow.getTime() - KB_GRAPH_DISPATCH_CLAIM_GRACE_MS),
+    },
+  } satisfies Prisma.KBGraphBuildWhereInput
+  const ambiguousCount = await dependencies.prisma.kBGraphBuild.count({
+    where: ambiguousWhere,
+  })
+  const ambiguousOffset = getGraphMonitorBatchOffset(ambiguousCount, sweepNow)
+  const ambiguousBuilds = await dependencies.prisma.kBGraphBuild.findMany({
+    where: ambiguousWhere,
+    select: { id: true, kbId: true, createdAt: true },
+    orderBy: { createdAt: 'asc' },
+    ...(ambiguousOffset > 0 ? { skip: ambiguousOffset } : {}),
+    take: KB_GRAPH_MONITOR_BATCH_SIZE,
+  })
+  await runWithConcurrency(ambiguousBuilds, async (build) => {
+    await resolveAmbiguousKBGraphDispatch(build, {
+      ...dependencies,
+      now: () => sweepNow,
+    })
+  })
+}
+
+/**
+ * Releases the reservations of builds whose provider run finished but whose
+ * terminal result could not be metered. The lecturer never received the graph
+ * the reservation paid for, so after the review window the platform absorbs the
+ * provider cost instead of parking spend against a semester quota forever. Every
+ * release keeps the build's failure code and is logged for the operator.
+ */
+export async function releaseUnmeteredKBGraphReservations(
+  dependencies: Pick<MonitorKBGraphBuildsDependencies, 'prisma' | 'logger'>,
+  sweepNow: Date
+): Promise<number> {
+  const unmeteredWhere = {
+    costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW,
+    errorCode: { in: [...KB_GRAPH_UNMETERED_RESULT_CODES] },
+    estimatedCostMinorUnits: { not: null },
+    // Without a quota row the hold reduced no quota, so there is nothing to
+    // unwind and the review flag stays as the operator's record.
+    quotaId: { not: null },
+    finishedAt: {
+      lte: new Date(sweepNow.getTime() - KB_GRAPH_COST_HOLD_RELEASE_MS),
+    },
+  } satisfies Prisma.KBGraphBuildWhereInput
+  const heldCount = await dependencies.prisma.kBGraphBuild.count({
+    where: unmeteredWhere,
+  })
+  const heldOffset = getGraphMonitorBatchOffset(heldCount, sweepNow)
+  const heldBuilds = await dependencies.prisma.kBGraphBuild.findMany({
+    where: unmeteredWhere,
+    select: { id: true, kbId: true },
+    orderBy: { finishedAt: 'asc' },
+    ...(heldOffset > 0 ? { skip: heldOffset } : {}),
+    take: KB_GRAPH_MONITOR_BATCH_SIZE,
+  })
+
+  let releasedCount = 0
+  for (const build of heldBuilds) {
+    const released = await dependencies.prisma.$transaction((tx) =>
+      releaseKBGraphReservationInTransaction(tx, build.id, [
+        KBGraphCostStatus.NEEDS_HUMAN_REVIEW,
+      ])
+    )
+    if (!released) continue
+
+    releasedCount += 1
+    await logInfoBestEffort(
+      dependencies.logger,
+      'KB graph reservation released after an unmetered terminal result',
+      { buildId: build.id, kbId: build.kbId }
+    )
+  }
+
+  return releasedCount
+}
+
+export async function markKBGraphBuildDispatchFailed(
+  input: BuildKBGraphInput,
+  prisma: KBGraphPrisma
+): Promise<void> {
+  const finishedAt = new Date()
+  await prisma.$transaction(async (tx) => {
+    const build = await tx.kBGraphBuild.findUnique({
+      where: { id: input.buildId },
+      select: {
+        id: true,
+        kbId: true,
+        dispatchClaimedAt: true,
+        costStatus: true,
+      },
+    })
+    if (!build) return
+
+    const failed = await tx.kBGraphBuild.updateMany({
+      where: {
+        id: build.id,
+        kbId: build.kbId,
+        externalOperationId: null,
+        dispatchClaimedAt:
+          build.dispatchClaimedAt === null ? null : { not: null },
+        status: {
+          in: [KBGraphBuildStatus.QUEUED, KBGraphBuildStatus.PROCESSING],
+        },
+      },
+      data: {
+        status: KBGraphBuildStatus.FAILED,
+        statusMessage:
+          build.dispatchClaimedAt === null
+            ? 'The external KB graph workflow could not be started.'
+            : 'The external KB graph workflow may have been accepted but could not be correlated; manual review is required.',
+        errorCode:
+          build.dispatchClaimedAt === null
+            ? 'KB_GRAPH_DISPATCH_FAILED'
+            : 'KB_GRAPH_DISPATCH_AMBIGUOUS',
+        finishedAt,
+      },
+    })
+    if (failed.count === 1) {
+      if (
+        build.dispatchClaimedAt === null &&
+        build.costStatus === KBGraphCostStatus.RESERVED
+      ) {
+        await releaseKBGraphReservationInTransaction(tx, build.id)
+      } else if (
+        build.costStatus === null ||
+        build.costStatus === KBGraphCostStatus.RESERVED
+      ) {
+        await tx.kBGraphBuild.updateMany({
+          where: { id: build.id, costStatus: build.costStatus },
+          data: { costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW },
+        })
+      }
+      if (build.dispatchClaimedAt === null) {
+        await tx.kB.updateMany({
+          where: { id: build.kbId, activeGraphBuildId: build.id },
+          data: { activeGraphBuildId: null },
+        })
+      }
+    }
+  })
+}

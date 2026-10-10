@@ -12,7 +12,7 @@ function UserGroupsManagement() {
 
   return (
     <div>
-      <div className="h-full w-full">
+      <div className="min-h-full w-full shrink-0">
         <H2>{t('manage.general.userGroups')}</H2>
         <div className="mb-2">{t('manage.userGroups.description')}</div>
         <div className="mt-6 flex flex-col lg:flex-row-reverse">

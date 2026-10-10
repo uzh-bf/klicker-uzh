@@ -1,0 +1,5 @@
+mutation DeleteKbResources($kbId: ID!, $ids: [String!]!) {
+  deleteKbResources(kbId: $kbId, ids: $ids) {
+    id
+  }
+}

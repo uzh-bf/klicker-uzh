@@ -1,9 +1,14 @@
 'use client'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { authedFetch } from '../lib/client/authedFetch'
 import { DEFAULT_MODE_DESCRIPTIONS } from '../lib/config/mode-descriptions'
 import { type ModelID, type ModelOption } from '../lib/config/models'
-import { parseModeOptions, resolveSelectedMode } from '../lib/config/modes'
+import {
+  type ChatModeOptions,
+  parseModeOptions,
+  resolveSelectedMode,
+} from '../lib/config/modes'
 import { type ReasoningEffort } from '../lib/config/reasoning'
 
 export interface ModeOption {
@@ -11,12 +16,14 @@ export interface ModeOption {
   description: string
 }
 
+export type AuthMode = 'account' | 'anonymous'
+
 const DEFAULT_REASONING_EFFORT: ReasoningEffort = 'none'
 let creditsRequestGeneration = 0
 let creditsLoadedChatbotId: string | null = null
 let modeOptionsRequestGeneration = 0
 const SAFE_FALLBACK_MODE_OPTIONS = {
-  tutor: DEFAULT_MODE_DESCRIPTIONS.tutor,
+  tutor: { description: DEFAULT_MODE_DESCRIPTIONS.tutor },
 }
 
 const resolveAllowedReasoningEfforts = (
@@ -67,10 +74,11 @@ interface SettingsState {
   // cannot make before the server has answered.
   creditsLoaded: boolean
   modelSelectionEnabled: boolean
+  authMode: AuthMode
 
   // Available options
   modelOptions: ModelOption[]
-  modeOptions: Record<string, string>
+  modeOptions: ChatModeOptions
   modeOptionsChatbotId: string | null
 
   // Actions
@@ -79,7 +87,7 @@ interface SettingsState {
   setSelectedReasoningEffort: (effort: ReasoningEffort) => void
   loadModeOptions: (
     chatbotId: string,
-    initialModeOptions?: Record<string, string>
+    initialModeOptions?: ChatModeOptions
   ) => Promise<void>
   loadCredits: (chatbotId: string) => Promise<void>
   decrementCredits: (amount: number) => void
@@ -90,7 +98,7 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       // initial state
-      selectedModel: 'gpt-4.1',
+      selectedModel: 'auto',
       selectedMode: 'tutor',
       selectedReasoningEffort: 'none',
       credits: {
@@ -100,6 +108,7 @@ export const useSettingsStore = create<SettingsState>()(
       },
       creditsLoaded: false,
       modelSelectionEnabled: false,
+      authMode: 'account' as AuthMode,
       modeOptions: {},
       modeOptionsChatbotId: null,
 
@@ -137,7 +146,7 @@ export const useSettingsStore = create<SettingsState>()(
 
       loadModeOptions: async (
         chatbotId: string,
-        initialModeOptions?: Record<string, string>
+        initialModeOptions?: ChatModeOptions
       ) => {
         const requestGeneration = ++modeOptionsRequestGeneration
         const hasInitialModeOptions = initialModeOptions !== undefined
@@ -161,7 +170,7 @@ export const useSettingsStore = create<SettingsState>()(
         })
 
         try {
-          const response = await fetch(`/api/chatbots/${chatbotId}`)
+          const response = await authedFetch(`/api/chatbots/${chatbotId}`)
           const responseData = await response.json()
           if (requestGeneration !== modeOptionsRequestGeneration) return
 
@@ -215,7 +224,9 @@ export const useSettingsStore = create<SettingsState>()(
         }
 
         try {
-          const response = await fetch(`/api/chatbots/${chatbotId}/credits`)
+          const response = await authedFetch(
+            `/api/chatbots/${chatbotId}/credits`
+          )
           if (requestGeneration !== creditsRequestGeneration) return
 
           if (!response.ok) {
@@ -232,6 +243,8 @@ export const useSettingsStore = create<SettingsState>()(
           }
           const availableModels: ModelOption[] = data.availableModels ?? []
           const automaticModelId: string | undefined = data.automaticModelId
+          const authMode: AuthMode =
+            data.authMode === 'anonymous' ? 'anonymous' : 'account'
 
           set((state) => {
             if (requestGeneration !== creditsRequestGeneration) return state
@@ -247,7 +260,7 @@ export const useSettingsStore = create<SettingsState>()(
               )
               if (!isSelectedModelAvailable) {
                 selectedModel =
-                  availableModels[0]?.id ?? automaticModelId ?? selectedModel
+                  automaticModelId ?? availableModels[0]?.id ?? selectedModel
               }
             }
 
@@ -265,6 +278,7 @@ export const useSettingsStore = create<SettingsState>()(
               modelOptions: availableModels,
               selectedModel,
               selectedReasoningEffort,
+              authMode,
             }
           })
         } catch (error) {

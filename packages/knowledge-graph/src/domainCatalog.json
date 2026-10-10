@@ -1,0 +1,552 @@
+{
+  "revision": "kg-domains-v1-793deb4279a163c357bd976868bee17606d6a352f9596a7b961dc4c200f65e72",
+  "digest": "793deb4279a163c357bd976868bee17606d6a352f9596a7b961dc4c200f65e72",
+  "policies": [
+    {
+      "id": "finance",
+      "version": 1,
+      "labelKey": "finance",
+      "languages": [
+        {
+          "language": "German",
+          "policyDigest": "628fff099c86192e13380b72eed248169387f20670b776e5bd39b3fda0ecb7d8",
+          "categories": [
+            {
+              "name": "Formel",
+              "definition": "Eine formale finanzwirtschaftliche Beziehung."
+            },
+            {
+              "name": "Institution",
+              "definition": "Eine Organisation oder institutionelle Rolle."
+            },
+            {
+              "name": "Instrument",
+              "definition": "Ein Vertrag oder Instrument der Finanzierung und Anlage."
+            },
+            {
+              "name": "Kennzahl",
+              "definition": "Eine messbare finanzwirtschaftliche Größe."
+            },
+            {
+              "name": "Konzept",
+              "definition": "Ein abstrakter finanzwirtschaftlicher Zusammenhang."
+            },
+            {
+              "name": "Methode",
+              "definition": "Ein Verfahren zur Analyse oder Entscheidung."
+            },
+            {
+              "name": "Regulierung",
+              "definition": "Eine rechtliche oder aufsichtsrechtliche Regel."
+            }
+          ]
+        },
+        {
+          "language": "English",
+          "policyDigest": "8574e13d3ddeee6c782618be1b6b0c53e8da3da1594ab701155d423a2af6b364",
+          "categories": [
+            {
+              "name": "Concept",
+              "definition": "An abstract finance or economics relationship."
+            },
+            {
+              "name": "Formula",
+              "definition": "A formal finance or economics relationship."
+            },
+            {
+              "name": "Institution",
+              "definition": "An organization or institutional role."
+            },
+            {
+              "name": "Instrument",
+              "definition": "A financing or investment contract or instrument."
+            },
+            {
+              "name": "Method",
+              "definition": "A procedure used for analysis or decision-making."
+            },
+            {
+              "name": "Metric",
+              "definition": "A measurable finance or economics quantity."
+            },
+            {
+              "name": "Regulation",
+              "definition": "A legal or supervisory rule."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "economics",
+      "version": 1,
+      "labelKey": "economics",
+      "languages": [
+        {
+          "language": "German",
+          "policyDigest": "a16463d8e310dd37f8b0972f60654b5bd8ec03d0806bdc1073d579c2bd0753c3",
+          "categories": [
+            {
+              "name": "Akteur",
+              "definition": "Eine Person, Organisation, ein Land oder eine wirtschaftliche Entscheidungsrolle."
+            },
+            {
+              "name": "Datensatz",
+              "definition": "Eine identifizierbare Sammlung empirischer Beobachtungen."
+            },
+            {
+              "name": "Fall",
+              "definition": "Ein konkretes Ereignis oder eine Situation, die wirtschaftlich analysiert wird."
+            },
+            {
+              "name": "Formel",
+              "definition": "Eine ausdrückliche mathematische Beziehung in der Wirtschaftswissenschaft."
+            },
+            {
+              "name": "Indikator",
+              "definition": "Eine beobachtbare oder berechnete wirtschaftliche Messgröße."
+            },
+            {
+              "name": "Institution",
+              "definition": "Ein dauerhaftes Regelsystem oder institutionelles Arrangement."
+            },
+            {
+              "name": "Konzept",
+              "definition": "Eine wirtschaftliche Idee oder Erscheinung."
+            },
+            {
+              "name": "Methode",
+              "definition": "Ein Verfahren zur wirtschaftlichen Analyse oder empirischen Identifikation."
+            },
+            {
+              "name": "Modell",
+              "definition": "Eine vereinfachte wirtschaftliche Darstellung mit ausdrücklichen Annahmen."
+            },
+            {
+              "name": "Theorie",
+              "definition": "Ein allgemeines Erklärungssystem für wirtschaftliche Erscheinungen."
+            },
+            {
+              "name": "Wirtschaftspolitische Maßnahme",
+              "definition": "Ein wirtschaftlicher Eingriff oder wirtschaftspolitisches Programm."
+            }
+          ]
+        },
+        {
+          "language": "English",
+          "policyDigest": "91fe11304a083d4607e68959192339ecea161a90e440646d277c94215dde15e5",
+          "categories": [
+            {
+              "name": "Actor",
+              "definition": "A person, organization, country or economic decision-making role."
+            },
+            {
+              "name": "Case",
+              "definition": "A concrete event or situation taught through economic analysis."
+            },
+            {
+              "name": "Concept",
+              "definition": "An economic idea or phenomenon."
+            },
+            {
+              "name": "Dataset",
+              "definition": "An identifiable collection of empirical observations."
+            },
+            {
+              "name": "Formula",
+              "definition": "An explicit mathematical relationship in economics."
+            },
+            {
+              "name": "Indicator",
+              "definition": "An observable or calculated economic measure."
+            },
+            {
+              "name": "Institution",
+              "definition": "An enduring rule system or institutional arrangement."
+            },
+            {
+              "name": "Method",
+              "definition": "A procedure for economic analysis or empirical identification."
+            },
+            {
+              "name": "Model",
+              "definition": "A simplified economic representation with explicit assumptions."
+            },
+            {
+              "name": "Policy",
+              "definition": "An economic intervention or policy program."
+            },
+            {
+              "name": "Theory",
+              "definition": "A general system explaining economic phenomena."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "business",
+      "version": 1,
+      "labelKey": "business",
+      "languages": [
+        {
+          "language": "German",
+          "policyDigest": "3af7602a61663737a7b96cc044a3127b3c1c30980e8486e9374f2cc19cc331dd",
+          "categories": [
+            {
+              "name": "Akteur",
+              "definition": "Eine konkrete Person, Organisation oder Organisationseinheit."
+            },
+            {
+              "name": "Bezugsrahmen",
+              "definition": "Ein strukturiertes Modell zur betriebswirtschaftlichen Analyse oder Entscheidung."
+            },
+            {
+              "name": "Fall",
+              "definition": "Eine konkrete betriebliche Situation oder Entscheidung."
+            },
+            {
+              "name": "Kennzahl",
+              "definition": "Eine quantifizierte betriebliche Leistung oder Bedingung."
+            },
+            {
+              "name": "Konzept",
+              "definition": "Eine allgemeine betriebswirtschaftliche Idee oder Erscheinung."
+            },
+            {
+              "name": "Methode",
+              "definition": "Ein gezieltes Verfahren für eine betriebliche Aufgabe."
+            },
+            {
+              "name": "Organisatorische Rolle",
+              "definition": "Eine abstrakte Position mit Verantwortlichkeiten."
+            },
+            {
+              "name": "Produkt",
+              "definition": "Ein Angebot, eine Dienstleistung oder Marke im betriebswirtschaftlichen Kontext."
+            },
+            {
+              "name": "Prozess",
+              "definition": "Eine geordnete Folge betrieblicher Aktivitäten."
+            }
+          ]
+        },
+        {
+          "language": "English",
+          "policyDigest": "d03c62c4fe0e3d9676e09c5ff619aba7dd728c9c3acd209427a4e895ae2eaa57",
+          "categories": [
+            {
+              "name": "Actor",
+              "definition": "A concrete person, organization or organizational unit."
+            },
+            {
+              "name": "Case",
+              "definition": "A concrete business situation or decision."
+            },
+            {
+              "name": "Concept",
+              "definition": "A general business idea or phenomenon."
+            },
+            {
+              "name": "Framework",
+              "definition": "A structured model for business analysis or decisions."
+            },
+            {
+              "name": "Method",
+              "definition": "A deliberate procedure for a business task."
+            },
+            {
+              "name": "Metric",
+              "definition": "A quantified business performance or condition."
+            },
+            {
+              "name": "Organizational Role",
+              "definition": "An abstract position with responsibilities."
+            },
+            {
+              "name": "Process",
+              "definition": "An ordered sequence of business activities."
+            },
+            {
+              "name": "Product",
+              "definition": "An offering, service or brand studied in business context."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mathematics",
+      "version": 1,
+      "labelKey": "mathematics",
+      "languages": [
+        {
+          "language": "German",
+          "policyDigest": "4ef7fcf08aaafa17bcb981b53297ae3b6a4cf04d4512def856600be31bb591d3",
+          "categories": [
+            {
+              "name": "Algorithmus",
+              "definition": "Ein ausdrückliches Rechenverfahren."
+            },
+            {
+              "name": "Axiom",
+              "definition": "Eine innerhalb eines formalen Systems vorausgesetzte Aussage."
+            },
+            {
+              "name": "Beispiel",
+              "definition": "Eine konkrete Veranschaulichung, einschließlich Gegenbeispielen."
+            },
+            {
+              "name": "Beweismethode",
+              "definition": "Eine allgemeine Technik zum Beweis einer Aussage."
+            },
+            {
+              "name": "Definition",
+              "definition": "Eine Aussage, die die Bedeutung eines Begriffs festlegt."
+            },
+            {
+              "name": "Formel",
+              "definition": "Eine symbolische Gleichheit, Ungleichheit oder mathematische Beziehung."
+            },
+            {
+              "name": "Konzept",
+              "definition": "Eine mathematische Eigenschaft oder Vorstellung."
+            },
+            {
+              "name": "Notation",
+              "definition": "Ein Symbol oder eine Konvention zum Ausdruck mathematischer Bedeutung."
+            },
+            {
+              "name": "Operator",
+              "definition": "Eine Operation auf mathematischen Objekten."
+            },
+            {
+              "name": "Satz",
+              "definition": "Eine bewiesene Aussage, einschließlich Lemmata und Korollaren."
+            },
+            {
+              "name": "Struktur",
+              "definition": "Ein mathematisches Objekt mit Relationen oder Operationen."
+            }
+          ]
+        },
+        {
+          "language": "English",
+          "policyDigest": "3e3b2e4d6f69d337b60ca34ebd4bcd7c2d702ff029da2d5a9a328af6bc43fd68",
+          "categories": [
+            {
+              "name": "Algorithm",
+              "definition": "An explicit computational procedure."
+            },
+            {
+              "name": "Axiom",
+              "definition": "A statement assumed within a formal system."
+            },
+            {
+              "name": "Concept",
+              "definition": "A mathematical property or notion."
+            },
+            {
+              "name": "Definition",
+              "definition": "A statement fixing the meaning of a term."
+            },
+            {
+              "name": "Example",
+              "definition": "A concrete illustration, including counterexamples."
+            },
+            {
+              "name": "Formula",
+              "definition": "A symbolic equality, inequality or mathematical relationship."
+            },
+            {
+              "name": "Notation",
+              "definition": "A symbol or convention expressing mathematical meaning."
+            },
+            {
+              "name": "Operator",
+              "definition": "An operation acting on mathematical objects."
+            },
+            {
+              "name": "Proof Method",
+              "definition": "A general technique for establishing a proposition."
+            },
+            {
+              "name": "Structure",
+              "definition": "A mathematical object equipped with relations or operations."
+            },
+            {
+              "name": "Theorem",
+              "definition": "A proven proposition, including lemmas and corollaries."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "informatics",
+      "version": 1,
+      "labelKey": "informatics",
+      "languages": [
+        {
+          "language": "German",
+          "policyDigest": "47d18f26875764e89708feae05e37762596e5960081f01a2c46c2b84cfb62f89",
+          "categories": [
+            {
+              "name": "Algorithmus",
+              "definition": "Ein ausdrückliches Verfahren zur Lösung eines Berechnungsproblems."
+            },
+            {
+              "name": "Architektur",
+              "definition": "Die strukturelle Organisation von Systemkomponenten."
+            },
+            {
+              "name": "Datenformat",
+              "definition": "Eine Konvention zur Kodierung oder zum Austausch von Daten."
+            },
+            {
+              "name": "Datenstruktur",
+              "definition": "Eine Organisation von Daten und ihren Zugriffsoperationen."
+            },
+            {
+              "name": "Konzept",
+              "definition": "Ein allgemeines Informatikprinzip oder eine Abstraktion."
+            },
+            {
+              "name": "Programmiersprache",
+              "definition": "Eine formale Sprache für ausführbare Operationen oder Abfragen."
+            },
+            {
+              "name": "Protokoll",
+              "definition": "Regeln für die Kommunikation zwischen Beteiligten."
+            },
+            {
+              "name": "Schnittstelle",
+              "definition": "Ein offengelegter Interaktionsvertrag, einschließlich APIs, Funktionen und Befehlen."
+            },
+            {
+              "name": "Werkzeug",
+              "definition": "Ein konkretes Softwaresystem oder eine wiederverwendbare Implementierung."
+            }
+          ]
+        },
+        {
+          "language": "English",
+          "policyDigest": "7cbbac2740df7580ffad938d7e5651c78d51738ab8390b700196b5ea5b1b3f62",
+          "categories": [
+            {
+              "name": "Algorithm",
+              "definition": "An explicit procedure for solving a computational problem."
+            },
+            {
+              "name": "Architecture",
+              "definition": "The structural organization of system components."
+            },
+            {
+              "name": "Concept",
+              "definition": "A general computing principle or abstraction."
+            },
+            {
+              "name": "Data Format",
+              "definition": "A convention for encoding or exchanging data."
+            },
+            {
+              "name": "Data Structure",
+              "definition": "An organization of data and its access operations."
+            },
+            {
+              "name": "Interface",
+              "definition": "An exposed interaction contract, including APIs, functions and commands."
+            },
+            {
+              "name": "Programming Language",
+              "definition": "A formal language for executable operations or queries."
+            },
+            {
+              "name": "Protocol",
+              "definition": "Rules governing communication between participants."
+            },
+            {
+              "name": "Tool",
+              "definition": "A concrete software system or reusable implementation."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "general-academic",
+      "version": 1,
+      "labelKey": "general-academic",
+      "languages": [
+        {
+          "language": "German",
+          "policyDigest": "71dcf377f361b9d706fb03bf672ecd985941198f05ec88460fbd2609d10f5f99",
+          "categories": [
+            {
+              "name": "Formel",
+              "definition": "Eine formale Beziehung zwischen Größen."
+            },
+            {
+              "name": "Institution",
+              "definition": "Eine Organisation oder institutionelle Rolle."
+            },
+            {
+              "name": "Konzept",
+              "definition": "Ein abstrakter Gegenstand des Fachgebiets."
+            },
+            {
+              "name": "Messgröße",
+              "definition": "Eine beobachtbare oder berechenbare Größe."
+            },
+            {
+              "name": "Methode",
+              "definition": "Ein systematisches Verfahren."
+            },
+            {
+              "name": "Prozess",
+              "definition": "Eine geordnete Folge fachlicher Schritte."
+            },
+            {
+              "name": "Theorie",
+              "definition": "Ein erklärender theoretischer Rahmen."
+            }
+          ]
+        },
+        {
+          "language": "English",
+          "policyDigest": "1591e988eb331da7cbeb7217a14a72a52a184499c464db00ecdc9ee120ce60fb",
+          "categories": [
+            {
+              "name": "Concept",
+              "definition": "An abstract subject within the discipline."
+            },
+            {
+              "name": "Formula",
+              "definition": "A formal relationship between quantities."
+            },
+            {
+              "name": "Institution",
+              "definition": "An organization or institutional role."
+            },
+            {
+              "name": "Measure",
+              "definition": "An observable or calculable quantity."
+            },
+            {
+              "name": "Method",
+              "definition": "A systematic procedure."
+            },
+            {
+              "name": "Process",
+              "definition": "An ordered sequence of disciplinary steps."
+            },
+            {
+              "name": "Theory",
+              "definition": "An explanatory theoretical framework."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -2,10 +2,26 @@ import { describe, expect, test } from 'vitest'
 import { hasAnyImageAttachmentData } from '../src/lib/attachments/attachmentState'
 import {
   canOpenMessageAttachment,
+  canUseComposerAttachments,
   getAttachmentPreviewSrc,
 } from '../src/lib/attachments/attachmentUi'
 
 describe('message attachment behavior', () => {
+  test('disables attachment ingestion when the surface allows zero images', () => {
+    expect(
+      canUseComposerAttachments({
+        maxImageAttachments: 0,
+        supportsImages: true,
+      })
+    ).toBe(false)
+    expect(
+      canUseComposerAttachments({
+        maxImageAttachments: 1,
+        supportsImages: true,
+      })
+    ).toBe(true)
+  })
+
   test('same-session local images prefer previews inline and remain directly openable without persisted ids', () => {
     const attachment = {
       type: 'image' as const,

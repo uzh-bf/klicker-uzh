@@ -1,0 +1,18 @@
+mutation MWithdrawChatbotRevision(
+  $chatbotId: String!
+  $expectedRevisionVersion: Int!
+) {
+  withdrawChatbotRevision(
+    chatbotId: $chatbotId
+    expectedRevisionVersion: $expectedRevisionVersion
+  ) {
+    id
+    status
+    revisionStatus
+    revisionVersion
+    reviewComment
+    authoringRevision {
+      ...ChatbotAuthoringRevisionData
+    }
+  }
+}

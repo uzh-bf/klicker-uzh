@@ -1,0 +1,27 @@
+mutation DuplicateGeneratedElementDraft($input: GeneratedElementDraftInput!) {
+  duplicateGeneratedElementDraft(input: $input) {
+    id
+    sourceElementId
+    order
+    duplicationIndex
+    parentDraftId
+    elementType
+    revision
+    decision
+    current {
+      name
+      prompt
+      context
+      explanation
+      choices {
+        id
+        label
+        text
+        correct
+        feedback
+      }
+      cardType
+      tags
+    }
+  }
+}
