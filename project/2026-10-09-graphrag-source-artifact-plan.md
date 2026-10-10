@@ -493,3 +493,26 @@ source and generated checksums to its recorded baseline. Canonical repair starts
 the exact task container, but full readiness times out on the LTI HTTP route.
 Container checks work; this is not full local application E2E acceptance. Source
 qualification, mandatory checks and independent integrated review remain open.
+
+
+October 10 independent source qualification passes: trusted Claude CLI final
+review returned schema-valid `pass` for ingestion `ea4a88a`, KG `efc3e9e` and
+Klicker `21c49968a7`. It reuses the complete earlier unchanged-source reviews and
+checks the renewed correction plus forge advice. No reportable finding remains.
+Operation/version fences protect webhook writes; tombstoned-KB deletion settlement
+must remain available. Parsed artifact and raw source caps govern distinct inputs.
+Conservative failed URL reservations remain until matching activation. Receipt:
+ignored `project/_local/reviews/2026-10-10-canonical-renewed-integrated-final-review.md`.
+
+Local mandatory checks pass at the source head: 42 typecheck tasks, seven lint
+tasks, formatting, syncpack and 94 host contracts. Full production build passes
+27 tasks, and ordinary task publication succeeds. Ingestion pipeline 680298 and
+KG pipeline 680295 pass at unchanged exact heads. The final documentation head
+will retain this source tree and review; hosted checks remain required through
+PR #6460. The user's OpenRouter review waiver remains binding; its pending forge
+gate is not a passed platform approval. No human reviewer was requested.
+
+This documentation receipt reuses unchanged-source checks and build evidence;
+only affected document formatting and staged hygiene need fresh validation.
+Final delivery records live in the three draft descriptions and the ignored
+qualification receipt. Rollout and live quality remain separate milestones.

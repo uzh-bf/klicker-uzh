@@ -4,16 +4,20 @@ October 10: canonical input source packages are now drafted in
 [ingestion !229](https://gitlab.uzh.ch/ai-infrastructure/services/data-ingestion/-/merge_requests/229),
 [KG !36](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/36)
 and [Klicker #6460](https://github.com/uzh-bf/klicker-uzh/pull/6460).
-The [source plan](2026-10-09-graphrag-source-artifact-plan.md) records the current
-qualification hold. Ingestion and KG exact-head CI pass. Klicker still needs a
-failed BLOB replacement correction: retain the new blob's size/MIME for retries
-and quota accounting instead of copying the old serving version's metadata.
-The user approved the bounded correction and renewed independent qualification
-after scope/risk reassessment. The patch is prepared; updated regression checks,
-source publication and final qualification remain in progress.
-Reader-first deployment and finite refresh/build acceptance follow source
-qualification. Live GraphRAG quality and student-map acceptance remain separate
-receipts.
+The [source plan](2026-10-09-graphrag-source-artifact-plan.md) records the reviewed
+source repair. Failed and pending replacements preserve the desired blob's size
+and MIME, and retry dispatch retains the matching tuple. Trusted independent
+integrated qualification passes at Klicker source `21c49968a7`; mandatory local
+checks and the full production build pass. Ingestion and KG exact-head CI pass.
+Klicker hosted checks are available on [PR #6460](https://github.com/uzh-bf/klicker-uzh/pull/6460/checks);
+source review does not replace the final-head CI requirement. The user waived
+the OpenRouter review, whose separate forge gate remains unresolved.
+
+The source packages remain drafts. Reader provisioning, migration application,
+physical cleanup convergence, reader-first deployment and a finite refresh/build
+batch follow source qualification under separate authority. Live GraphRAG quality
+and student-map acceptance remain separate receipts. Full local application
+readiness is unqualified because the unrelated LTI route returned HTTP 502.
 
 Date: 2026-09-12  
 Status: roadmap direction reviewed; approved checkpoint A source package and controlled evaluation delivered on 2026-09-12; a 2026-09-13 investigation added the focus-topic control design to W8 and the improvement levers; a 2026-09-14 follow-up delivered the lecturer-facing generation-language selector. Remaining roadmap acceptance work is listed below.  
