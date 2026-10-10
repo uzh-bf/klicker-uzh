@@ -64,8 +64,8 @@ const externalEnv = {
   KB_FALKORDB_QUERY_TIMEOUT_MS: '5000',
 }
 
-function createCanonicalBuild() {
-  const reference = {
+function canonicalReference() {
+  return {
     contract_version: 'canonical-document/v1' as const,
     producer_id: 'klicker',
     project_id: 'klicker-course-materials',
@@ -77,84 +77,169 @@ function createCanonicalBuild() {
     parser_recipe_sha256: 'c'.repeat(64),
     byte_count: 1024,
   }
-  const legacy = createBuild()
+}
+
+function ingestionClient(reference: unknown = canonicalReference()) {
   return {
-    ...legacy,
-    sourceInputContract: 'canonical-document/v1',
-    sourceInputDigest: hashKBCanonicalInputReferences([reference]),
-    sources: [{ ...legacy.sources[0]!, canonicalInput: reference }],
+    acceptResource: vi.fn(),
+    deleteResource: vi.fn(),
+    getOperation: vi.fn().mockResolvedValue({
+      operationId: 'source-operation',
+      producer: 'klicker',
+      projectId: 'klicker-course-materials',
+      externalResourceId: RESOURCE_ID,
+      canonicalInput: reference,
+      serving: { activeResourceVersion: 3, activeSha256: CONTENT_SHA256 },
+    }),
   }
 }
 
 describe('canonical KG dispatch', () => {
-  it('pins the selected source artifact and keeps credentials out of the payload', () => {
-    const build = createCanonicalBuild()
-    const payload = buildExternalKBGraphPayload(build, [SOURCE_URL], {
-      ...externalEnv,
-      KB_CANONICAL_INPUT_ENABLED: 'true',
-      KB_CANONICAL_INPUT_API_TOKEN: 'synthetic-reader-token',
-    })
+  it('pins the resolved artifact without credentials or database lineage', () => {
+    const reference = canonicalReference()
+    const payload = buildExternalKBGraphPayload(
+      createBuild(),
+      [SOURCE_URL],
+      {
+        ...externalEnv,
+        KB_CANONICAL_INPUT_ENABLED: 'true',
+        KB_CANONICAL_INPUT_API_TOKEN: 'synthetic-reader-token',
+      },
+      [reference]
+    )
     expect(payload.source_input_contract).toBe('canonical-document/v1')
     expect(payload.klicker_graph_build.source_input_digest).toBe(
-      build.sourceInputDigest
+      hashKBCanonicalInputReferences([reference])
     )
-    expect(payload.sources[0]?.canonical_input).toEqual(
-      build.sources[0]?.canonicalInput
-    )
+    expect(payload.sources[0]?.canonical_input).toEqual(reference)
     expect(payload.upload_markdown).toBe(false)
     expect(JSON.stringify(payload)).not.toContain('synthetic-reader-token')
   })
 
-  it('refuses canonical dispatch while disabled and rejects altered frozen lineage', () => {
-    const build = createCanonicalBuild()
+  it('rejects mismatched canonical references and a disabled canonical payload', () => {
     expect(() =>
-      buildExternalKBGraphPayload(build, [SOURCE_URL], externalEnv)
+      buildExternalKBGraphPayload(createBuild(), [SOURCE_URL], externalEnv, [
+        canonicalReference(),
+      ])
     ).toThrow()
-    const enabledEnv = { ...externalEnv, KB_CANONICAL_INPUT_ENABLED: 'true' }
-    expect(() =>
-      buildExternalKBGraphPayload(
-        { ...build, sourceInputDigest: 'd'.repeat(64) },
-        [SOURCE_URL],
-        enabledEnv
-      )
-    ).toThrow()
-    expect(() =>
-      buildExternalKBGraphPayload(
-        { ...build, sourceInputContract: null },
-        [SOURCE_URL],
-        enabledEnv
-      )
-    ).toThrow()
+    for (const change of [
+      { source_sha256: 'd'.repeat(64) },
+      { kb_id: OWNER_ID },
+      { project_id: 'another-project' },
+      { external_resource_id: OWNER_ID },
+    ]) {
+      expect(() =>
+        buildExternalKBGraphPayload(
+          createBuild(),
+          [SOURCE_URL],
+          { ...externalEnv, KB_CANONICAL_INPUT_ENABLED: 'true' },
+          [{ ...canonicalReference(), ...change }]
+        )
+      ).toThrow()
+    }
   })
 
-  it('dispatches a private blob through its artifact reference without minting a source URL', async () => {
-    const canonical = createCanonicalBuild()
-    const build = {
-      ...canonical,
-      sources: canonical.sources.map((source) => ({
-        ...source,
-        type: KBResourceType.BLOB,
-        sourceUrl: null,
-        blobName: 'synthetic.pdf',
-      })),
-    }
-    const prisma = createDispatchPrisma({ build: build as never })
+  it('resolves a private blob without minting a source URL', async () => {
+    const build = createBuild({
+      sources: [
+        {
+          ...createBuild().sources[0]!,
+          type: KBResourceType.BLOB,
+          sourceUrl: null,
+          blobName: 'synthetic.pdf',
+        },
+      ],
+    })
+    const prisma = createDispatchPrisma({ build })
     const client = createClient()
     const getSourceUrl = vi.fn(() => {
-      throw new Error('canonical dispatch must not mint an origin URL')
+      throw new Error('must not mint an origin URL')
     })
+    const ingestion = ingestionClient()
     await dispatchKBGraphBuild(
       { buildId: BUILD_ID },
       {
         prisma: prisma as never,
         client,
+        ingestionClient: ingestion as never,
         env: { ...externalEnv, KB_CANONICAL_INPUT_ENABLED: 'true' },
         now: () => NOW,
         getSourceUrl,
       }
     )
     expect(getSourceUrl).not.toHaveBeenCalled()
-    expect(client.runNoWait).toHaveBeenCalledOnce()
+    expect(ingestion.getOperation).toHaveBeenCalledWith(
+      'source-operation',
+      'knowledge-source/v2'
+    )
+    expect(client.runNoWait).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        sources: [
+          expect.objectContaining({ canonical_input: canonicalReference() }),
+        ],
+      }),
+      expect.anything()
+    )
+  })
+
+  it.each([
+    null,
+    { ...canonicalReference(), resource_version: 4 },
+    { ...canonicalReference(), source_sha256: 'd'.repeat(64) },
+  ])('fails before provider dispatch when serving input is unavailable or mismatched: %o', async (reference) => {
+    const prisma = createDispatchPrisma()
+    const client = createClient()
+    const getSourceUrl = vi.fn()
+    await expect(
+      dispatchKBGraphBuild(
+        { buildId: BUILD_ID },
+        {
+          prisma: prisma as never,
+          client,
+          ingestionClient: ingestionClient(reference) as never,
+          env: { ...externalEnv, KB_CANONICAL_INPUT_ENABLED: 'true' },
+          now: () => NOW,
+          getSourceUrl,
+        }
+      )
+    ).rejects.toThrow()
+    expect(client.runNoWait).not.toHaveBeenCalled()
+    expect(getSourceUrl).not.toHaveBeenCalled()
+  })
+
+  it('recovers an accepted run after disablement without resolving or fetching input', async () => {
+    const prisma = createDispatchPrisma()
+    const client = createClient({
+      rows: [
+        {
+          workflowRunExternalId: 'accepted-canonical-run',
+          createdAt: CREATED_AT.toISOString(),
+          additionalMetadata: {
+            [KB_GRAPH_BUILD_METADATA_KEY]: BUILD_ID,
+            [KB_GRAPH_KB_METADATA_KEY]: KB_ID,
+          },
+        },
+      ],
+    })
+    const ingestion = ingestionClient()
+    const getSourceUrl = vi.fn()
+    await expect(
+      dispatchKBGraphBuild(
+        { buildId: BUILD_ID },
+        {
+          prisma: prisma as never,
+          client,
+          ingestionClient: ingestion as never,
+          env: { ...externalEnv, KB_CANONICAL_INPUT_ENABLED: 'false' },
+          now: () => NOW,
+          getSourceUrl,
+        }
+      )
+    ).resolves.toBe('accepted-canonical-run')
+    expect(ingestion.getOperation).not.toHaveBeenCalled()
+    expect(getSourceUrl).not.toHaveBeenCalled()
+    expect(client.runNoWait).not.toHaveBeenCalled()
   })
 })
 
@@ -247,6 +332,16 @@ function createDispatchPrisma({
       .mockResolvedValueOnce({ externalOperationId: rereadExternalOperationId })
   }
   const prisma = {
+    kBResource: {
+      findMany: vi.fn().mockResolvedValue([
+        {
+          id: RESOURCE_ID,
+          activeResourceVersion: 3,
+          activeContentSha256: CONTENT_SHA256,
+          externalOperationId: 'source-operation',
+        },
+      ]),
+    },
     kBGraphBuild: {
       findUnique,
       updateMany: vi.fn().mockResolvedValue({ count: updateCount }),

@@ -1,31 +1,21 @@
 # Graph-assisted retrieval reliability and staging qualification
 
-October 10 final review follow-up: lecturer API freshness also compares the
-canonical input digest at source `557e067433`. The 69-test knowledge-service
-suite and independent focused correction review pass. All nine required hosted
-checks passed for preceding head `be7f83ee40`; corrected-head CI remains required
-on [Klicker #6460](https://github.com/uzh-bf/klicker-uzh/pull/6460/checks).
-This closes the parser-only staleness contract gap without activating canonical
-ingestion, graph builds or GraphRAG. Deployment and live-quality gates remain.
+October 10 scope revision: the user approved simplifying
+[Klicker #6460](https://github.com/uzh-bf/klicker-uzh/pull/6460) to add no database
+columns or migration. Canonical references are resolved at dispatch and pinned
+in the provider workflow. Klicker retains content-hash freshness checks;
+automatic parser-only drift detection is deferred, so parser changes require a
+controlled graph rebuild. The revised
+[source plan](2026-10-09-graphrag-source-artifact-plan.md) owns implementation
+and renewed qualification. Earlier reviews and CI qualify the superseded design.
 
-October 10: canonical input source packages are now drafted in
-[ingestion !229](https://gitlab.uzh.ch/ai-infrastructure/services/data-ingestion/-/merge_requests/229),
-[KG !36](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/36)
-and [Klicker #6460](https://github.com/uzh-bf/klicker-uzh/pull/6460).
-The [source plan](2026-10-09-graphrag-source-artifact-plan.md) records the reviewed
-source repair. Failed and pending replacements preserve the desired blob's size
-and MIME, and retry dispatch retains the matching tuple. Trusted independent
-integrated qualification passes at Klicker source `21c49968a7`; mandatory local
-checks and the full production build pass. Ingestion and KG exact-head CI pass.
-Klicker hosted checks are available on [PR #6460](https://github.com/uzh-bf/klicker-uzh/pull/6460/checks);
-source review does not replace the final-head CI requirement. The user waived
-the OpenRouter review, whose separate forge gate remains unresolved.
-
-The source packages remain drafts. Reader provisioning, migration application,
-physical cleanup convergence, reader-first deployment and a finite refresh/build
-batch follow source qualification under separate authority. Live GraphRAG quality
-and student-map acceptance remain separate receipts. Full local application
-readiness is unqualified because the unrelated LTI route returned HTTP 502.
+The canonical reader and consumer source packages remain drafted in
+[ingestion !229](https://gitlab.uzh.ch/ai-infrastructure/services/data-ingestion/-/merge_requests/229)
+and [KG !36](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/36).
+Reader provisioning, physical cleanup convergence, reader-first deployment and
+a finite refresh/build batch remain separately gated. Live GraphRAG quality and
+student-map acceptance remain separate receipts. The OpenRouter review remains
+waived by the user.
 
 ## Current state and next decision
 
@@ -64,7 +54,7 @@ Each milestone ends with a disposition and evidence, rather than an automatic tu
 | Milestone | Dependency and owner | Acceptance and stop condition |
 | --- | --- | --- |
 | 1. Restore document-tool compatibility | Chat maintainer; merged [PR #6421](https://github.com/uzh-bf/klicker-uzh/pull/6421) | Source repair delivered. Retain omitted/supplied options, raw-provider lifetime, cancellation, null handling and queue regression checks. Serving and persisted-message proof remain separate acceptance receipts |
-| 1a. Share a canonical ingestion input | Ingestion, KG and Klicker owners; [source-artifact plan](2026-10-09-graphrag-source-artifact-plan.md), source repair approved and Astra plan review passed | Normal retrieval and KG preparation use one active resource version. Prove origin drift, digest/version enforcement, scoped access, deletion and legacy compatibility with synthetic fixtures. Source delivery ends at reviewed draft changes and CI; merge/deployment and live refresh/build remain gated |
+| 1a. Share a canonical ingestion input | Ingestion, KG and Klicker owners; [source-artifact plan](2026-10-09-graphrag-source-artifact-plan.md), source repair approved and Astra plan review passed | Normal retrieval and KG preparation use one active resource version, resolved at dispatch without Klicker schema changes; parser-only freshness is deferred. Prove origin drift, digest/version enforcement, scoped access, deletion and legacy compatibility with synthetic fixtures. Source delivery ends at reviewed draft changes and CI; merge/deployment and live refresh/build remain gated |
 | 2. Verify deployed boundaries and student map | Main/operator; qualified source and serving proof; milestone 1a for the identified mutable-URL KB; controlled actor and current published graph | Record exact revision/digest/migration proof and a separate map scorecard: map/retrieval policy combinations, direct-route enforcement, autocomplete/exploration, sidebar/fullscreen, ask-about-this prefill without automatic send, thread preservation, mobile/keyboard behavior and publication replacement/staleness. Reuse existing browser harness and synthetic fixtures. A map failure blocks map rollout; a retrieval failure does not by itself invalidate independent map availability |
 | 3. Prove retrieval mechanism, persistence and disablement | Main; deployed qualified follow-up and milestone 1a contract; controlled chatbot/KB with a current canonical-input graph; approved provider/data boundary, fresh total spend ceiling and named activation/disablement authority | Run the six-turn probe below, then synthetic failure/withdrawal checks. Require actual provider dispatch, useful new bridge evidence, correct persisted citations after reload and verified safe disablement. Stop activation on scope leakage, invalid citations, bounded-termination failure or unusable evidence receipts. Six turns qualify mechanism only |
 | 4. Measure incremental graph value | Evaluation owner; milestone 3, private artifact paths, frozen reviewed cases and accepted decision criteria | One frozen, paired comparison using the existing framework and the three arms below. Report family-level uncertainty, errors/skips, coverage, latency and cost. End with adopt for named query classes, retain disabled, or inconclusive. Unmatched controls permit an operational comparison only; they do not qualify graph-specific uplift |

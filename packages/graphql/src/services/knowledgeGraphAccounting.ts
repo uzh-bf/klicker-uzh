@@ -1,7 +1,4 @@
-import {
-  computeKBCanonicalInputDigest,
-  computeKBContentDigest,
-} from '@klicker-uzh/knowledge-graph'
+import { computeKBContentDigest } from '@klicker-uzh/knowledge-graph'
 import * as DB from '@klicker-uzh/prisma/client'
 import { GraphQLError } from 'graphql'
 import { expectedKBGraphManifestBlobName } from './kbGraphBundleCoordinates.js'
@@ -135,8 +132,6 @@ type KBGraphCostBuild = {
   kbId: string
   externalOperationId: string | null
   sourceContentDigest: string
-  sourceInputContract: string | null
-  sourceInputDigest: string | null
   graphName: string
   graphmlBlobName: string | null
   createdAt: Date
@@ -299,8 +294,6 @@ export async function settleKBGraphBuildCost(
       kbId: true,
       externalOperationId: true,
       sourceContentDigest: true,
-      sourceInputContract: true,
-      sourceInputDigest: true,
       graphName: true,
       graphmlBlobName: true,
       graphBundleContainerName: true,
@@ -379,10 +372,6 @@ export async function settleKBGraphBuildCost(
         )
   if (
     result.source_content_digest !== build.sourceContentDigest ||
-    (build.sourceInputContract === 'canonical-document/v1'
-      ? result.contract_version !== 'klicker-kb-graph/v2' ||
-        result.source_input_digest !== build.sourceInputDigest
-      : result.contract_version !== 'klicker-kb-graph/v1') ||
     result.graph_name !== build.graphName ||
     (result.graphml_artifact !== null &&
       (result.graphml_artifact.blob_name !== build.graphmlBlobName ||
@@ -462,16 +451,25 @@ export async function settleKBGraphBuildCost(
       usage.requestCount += component.request_count
     }
 
-    let canonicalCurrent = true
-    if (build.sourceInputContract === 'canonical-document/v1') {
+    let sourceCurrent = true
+    if (
+      result.status === 'SUCCEEDED' &&
+      result.contract_version === 'klicker-kb-graph/v2'
+    ) {
       await prisma.$queryRaw`SELECT "id" FROM "public"."KB" WHERE "id" = CAST(${build.kbId} AS UUID) FOR UPDATE`
       await prisma.$queryRaw`SELECT "id" FROM "public"."KBResource" WHERE "kbId" = CAST(${build.kbId} AS UUID) ORDER BY "id" FOR UPDATE`
-      canonicalCurrent =
-        process.env.KB_CANONICAL_INPUT_ENABLED === 'true' &&
+      sourceCurrent =
         build.sourceContentDigest ===
           (await computeKBContentDigest(prisma, build.kbId)) &&
-        build.sourceInputDigest ===
-          (await computeKBCanonicalInputDigest(prisma, build.kbId))
+        (await prisma.kBResource.count({
+          where: {
+            kbId: build.kbId,
+            deletedAt: null,
+            materialType: DB.KBResourceMaterialType.COURSE_CONTENT,
+            activeContentSha256: { not: null },
+            ingestionOperation: DB.KBIngestionOperation.DELETE,
+          },
+        })) === 0
     }
     const lateSuccess =
       allowLateSuccess &&
@@ -484,13 +482,13 @@ export async function settleKBGraphBuildCost(
     const lateRejection = lateSuccess?.eligible === false ? lateSuccess : null
     let publishSuccess =
       succeeded &&
-      canonicalCurrent &&
+      sourceCurrent &&
       lateRejection === null &&
       (build.kb.activeGraphBuildId === build.id ||
         lateSuccess?.eligible === true)
     const settledStatus = publishSuccess
       ? DB.KBGraphBuildStatus.SUCCEEDED
-      : !canonicalCurrent && succeeded
+      : !sourceCurrent && succeeded
         ? DB.KBGraphBuildStatus.SUPERSEDED
         : (lateRejection?.status ??
           (succeeded
@@ -502,8 +500,8 @@ export async function settleKBGraphBuildCost(
         (succeeded ? null : terminalResultError(result)))
     const settledErrorCode = publishSuccess
       ? null
-      : !canonicalCurrent && succeeded
-        ? 'KB_CANONICAL_INPUT_STALE'
+      : !sourceCurrent && succeeded
+        ? 'KB_GRAPH_SOURCE_STALE'
         : (lateRejection?.errorCode ??
           (succeeded
             ? null

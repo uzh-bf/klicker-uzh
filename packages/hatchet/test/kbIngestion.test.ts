@@ -255,7 +255,7 @@ describe('KB ingestion dispatch', () => {
     })
   })
 
-  it('admits a v2 URL source without probing and persists the discriminator', async () => {
+  it('admits a v2 URL source without probing caller bytes', async () => {
     const prisma = dispatchPrisma({
       status: KBResourceStatus.QUEUED,
       ingestionAttemptId: ATTEMPT_ID,
@@ -311,12 +311,11 @@ describe('KB ingestion dispatch', () => {
         contentSha256: null,
         mimeType: null,
         sizeBytes: null,
-        inputContract: 'knowledge-source/v2',
       },
     })
   })
 
-  it('refuses a durable v2 resource when the flag is off without legacy fallback', async () => {
+  it('falls back to the caller-probed legacy path when canonical admission is disabled', async () => {
     const prisma = dispatchPrisma({
       status: KBResourceStatus.QUEUED,
       ingestionAttemptId: ATTEMPT_ID,
@@ -325,23 +324,40 @@ describe('KB ingestion dispatch', () => {
       mimeType: null,
       sizeBytes: null,
       externalOperationId: null,
-      inputContract: 'knowledge-source/v2',
     })
     const apiClient = client()
-    const prepareSource = vi.fn()
+    const legacyEnv = { ...process.env, KB_CANONICAL_INPUT_ENABLED: 'false' }
+    const prepareSource = vi.fn().mockResolvedValue(source)
 
     await expect(
       dispatchKBIngestion(input, {
         prisma: prisma as never,
         client: apiClient,
         prepareSource,
-        env: { ...process.env, KB_CANONICAL_INPUT_ENABLED: 'false' },
+        env: legacyEnv,
+        now: () => NOW,
       })
-    ).rejects.toThrow('KB ingestion dispatch failed')
+    ).resolves.toBe(OPERATION_ID)
 
-    expect(prepareSource).not.toHaveBeenCalled()
-    expect(apiClient.acceptResource).not.toHaveBeenCalled()
-    expect(prisma.kBResource.updateMany).not.toHaveBeenCalled()
+    expect(prepareSource).toHaveBeenCalledWith(input, legacyEnv)
+    expect(apiClient.acceptResource).toHaveBeenCalledWith({
+      resourceId: RESOURCE_ID,
+      kbId: KB_ID,
+      resourceVersion: 3,
+      ingestionAttemptId: ATTEMPT_ID,
+      source,
+    })
+    expect(prisma.kBResource.updateMany).toHaveBeenNthCalledWith(1, {
+      where: expect.objectContaining({
+        id: RESOURCE_ID,
+        contentSha256: null,
+      }),
+      data: {
+        contentSha256: CONTENT_SHA256,
+        mimeType: 'text/plain',
+        sizeBytes: 1024,
+      },
+    })
   })
 
   it('keeps digest verification for a v2 blob source', async () => {
@@ -405,7 +421,6 @@ describe('KB ingestion dispatch', () => {
         contentSha256: CONTENT_SHA256,
         mimeType: 'application/pdf',
         sizeBytes: 1024,
-        inputContract: 'knowledge-source/v2',
       },
     })
   })
@@ -874,7 +889,7 @@ describe('KB deletion dispatch', () => {
     })
   })
 
-  it('dispatches a v2 deletion from the durable discriminator while the flag is disabled', async () => {
+  it('dispatches a deletion through the existing v1 contract while canonical admission is enabled', async () => {
     const prisma = dispatchPrisma({
       kbId: KB_ID,
       deletedAt: NOW,
@@ -882,7 +897,6 @@ describe('KB deletion dispatch', () => {
       ingestionAttemptId: ATTEMPT_ID,
       resourceVersion: 4,
       externalOperationId: null,
-      inputContract: 'knowledge-source/v2',
     })
     const apiClient = client()
 
@@ -890,15 +904,12 @@ describe('KB deletion dispatch', () => {
       dispatchKBDeletion(deletionInput, {
         prisma: prisma as never,
         client: apiClient,
-        env: { ...process.env, KB_CANONICAL_INPUT_ENABLED: 'false' },
+        env: canonicalEnv,
         now: () => NOW,
       })
     ).resolves.toBe(OPERATION_ID)
 
-    expect(apiClient.deleteResource).toHaveBeenCalledWith({
-      ...deletionInput,
-      inputContract: 'knowledge-source/v2',
-    })
+    expect(apiClient.deleteResource).toHaveBeenCalledWith(deletionInput)
   })
 
   it('does not redispatch a stale deletion attempt', async () => {
@@ -1412,11 +1423,10 @@ describe('KB ingestion reconciliation', () => {
     )
   })
 
-  it('settles a durable v2 operation with the observed digest lineage', async () => {
+  it('polls a pending v2 URL through the canonical contract while canonical admission is disabled', async () => {
     const canonicalResource = {
       ...activeResource,
       contentSha256: null,
-      inputContract: 'knowledge-source/v2',
     }
     const prisma = monitorPrisma([canonicalResource])
     const getOperation = vi.fn().mockResolvedValue(
@@ -1461,7 +1471,6 @@ describe('KB ingestion reconciliation', () => {
         errorCode: null,
         activeResourceVersion: 3,
         activeContentSha256: CONTENT_SHA256,
-        activeCanonicalInput: canonicalInputReference,
         sizeBytes: 4096,
         mimeType: 'text/html',
         contentSha256: CONTENT_SHA256,
@@ -1500,7 +1509,6 @@ describe('KB ingestion reconciliation', () => {
       sizeBytes: 4096,
       mimeType: 'application/pdf',
       contentSha256: null,
-      inputContract: 'knowledge-source/v2',
     }
     const prisma = monitorPrisma([canonicalResource])
 
@@ -1542,7 +1550,6 @@ describe('KB ingestion reconciliation', () => {
         errorCode: null,
         activeResourceVersion: 2,
         activeContentSha256: previousSha256,
-        activeCanonicalInput: previousInput,
       },
     })
   })
@@ -1560,7 +1567,6 @@ describe('KB ingestion reconciliation', () => {
     const canonicalResource = {
       ...activeResource,
       contentSha256: null,
-      inputContract: 'knowledge-source/v2',
     }
     const prisma = monitorPrisma([canonicalResource])
     const logger = { error: vi.fn() }
@@ -1598,11 +1604,10 @@ describe('KB ingestion reconciliation', () => {
     )
   })
 
-  it('refuses a durable v2 success without canonical lineage', async () => {
+  it('refuses a v2 success without a canonical reference', async () => {
     const canonicalResource = {
       ...activeResource,
       contentSha256: null,
-      inputContract: 'knowledge-source/v2',
     }
     const prisma = monitorPrisma([canonicalResource])
     const logger = { error: vi.fn() }
@@ -1634,6 +1639,166 @@ describe('KB ingestion reconciliation', () => {
         kbId: KB_ID,
         ingestionAttemptId: ATTEMPT_ID,
       }
+    )
+  })
+
+  it.each([
+    'running',
+    'succeeded',
+  ] as const)('keeps a v2 URL hash unset while %s has not cut over serving', async (status) => {
+    const previousSha256 = 'a'.repeat(64)
+    const previousInput = {
+      ...canonicalInputReference,
+      resource_version: 2,
+      source_sha256: previousSha256,
+    } satisfies CanonicalInputReference
+    const pendingResource = {
+      ...activeResource,
+      contentSha256: null,
+    }
+    const prisma = monitorPrisma([pendingResource])
+    const getOperation = vi.fn().mockResolvedValue(
+      operation({
+        status,
+        observedSha256: status === 'succeeded' ? CONTENT_SHA256 : null,
+        serving: {
+          activeResourceVersion: 2,
+          activeSha256: previousSha256,
+        },
+        inputContract: 'knowledge-source/v2',
+        canonicalInput: previousInput,
+      })
+    )
+
+    await monitorActiveKBIngestions({
+      prisma: prisma as never,
+      client: client({ getOperation }),
+      now: () => NOW,
+    })
+
+    expect(getOperation).toHaveBeenCalledWith(
+      OPERATION_ID,
+      'knowledge-source/v2'
+    )
+    expect(prisma.kBResource.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        OR: [
+          { ingestionOperation: KBIngestionOperation.UPSERT, deletedAt: null },
+          {
+            ingestionOperation: KBIngestionOperation.DELETE,
+            deletedAt: { not: null },
+          },
+        ],
+      }),
+    })
+    expect(prisma.kBResource.updateMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        id: RESOURCE_ID,
+        contentSha256: null,
+      }),
+      data: {
+        status: KBResourceStatus.PROCESSING,
+        statusMessage: null,
+        errorCode: null,
+        activeResourceVersion: 2,
+        activeContentSha256: previousSha256,
+      },
+    })
+  })
+
+  it.each([
+    {
+      shape: 'a different observed digest',
+      observedSha256: 'f'.repeat(64),
+      activeSha256: 'f'.repeat(64),
+      message: 'KB ingestion operation correlation failed',
+    },
+    {
+      shape: 'a missing observed digest while different bytes serve',
+      observedSha256: null,
+      activeSha256: 'f'.repeat(64),
+      message: 'KB ingestion observed digest correlation failed',
+    },
+  ])('refuses a pinned v2 blob success reporting $shape', async ({
+    observedSha256,
+    activeSha256,
+    message,
+  }) => {
+    const pinnedResource = {
+      ...activeResource,
+      contentSha256: CONTENT_SHA256,
+    }
+    const prisma = monitorPrisma([pinnedResource])
+    const logger = { error: vi.fn() }
+    const getOperation = vi.fn().mockResolvedValue(
+      operation({
+        status: 'succeeded',
+        observedSha256,
+        serving: {
+          activeResourceVersion: 3,
+          activeSha256,
+        },
+        inputContract: 'knowledge-source/v2',
+        canonicalInput: {
+          ...canonicalInputReference,
+          source_sha256: activeSha256,
+        },
+      })
+    )
+
+    await monitorActiveKBIngestions({
+      prisma: prisma as never,
+      client: client({ getOperation }),
+      env: canonicalEnv,
+      logger,
+    })
+
+    expect(getOperation).toHaveBeenCalledWith(
+      OPERATION_ID,
+      'knowledge-source/v2'
+    )
+    expect(prisma.kBResource.updateMany).not.toHaveBeenCalled()
+    expect(logger.error).toHaveBeenCalledWith(message, {
+      resourceId: RESOURCE_ID,
+      kbId: KB_ID,
+      ingestionAttemptId: ATTEMPT_ID,
+    })
+  })
+
+  it('settles a pinned v2 blob success when the observed digest matches', async () => {
+    const pinnedResource = {
+      ...activeResource,
+      contentSha256: CONTENT_SHA256,
+    }
+    const prisma = monitorPrisma([pinnedResource])
+
+    await monitorActiveKBIngestions({
+      prisma: prisma as never,
+      client: client({
+        getOperation: vi.fn().mockResolvedValue(
+          operation({
+            status: 'succeeded',
+            observedSha256: CONTENT_SHA256,
+            serving: {
+              activeResourceVersion: 3,
+              activeSha256: CONTENT_SHA256,
+            },
+            inputContract: 'knowledge-source/v2',
+            canonicalInput: canonicalInputReference,
+          })
+        ),
+      }),
+      env: canonicalEnv,
+    })
+
+    expect(prisma.kBResource.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: KBResourceStatus.READY,
+          activeContentSha256: CONTENT_SHA256,
+          contentSha256: CONTENT_SHA256,
+        }),
+      })
     )
   })
 

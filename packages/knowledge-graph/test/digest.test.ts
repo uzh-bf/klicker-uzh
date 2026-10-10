@@ -5,7 +5,6 @@ import {
 import { describe, expect, it, vi } from 'vitest'
 
 import {
-  computeKBCanonicalInputDigest,
   computeKBContentDigest,
   hashKBCanonicalInputReferences,
   hashKBContentDigestEntries,
@@ -142,30 +141,5 @@ describe('canonical graph source lineage', () => {
     expect(() =>
       hashKBCanonicalInputReferences([reference, reference])
     ).toThrow()
-  })
-
-  it.each([
-    { activeResourceVersion: 2 },
-    { activeContentSha256: 'd'.repeat(64) },
-    { activeCanonicalInput: null },
-    { ingestionOperation: 'DELETE' },
-  ])('declines lineage that no longer serves: %o', async (change) => {
-    const prisma = {
-      kBResource: {
-        findMany: vi.fn().mockResolvedValue([
-          {
-            id: reference.external_resource_id,
-            activeResourceVersion: reference.resource_version,
-            activeContentSha256: reference.source_sha256,
-            activeCanonicalInput: reference,
-            ingestionOperation: 'UPSERT',
-            ...change,
-          },
-        ]),
-      },
-    } as unknown as PrismaClient
-    await expect(
-      computeKBCanonicalInputDigest(prisma, 'kb-id')
-    ).resolves.toBeNull()
   })
 })

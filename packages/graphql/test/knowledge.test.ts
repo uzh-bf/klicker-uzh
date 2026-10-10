@@ -1,11 +1,7 @@
 import { BlobServiceClient } from '@azure/storage-blob'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import type { FeatureFlagKey } from '@klicker-uzh/feature-flags'
-import {
-  getDefaultKBGraphDomainCatalog,
-  hashKBCanonicalInputReferences,
-  hashKBContentDigestEntries,
-} from '@klicker-uzh/knowledge-graph'
+import { getDefaultKBGraphDomainCatalog } from '@klicker-uzh/knowledge-graph'
 import { prisma as prismaClient } from '@klicker-uzh/prisma'
 import {
   KBGraphBuildStatus,
@@ -17,7 +13,6 @@ import {
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
 import {
-  type CanonicalInputReference,
   MAX_KB_RESOURCE_COUNT,
   MAX_KB_SOURCE_SIZE_BYTES,
   MAX_KB_TOTAL_SIZE_BYTES,
@@ -479,78 +474,6 @@ describe('Integration tests for knowledge base CRUD', () => {
       else process.env[key] = value
     }
     await testCleanup(prisma)
-  })
-
-  it('reports canonical parser changes stale while preserving legacy freshness', async () => {
-    const kb = await createKb({ name: 'Canonical freshness' }, userOneCtx)
-    const resourceId = randomUUID()
-    const reference: CanonicalInputReference = {
-      contract_version: 'canonical-document/v1',
-      producer_id: 'klicker',
-      project_id: 'klicker-course-materials',
-      kb_id: kb.id,
-      external_resource_id: resourceId,
-      resource_version: 1,
-      source_sha256: 'a'.repeat(64),
-      canonical_sha256: 'b'.repeat(64),
-      parser_recipe_sha256: 'c'.repeat(64),
-      byte_count: 128,
-    }
-    await prisma.kBResource.create({
-      data: {
-        id: resourceId,
-        kbId: kb.id,
-        type: KBResourceType.URL,
-        title: 'Freshness source',
-        sourceUrl: 'https://example.org/freshness',
-        materialType: KBResourceMaterialType.COURSE_CONTENT,
-        status: KBResourceStatus.READY,
-        activeResourceVersion: 1,
-        activeContentSha256: reference.source_sha256,
-        activeCanonicalInput: reference,
-      },
-    })
-    const build = await prisma.kBGraphBuild.create({
-      data: {
-        id: randomUUID(),
-        kbId: kb.id,
-        status: KBGraphBuildStatus.SUCCEEDED,
-        graphName: 'synthetic-freshness-graph',
-        sourceContentDigest: hashKBContentDigestEntries([
-          { resourceId, contentSha256: reference.source_sha256 },
-        ]),
-        sourceInputContract: reference.contract_version,
-        sourceInputDigest: hashKBCanonicalInputReferences([reference]),
-      },
-    })
-    await prisma.kB.update({
-      where: { id: kb.id },
-      data: { publishedGraphBuildId: build.id },
-    })
-    expect(
-      (await getKbKnowledgeGraphConfig({ kbId: kb.id }, userOneCtx)).isStale
-    ).toBe(false)
-
-    await prisma.kBResource.update({
-      where: { id: resourceId },
-      data: {
-        activeCanonicalInput: {
-          ...reference,
-          parser_recipe_sha256: 'd'.repeat(64),
-        },
-      },
-    })
-    expect(
-      (await getKbKnowledgeGraphConfig({ kbId: kb.id }, userOneCtx)).isStale
-    ).toBe(true)
-
-    await prisma.kBGraphBuild.update({
-      where: { id: build.id },
-      data: { sourceInputContract: null, sourceInputDigest: null },
-    })
-    expect(
-      (await getKbKnowledgeGraphConfig({ kbId: kb.id }, userOneCtx)).isStale
-    ).toBe(false)
   })
 
   it('requires graph opt-in and the rollout admission before dispatching a build', async () => {

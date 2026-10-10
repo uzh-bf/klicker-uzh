@@ -153,8 +153,6 @@ model KBResource {
   externalOperationStartedAt DateTime?
   activeResourceVersion      Int?
   activeContentSha256        String?
-  inputContract              String?
-  activeCanonicalInput       Json?
   errorCode                  String?
   ingestionOperation         KBIngestionOperation @default(UPSERT)
 
@@ -223,8 +221,6 @@ model KBGraphBuild {
 
   // digest over the KB's active serving set at request time; pins what this build represents
   sourceContentDigest String
-  sourceInputContract String?
-  sourceInputDigest   String?
   // FalkorDB graph the completed build is written to, in one step at the end
   graphName String
   // GraphML export retained on Blob for versioning, once the build succeeds
@@ -333,7 +329,6 @@ model KBGraphBuildSource {
   title         String
   type          KBResourceType
   contentSha256 String
-  canonicalInput Json?
   sourceUrl     String?
   blobName      String?
 

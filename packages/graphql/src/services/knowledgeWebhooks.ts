@@ -3,7 +3,6 @@ import {
   KBIngestionOperation,
   KBIngestionStatus,
   KBResourceStatus,
-  Prisma,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
 import {
@@ -341,17 +340,13 @@ export async function handleKBIngestionWebhook({
       where: { id: payload.external_resource_id },
       select: {
         kbId: true,
-        inputContract: true,
-        activeCanonicalInput: true,
       },
     })
     if (!scope) return
     await tx.$queryRaw`SELECT "id" FROM "public"."KB" WHERE "id" = CAST(${scope.kbId} AS UUID) AND "deletedAt" IS NULL FOR UPDATE`
-    if (
-      (scope.inputContract === 'knowledge-source/v2') !==
-      (payload.contract_version === 'knowledge-source/v2')
-    )
-      return
+    // Signed callbacks are accepted for both contracts independently of the
+    // canonical admission flag. The canonical reference is scoped to the
+    // resource's knowledge base and to the configured ingestion project.
     if (
       payload.canonical_input &&
       (payload.canonical_input.kb_id !== scope.kbId ||
@@ -359,12 +354,14 @@ export async function handleKBIngestionWebhook({
           (env.KB_INGESTION_PROJECT_ID?.trim() || 'klicker-course-materials'))
     )
       return
+    // A v2 event without a canonical reference cannot be validated against a
+    // serving artifact; only a pending attempt with an empty serving state may
+    // proceed without one.
     if (
       payload.contract_version === 'knowledge-source/v2' &&
       !payload.canonical_input &&
       (payload.eventType === 'resource.content_refreshed' ||
-        (isCanonicalInputReference(scope.activeCanonicalInput) &&
-          payload.serving.active_resource_version !== null))
+        payload.serving.active_resource_version !== null)
     )
       return
     if (payload.eventType === 'resource.content_refreshed') {
@@ -445,17 +442,11 @@ export async function handleKBIngestionWebhook({
           data: {
             activeResourceVersion,
             activeContentSha256,
-            ...(payload.contract_version
+            ...(payload.serving_source_metadata &&
+            activeResourceVersion >= resource.resourceVersion
               ? {
-                  activeCanonicalInput:
-                    payload.canonical_input ?? Prisma.JsonNull,
-                  ...(payload.serving_source_metadata &&
-                  activeResourceVersion >= resource.resourceVersion
-                    ? {
-                        sizeBytes: payload.serving_source_metadata.byte_count,
-                        mimeType: payload.serving_source_metadata.mime_type,
-                      }
-                    : {}),
+                  sizeBytes: payload.serving_source_metadata.byte_count,
+                  mimeType: payload.serving_source_metadata.mime_type,
                 }
               : {}),
             ingestedAt: occurredAt,
@@ -492,6 +483,18 @@ export async function handleKBIngestionWebhook({
     ) {
       return
     }
+    // A pinned desired digest (a blob upload or another caller-known hash)
+    // must not accept a v2 event that serves this attempt's version with
+    // different bytes; the digest is learned only when it matches.
+    if (
+      payload.contract_version === 'knowledge-source/v2' &&
+      resource.contentSha256 !== null &&
+      payload.serving.active_resource_version === payload.resource_version &&
+      payload.serving.active_sha256 !== null &&
+      payload.serving.active_sha256 !== resource.contentSha256
+    ) {
+      return
+    }
 
     const run = await tx.kBIngestionRun.findUnique({
       where: { id: resource.ingestionAttemptId },
@@ -514,21 +517,22 @@ export async function handleKBIngestionWebhook({
     const servingState = {
       activeResourceVersion: payload.serving.active_resource_version,
       activeContentSha256: payload.serving.active_sha256,
-      ...(payload.contract_version
+      ...(payload.contract_version &&
+      payload.serving_source_metadata &&
+      servingMatchesCurrent
         ? {
-            activeCanonicalInput: payload.canonical_input ?? Prisma.JsonNull,
-            ...(payload.serving_source_metadata && servingMatchesCurrent
-              ? {
-                  sizeBytes: payload.serving_source_metadata.byte_count,
-                  mimeType: payload.serving_source_metadata.mime_type,
-                }
-              : {}),
-            ...(servingMatchesCurrent
-              ? { contentSha256: payload.serving.active_sha256 }
-              : {}),
+            sizeBytes: payload.serving_source_metadata.byte_count,
+            mimeType: payload.serving_source_metadata.mime_type,
           }
         : {}),
     }
+    // The desired raw digest is learned from a successful cutover only; a
+    // pending attempt keeps its caller hash until then.
+    const learnedContentSha256 =
+      payload.contract_version === 'knowledge-source/v2' &&
+      servingMatchesCurrent
+        ? { contentSha256: payload.serving.active_sha256 }
+        : {}
 
     if (!transition) {
       await tx.kBResource.updateMany({
@@ -546,6 +550,7 @@ export async function handleKBIngestionWebhook({
           servingMatchesCurrent && run.status === KBIngestionStatus.SUCCEEDED
             ? {
                 ...servingState,
+                ...learnedContentSha256,
                 status: KBResourceStatus.READY,
                 statusMessage: null,
                 errorCode: null,
@@ -574,6 +579,9 @@ export async function handleKBIngestionWebhook({
       },
       data: {
         ...servingState,
+        ...(payload.eventType === 'resource.processing_succeeded'
+          ? learnedContentSha256
+          : {}),
         status: resourceStatus,
         statusMessage: transition.statusMessage,
         errorCode: payload.error_code,
@@ -606,8 +614,8 @@ export async function handleKBIngestionWebhook({
         status: transition.runStatus,
         statusMessage: transition.statusMessage,
         errorCode: payload.error_code,
-        ...(payload.contract_version && servingMatchesCurrent
-          ? { contentSha256: payload.serving.active_sha256 }
+        ...(payload.eventType === 'resource.processing_succeeded'
+          ? learnedContentSha256
           : {}),
         ...(payload.eventType === 'resource.processing_started'
           ? { startedAt: new Date(payload.occurredAt) }

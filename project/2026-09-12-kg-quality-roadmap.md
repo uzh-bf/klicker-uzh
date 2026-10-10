@@ -1,36 +1,21 @@
 # Knowledge graph quality roadmap
 
-October 10 final review follow-up: lecturer API freshness also compares the
-canonical input digest at source `557e067433`. The 69-test knowledge-service
-suite and independent focused correction review pass. All nine required hosted
-checks passed for preceding head `be7f83ee40`; corrected-head CI remains required
-on [Klicker #6460](https://github.com/uzh-bf/klicker-uzh/pull/6460/checks).
-This closes the parser-only staleness contract gap without activating canonical
-ingestion, graph builds or GraphRAG. Deployment and live-quality gates remain.
+October 10 scope revision: the user approved simplifying
+[Klicker #6460](https://github.com/uzh-bf/klicker-uzh/pull/6460) to add no database
+columns or migration. Canonical references are resolved at dispatch and pinned
+in the provider workflow. Klicker retains content-hash freshness checks;
+automatic parser-only drift detection is deferred, so parser changes require a
+controlled graph rebuild. The revised
+[source plan](2026-10-09-graphrag-source-artifact-plan.md) owns implementation
+and renewed qualification. Earlier reviews and CI qualify the superseded design.
 
-October 10: canonical input source packages are now drafted in
-[ingestion !229](https://gitlab.uzh.ch/ai-infrastructure/services/data-ingestion/-/merge_requests/229),
-[KG !36](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/36)
-and [Klicker #6460](https://github.com/uzh-bf/klicker-uzh/pull/6460).
-The [source plan](2026-10-09-graphrag-source-artifact-plan.md) records the reviewed
-source repair. Failed and pending replacements preserve the desired blob's size
-and MIME, and retry dispatch retains the matching tuple. Trusted independent
-integrated qualification passes at Klicker source `21c49968a7`; mandatory local
-checks and the full production build pass. Ingestion and KG exact-head CI pass.
-Klicker hosted checks are available on [PR #6460](https://github.com/uzh-bf/klicker-uzh/pull/6460/checks);
-source review does not replace the final-head CI requirement. The user waived
-the OpenRouter review, whose separate forge gate remains unresolved.
-
-The source packages remain drafts. Reader provisioning, migration application,
-physical cleanup convergence, reader-first deployment and a finite refresh/build
-batch follow source qualification under separate authority. Live GraphRAG quality
-and student-map acceptance remain separate receipts. Full local application
-readiness is unqualified because the unrelated LTI route returned HTTP 502.
-
-Date: 2026-09-12  
-Status: roadmap direction reviewed; approved checkpoint A source package and controlled evaluation delivered on 2026-09-12; a 2026-09-13 investigation added the focus-topic control design to W8 and the improvement levers; a 2026-09-14 follow-up delivered the lecturer-facing generation-language selector. Remaining roadmap acceptance work is listed below.  
-Scope: graph generation and its use in content generation, chatbot retrieval, and lecturer review.  
-Parent: [six-domain selection plan](2026-09-11-kg-domain-selection-plan.md).
+The canonical reader and consumer source packages remain drafted in
+[ingestion !229](https://gitlab.uzh.ch/ai-infrastructure/services/data-ingestion/-/merge_requests/229)
+and [KG !36](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/36).
+Reader provisioning, physical cleanup convergence, reader-first deployment and
+a finite refresh/build batch remain separately gated. Live GraphRAG quality and
+student-map acceptance remain separate receipts. The OpenRouter review remains
+waived by the user.
 
 ## Current planning checkpoint — 2026-10-09
 

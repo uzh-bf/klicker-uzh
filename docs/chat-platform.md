@@ -1640,14 +1640,18 @@ import ([Testing](./testing.md)).
 
 Graph generation can consume the same canonical parsed document as indexing.
 The ingestion service owns its active-version artifact and a separate scoped
-reader identity. Klicker freezes the content-free reference into the build and
-checks it again before publication. See [canonical input ownership](./adr/canonical-ingestion-input-ownership.md)
+reader identity. Klicker resolves the current serving reference at dispatch;
+the provider pins it in its durable workflow input. Klicker adds no database
+columns and retains raw content-hash freshness. Parser-only drift detection is
+deferred; parser changes require a deliberate graph rebuild. See
+[canonical input ownership](./adr/canonical-ingestion-input-ownership.md)
 for retention, revocation and rollout boundaries.
 
-`KB_CANONICAL_INPUT_ENABLED` defaults false and gates v2 ingestion admission and
-canonical graph dispatch. Durable canonical records fail closed while disabled,
-including retries. Their deletion and status reconciliation still use v2.
-The graph worker receives `KB_CANONICAL_INPUT_API_URL` and
+`KB_CANONICAL_INPUT_ENABLED` defaults false and selects new v2 ingestion admission
+and canonical graph dispatch. Enabled dispatch fails on missing or mismatched
+canonical input without substituting an origin fetch. Accepted provider runs and
+v2 ingestion can still reconcile after disablement. Deletion retains its existing
+contract. The graph worker receives `KB_CANONICAL_INPUT_API_URL` and
 `KB_CANONICAL_INPUT_API_TOKEN` directly at runtime; neither belongs in a workflow
 payload. The existing `chatbot-graphrag` GrowthBook flag and lecturer controls
 continue to govern student graph retrieval independently.

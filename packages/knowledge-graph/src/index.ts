@@ -9,7 +9,6 @@ export {
 export * from './config.js'
 export type { KBContentDigestEntry } from './digest.js'
 export {
-  computeKBCanonicalInputDigest,
   computeKBContentDigest,
   hashKBCanonicalInputReferences,
   hashKBContentDigestEntries,
