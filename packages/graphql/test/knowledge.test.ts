@@ -2418,6 +2418,8 @@ describe('Integration tests for knowledge base CRUD', () => {
         resourceId: resource.id,
         blobName: replacementTicket.blobName,
         resourceVersion: 3,
+        mimeType: 'application/pdf',
+        sizeBytes: 2048,
       })
     )
   })

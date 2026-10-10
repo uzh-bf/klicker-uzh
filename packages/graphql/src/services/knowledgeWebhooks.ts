@@ -517,9 +517,7 @@ export async function handleKBIngestionWebhook({
       ...(payload.contract_version
         ? {
             activeCanonicalInput: payload.canonical_input ?? Prisma.JsonNull,
-            ...(payload.serving_source_metadata &&
-            (servingMatchesCurrent ||
-              transition?.resourceStatus === KBResourceStatus.FAILED)
+            ...(payload.serving_source_metadata && servingMatchesCurrent
               ? {
                   sizeBytes: payload.serving_source_metadata.byte_count,
                   mimeType: payload.serving_source_metadata.mime_type,

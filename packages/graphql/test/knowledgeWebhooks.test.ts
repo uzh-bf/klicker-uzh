@@ -1,4 +1,7 @@
-import { prisma as prismaClient } from '@klicker-uzh/prisma'
+import {
+  prisma as prismaClient,
+  requireDisposableDatabase,
+} from '@klicker-uzh/prisma'
 import {
   KBIngestionOperation,
   KBIngestionStatus,
@@ -169,6 +172,7 @@ describe('KB ingestion webhook contract', () => {
 
   beforeAll(async () => {
     prisma = prismaClient
+    await requireDisposableDatabase(prisma)
   })
 
   beforeEach(async () => {
@@ -847,6 +851,71 @@ describe('KB ingestion webhook contract', () => {
         status: KBIngestionStatus.SUCCEEDED,
         contentSha256: CONTENT_SHA256,
         finishedAt: new Date(OCCURRED_AT),
+      })
+    })
+
+    it.each([
+      {
+        eventType: 'resource.processing_failed' as const,
+        status: KBResourceStatus.FAILED,
+      },
+      {
+        eventType: 'resource.processing_progress' as const,
+        status: KBResourceStatus.PROCESSING,
+      },
+    ])('preserves desired blob metadata on $eventType', async ({
+      eventType,
+      status,
+    }) => {
+      await prepareCanonicalAttempt()
+      const priorSha256 = 'a'.repeat(64)
+      const priorReference = canonicalReference({
+        resourceVersion: RESOURCE_VERSION - 1,
+        sourceSha256: priorSha256,
+      })
+      const desiredBlobName = `${resourceId}.pdf`
+      await prisma.kBResource.update({
+        where: { id: resourceId },
+        data: {
+          type: KBResourceType.BLOB,
+          sourceUrl: null,
+          blobName: desiredBlobName,
+          mimeType: 'application/pdf',
+          sizeBytes: 4096,
+          activeResourceVersion: RESOURCE_VERSION - 1,
+          activeContentSha256: priorSha256,
+          activeCanonicalInput: priorReference,
+        },
+      })
+      const request = createRequest(
+        canonicalEvent(eventType, {
+          serving: {
+            active_resource_version: RESOURCE_VERSION - 1,
+            active_sha256: priorSha256,
+          },
+          canonical_input: priorReference,
+          serving_source_metadata: {
+            byte_count: 512,
+            mime_type: 'text/plain',
+          },
+        })
+      )
+
+      await expect(
+        handleKBIngestionWebhook({
+          prisma,
+          ...request,
+          env: { KB_WEBHOOK_SECRET: SECRET },
+        })
+      ).resolves.toEqual({ statusCode: 200, body: { ok: true } })
+      await expect(getResource()).resolves.toMatchObject({
+        status,
+        blobName: desiredBlobName,
+        mimeType: 'application/pdf',
+        sizeBytes: 4096,
+        activeResourceVersion: RESOURCE_VERSION - 1,
+        activeContentSha256: priorSha256,
+        activeCanonicalInput: priorReference,
       })
     })
 

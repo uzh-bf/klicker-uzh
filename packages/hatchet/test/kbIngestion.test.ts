@@ -1477,7 +1477,16 @@ describe('KB ingestion reconciliation', () => {
     )
   })
 
-  it('preserves the serving identity when a durable v2 replacement fails', async () => {
+  it.each([
+    { operationStatus: 'failed' as const, status: KBResourceStatus.FAILED },
+    {
+      operationStatus: 'running' as const,
+      status: KBResourceStatus.PROCESSING,
+    },
+  ])('preserves desired blob metadata on $operationStatus', async ({
+    operationStatus,
+    status,
+  }) => {
     const previousSha256 = 'a'.repeat(64)
     const previousInput = {
       ...canonicalInputReference,
@@ -1486,6 +1495,10 @@ describe('KB ingestion reconciliation', () => {
     } satisfies CanonicalInputReference
     const canonicalResource = {
       ...activeResource,
+      type: 'BLOB',
+      blobName: `${RESOURCE_ID}.pdf`,
+      sizeBytes: 4096,
+      mimeType: 'application/pdf',
       contentSha256: null,
       inputContract: 'knowledge-source/v2',
     }
@@ -1493,10 +1506,11 @@ describe('KB ingestion reconciliation', () => {
 
     await monitorActiveKBIngestions({
       prisma: prisma as never,
+      now: () => NOW,
       client: client({
         getOperation: vi.fn().mockResolvedValue(
           operation({
-            status: 'failed',
+            status: operationStatus,
             observedSha256: null,
             serving: {
               activeResourceVersion: 2,
@@ -1523,14 +1537,12 @@ describe('KB ingestion reconciliation', () => {
         },
       },
       data: {
-        status: KBResourceStatus.FAILED,
-        statusMessage: 'The ingestion operation failed.',
+        status,
+        statusMessage: operationStatus === 'failed' ? expect.any(String) : null,
         errorCode: null,
         activeResourceVersion: 2,
         activeContentSha256: previousSha256,
         activeCanonicalInput: previousInput,
-        sizeBytes: 512,
-        mimeType: 'text/plain',
       },
     })
   })

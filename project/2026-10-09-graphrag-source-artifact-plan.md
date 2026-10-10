@@ -464,3 +464,32 @@ Main owns this correction. No merge, deployment, live refresh, graph rebuild,
 activation or paid evaluation is authorized by this checkpoint. The goal remains
 active and unachieved. Raw review, validation failure and verified disposition live
 in ignored `project/_local/reviews/2026-10-10-canonical-integrated-final-review.md`.
+
+
+October 10 reassessment approved: the user approved one additional bounded source
+correction and independent qualification through updated drafts. Apply the prepared
+blob-metadata patch, prove failed and pending replacement metadata preservation,
+verify retry dispatch retains the blob/size/MIME tuple, run affected and mandatory
+checks, and publish the corrected task head. Reuse passing ingestion and KG source
+and exact-head CI receipts; their heads remain unchanged. Main owns the coupled
+correction; no independent implementation item exists. The renewed final-review
+pass covers the complete integrated package with prior findings and corrections.
+No merge, deployment, live refresh, build, GraphRAG activation or paid evaluation
+scope is added. This approval supersedes the earlier review-cycle hold; the goal's
+objective and terminal condition remain unchanged.
+
+
+October 10 renewed correction verification: both polling and signed callbacks now
+update raw size/MIME only when the serving version matches the desired version.
+Distinct old text/new PDF fixtures prove failed and pending replacements preserve
+the desired blob tuple. Existing retry dispatch asserts the retained blob's size
+and MIME. Checks pass: 61 ingestion reconciliation tests, 29 real-PostgreSQL
+signed-webhook tests and the focused replacement-retry case. The webhook suite
+now arms the disposable-database guard on its actual Prisma client before writes.
+Main reviewed the correction for simplification; no new abstraction is needed.
+
+The retained runtime's generated profile was restored only after matching both
+source and generated checksums to its recorded baseline. Canonical repair starts
+the exact task container, but full readiness times out on the LTI HTTP route.
+Container checks work; this is not full local application E2E acceptance. Source
+qualification, mandatory checks and independent integrated review remain open.

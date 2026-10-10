@@ -8,8 +8,9 @@ The [source plan](2026-10-09-graphrag-source-artifact-plan.md) records the curre
 qualification hold. Ingestion and KG exact-head CI pass. Klicker still needs a
 failed BLOB replacement correction: retain the new blob's size/MIME for retries
 and quota accounting instead of copying the old serving version's metadata.
-The final review correction budget is spent, so the next source correction and
-focused qualification require scope/risk reassessment before execution.
+The user approved the bounded correction and renewed independent qualification
+after scope/risk reassessment. The patch is prepared; updated regression checks,
+source publication and final qualification remain in progress.
 Reader-first deployment and finite refresh/build acceptance follow source
 qualification. Live GraphRAG quality and student-map acceptance remain separate
 receipts.
