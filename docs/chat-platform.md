@@ -473,10 +473,10 @@ planning target, while the reset date is exact; in-flight requests may exceed
 the target. It is read-only for account owners, and it does not expose
 internal funding or provider details.
 
-On staging, the deployed Klicker Auto option is the LiteLLM `auto-router-v2`
-endpoint; production Auto still uses `auto-router`.
+On staging and production, the deployed Klicker Auto option is the LiteLLM
+`auto-router-v2` endpoint.
 The only in-repo record of its tier map is the comment above `modelRegistry`
-in `deploy/env-uzh-stg/values.yaml`: SIMPLE = `gpt-6-luna-high`, MEDIUM
+in `deploy/env-uzh-stg/values.yaml` and `deploy/env-uzh-prd/values.yaml`: SIMPLE = `gpt-6-luna-high`, MEDIUM
 = `gpt-6.1-sol-low`, COMPLEX = `gpt-6.1-sol-medium`, REASONING =
 `gpt-6.1-sol-high` (match_threshold 0.55). The v1 `auto-router` stays
 deployed with the same classifier and corpus (MEDIUM = `gpt-6-luna-xhigh`,
@@ -499,6 +499,9 @@ id that answered.
 Migration `20261008120000_chat_drop_retired_model_ids` later removed the
 retired `gpt-4.1` and `gpt-5.4` ids from live and draft chatbot policies, so
 edits to those chatbots still pass registry validation.
+Migration `20261009120000_chat_drop_unregistered_model_ids` does the same for
+`gpt-4.1-mini` and `gpt-5.5`, which published chatbots still named although
+neither registry lists them.
 Both staging and production now use `auto` as the global automatic-model
 primary, so chatbots using automatic model selection use Auto by default.
 Chatbots with an explicit model selection can continue using that selection.

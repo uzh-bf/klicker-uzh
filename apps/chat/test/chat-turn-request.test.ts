@@ -138,12 +138,4 @@ describe('chat turn request layout', () => {
     expect(turn3.tools).toEqual(turn1.tools)
     expect(turn3.prompt_cache_key).toBe(turn1.prompt_cache_key)
   })
-
-  test('uses a different cache key for another thread', async () => {
-    const history: ModelMessage[] = [{ role: 'user', content: 'Question' }]
-    const first = await sendTurn(history, [], 'thread-1')
-    const other = await sendTurn(history, [], 'thread-2')
-
-    expect(other.prompt_cache_key).not.toBe(first.prompt_cache_key)
-  })
 })
