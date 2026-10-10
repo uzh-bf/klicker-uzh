@@ -496,8 +496,10 @@ export async function settleKBGraphBuildCost(
             : DB.KBGraphBuildStatus.FAILED))
     const settledStatusMessage = publishSuccess
       ? null
-      : (lateRejection?.statusMessage ??
-        (succeeded ? null : terminalResultError(result)))
+      : !sourceCurrent && succeeded
+        ? 'The knowledge base sources changed while this graph was being built. Rebuild the graph using the current sources.'
+        : (lateRejection?.statusMessage ??
+          (succeeded ? null : terminalResultError(result)))
     const settledErrorCode = publishSuccess
       ? null
       : !sourceCurrent && succeeded

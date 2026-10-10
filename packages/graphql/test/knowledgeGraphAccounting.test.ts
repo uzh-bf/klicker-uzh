@@ -1117,6 +1117,7 @@ describe('KB graph cost accounting', () => {
         status: KBGraphBuildStatus.SUPERSEDED,
         costStatus: KBGraphCostStatus.SETTLED,
         errorCode: 'KB_GRAPH_SOURCE_STALE',
+        statusMessage: expect.any(String),
         actualCostMinorUnits: 60,
       })
       await expect(

@@ -208,3 +208,10 @@ and integrated final correction review precede final-head CI.
 Next: qualify the correction, exact-head CI, and refresh the draft evidence.
 The exact runtime stop exception is awaiting the user's answer. No merge, deployment,
 live refresh/rebuild, activation or paid evaluation is admitted.
+
+All nine required checks passed on `88bd45f85d`, including all eight Playwright
+shards. Final automated feedback found a missing explanation for stale-source
+supersession. The settlement now reports the reason and rebuild action; the
+existing PostgreSQL regressions require an explanatory message without pinning
+its wording. All 18 accounting tests and GraphQL checks pass. Final correction
+review, production build and exact-head CI remain required before qualification.
