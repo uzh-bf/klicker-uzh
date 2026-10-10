@@ -12,6 +12,12 @@ export const FEATURE_FLAG_DEFAULTS = {
   'ai-beta': false,
   'learning-analytics': false,
   'chatbot-graphrag': false,
+  // Reveals the advanced chatbot-management controls in Manage: model
+  // selection, reasoning effort, credit editing, usage summary, MCP
+  // configuration, knowledge-graph controls and response examples. Off is
+  // the ordinary lecturer surface, not a degraded one — it shows the
+  // simplified chatbot surface that every lecturer sees by default.
+  'ai-advanced-management': false,
   // Knowledge-base admission controls. Each one answers whether an actor may
   // start new work; the provider contract still decides what a worker can
   // execute, and an accepted build keeps the inputs it was accepted with.

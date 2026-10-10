@@ -1,5 +1,6 @@
 import { CreditResetPeriod } from '@klicker-uzh/prisma/client'
 import {
+  DEFAULT_CHATBOT_CREDIT_POLICY,
   MAX_SIGNED_INT32,
   normalizeAndValidateCreditPolicy,
 } from '../src/services/chatbotCreditPolicy.js'
@@ -35,6 +36,17 @@ describe('chatbot credit policy', () => {
       creditResetAmount: 0,
       creditMaxCredits: 0,
     })
+  })
+
+  // Chatbot creation writes the default straight to the database, but the
+  // owner-facing editor sends every save through this validator. A default
+  // the validator rejects would therefore be unsaveable: opening the credit
+  // controls and pressing save without changing anything would fail. Tuning
+  // the numbers is expected, so the constant is pinned as a valid policy.
+  it('accepts the default chatbot credit policy unchanged', () => {
+    expect(
+      normalizeAndValidateCreditPolicy(DEFAULT_CHATBOT_CREDIT_POLICY)
+    ).toEqual(DEFAULT_CHATBOT_CREDIT_POLICY)
   })
 
   it.each([
