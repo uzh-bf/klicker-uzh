@@ -152,6 +152,51 @@ Additive language metadata requires no migration. New files beyond the operation
 
 ## Progress
 
+- Delivery continuation — 2026-10-10: the sandbox restriction is lifted. Source
+  delivery continues on `rs/kg-graphrag-input-contract`, in the matching fresh
+  task worktree, at the same `v3-ai` baseline. The previous checkout's retained
+  runtime could not reconcile its changed managed configuration. Use the
+  repository's existing Blob port override for the isolated verification
+  runtime; no runtime configuration source change is included. The reviewed
+  retrieval code and tests are unchanged, so their passing focused evidence is
+  reusable. Full native hook checks pass (42 check tasks and 7 KB-contract
+  tasks), and all 27 production build tasks pass. The input correction is
+  committed and pushed in [draft PR #6461](https://github.com/uzh-bf/klicker-uzh/pull/6461),
+  targeting `v3-ai`. Final self-review found no unresolved issue in the complete
+  three-file package. All nine required hosted checks passed for the corrected
+  source at `bdeaf3a2107bb7783323ae6ca8ec4ff9d4b91265`, including the actual
+  [Playwright build and test run](https://github.com/uzh-bf/klicker-uzh/actions/runs/38039231202).
+  Ordinary automated review reports zero findings. The final AI workflow
+  requires a non-draft PR, so it awaits named ready-status authority. Merge,
+  staging promotion through the live `v3-adaptive-learning` source and repeated
+  participant acceptance are subsequent gates.
+  Ordinary automated review identified an unusable `question` value suppressing
+  a valid legacy `query`. The generic wrapper now prefers a nonblank string
+  `question` and otherwise selects `query`, preserving both original keys.
+  Five compatibility cases failed before that correction; all 79 focused
+  retrieval, scope, flag and result tests pass afterward.
+  The separate question comparison still requires attributable provider-cost
+  visibility or an enforceable bound before its two approved batches can run.
+- Acceptance correction — 2026-10-09: the first real synthetic participant
+  turn returned a cited German answer and survived reload, but producing logs
+  showed graph retrieval was ineligible. The live `doc_query` input uses
+  `question`; the wrapper read only `query`. Main owns a bounded correction in
+  `graphAssistedDocQuery.ts` and the existing `graph-assisted-doc-query.test.ts`
+  on `rs/kg-graphrag-question-contract`, based on `v3-ai` at
+  `d06cc9054ceaaff69f30794f94fde445f7c9f571`. Expand the selected input field,
+  retain `query` compatibility, and preserve scope, cancellation, budgets and
+  citation behavior. The new `question` case failed before the fix; all 74
+  focused retrieval, scope, flag and result tests pass after it, as does the
+  isolated Chat TypeScript check. No new module, dependency or contract is added.
+  The original KB and retrieval-off settings were restored through normal
+  publication controls. The updated Volta CLI now reports devrouter 0.2.0 and
+  accepts the worktree configuration. Required container checks remain pending:
+  this exact checkout has no running app container, and sandbox-denied process
+  inspection prevents canonical runtime-lock validation. Fetch and staging succeed
+  from the task worktree, and the recorded `v3-ai` baseline is unchanged.
+  Source delivery and repeated STG acceptance remain pending. The separate
+  question comparison is approved but still awaits attributable provider-cost
+  visibility or an enforceable bound.
 - Updated checkpoint — 2026-10-08: graph-control PR #6229 now carries the
   verified normal integration `8f42c93d5f`; the fresh isolated UI runtime passed
   the complete hooks and build. The historical 649-pixel click opened the
