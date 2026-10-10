@@ -5,6 +5,7 @@ import {
   StorageSharedKeyCredential,
 } from '@azure/storage-blob'
 import {
+  computeKBCanonicalInputDigest,
   computeKBContentDigest,
   getDefaultKBGraphDomainCatalog,
   getKnowledgeGraphName,
@@ -2677,6 +2678,8 @@ const KB_GRAPH_BUILD_CONFIG_SELECT = {
   domainPolicyLanguage: true,
   focusTopic: true,
   sourceContentDigest: true,
+  sourceInputContract: true,
+  sourceInputDigest: true,
   startedAt: true,
   finishedAt: true,
   createdAt: true,
@@ -3019,6 +3022,8 @@ export async function getKbKnowledgeGraphConfig(
           },
           select: {
             sourceContentDigest: true,
+            sourceInputContract: true,
+            sourceInputDigest: true,
             domainPolicyId: true,
             domainPolicyVersion: true,
             domainPolicyLanguage: true,
@@ -3051,7 +3056,10 @@ export async function getKbKnowledgeGraphConfig(
   const isStale =
     publishedBuild !== null
       ? publishedBuild.sourceContentDigest !==
-        (await computeKBContentDigest(ctx.prisma, kb.id))
+          (await computeKBContentDigest(ctx.prisma, kb.id)) ||
+        (publishedBuild.sourceInputContract === 'canonical-document/v1' &&
+          publishedBuild.sourceInputDigest !==
+            (await computeKBCanonicalInputDigest(ctx.prisma, kb.id)))
       : false
   return getKBGraphBuildConfig(
     kb,
@@ -3434,7 +3442,10 @@ export async function rebuildKbKnowledgeGraph(
   const isStale =
     result.build.status === DB.KBGraphBuildStatus.SUCCEEDED
       ? result.build.sourceContentDigest !==
-        (await computeKBContentDigest(ctx.prisma, kbId))
+          (await computeKBContentDigest(ctx.prisma, kbId)) ||
+        (result.build.sourceInputContract === 'canonical-document/v1' &&
+          result.build.sourceInputDigest !==
+            (await computeKBCanonicalInputDigest(ctx.prisma, kbId)))
       : false
   const costConfiguration = getKBGraphCostConfiguration()
   const quota = await ctx.prisma.kBGraphQuota.findUnique({
