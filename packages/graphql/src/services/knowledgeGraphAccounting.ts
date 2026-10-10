@@ -410,6 +410,7 @@ export async function settleKBGraphBuildCost(
     )
   }
 
+  await prisma.$queryRaw`SELECT "id" FROM "public"."KB" WHERE "id" = CAST(${build.kbId} AS UUID) FOR UPDATE`
   if (result.metered_cost !== null) {
     if (result.metered_cost.currency !== build.costCurrency) {
       return markCostNeedsHumanReview(
@@ -451,7 +452,6 @@ export async function settleKBGraphBuildCost(
       usage.requestCount += component.request_count
     }
 
-    await prisma.$queryRaw`SELECT "id" FROM "public"."KB" WHERE "id" = CAST(${build.kbId} AS UUID) FOR UPDATE`
     let sourceCurrent = true
     if (
       result.status === 'SUCCEEDED' &&

@@ -199,7 +199,11 @@ deadlock. Completion and timeout now both acquire the KB lock first; the
 same test and all 17 accounting tests pass. The rollback coverage now uses the
 actual ingestion API client with the legacy response shape after disablement;
 matching blob digests settle and mismatches are rejected. All 190 affected
-worker tests pass. Independent correction review and final-head CI follow.
+worker tests pass. Independent review then identified the same inversion in
+unmetered failures. The extended concurrent test reproduced it; settlement now
+takes the KB lock before either metering branch. All 18 accounting tests pass.
+The simplifier found no useful reduction. Independent correction verification
+and integrated final correction review precede final-head CI.
 
 Next: qualify the correction, exact-head CI, and refresh the draft evidence.
 The exact runtime stop exception is awaiting the user's answer. No merge, deployment,

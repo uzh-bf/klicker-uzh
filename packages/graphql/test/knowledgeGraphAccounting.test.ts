@@ -1183,7 +1183,10 @@ describe('KB graph cost accounting', () => {
       })
     })
 
-    it('settles completion while an overlapping monitor attempts to time out the same build', async () => {
+    it.each([
+      'SUCCEEDED',
+      'FAILED',
+    ] as const)('settles %s while an overlapping monitor attempts to time out the same build', async (status) => {
       await reserveCanonicalBuild()
       const source = await createCanonicalSource()
       const { build, runId, graphmlBlobName } = await createBuild({
@@ -1205,29 +1208,58 @@ describe('KB graph cost accounting', () => {
       // Hold completion's first lock until timeout reaches its first write.
       // This forces the conflicting interleaving without timing-based sleeps.
       let firstLock = true
+      async function rendezvous() {
+        if (firstLock) {
+          firstLock = false
+          completionLocked()
+          await timeoutStart
+        }
+      }
       const completion = prisma.$transaction(async (tx) =>
         settleKBGraphBuildCost(
           {
             ...tx,
             $queryRaw: async (...args: Parameters<typeof tx.$queryRaw>) => {
               const value = await tx.$queryRaw(...args)
-              if (firstLock) {
-                firstLock = false
-                completionLocked()
-                await timeoutStart
+              if (
+                (args[0] as TemplateStringsArray)
+                  .join('')
+                  .includes('"public"."KB"')
+              ) {
+                await rendezvous()
               }
               return value
             },
-          } as typeof tx,
+            kBGraphBuild: {
+              ...tx.kBGraphBuild,
+              updateMany: async (
+                args: Parameters<typeof tx.kBGraphBuild.updateMany>[0]
+              ) => {
+                const updated = await tx.kBGraphBuild.updateMany(args)
+                await rendezvous()
+                return updated
+              },
+            },
+          } as unknown as typeof tx,
           {
             buildId: build.id,
-            result: successfulCanonicalResult({
-              buildId: build.id,
-              runId,
-              graphmlBlobName,
-              sourceContentDigest: source.sourceContentDigest,
-              sourceInputDigest: source.sourceInputDigest,
-            }),
+            result: {
+              ...successfulCanonicalResult({
+                buildId: build.id,
+                runId,
+                graphmlBlobName,
+                sourceContentDigest: source.sourceContentDigest,
+                sourceInputDigest: source.sourceInputDigest,
+              }),
+              ...(status === 'FAILED'
+                ? {
+                    status,
+                    error_code: 'KB_GRAPH_PROVIDER_FAILED',
+                    metered_cost: null,
+                    graphml_artifact: null,
+                  }
+                : {}),
+            },
             finishedAt: NOW,
           }
         )
@@ -1269,25 +1301,33 @@ describe('KB graph cost accounting', () => {
         logger,
       })
       await expect(Promise.all([completion, timeout])).resolves.toEqual([
-        'SETTLED',
+        status === 'SUCCEEDED' ? 'SETTLED' : 'RELEASED',
         undefined,
       ])
       expect(logger.error).not.toHaveBeenCalled()
       await expect(
         prisma.kBGraphBuild.findUniqueOrThrow({ where: { id: build.id } })
       ).resolves.toMatchObject({
-        status: KBGraphBuildStatus.SUCCEEDED,
-        costStatus: KBGraphCostStatus.SETTLED,
-        actualCostMinorUnits: 60,
+        status,
+        costStatus:
+          status === 'SUCCEEDED'
+            ? KBGraphCostStatus.SETTLED
+            : KBGraphCostStatus.RELEASED,
+        actualCostMinorUnits: status === 'SUCCEEDED' ? 60 : null,
       })
       await expect(
         prisma.kBGraphQuota.findUniqueOrThrow({
           where: { ownerId_semesterKey: { ownerId, semesterKey: '2026-H2' } },
         })
-      ).resolves.toMatchObject({ reservedMinorUnits: 0, settledMinorUnits: 60 })
+      ).resolves.toMatchObject({
+        reservedMinorUnits: 0,
+        settledMinorUnits: status === 'SUCCEEDED' ? 60 : 0,
+      })
       await expect(
         prisma.kB.findUniqueOrThrow({ where: { id: kbId } })
-      ).resolves.toMatchObject({ publishedGraphBuildId: build.id })
+      ).resolves.toMatchObject({
+        publishedGraphBuildId: status === 'SUCCEEDED' ? build.id : null,
+      })
     })
 
     it('withholds publication but retains metering after the served version was replaced', async () => {
