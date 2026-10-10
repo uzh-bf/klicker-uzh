@@ -434,6 +434,11 @@ export default {
       searchCourseMaterialFailed: 'Course material search failed',
       imageAnalyzed: 'Image analyzed',
     },
+    videoFrames: {
+      source: '{title} · Frame at {timestamp}',
+      unavailable: 'This video frame is currently unavailable.',
+      retry: 'Retry frame',
+    },
     sources: {
       title: 'Sources',
       cited: 'Cited in this answer',

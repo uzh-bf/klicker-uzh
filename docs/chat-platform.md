@@ -1450,6 +1450,24 @@ structured `start_sec` and optional `end_sec` values in the first chunk, plus a 
 and prefers the structured start for the card and citation preview. Legacy results remain
 supported: a video position can still come from a clock- or `1m30s`-valued `labeled_page_number`
 or from a `t`/`start`/`time_continue`/`#t=` parameter on the source URL (`getSourceTimestamp`).
+
+Retrieved recording chunks may also carry a `video_frames` descriptor. The model can call
+`show_video_frame` only with an `asset_id` returned by `doc_query` in the same turn and only for a
+knowledge base still bound to the chatbot. A successful selection is persisted in the assistant
+message and rendered after the answer paragraph that introduces it. The frame caption's source
+badge scrolls to the matching source card. The poster opens an inline video player at the retrieved
+time range; the browser receives neither storage credentials nor an unrestricted object key.
+
+The producer publishes the original recording, representative JPEGs, and their manifest to the
+same content-addressed Blob container under `e1/v1/{videos,frames,manifests}/sha256/...`. Chat checks
+message ownership and current KB scope before serving a frame or video. It reads frame artifacts on
+the server, enforces byte limits, verifies SHA-256 and manifest membership, and issues a ten-minute
+read-only SAS URL for video playback. The local `CHAT_VIDEO_FRAME_STORE_PATH` adapter exists for
+development fixtures. A deployed Chat pod instead needs `CHAT_VIDEO_BLOB_CONTAINER`,
+`BLOB_STORAGE_ACCOUNT_NAME`, and `BLOB_STORAGE_ACCESS_KEY` for the producer's container. The video
+route preserves HTTP range requests so seeking and browser playback work without loading the whole
+recording.
+
 A bare numeric `labeled_page_number` remains a publisher page label, never seconds; other labels
 such as `Kapitel IV` also remain page text. Each card's index badge mirrors the inline chip —
 a bare digit in a small `bg-primary/10` rounded square (`sources-section.tsx`), not a

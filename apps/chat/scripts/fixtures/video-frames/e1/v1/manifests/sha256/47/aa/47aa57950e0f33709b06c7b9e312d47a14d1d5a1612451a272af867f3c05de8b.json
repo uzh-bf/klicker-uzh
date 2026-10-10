@@ -1,0 +1,16 @@
+{
+  "schema_version": "video_frame_assets.v1",
+  "source_video_sha256": "34f453033678a90c989939d9c845ffdb031d39c5869c2eb794d073d7047c9f67",
+  "assets": [
+    {
+      "asset_id": "f1d7d1bb20d0b9996ff110fd93ede38d2914c03073f2f30c7dabdabfb263f1c7",
+      "frame_sha256": "790402ba3458fbc222e596e78e13425168655b16519489118424255b97ee4eb8",
+      "visual_state_id": "visual-state-0001",
+      "timestamp_sec": 50,
+      "width_px": 1025,
+      "height_px": 608,
+      "mime_type": "image/jpeg",
+      "kind": "video_frame"
+    }
+  ]
+}

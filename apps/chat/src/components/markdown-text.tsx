@@ -12,10 +12,15 @@ import {
 import { CheckIcon, CopyIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import {
+  cloneElement,
   type ComponentProps,
+  createContext,
   type FC,
+  isValidElement,
   memo,
+  type ReactNode,
   useCallback,
+  useContext,
   useState,
 } from 'react'
 import rehypeKatex from 'rehype-katex'
@@ -37,12 +42,68 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 // Stable module-scope reference: recreating this array on every render would
 // defeat `MarkdownTextPrimitive`'s own memoization of the parsed tree.
-const remarkPlugins = [remarkGfm, remarkMath, remarkCitationMarkers]
+function remarkFirstParagraphAnchor() {
+  return (tree: {
+    children?: Array<{
+      type?: string
+      data?: { hProperties?: Record<string, unknown> }
+    }>
+  }) => {
+    const anchor =
+      tree.children?.find((node) => node.type === 'paragraph') ??
+      tree.children?.find((node) =>
+        [
+          'heading',
+          'blockquote',
+          'list',
+          'table',
+          'code',
+          'thematicBreak',
+        ].includes(node.type ?? '')
+      )
+    if (!anchor) return
+    anchor.data ??= {}
+    anchor.data.hProperties = {
+      ...anchor.data.hProperties,
+      'data-inline-media-anchor': 'true',
+    }
+  }
+}
+
+const remarkPlugins = [
+  remarkGfm,
+  remarkMath,
+  remarkCitationMarkers,
+  remarkFirstParagraphAnchor,
+]
 const rehypePlugins: NonNullable<
   ComponentProps<typeof MarkdownTextPrimitive>['rehypePlugins']
 > = [[rehypeKatex, { trust: false }]]
+const AfterFirstParagraphContext = createContext<ReactNode>(null)
 
-const MarkdownTextImpl = () => {
+type InlineMediaAnchorAttribute = {
+  'data-inline-media-anchor'?: string | boolean
+}
+
+function splitInlineMediaAnchor<T extends object>(props: T) {
+  const { 'data-inline-media-anchor': marker, ...elementProps } = props as T &
+    InlineMediaAnchorAttribute
+  return {
+    elementProps: elementProps as Omit<T, keyof InlineMediaAnchorAttribute>,
+    isAnchor: marker === 'true' || marker === true,
+  }
+}
+
+const InlineMediaAfter = ({ anchor }: { anchor: boolean }) => {
+  const afterFirstParagraph = useContext(AfterFirstParagraphContext)
+  return anchor ? afterFirstParagraph : null
+}
+
+const MarkdownTextImpl = ({
+  afterFirstParagraph,
+}: {
+  afterFirstParagraph?: ReactNode
+}) => {
   const { text, status } = useMessagePartText()
   const isRunning = status.type === 'running'
   const { hasMathOpener } = inspectStreamingMath(text)
@@ -53,14 +114,16 @@ const MarkdownTextImpl = () => {
   )
 
   return (
-    <MarkdownTextPrimitive
-      remarkPlugins={remarkPlugins}
-      rehypePlugins={rehypePlugins}
-      preprocess={preprocess}
-      smooth={isRunning && !hasMathOpener}
-      className="aui-md"
-      components={defaultComponents}
-    />
+    <AfterFirstParagraphContext.Provider value={afterFirstParagraph ?? null}>
+      <MarkdownTextPrimitive
+        remarkPlugins={remarkPlugins}
+        rehypePlugins={rehypePlugins}
+        preprocess={preprocess}
+        smooth={isRunning && !hasMathOpener}
+        className="aui-md"
+        components={defaultComponents}
+      />
+    </AfterFirstParagraphContext.Provider>
   )
 }
 
@@ -117,68 +180,112 @@ const defaultComponents = memoizeMarkdownComponents({
   // Shift Markdown headings down one level because the chatbot shell owns the
   // page's h1. The smaller scale keeps answer structure readable without
   // making a chat bubble look like a document title page.
-  h1: ({ className, ...props }) => (
-    <h2
-      className={cn(
-        'mb-4 scroll-m-20 text-2xl font-extrabold tracking-tight text-pretty last:mb-0 sm:text-3xl',
-        className
-      )}
-      {...props}
-    />
-  ),
-  h2: ({ className, ...props }) => (
-    <h3
-      className={cn(
-        'mb-4 mt-6 scroll-m-20 text-xl font-semibold tracking-tight text-pretty first:mt-0 last:mb-0 sm:text-2xl',
-        className
-      )}
-      {...props}
-    />
-  ),
-  h3: ({ className, ...props }) => (
-    <h4
-      className={cn(
-        'mb-3 mt-5 scroll-m-20 text-lg font-semibold tracking-tight text-pretty first:mt-0 last:mb-0 sm:text-xl',
-        className
-      )}
-      {...props}
-    />
-  ),
-  h4: ({ className, ...props }) => (
-    <h5
-      className={cn(
-        'mb-3 mt-4 scroll-m-20 text-base font-semibold tracking-tight text-pretty first:mt-0 last:mb-0 sm:text-lg',
-        className
-      )}
-      {...props}
-    />
-  ),
-  h5: ({ className, ...props }) => (
-    <h6
-      className={cn(
-        'my-3 text-[15px] font-semibold text-pretty first:mt-0 last:mb-0 sm:text-base',
-        className
-      )}
-      {...props}
-    />
-  ),
-  h6: ({ className, ...props }) => (
-    <div
-      {...props}
-      role="heading"
-      aria-level={7}
-      className={cn(
-        'my-3 text-sm font-semibold text-pretty first:mt-0 last:mb-0',
-        className
-      )}
-    />
-  ),
-  p: ({ className, ...props }) => (
-    <p
-      className={cn('mb-5 mt-5 leading-7 first:mt-0 last:mb-0', className)}
-      {...props}
-    />
-  ),
+  h1: ({ className, ...props }) => {
+    const { elementProps, isAnchor } = splitInlineMediaAnchor(props)
+    return (
+      <>
+        <h2
+          className={cn(
+            'mb-4 scroll-m-20 text-2xl font-extrabold tracking-tight text-pretty last:mb-0 sm:text-3xl',
+            className
+          )}
+          {...elementProps}
+        />
+        <InlineMediaAfter anchor={isAnchor} />
+      </>
+    )
+  },
+  h2: ({ className, ...props }) => {
+    const { elementProps, isAnchor } = splitInlineMediaAnchor(props)
+    return (
+      <>
+        <h3
+          className={cn(
+            'mb-4 mt-6 scroll-m-20 text-xl font-semibold tracking-tight text-pretty first:mt-0 last:mb-0 sm:text-2xl',
+            className
+          )}
+          {...elementProps}
+        />
+        <InlineMediaAfter anchor={isAnchor} />
+      </>
+    )
+  },
+  h3: ({ className, ...props }) => {
+    const { elementProps, isAnchor } = splitInlineMediaAnchor(props)
+    return (
+      <>
+        <h4
+          className={cn(
+            'mb-3 mt-5 scroll-m-20 text-lg font-semibold tracking-tight text-pretty first:mt-0 last:mb-0 sm:text-xl',
+            className
+          )}
+          {...elementProps}
+        />
+        <InlineMediaAfter anchor={isAnchor} />
+      </>
+    )
+  },
+  h4: ({ className, ...props }) => {
+    const { elementProps, isAnchor } = splitInlineMediaAnchor(props)
+    return (
+      <>
+        <h5
+          className={cn(
+            'mb-3 mt-4 scroll-m-20 text-base font-semibold tracking-tight text-pretty first:mt-0 last:mb-0 sm:text-lg',
+            className
+          )}
+          {...elementProps}
+        />
+        <InlineMediaAfter anchor={isAnchor} />
+      </>
+    )
+  },
+  h5: ({ className, ...props }) => {
+    const { elementProps, isAnchor } = splitInlineMediaAnchor(props)
+    return (
+      <>
+        <h6
+          className={cn(
+            'my-3 text-[15px] font-semibold text-pretty first:mt-0 last:mb-0 sm:text-base',
+            className
+          )}
+          {...elementProps}
+        />
+        <InlineMediaAfter anchor={isAnchor} />
+      </>
+    )
+  },
+  h6: ({ className, ...props }) => {
+    const { elementProps, isAnchor } = splitInlineMediaAnchor(props)
+    return (
+      <>
+        <div
+          {...elementProps}
+          role="heading"
+          aria-level={7}
+          className={cn(
+            'my-3 text-sm font-semibold text-pretty first:mt-0 last:mb-0',
+            className
+          )}
+        />
+        <InlineMediaAfter anchor={isAnchor} />
+      </>
+    )
+  },
+  p: function Paragraph({ className, ...props }) {
+    const afterFirstParagraph = useContext(AfterFirstParagraphContext)
+    const { elementProps, isAnchor } = splitInlineMediaAnchor(props)
+
+    return (
+      <>
+        <p
+          className={cn('mb-5 mt-5 leading-7 first:mt-0 last:mb-0', className)}
+          {...elementProps}
+        />
+        {isAnchor ? afterFirstParagraph : null}
+      </>
+    )
+  },
   a: ({ className, children, href, ...props }) => {
     const citationIndex = parseCitationHref(href)
     if (citationIndex !== null) return <CitationChip index={citationIndex} />
@@ -202,38 +309,68 @@ const defaultComponents = memoizeMarkdownComponents({
   // not a plain citation-style quote: rounded block, amber left accent, and
   // `break-words` so long tokens (URLs) wrap instead of overflowing on
   // mobile widths.
-  blockquote: ({ className, ...props }) => (
-    <blockquote
-      className={cn(
-        'my-5 break-words rounded-md border-l-4 border-amber-400 bg-amber-50 px-4 py-3 text-amber-900',
-        className
-      )}
-      {...props}
-    />
-  ),
-  ul: ({ className, ...props }) => (
-    <ul
-      className={cn('my-5 ml-6 list-disc [&>li]:mt-2', className)}
-      {...props}
-    />
-  ),
-  ol: ({ className, ...props }) => (
-    <ol
-      className={cn('my-5 ml-6 list-decimal [&>li]:mt-2', className)}
-      {...props}
-    />
-  ),
-  hr: ({ className, ...props }) => (
-    <hr className={cn('my-5 border-b', className)} {...props} />
-  ),
-  table: ({ className, ...props }) => (
-    <div className="my-5 overflow-x-auto">
-      <table
-        className={cn('w-full border-separate border-spacing-0', className)}
-        {...props}
-      />
-    </div>
-  ),
+  blockquote: ({ className, ...props }) => {
+    const { elementProps, isAnchor } = splitInlineMediaAnchor(props)
+    return (
+      <>
+        <blockquote
+          className={cn(
+            'my-5 break-words rounded-md border-l-4 border-amber-400 bg-amber-50 px-4 py-3 text-amber-900',
+            className
+          )}
+          {...elementProps}
+        />
+        <InlineMediaAfter anchor={isAnchor} />
+      </>
+    )
+  },
+  ul: ({ className, ...props }) => {
+    const { elementProps, isAnchor } = splitInlineMediaAnchor(props)
+    return (
+      <>
+        <ul
+          className={cn('my-5 ml-6 list-disc [&>li]:mt-2', className)}
+          {...elementProps}
+        />
+        <InlineMediaAfter anchor={isAnchor} />
+      </>
+    )
+  },
+  ol: ({ className, ...props }) => {
+    const { elementProps, isAnchor } = splitInlineMediaAnchor(props)
+    return (
+      <>
+        <ol
+          className={cn('my-5 ml-6 list-decimal [&>li]:mt-2', className)}
+          {...elementProps}
+        />
+        <InlineMediaAfter anchor={isAnchor} />
+      </>
+    )
+  },
+  hr: ({ className, ...props }) => {
+    const { elementProps, isAnchor } = splitInlineMediaAnchor(props)
+    return (
+      <>
+        <hr className={cn('my-5 border-b', className)} {...elementProps} />
+        <InlineMediaAfter anchor={isAnchor} />
+      </>
+    )
+  },
+  table: ({ className, ...props }) => {
+    const { elementProps, isAnchor } = splitInlineMediaAnchor(props)
+    return (
+      <>
+        <div className="my-5 overflow-x-auto">
+          <table
+            className={cn('w-full border-separate border-spacing-0', className)}
+            {...elementProps}
+          />
+        </div>
+        <InlineMediaAfter anchor={isAnchor} />
+      </>
+    )
+  },
   th: ({ className, ...props }) => (
     <th
       className={cn(
@@ -267,15 +404,33 @@ const defaultComponents = memoizeMarkdownComponents({
       {...props}
     />
   ),
-  pre: ({ className, ...props }) => (
-    <pre
-      className={cn(
-        'overflow-x-auto rounded-b-lg bg-black p-4 text-white',
-        className
-      )}
-      {...props}
-    />
-  ),
+  pre: ({ className, ...props }) => {
+    const { elementProps, isAnchor } = splitInlineMediaAnchor(props)
+    const { children: preChildren, ...preProps } = elementProps
+    const codeChild = isValidElement<InlineMediaAnchorAttribute>(preChildren)
+      ? preChildren
+      : undefined
+    const codeIsAnchor =
+      codeChild?.props['data-inline-media-anchor'] === 'true' ||
+      codeChild?.props['data-inline-media-anchor'] === true
+    const children = codeIsAnchor
+      ? cloneElement(codeChild, { 'data-inline-media-anchor': undefined })
+      : preChildren
+    return (
+      <>
+        <pre
+          className={cn(
+            'overflow-x-auto rounded-b-lg bg-black p-4 text-white',
+            className
+          )}
+          {...preProps}
+        >
+          {children}
+        </pre>
+        <InlineMediaAfter anchor={isAnchor || codeIsAnchor} />
+      </>
+    )
+  },
   code: function Code({ className, ...props }) {
     const isCodeBlock = useIsMarkdownCodeBlock()
     return (
