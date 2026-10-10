@@ -21,7 +21,7 @@
     "@langfuse/otel": "5.10.1",
     "@langfuse/tracing": "5.10.1",
     "@langfuse/vercel-ai-sdk": "5.10.1",
-    "@modelcontextprotocol/sdk": "1.17.5",
+    "@modelcontextprotocol/sdk": "1.31.0",
     "@opentelemetry/sdk-node": "0.221.0",
     "@radix-ui/react-dialog": "1.1.15",
     "@radix-ui/react-progress": "1.1.8",
