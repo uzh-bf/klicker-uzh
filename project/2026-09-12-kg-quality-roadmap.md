@@ -1,5 +1,13 @@
 # Knowledge graph quality roadmap
 
+October 10 final review follow-up: lecturer API freshness also compares the
+canonical input digest at source `557e067433`. The 69-test knowledge-service
+suite and independent focused correction review pass. All nine required hosted
+checks passed for preceding head `be7f83ee40`; corrected-head CI remains required
+on [Klicker #6460](https://github.com/uzh-bf/klicker-uzh/pull/6460/checks).
+This closes the parser-only staleness contract gap without activating canonical
+ingestion, graph builds or GraphRAG. Deployment and live-quality gates remain.
+
 October 10: canonical input source packages are now drafted in
 [ingestion !229](https://gitlab.uzh.ch/ai-infrastructure/services/data-ingestion/-/merge_requests/229),
 [KG !36](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/36)

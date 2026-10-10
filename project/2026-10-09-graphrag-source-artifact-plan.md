@@ -516,3 +516,16 @@ This documentation receipt reuses unchanged-source checks and build evidence;
 only affected document formatting and staged hygiene need fresh validation.
 Final delivery records live in the three draft descriptions and the ignored
 qualification receipt. Rollout and live quality remain separate milestones.
+
+
+October 10 final hosted review follow-up: all nine required checks, including
+all eight Playwright shards, passed at `be7f83ee40`. Ordinary OCR then identified
+a verified staleness discrepancy in the lecturer configuration API. Correction
+`557e067433` extends the existing selections and predicates to compare the
+canonical input digest, matching the student publication guard. Parser-only
+changes now report stale; legacy builds retain their raw-digest semantics.
+The existing knowledge-service suite passes 69 tests, mandatory commit hooks
+pass, and the independent focused correction review passes the canonical schema
+without findings. No helper, module, dependency, schema or visible UI was added.
+Hosted checks for the correction remain required; earlier green CI applies only
+to the earlier source. Both other service heads and receipts remain unchanged.
