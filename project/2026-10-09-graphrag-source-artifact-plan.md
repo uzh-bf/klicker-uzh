@@ -72,12 +72,24 @@ retained databases or provision new cluster connectivity.
 
 ## Progress
 
-October 11: approved revision executing. All three task heads were clean and
-fetched. Provider ownership is dispatched; main owns Klicker and documentation.
-Earlier canonical checks qualify the superseded contract and are not acceptance
-for this revision. Exact-head checks and review must follow the revised source.
+October 11: implementation is simplified in all three existing task branches.
+Klicker retains source-freshness, accounting lock-order and replacement metadata
+regressions. Ingestion retains only signed-URL credential rejection. KG restores
+its existing raw-source preparation and adds synthetic independence/digest tests.
+There are no net database, dependency, canonical-reader or v2 contract changes.
 
-The existing native goal remains blocked on the previously unresolved disposable
-runtime stop exception. Available goal tools cannot resume or replace it. The new
-approved objective is recorded here; this status does not block independent source
-work. No additional runtime has been started for this revision.
+Klicker verification passed: 27 build tasks, 42 check tasks, seven lint tasks,
+repository guards, 40 host-launcher and 93 Playwright CI contract tests, focused
+PostgreSQL and worker suites, staged formatting and secret scan. The source scan
+reported no findings. Ingestion reports 160 passing tests and 36 skips plus Ruff
+and targeted type checks. KG lint and format pass; its acceptance tests still need
+an executable Python environment or exact-head CI before completed delivery.
+
+The existing disposable verification checkout was stopped with the user-approved
+`devsy workspace stop volumes-home-git-klicke-15871e75` fallback after canonical
+stop rejected its existing reliability record. Source identity matched
+`trees/rs/graphrag-no-db-verification`; provider state is `Stopped`, its application
+container exited, and no exact checkout routes remain. Worktree and data remain.
+The old cleanup-blocked native goal is complete. The new independent-workflow
+simplification goal is active. Exact-range reviews, draft updates and exact-head
+CI evidence remain before this goal is complete.
