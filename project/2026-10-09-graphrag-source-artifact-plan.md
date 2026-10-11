@@ -91,12 +91,21 @@ stop rejected its existing reliability record. Source identity matched
 `trees/rs/graphrag-no-db-verification`; provider state is `Stopped`, its application
 container exited, and no exact checkout routes remain. Worktree and data remain.
 The old cleanup-blocked native goal is complete. The new independent-workflow
-simplification goal is active. Exact-range reviews, draft updates and exact-head
-CI evidence remain before this goal is complete.
+simplification goal is active. Exact-range reviews and draft updates completed, and all nine required checks
+passed at Klicker head 794091d1, including all eight actual Playwright shards.
+Ingestion pipeline 681053 and KG pipeline 681059 passed on their pushed heads.
+A subsequent lock-order correction requires fresh Klicker verification and CI.
 
 The exact-range simplification pass inspected all 19 changed paths across the
 three held ranges. Its duplicate success-test finding was accepted: merge the
 null-error assertion into the existing idempotent successful-publication test and
 remove the redundant new case. Replacement, deletion and forced concurrent
 settlement regressions remain. The stale adoption-plan contract sentence was
-corrected. Risk and integrated final reviews remain pending.
+corrected. Risk and integrated final reviews passed after the KG protocol/control
+correction. Fresh forge feedback then revealed a reachable shared-KB/quota cycle:
+a newer dispatch failure can hold quota while an older settlement holds KB.
+The correction locks KB and quota before the first build write in all four
+failure paths, with forced PostgreSQL regressions for late success and failure.
+Settlement classification now uses one explicit precedence chain. Existing source,
+claim, quota and publication contracts remain unchanged. Verification uses isolated
+one-shot containers and CI; the managed verification runtime remains stopped.

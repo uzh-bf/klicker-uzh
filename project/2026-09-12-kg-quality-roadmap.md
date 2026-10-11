@@ -20,7 +20,8 @@ and paid evaluation remain separate gates; OpenRouter review remains waived.
 
 ## Current planning checkpoint — 2026-10-11
 
-W9a now qualifies independent workflows and source/publication guards. A mutable
+W9a now qualifies independent workflows and source/publication guards, including
+KB-before-quota ordering across settlement and all dispatch-failure paths. A mutable
 URL mismatch remains a safe build rejection, not a repaired availability problem.
 Use stable, digest-verified controlled inputs for the next staging comparison.
 If the intended corpus cannot meet that condition, scope producer-owned raw

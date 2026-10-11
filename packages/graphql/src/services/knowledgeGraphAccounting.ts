@@ -483,30 +483,23 @@ export async function settleKBGraphBuildCost(
       lateRejection === null &&
       (build.kb.activeGraphBuildId === build.id ||
         lateSuccess?.eligible === true)
-    const settledStatus = publishSuccess
-      ? DB.KBGraphBuildStatus.SUCCEEDED
-      : (lateRejection?.status ??
-        (!sourceCurrent && succeeded
-          ? DB.KBGraphBuildStatus.SUPERSEDED
-          : succeeded
-            ? DB.KBGraphBuildStatus.SUCCEEDED
-            : DB.KBGraphBuildStatus.FAILED))
-    const settledStatusMessage = publishSuccess
-      ? null
-      : (lateRejection?.statusMessage ??
-        (!sourceCurrent && succeeded
-          ? 'The knowledge base sources changed while this graph was being built. Rebuild the graph using the current sources.'
-          : succeeded
-            ? null
-            : terminalResultError(result)))
-    const settledErrorCode = publishSuccess
-      ? null
-      : (lateRejection?.errorCode ??
-        (!sourceCurrent && succeeded
-          ? 'KB_GRAPH_SOURCE_STALE'
-          : succeeded
-            ? null
-            : (result.error_code ?? `KB_GRAPH_${result.status}`)))
+    let settledStatus: DB.KBGraphBuildStatus = DB.KBGraphBuildStatus.SUCCEEDED
+    let settledStatusMessage: string | null = null
+    let settledErrorCode: string | null = null
+    if (lateRejection) {
+      settledStatus = lateRejection.status
+      settledStatusMessage = lateRejection.statusMessage
+      settledErrorCode = lateRejection.errorCode
+    } else if (!sourceCurrent && succeeded) {
+      settledStatus = DB.KBGraphBuildStatus.SUPERSEDED
+      settledStatusMessage =
+        'The knowledge base sources changed while this graph was being built. Rebuild the graph using the current sources.'
+      settledErrorCode = 'KB_GRAPH_SOURCE_STALE'
+    } else if (!succeeded) {
+      settledStatus = DB.KBGraphBuildStatus.FAILED
+      settledStatusMessage = terminalResultError(result)
+      settledErrorCode = result.error_code ?? `KB_GRAPH_${result.status}`
+    }
     const failed = settledStatus === DB.KBGraphBuildStatus.FAILED
     // Failed builds retain provider usage as diagnostics without consuming quota.
     const chargeMinorUnits = failed ? 0 : result.metered_cost.amount_minor_units

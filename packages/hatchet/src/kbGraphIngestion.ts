@@ -193,6 +193,19 @@ function isActiveBuildStatus(status: KBGraphBuildStatus) {
   )
 }
 
+async function lockKBGraphBuildReservation(
+  prisma: Prisma.TransactionClient,
+  kbId: string,
+  quotaId: string | null
+) {
+  // Settlement and failure compensation share a KB and semester quota even
+  // when they concern different builds. Lock both before changing a build.
+  await prisma.$queryRaw`SELECT "id" FROM "public"."KB" WHERE "id" = CAST(${kbId} AS UUID) FOR UPDATE`
+  if (quotaId) {
+    await prisma.$queryRaw`SELECT "id" FROM "public"."KBGraphQuota" WHERE "id" = CAST(${quotaId} AS UUID) FOR UPDATE`
+  }
+}
+
 async function releaseKBGraphReservationInTransaction(
   prisma: Prisma.TransactionClient,
   buildId: string,
@@ -536,6 +549,7 @@ async function failKBGraphBuildBeforeDispatch(
         externalOperationId: true,
         dispatchClaimedAt: true,
         costStatus: true,
+        quotaId: true,
         status: true,
         kb: {
           select: { deletedAt: true, activeGraphBuildId: true },
@@ -555,6 +569,7 @@ async function failKBGraphBuildBeforeDispatch(
       return
     }
 
+    await lockKBGraphBuildReservation(tx, kbId, current.quotaId)
     const failed = await tx.kBGraphBuild.updateMany({
       where: {
         id: buildId,
@@ -768,6 +783,12 @@ export async function resolveAmbiguousKBGraphDispatch(
   }
 
   await dependencies.prisma.$transaction(async (tx) => {
+    const reservation = await tx.kBGraphBuild.findUnique({
+      where: { id: build.id },
+      select: { quotaId: true },
+    })
+    if (!reservation) return
+    await lockKBGraphBuildReservation(tx, build.kbId, reservation.quotaId)
     const failed = await tx.kBGraphBuild.updateMany({
       where: {
         id: build.id,
@@ -1573,10 +1594,12 @@ export async function markKBGraphBuildDispatchFailed(
         kbId: true,
         dispatchClaimedAt: true,
         costStatus: true,
+        quotaId: true,
       },
     })
     if (!build) return
 
+    await lockKBGraphBuildReservation(tx, build.kbId, build.quotaId)
     const failed = await tx.kBGraphBuild.updateMany({
       where: {
         id: build.id,
