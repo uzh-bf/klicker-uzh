@@ -4,8 +4,8 @@ date: 2026-10-11
 problem_type: test_failure
 severity: medium
 symptoms:
-  - "Model registry parity fails during test collection after image promotion."
-  - "Deployed registry accepts multiple BASE entries while the control-source validator rejects them."
+  - 'Model registry parity fails during test collection after image promotion.'
+  - 'Deployed registry accepts multiple BASE entries while the control-source validator rejects them.'
 root_cause: An image-only promotion advanced released images without advancing the control branch's shared registry policy.
 tags: [registry, promotion, configuration, parity]
 ---

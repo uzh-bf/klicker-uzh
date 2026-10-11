@@ -233,7 +233,7 @@ Search for `portfolio diversification` and tell me the exact marker it
 returns.” A successful turn calls `KB_doc_query` and shows
 `KLICKER_LOCAL_MCP_OK` in a non-empty final answer plus the synthetic source
 card. Reload the thread and require the tool result, answer, and source to
-remain visible. Use the direct `GPT-5.6 Luna` option only when isolating the
+remain visible. Use the direct `GPT-6 Luna` option only when isolating the
 router from the model/tool integration.
 
 **Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.2.0 fronts the stack over the shared `devnet` network. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery, 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime, 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct retained-runtime configuration and mount comparison, and 0.2.0 reads the `worktrees` cleanup declarations in `.devrouter.yml`. One-time host setup must happen **before** the container starts:
