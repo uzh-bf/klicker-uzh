@@ -137,6 +137,24 @@ describe('default chat model registry parity', () => {
     expect(fallbackIds(backendModels)).toContain('gpt-6-luna')
   })
 
+  test('the built-in participant fallback resolves in the local model gateway', () => {
+    const gateway = parseYaml(
+      readFileSync(
+        new URL('../../../util/litellm/config.yaml', import.meta.url),
+        'utf8'
+      )
+    ) as { model_list: { model_name: string }[] }
+    const deployments = new Set(
+      gateway.model_list.map((model) => model.model_name)
+    )
+
+    for (const models of [chatModels, backendModels]) {
+      for (const model of models.filter((entry) => entry.fallback)) {
+        expect(deployments.has(model.deploymentId)).toBe(true)
+      }
+    }
+  })
+
   test('both consumers accept additional BASE models and BASE Auto', () => {
     for (const parseRegistry of [parseChatRegistry, parseBackendRegistry]) {
       expect(

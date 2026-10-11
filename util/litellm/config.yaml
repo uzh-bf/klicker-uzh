@@ -92,6 +92,15 @@ model_list:
       api_base: 'os.environ/UPSTREAM_OPENAI_BASE_URL'
       api_key: 'os.environ/UPSTREAM_OPENAI_API_KEY'
 
+  - model_name: 'gpt-6-luna'
+    litellm_params:
+      model: 'openai/gpt-6-luna'
+      allowed_openai_params: ['reasoning_effort']
+      api_base: 'os.environ/UPSTREAM_OPENAI_BASE_URL'
+      api_key: 'os.environ/UPSTREAM_OPENAI_API_KEY'
+      num_retries: 0
+      timeout: 600
+
   # Direct GPT-5.6 Luna selection for comparison with Auto Mode. The fixed
   # effort aliases are internal router targets and are not exposed as chat
   # picker options.
