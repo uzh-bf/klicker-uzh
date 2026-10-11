@@ -453,10 +453,7 @@ export async function settleKBGraphBuildCost(
     }
 
     let sourceCurrent = true
-    if (
-      result.status === 'SUCCEEDED' &&
-      result.contract_version === 'klicker-kb-graph/v2'
-    ) {
+    if (result.status === 'SUCCEEDED') {
       await prisma.$queryRaw`SELECT "id" FROM "public"."KBResource" WHERE "kbId" = CAST(${build.kbId} AS UUID) ORDER BY "id" FOR UPDATE`
       sourceCurrent =
         build.sourceContentDigest ===
@@ -488,24 +485,26 @@ export async function settleKBGraphBuildCost(
         lateSuccess?.eligible === true)
     const settledStatus = publishSuccess
       ? DB.KBGraphBuildStatus.SUCCEEDED
-      : !sourceCurrent && succeeded
-        ? DB.KBGraphBuildStatus.SUPERSEDED
-        : (lateRejection?.status ??
-          (succeeded
+      : (lateRejection?.status ??
+        (!sourceCurrent && succeeded
+          ? DB.KBGraphBuildStatus.SUPERSEDED
+          : succeeded
             ? DB.KBGraphBuildStatus.SUCCEEDED
             : DB.KBGraphBuildStatus.FAILED))
     const settledStatusMessage = publishSuccess
       ? null
-      : !sourceCurrent && succeeded
-        ? 'The knowledge base sources changed while this graph was being built. Rebuild the graph using the current sources.'
-        : (lateRejection?.statusMessage ??
-          (succeeded ? null : terminalResultError(result)))
+      : (lateRejection?.statusMessage ??
+        (!sourceCurrent && succeeded
+          ? 'The knowledge base sources changed while this graph was being built. Rebuild the graph using the current sources.'
+          : succeeded
+            ? null
+            : terminalResultError(result)))
     const settledErrorCode = publishSuccess
       ? null
-      : !sourceCurrent && succeeded
-        ? 'KB_GRAPH_SOURCE_STALE'
-        : (lateRejection?.errorCode ??
-          (succeeded
+      : (lateRejection?.errorCode ??
+        (!sourceCurrent && succeeded
+          ? 'KB_GRAPH_SOURCE_STALE'
+          : succeeded
             ? null
             : (result.error_code ?? `KB_GRAPH_${result.status}`)))
     const failed = settledStatus === DB.KBGraphBuildStatus.FAILED

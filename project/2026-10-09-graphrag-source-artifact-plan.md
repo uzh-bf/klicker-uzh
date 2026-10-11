@@ -55,13 +55,13 @@ The OpenRouter review waiver remains in force.
 
 ### Test portfolio
 
-| Behavior at risk | Obligation and primary seam | Distinct failure |
-| --- | --- | --- |
-| KG independent preparation and source identity | Extend existing KG workflow tests | Ingestion unavailability blocks KG, or changed bytes reach generation |
-| Source replacement/deletion during graph completion | Extend existing PostgreSQL accounting tests | A stale/withdrawn source graph is published or metering is lost |
-| Timeout/completion concurrency | Retain existing deterministic accounting regression | Inconsistent KB/build lock order deadlocks metered or unmetered completion |
-| Ingestion replacement metadata | Retain applicable existing polling/webhook regressions | Desired blob name, size and MIME become inconsistent with prior serving state |
-| Existing admission and provider contracts | Run existing worker/API/terminal suites | Removing canonical plumbing changes ordinary payload, recovery or scope enforcement |
+| Behavior at risk                                    | Obligation and primary seam                            | Distinct failure                                                                    |
+| --------------------------------------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| KG independent preparation and source identity      | Extend existing KG workflow tests                      | Ingestion unavailability blocks KG, or changed bytes reach generation               |
+| Source replacement/deletion during graph completion | Extend existing PostgreSQL accounting tests            | A stale/withdrawn source graph is published or metering is lost                     |
+| Timeout/completion concurrency                      | Retain existing deterministic accounting regression    | Inconsistent KB/build lock order deadlocks metered or unmetered completion          |
+| Ingestion replacement metadata                      | Retain applicable existing polling/webhook regressions | Desired blob name, size and MIME become inconsistent with prior serving state       |
+| Existing admission and provider contracts           | Run existing worker/API/terminal suites                | Removing canonical plumbing changes ordinary payload, recovery or scope enforcement |
 
 Use synthetic fixtures and existing test files. Tests must not pin prose, seed
 contents or absence of implementation symbols. Provider-only changes do not prove

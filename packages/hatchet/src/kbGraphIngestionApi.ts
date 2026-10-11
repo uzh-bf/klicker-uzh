@@ -1,4 +1,3 @@
-import { isIP } from 'node:net'
 import {
   BlobSASPermissions,
   BlobServiceClient,
@@ -7,13 +6,13 @@ import {
   StorageSharedKeyCredential,
 } from '@azure/storage-blob'
 import { HatchetClient } from '@hatchet-dev/typescript-sdk'
+import { isIP } from 'node:net'
 import { getKnowledgeGraphConfig } from '@klicker-uzh/knowledge-graph'
 import {
-  type KBGraphBuildSource,
   KBGraphQualityTier,
   KBResourceType,
+  type KBGraphBuildSource,
 } from '@klicker-uzh/prisma/client'
-import type { CanonicalInputReference } from '@klicker-uzh/types'
 import { getBlobStorageAccountUrl } from '@klicker-uzh/util'
 import { parsePositiveIntegerEnv } from './env.js'
 
@@ -55,12 +54,10 @@ type ExternalHatchetTLSStrategy = 'tls' | 'mtls' | 'none'
 export type ExternalKBGraphPayload = {
   course_id: string
   storage_name: string
-  source_input_contract?: 'canonical-document/v1'
   sources: Array<{
     source_id: string
     source_url: string
     expected_content_sha256: string
-    canonical_input?: CanonicalInputReference
   }>
   upload_markdown: false
   upload_graph_artifacts: boolean
@@ -86,7 +83,6 @@ export type ExternalKBGraphPayload = {
     kb_id: string
     owner_id: string
     source_content_digest: string
-    source_input_digest?: string
     graphml_container_name: string
     graphml_blob_name: string
   }

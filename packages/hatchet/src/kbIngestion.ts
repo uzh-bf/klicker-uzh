@@ -10,11 +10,9 @@ import type {
   IngestKBResourceInput,
 } from '@klicker-uzh/types'
 import {
-  isCanonicalInputReference,
   MAX_KB_SOURCE_SIZE_BYTES,
   resolveKBStorageLimitBytes,
 } from '@klicker-uzh/types'
-import { normalizePublicHttpUrl } from '@klicker-uzh/util/public-url'
 import {
   buildKBIngestionSource,
   createKBIngestionApiClient,
@@ -135,12 +133,10 @@ async function admitIngestionSource({
   prisma,
   source,
   env,
-  inputContract,
 }: {
   input: IngestKBResourceInput
   prisma: KBIngestionPrisma
   source: KBIngestionSource
-  inputContract?: 'knowledge-source/v2'
   env: NodeJS.ProcessEnv
 }): Promise<KBIngestionSource | string | undefined> {
   return prisma.$transaction(async (tx) => {
@@ -178,7 +174,6 @@ async function admitIngestionSource({
       return currentResource.externalOperationId
     }
     const cachedSource =
-      !(inputContract && input.type === 'URL') &&
       currentResource.contentSha256 &&
       currentResource.mimeType &&
       currentResource.sizeBytes !== null
@@ -211,7 +206,7 @@ async function admitIngestionSource({
       retainedSizeBytes +
       (uploadTickets._sum.sizeBytes ?? 0) -
       (currentResource.sizeBytes ?? MAX_KB_SOURCE_SIZE_BYTES) +
-      (source.sizeBytes ?? MAX_KB_SOURCE_SIZE_BYTES)
+      source.sizeBytes
     if (
       projectedSizeBytes >
       resolveKBStorageLimitBytes(currentResource.kb.storageLimitMiB)
@@ -275,9 +270,7 @@ async function admitIngestionSource({
         status: {
           in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
         },
-        ...(inputContract && input.type === 'URL'
-          ? {}
-          : { contentSha256: null }),
+        contentSha256: null,
         externalOperationId: null,
       },
       data: {
@@ -352,15 +345,8 @@ export async function dispatchKBIngestion(
       return resource.externalOperationId
     }
 
-    const inputContract =
-      env.KB_CANONICAL_INPUT_ENABLED === 'true'
-        ? ('knowledge-source/v2' as const)
-        : undefined
     let source =
-      !(inputContract && input.type === 'URL') &&
-      resource.contentSha256 &&
-      resource.mimeType &&
-      resource.sizeBytes !== null
+      resource.contentSha256 && resource.mimeType && resource.sizeBytes !== null
         ? buildKBIngestionSource(
             input,
             resource.mimeType,
@@ -369,16 +355,6 @@ export async function dispatchKBIngestion(
             env
           )
         : undefined
-    if (inputContract && input.type === 'URL') {
-      source = {
-        kind: 'url',
-        url: normalizePublicHttpUrl(input.sourceUrl),
-        displayName: input.title,
-        mimeType: null,
-        contentSha256: null,
-        sizeBytes: null,
-      }
-    }
     if (!source) {
       const prepareSource =
         dependencies.prepareSource ??
@@ -390,7 +366,6 @@ export async function dispatchKBIngestion(
       input,
       prisma: dependencies.prisma,
       source,
-      inputContract,
       env,
     })
     if (typeof admitted === 'string' || !admitted) {
@@ -405,7 +380,6 @@ export async function dispatchKBIngestion(
       resourceVersion: input.resourceVersion,
       ingestionAttemptId: input.ingestionAttemptId,
       source,
-      ...(inputContract ? { inputContract } : {}),
     })
     const startedAt = now()
     const persisted = await dependencies.prisma.$transaction(async (tx) => {
@@ -851,7 +825,11 @@ async function reconcileResource({
   } = resource
   const ingestionOperation =
     resource.ingestionOperation ?? KBIngestionOperation.UPSERT
-  if (!ingestionAttemptId || !externalOperationId) {
+  if (
+    !ingestionAttemptId ||
+    !externalOperationId ||
+    (ingestionOperation === KBIngestionOperation.UPSERT && !contentSha256)
+  ) {
     return
   }
   const identifiers = {
@@ -861,34 +839,17 @@ async function reconcileResource({
   }
 
   try {
-    // Deletion keeps the existing v1 contract. A pending upsert is polled
-    // through the canonical contract when canonical admission is enabled or
-    // when it has no caller hash yet; a legacy operation with a known hash
-    // stays on v1 while canonical admission is disabled.
-    const canonical =
-      ingestionOperation !== KBIngestionOperation.DELETE &&
-      (env.KB_CANONICAL_INPUT_ENABLED === 'true' || contentSha256 === null)
-    const operation = canonical
-      ? await client.getOperation(externalOperationId, 'knowledge-source/v2')
-      : await client.getOperation(externalOperationId)
+    const operation = await client.getOperation(externalOperationId)
     if (
       operation.operationId !== externalOperationId ||
       operation.projectId !== getKBIngestionProjectId(env) ||
       operation.producer !== 'klicker' ||
       operation.externalResourceId !== resource.id ||
       operation.resourceVersion !== resource.resourceVersion ||
-      (!canonical &&
-        operation.expectedSha256 !==
-          (ingestionOperation === KBIngestionOperation.DELETE
-            ? null
-            : contentSha256)) ||
-      (canonical &&
-        ingestionOperation === KBIngestionOperation.UPSERT &&
-        contentSha256 !== null &&
-        ((operation.expectedSha256 !== null &&
-          operation.expectedSha256 !== contentSha256) ||
-          (operation.observedSha256 !== null &&
-            operation.observedSha256 !== contentSha256))) ||
+      operation.expectedSha256 !==
+        (ingestionOperation === KBIngestionOperation.DELETE
+          ? null
+          : contentSha256) ||
       (ingestionOperation === KBIngestionOperation.DELETE
         ? operation.operation !== 'delete'
         : operation.operation === 'delete')
@@ -904,27 +865,7 @@ async function reconcileResource({
     if (
       ingestionOperation === KBIngestionOperation.UPSERT &&
       operation.status === 'succeeded' &&
-      !canonical &&
       operation.observedSha256 !== contentSha256
-    ) {
-      await logErrorBestEffort(
-        logger,
-        'KB ingestion observed digest correlation failed',
-        identifiers
-      )
-      return
-    }
-
-    // A pinned raw digest must match any serving cutover to the desired
-    // version, regardless of the operation status. A canonical URL with no
-    // caller hash learns its digest only after a successful cutover.
-    if (
-      canonical &&
-      ingestionOperation === KBIngestionOperation.UPSERT &&
-      contentSha256 !== null &&
-      operation.serving.activeResourceVersion === resource.resourceVersion &&
-      operation.serving.activeSha256 !== null &&
-      operation.serving.activeSha256 !== contentSha256
     ) {
       await logErrorBestEffort(
         logger,
@@ -965,24 +906,6 @@ async function reconcileResource({
       return
     }
 
-    const reference = operation.canonicalInput
-    if (
-      canonical &&
-      (operation.inputContract !== 'knowledge-source/v2' ||
-        (reference &&
-          (!isCanonicalInputReference(reference) ||
-            reference.kb_id !== resource.kbId ||
-            reference.external_resource_id !== resource.id ||
-            reference.project_id !== getKBIngestionProjectId(env) ||
-            reference.producer_id !== 'klicker' ||
-            reference.resource_version !==
-              operation.serving.activeResourceVersion ||
-            reference.source_sha256 !== operation.serving.activeSha256)) ||
-        (operation.status === 'succeeded' && !reference) ||
-        (operation.serving.activeResourceVersion !== null && !reference))
-    ) {
-      throw new Error('Canonical ingestion correlation failed')
-    }
     const transition = mapOperationStatus(operation.status)
     const servingMatchesCurrent =
       ingestionOperation === KBIngestionOperation.DELETE
@@ -990,8 +913,7 @@ async function reconcileResource({
           operation.serving.activeSha256 === null
         : operation.serving.activeResourceVersion ===
             resource.resourceVersion &&
-          operation.serving.activeSha256 ===
-            (canonical ? operation.observedSha256 : contentSha256)
+          operation.serving.activeSha256 === contentSha256
     if (operation.status === 'succeeded' && !servingMatchesCurrent) {
       await logInfoBestEffort(
         logger,
@@ -1041,21 +963,6 @@ async function reconcileResource({
           errorCode: operation.errorCode,
           activeResourceVersion: operation.serving.activeResourceVersion,
           activeContentSha256: operation.serving.activeSha256,
-          ...(canonical
-            ? {
-                ...(operation.servingSourceMetadata && servingMatchesCurrent
-                  ? {
-                      sizeBytes: operation.servingSourceMetadata.byte_count,
-                      mimeType: operation.servingSourceMetadata.mime_type,
-                    }
-                  : {}),
-                ...(operation.status === 'succeeded' &&
-                servingMatchesCurrent &&
-                operation.observedSha256
-                  ? { contentSha256: operation.observedSha256 }
-                  : {}),
-              }
-            : {}),
           ...(resourceStatus === KBResourceStatus.READY
             ? { ingestedAt: operationUpdatedAt }
             : {}),
@@ -1076,12 +983,6 @@ async function reconcileResource({
           status: transition.runStatus,
           statusMessage: transition.statusMessage,
           errorCode: operation.errorCode,
-          ...(canonical &&
-          operation.status === 'succeeded' &&
-          servingMatchesCurrent &&
-          operation.observedSha256
-            ? { contentSha256: operation.observedSha256 }
-            : {}),
           ...(transition.terminal ? { finishedAt: operationUpdatedAt } : {}),
         },
       })
@@ -1127,6 +1028,7 @@ export async function monitorActiveKBIngestions(
     OR: [
       {
         ingestionOperation: KBIngestionOperation.UPSERT,
+        contentSha256: { not: null },
         deletedAt: null,
       },
       {

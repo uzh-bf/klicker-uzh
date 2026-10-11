@@ -3,8 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { hashKBContentDigestEntries } from '../src/digest.js'
 import {
-  getPublishedKnowledgeGraph,
   KnowledgeGraphNotPublishedError,
+  getPublishedKnowledgeGraph,
 } from '../src/publication.js'
 
 type MockKB = {
