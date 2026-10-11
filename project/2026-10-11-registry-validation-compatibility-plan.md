@@ -40,4 +40,8 @@ After local verification, ordinary non-force task push and draft PR are already 
 
 ## Progress
 
-Planning: derived from the Astra-approved production roadmap and explicit October11 implementation instruction. Baseline forge unit38156141969 reproduces collection failure; local reproduction pending. Required scoped planning challenge pending. No source changes yet. Native broad production goal remains BLOCKED and is not replaced.
+Planning challenge: APPROVED by the existing Astra planner. The local unmodified promotion tree reproduces the same collection-time Zod failure as unit38156141969. Implementation backports the released shared policy and only the two fallback entries.
+
+Verification extended the owned test set to apps/chat/test/account-usage-route.test.ts after four stale model selections and one resulting queued mock response reproduced failures. The route fixture now owns its synthetic prices; model identity and observable credit guards remain covered independently of default pricing. All six focused registry/credit suites pass: 65 tests. Biome checks all six changed source/test files without fixes; diff whitespace checks pass. Test execution uses Node24.21.0 and Vitest3.2.4 in a network-disabled one-shot container, aliases the actual shared policy source, and reuses generated Prisma enum/browser bindings without database access. Full hosted CI and Browser proof remain pending.
+
+One implementation slice is complete, with simplification, risk review and integrated final review next. Standing task push and draft PR delivery remain approved. Native broad production goal remains BLOCKED and is not replaced.

@@ -1,5 +1,20 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 
+type RegistryIssue = { code: string; path: (string | number)[] }
+
+function getRegistryIssues(
+  parseRegistry: (value: unknown) => unknown,
+  value: unknown
+): RegistryIssue[] {
+  try {
+    parseRegistry(value)
+  } catch (error) {
+    const issues = (error as { issues?: unknown }).issues
+    if (Array.isArray(issues)) return issues as RegistryIssue[]
+  }
+  return []
+}
+
 afterEach(() => {
   vi.unstubAllEnvs()
   vi.resetModules()
@@ -29,9 +44,9 @@ describe('chat model registry provider protocol', () => {
           cost: { input: 1, output: 1 },
         },
         {
-          id: 'gpt-5.6-luna',
-          deploymentId: 'gpt-5.6-luna',
-          name: 'GPT-5.6 Luna',
+          id: 'gpt-6-luna',
+          deploymentId: 'gpt-6-luna',
+          name: 'GPT-6 Luna',
           fallback: true,
           usageClass: 'BASE',
           maxOutputTokens: 4096,
@@ -57,7 +72,7 @@ describe('chat model registry provider protocol', () => {
       usesResponsesApi: true,
       supportedReasoningEfforts: ['medium'],
     })
-    expect(byId.get('gpt-5.6-luna')).toMatchObject({
+    expect(byId.get('gpt-6-luna')).toMatchObject({
       supportsReasoning: false,
       usesResponsesApi: false,
       supportedReasoningEfforts: [],
@@ -94,9 +109,9 @@ describe('chat model registry provider protocol', () => {
           cost: { input: 1, output: 1 },
         },
         {
-          id: 'gpt-5.6-luna',
-          deploymentId: 'gpt-5.6-luna',
-          name: 'GPT-5.6 Luna',
+          id: 'gpt-6-luna',
+          deploymentId: 'gpt-6-luna',
+          name: 'GPT-6 Luna',
           fallback: true,
           usageClass: 'BASE',
           maxOutputTokens: 4096,
@@ -128,8 +143,8 @@ describe('chat model registry provider protocol', () => {
       getModelsForChatbot({ allowedModelIds: ['gpt-4.1-mini'] }).map(
         (model) => model.id
       )
-    ).toEqual(['gpt-5.6-luna'])
-    expect(getAutomaticModelId(['gpt-4.1-mini'])).toBe('gpt-5.6-luna')
+    ).toEqual(['gpt-6-luna'])
+    expect(getAutomaticModelId(['gpt-4.1-mini'])).toBe('gpt-6-luna')
   })
 
   test('always selects Luna as the participant fallback', async () => {
@@ -162,9 +177,9 @@ describe('chat model registry provider protocol', () => {
           cost: { input: 1, output: 1 },
         },
         {
-          id: 'gpt-5.6-luna',
-          deploymentId: 'gpt-5.6-luna',
-          name: 'GPT-5.6 Luna',
+          id: 'gpt-6-luna',
+          deploymentId: 'gpt-6-luna',
+          name: 'GPT-6 Luna',
           fallback: true,
           usageClass: 'BASE',
           maxOutputTokens: 4096,
@@ -177,50 +192,57 @@ describe('chat model registry provider protocol', () => {
       '../src/lib/server/chatModelRegistry'
     )
 
-    expect(getParticipantFallbackModelId()).toBe('gpt-5.6-luna')
-    vi.stubEnv('CHAT_FALLBACK_MODEL_ID', 'gpt-5.6-luna')
-    expect(getParticipantFallbackModelId()).toBe('gpt-5.6-luna')
+    expect(getParticipantFallbackModelId()).toBe('gpt-6-luna')
+    vi.stubEnv('CHAT_FALLBACK_MODEL_ID', 'gpt-6-luna')
+    expect(getParticipantFallbackModelId()).toBe('gpt-6-luna')
   })
 
-  test('rejects a registry whose sole BASE model is not fallback Luna', async () => {
+  test('rejects a registry unless GPT-6 Luna is a BASE fallback', async () => {
     const { parseChatModelRegistry } = await import(
       '../src/lib/server/chatModelRegistry'
     )
 
-    expect(() =>
-      parseChatModelRegistry([
-        {
-          id: 'gpt-5.6-luna',
-          deploymentId: 'gpt-5.6-luna',
-          name: 'GPT-5.6 Luna',
-          fallback: true,
-          usageClass: 'ADVANCED',
-          maxOutputTokens: 4096,
-          cost: { input: 0.2, output: 1.2 },
-        },
-        {
-          id: 'other-base',
-          deploymentId: 'other-base',
-          name: 'Other Base',
-          usageClass: 'BASE',
-          maxOutputTokens: 4096,
-          cost: { input: 1, output: 1 },
-        },
-      ])
-    ).toThrow(/gpt-5\.6-luna.*only BASE/)
+    const nonBaseLunaRegistry = [
+      {
+        id: 'auto',
+        deploymentId: 'auto-router',
+        name: 'Auto',
+        usageClass: 'ADVANCED',
+        maxOutputTokens: 4096,
+        cost: { input: 1, output: 1 },
+      },
+      {
+        id: 'gpt-6-luna',
+        deploymentId: 'gpt-6-luna',
+        name: 'GPT-6 Luna',
+        fallback: true,
+        usageClass: 'ADVANCED',
+        maxOutputTokens: 4096,
+        cost: { input: 0.1, output: 0.5 },
+      },
+      {
+        id: 'other-base',
+        deploymentId: 'other-base',
+        name: 'Other Base',
+        usageClass: 'BASE',
+        maxOutputTokens: 4096,
+        cost: { input: 1, output: 1 },
+      },
+    ]
+    const nonFallbackLunaRegistry = nonBaseLunaRegistry.map((model) =>
+      model.id === 'gpt-6-luna'
+        ? { ...model, usageClass: 'BASE' as const, fallback: false }
+        : model
+    )
 
-    expect(() =>
-      parseChatModelRegistry([
-        {
-          id: 'gpt-5.6-luna',
-          deploymentId: 'gpt-5.6-luna',
-          name: 'GPT-5.6 Luna',
-          usageClass: 'BASE',
-          maxOutputTokens: 4096,
-          cost: { input: 0.2, output: 1.2 },
-        },
-      ])
-    ).toThrow(/participant-credit fallback/)
+    expect(
+      getRegistryIssues(parseChatModelRegistry, nonBaseLunaRegistry)
+    ).toContainEqual(expect.objectContaining({ code: 'custom', path: [] }))
+    expect(
+      getRegistryIssues(parseChatModelRegistry, nonFallbackLunaRegistry)
+    ).toContainEqual(
+      expect.objectContaining({ code: 'custom', path: [1, 'fallback'] })
+    )
   })
 
   test('fails closed when supplied registry JSON is invalid', async () => {

@@ -117,9 +117,9 @@ const DEFAULT_CHAT_MODEL_REGISTRY_INPUT = [
     cost: { input: 1.0, output: 5.0 },
   },
   {
-    id: 'gpt-5.6-luna',
-    deploymentId: 'gpt-5.6-luna',
-    name: 'GPT-5.6 Luna',
+    id: 'gpt-6-luna',
+    deploymentId: 'gpt-6-luna',
+    name: 'GPT-6 Luna',
     description: 'OpenAI reasoning model',
     fallback: true,
     supportsReasoning: true,
@@ -128,7 +128,7 @@ const DEFAULT_CHAT_MODEL_REGISTRY_INPUT = [
     maxOutputTokens: 4096,
     usageClass: 'BASE',
     apiVersion: 'preview',
-    cost: { input: 0.2, output: 1.2 },
+    cost: { input: 0.1, output: 0.5 },
   },
   {
     id: 'gpt-4.1',
