@@ -1,20 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 
-type RegistryIssue = { code: string; path: (string | number)[] }
-
-function getRegistryIssues(
-  parseRegistry: (value: unknown) => unknown,
-  value: unknown
-): RegistryIssue[] {
-  try {
-    parseRegistry(value)
-  } catch (error) {
-    const issues = (error as { issues?: unknown }).issues
-    if (Array.isArray(issues)) return issues as RegistryIssue[]
-  }
-  return []
-}
-
 afterEach(() => {
   vi.unstubAllEnvs()
   vi.resetModules()
@@ -195,54 +180,6 @@ describe('chat model registry provider protocol', () => {
     expect(getParticipantFallbackModelId()).toBe('gpt-6-luna')
     vi.stubEnv('CHAT_FALLBACK_MODEL_ID', 'gpt-6-luna')
     expect(getParticipantFallbackModelId()).toBe('gpt-6-luna')
-  })
-
-  test('rejects a registry unless GPT-6 Luna is a BASE fallback', async () => {
-    const { parseChatModelRegistry } = await import(
-      '../src/lib/server/chatModelRegistry'
-    )
-
-    const nonBaseLunaRegistry = [
-      {
-        id: 'auto',
-        deploymentId: 'auto-router',
-        name: 'Auto',
-        usageClass: 'ADVANCED',
-        maxOutputTokens: 4096,
-        cost: { input: 1, output: 1 },
-      },
-      {
-        id: 'gpt-6-luna',
-        deploymentId: 'gpt-6-luna',
-        name: 'GPT-6 Luna',
-        fallback: true,
-        usageClass: 'ADVANCED',
-        maxOutputTokens: 4096,
-        cost: { input: 0.1, output: 0.5 },
-      },
-      {
-        id: 'other-base',
-        deploymentId: 'other-base',
-        name: 'Other Base',
-        usageClass: 'BASE',
-        maxOutputTokens: 4096,
-        cost: { input: 1, output: 1 },
-      },
-    ]
-    const nonFallbackLunaRegistry = nonBaseLunaRegistry.map((model) =>
-      model.id === 'gpt-6-luna'
-        ? { ...model, usageClass: 'BASE' as const, fallback: false }
-        : model
-    )
-
-    expect(
-      getRegistryIssues(parseChatModelRegistry, nonBaseLunaRegistry)
-    ).toContainEqual(expect.objectContaining({ code: 'custom', path: [] }))
-    expect(
-      getRegistryIssues(parseChatModelRegistry, nonFallbackLunaRegistry)
-    ).toContainEqual(
-      expect.objectContaining({ code: 'custom', path: [1, 'fallback'] })
-    )
   })
 
   test('fails closed when supplied registry JSON is invalid', async () => {

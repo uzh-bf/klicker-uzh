@@ -1086,7 +1086,7 @@ export async function createChatbot(
   const auto = modelRegistry.find((model) => model.id === 'auto')
   if (autoPolicyIssues.length > 0 || !auto) {
     throw new GraphQLError(
-      'Chatbot defaults require exactly one valid non-reasoning ADVANCED Auto model'
+      'Chatbot defaults require exactly one valid non-reasoning Auto model'
     )
   }
 
