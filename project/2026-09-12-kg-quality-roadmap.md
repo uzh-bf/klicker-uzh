@@ -1,11 +1,34 @@
 # Knowledge graph quality roadmap
 
-Date: 2026-09-12  
-Status: roadmap direction reviewed; approved checkpoint A source package and controlled evaluation delivered on 2026-09-12; a 2026-09-13 investigation added the focus-topic control design to W8 and the improvement levers; a 2026-09-14 follow-up delivered the lecturer-facing generation-language selector. Remaining roadmap acceptance work is listed below.  
-Scope: graph generation and its use in content generation, chatbot retrieval, and lecturer review.  
-Parent: [six-domain selection plan](2026-09-11-kg-domain-selection-plan.md).
+October 11 scope revision: the user approved keeping ingestion and KG
+independently operated, with no database changes. The configured Astra review
+identified runtime, parser and lifecycle coupling in the canonical-reader design.
+The revised [source plan](2026-10-09-graphrag-source-artifact-plan.md) removes that
+adapter from draft [Klicker #6460](https://github.com/uzh-bf/klicker-uzh/pull/6460),
+[ingestion !229](https://gitlab.uzh.ch/ai-infrastructure/services/data-ingestion/-/merge_requests/229)
+and [KG !36](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/36),
+retaining useful independent correctness fixes and regression protection.
 
-## Current delivery checkpoint — 2026-10-08
+KG consumes source references and expected raw hashes through its existing
+contract. It requires no live ingestion reader or operation lookup. Dynamic URLs
+can still fail digest validation; this revision does not guarantee availability
+of earlier bytes or identical parsed text. Producer-owned immutable raw snapshots
+are a conditional follow-up, with retention and deletion decisions before work.
+Automatic parser-only freshness remains deferred. Earlier canonical checks do
+not qualify the revised source. Merge, deployment, live refresh/build, activation
+and paid evaluation remain separate gates; OpenRouter review remains waived.
+
+## Current planning checkpoint — 2026-10-11
+
+W9a now qualifies independent workflows and source/publication guards, including
+KB-before-quota ordering across settlement and all dispatch-failure paths. A mutable
+URL mismatch remains a safe build rejection, not a repaired availability problem.
+Use stable, digest-verified controlled inputs for the next staging comparison.
+If the intended corpus cannot meet that condition, scope producer-owned raw
+snapshots before its next build. Student-map fixtures can qualify independently.
+No current serving, flag, participant-authentication or quality claim is made here.
+
+### Previous delivery checkpoint — 2026-10-08
 
 This update supersedes the October 7 runtime and failure-charging blockers below.
 The existing graph-control PR [#6229](https://github.com/uzh-bf/klicker-uzh/pull/6229)
@@ -130,13 +153,13 @@ dependencies; merges and deployments keep their named authorization boundaries.
 
 The user approved checkpoint A implementation, its controlled reruns, and a comprehensive review. Source delivery is in generator MR !17, stacked on the domain selection MR !15; Klicker foundation PR #5904 and selector PR #5906 remain drafts. This status records achieved evidence without expanding the roadmap's remaining scope.
 
-| Area                              | Achieved                                                                                                                                                                           | Still required                                                                                                                            |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Six-domain UI and frozen dispatch | All six versioned choices, category preview, persisted selections, compatibility gates, focused contract tests, mocked browser proof, and the unmocked UI → API → worker → publication and participant-read acceptance on an isolated synthetic stack | Worker release/capability activation under separate authority; the acceptance does not measure downstream content or chat quality          |
-| W1 diagnostics                    | Optional atomic cleaning reports, recipe thresholds, normalization/repair details, retained raw/cleaned artifacts                                                                  | Consumer-facing diagnostics and richer provenance/decision observability                                                                  |
-| W2 category reliability           | Frozen diagnostic improved from 11/33 to 33/33 valid builds on the first repaired matrix; corrected matrix also 33/33; complete malformed-batch rejection protected by regressions | Legacy/explicit-Finance equivalence and actual dispatch-path diagnostic; arbitrary-corpus reliability remains unproven                    |
-| W3 semantic preservation          | Value/unit/opposite/subtype guards, compound extrema fixes, described-leaf retention, safe handling of failed merge decisions                                                      | Cross-category regressions fixed in `67a6646` with deterministic evidence; post-fix consumer precision/noise trade-off remains unmeasured |
-| W4–W12                            | Direction and dependencies documented; existing content/chat/correction primitives identified                                                                                      | Implementation and consumer-quality evidence; no claim these packages are complete                                                        |
+| Area                              | Achieved                                                                                                                                                                                                                                              | Still required                                                                                                                            |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Six-domain UI and frozen dispatch | All six versioned choices, category preview, persisted selections, compatibility gates, focused contract tests, mocked browser proof, and the unmocked UI → API → worker → publication and participant-read acceptance on an isolated synthetic stack | Worker release/capability activation under separate authority; the acceptance does not measure downstream content or chat quality         |
+| W1 diagnostics                    | Optional atomic cleaning reports, recipe thresholds, normalization/repair details, retained raw/cleaned artifacts                                                                                                                                     | Consumer-facing diagnostics and richer provenance/decision observability                                                                  |
+| W2 category reliability           | Frozen diagnostic improved from 11/33 to 33/33 valid builds on the first repaired matrix; corrected matrix also 33/33; complete malformed-batch rejection protected by regressions                                                                    | Legacy/explicit-Finance equivalence and actual dispatch-path diagnostic; arbitrary-corpus reliability remains unproven                    |
+| W3 semantic preservation          | Value/unit/opposite/subtype guards, compound extrema fixes, described-leaf retention, safe handling of failed merge decisions                                                                                                                         | Cross-category regressions fixed in `67a6646` with deterministic evidence; post-fix consumer precision/noise trade-off remains unmeasured |
+| W4–W12                            | Direction and dependencies documented; existing content/chat/correction primitives identified                                                                                                                                                         | Implementation and consumer-quality evidence; no claim these packages are complete                                                        |
 
 The earlier rerun findings conflated normalization with LLM repair and double-counted baseline cost. The receipt audit establishes baseline provider cost USD0.65058847, first rerunUSD0.70012750, and cumulative provider cost USD1.35071597 before the corrected rerun; conservative historic charges add USD0.12560240. Current per-matrix reporting separates these figures.
 
@@ -192,14 +215,14 @@ These observations establish defects, not their historical origin or the best do
 
 ### Reuse existing work
 
-| Existing primitive or work                                                                                           | Disposition      | Roadmap delta and owner                                                                                                                                 |
-| -------------------------------------------------------------------------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Versioned domain catalog, frozen build selection, worker capability checks, policy/recipe digests                    | Extend           | Generator extends measurable policy behavior; Klicker continues to expose compatible versions and frozen selections                                     |
-| KB build ledger, pinned corpus, cost reservation/settlement, last-good publication, immutable graph bundles          | Reuse / extend   | Add bounded quality diagnostics and complete effective settings without creating a second lifecycle; generator and Klicker maintain their current sides |
-| Source chunk identity, graph-to-chunk selection, blueprint objectives, evidence and calculation validation           | Compose          | Evaluate coverage and strengthen provenance at the existing seams; generator/content owner                                                              |
-| Graph correction sets, instructor assertions, preview/materialization and consistency validation in generator branch | Compose          | Product review and correction adoption after dependency readiness; avoid a separate mutable graph editor                                                |
-| Document retrieval plus basic graph-assisted query expansion in PR #5912                                             | Reuse / evaluate | Chat owner measures the existing design, then adds passage-oriented graph retrieval only if justified                                                   |
-| Graph build focus topic in draft [PR #5957](https://github.com/uzh-bf/klicker-uzh/pull/5957) and [generator MR !18](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/18) | Reuse / evaluate | Extraction-emphasis lever already recorded in recipe lineage; decide retention once the question-side focus lands; generator and Klicker UI owners        |
+| Existing primitive or work                                                                                                                                                                     | Disposition      | Roadmap delta and owner                                                                                                                                 |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Versioned domain catalog, frozen build selection, worker capability checks, policy/recipe digests                                                                                              | Extend           | Generator extends measurable policy behavior; Klicker continues to expose compatible versions and frozen selections                                     |
+| KB build ledger, pinned corpus, cost reservation/settlement, last-good publication, immutable graph bundles                                                                                    | Reuse / extend   | Add bounded quality diagnostics and complete effective settings without creating a second lifecycle; generator and Klicker maintain their current sides |
+| Source chunk identity, graph-to-chunk selection, blueprint objectives, evidence and calculation validation                                                                                     | Compose          | Evaluate coverage and strengthen provenance at the existing seams; generator/content owner                                                              |
+| Graph correction sets, instructor assertions, preview/materialization and consistency validation in generator branch                                                                           | Compose          | Product review and correction adoption after dependency readiness; avoid a separate mutable graph editor                                                |
+| Document retrieval plus basic graph-assisted query expansion in PR #5912                                                                                                                       | Reuse / evaluate | Chat owner measures the existing design, then adds passage-oriented graph retrieval only if justified                                                   |
+| Graph build focus topic in draft [PR #5957](https://github.com/uzh-bf/klicker-uzh/pull/5957) and [generator MR !18](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/18) | Reuse / evaluate | Extraction-emphasis lever already recorded in recipe lineage; decide retention once the question-side focus lands; generator and Klicker UI owners      |
 
 The domain feature is in draft [Klicker foundation PR #5904](https://github.com/uzh-bf/klicker-uzh/pull/5904), [selector PR #5906](https://github.com/uzh-bf/klicker-uzh/pull/5906), and [generator MR !15](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/15), with the generator's existing MR !4 dependency preserved. Source presence is not deployment proof.
 
@@ -213,28 +236,28 @@ The [existing production roadmap](2026-08-10-kb-graph-production-roadmap.md) own
 
 ### Inputs, extraction, and graph construction
 
-| Lever                         | Current foothold                                                                                              | Proposed quality improvement and tradeoff                                                                                                                               |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Domain selection              | Six explicit policies: Finance, Economics, Business Administration, Mathematics, Informatics, General / Mixed | Tune entity definitions, relation guidance, examples, exclusion and retention rules. More specific labels help only when they preserve the right concepts and relations |
-| Generation language           | Delivered selector for German and English; Klicker freezes it with the policy pair and every catalog policy ships both category sets  | Evaluate whether one language's categories fit sources written in the other. The control is explicit, so it never follows the UI locale                                              |
-| Course context                | Policy supports terminology, themes, audience, and bounded overrides; UI currently selects a domain           | Add justified course-level context after evaluation. Avoid silently inferring a domain or exposing a large prompt editor                                                |
-| Document conversion           | Existing ingestion and page/source identity                                                                   | Preserve headings, table structure, formulas, code, captions, and reading order. Multimodal extraction adds cost and a data boundary; use it only for demonstrated gaps |
-| Chunking and context          | Worker uses fixed-token chunking; size, overlap, and gleaning are recipe inputs                               | Compare structure-aware sections and parent context with fixed chunks. Larger context may improve cross-sentence relations but dilute extraction and increase cost      |
-| Extraction strategy           | LightRAG extraction, domain guidance, and gleaning                                                            | Improve endpoint completeness, bounded structured output, relation direction and conditions. Additional passes must earn their cost through missed-evidence recovery    |
-| Entity identity and relations | Alias/merge candidates, qualifier/index/acronym guards, relation descriptions                                 | Preserve symbol values, units, subtype distinctions, negation, and context. Introduce stable machine identity separately from translated display labels where needed    |
-| Build focus topic             | Draft focus field renders a prioritization block inside extraction guidance and enters recipe parameters and digest | Measure whether extraction emphasis improves downstream selection; it never narrows coverage or adds facts, so it cannot replace domain policy or source scoping        |
+| Lever                         | Current foothold                                                                                                                     | Proposed quality improvement and tradeoff                                                                                                                               |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Domain selection              | Six explicit policies: Finance, Economics, Business Administration, Mathematics, Informatics, General / Mixed                        | Tune entity definitions, relation guidance, examples, exclusion and retention rules. More specific labels help only when they preserve the right concepts and relations |
+| Generation language           | Delivered selector for German and English; Klicker freezes it with the policy pair and every catalog policy ships both category sets | Evaluate whether one language's categories fit sources written in the other. The control is explicit, so it never follows the UI locale                                 |
+| Course context                | Policy supports terminology, themes, audience, and bounded overrides; UI currently selects a domain                                  | Add justified course-level context after evaluation. Avoid silently inferring a domain or exposing a large prompt editor                                                |
+| Document conversion           | Existing ingestion and page/source identity                                                                                          | Preserve headings, table structure, formulas, code, captions, and reading order. Multimodal extraction adds cost and a data boundary; use it only for demonstrated gaps |
+| Chunking and context          | Worker uses fixed-token chunking; size, overlap, and gleaning are recipe inputs                                                      | Compare structure-aware sections and parent context with fixed chunks. Larger context may improve cross-sentence relations but dilute extraction and increase cost      |
+| Extraction strategy           | LightRAG extraction, domain guidance, and gleaning                                                                                   | Improve endpoint completeness, bounded structured output, relation direction and conditions. Additional passes must earn their cost through missed-evidence recovery    |
+| Entity identity and relations | Alias/merge candidates, qualifier/index/acronym guards, relation descriptions                                                        | Preserve symbol values, units, subtype distinctions, negation, and context. Introduce stable machine identity separately from translated display labels where needed    |
+| Build focus topic             | Draft focus field renders a prioritization block inside extraction guidance and enters recipe parameters and digest                  | Measure whether extraction emphasis improves downstream selection; it never narrows coverage or adds facts, so it cannot replace domain policy or source scoping        |
 
 ### Cleaning, consumers, and operation
 
-| Lever                      | Current foothold                                                               | Proposed quality improvement and tradeoff                                                                                                                |
-| -------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Cleaning aggressiveness    | Noise plan, merge plan, similarity threshold 0.92, chunk/degree filter         | Conservative identity decisions and evidence-aware retention. A compact viewer may use a projection without deleting material needed by other consumers  |
-| Evidence and diagnostics   | Source/chunk maps, recipe and bundle hashes, correction reports                | Record why a node exists or disappeared, and whether each pass actually ran. Extend lineage without copying private source bodies into product telemetry |
-| Model and embedding choice | Separate extraction/cleaning models, reasoning controls, speed/quality presets | Compare effective model routes, embeddings, reranking, and budgets. A stronger model or a “high” tier is a hypothesis, not demonstrated quality          |
-| Consumer selection         | Content subgraph/evidence ranking; separate chat query expansion               | Optimize evidence selection per task, controlling centrality bias, duplication, irrelevant expansion, and evidence truncation                            |
+| Lever                      | Current foothold                                                                                                                  | Proposed quality improvement and tradeoff                                                                                                                       |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cleaning aggressiveness    | Noise plan, merge plan, similarity threshold 0.92, chunk/degree filter                                                            | Conservative identity decisions and evidence-aware retention. A compact viewer may use a projection without deleting material needed by other consumers         |
+| Evidence and diagnostics   | Source/chunk maps, recipe and bundle hashes, correction reports                                                                   | Record why a node exists or disappeared, and whether each pass actually ran. Extend lineage without copying private source bodies into product telemetry        |
+| Model and embedding choice | Separate extraction/cleaning models, reasoning controls, speed/quality presets                                                    | Compare effective model routes, embeddings, reranking, and budgets. A stronger model or a “high” tier is a hypothesis, not demonstrated quality                 |
+| Consumer selection         | Content subgraph/evidence ranking; separate chat query expansion                                                                  | Optimize evidence selection per task, controlling centrality bias, duplication, irrelevant expansion, and evidence truncation                                   |
 | Generation focus topic     | Blueprint objectives and graph-proposed topic targets steer each slot; a legacy topic subgraph filter is unreachable from Klicker | Expose a lecturer focus that concentrates one generation batch on a topic; requires a versioned blueprint contract because the generator rejects unknown fields |
-| Lecturer feedback          | Content review plus generator correction primitives                            | Classify errors and apply reviewable, versioned corrections. Ratings alone do not identify a graph defect or justify automated prompt changes            |
-| Freshness and reuse        | Pinned sources, immutable artifacts, staleness/publication checks              | Reuse unchanged computation safely; reconcile changed/deleted sources and corrections. Automatic paid rebuilds remain a separate product decision        |
+| Lecturer feedback          | Content review plus generator correction primitives                                                                               | Classify errors and apply reviewable, versioned corrections. Ratings alone do not identify a graph defect or justify automated prompt changes                   |
+| Freshness and reuse        | Pinned sources, immutable artifacts, staleness/publication checks                                                                 | Reuse unchanged computation safely; reconcile changed/deleted sources and corrections. Automatic paid rebuilds remain a separate product decision               |
 
 ## Sequenced work packages
 
@@ -302,9 +325,38 @@ The focus arm is accepted only when a paired same-graph comparison shows the int
 
 Completion: blinded educator review demonstrates a meaningful gain in predeclared measures, with no critical grounding or format regression. Report usable drafts per attempted batch and editing effort, not just quality of retained items. Preserve explicit review/approval before publication. Deterministic generation contracts and focused end-to-end synthetic jobs support, but do not replace, content review.
 
-**W9 — Chat retrieval and answer quality.** Owner: chat/retrieval engineer. Dependency: W1 chat cases and qualified document-tool execution. Size: medium initially; advanced approaches conditional. The [October adoption plan](2026-10-07-graphrag-adoption-plan.md) owns current source/staging status and the finite qualification protocol. The earlier graph feature is serving on staging; its reliability follow-up, draft PR #6421, is blocked by three hosted compatibility-test failures. Source presence, map availability and answer quality remain separate acceptance boundaries.
+**W9 — Chat retrieval and answer quality.** Owner: chat/retrieval engineer.
+Dependency: W1 chat cases, qualified document-tool execution and consistent
+ingestion/graph source versions. Size: medium initially; advanced approaches
+conditional. The [October adoption plan](2026-10-07-graphrag-adoption-plan.md)
+owns the finite qualification protocol. The document-tool reliability repair
+merged through [PR #6421](https://github.com/uzh-bf/klicker-uzh/pull/6421).
+Source presence, map availability and answer quality remain separate acceptance
+boundaries; merge does not prove serving or participant acceptance.
 
-First repair the existing omitted-options document-tool contract and qualify the full Chat suite, then prove mechanism, persisted citations and operational disablement on a controlled target. Compare ordinary document retrieval, the existing bounded graph query expansion and a frozen non-graph second search. Match answering model, effort, prompt, mode, corpus/publication, history and actual evidence budgets; apply the same fusion to the two-search arms. If the matched control is unavailable, report operational differences with confounds rather than graph-specific uplift. Preserve original-query evidence so graph hints cannot crowd it out.
+**W9a — Independent workflows and verified graph sources.** Owner: Klicker
+integration engineer, with ingestion and KG owners responsible for their own
+workflows. The [source plan](2026-10-09-graphrag-source-artifact-plan.md) owns the
+approved simplification, useful fixes and renewed source qualification.
+
+Completion: KG preparation succeeds without ingestion availability; changed raw
+hashes reject generation; replacement/deletion withholds stale publication;
+concurrent completion/timeout and idempotent accounting remain safe. Verify no
+schema, migration, canonical reader or shared flag remains. This establishes
+source contracts, not dynamic-URL reproducibility or consumer quality. Require a
+stable, digest-verified source set for the controlled comparison; snapshot-based
+reproducibility is separate conditional work. Draft source delivery and CI precede
+separately authorized deployment, refresh/build and evaluation.
+
+After W9a qualifies the target input and a current graph is available, prove
+mechanism, persisted citations and operational disablement on a controlled
+target. Compare ordinary document retrieval, the existing bounded graph query
+expansion and a frozen non-graph second search. Match answering model, effort,
+prompt, mode, corpus/publication, history and actual evidence budgets; apply the
+same fusion to the two-search arms. Freeze raw-source hashes, parser versions and graph
+lineage in the private run manifest. If the matched control is unavailable,
+report operational differences with confounds rather than graph-specific uplift.
+Preserve original-query evidence so graph hints cannot crowd it out.
 
 Freeze development/holdout by concept, document and evidence family before tuning, with paraphrases/translations together. Measure factual lookup, terminology/bilingual variants, bridges, comparison, multi-hop evidence needs, whole-topic synthesis, irrelevant hubs and unanswerable/conflicting questions separately. The existing one-hop mechanism does not itself establish multi-hop or whole-topic capability. Use the existing evaluation framework; text-only captures require separate persisted-source/browser checks for locators. Report family-level paired uncertainty, all-attempt coverage, fallback, errors/skips, actual requests/context, latency and total spend. Predeclare useful gain, tolerated regressions and operational limits; existing metric thresholds are diagnostic configuration, not a rollout decision.
 
@@ -373,6 +425,8 @@ flowchart TD
   R --> W7[W7 Model and compute calibration]
   R --> W8[W8 Content outcomes]
   R --> W9[W9 Chat outcomes]
+  W4 -. source fidelity .-> W9a[W9a Independent workflows and source guards]
+  W9a --> W9
   W5 -. richer evidence .-> W8
   W5 -. passage retrieval .-> W9
   W1 --> W10[W10 Lecturer corrections]
@@ -433,18 +487,18 @@ Inspected on 2026-09-12 after fetching both remotes. Klicker task head: `216634e
 
 Klicker source anchors are relative to this worktree. Generator anchors below are relative to `/Volumes/HOME/Git/klicker/kg-content-generation/trees/rs/kg-domain-selection/lightrag_research/`. These are inspected implementation locations, not claims that every branch capability is deployed.
 
-| Claim                                            | Source anchor                                                                                                                                                                              |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Frozen dispatch, input route and models          | Klicker `packages/hatchet/src/kbGraphIngestion.ts:575`; lifecycle contract in `docs/async-and-workers.md`                                                                                  |
-| Published graph versus generation eligibility    | Klicker `packages/graphql/src/services/elementGenerationGraphReadiness.ts:26`; `questionGenerationGraph.ts:89`                                                                             |
-| Existing objectives and source-scoped blueprints | Klicker `packages/graphql/src/services/questionGenerationBlueprint.ts:17`; `flashcardGenerationBlueprint.ts`                                                                               |
-| Policy and effective recipe levers               | Generator `hatchet_workflows/domain_policy.py:212`; `generation_recipe.py:40`; `tasks.py:238`                                                                                              |
-| Category handling and cleaning passes            | Generator `lightrag_scripts/pipeline.py:186`, `:876`; `kg_cleaner.py:1033`, `:1359`                                                                                                        |
-| Bundle inventory and correction seam             | Generator `hatchet_workflows/graph_bundle_io.py:21`; `graph_correction_schemas.py:284`; `graph_corrections.py:461`                                                                         |
-| Existing graph/evidence content selection        | Generator `questions_generation/graph_retrieval.py:54`; `questions_generation/pipeline.py:1935`; `questions_generation/source_evidence.py`; `questions_generation/calculation_verifier.py` |
-| Basic chat augmentation prior art                | Separate chat worktree `apps/chat/src/services/graphAssistedDocQuery.ts:143`; `packages/knowledge-graph/src/retrieval.ts:1`; its `project/2026-09-11-student-chat-graphrag-basic.md`       |
+| Claim                                            | Source anchor                                                                                                                                                                                                 |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Frozen dispatch, input route and models          | Klicker `packages/hatchet/src/kbGraphIngestion.ts:575`; lifecycle contract in `docs/async-and-workers.md`                                                                                                     |
+| Published graph versus generation eligibility    | Klicker `packages/graphql/src/services/elementGenerationGraphReadiness.ts:26`; `questionGenerationGraph.ts:89`                                                                                                |
+| Existing objectives and source-scoped blueprints | Klicker `packages/graphql/src/services/questionGenerationBlueprint.ts:17`; `flashcardGenerationBlueprint.ts`                                                                                                  |
+| Policy and effective recipe levers               | Generator `hatchet_workflows/domain_policy.py:212`; `generation_recipe.py:40`; `tasks.py:238`                                                                                                                 |
+| Category handling and cleaning passes            | Generator `lightrag_scripts/pipeline.py:186`, `:876`; `kg_cleaner.py:1033`, `:1359`                                                                                                                           |
+| Bundle inventory and correction seam             | Generator `hatchet_workflows/graph_bundle_io.py:21`; `graph_correction_schemas.py:284`; `graph_corrections.py:461`                                                                                            |
+| Existing graph/evidence content selection        | Generator `questions_generation/graph_retrieval.py:54`; `questions_generation/pipeline.py:1935`; `questions_generation/source_evidence.py`; `questions_generation/calculation_verifier.py`                    |
+| Basic chat augmentation prior art                | Separate chat worktree `apps/chat/src/services/graphAssistedDocQuery.ts:143`; `packages/knowledge-graph/src/retrieval.ts:1`; its `project/2026-09-11-student-chat-graphrag-basic.md`                          |
 | Question topic steering seams                    | Generator `questions_generation/assessment_design.py:2770`, `:2860`; `questions_generation/graph_retrieval.py:1349`; `questions_generation/graph_helpers.py:655`; `questions_generation/exam_blueprint.py:47` |
-| Element-generation configuration and blueprint   | Klicker `packages/graphql/src/services/questionGenerationConfiguration.ts:249`; `questionGenerationBlueprint.ts:17`; `questionGeneration.ts:411`                                           |
+| Element-generation configuration and blueprint   | Klicker `packages/graphql/src/services/questionGenerationConfiguration.ts:249`; `questionGenerationBlueprint.ts:17`; `questionGeneration.ts:411`                                                              |
 
 The independent generator inspection was reconciled with schema and call-site evidence. A suggested explicit-policy allowlist bypass is not established: `schemas.py:257` rejects that combination. Strict validation also runs after cleaning. File presence on a default branch is not evidence of shipping. Neither claim is used to justify new work here. Benchmark logs already establish false merges and leaf loss; additional diagnostics improve repeatability rather than making those findings real for the first time.
 
@@ -457,7 +511,6 @@ The [official Microsoft GraphRAG query overview](https://microsoft.github.io/gra
 The [LightRAG paper](https://arxiv.org/abs/2410.05779) motivates graph-enhanced retrieval; the [official core API documentation](https://github.com/HKUDS/LightRAG/blob/main/docs/ProgramingWithCore.md) exposes retrieval modes, candidate/token budgets, and optional reranking. Verify the pinned installed version before adopting any setting. LightRAG's `global` mode and Microsoft's community-report global search are different mechanisms.
 
 [RAGChecker](https://arxiv.org/abs/2408.08067) supports diagnosing retrieval and answer generation separately and calibrating automated evaluation against human judgments. That principle informs the portfolio above; no dependency adoption or paper-level performance claim is assumed for this project.
-
 
 ## Latest acceptance checkpoint
 
@@ -480,23 +533,23 @@ The reconciled cumulative experimental ledger cost is USD2.82446340 of the exist
 
 The six-domain and language selectors were exercised for real on staging, not only on the isolated stack: `v3-audit` head `5d63a342344b`, both ConfigMaps pinned to catalog revision `kg-domains-v1`, and all four knowledge-graph GrowthBook flags forced on for staging users. Eight Standard-tier builds ran from the lecturer UI against one synthetic English source, seven succeeded, and every distribution below was read back from FalkorDB under graph key `klickeruzh:kb:<kbId>:<buildId>` rather than from the panel. Each build settles at the flat CHF 1.00 standard estimate, so the run exceeded the owner's deployed CHF 10.00 semester budget and one further build would not have been admitted.
 
-| Run                      | Build      | Node labels read from FalkorDB                                                        | Edges |
-| ------------------------ | ---------- | ------------------------------------------------------------------------------------- | ----: |
-| Finance, English         | `f8a45b8d` | Metric (5), Instrument (5), Concept (3), Institution (3), Method (1)                  |    22 |
-| Economics, English       | `3d792ad8` | Concept (9), Indicator (5), Actor (4), Institution (1), Method (1)                    |    23 |
-| Business Administration  | `090437c2` | Concept (7), Product (6), Actor (2), Process (1), Framework (1)                       |    17 |
-| Mathematics, English     | `e58220bb` | Concept (6), Definition (2)                                                           |     5 |
-| Informatics, English     | `0318513c` | Concept (19)                                                                          |    19 |
-| General / Mixed, English | `1e5b7605` | Concept (10), Measure (5), Institution (3), Process (1)                               |    22 |
-| Finance, German          | `ea4dacd0` | Konzept (6), Instrument (5), Kennzahl (4), Regulierung (1), Institution (1), Methode (1) |  17 |
+| Run                      | Build      | Node labels read from FalkorDB                                                           | Edges |
+| ------------------------ | ---------- | ---------------------------------------------------------------------------------------- | ----: |
+| Finance, English         | `f8a45b8d` | Metric (5), Instrument (5), Concept (3), Institution (3), Method (1)                     |    22 |
+| Economics, English       | `3d792ad8` | Concept (9), Indicator (5), Actor (4), Institution (1), Method (1)                       |    23 |
+| Business Administration  | `090437c2` | Concept (7), Product (6), Actor (2), Process (1), Framework (1)                          |    17 |
+| Mathematics, English     | `e58220bb` | Concept (6), Definition (2)                                                              |     5 |
+| Informatics, English     | `0318513c` | Concept (19)                                                                             |    19 |
+| General / Mixed, English | `1e5b7605` | Concept (10), Measure (5), Institution (3), Process (1)                                  |    22 |
+| Finance, German          | `ea4dacd0` | Konzept (6), Instrument (5), Kennzahl (4), Regulierung (1), Institution (1), Methode (1) |    17 |
 
 Domain selection demonstrably changes the type system on identical input: Economics admits `Actor` and `Indicator` where Finance prefers `Metric`, Business Administration introduces `Product`, `Process` and `Framework`, and the generic policy falls back to `Measure` and `Process`. Language selection stays independent of the domain and reaches the artifact: the German Finance build carries German category names and German entity names (`Komitee`, `Geldmarktfonds`, `Diversifikation`), while the English Finance build of the same source does not. Structural validity is still not quality, and this run does not measure it: Mathematics produced only five relationships and Informatics typed all nineteen nodes as `Concept`, so neither policy carries domain-specific guidance yet. Both belong to W6 calibration, together with the observation that a specialist policy is not automatically preferable to General / Mixed on short sources.
 
 Follow-ups this run recorded, without expanding the roadmap's approved scope:
 
-| Observation                                                                                                                                                                                                                                                                                                                                                 | Owner and package                                                                    |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| One Business Administration attempt failed with `KB_GRAPH_RESULT_CONTRACT_INVALID` and stayed at `NEEDS_HUMAN_REVIEW` holding its CHF 1.00 reservation, although the provider run reported `COMPLETED` with no error and had already written a graph with the same label distribution as the successful retry. The truncated terminal envelope must keep failing closed, but a held reservation needs a reviewed release path instead of persisting indefinitely. | Generator/Klicker terminal contract, W1 diagnostics and W2 contract handling         |
-| After a rebuild the panel kept rendering the previous build's legend, concept count and published-domain caption until the page was reloaded, while FalkorDB and `publishedGraphBuildId` already held the new graph. The overview query is network-only, so the viewer must refetch when the publication pointer changes.                                                          | Klicker UI, W10 observability                                                        |
-| `monitor-kb-graph-builds` logged `KB graph cleanup failed` roughly 240 times in six hours, about ten duplicates per tick. That is unrelated to this comparison, but it hides real cleanup failures.                                                                                                                                                             | Worker/cleanup operations, W11 recovery                                              |
-| `ensureLockedKBGraphQuota` rejects every build when the ledger row's `limitMinorUnits` differs from the configured `semesterQuotaMinorUnits`, so a quota change cannot be deployed ahead of or behind its ledger row update without failing all builds in the window. Prefer a versioned or migrated quota contract over a hand-coordinated configuration and row change.          | Klicker quota/accounting owner, W12 operational quality                              |
+| Observation                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Owner and package                                                            |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| One Business Administration attempt failed with `KB_GRAPH_RESULT_CONTRACT_INVALID` and stayed at `NEEDS_HUMAN_REVIEW` holding its CHF 1.00 reservation, although the provider run reported `COMPLETED` with no error and had already written a graph with the same label distribution as the successful retry. The truncated terminal envelope must keep failing closed, but a held reservation needs a reviewed release path instead of persisting indefinitely. | Generator/Klicker terminal contract, W1 diagnostics and W2 contract handling |
+| After a rebuild the panel kept rendering the previous build's legend, concept count and published-domain caption until the page was reloaded, while FalkorDB and `publishedGraphBuildId` already held the new graph. The overview query is network-only, so the viewer must refetch when the publication pointer changes.                                                                                                                                         | Klicker UI, W10 observability                                                |
+| `monitor-kb-graph-builds` logged `KB graph cleanup failed` roughly 240 times in six hours, about ten duplicates per tick. That is unrelated to this comparison, but it hides real cleanup failures.                                                                                                                                                                                                                                                               | Worker/cleanup operations, W11 recovery                                      |
+| `ensureLockedKBGraphQuota` rejects every build when the ledger row's `limitMinorUnits` differs from the configured `semesterQuotaMinorUnits`, so a quota change cannot be deployed ahead of or behind its ledger row update without failing all builds in the window. Prefer a versioned or migrated quota contract over a hand-coordinated configuration and row change.                                                                                         | Klicker quota/accounting owner, W12 operational quality                      |
