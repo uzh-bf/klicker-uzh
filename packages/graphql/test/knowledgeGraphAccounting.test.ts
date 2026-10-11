@@ -404,6 +404,7 @@ describe('KB graph cost accounting', () => {
     ).resolves.toMatchObject({
       status: KBGraphBuildStatus.SUCCEEDED,
       costStatus: KBGraphCostStatus.SETTLED,
+      errorCode: null,
       actualCostMinorUnits: 60,
       actualInputTokens: 11,
       actualOutputTokens: 13,
@@ -1074,52 +1075,6 @@ describe('KB graph cost accounting', () => {
         publishedGraphBuildId: null,
       })
     }
-
-    it('settles and publishes a result for unchanged sources', async () => {
-      await reserveSourceBuild()
-      const source = await createSource()
-      const { build, runId, graphmlBlobName } = await createBuild({
-        sourceContentDigest: source.sourceContentDigest,
-      })
-
-      await expect(
-        prisma.$transaction((tx) =>
-          settleKBGraphBuildCost(tx, {
-            buildId: build.id,
-            result: successfulResult({
-              buildId: build.id,
-              runId,
-              graphmlBlobName,
-              sourceContentDigest: source.sourceContentDigest,
-            }),
-            finishedAt: NOW,
-          })
-        )
-      ).resolves.toBe('SETTLED')
-
-      await expect(
-        prisma.kBGraphBuild.findUniqueOrThrow({ where: { id: build.id } })
-      ).resolves.toMatchObject({
-        status: KBGraphBuildStatus.SUCCEEDED,
-        costStatus: KBGraphCostStatus.SETTLED,
-        errorCode: null,
-        actualCostMinorUnits: 60,
-      })
-      await expect(
-        prisma.kBGraphQuota.findUniqueOrThrow({
-          where: { ownerId_semesterKey: { ownerId, semesterKey: '2026-H2' } },
-        })
-      ).resolves.toMatchObject({
-        reservedMinorUnits: 0,
-        settledMinorUnits: 60,
-      })
-      await expect(
-        prisma.kB.findUniqueOrThrow({ where: { id: kbId } })
-      ).resolves.toMatchObject({
-        activeGraphBuildId: null,
-        publishedGraphBuildId: build.id,
-      })
-    })
 
     it.each([
       'SUCCEEDED',

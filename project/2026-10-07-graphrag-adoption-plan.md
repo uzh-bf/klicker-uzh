@@ -57,9 +57,9 @@ Each milestone ends with a disposition and evidence, rather than an automatic tu
 | 4. Measure incremental graph value                        | Evaluation owner; milestone 3, private artifact paths, frozen reviewed cases and accepted decision criteria                                                                                                                                       | One frozen, paired comparison using the existing framework and the three arms below. Report family-level uncertainty, errors/skips, coverage, latency and cost. End with adopt for named query classes, retain disabled, or inconclusive. Unmatched controls permit an operational comparison only; they do not qualify graph-specific uplift                                                                                                                                                     |
 | 5. Decide a bounded pilot and later improvements          | Main/product owner; independent map results and retrieval evidence; separately named activation authority                                                                                                                                         | Define the cohort, operator, support route, observation window and stop triggers before widening. Preserve [ADR 0014](../docs/adr/0014-beta-learns-before-quality-thresholds.md)'s distinction between initial beta and quality claims/widening. Choose follow-on work from observed failures, with a new bounded contract when scope changes                                                                                                                                                     |
 
-Milestone 1a introduces the explicitly versioned artifact, scoped read and
-retention contracts described in its implementation plan. The original retrieval
-reliability package introduced no new schema or retrieval library. Failure-driven
+Milestone 1a removes the proposed ingestion-reader and v2 contracts and qualifies
+independently operated workflows through the existing raw-source contract. The
+original retrieval reliability package introduced no new schema or retrieval library. Failure-driven
 candidates remain alias/inflection/bilingual anchoring, indexed search for
 demonstrated scan/coverage limits, graph-to-passage provenance/reranking for
 evidence-selection failures, and distributed admission for observed multi-replica

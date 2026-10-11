@@ -82,8 +82,8 @@ Klicker verification passed: 27 build tasks, 42 check tasks, seven lint tasks,
 repository guards, 40 host-launcher and 93 Playwright CI contract tests, focused
 PostgreSQL and worker suites, staged formatting and secret scan. The source scan
 reported no findings. Ingestion reports 160 passing tests and 36 skips plus Ruff
-and targeted type checks. KG lint and format pass; its acceptance tests still need
-an executable Python environment or exact-head CI before completed delivery.
+and targeted type checks. KG lint and format pass; 71 workflow, recipe and terminal-contract tests passed
+using an existing Python 3.12 environment against the task worktree.
 
 The existing disposable verification checkout was stopped with the user-approved
 `devsy workspace stop volumes-home-git-klicke-15871e75` fallback after canonical
@@ -93,3 +93,10 @@ container exited, and no exact checkout routes remain. Worktree and data remain.
 The old cleanup-blocked native goal is complete. The new independent-workflow
 simplification goal is active. Exact-range reviews, draft updates and exact-head
 CI evidence remain before this goal is complete.
+
+The exact-range simplification pass inspected all 19 changed paths across the
+three held ranges. Its duplicate success-test finding was accepted: merge the
+null-error assertion into the existing idempotent successful-publication test and
+remove the redundant new case. Replacement, deletion and forced concurrent
+settlement regressions remain. The stale adoption-plan contract sentence was
+corrected. Risk and integrated final reviews remain pending.
