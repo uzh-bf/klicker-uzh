@@ -12,8 +12,8 @@ recovery guidance and updating the existing PR after fixes and browser verificat
 
 Most of the supplied feedback describes behavior already implemented. It is
 not a request to replace cookies with tokens: both transports carry participant
-JWTs. The feedback's reference head, `ec916db4f8`, is the parent of current head
-`0752024accb2a2f8097fb63e6c24f775b4363c40`. The only subsequent change adds
+JWTs. The feedback's reference head, `ec916db4f8`, is the parent of the initial review head
+`0752024accb2a2f8097fb63e6c24f775b4363c40`. The only change between those two revisions adds
 account-deletion failure feedback. There is no evidence that a later policy
 redesign was applied in response to this particular feedback.
 
@@ -64,16 +64,14 @@ git diff fb43d837e9106c5a80616dc3ee519c7395a4e262...0752024accb2a2f8097fb63e6c24
 
 The comparison includes all 48 changed paths. The existing worktree is
 `trees/olat-session-recovery`, branch `rs/olat-session-recovery`; its initial
-status was clean. Local `origin/v3` differs from the live PR base. `git fetch
---prune` fails with `cannot open '.git/FETCH_HEAD': Operation not permitted`.
-Use the pinned comparison for this review and complete the remote-state gate
-before later source publication; do not silently integrate a remembered target.
+status was clean. The initial sandbox blocked `git fetch --prune` with a metadata permission error.
+Access was subsequently restored and the fetch completed through the existing
+GitHub CLI credential helper; see the current execution record below.
 
-This is a source and test-coverage review, not renewed browser acceptance.
-The handoff's prior checks remain revision-specific historical evidence.
-CodeQL failure and pending final AI review remain separate delivery gates.
-Runtime inspection also failed because devrouter process inspection was denied;
-no runtime was started, stopped, or claimed healthy in this turn.
+The initial review was source evidence only. The execution record below now
+contains fresh browser acceptance. Handoff checks remain revision-specific
+historical evidence. Exact-head CI, CodeQL disposition and the public final AI
+review remain separate delivery gates.
 
 ### Feedback disposition
 
@@ -362,8 +360,8 @@ at this head (`services/courses.ts:167-199`). Bridge tests must prove its
 principal through authorization outcomes; there is no participation-creation
 write to observe. This corrects the evidence method, not the approved policy. Existing
 session tests now cover retained clients after stop, delayed data/auth errors,
-late login mutation results and a scheduled retry crossing logout. They have
-not been executed. Gibbs returned the browser-spec checkpoint and is closed.
+late login mutation results and a scheduled retry crossing logout. All 33 PWA
+unit tests pass. Gibbs returned the browser-spec checkpoint and is closed.
 Main completed integration: declined logout stays on the profile with an error
 toast; post-login identity waits exclude retained bearer requests; cancelled
 chatbot recovery preserves the explicit request principal; and conflicting
@@ -371,14 +369,30 @@ cookies do not unlock the entry. The authored tests also cover a cookie-mode
 popup, a fresh OLAT launch retaining the gate, and direct bridge authorization
 using isolated member/outsider fixtures. The expired-bearer test includes a
 protected read-only membership operation with the valid ambient cookie present.
-The Chat destination is intercepted after the bridge redirect, so this proves
-bridge authorization only, not the Chat application's authenticated principal.
+Tests observe the real server redirect to Chat, so they prove bridge
+authorization only, not the Chat application's authenticated principal.
 The first browser run found a missing course PIN in the new fixture, corrected
 by declaring the isolated course SSO. Synthetic participants now carry complete
 data-use acknowledgements, keeping onboarding separate from the session tests.
-The five-project browser run is active. A Chromium bridge assertion encountered
-a transient HTTP 500 while concurrent package checks rebuilt dependencies; inspect
-and rerun that affected journey after builds finish before claiming acceptance.
+The full-profile five-project run passed 64 cases and skipped eight WebKit
+cookie-dependent cases. Its eight failures shared an incorrect destination
+mock: Playwright routes only the initial URL of a redirect chain. Replacing
+that mock with observation of the real redirect produced eight passes and
+two expected WebKit skips in the focused rerun. Combined coverage is 72 passing
+cases and eight environment skips, not a single green 80-case run. All five
+local ltijs/mock-LMS launch cases passed. Unaffected passing cases are reused;
+only the two corrected bridge scenarios were rerun.
+
+Agent-browser verified EN desktop and DE compact logout/deletion rejection
+feedback, cancellation without losing the explicit session, and same-tab
+ordinary login restoring the cookie-mode link. Visual inspection found inherited
+white text on the white recovery dialog. An explicit dark text color repaired
+it; both locale captures were refreshed and inspected. Eight synthetic captures
+and their source patch are retained under
+`project/_local/screenshots/2026-10-12-olat-recovery/`. These captures are local
+application evidence; they do not establish real OLAT or authenticated Chat
+identity. The manual fixture uses an injected synthetic tab credential; the
+real local LTI credential path is covered separately by the browser suite.
 
 Checks completed: all 33 PWA unit tests, focused PWA typecheck, the container
 portion of `check:all` (35 Turbo check/build tasks plus lint and policy checks),
@@ -389,20 +403,33 @@ formatting. Biome formatting, Prettier and `git diff --check` pass. Full Biome
 lint previously reported untouched hook/import diagnostics; repository-native
 ESLint checks pass. Agent-browser confirms visible rejection feedback for logout
 and deletion and preserved profile state in EN desktop and DE compact layouts.
-The screenshot gallery and remaining chatbot interactions are in progress.
+The gallery includes inspected EN desktop and DE compact chatbot guidance.
 Apollo 3 retry/link contracts were checked against installed 3.13.8 source and
 the official Apollo v3 retry documentation.
 
 Route: main for contract/continuity and integration (coupled identity seam);
 trusted-native executor Gibbs for the disjoint browser spec. Acceptance remains
-the approved source and browser portfolio. Standard full-path review gates are
-pending committed and verified code; no source review can replace browser
-proof. The existing source/API comments were preserved except where the
+the approved source and browser portfolio. The dedicated simplifier reviewed `fdb3078adf..55dbc84597` and found no
+justified simplification. The risk review accepted the correction range through `a9e253ecf8`, resolving
+the bridge evidence gap and withdrawing an assessment concern because that
+app skips the chatbot query. No consequential findings remain in the slice.
+Integrated final review remains pending; no source review replaces browser proof. The existing source/API comments were preserved except where the
 approved behavior changes their contract.
 
-Next: finish the browser matrix and affected reruns, inspect and publish the
-synthetic screenshot gallery, complete committed simplification and slice/final
-reviews, then push and update the existing PR. Preserve its current ready/draft
+The owned synthetic gallery chatbot was removed through the guarded script and
+its absence verified. The browser session was closed. The first full production
+build hit the documented duplicate generated `PagesPageConfig` validators; the
+owned dev process was stopped and generated dev types preserved outside compiler
+inputs before retrying. The full production build then passed all 23 tasks
+(17 cache hits) in 3m13s. No source workaround or typecheck bypass was added.
+
+Package size against `v3`: 4,970 substantive changed lines across 48 source,
+test and domain-document paths, plus the excluded project-plan artifact. This
+is the existing reviewed PR and the user explicitly requested updating it; the
+approved follow-up retains that topology rather than opening another package.
+
+Next: finish integrated final review and runtime-stop verification, then push and
+update the existing PR with the inspected screenshot gallery. Preserve its current ready/draft
 state. Do not poll CI; the user signals when exact-head checks have settled before
 `/final-review`. Human review, merge, alert dismissal and deployment remain
 separate. The historical record below is retained verbatim and does not establish
