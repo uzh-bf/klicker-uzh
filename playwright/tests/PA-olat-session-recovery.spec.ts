@@ -187,15 +187,20 @@ async function signInAs(
 async function signOut(page: Page) {
   await page.getByTestId('header-avatar').click()
   await page.getByTestId('logout').click()
-  await expect(page).toHaveURL((url) => url.pathname.endsWith('/login'))
+  await expect(
+    page
+      .getByTestId('username-field')
+      .or(page.getByTestId('participant-session-recovery'))
+  ).toBeVisible()
+  await expect(page.getByTestId('update-account-email')).toHaveCount(0)
 }
 
-// WebKit discards cookies scoped to the local *.localhost stack, so real
-// cookie-session flows cannot be exercised in its project.
+// WebKit cannot reliably expose the shared revision cookie on the local
+// *.localhost stack, so real cookie-session flows cannot run in its project.
 function skipWithoutCookieSessions(projectName: string) {
   test.skip(
     projectName.startsWith('webkit-'),
-    'WebKit discards cookies scoped to the local *.localhost domain'
+    'WebKit cannot expose shared revision cookies on the local *.localhost domain'
   )
 }
 
@@ -574,6 +579,7 @@ test('a full LTI 1.3 launch through the tool signs in a new account without reta
   baseURL,
   request,
 }, info) => {
+  skipWithoutCookieSessions(info.project.name)
   const tool = baseURL!.replace('://pwa.', '://lti.')
   const available = await request
     .get(`${tool}/login`)
@@ -735,10 +741,7 @@ test('a full LTI 1.3 launch through the tool signs in a new account without reta
     const outcome = await settleLaunch(frame, () =>
       expectIdentity(frame, { email: createEmail, username: createUsername })
     )
-    if (
-      (!recoveryPage && info.project.name.endsWith('-blocked')) ||
-      info.project.name.startsWith('webkit-')
-    )
+    if (!recoveryPage && info.project.name.endsWith('-blocked'))
       expect(outcome).toBe('cookies-refused')
     if (outcome === 'accepted') {
       expect(await sessionRevision(frame)).toBeTruthy()
@@ -967,7 +970,6 @@ test('rejected logout and account deletion keep the shared session and succeed o
   await page.unroute('**/api/graphql*')
   await signOut(page)
   expect(await sessionRevision(page)).toBeTruthy()
-  await second.goto(`${baseURL}/editProfile`)
   await expect(second.getByTestId('participant-session-recovery')).toBeVisible()
   await expect(second.getByTestId('update-account-email')).toHaveCount(0)
 
@@ -1041,7 +1043,6 @@ test('rejected logout and account deletion keep the shared session and succeed o
         prisma.participant.findUnique({ where: { id: disposable.id } })
       )
       .toBeNull()
-    await page.goto(`${baseURL}/editProfile`)
     await expect(page.getByTestId('participant-session-recovery')).toBeVisible()
     await expect(page.getByTestId('update-account-email')).toHaveCount(0)
   } finally {

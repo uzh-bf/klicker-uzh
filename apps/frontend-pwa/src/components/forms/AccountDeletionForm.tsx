@@ -1,5 +1,6 @@
 import { useMutation } from '@apollo/client'
 import { DeleteParticipantAccountDocument } from '@klicker-uzh/graphql/dist/ops'
+import { participantReloadUrl } from '@klicker-uzh/shared-components/src/utils/participantSession'
 import { Button, H3, Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -55,7 +56,7 @@ function AccountDeletionForm() {
                   setDeleteModalOpen(false)
                   return
                 }
-                window?.location.reload()
+                window.location.replace(participantReloadUrl())
               }}
               dataPrimaryAction={{ cy: 'delete-account-command' }}
               secondaryLabel={t('shared.generic.cancel')}
