@@ -1,8 +1,10 @@
 import {
   type APIRequestContext,
+  type BrowserContext,
   expect,
   type Frame,
   type Page,
+  type Request,
   test,
 } from '@playwright/test'
 import {
@@ -18,6 +20,7 @@ import { exportSPKI, generateKeyPair, SignJWT } from 'jose'
 import { execFileSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
+import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '../../packages/util/src/participantAccountDataUse.js'
 import { getPrisma } from '../global-setup.js'
 import {
   APP_SECRET,
@@ -41,12 +44,45 @@ const lms = 'https://lms.example.invalid'
 const ssoId = `synthetic-olat-recovery-${randomUUID()}`
 const quizId = randomUUID()
 const liveQuizId = randomUUID()
+// An allowed bridge launch redirects to the Chat app on its routed
+// host (chat.klicker.localhost or chat.klicker.<workspace>.localhost).
+const chatDestination = /^https:\/\/chat\./
 let liveQuizBlockId: number
+let chatbotId: string
+let bridgeCourseId: string
+let bridgeChatbotId: string
+let bridgeMemberId: string
+let bridgeOutsiderId: string
 let email: string
 let username: string
 let elementId: number
 const studentId = PARTICIPANT_IDS[1]!
 const otherId = PARTICIPANT_IDS[0]!
+
+// Synthetic accounts exercise session handling after ordinary onboarding.
+function completedDataUse() {
+  const now = new Date()
+  return {
+    researchConsent: false,
+    learningAnalyticsConsent: false,
+    researchConsentChoiceAt: now,
+    researchConsentDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+    learningAnalyticsChoiceAt: now,
+    learningAnalyticsDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+    dataUseAcknowledgedAt: now,
+    dataUseAcknowledgedVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+    dataUseRevision: 1,
+    dataUseEvents: {
+      create: {
+        revision: 1,
+        disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+        researchConsent: false,
+        learningAnalyticsConsent: false,
+        acknowledged: true,
+      },
+    },
+  }
+}
 
 async function signed(
   payload: Record<string, unknown>,
@@ -121,6 +157,111 @@ function skipWithoutLocalCookies(projectName: string) {
   )
 }
 
+// The PWA resolves operation names from the GET query or the POST body. The
+// lane runs development builds, but a built image can use GET persisted
+// queries, so both shapes are recognized.
+function graphqlOperationName(request: Request) {
+  if (!request.url().includes('/api/graphql')) return null
+  if (request.method() === 'GET')
+    return new URL(request.url()).searchParams.get('operationName')
+  try {
+    return (
+      (request.postDataJSON() as { operationName?: string } | null)
+        ?.operationName ?? null
+    )
+  } catch {
+    return null
+  }
+}
+
+function waitForSelfResponse(page: Page) {
+  return page.waitForResponse(
+    (response) =>
+      response.url().includes('/api/graphql') &&
+      graphqlOperationName(response.request()) === 'Self'
+  )
+}
+
+// The awaited post-login Self must arrive in cookie mode. A retained tab can
+// still have an explicit-mode Layout request in flight, so consuming the
+// first Self after a login click could assert the pre-transition identity.
+function waitForCookieModeSelf(page: Page) {
+  return page.waitForResponse(async (response) => {
+    if (
+      !response.url().includes('/api/graphql') ||
+      graphqlOperationName(response.request()) !== 'Self'
+    )
+      return false
+    const authorization = (await response.request().allHeaders()).authorization
+    return !authorization || !authorization.startsWith('Bearer ')
+  })
+}
+
+// Assert the error state without depending on translated feedback copy.
+function toastItems(page: Page) {
+  return page.locator('[data-sonner-toast][data-type="error"]')
+}
+
+// The bridge hands an allowed launch to the Chat app. Fulfilling the
+// destination keeps the check on this stack without claiming Chat's own
+// authenticated principal.
+async function interceptChatDestination(context: BrowserContext) {
+  const chatRequests: string[] = []
+  await context.route(chatDestination, async (route) => {
+    chatRequests.push(route.request().url())
+    await route.fulfill({
+      contentType: 'text/html',
+      body: '<html><body><div data-cy="synthetic-chat-destination">Synthetic chat destination</div></body></html>',
+    })
+  })
+  return chatRequests
+}
+
+// Stores an explicit credential in this tab and reloads the page so it binds
+// it. An init script would seed the credential again after the tab clears it,
+// which the lifecycle checks below must observe instead.
+async function retainExplicitSession(
+  page: Page,
+  baseURL: string,
+  token: string
+) {
+  await page.goto(`${baseURL}/editProfile`)
+  await page.evaluate(
+    (value) => sessionStorage.setItem('participant_token', value),
+    token
+  )
+  await page.reload()
+}
+
+async function storedExplicitToken(page: Page) {
+  return page.evaluate(() => sessionStorage.getItem('participant_token'))
+}
+
+// Decodes the participant credential a request carried without pinning its
+// value: sub identifies the participant and exp its expiry.
+async function explicitBearerPayload(request: Request) {
+  const bearer = /^Bearer (.+)$/.exec(
+    (await request.allHeaders()).authorization ?? ''
+  )?.[1]
+  if (!bearer) return null
+  return JSON.parse(
+    Buffer.from(bearer.split('.')[1]!, 'base64url').toString()
+  ) as { sub?: string; exp?: number }
+}
+
+async function expectParticipantIdentity(
+  subject: Page | Frame,
+  participant: { email: string | null; username: string }
+) {
+  if (participant.email)
+    await expect(subject.getByTestId('update-account-email')).toHaveValue(
+      participant.email
+    )
+  await expect(subject.getByTestId('update-account-username')).toHaveValue(
+    participant.username
+  )
+}
+
 // Lecturer operations go through the API so the live quiz state in the cache
 // is the one the response pipeline relies on.
 async function lecturer(
@@ -167,6 +308,64 @@ test.beforeAll(async ({}, info) => {
   })
   email = participant.email!
   username = participant.username
+  // The global setup seeds users, courses and participants but no chatbot;
+  // the header chatbot gate needs a published chatbot on the seeded course.
+  // This synthetic bot is owned by the spec and is never a shared fixture.
+  const chatbot = await prisma.chatbot.create({
+    data: {
+      name: 'Synthetic session recovery chatbot',
+      status: 'PUBLISHED',
+      ownerId: USER_ID_TEST,
+      courseId: COURSE_ID_TEST,
+    },
+  })
+  chatbotId = chatbot.id
+  // Membership-differential fixtures for the direct bridge: a member on a
+  // spec-owned course and a valid participant without course access. Keeping
+  // them separate avoids touching seeded memberships or shared fixtures.
+  const bridgeCourse = await prisma.course.create({
+    data: {
+      name: `Synthetic session recovery bridge course ${randomUUID().slice(0, 8)}`,
+      displayName: 'Synthetic session recovery bridge course',
+      authType: 'SSO',
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      groupDeadlineDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      owner: { connect: { id: USER_ID_TEST } },
+    },
+  })
+  bridgeCourseId = bridgeCourse.id
+  bridgeChatbotId = (
+    await prisma.chatbot.create({
+      data: {
+        name: 'Synthetic session recovery bridge chatbot',
+        status: 'PUBLISHED',
+        ownerId: USER_ID_TEST,
+        courseId: bridgeCourseId,
+      },
+    })
+  ).id
+  const bridgeMember = await prisma.participant.create({
+    data: {
+      username: `pa${randomUUID().slice(0, 8)}`,
+      email: `bridge-member-${randomUUID()}@example.invalid`,
+      password: randomUUID(),
+      ...completedDataUse(),
+    },
+  })
+  bridgeMemberId = bridgeMember.id
+  const bridgeOutsider = await prisma.participant.create({
+    data: {
+      username: `pa${randomUUID().slice(0, 8)}`,
+      email: `bridge-outsider-${randomUUID()}@example.invalid`,
+      password: randomUUID(),
+      ...completedDataUse(),
+    },
+  })
+  bridgeOutsiderId = bridgeOutsider.id
+  await prisma.participation.create({
+    data: { courseId: bridgeCourseId, participantId: bridgeMemberId },
+  })
   await prisma.participantAccount.create({
     data: {
       ssoId,
@@ -282,6 +481,14 @@ test.afterAll(async ({}, info) => {
   await prisma.practiceQuiz.deleteMany({ where: { id: quizId } })
   await prisma.liveQuiz.deleteMany({ where: { id: liveQuizId } })
   if (elementId) await prisma.element.deleteMany({ where: { id: elementId } })
+  if (chatbotId) await prisma.chatbot.deleteMany({ where: { id: chatbotId } })
+  if (bridgeChatbotId)
+    await prisma.chatbot.deleteMany({ where: { id: bridgeChatbotId } })
+  for (const id of [bridgeMemberId, bridgeOutsiderId]) {
+    if (id) await prisma.participant.deleteMany({ where: { id } })
+  }
+  if (bridgeCourseId)
+    await prisma.course.deleteMany({ where: { id: bridgeCourseId } })
 })
 
 test('fresh embedded launch without email restores linked B, supersedes retained A and supports quiz access', async ({
@@ -889,7 +1096,7 @@ test('a participant token in the URL cannot replace or create a session', async 
   await profile(page.mainFrame())
 })
 
-test('logout in one tab ends the session in every tab', async ({
+test('logout ends the shared cookie session in tabs that authenticate with the cookie', async ({
   page,
   context,
   baseURL,
@@ -928,11 +1135,12 @@ test('logout in one tab ends the session in every tab', async ({
   await expect(other.getByTestId('update-account-email')).toHaveCount(0)
 })
 
-test('password, magic-link and activation transitions navigate with the new identity', async ({
+test('password, magic-link and activation success replace an active explicit session with the ordinary cookie identity', async ({
   page,
   context,
   baseURL,
 }, info) => {
+  test.setTimeout(120_000)
   skipWithoutLocalCookies(info.project.name)
   const prisma = await getPrisma()
   const participants = await prisma.participant.findMany({
@@ -947,30 +1155,614 @@ test('password, magic-link and activation transitions navigate with the new iden
       participant.username
     )
   }
-  for (const id of [otherId, studentId, otherId]) {
+  // Each iteration starts from an active explicit session in this tab, never
+  // from cleared storage, and proves the tab ends on the cookie identity.
+  for (const { retained, target } of [
+    { retained: studentId, target: otherId },
+    { retained: otherId, target: studentId },
+    { retained: studentId, target: otherId },
+  ] as const) {
     await context.clearCookies()
-    await page.goto('about:blank')
+    await retainExplicitSession(
+      page,
+      baseURL!,
+      await signed({ sub: retained, role: 'PARTICIPANT' }, '14d')
+    )
+    await expectIdentity(retained)
     await page.goto(`${baseURL}/login?redirect_to=/editProfile`)
-    await page.evaluate(() => {
-      localStorage.clear()
-      sessionStorage.clear()
-    })
-    const participant = participants.find((item) => item.id === id)!
+    const identitySelf = waitForCookieModeSelf(page)
+    const participant = participants.find((item) => item.id === target)!
     await page.getByTestId('username-field').fill(participant.username)
     await page.getByTestId('password-field').fill(STUDENT_PASSWORD)
+    const loginResponse = page.waitForResponse(
+      (response) =>
+        graphqlOperationName(response.request()) === 'LoginParticipant'
+    )
     await page.getByTestId('submit-login').click()
+    expect(
+      (await (await loginResponse).json()).data.loginParticipant
+    ).toBeTruthy()
     await expect(page).toHaveURL((url) => url.pathname.endsWith('/editProfile'))
-    await expectIdentity(id)
+    const response = await identitySelf
+    const headers = await response.request().allHeaders()
+    expect(headers.authorization ?? '').not.toMatch(/^Bearer /)
+    expect((await response.json()).data.self.id).toBe(target)
+    await expectIdentity(target)
+    expect(await storedExplicitToken(page)).toBeNull()
   }
-  for (const [path, scope, id] of [
-    ['magicLogin', 'OTP', studentId],
-    ['activation', 'ACTIVATION', otherId],
+  for (const [path, scope, retained, target] of [
+    ['magicLogin', 'OTP', otherId, studentId],
+    ['activation', 'ACTIVATION', studentId, otherId],
   ] as const) {
-    const token = await signed({ sub: id, scope })
+    await context.clearCookies()
+    await retainExplicitSession(
+      page,
+      baseURL!,
+      await signed({ sub: retained, role: 'PARTICIPANT' }, '14d')
+    )
+    await expectIdentity(retained)
+    const token = await signed({ sub: target, scope })
     await page.goto(`${baseURL}/${path}?token=${encodeURIComponent(token)}`)
     await expect(page.getByTestId('homepage')).toBeVisible()
+    expect(await storedExplicitToken(page)).toBeNull()
+    const identitySelf = waitForCookieModeSelf(page)
     await page.goto(`${baseURL}/editProfile`)
-    await expectIdentity(id)
+    const response = await identitySelf
+    const headers = await response.request().allHeaders()
+    expect(headers.authorization ?? '').not.toMatch(/^Bearer /)
+    expect((await response.json()).data.self.id).toBe(target)
+    await expectIdentity(target)
+  }
+})
+
+test('an ordinary login and logout in another tab leave this tab attributed to its explicit identity', async ({
+  page,
+  context,
+  baseURL,
+}, info) => {
+  skipWithoutLocalCookies(info.project.name)
+  const prisma = await getPrisma()
+  const participants = await prisma.participant.findMany({
+    where: { id: { in: [otherId, studentId] } },
+  })
+  const explicitParticipant = participants.find(
+    (item) => item.id === studentId
+  )!
+  const cookieParticipant = participants.find((item) => item.id === otherId)!
+  const explicitToken = await signed(
+    { sub: studentId, role: 'PARTICIPANT' },
+    '14d'
+  )
+  await retainExplicitSession(page, baseURL!, explicitToken)
+  await expectParticipantIdentity(page, explicitParticipant)
+  const observedSelf: (string | null)[] = []
+  page.on('response', async (response) => {
+    if (!response.url().includes('/api/graphql')) return
+    try {
+      const data = await response.json()
+      if (data.data && Object.hasOwn(data.data, 'self'))
+        observedSelf.push(data.data.self?.id ?? null)
+    } catch {}
+  })
+
+  // The ordinary login in the second tab replaces the shared cookie only;
+  // this tab never authenticates with it.
+  const other = await context.newPage()
+  await other.goto(`${baseURL}/login?redirect_to=/editProfile`)
+  await other.getByTestId('username-field').fill(cookieParticipant.username)
+  await other.getByTestId('password-field').fill(STUDENT_PASSWORD)
+  await other.getByTestId('submit-login').click()
+  await expect(other).toHaveURL((url) => url.pathname.endsWith('/editProfile'))
+  await expectParticipantIdentity(other, cookieParticipant)
+  expect(
+    (await context.cookies()).some(
+      (cookie) => cookie.name === 'participant_token'
+    )
+  ).toBe(true)
+
+  // This tab keeps sending its explicit credential and shows its own identity.
+  const afterLogin = page.waitForRequest(
+    (request) => graphqlOperationName(request) === 'Self'
+  )
+  await page.goto(`${baseURL}/editProfile`)
+  expect((await explicitBearerPayload(await afterLogin))?.sub).toBe(studentId)
+  await expectParticipantIdentity(page, explicitParticipant)
+
+  // Logout in the second tab ends the cookie session for that tab.
+  await other.getByTestId('header-avatar').click()
+  await other.getByTestId('logout').click()
+  await expect(other).toHaveURL(/\/login(?:\?|$)/)
+  expect(
+    (await context.cookies()).some(
+      (cookie) => cookie.name === 'participant_token'
+    )
+  ).toBe(false)
+
+  // This tab still holds and sends its own credential afterwards.
+  const afterLogout = page.waitForRequest(
+    (request) => graphqlOperationName(request) === 'Self'
+  )
+  await page.goto(`${baseURL}/editProfile`)
+  expect((await explicitBearerPayload(await afterLogout))?.sub).toBe(studentId)
+  await expectParticipantIdentity(page, explicitParticipant)
+  expect(await storedExplicitToken(page)).toBe(explicitToken)
+  expect(observedSelf).not.toContain(otherId)
+})
+
+test('a declined header logout keeps the explicit identity and its retry ends it without falling back to the cookie', async ({
+  page,
+  context,
+  baseURL,
+}, info) => {
+  skipWithoutLocalCookies(info.project.name)
+  const prisma = await getPrisma()
+  const explicitParticipant = await prisma.participant.findUniqueOrThrow({
+    where: { id: studentId },
+  })
+  await context.addCookies([
+    {
+      name: 'participant_token',
+      value: await signed({ sub: otherId, role: 'PARTICIPANT' }, '14d'),
+      domain: `.${process.env.COOKIE_DOMAIN!}`,
+      path: '/',
+      secure: true,
+      httpOnly: true,
+      sameSite: 'None',
+    },
+  ])
+  await retainExplicitSession(
+    page,
+    baseURL!,
+    await signed({ sub: studentId, role: 'PARTICIPANT' }, '14d')
+  )
+  await expectParticipantIdentity(page, explicitParticipant)
+
+  // The server-declared rejection is fulfilled before any backend mutation.
+  await page.route('**/api/graphql*', async (route) => {
+    if (graphqlOperationName(route.request()) === 'LogoutParticipant') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ data: { logoutParticipant: null } }),
+      })
+    } else await route.continue()
+  })
+  await page.getByTestId('header-avatar').click()
+  await page.getByTestId('logout').click()
+  await expect(toastItems(page).first()).toBeVisible()
+  await expect(page).toHaveURL((url) => url.pathname.endsWith('/editProfile'))
+  await expectParticipantIdentity(page, explicitParticipant)
+  expect(
+    (await context.cookies()).some(
+      (cookie) => cookie.name === 'participant_token'
+    )
+  ).toBe(true)
+
+  const retained = page.waitForRequest(
+    (request) => graphqlOperationName(request) === 'Self'
+  )
+  await page.goto(`${baseURL}/editProfile`)
+  expect((await explicitBearerPayload(await retained))?.sub).toBe(studentId)
+  await expectParticipantIdentity(page, explicitParticipant)
+
+  // The retry runs the real command: this tab's credential and the applicable
+  // cookie both end, and the page settles into recovery.
+  await page.unroute('**/api/graphql*')
+  await page.getByTestId('header-avatar').click()
+  await page.getByTestId('logout').click()
+  await expect(page).toHaveURL(/\/login(?:\?|$)/)
+  expect(
+    (await context.cookies()).some(
+      (cookie) => cookie.name === 'participant_token'
+    )
+  ).toBe(false)
+  expect(await storedExplicitToken(page)).toBeNull()
+  await page.goto(`${baseURL}/editProfile`)
+  await expect(page.getByTestId('participant-session-recovery')).toBeVisible()
+  await expect(page.getByTestId('update-account-email')).toHaveCount(0)
+  await expect(page.getByTestId('participant-session-login')).toBeVisible()
+})
+
+test('a declined account deletion keeps the disposable participant and a retry deletes it', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  test.setTimeout(120_000)
+  const prisma = await getPrisma()
+  const disposableUsername = `pa${randomUUID().slice(0, 8)}`
+  const disposable = await prisma.participant.create({
+    data: {
+      username: disposableUsername,
+      email: `${disposableUsername}@example.invalid`,
+      password: randomUUID(),
+      ...completedDataUse(),
+    },
+  })
+  try {
+    await retainExplicitSession(
+      page,
+      baseURL!,
+      await signed({ sub: disposable.id, role: 'PARTICIPANT' }, '14d')
+    )
+    await expectParticipantIdentity(page, disposable)
+
+    // The false result is declared before any backend mutation runs.
+    let declineDelete = true
+    await page.route('**/api/graphql*', async (route) => {
+      if (
+        declineDelete &&
+        graphqlOperationName(route.request()) === 'DeleteParticipantAccount'
+      ) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ data: { deleteParticipantAccount: false } }),
+        })
+      } else await route.continue()
+    })
+    await page.getByTestId('confirm-delete-account').click()
+    await page.getByTestId('delete-account-command').click()
+    // The declined command renders feedback, closes the modal, and leaves both
+    // the account and this tab's credential intact.
+    await expect(toastItems(page).first()).toBeVisible()
+    await expect(page.getByTestId('delete-account-command')).toBeHidden()
+    expect(
+      await prisma.participant.findUnique({ where: { id: disposable.id } })
+    ).not.toBeNull()
+
+    const retained = page.waitForRequest(
+      (request) => graphqlOperationName(request) === 'Self'
+    )
+    await page.goto(`${baseURL}/editProfile`)
+    expect((await explicitBearerPayload(await retained))?.sub).toBe(
+      disposable.id
+    )
+    await expectParticipantIdentity(page, disposable)
+
+    // The retry runs the real command and ends this synthetic session.
+    declineDelete = false
+    await page.getByTestId('confirm-delete-account').click()
+    await page.getByTestId('delete-account-command').click()
+    await expect
+      .poll(() =>
+        prisma.participant.findUnique({ where: { id: disposable.id } })
+      )
+      .toBeNull()
+    await expect(page.getByTestId('participant-session-recovery')).toBeVisible()
+    await expect(page.getByTestId('update-account-email')).toHaveCount(0)
+    expect(await storedExplicitToken(page)).toBeNull()
+    expect(
+      (await context.cookies()).some(
+        (cookie) => cookie.name === 'participant_token'
+      )
+    ).toBe(false)
+  } finally {
+    await prisma.participant.deleteMany({ where: { id: disposable.id } })
+  }
+})
+
+test('an expired retained credential does not fall back to a valid ambient cookie and a fresh launch recovers', async ({
+  page,
+  context,
+  baseURL,
+}, info) => {
+  test.setTimeout(120_000)
+  skipWithoutLocalCookies(info.project.name)
+  const prisma = await getPrisma()
+  const ambientParticipant = await prisma.participant.findUniqueOrThrow({
+    where: { id: otherId },
+  })
+  await context.addCookies([
+    {
+      name: 'participant_token',
+      value: await signed({ sub: otherId, role: 'PARTICIPANT' }, '14d'),
+      domain: `.${process.env.COOKIE_DOMAIN!}`,
+      path: '/',
+      secure: true,
+      httpOnly: true,
+      sameSite: 'None',
+    },
+  ])
+  await page.goto(`${baseURL}/editProfile`)
+  await expectParticipantIdentity(page, ambientParticipant)
+  await page.evaluate(
+    (value) => sessionStorage.setItem('participant_token', value),
+    await signed(
+      { sub: studentId, role: 'PARTICIPANT' },
+      Math.floor(Date.now() / 1000) - 60
+    )
+  )
+
+  // The unusable bearer is authoritative: the page settles into recovery
+  // without an identity from the still-valid ambient cookie and without the
+  // login redirect an Unauthorized error would trigger.
+  const expiredSelf = page.waitForRequest(
+    (request) => graphqlOperationName(request) === 'Self'
+  )
+  const recoverySelf = waitForSelfResponse(page)
+  await page.reload()
+  await expect(page.getByTestId('participant-session-recovery')).toBeVisible()
+  await expect(page.getByTestId('participant-session-login')).toBeVisible()
+  await expect(page.getByTestId('update-account-email')).toHaveCount(0)
+  await expect(page).toHaveURL((url) => url.pathname === '/editProfile')
+  const expiredPayload = await explicitBearerPayload(await expiredSelf)
+  expect(expiredPayload?.sub).toBe(studentId)
+  expect(expiredPayload?.exp).toBeLessThan(Date.now() / 1000)
+  expect((await (await recoverySelf).json()).data.self).toBeNull()
+
+  // The same expired credential also fails a protected, read-only membership
+  // operation while the valid ambient cookie is still attached by the browser.
+  const protectedResult = await page.evaluate(
+    async ({ apiUrl, courseId }) => {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'content-type': 'application/json',
+          'x-graphql-yoga-csrf': 'true',
+          authorization: `Bearer ${sessionStorage.getItem('participant_token')}`,
+        },
+        body: JSON.stringify({
+          query:
+            'mutation EnsureParticipation($courseId: String!) { ensureParticipation(courseId: $courseId) }',
+          operationName: 'EnsureParticipation',
+          variables: { courseId },
+        }),
+      })
+      return response.json()
+    },
+    {
+      apiUrl: `${baseURL!.replace('://pwa.', '://api.')}/api/graphql`,
+      courseId: COURSE_ID_TEST,
+    }
+  )
+  expect(protectedResult.data?.ensureParticipation).not.toBe(true)
+  expect(protectedResult.errors).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ message: 'Unauthorized' }),
+    ])
+  )
+
+  // The ambient cookie is valid for this browser: removing only the tab's
+  // credential reveals it, which the settled recovery above refused to do.
+  await page.evaluate(() => sessionStorage.clear())
+  await page.reload()
+  await expectParticipantIdentity(page, ambientParticipant)
+
+  // A fresh handoff replaces the tab session with the launched participant.
+  const launchSelf = waitForSelfResponse(page)
+  await page.goto(
+    `${baseURL}/editProfile?jwt=${encodeURIComponent(await signed({ sub: ssoId, scope: 'LTI1.3' }))}`
+  )
+  expect((await (await launchSelf).json()).data.self.id).toBe(studentId)
+  await expectParticipantIdentity(
+    page,
+    await prisma.participant.findUniqueOrThrow({ where: { id: studentId } })
+  )
+  const stored = (await storedExplicitToken(page))!
+  const storedPayload = JSON.parse(
+    Buffer.from(stored.split('.')[1]!, 'base64url').toString()
+  ) as { sub?: string; exp?: number }
+  expect(storedPayload.sub).toBe(studentId)
+  expect(storedPayload.exp).toBeGreaterThan(Date.now() / 1000)
+})
+
+test('the course chatbot entry gate makes no bridge request while an explicit credential exists', async ({
+  page,
+  context,
+  baseURL,
+}, info) => {
+  test.setTimeout(120_000)
+  skipWithoutLocalCookies(info.project.name)
+  const prisma = await getPrisma()
+  const cookieParticipant = await prisma.participant.findUniqueOrThrow({
+    where: { id: otherId },
+  })
+  await retainExplicitSession(
+    page,
+    baseURL!,
+    await signed({ sub: studentId, role: 'PARTICIPANT' }, '14d')
+  )
+  const bridgeRequests: string[] = []
+  const popups: Page[] = []
+  page.on('request', (request) => {
+    if (request.url().includes(`/course/${COURSE_ID_TEST}/chatbot/`))
+      bridgeRequests.push(request.url())
+  })
+  page.on('popup', (popup) => popups.push(popup))
+
+  // Explicit B without a cookie: recovery guidance instead of the bridge.
+  expect(
+    (await context.cookies()).some(
+      (cookie) => cookie.name === 'participant_token'
+    )
+  ).toBe(false)
+  const courseUrl = `${baseURL}/course/${COURSE_ID_TEST}`
+  await page.goto(courseUrl)
+  await expect(
+    page.getByTestId('student-course-chatbot-recovery')
+  ).toBeVisible()
+  await expect(page.getByTestId('student-course-chatbot-link')).toHaveCount(0)
+  expect(bridgeRequests).toEqual([])
+  expect(popups).toEqual([])
+  await page.getByTestId('student-course-chatbot-recovery').click()
+  await expect(page.getByTestId('course-chatbot-recovery-modal')).toBeVisible()
+  await page.getByTestId('course-chatbot-recovery-close').click()
+  await expect(page.getByTestId('course-chatbot-recovery-modal')).toBeHidden()
+  await page.getByTestId('student-course-chatbot-recovery').click()
+  await page.getByTestId('course-chatbot-recovery-cancel').click()
+  await expect(page.getByTestId('course-chatbot-recovery-modal')).toBeHidden()
+  expect(bridgeRequests).toEqual([])
+  expect(popups).toEqual([])
+
+  const explicitParticipant = await prisma.participant.findUniqueOrThrow({
+    where: { id: studentId },
+  })
+  const afterCancel = waitForSelfResponse(page)
+  await page.goto(`${baseURL}/editProfile`)
+  const retainedResponse = await afterCancel
+  expect((await explicitBearerPayload(retainedResponse.request()))?.sub).toBe(
+    studentId
+  )
+  expect((await retainedResponse.json()).data.self.id).toBe(studentId)
+  await expectParticipantIdentity(page, explicitParticipant)
+
+  // A conflicting ambient cookie keeps the same conservative gate.
+  await context.addCookies([
+    {
+      name: 'participant_token',
+      value: await signed({ sub: otherId, role: 'PARTICIPANT' }, '14d'),
+      domain: `.${process.env.COOKIE_DOMAIN!}`,
+      path: '/',
+      secure: true,
+      httpOnly: true,
+      sameSite: 'None',
+    },
+  ])
+  const conflictingSelf = waitForSelfResponse(page)
+  await page.goto(courseUrl)
+  const conflictingResponse = await conflictingSelf
+  expect(
+    (await explicitBearerPayload(conflictingResponse.request()))?.sub
+  ).toBe(studentId)
+  expect((await conflictingResponse.json()).data.self.id).toBe(studentId)
+  await expect(
+    page.getByTestId('student-course-chatbot-recovery')
+  ).toBeVisible()
+  await expect(page.getByTestId('student-course-chatbot-link')).toHaveCount(0)
+  expect(bridgeRequests).toEqual([])
+
+  // An ordinary login in this tab ends the explicit credential and restores
+  // the cookie-mode link.
+  await page.getByTestId('student-course-chatbot-recovery').click()
+  await page.getByTestId('course-chatbot-recovery-login').click()
+  await expect(page).toHaveURL(
+    (url) =>
+      url.pathname === '/login' &&
+      url.searchParams.get('redirect_to') === `/course/${COURSE_ID_TEST}`
+  )
+  await page.getByTestId('username-field').fill(cookieParticipant.username)
+  await page.getByTestId('password-field').fill(STUDENT_PASSWORD)
+  await page.getByTestId('submit-login').click()
+  await expect(page).toHaveURL((url) =>
+    url.pathname.endsWith(`/course/${COURSE_ID_TEST}`)
+  )
+  await expect(page.getByTestId('student-course-chatbot-link')).toBeVisible()
+  await expect(page.getByTestId('student-course-chatbot-recovery')).toHaveCount(
+    0
+  )
+  expect(await storedExplicitToken(page)).toBeNull()
+  const identitySelf = waitForCookieModeSelf(page)
+  await page.goto(`${baseURL}/editProfile`)
+  const response = await identitySelf
+  const headers = await response.request().allHeaders()
+  expect(headers.authorization ?? '').not.toMatch(/^Bearer /)
+  expect((await response.json()).data.self.id).toBe(otherId)
+  expect(popups).toEqual([])
+
+  const chatRequests = await interceptChatDestination(context)
+  await page.goto(courseUrl)
+  const chatLink = page.locator('a').filter({
+    has: page.getByTestId('student-course-chatbot-link'),
+  })
+  await expect(chatLink).toHaveAttribute('target', '_blank')
+  const bridgePath = await chatLink.getAttribute('href')
+  expect(bridgePath).toContain(`/course/${COURSE_ID_TEST}/chatbot/`)
+  const popupPromise = page.waitForEvent('popup')
+  await chatLink.click()
+  const popup = await popupPromise
+  await expect(popup.getByTestId('synthetic-chat-destination')).toBeVisible()
+  expect(new URL(popup.url()).pathname).toBe(
+    `/${bridgePath!.split('/').at(-1)}`
+  )
+  expect(chatRequests).toHaveLength(1)
+  await popup.close()
+
+  // A fresh OLAT launch restores an explicit session and therefore still
+  // needs ordinary login before another cross-app bridge navigation.
+  await page.goto(
+    `${baseURL}/editProfile?jwt=${encodeURIComponent(await signed({ sub: ssoId, scope: 'LTI1.3' }))}`
+  )
+  await expectParticipantIdentity(page, explicitParticipant)
+  await page.goto(courseUrl)
+  await expect(
+    page.getByTestId('student-course-chatbot-recovery')
+  ).toBeVisible()
+  await expect(page.getByTestId('student-course-chatbot-link')).toHaveCount(0)
+  expect(chatRequests).toHaveLength(1)
+})
+
+test('the direct chatbot bridge authorizes its own cookie principal despite a conflicting tab credential', async ({
+  context,
+  baseURL,
+}, info) => {
+  skipWithoutLocalCookies(info.project.name)
+  const chatRequests = await interceptChatDestination(context)
+  const bridgePath = `/course/${bridgeCourseId}/chatbot/${bridgeChatbotId}`
+  for (const cookieId of [null, bridgeMemberId, bridgeOutsiderId]) {
+    await context.clearCookies()
+    if (cookieId) {
+      await context.addCookies([
+        {
+          name: 'participant_token',
+          value: await signed({ sub: cookieId, role: 'PARTICIPANT' }, '14d'),
+          domain: `.${process.env.COOKIE_DOMAIN!}`,
+          path: '/',
+          secure: true,
+          httpOnly: true,
+          sameSite: 'None',
+        },
+      ])
+    }
+    const page = await context.newPage()
+    const explicitId =
+      cookieId === bridgeMemberId ? bridgeOutsiderId : bridgeMemberId
+    await retainExplicitSession(
+      page,
+      baseURL!,
+      await signed({ sub: explicitId, role: 'PARTICIPANT' }, '14d')
+    )
+    const ownRequest = page.waitForRequest(
+      (request) =>
+        request.isNavigationRequest() &&
+        new URL(request.url()).pathname.endsWith(bridgePath)
+    )
+    const redirectsBefore = chatRequests.length
+    await page.goto(`${baseURL}${bridgePath}`)
+    expect(
+      (await (await ownRequest).allHeaders()).authorization ?? ''
+    ).not.toMatch(/^Bearer /)
+    if (!cookieId) {
+      await expect(page).toHaveURL(
+        (url) =>
+          url.pathname.endsWith('/login') &&
+          (url.searchParams.get('redirect_to') ?? '').endsWith(bridgePath)
+      )
+      expect(chatRequests).toHaveLength(redirectsBefore)
+    } else if (cookieId === bridgeMemberId) {
+      await expect(page.getByTestId('synthetic-chat-destination')).toBeVisible()
+      expect(new URL(page.url()).pathname).toBe(`/${bridgeChatbotId}`)
+      expect(chatRequests).toHaveLength(redirectsBefore + 1)
+    } else {
+      await expect(page).toHaveURL((url) => url.pathname.endsWith(bridgePath))
+      // The server-generated result is structured evidence of the failed
+      // membership check, independent of localized notification wording.
+      expect(
+        await page
+          .locator('#__NEXT_DATA__')
+          .evaluate(
+            (element) =>
+              JSON.parse(element.textContent!).props.pageProps
+                .participationError
+          )
+      ).toBe(true)
+      await expect(
+        page.locator(`a[href$="/course/${bridgeCourseId}"]`).last()
+      ).toBeVisible()
+      expect(chatRequests).toHaveLength(redirectsBefore)
+    }
+    await page.close()
   }
 })
 

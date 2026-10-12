@@ -907,6 +907,9 @@ Other participants will only see your public **participant profile**, including 
         'You need a KlickerUZH account to access this chatbot. Please log in or create an account first.',
       goToLogin: 'Go to login',
       openCourseChat: 'AI tutor',
+      sessionRecoveryTitle: 'Log in before opening the AI tutor',
+      sessionRecoveryMessage:
+        'You opened KlickerUZH through OLAT. To use the AI tutor, log in with your KlickerUZH account in this tab. This replaces the current OLAT session and requires cookies to be allowed. Opening KlickerUZH again through OLAT restores that session but does not unlock this AI tutor link. You can cancel to keep using your current session.',
       participationRequiredMessage:
         'We could not activate your participation for this course. Open the course in OLAT/KlickerUZH and ensure you have joined it before trying again.',
       goToCourse: 'Open course',

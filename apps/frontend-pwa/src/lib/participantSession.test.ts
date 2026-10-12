@@ -152,3 +152,211 @@ it('gives each participant binding its own Apollo cache', async () => {
   second.stop()
   removeWindow()
 })
+
+for (const outcome of [
+  'success',
+  'unauthorized',
+  'data-use',
+  'login',
+] as const) {
+  it(`rejects retained-client work and delayed ${outcome} after logout`, {
+    timeout: 5000,
+  }, async (t) => {
+    process.env.NEXT_PUBLIC_API_URL = 'https://api.example.invalid/api/graphql'
+    const previousEnvironment = process.env.NODE_ENV
+    Object.assign(process.env, { NODE_ENV: 'development' })
+    const { gql } = await import('@apollo/client')
+    const { initializeApollo, hasExplicitParticipantSession } = await import(
+      './apollo'
+    )
+    const { default: Router } = await import('next/router')
+    const redirects = t.mock.method(Router, 'push', async () => true)
+    const replacements = t.mock.method(Router, 'replace', async () => true)
+    const values = installWindow()
+    setParticipantSessionToken('participant-b')
+    const requests: string[] = []
+    let releaseOldResult!: (response: Response) => void
+    let requestStarted!: () => void
+    const started = new Promise<void>((resolve) => {
+      requestStarted = resolve
+    })
+    t.mock.method(
+      globalThis,
+      'fetch',
+      async (_input: unknown, init?: RequestInit) => {
+        const { operationName } = JSON.parse(String(init?.body))
+        requests.push(operationName)
+        if (
+          operationName === 'QDelayedSelf' ||
+          operationName === 'MDelayedLogin'
+        ) {
+          requestStarted()
+          return new Promise<Response>((resolve) => {
+            releaseOldResult = resolve
+          })
+        }
+        return new Response(
+          JSON.stringify({
+            data:
+              operationName === 'MLogoutParticipant'
+                ? { logoutParticipant: 'participant-b' }
+                : { self: { __typename: 'Participant', id: 'participant-a' } },
+          }),
+          {
+            headers: { 'content-type': 'application/json' },
+          }
+        )
+      }
+    )
+    const old = initializeApollo(undefined, undefined, {
+      token: 'participant-b',
+      key: `retirement:${outcome}:participant-b`,
+    })
+    let current: typeof old | undefined
+    t.after(() => {
+      old.stop()
+      current?.stop()
+      removeWindow()
+      if (previousEnvironment === undefined)
+        Reflect.deleteProperty(process.env, 'NODE_ENV')
+      else Object.assign(process.env, { NODE_ENV: previousEnvironment })
+    })
+    assert.equal(hasExplicitParticipantSession(old), true)
+    const delayed =
+      outcome === 'login'
+        ? old.mutate({
+            mutation: gql`mutation MDelayedLogin { loginParticipant(usernameOrEmail: "synthetic", password: "synthetic") }`,
+          })
+        : old.query({
+            query: gql`query QDelayedSelf { self { id __typename } }`,
+            fetchPolicy: 'network-only',
+          })
+    const rejectedDelayed = assert.rejects(
+      delayed,
+      /Participant session changed/
+    )
+    await started
+    await old.mutate({
+      mutation: gql`mutation MLogoutParticipant { logoutParticipant }`,
+    })
+    assert.equal(getParticipantSessionToken(), null)
+    assert.equal(values.has('participant_token'), false)
+    const generation = getParticipantSessionGeneration()
+    current = initializeApollo(undefined, undefined, {
+      token: null,
+      key: `retirement:${outcome}:cookie`,
+    })
+    assert.equal(hasExplicitParticipantSession(current), false)
+    const self = gql`query QCurrentSelf { self { id __typename } }`
+    assert.equal(
+      (await current.query({ query: self, fetchPolicy: 'network-only' })).data
+        .self.id,
+      'participant-a'
+    )
+    releaseOldResult(
+      new Response(
+        JSON.stringify(
+          outcome === 'login'
+            ? { data: { loginParticipant: 'participant-b' } }
+            : outcome === 'success'
+              ? {
+                  data: {
+                    self: { __typename: 'Participant', id: 'participant-b' },
+                  },
+                }
+              : {
+                  errors: [
+                    {
+                      message:
+                        outcome === 'unauthorized'
+                          ? 'Unauthorized'
+                          : 'Data use required',
+                      extensions:
+                        outcome === 'data-use'
+                          ? { code: 'PARTICIPANT_DATA_USE_COMPLETION_REQUIRED' }
+                          : { code: 'UNAUTHENTICATED' },
+                    },
+                  ],
+                }
+        ),
+        {
+          headers: { 'content-type': 'application/json' },
+        }
+      )
+    )
+    await rejectedDelayed
+    old.stop()
+    await assert.rejects(
+      old.query({ query: self, fetchPolicy: 'network-only' }),
+      /Participant session changed/
+    )
+    assert.deepEqual(requests, [
+      outcome === 'login' ? 'MDelayedLogin' : 'QDelayedSelf',
+      'MLogoutParticipant',
+      'QCurrentSelf',
+    ])
+    assert.equal(
+      current.readQuery<{ self: { id: string } }>({ query: self })?.self.id,
+      'participant-a'
+    )
+    assert.equal(old.extract()['Participant:participant-b'], undefined)
+    assert.equal(getParticipantSessionGeneration(), generation)
+    assert.equal(redirects.mock.callCount(), 0)
+    assert.equal(replacements.mock.callCount(), 0)
+  })
+}
+
+it('does not retry a failed request after its participant binding retires', {
+  timeout: 5000,
+}, async (t) => {
+  process.env.NEXT_PUBLIC_API_URL = 'https://api.example.invalid/api/graphql'
+  const previousEnvironment = process.env.NODE_ENV
+  Object.assign(process.env, { NODE_ENV: 'development' })
+  const { gql } = await import('@apollo/client')
+  const { initializeApollo } = await import('./apollo')
+  installWindow()
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  let attempts = 0
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async (_input: unknown, init?: RequestInit) => {
+      const { operationName } = JSON.parse(String(init?.body))
+      if (operationName === 'QRetrySelf') {
+        attempts += 1
+        throw new Error('Synthetic transport failure')
+      }
+      return new Response(
+        JSON.stringify({ data: { logoutParticipant: 'participant-b' } }),
+        {
+          headers: { 'content-type': 'application/json' },
+        }
+      )
+    }
+  )
+  const client = initializeApollo(undefined, undefined, {
+    token: 'participant-b',
+    key: 'retry:participant-b',
+  })
+  t.after(() => {
+    client.stop()
+    removeWindow()
+    if (previousEnvironment === undefined)
+      Reflect.deleteProperty(process.env, 'NODE_ENV')
+    else Object.assign(process.env, { NODE_ENV: previousEnvironment })
+  })
+  const pending = client.query({
+    query: gql`query QRetrySelf { self { id } }`,
+    fetchPolicy: 'network-only',
+  })
+  const rejected = assert.rejects(pending, /Participant session changed/)
+  // Let the failed request schedule its retry, then retire before that timer.
+  await new Promise<void>((resolve) => setImmediate(resolve))
+  assert.equal(attempts, 1)
+  await client.mutate({
+    mutation: gql`mutation MLogoutParticipant { logoutParticipant }`,
+  })
+  t.mock.timers.tick(3000)
+  await rejected
+  assert.equal(attempts, 1)
+})

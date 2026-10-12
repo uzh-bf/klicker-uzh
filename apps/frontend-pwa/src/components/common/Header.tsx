@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useApolloClient, useMutation, useQuery } from '@apollo/client'
 import {
   faCircleQuestion,
   faComment,
@@ -22,12 +22,13 @@ import {
   StudentCourse,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Dropdown, H1, H2, toast } from '@uzh-bf/design-system'
+import { hasExplicitParticipantSession } from '@lib/apollo'
+import { Button, Dropdown, H1, H2, Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import AvatarWithLevel from './AvatarWithLevel'
 
@@ -51,6 +52,13 @@ function Header({
   const router = useRouter()
   const { pathname, asPath, query } = router
   const t = useTranslations()
+  const client = useApolloClient()
+  const [sessionReady, setSessionReady] = useState(false)
+  const [chatRecoveryOpen, setChatRecoveryOpen] = useState(false)
+  useEffect(() => setSessionReady(true), [])
+  // SSR cannot see a retained tab credential. Wait for the browser binding
+  // before exposing a link that could prefetch the cookie-authenticated bridge.
+  const requiresChatRecovery = hasExplicitParticipantSession(client)
 
   const [changeParticipantLocale, { loading: changingLocale }] = useMutation(
     ChangeParticipantLocaleDocument
@@ -155,7 +163,46 @@ function Header({
             </Link>
           ))}
 
-        {courseId && courseChatbot && (
+        {courseId &&
+        courseChatbot &&
+        (!sessionReady || requiresChatRecovery) ? (
+          <>
+            <Button
+              primary
+              disabled={!sessionReady}
+              onClick={() => setChatRecoveryOpen(true)}
+              className={{
+                root: 'h-8 bg-slate-800 py-0 text-white hover:bg-slate-700 hover:text-white',
+              }}
+              data={{ cy: 'student-course-chatbot-recovery' }}
+            >
+              <Button.Label>{t('pwa.chatbot.openCourseChat')}</Button.Label>
+            </Button>
+            <Modal
+              open={chatRecoveryOpen}
+              title={t('pwa.chatbot.sessionRecoveryTitle')}
+              onClose={() => setChatRecoveryOpen(false)}
+              dataCloseButton={{ cy: 'course-chatbot-recovery-close' }}
+              primaryLabel={t('pwa.chatbot.goToLogin')}
+              onPrimaryAction={() => {
+                setChatRecoveryOpen(false)
+                void router.push({
+                  pathname: '/login',
+                  query: { redirect_to: `/course/${courseId}` },
+                })
+              }}
+              dataPrimaryAction={{ cy: 'course-chatbot-recovery-login' }}
+              secondaryLabel={t('shared.generic.cancel')}
+              onSecondaryAction={() => setChatRecoveryOpen(false)}
+              dataSecondaryAction={{ cy: 'course-chatbot-recovery-cancel' }}
+              className={{ content: 'max-w-md' }}
+            >
+              <div data-cy="course-chatbot-recovery-modal">
+                {t('pwa.chatbot.sessionRecoveryMessage')}
+              </div>
+            </Modal>
+          </>
+        ) : courseId && courseChatbot ? (
           <Link
             href={`/course/${courseId}/chatbot/${courseChatbot.id}`}
             target="_blank"
@@ -171,7 +218,7 @@ function Header({
               <Button.Label>{t('pwa.chatbot.openCourseChat')}</Button.Label>
             </Button>
           </Link>
-        )}
+        ) : null}
 
         <Dropdown
           trigger={
@@ -371,8 +418,23 @@ function Header({
                       </div>
                     ),
                     onClick: async () => {
-                      await logoutParticipant()
-                      router.push('/login')
+                      if (process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true') {
+                        await logoutParticipant()
+                        router.push('/login')
+                        return
+                      }
+                      const result = await logoutParticipant().catch(
+                        () => undefined
+                      )
+                      if (!result?.data?.logoutParticipant) {
+                        toast({
+                          type: 'error',
+                          message: t('shared.generic.systemError'),
+                          options: { duration: 6000 },
+                        })
+                        return
+                      }
+                      await router.push('/login')
                     },
                     data: { cy: 'logout' },
                   },

@@ -5,6 +5,7 @@ import {
   HttpLink,
   InMemoryCache,
   NormalizedCacheObject,
+  Observable,
   split,
 } from '@apollo/client'
 import { setContext } from '@apollo/client/link/context'
@@ -54,10 +55,7 @@ interface ParticipantBinding {
 
 let apolloClient: ApolloClient<NormalizedCacheObject> | undefined
 let apolloBinding: ParticipantBinding | undefined
-const bindings = new WeakMap<
-  ApolloClient<NormalizedCacheObject>,
-  ParticipantBinding
->()
+const bindings = new WeakMap<ApolloClient<object>, ParticipantBinding>()
 
 function createIsomorphLink(
   ctx?: GetServerSidePropsContext,
@@ -201,6 +199,7 @@ function createIsomorphLink(
       },
       attempts: {
         max: 3,
+        retryIf: (error) => !!error && !binding?.retired,
       },
     })
 
@@ -234,17 +233,44 @@ function createIsomorphLink(
       link
     )
 
+    // Check after asynchronous context and persisted-query work, including
+    // retries. A stopped client can still be held by an event handler.
+    const sessionGuardLink = new ApolloLink(
+      (operation, forward) =>
+        new Observable((observer) => {
+          if (binding?.retired) {
+            observer.error(new Error('Participant session changed'))
+            return
+          }
+          const subscription = forward(operation).subscribe({
+            next: (result) => {
+              if (binding?.retired)
+                observer.error(new Error('Participant session changed'))
+              else observer.next(result)
+            },
+            error: (error) => observer.error(error),
+            complete: () => observer.complete(),
+          })
+          return () => subscription.unsubscribe()
+        })
+    )
+
     return from([
       retryLink,
       errorLink,
       ...(binding ? [sessionResultLink] : []),
       authLink,
       ...persistedLink,
+      ...(binding ? [sessionGuardLink] : []),
       link,
     ])
   }
 
   return from([errorLink, authLink, ...persistedLink, link])
+}
+
+export function hasExplicitParticipantSession(client: ApolloClient<object>) {
+  return !!bindings.get(client)?.token
 }
 
 // TODO: use the schema link when working on the server?

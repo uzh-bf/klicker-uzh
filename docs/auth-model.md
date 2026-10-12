@@ -80,29 +80,61 @@ token in a link would let one participant place another in their account.
 Edit Profile carries the verified signed LTI handoff through its registration
 redirect, so Create Account does not substitute an older or missing LTI cookie.
 
-The application boundary binds an Apollo client to the page credential before
-child queries. Only explicit credentials, from an LTI exchange or from account
-creation, are kept in the tab (memory, plus sessionStorage when available).
-They let a frame that refuses cookies keep its identity across navigation.
+Both cookie and bearer transports carry participant-session JWTs. The
+application boundary binds an Apollo client to the page credential before
+child queries. Only explicit credentials, from an LTI exchange or LTI-backed
+account creation, are kept in the tab (memory, plus sessionStorage when
+available). Manual registration sends an activation email and returns no
+participant-session JWT.
+Explicit credentials let a frame that refuses cookies keep its identity across navigation.
 A kept credential takes precedence over any cookie session, and server-rendered
 data from a different cookie session is not shown in its place. Live-quiz
 answers carry the kept credential to the response API as a bearer. The API
 verifies it as it does for GraphQL, queues the answer for that participant in
 place of any cookie identity, and refuses an unusable credential with 401. Tabs without
 one send no bearer, so a logout in one tab reaches every cookie-authenticated
-tab on its next request. A frame holding an explicit credential keeps it until
-it relaunches or logs out itself. A page that ends the
-identity, or a successful session-changing mutation, retires the client;
-retired clients ignore late results and error redirects. With both cookies and
-storage unavailable, the active document can continue; a credential-free full
-reload has no identity and requires a fresh launch. The SSR-required chatbot
-bridge cannot use browser-only memory and retains explicit login/relaunch
-recovery.
+tab on its next request; no broadcast immediately clears another tab's screen.
+A tab holding an explicit credential continues as its launched participant
+even when another tab logs in or logs out. Its own successful ordinary login
+returns it to cookie mode. A page that ends the identity, or a successful
+session-changing mutation, retires the client. A guard after asynchronous
+authentication and persisted-query processing rejects new transport work and
+late results from retired clients; their errors cannot trigger recovery
+navigation or retries. Already-dispatched server operations cannot be undone.
+With both cookies and storage unavailable, the active document can continue;
+a credential-free full reload has no identity and requires a fresh launch.
+
+The SSR chatbot bridge cannot read browser memory or sessionStorage. While
+the PWA tab holds an explicit credential, its Header chatbot action opens
+recovery guidance without a link, prefetch, new window or bridge participation
+check. `ensureParticipation` currently checks an existing course participation;
+it does not create one.
+This gate also applies when the cookie is absent, belongs to another account,
+or might match: the client does not establish that equivalence. The guidance
+offers ordinary login in the same tab, which replaces the explicit session and
+requires usable cookies. A fresh LTI launch restores PWA access but keeps the
+explicit credential, so it does not unlock the chatbot action. Cookie-mode
+entry keeps its new-tab link. Directly opening the bridge still uses that
+request's verified launch or cookie; it cannot infer another tab's identity.
 
 Successful logout or account deletion clears memory, storage and the client
-cache. False/error responses retain the session. Account-deletion cookies expire
+cache. False/error responses retain the session. Regular logout reports a
+rejected command on the current page so the participant can retry.
+Account-deletion cookies expire
 only after the database transaction succeeds. Direct password, magic-link and
 activation success clear prior bearer state before cookie-authenticated queries.
+These operations return a participant ID, not a browser-retained JWT. They
+cannot maintain ordinary login in a frame that refuses the cookie. Logout
+expires applicable cookies and clears this document's explicit state; it does
+not revoke already-issued JWTs held in other contexts. A response lost after
+a server mutation commits has an uncertain outcome; a known rejection before
+the mutation runs is the case targeted by the failure-retention tests.
+
+HttpOnly protects the cookie itself. Explicit JWTs in memory/sessionStorage
+remain readable by application JavaScript. Some SSR pages also serialize
+ambient JWTs in page props, as they did before this change; omitting them from
+the persistent tab store does not make cookie-mode browsing free of
+JavaScript-readable credentials.
 
 Registered-session cookies use thirteen-day retention, within the fourteen-day
 signed session. Express accepts milliseconds; nookies/wire Max-Age uses seconds.
