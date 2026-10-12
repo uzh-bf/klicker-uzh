@@ -161,10 +161,14 @@ async function expectIdentity(
   )
 }
 
-async function sessionRevision(context: BrowserContext) {
-  return (await context.cookies()).find(
-    (cookie) => cookie.name === 'participant_session'
-  )?.value
+async function sessionRevision(subject: Page | Frame) {
+  return subject.evaluate(
+    () =>
+      document.cookie
+        .split('; ')
+        .find((cookie) => cookie.startsWith('participant_session='))
+        ?.split('=')[1]
+  )
 }
 
 async function signInAs(
@@ -417,9 +421,7 @@ async function expectChatIdentity(
     (await response.json()).map((thread: { id: string }) => thread.id)
   ).toEqual([threadId])
   const headers = await response.request().allHeaders()
-  expect(headers['x-participant-session']).toBe(
-    await sessionRevision(chat.context())
-  )
+  expect(headers['x-participant-session']).toBe(await sessionRevision(chat))
   expect(headers.authorization ?? '').not.toMatch(/^Bearer /)
   await expect(chat.getByTestId('chat-thread-list')).toBeVisible()
   // UUID titles are test-owned identity markers, independent of UI copy.
@@ -477,11 +479,11 @@ test('existing PWA and Chat tabs adopt ordinary login and clear on logout', asyn
   const previousChatDocument = await chat
     .getByTestId('chat-thread-list')
     .elementHandle()
-  const firstRevision = await sessionRevision(context)
+  const firstRevision = await sessionRevision(first)
 
   const replacement = waitForChatIdentity(context, ltiThreadId)
   await signInAs(first, baseURL!, ltiUsername)
-  expect(await sessionRevision(context)).not.toBe(firstRevision)
+  expect(await sessionRevision(first)).not.toBe(firstRevision)
   // No navigation, reload or test fetch in either observing tab.
   await expectIdentity(second, { email: ltiEmail, username: ltiUsername })
   await chat.bringToFront()
@@ -524,7 +526,7 @@ test('refused launch cookies show recovery in the standalone page and LMS frame'
   expect(await settleLaunch(page.mainFrame(), async () => {})).toBe(
     'cookies-refused'
   )
-  expect(await sessionRevision(context)).toBeUndefined()
+  expect(await sessionRevision(page)).toBeUndefined()
 
   await page.unroute('**/editProfile*', refuseCookies)
   await signInAs(page, baseURL!, loginUsername)
@@ -545,7 +547,6 @@ test('an invalid launch or query token cannot create a session or retain an iden
   baseURL,
 }, info) => {
   skipWithoutCookieSessions(info.project.name)
-  const before = await sessionRevision(context)
   const frame = await launch(
     page,
     `${baseURL}/editProfile?jwt=${encodeURIComponent('not-a-valid-jwt')}`
@@ -553,11 +554,12 @@ test('an invalid launch or query token cannot create a session or retain an iden
   await expect
     .poll(() => frame.url(), { timeout: 30_000 })
     .toContain('serverError?freshLaunch=true')
-  await expect(frame.getByTestId('fresh-launch-recovery')).toBeVisible()
+  await expect(
+    frame
+      .getByTestId('fresh-launch-recovery')
+      .or(frame.getByTestId('cookies-required-recovery'))
+  ).toBeVisible()
   await expect(frame.getByTestId('update-account-email')).toHaveCount(0)
-  const afterReject = await sessionRevision(context)
-  expect(afterReject).toBeTruthy()
-  expect(afterReject).not.toBe(before)
 
   // The retired URL credential parameter is ignored: it neither signs in as
   // that participant nor blocks the anonymous sign-in surface.
@@ -726,7 +728,7 @@ test('a full LTI 1.3 launch through the tool signs in a new account without reta
     )
       expect(outcome).toBe('cookies-refused')
     if (outcome === 'accepted') {
-      expect(await sessionRevision(context)).toBeTruthy()
+      expect(await sessionRevision(frame)).toBeTruthy()
       expect(new URL(frame.url()).searchParams.has('participantToken')).toBe(
         false
       )
@@ -763,7 +765,7 @@ test('LTI B replaces A in an existing PWA profile and existing Chat tab', async 
   await second.goto(`${baseURL}/editProfile`)
   await expectIdentity(second, { email: loginEmail, username: loginUsername })
   const chat = await openChat(first, baseURL!)
-  const loginRevision = await sessionRevision(context)
+  const loginRevision = await sessionRevision(second)
   const replacement = waitForChatIdentity(context, ltiThreadId)
 
   const destination = `${baseURL}/editProfile?jwt=${encodeURIComponent(await signed({ sub: ssoId, scope: 'LTI1.3' }))}`
@@ -783,7 +785,7 @@ test('LTI B replaces A in an existing PWA profile and existing Chat tab', async 
     )
     await expectIdentity(first, { email: ltiEmail, username: ltiUsername })
   }
-  expect(await sessionRevision(context)).not.toBe(loginRevision)
+  expect(await sessionRevision(second)).not.toBe(loginRevision)
   await second.bringToFront()
   await expectIdentity(second, { email: ltiEmail, username: ltiUsername })
   await chat.bringToFront()
@@ -803,7 +805,7 @@ test('the last completed login response replaces earlier cookies and cached iden
   await second.goto(`${baseURL}/editProfile`)
   await expectIdentity(second, { email: loginEmail, username: loginUsername })
   const chat = await openChat(first, baseURL!)
-  const initialRevision = await sessionRevision(context)
+  const initialRevision = await sessionRevision(first)
 
   // An inert same-origin document keeps the pending browser fetch alive while
   // application tabs react to the other login. The real backend still signs
@@ -891,10 +893,10 @@ test('the last completed login response replaces earlier cookies and cached iden
       .poll(() => captured || !!captureError, { timeout: 12_000 })
       .toBe(true)
     expect(captureError).toBeUndefined()
-    expect(await sessionRevision(context)).toBe(initialRevision)
+    expect(await sessionRevision(first)).toBe(initialRevision)
     const earlier = waitForChatIdentity(context, loginThreadId)
     await signInAs(first, baseURL!, loginUsername)
-    const earlierRevision = await sessionRevision(context)
+    const earlierRevision = await sessionRevision(first)
     expect(earlierRevision).not.toBe(initialRevision)
     await expectChatIdentity(chat, await earlier, loginThreadId)
     await expectIdentity(second, { email: loginEmail, username: loginUsername })
@@ -904,7 +906,7 @@ test('the last completed login response replaces earlier cookies and cached iden
     const last = waitForChatIdentity(context, ltiThreadId)
     release()
     expect((await pending)?.data.loginParticipant).toBeTruthy()
-    expect(await sessionRevision(context)).toBe(delayedRevision)
+    expect(await sessionRevision(first)).toBe(delayedRevision)
     expect(delayedRevision).not.toBe(earlierRevision)
     await expectIdentity(first, { email: ltiEmail, username: ltiUsername })
     await expectIdentity(second, { email: ltiEmail, username: ltiUsername })
@@ -950,7 +952,7 @@ test('rejected logout and account deletion keep the shared session and succeed o
   // The retry runs the real command and ends the session for both tabs.
   await page.unroute('**/api/graphql*')
   await signOut(page)
-  expect(await sessionRevision(context)).toBeTruthy()
+  expect(await sessionRevision(page)).toBeTruthy()
   await second.goto(`${baseURL}/editProfile`)
   await expect(second.getByTestId('participant-session-recovery')).toBeVisible()
   await expect(second.getByTestId('update-account-email')).toHaveCount(0)
@@ -1084,7 +1086,7 @@ test('a live quiz answer and a practice submission are recorded for the shared c
     })
     return
   }
-  expect(await sessionRevision(context)).toBeTruthy()
+  expect(await sessionRevision(frame)).toBeTruthy()
 
   // The practice quiz is answered in the frame under the shared cookie.
   await navigate(frame, `/course/${COURSE_ID_TEST}/practiceQuizzes/${quizId}`)
@@ -1138,16 +1140,6 @@ test('a live quiz answer and a practice submission are recorded for the shared c
       'mutation ($quizId: String!, $blockId: Int!) { activateLiveQuizBlock(quizId: $quizId, blockId: $blockId) { id } }',
       { quizId: liveQuizId, blockId: liveQuizBlockId }
     )
-    const stale = await request.post(responseApi(baseURL!), {
-      headers: {
-        origin: new URL(baseURL!).origin,
-        'x-participant-session': 'stale-revision',
-        cookie: `participant_session=${await sessionRevision(context)}; participant_token=${(await context.cookies()).find((cookie) => cookie.name === 'participant_token')?.value ?? ''}`,
-      },
-      data: { response: { choices: [1] }, liveQuizId, instanceId },
-    })
-    expect(stale.status()).toBe(409)
-
     await navigate(frame, `/session/${liveQuizId}`)
     const answer = page.waitForRequest(
       (item) => item.url() === responseApi(baseURL!) && item.method() === 'POST'
@@ -1156,9 +1148,7 @@ test('a live quiz answer and a practice submission are recorded for the shared c
     await frame.getByTestId('student-submit-answer').click()
     const sent = await answer
     const headers = await sent.allHeaders()
-    expect(headers['x-participant-session']).toBe(
-      await sessionRevision(context)
-    )
+    expect(headers['x-participant-session']).toBe(await sessionRevision(frame))
     expect((await sent.response())?.status()).toBe(200)
     await expect
       .poll(

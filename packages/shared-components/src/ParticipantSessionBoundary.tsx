@@ -1,14 +1,42 @@
 'use client'
 
-import { type ReactNode, useEffect, useSyncExternalStore } from 'react'
+import { useTranslations } from 'next-intl'
+import {
+  type ReactNode,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+} from 'react'
 import {
   bindParticipantSession,
   checkParticipantSession,
+  hasSharedParticipantCookies,
   isParticipantSessionStale,
   participantReloadUrl,
   readParticipantSession,
   subscribeParticipantSession,
 } from './utils/participantSession'
+
+export function ParticipantCookieRecovery({
+  href = '/login',
+}: {
+  href?: string
+}) {
+  const t = useTranslations('pwa.serverError')
+  return (
+    <div data-cy="cookies-required-recovery" className="mx-auto max-w-xl p-6">
+      <p className="my-4 text-gray-600">{t('cookiesRequiredMessage')}</p>
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-uzh-blue underline"
+      >
+        {t('cookiesRequiredAction')}
+      </a>
+    </div>
+  )
+}
 
 export default function ParticipantSessionBoundary({
   children,
@@ -19,6 +47,7 @@ export default function ParticipantSessionBoundary({
   expectedRevision?: string
   requireCookie?: boolean
 }) {
+  const [sharedCookies, setSharedCookies] = useState<boolean>()
   if (typeof window !== 'undefined') bindParticipantSession(expectedRevision)
   const stale = useSyncExternalStore(
     subscribeParticipantSession,
@@ -34,10 +63,17 @@ export default function ParticipantSessionBoundary({
     expectedRevision !== readParticipantSession()
 
   useEffect(() => {
-    if (refused) {
-      window.location.replace('/serverError?cookiesRequired=true')
-      return
+    let active = true
+    void hasSharedParticipantCookies().then((available) => {
+      if (active) setSharedCookies(available)
+    })
+    return () => {
+      active = false
     }
+  }, [])
+
+  useEffect(() => {
+    if (refused || !sharedCookies) return
     const check = (event?: Event) => {
       if (checkParticipantSession()) return
       event?.preventDefault()
@@ -60,7 +96,20 @@ export default function ParticipantSessionBoundary({
       window.clearInterval(timer)
       events.forEach((name) => window.removeEventListener(name, check, true))
     }
-  }, [refused])
+  }, [refused, sharedCookies])
 
-  return stale || refused || mismatch ? null : children
+  if (refused || sharedCookies === false) {
+    const current =
+      typeof window === 'undefined' ? undefined : new URL(window.location.href)
+    return (
+      <ParticipantCookieRecovery
+        href={
+          current?.searchParams.has('jwt')
+            ? current.href
+            : `${process.env.NEXT_PUBLIC_PWA_URL?.replace(/\/$/, '') ?? ''}/login`
+        }
+      />
+    )
+  }
+  return !sharedCookies || stale || mismatch ? null : children
 }

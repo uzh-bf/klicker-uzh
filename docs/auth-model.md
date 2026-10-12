@@ -88,6 +88,10 @@ responses cannot be revoked locally. Logout does not globally revoke JWTs.
 Assessment and lecturer authentication keep their existing separate contracts.
 
 LTI and registration confirm cookie acceptance before using protected pages.
+Embedded PWA and Chat pages also check unpartitioned cookie access before
+mounting authenticated consumers. A cookie confined to an LMS partition cannot
+establish a separate usable login. Recovery opens the original LTI activity in
+a normal tab so it can replace the shared login.
 If cookies are refused, recovery opens ordinary login outside the LMS frame.
 There is no tab-token fallback. The normal Chat link opens in a new tab without
 a recovery gate. Its bridge checks membership without creating enrollment and

@@ -32,8 +32,8 @@ The product primitives are participant identity, shared browser session and
 course access. A successful login replaces the shared session; LTI is a login,
 not a tab-owned session. Course and Chat permissions continue to be evaluated
 for the current participant. Cancelled or rejected logout/deletion does not
-replace the session. Separate browser profiles/cookie partitions are distinct
-browser contexts; blocked third-party cookies require a top-level recovery.
+replace the session. Separate browser profiles are distinct contexts; blocked or partition-only
+third-party cookies require top-level recovery.
 
 A non-secret session revision cookie accompanies the HttpOnly credential and
 is rotated by successful authentication and session-ending operations. It
@@ -44,7 +44,9 @@ PWA and Chat origins without storing credentials. Requests carry their expected
 revision so servers can reject a request whose cookies changed after the UI's
 check. Already committed server operations cannot be undone by a later login.
 LTI SSR publishes the expected revision so refused cookies cannot silently
-continue using the former login. Do not replay launch parameters when reloading.
+continue using the former login. Embedded UI also confirms unpartitioned access
+with document.hasStorageAccess before mounting authenticated consumers; otherwise
+it offers the original LTI launch in a top-level tab. Do not replay launch parameters when reloading.
 
 Replace the regular PWA session module and simplify Apollo lifecycle management;
 retain only old-request/result suppression needed for shared identity changes.

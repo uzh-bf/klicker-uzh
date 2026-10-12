@@ -4,6 +4,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { ParticipantCookieRecovery } from '@klicker-uzh/shared-components/src/ParticipantSessionBoundary'
 import { participantDataUseReturn } from '@lib/participantDataUseReturn'
 import { Button, H1 } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
@@ -45,19 +46,7 @@ function Index() {
         {!router.isReady ? (
           <Loader />
         ) : cookiesRequired ? (
-          <div data-cy="cookies-required-recovery">
-            <p className="max-w-140 my-4 text-gray-600">
-              {t('pwa.serverError.cookiesRequiredMessage')}
-            </p>
-            <a
-              href="/login"
-              target="_blank"
-              rel="noopener"
-              className="text-uzh-blue underline"
-            >
-              {t('pwa.serverError.cookiesRequiredAction')}
-            </a>
-          </div>
+          <ParticipantCookieRecovery />
         ) : freshLaunch ? (
           <div data-cy="fresh-launch-recovery">
             <p className="max-w-140 my-4 text-gray-600">

@@ -125,8 +125,6 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     if (participantToken && sessionEstablished) {
       return {
         props: {
-          participantToken:
-            process.env.ASSESSMENT_MODE === 'true' ? participantToken : null,
           sessionState,
           sessionRevision,
           sessionEstablished,

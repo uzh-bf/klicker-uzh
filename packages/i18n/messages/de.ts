@@ -1420,7 +1420,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       freshLaunchRecoveryEmbedded:
         'Diese Seite ist in Ihrer Lernplattform eingebettet; eine neue Sitzung muss von dort aus gestartet werden.',
       cookiesRequiredMessage:
-        'Ihr Browser hat die Cookies blockiert, die für die Anmeldung bei KlickerUZH erforderlich sind. Öffnen Sie diese Seite in einem neuen Tab ausserhalb Ihrer Lernplattform und melden Sie sich dort an oder starten Sie die Aktivität neu.',
+        'Ihr Browser kann diese Anmeldung nicht mit anderen KlickerUZH-Tabs teilen. Öffnen Sie die Aktivität in einem neuen Tab ausserhalb Ihrer Lernplattform, um fortzufahren.',
       cookiesRequiredAction: 'In neuem Tab öffnen',
     },
     avatar: {

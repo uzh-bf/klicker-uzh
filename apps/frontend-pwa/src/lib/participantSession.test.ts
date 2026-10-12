@@ -3,6 +3,7 @@ import { it } from 'node:test'
 import {
   acceptParticipantSession,
   checkParticipantSession,
+  hasSharedParticipantCookies,
   isParticipantSessionStale,
   participantFetch,
   participantReloadUrl,
@@ -40,6 +41,27 @@ function restoreEnvironment(previousEnvironment: string | undefined) {
     Reflect.deleteProperty(process.env, 'NODE_ENV')
   else Object.assign(process.env, { NODE_ENV: previousEnvironment })
 }
+
+it('requires unpartitioned cookie access before an embedded login is usable', async () => {
+  const frame = {}
+  installWindow({ self: frame, top: frame })
+  installDocument('')
+  assert.equal(await hasSharedParticipantCookies(), true)
+  installWindow({ self: frame, top: {} })
+  assert.equal(await hasSharedParticipantCookies(), false)
+  for (const granted of [false, true]) {
+    Object.assign(document, { hasStorageAccess: async () => granted })
+    assert.equal(await hasSharedParticipantCookies(), granted)
+  }
+  Object.assign(document, {
+    hasStorageAccess: async () => {
+      throw new Error('denied')
+    },
+  })
+  assert.equal(await hasSharedParticipantCookies(), false)
+  removeDocument()
+  removeWindow()
+})
 
 it('sends the bound revision, or the none marker without one', () => {
   const doc = installDocument('participant_session=rev-1')

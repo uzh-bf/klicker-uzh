@@ -14,7 +14,9 @@ tags:
 A successful LTI launch replaces the regular participant login for the browser
 cookie context. Ordinary login follows the same rule. PWA and Chat tabs use the
 shared HttpOnly credential rather than keeping independent participant tokens.
-Separate profiles and browser cookie partitions remain separate contexts.
+Separate browser profiles remain separate contexts. Embedded pages must confirm
+unpartitioned cookie access before mounting authenticated UI; a partitioned
+LMS login cannot coexist as another usable identity.
 
 The `participant_session` cookie contains a random, non-secret revision with the
 credential's domain, path, security policy and lifetime. Login, logout and
@@ -27,8 +29,10 @@ The revision is not an authentication credential. Existing sessions without a
 revision use an empty binding until their next session transition.
 
 LTI exchange and account creation must confirm cookie acceptance. A refused
-cookie leads to recovery outside the LMS frame, never a memory-only login or
-silent use of the former participant. The Chat link opens normally; its bridge
+cookie or partition-only access leads to recovery outside the LMS frame, never a memory-only login or
+silent use of the former participant. Recovery preserves an LTI launch URL for
+opening in a top-level tab, where it replaces the shared login. The Chat link
+opens normally; its bridge
 checks course membership and confirms any newly exchanged session before
 navigation. Invalid launches block their protected view and clear the regular
 session. Rejected logout/deletion retain the current session and offer feedback.

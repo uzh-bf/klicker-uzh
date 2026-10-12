@@ -7,6 +7,13 @@ let revision: string | undefined
 let stale = false
 const listeners = new Set<() => void>()
 
+export async function hasSharedParticipantCookies() {
+  if (window.self === window.top) return true
+  // A cookie readable in an LMS frame may belong to a separate partition.
+  // Only unpartitioned access can share the top-level participant login.
+  return document.hasStorageAccess?.().catch(() => false) ?? false
+}
+
 export function readParticipantSession() {
   if (typeof document === 'undefined') return ''
   return (

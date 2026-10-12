@@ -1415,7 +1415,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       freshLaunchRecoveryEmbedded:
         'This page is embedded in your learning platform; a fresh session has to be started from there.',
       cookiesRequiredMessage:
-        'Your browser blocked the cookies required to sign in to KlickerUZH. Open this page outside your learning platform in a new browser tab and log in or relaunch the activity there.',
+        'Your browser cannot share this login with other KlickerUZH tabs. Open the activity outside your learning platform in a new browser tab to continue.',
       cookiesRequiredAction: 'Open in a new tab',
     },
     avatar: {

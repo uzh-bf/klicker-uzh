@@ -1,6 +1,5 @@
 import {
   assertParticipantSession,
-  bindParticipantSession,
   participantFetch,
 } from '@klicker-uzh/shared-components/src/utils/participantSession'
 import { useParams } from 'next/navigation'
@@ -288,7 +287,6 @@ export function useChatResponse(
         }
 
         // setup streaming response parsing
-        const sessionRevision = bindParticipantSession()
         const reader = response.body?.getReader()
         const decoder = new TextDecoder()
         let buffer = ''
@@ -354,7 +352,7 @@ export function useChatResponse(
            */
           while (true) {
             const { done, value } = await reader.read()
-            assertParticipantSession(sessionRevision)
+            assertParticipantSession()
             if (done) break
 
             // buffer management for incomplete chunks
