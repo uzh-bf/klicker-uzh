@@ -1,6 +1,6 @@
 import { CHATBOT_STANDARD_MODE_KEYS } from '@klicker-uzh/util'
 import { describe, expect, test } from 'vitest'
-import { DEFAULT_PROMPT } from '../src/lib/config/prompts'
+import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
 import {
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,

@@ -450,8 +450,29 @@ bound KB link navigates successfully. At 390px the existing header and tab
 strip overflow horizontally; the Knowledge controls fit. This UI limitation
 remains outside the retrieval reconciliation.
 
-Status: source and documentation reconciled; commit hooks, independent reviews,
-non-force push, and draft PR update remain. Merge and deployment remain gated.
+Status: reconciliation committed and pushed normally as `738d9ab2aa`; the draft
+[PR #6247](https://github.com/uzh-bf/klicker-uzh/pull/6247) is mergeable. Mandatory
+hooks, the 27-task full build, and the 337 focused cases passed. The slice
+review and final integrated review found no defects. The simplifier's optional
+single-caller helper reduction was deferred: the existing pure helper protects
+approved-key normalization without adding application structure. Reports in `project/_local/reviews/`:
+`2026-10-12-kb-reconciliation-simplifier.md`,
+`2026-10-12-kb-reconciliation-slice-review.md`, and
+`2026-10-12-kb-reconciliation-final-result.json`.
+
+Hosted type, unit, GraphQL, translation, security, and the full Playwright
+run passed on that source head. The follow-up head's CI and the repository's
+final AI review remain pending.
+Forge feedback's new test import uses the configured alias in this follow-up;
+its application source is unchanged, so the recorded browser, behavior, and
+independent-review evidence remains applicable. The two optional OCR
+maintainability suggestions are deferred: the binding payload has only local
+transaction callers, and relocating the standard-mode list would expand the
+normalizer/module scope without correcting observed behavior.
+
+Next action: finish exact-head CI and the final AI review, verify runtime
+shutdown, and refresh the draft description. Merge, deployment, marking ready,
+PRD writes, and ethics-bot draft publication remain gated.
 Packaging: one cohesive repair of the existing retrieval/lecturer surface
 contract; the previously approved single-PR topology is retained.
 
