@@ -22,6 +22,7 @@ import {
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
 } from '@/src/lib/server/effectiveChatModes'
+import { REPLY_LANGUAGE_REMINDER } from '@/src/lib/server/languageInstructions'
 import {
   MANAGE_CHAT_BODY_TIMEOUT_MS,
   MANAGE_CHAT_TOTAL_TIMEOUT_MS,
@@ -385,27 +386,34 @@ export async function POST(
       },
       stopWhen: isStepCount(5),
       toolChoice: 'auto',
+      // The reply-language reminder ends every step, after tool output, so
+      // retrieved material in another language cannot set the reply language.
+      allowSystemInMessages: true,
       // Step continuations carry the canonical citation indices, the same
       // contract the participant chat applies. Without them the model has no
       // index to cite and falls back to prose citations without chips.
-      prepareStep: docQueryToolName
-        ? ({ stepNumber, steps, initialMessages, responseMessages }) =>
-            stepNumber === 0
-              ? quizzerDocQueryToolName
-                ? {
-                    toolChoice: {
-                      type: 'tool' as const,
-                      toolName: quizzerDocQueryToolName,
-                    },
-                  }
-                : {}
-              : {
-                  messages: [
-                    ...initialMessages,
-                    ...withModelCitationIndices(responseMessages, steps),
-                  ],
-                }
-        : undefined,
+      prepareStep: ({
+        stepNumber,
+        steps,
+        initialMessages,
+        responseMessages,
+      }) => ({
+        ...(quizzerDocQueryToolName && stepNumber === 0
+          ? {
+              toolChoice: {
+                type: 'tool' as const,
+                toolName: quizzerDocQueryToolName,
+              },
+            }
+          : {}),
+        messages: [
+          ...initialMessages,
+          ...(docQueryToolName && stepNumber > 0
+            ? withModelCitationIndices(responseMessages, steps)
+            : responseMessages),
+          REPLY_LANGUAGE_REMINDER,
+        ],
+      }),
       tools: promptCacheRequest?.tools ?? tools,
       toolOrder: promptCacheRequest?.toolOrder,
       onEnd: closeMcpTools,

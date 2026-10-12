@@ -5,6 +5,7 @@ import {
   resolveRequestedChatMode,
   type ChatModeMCPConfiguration,
 } from '@/src/lib/server/effectiveChatModes'
+import { REPLY_LANGUAGE_REMINDER } from '@/src/lib/server/languageInstructions'
 
 const mocks = vi.hoisted(() => ({
   buildPromptCacheRequest: vi.fn(),
@@ -970,8 +971,16 @@ describe('POST owner preview chat', () => {
 
     expect(response.status).toBe(200)
     const streamOptions = mocks.streamText.mock.calls[0]![0]
-    expect(streamOptions.prepareStep({ stepNumber: 0 })).toEqual({
+    expect(
+      streamOptions.prepareStep({
+        initialMessages: [],
+        responseMessages: [],
+        stepNumber: 0,
+        steps: [],
+      })
+    ).toEqual({
       toolChoice: { type: 'tool', toolName: 'KB_doc_query' },
+      messages: [REPLY_LANGUAGE_REMINDER],
     })
     expect(
       streamOptions.prepareStep({
@@ -980,7 +989,7 @@ describe('POST owner preview chat', () => {
         stepNumber: 1,
         steps: [],
       })
-    ).toEqual({ messages: [] })
+    ).toEqual({ messages: [REPLY_LANGUAGE_REMINDER] })
   })
 
   it('projects canonical citation indices into the preview continuation', async () => {
@@ -1039,10 +1048,14 @@ describe('POST owner preview chat', () => {
       steps,
     })
 
-    expect(prepared.messages).toHaveLength(2)
+    expect(prepared.messages).toHaveLength(3)
     expect(
       JSON.parse(prepared.messages[1].content[0].output.value).sources[0]
         .citation_index
     ).toBe(1)
+    // Retrieved passages may be in another language than the question, so the
+    // reply-language reminder must follow them as the step's last message.
+    expect(prepared.messages[2]).toEqual(REPLY_LANGUAGE_REMINDER)
+    expect(streamOptions.allowSystemInMessages).toBe(true)
   })
 })
