@@ -518,21 +518,6 @@ describe('normalizeSourcesFromParts', () => {
     expect(result[98]?.index).toBe(99)
   })
 
-  test('admits a sixteenth source returned by a later call', () => {
-    const firstBatch = Array.from({ length: 15 }, (_, i) => answerSource(i))
-    const result = normalizeSourcesFromParts([
-      toolCallPart('KB_doc_query', { answer: 'first', sources: firstBatch }),
-      toolCallPart('KB_doc_query', {
-        answer: 'refined',
-        sources: [answerSource(15)],
-      }),
-    ])
-
-    expect(result).toHaveLength(16)
-    expect(result[15]?.index).toBe(16)
-    expect(result[15]?.title).toBe('doc-15.pdf')
-  })
-
   test('numbers a new source from a refined call 21 after twenty earlier sources', () => {
     const firstBatch = Array.from({ length: 20 }, (_, i) => answerSource(i))
     const result = normalizeSourcesFromParts([

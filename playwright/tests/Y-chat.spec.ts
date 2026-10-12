@@ -2705,9 +2705,15 @@ test.describe('Chatbot Source Citations', () => {
     for (const variant of ['desktop-en', 'reloaded-en', 'mobile-de']) {
       if (variant === 'mobile-de') {
         await page.setViewportSize({ width: 390, height: 844 })
-        await page.context().addCookies([
-          { name: 'NEXT_LOCALE', value: 'de', url: new URL(chatUrl()).origin },
-        ])
+        await page
+          .context()
+          .addCookies([
+            {
+              name: 'NEXT_LOCALE',
+              value: 'de',
+              url: new URL(chatUrl()).origin,
+            },
+          ])
       }
       if (variant !== 'desktop-en') await page.reload()
 

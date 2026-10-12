@@ -232,7 +232,9 @@ describe('model-only citation indices', () => {
     const projectedFirst = projectedPayload(projected).sources
     expect(projectedFirst).toHaveLength(100)
     expect(
-      projectedFirst.map((s: { citation_index: number | null }) => s.citation_index)
+      projectedFirst.map(
+        (s: { citation_index: number | null }) => s.citation_index
+      )
     ).toEqual([...Array.from({ length: 99 }, (_, i) => i + 1), null])
     // The overflow source keeps its text in the model-facing projection; only
     // its citation_index is null.
