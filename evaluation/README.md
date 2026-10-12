@@ -11,6 +11,100 @@ Klicker application stack.
   truth cases under `data/ground_truth/`. Do not add production or personal
   data.
 
+## Trajectories and provider admission
+
+`apps/chat/scripts/run-tutor-trajectories.mjs` accepts synthetic Tutor, Explainer
+and Quizzer corpora. Receipts reconstruct citation positions with the application's
+source mapper, including cross-call duplicates and null indices for overflow.
+They contain hashed identities and numeric page/video positions, not source text,
+titles or URLs. Reconstruction from persisted tools does not establish the exact
+historical model input. Receipt version 2 identifies the mapper fingerprint.
+
+Both the trajectory CLI and the listening evaluation target require a shared
+version-2 budget for operator runs. Application credits remain observational;
+they are not provider dollars. The budget admits at most 120 submitted turns and
+US$5 of conservative provider reservations across all arms. Each upstream model
+step or retry reserves its qualified full input-context cost plus its bounded
+output cost before dispatch. Reservations are retained on success and failure.
+This may exhaust the dollar cap long before 120 turns.
+
+Set `KLICKER_EVAL_PRICING_FILE` to a private JSON policy with this shape. The numbers
+below are synthetic examples, not tariffs or provider qualification:
+
+```json
+{
+  "version": 1,
+  "provider": "synthetic",
+  "upstreamOrigin": "https://synthetic.example/v1",
+  "qualification": "Evidence of enforced context/output bounds and upper tariffs",
+  "models": {
+    "synthetic-model": {
+      "contextTokens": 1000,
+      "maxOutputTokens": 100,
+      "inputMicroUsdPerMillion": 1000000,
+      "outputMicroUsdPerMillion": 2000000,
+      "outputIncludesReasoning": true
+    }
+  }
+}
+```
+
+Use provider-enforced architectural context bounds and conservative upper prices
+for the exact provider/model route, including reasoning tokens. One dollar is
+1,000,000 microdollars. The guard accepts only text `/v1/responses` and
+`/v1/chat/completions` requests with an explicit `max_output_tokens` or
+reasoning-inclusive `max_completion_tokens`, respectively. Unpriced models,
+legacy `max_tokens`, hosted tools, multimodal input, multiple completions,
+provider price overrides and redirects fail closed. Function tools execute in
+the application; their separate paid egress must be qualified independently.
+
+Choose a new private `KLICKER_EVAL_BUDGET_FILE`, then initialize it offline once:
+
+```bash
+node apps/chat/scripts/evaluation-spend-guard.mjs --initialize-budget
+```
+
+Initialization creates an immutable `.identity` receipt alongside the mutable
+ledger. Never replace an exhausted, interrupted or legacy ledger to resume the
+same experiment. Legacy application-credit budgets must be retained as historical
+records; create a new explicitly authorized experiment instead. Mutation `.lock`
+and run `.run` leases fail closed if held or left by interruption. A responsive
+Unix socket `.lease` proves that the run owner is alive; runner and guard must
+share the same local OS/filesystem. Guard restarts reject uncertain ledgers. Investigate
+such state before recovery; there is no automatic reset or refund.
+
+The approved evaluation-only route is application → local spend guard → qualified
+upstream. Inject `KLICKER_EVAL_GUARD_KEY` and `KLICKER_EVAL_UPSTREAM_KEY` at runtime
+through the existing secret operator. Set `KLICKER_EVAL_UPSTREAM_ORIGIN` to the
+OpenAI-compatible API base (for example `https://<qualified-host>/openai/v1`).
+Run `node apps/chat/scripts/evaluation-spend-guard.mjs` in the guard process.
+It prints its port, binds to loopback by default and sends only authenticated
+model requests upstream. Container access requires an explicitly selected private
+`KLICKER_EVAL_GUARD_HOST`; exposing it publicly is outside this workflow.
+
+The evaluation application's `OPENAI_BASE_URL` must point to that guard's `/v1`
+and its `OPENAI_API_KEY` must be the guard key. Keep the upstream key only in the
+guard process. Prove that all model steps, summaries, retries and other billable
+paths traverse the guard before a paid run. Auto routing is unqualified because
+classifier/embedding requests can bypass this text-model seam. Pin the fixed
+`KLICKER_EVAL_MODEL_ID` (default `gpt-6-luna`); an `auto` arm label grants no Auto
+routing. The qualified provider must support the application's fixed low
+reasoning effort and explicit output bound.
+
+Save that proof in a private `KLICKER_EVAL_QUALIFICATION_FILE`: `version: 1`,
+`experimentId` and `policyHash` from the initialized ledger, exact `guardOrigin`,
+`chatOrigin`, `chatbotId`, `modelId`, canonical policy `upstreamOrigin`,
+`allBillableEgressGuarded: true`, and a nonempty
+`evidence` reference. Export the same `KLICKER_EVAL_GUARD_ORIGIN` (without `/v1`)
+and runtime-injected guard key to the runner. It checks the receipt and authenticated
+guard status before login; reachability alone is not routing proof. Keep policies,
+receipts, ledger and synthetic transcripts in approved private custody, outside Git.
+
+This source package proves local admission with synthetic transports and zero
+provider spend. It does not qualify live application wiring, current provider
+tariffs, browser behavior or chatbot answer quality. Run qualification and paid
+experiments require their own approved environment and spend boundary.
+
 ## One-time setup
 
 Use the repository's pinned Node 24 and pnpm versions. pnpm warns about missing or

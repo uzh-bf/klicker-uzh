@@ -70,7 +70,12 @@ transports with zero provider spend. No dependencies or schema changes.
    interrupted turns fail closed; no automatic budget reset or reservation refund.
    Every mutation locks, rereads, validates, updates, atomically replaces and
    fsyncs before unlocking. Use safe integer microdollars and immutable caps,
-   experiment UUID and policy hash. An active turn carries a random owner token;
+   experiment UUID and policy hash. Separate `.run` and `.lock` files distinguish
+   the run lease from short mutation locks. Runner mutates lifecycle/credits;
+   a responsive Unix socket with the exact run-lock token proves live ownership,
+   so stale locks cannot admit after runner exit. Guard and runner share the
+   same local OS/filesystem. Guard startup rejects uncertain ledgers.
+   guard mutates reserved spend. An active turn carries a random owner token;
    the runner holds an exclusive run lock until exit. An interrupted active turn
    remains uncertain on restart. The guard may reserve during an active turn;
    runner updates never overwrite guard updates. Guard startup requires the
@@ -84,15 +89,25 @@ transports with zero provider spend. No dependencies or schema changes.
    an explicit request-field allowlist; support `/v1/responses` and
    `/v1/chat/completions` with function tools only.
    Reserve the full qualified model input-context cost plus the explicit output
-   ceiling, rounded up in integer microdollars. Forward no request without a
-   successful durable reservation. Retries each reserve again. Do not forward
+   ceiling, rounded up in integer microdollars. This is the provider's enforced
+   architectural context limit, not an arbitrary smaller input estimate. The
+   conservative US$5 cap may stop well before 120 turns; 120 is a ceiling, not
+   a promised allocation. Forward no request without a successful durable
+   reservation. Each step, retry and allowed auxiliary model call reserves
+   independently; requests outside an active turn are denied. The application
+   retains its existing five-step limit. Forward SSE chunks immediately. Do not forward
    arbitrary client headers. No request/response text or upstream errors in logs.
 5. Bind the guard's canonical pricing policy hash to the shared ledger. The
+   canonical upstream API base belongs in that policy and must match guard
+   configuration, status and qualification. Endpoint drift invalidates proof.
    policy is a private operator input with provider, qualification evidence,
    context/output bounds and conservative prices. Actual cost is bounded only
    for the qualified route and tariffs. Run qualification must establish that
    model steps, summaries, retries and any paid tools have no alternate egress;
    absent proof means no paid run. Free deterministic tools may remain local.
+   Fixed-model comparisons only: reject Auto model routing, whose classifier and
+   embedding egress are outside this qualified text-model guard. An `auto` arm
+   label is historical metadata and does not grant Auto-model routing.
 6. Placement is application -> local guard -> qualified upstream, using the
    application's evaluation-only `OPENAI_BASE_URL` and runtime-injected key.
    Listener defaults to loopback; container access uses an explicitly selected
@@ -101,7 +116,9 @@ transports with zero provider spend. No dependencies or schema changes.
    guard origin, experiment UUID, pricing hash and egress proof for all paid paths.
    The runner requires that receipt and authenticated guard status before login;
    availability alone is not routing proof. Synthetic fake-application wiring
-   verifies the adapter path; live wiring qualification is deferred. Retain turn
+   verifies the adapter path; live wiring qualification is deferred. The package
+   provides local admission/accounting only, not a claim of live paid routing.
+   Retain turn
    accounting on failed or invalid runs. Synthetic integration tests establish
    admission behavior, not current provider billing or application answer quality.
 
@@ -167,10 +184,14 @@ Run tests through `devrouter exec <exact-worktree> -- <command>`.
    dotfiles commit only.
 2. Executor: `apps/chat/scripts/tutor-trajectory.mjs` and
    `apps/chat/test/tutor-trajectories.test.mjs` for source mapping/Explainer and
-   new mapping receipts. Main will modify the same tests only after ownership
-   returns. Use existing tsx to load the application module; no application-source
+   new mapping receipts. The same worker owns runner blocks in that test and
+   `apps/chat/test/klicker-evaluation-target.test.mjs` against main's frozen
+   ledger/qualification interfaces. Main integrates after ownership returns.
+   Use existing tsx to load the application module; no application-source
    rewrite to make evaluator loading easier. Use `tsImport` from `tsx/esm/api`
-   inside the ESM script so plain-node CLI and Vitest use the same module loader.
+   inside the ESM script where supported. The pinned version's extensionless
+   resolution fails there; its existing registration entrypoint is the verified
+   plain-Node fallback. Vitest imports the same application module.
 3. Main: new `apps/chat/scripts/evaluation-budget.mjs` and
    `apps/chat/scripts/evaluation-spend-guard.mjs`, existing
    `run-tutor-trajectories.mjs` and `klicker-evaluation-target.mjs`, new
@@ -189,8 +210,12 @@ ambiguous one. This package never resets an existing ledger or applies live prom
 
 ## Progress
 
-- Approved scope: user's executable request; implementation not yet started.
-- Planning pass: pending. Required lenses: spend/data integrity, local transport
-  security, correctness and compatibility. Source mapping owner pending dispatch.
-- Runtime: task source path resolved; minimal `mcp` profile startup is running.
+- Skills: installed and locally committed as dotfiles `0e2daa2`; linked handoff
+  and frontmatter checked. Walkthroughs cover quality-to-prompt, prompt-only,
+  and Explainer direct help versus Quizzer release/persona discovery contracts.
+- Mapping and Explainer: worker completed; 18 checks passed. The same worker
+  owns remaining runner/adapter tests for the revised budget interface.
+- Budget: main implementing endpoint binding and live run lease after accepted
+  recovery planner findings. Integrated tests and source reviews pending.
+- Runtime: exact worktree minimal `mcp` container. No paid calls.
 - Terminal: completed draft source delivery plus installed skill updates.
