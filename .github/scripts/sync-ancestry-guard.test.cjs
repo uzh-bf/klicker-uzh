@@ -6,7 +6,9 @@ const path = require('node:path')
 const test = require('node:test')
 const YAML = require('yaml')
 const {
+  DOWNSTREAM,
   SOURCES,
+  findDownstreamCommits,
   findUnrepairedSquashedSync,
 } = require('./sync-ancestry-guard.cjs')
 
@@ -90,6 +92,36 @@ test('ignores squashed feature pull requests and merge-commit syncs', async () =
     [feature.commit, { number: 8, headSha: feature.headSha }],
   ])
   assert.equal(await detect(repo, pullRequests), null)
+})
+
+test('flags downstream work merged back into its upstream branch', () => {
+  const { cwd, git, commit } = repository()
+  git('switch', '-q', '-c', 'v3-audit')
+  commit('audit-only')
+  git('switch', '-q', 'v3-ai')
+  commit('ai-next')
+  git('switch', '-q', '-c', 'feature')
+  commit('feature')
+  git('switch', '-q', 'v3-audit')
+  git('merge', '-q', '--no-edit', 'v3-ai')
+  const before = git('rev-parse', 'v3-ai')
+  const downstreamSha = git('rev-parse', 'v3-audit')
+  const check = (head) =>
+    findDownstreamCommits(cwd, { parent: before, head, downstreamSha })
+
+  // Forward work and the downstream's own sync merges are not leaks.
+  assert.deepEqual(check(git('rev-parse', 'feature')), [])
+
+  // "Update branch" on a v3-ai -> v3-audit PR whose head is v3-ai itself.
+  git('switch', '-q', 'v3-ai')
+  git('merge', '-q', '--no-ff', '--no-edit', 'v3-audit')
+  const leaked = check(git('rev-parse', 'v3-ai'))
+  assert.ok(leaked.includes(downstreamSha))
+  assert.ok(leaked.length >= 2)
+})
+
+test('only upstream branches of the chain have a downstream', () => {
+  assert.deepEqual(DOWNSTREAM, { v3: 'v3-ai', 'v3-ai': 'v3-audit' })
 })
 
 test('guards exactly the target branches of the sync chain', () => {

@@ -4,6 +4,10 @@ const { PAIRS } = require('./draft-sync-prs.cjs')
 const REPOSITORY = 'uzh-bf/klicker-uzh'
 // Integration branch -> the branch whose history it must keep as ancestry.
 const SOURCES = Object.fromEntries(PAIRS.map(({ head, base }) => [base, head]))
+// Source branch -> the integration branch it feeds, which must never flow back.
+const DOWNSTREAM = Object.fromEntries(
+  PAIRS.map(({ head, base }) => [head, base])
+)
 const STATUS_CONTEXT = 'sync-ancestry'
 
 function git(cwd, args) {
@@ -33,6 +37,39 @@ function bringsSourceCommits(cwd, { parent, head, sourceSha }) {
     return false
   }
   return !isAncestor(cwd, mergeBase, parent)
+}
+
+// Commits made on the downstream branch itself (its first-parent line) that
+// `head` brings and `parent` lacks. Changes reach a downstream branch only as
+// merged-in parents, so any of its own commits in `head` flowed backwards, for
+// example through "Update branch" on a pull request whose head was upstream.
+function findDownstreamCommits(
+  cwd,
+  { parent, head, downstreamSha, limit = 5000 }
+) {
+  const revList = (...args) =>
+    git(cwd, ['rev-list', `--max-count=${limit}`, ...args])
+      .split('\n')
+      .filter(Boolean)
+  const downstreamOwn = new Set(
+    revList('--first-parent', downstreamSha, '--not', parent)
+  )
+  if (downstreamOwn.size === 0) return []
+  return revList(head, '--not', parent).filter((commit) =>
+    downstreamOwn.has(commit)
+  )
+}
+
+function hasCommit(cwd, sha) {
+  try {
+    execFileSync('git', ['cat-file', '-e', `${sha}^{commit}`], {
+      cwd,
+      stdio: 'ignore',
+    })
+    return true
+  } catch {
+    return false
+  }
 }
 
 // A squash merge records a sync as a single-parent commit, so the source
@@ -143,6 +180,22 @@ async function guardSyncAncestry({ github, context, core, cwd }) {
     : context.sha
   const sourceSha = git(cwd, ['rev-parse', `origin/${source}`])
 
+  const downstream = DOWNSTREAM[base]
+  const parent = pullRequest ? baseSha : context.payload.before
+  const head = pullRequest ? pullRequest.head.sha : baseSha
+  // A branch creation or a force push may leave no comparable parent.
+  const leaked =
+    downstream && parent && hasCommit(cwd, parent)
+      ? findDownstreamCommits(cwd, {
+          parent,
+          head,
+          downstreamSha: git(cwd, ['rev-parse', `origin/${downstream}`]),
+        })
+      : []
+  const leakMessage = leaked.length
+    ? `${leaked.length} commit(s) made on ${downstream} (newest ${leaked[0].slice(0, 10)}) would flow back into ${base}. Changes move ${source} -> ${base} -> ${downstream} only.`
+    : null
+
   const finding = await findUnrepairedSquashedSync({
     cwd,
     baseSha,
@@ -172,6 +225,10 @@ async function guardSyncAncestry({ github, context, core, cwd }) {
   })
 
   if (pullRequest) {
+    if (leakMessage) {
+      core.setFailed(leakMessage)
+      return
+    }
     // Merging any sync with a merge commit, including a repair pull request,
     // restores the ancestry, so syncs stay mergeable while the branch is blocked.
     const isSync = bringsSourceCommits(cwd, {
@@ -198,12 +255,15 @@ async function guardSyncAncestry({ github, context, core, cwd }) {
   await github.rest.repos.createCommitStatus({
     ...repo,
     sha: baseSha,
-    state: finding ? 'failure' : 'success',
+    state: finding || leakMessage ? 'failure' : 'success',
     context: STATUS_CONTEXT,
-    description: finding
-      ? `Squashed sync #${finding.number}; merge #${repair} with a merge commit`
-      : `${source} ancestry intact`,
+    description: leakMessage
+      ? `${leaked.length} ${downstream} commit(s) flowed back into ${base}`
+      : finding
+        ? `Squashed sync #${finding.number}; merge #${repair} with a merge commit`
+        : `${source} ancestry intact`,
   })
+  if (leakMessage) core.setFailed(leakMessage)
   if (finding) {
     core.setFailed(
       `#${finding.number} squash-merged a sync into ${base}; merge repair #${repair} with a merge commit.`
@@ -212,8 +272,10 @@ async function guardSyncAncestry({ github, context, core, cwd }) {
 }
 
 module.exports = {
+  DOWNSTREAM,
   SOURCES,
   bringsSourceCommits,
+  findDownstreamCommits,
   findUnrepairedSquashedSync,
   guardSyncAncestry,
 }

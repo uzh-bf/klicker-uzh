@@ -42,18 +42,26 @@ jobs:
           persist-credentials: false
           sparse-checkout: .github/scripts
 
+      # Sync-branch updates must come from a non-GITHUB_TOKEN identity, because
+      # GITHUB_TOKEN pushes start no workflows and the PR would never get CI.
       - name: Maintain draft sync PRs
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+          HAS_SYNC_TOKEN: ${{ secrets.SYNC_PR_BOT_TOKEN != '' }}
         with:
+          github-token: ${{ secrets.SYNC_PR_BOT_TOKEN || github.token }}
           script: |
             const { maintainDraftSyncPrs } = require('./.github/scripts/draft-sync-prs.cjs')
-            const results = await maintainDraftSyncPrs({
-              github,
-              context,
-              dryRun: process.env.DRY_RUN !== 'false',
-            })
-            for (const { head, base, action, number } of results) {
-              core.info(`${head} -> ${base}: ${action}${number ? ` #${number}` : ''}`)
+            const dryRun = process.env.DRY_RUN !== 'false'
+            if (!dryRun && process.env.HAS_SYNC_TOKEN !== 'true') {
+              core.setFailed('secrets.SYNC_PR_BOT_TOKEN is not set')
+              return
+            }
+            const results = await maintainDraftSyncPrs({ github, context, dryRun })
+            for (const { branch, base, action, number } of results) {
+              core.info(`${branch} -> ${base}: ${action}${number ? ` #${number}` : ''}`)
+              if (action === 'conflict') {
+                core.warning(`${branch} conflicts with its source; resolve it on #${number}.`)
+              }
             }

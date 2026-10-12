@@ -2,7 +2,7 @@
 type: Operations
 title: CI & Deployment
 description: PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
-timestamp: '2026-09-20'
+timestamp: '2026-10-12'
 tags:
   - ci
   - deployment
@@ -15,12 +15,29 @@ tags:
 ## Draft sync PR maintenance
 
 `maintain-draft-sync-prs.yml` maintains the exact forward pairs `v3` ->
-`v3-ai` and `v3-ai` -> `v3-audit`. It opens a draft only when the source has
-commits and a non-empty diff absent from the target and no matching open PR.
-Existing PR descriptions and draft/ready states are preserved. Source pushes
-already update their diffs, so maintenance does not edit PR metadata, update
-branches, resolve conflicts, merge, or enforce merge methods. Maintainers choose
-when to mark ready and merge with a merge commit to preserve ancestry.
+`v3-ai` and `v3-ai` -> `v3-audit`. Each sync PR's head is a bot-owned branch,
+`sync/<source>-into-<target>`, never the long-lived source branch. GitHub's
+"Update branch" button and web conflict edits write to a PR's head. With the
+source branch as head, one click merged `v3-audit` back into the production
+branch `v3-ai`. With a sync branch as head, the same click only changes the
+sync branch, and merging it moves changes in the intended direction.
+
+On every run, for each pair, the controller:
+
+1. Skips a pair whose open PR still has the source branch as head (`legacy`).
+   Closing that PR lets the next run migrate the pair.
+2. Advances an open sync PR's head to the current source tip. It fast-forwards
+   an unchanged head. A head that maintainers changed, for example by resolving
+   conflicts or using "Update branch", is never reset: the source is merged
+   into it, and a merge conflict is reported as `conflict` for maintainers.
+3. Otherwise opens a draft when the source has commits and a non-empty diff
+   absent from the target. It first points the sync branch at the source tip,
+   discarding leftovers from a previous, merged or closed, sync.
+
+Existing PR descriptions and draft/ready states are preserved. The controller
+never writes the source or target branches and never merges. Maintainers
+choose when to mark ready and merge with a merge commit to preserve ancestry.
+Resolve conflicts directly on the sync branch.
 
 The controller runs from `v3` after Check codebase completes for a push to
 either source branch, regardless of the check result. Completion is a wakeup,
@@ -37,19 +54,38 @@ gh workflow run maintain-draft-sync-prs.yml --ref v3 -f dry_run=true
 gh workflow run maintain-draft-sync-prs.yml --ref v3 -f dry_run=false
 ```
 
-The ordinary `GITHUB_TOKEN` has contents-read and pull-requests-write access;
-GitHub Actions must be allowed to create PRs in repository settings. No separate
-bot credential is needed. GitHub may require approval before running workflows
-for token-created PRs. Drafts skip staging image builds and some analysis, but
-other PR checks and source-branch push CI can still run. Marking ready invokes
-the existing ready-state validation; required checks must pass before merging.
+Writes use the `SYNC_PR_BOT_TOKEN` repository secret: a fine-grained token
+for this repository only, with Contents and Pull requests read/write. Updates
+made with the ordinary `GITHUB_TOKEN` start no workflows, so a sync PR would
+never receive its required checks. Without the secret, automatic and
+non-preview runs fail and previews still work. The sync branches are not
+protected integration branches, so the token needs no ruleset bypass. Drafts
+skip staging image builds and some analysis. Marking ready invokes the existing
+ready-state validation; required checks must pass before merging.
 
 Closing a sync PR without merging does not pause maintenance: the next eligible
-run may create a new draft if changes remain. Conflicts remain a maintainer
-task. Avoid Update branch on these PRs because it merges the target back into
-the long-lived source branch. An API failure is reported rather than treated
-as evidence that a PR exists; a duplicate-creation response is accepted only
-after the matching open PR is found.
+run may create a new draft if changes remain. An API failure is reported rather
+than treated as evidence that a PR exists; a duplicate-creation response is
+accepted only after the matching open PR is found.
+
+### Sync direction guard
+
+`sync-ancestry-guard.yml` also rejects changes flowing backwards. For a pull
+request into, or a push to, a branch that feeds another pair target (`v3-ai`
+feeds `v3-audit`), it fails when the new head contains a commit from the
+downstream branch's own first-parent line that the target lacked. Downstream
+branches receive upstream work only as merged-in parents, so their own
+first-parent commits never belong upstream. Ordinary CI cannot see this: the
+2026-10-12 back-merge of `v3-audit` into `v3-ai` passed every other check.
+
+Recovery from a back-merge that already landed is a force push of the target to
+its last good SHA, not a revert. A revert commit would travel with the next sync
+and delete the downstream's own work there. The force push needs a repository
+admin to remove `non_fast_forward` from the target's ruleset, push with
+`--force-with-lease=<target>:<bad SHA>`, and restore the ruleset immediately.
+Afterwards, check that no remote branch or open PR contains the bad SHA
+(`git branch -r --contains <sha>`) and ask anyone who fetched the target in that
+window to rebase.
 
 ### Squashed sync guard
 
