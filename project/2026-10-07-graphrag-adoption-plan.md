@@ -20,6 +20,219 @@ and paid evaluation remain separate gates; OpenRouter review remains waived.
 
 ## Current state and next decision
 
+### October 12 correction and next bounded probe (awaiting approval)
+
+The empty result exposed a responsibility conflict: strict category repair required
+labels for policy-excluded concrete examples before noise removal could inspect
+them. Cleaning exclusion/merge guidance also entered the category prompt. This is
+a source-level conflict; one response cannot establish the model's causal reasoning.
+
+[Provider MR !42](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/42)
+now removes policy noise before strict category repair and removes deletion guidance
+from classification. It retains canonical definitions, candidate evidence, category
+caps, complete-batch rejection, persisted-write checks and final/pre-export strict
+validation. Invalid category policies fail before noise runs. Legacy ordering is
+unchanged. The existing preservation defaults still apply to uncertain noise calls;
+invalid categories alone never authorize deletion. Ingestion remains independent,
+with no database changes. Offline qualification: 86 tests and Ruff pass under
+LightRAG 1.5.7; source `1d84e768301ff9e9cad3498e989070ca21a1e174`.
+
+**Proposed next batch.** Main owns admission, effects and cleanup. Reopen only
+`127.0.0.1:14000 -> stg-litellm/litellm:4000` through existing STG access, inject the
+existing restricted gateway credential, recheck prices/retry/fallback controls and
+reconcile the prior probe when its billing row exists. Preserve its CHF 0.10 hold
+until then. No broad traffic discovery or new secret permissions.
+
+1. Run at most two sequential probe calls using the exact corrected source.
+   First use the existing noise classifier on the three frozen residual names and
+   one synthetic retained concept. Require a raw complete response identifying
+   those three as noise and the anchor as theory: stop finish, no refusal,
+   truncation, missing identities or unexpected decisions. Do not infer success
+   from preservation defaults. On success only, call category repair once on the
+   frozen synthetic concept with meaningful evidence and require its allowed
+   category. This second call proves the request contract, not real-survivor
+   semantics or whole-graph recovery. No fallback labels or automatic repeat.
+2. Each request has at most 5,000 input tokens, a 120-second deadline and one
+   client attempt. Noise uses the unchanged resolved route: exact Azure Luna alias,
+   no explicit effort, temperature zero, 2,000 output tokens. Category uses the same
+   alias, medium effort, no temperature, 4,000 output tokens. The previous route
+   configuration bound both at CHF 0.1472, including gateway retries/fallbacks and
+   CHF 2/USD. Recheck every assumption; admit only within CHF 0.20. Preserve raw
+   evidence privately and reconcile every call; unresolved new spend blocks further
+   dispatch. A failed condition stops the dependent sequence.
+3. Only after probe acceptance, required reviews and exact-head CI: mark provider
+   MR !42 ready, merge to main, verify the published immutable image; create one
+   GitOps MR against main updating only `kg-content-generation/stg/kustomization.yaml`,
+   require render review and checks, mark ready/merge, then deploy the STG KG worker
+   through Argo after proving worker slots idle and no active builds. Verify exact
+   digest, source, LightRAG version and serving health. No unapproved rollback.
+4. Submit exactly one new graph build for the frozen six-resource TEST Finance I
+   inventory and unchanged course-content source digest. Require successful strict
+   cleaning, expected source selection and fresh committed publication. Only then
+   bind the existing test chatbot, run the remaining three GraphRAG answers and at
+   most six searches, score 27 judges in the frozen evaluation framework, and check
+   graph navigation/prefill without a paid native Auto turn. Retain the existing
+   ordinary-RAG and extra-search-control results and all global call caps.
+5. On every terminal branch restore the exact original test bindings/settings,
+   verify unchanged broader scope, close owned tunnel/relay, retain all failed
+   evidence and report actual quality separately from synthetic mechanism proof.
+   No retries, replacement calls or replacement builds.
+
+Budget including existing holds: CHF 6.79857084. New reservations: probe CHF 0.20,
+new graph CHF 2.50, three answers CHF 0.4718592, 27 judges CHF 4.0697856.
+Total conservative ceiling **CHF 14.04021564 of CHF 20**, leaving CHF 5.95978436
+unallocated. Existing retrieval hold covers remaining searches; both failed graph
+holds remain. Graph accounting still uses the approved application-charge basis.
+
+The existing private `classifier-probe.py` harness now validates both source call
+shapes offline, rejects missing/wrong noise decisions and empty category output,
+and refuses live execution until admission is separately approved and completed.
+Measured dry-run input bounds: 1,273 noise / 746 category tokens. Prior receipts
+are preserved. Live qualification must also validate raw refusal/finish conditions,
+exclusive per-call claims, source/policy hashes, current retry/pricing assumptions,
+and exact-request billing before dispatch proceeds. No new paid calls occurred
+while preparing this correction. Do not mistake offline fabricated responses for
+model acceptance.
+
+### October 12 approved batch: classifier gate failed
+
+The user approved the bounded probe, conditional merges and STG deployment,
+one graph build and evaluation within CHF 20. The exact provider head
+`da665ef3e9c15df904c6dbc23bbf6d27494b085e` passed pipeline 682010;
+required GitLab approvals were satisfied. The previously reviewed source is
+unchanged. No provider or GitOps merge occurred.
+
+The single live Azure classifier probe returned HTTP 200 with stop finish and
+no refusal, but an empty classifications array for three requested identities.
+Strict validation rejected it with `incomplete`, accepted zero. The request used
+the exact source classifier and rendered domain policy, medium reasoning,
+4,000 output tokens, one client attempt and a 120-second timeout. The measured
+input bound was 1,266 tokens against the approved 5,000. Gateway headers report
+zero retries and fallbacks, 783 total tokens and USD 0.0001219 response cost.
+This proves the request is accepted by the route, not successful classification.
+The historical whole-build cause remains unproved.
+
+The failed qualification blocks all dependent merges, deployment, graph build,
+activation and evaluation. No replacement request is authorized. The original
+test-chatbot bindings and settings, source digest, active-build pointer and
+published graph were verified unchanged. Keep the full CHF 0.10 probe hold
+until exact-request billing reconciliation succeeds: conservative accounting
+including holds is CHF 6.79857084, leaving CHF 13.20142916. No new graph,
+answer or judge call ran. The owned tunnel is closed; ports 14000 and 14001
+were verified closed.
+Private receipts remain under the existing protocol root.
+
+Next scope: diagnose why the classifier returned no labels, using the retained
+private response and exact prompt. Qualify any correction offline while preserving
+strict completeness checks and independent ingestion. A further paid probe/build
+needs a revised bounded admission; do not silently repeat this failed batch.
+
+### October 12 classifier qualification and approved batch specification
+
+**Approval summary.** Source diagnosis and qualification were authorized. The
+provider fix is in [draft MR !42](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/42),
+source `91acaa7d4d7ae0cb16429f6c4beb589c9ca5de07`, based on merged `main`
+`f2fc09c30b3d696e7bd1cf4dcc2ecae5941bf8d4`. Sixty focused tests pass offline
+with LightRAG 1.5.7. The exact Azure gateway alias now receives classifier
+reasoning configuration without changing its transmitted model or request budget.
+Incomplete/refused/non-stop classifications fail closed. Safe batch reasons and
+repair counters survive the strict-validation failure. Ingestion remains
+independent; no database, dependency or global routing changes are included.
+
+The historic cause remains unconfirmed. Three residual invalid nodes cannot
+exclude an initial candidate set over the repair cap. The old report lost those
+counts, and no classifier response receipt exists. This section supersedes any
+interpretation below that the residual count ruled out cap exhaustion. The patch
+qualifies request and failure behavior; it does not prove that the next graph will
+pass. Keep strict validation, the 256-node cap and verified persisted writes.
+
+**Approved executable batch — stopped at the failed classifier gate above.** First qualify the exact
+classifier request through the existing STG Azure gateway, then conditionally
+mark ready and merge provider MR !42 into `main`, publish its immutable worker
+image, create/mark-ready/merge the STG-only image-reference MR in
+`uzh-bf/cloud/helm-charts` against `main`, and allow Argo to update only the STG
+KG worker. Run one new build on the same frozen source hashes. Only a fresh,
+validated publication admits the remaining three GraphRAG answers, 27 judge calls
+and student KG navigation checks. Restore the original test chatbot scope and
+close temporary connectivity on every terminal branch. No automatic retries or
+replacement builds; a failed condition blocks its dependent branch.
+
+The proposed total conservative ceiling is **CHF 13.84021564 of CHF 20**, leaving
+CHF 6.15978436 unallocated. This includes the current CHF 6.69857084 and both
+failed-build holds. New reservations are CHF 0.10 for the classifier probe,
+CHF 2.50 for one build, CHF 0.4718592 for three fixed-model answers and
+CHF 4.0697856 for 27 judges. The existing retrieval reservation covers at most six
+remaining searches. The graph uses the previously approved application-charge
+basis; underlying provider spend remains unattributable. Native Auto generation
+is excluded from admission until its full routing/retry cost is bounded. The
+student graph checks can run without sending a message.
+
+**Execution details and gates.** Main owns operational admission, private data,
+spend, activation, integration and cleanup. The existing framework and guards own
+capture/scoring; no new ingestion adapter or evaluation framework is introduced.
+
+1. **Preflight and classifier probe.** Verify required source checks and completed
+   reviews on MR !42's exact head. Reopen only the temporary loopback mapping
+   `127.0.0.1:14000 -> stg-litellm/litellm:4000` through the existing
+   `aks-stg-apps-admin` access. Use the restricted `ai-generic-stg` operator profile
+   for runtime-only gateway authentication. Inspect current pricing, retry and
+   fallback configuration with values suppressed. Qualify one request from the
+   exact source classifier, using bounded evidence from the three retained failed
+   graph candidates and their existing policy, through
+   `klickeruzh/azure/gpt-6-luna`. Limit total input to 5,000 tokens, output to 4,000,
+   timeout to 120 seconds, client attempts to one. Admit only if all gateway retry
+   and fallback attempts remain within CHF 0.10; otherwise stop before dispatch.
+   Preserve the historical graph unchanged. Require stop finish, complete unique
+   allowed labels, no refusal, safe diagnostic counts, and cost reconciliation.
+   Keep source evidence and response labels private. This verifies classification
+   of the residue, not the historic initial candidate count or full graph quality.
+2. **Conditional provider delivery.** After successful probe and required CI and
+   human review, mark MR !42 ready and merge into provider `main`. Require the
+   merged-main checks and image-publication job to pass; verify commit-to-registry
+   digest. Create one GitOps MR changing only
+   `kg-content-generation/stg/kustomization.yaml`; no PRD manifest or shared
+   infrastructure edits. Require structural render review, required checks and
+   any human approval before marking ready and merging. Before rollout, verify no
+   active graph builds and all worker slots idle. Verify Argo Synced/Healthy,
+   ready worker, source hash, exact image digest and LightRAG 1.5.7. On failure,
+   stop dependent work and report; no unapproved rollback or broader mutation.
+3. **One new graph.** Revalidate the six-resource TEST Finance I inventory,
+   source hashes and course-content selection against the private frozen protocol.
+   Require unchanged digest, no ingestion in progress, available quota and no
+   duplicate active build. Submit exactly one new build for that KB through the
+   existing application workflow. Bind the returned build/run IDs in a new private
+   addendum; never overwrite prior failed receipts. Observe the same run with one
+   supported blocking watcher. An observer timeout does not grant cancellation,
+   resubmission or another build. Require successful strict cleaning, nonempty
+   graph, matching source provenance, and committed fresh FalkorDB publication.
+   Preserve any failure and hold its cost; stop before activation/evaluation.
+4. **Test-only comparison and UI.** Only bind the fresh teaching publication to
+   the existing STG E2E test chatbot, preserving existing GrowthBook targeting and
+   all other chatbots. The private restoration snapshot remains authoritative.
+   Reuse framework `2a75632a98a8f8e8382a7f7ecaa4fda9f715e12b`, frozen questions,
+   goldens, baseline/control receipts, identical prompt/model/effort and production
+   fusion limits. Execute three GraphRAG cases and at most six searches, then
+   27 judges through the guarded framework. Global caps remain 15 searches,
+   10 target attempts and 81 judge calls including prior usage. Any unresolved
+   cost or invalid provenance blocks further dispatch; never replay silently.
+   Check student sidebar, search, fullscreen and ask-about-this prefill without
+   sending. Report harness quality, map interaction and native chat acceptance
+   separately; native paid Auto acceptance remains open.
+5. **Terminal accounting and restoration.** Compare all nine accepted answers
+   with their original evidence; report per-case results, source retention,
+   citations, latency and cost limitations. Do not claim statistical uplift from
+   this three-case pilot or change frozen goldens. Restore exact original KB
+   bindings and feature settings on success or failure and verify them. Close
+   the owned loopback tunnel and any local judge relay; verify their ports are
+   closed. Preserve source/runtime identities and failed evidence. Stop at complete
+   report/cleanup, or the first failed qualification, publication or budget gate.
+
+The private protocol, original restoration snapshot, source pins and cost guards
+remain under `/private/tmp/graphrag-teaching-stg-20261012`; no teaching material,
+credentials, classifier bodies or raw captures enter public Git. The user-approved
+source terminal was a reviewed draft; the user subsequently approved this batch.
+Its failed qualification branch is recorded above.
+
 October 11: the canonical-reader design is superseded by independent workflows.
 Source fidelity remains a qualification requirement. Use stable, digest-verified
 inputs for staging mechanism and quality comparisons. If a mutable corpus cannot
