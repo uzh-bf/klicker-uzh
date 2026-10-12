@@ -2,6 +2,7 @@ import * as DB from '@klicker-uzh/prisma/client'
 import type {
   QuestionGenerationItemType,
   QuestionLibrarySnapshotQuestion,
+  QuestionPoolSnapshotQuestion,
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
 import { canonicalElementGenerationJson } from './elementGenerationProvider.js'
@@ -141,10 +142,55 @@ export function normalizeQuestionLibraryElement(
   }
 }
 
+export function normalizeQuestionPoolElement(
+  element: LibraryElement
+): QuestionPoolSnapshotQuestion {
+  const legacy = normalizeQuestionLibraryElement(element)
+  // A comparison reference does not establish a verified answer key.
+  const options = element.options
+  const keyed =
+    'hasSampleSolution' in options && options.hasSampleSolution === true
+  const choices =
+    'choices' in options && Array.isArray(options.choices)
+      ? [...options.choices].sort((left, right) => left.ix - right.ix)
+      : []
+  return {
+    source: {
+      namespace: 'klicker',
+      item_id: String(legacy.element_id),
+      revision: String(legacy.version),
+    },
+    item_format: legacy.element_type,
+    name: legacy.name,
+    stem: legacy.stem,
+    choices: legacy.choices.map((choice, index) => {
+      const original = choices[index]
+      const feedback = original?.feedback ?? ''
+      if (
+        typeof feedback !== 'string' ||
+        feedback.length > MAX_CHOICE_TEXT_LENGTH
+      ) {
+        return configurationError('Question-pool choice feedback is invalid')
+      }
+      return {
+        text: choice.text,
+        correct:
+          keyed && typeof original?.correct === 'boolean'
+            ? original.correct
+            : null,
+        feedback,
+      }
+    }),
+    allowed_uses: ['comparison'],
+  }
+}
+
 export async function createQuestionLibrarySnapshot(
   ctx: ContextWithUser,
-  env: RuntimeEnvironment = process.env
+  env: RuntimeEnvironment = process.env,
+  options: { schemaVersion?: 1 | 2 } = {}
 ): Promise<Buffer> {
+  const schemaVersion = options.schemaVersion ?? 1
   const limit = questionLibraryComparisonMaxElements(env)
   const elements = await ctx.prisma.element.findMany({
     where: {
@@ -167,7 +213,11 @@ export async function createQuestionLibrarySnapshot(
   const selected = elements.slice(0, limit)
   const questions = selected.flatMap((element) => {
     try {
-      return [normalizeQuestionLibraryElement(element)]
+      return [
+        schemaVersion === 2
+          ? normalizeQuestionPoolElement(element)
+          : normalizeQuestionLibraryElement(element),
+      ]
     } catch (error) {
       if (error instanceof QuestionGenerationServiceError) {
         console.warn(
@@ -199,7 +249,8 @@ export async function createQuestionLibrarySnapshot(
       questionLibrarySnapshotByteLength(
         candidateCount,
         candidateQuestionBytes,
-        candidateTruncated
+        candidateTruncated,
+        schemaVersion
       ) > MAX_BUFFERED_QUESTION_GENERATION_ARTIFACT_BYTES
     ) {
       break
@@ -214,7 +265,8 @@ export async function createQuestionLibrarySnapshot(
     serializeQuestionLibrarySnapshot(
       serializedQuestions.join(','),
       referenceCount,
-      truncated
+      truncated,
+      schemaVersion
     ),
     'utf8'
   )
@@ -223,19 +275,27 @@ export async function createQuestionLibrarySnapshot(
 function serializeQuestionLibrarySnapshot(
   serializedQuestions: string,
   referenceCount: number,
-  truncated: boolean
+  truncated: boolean,
+  schemaVersion: 1 | 2
 ): string {
-  return `{"questions":[${serializedQuestions}],"reference_count":${referenceCount},"schema_version":1,"truncated":${truncated}}\n`
+  const scope = schemaVersion === 2 ? ',"scope":"owned_active_library"' : ''
+  return `{"questions":[${serializedQuestions}],"reference_count":${referenceCount},"schema_version":${schemaVersion}${scope},"truncated":${truncated}}\n`
 }
 
 function questionLibrarySnapshotByteLength(
   referenceCount: number,
   questionBytes: number,
-  truncated: boolean
+  truncated: boolean,
+  schemaVersion: 1 | 2
 ): number {
   return (
     Buffer.byteLength(
-      serializeQuestionLibrarySnapshot('', referenceCount, truncated),
+      serializeQuestionLibrarySnapshot(
+        '',
+        referenceCount,
+        truncated,
+        schemaVersion
+      ),
       'utf8'
     ) + questionBytes
   )

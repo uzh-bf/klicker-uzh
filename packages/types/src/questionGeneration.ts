@@ -27,6 +27,27 @@ export type QuestionLibrarySnapshot = {
   questions: QuestionLibrarySnapshotQuestion[]
 }
 
+export type QuestionPoolSnapshotQuestion = {
+  source: { namespace: string; item_id: string; revision: string }
+  item_format: QuestionGenerationItemType
+  name?: string
+  stem: string
+  context?: string
+  explanation?: string
+  choices: Array<{ text: string; correct: boolean | null; feedback?: string }>
+  allowed_uses: Array<
+    'comparison' | 'example' | 'calibration' | 'reuse' | 'update'
+  >
+}
+
+export type QuestionPoolSnapshot = {
+  schema_version: 2
+  scope: string
+  reference_count: number
+  truncated: boolean
+  questions: QuestionPoolSnapshotQuestion[]
+}
+
 export type KBGraphSourceSnapshotItem = {
   resourceId: string
   title: string

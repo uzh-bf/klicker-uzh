@@ -1,5 +1,31 @@
 # Generated-question similarity against the lecturer library
 
+
+## Shared quiz-pool contract — 12 October 2026
+
+QP1 extends the existing snapshot producer with explicit `{ schemaVersion: 2 }`
+opt-in. Existing callers still emit schema 1. Schema 2 preserves opaque source
+identity (`klicker`, element ID, version), nullable correctness and per-choice
+feedback, and declares `owned_active_library` scope and comparison-only use.
+It uses the existing authorized query, bounds, canonical serialization and
+immutable artifact transport. A lecturer-wide library is not a same-course
+exemplar pool. No new database access path or runtime toggle is introduced.
+
+The paired worker change in !35 validates this representation and normalizes
+existing file-import records into the same content contract. It reuses !34/!35's
+semantic scorer. Examples, empirical calibration, reuse and update remain the
+subsequent QP2/QP3 work; format-adapter qualification remains QP4. Legacy hashes
+and no-pool behavior retain compatibility. Deploy a compatible worker before
+activating schema 2 at a caller; this slice does not activate it.
+
+Validation: 12 producer tests pass in an isolated container harness with real
+Prisma enums and a stub for unrelated graph access. Both schemas retain the
+artifact byte cap. A synthetic snapshot emitted by the actual TypeScript
+producer passes the Python worker model and existing comparison-record builder.
+Biome passes for the changed source and tests. Full monorepo type/build checks
+remain the PR CI obligation; these focused checks do not replace them.
+
+
 ## Goal
 
 Warn a lecturer during question-generation review when a newly planned SC, MC,
@@ -50,7 +76,8 @@ snapshot supplied by Klicker.
 - The snapshot contains the minimum useful semantic representation: element
   id, version, type, name, stem/content, and normalized choices including which
   choices are correct. Exclude feedback, tags, statistics, activity placement,
-  owner identity, and participant data.
+  owner identity, and participant data. This describes schema 1; the optional
+  schema-2 contract above additionally preserves choice feedback.
 - Gamification is unaffected: no points, XP, responses, or leaderboards change.
 
 ## Cross-repository contract

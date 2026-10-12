@@ -5,6 +5,7 @@ import { MAX_BUFFERED_QUESTION_GENERATION_ARTIFACT_BYTES } from '../src/services
 import {
   createQuestionLibrarySnapshot,
   normalizeQuestionLibraryElement,
+  normalizeQuestionPoolElement,
   questionLibraryComparisonEnabled,
   questionLibraryComparisonMaxElements,
 } from '../src/services/questionGenerationLibrary.js'
@@ -172,7 +173,9 @@ describe('question-library snapshot', () => {
     warning.mockRestore()
   })
 
-  it('truncates the snapshot to the runtime artifact byte limit', async () => {
+  it.each([
+    1, 2,
+  ] as const)('bounds schema %i snapshots by the artifact byte limit', async (schemaVersion) => {
     const largeChoices = Array.from({ length: 100 }, (_, ix) => ({
       ix,
       value: `${ix}`.padEnd(10_000, 'x'),
@@ -187,9 +190,13 @@ describe('question-library snapshot', () => {
     )
     const { ctx } = context(rows)
 
-    const bytes = await createQuestionLibrarySnapshot(ctx, {
-      KB_QUESTION_LIBRARY_COMPARISON_MAX_ELEMENTS: '20',
-    })
+    const bytes = await createQuestionLibrarySnapshot(
+      ctx,
+      {
+        KB_QUESTION_LIBRARY_COMPARISON_MAX_ELEMENTS: '20',
+      },
+      { schemaVersion }
+    )
     const snapshot = JSON.parse(bytes.toString('utf8'))
 
     expect(bytes.byteLength).toBeLessThanOrEqual(
@@ -198,5 +205,69 @@ describe('question-library snapshot', () => {
     expect(snapshot.reference_count).toBeLessThan(rows.length)
     expect(snapshot.questions).toHaveLength(snapshot.reference_count)
     expect(snapshot.truncated).toBe(true)
+  })
+})
+
+describe('generic question pool snapshot', () => {
+  it('preserves unknown keys and restricts uses to comparison', () => {
+    const question = normalizeQuestionPoolElement(
+      element({
+        options: {
+          hasSampleSolution: false,
+          choices: [{ ix: 0, value: 'Synthetic choice', correct: false }],
+        },
+      })
+    )
+    expect(question.source).toEqual({
+      namespace: 'klicker',
+      item_id: '42',
+      revision: '3',
+    })
+    expect(question.allowed_uses).toEqual(['comparison'])
+    expect(question.choices[0]?.correct).toBeNull()
+  })
+
+  it('preserves known answer association in option order', () => {
+    const question = normalizeQuestionPoolElement(
+      element({
+        options: {
+          hasSampleSolution: true,
+          choices: [
+            { ix: 1, value: 'Second', correct: false },
+            {
+              ix: 0,
+              value: 'First',
+              correct: true,
+              feedback: 'Synthetic feedback',
+            },
+          ],
+        },
+      })
+    )
+    expect(question.choices).toEqual([
+      { text: 'First', correct: true, feedback: 'Synthetic feedback' },
+      { text: 'Second', correct: false, feedback: '' },
+    ])
+  })
+
+  it('emits generic snapshots only on explicit caller opt-in', async () => {
+    const { ctx } = context([element()])
+    const legacy = JSON.parse(
+      (await createQuestionLibrarySnapshot(ctx, {})).toString()
+    )
+    const generic = JSON.parse(
+      (
+        await createQuestionLibrarySnapshot(ctx, {}, { schemaVersion: 2 })
+      ).toString()
+    )
+    expect(legacy.schema_version).toBe(1)
+    expect(generic.schema_version).toBe(2)
+    expect(generic.scope).toBe('owned_active_library')
+    expect(generic.reference_count).toBe(legacy.reference_count)
+    expect(generic.truncated).toBe(legacy.truncated)
+    expect(generic.questions[0].source.item_id).toBe(
+      String(legacy.questions[0].element_id)
+    )
+    expect(generic.questions[0].stem).toBe(legacy.questions[0].stem)
   })
 })
