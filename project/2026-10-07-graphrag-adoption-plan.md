@@ -274,6 +274,96 @@ formula extraction independently, then use a larger clean holdout with factual
 answers separated from citation constraints. Native persisted-chat and graph UI
 acceptance remain separate rollout gates.
 
+### Approved recovery batch: cleaning timeout and remaining teaching-data comparison
+
+Approval mode: executable batch, approved on October 12. The adapter fix is
+already delivered in draft PR #6478. The fresh teaching graph failed while an
+entity edit flushed vector embeddings. Scoped reads of the surviving STG worker
+show LightRAG 1.5.7, a 30-second library embedding timeout, and a configured
+180-second provider timeout. Build initialization passes that setting; cleaning
+and strict validation initialization omit it. The same omission exists at the
+fetched provider `origin/main` baseline. The timeout can terminate the embedding
+worker after twice the library timeout. Exact failed-worker assignment and the
+underlying embedding latency remain unproven.
+
+The recommended source correction passes the resolved embedding timeout to both
+existing initializers. Preserve category validation and failure behavior; add no
+embedding retry, ingestion dependency, database change or timeout increase. The
+provider worker currently installs floating LightRAG requirements while its lock
+records another version. Before deploying a candidate, qualify the relevant tests
+against the deployed 1.5.7 dependency and require a reproducible candidate with that
+exact version. The worker requirements now pin LightRAG 1.5.7; the development
+lock remains unchanged. Focused tests pass against both 1.5.7 and the locked 1.5.1.
+Stop on required unrelated dependency changes.
+
+The approved authority extends to the provider repository
+`uzh-bf/tc/kg-content-generation`, an ordinary task-branch MR targeting `main`,
+marking that MR ready and merging only after required checks and human reviews,
+and deploying its exact verified worker image through the configured STG GitOps
+path: `uzh-bf/cloud/helm-charts`, target `main`,
+`kg-content-generation/stg`, Argo application
+`argo/app-kg-content-generation-stg`. The deployment affects the shared STG graph
+worker. Record the previous image, verify no conflicting active build before
+rollout, and restore the prior image through GitOps if worker health fails.
+Production deployment, broad flag changes, replay of the failed run, data deletion
+and category-policy relaxation
+are excluded. GitOps changes are limited to the STG provider image reference. Ask
+again if qualification requires unrelated infrastructure ownership or changes.
+
+After serving proof, submit the approved new build for the same frozen sources.
+Preserve the failed build and original protocol. A separate recovery addendum must
+bind the new publication ID to the unchanged corpus hashes, questions, goldens,
+models, metrics, evidence limits and already-scored baseline/control answers.
+Rebind only the identified test chatbot; admit paid calls only after guard review,
+source digest checks and fresh publication checks. Run three GraphRAG harness
+answers, at most six remaining searches and 27 remaining judge calls. Reopen only
+the previously approved loopback LiteLLM tunnel while needed. Separately qualify
+one bounded native chatbot turn and persisted citations, KG sidebar, full-screen,
+search and ask-about-this interactions. Restore the original test binding and
+settings and close evaluation connectivity at the end or on failure.
+
+Retain CHF 4.19857084 already counted including the failed-build hold. Additional
+maximum reservations are CHF 2.50 for one new graph build, CHF 0.4718592 for three
+harness answers, CHF 4.0697856 for 27 judge calls, and CHF 2.00 for one native turn.
+The existing CHF 0.25 retrieval reservation covers the remaining search cap.
+The combined approved maximum is CHF 13.24021564 against the original CHF 20
+ceiling. Admit the native turn only after route pricing and execution limits prove
+its CHF 2 bound; otherwise stop before sending. Preserve the approved graph
+application-charge accounting basis and all unknown-cost holds. No automatic
+replacement call or further graph build is authorized.
+
+October 12 recovery delivery: provider [MR !41](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/41)
+merged at `f2fc09c30b3d696e7bd1cf4dcc2ecae5941bf8d4`. Its required workflow,
+persistence and image-publication checks passed; the legacy quality audit remains
+an allowed failure. STG-only GitOps [MR !141](https://gitlab.uzh.ch/uzh-bf/cloud/helm-charts/-/merge_requests/141)
+passed source review, structural rendering and exact-head CI, then merged at
+`33241ffeaf01bc3e2dfcc6efa4a78c3719f2faeb`. Argo is Synced/Healthy at that
+revision. The new ready worker serves digest
+`sha256:75bd8dc45365f9ac0ccd50acf424bffe63fe0da4918f05dc148c30dd8edaeeb0`,
+LightRAG 1.5.7 and the verified timeout pass-through in both initializers. All
+worker slots were available and no active graph build existed before rollout.
+No PRD manifest, ingestion workflow or database schema changed.
+
+The single approved new build has been accepted on the unchanged frozen source
+hashes. Its fresh publication and GraphRAG comparison remain pending. The private
+recovery addendum retains the failed build, original protocol and scored
+baseline/control receipts. The reviewed recovery guards pass their offline
+checks. Persisted participant login and authenticated synthetic graph overview
+pass against the current serving application.
+
+The test chatbot uses Auto, whose live routing includes a classifier, semantic
+embedding, routed models and fallback paths. Named component prices are now
+known, but several routes lack token limits and the native input/retry bound is
+unqualified. Hold the native paid turn before dispatch under the approved CHF 2
+condition. This gate is separate from the bounded fixed-model framework arms.
+
+Terminal: source and serving receipts, a complete three-arm framework report,
+separate native/UI evidence, reconciled costs and restored test scope; or stop at
+the first failed qualification, rollout, publication or cost condition with the
+failed identity preserved. The existing native goal remains unfinished. Guard
+review, exact-head CI, serving proof and fresh publication are concrete
+dependencies.
+
 October 9: approved source-artifact repair is planned in the linked implementation
 plan and added as milestone 1a. Historical source and review receipts below remain
 dated evidence. The new package has no PR/MR or implementation yet. Astra approved
