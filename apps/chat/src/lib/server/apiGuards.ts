@@ -1,6 +1,9 @@
 import { prisma } from '@klicker-uzh/prisma'
 import { ChatbotStatus, type Prisma } from '@klicker-uzh/prisma/client'
-import { participantSessionMatches } from '@klicker-uzh/util'
+import {
+  isCookieDomainOrigin,
+  participantSessionMatches,
+} from '@klicker-uzh/util'
 import { jwtVerify } from 'jose'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -108,6 +111,17 @@ export async function withChatbotAuth(
   | { participantId: string; chatbot: { courseId: string } }
   | { response: NextResponse }
 > {
+  const origin = req.headers.get('origin')
+  if (
+    (origin !== null && !isCookieDomainOrigin(origin)) ||
+    req.headers.get('sec-fetch-site') === 'cross-site'
+  )
+    return {
+      response: NextResponse.json(
+        { error: 'untrusted_origin' },
+        { status: 403 }
+      ),
+    }
   if (
     !participantSessionMatches(
       req.headers.get('x-participant-session') ?? undefined,

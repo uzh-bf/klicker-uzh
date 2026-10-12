@@ -16,7 +16,14 @@ cookie context. Ordinary login follows the same rule. PWA and Chat tabs use the
 shared HttpOnly credential rather than keeping independent participant tokens.
 Separate browser profiles remain separate contexts. Embedded pages must confirm
 unpartitioned cookie access before mounting authenticated UI; a partitioned
-LMS login cannot coexist as another usable identity.
+LMS login cannot coexist as another usable identity. The boundary covers every
+regular PWA and Chat page, including anonymous entry points: their shared layout
+and queries can discover a participant cookie. Until hydration establishes the
+browser context, page content is withheld. Top-level pages proceed immediately
+after that check; embedded pages without shared access offer top-level recovery.
+This deliberately trades server-rendered first paint and anonymous embedded use
+for one consistent browser identity. Server-fetched data remains available for
+hydration only when its session revision still matches.
 
 The `participant_session` cookie contains a random, non-secret revision with the
 credential's domain, path, security policy and lifetime. Login, logout and
@@ -46,7 +53,8 @@ server outcome; clients observe the resulting revision when it is available.
 Regular PWA browser requests authenticate only from cookies. Server-side and
 non-browser bearer callers and the separate assessment/lecturer contracts
 remain supported. Assessment fallback is not a retained regular-session mode.
-Participant cookies require a configured COOKIE_DOMAIN and origin checks;
+Participant cookies and Chat API origin checks require a configured COOKIE_DOMAIN;
+the Chat ConfigMap uses the same backendGraphql.cookieDomain value as GraphQL.
 SameSite=None does not authorize foreign-origin cookie selection or issuance.
 Current-partition cookie cleanup does not claim to clear every browser partition.
 

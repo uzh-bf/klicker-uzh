@@ -99,6 +99,13 @@ async function readBody(req: IncomingMessage): Promise<any> {
 }
 
 async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
+  const origin = req.headers.origin
+  if (
+    (origin !== undefined && !CORS_ALLOWED_ORIGINS.includes(origin)) ||
+    req.headers['sec-fetch-site'] === 'cross-site'
+  ) {
+    return sendJson(req, res, 403, { error: 'untrusted_origin' })
+  }
   let payload: any
   try {
     payload = await readBody(req)

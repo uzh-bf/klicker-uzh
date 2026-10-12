@@ -45,8 +45,11 @@ revision so servers can reject a request whose cookies changed after the UI's
 check. Already committed server operations cannot be undone by a later login.
 LTI SSR publishes the expected revision so refused cookies cannot silently
 continue using the former login. Embedded UI also confirms unpartitioned access
-with document.hasStorageAccess before mounting authenticated consumers; otherwise
-it offers the original LTI launch in a top-level tab. Do not replay launch parameters when reloading.
+with document.hasStorageAccess before mounting any regular PWA or Chat page,
+including anonymous entry points whose layout can query participant identity.
+Content waits for the client context check; server-fetched data remains available
+for matching-revision hydration. Without shared access, the boundary
+offers the original LTI launch in a top-level tab. Do not replay launch parameters when reloading.
 
 Replace the regular PWA session module and simplify Apollo lifecycle management;
 retain only old-request/result suppression needed for shared identity changes.
@@ -136,26 +139,60 @@ Reuse unaffected evidence only where source and contract have not changed.
 
 ## Progress
 
-Shared-login implementation is in verification. Removed tab token storage,
-explicit-bearer precedence, the Chat login gate and their obsolete tests. Added
-one shared revision boundary for PWA and Chat, guarded requests/results and
-cookie-acceptance recovery. Temporary login reloads after cookie replacement.
-The browser spec now observes existing PWA and Chat tabs and completed-response
-ordering; it has not yet run against this implementation.
+Shared-login implementation and final review corrections are ready locally. Removed
+regular tab token storage, explicit-bearer precedence, the Chat login gate and
+obsolete tests. Shared revision checks protect PWA, Chat and response requests.
+Embedded pages require unpartitioned cookie access before authenticated content
+mounts; otherwise the original LTI activity can open in a normal tab.
+The browser spec observes existing PWA and Chat tabs and completed-response
+ordering. It has not yet run against this implementation.
 
-Planner approved the revised contract. Container checks passed: 30 PWA tests,
-24 backend tests, PWA/backend/Chat/response API/shared component/GraphQL type
-checks, and backend production build. Chat suite: 744 passed, 21 skipped,
-one Headers-representation assertion corrected; its five-test file then passed.
-No earlier tab-isolation browser result counts toward the new contract.
+Planner, simplification and focused risk review completed. Simplification removed
+an unused account token prop, duplicate revision writes and redundant Chat stream
+state. The integrated final source review inspected the full PR through `35b2700994`.
+Its accepted corrections bind live-quiz SSR data to the session revision, remove
+the redundant post-deletion logout and reject foreign-origin cookie writes in
+Chat and the response API. The existing server logout helper now performs cookie
+cleanup after committed deletion. The conservative whole-page mounting boundary
+is retained and its first-render/anonymous-frame tradeoff is explicit above.
+The single correction review accepted these changes and found a missing Chat
+ConfigMap declaration. Adding the existing cookie-domain value closes that gap;
+Helm rendering passed for default, staging and production values, with nonempty
+domains in both deployment overlays. Source review is dispositioned; browser
+acceptance remains outstanding. `2ce5d70477` only aligns browser
+tests with the corrected recovery interaction.
 
-The retained runtime is stopped after an OIDC Compose configuration guard
-blocked startup. A separate detached verification checkout preserves its data:
-`trees/olat-shared-login-verification`. Its managed initial build stalled after producing the backend bundle; stopping
-through devrouter cancelled startup but hit the same OIDC Compose hash guard.
-Browser verification is blocked until the runtime reaches readiness.
-The 125 host launcher/workflow checks passed. Full container checks encountered
-an existing parallel Prisma generation race and an offline Analytics dependency
-fetch; focused consumer checks above passed. Next: complete browser verification, simplify and review the committed
-correction, build, publish current evidence and update the existing PR. Stop
-both exact runtime targets and verify route release before closing.
+Verification completed:
+
+- 31 PWA unit tests, 24 backend unit tests and three focused GraphQL cookie and
+  deletion-cleanup tests passed. The final Chat guard file passed all 17 tests.
+  Twelve database-dependent cases in the selected GraphQL file were
+  excluded because the managed application runtime is unavailable.
+- Chat: 744 passed and 21 skipped, with one Headers-representation assertion
+  corrected; its five-test file then passed. This is combined evidence, not one
+  clean full-suite run. Eighteen focused Chat regression tests also passed.
+- All 35 repository type-check tasks, lint, dependency consistency, agent-doc,
+  Git-identity, removed-doc-path and Prisma schema-sync checks passed. The 125
+  host launcher/workflow tests and current Playwright static type check passed.
+- Production build passed all 23 tasks. PWA and Chat production builds passed
+  again after the embedded-cookie correction. Staged formatting, diff and secret
+  checks passed. Focused static security scanning found three unchanged baseline
+  findings and no newly introduced findings; this does not resolve CodeQL.
+
+Browser verification and screenshots remain blocked. Both exact managed runtime
+providers are stopped. The retained runtime refuses startup with
+`Managed Compose configuration changed for service 'oidc'.` A separate detached
+verification checkout, `trees/olat-shared-login-verification`, preserves a source
+snapshot matching the implementation. Its initial managed build stalled; after
+provider-owned stop, devrouter repair is blocked by `COMPLETION_UNKNOWN` lifecycle
+admission. Devrouter stop still reports the OIDC configuration guard. No retained
+containers, volumes, worktrees or data were deleted, and no tool configuration was
+changed. Read-only doctor reports the runtime stopped but supplies no applicable
+reconciliation for these failures.
+
+Next: restore supported devrouter startup; run the revised browser suite and capture current EN desktop / DE mobile
+screenshots; then push and update the existing PR with accurate evidence. The
+PR remains at `a7b5054177`; no earlier tab-isolation browser result counts toward
+this contract. Stop both exact runtime targets and verify route release at close.
+Hosted CI, CodeQL disposition, required final AI review and real OLAT acceptance
+remain separate outstanding checks; do not infer them from local verification.

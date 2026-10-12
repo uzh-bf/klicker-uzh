@@ -24,7 +24,10 @@ headers. A supplied `x-participant-session` must match the non-secret
 `participant_session` cookie (`none` represents no revision); mismatches return
 HTTP 409 before executing work. Missing headers preserve non-browser callers.
 The PWA branch also requires the origin host to lie
-inside `COOKIE_DOMAIN`: participant cookies are SameSite=None and CORS reflects
+inside `COOKIE_DOMAIN`. Chat uses the same origin restriction before authenticating
+API requests; its ConfigMap receives `backendGraphql.cookieDomain` as
+`COOKIE_DOMAIN`. The response API rejects origins outside its existing
+`CORS_ALLOWED_ORIGINS` before accepting regular answers. Participant cookies are SameSite=None and CORS reflects
 any origin, so a foreign host that merely contains `pwa` must not select them.
 For the same reason, participant login issues a SameSite=None cookie only to an
 origin inside `COOKIE_DOMAIN`. Any other origin receives a Lax cookie, which a

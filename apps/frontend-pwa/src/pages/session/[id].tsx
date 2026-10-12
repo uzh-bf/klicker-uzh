@@ -681,6 +681,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   return addApolloState(apolloClient, {
     props: {
       id: ctx.params.id,
+      sessionRevision: ctx.req.cookies.participant_session ?? '',
       messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
         .default,
     },

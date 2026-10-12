@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   findUnique: vi.fn(),
@@ -203,5 +203,61 @@ describe('shared browser session revision', () => {
     expect('response' in result && result.response.status).toBe(409)
     expect(mocks.jwtVerify).not.toHaveBeenCalled()
     expect(mocks.findUnique).not.toHaveBeenCalled()
+  })
+})
+
+describe('shared cookie request origin', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.stubEnv('COOKIE_DOMAIN', '.example.test')
+    mocks.jwtVerify.mockResolvedValue({ payload: { sub: 'participant-1' } })
+    mocks.findUnique.mockImplementation(async () => ({
+      courseId: 'course-1',
+      status: 'PUBLISHED',
+    }))
+    mocks.participationFindUnique.mockResolvedValue({ id: 'participation-1' })
+  })
+  afterEach(() => vi.unstubAllEnvs())
+
+  test.each([
+    'https://foreign.test',
+    'https://chat.example.test.foreign.test',
+    'null',
+  ])('rejects a simple cookie-authenticated write from %s', async (origin) => {
+    const result = await withChatbotAuth(
+      new NextRequest(
+        `https://chat.example.test/api/chatbots/${VALID_ID}/chat`,
+        {
+          method: 'POST',
+          headers: {
+            origin,
+            cookie: 'participant_token=synthetic',
+            'content-type': 'text/plain',
+          },
+          body: '{}',
+        }
+      ),
+      VALID_ID
+    )
+    expect('response' in result && result.response.status).toBe(403)
+    expect(mocks.jwtVerify).not.toHaveBeenCalled()
+    expect(mocks.findUnique).not.toHaveBeenCalled()
+  })
+
+  test('accepts a same-domain write and an originless non-browser caller', async () => {
+    for (const origin of ['https://chat.example.test', undefined]) {
+      const headers: Record<string, string> = {
+        cookie: 'participant_token=synthetic',
+      }
+      if (origin) headers.origin = origin
+      const result = await withChatbotAuth(
+        new NextRequest(
+          `https://chat.example.test/api/chatbots/${VALID_ID}/chat`,
+          { method: 'POST', headers }
+        ),
+        VALID_ID
+      )
+      expect(result).toMatchObject({ participantId: 'participant-1' })
+    }
   })
 })

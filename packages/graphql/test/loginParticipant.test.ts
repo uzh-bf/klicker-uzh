@@ -16,6 +16,7 @@ import {
 import type { Context } from '../src/lib/context.js'
 import {
   activateParticipantAccount,
+  deleteParticipantAccount,
   loginParticipant,
   loginParticipantMagicLink,
 } from '../src/services/accounts.js'
@@ -447,7 +448,7 @@ describe('Participant session cookie retention', () => {
     ][]
     const issuance = calls.find(
       ([name, , options]) =>
-        name === 'participant_token' && options?.maxAge! > 0
+        name === 'participant_token' && (options?.maxAge ?? 0) > 0
     )!
     const claims = await verifyJWT(
       issuance[1] as string,
@@ -523,7 +524,7 @@ describe('Participant session cookie retention', () => {
         ][]
         return calls.find(
           ([name, , options]) =>
-            name === 'participant_token' && options?.maxAge! > 0
+            name === 'participant_token' && (options?.maxAge ?? 0) > 0
         )?.[2].sameSite
       }
       expect(await sameSiteFor('https://pwa.klicker.test')).toBe('none')
@@ -533,5 +534,45 @@ describe('Participant session cookie retention', () => {
       vi.unstubAllEnvs()
       vi.resetModules()
     }
+  })
+})
+
+describe('Participant deletion session cleanup', () => {
+  it('expires all participant credentials after committed deletion and preserves them on rejection', async () => {
+    const ctx = {
+      ...createCtx(),
+      user: { sub: 'synthetic-participant' },
+    } as any
+    ctx.prisma = {
+      participant: {
+        findUnique: vi.fn().mockResolvedValue({ participantGroups: [] }),
+        delete: vi.fn().mockResolvedValue({}),
+      },
+      $transaction: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('synthetic rejection'))
+        .mockResolvedValueOnce([]),
+    }
+    await expect(deleteParticipantAccount(ctx)).rejects.toThrow(
+      'synthetic rejection'
+    )
+    expect(ctx.res.cookie).not.toHaveBeenCalled()
+    expect(await deleteParticipantAccount(ctx)).toBe(true)
+    for (const name of [
+      'participant_token',
+      'temporary_participant_token',
+      'next-auth.participant-session-token',
+    ]) {
+      expect(ctx.res.cookie).toHaveBeenCalledWith(
+        name,
+        expect.any(String),
+        expect.objectContaining({ maxAge: 0 })
+      )
+    }
+    expect(ctx.res.cookie).toHaveBeenCalledWith(
+      'participant_session',
+      expect.any(String),
+      expect.objectContaining({ httpOnly: false })
+    )
   })
 })

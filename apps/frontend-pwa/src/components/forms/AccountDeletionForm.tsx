@@ -1,8 +1,5 @@
 import { useMutation } from '@apollo/client'
-import {
-  DeleteParticipantAccountDocument,
-  LogoutParticipantDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { DeleteParticipantAccountDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H3, Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -13,9 +10,6 @@ function AccountDeletionForm() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [deleteParticipantAccount, { loading: deletingAccount }] = useMutation(
     DeleteParticipantAccountDocument
-  )
-  const [logoutParticipant, { loading: loggingOut }] = useMutation(
-    LogoutParticipantDocument
   )
 
   return (
@@ -46,7 +40,7 @@ function AccountDeletionForm() {
               onClose={(): void => setDeleteModalOpen(false)}
               primaryLabel={t('shared.generic.confirm')}
               primaryButtonStyle="destructive"
-              primaryLoading={deletingAccount || loggingOut}
+              primaryLoading={deletingAccount}
               onPrimaryAction={async () => {
                 const result = await deleteParticipantAccount().catch(
                   () => undefined
@@ -61,9 +55,6 @@ function AccountDeletionForm() {
                   setDeleteModalOpen(false)
                   return
                 }
-                try {
-                  await logoutParticipant()
-                } catch (e) {}
                 window?.location.reload()
               }}
               dataPrimaryAction={{ cy: 'delete-account-command' }}

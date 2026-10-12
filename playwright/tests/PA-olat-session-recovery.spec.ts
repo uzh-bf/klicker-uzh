@@ -1078,6 +1078,20 @@ test('a live quiz answer and a practice submission are recorded for the shared c
   })
   expect(anonymous.status()).toBe(409)
 
+  const foreignWrite = await request.post(responseApi(baseURL!), {
+    headers: {
+      origin: 'https://foreign.example',
+      'content-type': 'text/plain',
+      cookie: 'participant_token=synthetic',
+    },
+    data: JSON.stringify({
+      response: { choices: [1] },
+      liveQuizId,
+      instanceId: 0,
+    }),
+  })
+  expect(foreignWrite.status()).toBe(403)
+
   const frame = await launch(
     page,
     `${baseURL}/editProfile?jwt=${encodeURIComponent(await signed({ sub: ssoId, scope: 'LTI1.3' }))}`

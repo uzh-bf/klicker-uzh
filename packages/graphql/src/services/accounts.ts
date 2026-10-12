@@ -612,7 +612,7 @@ export async function deleteParticipantAccount(ctx: ContextWithUser) {
   )
 
   await ctx.prisma.$transaction(deletionPromises)
-  expireParticipantCookie(ctx)
+  await logoutParticipant(ctx)
   return true
 }
 
