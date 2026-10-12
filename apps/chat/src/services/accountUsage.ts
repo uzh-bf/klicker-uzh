@@ -1,9 +1,6 @@
 import { getEffectiveChatAccountUsage, prisma } from '@klicker-uzh/prisma'
 import { type ChatUsageClass, Prisma } from '@klicker-uzh/prisma/client'
-import {
-  getZurichMonthStart,
-  isChatUsageClassEntitled,
-} from '@klicker-uzh/util'
+import { getZurichMonthStart } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import { NextResponse } from 'next/server'
 import { withTransaction } from '../utils/transactions'
@@ -113,16 +110,13 @@ async function lockChatTurnParent(
   )
 }
 
-async function loadChatUsageEntitlement(ownerId: string) {
+async function loadChatUsageApproval(ownerId: string) {
   const owner = await prisma.user.findUnique({
     where: { id: ownerId },
-    select: { aiFeaturesEnabled: true, aiChatbotCostCenter: true },
+    select: { aiFeaturesEnabled: true },
   })
 
-  return {
-    aiFeaturesEnabled: owner?.aiFeaturesEnabled ?? false,
-    aiChatbotCostCenter: owner?.aiChatbotCostCenter ?? null,
-  }
+  return owner?.aiFeaturesEnabled ?? false
 }
 
 export async function isChatAccountUsageAvailable({
@@ -135,8 +129,8 @@ export async function isChatAccountUsageAvailable({
   now?: Date
 }): Promise<boolean> {
   const monthStart = getZurichMonthStart(now)
-  const [entitlement, usage] = await Promise.all([
-    loadChatUsageEntitlement(ownerId),
+  const [aiFeaturesEnabled, usage] = await Promise.all([
+    loadChatUsageApproval(ownerId),
     getEffectiveChatAccountUsage(prisma, {
       ownerId,
       usageClass,
@@ -145,13 +139,7 @@ export async function isChatAccountUsageAvailable({
   ])
 
   return Boolean(
-    isChatUsageClassEntitled({
-      usageClass,
-      ...entitlement,
-      hasAdvancedAllowance:
-        usageClass === 'ADVANCED' &&
-        Boolean(usage?.budgetCredits.greaterThan(0)),
-    }) &&
+    aiFeaturesEnabled &&
       usage?.budgetCredits.greaterThan(0) &&
       usage.usedCredits.lessThan(usage.budgetCredits)
   )
