@@ -91,7 +91,10 @@ async function resetSyncBranch({ github, repo, branch, sourceSha }) {
       sha: sourceSha,
     })
   } catch (error) {
-    if (error.status !== 422) throw error
+    // 422 also covers refusals such as missing workflow-file permission.
+    if (error.status !== 422 || !/already exists/i.test(error.message)) {
+      throw error
+    }
     await github.rest.git.updateRef({
       ...repo,
       ref: `heads/${branch}`,

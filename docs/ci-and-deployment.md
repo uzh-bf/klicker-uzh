@@ -55,7 +55,9 @@ gh workflow run maintain-draft-sync-prs.yml --ref v3 -f dry_run=false
 ```
 
 Writes use the `SYNC_PR_BOT_TOKEN` repository secret: a fine-grained token
-for this repository only, with Contents and Pull requests read/write. Updates
+for this repository only, with Contents, Pull requests, and Workflows
+read/write. Workflows write is needed because GitHub refuses ref updates that
+bring `.github/workflows` changes without it. Updates
 made with the ordinary `GITHUB_TOKEN` start no workflows, so a sync PR would
 never receive its required checks. Without the secret, automatic and
 non-preview runs fail and previews still work. The sync branches are not
@@ -85,7 +87,9 @@ admin to remove `non_fast_forward` from the target's ruleset, push with
 `--force-with-lease=<target>:<bad SHA>`, and restore the ruleset immediately.
 Afterwards, check that no remote branch or open PR contains the bad SHA
 (`git branch -r --contains <sha>`) and ask anyone who fetched the target in that
-window to rebase.
+window to rebase. If a `sync/` branch already followed the bad SHA, close its PR;
+the next controller run resets the branch to the recovered tip and opens a new
+draft.
 
 ### Squashed sync guard
 

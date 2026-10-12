@@ -51,7 +51,9 @@ function fixture({
         async createRef({ ref, sha }) {
           const name = ref.replace('refs/heads/', '')
           if (refs.has(name)) {
-            throw Object.assign(new Error('exists'), { status: 422 })
+            throw Object.assign(new Error('Reference already exists'), {
+              status: 422,
+            })
           }
           refs.set(name, sha)
           refWrites.push({ op: 'create', name, sha })
