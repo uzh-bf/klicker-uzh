@@ -1,12 +1,13 @@
+import { randomUUID } from 'node:crypto'
 import { type AppLogger, toSafeError } from '@klicker-uzh/logging/node'
+import { prisma } from '@klicker-uzh/prisma'
+import type { Prisma } from '@klicker-uzh/prisma/client'
+import { HANDOFF_SOURCES } from '@klicker-uzh/shared-components/src/utils/handoff'
 import type {
   ELearningSnapshotContent,
   KlickerChatContext,
 } from '@klicker-uzh/types'
-import { randomUUID } from 'node:crypto'
-import { prisma } from '@klicker-uzh/prisma'
-import type { Prisma } from '@klicker-uzh/prisma/client'
-import { HANDOFF_SOURCES } from '@klicker-uzh/shared-components/src/utils/handoff'
+import { isChatUsageClassEntitled } from '@klicker-uzh/util'
 import {
   type LangfuseSpan,
   propagateAttributes,
@@ -25,6 +26,7 @@ import { after, type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
+import { withCalculatorTool } from '@/src/lib/server/calculatorTool'
 import { sanitizeChatLogContext } from '@/src/lib/server/chatLogging'
 import { getChatModel } from '@/src/lib/server/chatModelProvider'
 import {
@@ -35,12 +37,14 @@ import {
   getModelsForChatbot,
   getParticipantFallbackModelId,
 } from '@/src/lib/server/chatModelRegistry'
+import { buildChatTurnRequest } from '@/src/lib/server/chatTurnRequest'
 import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
 import {
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
 } from '@/src/lib/server/effectiveChatModes'
+import { trailingStepMessage } from '@/src/lib/server/feedbackEvidence'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
   flushLangfuseTelemetry,
@@ -55,6 +59,7 @@ import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
+import { getOpenAIProviderOptions } from '@/src/lib/server/openaiProviderOptions'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import {
   buildAbortedAssistantContent,
@@ -80,6 +85,7 @@ import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import {
   CHAT_TURN_ALREADY_COMPLETED_CODE,
   ChatTurnConflictError,
+  chatModelUnavailableResponse,
   claimChatTurn,
   failChatTurn,
   finalizeChatTurn,
@@ -94,6 +100,14 @@ import {
 import { CreditsService } from '@/src/services/credits'
 import { DisclaimersService } from '@/src/services/disclaimers'
 import {
+  formatElearningEvidencePolicy,
+  formatElearningSnapshotContext,
+  matchesPersistedLearningHistory,
+  normalizePersistedLearningContext,
+  resolveElearningThreadOrigin,
+  verifyAndNormalizeElearningChatContext,
+} from '@/src/services/elearningContext'
+import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
   type MCPToolsHandle,
@@ -105,17 +119,11 @@ import {
 import {
   formatPracticeCandidatesForPrompt,
   getPracticeStackForQuiz,
+  getStudentPracticeMcpUrl,
   lookupRelevantPracticeStacks,
   STUDENT_PRACTICE_QUIZ_TOOL_NAME,
   toPracticeCandidateId,
 } from '@/src/services/studentPracticeMcp'
-import {
-  formatElearningGroundingPolicy,
-  normalizePersistedLearningContext,
-  resolveElearningThreadOrigin,
-  verifyAndNormalizeElearningChatContext,
-  matchesPersistedLearningHistory,
-} from '@/src/services/elearningContext'
 import { ThreadService } from '@/src/services/threads'
 
 export const runtime = 'nodejs'
@@ -132,24 +140,6 @@ type ChatRouteModelMessage = {
   content:
     | string
     | Array<{ type: 'text'; text: string } | { type: 'image'; image: string }>
-}
-
-const CHAT_MODEL_UNAVAILABLE_BASE = 'CHAT_MODEL_UNAVAILABLE_BASE'
-const CHAT_MODEL_UNAVAILABLE_ADVANCED = 'CHAT_MODEL_UNAVAILABLE_ADVANCED'
-
-function chatModelUnavailableResponse(
-  usageClass: ChatModelConfig['usageClass']
-) {
-  return NextResponse.json(
-    {
-      error: 'Chat model usage is unavailable',
-      code:
-        usageClass === 'BASE'
-          ? CHAT_MODEL_UNAVAILABLE_BASE
-          : CHAT_MODEL_UNAVAILABLE_ADVANCED,
-    },
-    { status: 403 }
-  )
 }
 
 function completedTurnResponse() {
@@ -688,7 +678,9 @@ async function handlePOST(
     chatbot = await prisma.chatbot.findUnique({
       where: { id: chatbotId },
       include: {
-        owner: { select: { aiFeaturesEnabled: true } },
+        owner: {
+          select: { aiFeaturesEnabled: true, aiChatbotCostCenter: true },
+        },
         course: {
           select: { displayName: true },
         },
@@ -734,7 +726,8 @@ async function handlePOST(
   const modeOptions = resolveEffectiveChatModeOptions(
     chatbot.systemPrompts,
     chatbot.mcpConfigurations,
-    chatbot.standardModeConfig
+    chatbot.standardModeConfig,
+    { customModeConfig: chatbot.customModeConfig }
   )
   const selectedMode = resolveRequestedChatMode(modeOptions, requestedMode)
   if (!Object.hasOwn(modeOptions, selectedMode)) {
@@ -848,6 +841,22 @@ async function handlePOST(
       )
       return false
     }
+  }
+
+  // Class admission does not depend on the usage-enforcement switch. The
+  // account-level approval opens the cost-free class; a cost-carrying class
+  // also needs an address to bill, so the turn stays closed without a cost
+  // center even while enforcement is off. The budget check below is the part
+  // that the switch controls.
+  const classAdmittedForSelectedModel = () =>
+    isChatUsageClassEntitled({
+      usageClass: selectedModelConfig.usageClass,
+      aiFeaturesEnabled: chatbot.owner.aiFeaturesEnabled,
+      aiChatbotCostCenter: chatbot.owner.aiChatbotCostCenter,
+    })
+
+  if (!classAdmittedForSelectedModel()) {
+    return chatModelUnavailableResponse(selectedModelConfig.usageClass)
   }
 
   if (isChatAccountUsageEnforcementEnabled()) {
@@ -1369,8 +1378,11 @@ async function handlePOST(
       }
     }
 
+    // Registered by mode and deployment capability, not by this turn's
+    // candidates, so the tool list at the start of the request prefix stays
+    // constant across a thread.
     const studentPracticeTools: Record<string, any> = {}
-    if (practiceCandidatePrompt) {
+    if (selectedMode === 'tutor' && getStudentPracticeMcpUrl() !== null) {
       studentPracticeTools[STUDENT_PRACTICE_QUIZ_TOOL_NAME] = tool({
         description:
           'Show a selected answer-safe practice quiz question to the student. Use only candidateId values from the current relevant practice candidate context.',
@@ -1385,7 +1397,13 @@ async function handlePOST(
         execute: async ({ candidateId }) => {
           const questionRef = practiceCandidateRefs.get(candidateId)
           if (!questionRef) {
-            throw new Error('Unknown practice candidate id')
+            return {
+              kind: 'student-practice-unavailable' as const,
+              reason:
+                practiceCandidateRefs.size === 0
+                  ? 'no-candidates'
+                  : 'unknown-candidate',
+            }
           }
 
           const payload = await getPracticeStackForQuiz({
@@ -1403,10 +1421,12 @@ async function handlePOST(
             ...payload,
           }
         },
-        toModelOutput: () => ({
+        toModelOutput: ({ output }) => ({
           type: 'text' as const,
           value:
-            'A practice quiz was shown to the student. Wait for the student answer or submission result before giving feedback.',
+            output.kind === 'student-practice-quiz'
+              ? 'A practice quiz was shown to the student. Wait for the student answer or submission result before giving feedback.'
+              : 'No practice quiz was shown: there is no matching practice candidate for this turn. Continue without a quiz.',
         }),
       })
     }
@@ -1417,6 +1437,9 @@ async function handlePOST(
       ...studentPracticeTools,
     }
     const toolNames = Object.keys(chatTools)
+    // The calculator is added after the system prompt inputs are fixed, so
+    // course grounding and citation rules still see only course tools.
+    const modelTools = withCalculatorTool(selectedMode, chatTools)
     const docQueryToolName = toolNames.find(isDocQueryToolName)
     const quizzerDocQueryToolName =
       selectedMode === 'quizzer' ? docQueryToolName : undefined
@@ -1450,27 +1473,31 @@ async function handlePOST(
         courseDisplayName: chatbot.course.displayName,
         toolNames,
         standardModeConfig: chatbot.standardModeConfig,
+        customModeConfig: chatbot.customModeConfig,
       }
     )
     const chatContextPrompt = formatKlickerChatContextForPrompt(chatContext)
     // The materials-only policy is bound to the conversation origin, so a turn
     // that lost or never carried a verified snapshot still answers under it.
-    const elearningContextPrompt = isElearningThread
-      ? formatElearningGroundingPolicy(elearningSnapshot)
+    // The policy text is fixed per thread and stays in the instructions; the
+    // snapshot and the other per-turn data travel in the turn context message.
+    const elearningPolicyPrompt = isElearningThread
+      ? formatElearningEvidencePolicy()
       : ''
-    const contextSections = [chatContextPrompt, elearningContextPrompt].filter(
-      Boolean
-    )
-    const contextAwareSystemPrompt =
-      contextSections.length > 0
-        ? `${systemPrompt}\n\n${contextSections.join('\n\n')}`
-        : systemPrompt
-    const practiceAwareSystemPrompt = practiceCandidatePrompt
-      ? `${contextAwareSystemPrompt}\n\n${practiceCandidatePrompt}`
-      : contextAwareSystemPrompt
-    const effectiveSystemPrompt = responseExampleSummary
-      ? `${practiceAwareSystemPrompt}\n\n${responseExampleSummary}`
-      : practiceAwareSystemPrompt
+    const elearningContextPrompt = isElearningThread
+      ? formatElearningSnapshotContext(elearningSnapshot)
+      : ''
+    const stableSections = [
+      systemPrompt,
+      elearningPolicyPrompt,
+      responseExampleSummary,
+    ]
+    const turnContextSections = [
+      chatContextPrompt,
+      elearningContextPrompt,
+      practiceCandidatePrompt,
+    ]
+    const effectiveSystemPrompt = stableSections.filter(Boolean).join('\n\n')
 
     // track partial content for cancelled streams
     let partialContent = ''
@@ -1484,6 +1511,7 @@ async function handlePOST(
       role: msg.role,
       content: msg.content,
     }))
+    const stepReminder = trailingStepMessage(selectedMode, messages)
 
     const maxOutputTokens = selectedModelConfig.maxOutputTokens
 
@@ -1511,10 +1539,21 @@ async function handlePOST(
             transport: selectedModelConfig.usesResponsesApi
               ? 'responses'
               : 'chat',
-            instructions: effectiveSystemPrompt,
-            tools: chatTools,
+            cacheScope: {
+              chatbotId,
+              mode: selectedMode,
+              threadId: owningThread.id,
+            },
+            tools: modelTools,
           })
         : null
+
+    const openAIProviderOptions = await getOpenAIProviderOptions({
+      assistantMessageId,
+      chatbotId,
+      threadId: owningThread.id,
+      routingSource: routing.source,
+    })
 
     const resolvedImages = await Promise.all(
       normalizedImages.map((image) => ensureImagePreviewBase64(image))
@@ -1964,6 +2003,12 @@ async function handlePOST(
       }
     }
 
+    const turnRequest = buildChatTurnRequest({
+      stableSections,
+      turnContextSections,
+      history: modelMessages as ModelMessage[],
+    })
+
     const startStream = () => {
       providerStreamStarted = true
       return streamText({
@@ -1995,6 +2040,7 @@ async function handlePOST(
         },
         providerOptions: {
           openai: {
+            ...openAIProviderOptions,
             ...(promptCacheRequest
               ? { promptCacheKey: promptCacheRequest.promptCacheKey }
               : {}),
@@ -2007,28 +2053,37 @@ async function handlePOST(
             }),
           },
         },
-        messages: modelMessages as ModelMessage[],
-        tools: promptCacheRequest?.tools ?? chatTools,
+        messages: turnRequest.messages,
+        tools: promptCacheRequest?.tools ?? modelTools,
         toolOrder: promptCacheRequest?.toolOrder,
         toolChoice: 'auto',
-        prepareStep: docQueryToolName
-          ? ({ stepNumber, steps, initialMessages, responseMessages }) =>
-              stepNumber === 0
-                ? {
-                    toolChoice: {
-                      type: 'tool' as const,
-                      toolName: docQueryToolName,
-                    },
-                  }
-                : {
-                    messages: [
-                      ...initialMessages,
-                      ...withModelCitationIndices(responseMessages, steps),
-                    ],
-                  }
-          : undefined,
+        // The feedback, precision and reply-language reminders end every step, after
+        // tool output, so retrieved material cannot override them.
+        allowSystemInMessages: true,
+        prepareStep: ({
+          stepNumber,
+          steps,
+          initialMessages,
+          responseMessages,
+        }) => ({
+          ...(docQueryToolName && stepNumber === 0
+            ? {
+                toolChoice: {
+                  type: 'tool' as const,
+                  toolName: docQueryToolName,
+                },
+              }
+            : {}),
+          messages: [
+            ...initialMessages,
+            ...(docQueryToolName && stepNumber > 0
+              ? withModelCitationIndices(responseMessages, steps)
+              : responseMessages),
+            stepReminder,
+          ],
+        }),
         stopWhen: isStepCount(5),
-        instructions: effectiveSystemPrompt,
+        instructions: turnRequest.instructions,
 
         abortSignal: req.signal,
 
@@ -2316,7 +2371,7 @@ async function handlePOST(
               deploymentId: selectedModelConfig.deploymentId,
               routingSource: routing.source,
               reasoningEffort: appliedReasoningEffort ?? 'none',
-              toolCount: String(toolNames.length),
+              toolCount: String(Object.keys(modelTools).length),
               imageAttachmentCount: String(images.length),
               handoffSource: handoffSource ?? 'direct',
             },

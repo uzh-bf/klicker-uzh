@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.84](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.83...v3.4.0-alpha.84) (2026-09-29)
+
+
+### Features
+
+* **import:** add standalone Excel template importer ([#6285](https://github.com/uzh-bf/klicker-uzh/issues/6285)) ([51fcf52](https://github.com/uzh-bf/klicker-uzh/commit/51fcf526102d7a3e67b98a96be8f26f14c742ec3))
+
+
+### Bug Fixes
+
+* **deps:** lift fast-uri to 3.1.8 for CVE-2026-84292 and CVE-2026-84394 ([#6334](https://github.com/uzh-bf/klicker-uzh/issues/6334)) ([e97579d](https://github.com/uzh-bf/klicker-uzh/commit/e97579d474f5afdf83f501fb3b15ac347d7cfc86))
+* **deps:** remove duplicate GraphQL exceljs dev dependency ([3a36755](https://github.com/uzh-bf/klicker-uzh/commit/3a36755491a35d89c5ea33106b0e4eeb97e56b9b))
+* **graphql:** adopt raised graph quota limits instead of rejecting admissions ([#6299](https://github.com/uzh-bf/klicker-uzh/issues/6299)) ([9c354cf](https://github.com/uzh-bf/klicker-uzh/commit/9c354cf7918035fea12a075b11e43eb57285b139))
+* **leaderboard:** repair React resolution and align Playwright production builds ([#6311](https://github.com/uzh-bf/klicker-uzh/issues/6311)) ([cde7e42](https://github.com/uzh-bf/klicker-uzh/commit/cde7e4274757893a698a6c762a18e4e877a131c0))
+
+
+### Documentation
+
+* **project:** fold the cost and spot review into the KEDA roadmap ([#6277](https://github.com/uzh-bf/klicker-uzh/issues/6277)) ([5d0940e](https://github.com/uzh-bf/klicker-uzh/commit/5d0940ed02e0e65d9e374b97b4c09fd5dbbf5cc8))
+
+
+### Enhancements
+
+* **chatbot:** add admin publication approval UI ([#6223](https://github.com/uzh-bf/klicker-uzh/issues/6223)) ([679b582](https://github.com/uzh-bf/klicker-uzh/commit/679b582e12d5005c648ade883c95ede80526371a))
+* **chat:** qualify assisted progress and clarify quiz continuation ([#6313](https://github.com/uzh-bf/klicker-uzh/issues/6313)) ([8c48bfb](https://github.com/uzh-bf/klicker-uzh/commit/8c48bfb32a7da960429e6fd75578fec7f4672921))
+* **ci:** detect and repair squashed integration syncs ([#6331](https://github.com/uzh-bf/klicker-uzh/issues/6331)) ([daac575](https://github.com/uzh-bf/klicker-uzh/commit/daac575f849229abbcb0989961c60a81976e515d))
+
 ## [3.4.0-alpha.83](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.82...v3.4.0-alpha.83) (2026-09-22)
 
 

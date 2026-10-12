@@ -26,6 +26,7 @@ import {
   createEvaluationServer,
   extractAssistantMessage,
   KlickerEvaluationTarget,
+  parseAllowedOrigins,
   parseGroundTruthFrontmatter,
   validateLocalOrigin,
 } from '../scripts/klicker-evaluation-target.mjs'
@@ -74,6 +75,44 @@ test('local origin validation rejects non-local target routes', () => {
   assert.throws(() => validateLocalOrigin('https://example.test', 'chat'), {
     code: 'chat_non_local',
   })
+})
+
+test('origin allow-list admits only exact listed https origins', () => {
+  const allowed = parseAllowedOrigins(
+    'https://chat.stg.example.test, https://api.stg.example.test/'
+  )
+  assert.deepEqual(allowed, [
+    'https://chat.stg.example.test',
+    'https://api.stg.example.test',
+  ])
+  assert.equal(
+    validateLocalOrigin('https://chat.stg.example.test', 'chat', allowed),
+    'https://chat.stg.example.test'
+  )
+  for (const lookalike of [
+    'http://chat.stg.example.test',
+    'https://chat.stg.example.test.evil.test',
+    'https://evil-chat.stg.example.test',
+    'https://chat.stg.example.test:8443',
+    'https://chat.stg.example.test@evil.test',
+    'https://other.example.test',
+  ]) {
+    assert.throws(() => validateLocalOrigin(lookalike, 'chat', allowed), {
+      code: 'chat_non_local',
+    })
+  }
+  assert.throws(
+    () => validateLocalOrigin('https://chat.stg.example.test', 'chat'),
+    { code: 'chat_non_local' }
+  )
+  assert.throws(() => parseAllowedOrigins('http://chat.stg.example.test'), {
+    code: 'allowed_origins_invalid',
+  })
+  assert.throws(
+    () => parseAllowedOrigins('https://chat.stg.example.test/app'),
+    { code: 'allowed_origins_invalid' }
+  )
+  assert.deepEqual(parseAllowedOrigins(''), [])
 })
 
 test('persisted assistant content converts to answer and tool names', () => {
@@ -178,7 +217,7 @@ test('target uses participant gates and reads back one persisted turn', async ()
     if (requestUrl.endsWith('/chat') && method === 'POST') {
       const payload = JSON.parse(body)
       assistantMessageId = payload.assistantMessageId
-      assert.equal(payload.selectedModel, 'gpt-5.6-luna')
+      assert.equal(payload.selectedModel, 'gpt-6-luna')
       assert.equal(payload.selectedMode, 'tutor')
       assert.equal(payload.messages[0].content, 'What is CAPM?')
       assert.equal(body.includes(expectedAnswer), false)
@@ -204,7 +243,7 @@ test('target uses participant gates and reads back one persisted turn', async ()
           id: assistantMessageId,
           role: 'assistant',
           chatMode: 'tutor',
-          modelId: 'gpt-5.6-luna',
+          modelId: 'gpt-6-luna',
           content: [
             { type: 'reasoning', text: 'not exposed' },
             {
@@ -237,7 +276,7 @@ test('target uses participant gates and reads back one persisted turn', async ()
     })
     await target.initialize()
     const result = await target.complete({
-      model: 'gpt-5.6-luna',
+      model: 'gpt-6-luna',
       stream: false,
       messages: [{ role: 'user', content: 'What is CAPM?' }],
     })
@@ -439,7 +478,7 @@ test('canary requires its configured tool', async () => {
     id: 'assistant-1',
     role: 'assistant',
     chatMode: 'tutor',
-    modelId: 'gpt-5.6-luna',
+    modelId: 'gpt-6-luna',
     content: [
       { type: 'tool-call', toolName: 'KB_doc_query' },
       { type: 'text', text: 'KLICKER_LOCAL_MCP_OK' },
@@ -453,7 +492,7 @@ test('canary requires its configured tool', async () => {
     id: 'assistant-2',
     role: 'assistant',
     chatMode: 'tutor',
-    modelId: 'gpt-5.6-luna',
+    modelId: 'gpt-6-luna',
     content: [
       { type: 'tool-call', toolName: 'wrong_tool' },
       { type: 'text', text: 'KLICKER_LOCAL_MCP_OK' },
@@ -466,15 +505,15 @@ test('canary requires its configured tool', async () => {
 
 test('adapter requires bearer auth and exposes only the configured model', async () => {
   const target = {
-    modelId: 'gpt-5.6-luna',
+    modelId: 'gpt-6-luna',
     async complete(body) {
-      assert.equal(body.model, 'gpt-5.6-luna')
+      assert.equal(body.model, 'gpt-6-luna')
       return {
         source: 'canary',
         payload: {
           id: 'response-1',
           object: 'chat.completion',
-          model: 'gpt-5.6-luna',
+          model: 'gpt-6-luna',
           choices: [
             {
               index: 0,
@@ -502,7 +541,7 @@ test('adapter requires bearer auth and exposes only the configured model', async
       headers: { Authorization: 'Bearer test-key' },
     })
     assert.equal(models.status, 200)
-    assert.deepEqual((await models.json()).data[0].id, 'gpt-5.6-luna')
+    assert.deepEqual((await models.json()).data[0].id, 'gpt-6-luna')
 
     const completion = await fetch(`${baseUrl}/v1/chat/completions`, {
       method: 'POST',
@@ -511,7 +550,7 @@ test('adapter requires bearer auth and exposes only the configured model', async
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5.6-luna',
+        model: 'gpt-6-luna',
         stream: false,
         messages: [{ role: 'user', content: 'synthetic' }],
       }),
@@ -564,8 +603,8 @@ function evidenceInput(content, overrides = {}) {
     question: 'Synthetic question',
     answer: 'Synthetic answer',
     mode: 'tutor',
-    requestedModel: 'gpt-5.6-luna',
-    persistedModel: 'gpt-5.6-luna',
+    requestedModel: 'gpt-6-luna',
+    persistedModel: 'gpt-6-luna',
     content,
     ...overrides,
   }
@@ -604,7 +643,7 @@ function canaryTarget({ directory, content }) {
     id: 'assistant-1',
     role: 'assistant',
     chatMode: 'tutor',
-    modelId: 'gpt-5.6-luna',
+    modelId: 'gpt-6-luna',
     content,
   })
   return target
@@ -632,8 +671,8 @@ test('evidence capture exports only ordered document passages', () => {
   assert.equal(capture.response_id, 'klicker-evaluation-synthetic')
   assert.equal(capture.run_id, 'synthetic-run')
   assert.equal(capture.mode, 'tutor')
-  assert.equal(capture.requested_model, 'gpt-5.6-luna')
-  assert.equal(capture.persisted_model, 'gpt-5.6-luna')
+  assert.equal(capture.requested_model, 'gpt-6-luna')
+  assert.equal(capture.persisted_model, 'gpt-6-luna')
   assert.equal(capture.question_sha256, sha256Hex('Synthetic question'))
   assert.equal(capture.answer_sha256, sha256Hex('Synthetic answer'))
 
@@ -929,7 +968,7 @@ test('opted-in target captures evidence bound to the completion id', async () =>
       ],
     })
     const result = await target.complete({
-      model: 'gpt-5.6-luna',
+      model: 'gpt-6-luna',
       stream: false,
       messages: [{ role: 'user', content: 'Synthetic canary' }],
     })
@@ -962,7 +1001,7 @@ test('an unsafe passage fails the opted-in run without evidence', async () => {
     })
     await assert.rejects(
       target.complete({
-        model: 'gpt-5.6-luna',
+        model: 'gpt-6-luna',
         stream: false,
         messages: [{ role: 'user', content: 'Synthetic canary' }],
       }),
@@ -1181,7 +1220,7 @@ never projected
           id: assistantMessageId,
           role: 'assistant',
           chatMode: 'tutor',
-          modelId: 'gpt-5.6-luna',
+          modelId: 'gpt-6-luna',
           content: [
             {
               type: 'text',
@@ -1210,7 +1249,7 @@ never projected
     })
     await target.initialize()
     const result = await target.complete({
-      model: 'gpt-5.6-luna',
+      model: 'gpt-6-luna',
       stream: false,
       messages: [
         {

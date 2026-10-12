@@ -7,9 +7,32 @@ type Execute<Options, Result> = (
   options: Options
 ) => Result | PromiseLike<Result>
 export type GraphQueryScope = { enabled: boolean; buildId?: string }
+export type GraphQueryDiagnostic = {
+  outcome:
+    | 'ineligible'
+    | 'already_augmented'
+    | 'scope_changed'
+    | 'invalid_baseline'
+    | 'no_hints'
+    | 'hints_unavailable'
+    | 'unsafe_hints'
+    | 'expansion_failed'
+    | 'expansion_unusable'
+    | 'fused'
+    | 'aborted'
+    | 'failed'
+  expansionAttempted: boolean
+  hintCount: number | null
+  baselinePassages: number | null
+  expandedPassages: number | null
+  resultPassages: number | null
+  resultCharacters: number | null
+  elapsedMs: number
+}
 export type GraphQueryDependencies = {
   validateScope: () => Promise<GraphQueryScope>
   hints: (query: string) => Promise<string[]>
+  observe?: (diagnostic: GraphQueryDiagnostic) => void
 }
 
 function record(value: unknown): value is RecordValue {
@@ -239,79 +262,125 @@ export function graphAssistedDocumentQuery<
 ): Execute<Options, Result> {
   let augmentationUsed = false
   return async (input, options) => {
+    const startedAt = performance.now()
+    let original: unknown
+    let expanded: unknown
+    let expansionAttempted = false
+    let hintCount: number | null = null
     const signal =
       options.abortSignal instanceof AbortSignal
         ? options.abortSignal
         : undefined
-    signal?.throwIfAborted()
-    const initial = await dependencies.validateScope()
-    const query = record(input) ? input.query : undefined
-    const eligible =
-      !augmentationUsed &&
-      initial.enabled &&
-      initial.buildId &&
-      typeof query === 'string' &&
-      query.trim() &&
-      query.length <= 2000
-    const graphSignal = AbortSignal.timeout(1500)
-    const hintsPromise = eligible
-      ? untilAbort(
-          Promise.resolve().then(() => dependencies.hints(query as string)),
-          signal ? AbortSignal.any([signal, graphSignal]) : graphSignal
-        ).catch(() => [])
-      : Promise.resolve([])
-    const original = await execute(input, options)
-    signal?.throwIfAborted()
-    const hints = await hintsPromise
-    signal?.throwIfAborted()
-    const current = await dependencies.validateScope()
-    if (
-      !eligible ||
-      augmentationUsed ||
-      !current.enabled ||
-      current.buildId !== initial.buildId ||
-      !passages(original) ||
-      hints.length === 0
-    )
-      return original
-    const safeHints = hints
-      .filter(
-        (hint) =>
-          typeof hint === 'string' &&
-          hint.length <= 100 &&
-          /^[\p{L}\p{N}\s()&.,+/-]+$/u.test(hint)
-      )
-      .slice(0, 6)
-    if (safeHints.length === 0) return original
-    augmentationUsed = true
-    const augmentationSignal = signal
-      ? AbortSignal.any([signal, AbortSignal.timeout(3000)])
-      : AbortSignal.timeout(3000)
-    let expanded: unknown
-    try {
-      expanded = await untilAbort(
-        Promise.resolve(
-          execute(
-            {
-              ...(input as RecordValue),
-              query: `${query}\nRelated concepts: ${safeHints.join(', ')}`,
-            },
-            { ...options, abortSignal: augmentationSignal }
-          )
-        ),
-        augmentationSignal
-      )
-    } catch {
-      signal?.throwIfAborted()
-      await dependencies.validateScope()
-      return original
+    function finish(value: unknown, outcome: GraphQueryDiagnostic['outcome']) {
+      const result = passages(value)
+      try {
+        dependencies.observe?.({
+          outcome,
+          expansionAttempted,
+          hintCount,
+          baselinePassages: passages(original)?.length ?? null,
+          expandedPassages: passages(expanded)?.length ?? null,
+          resultPassages: result?.length ?? null,
+          resultCharacters:
+            result?.reduce(
+              (total, passage) => total + String(passage.chunk.content).length,
+              0
+            ) ?? null,
+          elapsedMs: Math.max(0, Math.round(performance.now() - startedAt)),
+        })
+      } catch {
+        // Operational diagnostics must not change retrieval or authorization.
+      }
+      return value as Result
     }
-    signal?.throwIfAborted()
-    const finalScope = await dependencies.validateScope()
-    if (!finalScope.enabled || finalScope.buildId !== initial.buildId)
-      return original
-    // The combiner only reconstructs validated document envelopes; other
-    // provider result contracts pass through unchanged.
-    return combineGraphSearchDocuments(original, expanded) as Result
+    try {
+      signal?.throwIfAborted()
+      const initial = await dependencies.validateScope()
+      const query = record(input) ? input.query : undefined
+      const eligible =
+        !augmentationUsed &&
+        initial.enabled &&
+        initial.buildId &&
+        typeof query === 'string' &&
+        query.trim() &&
+        query.length <= 2000
+      const graphSignal = AbortSignal.timeout(1500)
+      let hintsUnavailable = false
+      const hintsPromise = eligible
+        ? untilAbort(
+            Promise.resolve().then(() => dependencies.hints(query as string)),
+            signal ? AbortSignal.any([signal, graphSignal]) : graphSignal
+          ).catch(() => {
+            hintsUnavailable = true
+            return []
+          })
+        : Promise.resolve([])
+      original = await execute(input, options)
+      signal?.throwIfAborted()
+      const hints = await hintsPromise
+      hintCount = eligible && !hintsUnavailable ? hints.length : null
+      signal?.throwIfAborted()
+      const current = await dependencies.validateScope()
+      if (!eligible)
+        return finish(
+          original,
+          augmentationUsed ? 'already_augmented' : 'ineligible'
+        )
+      if (augmentationUsed) return finish(original, 'already_augmented')
+      if (!current.enabled || current.buildId !== initial.buildId)
+        return finish(original, 'scope_changed')
+      if (!passages(original)) return finish(original, 'invalid_baseline')
+      if (hints.length === 0)
+        return finish(
+          original,
+          hintsUnavailable ? 'hints_unavailable' : 'no_hints'
+        )
+      const safeHints = hints
+        .filter(
+          (hint) =>
+            typeof hint === 'string' &&
+            hint.length <= 100 &&
+            /^[\p{L}\p{N}\s()&.,+/-]+$/u.test(hint)
+        )
+        .slice(0, 6)
+      if (safeHints.length === 0) return finish(original, 'unsafe_hints')
+      augmentationUsed = true
+      expansionAttempted = true
+      const augmentationSignal = signal
+        ? AbortSignal.any([signal, AbortSignal.timeout(3000)])
+        : AbortSignal.timeout(3000)
+      try {
+        expanded = await untilAbort(
+          Promise.resolve(
+            execute(
+              {
+                ...(input as RecordValue),
+                query: `${query}\nRelated concepts: ${safeHints.join(', ')}`,
+              },
+              { ...options, abortSignal: augmentationSignal }
+            )
+          ),
+          augmentationSignal
+        )
+      } catch {
+        signal?.throwIfAborted()
+        await dependencies.validateScope()
+        return finish(original, 'expansion_failed')
+      }
+      signal?.throwIfAborted()
+      const finalScope = await dependencies.validateScope()
+      if (!finalScope.enabled || finalScope.buildId !== initial.buildId)
+        return finish(original, 'scope_changed')
+      // The combiner only reconstructs validated document envelopes; other
+      // provider result contracts pass through unchanged.
+      const combined = combineGraphSearchDocuments(original, expanded)
+      return finish(
+        combined,
+        combined === original ? 'expansion_unusable' : 'fused'
+      )
+    } catch (error) {
+      finish(undefined, signal?.aborted ? 'aborted' : 'failed')
+      throw error
+    }
   }
 }

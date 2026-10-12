@@ -17,7 +17,10 @@ import {
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
 import { getRouteLogger } from '@/src/lib/server/requestLogging'
-import { sanitizeDocQueryResult } from './docQueryResult'
+import {
+  sanitizeDocQueryResult,
+  serializeDocQueryExecution,
+} from './docQueryResult'
 import {
   assertDocQueryRequestScope,
   assertDocQueryTransportSecurity,
@@ -525,6 +528,23 @@ async function loadServerTools(
       log
     )
     const rawTools = await client.tools()
+    // Serialize the raw client calls, including graph-expanded searches. An
+    // augmentation timeout must not release an unfinished provider operation.
+    for (const [name, tool] of Object.entries(rawTools)) {
+      if (
+        (name === 'doc_query' ||
+          (name === requiredRawToolName &&
+            runtimePolicy.required &&
+            runtimePolicy.toolAlias === 'doc_query')) &&
+        typeof tool.execute === 'function'
+      ) {
+        const execute = tool.execute.bind(tool)
+        rawTools[name] = {
+          ...tool,
+          execute: serializeDocQueryExecution(execute) as typeof execute,
+        }
+      }
+    }
     if (
       server.name === DOC_QUERY_MCP_SERVER_NAME &&
       context.knowledgeGraphRetrievalEnabled === true
@@ -538,13 +558,30 @@ async function loadServerTools(
             import('./graphQueryScope'),
           ])
         const execute = tool.execute.bind(tool)
+        const dependencies = graphQueryDependencies(context)
+        dependencies.observe = (diagnostic) => {
+          log.info(
+            {
+              event: 'chat.graph_retrieval',
+              outcome: diagnostic.outcome,
+              expansionAttempted: diagnostic.expansionAttempted,
+              hintCount: diagnostic.hintCount,
+              baselinePassages: diagnostic.baselinePassages,
+              expandedPassages: diagnostic.expandedPassages,
+              resultPassages: diagnostic.resultPassages,
+              resultCharacters: diagnostic.resultCharacters,
+              elapsedMs: diagnostic.elapsedMs,
+            },
+            'Graph-assisted document retrieval completed'
+          )
+        }
         rawTools[rawName] = {
           ...tool,
           // MCP callTool resolves one response. The SDK's generic tool type
           // also permits streaming implementations, which this client does not use.
           execute: graphAssistedDocumentQuery(
             execute,
-            graphQueryDependencies(context)
+            dependencies
           ) as typeof execute,
         }
       }

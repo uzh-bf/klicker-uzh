@@ -22,6 +22,7 @@ async function handleGET(
       modelSelection: true,
       systemPrompts: true,
       standardModeConfig: true,
+      customModeConfig: true,
       mcpConfigurations: {
         select: {
           allowedTools: true,
@@ -44,7 +45,8 @@ async function handleGET(
       modeOptions: resolveEffectiveChatModeOptions(
         chatbot.systemPrompts,
         mcpConfigurations,
-        chatbot.standardModeConfig
+        chatbot.standardModeConfig,
+        { customModeConfig: chatbot.customModeConfig }
       ),
     })
   } catch {

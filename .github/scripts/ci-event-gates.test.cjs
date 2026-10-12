@@ -308,17 +308,33 @@ test('ready_for_review lists only workflows with a documented lifecycle role', (
   )
 })
 
-test('graphql validation re-runs on a base retarget but not the ready boundary', () => {
+test('graphql validation re-runs neither on edits nor at the ready boundary', () => {
   const workflow = readWorkflow('test-graphql.yml')
-  // "edited" re-evaluates the internal selector on a base retarget. The suite
-  // runs identically for drafts and ready PRs, so the ready transition re-runs
-  // nothing.
+  // The suite runs identically for drafts and ready PRs, so the ready
+  // transition re-runs nothing, and a title or body edit never changes the
+  // tested tree.
   assert.deepEqual(workflow.on.pull_request.types, [
     'opened',
     'synchronize',
     'reopened',
-    'edited',
   ])
+})
+
+test('no pull-request workflow re-runs on a title or body edit', () => {
+  // GitHub cannot filter "edited" to base retargets at the trigger, so every
+  // description edit would start (and cancel in-progress) validation of an
+  // unchanged tree. A retarget is revalidated by the restack push or by
+  // closing and reopening the pull request.
+  const offenders = fs
+    .readdirSync(path.join(root, '.github/workflows'))
+    .filter((file) => /\.ya?ml$/.test(file))
+    .filter((file) => {
+      const on = readWorkflow(file).on ?? {}
+      return ['pull_request', 'pull_request_target'].some((event) =>
+        (on[event]?.types ?? []).includes('edited')
+      )
+    })
+  assert.deepEqual(offenders, [])
 })
 
 // The two static-analysis lanes carry no required status context, so they may
@@ -707,8 +723,8 @@ test('summary reporters always report and never suppress a required check', () =
     // selector must live in a job instead.
     assert.equal(workflow.on?.pull_request?.paths, undefined, name)
     assert.equal(workflow.on?.push?.paths, undefined, name)
-    // A retarget re-evaluates the internal selector.
-    assert.ok(workflow.on.pull_request.types.includes('edited'), name)
+    // A title or body edit never changes the tested tree.
+    assert.ok(!workflow.on.pull_request.types.includes('edited'), name)
     // Drafts run the same suite as ready PRs, so the workflow must not gate on
     // the draft state or re-run the suite at the ready transition.
     assert.ok(
@@ -768,10 +784,8 @@ test('the codebase check reuses prior validation without suppressing its context
     /needs\.select\.outputs\.should_run == 'true'/
   )
   assert.equal(workflow.permissions.checks, 'read')
-  // The ready boundary still recomputes, and an edited retarget still selects
-  // through the same action.
+  // The ready boundary still recomputes.
   assert.ok(workflow.on.pull_request.types.includes('ready_for_review'))
-  assert.ok(workflow.on.pull_request.types.includes('edited'))
 })
 
 // The application-wide steps of the codebase check run in full unless the

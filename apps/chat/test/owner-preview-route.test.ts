@@ -154,9 +154,10 @@ function createChatbot(
       },
     ],
     modelSelection: false,
-    owner: { aiFeaturesEnabled: true },
+    owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: 'KST-1' },
     ownerId: 'owner-id',
     standardModeConfig: defaultStandardModeConfig,
+    customModeConfig: null,
     systemPrompts: { tutor: 'Tutor instructions' },
     ...overrides,
   }
@@ -194,6 +195,31 @@ function createCustomModeChatbot() {
       'Ethik-Rollenspiel': 'Ethik instructions',
       tutor: 'Tutor instructions',
     },
+  })
+}
+
+const approvedCustomMode = {
+  key: 'cm_0d1f2c3b-4a59-4e6f-8b7a-9c8d7e6f5a4b',
+  name: 'Ethik-Rollenspiel',
+  description: 'Practises ethical reasoning in a role play.',
+  personaText: 'Act as the role-play counterpart.',
+}
+
+function createApprovedCustomModeChatbot() {
+  const [tutorConfiguration] = createChatbot().mcpConfigurations as Array<
+    Record<string, unknown>
+  >
+
+  return createChatbot({
+    customModeConfig: { modes: [approvedCustomMode] },
+    mcpConfigurations: [
+      tutorConfiguration,
+      {
+        ...tutorConfiguration,
+        chatMode: approvedCustomMode.key,
+        priority: 2,
+      },
+    ],
   })
 }
 
@@ -267,6 +293,64 @@ describe('POST owner preview chat', () => {
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
+  it('refuses an advanced model for an account without a cost center', async () => {
+    mocks.findChatbot.mockResolvedValue(
+      createChatbot({
+        modelSelection: true,
+        owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: null },
+      })
+    )
+    setRequestOptions({
+      selectedMode: 'tutor',
+      selectedModel: 'advanced-model',
+    })
+
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+
+    expect(response.status).toBe(403)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Chat model usage is unavailable',
+      code: 'CHAT_MODEL_UNAVAILABLE_ADVANCED',
+    })
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
+  it('still previews a base model without a cost center', async () => {
+    mocks.findChatbot.mockResolvedValue(
+      createChatbot({
+        owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: null },
+      })
+    )
+
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.streamText).toHaveBeenCalledOnce()
+  })
+
+  it('refuses a base model for an account without AI approval', async () => {
+    mocks.findChatbot.mockResolvedValue(
+      createChatbot({
+        owner: { aiFeaturesEnabled: false, aiChatbotCostCenter: 'KST-1' },
+      })
+    )
+
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+
+    expect(response.status).toBe(403)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Account AI approval is required for preview',
+    })
+    expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
   it('rate limits before reading or validating the request body', async () => {
     mocks.rateLimitCheck.mockReturnValue({
       allowed: false,
@@ -327,6 +411,7 @@ describe('POST owner preview chat', () => {
       'tutor',
       {
         courseDisplayName: 'Test Course',
+        customModeConfig: null,
         toolNames: ['KB_doc_query'],
         standardModeConfig: defaultStandardModeConfig,
       }
@@ -586,7 +671,7 @@ describe('POST owner preview chat', () => {
       selectedMode: 'TUTOR',
       status: 200,
     },
-  ])('resolves $selectedMode like the participant route', async ({
+  ])('resolves $selectedMode against the preview mode options', async ({
     selectedMode,
     resolvedMode,
     status,
@@ -597,7 +682,11 @@ describe('POST owner preview chat', () => {
     const modeOptions = resolveEffectiveChatModeOptions(
       chatbot.systemPrompts,
       chatbot.mcpConfigurations as ChatModeMCPConfiguration[],
-      chatbot.standardModeConfig
+      chatbot.standardModeConfig,
+      {
+        allowUnapprovedModes: true,
+        customModeConfig: chatbot.customModeConfig,
+      }
     )
     expect(Object.hasOwn(modeOptions, 'Ethik-Rollenspiel')).toBe(true)
     expect(resolveRequestedChatMode(modeOptions, selectedMode)).toBe(
@@ -627,6 +716,7 @@ describe('POST owner preview chat', () => {
       resolvedMode,
       {
         courseDisplayName: 'Test Course',
+        customModeConfig: null,
         toolNames: ['KB_doc_query'],
         standardModeConfig: defaultStandardModeConfig,
       }
@@ -634,6 +724,112 @@ describe('POST owner preview chat', () => {
     expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
       expect.any(Array),
       expect.objectContaining({ kbIds: [originalKbId] })
+    )
+  })
+
+  it('previews an approved custom mode by its stored key and compiles its persona', async () => {
+    const chatbot = createApprovedCustomModeChatbot()
+    mocks.findChatbot.mockResolvedValue(chatbot)
+
+    const modeOptions = resolveEffectiveChatModeOptions(
+      chatbot.systemPrompts,
+      chatbot.mcpConfigurations as ChatModeMCPConfiguration[],
+      chatbot.standardModeConfig,
+      {
+        allowUnapprovedModes: true,
+        customModeConfig: chatbot.customModeConfig,
+      }
+    )
+    expect(modeOptions[approvedCustomMode.key]).toEqual({
+      description: approvedCustomMode.description,
+      name: approvedCustomMode.name,
+    })
+
+    setRequestOptions({ selectedMode: approvedCustomMode.key })
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
+      { tutor: 'Tutor instructions' },
+      approvedCustomMode.key,
+      {
+        courseDisplayName: 'Test Course',
+        customModeConfig: { modes: [approvedCustomMode] },
+        toolNames: ['KB_doc_query'],
+        standardModeConfig: defaultStandardModeConfig,
+      }
+    )
+  })
+
+  it('previews a draft custom mode through the saved revision even when the live config is empty', async () => {
+    const chatbot = createChatbot({
+      mcpConfigurations: [
+        {
+          allowedTools: ['doc_query'],
+          chatMode: 'tutor',
+          isEnabled: true,
+          parameters: {
+            kb_id: originalKbId,
+            required: true,
+            toolAlias: 'doc_query',
+          },
+          priority: 1,
+          mcpServer: {
+            authSecret: null,
+            authType: 'scope_token',
+            chatbotIdHeader: null,
+            id: 'kb-server',
+            isActive: true,
+            name: 'KB',
+            parameters: {},
+            passChatbotId: false,
+            url: 'http://kb.test/mcp',
+          },
+        },
+      ],
+      draftConfig: {
+        ...createApprovedCustomModeChatbot(),
+        customModeConfig: { modes: [approvedCustomMode] },
+      },
+    })
+    mocks.findChatbot.mockResolvedValue(chatbot)
+
+    const modeOptions = resolveEffectiveChatModeOptions(
+      chatbot.systemPrompts,
+      chatbot.mcpConfigurations as ChatModeMCPConfiguration[],
+      chatbot.standardModeConfig,
+      {
+        allowUnapprovedModes: true,
+        customModeConfig: (chatbot.draftConfig as Record<string, unknown>)
+          .customModeConfig,
+      }
+    )
+    expect(modeOptions[approvedCustomMode.key]).toEqual({
+      description: approvedCustomMode.description,
+      name: approvedCustomMode.name,
+    })
+
+    setRequestOptions({ selectedMode: approvedCustomMode.key })
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ kbIds: [originalKbId] })
+    )
+    expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
+      { tutor: 'Tutor instructions' },
+      approvedCustomMode.key,
+      {
+        courseDisplayName: 'Test Course',
+        customModeConfig: { modes: [approvedCustomMode] },
+        toolNames: ['KB_doc_query'],
+        standardModeConfig: defaultStandardModeConfig,
+      }
     )
   })
 

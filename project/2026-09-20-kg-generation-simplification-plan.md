@@ -152,6 +152,68 @@ Additive language metadata requires no migration. New files beyond the operation
 
 ## Progress
 
+- Updated checkpoint — 2026-10-08: graph-control PR #6229 now carries the
+  verified normal integration `8f42c93d5f`; the fresh isolated UI runtime passed
+  the complete hooks and build. The historical 649-pixel click opened the
+  quality menu with no request. The fixed click submitted Business v1, English,
+  HIGH once, without graph focus. Five responsive captures are published and
+  verified in the public PR. All eight currently reported required hosted checks pass; hosted Playwright and
+  final AI review remain pending. Configuration and dispatch are synthetic mocks.
+- Failed-build charging is corrected in draft PR #6431 (`9df10b4553`), with
+  13 passing accounting integration tests and all nine required hosted checks green.
+  Its automated review exhausted tool-request rounds twice without a verdict.
+  No historical refund or live accounting repair occurred.
+- Fresh acceptance prerequisites remain blocked: the GrowthBook connector
+  cannot fetch `chatbot-graphrag`, and the synthetic participant entry redirects
+  to Login Required. No activation, publication or paid turn occurred. The
+  previously approved four-turn/CHF 2 GraphRAG sequence remains bounded and
+  waiting for those capabilities. See the current roadmap checkpoint.
+
+- Current checkpoint — 2026-10-07: [#6178](https://github.com/uzh-bf/klicker-uzh/pull/6178) merged on September 20; its language,
+  focus and GrowthBook source delivery is complete. The later staging comparison
+  exercised all six domains and German/English artifacts. [#6237](https://github.com/uzh-bf/klicker-uzh/pull/6237), [#6238](https://github.com/uzh-bf/klicker-uzh/pull/6238), [#6272](https://github.com/uzh-bf/klicker-uzh/pull/6272),
+  [#6299](https://github.com/uzh-bf/klicker-uzh/pull/6299) and [#6308](https://github.com/uzh-bf/klicker-uzh/pull/6308) closed the observed preview, reservation, cleanup and quota
+  defects. These outcomes supersede the historical pending claims below.
+- Remaining work and acceptance order now follow the
+  [current roadmap checkpoint](2026-09-12-kg-quality-roadmap.md#current-delivery-checkpoint--2026-10-08).
+  The main session continues in solo mode under the user's renewed goal.
+  Existing [#6229](https://github.com/uzh-bf/klicker-uzh/pull/6229) is the UI delivery branch; it was integrated with `v3-ai`
+  `73e0877505638e986503d041595f7cda4aa63a6c` because it was 94 target commits
+  behind. The source fix remains five additions and one deletion in one file.
+- Credential delivery — 2026-10-07: [infrastructure MR !652](https://gitlab.uzh.ch/uzh-bf/cloud/df-cloud-klickeruzh/-/merge_requests/652)
+  merged at `5711d5804ae4867ab4b0fd167d14e584b20fa786`; the approved
+  [STG apply](https://gitlab.uzh.ch/uzh-bf/cloud/df-cloud-klickeruzh/-/jobs/2167373)
+  succeeded. Dedicated reader credentials are prepared for STG and PRD, with no
+  PRD apply. Chat now serves `ef015bd7bb6347668e0d37bda6caa4a5bc78f133`, has one
+  ready replica, passes the synthetic graph read and denies graph listing.
+- Consumer preparation — 2026-10-07: the in-app browser works. The existing
+  synthetic chatbot has saved disclaimer revision 1 in DRAFT. Its probe binding
+  saved and read back correctly, then its original KB binding was restored;
+  retrieval remains false. No publication request or model turn occurred. The
+  owner-only STG GraphRAG test is approved for four synthetic participant turns
+  and CHF 2 cumulative usage, with normal publication approval and restoration.
+- Remaining capabilities — 2026-10-07: GrowthBook management connector reads
+  fail; the configured backend management API returns HTTP 404 and the private
+  UI fails DNS resolution. The SDK payload lacks `chatbot-graphrag`. The exact
+  participant entry redirects to Student Login. Restore existing management
+  access and an authenticated STG test participant session before resuming the
+  approved test. Fixed-layout proof and full hooks still depend on repairing
+  the recorded managed-runtime baseline mismatch. [PR #6365](https://github.com/uzh-bf/klicker-uzh/pull/6365)
+  remains open with failing deployment-parity checks; production model settings
+  must not be promoted through the quota companion.
+- Accounting audit — 2026-10-07: [PR #6236](https://github.com/uzh-bf/klicker-uzh/pull/6236)
+  remains a draft plan. Current `origin/v3-ai` still charges valid metered failed
+  results; its accounting test expects a 60-minor-unit failure charge. The
+  approved no-failure-charge rule requires a source regression fix in addition
+  to the shipped unmetered-failure release. Reservation bounds, estimate-model
+  location and configured-pricing fallback remain explicit decisions. Paid
+  calibration and live accounting changes retain their separate authority.
+- Checkpoint delivery — 2026-10-07: updated project documents remain local edits.
+  Full application hooks and fixed-layout browser proof remain blocked by the
+  managed runtime. Source branch, forge metadata, serving image and scoped
+  runtime checks were reconciled in solo mode. The native goal is active;
+  consumer acceptance, accounting delivery and runtime discovery are incomplete.
+
 - W12a implementation — 2026-09-20: source package implemented in solo mode. Four default-off admission flags join the shared registry (kb-ingestion, kb-graph-builds, kb-graph-domain-selection, question-focus-topic). The GraphQL backend evaluates them per actor at admission time and refuses new work with the existing error codes; reads, deletion, cleanup, queued reconciliation, published graphs, accepted builds and settlement are unchanged. The domain-selection handshake and the question-focus capability query now reflect the requesting actor. The Helm backend ConfigMap no longer renders KB_INGESTION_DISABLED, KB_GRAPH_DISABLED or QUESTION_GENERATION_FOCUS_TOPIC_ENABLED; the general worker keeps its own KB_GRAPH_DISABLED deployment switch and KB_INGESTION_WORKER_DISABLED stays. Stale STG and PRD values keys were removed.
 - W12a verification — 2026-09-20: feature-flags 75/75; the two touched GraphQL suites 73/73; the full GraphQL suite 1436/1438 with two pre-existing failures in activitySharing.test.ts (an unordered findFirst over audit-log rows), reproduced with the unmodified shared test helper. GraphQL typecheck, code generation and the tracked-schema diff pass; Biome format and Prettier checks pass on every changed file; check:kb-ingestion-stg passes. Playwright Y-question-generation-review.spec.ts passes 6/6, including the new case where an open form re-reads its capabilities after a CONFIGURATION_INVALID rejection. Browser dispatch is intercepted, so this proves the form contract rather than real generator behaviour.
 - W12a rollout prerequisites — 2026-09-20: every flag fails closed, so a deployed environment must define kb-ingestion and kb-graph-builds before any actor can start that work, and the other two only where their provider contract is verified. Staging does not render the domain catalog revision, so domain selection stays off there regardless. Creating the definitions, deploying and activating are separately authorized and did not happen.

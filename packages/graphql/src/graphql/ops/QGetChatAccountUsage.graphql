@@ -1,8 +1,10 @@
 query GetChatAccountUsage($ownerId: String) {
   getChatAccountUsage(ownerId: $ownerId) {
     authorized
+    subscriptionTier
     baseModelUsage {
       usageClass
+      entitled
       budgetCredits
       usedCredits
       remainingCredits
@@ -10,6 +12,7 @@ query GetChatAccountUsage($ownerId: String) {
     }
     advancedModelUsage {
       usageClass
+      entitled
       budgetCredits
       usedCredits
       remainingCredits

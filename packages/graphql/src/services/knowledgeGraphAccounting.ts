@@ -479,6 +479,9 @@ export async function settleKBGraphBuildCost(
       ? null
       : (lateRejection?.errorCode ??
         (succeeded ? null : (result.error_code ?? `KB_GRAPH_${result.status}`)))
+    const failed = settledStatus === DB.KBGraphBuildStatus.FAILED
+    // Failed builds retain provider usage as diagnostics without consuming quota.
+    const chargeMinorUnits = failed ? 0 : result.metered_cost.amount_minor_units
     await lockKBGraphQuota(prisma, build.quotaId!)
     const updated = await prisma.kBGraphBuild.updateMany({
       where: {
@@ -490,7 +493,7 @@ export async function settleKBGraphBuildCost(
         status: settledStatus,
         statusMessage: settledStatusMessage,
         errorCode: settledErrorCode,
-        actualCostMinorUnits: result.metered_cost.amount_minor_units,
+        actualCostMinorUnits: chargeMinorUnits,
         actualInputTokens: usage.inputTokens,
         actualOutputTokens: usage.outputTokens,
         actualEmbeddingTokens: usage.embeddingTokens,
@@ -510,7 +513,9 @@ export async function settleKBGraphBuildCost(
                 sha256: result.graph_bundle.manifest_artifact.sha256,
               },
             }),
-        costStatus: DB.KBGraphCostStatus.SETTLED,
+        costStatus: failed
+          ? DB.KBGraphCostStatus.RELEASED
+          : DB.KBGraphCostStatus.SETTLED,
         meteredCost: result.metered_cost,
         finishedAt,
       },
@@ -533,7 +538,7 @@ export async function settleKBGraphBuildCost(
       data: {
         reservedMinorUnits: { decrement: build.estimatedCostMinorUnits },
         settledMinorUnits: {
-          increment: result.metered_cost.amount_minor_units,
+          increment: chargeMinorUnits,
         },
       },
     })
@@ -592,7 +597,7 @@ export async function settleKBGraphBuildCost(
         data: { activeGraphBuildId: null },
       })
     }
-    return 'SETTLED'
+    return failed ? 'RELEASED' : 'SETTLED'
   }
 
   if (result.status === 'SUCCEEDED') {

@@ -49,7 +49,7 @@ export default {
       usingPrimaryModel:
         'Die automatische Auswahl wird verwendet, solange Credits verfügbar sind.',
       usingFallbackModel:
-        'Es sind keine Credits mehr übrig. GPT-5.6 Luna kann als Credit-Fallback verwendet werden.',
+        'Es sind keine Credits mehr übrig. Das Basismodell kann als Credit-Fallback verwendet werden.',
       reasoningEffortLabel: 'Denkaufwand',
       selectReasoningEffort: 'Denkaufwand auswählen',
       reasoningEffortHint:
@@ -2049,6 +2049,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       'Die hochgeladene Datei stimmt nicht mehr mit ihrer Upload-Reservierung überein. Laden Sie sie erneut hoch.',
     ingestionFailed: 'Der Verarbeitungsvorgang ist fehlgeschlagen.',
     ingestionSuperseded: 'Der Verarbeitungsvorgang wurde ersetzt.',
+    ingestionFailureSourceVersionMismatch:
+      'Die Quelle stimmt nicht mehr mit der Version überein, die beim Hinzufügen gespeichert wurde.',
+    ingestionFailureSourceFetch: 'Die Quelle konnte nicht abgerufen werden.',
+    ingestionFailureSourceProcessing:
+      'Der Inhalt der Quelle konnte nicht verarbeitet werden.',
+    ingestionFailureSourceSizeLimit:
+      'Die Quelle überschreitet die unterstützte Grössenbegrenzung.',
+    ingestionFailureActivation:
+      'Der importierte Inhalt konnte nicht aktiviert werden.',
     inspectResource: 'Details',
     inspectorTitle: 'Ressourcendetails',
     sourceType: 'Quelltyp',
@@ -2697,6 +2706,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatAccountUsageTitle: 'Chatbot-Nutzung',
       chatAccountUsageUnauthorized:
         'Die Chatbot-Nutzung ist für dieses Konto nicht freigeschaltet.',
+      chatAccountUsageSubscriptionLabel: 'Tarif',
+      chatAccountUsageTierBase: 'Basismodelle',
+      chatAccountUsageTierAdvanced: 'Basis- und fortgeschrittene Modelle',
+      chatAccountUsageClassUnavailable:
+        'Diese Nutzungsklasse ist für Ihr Konto nicht freigeschaltet.',
+      chatAccountUsageAdvancedCostCenter:
+        'Fortgeschrittene Modelle erfordern eine Kostenstelle, auf die die AI-Nutzung verrechnet werden kann.',
       chatAccountUsageRefreshing: 'Nutzung wird aktualisiert ...',
       chatAccountUsageStale:
         'Die aktuelle Nutzung konnte nicht geladen werden. Die unten angezeigten Werte sind möglicherweise veraltet.',
@@ -5085,6 +5101,33 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Quizzer kann weiterhin ausgeblendet sein, wenn die Fähigkeit für Kursmaterialien nicht verfügbar ist.',
       chatbotModeEnabled: 'Aktiviert',
       chatbotModeDisabled: 'Deaktiviert',
+      chatbotCustomModesTitle: 'Eigene Modi',
+      chatbotCustomModesDescription:
+        'Fügen Sie bis zu {count} eigene Modi mit eigenem Namen, eigener Beschreibung und eigenem Persona-Text hinzu. Eigene Modi werden zusammen mit der Chatbot-Revision geprüft.',
+      chatbotCustomModesEmpty:
+        'Noch keine eigenen Modi. Fügen Sie einen hinzu, um Teilnehmenden einen zusätzlichen Modus anzubieten.',
+      chatbotCustomModesNone: 'Es sind keine eigenen Modi konfiguriert.',
+      chatbotCustomModesCount: '{count} von {max} eigenen Modi verwendet',
+      chatbotCustomMode: 'Eigener Modus {number}',
+      chatbotCustomModeName: 'Name des Modus',
+      chatbotCustomModeNameRequired: 'Jeder eigene Modus benötigt einen Namen.',
+      chatbotCustomModeDescription: 'Kurzbeschreibung',
+      chatbotCustomModePersonaText: 'Persona und Anweisungen',
+      chatbotCustomModePersonaPlaceholder:
+        'Beschreiben Sie, wie dieser Modus auf Teilnehmende antworten soll.',
+      chatbotCustomModeAdd: 'Eigenen Modus hinzufügen',
+      chatbotCustomModeRemove: 'Entfernen',
+      chatbotCustomModesLimit:
+        'Es werden höchstens {count} eigene Modi unterstützt.',
+      chatbotCustomModesDuplicate:
+        'Jeder eigene Modus benötigt einen eindeutigen Namen.',
+      chatbotCustomModesReadonly:
+        'Eigene Modi können in diesem Chatbot-Status nicht bearbeitet werden.',
+      chatbotCustomModesSave: 'Eigene Modi speichern',
+      chatbotCustomModesSaving: 'Wird gespeichert…',
+      chatbotCustomModesSaveSuccess: 'Eigene Modi gespeichert.',
+      chatbotCustomModesSaveError:
+        'Die eigenen Modi konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.',
       chatbotFraming: 'Rahmung des Chatbots',
       chatbotFramingDescription:
         'Beschreiben Sie kurz den Kurs, die Zielgruppe oder den gewünschten Schwerpunkt. Dieser Kontext wird in den Standard-Lernmodi verwendet.',

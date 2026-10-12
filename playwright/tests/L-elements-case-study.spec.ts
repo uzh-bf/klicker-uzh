@@ -13,6 +13,7 @@ import { Page } from '@playwright/test'
 import { cleanupTest } from '../util/cleanup.js'
 import { expect, test } from '../util/fixtures.js'
 import {
+  clearEditorField,
   deleteElement,
   searchAndEdit,
   validateElement,
@@ -723,11 +724,7 @@ test.describe('Test creation and editing functionalities for Case Study elements
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
 
     const questionText = page.getByTestId('insert-question-text')
-    await questionText.click()
-    await page.keyboard.press(
-      process.platform === 'darwin' ? 'Meta+A' : 'Control+A'
-    )
-    await page.keyboard.press('Backspace')
+    await clearEditorField(page, 'insert-question-text')
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
     await questionText.pressSequentially(CS.content)
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()

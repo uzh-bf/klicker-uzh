@@ -524,7 +524,7 @@ describe('KB graph cost accounting', () => {
     ).resolves.toMatchObject({ activeGraphBuildId: null })
   })
 
-  it('settles a late success without publishing when the KB digest is stale', async () => {
+  it('releases a late success rejected because the KB digest is stale', async () => {
     await prisma.$transaction((tx) =>
       reserveKBGraphCost(tx, {
         ownerId,
@@ -568,13 +568,14 @@ describe('KB graph cost accounting', () => {
           allowLateSuccess: true,
         })
       )
-    ).resolves.toBe('SETTLED')
+    ).resolves.toBe('RELEASED')
 
     await expect(
       prisma.kBGraphBuild.findUniqueOrThrow({ where: { id: build.id } })
     ).resolves.toMatchObject({
       status: KBGraphBuildStatus.FAILED,
-      costStatus: KBGraphCostStatus.SETTLED,
+      costStatus: KBGraphCostStatus.RELEASED,
+      actualCostMinorUnits: 0,
       errorCode: 'KB_GRAPH_LATE_SUCCESS_STALE',
     })
     await expect(
@@ -583,6 +584,11 @@ describe('KB graph cost accounting', () => {
       activeGraphBuildId: null,
       publishedGraphBuildId: null,
     })
+    await expect(
+      prisma.kBGraphQuota.findUniqueOrThrow({
+        where: { ownerId_semesterKey: { ownerId, semesterKey: '2026-H2' } },
+      })
+    ).resolves.toMatchObject({ reservedMinorUnits: 0, settledMinorUnits: 0 })
   })
 
   it('settles a late success without publishing when a newer build exists', async () => {
@@ -769,7 +775,7 @@ describe('KB graph cost accounting', () => {
     ).resolves.toMatchObject({ costStatus: KBGraphCostStatus.RELEASED })
   })
 
-  it('settles metered non-success results without publishing the build', async () => {
+  it('releases metered failures without charging or replacing the published graph', async () => {
     await prisma.$transaction((tx) =>
       reserveKBGraphCost(tx, {
         ownerId,
@@ -778,6 +784,23 @@ describe('KB graph cost accounting', () => {
         now: NOW,
       })
     )
+    const { build: published } = await createBuild({
+      active: false,
+      status: KBGraphBuildStatus.SUCCEEDED,
+      costStatus: KBGraphCostStatus.SETTLED,
+    })
+    await prisma.kBGraphBuild.update({
+      where: { id: published.id },
+      data: { actualCostMinorUnits: 40 },
+    })
+    await prisma.kBGraphQuota.update({
+      where: { id: published.quotaId! },
+      data: { settledMinorUnits: 40 },
+    })
+    await prisma.kB.update({
+      where: { id: kbId },
+      data: { publishedGraphBuildId: published.id },
+    })
     const { build, runId, graphmlBlobName } = await createBuild()
     const failedResult = {
       ...successfulResult({ buildId: build.id, runId, graphmlBlobName }),
@@ -794,25 +817,39 @@ describe('KB graph cost accounting', () => {
           finishedAt: NOW,
         })
       )
-    ).resolves.toBe('SETTLED')
+    ).resolves.toBe('RELEASED')
+    await expect(
+      prisma.$transaction((tx) =>
+        settleKBGraphBuildCost(tx, {
+          buildId: build.id,
+          result: failedResult,
+          finishedAt: NOW,
+        })
+      )
+    ).resolves.toBe('DUPLICATE')
     await expect(
       prisma.kBGraphBuild.findUniqueOrThrow({ where: { id: build.id } })
     ).resolves.toMatchObject({
       status: KBGraphBuildStatus.FAILED,
-      costStatus: KBGraphCostStatus.SETTLED,
+      costStatus: KBGraphCostStatus.RELEASED,
       errorCode: 'KB_GRAPH_PROVIDER_FAILED',
-      actualCostMinorUnits: 60,
+      actualCostMinorUnits: 0,
+      actualInputTokens: 11,
+      actualOutputTokens: 13,
+      actualEmbeddingTokens: 7,
+      actualRequestCount: 2,
+      meteredCost: failedResult.metered_cost,
     })
     await expect(
       prisma.kBGraphQuota.findUniqueOrThrow({
         where: { ownerId_semesterKey: { ownerId, semesterKey: '2026-H2' } },
       })
-    ).resolves.toMatchObject({ reservedMinorUnits: 0, settledMinorUnits: 60 })
+    ).resolves.toMatchObject({ reservedMinorUnits: 0, settledMinorUnits: 40 })
     await expect(
       prisma.kB.findUniqueOrThrow({ where: { id: kbId } })
     ).resolves.toMatchObject({
       activeGraphBuildId: null,
-      publishedGraphBuildId: null,
+      publishedGraphBuildId: published.id,
     })
   })
 
