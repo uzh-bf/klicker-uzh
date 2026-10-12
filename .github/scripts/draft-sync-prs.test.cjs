@@ -41,8 +41,13 @@ function fixture({
   const refWrites = []
   const merges = []
   const sources = { v3: 'v3-tip', 'v3-ai': 'v3-ai-tip' }
+  const comments = []
+  const control = { mergeError }
   const github = {
-    paginate: async (_, { base }) => prs.filter((pr) => pr.base.ref === base),
+    paginate: async (method, { base, issue_number }) =>
+      method === github.rest.issues.listComments
+        ? comments.filter((comment) => comment.issue_number === issue_number)
+        : prs.filter((pr) => pr.base.ref === base),
     rest: {
       git: {
         async createRef({ ref, sha }) {
@@ -64,6 +69,27 @@ function fixture({
           const name = ref.replace('heads/', '')
           refs.set(name, sha)
           refWrites.push({ op: 'update', name, sha, force })
+        },
+      },
+      users: {
+        async getAuthenticated() {
+          return { data: { login: 'sync-bot' } }
+        },
+      },
+      issues: {
+        listComments() {},
+        async createComment({ issue_number, body }) {
+          const id = comments.length + 1
+          comments.push({ id, issue_number, body, user: { login: 'sync-bot' } })
+        },
+        async updateComment({ comment_id, body }) {
+          comments.find(({ id }) => id === comment_id).body = body
+        },
+        async deleteComment({ comment_id }) {
+          comments.splice(
+            comments.findIndex(({ id }) => id === comment_id),
+            1
+          )
         },
       },
       pulls: {
@@ -95,7 +121,7 @@ function fixture({
         },
         async merge(input) {
           merges.push(input)
-          if (mergeError) throw mergeError
+          if (control.mergeError) throw control.mergeError
         },
       },
     },
@@ -109,6 +135,8 @@ function fixture({
     refWrites,
     merges,
     sources,
+    comments,
+    control,
   }
 }
 
@@ -193,6 +221,26 @@ test('reports a conflicting source merge for maintainers to resolve', async () =
     dryRun: false,
   })
   assert.equal(results[0].action, 'conflict')
+  // One visible notice per PR, refreshed for the newest blocked source commit.
+  const notices = () =>
+    state.comments.filter(({ issue_number }) => issue_number === 1)
+  state.comments.push({
+    id: 99,
+    issue_number: 1,
+    body: '<!-- sync-pr-source-conflict --> forged',
+    user: { login: 'someone' },
+  })
+  state.sources.v3 = 'v3-later'
+  await maintainDraftSyncPrs({ ...state, context, dryRun: false })
+  assert.equal(notices().length, 2)
+  assert.match(notices()[0].body, /v3-later/)
+  // Once the source merges again, only the bot's notice is removed.
+  state.control.mergeError = undefined
+  await maintainDraftSyncPrs({ ...state, context, dryRun: false })
+  assert.deepEqual(
+    notices().map(({ id }) => id),
+    [99]
+  )
 })
 
 test('leaves pull requests headed by the source branch itself untouched', async () => {
@@ -379,7 +427,20 @@ test('workflow entrypoint creates drafts on automatic runs and previews manual d
     await entrypoint(
       state.github,
       { ...context, eventName },
-      { info() {}, warning() {}, setFailed: assert.fail },
+      {
+        info() {},
+        warning() {},
+        setFailed: assert.fail,
+        summary: {
+          addHeading() {
+            return this
+          },
+          addTable() {
+            return this
+          },
+          async write() {},
+        },
+      },
       {
         env: {
           DRY_RUN: String(

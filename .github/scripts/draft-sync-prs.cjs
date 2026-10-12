@@ -110,6 +110,57 @@ async function createSyncBranch({ github, repo, branch, sourceSha }) {
   }
 }
 
+const CONFLICT_MARKER = '<!-- sync-pr-source-conflict -->'
+
+// Keeps one bot comment on a sync pull request while the source cannot be
+// merged into its head, because the PR stays mergeable into its target while
+// lacking that source commit. The comment is removed once the merge succeeds.
+async function updateConflictNotice({
+  github,
+  repo,
+  pr,
+  head,
+  sourceSha,
+  conflict,
+}) {
+  const { data: bot } = await github.rest.users.getAuthenticated()
+  const comments = await github.paginate(github.rest.issues.listComments, {
+    ...repo,
+    issue_number: pr.number,
+    per_page: 100,
+  })
+  const notice = comments.find(
+    (comment) =>
+      comment.user?.login === bot.login &&
+      comment.body?.startsWith(CONFLICT_MARKER)
+  )
+  if (!conflict) {
+    if (notice) {
+      await github.rest.issues.deleteComment({ ...repo, comment_id: notice.id })
+    }
+    return
+  }
+  const branch = pr.head.ref
+  const body = [
+    CONFLICT_MARKER,
+    `\`${head}\` at \`${sourceSha.slice(0, 10)}\` conflicts with \`${branch}\`, so this pull request does not contain it yet. Merge \`${sourceSha}\` into \`${branch}\` and resolve the conflicts there; automatic updates resume afterwards.`,
+  ].join('\n')
+  if (notice?.body === body) return
+  if (notice) {
+    await github.rest.issues.updateComment({
+      ...repo,
+      comment_id: notice.id,
+      body,
+    })
+  } else {
+    await github.rest.issues.createComment({
+      ...repo,
+      issue_number: pr.number,
+      body,
+    })
+  }
+}
+
 async function maintainDraftSyncPrs({ github, context, dryRun = true }) {
   if (!acceptsEvent(context)) return []
   const repo = context.repo
@@ -170,6 +221,14 @@ async function maintainDraftSyncPrs({ github, context, dryRun = true }) {
         pr: existing,
         sourceSha,
       })
+      await updateConflictNotice({
+        github,
+        repo,
+        pr: existing,
+        head,
+        sourceSha,
+        conflict: action === 'conflict',
+      })
       report(action, existing.number, branch)
       continue
     }
@@ -202,7 +261,7 @@ async function maintainDraftSyncPrs({ github, context, dryRun = true }) {
         draft: true,
         title: `chore(sync): merge ${head} into ${base}`,
         body: [
-          `Integrate \`${head}\` into \`${base}\`. The head \`${branch}\` is a bot-owned copy of \`${head}\` that follows it automatically.`,
+          `Integrate \`${head}\` into \`${base}\`. The head \`${branch}\` is a bot-owned copy of \`${head}\` that follows it automatically, also after this pull request is marked ready.`,
           '',
           'Mark ready when the accumulated changes should be reviewed and validated for integration. Use a merge commit to preserve branch ancestry.',
           '',

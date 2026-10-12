@@ -42,8 +42,9 @@ jobs:
           persist-credentials: false
           sparse-checkout: .github/scripts
 
-      # Sync-branch updates must come from a non-GITHUB_TOKEN identity, because
-      # GITHUB_TOKEN pushes start no workflows and the PR would never get CI.
+      # Sync-branch updates use a separate identity so the sync PR's CI starts
+      # without manual approval: GITHUB_TOKEN updates start no push workflows,
+      # and the pull request workflows they trigger wait for approval.
       - name: Maintain draft sync PRs
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
@@ -59,9 +60,12 @@ jobs:
               return
             }
             const results = await maintainDraftSyncPrs({ github, context, dryRun })
+            const rows = [['Sync branch', 'Target', 'Result', 'PR']]
             for (const { branch, base, action, number } of results) {
               core.info(`${branch} -> ${base}: ${action}${number ? ` #${number}` : ''}`)
-              if (action === 'conflict') {
-                core.warning(`${branch} conflicts with its source; resolve it on #${number}.`)
+              rows.push([branch, base, action, number ? `#${number}` : ''])
+              if (action === 'conflict' || action === 'stale-branch') {
+                core.warning(`${branch} -> ${base}: ${action}${number ? ` on #${number}` : ''}; see docs/ci-and-deployment.md.`)
               }
             }
+            await core.summary.addHeading('Draft sync PRs').addTable(rows).write()

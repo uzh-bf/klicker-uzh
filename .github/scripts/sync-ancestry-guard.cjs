@@ -4,10 +4,17 @@ const { PAIRS } = require('./draft-sync-prs.cjs')
 const REPOSITORY = 'uzh-bf/klicker-uzh'
 // Integration branch -> the branch whose history it must keep as ancestry.
 const SOURCES = Object.fromEntries(PAIRS.map(({ head, base }) => [base, head]))
-// Source branch -> the integration branch it feeds, which must never flow back.
-const DOWNSTREAM = Object.fromEntries(
-  PAIRS.map(({ head, base }) => [head, base])
-)
+// Sync target -> the branch it feeds, which must never flow back into it,
+// pinned to that downstream branch's oldest own first-parent commit. Every later
+// downstream commit descends from the root, so any back-merge carries it, even
+// after an earlier bypass already contaminated the target. v3 has no entry:
+// ADR 0007 plans to fold v3-ai back into v3, and this guard does not run there.
+const DOWNSTREAM_ROOTS = {
+  'v3-ai': {
+    downstream: 'v3-audit',
+    root: 'f9c8fa7c72f201bec66e99c0b886b1f6a9e87ef1',
+  },
+}
 const STATUS_CONTEXT = 'sync-ancestry'
 
 function git(cwd, args) {
@@ -43,24 +50,20 @@ function bringsSourceCommits(cwd, { parent, head, sourceSha }) {
   return !isAncestor(cwd, mergeBase, parent)
 }
 
-// Commits made on the downstream branch itself (its first-parent line) that
-// `head` brings and `parent` lacks. Changes reach a downstream branch only as
-// merged-in parents, so any of its own commits in `head` flowed backwards, for
-// example through "Update branch" on a pull request whose head was upstream.
-// Both walks are unbounded: a capped walk could miss an old downstream commit
-// and report a back-merge as clean.
-function findDownstreamCommits(cwd, { parent, head, downstreamSha }) {
-  const revList = (...args) =>
-    git(cwd, ['rev-list', ...args])
-      .split('\n')
-      .filter(Boolean)
-  const downstreamOwn = new Set(
-    revList('--first-parent', downstreamSha, '--not', parent)
-  )
-  if (downstreamOwn.size === 0) return []
-  return revList(head, '--not', parent).filter((commit) =>
-    downstreamOwn.has(commit)
-  )
+// Reports whether `head` contains downstream history, for example after
+// "Update branch" on a pull request whose head was the upstream branch.
+// `existing` means `parent` already contained it, so the target needs recovery
+// rather than a rejected change. A pin that left the downstream branch's
+// first-parent line fails closed instead of passing every change.
+function findBackflow(cwd, { parent, head, downstreamSha, root }) {
+  const line = git(cwd, ['rev-list', '--first-parent', downstreamSha])
+  if (!line.split('\n').includes(root)) {
+    throw new Error(
+      `Pinned root ${root} is not on the downstream first-parent line; update DOWNSTREAM_ROOTS.`
+    )
+  }
+  if (!isAncestor(cwd, root, head)) return null
+  return { existing: Boolean(parent) && isAncestor(cwd, root, parent) }
 }
 
 function hasCommit(cwd, sha) {
@@ -183,21 +186,24 @@ async function guardSyncAncestry({ github, context, core, cwd }) {
     : context.sha
   const sourceSha = git(cwd, ['rev-parse', `origin/${source}`])
 
-  const downstream = DOWNSTREAM[base]
-  const parent = pullRequest ? baseSha : context.payload.before
+  const edge = DOWNSTREAM_ROOTS[base]
+  const downstream = edge?.downstream
+  const before = pullRequest ? baseSha : context.payload.before
   const head = pullRequest ? pullRequest.head.sha : baseSha
   // A branch creation or a force push may leave no comparable parent.
-  const leaked =
-    downstream && parent && hasCommit(cwd, parent)
-      ? findDownstreamCommits(cwd, {
-          parent,
-          head,
-          downstreamSha: git(cwd, ['rev-parse', `origin/${downstream}`]),
-        })
-      : []
-  const leakMessage = leaked.length
-    ? `${leaked.length} commit(s) made on ${downstream} (newest ${leaked[0].slice(0, 10)}) would flow back into ${base}. Changes move ${source} -> ${base} -> ${downstream} only.`
+  const backflow = edge
+    ? findBackflow(cwd, {
+        parent: before && hasCommit(cwd, before) ? before : null,
+        head,
+        downstreamSha: git(cwd, ['rev-parse', `origin/${downstream}`]),
+        root: edge.root,
+      })
     : null
+  const leakMessage = !backflow
+    ? null
+    : backflow.existing
+      ? `${base} already contains ${downstream} history (root ${edge.root.slice(0, 10)}). Nothing can merge into ${base} until it is recovered; see "Sync direction guard" in docs/ci-and-deployment.md.`
+      : `This change merges ${downstream} history (root ${edge.root.slice(0, 10)}) back into ${base}. Changes move ${source} -> ${base} -> ${downstream} only.`
 
   const finding = await findUnrepairedSquashedSync({
     cwd,
@@ -261,7 +267,7 @@ async function guardSyncAncestry({ github, context, core, cwd }) {
     state: finding || leakMessage ? 'failure' : 'success',
     context: STATUS_CONTEXT,
     description: leakMessage
-      ? `${leaked.length} ${downstream} commit(s) flowed back into ${base}`
+      ? `${downstream} history flowed back into ${base}`
       : finding
         ? `Squashed sync #${finding.number}; merge #${repair} with a merge commit`
         : `${source} ancestry intact`,
@@ -275,10 +281,10 @@ async function guardSyncAncestry({ github, context, core, cwd }) {
 }
 
 module.exports = {
-  DOWNSTREAM,
+  DOWNSTREAM_ROOTS,
   SOURCES,
   bringsSourceCommits,
-  findDownstreamCommits,
+  findBackflow,
   findUnrepairedSquashedSync,
   guardSyncAncestry,
 }
