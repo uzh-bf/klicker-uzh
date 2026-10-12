@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { test } from 'vitest'
 
 import {
+  assertBudgetCanStart,
   fingerprint,
   initializeBudget,
   readBudgetLedger,
@@ -559,7 +560,7 @@ test('adapter requires bearer auth and exposes only the configured model', async
 // The guarded runQuestion again mirrors the production placement: an
 // authenticated status read reflects the durable ledger, and the application
 // reserves the full qualified cost before it can produce a chat result.
-test('guarded runQuestion holds its turn, reservation and credits and refuses an over-budget call', async () => {
+test('guarded runQuestion accounts completed failures and refuses an over-budget call', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'klicker-evaluation-'))
   const budgetFile = join(directory, 'budget.json')
   const qualificationFile = join(directory, 'qualification.json')
@@ -654,7 +655,7 @@ test('guarded runQuestion holds its turn, reservation and credits and refuses an
 
   try {
     await initializeBudget(budgetFile, SYNTHETIC_POLICY_HASH, {
-      maxProviderMicroUsd: SYNTHETIC_RESERVATION + 100,
+      maxProviderMicroUsd: 2 * SYNTHETIC_RESERVATION + 100,
     })
     const ledger = await readBudgetLedger(budgetFile)
     await writeFile(
@@ -714,16 +715,34 @@ test('guarded runQuestion holds its turn, reservation and credits and refuses an
     assert.equal(afterTurn.activeTurn, null)
     assert.equal(dispatched, 1)
 
-    // Over budget: the guard refuses the reservation, so no second provider
+    await assert.rejects(target.runQuestion(target.canary.question), {
+      code: 'canary_tool_missing',
+    })
+    const afterCompletedFailure = await readBudgetLedger(budgetFile)
+    assert.equal(afterCompletedFailure.submittedTurns, 2)
+    assert.equal(
+      afterCompletedFailure.reservedProviderMicroUsd,
+      2 * SYNTHETIC_RESERVATION
+    )
+    assert.equal(afterCompletedFailure.creditsUsed, 2 * credits)
+    assert.equal(afterCompletedFailure.uncertain, false)
+    assert.equal(afterCompletedFailure.activeTurn, null)
+    assert.doesNotThrow(() => assertBudgetCanStart(afterCompletedFailure))
+    assert.equal(dispatched, 2)
+
+    // Over budget: the guard refuses the reservation, so no further provider
     // call is dispatched and the interrupted turn stays uncertain.
     await assert.rejects(target.runQuestion(question), {
       code: 'chat_submit_http_429',
     })
     const afterRefusal = await readBudgetLedger(budgetFile)
-    assert.equal(dispatched, 1)
-    assert.equal(afterRefusal.submittedTurns, 2)
-    assert.equal(afterRefusal.reservedProviderMicroUsd, SYNTHETIC_RESERVATION)
-    assert.equal(afterRefusal.creditsUsed, credits)
+    assert.equal(dispatched, 2)
+    assert.equal(afterRefusal.submittedTurns, 3)
+    assert.equal(
+      afterRefusal.reservedProviderMicroUsd,
+      2 * SYNTHETIC_RESERVATION
+    )
+    assert.equal(afterRefusal.creditsUsed, 2 * credits)
     assert.equal(afterRefusal.uncertain, true)
     assert.notEqual(afterRefusal.activeTurn, null)
 
@@ -733,7 +752,7 @@ test('guarded runQuestion holds its turn, reservation and credits and refuses an
       code: 'budget_uncertain',
     })
     assert.equal(statusReads, statusReadsBefore)
-    assert.equal(dispatched, 1)
+    assert.equal(dispatched, 2)
   } finally {
     globalThis.fetch = originalFetch
     await rm(directory, { recursive: true, force: true })

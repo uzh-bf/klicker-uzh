@@ -731,6 +731,12 @@ export class KlickerEvaluationTarget {
         assistantMessageId,
         metadata.mode
       )
+      if (turnToken)
+        await finishBudgetTurn(
+          this.budgetFile,
+          turnToken,
+          finiteCredits(message.creditsUsed)
+        )
       const result = extractAssistantMessage(message)
       if (
         metadata.source === 'canary' &&
@@ -738,12 +744,6 @@ export class KlickerEvaluationTarget {
       ) {
         throw evaluationError('canary_tool_missing')
       }
-      if (turnToken)
-        await finishBudgetTurn(
-          this.budgetFile,
-          turnToken,
-          finiteCredits(message.creditsUsed)
-        )
       return { metadata, ...result }
     } finally {
       await release?.()
