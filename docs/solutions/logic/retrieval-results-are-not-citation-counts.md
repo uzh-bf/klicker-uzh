@@ -35,6 +35,14 @@ Navigation metadata is also separate from identity. A supplied public origin
 can improve a link without changing deduplication or citation numbering.
 Missing origins remain unavailable; chunk text is not trusted URL metadata.
 
+Evaluation receipts must use the same source normalizer and citation-index
+projection as the application. Deduplicating by title/reference alone loses
+page and video-position identity; truncating each tool call separately diverges
+from the message-wide sequence. The trajectory evaluator records original
+per-call source positions, nullable indices and hashed normalized identities.
+This reconstructs citation membership from persisted tools, rather than proving
+what evidence the historical model actually received.
+
 ## Prevention
 
 Keep synthetic tests for unnamed chunks, multiple tool calls, capped citation

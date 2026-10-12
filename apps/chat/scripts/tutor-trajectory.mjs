@@ -265,9 +265,7 @@ function mapSourceEntries(parts, registry) {
       entries.push({
         toolCallId: part.toolCallId,
         sourcePosition: position + 1,
-        citationIndex: Number.isInteger(indices[position])
-          ? indices[position]
-          : null,
+        citationIndex: indices[position],
         identityHash: normalized
           ? createHash('sha256').update(normalized.id).digest('hex')
           : null,
