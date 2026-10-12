@@ -5,12 +5,12 @@ import type {
   QuestionPoolSnapshotQuestion,
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '@/lib/context.js'
-import { canonicalElementGenerationJson } from '@/services/elementGenerationProvider.js'
-import { MAX_BUFFERED_QUESTION_GENERATION_ARTIFACT_BYTES } from '@/services/questionGenerationContracts.js'
+import { canonicalElementGenerationJson } from './elementGenerationProvider.js'
+import { MAX_BUFFERED_QUESTION_GENERATION_ARTIFACT_BYTES } from './questionGenerationContracts.js'
 import {
   QuestionGenerationServiceError,
   questionGenerationServiceError,
-} from '@/services/questionGenerationErrors.js'
+} from './questionGenerationErrors.js'
 
 const MAX_LIBRARY_ELEMENTS = 500
 const MAX_NAME_LENGTH = 500

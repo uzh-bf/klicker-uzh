@@ -256,3 +256,13 @@ Twelve producer tests, focused wire-type checking and Biome pass in an isolated
 container. The verified alias-import review finding is fixed. Full branch CI
 remains separate from these focused results. No feature activation, database
 access or deployment occurred; compatible worker rollout precedes schema-2 use.
+
+### Code-generation compatibility correction
+
+CI job 115004867694 at `3360ab47db` failed when graphql-codegen's Jiti loader
+resolved the new runtime path aliases. Restore relative imports for executable
+service dependencies; retain the type-only and test aliases. The package's
+TypeScript path mapping and isolated Vitest resolver do not establish runtime
+alias support. This corrects the accepted review suggestion without changing
+code-generation configuration or adding dependencies. Hosted build verification
+remains required for the correction.
