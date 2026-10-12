@@ -31,6 +31,23 @@ import {
   validateLocalOrigin,
 } from '../scripts/klicker-evaluation-target.mjs'
 
+// Wire contract of the registered LoginParticipant persisted operation: the
+// API refuses arbitrary operations, so the login request must carry only the
+// registered hash and the credential variables.
+const LOGIN_OPERATION_HASH =
+  '8e3ea39b64b0408ac5e307fc0778e8ad583268eec5569d98873ddec90598c384'
+
+const PERSISTED_LOGIN_BODY = {
+  operationName: 'LoginParticipant',
+  variables: {
+    usernameOrEmail: 'synthetic-participant',
+    password: 'synthetic-password',
+  },
+  extensions: {
+    persistedQuery: { version: 1, sha256Hash: LOGIN_OPERATION_HASH },
+  },
+}
+
 test('frontmatter projection contains only target-safe question metadata', () => {
   const metadata = parseGroundTruthFrontmatter(
     `---
@@ -183,6 +200,8 @@ test('target uses participant gates and reads back one persisted turn', async ()
     requests.push({ requestUrl, method, body, headers: options.headers || {} })
 
     if (requestUrl.endsWith('/api/graphql')) {
+      assert.equal(method, 'POST')
+      assert.deepEqual(JSON.parse(body), PERSISTED_LOGIN_BODY)
       return new Response(
         JSON.stringify({ data: { loginParticipant: 'participant-jwt' } }),
         {
@@ -311,6 +330,104 @@ test('target uses participant gates and reads back one persisted turn', async ()
   } finally {
     globalThis.fetch = originalFetch
     await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test('persisted login rejects invalid credentials without a session cookie', async () => {
+  const target = new KlickerEvaluationTarget({
+    apiOrigin: 'https://api.klicker.localhost',
+    chatOrigin: 'https://chat.klicker.localhost',
+    apiKey: 'target-key',
+    participantUsername: 'synthetic-participant',
+    participantPassword: 'synthetic-password',
+    groundTruthDirectory: '/tmp/unused-ground-truth',
+    canaryFixture: '/tmp/unused-canary.json',
+    requestTimeoutMs: 1000,
+  })
+  const originalFetch = globalThis.fetch
+  const requests = []
+  globalThis.fetch = async (url, options = {}) => {
+    requests.push({ requestUrl: String(url), body: options.body })
+    return Response.json({ data: { loginParticipant: null } })
+  }
+
+  try {
+    await assert.rejects(target.loginParticipant(), (error) => {
+      assert.equal(error.code, 'participant_login_rejected')
+      assert.equal(String(error.message).includes('synthetic-password'), false)
+      return true
+    })
+    assert.equal(
+      requests[0].requestUrl,
+      'https://api.klicker.localhost/api/graphql'
+    )
+    assert.equal(requests[0].requestUrl.includes('synthetic-password'), false)
+    assert.deepEqual(JSON.parse(requests[0].body), PERSISTED_LOGIN_BODY)
+
+    globalThis.fetch = async (url, options = {}) => {
+      requests.push({ requestUrl: String(url), body: options.body })
+      return Response.json({ data: { loginParticipant: 'participant-jwt' } })
+    }
+    await assert.rejects(target.loginParticipant(), {
+      code: 'participant_cookie_missing',
+    })
+    assert.deepEqual(
+      requests.map(({ body }) => JSON.parse(body)),
+      [PERSISTED_LOGIN_BODY, PERSISTED_LOGIN_BODY]
+    )
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('persisted login maps only the exact persisted-operation rejections', async () => {
+  const target = new KlickerEvaluationTarget({
+    apiOrigin: 'https://api.klicker.localhost',
+    chatOrigin: 'https://chat.klicker.localhost',
+    apiKey: 'target-key',
+    participantUsername: 'synthetic-participant',
+    participantPassword: 'synthetic-password',
+    groundTruthDirectory: '/tmp/unused-ground-truth',
+    canaryFixture: '/tmp/unused-canary.json',
+    requestTimeoutMs: 1000,
+  })
+  const originalFetch = globalThis.fetch
+
+  try {
+    const cases = [
+      [
+        'unregistered hash',
+        'PersistedQueryNotFound',
+        'participant_login_persisted_operation_rejected',
+      ],
+      [
+        'raw query refused',
+        'PersistedQueryOnly',
+        'participant_login_persisted_operation_rejected',
+      ],
+      [
+        'ordinary server failure',
+        'Synthetic server failure',
+        'participant_login_rejected',
+      ],
+      [
+        'lookalike wording',
+        'persisted query lookup failed',
+        'participant_login_rejected',
+      ],
+    ]
+
+    for (const [name, message, code] of cases) {
+      globalThis.fetch = async () => Response.json({ errors: [{ message }] })
+      await assert.rejects(target.loginParticipant(), { code }, name)
+    }
+
+    globalThis.fetch = async () => new Response('{}', { status: 500 })
+    await assert.rejects(target.loginParticipant(), {
+      code: 'participant_login_http_500',
+    })
+  } finally {
+    globalThis.fetch = originalFetch
   }
 })
 

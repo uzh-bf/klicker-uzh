@@ -172,6 +172,71 @@ Update the graph section of `docs/chat-platform.md` for request-local serializat
 
 ## Progress
 
+### October 12: teaching-data comparison continuation
+
+User approved fixing the evaluation adapter login and comparing actual STG
+teaching data, including a graph-free extra-search control, within the remaining
+CHF 20 total ceiling. Astra approved the bounded exploratory protocol on October
+12. Prior conservatively accounted spend is CHF 1.07826744. The combined prior
+spend and new reservations total CHF 16.54880504; unknown costs retain their full
+reservation. Graph cost uses the separately approved application charge basis.
+
+Main owns STG scope, source-version and publication checks, paid-call admission,
+cost reconciliation and final acceptance. A worker owns the existing adapter
+login repair and focused regression checks; a separate offline assignment owns
+the private harness's import of the unchanged production fusion code. Main
+verifies both. Deliver the adapter fix through an ordinary draft PR to `v3-ai`;
+marking ready, merging and deploying remain separate decisions.
+
+Freeze three source-grounded cases before target execution: two questions joining
+distinct teaching documents and one unsupported-topic question. Compare a
+single full-question search, graph-assisted expansion of that search, and a second
+search using the question's second clause without graph inputs. Missing or empty
+clauses are ineligible. Preliminary first-clause searches are excluded from the
+final comparison. Reuse the same baseline receipt across arms, record actual
+dispatch counts and no-hint fallback, and interpret this as a mechanism pilot.
+Retrieval covers the frozen KB inventory; graph generation covers only its
+teaching resources. Verify that distinction explicitly.
+
+All harness answers use the existing Azure `gpt-5.6-luna-low` deployment, identical
+prompt and effort, no history, and no fallback. Apply a common ceiling of 12
+passages and 16,000 content characters before generation. Use production graph
+hints, its query augmentation format and its fusion function. The provider client
+uses the deployed scoped route, with `expand: false`; it receives neither expected
+answers nor a graph-generated answer. Reserve every target, retrieval and judge
+request before dispatch and stop on uncertain completion rather than replaying.
+One labelled replacement capture was reserved after the first upstream completion
+and cost were reconciled: the local guard expected the provider model name, while
+LiteLLM returns the requested deployment alias. The replacement reused the cached
+response. Preserve both receipts and exclude its cache latency from fresh-model
+latency claims. The target limit is ten requests for nine comparison answers.
+
+Score the nine harness answers using the existing pinned evaluation framework
+and four configured metrics, with at most 81 judge calls. Record complete case and
+metric counters, errors, family-level differences, source locators, evidence added
+by expansion, latency and conservative spend. Keep native adapter login,
+persisted-capture and browser acceptance separate from the harness comparison;
+the native chatbot's current model default differs. Three cases cannot establish
+production retrieval quality or authorize broader activation.
+
+Private protocol, materials, goldens, raw provider receipts, ledgers and reports
+live at `/private/tmp/graphrag-teaching-stg-20261012`, outside public Git. Named
+harness files are `provider-query.mjs`, `control-harness.mjs` and
+`budgeted-eval.py`. Keep activation scoped to the existing test chatbot, preserve
+other chatbot settings, and restore its original binding on scope or publication
+failure. Close the approved loopback LiteLLM tunnel and evaluation relay after
+the final checks. No ingestion coupling, database changes or test-only production
+endpoint is introduced.
+
+Source verification: persisted login and cookie issuance pass against STG without
+a preload. The 29 adapter tests and 50 adapter/trajectory seam tests pass on pinned
+Vitest 3.2.4 and Node 24.21.0. Focused ESLint, source formatting, plan formatting,
+host Git identity/hook contracts and launcher checks pass. Independent native
+source review found no P0-P2 issues. Full repository checks were attempted and
+remain unavailable because the disposable container cannot run host Git/devrouter
+contract tests, and its network-disabled analytics lint could not fetch tooling.
+Keep full qualification pending; these focused receipts do not clear it.
+
 October 9: approved source-artifact repair is planned in the linked implementation
 plan and added as milestone 1a. Historical source and review receipts below remain
 dated evidence. The new package has no PR/MR or implementation yet. Astra approved
