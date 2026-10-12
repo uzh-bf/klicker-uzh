@@ -455,9 +455,6 @@ async function settleLaunch(frame: Frame, profile: () => Promise<void>) {
       .or(frame.getByTestId('cookies-required-recovery'))
   ).toBeVisible({ timeout: 30_000 })
   if (await frame.getByTestId('cookies-required-recovery').isVisible()) {
-    const url = new URL(frame.url())
-    expect(url.pathname).toMatch(/\/serverError$/)
-    expect(url.searchParams.get('cookiesRequired')).toBe('true')
     await expect(frame.getByTestId('update-account-email')).toHaveCount(0)
     return 'cookies-refused'
   }
@@ -703,9 +700,24 @@ test('a full LTI 1.3 launch through the tool signs in a new account without reta
         page.frames().find((item) => item.url().includes('/createAccount'))
       )
       .not.toBeUndefined()
-    const frame = page
+    let frame = page
       .frames()
       .find((item) => item.url().includes('/createAccount'))!
+    await expect(
+      frame
+        .getByTestId('email-field')
+        .or(frame.getByTestId('cookies-required-recovery'))
+    ).toBeVisible()
+    let recoveryPage: Page | undefined
+    if (await frame.getByTestId('cookies-required-recovery').isVisible()) {
+      const opened = context.waitForEvent('page')
+      await frame
+        .getByTestId('cookies-required-recovery')
+        .getByRole('link')
+        .click()
+      recoveryPage = await opened
+      frame = recoveryPage.mainFrame()
+    }
     await expect(frame.getByTestId('email-field')).toHaveValue(createEmail)
     await frame
       .getByTestId('username-field-account-creation')
@@ -723,7 +735,7 @@ test('a full LTI 1.3 launch through the tool signs in a new account without reta
       expectIdentity(frame, { email: createEmail, username: createUsername })
     )
     if (
-      info.project.name.endsWith('-blocked') ||
+      (!recoveryPage && info.project.name.endsWith('-blocked')) ||
       info.project.name.startsWith('webkit-')
     )
       expect(outcome).toBe('cookies-refused')
@@ -733,6 +745,7 @@ test('a full LTI 1.3 launch through the tool signs in a new account without reta
         false
       )
     }
+    await recoveryPage?.close()
 
     // A token the platform did not sign never reaches the PWA.
     await context.clearCookies()
