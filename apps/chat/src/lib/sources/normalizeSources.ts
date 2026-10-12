@@ -2,7 +2,10 @@ import { TOOL_NAME_SUFFIX_LENGTH } from '../config/toolNames'
 import { getPublicSourceUrl } from './sourceUrl'
 import type { ChatSource, ChatSourceType } from './types'
 
-export const MAX_SOURCES = 12
+// 99 is the largest index the two-digit marker parser and `parseCitationHref`
+// accept, so it is also the citation cap: sources beyond it stay model-visible
+// with a null `citation_index` instead of being dropped or renumbered.
+export const MAX_SOURCES = 99
 const EXCERPT_MAX_LENGTH = 240
 
 // MCP tools are namespaced by server, e.g. `KB_doc_query` (see

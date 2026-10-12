@@ -214,14 +214,14 @@ describe('model-only citation indices', () => {
     ).toEqual([1, 2])
   })
 
-  test('caps new identities but still maps admitted repeats after overflow and skips invalid entries', () => {
-    const sources = Array.from({ length: 13 }, (_, i) => group(`urn:${i}`))
+  test('caps new identities at 99 but still maps admitted repeats after overflow and skips invalid entries', () => {
+    const sources = Array.from({ length: 100 }, (_, i) => group(`urn:${i}`))
     const steps = [
       { content: [call('a'), result('a', payload(...sources))] },
       {
         content: [
           call('b'),
-          result('b', payload(null, {}, sources[0], sources[12])),
+          result('b', payload(null, {}, sources[0], sources[99])),
         ],
       },
     ]
@@ -229,17 +229,38 @@ describe('model-only citation indices', () => {
       [message('a'), message('b')],
       steps
     )
+    const projectedFirst = projectedPayload(projected).sources
+    expect(projectedFirst).toHaveLength(100)
     expect(
-      projectedPayload(projected).sources.map(
-        (s: { citation_index: number | null }) => s.citation_index
-      )
-    ).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, null])
+      projectedFirst.map((s: { citation_index: number | null }) => s.citation_index)
+    ).toEqual([...Array.from({ length: 99 }, (_, i) => i + 1), null])
+    // The overflow source keeps its text in the model-facing projection; only
+    // its citation_index is null.
+    expect(projectedFirst[99]).toEqual({
+      ...sources[99],
+      citation_index: null,
+    })
     expect(projectedPayload(projected, 1).sources).toEqual([
       null,
       { citation_index: null },
       { ...sources[0], citation_index: 1 },
-      { ...sources[12], citation_index: null },
+      { ...sources[99], citation_index: null },
     ])
+  })
+
+  test('live and persisted parts normalize to the same 99 indices', () => {
+    const sources = Array.from({ length: 100 }, (_, i) => group(`urn:${i}`))
+    const raw = payload(...sources)
+    const steps = [{ content: [call('a'), result('a', raw)] }]
+
+    const live = normalizeSourcesFromParts(mapAssistantStepContent(steps))
+    const persisted = normalizeSourcesFromParts([
+      { type: 'tool-call', toolName: 'KB_doc_query', result: raw },
+    ])
+
+    expect(live).toHaveLength(99)
+    expect(live.at(-1)?.index).toBe(99)
+    expect(persisted).toEqual(live)
   })
 
   test('prefers canonical FastMCP structured data over conflicting text', () => {
