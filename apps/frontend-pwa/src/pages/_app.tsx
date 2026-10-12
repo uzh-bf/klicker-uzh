@@ -38,8 +38,15 @@ function App({ Component, pageProps }: AppProps) {
     (pageProps.sessionState === 'rejected' ||
       pageProps.sessionState === 'exchange_unavailable')
   useEffect(() => {
-    if (recovering) void router.replace('/serverError?freshLaunch=true')
-  }, [recovering, router])
+    // The rejected-launch navigation must win over the session boundary's
+    // credential-stripped revision reload. A full navigation also rebinds the
+    // page to the cookies the browser actually holds.
+    if (recovering) {
+      const prefix =
+        locale && locale !== routing.defaultLocale ? `/${locale}` : ''
+      window.location.replace(`${prefix}/serverError?freshLaunch=true`)
+    }
+  }, [recovering, locale])
 
   useEffect(() => {
     if (MATOMO_URL && MATOMO_SITE_ID) {
@@ -114,12 +121,14 @@ function App({ Component, pageProps }: AppProps) {
           <Toaster closeButton position="top-right" />
           {process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true' ? (
             <Component {...pageProps} />
+          ) : recovering ? (
+            <Loader />
           ) : (
             <ParticipantSessionBoundary
               expectedRevision={pageProps.sessionRevision}
               requireCookie={pageProps.sessionEstablished}
             >
-              {recovering ? <Loader /> : <Component {...pageProps} />}
+              <Component {...pageProps} />
             </ParticipantSessionBoundary>
           )}
         </ApolloProvider>

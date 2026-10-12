@@ -254,7 +254,7 @@ test.beforeAll(async ({}, info) => {
       participantId: ltiId,
     },
   })
-  // The header chatbot gate needs a published chatbot on the seeded course.
+  // The course Chat link needs a published chatbot on the seeded course.
   chatbotId = (
     await prisma.chatbot.create({
       data: {
@@ -438,7 +438,7 @@ async function expectChatIdentity(
 async function openChat(page: Page, baseURL: string) {
   await page.goto(`${baseURL}/course/${COURSE_ID_TEST}`)
   const identity = waitForChatIdentity(page.context(), loginThreadId)
-  const popup = page.waitForEvent('popup')
+  const popup = page.waitForEvent('popup', { timeout: 30_000 })
   await page.getByTestId('student-course-chatbot-link').click()
   const chat = await popup
   await expectChatIdentity(chat, await identity, loginThreadId)
@@ -589,11 +589,12 @@ test('a full LTI 1.3 launch through the tool signs in a new account without reta
   const deploymentId = 'synthetic-deployment'
   const platformKey = await generateKeyPair('RS256')
   const forgedKey = await generateKeyPair('RS256')
+  const repo = fileURLToPath(new URL('../..', import.meta.url))
   execFileSync(
-    'devrouter',
+    process.env.KLICKER_DEVROUTER_BIN ?? 'devrouter',
     [
       'exec',
-      fileURLToPath(new URL('../..', import.meta.url)),
+      repo,
       '--',
       'node',
       'apps/lti/scripts/register-local-platform.mjs',
