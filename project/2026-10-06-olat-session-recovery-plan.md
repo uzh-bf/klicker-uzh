@@ -139,7 +139,8 @@ Reuse unaffected evidence only where source and contract have not changed.
 
 ## Progress
 
-Shared-login implementation and final review corrections are ready locally. Removed
+Shared-login implementation and final review corrections are committed locally
+through `a650a0c78c`. Removed
 regular tab token storage, explicit-bearer precedence, the Chat login gate and
 obsolete tests. Shared revision checks protect PWA, Chat and response requests.
 Embedded pages require unpartitioned cookie access before authenticated content
@@ -174,9 +175,11 @@ Verification completed:
 - All 35 repository type-check tasks, lint, dependency consistency, agent-doc,
   Git-identity, removed-doc-path and Prisma schema-sync checks passed. The 125
   host launcher/workflow tests and current Playwright static type check passed.
-- Production build passed all 23 tasks. PWA and Chat production builds passed
-  again after the embedded-cookie correction. Staged formatting, diff and secret
-  checks passed. Focused static security scanning found three unchanged baseline
+- An earlier production build passed all 23 tasks. The final correction build
+  completed the app bundles but LTI and response-API Rollup processes did not
+  exit; the one-off container was stopped. Both packages then built successfully
+  in a sequential rerun. This is combined build evidence, not one clean final
+  monorepo run. Staged formatting, diff and secret checks passed. Focused static security scanning found three unchanged baseline
   findings and no newly introduced findings; this does not resolve CodeQL.
 
 Browser verification and screenshots remain blocked. Both exact managed runtime
