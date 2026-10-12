@@ -139,63 +139,93 @@ Reuse unaffected evidence only where source and contract have not changed.
 
 ## Progress
 
-Shared-login implementation and final review corrections are committed locally
-through `a650a0c78c`. Removed
-regular tab token storage, explicit-bearer precedence, the Chat login gate and
-obsolete tests. Shared revision checks protect PWA, Chat and response requests.
-Embedded pages require unpartitioned cookie access before authenticated content
-mounts; otherwise the original LTI activity can open in a normal tab.
-The browser spec observes existing PWA and Chat tabs and completed-response
-ordering. It has not yet run against this implementation.
+The shared-login implementation is committed through `00fbf1b11a`. Regular
+per-tab token storage, explicit-bearer precedence, the Chat login gate and its
+translations/tests are removed. Shared revision checks protect PWA, Chat and
+response requests. The direct Chat link is restored. Embedded pages require
+unpartitioned cookie access; otherwise the original LTI activity can open in a
+normal tab. Assessment and non-browser authentication keep their own contracts.
 
-Planner, simplification and focused risk review completed. Simplification removed
-an unused account token prop, duplicate revision writes and redundant Chat stream
-state. The integrated final source review inspected the full PR through `35b2700994`.
-Its accepted corrections bind live-quiz SSR data to the session revision, remove
-the redundant post-deletion logout and reject foreign-origin cookie writes in
-Chat and the response API. The existing server logout helper now performs cookie
-cleanup after committed deletion. The conservative whole-page mounting boundary
-is retained and its first-render/anonymous-frame tradeoff is explicit above.
-The single correction review accepted these changes and found a missing Chat
-ConfigMap declaration. Adding the existing cookie-domain value closes that gap;
-Helm rendering passed for default, staging and production values, with nonempty
-domains in both deployment overlays. Source review is dispositioned; browser
-acceptance remains outstanding. `2ce5d70477` only aligns browser
-tests with the corrected recovery interaction.
+Planner, simplification, focused risk and integrated source reviews completed.
+Accepted corrections bind live-quiz SSR data to the revision, remove redundant
+post-deletion logout, reject foreign-origin cookie writes, and declare the Chat
+cookie domain in its ConfigMap. Default/staging/production chart rendering
+passed. The conservative whole-page mounting boundary also protects anonymous
+layouts that query participant identity.
 
-Verification completed:
+Browser verification found two further application corrections. Rejected-launch
+recovery now wins over the revision reload and preserves the locale. Successful
+deletion reloads a credential-stripped URL rather than replaying the deleted
+account's LTI launch. Both received scoped independent review without blocking
+findings. The browser tests observe signed-out state rather than competing with
+application redirects; deletion starts in a fresh tab after the logout scenario.
+The optional suggestion to strip every successful launch URL immediately remains
+outside this correction; deletion and revision reloads already strip credentials.
 
-- 31 PWA unit tests, 24 backend unit tests and three focused GraphQL cookie and
-  deletion-cleanup tests passed. The final Chat guard file passed all 17 tests.
-  Twelve database-dependent cases in the selected GraphQL file were
-  excluded because the managed application runtime is unavailable.
-- Chat: 744 passed and 21 skipped, with one Headers-representation assertion
-  corrected; its five-test file then passed. This is combined evidence, not one
-  clean full-suite run. Eighteen focused Chat regression tests also passed.
-- All 35 repository type-check tasks, lint, dependency consistency, agent-doc,
-  Git-identity, removed-doc-path and Prisma schema-sync checks passed. The 125
-  host launcher/workflow tests and current Playwright static type check passed.
-- An earlier production build passed all 23 tasks. The final correction build
-  completed the app bundles but LTI and response-API Rollup processes did not
-  exit; the one-off container was stopped. Both packages then built successfully
-  in a sequential rerun. This is combined build evidence, not one clean final
-  monorepo run. Staged formatting, diff and secret checks passed. Focused static security scanning found three unchanged baseline
-  findings and no newly introduced findings; this does not resolve CodeQL.
+### Verification
 
-Browser verification and screenshots remain blocked. Both exact managed runtime
-providers are stopped. The retained runtime refuses startup with
-`Managed Compose configuration changed for service 'oidc'.` A separate detached
-verification checkout, `trees/olat-shared-login-verification`, preserves a source
-snapshot matching the implementation. Its initial managed build stalled; after
-provider-owned stop, devrouter repair is blocked by `COMPLETION_UNKNOWN` lifecycle
-admission. Devrouter stop still reports the OIDC configuration guard. No retained
-containers, volumes, worktrees or data were deleted, and no tool configuration was
-changed. Read-only doctor reports the runtime stopped but supplies no applicable
-reconciliation for these failures.
+- All 31 PWA unit tests and 15 database-backed GraphQL login/cookie/deletion
+  tests passed. PWA type/lint and Playwright type checks passed; lint has thirteen
+  existing warnings and no errors. Container formatter and secret checks passed.
+- Unchanged-source evidence remains valid: 24 backend tests, 17 Chat guard tests,
+  35 repository type-check tasks, lint/dependency/policy checks, and 125 host
+  launcher/workflow tests. Chat has 745 combined passing cases and 21 skips after
+  a corrected Headers assertion; this is not one clean full-suite run.
+- Browser acceptance totals 33 passing cases and seven environment skips
+  across five projects. This is combined evidence: the latest full run had
+  30 passes, seven skips and three failures; the affected two journeys then
+  passed all eight applicable Chromium/Firefox cases (two WebKit skips).
+  All four real ltijs launches against the mock LMS passed in the focused run.
+- Final PWA production build passed against application source `00fbf1b11a`.
+  Its first attempt found duplicate development/production generated types;
+  the owned dev process was stopped and generated dev output was moved aside
+  before the successful build. No source configuration changed. An earlier
+  monorepo build passed 23 tasks. Corrected app bundles plus sequential LTI and
+  response-API builds provide the remaining combined build evidence; the
+  earlier combined Rollup invocation did not exit and is not claimed as green.
+- Real agent-browser captures cover EN desktop and DE mobile signed-out/profile
+  states, embedded recovery, malformed launch recovery, refused cookies and the
+  restored course Chat link. Login replacement and logout were observed across
+  tabs; the direct Chat link opened Chat without a recovery dialog. Synthetic
+  screenshots retain their capture revisions and reuse rationale.
 
-Next: restore supported devrouter startup; run the revised browser suite and capture current EN desktop / DE mobile
-screenshots; then push and update the existing PR with accurate evidence. The
-PR remains at `a7b5054177`; no earlier tab-isolation browser result counts toward
-this contract. Stop both exact runtime targets and verify route release at close.
-Hosted CI, CodeQL disposition, required final AI review and real OLAT acceptance
-remain separate outstanding checks; do not infer them from local verification.
+The initial five-project matrix had 28 passes, six skips and six failures.
+Corrections addressed competing test navigations, deletion replay and WebKit's
+local cookie limitation. A subsequent matrix had 30 passes, seven skips and
+three failures: one transient devrouter container-inventory error during local
+LTI registration and two deletion-scenario navigations racing the preceding
+logout redirect. The affected journeys passed their focused rerun after isolating deletion
+in a fresh tab. Earlier tab-isolation browser results do not count toward the
+shared-login contract.
+
+The seven WebKit cookie-dependent journeys cannot be completed on this local
+`.localhost` stack: the shared revision is not consistently readable although
+the API may receive cookies, resulting in HTTP 409. Its remaining quiz journey
+checks refusal and records skipped submission steps. Other restricted contexts
+also record refused-cookie steps without claiming quiz attribution there.
+The four Chromium/Firefox projects exercise the real ltijs service against a
+synthetic LMS. Real OLAT and production acceptance remain unverified.
+
+### Runtime and delivery
+
+Git and host process access are restored. Startup was blocked by a devrouter
+Compose hash mismatch: Compose resolves `network_mode: service:app` to the exact
+container identity before hashing. A narrowly reviewed local repair preserves
+full hash validation and passed 177 tests plus native checks. Canonical stop
+cleared the uncertain lifecycle state. The guarded bootstrap helper verified
+marked disposable databases, prepared dependencies and seeded synthetic data.
+The full routed runtime now passes app and route readiness checks. No global
+CLI/configuration replacement or retained volume/container deletion was needed.
+
+Runtime release uses canonical stop on the exact implementation and verification
+checkouts, followed by provider-state and route readback. The local runtime
+report records the final state; retained data and worktrees remain preserved.
+
+The existing PR remains the delivery target, as explicitly requested. The
+cohesive authentication contract crosses PWA, Chat and API boundaries; no new
+stack topology is introduced. Packaging remains approximately 62 files against
+v3, dominated by authentication regression coverage. Obsolete tab-session code
+and its tests were removed rather than retained as a second login mode. Hosted CI, CodeQL disposition and
+the required public final review remain outstanding merge gates. Do not poll
+CI or trigger the final review before the user reports the required conditions.
+No merge, deployment, human review request or CodeQL state change is included.

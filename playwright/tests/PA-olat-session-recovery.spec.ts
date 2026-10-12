@@ -975,6 +975,7 @@ test('rejected logout and account deletion keep the shared session and succeed o
 
   // A declined account deletion keeps the disposable participant; the retry
   // deletes it and ends the shared session.
+  page = await context.newPage()
   const prisma = await getPrisma()
   const disposableUsername = `pa${randomUUID().slice(0, 8)}`
   const disposable = await prisma.participant.create({
