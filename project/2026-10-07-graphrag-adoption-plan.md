@@ -20,6 +20,88 @@ and paid evaluation remain separate gates; OpenRouter review remains waived.
 
 ## Current state and next decision
 
+### October 12 names-only diagnosis and next context probe (prepared)
+
+Saved evidence confirms the raw noise response kept two of three residual examples.
+The classifier received names without descriptions. The production GraphML reader
+also discards descriptions before noise planning, and generic preservation guidance
+competes with the course policy's evidence-dependent exclusions. These are verified
+source gaps; the causal explanation of the model's decisions remains a hypothesis.
+
+Provider MR !42 now reads bounded descriptions from the existing local GraphML,
+wires them through the existing pipeline and standalone cleaner, and supplies
+indexed JSON evidence. It clarifies course-policy precedence for incidental examples.
+Descriptions over 1,000 characters are preserved in code. Rejected, partial,
+duplicate-key, refused or non-stop responses preserve the whole batch. Complete
+request content exceeding 64,000 UTF-8 bytes including the protocol allowance
+is preserved without dispatch or splitting. Graph read errors abort before calls
+or plan writes; diagnostics omit provider exception bodies. Pattern-based noise
+behavior remains an existing limitation. Strict category, persisted-write and
+final/pre-export validation remain in place; ingestion remains independently
+operated, with no database, dependency, taxonomy or global routing changes.
+
+Offline source qualification: 93 tests and Ruff pass under LightRAG 1.5.7.
+Source commit `40ff610` has passing independent risk and integrated final reviews;
+simplification found no useful reduction. Provider draft head is `7a09d42`. The
+private v3 harness uses exact source functions and the frozen residual descriptions
+plus a synthetic retained concept. It accepts the synthetic complete result and
+rejects missing/wrong noise labels, empty category output, refusal and truncation.
+Measured input bounds are 1,555 noise and 746 category tokens. These are fabricated
+response checks, not live semantic acceptance. Its live path remains disabled.
+
+**Proposed next bounded probe.** Main owns admission, effects and cleanup. Approval
+would cover reopening only `127.0.0.1:14000 -> stg-litellm/litellm:4000` using
+existing STG access and the existing restricted `ai-generic-stg` gateway credential,
+then at most two sequential calls. Recheck the complete effective Azure route,
+model prices, retry/fallback controls and previous exact-request billing before
+admitting the unchanged exact Luna alias. Stop if a conservative bound cannot
+fit the CHF 0.50 reservation. No new secret permissions or broad traffic discovery.
+
+1. Call the exact noise classifier once on the three frozen names **and their
+   descriptions**, plus the synthetic anchor. Require one complete raw map with
+   unique identities/keys, stop finish, no refusal, three noise labels and one
+   retained concept. Do not infer acceptance from production preservation defaults.
+2. Only after accepted noise decisions and reconciled new-call spend, call the
+   existing category classifier once on the same meaningful synthetic anchor.
+   Require its expected allowed category and the complete strict response contract.
+   Unresolved spend or any rejected result stops the dependent branch. No automatic
+   repeats, substitutions or replacement calls; exclusive v3 claims preserve all
+   prior failed evidence.
+3. Each request has at most 5,000 input tokens, measured as the larger
+   cl100k_base/o200k_base count across all message content plus 512 protocol tokens.
+   Noise output 2,000, category output 4,000; 120-second deadline, one client attempt.
+   The proposed envelope is 24 upstream attempts per request: six possible route
+   selections times four attempts, based on max_fallbacks five and num_retries three.
+   At the recorded worst route rates and CHF 2/USD, both requests total CHF 0.4416.
+   The installed gateway version and retry semantics must establish this envelope
+   before admission; unsupported or more expensive controls stop dispatch.
+4. On success, rejection, timeout, interruption or post-connectivity preflight failure,
+   main retains private responses/cost receipts and verifies original
+   test chatbot/source/publication state, and closes the exact recorded forwarding process, proving its ports closed.
+   Unresolved billing or cleanup retains holds and blocks continuation without replay. This probe
+   creates no graph build or activation and does not qualify whole-graph recovery.
+   Conditional delivery and evaluation remain stopped until a reviewed successful
+   admission is available.
+
+Conservative current accounting **CHF 6.99857084**, remaining **CHF 13.00142916**.
+With the proposed CHF 0.50 probe hold: **CHF 7.49857084**, leaving **CHF 12.50142916**.
+The later graph/answer/judge reservations would bring the combined planning ceiling
+to **CHF 14.54021564**, leaving CHF 5.45978436 unallocated; they are not admitted
+by this source/probe-preparation step. Existing failed-build and unresolved probe
+holds remain. Graph accounting still uses the approved application-charge basis.
+No new paid call or cluster connectivity ran while qualifying this correction.
+
+The private source manifest pins the actual loaded bytes of pipeline, cleaner,
+constants, domain-policy renderer, frozen candidates/policy and evaluation protocol.
+The harness requires fresh admission evidence before each live dispatch, aged zero
+to five minutes, plus gateway-version/configuration-bound qualification of the
+24-attempt ceiling and confirmation that every prior billing hold remains counted.
+Missing or mismatched evidence blocks an exclusive claim before dispatch. Billing
+requires each reported charge to be finite/nonnegative and an exact token-matched
+row; any gateway retry/fallback blocks category dispatch until every charge can be
+reconciled. All raw responses and billing evidence remain private. Live execution
+remains guarded until the user approves the corrected probe scope.
+
 ### October 12 latest execution: noise classification blocks recovery
 
 The user approved the two-probe batch and conditional delivery sequence below.
