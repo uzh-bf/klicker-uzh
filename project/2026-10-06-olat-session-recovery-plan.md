@@ -325,9 +325,10 @@ on changing a framework API or dependency version.
 
 ### Progress for this follow-up
 
-Status: implementation and browser verification in progress. Host access was
-restored on 12 October. User approval covers completion and updating the existing
-PR after browser verification; no additional generic approval is needed.
+Status: implementation, local verification and integrated source review complete.
+Host access was restored on 12 October. The existing PR records the published
+revision and remaining exact-head CI/CodeQL gate. User approval covers its update
+after browser verification; no additional generic approval is needed.
 
 Completed planning: immutable 48-path inventory, two independent source reviews,
 feedback-to-source reconciliation, existing test inspection and planner hardening.
@@ -340,12 +341,12 @@ GitHub confirms that head and base `fb43d837e9106c5a80616dc3ee519c7395a4e262`.
 The initial sandbox prevented Git metadata writes and devrouter lock inspection.
 After access was restored, the SSH agent refused signing. A command-scoped HTTPS
 transport using the existing `gh` credential helper fetched successfully, without
-changing remote configuration. The task is even with its remote; it is 38 ahead
+changing remote configuration. At that fetch the task was even with its remote, 38 ahead
 and 3 behind `origin/v3` (`df2bfa41d8`). Those three target commits concern Chat
 registries and production pins and introduce no current integration blocker.
 The live PR still targets `v3`. Exact worktree runtime
-`rs-olat-session-recovery` is running through `devrouter ensure --profile full`;
-its application readiness contracts passed. It must be stopped after verification.
+`rs-olat-session-recovery` was started through `devrouter ensure --profile full`;
+its application readiness contracts passed. Runtime closure is recorded below.
 
 Implemented locally: a final Apollo transport guard with retry suppression and
 late-result rejection; Header recovery guidance keyed to the active Apollo
@@ -413,7 +414,13 @@ the approved source and browser portfolio. The dedicated simplifier reviewed `fd
 justified simplification. The risk review accepted the correction range through `a9e253ecf8`, resolving
 the bridge evidence gap and withdrawing an assessment concern because that
 app skips the chatbot query. No consequential findings remain in the slice.
-Integrated final review remains pending; no source review replaces browser proof. The existing source/API comments were preserved except where the
+Claude CLI final review passed on the complete 49-path range
+`fb43d837e9106c5a80616dc3ee519c7395a4e262..efd74004617ea4110ad77eb0d24daa043385f21c`.
+The structured result validated against the canonical review schema and contains
+no findings. Its pending runtime-close observation is superseded by the receipt
+below. This final documentation-only status update does not change the reviewed
+application or tested behavior; main-session diff inspection verifies it. The
+existing source/API comments were preserved except where the
 approved behavior changes their contract.
 
 The owned synthetic gallery chatbot was removed through the guarded script and
@@ -422,15 +429,24 @@ build hit the documented duplicate generated `PagesPageConfig` validators; the
 owned dev process was stopped and generated dev types preserved outside compiler
 inputs before retrying. The full production build then passed all 23 tasks
 (17 cache hits) in 3m13s. No source workaround or typecheck bypass was added.
+Focused Opengrep scanning ran 210 applicable rules on the two changed application
+files: no scan errors or new findings. Its HTTP-to-WebSocket warning is unchanged
+in `v3`, alongside HTTPS-to-WSS conversion.
+
+The exact worktree runtime was stopped through devrouter. Source-path lookup
+resolved Devsy workspace `rs-olat-session-recovery`, Docker UID `default-rs-f31e9`;
+provider status is `Stopped`, and fresh routing inventory contains zero routes
+for this checkout. The managed stop waited for a shared provider lock and freed
+all 11 routes. No workspace or retained data was deleted.
 
 Package size against `v3`: 4,970 substantive changed lines across 48 source,
 test and domain-document paths, plus the excluded project-plan artifact. This
 is the existing reviewed PR and the user explicitly requested updating it; the
 approved follow-up retains that topology rather than opening another package.
 
-Next: finish integrated final review and runtime-stop verification, then push and
-update the existing PR with the inspected screenshot gallery. Preserve its current ready/draft
-state. Do not poll CI; the user signals when exact-head checks have settled before
+Delivery uses an ordinary task-branch push and the existing PR with the inspected
+screenshot gallery, preserving its existing ready/draft state. Do not poll CI;
+the user signals when exact-head checks have settled before
 `/final-review`. Human review, merge, alert dismissal and deployment remain
 separate. The historical record below is retained verbatim and does not establish
 acceptance of these new changes.
