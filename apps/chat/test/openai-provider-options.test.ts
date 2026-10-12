@@ -1,4 +1,7 @@
-import { createOpenAI } from '@ai-sdk/openai'
+import {
+  createOpenAI,
+  type OpenAILanguageModelResponsesOptions,
+} from '@ai-sdk/openai'
 import { generateText, isStepCount, streamText, tool } from 'ai'
 import { describe, expect, test, vi } from 'vitest'
 import { z } from 'zod'
@@ -128,7 +131,7 @@ describe('OpenAI provider routing options', () => {
   })
 
   describe('reasoning options for gateway deployment ids', () => {
-    async function requestBodyFor(openai: Record<string, unknown>) {
+    async function requestBodyFor(openai: OpenAILanguageModelResponsesOptions) {
       let body: Record<string, any> = {}
       const fetch = vi.fn(async (_input: unknown, init?: RequestInit) => {
         body = JSON.parse(String(init?.body))
