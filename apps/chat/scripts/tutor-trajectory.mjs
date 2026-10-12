@@ -3,8 +3,17 @@
 // the driver that chains real assistant replies into the next learner turn.
 // Transport (login, thread creation, streaming, polling) stays in
 // klicker-evaluation-target.mjs.
+//
+// Source receipts reuse the application's own normalization and citation
+// mapping (`src/lib/sources/normalizeSources.ts`) instead of a second copy, so
+// first-appearance numbering, cross-call deduplication and the source
+// capacity always follow the shipped application. A receipt records which
+// mapper produced it, but never the raw references, titles, URLs, chunks or
+// excerpts behind it. The mapping is a reconstruction from persisted tool
+// results, not a claim about the exact historical model input.
 
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 
 import { evaluationError, finiteCredits } from './klicker-evaluation-target.mjs'
 
@@ -16,9 +25,13 @@ export const EXPECTED_DOC_QUERY_TOOL = 'KB_doc_query'
 
 export const TRAJECTORY_GROUPS = ['development', 'reserved', 'control']
 export const TRAJECTORY_LANGUAGES = ['en', 'de']
-export const TRAJECTORY_MODES = ['tutor', 'quizzer']
+export const TRAJECTORY_MODES = ['tutor', 'explainer', 'quizzer']
 
-const TRAJECTORY_MAX_SOURCES = 12
+// Bumped when the sanitized turn receipt shape changes.
+const TRAJECTORY_RECEIPT_VERSION = 2
+// Schema version of the reconstructed per-call source mapping below.
+const SOURCE_MAPPING_VERSION = 1
+
 const TRAJECTORY_CASE_FIELDS = new Set([
   'id',
   'group',
@@ -159,80 +172,122 @@ export function validateTrajectoryCorpus(value) {
   return { version: 1, cases }
 }
 
-// Receipts may carry source references and titles only. A persisted tool
-// result still holds raw retrieval payloads (arguments, chunks, excerpts and
-// potentially internal URLs), so this projection picks the two fields a
-// reviewer needs and never forwards the raw result itself.
-function cleanMetadataString(value) {
-  if (typeof value !== 'string') return null
-  const trimmed = value.trim()
-  if (!trimmed || trimmed.toUpperCase() === 'N/A') return null
-  return trimmed
-}
+// The application mapper is TypeScript with extensionless imports. `tsx` is an
+// existing dev dependency, so no new dependency is added. Vitest resolves the
+// module through its own pipeline; a plain `node` process cannot follow the
+// application's extensionless imports, so on failure the tsx loader is
+// registered once and the import retried. Both paths load the exact shipped
+// module, keeping the evaluator's numbering identical to the application's.
+const SOURCE_MAPPER_FILE = new URL(
+  '../src/lib/sources/normalizeSources.ts',
+  import.meta.url
+)
 
-function parseMetadataObject(raw) {
-  if (typeof raw !== 'string') return undefined
+async function importSourceMapper() {
   try {
-    const parsed = JSON.parse(raw)
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-      ? parsed
-      : undefined
+    return await import('../src/lib/sources/normalizeSources.ts')
   } catch {
-    return undefined
+    await import('tsx')
+    return await import('../src/lib/sources/normalizeSources.ts')
   }
 }
 
-function docQueryPayload(raw) {
-  if (typeof raw === 'string') return parseMetadataObject(raw)
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined
-  if (Array.isArray(raw.content)) {
+// tsx may present a CommonJS module either as named exports or through its
+// interop namespace, depending on how the loader classified the module.
+function selectSourceMapper(namespace) {
+  const mapper =
+    typeof namespace?.normalizeSourcesFromParts === 'function'
+      ? namespace
+      : (namespace?.['module.exports'] ?? namespace?.default)
+  if (
+    typeof mapper?.normalizeSourcesFromParts !== 'function' ||
+    typeof mapper?.parseDocQueryPayload !== 'function' ||
+    typeof mapper?.sourceCitationIndices !== 'function' ||
+    !Number.isInteger(mapper?.MAX_SOURCES)
+  ) {
+    throw evaluationError('source_mapper_unavailable')
+  }
+  return mapper
+}
+
+const SOURCE_MAPPER = selectSourceMapper(await importSourceMapper())
+const {
+  MAX_SOURCES,
+  normalizeSourcesFromParts,
+  parseDocQueryPayload,
+  sourceCitationIndices,
+} = SOURCE_MAPPER
+
+// Identifies the reconstruction for a reviewer: the receipt schema version, the
+// application capacity in force, and a fingerprint of the exact mapper file.
+// The fingerprint is a file hash, so a reviewer can recompute it from the
+// checked-out source and see when the application mapping changes.
+const SOURCE_MAPPING_DESCRIPTOR = Object.freeze({
+  version: SOURCE_MAPPING_VERSION,
+  maxSources: MAX_SOURCES,
+  fingerprint: createHash('sha256')
+    .update(readFileSync(SOURCE_MAPPER_FILE))
+    .digest('hex'),
+})
+
+// Reconstructs the application's per-call citation mapping from persisted tool
+// results: for every original source position, the first-appearance registry
+// index reconstructed for the model (null past the capacity or when the source does not
+// normalize), a hashed normalized identity shared across calls, the normalized
+// type and safe numeric page/time metadata. Raw references, titles, URLs, chunks
+// and excerpts never reach a receipt.
+function mapSourceEntries(parts, registry) {
+  const entries = []
+  for (const part of parts) {
     if (
-      raw.structuredContent &&
-      typeof raw.structuredContent === 'object' &&
-      !Array.isArray(raw.structuredContent)
+      part?.type !== 'tool-call' ||
+      part.toolName !== EXPECTED_DOC_QUERY_TOOL ||
+      !isCompletedDocQueryPart(part)
     ) {
-      return docQueryPayload(raw.structuredContent) ?? raw.structuredContent
+      continue
     }
-    const textItem = raw.content.find(
-      (item) =>
-        item &&
-        typeof item === 'object' &&
-        item.type === 'text' &&
-        typeof item.text === 'string'
-    )
-    return textItem ? parseMetadataObject(textItem.text) : undefined
+    const payload = parseDocQueryPayload(part.result)
+    if (!payload || 'error' in payload || !Array.isArray(payload.sources)) {
+      continue
+    }
+    const indices = sourceCitationIndices(payload, registry)
+    payload.sources.forEach((rawSource, position) => {
+      // Mirrors `sourceCitationIndices`, which normalizes each source through a
+      // single-source payload, to recover the normalized identity behind the
+      // index, including for positions that fell past the capacity.
+      const [normalized] = normalizeSourcesFromParts([
+        {
+          type: 'tool-call',
+          toolName: 'doc_query',
+          result: { ...payload, sources: [rawSource] },
+        },
+      ])
+      entries.push({
+        toolCallId: part.toolCallId,
+        sourcePosition: position + 1,
+        citationIndex: Number.isInteger(indices[position])
+          ? indices[position]
+          : null,
+        identityHash: normalized
+          ? createHash('sha256').update(normalized.id).digest('hex')
+          : null,
+        type: normalized?.type ?? null,
+        page: normalized?.page ?? null,
+        startSec: normalized?.startSec ?? null,
+        endSec: normalized?.endSec ?? null,
+      })
+    })
   }
-  return raw
+  return entries
 }
 
-function sourceMetadataKey(reference, title) {
-  return (reference ?? '') + '|' + (title ?? '')
-}
-
-function docQuerySourceMetadata(raw) {
-  const payload = docQueryPayload(raw)
-  const entries =
-    payload && Array.isArray(payload.sources) ? payload.sources : []
-  const sources = []
-  const seen = new Set()
-  for (const entry of entries) {
-    if (sources.length >= TRAJECTORY_MAX_SOURCES) break
-    if (!entry || typeof entry !== 'object') continue
-    const reference =
-      cleanMetadataString(entry.reference) ??
-      cleanMetadataString(entry.file_name)
-    const title =
-      cleanMetadataString(entry.title) ??
-      cleanMetadataString(entry.display_name) ??
-      cleanMetadataString(entry.file_name) ??
-      reference
-    if (!reference && !title) continue
-    const key = sourceMetadataKey(reference, title)
-    if (seen.has(key)) continue
-    seen.add(key)
-    sources.push({ ref: reference ?? title, title: title ?? reference })
+export function buildSourceReceipt(parts) {
+  const content = Array.isArray(parts) ? parts : []
+  const registry = normalizeSourcesFromParts(content)
+  return {
+    sourceMapping: SOURCE_MAPPING_DESCRIPTOR,
+    sources: mapSourceEntries(content, registry),
   }
-  return sources
 }
 
 function extractVisibleText(message, role) {
@@ -287,23 +342,14 @@ function extractTrajectoryTurn(message, requireRetrieval) {
   if (completed.length !== docQueryParts.length)
     throw evaluationError('trajectory_tool_error')
 
-  const sources = []
-  const seen = new Set()
-  for (const part of completed) {
-    for (const source of docQuerySourceMetadata(part.result)) {
-      if (sources.length >= TRAJECTORY_MAX_SOURCES) break
-      const key = sourceMetadataKey(source.ref, source.title)
-      if (seen.has(key)) continue
-      seen.add(key)
-      sources.push(source)
-    }
-  }
+  const { sources, sourceMapping } = buildSourceReceipt(parts)
 
   return {
     answer,
     toolName: docQueryParts.length ? EXPECTED_DOC_QUERY_TOOL : null,
     toolStatus: docQueryParts.length ? 'completed' : 'not_called',
     sources,
+    sourceMapping,
   }
 }
 
@@ -421,6 +467,7 @@ function verifyTrajectoryTurn({ messages, chain, mode, modelId, stream }) {
     userText: persistedUserText,
     assistantText: extracted.answer,
     sources: extracted.sources,
+    sourceMapping: extracted.sourceMapping,
     toolName: extracted.toolName,
     toolStatus: extracted.toolStatus,
     creditsUsed: finiteCredits(persistedAssistant.creditsUsed),
@@ -495,6 +542,7 @@ export async function runTrajectory(target, definition, options = {}) {
 
     const receipt = {
       type: 'turn',
+      receiptVersion: TRAJECTORY_RECEIPT_VERSION,
       arm,
       caseId: plan.id,
       group: plan.group,
@@ -511,6 +559,7 @@ export async function runTrajectory(target, definition, options = {}) {
       userText: verified.userText,
       assistantText: verified.assistantText,
       sources: verified.sources,
+      sourceMapping: verified.sourceMapping,
       toolName: verified.toolName,
       toolStatus: verified.toolStatus,
       latencyMs: Date.now() - startedAt,
