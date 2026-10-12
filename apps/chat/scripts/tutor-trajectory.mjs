@@ -201,6 +201,7 @@ function selectSourceMapper(namespace) {
       : (namespace?.['module.exports'] ?? namespace?.default)
   if (
     typeof mapper?.normalizeSourcesFromParts !== 'function' ||
+    typeof mapper?.isDocQueryToolName !== 'function' ||
     typeof mapper?.parseDocQueryPayload !== 'function' ||
     typeof mapper?.sourceCitationIndices !== 'function' ||
     !Number.isInteger(mapper?.MAX_SOURCES)
@@ -212,6 +213,7 @@ function selectSourceMapper(namespace) {
 
 const SOURCE_MAPPER = selectSourceMapper(await importSourceMapper())
 const {
+  isDocQueryToolName,
   MAX_SOURCES,
   normalizeSourcesFromParts,
   parseDocQueryPayload,
@@ -241,7 +243,8 @@ function mapSourceEntries(parts, registry) {
   for (const part of parts) {
     if (
       part?.type !== 'tool-call' ||
-      part.toolName !== EXPECTED_DOC_QUERY_TOOL ||
+      typeof part.toolName !== 'string' ||
+      !isDocQueryToolName(part.toolName) ||
       !isCompletedDocQueryPart(part)
     ) {
       continue

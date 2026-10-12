@@ -16,6 +16,8 @@ Klicker application stack.
 `apps/chat/scripts/run-tutor-trajectories.mjs` accepts synthetic Tutor, Explainer
 and Quizzer corpora. Receipts reconstruct citation positions with the application's
 source mapper, including cross-call duplicates and null indices for overflow.
+The receipt includes every application-recognized retrieval server; the local
+trajectory's first-turn grounding check still requires `KB_doc_query`.
 They contain hashed identities and numeric page/video positions, not source text,
 titles or URLs. Reconstruction from persisted tools does not establish the exact
 historical model input. Receipt version 2 identifies the mapper fingerprint.

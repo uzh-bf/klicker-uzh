@@ -713,10 +713,10 @@ test('trajectory accepts Explainer with the same stream and persistence checks',
 test('source receipts match the application citation projection and suppress raw sources', () => {
   const documents = (...sources) => ({ mode: 'documents', sources })
   const answer = (...sources) => ({ mode: 'answer', sources })
-  const part = (toolCallId, result) => ({
+  const part = (toolCallId, result, toolName = EXPECTED_DOC_QUERY_TOOL) => ({
     type: 'tool-call',
     toolCallId,
-    toolName: EXPECTED_DOC_QUERY_TOOL,
+    toolName,
     result,
   })
   const alphaChunk = {
@@ -752,24 +752,31 @@ test('source receipts match the application citation projection and suppress raw
         page_number: 5,
         source_url: 'https://private.example.internal/secret.pdf',
         excerpt: 'private-chunk-text',
-      })
+      }),
+      'COURSE_doc_query'
     ),
-    part('call-c', {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(
-            documents(
-              ...Array.from({ length: 12 }, (_, index) => ({
-                reference: 'urn:c' + index,
-                title: 'Doc ' + index,
-                chunks: [{ content: 'chunk ' + index, page_number: index + 1 }],
-              }))
-            )
-          ),
-        },
-      ],
-    }),
+    part(
+      'call-c',
+      {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              documents(
+                ...Array.from({ length: 12 }, (_, index) => ({
+                  reference: 'urn:c' + index,
+                  title: 'Doc ' + index,
+                  chunks: [
+                    { content: 'chunk ' + index, page_number: index + 1 },
+                  ],
+                }))
+              )
+            ),
+          },
+        ],
+      },
+      'COURSE_doc_query_01234567'
+    ),
   ]
 
   const receipt = buildSourceReceipt(parts)
