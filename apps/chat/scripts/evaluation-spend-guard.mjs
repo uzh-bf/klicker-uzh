@@ -236,18 +236,7 @@ export async function createSpendGuard({
     throw budgetError('budget_policy_mismatch')
   assertBudgetCanStart(ledger)
   const upstream = new URL(upstreamOrigin)
-  if (
-    !apiKey ||
-    !upstreamKey ||
-    upstreamOrigin !== policy.upstreamOrigin ||
-    upstream.username ||
-    upstream.password ||
-    upstream.search ||
-    upstream.hash ||
-    !['http:', 'https:'].includes(upstream.protocol) ||
-    (upstream.protocol === 'http:' &&
-      !['localhost', '127.0.0.1', '[::1]'].includes(upstream.hostname))
-  )
+  if (!apiKey || !upstreamKey || upstreamOrigin !== policy.upstreamOrigin)
     throw budgetError('provider_guard_configuration_invalid')
 
   return createServer(async (request, response) => {
