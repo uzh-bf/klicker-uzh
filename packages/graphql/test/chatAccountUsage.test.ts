@@ -277,7 +277,7 @@ describe('ChatAccountUsage service and GraphQL API', () => {
       },
       advancedModelUsage: {
         usageClass: 'ADVANCED',
-        entitled: false,
+        entitled: true,
         budgetCredits: 1,
         usedCredits: 2,
         remainingCredits: 0,
@@ -285,7 +285,7 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     })
   })
 
-  it('opens the advanced class only for an account with a cost center', async () => {
+  it('opens advanced entitlement for a billing address or an explicit allowance', async () => {
     await prisma.user.update({
       where: { id: ownerId },
       data: {
@@ -303,7 +303,7 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     })
 
     // A recorded tier alone never admits a cost-carrying class: without an
-    // address to bill, the advanced lane stays closed.
+    // address to bill or an explicit allowance, the advanced lane stays closed.
     await prisma.user.update({
       where: { id: ownerId },
       data: { aiChatbotCostCenter: null },
@@ -313,6 +313,17 @@ describe('ChatAccountUsage service and GraphQL API', () => {
       subscriptionTier: 'ADVANCED',
       baseModelUsage: { entitled: true },
       advancedModelUsage: { entitled: false },
+    })
+
+    await seedUsage({
+      usageClass: 'ADVANCED',
+      budgetCredits: 2,
+      usedCredits: 0,
+    })
+    const fundedPilot = await getChatAccountUsage({ now: NOW }, ownerCtx)
+    expect(fundedPilot?.advancedModelUsage).toMatchObject({
+      entitled: true,
+      remainingCredits: 2,
     })
 
     // A withdrawn account is closed for both classes, whatever it records.
@@ -354,11 +365,23 @@ describe('ChatAccountUsage service and GraphQL API', () => {
       },
       advancedModelUsage: {
         usageClass: 'ADVANCED',
+        entitled: true,
         budgetCredits: 7,
         usedCredits: 0,
         remainingCredits: 7,
         resetAt: getZurichMonthReset(NEXT_MONTH),
       },
+    })
+    await seedUsage({
+      usageClass: 'ADVANCED',
+      budgetCredits: 0,
+      usedCredits: 0,
+      now: NEXT_MONTH,
+    })
+    const revoked = await getChatAccountUsage({ now: NEXT_MONTH }, ownerCtx)
+    expect(revoked?.advancedModelUsage).toMatchObject({
+      entitled: false,
+      remainingCredits: 0,
     })
   })
 
@@ -698,7 +721,7 @@ describe('ChatAccountUsage service and GraphQL API', () => {
         baseModelUsage: { usageClass: 'BASE', budgetCredits: 4.5 },
         advancedModelUsage: {
           usageClass: 'ADVANCED',
-          entitled: false,
+          entitled: true,
           budgetCredits: 6.25,
         },
       },

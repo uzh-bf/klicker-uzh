@@ -145,7 +145,13 @@ export async function isChatAccountUsageAvailable({
   ])
 
   return Boolean(
-    isChatUsageClassEntitled({ usageClass, ...entitlement }) &&
+    isChatUsageClassEntitled({
+      usageClass,
+      ...entitlement,
+      hasAdvancedAllowance:
+        usageClass === 'ADVANCED' &&
+        Boolean(usage?.budgetCredits.greaterThan(0)),
+    }) &&
       usage?.budgetCredits.greaterThan(0) &&
       usage.usedCredits.lessThan(usage.budgetCredits)
   )

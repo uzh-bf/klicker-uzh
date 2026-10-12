@@ -877,8 +877,9 @@ describe('account usage chat route', () => {
     expect(mocks.streamText).toHaveBeenCalledOnce()
   })
 
-  test('refuses an advanced model without a cost center while enforcement is off', async () => {
+  test('refuses an unfunded advanced model without a cost center while enforcement is off', async () => {
     mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(false)
+    mocks.isChatAccountUsageAvailable.mockResolvedValue(false)
     mocks.chatbotFindUnique.mockResolvedValue(
       chatbot({
         owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: null },
@@ -894,7 +895,10 @@ describe('account usage chat route', () => {
       error: 'Chat model usage is unavailable',
       code: 'CHAT_MODEL_UNAVAILABLE_ADVANCED',
     })
-    expect(mocks.isChatAccountUsageAvailable).not.toHaveBeenCalled()
+    expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledWith({
+      ownerId: 'owner-1',
+      usageClass: 'ADVANCED',
+    })
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.threadFindFirst).not.toHaveBeenCalled()
     expect(mocks.streamText).not.toHaveBeenCalled()
@@ -903,6 +907,7 @@ describe('account usage chat route', () => {
   test('refuses the automatic default without a cost center while enforcement is off', async () => {
     vi.stubEnv('CHAT_PRIMARY_MODEL_ID', 'auto')
     mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(false)
+    mocks.isChatAccountUsageAvailable.mockResolvedValue(false)
     mocks.chatbotFindUnique.mockResolvedValue(
       chatbot({
         modelSelection: false,
@@ -920,6 +925,44 @@ describe('account usage chat route', () => {
       error: 'Chat model usage is unavailable',
       code: 'CHAT_MODEL_UNAVAILABLE_ADVANCED',
     })
+    expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
+  test.each([
+    false,
+    true,
+  ])('admits a funded advanced pilot with enforcement %s', async (enforced) => {
+    mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(enforced)
+    mocks.isChatAccountUsageAvailable.mockResolvedValue(true)
+    mocks.chatbotFindUnique.mockResolvedValue(
+      chatbot({ owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: '  ' } })
+    )
+    const response = await POST(createRequest({ selectedModel: 'gpt-4.1' }), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(response.status).toBe(200)
+    expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledWith({
+      ownerId: 'owner-1',
+      usageClass: 'ADVANCED',
+    })
+    expect(mocks.streamText).toHaveBeenCalledOnce()
+  })
+
+  test('denies a pilot before side effects when funding lookup fails with enforcement off', async () => {
+    mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(false)
+    mocks.isChatAccountUsageAvailable.mockRejectedValue(
+      new Error('lookup failed')
+    )
+    mocks.chatbotFindUnique.mockResolvedValue(
+      chatbot({ owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: null } })
+    )
+    const response = await POST(createRequest({ selectedModel: 'gpt-4.1' }), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(response.status).toBe(403)
+    expect((await response.json()).code).toBe('CHAT_MODEL_UNAVAILABLE_ADVANCED')
+    expect(mocks.claimChatTurn).not.toHaveBeenCalled()
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 

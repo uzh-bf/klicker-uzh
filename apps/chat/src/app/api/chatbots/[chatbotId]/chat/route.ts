@@ -839,11 +839,8 @@ export async function POST(
     }
   }
 
-  // Class admission does not depend on the usage-enforcement switch. The
-  // account-level approval opens the cost-free class; a cost-carrying class
-  // also needs an address to bill, so the turn stays closed without a cost
-  // center even while enforcement is off. The budget check below is the part
-  // that the switch controls.
+  // Unbilled advanced pilots need an explicit remaining allowance even while
+  // general enforcement is off. Billed accounts retain the rollout switch.
   const classAdmittedForSelectedModel = () =>
     isChatUsageClassEntitled({
       usageClass: selectedModelConfig.usageClass,
@@ -851,11 +848,10 @@ export async function POST(
       aiChatbotCostCenter: chatbot.owner.aiChatbotCostCenter,
     })
 
-  if (!classAdmittedForSelectedModel()) {
-    return chatModelUnavailableResponse(selectedModelConfig.usageClass)
-  }
-
-  if (isChatAccountUsageEnforcementEnabled()) {
+  if (
+    isChatAccountUsageEnforcementEnabled() ||
+    !classAdmittedForSelectedModel()
+  ) {
     if (!(await accountUsageAvailableForSelectedModel())) {
       return chatModelUnavailableResponse(selectedModelConfig.usageClass)
     }

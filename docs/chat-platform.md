@@ -383,13 +383,20 @@ on, the same request fails closed with `403` and the class-specific
 separate reviewed values change, applied per environment only after the
 base-budget backfill and cohort evidence exist for it.
 
-Enforcement does not control class admission. Whether or not the switch is on,
-the participant and preview routes admit a candidate only when its usage class
-is entitled: the account-level AI approval opens the cost-free base class, and a
-cost-carrying advanced class additionally needs a non-blank cost center. Both
-deployed automatic primaries (GPT-6 Luna) are `BASE`, so an approved account
-without a cost center keeps its automatic default; only directly selected Sol
-models need the cost center.
+Account AI approval remains required for every class. Advanced participant
+turns also require a nonblank cost center or an explicit positive advanced
+allowance configured by operations. For platform-funded pilots without a cost
+center, remaining allowance is checked on every admission, even when general
+usage enforcement is disabled; a missing, zero or exhausted grant and a failed
+lookup deny inference. Existing effective-month carry-forward applies. This is
+an admission check, not a reservation: the final-turn, concurrency and missing
+usage limitations documented below still apply. Billed accounts and the base
+class retain the rollout switch's existing budget-check behavior.
+
+Owner preview remains unmetered and requires a cost center for advanced models.
+A funded pilot uses the course/student route; opening advanced owner preview
+requires a separate accounting change. Account usage projections report grant
+entitlement independently from remaining credits, including an exhausted grant.
 
 An account with no configured base budget receives the default
 `DEFAULT_BASE_CHAT_BUDGET_CREDITS` (`packages/util/src/chatUsage.ts`) for the

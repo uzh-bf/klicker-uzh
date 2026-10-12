@@ -117,21 +117,23 @@ export const DEFAULT_BASE_CHAT_BUDGET_CREDITS = 1
 /**
  * Decides whether an account is entitled to one usage class, ignoring whether
  * it still has budget left. Cost-free classes need only the account-level AI
- * approval, because the platform carries them. Cost-carrying classes are
- * billed to a cost center, so the approval alone is not enough: without an
- * address to bill, the class stays closed and the account cannot reach it.
+ * approval, because the platform carries them. Advanced classes also need a
+ * billing cost center or an explicit operations-managed allowance. A funded
+ * pilot without a cost center must additionally pass the live budget check.
  */
 export function isChatUsageClassEntitled({
   usageClass,
   aiFeaturesEnabled,
   aiChatbotCostCenter,
+  hasAdvancedAllowance = false,
 }: {
   usageClass: 'BASE' | 'ADVANCED'
   aiFeaturesEnabled: boolean
   aiChatbotCostCenter: string | null
+  hasAdvancedAllowance?: boolean
 }): boolean {
   if (!aiFeaturesEnabled) return false
   if (usageClass === 'BASE') return true
 
-  return Boolean(aiChatbotCostCenter?.trim())
+  return Boolean(aiChatbotCostCenter?.trim()) || hasAdvancedAllowance
 }

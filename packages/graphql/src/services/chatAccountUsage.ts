@@ -127,6 +127,9 @@ function projectOverview({
       usageClass,
       aiFeaturesEnabled: authorized,
       aiChatbotCostCenter,
+      hasAdvancedAllowance: Boolean(
+        advancedModelUsage?.budgetCredits.greaterThan(0)
+      ),
     })
 
   return {

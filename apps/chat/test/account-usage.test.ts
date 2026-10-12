@@ -46,7 +46,7 @@ function budgetedUsage() {
 }
 
 describe('account usage class admission', () => {
-  test('admits a base class on the flag alone and a cost-carrying class only with a cost center', async () => {
+  test('admits funded classes with or without a billing cost center', async () => {
     mocks.getEffectiveChatAccountUsage.mockResolvedValue(budgetedUsage())
     mocks.prisma.user.findUnique.mockResolvedValue({
       aiChatbotCostCenter: null,
@@ -64,7 +64,7 @@ describe('account usage class admission', () => {
         ownerId: 'owner-1',
         usageClass: 'ADVANCED',
       })
-    ).resolves.toBe(false)
+    ).resolves.toBe(true)
 
     mocks.prisma.user.findUnique.mockResolvedValue({
       aiChatbotCostCenter: 'KST-1',
@@ -76,6 +76,34 @@ describe('account usage class admission', () => {
         usageClass: 'ADVANCED',
       })
     ).resolves.toBe(true)
+  })
+
+  test.each([
+    { amounts: null },
+    { amounts: [0, 0] },
+    { amounts: [1, 1] },
+    { amounts: [1, 2] },
+  ])('refuses an unbilled advanced class without remaining funding: %j', async ({
+    amounts,
+  }) => {
+    mocks.prisma.user.findUnique.mockResolvedValue({
+      aiFeaturesEnabled: true,
+      aiChatbotCostCenter: '   ',
+    })
+    mocks.getEffectiveChatAccountUsage.mockResolvedValue(
+      amounts === null
+        ? null
+        : {
+            budgetCredits: new Prisma.Decimal(amounts[0]!),
+            usedCredits: new Prisma.Decimal(amounts[1]!),
+          }
+    )
+    await expect(
+      isChatAccountUsageAvailable({
+        ownerId: 'owner-1',
+        usageClass: 'ADVANCED',
+      })
+    ).resolves.toBe(false)
   })
 
   test('refuses every class when the account has no AI approval', async () => {
