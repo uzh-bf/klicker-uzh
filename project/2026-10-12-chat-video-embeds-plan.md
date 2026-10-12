@@ -32,4 +32,4 @@ Target `v3`, base `bcdccb81cd05886510133f6a1b9106d89f987575`. Branch `enhance/ch
 
 ## Progress
 
-Planner APPROVED after requiring exact-player checks without uploader privileges. Source implementation pending; runtime starting. Production inline acceptance remains gated on release/deployment.
+Planner APPROVED after requiring exact-player checks without uploader privileges. Source implemented with six renderer regressions; the node test configuration bypasses the application-only PostCSS pipeline. Chat suite: 741 passed, 21 skipped. Shared Markdown: 53 passed. Chat and Markdown typechecks passed. Real MarkdownText fixture renders an inline player at 1440x900 and 390x844, preserving separate/unsupported links with no horizontal overflow. Temporary fixture removed; screenshots are in ignored project/_local/video-gallery. Production conversation acceptance is blocked at account usage admission; inline acceptance remains gated on release/deployment. Reviews and draft delivery pending.
