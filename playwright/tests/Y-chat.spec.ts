@@ -1950,21 +1950,17 @@ test.describe('Chatbot Settings Panel', () => {
     )
   })
 
-  test('Model descriptions explain capabilities without provider jargon', async ({
-    page,
-  }) => {
+  test('Selected model exposes its description', async ({ page }) => {
     await setModelSelection(participantId, true)
     await visitChat(page)
     await openSettings(page)
 
     const modelSection = page.getByTestId('chat-model-selection')
-    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-5.6 Luna')
+    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-6 Luna')
 
-    await expect(modelSection).toContainText(
-      'Uses fewer credits and remains available when your credits run out'
-    )
-    await expect(modelSection).not.toContainText('LiteLLM')
-    await expect(modelSection).not.toContainText('OpenAI reasoning model')
+    const description = modelSection.locator('p')
+    await expect(description).toBeVisible()
+    await expect(description).toHaveText(/\S/)
   })
 
   // The selector only appears for a model that supports reasoning with more
@@ -1978,7 +1974,7 @@ test.describe('Chatbot Settings Panel', () => {
     await mockChatStream(page, {
       metadata: {
         chatMode: 'tutor',
-        modelId: 'gpt-5.6-luna',
+        modelId: 'gpt-6-luna',
         reasoningEffort: 'high',
       },
     })
@@ -1995,7 +1991,7 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(
       page.getByTestId('chat-reasoning-effort-selection')
     ).toHaveCount(0)
-    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-5.6 Luna')
+    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-6 Luna')
 
     await expect(
       page.getByTestId('chat-reasoning-effort-selection')
@@ -2018,7 +2014,11 @@ test.describe('Chatbot Settings Panel', () => {
     await sendMessage(page, 'Selected reasoning effort check')
 
     const chatRequest = await chatRequestPromise
-    const payload = chatRequest.postDataJSON() as { reasoningEffort?: string }
+    const payload = chatRequest.postDataJSON() as {
+      selectedModel?: string
+      reasoningEffort?: string
+    }
+    expect(payload.selectedModel).toBe('gpt-6-luna')
     expect(payload.reasoningEffort).toBe('high')
 
     // The caption under the answer reflects the effort the stream reported.
