@@ -1,6 +1,6 @@
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 
 // The chat suite runs in the node environment without jsdom or
 // testing-library, so the real assistant-ui markdown primitive cannot mount
@@ -51,10 +51,6 @@ function renderLink(href: string, children: React.ReactNode): string {
 }
 
 describe('chat markdown video embeds', () => {
-  beforeEach(() => {
-    mocks.link = { href: '', children: 'video' }
-  })
-
   test('renders an allowlisted video-labelled link as the shared inline player', () => {
     const html = renderLink(YOUTUBE_URL, 'video')
 
