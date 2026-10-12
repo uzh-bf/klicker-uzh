@@ -29,6 +29,24 @@ export type QuestionLibrarySnapshot = {
 
 export type QuestionPoolSnapshotQuestion = {
   source: { namespace: string; item_id: string; revision: string }
+  module_id?: string
+  selection_rule?: 'pick_true' | 'pick_false' | ''
+  calibration?: {
+    difficulty_scale: 1 | 2 | 3 | 4 | 5
+    difficulty_scale_source?: 'labelled' | 'model' | 'observed'
+    observed_difficulty?: number | null
+    observed_discrimination?: number | null
+    observed_sample_size?: number | null
+    observed_setting?:
+      | 'exam'
+      | 'live_quiz'
+      | 'practice_quiz'
+      | 'microlearning'
+      | null
+    observed_scoring_basis?: 'correct' | 'full_credit' | 'partial_credit' | null
+    observed_option_shares?: Record<string, number>
+    observed_statistics_note?: string
+  } | null
   item_format: QuestionGenerationItemType
   name?: string
   stem: string

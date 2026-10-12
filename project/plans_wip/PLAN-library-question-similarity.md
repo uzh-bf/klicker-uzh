@@ -242,3 +242,17 @@ independent review and rollback.
   separate Klicker PR to `v3-ai`, then obtain supervisor approval for compatible
   staging deployment. Keep both rollout gates disabled until both revisions are
   available.
+
+## QP2–QP4 shared-core integration — 12 October 2026
+
+The generator's existing !33 integration branch now combines !34/!35 snapshots
+and similarity with source-aware identity, frozen empirical calibration and
+purpose-specific generation references. This consumer adds only optional wire
+metadata for module, selection rule and calibration context; the producer still
+emits comparison-only snapshots and defaults to schema 1. No observation or
+permission is inferred from the Klicker database.
+
+Twelve producer tests, focused wire-type checking and Biome pass in an isolated
+container. The verified alias-import review finding is fixed. Full branch CI
+remains separate from these focused results. No feature activation, database
+access or deployment occurred; compatible worker rollout precedes schema-2 use.

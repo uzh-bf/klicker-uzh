@@ -1,14 +1,14 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { describe, expect, it, vi } from 'vitest'
-import type { ContextWithUser } from '../src/lib/context.js'
-import { MAX_BUFFERED_QUESTION_GENERATION_ARTIFACT_BYTES } from '../src/services/questionGenerationContracts.js'
+import type { ContextWithUser } from '@/lib/context.js'
+import { MAX_BUFFERED_QUESTION_GENERATION_ARTIFACT_BYTES } from '@/services/questionGenerationContracts.js'
 import {
   createQuestionLibrarySnapshot,
   normalizeQuestionLibraryElement,
   normalizeQuestionPoolElement,
   questionLibraryComparisonEnabled,
   questionLibraryComparisonMaxElements,
-} from '../src/services/questionGenerationLibrary.js'
+} from '@/services/questionGenerationLibrary.js'
 
 function element(
   overrides: Record<string, unknown> = {}
