@@ -37,12 +37,12 @@ every reviewed answer. Resolve that before claiming a root cause or a live fix.
 - Repository/worktree: `klicker-uzh`, `trees/chatbot-learning-quality`.
 - Branch/target: `docs/chatbot-learning-quality` → `v3`.
 - Fresh source baseline: `df2bfa41d8753c04af2f07f185b78d842cbdcd92`, fetched 12 October 2026.
-  The primary checkout is clean and six commits behind that baseline; it was not reset.
+  The task worktree isolates all changes; the primary checkout is not modified.
 - Related historical provisioning plan:
   [native course-chatbot setup](2026-08-14-informatik-und-wirtschaft-klicker-plan.md).
   Its old worktree contains unrelated untracked work and is not reused for this package.
-- No PR exists for this planning draft. Keep the plan with its eventual implementation;
-  do not create a plan-only PR under the current request.
+- Delivery: [draft PR #6483](https://github.com/uzh-bf/klicker-uzh/pull/6483)
+  contains the implementation and this plan. It remains a draft while verification finishes.
 
 The global skill is a separate requested deliverable in the canonical dotfiles checkout:
 `agent-resources/agent-skills/rs-chatbot-quality-iteration/`. Its content is generic and
@@ -246,6 +246,8 @@ session retains slices 1 and 4 for privacy, unresolved decisions and critical-pa
    Likely files: `normalizeSources.ts`, `citationInstructions.ts`, `citation-contract.hbs`,
    `useMessageSources.ts`, `sources-section.tsx`, `citation-chip.tsx`,
    `remarkCitationMarkers.ts`, their existing citation tests, and `docs/chat-platform.md`.
+   Extend the existing lesson in `docs/solutions/logic/retrieval-results-are-not-citation-counts.md`
+   with the distinction between visible retrieval text and citation capacity.
    Change query formulation or ranking only for residual failures after this correction.
    Acceptance: a source beyond the old 12-entry limit and a new source in a refined search
    are both citable and reachable in the UI; the highest admitted index, the first overflow
@@ -283,7 +285,7 @@ in this plan.
 
 | Consequential behavior | Obligation and primary seam | Failure distinguished |
 | --- | --- | --- |
-| Evidence/reference survival | **Extend existing** `apps/chat/test/{normalize-sources,citation-model-output,citation-markers,citation-registry,citation-chip,source-display}.test.ts`; exercise cross-search/reload UI | Visible tool evidence is uncitable because earlier results consumed display-linked slots |
+| Evidence/reference survival | **Extend existing** `apps/chat/test/{normalize-sources,citation-model-output,citation-markers,citation-registry,citation-chip,source-display}.test.ts` and `playwright/tests/Y-chat.spec.ts`; exercise cross-search/reload UI | Visible tool evidence is uncitable because earlier results consumed display-linked slots |
 | Chapter variants and absent-source control | **Extend existing** evaluation target `apps/chat/scripts/klicker-evaluation-target.mjs` through its supported input contract; private synthetic cases, no new repository file | Wording sensitivity versus fabricated coverage |
 | Multi-part completion and concise editing | **Extend existing** multi-turn comparison described in the Tutor feedback comparison, after verifying its history/tool support | Unfinished task declared complete or request replaced by promises |
 | Feedback, hints, language and direct answers | **None** initially: reuse existing synthetic controls and `apps/chat/test/feedback-evidence.test.ts`; admit a new synthetic case only for a reproduced uncovered failure with a frozen rubric | A local improvement damages established teaching behavior |
@@ -346,11 +348,76 @@ and run synthetic student-path acceptance; a merged PR is not a live-quality rec
 
 ### Progress and review provenance
 
-- Analysis: complete within the authorised read-only scope; historical deployment
-  attribution remains an explicit first implementation check.
-- Application implementation: approved; slice 1 baseline checks in progress.
-- Source mapping: completed by a bounded read-only explorer; production content stayed in
-  the main session. Citation-starvation probe completed with synthetic inputs.
+#### Execution baseline and evaluation ruling — 12 October 2026
+
+The desired production manifest pins `v3.4.0-alpha.86` with three Chat replicas and
+`lifecycleWritersEnabled: false`. These are repository configuration facts, not a fresh
+cluster rollout receipt. The schema defaults `ChatMessage.lifecycleStatus` to `COMPLETED`,
+while `services/accountUsage.ts` gates lifecycle attempts on
+`CHAT_TURN_LIFECYCLE_WRITES_ENABLED`. Therefore, a historical blank row labelled
+`COMPLETED` is insufficient evidence of successful terminal delivery. Its exact provider
+outcome, historical deployed prompt and displayed UI remain unverified. No lifecycle or
+infrastructure change is included in this package.
+
+The deterministic candidate contract is frozen at **99 unique citation identities per
+assistant message**, appended in first-appearance order across searches. The separate
+initial preview contains at most **12 cited cards**. Remaining cited and uncited cards
+stay available in the existing disclosure. The model receives all original source text;
+identity 100 and later receive null citation indices. This ceiling matches the existing
+two-digit marker parser and does not increase retrieval payload size or the tool-step limit.
+
+The existing runner is `apps/chat/scripts/run-tutor-trajectories.mjs`, using
+`klicker-evaluation-target.mjs` and `tutor-trajectory.mjs`. It does preserve real reply
+history and verifies persisted results, but it cannot yet accept this complete comparison:
+
+- Its source-metadata receipt independently stops at 12 sources and deduplicates by
+  reference/title rather than the application's citation identity. It cannot establish
+  whether later sources survived the actual model-facing projection.
+- It accepts Tutor and Quizzer cases, not Explainer cases. The deterministic local MCP
+  fixture also does not reproduce broad retrieval followed by a useful refined result.
+- Its shared ledger counts submitted turns before requests, but tracks application
+  credits after completion and explicitly allows one in-flight overshoot. It does not
+  enforce the approved hard US$5 provider-spend limit.
+
+**Generation-quality acceptance is inconclusive; zero assistant turns were generated.**
+No generation case allocation or tuning run began. Mode, task-completion, concision and
+quiz prompts remain unchanged. The citation overflow instruction changes only the
+deterministic source contract; tests and browser checks cannot establish better generated
+answers or satisfy the model latency/cost guardrails.
+
+The smallest follow-up is to extend those existing runner/fixture seams with evidence from
+the actual bounded citation mapping, Explainer support and a pre-request provider-cost reservation
+that accounts for all model/tool steps. Qualify the pinned current model and fixed effort,
+then freeze development/reserved/control cases and three matched repeats under the
+existing 120-turn/US$5 caps. This is a proposed follow-up, not an implicit new harness or
+permission to use another provider. No course content should be copied into fixtures.
+
+#### Delivery progress
+
+- Slice 1: source baseline and attribution investigation complete; historical generation
+  and UI outcomes remain unknown. The existing evaluator cannot accept the frozen
+  comparison under the approved provider-cost cap; see the ruling above.
+- Slice 2: implemented in `11ae42d363`, with assertion consolidation and formatting in
+  `125254c30d`. The focused container suite passed **164 tests across eight files**;
+  Chat route generation and TypeScript checking passed. All **21 local source-citation
+  browser tests** passed, including desktop English, reload and mobile German. All
+  **120 chat browser tests** passed in CI on `11ae42d363`; subsequent edits affect only
+  test consolidation, formatting and documentation. Manual browser inspection confirmed
+  99 retained cards, 12 initially visible cards and citation 99 opening its disclosure,
+  focusing the correct card and retaining its expected synthetic URL.
+- Slice 3: conditional prompt tuning was not started because paired generation acceptance
+  is unavailable. No task-completion, concision, mode or quiz instruction changed.
+- Slice 4: [draft PR #6483](https://github.com/uzh-bf/klicker-uzh/pull/6483) is open.
+  Final integrated review and final-head CI are recorded in the PR. Chat lint passed
+  with 20 pre-existing warnings; Chat and Playwright type checks, focused Biome checks
+  and explicit-config Prettier checks passed. The first CI formatter
+  failure was corrected using repository formatters. OpenCodeReview failed with provider
+  HTTP 402 on all three requests, producing no review; no billing or provider configuration
+  was changed. Greptile reported no actionable issue on the initial implementation head.
+- Slice review: **PASS**, no correction-level findings. Simplification removed one
+  redundant normalizer test while retaining the stronger cross-search case and browser
+  coverage. Reports: `_local/reviews/2026-10-12-chatbot-citation-cap-slice-review.md` and
+  `_local/reviews/2026-10-12-chatbot-citation-cap-simplifier.md`.
 - Planning review: **APPROVED** after one correction round. Native planner confirmed the
   revised ownership, test obligations, parser-compatible citation ceiling and comparison
   thresholds. Local report: `_local/reviews/2026-10-12-chatbot-learning-quality-planner.md`.
@@ -363,8 +430,12 @@ and run synthetic student-path acceptance; a merged PR is not a live-quality rec
   Local report: `_local/reviews/2026-10-12-chatbot-quality-skill-forward-test.md`.
   The skill is discoverable
   through the existing global symlink.
-- No runtime was started and no production state was changed.
-- Planning and skill deliverables are complete. This plan is the first implementation-branch
-  commit. No application PR exists yet.
-- Next action: freeze the baseline and bounded citation contract, then implement and verify
-  through draft PR delivery. Merge and live effects retain separate authority.
+- A task-local runtime was started for verification. Its optional authenticated MCP fixture
+  failed startup; after stopping that runtime, the smaller Chat-only profile passed the
+  synthetic browser checks. Final runtime shutdown and provider-state verification are
+  delivery obligations recorded in the PR. No production state was changed.
+- Packaging: one cohesive citation correction, tests and documentation; no independent
+  capability or second delivery layer is bundled. No new dependency, schema or service.
+- Next action: complete the integrated review, final-head CI and screenshot publication,
+  update the draft and release the task-local runtime. Merge and live effects retain
+  separate authority; generated-answer quality remains explicitly inconclusive.
