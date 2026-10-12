@@ -202,17 +202,17 @@ function toastItems(page: Page) {
   return page.locator('[data-sonner-toast][data-type="error"]')
 }
 
-// The bridge hands an allowed launch to the Chat app. Fulfilling the
-// destination keeps the check on this stack without claiming Chat's own
-// authenticated principal.
-async function interceptChatDestination(context: BrowserContext) {
+// Observe the real server redirect. Playwright routes only the initial URL
+// in a redirect chain, so a destination mock would miss this navigation.
+function observeChatRedirects(context: BrowserContext) {
   const chatRequests: string[] = []
-  await context.route(chatDestination, async (route) => {
-    chatRequests.push(route.request().url())
-    await route.fulfill({
-      contentType: 'text/html',
-      body: '<html><body><div data-cy="synthetic-chat-destination">Synthetic chat destination</div></body></html>',
-    })
+  context.on('request', (request) => {
+    if (
+      request.isNavigationRequest() &&
+      chatDestination.test(request.url()) &&
+      request.redirectedFrom()?.url().includes('/chatbot/')
+    )
+      chatRequests.push(request.url())
   })
   return chatRequests
 }
@@ -1661,7 +1661,7 @@ test('the course chatbot entry gate makes no bridge request while an explicit cr
   expect((await response.json()).data.self.id).toBe(otherId)
   expect(popups).toEqual([])
 
-  const chatRequests = await interceptChatDestination(context)
+  const chatRequests = observeChatRedirects(context)
   await page.goto(courseUrl)
   const chatLink = page.locator('a').filter({
     has: page.getByTestId('student-course-chatbot-link'),
@@ -1672,11 +1672,10 @@ test('the course chatbot entry gate makes no bridge request while an explicit cr
   const popupPromise = page.waitForEvent('popup')
   await chatLink.click()
   const popup = await popupPromise
-  await expect(popup.getByTestId('synthetic-chat-destination')).toBeVisible()
-  expect(new URL(popup.url()).pathname).toBe(
+  await expect.poll(() => chatRequests.length).toBe(1)
+  expect(new URL(chatRequests[0]!).pathname).toBe(
     `/${bridgePath!.split('/').at(-1)}`
   )
-  expect(chatRequests).toHaveLength(1)
   await popup.close()
 
   // A fresh OLAT launch restores an explicit session and therefore still
@@ -1698,7 +1697,7 @@ test('the direct chatbot bridge authorizes its own cookie principal despite a co
   baseURL,
 }, info) => {
   skipWithoutLocalCookies(info.project.name)
-  const chatRequests = await interceptChatDestination(context)
+  const chatRequests = observeChatRedirects(context)
   const bridgePath = `/course/${bridgeCourseId}/chatbot/${bridgeChatbotId}`
   for (const cookieId of [null, bridgeMemberId, bridgeOutsiderId]) {
     await context.clearCookies()
@@ -1741,9 +1740,8 @@ test('the direct chatbot bridge authorizes its own cookie principal despite a co
       )
       expect(chatRequests).toHaveLength(redirectsBefore)
     } else if (cookieId === bridgeMemberId) {
-      await expect(page.getByTestId('synthetic-chat-destination')).toBeVisible()
-      expect(new URL(page.url()).pathname).toBe(`/${bridgeChatbotId}`)
-      expect(chatRequests).toHaveLength(redirectsBefore + 1)
+      await expect.poll(() => chatRequests.length).toBe(redirectsBefore + 1)
+      expect(new URL(chatRequests.at(-1)!).pathname).toBe(`/${bridgeChatbotId}`)
     } else {
       await expect(page).toHaveURL((url) => url.pathname.endsWith(bridgePath))
       // The server-generated result is structured evidence of the failed

@@ -195,7 +195,7 @@ function Header({
               secondaryLabel={t('shared.generic.cancel')}
               onSecondaryAction={() => setChatRecoveryOpen(false)}
               dataSecondaryAction={{ cy: 'course-chatbot-recovery-cancel' }}
-              className={{ content: 'max-w-md' }}
+              className={{ content: 'max-w-md text-gray-900' }}
             >
               <div data-cy="course-chatbot-recovery-modal">
                 {t('pwa.chatbot.sessionRecoveryMessage')}
