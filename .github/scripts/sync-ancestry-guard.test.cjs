@@ -6,7 +6,9 @@ const path = require('node:path')
 const test = require('node:test')
 const YAML = require('yaml')
 const {
+  DOWNSTREAM_ROOTS,
   SOURCES,
+  findBackflow,
   findUnrepairedSquashedSync,
 } = require('./sync-ancestry-guard.cjs')
 
@@ -90,6 +92,65 @@ test('ignores squashed feature pull requests and merge-commit syncs', async () =
     [feature.commit, { number: 8, headSha: feature.headSha }],
   ])
   assert.equal(await detect(repo, pullRequests), null)
+})
+
+test('flags downstream history in its upstream branch until recovery', () => {
+  const { cwd, git, commit } = repository()
+  git('switch', '-q', '-c', 'v3-audit')
+  const root = commit('audit-only')
+  git('switch', '-q', 'v3-ai')
+  commit('ai-next')
+  git('switch', '-q', '-c', 'feature')
+  commit('feature')
+  git('switch', '-q', 'v3-audit')
+  git('merge', '-q', '--no-edit', 'v3-ai')
+  const check = (parent, head) =>
+    findBackflow(cwd, {
+      parent,
+      head,
+      downstreamSha: git('rev-parse', 'v3-audit'),
+      root,
+    })
+  const clean = git('rev-parse', 'v3-ai')
+
+  // Forward work and the downstream's own sync merges are not backflow.
+  assert.equal(check(clean, git('rev-parse', 'feature')), null)
+
+  // "Update branch" on a v3-ai -> v3-audit PR whose head is v3-ai itself.
+  git('switch', '-q', 'v3-ai')
+  git('merge', '-q', '--no-ff', '--no-edit', 'v3-audit')
+  const contaminated = git('rev-parse', 'v3-ai')
+  assert.deepEqual(check(clean, contaminated), { existing: false })
+
+  // An ordinary follow-up on the contaminated branch stays blocked, both as a
+  // pull request and as the push that lands it.
+  git('switch', '-q', '-c', 'follow-up')
+  const followUp = commit('follow-up')
+  assert.deepEqual(check(contaminated, followUp), { existing: true })
+  git('switch', '-q', 'v3-ai')
+  git('merge', '-q', '--no-ff', '--no-edit', 'follow-up')
+  assert.deepEqual(check(contaminated, git('rev-parse', 'v3-ai')), {
+    existing: true,
+  })
+
+  // A pin that is not on the downstream line fails closed.
+  assert.throws(() =>
+    findBackflow(cwd, {
+      parent: clean,
+      head: clean,
+      downstreamSha: git('rev-parse', 'v3-audit'),
+      root: followUp,
+    })
+  )
+})
+
+test('pins backflow roots only for chain edges into guarded targets', () => {
+  for (const [base, { downstream, root }] of Object.entries(DOWNSTREAM_ROOTS)) {
+    assert.ok(SOURCES[base])
+    assert.equal(SOURCES[downstream], base)
+    assert.match(root, /^[0-9a-f]{40}$/)
+  }
+  assert.deepEqual(Object.keys(DOWNSTREAM_ROOTS), ['v3-ai'])
 })
 
 test('guards exactly the target branches of the sync chain', () => {

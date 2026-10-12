@@ -2,7 +2,7 @@
 type: Operations
 title: CI & Deployment
 description: PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
-timestamp: '2026-09-20'
+timestamp: '2026-10-12'
 tags:
   - ci
   - deployment
@@ -15,12 +15,39 @@ tags:
 ## Draft sync PR maintenance
 
 `maintain-draft-sync-prs.yml` maintains the exact forward pairs `v3` ->
-`v3-ai` and `v3-ai` -> `v3-audit`. It opens a draft only when the source has
-commits and a non-empty diff absent from the target and no matching open PR.
-Existing PR descriptions and draft/ready states are preserved. Source pushes
-already update their diffs, so maintenance does not edit PR metadata, update
-branches, resolve conflicts, merge, or enforce merge methods. Maintainers choose
-when to mark ready and merge with a merge commit to preserve ancestry.
+`v3-ai` and `v3-ai` -> `v3-audit`. Each sync PR's head is a bot-owned branch,
+`sync/<source>-into-<target>-<sha10>`, never the long-lived source branch. The
+suffix is the source SHA the PR started from, so every new sync PR gets a fresh
+branch. GitHub's
+"Update branch" button and web conflict edits write to a PR's head. With the
+source branch as head, one click merged `v3-audit` back into the production
+branch `v3-ai`. With a sync branch as head, the same click only changes the
+sync branch, and merging it moves changes in the intended direction.
+
+On every run, for each pair, the controller:
+
+1. Skips a pair whose open PR still has the source branch as head (`legacy`).
+   Closing that PR lets the next run migrate the pair.
+2. Advances an open sync PR's head to the current source tip. It fast-forwards
+   an unchanged head. A head that maintainers changed, for example by resolving
+   conflicts or using "Update branch", is never reset: the source is merged
+   into it. A merge conflict is reported as `conflict`, and the controller
+   keeps one comment on the PR naming the blocked source SHA until a later
+   merge succeeds. The PR can stay mergeable into its target meanwhile, so
+   check for that comment before merging.
+3. Otherwise opens a draft when the source has commits and a non-empty diff
+   absent from the target. It creates a fresh sync branch at the source tip.
+   If a branch of that name already exists at another commit, the controller
+   reports `stale-branch` and leaves it alone; delete it to let the next run
+   proceed.
+
+Existing PR descriptions and draft/ready states are preserved. Ready sync PRs
+keep tracking the source; review and merge decisions apply to the latest
+synchronized head. The run summary lists each pair's result. The controller
+never force-updates a branch, never writes the source or target branches and
+never merges. Maintainers
+choose when to mark ready and merge with a merge commit to preserve ancestry.
+Resolve conflicts directly on the sync branch.
 
 The controller runs from `v3` after Check codebase completes for a push to
 either source branch, regardless of the check result. Completion is a wakeup,
@@ -37,19 +64,65 @@ gh workflow run maintain-draft-sync-prs.yml --ref v3 -f dry_run=true
 gh workflow run maintain-draft-sync-prs.yml --ref v3 -f dry_run=false
 ```
 
-The ordinary `GITHUB_TOKEN` has contents-read and pull-requests-write access;
-GitHub Actions must be allowed to create PRs in repository settings. No separate
-bot credential is needed. GitHub may require approval before running workflows
-for token-created PRs. Drafts skip staging image builds and some analysis, but
-other PR checks and source-branch push CI can still run. Marking ready invokes
-the existing ready-state validation; required checks must pass before merging.
+Writes use the `SYNC_PR_BOT_TOKEN` repository secret: a fine-grained token
+for this repository only, with Contents, Pull requests, and Workflows
+read/write. Workflows write is needed because GitHub refuses ref updates that
+bring `.github/workflows` changes without it. The separate token lets sync-PR
+CI start without manual approval: `GITHUB_TOKEN` updates start no push
+workflows, and the pull request workflows they trigger wait for approval. A
+GitHub App installation token would remove the dependence on one person's
+account. Without the secret, automatic and
+non-preview runs fail and previews still work. The sync branches are not
+protected integration branches, so the token needs no ruleset bypass. Drafts
+skip staging image builds and some analysis. Marking ready invokes the existing
+ready-state validation; required checks must pass before merging.
 
 Closing a sync PR without merging does not pause maintenance: the next eligible
-run may create a new draft if changes remain. Conflicts remain a maintainer
-task. Avoid Update branch on these PRs because it merges the target back into
-the long-lived source branch. An API failure is reported rather than treated
-as evidence that a PR exists; a duplicate-creation response is accepted only
-after the matching open PR is found.
+run may create a new draft if changes remain. An API failure is reported rather
+than treated as evidence that a PR exists; a duplicate-creation response is
+accepted only after the matching open PR is found.
+
+### Sync direction guard
+
+`sync-ancestry-guard.yml` also rejects `v3-audit` history in `v3-ai`. Every
+pull request into `v3-ai` and every push to it fails when the new head contains
+`v3-audit`'s oldest own first-parent commit, pinned in `DOWNSTREAM_ROOTS`.
+Every later `v3-audit` commit descends from that root, so any merge of
+`v3-audit` into `v3-ai` carries it. The check is a branch-health gate: once
+`v3-ai` contains the root, every later pull request and push fails as well,
+until recovery removes it. A pin that is no longer on `v3-audit`'s first-parent
+line fails the check instead of passing it. Ordinary CI cannot see this: the
+2026-10-12 back-merge of `v3-audit` into `v3-ai` passed every other check.
+
+The guard covers only that edge. `v3-ai` history in `v3` is not checked,
+because ADR 0007 plans to fold `v3-ai` back into `v3`. It also checks commit
+ancestry only: a cherry-pick or rebased copy of downstream work is a new commit
+and passes. Guard changes take effect per target as the sync chain delivers
+them, because each push and pull request runs the copy of the guard on its own
+branch.
+
+Recovery from a back-merge that already landed is a force push of the target to
+its last good SHA, not a revert. A revert commit would travel with the next sync
+and delete the downstream's own work there. Several rulesets without bypass block it, so a repository
+admin:
+
+1. Records every active ruleset whose `include` matches the target, for
+   example with `gh api repos/uzh-bf/klicker-uzh/rulesets`. For `v3-ai` these
+   are `v3 integration branch protection`, `v3-ai direct integration
+protection`, and `sync targets require pull requests`; for `v3-audit` the
+   first and the last.
+2. Sets each of them to `enforcement: disabled` with
+   `gh api -X PUT repos/uzh-bf/klicker-uzh/rulesets/<id> -f enforcement=disabled`.
+3. Pushes `git push --force-with-lease=<target>:<bad SHA> origin <good SHA>:<target>`.
+4. Sets each recorded ruleset back to `enforcement: active`, then confirms with
+   `gh api repos/uzh-bf/klicker-uzh/rules/branches/<target>` that the
+   `deletion`, `non_fast_forward`, and `pull_request` rules apply again.
+
+Afterwards, check that no remote branch or open PR contains the bad SHA
+(`git branch -r --contains <sha>`) and ask anyone who fetched the target in that
+window to rebase. If a `sync/` branch already followed the bad SHA, close its PR
+and delete that branch. The next controller run opens a new draft on a fresh
+branch from the recovered tip.
 
 ### Squashed sync guard
 
