@@ -1,5 +1,419 @@
 # Restore participant sessions after an OLAT launch
 
+## Feedback review and approved follow-up — 12 October 2026
+
+This section records the current review and proposed improvements for
+[PR #6414](https://github.com/uzh-bf/klicker-uzh/pull/6414). It takes precedence
+over conflicting historical design and progress statements below. On 12 October
+2026 the user approved this executable batch, explicitly including chatbot
+recovery guidance and updating the existing PR after fixes and browser verification.
+
+### Approval summary
+
+Most of the supplied feedback describes behavior already implemented. It is
+not a request to replace cookies with tokens: both transports carry participant
+JWTs. The feedback's reference head, `ec916db4f8`, is the parent of current head
+`0752024accb2a2f8097fb63e6c24f775b4363c40`. The only subsequent change adds
+account-deletion failure feedback. There is no evidence that a later policy
+redesign was applied in response to this particular feedback.
+
+**Recommendation:** retain the existing two-mode policy and make its limits
+explicit, then close the consequential verification gaps. An explicit LTI tab
+keeps its launched participant when another tab changes or removes the shared
+cookie. Successful ordinary login in that same tab returns it to cookie mode.
+Logout clears that document's explicit credential and applicable cookies; it
+provides neither immediate cross-tab UI clearing nor global JWT revocation.
+
+Approval also adopts a conservative chatbot-entry rule: when the originating
+PWA tab holds an explicit credential, its course-chat action shows recovery
+instructions without opening or prefetching the cookie-authenticated bridge.
+It preserves the current PWA identity. This sacrifices direct chat access from
+such tabs until ordinary login in that tab returns it to cookie mode. A fresh
+LTI launch can recover PWA access but still leaves an explicit credential and
+does not unlock the Header chatbot action. Recovery guidance must state that
+distinction. Cookie-mode entry keeps its existing behavior. A directly opened bridge cannot infer another tab's identity and
+continues to use its own verified launch or cookie. No B-to-Chat continuity is
+claimed. This is the only approved product-behavior extension in this batch.
+
+This recommendation preserves the accepted precedence decision in ADR 0044.
+Broadening logout to all explicit tabs, making every login cookie-independent,
+adding server-side revocation, or changing token lifetime requires a separate
+product decision. Those mechanisms are not implied by the feedback.
+
+**Approval mode:** approved executable batch.
+**Authority now:** the bounded slices below, their checks, ordinary commits and
+non-force pushes, and updating the existing PR after fixes and browser
+verification. Preserve its current readiness state. Merge, deployment, alert
+dismissal and human-review requests remain separate gates.
+**Owner:** main session; execution mode standard because exact main-model
+identity is unavailable. A bounded trusted-native executor owns the browser
+tests; the main session owns policy, coupled source changes and integration.
+**Terminal:** documented policy, repaired defects, passing mandatory source and
+browser verification, and the existing PR updated with accurate evidence.
+Unavailable required capabilities produce a blocked checkpoint, not completion.
+
+### Review baseline and evidence limits
+
+GitHub reports target `v3` at `fb43d837e9106c5a80616dc3ee519c7395a4e262` and
+head `0752024accb2a2f8097fb63e6c24f775b4363c40`. Both objects exist locally;
+the target is also the merge base. Review command:
+
+```sh
+git diff fb43d837e9106c5a80616dc3ee519c7395a4e262...0752024accb2a2f8097fb63e6c24f775b4363c40
+```
+
+The comparison includes all 48 changed paths. The existing worktree is
+`trees/olat-session-recovery`, branch `rs/olat-session-recovery`; its initial
+status was clean. Local `origin/v3` differs from the live PR base. `git fetch
+--prune` fails with `cannot open '.git/FETCH_HEAD': Operation not permitted`.
+Use the pinned comparison for this review and complete the remote-state gate
+before later source publication; do not silently integrate a remembered target.
+
+This is a source and test-coverage review, not renewed browser acceptance.
+The handoff's prior checks remain revision-specific historical evidence.
+CodeQL failure and pending final AI review remain separate delivery gates.
+Runtime inspection also failed because devrouter process inspection was denied;
+no runtime was started, stopped, or claimed healthy in this turn.
+
+### Feedback disposition
+
+| Feedback theme | Current implementation and evidence | Disposition |
+| --- | --- | --- |
+| JWT credential versus cookie/bearer transport | `packages/graphql/src/services/accounts.ts:140-188,347-437`; `packages/util/src/auth.ts:35-64` | Already implemented. Describe transports and precedence separately from token type. |
+| Explicit LTI identity wins over cookies | `participantSession.ts:89-102`; `jwtMiddleware.ts:38-64`; response API `index.ts:121-150`; PWA session-page submission | Already implemented, including live-quiz attribution. Preserve fail-closed invalid-bearer behavior. |
+| Fresh launch and registration replace older state | `getParticipantToken.ts:135-198`; `createAccount.tsx:107-145`; helper tests and PA launch/registration journeys | Already implemented. No raw participant JWT URL handoff in regular PWA. |
+| Ordinary password, magic and activation login use cookies | `accounts.ts` returns participant IDs; `participantSession.ts:105-120`; respective login pages | Already implemented. Existing login journey clears storage first, so it does not prove transition from an active explicit session. |
+| Manual versus LTI registration | `createAccount.tsx:60-90` and account service | Already distinct. Replace broad claims that all account creation retains a credential with the token-returning LTI case. |
+| Tab persistence and logout | `participantSession.ts:10-46,73-102`; `accounts.ts:426-437`; PA spec `892-928` | Policy exists. Current two-tab test covers cookie tabs only and navigates the other tab; it does not prove immediate clearing or explicit-tab logout behavior. |
+| JS-readable credential versus HttpOnly cookie | Store writes token to sessionStorage; `editProfile.tsx:199-207` also serializes ambient JWT page props, as the base already did | Existing exposure, with explicit persistence made systematic. Do not imply cookie-only browsing keeps every JWT out of JavaScript; separate persistence from exposure. |
+| Cookie lifetime, SameSite and legacy cleanup | `getParticipantToken.ts:117-132`; account service issuance/expiration; cookie tests; `docs/auth-model.md` | Already implemented for regular participants. Preserve seconds/milliseconds distinction and cleanup restricted to the current partition. |
+| Blocked ordinary login and SSR chatbot bridge | Ordinary login returns no retained JWT; chatbot route resolves identity server-side at lines 37-79 | Existing limitation. Cookie absence and cookie A conflicting with tab B are different scenarios; test both before claiming safe recovery. |
+| Temporary participants, assessment and lecturer audiences | Middleware separate branches, retained assessment helper, ordinary PWA hook guard | Existing scope boundaries. No expansion into these audiences in the proposed follow-up. |
+
+Path key: `participantSession.ts` and `getParticipantToken.ts` live in
+`apps/frontend-pwa/src/lib/`; the named PWA pages live in
+`apps/frontend-pwa/src/pages/`; `jwtMiddleware.ts` lives in
+`apps/backend-docker/src/`; `accounts.ts` lives in
+`packages/graphql/src/services/`; PA means
+`playwright/tests/PA-olat-session-recovery.spec.ts`. Exact cited lines refer to
+the reviewed head, before this plan edit.
+
+### Review findings
+
+#### Standards
+
+The independent reviewer inspected all 48 changed paths and returned
+DONE_WITH_CONCERNS. The main session accepted the following findings:
+
+- **Retired-client request guard removed:** `e56cb35a41` removed the final
+  transport guard. At head, `apollo.ts:122-137,361-372` marks retirement and
+  suppresses error redirects, but the link chain at `237-244` does not reject
+  subsequent requests on a retained old client. The reviewer inspected the
+  installed Apollo 3.13.8 source: `stop()` cancels current fetches but does not
+  permanently prohibit later calls. Known login paths now navigate rather than
+  query the old client, so no user-visible failure was demonstrated. Add a
+  regression and restore the small guard as protection of the original contract.
+- **Historical design and acceptance overclaim:** `initializeApollo` mutates
+  module client state from `useMemo`; the old commit-owned projection and
+  revision guards are gone. The credential-store application remains in an
+  effect. No actual discarded-render identity failure was established. Correct
+  the documentation and retain the simpler design rather than restoring all
+  removed machinery.
+
+Repeated retention constants and assessment login branches are minor heuristics,
+not justification for new abstraction. Existing fixture corrections and removal
+of prose assertions follow the repository's test policy.
+
+#### Spec
+
+The independent reviewer also covered all 48 paths and returned
+DONE_WITH_CONCERNS. The two-mode policy matches the supplied feedback. Accepted
+gaps are explicit-tab lifecycle tests, actual deletion-error UI verification,
+precise exposure/logout documentation, and the chatbot entry policy described
+above. The chatbot entry and server-side cookie behavior predate this PR; the
+mismatch is a cross-surface acceptance issue, not a newly proven auth bypass.
+The same-tab ordinary-login test starts from cleared storage and therefore
+cannot prove explicit B changes to ordinary A.
+
+Both reviews are source evidence only. Their local disposition records are
+`project/_local/reviews/2026-10-12-olat-feedback-standards.md` and
+`project/_local/reviews/2026-10-12-olat-feedback-spec.md`. Historical probes and
+old screenshots do not prove behavior after the later simplification.
+
+### Primitive impact
+
+| Product primitive | Disposition | Contract delta and consumers | Decision |
+| --- | --- | --- | --- |
+| Participant session | Reuse | Preserve explicit-tab precedence and cookie-mode ordinary login across PWA, GraphQL and answer submission. | Document and verify the existing policy. |
+| End session | Reuse | Local explicit credential plus applicable cookies; another explicit context may continue until its own ending or expiry. | No browser-wide logout or revocation capability added. |
+| Account deletion | Reuse | Failure retains identity; successful transaction ends this document's session. | Verify the actual UI command and recovery. |
+| Chatbot entry | Extend | An explicit PWA tab cannot silently open a cookie-selected chat identity through its header action. | Approval adopts local recovery without transfer; direct bridge requests keep their own server-visible identity. |
+| LTI account link and course access | Reuse | Existing resolution, authorization and account-completion rules. | No enrollment, leaderboard-opt-in, linking or data-model changes. |
+
+ADR gate: update ADR 0044's consequences and alternatives, including the
+conservative chatbot-entry boundary, without changing its precedence policy. A different cross-tab logout contract or a new
+server-side session identifier reopens the ADR and requires a product ruling.
+
+### Verification portfolio
+
+Existing helper/middleware/cookie suites already protect signature, scope,
+expiry, origin selection, cookie attributes, cleanup ordering and invalid-bearer
+rejection. Existing PA journeys protect fresh launch, registration, native
+cookie blocking, memory-only navigation, query retry and live-quiz ownership.
+Reuse them; add only the missing state transitions named in slice 2 and the
+specific reproductions from accepted source findings.
+
+| Consequential risk | Test obligation and suite | Distinct acceptance / owner |
+| --- | --- | --- |
+| Mixed explicit/cookie tabs and logout | Extend existing PA OLAT journey | Explicit B survives another tab's login/logout; B's own successful logout cannot silently reveal ambient A / slice 2. |
+| Explicit-to-ordinary login transitions | Extend existing PA OLAT journey | Password, magic-link and activation success replace retained B with ordinary A, proving next request and destination identity / slice 2. |
+| Rejected and successful account ending | Extend existing PA OLAT journey; reuse account-service cleanup tests | UI rejection before backend execution retains principal and permits retry; true deletion clears only synthetic account/session / slice 2. |
+| Expired retained bearer | Extend existing PA OLAT journey; reuse signed expiry tests | No fallback to another cookie on protected query or answer; settled recovery and fresh launch / slice 2. |
+| Retired-client isolation | Extend existing `participantSession.test.ts` | Delay old success/error, attempt a queued and a new retired-client request: current identity/cache/navigation stay intact; no post-retirement transport / slice 3. |
+| Chatbot entry identity boundary | Extend existing PA OLAT journey | Explicit-tab header action causes no bridge request or participation mutation; ordinary cookie/direct bridge use their own identity / slice 3. |
+
+No new test files, framework or dependencies are planned. This is the finite
+portfolio; an unrelated finding is recorded separately rather than expanding
+implementation silently.
+
+### Delegation map
+
+| Slice | Owner | Dependency and acceptance |
+| --- | --- | --- |
+| 1: contract and evidence | Main session | Source review complete; each current statement maps to source or qualified evidence. |
+| 2: lifecycle proof | One bounded executor, integrated by main | Approved policy; tests may expose a reproducible red case for slice 3, with synthetic state cleaned up. |
+| 3: continuity guard, chat entry and finish | Main session | Slice 2 evidence; coupled identity seams remain local; all required new checks pass before completion. |
+
+Each slice forms a coherent commit after its focused checks; a failing regression
+may be developed with its slice-3 repair and committed green together. This
+follow-up stays in the existing PR; no stack or branch-topology change is proposed.
+
+### Approved slices
+
+**1. Reconcile the session contract and current evidence.** Update
+`docs/adr/0044-regular-participant-session-recovery.md`, the regular-participant
+section of `docs/auth-model.md`, and this plan. Explain credential, storage and
+transport; ordinary versus explicit login; logout's scope; no global revocation;
+JS-readable explicit credentials and pre-existing ambient JWT page props; storage-denied reload; and the chatbot bridge.
+Qualify manual account creation. Preserve the earlier progress as history,
+clearly separated from current acceptance. Replace current contract statements
+that still accept `participantToken` URLs or describe removed implementation
+mechanics. Update the existing PR body only after evidence is reconciled.
+Acceptance: each claimed behavior maps to source and a matching test or an
+explicit limitation, with no universal-logout or universal-cookie-free claim.
+
+**2. Prove identity and ending-session behavior at the missing boundaries.**
+Extend `playwright/tests/PA-olat-session-recovery.spec.ts`; extend
+`apps/frontend-pwa/src/lib/participantSession.test.ts` only where a distinct
+state invariant needs lower-level protection. Reuse synthetic A/B fixtures,
+current cookie-domain handling and existing allowed/blocked browser projects.
+
+- Keep the existing cookie-tab logout test, naming its scope accurately.
+  Add explicit B plus cookie A: ordinary login and logout in a different tab
+  must leave B's authenticated requests attributed to B. Ending B's own tab
+  must clear its retained credential and produce settled recovery.
+- Exercise password, magic-link and activation success from an active explicit
+  B tab and verify destination identity, lack of retained B, and outgoing
+  credential mode. Existing clean-storage login coverage does not establish this.
+- Exercise failed logout and failed account deletion through the real UI command
+  (`delete-account-command`), injecting a server-declared rejection or false result before the backend
+  mutation runs. Assert the same authenticated principal on a subsequent request, visible
+  recoverable feedback, and a working retry. Also verify successful deletion
+  clears the local session using a disposable participant with no real records.
+- Exercise an expired retained explicit credential with a valid different
+  ambient cookie: no answer or protected operation may fall through to that
+  cookie's identity; recovery must settle and accept a fresh LTI launch.
+
+For B's own logout with ambient A, require cleared explicit state, expired
+applicable cookies and no immediate silent authentication as A. A response lost
+after server commit is an uncertain outcome, not a known rejection; this package
+does not add reconciliation for that pre-existing distributed-failure case and
+must not claim its failure-retention tests cover it.
+
+Use network attribution and resulting identity, not only avatar or cookie
+presence. Assertions target behavior, state and protocol values, never exact
+translated copy. Add no new dependencies or standalone test framework.
+
+**3. Restore request retirement and enforce the approved chatbot-entry boundary.**
+In `apps/frontend-pwa/src/lib/apollo.ts`, restore the smallest guard immediately
+before transport after asynchronous context/persisted-query processing. A
+retired binding must not start or retry network work; delayed old results and
+errors must not change current identity, cache or navigation. Preserve the
+current two-mode store and per-binding client reuse. Extend the existing
+`participantSession.test.ts` with controlled transport timing; keep
+`participantSession.ts` unchanged unless that regression proves a small
+state-invariant correction necessary. Already-dispatched server operations
+cannot be undone by client retirement; do not claim server-side revocation.
+
+In `apps/frontend-pwa/src/components/common/Header.tsx`, render a recovery
+action instead of a navigable/prefetchable chatbot link while an explicit tab
+credential exists. Reuse the current UI primitives and EN/DE messages in
+`packages/i18n/messages/en.ts` and `de.ts`; introduce no new module. Activation
+explains that ordinary login in this tab returns it to cookie mode; a fresh LTI
+launch alone does not unlock this action. It preserves B without a bridge request, new window or
+`ensureParticipation` side effect. Removing only `target=_blank` is insufficient
+because SSR still cannot read the explicit credential.
+
+Acceptance cases are separate:
+
+- Explicit B with absent cookies: recovery in the originating tab; no bridge
+  request, no bridge participation check, B stays authenticated there.
+- Explicit B with conflicting cookie A (or an unproven matching cookie): the
+  same conservative gate. Do not silently choose A or promise access as B.
+- Ordinary cookie-mode entry: retain the real new-tab behavior and verify the
+  bridge's request/participation-check principal using synthetic records. If claiming
+  Chat access as that principal, independently check Chat's authenticated
+  principal; a redirect alone is insufficient.
+- Direct navigation to
+  `apps/frontend-pwa/src/pages/course/[courseId]/chatbot/[chatbotId].tsx`: verify
+  the existing no-cookie login path and cookie-authenticated path. That server
+  request has no knowledge of B in another tab. No bridge source change or
+  universal cross-tab guarantee is included.
+
+Source edits are limited to `apollo.ts`, conditionally `participantSession.ts`,
+`Header.tsx`, and EN/DE messages, plus the named existing tests and slice-1
+documents. Any required edit beyond these files gets a scope assessment; new
+credential transport, mutation return contracts, global logout or server-side
+revocation requires a separate approved design. The original login/recovery
+pages and chatbot bridge are inspection/verification targets, not an open-ended
+write allowance.
+
+Run the dedicated OLAT lane from the host worktree:
+
+```sh
+VOLTA_FEATURE_PNPM=1 node ./util/run-playwright-host.mjs --runtime-profile full --config olat-session.config.ts --reporter=line
+```
+
+The config selects Chromium allowed/blocked, Firefox standard/blocked and
+WebKit standard. Use `full` for the real local ltijs/mock-LMS journey. New
+lifecycle checks must pass in each applicable browser; WebKit localhost-cookie
+skips and Firefox storage-denial limits must be named per obligation, with an
+accepted alternative environment or a blocked checkpoint for missing required
+coverage. Do not report skipped full-LTI
+cases from `live-quiz` as launch acceptance. Retain Firefox storage-denial and
+WebKit localhost-cookie limitations explicitly. Run focused package checks for
+changed source, then exact diff review and required risk/final reviews. For
+visible deletion/recovery behavior, use agent-browser interactions and the
+existing screenshot-gallery process for EN desktop and DE compact states;
+include provenance and interaction results in the PR. Stop and verify the exact
+runtime at the end under the runtime lifecycle rules.
+
+Terminal after implementation approval: the selected policy is documented,
+accepted defects are repaired, all mandatory consequential checks pass, and
+the existing PR describes its exact source and browser evidence. Required checks that cannot run produce a
+blocked checkpoint, never completed delivery. Source publication first requires
+restoring the remote-state check; browser acceptance, required exact-head CI and
+CodeQL disposition, and final source/AI review are separate conditions. Alert
+dismissal remains the user's action; do not poll CI or post the final-review
+command until the carried-forward user signal and eligibility are satisfied.
+No claim of real OLAT incident causality is added by a synthetic LMS run.
+
+### Deferred decisions and browser references
+
+The ordinary-login-in-a-cookie-blocked-frame limitation is not permission to
+return session JWTs from every login mutation. The recommended immediate work
+is to document and verify safe recovery; a cookie-independent ordinary-login
+capability requires its own scope and trust-boundary review. Likewise, a shared
+logout broadcast cannot be presented as server-side JWT revocation.
+
+Browser semantics were checked against primary MDN documentation on
+[sessionStorage](https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage),
+[Set-Cookie](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Cookie),
+and [third-party cookies](https://developer.mozilla.org/en-US/docs/Web/Privacy/Guides/Third-party_cookies).
+Storage is scoped to origin and browsing context, survives reload, and can be
+initially copied from an opener; subsequent changes are separate. SameSite
+attributes do not override storage/privacy policy. This review does not depend
+on changing a framework API or dependency version.
+
+### Progress for this follow-up
+
+Status: implementation and browser verification in progress. Host access was
+restored on 12 October. User approval covers completion and updating the existing
+PR after browser verification; no additional generic approval is needed.
+
+Completed planning: immutable 48-path inventory, two independent source reviews,
+feedback-to-source reconciliation, existing test inspection and planner hardening.
+Planner Franklin approved round 3. The optional AGY opinion supplied no review
+because login and sandbox state access failed. Prior review records are under
+`project/_local/reviews/2026-10-12-olat-feedback-*`.
+
+Current implementation starts from `0752024accb2a2f8097fb63e6c24f775b4363c40`.
+GitHub confirms that head and base `fb43d837e9106c5a80616dc3ee519c7395a4e262`.
+The initial sandbox prevented Git metadata writes and devrouter lock inspection.
+After access was restored, the SSH agent refused signing. A command-scoped HTTPS
+transport using the existing `gh` credential helper fetched successfully, without
+changing remote configuration. The task is even with its remote; it is 38 ahead
+and 3 behind `origin/v3` (`df2bfa41d8`). Those three target commits concern Chat
+registries and production pins and introduce no current integration blocker.
+The live PR still targets `v3`. Exact worktree runtime
+`rs-olat-session-recovery` is running through `devrouter ensure --profile full`;
+its application readiness contracts passed. It must be stopped after verification.
+
+Implemented locally: a final Apollo transport guard with retry suppression and
+late-result rejection; Header recovery guidance keyed to the active Apollo
+binding, with a hydration guard against early bridge prefetch; paired EN/DE
+copy; and precise session, logout, exposure and chatbot documentation. Test
+authoring exposed a declined regular logout navigating without feedback. The
+Header now shows the existing error toast and stays on the page for a retry;
+the assessment logout branch retains its existing behavior. This correction
+fits the approved failure-feedback contract and Header write scope. A second
+source correction: `ensureParticipation` only checks an existing participation
+at this head (`services/courses.ts:167-199`). Bridge tests must prove its
+principal through authorization outcomes; there is no participation-creation
+write to observe. This corrects the evidence method, not the approved policy. Existing
+session tests now cover retained clients after stop, delayed data/auth errors,
+late login mutation results and a scheduled retry crossing logout. They have
+not been executed. Gibbs returned the browser-spec checkpoint and is closed.
+Main completed integration: declined logout stays on the profile with an error
+toast; post-login identity waits exclude retained bearer requests; cancelled
+chatbot recovery preserves the explicit request principal; and conflicting
+cookies do not unlock the entry. The authored tests also cover a cookie-mode
+popup, a fresh OLAT launch retaining the gate, and direct bridge authorization
+using isolated member/outsider fixtures. The expired-bearer test includes a
+protected read-only membership operation with the valid ambient cookie present.
+The Chat destination is intercepted after the bridge redirect, so this proves
+bridge authorization only, not the Chat application's authenticated principal.
+The first browser run found a missing course PIN in the new fixture, corrected
+by declaring the isolated course SSO. Synthetic participants now carry complete
+data-use acknowledgements, keeping onboarding separate from the session tests.
+The five-project browser run is active. A Chromium bridge assertion encountered
+a transient HTTP 500 while concurrent package checks rebuilt dependencies; inspect
+and rerun that affected journey after builds finish before claiming acceptance.
+
+Checks completed: all 33 PWA unit tests, focused PWA typecheck, the container
+portion of `check:all` (35 Turbo check/build tasks plus lint and policy checks),
+and 125 host-only Playwright workflow/launcher checks. `check:all` was split after
+its host-only checks correctly refused container execution; no boundary was
+bypassed. I18n has no separate check script and is covered by consumers and
+formatting. Biome formatting, Prettier and `git diff --check` pass. Full Biome
+lint previously reported untouched hook/import diagnostics; repository-native
+ESLint checks pass. Agent-browser confirms visible rejection feedback for logout
+and deletion and preserved profile state in EN desktop and DE compact layouts.
+The screenshot gallery and remaining chatbot interactions are in progress.
+Apollo 3 retry/link contracts were checked against installed 3.13.8 source and
+the official Apollo v3 retry documentation.
+
+Route: main for contract/continuity and integration (coupled identity seam);
+trusted-native executor Gibbs for the disjoint browser spec. Acceptance remains
+the approved source and browser portfolio. Standard full-path review gates are
+pending committed and verified code; no source review can replace browser
+proof. The existing source/API comments were preserved except where the
+approved behavior changes their contract.
+
+Next: finish the browser matrix and affected reruns, inspect and publish the
+synthetic screenshot gallery, complete committed simplification and slice/final
+reviews, then push and update the existing PR. Preserve its current ready/draft
+state. Do not poll CI; the user signals when exact-head checks have settled before
+`/final-review`. Human review, merge, alert dismissal and deployment remain
+separate. The historical record below is retained verbatim and does not establish
+acceptance of these new changes.
+
+## Historical implementation plan and execution record
+
+The sections below preserve the original approved repair and its progress.
+Where later source changes superseded its mechanisms or evidence, use the
+12 October review above and the final implementation's exact-head proof.
+
 ## Outcome and execution contract
 
 A fresh, verified OLAT launch restores the intended participant's Klicker
