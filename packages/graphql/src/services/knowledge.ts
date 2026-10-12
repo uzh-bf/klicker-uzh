@@ -49,7 +49,7 @@ import {
 } from './docQuerySources.js'
 import { isElementGenerationGraphBundleReady } from './elementGenerationGraphReadiness.js'
 import { getKBGraphBundleCoordinates } from './kbGraphBundleCoordinates.js'
-import { resolveKBGraphQuotaLimit } from './kbGraphQuota.js'
+import { lockKBGraphQuota, resolveKBGraphQuotaLimit } from './kbGraphQuota.js'
 import {
   getKBGraphRemainingQuota,
   releaseKBGraphCostReservation,
@@ -3353,6 +3353,14 @@ export async function rebuildKbKnowledgeGraph(
     } catch {
       const finishedAt = new Date()
       await ctx.prisma.$transaction(async (prisma) => {
+        await prisma.$queryRaw`SELECT "id" FROM "public"."KB" WHERE "id" = CAST(${kbId} AS UUID) FOR UPDATE`
+        const reservation = await prisma.kBGraphBuild.findUnique({
+          where: { id: result.queueBuildId! },
+          select: { quotaId: true },
+        })
+        if (reservation?.quotaId) {
+          await lockKBGraphQuota(prisma, reservation.quotaId)
+        }
         const failed = await prisma.kBGraphBuild.updateMany({
           where: {
             id: result.queueBuildId!,
