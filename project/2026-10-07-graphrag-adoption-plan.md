@@ -344,8 +344,8 @@ LightRAG 1.5.7 and the verified timeout pass-through in both initializers. All
 worker slots were available and no active graph build existed before rollout.
 No PRD manifest, ingestion workflow or database schema changed.
 
-The single approved new build has been accepted on the unchanged frozen source
-hashes. Its fresh publication and GraphRAG comparison remain pending. The private
+The single approved new build ran on the unchanged frozen source hashes and failed
+in strict category validation. No fresh graph was exported or published. The private
 recovery addendum retains the failed build, original protocol and scored
 baseline/control receipts. The reviewed recovery guards pass their offline
 checks. Persisted participant login and authenticated synthetic graph overview
@@ -356,6 +356,37 @@ embedding, routed models and fallback paths. Named component prices are now
 known, but several routes lack token limits and the native input/retry bound is
 unqualified. Hold the native paid turn before dispatch under the approved CHF 2
 condition. This gate is separate from the bounded fixed-model framework arms.
+
+October 12 recovery outcome: the provider completed extraction and category edits,
+then failed during the first cleaning pass. The new exception reports categories
+outside the selected policy; no timeout exception appears in the failure chain.
+The failed working graph contains 2,219 nodes and 2,982 edges. Three nodes remain
+noncanonical across two category values, below the 256-node repair cap. All three
+have descriptions and relations. These counts do not establish why the classifier
+left them unmapped. The cleaning report records the failed pass with zero attempt
+counters because validation precedes recording the repair outcome. The runtime
+cleaning role was Azure GPT-6 Luna with no explicit reasoning effort.
+
+The approved failure branch has been executed. The provider run and application
+build are terminal failures, the application reservation is released, and the
+previous publication remains unchanged. No GraphRAG searches, target answers or
+judge calls were admitted. The original test chatbot bindings and feature settings
+match the restoration snapshot exactly; source hashes and all historical evidence
+pins remain unchanged. The authenticated student view opens and exposes the KG
+button, but fresh teaching-graph interactions remain unverified. Both temporary
+loopback listeners are closed. Retaining both failed-build holds gives a
+conservative CHF 6.69857084 counted against CHF 20, with CHF 13.30142916 remaining.
+
+The next gate is to diagnose the category classifier's model/request/response
+contract and retain safe repair counters before strict validation. Use the saved
+failed artifact and synthetic fixtures to qualify the correction before another
+paid build. Preserve the policy validator, repair cap, source boundary and
+independence from ingestion. Another provider change, deployment and paid build
+require a new bounded approval; the one-build recovery authority is exhausted.
+The three GraphRAG cases, 27 judge calls and fresh student KG acceptance remain
+blocked on publication. Native Auto-mode cost qualification remains a separate
+gate. Draft PR #6478 carries the adapter fix and this evidence checkpoint; it is
+not merge or rollout acceptance.
 
 Terminal: source and serving receipts, a complete three-arm framework report,
 separate native/UI evidence, reconciled costs and restored test scope; or stop at
