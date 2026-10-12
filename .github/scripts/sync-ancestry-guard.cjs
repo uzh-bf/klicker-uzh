@@ -11,7 +11,11 @@ const DOWNSTREAM = Object.fromEntries(
 const STATUS_CONTEXT = 'sync-ancestry'
 
 function git(cwd, args) {
-  return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim()
+  return execFileSync('git', args, {
+    cwd,
+    encoding: 'utf8',
+    maxBuffer: 256 * 1024 * 1024,
+  }).trim()
 }
 
 function isAncestor(cwd, ancestor, descendant) {
@@ -43,12 +47,11 @@ function bringsSourceCommits(cwd, { parent, head, sourceSha }) {
 // `head` brings and `parent` lacks. Changes reach a downstream branch only as
 // merged-in parents, so any of its own commits in `head` flowed backwards, for
 // example through "Update branch" on a pull request whose head was upstream.
-function findDownstreamCommits(
-  cwd,
-  { parent, head, downstreamSha, limit = 5000 }
-) {
+// Both walks are unbounded: a capped walk could miss an old downstream commit
+// and report a back-merge as clean.
+function findDownstreamCommits(cwd, { parent, head, downstreamSha }) {
   const revList = (...args) =>
-    git(cwd, ['rev-list', `--max-count=${limit}`, ...args])
+    git(cwd, ['rev-list', ...args])
       .split('\n')
       .filter(Boolean)
   const downstreamOwn = new Set(

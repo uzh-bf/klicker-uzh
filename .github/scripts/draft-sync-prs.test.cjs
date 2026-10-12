@@ -42,10 +42,7 @@ function fixture({
   const merges = []
   const sources = { v3: 'v3-tip', 'v3-ai': 'v3-ai-tip' }
   const github = {
-    paginate: async (_, { head, base }) =>
-      prs.filter(
-        (pr) => `uzh-bf:${pr.head.ref}` === head && pr.base.ref === base
-      ),
+    paginate: async (_, { base }) => prs.filter((pr) => pr.base.ref === base),
     rest: {
       git: {
         async createRef({ ref, sha }) {
@@ -57,6 +54,11 @@ function fixture({
           }
           refs.set(name, sha)
           refWrites.push({ op: 'create', name, sha })
+        },
+        async getRef({ ref }) {
+          return {
+            data: { object: { sha: refs.get(ref.replace('heads/', '')) } },
+          }
         },
         async updateRef({ ref, sha, force }) {
           const name = ref.replace('heads/', '')
@@ -124,9 +126,9 @@ test('creates only the two forward pairs as drafts and preserves ready PRs on re
   // Every PR head is a bot-owned sync branch, never the long-lived source.
   assert.deepEqual(
     state.creates.map(({ head }) => head),
-    ['sync/v3-into-v3-ai', 'sync/v3-ai-into-v3-audit']
+    ['sync/v3-into-v3-ai-v3-tip', 'sync/v3-ai-into-v3-audit-v3-ai-tip']
   )
-  assert.equal(state.refs.get('sync/v3-into-v3-ai'), 'v3-tip')
+  assert.equal(state.refs.get('sync/v3-into-v3-ai-v3-tip'), 'v3-tip')
   state.prs[0].draft = false
   const second = await maintainDraftSyncPrs({
     ...state,
@@ -208,13 +210,29 @@ test('leaves pull requests headed by the source branch itself untouched', async 
   assert.deepEqual(results[1], {
     head: 'v3-ai',
     base: 'v3-audit',
-    branch: syncBranch({ head: 'v3-ai', base: 'v3-audit' }),
+    branch: 'v3-ai',
     action: 'legacy',
     number: 99,
   })
   assert.deepEqual(
     state.creates.map(({ head }) => head),
-    ['sync/v3-into-v3-ai']
+    [syncBranch({ head: 'v3', base: 'v3-ai' }, 'v3-tip')]
+  )
+})
+
+test('never overwrites a leftover sync branch at another commit', async () => {
+  const state = fixture()
+  state.refs.set('sync/v3-into-v3-ai-v3-tip', 'someone-else')
+  const results = await maintainDraftSyncPrs({
+    ...state,
+    context,
+    dryRun: false,
+  })
+  assert.equal(results[0].action, 'stale-branch')
+  assert.equal(state.refs.get('sync/v3-into-v3-ai-v3-tip'), 'someone-else')
+  assert.deepEqual(
+    state.creates.map(({ head }) => head),
+    ['sync/v3-ai-into-v3-audit-v3-ai-tip']
   )
 })
 
@@ -257,7 +275,7 @@ test('ignores same-named fork PRs', async () => {
   const state = fixture()
   state.prs.push({
     head: {
-      ref: 'sync/v3-into-v3-ai',
+      ref: 'sync/v3-into-v3-ai-v3-tip',
       repo: { full_name: 'someone/klicker-uzh' },
     },
     base: { ref: 'v3-ai', repo: { full_name: repository } },

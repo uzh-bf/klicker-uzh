@@ -7,8 +7,14 @@ const PAIRS = [
 // Sync pull requests never use the long-lived source branch as their head.
 // GitHub's "Update branch" and conflict edits write to the pull request head,
 // so a source-branch head would let them merge the target back into the source.
-function syncBranch({ head, base }) {
-  return `sync/${head}-into-${base}`
+// Each new pull request gets a fresh branch named after its starting source
+// SHA, so the controller never has to reset a branch that someone else used.
+function syncBranchPrefix({ head, base }) {
+  return `sync/${head}-into-${base}-`
+}
+
+function syncBranch(pair, sourceSha) {
+  return `${syncBranchPrefix(pair)}${sourceSha.slice(0, 10)}`
 }
 
 function acceptsEvent(context) {
@@ -26,17 +32,16 @@ function acceptsEvent(context) {
   )
 }
 
-async function findOpenPr({ github, repo, head, base }) {
+async function findOpenPr({ github, repo, base, matches }) {
   const prs = await github.paginate(github.rest.pulls.list, {
     ...repo,
     state: 'open',
-    head: `${repo.owner}:${head}`,
     base,
     per_page: 100,
   })
   return prs.find(
     (pr) =>
-      pr.head.ref === head &&
+      matches(pr.head.ref) &&
       pr.base.ref === base &&
       pr.head.repo?.full_name === REPOSITORY &&
       pr.base.repo?.full_name === REPOSITORY
@@ -81,26 +86,27 @@ async function advanceSyncBranch({ github, repo, branch, pr, sourceSha }) {
   }
 }
 
-// Points the bot-owned sync branch at the source tip. Only called when no open
-// pull request uses the branch, so any leftover commits on it are discarded.
-async function resetSyncBranch({ github, repo, branch, sourceSha }) {
+// Creates the fresh sync branch for a new pull request. An existing branch of
+// that name is reused only when it still points at the source tip; anything
+// else is someone's work and is never overwritten.
+async function createSyncBranch({ github, repo, branch, sourceSha }) {
   try {
     await github.rest.git.createRef({
       ...repo,
       ref: `refs/heads/${branch}`,
       sha: sourceSha,
     })
+    return true
   } catch (error) {
     // 422 also covers refusals such as missing workflow-file permission.
     if (error.status !== 422 || !/already exists/i.test(error.message)) {
       throw error
     }
-    await github.rest.git.updateRef({
+    const { data: ref } = await github.rest.git.getRef({
       ...repo,
       ref: `heads/${branch}`,
-      sha: sourceSha,
-      force: true,
     })
+    return ref.object.sha === sourceSha
   }
 }
 
@@ -111,15 +117,26 @@ async function maintainDraftSyncPrs({ github, context, dryRun = true }) {
 
   for (const pair of PAIRS) {
     const { head, base } = pair
-    const branch = syncBranch(pair)
-    const report = (action, number) =>
-      results.push({ head, base, branch, action, ...(number && { number }) })
+    const prefix = syncBranchPrefix(pair)
+    const report = (action, number, branch) =>
+      results.push({
+        head,
+        base,
+        branch: branch ?? prefix,
+        action,
+        ...(number && { number }),
+      })
 
     // A pull request opened before sync branches existed still has the source
     // branch as its head. Leave it alone; closing it lets the next run migrate.
-    const legacy = await findOpenPr({ github, repo, head, base })
+    const legacy = await findOpenPr({
+      github,
+      repo,
+      base,
+      matches: (ref) => ref === head,
+    })
     if (legacy) {
-      report('legacy', legacy.number)
+      report('legacy', legacy.number, head)
       continue
     }
 
@@ -130,12 +147,19 @@ async function maintainDraftSyncPrs({ github, context, dryRun = true }) {
     })
     const sourceSha = source.commit.sha
 
-    const existing = await findOpenPr({ github, repo, head: branch, base })
+    const existing = await findOpenPr({
+      github,
+      repo,
+      base,
+      matches: (ref) => ref.startsWith(prefix),
+    })
     if (existing) {
+      const branch = existing.head.ref
       if (dryRun) {
         report(
           existing.head.sha === sourceSha ? 'existing' : 'would-advance',
-          existing.number
+          existing.number,
+          branch
         )
         continue
       }
@@ -146,7 +170,7 @@ async function maintainDraftSyncPrs({ github, context, dryRun = true }) {
         pr: existing,
         sourceSha,
       })
-      report(action, existing.number)
+      report(action, existing.number, branch)
       continue
     }
 
@@ -165,7 +189,11 @@ async function maintainDraftSyncPrs({ github, context, dryRun = true }) {
       continue
     }
 
-    await resetSyncBranch({ github, repo, branch, sourceSha })
+    const branch = syncBranch(pair, sourceSha)
+    if (!(await createSyncBranch({ github, repo, branch, sourceSha }))) {
+      report('stale-branch', undefined, branch)
+      continue
+    }
     try {
       const { data: pr } = await github.rest.pulls.create({
         ...repo,
@@ -178,21 +206,32 @@ async function maintainDraftSyncPrs({ github, context, dryRun = true }) {
           '',
           'Mark ready when the accumulated changes should be reviewed and validated for integration. Use a merge commit to preserve branch ancestry.',
           '',
-          `Resolve conflicts on \`${branch}\` itself, or use "Update branch"; neither touches \`${head}\`. Later \`${head}\` pushes are merged into your resolution rather than replacing it.`,
+          `Resolve conflicts on \`${branch}\` itself; that never touches \`${head}\`. Later \`${head}\` pushes are merged into your resolution rather than replacing it.`,
           '',
           'Creation is automated; readiness and merging remain manual.',
         ].join('\n'),
       })
-      report('created', pr.number)
+      report('created', pr.number, branch)
     } catch (error) {
       if (error.status !== 422) throw error
       // A maintainer or another caller may have created the same PR meanwhile.
-      const concurrent = await findOpenPr({ github, repo, head: branch, base })
+      const concurrent = await findOpenPr({
+        github,
+        repo,
+        base,
+        matches: (ref) => ref.startsWith(prefix),
+      })
       if (!concurrent) throw error
-      report('existing', concurrent.number)
+      report('existing', concurrent.number, concurrent.head.ref)
     }
   }
   return results
 }
 
-module.exports = { PAIRS, acceptsEvent, maintainDraftSyncPrs, syncBranch }
+module.exports = {
+  PAIRS,
+  acceptsEvent,
+  maintainDraftSyncPrs,
+  syncBranch,
+  syncBranchPrefix,
+}

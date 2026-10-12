@@ -16,7 +16,9 @@ tags:
 
 `maintain-draft-sync-prs.yml` maintains the exact forward pairs `v3` ->
 `v3-ai` and `v3-ai` -> `v3-audit`. Each sync PR's head is a bot-owned branch,
-`sync/<source>-into-<target>`, never the long-lived source branch. GitHub's
+`sync/<source>-into-<target>-<sha10>`, never the long-lived source branch. The
+suffix is the source SHA the PR started from, so every new sync PR gets a fresh
+branch. GitHub's
 "Update branch" button and web conflict edits write to a PR's head. With the
 source branch as head, one click merged `v3-audit` back into the production
 branch `v3-ai`. With a sync branch as head, the same click only changes the
@@ -31,11 +33,14 @@ On every run, for each pair, the controller:
    conflicts or using "Update branch", is never reset: the source is merged
    into it, and a merge conflict is reported as `conflict` for maintainers.
 3. Otherwise opens a draft when the source has commits and a non-empty diff
-   absent from the target. It first points the sync branch at the source tip,
-   discarding leftovers from a previous, merged or closed, sync.
+   absent from the target. It creates a fresh sync branch at the source tip.
+   If a branch of that name already exists at another commit, the controller
+   reports `stale-branch` and leaves it alone; delete it to let the next run
+   proceed.
 
 Existing PR descriptions and draft/ready states are preserved. The controller
-never writes the source or target branches and never merges. Maintainers
+never force-updates a branch, never writes the source or target branches and
+never merges. Maintainers
 choose when to mark ready and merge with a merge commit to preserve ancestry.
 Resolve conflicts directly on the sync branch.
 
@@ -87,9 +92,9 @@ admin to remove `non_fast_forward` from the target's ruleset, push with
 `--force-with-lease=<target>:<bad SHA>`, and restore the ruleset immediately.
 Afterwards, check that no remote branch or open PR contains the bad SHA
 (`git branch -r --contains <sha>`) and ask anyone who fetched the target in that
-window to rebase. If a `sync/` branch already followed the bad SHA, close its PR;
-the next controller run resets the branch to the recovered tip and opens a new
-draft.
+window to rebase. If a `sync/` branch already followed the bad SHA, close its PR
+and delete that branch. The next controller run opens a new draft on a fresh
+branch from the recovered tip.
 
 ### Squashed sync guard
 
