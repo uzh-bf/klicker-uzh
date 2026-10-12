@@ -9,6 +9,7 @@ import { useTranslations } from 'next-intl'
 import { useParams, useRouter } from 'next/navigation'
 import { formatModeLabel, getModeIcon } from '../lib/config/modes'
 import { useChatStore, type Thread } from '../stores/chatStore'
+import { useEffectiveModeOptions } from './mode-options-context'
 import {
   transitionDeleteConfirm,
   type DeleteConfirmPhase,
@@ -206,6 +207,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
   onDelete,
 }) => {
   const t = useTranslations()
+  const modeOptions = useEffectiveModeOptions()
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState('')
@@ -414,7 +416,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
                   className: 'size-3 shrink-0',
                 })}
                 <span className="truncate">
-                  {formatModeLabel(t, thread.lastChatMode)}
+                  {formatModeLabel(t, thread.lastChatMode, modeOptions)}
                 </span>
               </p>
             )}

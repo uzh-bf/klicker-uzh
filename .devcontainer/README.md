@@ -50,7 +50,7 @@ The primary checkout keeps fixed localhost application ports, publishes the data
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.1.2 and set it up:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.2.0 and set it up:
    ```bash
    devrouter setup --yes   # Traefik + the shared `devnet` + mkcert CA
    ```
@@ -106,7 +106,7 @@ marker creation to work around a refusal.
 
 ## Profiles
 
-This repository pins devrouter 0.1.2. Managed profiles, introduced in 0.0.40,
+This repository pins devrouter 0.2.0. Managed profiles, introduced in 0.0.40,
 select three independent dimensions: routed
 apps, optional Compose services, and managed processes. Merged selections are
 additive and order-insensitive; omitting `--profile` selects `standard`, which
@@ -123,14 +123,15 @@ retained-runtime configuration and mount comparison.
 Version 0.0.58 runs the host dependency-mount generator before Compose inspection.
 It does not apply changed mounts to retained containers.
 
-| Profile                                 | What starts                                                                   |
-| --------------------------------------- | ----------------------------------------------------------------------------- |
-| `manage` / `pwa` / `chat` / `live-quiz` | That app set + API/Auth (+ PWA for chat; workers for live-quiz), the 3x Redis |
-| `ai`                                    | LiteLLM only - no routes, no app process                                      |
-| `mcp`                                   | Deterministic MCP fixture and its separate disposable database                |
-| `email`                                 | MailHog only                                                                  |
-| `standard` (default)                    | All ordinary applications, LiteLLM and MailHog; no deterministic MCP fixture  |
-| `full`                                  | Every capability, including the isolated deterministic MCP database           |
+| Profile                                 | What starts                                                                           |
+| --------------------------------------- | ------------------------------------------------------------------------------------- |
+| `manage` / `pwa` / `chat` / `live-quiz` | That app set + API/Auth (+ PWA for chat; workers for live-quiz), the 3x Redis         |
+| `eduid`                                 | The local Edu-ID OIDC mock only - combine it with an application profile              |
+| `ai`                                    | LiteLLM only - no routes, no app process                                              |
+| `mcp`                                   | Deterministic MCP fixture and its separate disposable database                        |
+| `email`                                 | MailHog only                                                                          |
+| `standard` (default)                    | All ordinary applications, LiteLLM and MailHog; no deterministic MCP fixture          |
+| `full`                                  | Every capability, including the isolated deterministic MCP database and the OIDC mock |
 
 Postgres and Hatchet stay in the managed base for every profile (the backend
 treats both as boot-critical). Capability-only selections keep the idle app
@@ -268,13 +269,50 @@ psql "host=db.klicker.<workspace>.localhost port=5432 user=klicker_test \
 
 ## Auth model in dev
 
-EduID is replaced by klicker's own **credentials login** (no OIDC mock needed).
-Seeded users (`packages/prisma-data`): `lecturer`/`abcd` (ADMIN), `free`/`abcd`,
-`pro1..3`/`abcd`, and `testuser1..50`/`abcdabcd`. Cross-app sessions work because
-linked-worktree apps are served under the same `klicker.<workspace>.localhost`
-parent and the cookie domain resolves to that parent. `post-start.sh` rewrites
-the public origins and `AUTH_*_ALLOWED_HOSTS` when `WORKSPACE` is set, because
-the hardcoded defaults only know `klicker.com`.
+Lecturer login uses klicker's own **credentials login** — `lecturer`/`abcd`
+(ADMIN), `free`/`abcd`, `pro1..3`/`abcd`, and `testuser1..50`/`abcdabcd` come
+from `packages/prisma-data`. Cross-app sessions work because linked-worktree apps
+are served under the same `klicker.<workspace>.localhost` parent and the cookie
+domain resolves to that parent. `post-start.sh` rewrites the public origins and
+`AUTH_*_ALLOWED_HOSTS` when `WORKSPACE` is set, because the hardcoded defaults
+only know `klicker.com`.
+
+**Edu-ID** is served by a local OIDC mock (`oidc` service, routed at
+`https://oidc.klicker[.<workspace>].localhost`). The real SWITCH client registers
+redirect URIs per client, so `uzh_klicker_auth_dev` only ever accepts
+`https://auth.klicker.com/api/auth/callback/...`; a linked worktree's
+`https://auth.klicker.<workspace>.localhost/...` callback is rejected by the
+provider and no local configuration can change that. The mock accepts any
+redirect URI, so Edu-ID login and the assessment flow are testable in every
+checkout.
+
+The mock is a devcontainer-only capability, so it stays out of the application
+profiles: CI plans those unions against `playwright/runtime-contract.yml`, whose
+closed schema requires a literal binding for every selected app and managed
+service, and the hosted Playwright runtime cannot provision a Compose-only
+proxy. The default `full` selection routes the mock; a selective selection adds
+the capability explicitly:
+
+```bash
+devrouter ensure . --profile manage,eduid
+```
+
+Outside such a selection `post-start` reports the mock as not selected and
+leaves the Edu-ID provider unregistered, so no checkout offers an issuer it
+cannot reach. When a selected mock cannot be prepared (for example an
+unresolvable Traefik), startup continues, the mock is reported as disabled, and
+the recovery is `devrouter setup --yes` followed by `devrouter ensure .`.
+
+The mock signs in one fixed synthetic participant
+(`testuser2@test.uzh.ch`, `sub=local-eduid-dev`); `post-start.sh` exposes it only
+while `EDUID_CLIENT_SECRET` is unset, so real provider credentials always win.
+Link that mock identity to a seeded participant with
+`pnpm --filter @klicker-uzh/prisma-data run seed:local-eduid-link`.
+
+In the plain-localhost fallback (a native Dev Container client without
+devrouter routing) the issuer is `http://localhost:8090/default`. The primary
+checkout publishes that port on `127.0.0.1` and `devcontainer.json` forwards it.
+Linked worktrees keep the routed HTTPS issuer and publish no fixed host port.
 
 ## Hatchet token
 
@@ -298,6 +336,7 @@ boot because its `HatchetClient.init` runs at module load (not lazy).
 | `azurite`                           | `mcr.microsoft.com/azure-storage/azurite:3.36.0` | local Blob service for browser uploads                                               |
 | `hatchet`                           | `hatchet-lite-dev:v0.101.0`                      | workflow engine (gRPC :7077, no UI auth)                                             |
 | `litellm`                           | `ghcr.io/berriai/litellm-database:v1.96.2`       | LLM proxy + Auto V2 complexity router for chat (port 4000 intra-net)                 |
+| `oidc`                              | `ghcr.io/navikt/mock-oauth2-server:2.1.11`       | local Edu-ID OIDC mock (dev-only, shares the app network namespace)                  |
 
 Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
 host-side `initialize.sh` creates the persistent machine-local pnpm store,
@@ -444,7 +483,7 @@ disabled and the rest of the DevPod still starts normally.
   Generation failures abort startup and retain the previous output; unchanged
   output is not rewritten.
 - Generating updated configuration does not change mounts in an existing
-  container. Devrouter 0.1.2 does not support warm mount reconciliation.
+  container. Devrouter 0.2.0 does not support warm mount reconciliation.
   Do not recreate or reset a retained workspace to apply a package addition or
   removal. Keep its data intact and resolve the supported lifecycle procedure
   separately. Unchanged package inventories retain the same volume names.
@@ -504,7 +543,7 @@ and confirm its provider is stopped and its routes are gone before restarting.
 The repository's `.devcontainer/recover-runtime.sh` is a consumer callback for
 the separately reviewed devrouter retained-recovery implementation. It is not
 an ordinary startup hook or a command to invoke manually. The repository-pinned
-0.1.2 release does not provide this recovery contract. The recovery performed
+0.2.0 release does not provide this recovery contract. The recovery performed
 for this branch used devrouter source revision
 `aacf9ea595b9c76b0aaf66c0f4d52179b05197d8`, whose `recovery-preview`,
 `recovery-apply` and `recovery-resume` commands own the lifecycle locks, exact

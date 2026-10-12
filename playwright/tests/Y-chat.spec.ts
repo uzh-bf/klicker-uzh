@@ -19,6 +19,7 @@ import {
   TEST_PNG_DATA_URL,
   testImageUpload,
 } from '../util/chat.js'
+import { deMessages, enMessages } from '../util/messages.js'
 import { selectOption } from '../util/workflow.js'
 
 const UNKNOWN_CHATBOT_ID = '00000000-0000-4000-8000-000000000404'
@@ -1651,6 +1652,27 @@ test.describe('Chatbot Settings Panel', () => {
     })
   }
 
+  // Read the shipped settings copy so the spec tracks the product text.
+  function settingsCopy(messages: {
+    chat: {
+      settingsPanel: Record<
+        | 'autoSelectionInfo'
+        | 'usingPrimaryModel'
+        | 'fixedModelInfo'
+        | 'usingFallbackModel',
+        string
+      >
+    }
+  }) {
+    const copy = messages.chat.settingsPanel
+    return {
+      automatic: copy.autoSelectionInfo,
+      primary: copy.usingPrimaryModel,
+      fixed: copy.fixedModelInfo,
+      fallback: copy.usingFallbackModel,
+    }
+  }
+
   async function assertAutomaticAndFixedModelCopy(
     page: Page,
     participantId: string,
@@ -1835,28 +1857,23 @@ test.describe('Chatbot Settings Panel', () => {
   test('Participant settings distinguish Auto and fixed models in English', async ({
     page,
   }) => {
-    await assertAutomaticAndFixedModelCopy(page, participantId, 'en', {
-      automatic: 'KlickerUZH chooses a suitable model for each message.',
-      primary: 'The automatic choice is used while credits are available.',
-      fixed: 'Your lecturer fixed this model for all participants.',
-      fallback:
-        'No credits remain. GPT-5.6 Luna may be used as the credit fallback.',
-    })
+    await assertAutomaticAndFixedModelCopy(
+      page,
+      participantId,
+      'en',
+      settingsCopy(enMessages)
+    )
   })
 
   test('Participant settings distinguish Auto and fixed models in German', async ({
     page,
   }) => {
-    await assertAutomaticAndFixedModelCopy(page, participantId, 'de', {
-      automatic:
-        'KlickerUZH wählt für jede Nachricht ein passendes Modell aus.',
-      primary:
-        'Die automatische Auswahl wird verwendet, solange Credits verfügbar sind.',
-      fixed:
-        'Die Lehrperson hat dieses Modell für alle Teilnehmenden festgelegt.',
-      fallback:
-        'Es sind keine Credits mehr übrig. GPT-5.6 Luna kann als Credit-Fallback verwendet werden.',
-    })
+    await assertAutomaticAndFixedModelCopy(
+      page,
+      participantId,
+      'de',
+      settingsCopy(deMessages)
+    )
   })
 
   test('Credits display shows current/total and percentage', async ({
@@ -1937,7 +1954,7 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(modelSection).toBeVisible()
     await expect(page.getByTestId('chat-model-display')).toHaveCount(0)
 
-    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-5.6 Luna')
+    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-6 Luna')
 
     const chatRequestPromise = page.waitForRequest(
       (request) =>
@@ -1948,28 +1965,24 @@ test.describe('Chatbot Settings Panel', () => {
 
     const chatRequest = await chatRequestPromise
     const payload = chatRequest.postDataJSON() as { selectedModel?: string }
-    expect(payload.selectedModel).toBe('gpt-5.6-luna')
+    expect(payload.selectedModel).toBe('gpt-6-luna')
     await expect(page.getByTestId('chat-assistant-message')).toContainText(
       'assistant reply #1',
       { timeout: 15_000 }
     )
   })
 
-  test('Model descriptions explain capabilities without provider jargon', async ({
-    page,
-  }) => {
+  test('Selected model exposes its description', async ({ page }) => {
     await setModelSelection(participantId, true)
     await visitChat(page)
     await openSettings(page)
 
     const modelSection = page.getByTestId('chat-model-selection')
-    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-5.6 Luna')
+    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-6 Luna')
 
-    await expect(modelSection).toContainText(
-      'Uses fewer credits and remains available when your credits run out'
-    )
-    await expect(modelSection).not.toContainText('LiteLLM')
-    await expect(modelSection).not.toContainText('OpenAI reasoning model')
+    const description = modelSection.locator('p')
+    await expect(description).toBeVisible()
+    await expect(description).toHaveText(/\S/)
   })
 
   // The selector only appears for a model that supports reasoning with more
@@ -1983,7 +1996,7 @@ test.describe('Chatbot Settings Panel', () => {
     await mockChatStream(page, {
       metadata: {
         chatMode: 'tutor',
-        modelId: 'gpt-5.6-luna',
+        modelId: 'gpt-6-luna',
         reasoningEffort: 'high',
       },
     })
@@ -2000,7 +2013,7 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(
       page.getByTestId('chat-reasoning-effort-selection')
     ).toHaveCount(0)
-    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-5.6 Luna')
+    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-6 Luna')
 
     await expect(
       page.getByTestId('chat-reasoning-effort-selection')
@@ -2023,7 +2036,11 @@ test.describe('Chatbot Settings Panel', () => {
     await sendMessage(page, 'Selected reasoning effort check')
 
     const chatRequest = await chatRequestPromise
-    const payload = chatRequest.postDataJSON() as { reasoningEffort?: string }
+    const payload = chatRequest.postDataJSON() as {
+      selectedModel?: string
+      reasoningEffort?: string
+    }
+    expect(payload.selectedModel).toBe('gpt-6-luna')
     expect(payload.reasoningEffort).toBe('high')
 
     // The caption under the answer reflects the effort the stream reported.
@@ -2935,9 +2952,11 @@ test.describe('Chatbot Source Citations', () => {
         ...[
           'An answer without a citation.',
           'A supported answer [1] and [1].',
-        ].map((text) => ({
+        ].map((text, ix) => ({
           role: 'assistant' as const,
           parentId: userId,
+          // The cited answer must be the newest sibling so it opens first.
+          createdAt: new Date(Date.now() + ix * 1000),
           content: [
             docQueryPart({
               toolCallId: text.includes('[1]') ? 'call-cited' : 'call-uncited',

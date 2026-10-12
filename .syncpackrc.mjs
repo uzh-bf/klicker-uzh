@@ -43,6 +43,13 @@ export default {
       packages: ['@klicker-uzh/monorepo'],
     },
     {
+      // The utilities override writes an exact lockfile specifier.
+      range: '',
+      dependencyTypes: ['dev'],
+      dependencies: ['@graphql-tools/utils'],
+      packages: ['**'],
+    },
+    {
       // The unqualified vitest overrides rewrite the lockfile specifiers to
       // the exact pin, and verifyDepsBeforeRun compares spec strings, so the
       // manifests must carry the exact release too (see #5924).
@@ -66,6 +73,13 @@ export default {
       range: '',
       dependencyTypes: ['dev'],
       dependencies: ['@babel/core'],
+      packages: ['**'],
+    },
+    {
+      // The utilities override writes an exact lockfile specifier.
+      range: '',
+      dependencyTypes: ['dev'],
+      dependencies: ['@graphql-tools/utils'],
       packages: ['**'],
     },
     {

@@ -4,7 +4,11 @@ import { persist } from 'zustand/middleware'
 import { authedFetch } from '../lib/client/authedFetch'
 import { DEFAULT_MODE_DESCRIPTIONS } from '../lib/config/mode-descriptions'
 import { type ModelID, type ModelOption } from '../lib/config/models'
-import { parseModeOptions, resolveSelectedMode } from '../lib/config/modes'
+import {
+  type ChatModeOptions,
+  parseModeOptions,
+  resolveSelectedMode,
+} from '../lib/config/modes'
 import { type ReasoningEffort } from '../lib/config/reasoning'
 
 export interface ModeOption {
@@ -19,7 +23,7 @@ let creditsRequestGeneration = 0
 let creditsLoadedChatbotId: string | null = null
 let modeOptionsRequestGeneration = 0
 const SAFE_FALLBACK_MODE_OPTIONS = {
-  tutor: DEFAULT_MODE_DESCRIPTIONS.tutor,
+  tutor: { description: DEFAULT_MODE_DESCRIPTIONS.tutor },
 }
 
 const resolveAllowedReasoningEfforts = (
@@ -74,7 +78,7 @@ interface SettingsState {
 
   // Available options
   modelOptions: ModelOption[]
-  modeOptions: Record<string, string>
+  modeOptions: ChatModeOptions
   modeOptionsChatbotId: string | null
 
   // Actions
@@ -83,7 +87,7 @@ interface SettingsState {
   setSelectedReasoningEffort: (effort: ReasoningEffort) => void
   loadModeOptions: (
     chatbotId: string,
-    initialModeOptions?: Record<string, string>
+    initialModeOptions?: ChatModeOptions
   ) => Promise<void>
   loadCredits: (chatbotId: string) => Promise<void>
   decrementCredits: (amount: number) => void
@@ -142,7 +146,7 @@ export const useSettingsStore = create<SettingsState>()(
 
       loadModeOptions: async (
         chatbotId: string,
-        initialModeOptions?: Record<string, string>
+        initialModeOptions?: ChatModeOptions
       ) => {
         const requestGeneration = ++modeOptionsRequestGeneration
         const hasInitialModeOptions = initialModeOptions !== undefined

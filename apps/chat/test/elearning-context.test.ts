@@ -1,14 +1,14 @@
-import { signJWT, verifyElearningChatGrant } from '@klicker-uzh/util'
 import {
   ELEARNING_SNAPSHOT_EXCERPT_MAX_LENGTH,
   ELEARNING_SNAPSHOT_OUTLINE_MAX_ITEMS,
 } from '@klicker-uzh/types'
+import { signJWT, verifyElearningChatGrant } from '@klicker-uzh/util'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
-  formatElearningGroundingPolicy,
-  matchesPersistedLearningHistory,
+  formatElearningSnapshotContext,
   hasElearningPageEvidence,
+  matchesPersistedLearningHistory,
   normalizePersistedLearningContext,
   resolveElearningThreadOrigin,
   verifyAndNormalizeElearningChatContext,
@@ -306,9 +306,9 @@ describe('page evidence', () => {
   })
 })
 
-describe('formatElearningGroundingPolicy', () => {
+describe('formatElearningSnapshotContext', () => {
   it('embeds the snapshot as intact JSON data', () => {
-    const prompt = formatElearningGroundingPolicy(baseSnapshot() as never)
+    const prompt = formatElearningSnapshotContext(baseSnapshot() as never)
     const fence = prompt.split('```json')[1]
     expect(fence).toBeDefined()
     const parsed = JSON.parse(fence.split('```')[0])
@@ -324,10 +324,10 @@ describe('formatElearningGroundingPolicy', () => {
       outline: undefined,
     }) as never
     expect(
-      formatElearningGroundingPolicy(withCompletion).includes('"completion": {')
+      formatElearningSnapshotContext(withCompletion).includes('"completion": {')
     ).toBe(true)
     expect(
-      formatElearningGroundingPolicy(withoutCompletion).includes(
+      formatElearningSnapshotContext(withoutCompletion).includes(
         '"completion": {'
       )
     ).toBe(false)
@@ -342,16 +342,15 @@ describe('formatElearningGroundingPolicy', () => {
         availability: 'metadata',
       },
     }) as never
-    const withTextPolicy = formatElearningGroundingPolicy(withText)
-    const metadataPolicy = formatElearningGroundingPolicy(metadataOnly)
+    const withTextPolicy = formatElearningSnapshotContext(withText)
+    const metadataPolicy = formatElearningSnapshotContext(metadataOnly)
     expect(metadataPolicy).toContain('No usable page text')
     expect(withTextPolicy).not.toContain('No usable page text')
     expect(metadataPolicy).toContain('"availability": "metadata"')
   })
 
-  it('emits the materials-only policy even without a snapshot', () => {
-    const prompt = formatElearningGroundingPolicy(null)
-    expect(prompt).toContain('eLearning evidence policy')
+  it('names the missing snapshot instead of embedding data', () => {
+    const prompt = formatElearningSnapshotContext(null)
     expect(prompt.length).toBeGreaterThan(0)
     expect(prompt).not.toContain('```json')
   })
@@ -360,7 +359,7 @@ describe('formatElearningGroundingPolicy', () => {
     const shortPage = baseSnapshot({
       material: { availability: 'full-text', excerpt: 'Zinseszins.' },
     }) as never
-    expect(formatElearningGroundingPolicy(shortPage)).not.toContain(
+    expect(formatElearningSnapshotContext(shortPage)).not.toContain(
       'No usable page text'
     )
   })

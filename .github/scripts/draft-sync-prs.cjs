@@ -96,4 +96,4 @@ async function maintainDraftSyncPrs({ github, context, dryRun = true }) {
   return results
 }
 
-module.exports = { acceptsEvent, maintainDraftSyncPrs }
+module.exports = { PAIRS, acceptsEvent, maintainDraftSyncPrs }

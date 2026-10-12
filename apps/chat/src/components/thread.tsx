@@ -69,6 +69,7 @@ import {
 } from '@/src/stores/composerStore'
 import { useSettingsStore } from '@/src/stores/settingsStore'
 import {
+  type ChatModeOptions,
   formatModeLabel,
   getComposerSubmitMode,
   getModeDescription,
@@ -128,7 +129,7 @@ type ThreadProps = {
   // assistant's limits). Ignored when `capabilities` is unset/empty.
   limitsNote?: string
   maxImageAttachments?: number
-  initialModeOptions?: Record<string, string>
+  initialModeOptions?: ChatModeOptions
   initialModeOptionsAreFallback?: boolean
 }
 const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []
@@ -612,7 +613,7 @@ const ThreadWelcome: FC<{
   welcomeMessage?: string
   capabilities?: ThreadWelcomeCapability[]
   limitsNote?: string
-  initialModeOptions?: Record<string, string>
+  initialModeOptions?: ChatModeOptions
   initialModeOptionsAreFallback?: boolean
 }> = ({
   chatbotAvatar,
@@ -631,7 +632,9 @@ const ThreadWelcome: FC<{
   const selectedMode = useSettingsStore((state) => state.selectedMode)
   const modeOptions = useEffectiveModeOptions()
   const activeMode = resolveSelectedMode(modeOptions, selectedMode)
-  const modeLabel = activeMode ? formatModeLabel(t, activeMode) : null
+  const modeLabel = activeMode
+    ? formatModeLabel(t, activeMode, modeOptions)
+    : null
   const modeDescription = activeMode
     ? getModeDescription(t, activeMode, modeOptions)
     : null
@@ -740,7 +743,7 @@ const SUGGESTION_DELAY_CLASSNAMES = ['delay-150', 'delay-200']
 
 const ThreadWelcomeSuggestions: FC<{
   suggestions?: ThreadSuggestion[]
-  initialModeOptions: Record<string, string>
+  initialModeOptions: ChatModeOptions
   initialModeOptionsAreFallback?: boolean
 }> = ({ suggestions: customSuggestions }) => {
   const t = useTranslations()
@@ -757,6 +760,11 @@ const ThreadWelcomeSuggestions: FC<{
       text: t(`chat.suggestions.${suggestion.id}`),
       prompt: t(`chat.suggestions.${suggestion.id}Prompt`),
     }))
+
+  // Modes without starters (every chatbot-defined mode key) render no
+  // section at all: a heading and editing hint above an empty grid would
+  // promise cards that are not there.
+  if (items.length === 0) return null
 
   return (
     <section

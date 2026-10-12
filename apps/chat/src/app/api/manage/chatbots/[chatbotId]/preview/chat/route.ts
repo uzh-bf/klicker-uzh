@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@klicker-uzh/prisma'
+import { isChatUsageClassEntitled } from '@klicker-uzh/util'
 import {
   consumeStream,
   convertToModelMessages,
@@ -15,11 +16,13 @@ import {
   getAutomaticModelId,
   getModelsForChatbot,
 } from '@/src/lib/server/chatModelRegistry'
+import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
 import {
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
 } from '@/src/lib/server/effectiveChatModes'
+import { REPLY_LANGUAGE_REMINDER } from '@/src/lib/server/languageInstructions'
 import {
   MANAGE_CHAT_BODY_TIMEOUT_MS,
   MANAGE_CHAT_TOTAL_TIMEOUT_MS,
@@ -29,9 +32,11 @@ import {
 import { REQUIRED_MCP_UNAVAILABLE_CODE } from '@/src/lib/server/mcpRuntimePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import { withOwnerPreviewAuth } from '@/src/lib/server/ownerPreviewAuth'
+import { resolveOwnerPreviewModeConfiguration } from '@/src/lib/server/previewAuthoringConfig'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
+import { chatModelUnavailableResponse } from '@/src/services/accountUsage'
 import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
@@ -134,7 +139,9 @@ export async function POST(
   const chatbot = await prisma.chatbot.findUnique({
     where: { id: chatbotId, ownerId: auth.userId },
     include: {
-      owner: { select: { aiFeaturesEnabled: true } },
+      owner: {
+        select: { aiFeaturesEnabled: true, aiChatbotCostCenter: true },
+      },
       course: {
         select: { displayName: true },
       },
@@ -160,7 +167,11 @@ export async function POST(
   const modeOptions = resolveEffectiveChatModeOptions(
     chatbot.systemPrompts,
     chatbot.mcpConfigurations,
-    chatbot.standardModeConfig
+    chatbot.standardModeConfig,
+    {
+      allowUnapprovedModes: true,
+      customModeConfig: resolveOwnerPreviewModeConfiguration(chatbot),
+    }
   )
   const selectedMode = resolveRequestedChatMode(
     modeOptions,
@@ -229,6 +240,19 @@ export async function POST(
 
   const { model: selectedModel, reasoningEffort } = modelResolution
 
+  // Preview is owner-funded and writes no usage row, so it skips the budget
+  // pre-check. Class admission still applies: an account without a cost center
+  // cannot start an advanced preview turn, exactly as in the participant route.
+  if (
+    !isChatUsageClassEntitled({
+      usageClass: selectedModel.usageClass,
+      aiFeaturesEnabled: chatbot.owner.aiFeaturesEnabled,
+      aiChatbotCostCenter: chatbot.owner.aiChatbotCostCenter,
+    })
+  ) {
+    return chatModelUnavailableResponse(selectedModel.usageClass)
+  }
+
   const kbConfigurations: MCPServerWithConfig[] = modeConfigurations
     .filter(
       (configuration) =>
@@ -288,10 +312,9 @@ export async function POST(
 
   try {
     const toolNames = Object.keys(tools)
+    const docQueryToolName = toolNames.find(isDocQueryToolName)
     const quizzerDocQueryToolName =
-      selectedMode === 'quizzer'
-        ? toolNames.find(isDocQueryToolName)
-        : undefined
+      selectedMode === 'quizzer' ? docQueryToolName : undefined
 
     if (selectedMode === 'quizzer' && !quizzerDocQueryToolName) {
       await closeMcpTools()
@@ -310,6 +333,9 @@ export async function POST(
         courseDisplayName: chatbot.course.displayName,
         toolNames,
         standardModeConfig: chatbot.standardModeConfig,
+        // Owner preview is an authoring surface, so it compiles the saved
+        // revision's custom modes rather than the currently approved set.
+        customModeConfig: resolveOwnerPreviewModeConfiguration(chatbot),
       }
     )
 
@@ -322,7 +348,13 @@ export async function POST(
         ? await buildPromptCacheRequest({
             deploymentId: selectedModel.deploymentId,
             transport: selectedModel.usesResponsesApi ? 'responses' : 'chat',
-            instructions: systemPrompt,
+            // Owner previews have no persisted thread, so one preview scope per
+            // chatbot and mode shares the cached prefix.
+            cacheScope: {
+              chatbotId,
+              mode: selectedMode,
+              threadId: 'owner-preview',
+            },
             tools,
           })
         : null
@@ -354,17 +386,34 @@ export async function POST(
       },
       stopWhen: isStepCount(5),
       toolChoice: 'auto',
-      prepareStep: quizzerDocQueryToolName
-        ? ({ stepNumber }) =>
-            stepNumber === 0
-              ? {
-                  toolChoice: {
-                    type: 'tool' as const,
-                    toolName: quizzerDocQueryToolName,
-                  },
-                }
-              : {}
-        : undefined,
+      // The reply-language reminder ends every step, after tool output, so
+      // retrieved material in another language cannot set the reply language.
+      allowSystemInMessages: true,
+      // Step continuations carry the canonical citation indices, the same
+      // contract the participant chat applies. Without them the model has no
+      // index to cite and falls back to prose citations without chips.
+      prepareStep: ({
+        stepNumber,
+        steps,
+        initialMessages,
+        responseMessages,
+      }) => ({
+        ...(quizzerDocQueryToolName && stepNumber === 0
+          ? {
+              toolChoice: {
+                type: 'tool' as const,
+                toolName: quizzerDocQueryToolName,
+              },
+            }
+          : {}),
+        messages: [
+          ...initialMessages,
+          ...(docQueryToolName && stepNumber > 0
+            ? withModelCitationIndices(responseMessages, steps)
+            : responseMessages),
+          REPLY_LANGUAGE_REMINDER,
+        ],
+      }),
       tools: promptCacheRequest?.tools ?? tools,
       toolOrder: promptCacheRequest?.toolOrder,
       onEnd: closeMcpTools,

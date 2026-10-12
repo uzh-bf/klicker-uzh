@@ -2,6 +2,7 @@ export type ChatbotMutation =
   | 'create'
   | 'metadata'
   | 'standardMode'
+  | 'customMode'
   | 'disclaimer'
   | 'credits'
   | 'publication'
@@ -23,6 +24,7 @@ export type ChatbotErrorMessageKey =
   | 'manage.resources.chatbotCreateError'
   | 'manage.resources.chatbotMetadataSaveError'
   | 'manage.resources.chatbotModesSaveError'
+  | 'manage.resources.chatbotCustomModesSaveError'
   | 'manage.resources.chatbotDisclaimerSaveError'
   | 'manage.resources.chatbotCreditPolicySaveError'
   | 'manage.resources.chatbotPublicationRequestError'
@@ -46,6 +48,7 @@ const fallbackMessageKeys: Record<ChatbotMutation, ChatbotErrorMessageKey> = {
   create: 'manage.resources.chatbotCreateError',
   metadata: 'manage.resources.chatbotMetadataSaveError',
   standardMode: 'manage.resources.chatbotModesSaveError',
+  customMode: 'manage.resources.chatbotCustomModesSaveError',
   disclaimer: 'manage.resources.chatbotDisclaimerSaveError',
   credits: 'manage.resources.chatbotCreditPolicySaveError',
   publication: 'manage.resources.chatbotPublicationRequestError',
@@ -128,4 +131,20 @@ export function getChatbotMutationErrorKey(
   }
 
   return fallbackMessageKeys[mutation]
+}
+
+/**
+ * The message a server-side validation error carries. The custom-mode section
+ * names the offending field in that message, so it shows the message itself
+ * instead of the generic invalid-input notice.
+ *
+ * Only validation errors describe a fixable field. Network, transport and
+ * server failures carry technical text ("Failed to fetch", a status line) that
+ * belongs in the localized fallback rather than in front of the lecturer, so
+ * this returns undefined for them.
+ */
+export function getChatbotGraphQLErrorMessage(error: unknown) {
+  if (getGraphQLErrorCode(error) !== 'BAD_USER_INPUT') return undefined
+
+  return getGraphQLErrorMessage(error)
 }

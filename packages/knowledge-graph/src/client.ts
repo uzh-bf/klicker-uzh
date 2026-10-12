@@ -118,20 +118,50 @@ export async function closeKnowledgeGraphClient(): Promise<void> {
  * Remove one completed build's private FalkorDB graph. Callers must validate
  * ownership before invoking this; the client deliberately has no notion of KB
  * lifecycle or retention policy.
+ *
+ * FalkorDB rejects `GRAPH.DELETE` for a key that holds no graph, so an absent
+ * graph counts as a satisfied request: a build that never wrote one and a graph
+ * that was already removed must both be able to finish their cleanup instead of
+ * failing on every sweep.
  */
 export async function deleteKnowledgeGraph(graphName: string): Promise<void> {
-  const { graph } = await graphSession(graphName)
-  await graph.delete()
+  const { client, graph } = await graphSession(graphName)
+
+  try {
+    await graph.delete()
+  } catch (error) {
+    if (await isGraphAbsent(client, graphName)) {
+      return
+    }
+
+    throw error
+  }
+}
+
+// A failed deletion is only tolerable when the graph is really gone; an
+// unreadable graph list keeps the original failure.
+async function isGraphAbsent(
+  client: FalkorDB,
+  graphName: string
+): Promise<boolean> {
+  try {
+    const graphNames = await client.list()
+    return !graphNames.includes(graphName)
+  } catch {
+    return false
+  }
 }
 
 // The graph name comes from the published build rather than being recomputed, so
 // a build that is being served is always read under the name it was written to.
 async function graphSession(graphName: string): Promise<{
+  client: FalkorDB
   graph: Graph
   config: KnowledgeGraphConfig
 }> {
   const { client, config } = await getClientSession()
   return {
+    client,
     graph: client.selectGraph(graphName),
     config,
   }

@@ -12,8 +12,10 @@ required binding whenever the chatbot declares one anywhere.
 This package fixes both halves and removes the internal MCP vocabulary from the
 lecturer surface:
 
-1. KB attachment reconciles the required retrieval rows against every chat mode
-   the chatbot declares, custom mode keys included.
+1. KB attachment provisions the required retrieval rows for Tutor and Explainer
+   and derives eligible custom-mode keys from the approved `customModeConfig`;
+   approved custom modes inherit the standard binding, so a newly approved mode
+   needs no re-attachment.
 2. Mode availability is resolved per mode. A mode keeps serving when it carries
    no retrieval binding; a mode that declares a required binding still fails
    closed when that binding cannot be resolved at request time.
@@ -69,11 +71,11 @@ that offers an unbound mode must also resolve its scope, or the mode would be
 offered and then fail at request time.
 
 Third seam: `attachKbToChatbot` never disables obsolete KB retrieval rows; it
-only upserts the modes it enumerates. Once attachment covers dynamic custom
-keys, a removed or renamed custom mode leaves an enabled row bound to the
-previous KB, and `resolveMcpScope`'s `assertOneScope` over all enabled KB rows
-rejects every mode with `scope_violation` (503). Attachment therefore has to
-reconcile the row set, not only add to it.
+only upserts the modes it enumerates. A removed or renamed custom mode leaves
+an enabled row bound to the previous KB, and `resolveMcpScope`'s
+`assertOneScope` over all enabled KB rows rejects every mode with
+`scope_violation` (503). Attachment therefore has to reconcile the row set, not
+only add to it.
 
 ### Decision 1 — Mode availability is resolved per mode
 
@@ -85,9 +87,10 @@ is not explicitly disabled.
 
 Consequence accepted: a mode that carries no retrieval binding serves without
 retrieval instead of disappearing. For KB-attached chatbots this rarely arises,
-because Decision 2 reconciles a row for every declared mode. It remains reachable when a custom
-mode is added after the KB was attached. Request-time fail-closed behaviour is
-unchanged for a mode that does declare a required binding.
+because approved custom modes inherit the standard required binding at request
+time, so a custom mode added after the KB was attached stays grounded without a
+re-attachment (October 12 reconciliation). Request-time fail-closed behaviour
+is unchanged for a mode that does declare a required binding.
 
 Rejected alternative: keep a cross-mode required policy but scope it to the
 mode's own bindings ("drop a mode that has no required binding"). It leaves the
@@ -97,14 +100,15 @@ provision bindings only and leave the resolver untouched. That fixes future
 attachments but leaves every already-attached custom-mode-only chatbot broken
 until an operator re-attaches, and leaves the coupling latent.
 
-### Decision 2 — KB attachment reconciles rows with the declared modes
+### Decision 2 — KB attachment reconciles rows with the approved modes
 
-`attachKbToChatbot` reconciles the KB retrieval row set to the chatbot's
-declared mode keys. The target set is `tutor`, `explainer`, and every non-blank
-`systemPrompts` key that is not a standard mode key (`tutor`, `explainer`,
-`quizzer`). Rows in that set are upserted enabled with the new KB; enabled rows
-for the KB server outside the set are disabled in the same transaction, except
-`quizzer` rows, which attachment never disables.
+`attachKbToChatbot` provisions the required `doc_query` rows for `tutor` and
+`explainer` only, and reconciles the chatbot's other KB rows against the
+approved mode set. The eligible exact custom keys come from the normalized
+approved live `customModeConfig` — never the legacy `systemPrompts` map and
+never a pending revision. Enabled rows for the KB server whose mode is outside
+`tutor`, `explainer`, an approved custom mode, and `quizzer` are disabled in
+the same transaction; `quizzer` rows are never disabled and never created.
 
 The `quizzer` handling is load-bearing in both directions. Attachment never
 creates a `quizzer` row, and the Quizzer binding stays inherited from the `tutor`
@@ -114,21 +118,22 @@ presence in that map suppresses Tutor inheritance
 (`effectiveChatModes.ts:118-150`). An existing disabled exact `quizzer` row is
 therefore an intentional override and stays untouched: disabling or deleting it
 would expose Quizzer through inheritance. An existing enabled exact `quizzer`
-binding is reconciled to the new KB like the declared rows, because leaving it on
+binding is reconciled to the new KB, because leaving it on
 the previous KB would make `assertOneScope` reject every request for every mode.
 
-The persisted-row contract is separate from request-time availability. Rows are
-provisioned for every declared key regardless of a mode's current `enabled`
-flag or a legacy NULL `standardModeConfig`, because availability is resolved
-per request and a later re-enable must still find its grounding. `quizzer` is
-never provisioned: it stays capability-gated and inherits a Tutor binding under
-the ADR 0021 rules. The upsert and the reconciliation stay idempotent, so
-re-attaching repairs rows created before this change, and removing a custom mode
-key cannot leave a stale binding behind.
+Approved custom modes do not store a per-mode row. They inherit the required
+Tutor or Explainer `doc_query` binding at request time, retagged to the selected
+mode key, so a custom mode approved after the attachment is grounded without
+another attachment and no re-attachment is needed. The stored standard rows stay
+independent of a mode's current `enabled` flag: the upsert still (re)enables the
+Tutor and Explainer rows, because availability is resolved per request and a
+later re-enable must still find its grounding. The upsert and the reconciliation
+stay idempotent, so removing a custom mode key cannot leave a stale binding
+behind.
 
 The derivation and the resolver must agree on what a standard mode key is. A
-shared standard-mode key list is added to the existing
-`packages/util/src/chatbotStandardModeConfig.ts` and consumed by both
+shared standard-mode key list lives in the existing
+`packages/util/src/chatbotStandardModeConfig.ts` and is consumed by both
 `knowledge.ts` and `effectiveChatModes.ts`. The drift assertion — that the
 shared list equals the chat runtime's prompt registry keys — lives in the
 `apps/chat` test suite, because the runtime registry (`DEFAULT_PROMPT` in
@@ -217,6 +222,11 @@ Check: `pnpm --filter @klicker-uzh/chat test`.
 
 #### Slice 2 — `enhance(graphql): reconcile knowledge-base retrieval rows with the declared chat modes`
 
+**October 12, 2026 — superseded provisioning:** the reconciled contract
+provisions Tutor and Explainer only and derives eligible custom keys from the
+approved `customModeConfig`; approved custom modes inherit the standard
+binding. The acceptance below records the September implementation.
+
 Files: `packages/util/src/chatbotStandardModeConfig.ts`,
 `packages/util/test/chatbotStandardModeConfig.test.ts`,
 `packages/graphql/src/services/knowledge.ts`,
@@ -303,8 +313,10 @@ separately gated, as does re-attaching the ethics bot's KB.
 ### Working context
 
 Worktree: `/Users/rschlae/Git/klicker/klicker-uzh/trees/chatbot-kb-custom-mode-binding`,
-branch `fix/chatbot-kb-custom-mode-binding`, tracking `origin/v3-ai` and based on
-`5eaf18ccbe`. Target branch: `v3-ai`. The KB feature (`services/knowledge.ts`,
+branch `fix/chatbot-kb-custom-mode-binding`, tracking `origin/v3-ai` and
+originally based on `5eaf18ccbe`; it was rebased onto `171c3e96cb`, and
+`origin/v3-ai` now points at `d48bd2a08ed53ca0b4dd810be9f83d69b4884899` (the
+October 12 reconciliation target). Target branch: `v3-ai`. The KB feature (`services/knowledge.ts`,
 `packages/kb-management`, `attachKbToChatbot`) exists only on `v3-ai`, not on
 `v3`, so a `v3`-based branch could not contain this fix.
 
@@ -336,11 +348,14 @@ populated projection, changes this decision and needs its own ADR update.
 | Product primitive | Disposition | Contract delta | Affected compositions and consumers | Evidence or open ruling |
 | --- | --- | --- | --- | --- |
 | Effective mode set | extend | A mode's availability no longer depends on another mode's required binding; an unbound mode is offered | Chat bootstrap API, participant layout, owner preview, request validation | Handoff incident reproduction; slice 1 tests |
-| Knowledge-base binding ("Wissensbasis") | extend | Attachment now reconciles the retrieval rows to every declared mode, custom modes included, preserving disabled `quizzer` overrides while reconciling enabled ones, and is the only lecturer-visible retrieval concept | KB attach/detach mutations, KB management bindings page, chatbot knowledge view | Slice 2 tests; live PRD incident |
+| Knowledge-base binding ("Wissensbasis") | extend | Attachment provisions only the Tutor and Explainer rows and derives eligible custom keys from the approved `customModeConfig`; approved custom modes inherit the standard binding, disabled exact overrides stay untouched, and "Wissensbasis" stays the only lecturer-visible retrieval concept | KB attach/detach mutations, KB management bindings page, chatbot knowledge view | Slice 2 tests; live PRD incident; October 12 reconciliation |
 | Standard-mode configuration | reuse | None | Unchanged | ADR 0021 invariant preserved |
 | MCP configuration (internal) | retire (lecturer projection and op selections only) | Runtime policy and stored rows keep working; the public read field is deprecated and resolves empty | Manage chat-usage view, four chatbot ops, public SDL | Slices 1-3 tests and codegen |
 
 ### Test portfolio
+
+The attachment rows below record the September implementation; the October 12
+reconciliation above states the current contract.
 
 | Risk or behaviour | Obligation | Primary seam | Existing protection | Distinct failure | Owning slice |
 | --- | --- | --- | --- | --- | --- |
@@ -372,6 +387,73 @@ captures; `$rs-mr-description-writer` writes the pull-request body with the
 screenshot table.
 
 ## Progress
+
+### October 12 reconciliation (current contract)
+
+Approved on 2026-10-12. It supersedes the per-declared-key provisioning design
+recorded further below, and every statement that a newly added custom mode stays
+ungrounded until a re-attachment. Decision 1 and Decision 2 are updated in
+place; the Slice 2 acceptance and the attachment rows of the test portfolio
+remain as the September implementation record, and the status records further
+below date from the September 2026 package work through the finish-gate
+documentation at `d380bcc680`.
+
+Scope: reconcile the KB attachment contract, the approved-mode visibility, and
+the documentation set (`docs/adr/0050-per-mode-retrieval-scope-and-kb-attachment.md`,
+`docs/adr/0021-templated-standard-modes-reviewed-custom-modes.md`,
+`docs/chat-platform.md`, `docs/domain-model.md`, `CONTEXT.md`, and this plan).
+Owner: main owns the source, tests, integration, review, commits, and push; the
+documentation reconciliation lives in this worktree. Current target:
+`d48bd2a08ed53ca0b4dd810be9f83d69b4884899` (`origin/v3-ai` head at
+reconciliation time). The current integration uses a normal merge; the
+September baseline was rebased onto `171c3e96cb`.
+
+Current contract:
+
+- Participants see only the approved live `customModeConfig`; the owner preview
+  may additionally offer saved draft modes.
+- Availability stays per mode. A selected mode with no enabled `KB`
+  configuration yields no scope, no scope token, and no KB server target, and a
+  mode whose declared required binding is unavailable still fails closed.
+  Quizzer keeps its capability gate, and a disabled exact Quizzer row still
+  suppresses Tutor inheritance.
+- Approved custom modes inherit the required Tutor or Explainer `doc_query`
+  binding, retagged to the selected mode key.
+- `attachKbToChatbot` provisions only the Tutor and Explainer rows. It
+  derives the eligible exact custom binding keys from the normalized approved
+  live `customModeConfig` — never from legacy `systemPrompts` or a pending
+  revision — disables stale enabled `KB` rows outside Tutor, Explainer,
+  approved custom modes, and Quizzer, and repoints already-enabled exact custom
+  and Quizzer rows to the replacement KB. It creates no custom or Quizzer rows
+  and never re-enables a disabled exact override. A custom mode approved after
+  the attachment inherits automatically, so no re-attachment is needed.
+- The lecturer MCP surface stays retired, and the deprecated
+  `Chatbot.mcpConfigurations` field resolves to an empty list.
+
+Acceptance: the documentation matches the shipped source contract under static
+consistency review in this worktree; the source behavior is verified by main
+through the package tests recorded here.
+
+Approved actions: the reconciled source, test, and documentation edits in this
+worktree; the configured reviews; local commits; and a non-force push to the
+task branch, all owned by main. Merge, deployment, marking the PR ready, PRD
+writes, and publishing the ethics bot's draft revision remain withheld.
+
+Verification reported by main on 2026-10-12: `@klicker-uzh/util` 9 focused
+cases; `@klicker-uzh/chat` 146 cases (one stale prose assertion updated to
+machine mode keys); `@klicker-uzh/graphql` `knowledge.test.ts` 71 cases and the
+approval, revisions, and manage suites 111 cases (a disabled-scope fixture
+corrected). Monorepo type/schema checks passed (42 tasks), and focused Opengrep on the
+four changed retrieval source files found no issues. Five refreshed browser
+captures cover EN/DE Usage and Knowledge plus compact DE Knowledge; the
+bound KB link navigates successfully. At 390px the existing header and tab
+strip overflow horizontally; the Knowledge controls fit. This UI limitation
+remains outside the retrieval reconciliation.
+
+Status: source and documentation reconciled; commit hooks, independent reviews,
+non-force push, and draft PR update remain. Merge and deployment remain gated.
+Packaging: one cohesive repair of the existing retrieval/lecturer surface
+contract; the previously approved single-PR topology is retained.
 
 ### Planning-stage review
 

@@ -20,3 +20,15 @@ export function withLanguageStyleContract(systemPrompt: string): string {
     ? `${trimmedBase}\n\n${LANGUAGE_STYLE_CONTRACT}`
     : LANGUAGE_STYLE_CONTRACT
 }
+
+/**
+ * Restates the reply-language rule as the last message of every model step.
+ * The rule in the system prompt alone loses to long other-language material,
+ * such as retrieved passages, that the model reads just before answering.
+ * The model identifies the language itself, so the reminder works for any
+ * language the user writes in.
+ */
+export const REPLY_LANGUAGE_REMINDER = {
+  role: 'system',
+  content: renderPromptTemplate('reply-language-reminder', {}),
+} as const

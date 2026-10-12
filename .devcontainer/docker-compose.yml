@@ -7,7 +7,8 @@
 # - postgres on db.klicker.localhost -> router port 5432, ephemeral direct port
 # - mailhog UI -> host port 8025
 # - hatchet dashboard -> host port 8888
-# - all web applications published on localhost ports (3000-3010, 3030, 7078)
+# - all web applications published on localhost ports (3000-3010, 3030, 7078,
+#   8090 for the local Edu-ID OIDC mock)
 #
 # Linked worktrees use `docker-compose.devrouter.yml` for namespaced aliases,
 # routes, and the same-path Git common-directory mount.
@@ -99,6 +100,58 @@ services:
       devnet: {}
     volumes:
       - azurite_data:/data
+
+  # --- local Edu-ID replacement (OIDC mock) ---
+  # SWITCH edu-ID registers redirect URIs per client, so the real provider can
+  # never accept a linked-worktree callback (https://auth.klicker.<workspace>.localhost/...)
+  # and the dev client is unusable outside the primary checkout. This mock
+  # accepts any redirect_uri and needs no SWITCH credentials.
+  #
+  # It shares the app container's network namespace, so the issuer URL is
+  # identical whether it is reached by the host browser (authorize) or by the
+  # auth app server (discovery/token/jwks); devrouter routes
+  # https://oidc.klicker[.<workspace>].localhost -> ${WORKSPACE}-app:8090.
+  # post-start.sh points EDUID_WELL_KNOWN at that issuer and maps the host to
+  # Traefik inside this container.
+  #
+  # Dev-only: the real provider stays in charge whenever a deployment supplies
+  # a real EDUID_CLIENT_SECRET, because only the devcontainer sets these values.
+  oidc:
+    image: ghcr.io/navikt/mock-oauth2-server:2.1.11
+    network_mode: service:app
+    depends_on:
+      - app
+    environment:
+      SERVER_PORT: '8090'
+      # interactiveLogin=false -> one click, no login form. The constant `sub`
+      # keeps one local participant across restarts; a changing sub would orphan
+      # the linked ParticipantAccount and create duplicate participants. The
+      # email matches the seeded testusers so the SSO link can resolve to a real
+      # assessment participant (see the prisma-data dev link helper).
+      JSON_CONFIG: >-
+        {
+          "interactiveLogin": false,
+          "tokenCallbacks": [
+            {
+              "issuerId": "default",
+              "requestMappings": [
+                {
+                  "requestParam": "grant_type",
+                  "match": "*",
+                  "claims": {
+                    "sub": "local-eduid-dev",
+                    "email": "testuser2@test.uzh.ch",
+                    "email_verified": true,
+                    "given_name": "Test",
+                    "family_name": "Student",
+                    "swissEduPersonUniqueID": "local-eduid-dev",
+                    "swissEduPersonMatriculationNumber": "13-123-456"
+                  }
+                }
+              ]
+            }
+          ]
+        }
 
   # --- Hatchet workflow engine (gRPC :7077, http :8888). Reached at hatchet:7077
   # by the app via compose DNS. SERVER_GRPC_BROADCAST_ADDRESS is set to the compose

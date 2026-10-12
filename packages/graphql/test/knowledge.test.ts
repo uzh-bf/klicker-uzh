@@ -1015,11 +1015,9 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expectScopedConfigurations(secondKb.id)
   })
 
-  it('provisions a required binding for every declared custom mode', async () => {
+  it('provisions only standard retrieval rows for approved custom modes', async () => {
     const kb = await createKb({ name: 'Case notes' }, userOneCtx)
     const course = await seedCourse({}, userOneCtx)
-    // The legacy NULL standard-mode configuration has to provision the same
-    // rows, because availability is resolved per request rather than here.
     const chatbot = await prisma.chatbot.create({
       data: {
         name: 'Case interview trainer',
@@ -1029,27 +1027,29 @@ describe('Integration tests for knowledge base CRUD', () => {
           tutor: { enabled: false },
           explainer: { enabled: false },
           quizzer: { enabled: false },
-          'case-interview': { description: 'Case interview' },
-          'retired-workshop': { description: 'Retired', enabled: false },
+          'unapproved-mode': { description: 'Draft' },
+        },
+        customModeConfig: {
+          modes: [
+            {
+              key: 'cm_approved',
+              name: 'Scenario',
+              description: null,
+              personaText: null,
+            },
+          ],
         },
       },
     })
-
     await attachKbToChatbot({ kbId: kb.id, chatbotId: chatbot.id }, userOneCtx)
-
+    await attachKbToChatbot({ kbId: kb.id, chatbotId: chatbot.id }, userOneCtx)
     const configurations = await prisma.chatbotMCPConfig.findMany({
       where: { chatbotId: chatbot.id, mcpServer: { name: 'KB' } },
       include: { mcpServer: { select: { id: true, name: true } } },
       orderBy: { chatMode: 'asc' },
     })
-    const modeKeys = [
-      'case-interview',
-      'explainer',
-      'retired-workshop',
-      'tutor',
-    ]
     expect(configurations).toEqual(
-      modeKeys.map((chatMode) =>
+      ['explainer', 'tutor'].map((chatMode) =>
         expect.objectContaining({
           chatMode,
           allowedTools: ['doc_query'],
@@ -1058,21 +1058,9 @@ describe('Integration tests for knowledge base CRUD', () => {
         })
       )
     )
-
-    for (const chatMode of modeKeys) {
-      expect(
-        resolveMcpScope(
-          configurations,
-          chatMode,
-          configurations.filter(
-            (configuration) => configuration.chatMode === chatMode
-          )
-        )
-      ).toEqual([kb.id])
-    }
   })
 
-  it('disables bindings for modes the chatbot no longer declares', async () => {
+  it('reconciles approved exact bindings and disables stale legacy rows', async () => {
     const firstKb = await createKb({ name: 'First KB' }, userOneCtx)
     const secondKb = await createKb({ name: 'Second KB' }, userOneCtx)
     const course = await seedCourse({}, userOneCtx)
@@ -1081,79 +1069,107 @@ describe('Integration tests for knowledge base CRUD', () => {
         name: 'Case interview trainer',
         ownerId: userOneCtx.user.sub,
         courseId: course.id,
-        systemPrompts: { 'case-interview': { description: 'Case interview' } },
+        // A retained prompt key does not confer participant approval.
+        systemPrompts: { 'legacy-removed': { description: 'Retained prompt' } },
+        customModeConfig: {
+          modes: [
+            {
+              key: 'cm_approved',
+              name: 'Scenario',
+              description: null,
+              personaText: null,
+            },
+            {
+              key: 'cm_disabled',
+              name: 'Optional scenario',
+              description: null,
+              personaText: null,
+            },
+          ],
+        },
       },
     })
     const mcpServer = await prisma.chatbotMCPServer.findUniqueOrThrow({
       where: { name: 'KB' },
       select: { id: true },
     })
-
     await attachKbToChatbot(
       { kbId: firstKb.id, chatbotId: chatbot.id },
       userOneCtx
     )
-
-    // A disabled exact Quizzer row overrides Tutor inheritance, so attachment
-    // neither disables it nor repoints it.
-    await prisma.chatbotMCPConfig.create({
-      data: {
+    await prisma.chatbotMCPConfig.createMany({
+      data: [
+        { chatMode: 'cm_approved', isEnabled: true },
+        { chatMode: 'cm_disabled', isEnabled: false },
+        { chatMode: 'legacy-removed', isEnabled: true },
+        { chatMode: 'quizzer', isEnabled: false },
+      ].map((configuration) => ({
+        ...configuration,
         chatbotId: chatbot.id,
         mcpServerId: mcpServer.id,
-        chatMode: 'quizzer',
         allowedTools: ['doc_query'],
         parameters: {
           required: true,
           toolAlias: 'doc_query',
           kb_id: firstKb.id,
         },
-        isEnabled: false,
-      },
-    })
-
-    await prisma.chatbot.update({
-      where: { id: chatbot.id },
-      data: { systemPrompts: {} },
+      })),
     })
     await attachKbToChatbot(
       { kbId: secondKb.id, chatbotId: chatbot.id },
       userOneCtx
     )
-
     const configurations = await prisma.chatbotMCPConfig.findMany({
       where: { chatbotId: chatbot.id, mcpServer: { name: 'KB' } },
       include: { mcpServer: { select: { id: true, name: true } } },
       orderBy: { chatMode: 'asc' },
     })
-    expect(configurations.map(({ chatMode }) => chatMode)).toEqual([
-      'case-interview',
-      'explainer',
-      'quizzer',
-      'tutor',
-    ])
-    // Every binding the chatbot still declares grounds the replacement KB, so
-    // no enabled row can hold the scope of the previous one.
+    expect(configurations.filter(({ isEnabled }) => isEnabled)).toEqual(
+      ['cm_approved', 'explainer', 'tutor'].map((chatMode) =>
+        expect.objectContaining({
+          chatMode,
+          parameters: {
+            required: true,
+            toolAlias: 'doc_query',
+            kb_id: secondKb.id,
+          },
+        })
+      )
+    )
+    expect(configurations.filter(({ isEnabled }) => !isEnabled)).toEqual(
+      ['cm_disabled', 'legacy-removed', 'quizzer'].map((chatMode) =>
+        expect.objectContaining({
+          chatMode,
+          parameters: {
+            required: true,
+            toolAlias: 'doc_query',
+            kb_id: firstKb.id,
+          },
+        })
+      )
+    )
     expect(
-      configurations
-        .filter(({ isEnabled }) => isEnabled)
-        .map(({ parameters }) => parameters)
-    ).toEqual([
-      { required: true, toolAlias: 'doc_query', kb_id: secondKb.id },
-      { required: true, toolAlias: 'doc_query', kb_id: secondKb.id },
-    ])
-    // The removed mode keeps its row without grounding retrieval, and the
-    // Quizzer override keeps the scope it was authored with.
-    expect(configurations.filter(({ isEnabled }) => !isEnabled)).toEqual([
-      expect.objectContaining({ chatMode: 'case-interview' }),
-      expect.objectContaining({
-        chatMode: 'quizzer',
-        parameters: {
-          required: true,
-          toolAlias: 'doc_query',
-          kb_id: firstKb.id,
-        },
-      }),
-    ])
+      resolveMcpScope(
+        configurations.filter(({ isEnabled }) => isEnabled),
+        'cm_approved',
+        configurations.filter(({ chatMode }) => chatMode === 'cm_approved')
+      )
+    ).toEqual([secondKb.id])
+
+    // Removing the approved key retires its exact binding on reattachment.
+    await prisma.chatbot.update({
+      where: { id: chatbot.id },
+      data: { customModeConfig: { modes: [] } },
+    })
+    await attachKbToChatbot(
+      { kbId: secondKb.id, chatbotId: chatbot.id },
+      userOneCtx
+    )
+    expect(
+      await prisma.chatbotMCPConfig.findFirstOrThrow({
+        where: { chatbotId: chatbot.id, chatMode: 'cm_approved' },
+      })
+    ).toMatchObject({ isEnabled: false })
   })
 
   it('reconciles an enabled quizzer binding to the replacement knowledge base', async () => {
@@ -2634,6 +2650,8 @@ describe('Integration tests for knowledge base CRUD', () => {
         resourceId: resource.id,
         blobName: replacementTicket.blobName,
         resourceVersion: 3,
+        mimeType: 'application/pdf',
+        sizeBytes: 2048,
       })
     )
   })

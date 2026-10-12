@@ -75,20 +75,22 @@ The lecturer MCP server (`apps/mcp-lecturer`, port 7081) and the student MCP ser
 4. **Browser E2E:** Run Playwright from the host with `pnpm playwright:host -- --project=chromium <spec>`. The launcher reconciles the routed devrouter workspace, maps the app URLs and seed database, and reuses the host browser cache. Never install Playwright browser binaries in a DevPod. The existing global setup resets and reseeds the mapped database, so use only a disposable local test runtime.
 
 Choose an application profile such as `manage`, `pwa`, `chat`, or
-`live-quiz`. Add the orthogonal `ai`, `mcp`, or `email` capability only when
-needed; for example, `devrouter ensure . --profile chat,ai,mcp`. Capability-only
-profiles run no Turbo app process. Omitting `--profile` keeps the compatibility
-default `full`. Profile unions are additive and order-insensitive, and a warm
-transition does not recreate the app container or reset persistent data.
+`live-quiz`. Add the orthogonal `ai`, `mcp`, `email`, or `eduid` capability
+only when needed; for example, `devrouter ensure . --profile chat,ai,mcp`, or
+`devrouter ensure . --profile manage,eduid` for Edu-ID login through the
+local OIDC mock. Capability-only profiles run no Turbo app process. Omitting
+`--profile` keeps the compatibility default `full`. Profile unions are additive
+and order-insensitive, and a warm transition does not recreate the app
+container or reset persistent data.
 
 Parallel task work should use one linked worktree per task and the smallest
 matching profile. A Manage-only task uses `manage`; Chat AI uses `chat,ai`;
-tool-calling work adds `mcp`; email work adds `email`. Independent worktrees
-keep separate app caches, database state, routes, and processes while sharing
-only the package-download cache. Do not default every parallel worktree to
-`full`, because that starts LiteLLM, MCP, MailHog, every routed app, and both
-workers in each environment. The Turbo local cache is shared across all
-worktrees and bounded in size/age; see
+tool-calling work adds `mcp`; email work adds `email`; Edu-ID login work adds
+`eduid`. Independent worktrees keep separate app caches, database state,
+routes, and processes while sharing only the package-download cache. Do not
+default every parallel worktree to `full`, because that starts LiteLLM, MCP,
+MailHog, every routed app, and both workers in each environment. The Turbo
+local cache is shared across all worktrees and bounded in size/age; see
 [Local Disk and Caches](./local-disk-and-caches.md) for the cache layout and
 the `clean:cache` / `clean:generated` / `clean:worktree` / `disk:usage`
 commands.

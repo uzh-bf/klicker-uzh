@@ -77,7 +77,11 @@ replacing:
 - **Custom modes** let a lecturer author a name, description, and free persona
   text. That text is compiled as the persona section on top of the same
   scaffolding; publication of a new or edited custom mode requires team
-  review (per ADR 0020).
+  review (per ADR 0020). Participants can select only the modes the chatbot
+  carries as approved configuration; a saved but unapproved mode stays visible
+  in the owner preview. An approved custom mode inherits the required
+  `doc_query` binding of Tutor or Explainer for the same server, retagged to
+  the selected mode key (ADR 0050).
 - In both tiers the platform scaffolding is non-removable: lecturer-authored
   content is layered onto it by the compile step. The scaffolding owns course
   scope and evidence, privacy and safety, non-disclosure, epistemic integrity,

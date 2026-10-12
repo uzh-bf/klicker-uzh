@@ -149,33 +149,32 @@ describe('chatbot standard mode configuration', () => {
     expect(isChatbotStandardModeKey('case-interview')).toBe(false)
   })
 
-  it('provisions the standard retrieval modes plus every declared custom mode', () => {
+  it('derives eligible exact bindings from normalized approved modes', () => {
+    const mode = (key: string, name: string) => ({
+      key,
+      name,
+      description: null,
+      personaText: null,
+    })
     expect(resolveChatbotKbRetrievalModeKeys(null)).toEqual([
       'tutor',
       'explainer',
     ])
-    expect(resolveChatbotKbRetrievalModeKeys('not an object')).toEqual([
+    expect(resolveChatbotKbRetrievalModeKeys({ 'legacy-mode': {} })).toEqual([
       'tutor',
       'explainer',
     ])
     expect(
       resolveChatbotKbRetrievalModeKeys({
-        tutor: { enabled: false },
-        explainer: {},
-        quizzer: {},
-        'case-interview': { description: 'Case interview' },
-        Case: {},
+        modes: [
+          mode('cm_approved', 'Scenario'),
+          mode('Case', 'Uppercase'),
+          mode('', 'Blank'),
+          mode('   ', 'Whitespace'),
+          mode('quizzer', 'Platform collision'),
+          mode('cm_approved', 'Duplicate'),
+        ],
       })
-    ).toEqual(['tutor', 'explainer', 'case-interview', 'Case'])
-  })
-
-  it('skips blank mode keys and keeps custom keys verbatim', () => {
-    expect(
-      resolveChatbotKbRetrievalModeKeys({
-        '': {},
-        '   ': {},
-        'Case interview': {},
-      })
-    ).toEqual(['tutor', 'explainer', 'Case interview'])
+    ).toEqual(['tutor', 'explainer', 'cm_approved', 'Case'])
   })
 })

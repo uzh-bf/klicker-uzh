@@ -199,11 +199,12 @@ _Avoid_: raw prompt, system prompt editor, custom-mode configuration
 
 **Effective mode set**:
 The server-resolved modes a participant may present or request for one
-chatbot. It combines standard-mode configuration and legacy custom-mode
-entries; a mode is not hidden because the chatbot declares a required retrieval
-binding elsewhere. An unsupported or typed-disabled mode is rejected before
-thread or provider work, and a mode whose declared required binding is
-unavailable fails closed at request time.
+chatbot. It combines standard-mode configuration and the approved custom-mode
+configuration; a saved draft mode is offered only in the owner preview, and a
+mode is not hidden because the chatbot declares a required retrieval binding
+elsewhere. An unsupported or typed-disabled mode is rejected before thread or
+provider work, and a mode whose declared required binding is unavailable fails
+closed at request time.
 _Avoid_: client mode list, available modes (when referring to server policy)
 
 ### Model classes and budgets
@@ -256,8 +257,8 @@ same usage class.
 _Avoid_: lecturer budget, account credits
 
 **Auto model**:
-The automatic model choice, classified as `ADVANCED` for the MVP until every
-routed billable step can be attributed to a usage class.
+The automatic model choice, with an explicit registry usage class. The released
+policy permits `BASE` Auto entries; see ADR 0020's compatibility amendment.
 _Avoid_: base fallback, unclassified model
 
 **Class exhaustion**:

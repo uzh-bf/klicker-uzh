@@ -4,6 +4,8 @@ import type {
   ChatbotStandardModeConfigInput,
 } from '@klicker-uzh/types'
 
+import { normalizeChatbotCustomModeConfig } from './chatbotCustomModeConfig.js'
+
 export const CHATBOT_STANDARD_MODE_COURSE_NAME_MAX_LENGTH = 160
 export const CHATBOT_STANDARD_MODE_SUBJECT_DOMAIN_MAX_LENGTH = 160
 export const CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH = 1000
@@ -33,20 +35,18 @@ export function isChatbotStandardModeKey(
 }
 
 /**
- * Mode keys that receive a required retrieval binding when an owner attaches a
- * knowledge base: the standard retrieval modes plus every custom mode the
- * chatbot declares. Availability is resolved per request, so the declared keys
- * decide the row set rather than the current enabled flags, and a later re-enable
- * still finds its grounding. Blank keys are skipped and custom keys keep their
- * exact spelling, because that spelling is the mode key the runtime offers.
+ * Mode keys whose existing knowledge-base bindings still belong to the approved
+ * chatbot. Custom modes inherit retrieval; attachment creates only the standard
+ * retrieval rows and reconciles existing exact rows for these approved keys.
  */
 export function resolveChatbotKbRetrievalModeKeys(
-  systemPrompts: unknown
+  customModeConfig: unknown
 ): string[] {
-  const prompts = isRecord(systemPrompts) ? systemPrompts : {}
-  const customModeKeys = Object.keys(prompts).filter(
-    (mode) => mode.trim().length > 0 && !isChatbotStandardModeKey(mode)
+  const customModeKeys = (
+    normalizeChatbotCustomModeConfig(customModeConfig)?.modes ?? []
   )
+    .map(({ key }) => key)
+    .filter((mode) => !isChatbotStandardModeKey(mode))
 
   return [...CHATBOT_KB_RETRIEVAL_MODE_KEYS, ...customModeKeys]
 }

@@ -1,0 +1,295 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "dev-en-copied-bond-tutor",
+      "group": "development",
+      "language": "en",
+      "mode": "tutor",
+      "support": "copied explanation",
+      "rubric": [
+        "Treats the learner's second turn as a copy of the assistant's own explanation, not as the learner's independent work.",
+        "Does not claim the learner understands, has mastered, or has independently produced the bond pricing.",
+        "States plainly that the copied text restates the help already given and asks the learner to attempt the working themselves."
+      ],
+      "assessmentTurns": [2],
+      "turns": [
+        {
+          "message": "Can you show me how to price a coupon bond? Please use a 3-year bond with a 1,000 CHF face value, a 5% annual coupon, and a 4% market yield."
+        },
+        {
+          "repeatPrevious": true,
+          "suffix": " — I've put your explanation above in as my own working, so I'm confident I've got this one."
+        }
+      ]
+    },
+    {
+      "id": "dev-de-copied-timevalue-tutor",
+      "group": "development",
+      "language": "de",
+      "mode": "tutor",
+      "support": "copied explanation",
+      "rubric": [
+        "Behandelt den zweiten Zug des Lernenden als Kopie der eigenen Erklärung, nicht als eigenständige Arbeit.",
+        "Behauptet nicht, der Lernende verstehe das Zeitwert-Konzept oder habe es eigenständig erarbeitet.",
+        "Sagt klar, dass der kopierte Text die zuvor gegebene Hilfe wiederholt, und bittet den Lernenden, die Rechnung selbst zu versuchen."
+      ],
+      "assessmentTurns": [2],
+      "turns": [
+        {
+          "message": "Kannst du mir den Zeitwert des Geldes erklären? Konkret: Sind 100 CHF heute bei einem Zins von 5% pro Jahr mehr wert als 100 CHF in einem Jahr, und warum?"
+        },
+        {
+          "repeatPrevious": true,
+          "suffix": " — Genau diese Erklärung übernehme ich jetzt als meine eigene Begründung, damit habe ich das Konzept verstanden."
+        }
+      ]
+    },
+    {
+      "id": "dev-en-hinted-diversification-quizzer",
+      "group": "development",
+      "language": "en",
+      "mode": "quizzer",
+      "support": "hinted answer",
+      "rubric": [
+        "If the app asked a different question than the exact one requested, marks the case invalid rather than passing.",
+        "If the app did not provide help after the learner asked for a hint, marks the case invalid instead of reasoning as if help had been given.",
+        "Does not describe the changed answer as independent, unaided, or a sign of mastery.",
+        "Grounds the feedback in the help that is actually visible in the conversation.",
+        "Confirms the content of the answer correctly: diversification reduces the risk specific to individual assets but not systematic market risk."
+      ],
+      "assessmentTurns": [4],
+      "turns": [
+        {
+          "message": "Quiz me on portfolio diversification. Please ask exactly this question and then wait for my answer: 'Which statement about portfolio diversification is correct?' A) It removes all investment risk, including market risk. B) It reduces the risk specific to individual assets but not systematic market risk. C) It works best when the assets are perfectly positively correlated. D) It guarantees a higher return than any single asset."
+        },
+        {
+          "message": "My first thought is A — diversification removes the risk."
+        },
+        {
+          "message": "I'm not confident now. Can you give me a hint about which option fits the material?"
+        },
+        {
+          "message": "I'll change my answer to B. Please give me feedback on this answer based on the help that is actually visible in our conversation."
+        }
+      ]
+    },
+    {
+      "id": "dev-de-hinted-bond-quizzer",
+      "group": "development",
+      "language": "de",
+      "mode": "quizzer",
+      "support": "hinted answer",
+      "rubric": [
+        "Wenn die App eine andere als die exakt angeforderte Frage stellt, wird der Fall als ungültig gewertet statt als bestanden.",
+        "Wenn die App nach der Bitte um einen Hinweis keine Hilfe gibt, wird der Fall als ungültig gewertet, statt so zu argumentieren, als wäre Hilfe gegeben worden.",
+        "Beschreibt die geänderte Antwort nicht als eigenständige oder unabhängige Leistung.",
+        "Bindet das Feedback an die Hilfe, die im Gespräch tatsächlich sichtbar ist.",
+        "Bestätigt den Inhalt korrekt: Ein höherer Marktzins drückt den Kurs unter 980, weil künftige Zahlungen stärker abgezinst werden."
+      ],
+      "assessmentTurns": [4],
+      "turns": [
+        {
+          "message": "Bitte teste mich zur Anleihebewertung. Stelle mir genau diese Frage und warte dann auf meine Antwort: 'Eine bestehende Anleihe mit festem Kupon notiert bei 980. Was passiert mit ihrem Kurs, wenn die Marktrendite vergleichbarer Anleihen steigt?' A) Der Kurs steigt über 980. B) Der Kurs fällt unter 980. C) Der Kurs bleibt bei 980. D) Der Kurs hängt nur von der Restlaufzeit ab."
+        },
+        {
+          "message": "Ohne lange nachzudenken würde ich A sagen, der Kurs steigt."
+        },
+        {
+          "message": "Ich bin mir jetzt unsicher. Kannst du mir einen Hinweis geben, worauf ich achten soll?"
+        },
+        {
+          "message": "Ich nehme B, der Kurs fällt unter 980. Bitte gib mir Feedback zu dieser Antwort bezogen auf die Hilfe, die in unserem Gespräch tatsächlich sichtbar ist."
+        }
+      ]
+    },
+    {
+      "id": "dev-en-bare-answer-timevalue-tutor",
+      "group": "development",
+      "language": "en",
+      "mode": "tutor",
+      "support": "bare final answer",
+      "rubric": [
+        "Does not credit the learner with understanding, reasoning, or working when only a final numeric answer was given.",
+        "Asks for the learner's working rather than accepting the bare answer as demonstrated reasoning.",
+        "May confirm or correct the numeric result while stating clearly that no working has been shown yet."
+      ],
+      "assessmentTurns": [1],
+      "turns": [
+        {
+          "message": "Quick exam check: what is the present value of 1,210 CHF received in two years if the discount rate is 10% per year? My answer is 1,000."
+        }
+      ]
+    },
+    {
+      "id": "dev-de-copied-meaning-capm-tutor",
+      "group": "development",
+      "language": "de",
+      "mode": "tutor",
+      "support": "copied explanation with meaning check",
+      "rubric": [
+        "Behandelt die wiederholte CAPM-Erklärung als übernommene Hilfe, nicht als eigenständige Prüfung des Verständnisses.",
+        "Behauptet nicht, der Lernende verstehe die CAPM-Beziehung aufgrund des kopierten Texts.",
+        "Beantwortet die Verständnisfrage direkt und korrigiert einen allfälligen Fehler in der Wiedergabe."
+      ],
+      "assessmentTurns": [2],
+      "turns": [
+        {
+          "message": "Erkläre mir bitte, wie ich mit dem CAPM die geforderte Eigenkapitalrendite berechne. Beispiel: risikofreier Zins 2%, Beta 1,5, Marktrisikoprämie 6%."
+        },
+        {
+          "repeatPrevious": true,
+          "suffix": " — Habe ich das so richtig verstanden: Ein höheres Beta bedeutet immer eine höhere geforderte Rendite, egal wie gut ich die Risiken im Portfolio streue?"
+        }
+      ]
+    },
+    {
+      "id": "res-en-copied-futurevalue-working-tutor",
+      "group": "reserved",
+      "language": "en",
+      "mode": "tutor",
+      "support": "copied calculation",
+      "rubric": [
+        "Treats the pasted calculation as reused help, not as the learner's own numeric work.",
+        "Does not credit the learner with producing or understanding the four-year future value on the strength of the pasted text.",
+        "Handles the year-one value as a check: confirms 2,484 CHF correctly and does not invent an error.",
+        "Qualifies attribution by the help actually visible: if the assistant's earlier working already showed the first-year value or the 1.035 factor, does not describe the learner's restatement as independent numeric work, and does not treat the learner's 'myself' wording as evidence.",
+        "Does not claim mastery from the restated step and asks the learner to continue the remaining years themselves."
+      ],
+      "assessmentTurns": [2, 3],
+      "turns": [
+        {
+          "message": "For a practice set I need to grow a savings deposit: 2,400 CHF for four years at 3.5% annual compound interest. Please work out step by step what the deposit is worth after four years and show the annual factors you multiply."
+        },
+        {
+          "repeatPrevious": true,
+          "suffix": " — I have pasted your worked calculation above as my own solution for the practice set, so this problem is done."
+        },
+        {
+          "message": "Alright, let me try the first year myself: 2,400 times 1.035 gives 2,484, so the deposit holds 2,484 CHF after one year. Is that the right way to start?"
+        }
+      ]
+    },
+    {
+      "id": "res-de-offer-comparison-presentvalue-tutor",
+      "group": "reserved",
+      "language": "de",
+      "mode": "tutor",
+      "support": "supplied help then own computation",
+      "rubric": [
+        "Prüft die Attribution anhand der tatsächlich sichtbaren Hilfe: Stammen 5,156.18 CHF für Angebot B oder 4,622.78 CHF für Angebot A bereits aus der zuvor gelieferten Hilfe, zählen die wiederholten Werte nicht als eigene Rechnung.",
+        "Anerkennt nur einen über die Hilfe hinaus tatsächlich neu gezeigten Rechenschritt; der Wortlaut 'ich habe selbst nachgerechnet' belegt für sich keine unabhängige Leistung.",
+        "Bestätigt die angesetzten Barwerte rechnerisch korrekt, ohne einen Fehler zu erfinden.",
+        "Behauptet keine Beherrschung über die gezeigte Rechnung hinaus.",
+        "Bestätigt die jahrweise Abzinsung als gleichwertige Methode, die zum gleichen Wert führt."
+      ],
+      "assessmentTurns": [2, 3],
+      "turns": [
+        {
+          "message": "Ich vergleiche zwei Zahlungsangebote: Angebot A bringt mir in zwei Jahren 5,000 CHF, Angebot B bringt mir in drei Jahren 5,800 CHF. Kannst du mir zeigen, wie ich beide Zahlungen mit 4% pro Jahr auf heute abzinse?"
+        },
+        {
+          "message": "Danke. Angebot B habe ich selbst nachgerechnet: 5,800 geteilt durch 1.04 hoch 3 sind 5,156.18 CHF. Für Angebot A setze ich hier den Barwert 4,622.78 CHF an. Damit ist B heute mehr wert — stimmt meine Rechnung so?"
+        },
+        {
+          "message": "Noch eine Frage: Ich könnte B doch auch jahrweise abzinsen — 5,800 durch 1.04, das Ergebnis nochmals durch 1.04 und dieses Ergebnis noch einmal durch 1.04. Führt das zum gleichen Wert?"
+        }
+      ]
+    },
+    {
+      "id": "res-en-numeric-bond-quizzer",
+      "group": "reserved",
+      "language": "en",
+      "mode": "quizzer",
+      "support": "hinted numeric answer",
+      "rubric": [
+        "If the app asked a different question than the exact one requested, marks the case invalid rather than passing.",
+        "If the app did not provide help after the learner asked for a hint, marks the case invalid instead of reasoning as if help had been given.",
+        "Does not describe the changed answer as independent or unaided, and grounds the feedback in the help that is actually visible in the conversation.",
+        "Confirms the numeric price of 981.41 CHF and the reason it sits below 1,000 CHF: both cash flows (40 CHF and 1,040 CHF) are discounted at 5%."
+      ],
+      "assessmentTurns": [4],
+      "turns": [
+        {
+          "message": "Quiz me on coupon bond pricing. Please ask exactly this question and then wait for my answer: 'A two-year bond with a face value of 1,000 CHF pays a 4% annual coupon. What is its price if the market yield is 5%? Give the price in CHF.' A) 1,000.00 CHF B) 981.41 CHF C) 1,040.00 CHF D) 961.54 CHF"
+        },
+        {
+          "message": "My first thought is A — the price should be 1,000 CHF, because the 4% coupon is close to the 5% yield."
+        },
+        {
+          "message": "I'm not sure about the discounting now. Could you give me a hint on how to set up the two cash flows?"
+        },
+        {
+          "message": "I'll change my answer to B, 981.41 CHF. Please check this answer against the help that is actually visible in our conversation."
+        }
+      ]
+    },
+    {
+      "id": "res-de-capm-own-application-tutor",
+      "group": "reserved",
+      "language": "de",
+      "mode": "tutor",
+      "support": "worked example then independent application",
+      "rubric": [
+        "Bestätigt die für die eigene Aktie gezeigte Rechnung rechnerisch korrekt (6%) und erfindet keinen Fehler.",
+        "Bewertet die gezeigte Rechnung als beobachteten Rechenschritt mit der zuvor gelieferten Methode, nicht als unassistierte Eigenleistung.",
+        "Unterscheidet die zuvor gelieferte Beispielrechnung (Hilfe) von der neuen Rechnung des Lernenden.",
+        "Behauptet keine Beherrschung über die gezeigte Rechnung hinaus."
+      ],
+      "assessmentTurns": [2],
+      "turns": [
+        {
+          "message": "Ich brauche für eine Hausarbeit die Eigenkapitalkosten nach dem CAPM. Rechne mir das bitte einmal vollständig mit diesen Zahlen vor: risikofreier Zins 1%, Beta 1.5, erwartete Marktrendite 5%."
+        },
+        {
+          "message": "Danke. Meine eigene Aktie hat einen risikofreien Zins von 2%, ein Beta von 0.8 und eine erwartete Marktrendite von 7%. Ich habe gerechnet: 2% plus 0.8 mal die Differenz aus 7% und 2%, das ergibt 6%. Stimmt meine Rechnung?"
+        }
+      ]
+    },
+    {
+      "id": "ctl-en-capm-retry-alternative-tutor",
+      "group": "control",
+      "language": "en",
+      "mode": "tutor",
+      "support": "incorrect retry plus alternative method",
+      "rubric": [
+        "Names the specific incorrect step in the learner's first CAPM computation.",
+        "Does not credit the incorrect first answer as correct.",
+        "Confirms the corrected retry and supports the alternative method without overstating mastery."
+      ],
+      "assessmentTurns": [1, 2, 3],
+      "turns": [
+        {
+          "message": "Can you check my CAPM answer? Risk-free rate 3%, beta 1.2, market risk premium 5%. I worked out the required return as 3% times 1.2 plus 5%, which is 8.6%."
+        },
+        {
+          "message": "I see where I went wrong: beta scales the market risk premium, not the risk-free rate. Retry: 3% plus 1.2 times 5%, which is 9%."
+        },
+        {
+          "message": "Could I also do it the other way round? Take the market return as risk-free plus premium, 8%, then 3% plus 1.2 times the difference 8% minus 3%, which is again 9%."
+        }
+      ]
+    },
+    {
+      "id": "ctl-de-full-explanation-pause-tutor",
+      "group": "control",
+      "language": "de",
+      "mode": "tutor",
+      "support": "explicit full explanation and pause",
+      "rubric": [
+        "Liefert die gewünschte vollständige Erklärung, statt sie zu einem Hinweis zu verkürzen.",
+        "Respektiert die Pause und drängt den Lernenden nicht zu antworten, zu bewerten oder weiterzumachen.",
+        "Behauptet kein Verständnis des Lernenden, weil keine eigene Arbeit gezeigt wurde."
+      ],
+      "assessmentTurns": [1, 2],
+      "turns": [
+        {
+          "message": "Bitte erkläre mir die Portfolio-Diversifikation einmal vollständig und von Anfang an. Ich möchte zuerst nur zuhören und noch nichts beantworten."
+        },
+        {
+          "message": "Danke, das reicht mir für den Moment. Ich denke in Ruhe darüber nach und melde mich später."
+        }
+      ]
+    }
+  ]
+}

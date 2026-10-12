@@ -5,10 +5,13 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma/client'
 import type { EventEmitter } from 'events'
+import { onTestFinished } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
   approveChatbotRevision,
+  getPendingChatbotPublications,
   rejectChatbotRevision,
+  saveChatbotRevision,
   submitChatbotRevision,
 } from '../src/services/chatbots.js'
 import {
@@ -114,6 +117,207 @@ describe('Integration tests for the chatbot publication workflow', () => {
       ctx
     )
   }
+
+  describe('getPendingChatbotPublications', () => {
+    it('rejects non-admin callers', async () => {
+      await seedChatbot(ChatbotStatus.PENDING_APPROVAL)
+      await expect(getPendingChatbotPublications(userOneCtx)).rejects.toThrow(
+        'Not authorized'
+      )
+      await expect(getPendingChatbotPublications(userTwoCtx)).rejects.toThrow(
+        'Not authorized'
+      )
+    })
+
+    it('lists pending requests across owners with review details but no credentials', async () => {
+      await enablePublishing()
+      const pending = await seedChatbot(ChatbotStatus.PENDING_APPROVAL, {
+        name: 'Synthetic review bot',
+        publicationUseCase: 'Practice course concepts',
+        expectedStudentCount: 40,
+        creditInitialCredits: 25,
+        creditMaxCredits: 25,
+        updatedAt: new Date('2026-01-01T00:00:00Z'),
+        openaiApiKey: 'synthetic-secret-not-for-review',
+        openaiBaseUrl: 'https://synthetic.invalid',
+        standardModeConfig: {
+          tutorEnabled: true,
+          explainerEnabled: true,
+          quizzerEnabled: false,
+          scopeNote: 'Synthetic course framing',
+        },
+      })
+      const server = await prisma.chatbotMCPServer.create({
+        data: {
+          name: `Synthetic review tools ${pending.id}`,
+          url: 'https://synthetic-tool.invalid',
+          authType: 'bearer',
+          authSecret: 'synthetic-tool-secret-not-for-review',
+          configurations: {
+            create: {
+              chatbotId: pending.id,
+              chatMode: 'tutor',
+              allowedTools: ['doc_query'],
+            },
+          },
+        },
+      })
+      onTestFinished(async () => {
+        await prisma.chatbotMCPServer.delete({ where: { id: server.id } })
+      })
+      const otherCourse = await seedCourse({}, userTwoCtx)
+      const second = await prisma.chatbot.create({
+        data: {
+          name: 'Another owner request',
+          updatedAt: new Date('2026-01-02T00:00:00Z'),
+          courseId: otherCourse.id,
+          ownerId: userTwoCtx.user.sub,
+          status: ChatbotStatus.PENDING_APPROVAL,
+        },
+      })
+      await seedChatbot(ChatbotStatus.DRAFT)
+      await seedChatbot(ChatbotStatus.PUBLISHED)
+      await seedChatbot(ChatbotStatus.REJECTED)
+      await seedChatbot(ChatbotStatus.PAUSED)
+
+      const reviews = await getPendingChatbotPublications(adminCtx)
+      expect(reviews.map(({ chatbot }) => chatbot.id)).toEqual([
+        pending.id,
+        second.id,
+      ])
+      expect(reviews[0]).toMatchObject({
+        ownerPublishingEnabled: true,
+        tools: [
+          {
+            serverName: server.name,
+            chatMode: 'tutor',
+            enabled: true,
+            allowedTools: ['doc_query'],
+          },
+        ],
+        disclaimerTitle: 'Course chatbot disclaimer',
+        disclaimerIntroText: 'Course-specific introduction',
+        chatbot: {
+          id: pending.id,
+          name: 'Synthetic review bot',
+          publicationUseCase: 'Practice course concepts',
+          expectedStudentCount: 40,
+          creditInitialCredits: 25,
+          courses: [{ id: pending.courseId }],
+          standardModeConfig: { scopeNote: 'Synthetic course framing' },
+        },
+      })
+      expect(reviews[0]?.ownerShortname).toBeTruthy()
+      expect(reviews[0]?.tools[0]).not.toHaveProperty('authSecret')
+      expect(reviews[0]?.tools[0]).not.toHaveProperty('url')
+      expect(reviews[0]?.chatbot).not.toHaveProperty('openaiApiKey')
+      expect(reviews[0]?.chatbot).not.toHaveProperty('openaiBaseUrl')
+      expect(reviews[0]?.chatbot).not.toHaveProperty('systemPrompts')
+      expect(reviews[0]?.chatbot).not.toHaveProperty('threads')
+      expect(reviews[1]?.ownerPublishingEnabled).toBe(false)
+
+      await approveChatbotRevision(
+        { id: pending.id, expectedRevisionVersion: pending.revisionVersion },
+        adminCtx
+      )
+      const remaining = await getPendingChatbotPublications(adminCtx)
+      expect(remaining.map(({ chatbot }) => chatbot.id)).toEqual([second.id])
+    })
+
+    it('reviews a published chatbot revision and rejects stale review decisions', async () => {
+      await enablePublishing()
+      const bot = await seedChatbot(ChatbotStatus.PUBLISHED, {
+        name: 'Live configuration',
+      })
+      const saved = await saveChatbotRevision(
+        {
+          chatbotId: bot.id,
+          expectedRevisionVersion: bot.revisionVersion,
+          input: {
+            metadata: { name: 'Pending configuration' },
+            disclaimer: {
+              title: 'Pending disclaimer',
+              introText: 'Synthetic revised introduction',
+            },
+          },
+        },
+        userOneCtx
+      )
+      const pending = await submit({
+        id: bot.id,
+        revisionVersion: saved!.revisionVersion,
+      })
+      const reviews = await getPendingChatbotPublications(adminCtx)
+      expect(reviews).toHaveLength(1)
+      expect(reviews[0]?.chatbot).toMatchObject({
+        id: bot.id,
+        status: ChatbotStatus.PUBLISHED,
+        name: 'Live configuration',
+        revisionVersion: pending!.revisionVersion,
+        authoringRevision: {
+          name: 'Pending configuration',
+          status: ChatbotStatus.PENDING_APPROVAL,
+          disclaimerTitle: 'Pending disclaimer',
+          disclaimerIntroText: 'Synthetic revised introduction',
+        },
+      })
+      await expect(
+        approveChatbotRevision(
+          { id: bot.id, expectedRevisionVersion: saved!.revisionVersion },
+          adminCtx
+        )
+      ).rejects.toThrow()
+      const rejected = await rejectChatbotRevision(
+        {
+          id: bot.id,
+          expectedRevisionVersion: reviews[0]!.chatbot.revisionVersion,
+          comment: 'Please revise the scope',
+        },
+        adminCtx
+      )
+      expect(rejected).toMatchObject({
+        status: ChatbotStatus.PUBLISHED,
+        revisionStatus: ChatbotStatus.REJECTED,
+      })
+      expect(await getPendingChatbotPublications(adminCtx)).toEqual([])
+      const resubmitted = await submit({
+        id: bot.id,
+        revisionVersion: rejected!.revisionVersion,
+      })
+      await expect(
+        rejectChatbotRevision(
+          {
+            id: bot.id,
+            expectedRevisionVersion: pending!.revisionVersion,
+            comment: 'Stale review',
+          },
+          adminCtx
+        )
+      ).rejects.toThrow()
+      const approved = await approveChatbotRevision(
+        { id: bot.id, expectedRevisionVersion: resubmitted!.revisionVersion },
+        adminCtx
+      )
+      expect(approved).toMatchObject({
+        name: 'Pending configuration',
+        status: ChatbotStatus.PUBLISHED,
+        revisionStatus: null,
+      })
+      expect(await getPendingChatbotPublications(adminCtx)).toEqual([])
+    })
+
+    it('excludes paused bots and non-legacy pending records without a pending revision', async () => {
+      await seedChatbot(ChatbotStatus.PAUSED, {
+        revisionStatus: ChatbotStatus.PENDING_APPROVAL,
+      })
+      await seedChatbot(ChatbotStatus.PENDING_APPROVAL, { revisionVersion: 1 })
+      expect(await getPendingChatbotPublications(adminCtx)).toEqual([])
+    })
+
+    it('returns an empty queue when nothing is awaiting approval', async () => {
+      expect(await getPendingChatbotPublications(adminCtx)).toEqual([])
+    })
+  })
 
   describe('submitChatbotRevision', () => {
     it('moves a DRAFT bot to PENDING_APPROVAL and records the request', async () => {

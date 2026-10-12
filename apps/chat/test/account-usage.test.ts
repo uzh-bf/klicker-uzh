@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   getEffectiveChatAccountUsage: vi.fn(),
   prisma: {
     chatMessage: { updateMany: vi.fn() },
+    user: { findUnique: vi.fn() },
   },
   transaction: {
     chatAccountUsage: { upsert: vi.fn() },
@@ -33,8 +34,71 @@ vi.mock('../src/services/credits', () => ({
 
 import {
   finalizeChatTurn,
+  isChatAccountUsageAvailable,
   roundChatUsageCredits,
 } from '../src/services/accountUsage'
+
+function budgetedUsage() {
+  return {
+    budgetCredits: new Prisma.Decimal(1),
+    usedCredits: new Prisma.Decimal(0),
+  }
+}
+
+describe('account usage class admission', () => {
+  test('admits a base class on the flag alone and a cost-carrying class only with a cost center', async () => {
+    mocks.getEffectiveChatAccountUsage.mockResolvedValue(budgetedUsage())
+    mocks.prisma.user.findUnique.mockResolvedValue({
+      aiChatbotCostCenter: null,
+      aiFeaturesEnabled: true,
+    })
+
+    await expect(
+      isChatAccountUsageAvailable({
+        ownerId: 'owner-1',
+        usageClass: 'BASE',
+      })
+    ).resolves.toBe(true)
+    await expect(
+      isChatAccountUsageAvailable({
+        ownerId: 'owner-1',
+        usageClass: 'ADVANCED',
+      })
+    ).resolves.toBe(false)
+
+    mocks.prisma.user.findUnique.mockResolvedValue({
+      aiChatbotCostCenter: 'KST-1',
+      aiFeaturesEnabled: true,
+    })
+    await expect(
+      isChatAccountUsageAvailable({
+        ownerId: 'owner-1',
+        usageClass: 'ADVANCED',
+      })
+    ).resolves.toBe(true)
+  })
+
+  test('refuses every class when the account has no AI approval', async () => {
+    mocks.getEffectiveChatAccountUsage.mockResolvedValue(budgetedUsage())
+    mocks.prisma.user.findUnique.mockResolvedValue({
+      aiChatbotCostCenter: 'KST-1',
+      aiFeaturesEnabled: false,
+    })
+
+    await expect(
+      isChatAccountUsageAvailable({
+        ownerId: 'owner-1',
+        usageClass: 'BASE',
+      })
+    ).resolves.toBe(false)
+    await expect(
+      isChatAccountUsageAvailable({
+        ownerId: 'owner-1',
+        usageClass: 'ADVANCED',
+      })
+    ).resolves.toBe(false)
+  })
+})
 
 describe('account usage credit rounding', () => {
   test('rounds once to the persisted six-decimal precision', () => {
