@@ -553,6 +553,7 @@ describe('KB ingestion dispatch', () => {
       kBIngestionRun: {
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
+      $queryRaw: vi.fn().mockResolvedValue([{ id: KB_ID }]),
       $transaction: vi.fn(),
     }
     prisma.$transaction.mockImplementation(async (callback) => callback(prisma))
@@ -767,6 +768,7 @@ describe('KB ingestion reconciliation', () => {
       kBIngestionRun: {
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
+      $queryRaw: vi.fn().mockResolvedValue([{ id: KB_ID }]),
       $transaction: vi.fn(),
     }
     prisma.$transaction.mockImplementation(async (callback) => callback(prisma))
@@ -782,6 +784,40 @@ describe('KB ingestion reconciliation', () => {
     externalOperationId: OPERATION_ID,
     externalOperationStartedAt: new Date('2026-07-26T11:50:00.000Z'),
   }
+
+  it.each([
+    'running',
+    'failed',
+  ] as const)('preserves replacement blob metadata while prior content serves after %s', async (status) => {
+    const replacement = {
+      ...activeResource,
+      type: 'BLOB',
+      blobName: 'replacement.pdf',
+      sizeBytes: 4096,
+      mimeType: 'application/pdf',
+    }
+    const prisma = monitorPrisma([replacement])
+    prisma.kBResource.updateMany.mockImplementation(async ({ data }) => {
+      Object.assign(replacement, data)
+      return { count: 1 }
+    })
+    await monitorActiveKBIngestions({
+      prisma: prisma as never,
+      client: client({
+        getOperation: vi.fn().mockResolvedValue(operation({ status })),
+      }),
+      now: () => NOW,
+    })
+    expect(prisma.kBResource.updateMany).toHaveBeenCalled()
+    expect(replacement).toMatchObject({
+      blobName: 'replacement.pdf',
+      sizeBytes: 4096,
+      mimeType: 'application/pdf',
+      contentSha256: CONTENT_SHA256,
+      activeResourceVersion: 2,
+      activeContentSha256: 'a'.repeat(64),
+    })
+  })
 
   it('leaves fresh operations to the signed callback path', async () => {
     const prisma = monitorPrisma([
@@ -1213,6 +1249,7 @@ describe('KB ingestion reconciliation', () => {
       kBIngestionRun: {
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
+      $queryRaw: vi.fn().mockResolvedValue([{ id: KB_ID }]),
       $transaction: vi.fn(),
     }
     prisma.$transaction.mockImplementation(async (callback) => callback(prisma))

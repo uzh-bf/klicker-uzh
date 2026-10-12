@@ -254,8 +254,8 @@ same usage class.
 _Avoid_: lecturer budget, account credits
 
 **Auto model**:
-The automatic model choice, classified as `ADVANCED` for the MVP until every
-routed billable step can be attributed to a usage class.
+The automatic model choice, with an explicit registry usage class. The released
+policy permits `BASE` Auto entries; see ADR 0020's compatibility amendment.
 _Avoid_: base fallback, unclassified model
 
 **Class exhaustion**:

@@ -473,10 +473,10 @@ planning target, while the reset date is exact; in-flight requests may exceed
 the target. It is read-only for account owners, and it does not expose
 internal funding or provider details.
 
-On staging, the deployed Klicker Auto option is the LiteLLM `auto-router-v2`
-endpoint; production Auto still uses `auto-router`.
+On staging and production, the deployed Klicker Auto option is the LiteLLM
+`auto-router-v2` endpoint.
 The only in-repo record of its tier map is the comment above `modelRegistry`
-in `deploy/env-uzh-stg/values.yaml`: SIMPLE = `gpt-6-luna-high`, MEDIUM
+in `deploy/env-uzh-stg/values.yaml` and `deploy/env-uzh-prd/values.yaml`: SIMPLE = `gpt-6-luna-high`, MEDIUM
 = `gpt-6.1-sol-low`, COMPLEX = `gpt-6.1-sol-medium`, REASONING =
 `gpt-6.1-sol-high` (match_threshold 0.55). The v1 `auto-router` stays
 deployed with the same classifier and corpus (MEDIUM = `gpt-6-luna-xhigh`,
@@ -499,6 +499,9 @@ id that answered.
 Migration `20261008120000_chat_drop_retired_model_ids` later removed the
 retired `gpt-4.1` and `gpt-5.4` ids from live and draft chatbot policies, so
 edits to those chatbots still pass registry validation.
+Migration `20261009120000_chat_drop_unregistered_model_ids` does the same for
+`gpt-4.1-mini` and `gpt-5.5`, which published chatbots still named although
+neither registry lists them.
 Both staging and production now use `auto` as the global automatic-model
 primary, so chatbots using automatic model selection use Auto by default.
 Chatbots with an explicit model selection can continue using that selection.
@@ -1632,3 +1635,21 @@ grading, and util once before the four suites because
 import ([Testing](./testing.md)).
 
 > **Do not run `pnpm --filter @klicker-uzh/chat check` while the devcontainer dev stack is up.** `check` is `next typegen && tsc --noEmit`, and typegen rewrites the same `.next/` the running dev server owns: from the next `✓ Compiled` line onward every chat route returns a bare Next 404 with nothing in `/tmp/dev.log`, including routes that just served 200. It is not a code bug — restart with `devrouter ensure .` from the host. Typecheck before the browser pass, not during it.
+
+## Independent graph inputs
+
+The knowledge base owns RAG and graph projections with independently operated
+workflows. Klicker submits source references and expected raw content hashes;
+the graph worker extracts those sources through the document-processing service.
+It requires no ingestion reader, operation lookup or shared admission flag.
+Successful graph completion checks source freshness and pending deletion before
+publication while retaining measured costs. See
+[independent input ownership](./adr/canonical-ingestion-input-ownership.md).
+
+A dynamic URL can change between downloads. The expected-hash check rejects that
+input before graph generation but cannot recover earlier bytes; parsing may
+already have incurred cost. Producer-owned immutable raw snapshots and automatic
+parser-only freshness remain deferred. Parser changes require an explicit rebuild.
+The existing `chatbot-graphrag` GrowthBook flag and lecturer controls govern
+student graph retrieval. Map interaction and retrieval quality remain separate
+acceptance checks.
