@@ -2003,6 +2003,10 @@ export async function POST(
               store: getOpenAIResponsesStore(),
             }),
             ...(providerReasoningEffort && {
+              // Deployment ids like klickeruzh/azure/gpt-6-luna defeat the
+              // SDK's model-id based reasoning detection, which would drop
+              // the reasoning options.
+              forceReasoning: true,
               reasoningEffort: providerReasoningEffort,
               reasoningSummary: 'auto',
             }),
