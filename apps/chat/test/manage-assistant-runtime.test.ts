@@ -2,7 +2,7 @@ import {
   CHAT_BASE_MODEL_ID,
   getChatModelBasePolicyIssues,
 } from '@klicker-uzh/util'
-import { describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import type { ChatModelConfig } from '@/src/lib/server/chatModelRegistry'
 import {
   buildManageAssistantSystemPrompt,
@@ -10,6 +10,8 @@ import {
   selectManageAssistantModel,
 } from '@/src/services/manageAssistantRuntime'
 import type { ManageElementCreateProposal } from '@/src/services/manageProposals'
+
+afterEach(() => vi.unstubAllEnvs())
 
 function model(
   overrides: Pick<ChatModelConfig, 'id' | 'fallback' | 'usageClass'>
@@ -340,12 +342,23 @@ describe('Manage assistant runtime helpers', () => {
     expect(reversed.deploymentId).toBe(forward.deploymentId)
   })
 
-  test('falls back to the first entry when no base-class entry exists', () => {
+  test('selects a configured BASE fallback independent of vendor and position', () => {
+    vi.stubEnv('CHAT_FALLBACK_MODEL_ID', 'fallback')
     expect(
       selectManageAssistantModel([
+        model({ id: 'auto', fallback: false, usageClass: 'ADVANCED' }),
         model({ id: 'fallback', fallback: true, usageClass: 'BASE' }),
       ]).deploymentId
     ).toBe('fallback-deployment')
+  })
+
+  test('rejects a registry with no BASE fallback instead of choosing ADVANCED', () => {
+    expect(() =>
+      selectManageAssistantModel([
+        model({ id: 'auto', fallback: false, usageClass: 'ADVANCED' }),
+        model({ id: 'fallback', fallback: true, usageClass: 'ADVANCED' }),
+      ])
+    ).toThrow()
   })
 
   test('defaults Manage assistant responses to stateless (OpenRouter-safe) when unset', () => {

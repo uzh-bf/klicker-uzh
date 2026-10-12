@@ -12,7 +12,10 @@ import {
   MAX_IMAGE_ATTACHMENTS,
   useComposerStore,
 } from '@/src/stores/composerStore'
-import { useSettingsStore } from '@/src/stores/settingsStore'
+import {
+  type ChatModelSelection,
+  useSettingsStore,
+} from '@/src/stores/settingsStore'
 import { type AppendMessage } from '@assistant-ui/react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
@@ -35,7 +38,10 @@ export function useThreadManagement(
   generateChatResponse: (
     messages: ExtendedThreadMessageLike[],
     threadId: string,
-    options?: { allowRegeneration?: boolean }
+    options?: {
+      allowRegeneration?: boolean
+      modelSelection?: ChatModelSelection
+    }
   ) => Promise<void>,
   abortControllerRef: React.MutableRefObject<AbortController | null>,
   selectedModeOverride?: string
@@ -48,9 +54,8 @@ export function useThreadManagement(
   const setIsRunning = useChatStore((state) => state.setIsRunning)
   const storedSelectedMode = useSettingsStore((state) => state.selectedMode)
   const selectedMode = selectedModeOverride ?? storedSelectedMode
-  const selectedModel = useSettingsStore((state) => state.selectedModel)
-  const selectedReasoningEffort = useSettingsStore(
-    (state) => state.selectedReasoningEffort
+  const ensureModelSelection = useSettingsStore(
+    (state) => state.ensureModelSelection
   )
 
   /**
@@ -60,6 +65,7 @@ export function useThreadManagement(
    */
   const onNew = useCallback(
     async (message: AppendMessage) => {
+      const modelSelection = await ensureModelSelection(chatbotId)
       const { activeThreadId: currentActiveThreadId } = useChatStore.getState()
 
       let threadId = currentActiveThreadId
@@ -92,8 +98,8 @@ export function useThreadManagement(
         createdAt: new Date(),
         parentId: message.parentId || null,
         chatMode: selectedMode,
-        modelId: selectedModel,
-        reasoningEffort: selectedReasoningEffort,
+        modelId: modelSelection.modelId,
+        reasoningEffort: modelSelection.reasoningEffort,
         imageAttachments,
       }
 
@@ -114,7 +120,7 @@ export function useThreadManagement(
           ?.messages || []
 
       // generate response based on current conversation
-      await generateChatResponse(currentMessages, threadId)
+      await generateChatResponse(currentMessages, threadId, { modelSelection })
     },
     [
       createThread,
@@ -124,8 +130,7 @@ export function useThreadManagement(
       router,
       searchParams,
       selectedMode,
-      selectedModel,
-      selectedReasoningEffort,
+      ensureModelSelection,
     ]
   )
 
@@ -138,6 +143,7 @@ export function useThreadManagement(
    */
   const onEdit = useCallback(
     async (message: AppendMessage) => {
+      const modelSelection = await ensureModelSelection(chatbotId)
       const { activeThreadId: threadId, threads } = useChatStore.getState()
 
       if (!threadId) {
@@ -171,8 +177,8 @@ export function useThreadManagement(
         createdAt: new Date(),
         parentId: parentId,
         chatMode: selectedMode,
-        modelId: selectedModel,
-        reasoningEffort: selectedReasoningEffort,
+        modelId: modelSelection.modelId,
+        reasoningEffort: modelSelection.reasoningEffort,
       }
 
       // build new conversation path up to the parent + edited message
@@ -256,9 +262,9 @@ export function useThreadManagement(
       }))
 
       // generate new response from the edited conversation state
-      await generateChatResponse(newCurrentPath, threadId)
+      await generateChatResponse(newCurrentPath, threadId, { modelSelection })
     },
-    [generateChatResponse, selectedMode, selectedModel, selectedReasoningEffort]
+    [generateChatResponse, selectedMode, ensureModelSelection, chatbotId]
   )
 
   /**
@@ -268,6 +274,7 @@ export function useThreadManagement(
    */
   const onReload = useCallback(
     async (parentId: string | null) => {
+      const modelSelection = await ensureModelSelection(chatbotId)
       const { activeThreadId: threadId, threads } = useChatStore.getState()
 
       if (!threadId) {
@@ -307,9 +314,10 @@ export function useThreadManagement(
       // regenerate response from truncated state
       await generateChatResponse(truncatedPath, threadId, {
         allowRegeneration: true,
+        modelSelection,
       })
     },
-    [generateChatResponse]
+    [generateChatResponse, ensureModelSelection, chatbotId]
   )
 
   /**

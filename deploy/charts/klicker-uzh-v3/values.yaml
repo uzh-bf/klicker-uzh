@@ -219,6 +219,8 @@ auth:
   affinity: {}
 
 chat:
+  # Optional modelSelection/allowedModelIds policy; unset creates a fixed BASE bot.
+  newChatbotModelPolicy: null
   priorityClassName: production-workload
   accountUsageEnforcementEnabled: false
   lifecycleWritersEnabled: false

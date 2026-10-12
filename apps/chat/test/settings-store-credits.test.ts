@@ -41,6 +41,159 @@ describe('settingsStore credits loading', () => {
     })
   })
 
+  test('shares pending bootstrap and returns only the loaded selection', async () => {
+    const modes = deferred<Pick<Response, 'ok' | 'json'>>()
+    const fetch = vi
+      .fn()
+      .mockReturnValueOnce(modes.promise)
+      .mockResolvedValueOnce(
+        creditsResponse(20, {
+          automaticModelId: 'base-a',
+          availableModels: [
+            {
+              id: 'base-a',
+              supportsReasoning: false,
+              allowedReasoningEfforts: [],
+            },
+          ],
+        })
+      )
+    vi.stubGlobal('fetch', fetch)
+    const first = useSettingsStore
+      .getState()
+      .ensureModelSelection('bootstrap-shared')
+    const second = useSettingsStore
+      .getState()
+      .ensureModelSelection('bootstrap-shared')
+    expect(fetch).toHaveBeenCalledTimes(1)
+    modes.resolve({
+      ok: true,
+      json: async () => ({
+        modelSelection: false,
+        modeOptions: { tutor: { description: '' } },
+      }),
+    })
+
+    await expect(first).resolves.toEqual({
+      modelId: 'base-a',
+      reasoningEffort: 'none',
+    })
+    await expect(second).resolves.toEqual({
+      modelId: 'base-a',
+      reasoningEffort: 'none',
+    })
+    expect(fetch).toHaveBeenCalledTimes(2)
+  })
+
+  test('rejects failed mode bootstrap and retries it on the next submission', async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, json: async () => ({}) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          modelSelection: false,
+          modeOptions: { tutor: { description: '' } },
+        }),
+      })
+      .mockResolvedValueOnce(
+        creditsResponse(20, {
+          automaticModelId: 'base-b',
+          availableModels: [
+            {
+              id: 'base-b',
+              supportsReasoning: false,
+              allowedReasoningEfforts: [],
+            },
+          ],
+        })
+      )
+    vi.stubGlobal('fetch', fetch)
+    await expect(
+      useSettingsStore.getState().ensureModelSelection('bootstrap-retry')
+    ).rejects.toThrow()
+    expect(fetch).toHaveBeenCalledTimes(1)
+    await expect(
+      useSettingsStore.getState().ensureModelSelection('bootstrap-retry')
+    ).resolves.toEqual({ modelId: 'base-b', reasoningEffort: 'none' })
+    expect(fetch).toHaveBeenCalledTimes(3)
+  })
+
+  test('rejects failed credits despite a prior same-bot load and permits a fresh attempt', async () => {
+    const model = {
+      id: 'base-c',
+      supportsReasoning: false,
+      allowedReasoningEfforts: [],
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValueOnce(
+        creditsResponse(20, {
+          automaticModelId: 'base-c',
+          availableModels: [model],
+        })
+      )
+    )
+    await useSettingsStore.getState().loadCredits('bootstrap-credit-retry')
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            modelSelection: false,
+            modeOptions: { tutor: { description: '' } },
+          }),
+        })
+        .mockRejectedValueOnce(new Error('offline'))
+        .mockResolvedValueOnce(
+          creditsResponse(20, {
+            automaticModelId: 'base-c',
+            availableModels: [model],
+          })
+        )
+    )
+    await expect(
+      useSettingsStore.getState().ensureModelSelection('bootstrap-credit-retry')
+    ).rejects.toThrow()
+    await expect(
+      useSettingsStore.getState().ensureModelSelection('bootstrap-credit-retry')
+    ).resolves.toEqual({ modelId: 'base-c', reasoningEffort: 'none' })
+  })
+
+  test('rejects bootstrap superseded by another chatbot', async () => {
+    const oldModes = deferred<Pick<Response, 'ok' | 'json'>>()
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockReturnValueOnce(oldModes.promise)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            modelSelection: false,
+            modeOptions: { tutor: { description: '' } },
+          }),
+        })
+    )
+    const oldAttempt = useSettingsStore
+      .getState()
+      .ensureModelSelection('bootstrap-old')
+    await useSettingsStore.getState().loadModeOptions('bootstrap-new')
+    oldModes.resolve({
+      ok: true,
+      json: async () => ({
+        modelSelection: false,
+        modeOptions: { tutor: { description: '' } },
+      }),
+    })
+    await expect(oldAttempt).rejects.toThrow()
+    expect(useSettingsStore.getState().modeOptionsChatbotId).toBe(
+      'bootstrap-new'
+    )
+  })
+
   test('ignores a stale response from a previous chatbot request', async () => {
     const first = deferred<ReturnType<typeof creditsResponse>>()
     const second = deferred<ReturnType<typeof creditsResponse>>()
@@ -139,6 +292,30 @@ describe('settingsStore credits loading', () => {
 
     expect(useSettingsStore.getState().selectedModel).toBe('gpt-4.1')
     expect(useSettingsStore.getState().modelOptions).toHaveLength(2)
+  })
+
+  test('uses the configured primary on first load instead of an incidental Auto selection', async () => {
+    useSettingsStore.setState({
+      ...useSettingsStore.getInitialState(),
+      modelSelectionEnabled: true,
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValueOnce(
+        creditsResponse(20, {
+          automaticModelId: 'base-a',
+          availableModels: ['auto', 'base-a'].map((id) => ({
+            id,
+            supportsReasoning: false,
+            allowedReasoningEfforts: [],
+          })),
+        })
+      )
+    )
+
+    await useSettingsStore.getState().loadCredits('chatbot-initial-selection')
+
+    expect(useSettingsStore.getState().selectedModel).toBe('base-a')
   })
 
   test.each([

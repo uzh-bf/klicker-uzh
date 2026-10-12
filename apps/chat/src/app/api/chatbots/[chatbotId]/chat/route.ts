@@ -32,8 +32,8 @@ import {
   getAllowedReasoningEffortsForModel,
   getAutomaticModelId,
   getChatModelRegistry,
-  getModelsForChatbot,
   getParticipantFallbackModelId,
+  parseReasoningEffortByModel,
 } from '@/src/lib/server/chatModelRegistry'
 import { buildChatTurnRequest } from '@/src/lib/server/chatTurnRequest'
 import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
@@ -768,11 +768,42 @@ export async function POST(
   // widen later uses back to `undefined`; every assignment below is checked.
   let selectedModelConfig: ChatModelConfig = initialModelConfig
 
+  let usingSafetyFallback = false
+  const selectParticipantFallback = () => {
+    const fallbackModelId = getParticipantFallbackModelId()
+    const fallbackModelConfig = modelRegistry.find(
+      (modelConfig) => modelConfig.id === fallbackModelId
+    )
+    if (!fallbackModelId || !fallbackModelConfig) return false
+
+    selectedModel = fallbackModelId
+    selectedModelConfig = fallbackModelConfig
+    usingSafetyFallback = true
+    return true
+  }
+
+  // Guest access and exhausted participant credits select the configured BASE
+  // safety model independently of the lecturer's model list.
+  if (authMode === 'anonymous') {
+    if (!selectParticipantFallback()) {
+      return chatModelUnavailableResponse('BASE')
+    }
+  } else {
+    const creditPreview = await CreditsService.previewUserCredits(
+      participantId,
+      chatbotId
+    )
+    if (creditPreview.current <= 0 && !selectParticipantFallback()) {
+      return chatModelUnavailableResponse('BASE')
+    }
+  }
+
   // Enforce per-chatbot model allow-list
   // Automatic selection is authoritative when a persisted allow-list contains
-  // only retired models: getAutomaticModelId resolves that state to Luna, the
+  // only retired models: getAutomaticModelId resolves that state to the
   // unconditional base fallback, so the stale list must not reject the turn.
   if (
+    !usingSafetyFallback &&
     allowedIds &&
     !allowedIds.has(selectedModelConfig.id) &&
     selectedModelConfig.id !== automaticModelId &&
@@ -783,45 +814,6 @@ export async function POST(
       { error: `Model not available for this chatbot: ${selectedModel}` },
       { status: 400 }
     )
-  }
-
-  const selectParticipantFallback = () => {
-    const fallbackModelId = getParticipantFallbackModelId()
-    const fallbackModelConfig = modelRegistry.find(
-      (modelConfig) => modelConfig.id === fallbackModelId
-    )
-    if (!fallbackModelId || !fallbackModelConfig) return false
-
-    selectedModel = fallbackModelId
-    selectedModelConfig = fallbackModelConfig
-    return true
-  }
-
-  // Anonymous LTI guests stay on the chatbot's allowed fallback model. Apply
-  // this after automatic and explicit selection so later credit handling
-  // cannot restore an advanced model for a guest with remaining credits.
-  if (authMode === 'anonymous' && !selectedModelConfig.fallback) {
-    const guestFallback = getModelsForChatbot(chatbot).find(
-      (modelConfig) => modelConfig.fallback
-    )
-    if (!guestFallback) {
-      return NextResponse.json(
-        { error: 'No fallback model available for guest access' },
-        { status: 503 }
-      )
-    }
-    selectedModel = guestFallback.id
-    selectedModelConfig = guestFallback
-  }
-
-  if (!selectedModelConfig.fallback) {
-    const creditPreview = await CreditsService.previewUserCredits(
-      participantId,
-      chatbotId
-    )
-    if (creditPreview.current <= 0 && !selectParticipantFallback()) {
-      return chatModelUnavailableResponse('BASE')
-    }
   }
 
   const accountUsageAvailableForSelectedModel = async () => {
@@ -877,6 +869,28 @@ export async function POST(
         return chatModelUnavailableResponse(selectedModelConfig.usageClass)
       }
     }
+  }
+
+  const allowedReasoningEfforts = getAllowedReasoningEffortsForModel(
+    selectedModelConfig,
+    chatbot.allowedReasoningEffortsByModel
+  )
+  if (
+    (selectedModelConfig.supportsReasoning ||
+      Boolean(
+        parseReasoningEffortByModel(chatbot.allowedReasoningEffortsByModel)[
+          selectedModelConfig.id
+        ]?.length
+      )) &&
+    allowedReasoningEfforts.length === 0
+  ) {
+    return NextResponse.json(
+      {
+        error: 'No configured reasoning level is supported by this model',
+        code: 'CHAT_MODEL_POLICY_UNAVAILABLE',
+      },
+      { status: 503 }
+    )
   }
 
   const enabledMCPConfigurations = (chatbot.mcpConfigurations ?? []).filter(
@@ -1485,10 +1499,6 @@ export async function POST(
 
     const maxOutputTokens = selectedModelConfig.maxOutputTokens
 
-    const allowedReasoningEfforts = getAllowedReasoningEffortsForModel(
-      selectedModelConfig,
-      chatbot.allowedReasoningEffortsByModel
-    )
     const appliedReasoningEffort: ReasoningEffort | null =
       allowedReasoningEfforts.length > 0
         ? allowedReasoningEfforts.includes(requestedReasoningEffort)

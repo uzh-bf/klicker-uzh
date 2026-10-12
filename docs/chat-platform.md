@@ -296,18 +296,25 @@ Three properties matter when debugging it:
 
 Every registry entry carries an explicit `usageClass` (`BASE` or `ADVANCED`),
 the server-derived classification of the model lane ([ADR 0020](./adr/0020-two-tier-chatbot-approval.md)).
-GPT-6 Luna must be a `BASE` model and the participant-credit fallback; both
-consumers reject external registries that violate that invariant. Other models
-may also be `BASE`. The deployed registries classify GPT-6 Luna (the automatic
+The configured participant-credit fallback must be a `BASE` model with
+`fallback: true`; both consumers reject settings that violate that invariant.
+Other models may also be `BASE`. The deployed registries classify GPT-6 Luna (the automatic
 primary and fallback) and `auto` as `BASE`, because Luna and Sol are cheap
 enough that the auto-router needs no cost center, while directly selected
 GPT-6 Sol, GPT-6.1 Sol and GPT-5.6 Sol stay `ADVANCED`.
 External registry JSON that omits `usageClass` normalizes to `ADVANCED` —
 conservative, because a missing class must never imply base usage.
 
-New chatbots use a fixed GPT-6 Luna policy by default: the owner projection
-contains one effective `gpt-6-luna` model and no reasoning entries. A registry
-without that BASE model keeps a single `auto` model instead. Staging sets
+New chatbots use `CHAT_NEW_CHATBOT_MODEL_POLICY_JSON` (Helm
+`chat.newChatbotModelPolicy`) when configured. Its object contains
+`modelSelection` and `allowedModelIds`: fixed mode requires exactly one active
+model; participant-choice mode accepts a nonempty unique list of active models.
+Invalid types, references, cardinality or unknown fields fail startup. Unset
+configuration creates a fixed bot on the validated BASE fallback, with no
+initial reasoning restrictions. The global primary remains the preferred
+initial choice when available; a participant's existing valid selection is
+retained. The list is a set of choices, not an outage retry chain.
+Changing this default does not rewrite existing bots or pending revisions. Staging sets
 `auto` as the automatic primary so existing automatic-selection chatbots
 exercise `auto-router-v2`; production keeps GPT-6 Luna. The strict owner-only
 `saveChatbotRevision` mutation uses its `modelPolicy` section to require exactly
@@ -318,7 +325,7 @@ reasoning model in participant-choice mode. Configuration saves use this single
 mutation; granular save mutations and publication aliases are removed.
 Legacy fixed rows are readable without a migration: empty or multi-model values
 resolve through the current `CHAT_PRIMARY_MODEL_ID`-aware runtime semantics,
-while a retired-only list falls back to Luna. Participant-choice empty lists
+while a retired-only list falls back to the configured BASE model. Participant-choice empty lists
 display all active models and are made explicit only by a strict save.
 
 Registry costs use Azure Global Standard short-context USD prices per one
@@ -703,8 +710,8 @@ The existing `ChatUsageCredits` balance remains a separate participant
 allowance. Its decrement is part of the `finalizeChatTurn` transaction together
 with the completed message and account usage, so a failed debit rolls back the
 other two writes and a duplicate completion cannot debit twice. At zero
-participant credits, the route switches from any effective model to GPT-6
-Luna and clamps its effective usage class to `BASE` before enforcement; Luna is
+participant credits, the route switches to the configured `CHAT_FALLBACK_MODEL_ID`
+entry, which startup validation requires to be `BASE`. The effective model is
 therefore charged only through its `BASE` account lane and the participant
 allowance. This fallback intentionally does not require the chatbot allow-list
 to contain Luna. New browser sessions start with Auto Mode. Saved unavailable selections use
@@ -719,15 +726,41 @@ immutable ledgers, automated refunds, invoices, per-chatbot allocation, and
 participant-credit migration remain deferred.
 
 - Omitted `supportsImageAttachments` defaults to **false** — every image-capable model must set it explicitly in deployment values or the attach button disappears.
-- The zero-credit participant path uses GPT-6 Luna as the base-lane fallback
+- Guest access and the zero-credit participant path use `CHAT_FALLBACK_MODEL_ID` as the base-lane fallback
   even when the chatbot allow-list excludes it. The registry must contain a
-  `fallback` GPT-6 Luna `BASE` entry; the route denies the turn only if that
-  entry is absent. Retired model IDs in persisted allow-lists are ignored, and
-  an automatic chatbot with no current allowed model resolves to Luna. The
-  chart still emits `CHAT_FALLBACK_MODEL_ID` for mixed-version compatibility
-  and the one-off maintenance script, but the current Chat runtime ignores it.
+  matching `fallback: true`, `BASE` entry; invalid settings fail startup.
+  If unset, a valid legacy fallback is preferred; otherwise exactly one eligible
+  BASE fallback is required. Retired-only allow-lists resolve to that fallback.
   `CHAT_PRIMARY_MODEL_ID` controls automatic primary selection; the participant
-  safety fallback is always Luna.
+  safety fallback remains BASE-only. The Manage assistant uses the same fallback.
+  Guest bootstrap exposes only that model with stored reasoning restrictions.
+  Account bootstrap retains the lecturer's model options independently of balance;
+  the server selects the safety fallback when credits are exhausted. Account
+  eligibility and BASE budget checks still apply.
+
+The chart exposes these defaults through `chat.automaticModels.primaryId`,
+`chat.automaticModels.fallbackId` and `chat.newChatbotModelPolicy` to both Chat and
+GraphQL. Configure the catalog through `chat.modelRegistry`. Policy validation
+uses the effective registry, so custom catalogs need no built-in vendor IDs.
+Registry IDs must retain their meaning; keep IDs referenced by existing bots
+and pending revisions when changing defaults. Model retirement is a separate
+compatibility operation. A stored reasoning restriction with no supported
+intersection rejects the turn before generation instead of widening it.
+
+GraphQL now receives the configured primary as well. Legacy fixed rows with
+empty or multiple model IDs may show a different effective model to their
+owner, aligned with Chat's existing runtime choice. Explicit single-model
+policies remain unchanged, and this projection does not rewrite stored rows.
+
+Settings are validated at process startup. Both deployment ConfigMaps have
+checksum annotations, so a configuration change uses the same image in a
+rolling restart; there is no hot reload. Keep old referenced IDs through the
+rollout to avoid mixed-revision incompatibility. Supported deployment IDs,
+capabilities, per-model output limits within 1–4096, reasoning levels and current
+input/output pricing fields need no application release. A new transport or
+pricing dimension still requires implementation. Live configuration and
+funding-policy changes retain their normal approval gates.
+
 - OpenAI Responses backends: keep `CHAT_OPENAI_STORE_RESPONSES=true` in shared/staged deployments — with `store: false`, LiteLLM/Azure can return "item not found" when a model references prior response items across tool-call steps. Local OpenRouter-style setups can leave it false.
 
 Credit fields are Prisma `Decimal` — never truthy-check them ([Data & Migrations](./data-and-migrations.md)).

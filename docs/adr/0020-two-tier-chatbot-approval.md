@@ -10,6 +10,10 @@ Lecturer setup editing after publication is superseded by
 [ADR 0043](./0043-review-chatbot-revisions-before-activation.md). Its saved
 revision and approval contract leaves unrelated runtime dependencies unchanged.
 
+The 2026-10-07 amendment below supersedes vendor-specific model defaults and
+cross-environment catalog equality. BASE-only fallback and usage-class semantics
+remain in force.
+
 ## Context
 
 The tutoring chatbot is billable, so uncontrolled go-live is not acceptable; at
@@ -87,6 +91,31 @@ GPT-5.6 Luna from the deployed registries. GPT-6 Luna is therefore both the
 automatic primary and the only fallback. GPT-6.1 Sol joins as an `ADVANCED`
 model, and staging `Auto` routes through `auto-router-v2`.
 
+Amendment, 2026-10-07: automatic primary and participant-credit fallback
+IDs are configuration references into the effective model
+registry. Both consumers validate these references at startup. The fallback
+must be `BASE` with `fallback: true`; it never selects an ADVANCED entry.
+Without explicit fallback configuration, an eligible legacy GPT-6 Luna entry
+is preferred; otherwise exactly one eligible BASE fallback is required. A new
+chatbot starts with the configured selection mode and allowed model IDs,
+or a fixed policy on that fallback when unset. The policy uses existing row
+fields and may offer multiple models for participant choice. The global primary
+is the preferred initial choice when available; existing participant selections
+remain authoritative. There is no provider outage failover policy in this change.
+Current participant defaults remain unchanged. GraphQL now receives the
+configured primary too, so legacy fixed rows with empty or multiple model IDs
+may show a different effective model to their owner, aligned with Chat's
+existing runtime choice. Existing explicit single-model policies, pending
+revisions and historical accounting retain their meaning; no records are rewritten.
+
+CI verifies that Chat and GraphQL interpret each environment's configured
+registry identically, including classes, fallback eligibility and accounting
+rates. Environments may deliberately use different catalogs and rates;
+changes retain their configuration and funding-policy approval boundaries.
+Tests do not pin incidental vendor catalogs or prices. Referenced model IDs
+must remain stable through rollout; retirement is a separate compatibility
+operation.
+
 The original design assigned one account-wide monthly budget per class to the
 lecturer. ADR 0041 supersedes that write ownership for the trusted pilot:
 operations manages each configured limit, which persists until an authorized
@@ -119,15 +148,16 @@ to the v3-ai workflow.
 - Post-publication edits to non-gated knobs (knowledge, standard-mode fields,
   and model choices within the account authorization) take effect
   without another approval; this bounded risk is accepted.
-- Both registry consumers reject configurations that do not make GPT-6 Luna
-  a `BASE` model and the participant-credit fallback. CI pins registry
-  class, fallback, and accounting-rate parity across built-in, staging, and
-  production declarations.
+- Both registry consumers reject an absent, ambiguous or non-BASE
+  participant-credit fallback. CI protects structured class, fallback and
+  accounting-rate parity between consumers for each configured environment.
 - Base and advanced budgets are visible as separate usage lanes, while the
   teaching center's base contribution and internal settlement remain hidden.
 - Class-specific account-budget exhaustion does not disable the other class or
-  trigger a cross-class switch. Zero participant credits are the deliberate
-  exception: the effective turn uses and is metered as base Luna. Participant
+  trigger a cross-class switch. Guest access and zero participant credits are
+  deliberate model-list exceptions: the effective turn uses and is metered as
+  the configured BASE fallback, retaining reasoning restrictions and account
+  eligibility and budget checks. Participant
   clients never receive cost-center or funding details.
 - Draft-config machinery for live bots is deliberately deferred until editing
   live bots proves painful.

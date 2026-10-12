@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useThreadManagement } from '../src/hooks/useThreadManagement'
 import { getEditedMessageSource } from '../src/lib/attachments/attachmentState'
 
-const { mockUseChatStore } = vi.hoisted(() => ({
+const { mockUseChatStore, ensureModelSelectionMock } = vi.hoisted(() => ({
+  ensureModelSelectionMock: vi.fn(),
   mockUseChatStore: Object.assign(vi.fn(), {
     getState: vi.fn(),
     setState: vi.fn(),
@@ -34,6 +35,7 @@ vi.mock('../src/stores/settingsStore', () => ({
       selectedMode: 'chat',
       selectedModel: 'gpt-test',
       selectedReasoningEffort: 'medium',
+      ensureModelSelection: ensureModelSelectionMock,
     }
     return selector ? selector(state) : state
   },
@@ -67,6 +69,10 @@ describe('getEditedMessageSource', () => {
     }
 
     mockUseChatStore.mockReset()
+    ensureModelSelectionMock.mockReset().mockResolvedValue({
+      modelId: 'gpt-test',
+      reasoningEffort: 'medium',
+    })
     chatActions = {
       createThread: vi.fn(),
       addMessage: vi.fn(),
@@ -87,6 +93,77 @@ describe('getEditedMessageSource', () => {
         ...storeState,
         ...partial,
       }
+    })
+  })
+
+  test.each([
+    'onNew',
+    'onEdit',
+    'onReload',
+  ] as const)('%s rejects failed bootstrap before any thread mutation', async (operation) => {
+    ensureModelSelectionMock.mockRejectedValueOnce(new Error('offline'))
+    const generateChatResponse = vi.fn()
+    const callbacks = useThreadManagement(generateChatResponse, {
+      current: null,
+    })
+    const attempt =
+      operation === 'onReload'
+        ? callbacks.onReload(null)
+        : callbacks[operation]({
+            role: 'user',
+            content: [],
+            parentId: null,
+            sourceId: null,
+            runConfig: undefined,
+            createdAt: new Date(),
+            metadata: { custom: {} },
+          })
+
+    await expect(attempt).rejects.toThrow('offline')
+    expect(chatActions.createThread).not.toHaveBeenCalled()
+    expect(chatActions.addMessage).not.toHaveBeenCalled()
+    expect(mockUseChatStore.setState).not.toHaveBeenCalled()
+    expect(generateChatResponse).not.toHaveBeenCalled()
+  })
+
+  test('first submission waits for bootstrap and uses the resolved model throughout', async () => {
+    let resolveSelection: (value: {
+      modelId: string
+      reasoningEffort: string
+    }) => void = () => {}
+    ensureModelSelectionMock.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveSelection = resolve
+      })
+    )
+    chatActions.createThread.mockResolvedValue('thread-1')
+    const generateChatResponse = vi.fn()
+    const { onNew } = useThreadManagement(generateChatResponse, {
+      current: null,
+    })
+    const attempt = onNew({
+      role: 'user',
+      content: [],
+      parentId: null,
+      sourceId: null,
+      runConfig: undefined,
+      createdAt: new Date(),
+      metadata: { custom: {} },
+    })
+
+    expect(chatActions.createThread).not.toHaveBeenCalled()
+    resolveSelection({ modelId: 'configured-model', reasoningEffort: 'none' })
+    await attempt
+    expect(chatActions.addMessage).toHaveBeenCalledWith(
+      'chatbot-1',
+      expect.objectContaining({
+        modelId: 'configured-model',
+        reasoningEffort: 'none',
+      }),
+      'thread-1'
+    )
+    expect(generateChatResponse).toHaveBeenCalledWith([], 'thread-1', {
+      modelSelection: { modelId: 'configured-model', reasoningEffort: 'none' },
     })
   })
 
@@ -220,7 +297,8 @@ describe('getEditedMessageSource', () => {
           imageAttachments: originalAttachments,
         }),
       ],
-      'thread-1'
+      'thread-1',
+      { modelSelection: { modelId: 'gpt-test', reasoningEffort: 'medium' } }
     )
   })
 
@@ -306,7 +384,10 @@ describe('getEditedMessageSource', () => {
     expect(generateChatResponse).toHaveBeenCalledWith(
       [expect.objectContaining({ id: 'user-1' })],
       'thread-1',
-      { allowRegeneration: true }
+      {
+        allowRegeneration: true,
+        modelSelection: { modelId: 'gpt-test', reasoningEffort: 'medium' },
+      }
     )
   })
 })
