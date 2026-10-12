@@ -49,7 +49,7 @@ transports with zero provider spend. No dependencies or schema changes.
 
 ### Binding contracts
 
-1. Reuse `normalizeSourcesFromParts`, `parseDocQueryPayload` and
+1. Reuse `isDocQueryToolName`, `normalizeSourcesFromParts`, `parseDocQueryPayload` and
    `sourceCitationIndices`. Preserve first-appearance identity, pages/video
    positions, cross-call deduplication and explicit null indices for overflow.
    Receipts omit raw source text, titles/references, arguments, reasoning and URLs.
@@ -213,9 +213,31 @@ ambiguous one. This package never resets an existing ledger or applies live prom
 - Skills: installed and locally committed as dotfiles `0e2daa2`; linked handoff
   and frontmatter checked. Walkthroughs cover quality-to-prompt, prompt-only,
   and Explainer direct help versus Quizzer release/persona discovery contracts.
-- Mapping and Explainer: worker completed; 18 checks passed. The same worker
-  owns remaining runner/adapter tests for the revised budget interface.
-- Budget: main implementing endpoint binding and live run lease after accepted
-  recovery planner findings. Integrated tests and source reviews pending.
-- Runtime: exact worktree minimal `mcp` container. No paid calls.
-- Terminal: completed draft source delivery plus installed skill updates.
+- Mapping and Explainer: implemented and verified against the application
+  projection, including other retrieval servers and suffixed names. The local
+  first-turn KB requirement remains strict; all worker ownership has returned.
+- Budget: US$5/120-turn durable admission, endpoint binding and live run lease
+  implemented. Completed canary failures account known credits before assessment;
+  interrupted calls still fail closed and reservations are never refunded.
+- Verification: 41 synthetic tests pass in the exact task container. Scoped
+  Biome/ESLint, formatting, plain-Node help, chat typecheck and secret checks pass.
+  Earlier passing checks reused where the tested source boundary is unchanged.
+  The data-hygiene heuristic flagged synthetic test assignments; exact staged
+  diffs and gitleaks confirmed false positives before its documented override.
+- Reviews: recovery planner approved; mapping and budget slice reviews have no
+  qualifying findings. Integrated final review passed after the completed-canary
+  correction; focused late mixed-server confirmation recorded privately.
+- Packaging: one coherent evaluator package, full path; 2,533 substantive changed
+  lines including maintained tests, excluding project-artifact documentation.
+- Delivery: [draft PR #6489](https://github.com/uzh-bf/klicker-uzh/pull/6489) targets
+  `v3`. Fresh fetch shows no target drift from `bf96b7059b`. Hosted checks remain
+  pending; the prior-head OpenCodeReview job failed at its provider HTTP request.
+  No human reviewer requested. Global skill changes are local dotfiles `0e2daa2`.
+- Runtime: exact source path `trees/chatbot-evaluator`, workspace
+  `enhance-chatbot-evaluator`, minimal `mcp` profile; stopped after verification,
+  provider state and zero exact routes checked. No paid evaluation calls.
+- Terminal: approved draft source delivery and installed skills complete. Merge,
+  deployment, prompt apply and paid evaluation were not requested. Before a paid
+  run, qualify current tariffs and every billable application egress path; source
+  tests alone do not prove live routing. Unix-socket path length and lock
+  contention remain fail-closed operational qualification considerations.
