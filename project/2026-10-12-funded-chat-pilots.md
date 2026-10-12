@@ -44,6 +44,10 @@ Rollback uses an ordinary source revert and the prior release pins. Reverting th
 
 ## Progress
 
-- Scoped production read confirms AI enabled, explicit allowance present, missing cost center, and zero advanced usage. Private account data excluded from this public artifact.
-- Source diagnosis complete. Plan challenge round 1 requested explicit ordering, preview scope, executable test coverage and budget limitations. All accepted and clarified above. Round 2 APPROVED by the same native planner. Optional AGY opposing-provider challenge also APPROVED. The implementation is complete; 85 focused chat/preview tests and 22 disposable-database tests pass. Util, chat and GraphQL typechecks pass. Full commit checks encountered a host-only test boundary; the 40 host tests passed when run on the host. Full repository typecheck and scoped lint remain in progress.
-- Required video PR CI remains running. Release/source synchronization and production acceptance pending.
+- Native planner approved round 2 after clarifying ordering, preview scope, executable coverage and budget limitations. Optional AGY plan challenge also approved.
+- Implemented and simplified in `31f9207acf` and `3bd4b56d72`: allowance availability directly combines AI approval, positive budget and remaining credit. Scope is 9 public source/test/doc paths; no live account data committed.
+- Verification: 85 focused chat/preview tests, 22 disposable GraphQL database tests, all 42 repository typecheck tasks, seven repository lint tasks and 40 host launcher tests pass. Chat tests and types passed again after simplification. Staged data-hygiene scan found no leaks.
+- Scoped Opengrep findings and Biome import-order/warnings are pre-existing; unrelated formatter changes were restored. Host hooks could not resolve checkout-local tooling and used an older devrouter; equivalent checks ran explicitly in the container and on the host. Hosted image builds remain required.
+- Independent slice review found no defects. Final Claude review of `b35104f97a..3bd4b56d72` found no code defects and requested only this progress update. Source reviews do not establish deployed acceptance.
+- [Draft PR #6488](https://github.com/uzh-bf/klicker-uzh/pull/6488) targets `v3-ai`. Required CI, video integration, release and live student-flow acceptance remain pending. Video PR CI is queued for an unavailable runner; the existing production Argo login is expired.
+- Exact runtime stopped, provider `Stopped`, zero task routes verified; synthetic browser closed. Next action after CI capability is restored: qualify both source changes, complete the approved release chain and verify the deployed student flow.
