@@ -129,15 +129,24 @@ no custom base URL and therefore still reaches the shared gateway. That
 key-only path intentionally receives neither the default exact-response bypass
 nor the default prompt-cache identity.
 
-For default requests, `POST` passes the final `systemPrompt`, requested
-deployment identity, transport family, and request tools (the MCP tools plus
-the Tutor and Quizzer `calculate` tool) to
-`buildPromptCacheRequest`. The helper hashes only a versioned canonical
-provider-visible projection with SHA-256, then emits the provider-safe
-`klicker:pc:v1:<50-hex-character-digest>` key and
-passes it to the OpenAI provider. Tool execution functions, MCP clients,
-participant/user/chatbot/thread/message/request identifiers, and raw tool-call
-identifiers are not identity inputs. Tool input examples are excluded because
+For default requests, `POST` passes the requested deployment identity,
+transport family, cache scope (chatbot, mode and thread) and request tools (the
+MCP tools plus the Tutor and Quizzer `calculate` tool) to
+`buildPromptCacheRequest`. The stable instructions stay in the request's
+`instructions`, and per-turn context sits in a message before the new user
+message, so the prefix of instructions and tools is identical for every thread
+of a chatbot and mode. The helper hashes a versioned canonical projection of
+the deployment, transport, chatbot, mode, provider-visible tools and a thread
+bucket with SHA-256, then emits the provider-safe
+`klicker:pc:v3:<50-hex-character-digest>` key and passes it to the OpenAI
+provider. The bucket is one of four values derived from a seeded hash of the
+thread id: threads share the cached prefix, a thread keeps its key on every
+turn, and a busy chatbot spreads its traffic over a few keys instead of
+pushing one key past the provider's per-key rate of about 15 requests per
+minute. The owner preview uses the fixed `owner-preview` thread scope. Tool
+execution functions, MCP clients, participant, user, message and request
+identifiers, raw thread ids and raw tool-call identifiers are not identity
+inputs. Tool input examples are excluded because
 neither OpenAI transport serializes them. Tool provider options are excluded
 for Chat Completions and limited to the OpenAI Responses options that reach the
 request. The rebuilt tools retain runtime execution, and the route supplies
@@ -464,10 +473,10 @@ planning target, while the reset date is exact; in-flight requests may exceed
 the target. It is read-only for account owners, and it does not expose
 internal funding or provider details.
 
-On staging, the deployed Klicker Auto option is the LiteLLM `auto-router-v2`
-endpoint; production Auto still uses `auto-router`.
+On staging and production, the deployed Klicker Auto option is the LiteLLM
+`auto-router-v2` endpoint.
 The only in-repo record of its tier map is the comment above `modelRegistry`
-in `deploy/env-uzh-stg/values.yaml`: SIMPLE = `gpt-6-luna-high`, MEDIUM
+in `deploy/env-uzh-stg/values.yaml` and `deploy/env-uzh-prd/values.yaml`: SIMPLE = `gpt-6-luna-high`, MEDIUM
 = `gpt-6.1-sol-low`, COMPLEX = `gpt-6.1-sol-medium`, REASONING =
 `gpt-6.1-sol-high` (match_threshold 0.55). The v1 `auto-router` stays
 deployed with the same classifier and corpus (MEDIUM = `gpt-6-luna-xhigh`,
@@ -487,6 +496,12 @@ router's effort targets remain internal. Before 2026-09-29 the base model id
 was `gpt-5.6-luna`; migration `20260929120000_chat_gpt6_base_model` rewrote
 stored chatbot allow-lists, while historical message `modelId` values keep the
 id that answered.
+Migration `20261008120000_chat_drop_retired_model_ids` later removed the
+retired `gpt-4.1` and `gpt-5.4` ids from live and draft chatbot policies, so
+edits to those chatbots still pass registry validation.
+Migration `20261009120000_chat_drop_unregistered_model_ids` does the same for
+`gpt-4.1-mini` and `gpt-5.5`, which published chatbots still named although
+neither registry lists them.
 Both staging and production now use `auto` as the global automatic-model
 primary, so chatbots using automatic model selection use Auto by default.
 Chatbots with an explicit model selection can continue using that selection.
@@ -1127,8 +1142,11 @@ Graph-assisted document search uses the native FalkorDB reader in
 It applies only to the student chat's configured KB document tool. A current,
 single published graph supplies at most six neighboring concept names from
 fixed, parameterized, one-hop queries. The original document query remains
-intact; at most one additional document query runs per tool instance. The
-adapter combines compatible `mode: documents` passages within 12 passages and
+intact; at most one additional document query runs per tool instance. Raw executions of each discovered document tool are serialized within the request-local client, including expanded queries. A slot is released only when the underlying provider operation settles; an outer expansion timeout does not release it. Queued cancelled calls are rejected before dispatch. Calls retain separate executions and results, without caching or retries. Top-level null/undefined results become a content-free execution error; valid empty results and nested nulls are preserved. An absent optional expansion retains authorized baseline evidence.
+
+The wrapper emits `[chat.graph_retrieval]` diagnostics with an allowlisted outcome, whether expansion was attempted, hint count, passage counts, output character count and total wrapper duration. Counts describe passage occurrences; unrecognized/unmeasured results use null rather than zero. Events contain no queries, labels, passages, identifiers or raw errors. Diagnostic failure cannot change retrieval or authorization. A `fused` outcome confirms compatible fusion, not improved source support or answer quality.
+
+The adapter combines compatible `mode: documents` passages within 12 passages and
 16,000 content characters, retaining provider source groups and locators. It
 protects the first three admitted baseline passages, then uses equal-weight
 reciprocal rank fusion with constant 60 for the remaining candidates. Contiguous
@@ -1617,3 +1635,21 @@ grading, and util once before the four suites because
 import ([Testing](./testing.md)).
 
 > **Do not run `pnpm --filter @klicker-uzh/chat check` while the devcontainer dev stack is up.** `check` is `next typegen && tsc --noEmit`, and typegen rewrites the same `.next/` the running dev server owns: from the next `✓ Compiled` line onward every chat route returns a bare Next 404 with nothing in `/tmp/dev.log`, including routes that just served 200. It is not a code bug — restart with `devrouter ensure .` from the host. Typecheck before the browser pass, not during it.
+
+## Independent graph inputs
+
+The knowledge base owns RAG and graph projections with independently operated
+workflows. Klicker submits source references and expected raw content hashes;
+the graph worker extracts those sources through the document-processing service.
+It requires no ingestion reader, operation lookup or shared admission flag.
+Successful graph completion checks source freshness and pending deletion before
+publication while retaining measured costs. See
+[independent input ownership](./adr/canonical-ingestion-input-ownership.md).
+
+A dynamic URL can change between downloads. The expected-hash check rejects that
+input before graph generation but cannot recover earlier bytes; parsing may
+already have incurred cost. Producer-owned immutable raw snapshots and automatic
+parser-only freshness remain deferred. Parser changes require an explicit rebuild.
+The existing `chatbot-graphrag` GrowthBook flag and lecturer controls govern
+student graph retrieval. Map interaction and retrieval quality remain separate
+acceptance checks.

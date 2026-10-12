@@ -77,6 +77,150 @@ describe('current-v3 Doc Query scope', () => {
     })
   })
 
+  test('serializes overlapping document calls and retains separate results', async () => {
+    let active = false
+    let finish!: () => void
+    const gate = new Promise<void>((resolve) => {
+      finish = resolve
+    })
+    const payload = {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({ mode: 'documents', sources: [] }),
+        },
+      ],
+    }
+    const execute = vi.fn(async () => {
+      if (active) return null
+      active = true
+      await gate
+      active = false
+      return payload
+    })
+    clientToolsMock.mockResolvedValue({ doc_query: { execute } })
+    const handle = await getAggregatedMCPTools([createServer()], CHATBOT_ID, {
+      kbIds: [KB_ID],
+      sessionId: SESSION_ID,
+    })
+    const tool = handle.tools.KB_doc_query
+    const first = tool.execute({ query: 'synthetic topic' }, {})
+    const second = tool.execute({ query: 'synthetic topic' }, {})
+    await vi.waitFor(() => expect(execute).toHaveBeenCalledTimes(1))
+    finish()
+    expect(await Promise.all([first, second])).toEqual([payload, payload])
+    expect(execute).toHaveBeenCalledTimes(2)
+    await handle.close()
+  })
+
+  test.each([
+    null,
+    undefined,
+  ])('rejects absent results and releases the document queue after failure: %s', async (absent) => {
+    const payload = { content: [], structuredContent: { optional: null } }
+    const execute = vi
+      .fn()
+      .mockResolvedValueOnce(absent)
+      .mockRejectedValueOnce(new Error('transport failed'))
+      .mockResolvedValue(payload)
+    clientToolsMock.mockResolvedValue({ doc_query: { execute } })
+    const handle = await getAggregatedMCPTools([createServer()], CHATBOT_ID, {
+      kbIds: [KB_ID],
+      sessionId: SESSION_ID,
+    })
+    const tool = handle.tools.KB_doc_query
+    await expect(tool.execute({ query: 'one' }, {})).rejects.toThrow()
+    await expect(tool.execute({ query: 'two' }, {})).rejects.toThrow(
+      'transport failed'
+    )
+    await expect(tool.execute({ query: 'three' }, {})).resolves.toEqual(payload)
+    await handle.close()
+  })
+
+  test('preserves scope failures without retrying the document call', async () => {
+    const error = new RequiredMCPUnavailableError('scope_violation')
+    const execute = vi.fn().mockRejectedValue(error)
+    clientToolsMock.mockResolvedValue({ doc_query: { execute } })
+    const handle = await getAggregatedMCPTools([createServer()], CHATBOT_ID, {
+      kbIds: [KB_ID],
+      sessionId: SESSION_ID,
+    })
+    await expect(
+      handle.tools.KB_doc_query.execute({ query: 'one' }, {})
+    ).rejects.toBe(error)
+    expect(execute).toHaveBeenCalledTimes(1)
+    await handle.close()
+  })
+
+  test('holds a cancelled active operation until the provider settles', async () => {
+    let finish!: () => void
+    const gate = new Promise<void>((resolve) => {
+      finish = resolve
+    })
+    const execute = vi.fn(async () => {
+      await gate
+      return { content: [] }
+    })
+    clientToolsMock.mockResolvedValue({ doc_query: { execute } })
+    const handle = await getAggregatedMCPTools([createServer()], CHATBOT_ID, {
+      kbIds: [KB_ID],
+      sessionId: SESSION_ID,
+    })
+    const tool = handle.tools.KB_doc_query
+    const controller = new AbortController()
+    const first = tool.execute(
+      { query: 'one' },
+      { abortSignal: controller.signal }
+    )
+    const assertion = expect(first).rejects.toThrow()
+    await vi.waitFor(() => expect(execute).toHaveBeenCalledTimes(1))
+    controller.abort()
+    await assertion
+    const second = tool.execute({ query: 'two' }, {})
+    await Promise.resolve()
+    expect(execute).toHaveBeenCalledTimes(1)
+    finish()
+    await assertion
+    await expect(second).resolves.toEqual({ content: [] })
+    expect(execute).toHaveBeenCalledTimes(2)
+    await handle.close()
+  })
+
+  test('does not dispatch a document call cancelled while queued', async () => {
+    let finish!: () => void
+    const gate = new Promise<void>((resolve) => {
+      finish = resolve
+    })
+    const execute = vi.fn(async () => {
+      await gate
+      return { content: [] }
+    })
+    clientToolsMock.mockResolvedValue({ doc_query: { execute } })
+    const handle = await getAggregatedMCPTools([createServer()], CHATBOT_ID, {
+      kbIds: [KB_ID],
+      sessionId: SESSION_ID,
+    })
+    const tool = handle.tools.KB_doc_query
+    const first = tool.execute({ query: 'one' }, {})
+    const controller = new AbortController()
+    const cancelled = tool.execute(
+      { query: 'two' },
+      { abortSignal: controller.signal }
+    )
+    const assertion = expect(cancelled).rejects.toThrow()
+    controller.abort()
+    await assertion
+    expect(execute).toHaveBeenCalledTimes(1)
+    finish()
+    await first
+    await assertion
+    expect(execute).toHaveBeenCalledTimes(1)
+    await expect(tool.execute({ query: 'three' }, {})).resolves.toEqual({
+      content: [],
+    })
+    await handle.close()
+  })
+
   test('keeps bearer transport auth separate from the scope token header', async () => {
     await getAggregatedMCPTools([createServer()], CHATBOT_ID, {
       kbIds: [KB_ID],

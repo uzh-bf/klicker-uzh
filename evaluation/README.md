@@ -344,7 +344,11 @@ translations/paraphrases in the same split. Compare ordinary RAG and graph
 expansion under one model, prompt, mode, context budget and corpus. Add a
 non-graph second-search control if the provider exposes it. Otherwise retain
 retrieval-spend and context-size confounds in the report. Persisted tool names
-do not prove internal expansion counts. Record actual context sizes, per-case
+do not prove internal expansion counts. Use the server's content-free `[chat.graph_retrieval]` event to distinguish an attempted second search from successful compatible fusion. Check captured passage locators/support separately: fusion does not prove useful new evidence. A null count is unavailable, not an empty result or a pass.
+
+Successful fusion applies 12 passages/16,000 content characters, while baseline and fallback preserve the provider payload. Verify actual context sizes for every arm; do not infer matched budgets from the wrapper. Keep budget enforcement in the provider or evaluation harness rather than changing production retrieval only for tests. A three-question off/on run proves mechanism only; quality qualification needs a fresh frozen family-separated set and predeclared acceptance criteria.
+
+Record actual context sizes, per-case
 metric outcomes and skips, errors, latency and spend. The existing quality
 reports/dashboard consume evaluator output; `compare_runs` is for load metrics.
 No additional evaluation engine is needed.
