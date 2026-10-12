@@ -6,7 +6,6 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
-import { setParticipantSessionToken } from '@lib/participantSession'
 import { toast } from '@uzh-bf/design-system'
 import generatePassword from 'generate-password'
 import type { GetServerSidePropsContext } from 'next'
@@ -16,7 +15,7 @@ import nookies from 'nookies'
 import { useEffect } from 'react'
 
 interface Props {
-  participantToken?: string
+  sessionEstablished?: boolean
   signedLtiData?: string
   ssoId?: string
   email?: string
@@ -25,7 +24,7 @@ interface Props {
 }
 
 function CreateAccount({
-  participantToken: linkedParticipantToken,
+  sessionEstablished,
   signedLtiData,
   email,
   username,
@@ -38,14 +37,11 @@ function CreateAccount({
   )
 
   useEffect(() => {
-    if (!linkedParticipantToken) return
-    // A launch for an already linked account continues to the profile. The
-    // frame may refuse the exchanged cookie, so the tab keeps the credential.
-    setParticipantSessionToken(linkedParticipantToken)
+    if (!sessionEstablished) return
     void router.replace('/editProfile')
-  }, [linkedParticipantToken, router])
+  }, [sessionEstablished, router])
 
-  if (linkedParticipantToken) return <Loader />
+  if (sessionEstablished) return <Loader />
 
   return (
     <Layout displayName={t('pwa.createAccount.signup.submit')}>
@@ -75,14 +71,11 @@ function CreateAccount({
           const participantToken = createResult?.participantToken ?? null
 
           if (participantToken) {
-            // The account cookie may be refused inside an LMS frame, so this
-            // tab keeps the new credential instead of passing it in the URL.
-            setParticipantSessionToken(participantToken)
             await router.replace('/editProfile?newAccount=true')
             return
           }
 
-          // keep legacy non-LTI behavior for direct /createAccount usage
+          // Unlinked accounts use the ordinary login flow.
           if (!signedLtiData && createResult?.participant) {
             await router.push({
               pathname: '/login',
@@ -118,18 +111,25 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   try {
     const { query } = ctx
     const apolloClient = initializeApollo()
-    const { participantToken, sessionState, signedLtiData, tokenSource } =
-      await getParticipantToken({
-        apolloClient,
-        ctx,
-      })
+    const {
+      participantToken,
+      sessionState,
+      signedLtiData,
+      sessionRevision,
+      sessionEstablished,
+    } = await getParticipantToken({
+      apolloClient,
+      ctx,
+    })
 
-    if (participantToken && tokenSource === 'explicit') {
+    if (participantToken && sessionEstablished) {
       return {
         props: {
-          participantToken,
+          participantToken:
+            process.env.ASSESSMENT_MODE === 'true' ? participantToken : null,
           sessionState,
-          tokenSource,
+          sessionRevision,
+          sessionEstablished,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
         },

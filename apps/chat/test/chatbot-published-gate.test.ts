@@ -1,3 +1,4 @@
+import { NextRequest } from 'next/server'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
@@ -23,6 +24,7 @@ vi.mock('jose', () => ({
 
 import {
   getChatbotOr404,
+  withChatbotAuth,
   withChatbotTokenAuth,
 } from '../src/lib/server/apiGuards'
 
@@ -182,5 +184,24 @@ describe('getChatbotOr404 publication gate', () => {
     expect(mocks.findUnique).not.toHaveBeenCalled()
     expect(mocks.participationFindUnique).not.toHaveBeenCalled()
     consoleError.mockRestore()
+  })
+})
+
+describe('shared browser session revision', () => {
+  test('rejects stale work before authentication or database access', async () => {
+    vi.clearAllMocks()
+    const request = new NextRequest(
+      `https://chat.example.test/api/chatbots/${VALID_ID}`,
+      {
+        headers: {
+          cookie: 'participant_session=new; participant_token=synthetic',
+          'x-participant-session': 'old',
+        },
+      }
+    )
+    const result = await withChatbotAuth(request, VALID_ID)
+    expect('response' in result && result.response.status).toBe(409)
+    expect(mocks.jwtVerify).not.toHaveBeenCalled()
+    expect(mocks.findUnique).not.toHaveBeenCalled()
   })
 })

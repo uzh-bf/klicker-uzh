@@ -7,8 +7,8 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { participantDataUseReturn } from '@lib/participantDataUseReturn'
 import { Button, H1 } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
 
@@ -16,6 +16,7 @@ function Index() {
   const t = useTranslations()
   const router = useRouter()
   const [embedded, setEmbedded] = useState(false)
+  const cookiesRequired = router.query.cookiesRequired === 'true'
   const freshLaunch = router.query.freshLaunch === 'true'
 
   // Frame detection only selects recovery guidance; it never grants identity.
@@ -43,6 +44,20 @@ function Index() {
         </div>
         {!router.isReady ? (
           <Loader />
+        ) : cookiesRequired ? (
+          <div data-cy="cookies-required-recovery">
+            <p className="max-w-140 my-4 text-gray-600">
+              {t('pwa.serverError.cookiesRequiredMessage')}
+            </p>
+            <a
+              href="/login"
+              target="_blank"
+              rel="noopener"
+              className="text-uzh-blue underline"
+            >
+              {t('pwa.serverError.cookiesRequiredAction')}
+            </a>
+          </div>
         ) : freshLaunch ? (
           <div data-cy="fresh-launch-recovery">
             <p className="max-w-140 my-4 text-gray-600">

@@ -1,10 +1,10 @@
 import {
-  type APIRequestContext,
-  type BrowserContext,
   expect,
+  type BrowserContext,
   type Frame,
   type Page,
-  type Request,
+  type Response,
+  type Route,
   test,
 } from '@playwright/test'
 import {
@@ -25,11 +25,17 @@ import { getPrisma } from '../global-setup.js'
 import {
   APP_SECRET,
   COURSE_ID_TEST,
-  LECTURER_EMAIL,
   PARTICIPANT_IDS,
   STUDENT_PASSWORD,
   USER_ID_TEST,
 } from '../util/constants.js'
+
+// One regular participant login exists per browser cookie context. The
+// HttpOnly participant_token cookie is the credential; the readable
+// participant_session cookie is its non-secret revision. Successful
+// authentication rotates the revision, every tab and app rebinds to it, and a
+// request whose revision no longer matches is refused instead of executing
+// under the replacement identity.
 
 test.beforeEach(async ({}, info) => {
   test.skip(
@@ -44,20 +50,20 @@ const lms = 'https://lms.example.invalid'
 const ssoId = `synthetic-olat-recovery-${randomUUID()}`
 const quizId = randomUUID()
 const liveQuizId = randomUUID()
-// An allowed bridge launch redirects to the Chat app on its routed
-// host (chat.klicker.localhost or chat.klicker.<workspace>.localhost).
-const chatDestination = /^https:\/\/chat\./
+const loginThreadId = randomUUID()
+const ltiThreadId = randomUUID()
 let liveQuizBlockId: number
-let chatbotId: string
-let bridgeCourseId: string
-let bridgeChatbotId: string
-let bridgeMemberId: string
-let bridgeOutsiderId: string
-let email: string
-let username: string
 let elementId: number
-const studentId = PARTICIPANT_IDS[1]!
-const otherId = PARTICIPANT_IDS[0]!
+let chatbotId: string
+
+// testuser1 is the ordinary login identity; testuser2 is the LTI identity the
+// synthetic launch maps onto the linked participant account below.
+const loginId = PARTICIPANT_IDS[0]!
+const ltiId = PARTICIPANT_IDS[1]!
+const loginUsername = 'testuser1'
+const ltiUsername = 'testuser2'
+const loginEmail = 'testuser1@test.uzh.ch'
+const ltiEmail = 'testuser2@test.uzh.ch'
 
 // Synthetic accounts exercise session handling after ordinary onboarding.
 function completedDataUse() {
@@ -95,11 +101,9 @@ async function signed(
     .sign(new TextEncoder().encode(process.env.APP_SECRET ?? APP_SECRET))
 }
 
-async function launch(
-  page: Page,
-  destination: string,
-  pathname = '/editProfile'
-) {
+// The synthetic LMS page embeds the launch target in an iframe, so every
+// launch happens in a third-party frame exactly like the real LMS embedding.
+async function launch(page: Page, destination: string) {
   await page.route(`${lms}/**`, (route) =>
     route.fulfill({
       contentType: 'text/html',
@@ -107,22 +111,28 @@ async function launch(
     })
   )
   await page.goto(`${lms}/launch`)
+  // Keep the frame object across redirects; a recovery redirect can finish
+  // before a poll observes the original launch pathname.
   await expect
     .poll(() =>
-      page
-        .frames()
-        .find((item) => item.url().includes(pathname))
-        ?.url()
+      page.frames().find((frame) => frame.parentFrame() === page.mainFrame())
     )
     .not.toBeUndefined()
-  return page.frames().find((item) => item.url().includes(pathname))!
+  return page
+    .frames()
+    .find((frame) => frame.parentFrame() === page.mainFrame())!
 }
 
-async function profile(frame: Frame) {
-  await expect(frame.getByTestId('update-account-email')).toHaveValue(email)
-  await expect(frame.getByTestId('update-account-username')).toHaveValue(
-    username
-  )
+function autoPost(action: string, fields: Record<string, string>) {
+  const escape = (value: string) =>
+    value.replace(/[&"<>]/g, (char) => `&#${char.charCodeAt(0)};`)
+  const inputs = Object.entries(fields)
+    .map(
+      ([name, value]) =>
+        `<input type="hidden" name="${escape(name)}" value="${escape(value)}">`
+    )
+    .join('')
+  return `<html><body><form method="post" action="${escape(action)}">${inputs}</form><script>document.forms[0].submit()</script></body></html>`
 }
 
 async function navigate(frame: Frame, path: string) {
@@ -136,121 +146,10 @@ async function navigate(frame: Frame, path: string) {
   }, path)
 }
 
-// Firefox denies a frame localStorage when it blocks all third-party cookies,
-// and the practice quiz cannot render without it.
-async function localStorageDenied(frame: Frame) {
-  return frame.evaluate(() => {
-    try {
-      return !window.localStorage
-    } catch {
-      return true
-    }
-  })
-}
-
-// WebKit discards every cookie this local *.localhost stack sets, so cookie
-// sessions cannot be exercised there.
-function skipWithoutLocalCookies(projectName: string) {
-  test.skip(
-    projectName.startsWith('webkit-'),
-    'WebKit discards cookies scoped to the local *.localhost domain'
-  )
-}
-
-// The PWA resolves operation names from the GET query or the POST body. The
-// lane runs development builds, but a built image can use GET persisted
-// queries, so both shapes are recognized.
-function graphqlOperationName(request: Request) {
-  if (!request.url().includes('/api/graphql')) return null
-  if (request.method() === 'GET')
-    return new URL(request.url()).searchParams.get('operationName')
-  try {
-    return (
-      (request.postDataJSON() as { operationName?: string } | null)
-        ?.operationName ?? null
-    )
-  } catch {
-    return null
-  }
-}
-
-function waitForSelfResponse(page: Page) {
-  return page.waitForResponse(
-    (response) =>
-      response.url().includes('/api/graphql') &&
-      graphqlOperationName(response.request()) === 'Self'
-  )
-}
-
-// The awaited post-login Self must arrive in cookie mode. A retained tab can
-// still have an explicit-mode Layout request in flight, so consuming the
-// first Self after a login click could assert the pre-transition identity.
-function waitForCookieModeSelf(page: Page) {
-  return page.waitForResponse(async (response) => {
-    if (
-      !response.url().includes('/api/graphql') ||
-      graphqlOperationName(response.request()) !== 'Self'
-    )
-      return false
-    const authorization = (await response.request().allHeaders()).authorization
-    return !authorization || !authorization.startsWith('Bearer ')
-  })
-}
-
-// Assert the error state without depending on translated feedback copy.
-function toastItems(page: Page) {
-  return page.locator('[data-sonner-toast][data-type="error"]')
-}
-
-// Observe the real server redirect. Playwright routes only the initial URL
-// in a redirect chain, so a destination mock would miss this navigation.
-function observeChatRedirects(context: BrowserContext) {
-  const chatRequests: string[] = []
-  context.on('request', (request) => {
-    if (
-      request.isNavigationRequest() &&
-      chatDestination.test(request.url()) &&
-      request.redirectedFrom()?.url().includes('/chatbot/')
-    )
-      chatRequests.push(request.url())
-  })
-  return chatRequests
-}
-
-// Stores an explicit credential in this tab and reloads the page so it binds
-// it. An init script would seed the credential again after the tab clears it,
-// which the lifecycle checks below must observe instead.
-async function retainExplicitSession(
-  page: Page,
-  baseURL: string,
-  token: string
-) {
-  await page.goto(`${baseURL}/editProfile`)
-  await page.evaluate(
-    (value) => sessionStorage.setItem('participant_token', value),
-    token
-  )
-  await page.reload()
-}
-
-async function storedExplicitToken(page: Page) {
-  return page.evaluate(() => sessionStorage.getItem('participant_token'))
-}
-
-// Decodes the participant credential a request carried without pinning its
-// value: sub identifies the participant and exp its expiry.
-async function explicitBearerPayload(request: Request) {
-  const bearer = /^Bearer (.+)$/.exec(
-    (await request.allHeaders()).authorization ?? ''
-  )?.[1]
-  if (!bearer) return null
-  return JSON.parse(
-    Buffer.from(bearer.split('.')[1]!, 'base64url').toString()
-  ) as { sub?: string; exp?: number }
-}
-
-async function expectParticipantIdentity(
-  subject: Page | Frame,
+async function expectIdentity(
+  subject:
+    | Page
+    | { getByTestId: (id: string) => ReturnType<Page['getByTestId']> },
   participant: { email: string | null; username: string }
 ) {
   if (participant.email)
@@ -262,16 +161,50 @@ async function expectParticipantIdentity(
   )
 }
 
-// Lecturer operations go through the API so the live quiz state in the cache
-// is the one the response pipeline relies on.
+async function sessionRevision(context: BrowserContext) {
+  return (await context.cookies()).find(
+    (cookie) => cookie.name === 'participant_session'
+  )?.value
+}
+
+async function signInAs(
+  page: Page,
+  baseURL: string,
+  username: string,
+  password = STUDENT_PASSWORD
+) {
+  await page.goto(`${baseURL}/login?redirect_to=/editProfile`)
+  await page.getByTestId('username-field').fill(username)
+  await page.getByTestId('password-field').fill(password)
+  await page.getByTestId('submit-login').click()
+  await expect(page).toHaveURL((url) => url.pathname.endsWith('/editProfile'))
+}
+
+async function signOut(page: Page) {
+  await page.getByTestId('header-avatar').click()
+  await page.getByTestId('logout').click()
+  await expect(page).toHaveURL((url) => url.pathname.endsWith('/login'))
+}
+
+// WebKit discards cookies scoped to the local *.localhost stack, so real
+// cookie-session flows cannot be exercised in its project.
+function skipWithoutCookieSessions(projectName: string) {
+  test.skip(
+    projectName.startsWith('webkit-'),
+    'WebKit discards cookies scoped to the local *.localhost domain'
+  )
+}
+
+// Lecturers change live quiz state through the API so the response pipeline
+// sees the state the UI holds.
 async function lecturer(
-  request: APIRequestContext,
+  request: import('@playwright/test').APIRequestContext,
   baseURL: string,
   query: string,
   variables: Record<string, unknown>
 ) {
   const token = await signed({
-    email: LECTURER_EMAIL,
+    email: 'lecturer@test.uzh.ch',
     sub: USER_ID_TEST,
     role: 'ADMIN',
     scope: 'ACCOUNT_OWNER',
@@ -303,76 +236,41 @@ test.beforeAll(async ({}, info) => {
   )
     return
   const prisma = await getPrisma()
-  const participant = await prisma.participant.findUniqueOrThrow({
-    where: { id: studentId },
+  const ltiParticipant = await prisma.participant.findUniqueOrThrow({
+    where: { id: ltiId },
   })
-  email = participant.email!
-  username = participant.username
-  // The global setup seeds users, courses and participants but no chatbot;
-  // the header chatbot gate needs a published chatbot on the seeded course.
-  // This synthetic bot is owned by the spec and is never a shared fixture.
-  const chatbot = await prisma.chatbot.create({
-    data: {
-      name: 'Synthetic session recovery chatbot',
-      status: 'PUBLISHED',
-      ownerId: USER_ID_TEST,
-      courseId: COURSE_ID_TEST,
-    },
-  })
-  chatbotId = chatbot.id
-  // Membership-differential fixtures for the direct bridge: a member on a
-  // spec-owned course and a valid participant without course access. Keeping
-  // them separate avoids touching seeded memberships or shared fixtures.
-  const bridgeCourse = await prisma.course.create({
-    data: {
-      name: `Synthetic session recovery bridge course ${randomUUID().slice(0, 8)}`,
-      displayName: 'Synthetic session recovery bridge course',
-      authType: 'SSO',
-      startDate: new Date(),
-      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      groupDeadlineDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      owner: { connect: { id: USER_ID_TEST } },
-    },
-  })
-  bridgeCourseId = bridgeCourse.id
-  bridgeChatbotId = (
-    await prisma.chatbot.create({
-      data: {
-        name: 'Synthetic session recovery bridge chatbot',
-        status: 'PUBLISHED',
-        ownerId: USER_ID_TEST,
-        courseId: bridgeCourseId,
-      },
-    })
-  ).id
-  const bridgeMember = await prisma.participant.create({
-    data: {
-      username: `pa${randomUUID().slice(0, 8)}`,
-      email: `bridge-member-${randomUUID()}@example.invalid`,
-      password: randomUUID(),
-      ...completedDataUse(),
-    },
-  })
-  bridgeMemberId = bridgeMember.id
-  const bridgeOutsider = await prisma.participant.create({
-    data: {
-      username: `pa${randomUUID().slice(0, 8)}`,
-      email: `bridge-outsider-${randomUUID()}@example.invalid`,
-      password: randomUUID(),
-      ...completedDataUse(),
-    },
-  })
-  bridgeOutsiderId = bridgeOutsider.id
-  await prisma.participation.create({
-    data: { courseId: bridgeCourseId, participantId: bridgeMemberId },
-  })
+  // The synthetic LMS launch below is linked to the seeded participant that
+  // the LTI identity resolves to. The link is spec-owned and removed in
+  // afterAll; the seeded rows themselves stay untouched.
   await prisma.participantAccount.create({
     data: {
       ssoId,
-      ssoEmail: email,
+      ssoEmail: ltiParticipant.email ?? ltiEmail,
       ssoType: 'LTI1.3',
-      participantId: studentId,
+      participantId: ltiId,
     },
+  })
+  // The header chatbot gate needs a published chatbot on the seeded course.
+  chatbotId = (
+    await prisma.chatbot.create({
+      data: {
+        name: 'Synthetic session recovery chatbot',
+        status: 'PUBLISHED',
+        ownerId: USER_ID_TEST,
+        courseId: COURSE_ID_TEST,
+      },
+    })
+  ).id
+  await prisma.chatThread.createMany({
+    data: [
+      {
+        id: loginThreadId,
+        title: loginThreadId,
+        chatbotId,
+        participantId: loginId,
+      },
+      { id: ltiThreadId, title: ltiThreadId, chatbotId, participantId: ltiId },
+    ],
   })
   const element = await prisma.element.create({
     data: {
@@ -481,303 +379,197 @@ test.afterAll(async ({}, info) => {
   await prisma.practiceQuiz.deleteMany({ where: { id: quizId } })
   await prisma.liveQuiz.deleteMany({ where: { id: liveQuizId } })
   if (elementId) await prisma.element.deleteMany({ where: { id: elementId } })
-  if (chatbotId) await prisma.chatbot.deleteMany({ where: { id: chatbotId } })
-  if (bridgeChatbotId)
-    await prisma.chatbot.deleteMany({ where: { id: bridgeChatbotId } })
-  for (const id of [bridgeMemberId, bridgeOutsiderId]) {
-    if (id) await prisma.participant.deleteMany({ where: { id } })
+  if (chatbotId) {
+    await prisma.chatThread.deleteMany({ where: { chatbotId } })
+    await prisma.chatbot.deleteMany({ where: { id: chatbotId } })
   }
-  if (bridgeCourseId)
-    await prisma.course.deleteMany({ where: { id: bridgeCourseId } })
 })
 
-test('fresh embedded launch without email restores linked B, supersedes retained A and supports quiz access', async ({
-  page,
-  context,
-  baseURL,
-  browser,
-}, info) => {
-  expect(new URL(baseURL!).protocol).toBe('https:')
-  const a = await signed({ sub: otherId, role: 'PARTICIPANT' }, '14d')
-  await context.addCookies([
-    {
-      name: 'participant_token',
-      value: a,
-      domain: `.${process.env.COOKIE_DOMAIN!}`,
-      path: '/',
-      secure: true,
-      httpOnly: true,
-      sameSite: 'None',
+// Observe the application's own request, so a fresh test-authored fetch cannot
+// hide a stale Chat document or cache. Each participant owns one empty thread.
+function waitForChatIdentity(context: BrowserContext, threadId: string) {
+  return context.waitForEvent('response', {
+    timeout: 30_000,
+    predicate: async (response) => {
+      if (
+        new URL(response.url()).pathname !==
+          `/api/chatbots/${chatbotId}/threads` ||
+        response.request().method() !== 'GET' ||
+        response.status() !== 200
+      )
+        return false
+      const threads = await response.json().catch(() => null)
+      return (
+        Array.isArray(threads) &&
+        threads.some((thread) => thread.id === threadId)
+      )
     },
-  ])
-  await context.addInitScript((token) => {
-    if (window.location.hostname !== 'lms.example.invalid') {
-      try {
-        if (!sessionStorage.getItem('participant_token'))
-          sessionStorage.setItem('participant_token', token)
-      } catch {}
-    }
-  }, a)
-  const jwt = await signed({ sub: ssoId, scope: 'LTI1.3' })
-  const nativeRequests = new Map<
-    string,
-    { url?: string; cookieSent?: boolean; blockedReasons?: string[] }
-  >()
-  const cdp = info.project.name.startsWith('chromium-')
-    ? await context.newCDPSession(page)
-    : undefined
-  if (cdp) {
-    await cdp.send('Network.enable')
-    cdp.on('Network.requestWillBeSent', ({ requestId, request }) => {
-      nativeRequests.set(requestId, {
-        ...nativeRequests.get(requestId),
-        url: request.url,
-      })
-    })
-    cdp.on('Network.requestWillBeSentExtraInfo', (event) => {
-      // These headers reflect cookie policy after the network stack applies it.
-      const cookie = Object.entries(event.headers).find(
-        ([name]) => name.toLowerCase() === 'cookie'
-      )?.[1]
-      nativeRequests.set(event.requestId, {
-        ...nativeRequests.get(event.requestId),
-        cookieSent: /(?:^|;\s*)participant_token=/.test(cookie ?? ''),
-        blockedReasons: event.associatedCookies
-          .filter(({ cookie }) => cookie.name === 'participant_token')
-          .flatMap(({ blockedReasons }) => blockedReasons),
-      })
-    })
-  }
-  const launchRequest = page.waitForRequest((request) =>
-    request.url().startsWith(`${baseURL}/editProfile?jwt=`)
-  )
-  const frame = await launch(
-    page,
-    `${baseURL}/editProfile?jwt=${encodeURIComponent(jwt)}`
-  )
-  let participantCookieSent: boolean
-  if (cdp) {
-    const nativeLaunch = () =>
-      [...nativeRequests.values()].find((request) =>
-        request.url?.startsWith(`${baseURL}/editProfile?jwt=`)
-      )
-    await expect.poll(() => nativeLaunch()?.cookieSent).not.toBeUndefined()
-    participantCookieSent = nativeLaunch()!.cookieSent!
-    if (info.project.name.endsWith('-blocked'))
-      expect(nativeLaunch()!.blockedReasons?.length).toBeGreaterThan(0)
-  } else {
-    const cookieHeader = (await (await launchRequest).allHeaders()).cookie ?? ''
-    participantCookieSent = /(?:^|;\s*)participant_token=/.test(cookieHeader)
-  }
-  if (info.project.name.endsWith('-blocked'))
-    expect(participantCookieSent).toBe(false)
-  if (info.project.name === 'chromium-allowed')
-    expect(participantCookieSent).toBe(true)
-  await profile(frame)
-  await info.attach('browser-provenance', {
-    body: JSON.stringify({
-      engine: browser.version(),
-      project: info.project.name,
-      topLevel: lms,
-      embeddedOrigin: new URL(baseURL!).origin,
-      boundary: 'after ltijs verification',
-    }),
-    contentType: 'application/json',
   })
-  if (await localStorageDenied(frame)) {
-    info.annotations.push({
-      type: 'skipped-step',
-      description:
-        'practice quiz needs localStorage, which this frame is denied',
-    })
-  } else {
-    await navigate(frame, `/course/${COURSE_ID_TEST}/practiceQuizzes/${quizId}`)
-    await expect(frame.getByTestId('start-practice-quiz')).toBeVisible()
-    await expect(
-      frame.getByTestId('login-to-student-login-collect-points')
-    ).toHaveCount(0)
-    await frame.getByTestId('start-practice-quiz').click()
-    await frame.getByTestId('sc-0-answer-option-1').click()
-    await frame.getByTestId('student-stack-submit').click()
-    const prisma = await getPrisma()
-    await expect
-      .poll(() =>
-        prisma.questionResponse.count({
-          where: { practiceQuizId: quizId, participantId: studentId },
-        })
-      )
-      .toBe(1)
-    expect(
-      await prisma.questionResponse.count({
-        where: { practiceQuizId: quizId, participantId: otherId },
-      })
-    ).toBe(0)
-  }
-  // A full reload inside the frame keeps B: the cookie when the browser sends
-  // one, otherwise the credential this tab kept, already on the first query.
-  // A frame that is denied storage as well keeps B only until it reloads.
-  const storageAvailable = await frame.evaluate(() => {
-    try {
-      return window.sessionStorage.getItem('participant_token') !== null
-    } catch {
-      return false
-    }
-  })
-  const reloadSelf = page.waitForRequest(
-    (request) =>
-      request.url().includes('/api/graphql') &&
-      /"operationName":"Self"|operationName=Self/.test(
-        request.postData() ?? request.url()
-      )
-  )
-  await frame.goto(`${baseURL}/editProfile`)
-  const reloadHeaders = await (await reloadSelf).allHeaders()
-  const credentialSent =
-    /^Bearer \S+/.test(reloadHeaders.authorization ?? '') ||
-    /(?:^|;\s*)participant_token=/.test(reloadHeaders.cookie ?? '')
-  if (credentialSent) await profile(frame)
-  else {
-    expect(storageAvailable).toBe(false)
-    await expect(
-      frame.getByTestId('participant-session-recovery')
-    ).toBeVisible()
-    await frame.goto(
-      `${baseURL}/editProfile?jwt=${encodeURIComponent(await signed({ sub: ssoId, scope: 'LTI1.3' }))}`
-    )
-    await profile(frame)
-  }
-  // A cookie session for another participant established later, e.g. by a
-  // login in another tab, does not replace the identity this frame launched.
-  await context.addCookies([
-    {
-      name: 'participant_token',
-      value: a,
-      domain: `.${process.env.COOKIE_DOMAIN!}`,
-      path: '/',
-      secure: true,
-      httpOnly: true,
-      sameSite: 'None',
-    },
-  ])
-  await frame.getByTestId('header-avatar').click()
-  await frame.getByTestId('header-setup-profile').click()
-  await profile(frame)
-  await info.attach('authenticated-profile', {
-    body: await page.screenshot(),
-    contentType: 'image/png',
-  })
-})
-
-test('registration preserves the fresh launch across a redirect with an old or missing LTI cookie', async ({
-  page,
-  context,
-  baseURL,
-}) => {
-  const newSsoId = `synthetic-registration-${randomUUID()}`
-  const newEmail = `${randomUUID()}@example.invalid`
-  const jwt = await signed({
-    sub: newSsoId,
-    email: newEmail,
-    scope: 'LTI1.3',
-  })
-  const older = await signed({ sub: ssoId, email, scope: 'LTI1.3' })
-  for (const retainOldCookie of [true, false]) {
-    await context.clearCookies()
-    if (retainOldCookie) {
-      await context.addCookies([
-        {
-          name: 'lti-token',
-          value: older,
-          domain: `.${process.env.COOKIE_DOMAIN!}`,
-          path: '/',
-          secure: true,
-          httpOnly: true,
-          sameSite: 'None',
-        },
-      ])
-    }
-    const frame = await launch(
-      page,
-      `${baseURL}/editProfile?jwt=${encodeURIComponent(jwt)}`,
-      '/createAccount'
-    )
-    await expect(frame.getByTestId('email-field')).toHaveValue(newEmail)
-    const registration = await frame.evaluate(() => {
-      const data = JSON.parse(
-        document.getElementById('__NEXT_DATA__')!.textContent!
-      )
-      return data.props.pageProps
-    })
-    expect(registration.sessionState).toBe('registration_required')
-    expect(registration.signedLtiData).toBe(jwt)
-    expect(registration.ssoId).toBe(newSsoId)
-    await expect(frame.getByTestId('update-account-email')).toHaveCount(0)
-  }
-})
-
-test('registration inside the frame lands on the new profile without a URL token', async ({
-  page,
-  baseURL,
-}) => {
-  const newSsoId = `synthetic-registration-${randomUUID()}`
-  const newUsername = `pa${randomUUID().slice(0, 8)}`
-  const newEmail = `${newUsername}@example.invalid`
-  const jwt = await signed({ sub: newSsoId, email: newEmail, scope: 'LTI1.3' })
-  const navigations: string[] = []
-  page.on('framenavigated', (item) => navigations.push(item.url()))
-  try {
-    const frame = await launch(
-      page,
-      `${baseURL}/editProfile?jwt=${encodeURIComponent(jwt)}`,
-      '/createAccount'
-    )
-    await expect(frame.getByTestId('email-field')).toHaveValue(newEmail)
-    await frame.getByTestId('username-field-account-creation').fill(newUsername)
-    await frame.getByTestId('password-field').fill('signupPassword123!')
-    await frame
-      .getByTestId('password-repetition-field')
-      .fill('signupPassword123!')
-    await frame.getByTestId('research-consent-toggle').click()
-    await frame.getByTestId('research-consent-no').click()
-    await frame.getByTestId('learning-analytics-consent-no').click()
-    await frame.getByTestId('tos-checkbox').click()
-    await frame.getByTestId('create-profile-button').click()
-    await expect
-      .poll(() => frame.url())
-      .toContain('/editProfile?newAccount=true')
-    await expect(frame.getByTestId('update-account-email')).toHaveValue(
-      newEmail
-    )
-    await expect(frame.getByTestId('update-account-username')).toHaveValue(
-      newUsername
-    )
-    expect(navigations.some((url) => url.includes('participantToken'))).toBe(
-      false
-    )
-  } finally {
-    const prisma = await getPrisma()
-    await prisma.participant.deleteMany({ where: { email: newEmail } })
-  }
-})
-
-function autoPost(action: string, fields: Record<string, string>) {
-  const escape = (value: string) =>
-    value.replace(/[&"<>]/g, (char) => `&#${char.charCodeAt(0)};`)
-  const inputs = Object.entries(fields)
-    .map(
-      ([name, value]) =>
-        `<input type="hidden" name="${escape(name)}" value="${escape(value)}">`
-    )
-    .join('')
-  return `<html><body><form method="post" action="${escape(action)}">${inputs}</form><script>document.forms[0].submit()</script></body></html>`
 }
 
-// Runs the whole LTI 1.3 launch: the synthetic LMS initiates the OIDC login,
-// the real LTI service (ltijs) redirects to the mocked authorization endpoint,
-// which posts back an RS256 id_token. ltijs verifies it and hands the PWA its
-// one-time jwt. Production, like this stack, runs ltijs in dev mode, so a
-// frame without third-party cookies still passes the state check.
-test('a full LTI 1.3 launch through the tool signs in the linked account in the frame and at top level', async ({
+async function expectChatIdentity(
+  chat: Page,
+  response: Response,
+  threadId: string
+) {
+  expect(response.request().frame().page()).toBe(chat)
+  expect(
+    (await response.json()).map((thread: { id: string }) => thread.id)
+  ).toEqual([threadId])
+  const headers = await response.request().allHeaders()
+  expect(headers['x-participant-session']).toBe(
+    await sessionRevision(chat.context())
+  )
+  expect(headers.authorization ?? '').not.toMatch(/^Bearer /)
+  await expect(chat.getByTestId('chat-thread-list')).toBeVisible()
+  // UUID titles are test-owned identity markers, independent of UI copy.
+  await expect(
+    chat.getByTestId('chat-thread-select').filter({ hasText: threadId })
+  ).toBeVisible()
+  const previous = threadId === loginThreadId ? ltiThreadId : loginThreadId
+  await expect(
+    chat.getByTestId('chat-thread-select').filter({ hasText: previous })
+  ).toHaveCount(0)
+  await expect(chat.getByTestId('chat-no-login')).toHaveCount(0)
+}
+
+async function openChat(page: Page, baseURL: string) {
+  await page.goto(`${baseURL}/course/${COURSE_ID_TEST}`)
+  const identity = waitForChatIdentity(page.context(), loginThreadId)
+  const popup = page.waitForEvent('popup')
+  await page.getByTestId('student-course-chatbot-link').click()
+  const chat = await popup
+  await expectChatIdentity(chat, await identity, loginThreadId)
+  await page.goto(`${baseURL}/editProfile`)
+  await expectIdentity(page, { email: loginEmail, username: loginUsername })
+  return chat
+}
+
+// The frame owns both the successful profile and refused-cookie recovery.
+async function settleLaunch(frame: Frame, profile: () => Promise<void>) {
+  await expect(
+    frame
+      .getByTestId('update-account-username')
+      .or(frame.getByTestId('cookies-required-recovery'))
+  ).toBeVisible({ timeout: 30_000 })
+  if (await frame.getByTestId('cookies-required-recovery').isVisible()) {
+    const url = new URL(frame.url())
+    expect(url.pathname).toMatch(/\/serverError$/)
+    expect(url.searchParams.get('cookiesRequired')).toBe('true')
+    await expect(frame.getByTestId('update-account-email')).toHaveCount(0)
+    return 'cookies-refused'
+  }
+  await profile()
+  return 'accepted'
+}
+
+test('existing PWA and Chat tabs adopt ordinary login and clear on logout', async ({
+  page: first,
+  context,
+  baseURL,
+}, info) => {
+  skipWithoutCookieSessions(info.project.name)
+  await signInAs(first, baseURL!, loginUsername)
+  const second = await context.newPage()
+  await second.goto(`${baseURL}/editProfile`)
+  await expectIdentity(second, { email: loginEmail, username: loginUsername })
+  const chat = await openChat(first, baseURL!)
+  const previousChatDocument = await chat
+    .getByTestId('chat-thread-list')
+    .elementHandle()
+  const firstRevision = await sessionRevision(context)
+
+  const replacement = waitForChatIdentity(context, ltiThreadId)
+  await signInAs(first, baseURL!, ltiUsername)
+  expect(await sessionRevision(context)).not.toBe(firstRevision)
+  // No navigation, reload or test fetch in either observing tab.
+  await expectIdentity(second, { email: ltiEmail, username: ltiUsername })
+  await chat.bringToFront()
+  await expectChatIdentity(chat, await replacement, ltiThreadId)
+  expect(
+    await previousChatDocument!
+      .evaluate((node) => node.isConnected)
+      .catch(() => false)
+  ).toBe(false)
+
+  await first.bringToFront()
+  await signOut(first)
+  await expect(second.getByTestId('participant-session-recovery')).toBeVisible()
+  await expect(second.getByTestId('update-account-email')).toHaveCount(0)
+  await chat.bringToFront()
+  await expect(chat.getByTestId('chat-no-login')).toBeVisible()
+  await expect(chat.getByTestId('chat-thread-list')).toHaveCount(0)
+  await expect(chat.getByTestId('chat-composer-input')).toHaveCount(0)
+})
+
+test('refused launch cookies show recovery in the standalone page and LMS frame', async ({
+  page,
+  context,
+  baseURL,
+  request,
+}, info) => {
+  skipWithoutCookieSessions(info.project.name)
+  const refuseCookies = async (route: Route) => {
+    // The isolated request fixture must not accept cookies into the browser
+    // before we strip Set-Cookie from the response it will receive.
+    const response = await request.fetch(route.request())
+    const headers = { ...response.headers() }
+    delete headers['set-cookie']
+    await route.fulfill({ response, headers })
+  }
+  await page.route('**/editProfile*', refuseCookies)
+  await page.goto(
+    `${baseURL}/editProfile?jwt=${encodeURIComponent(await signed({ sub: ssoId, scope: 'LTI1.3' }))}`
+  )
+  expect(await settleLaunch(page.mainFrame(), async () => {})).toBe(
+    'cookies-refused'
+  )
+  expect(await sessionRevision(context)).toBeUndefined()
+
+  await page.unroute('**/editProfile*', refuseCookies)
+  await signInAs(page, baseURL!, loginUsername)
+  await expectIdentity(page, { email: loginEmail, username: loginUsername })
+  await page.route('**/editProfile*', refuseCookies)
+  const frame = await launch(
+    page,
+    `${baseURL}/editProfile?jwt=${encodeURIComponent(await signed({ sub: ssoId, scope: 'LTI1.3' }))}`
+  )
+  expect(await settleLaunch(frame, async () => {})).toBe('cookies-refused')
+  await expect(frame.getByTestId('cookies-required-recovery')).toBeVisible()
+  await expect(frame.getByTestId('update-account-email')).toHaveCount(0)
+})
+
+test('an invalid launch or query token cannot create a session or retain an identity', async ({
+  page,
+  context,
+  baseURL,
+}, info) => {
+  skipWithoutCookieSessions(info.project.name)
+  const before = await sessionRevision(context)
+  const frame = await launch(
+    page,
+    `${baseURL}/editProfile?jwt=${encodeURIComponent('not-a-valid-jwt')}`
+  )
+  await expect
+    .poll(() => frame.url(), { timeout: 30_000 })
+    .toContain('serverError?freshLaunch=true')
+  await expect(frame.getByTestId('fresh-launch-recovery')).toBeVisible()
+  await expect(frame.getByTestId('update-account-email')).toHaveCount(0)
+  const afterReject = await sessionRevision(context)
+  expect(afterReject).toBeTruthy()
+  expect(afterReject).not.toBe(before)
+
+  // The retired URL credential parameter is ignored: it neither signs in as
+  // that participant nor blocks the anonymous sign-in surface.
+  const other = await signed({ sub: loginId, role: 'PARTICIPANT' }, '14d')
+  await page.goto(
+    `${baseURL}/editProfile?participantToken=${encodeURIComponent(other)}`
+  )
+  await expect(page.getByTestId('participant-session-recovery')).toBeVisible()
+  await expect(page.getByTestId('update-account-email')).toHaveCount(0)
+})
+
+test('a full LTI 1.3 launch through the tool signs in a new account without retaining a URL credential', async ({
   page,
   context,
   baseURL,
@@ -823,7 +615,9 @@ test('a full LTI 1.3 launch through the tool signs in the linked account in the 
     { stdio: 'pipe' }
   )
   let signingKey = platformKey.privateKey
-  const authRequests: URLSearchParams[] = []
+  const createSsoId = `synthetic-registration-${randomUUID()}`
+  const createEmail = `${randomUUID()}@example.invalid`
+  const createUsername = `pa${randomUUID().slice(0, 8)}`
   // Route handlers never see a redirect target, so the tool's redirect to the
   // mocked authorization endpoint becomes a navigation the LMS route serves.
   await context.route(`${tool}/login`, async (route) => {
@@ -853,7 +647,7 @@ test('a full LTI 1.3 launch through the tool signs in the linked account in the 
         contentType: 'text/html',
         body: autoPost(`${tool}/login`, {
           iss: lms,
-          login_hint: ssoId,
+          login_hint: createSsoId,
           target_link_uri: `${tool}/`,
           client_id: clientId,
           lti_deployment_id: deploymentId,
@@ -861,11 +655,10 @@ test('a full LTI 1.3 launch through the tool signs in the linked account in the 
       })
     if (url.pathname !== '/auth') return route.fulfill({ status: 404 })
     const params = url.searchParams
-    authRequests.push(params)
     const claim = 'https://purl.imsglobal.org/spec/lti/claim'
     const idToken = await new SignJWT({
       nonce: params.get('nonce'),
-      email,
+      email: createEmail,
       [`${claim}/message_type`]: 'LtiResourceLinkRequest',
       [`${claim}/version`]: '1.3.0',
       [`${claim}/deployment_id`]: deploymentId,
@@ -880,7 +673,7 @@ test('a full LTI 1.3 launch through the tool signs in the linked account in the 
       .setProtectedHeader({ alg: 'RS256' })
       .setIssuer(lms)
       .setAudience(clientId)
-      .setSubject(ssoId)
+      .setSubject(createSsoId)
       .setIssuedAt()
       .setExpirationTime('5m')
       .sign(signingKey)
@@ -896,430 +689,251 @@ test('a full LTI 1.3 launch through the tool signs in the linked account in the 
     page.waitForRequest((item) =>
       item.url().startsWith(`${baseURL}/editProfile?jwt=`)
     )
-
-  let launched = handoff()
-  await page.goto(`${lms}/course`)
-  await launched
-  await expect
-    .poll(() =>
-      page.frames().find((item) => item.url().includes('/editProfile'))
+  try {
+    // The full launch starts at the mocked LMS, runs the real ltijs
+    // verification and hands the PWA a one-time jwt framed as the new linked
+    // account, which the frame registers.
+    let launched = handoff()
+    await page.goto(`${lms}/course`)
+    await launched
+    await expect
+      .poll(() =>
+        page.frames().find((item) => item.url().includes('/createAccount'))
+      )
+      .not.toBeUndefined()
+    const frame = page
+      .frames()
+      .find((item) => item.url().includes('/createAccount'))!
+    await expect(frame.getByTestId('email-field')).toHaveValue(createEmail)
+    await frame
+      .getByTestId('username-field-account-creation')
+      .fill(createUsername)
+    await frame.getByTestId('password-field').fill('signupPassword123!')
+    await frame
+      .getByTestId('password-repetition-field')
+      .fill('signupPassword123!')
+    await frame.getByTestId('research-consent-toggle').click()
+    await frame.getByTestId('research-consent-no').click()
+    await frame.getByTestId('learning-analytics-consent-no').click()
+    await frame.getByTestId('tos-checkbox').click()
+    await frame.getByTestId('create-profile-button').click()
+    const outcome = await settleLaunch(frame, () =>
+      expectIdentity(frame, { email: createEmail, username: createUsername })
     )
-    .not.toBeUndefined()
-  await profile(
-    page.frames().find((item) => item.url().includes('/editProfile'))!
-  )
-
-  await context.clearCookies()
-  launched = handoff()
-  await page.goto(`${lms}/initiate`)
-  await launched
-  await expect(page).toHaveURL((url) => url.pathname.endsWith('/editProfile'))
-  await profile(page.mainFrame())
-
-  expect(authRequests).toHaveLength(2)
-  for (const params of authRequests) {
-    expect(Object.fromEntries(params)).toMatchObject({
-      response_type: 'id_token',
-      response_mode: 'form_post',
-      scope: 'openid',
-      prompt: 'none',
-      client_id: clientId,
-      login_hint: ssoId,
-      lti_deployment_id: deploymentId,
-      redirect_uri: `${tool}/`,
-    })
-    expect(params.get('nonce')).toBeTruthy()
-    expect(params.get('state')).toBeTruthy()
-  }
-
-  // A token the platform did not sign never reaches the PWA.
-  await context.clearCookies()
-  signingKey = forgedKey.privateKey
-  const rejected = page.waitForResponse(
-    (response) =>
-      response.url() === `${tool}/` && response.request().method() === 'POST'
-  )
-  let forwarded = false
-  page.on('request', (item) => {
-    if (item.url().startsWith(`${baseURL}/editProfile?jwt=`)) forwarded = true
-  })
-  await page.goto(`${lms}/initiate`)
-  expect((await rejected).status()).toBe(401)
-  expect(forwarded).toBe(false)
-})
-
-test('memory-only B survives navigation and full reload settles before a fresh relaunch', async ({
-  page,
-  context,
-  baseURL,
-}) => {
-  const observedSelf: (string | null)[] = []
-  page.on('response', async (response) => {
-    if (!response.url().includes('/api/graphql')) return
-    try {
-      const data = await response.json()
-      if (data.data && Object.hasOwn(data.data, 'self'))
-        observedSelf.push(data.data.self?.id ?? null)
-    } catch {}
-  })
-  await context.addInitScript(() => {
-    if (window.location.hostname !== 'lms.example.invalid')
-      Object.defineProperty(window, 'sessionStorage', {
-        get() {
-          throw new DOMException('Synthetic storage denial', 'SecurityError')
-        },
-      })
-  })
-  // Cookie removal is fault injection here; native cookie restrictions are checked separately.
-  await context.route('**/api/graphql*', async (route) => {
-    const headers = { ...route.request().headers() }
-    delete headers.cookie
-    const response = await route.fetch({ headers })
-    const responseHeaders = { ...response.headers() }
-    delete responseHeaders['set-cookie']
-    await route.fulfill({ response, headers: responseHeaders })
-  })
-  const jwt = await signed({ sub: ssoId, email, scope: 'LTI1.3' })
-  const frame = await launch(
-    page,
-    `${baseURL}/editProfile?jwt=${encodeURIComponent(jwt)}`
-  )
-  await profile(frame)
-  await context.clearCookies()
-  if (!(await localStorageDenied(frame))) {
-    await navigate(frame, `/course/${COURSE_ID_TEST}/practiceQuizzes/${quizId}`)
-    await expect(frame.getByTestId('start-practice-quiz')).toBeVisible()
-  }
-  await navigate(frame, '/editProfile')
-  await profile(frame)
-  await frame.goto(`${baseURL}/editProfile`)
-  await expect(frame.getByTestId('update-account-email')).toHaveCount(0)
-  await expect(frame.getByTestId('participant-session-recovery')).toBeVisible()
-  for (const variant of [
-    { locale: 'en', viewport: { width: 1440, height: 1000 } },
-    { locale: 'de', viewport: { width: 390, height: 844 } },
-  ]) {
-    await page.setViewportSize(variant.viewport)
-    await frame.goto(`${baseURL}/${variant.locale}/editProfile`)
-    await expect(
-      frame.getByTestId('participant-session-recovery')
-    ).toBeVisible()
-    await test.info().attach(`anonymous-${variant.locale}`, {
-      body: await page.screenshot(),
-      contentType: 'image/png',
-    })
-  }
-  for (const variant of [
-    { locale: 'en', viewport: { width: 1440, height: 1000 } },
-    { locale: 'de', viewport: { width: 390, height: 844 } },
-  ]) {
-    await page.setViewportSize(variant.viewport)
-    await frame.goto(
-      `${baseURL}/${variant.locale}/editProfile?jwt=${encodeURIComponent(await signed({ sub: ssoId, email, scope: 'LTI1.3' }, Math.floor(Date.now() / 1000) - 60))}`
+    if (
+      info.project.name.endsWith('-blocked') ||
+      info.project.name.startsWith('webkit-')
     )
-    await expect(frame.getByTestId('fresh-launch-recovery')).toBeVisible()
-    await test.info().attach(`fresh-launch-${variant.locale}`, {
-      body: await page.screenshot(),
-      contentType: 'image/png',
-    })
-  }
-  await frame.goto(
-    `${baseURL}/editProfile?jwt=${encodeURIComponent(await signed({ sub: ssoId, email, scope: 'LTI1.3' }))}`
-  )
-  await profile(frame)
-  expect(observedSelf).not.toContain(otherId)
-})
+      expect(outcome).toBe('cookies-refused')
+    if (outcome === 'accepted') {
+      expect(await sessionRevision(context)).toBeTruthy()
+      expect(new URL(frame.url()).searchParams.has('participantToken')).toBe(
+        false
+      )
+    }
 
-test('a failed profile query offers one manual retry and recovers the intended identity', async ({
-  page,
-  baseURL,
-}) => {
-  let failSelf = true
-  await page.route('**/api/graphql*', async (route) => {
-    const request = route.request()
-    const operationName =
-      request.method() === 'GET'
-        ? new URL(request.url()).searchParams.get('operationName')
-        : request.postDataJSON()?.operationName
-    if (operationName === 'Self' && failSelf) {
-      await route.fulfill({ status: 503, body: 'Synthetic query outage' })
-    } else await route.continue()
-  })
-  for (const variant of [
-    { locale: 'en', viewport: { width: 1440, height: 1000 } },
-    { locale: 'de', viewport: { width: 390, height: 844 } },
-  ]) {
-    failSelf = true
-    await page.setViewportSize(variant.viewport)
-    const frame = await launch(
-      page,
-      `${baseURL}/${variant.locale}/editProfile?jwt=${encodeURIComponent(await signed({ sub: ssoId, email, scope: 'LTI1.3' }))}`
-    )
-    await expect(frame.getByTestId('participant-session-error')).toBeVisible()
-    await expect(frame.getByTestId('update-account-email')).toHaveCount(0)
-    await expect(frame.getByTestId('participant-session-retry')).toBeEnabled()
-    await test.info().attach(`query-error-${variant.locale}`, {
-      body: await page.screenshot(),
-      contentType: 'image/png',
-    })
-    failSelf = false
-    await frame.getByTestId('participant-session-retry').click()
-    await profile(frame)
-  }
-})
-
-test('a participant token in the URL cannot replace or create a session', async ({
-  page,
-  context,
-  baseURL,
-}, info) => {
-  skipWithoutLocalCookies(info.project.name)
-  const other = await signed({ sub: otherId, role: 'PARTICIPANT' }, '14d')
-  await page.goto(
-    `${baseURL}/editProfile?participantToken=${encodeURIComponent(other)}`
-  )
-  await expect(page.getByTestId('participant-session-recovery')).toBeVisible()
-  await context.addCookies([
-    {
-      name: 'participant_token',
-      value: await signed({ sub: studentId, role: 'PARTICIPANT' }, '14d'),
-      domain: `.${process.env.COOKIE_DOMAIN!}`,
-      path: '/',
-      secure: true,
-      httpOnly: true,
-      sameSite: 'None',
-    },
-  ])
-  await page.goto(
-    `${baseURL}/editProfile?participantToken=${encodeURIComponent(other)}`
-  )
-  await profile(page.mainFrame())
-})
-
-test('logout ends the shared cookie session in tabs that authenticate with the cookie', async ({
-  page,
-  context,
-  baseURL,
-}, info) => {
-  skipWithoutLocalCookies(info.project.name)
-  await context.addCookies([
-    {
-      name: 'participant_token',
-      value: await signed({ sub: studentId, role: 'PARTICIPANT' }, '14d'),
-      domain: `.${process.env.COOKIE_DOMAIN!}`,
-      path: '/',
-      secure: true,
-      httpOnly: true,
-      sameSite: 'None',
-    },
-  ])
-  const other = await context.newPage()
-  await other.goto(`${baseURL}/editProfile`)
-  await profile(other.mainFrame())
-  await page.goto(`${baseURL}/editProfile`)
-  await profile(page.mainFrame())
-  await page.getByTestId('header-avatar').click()
-  await page.getByTestId('logout').click()
-  await expect(page).toHaveURL(/\/login(?:\?|$)/)
-  expect(
-    (await context.cookies()).some(
-      (cookie) => cookie.name === 'participant_token'
-    )
-  ).toBe(false)
-  await page.goto(`${baseURL}/editProfile`)
-  await expect(page.getByTestId('participant-session-recovery')).toBeVisible()
-  await expect(page.getByTestId('update-account-email')).toHaveCount(0)
-  // The other tab never held a copy of the cookie session.
-  await other.goto(`${baseURL}/editProfile`)
-  await expect(other.getByTestId('participant-session-recovery')).toBeVisible()
-  await expect(other.getByTestId('update-account-email')).toHaveCount(0)
-})
-
-test('password, magic-link and activation success replace an active explicit session with the ordinary cookie identity', async ({
-  page,
-  context,
-  baseURL,
-}, info) => {
-  test.setTimeout(120_000)
-  skipWithoutLocalCookies(info.project.name)
-  const prisma = await getPrisma()
-  const participants = await prisma.participant.findMany({
-    where: { id: { in: [otherId, studentId] } },
-  })
-  const expectIdentity = async (id: string) => {
-    const participant = participants.find((item) => item.id === id)!
-    await expect(page.getByTestId('update-account-email')).toHaveValue(
-      participant.email!
-    )
-    await expect(page.getByTestId('update-account-username')).toHaveValue(
-      participant.username
-    )
-  }
-  // Each iteration starts from an active explicit session in this tab, never
-  // from cleared storage, and proves the tab ends on the cookie identity.
-  for (const { retained, target } of [
-    { retained: studentId, target: otherId },
-    { retained: otherId, target: studentId },
-    { retained: studentId, target: otherId },
-  ] as const) {
+    // A token the platform did not sign never reaches the PWA.
     await context.clearCookies()
-    await retainExplicitSession(
-      page,
-      baseURL!,
-      await signed({ sub: retained, role: 'PARTICIPANT' }, '14d')
-    )
-    await expectIdentity(retained)
-    await page.goto(`${baseURL}/login?redirect_to=/editProfile`)
-    const identitySelf = waitForCookieModeSelf(page)
-    const participant = participants.find((item) => item.id === target)!
-    await page.getByTestId('username-field').fill(participant.username)
-    await page.getByTestId('password-field').fill(STUDENT_PASSWORD)
-    const loginResponse = page.waitForResponse(
+    signingKey = forgedKey.privateKey
+    const rejected = page.waitForResponse(
       (response) =>
-        graphqlOperationName(response.request()) === 'LoginParticipant'
+        response.url() === `${tool}/` && response.request().method() === 'POST'
     )
-    await page.getByTestId('submit-login').click()
-    expect(
-      (await (await loginResponse).json()).data.loginParticipant
-    ).toBeTruthy()
-    await expect(page).toHaveURL((url) => url.pathname.endsWith('/editProfile'))
-    const response = await identitySelf
-    const headers = await response.request().allHeaders()
-    expect(headers.authorization ?? '').not.toMatch(/^Bearer /)
-    expect((await response.json()).data.self.id).toBe(target)
-    await expectIdentity(target)
-    expect(await storedExplicitToken(page)).toBeNull()
-  }
-  for (const [path, scope, retained, target] of [
-    ['magicLogin', 'OTP', otherId, studentId],
-    ['activation', 'ACTIVATION', studentId, otherId],
-  ] as const) {
-    await context.clearCookies()
-    await retainExplicitSession(
-      page,
-      baseURL!,
-      await signed({ sub: retained, role: 'PARTICIPANT' }, '14d')
-    )
-    await expectIdentity(retained)
-    const token = await signed({ sub: target, scope })
-    await page.goto(`${baseURL}/${path}?token=${encodeURIComponent(token)}`)
-    await expect(page.getByTestId('homepage')).toBeVisible()
-    expect(await storedExplicitToken(page)).toBeNull()
-    const identitySelf = waitForCookieModeSelf(page)
-    await page.goto(`${baseURL}/editProfile`)
-    const response = await identitySelf
-    const headers = await response.request().allHeaders()
-    expect(headers.authorization ?? '').not.toMatch(/^Bearer /)
-    expect((await response.json()).data.self.id).toBe(target)
-    await expectIdentity(target)
+    let forwarded = false
+    page.on('request', (item) => {
+      if (item.url().startsWith(`${baseURL}/editProfile?jwt=`)) forwarded = true
+    })
+    await page.goto(`${lms}/initiate`)
+    expect((await rejected).status()).toBe(401)
+    expect(forwarded).toBe(false)
+  } finally {
+    const prisma = await getPrisma()
+    await prisma.participant.deleteMany({ where: { email: createEmail } })
   }
 })
 
-test('an ordinary login and logout in another tab leave this tab attributed to its explicit identity', async ({
-  page,
+test('LTI B replaces A in an existing PWA profile and existing Chat tab', async ({
+  page: first,
   context,
   baseURL,
 }, info) => {
-  skipWithoutLocalCookies(info.project.name)
-  const prisma = await getPrisma()
-  const participants = await prisma.participant.findMany({
-    where: { id: { in: [otherId, studentId] } },
-  })
-  const explicitParticipant = participants.find(
-    (item) => item.id === studentId
-  )!
-  const cookieParticipant = participants.find((item) => item.id === otherId)!
-  const explicitToken = await signed(
-    { sub: studentId, role: 'PARTICIPANT' },
-    '14d'
+  skipWithoutCookieSessions(info.project.name)
+  await signInAs(first, baseURL!, loginUsername)
+  const second = await context.newPage()
+  await second.goto(`${baseURL}/editProfile`)
+  await expectIdentity(second, { email: loginEmail, username: loginUsername })
+  const chat = await openChat(first, baseURL!)
+  const loginRevision = await sessionRevision(context)
+  const replacement = waitForChatIdentity(context, ltiThreadId)
+
+  const destination = `${baseURL}/editProfile?jwt=${encodeURIComponent(await signed({ sub: ssoId, scope: 'LTI1.3' }))}`
+  const frame = await launch(first, destination)
+  const outcome = await settleLaunch(frame, () =>
+    expectIdentity(frame, { email: ltiEmail, username: ltiUsername })
   )
-  await retainExplicitSession(page, baseURL!, explicitToken)
-  await expectParticipantIdentity(page, explicitParticipant)
-  const observedSelf: (string | null)[] = []
-  page.on('response', async (response) => {
-    if (!response.url().includes('/api/graphql')) return
+  if (info.project.name.endsWith('-blocked'))
+    expect(outcome).toBe('cookies-refused')
+  if (outcome === 'cookies-refused') {
+    await expect(frame.getByTestId('cookies-required-recovery')).toBeVisible()
+    await expect(frame.getByTestId('update-account-email')).toHaveCount(0)
+    // Restricted projects then exercise a permitted top-level launch with
+    // the original PWA observer and Chat tab still open.
+    await first.goto(
+      `${baseURL}/editProfile?jwt=${encodeURIComponent(await signed({ sub: ssoId, scope: 'LTI1.3' }))}`
+    )
+    await expectIdentity(first, { email: ltiEmail, username: ltiUsername })
+  }
+  expect(await sessionRevision(context)).not.toBe(loginRevision)
+  await second.bringToFront()
+  await expectIdentity(second, { email: ltiEmail, username: ltiUsername })
+  await chat.bringToFront()
+  await expectChatIdentity(chat, await replacement, ltiThreadId)
+})
+
+test('the last completed login response replaces earlier cookies and cached identities', async ({
+  page: first,
+  context,
+  baseURL,
+  playwright,
+}, info) => {
+  test.setTimeout(60_000)
+  skipWithoutCookieSessions(info.project.name)
+  await signInAs(first, baseURL!, loginUsername)
+  const second = await context.newPage()
+  await second.goto(`${baseURL}/editProfile`)
+  await expectIdentity(second, { email: loginEmail, username: loginUsername })
+  const chat = await openChat(first, baseURL!)
+  const initialRevision = await sessionRevision(context)
+
+  // An inert same-origin document keeps the pending browser fetch alive while
+  // application tabs react to the other login. The real backend still signs
+  // both login responses; only delivery of B's response is delayed.
+  const driver = await context.newPage()
+  await driver.route(`${baseURL}/session-race-driver`, (route) =>
+    route.fulfill({
+      contentType: 'text/html',
+      body: '<html><body></body></html>',
+    })
+  )
+  await driver.goto(`${baseURL}/session-race-driver`)
+  const isolated = await playwright.request.newContext({
+    ignoreHTTPSErrors: true,
+  })
+  let release!: () => void
+  const delivery = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  let captured = false
+  let delivered = false
+  let captureError: unknown
+  let delayedRevision: string | undefined
+  let deliveryTimedOut = false
+  const deadline = setTimeout(() => {
+    deliveryTimedOut = true
+    release()
+  }, 20_000)
+  const api = `${baseURL!.replace('://pwa.', '://api.')}/api/graphql`
+  await driver.route(`${api}*`, async (route) => {
     try {
-      const data = await response.json()
-      if (data.data && Object.hasOwn(data.data, 'self'))
-        observedSelf.push(data.data.self?.id ?? null)
-    } catch {}
+      // route.fetch would update the browser context's cookies immediately.
+      // This isolated request context keeps Set-Cookie pending until fulfill.
+      const response = await isolated.fetch(route.request(), {
+        timeout: 10_000,
+      })
+      expect(response.ok()).toBe(true)
+      expect((await response.json()).data.loginParticipant).toBeTruthy()
+      delayedRevision = response
+        .headersArray()
+        .filter(({ name }) => name.toLowerCase() === 'set-cookie')
+        .map(({ value }) => /^participant_session=([^;]+)/.exec(value)?.[1])
+        .find(Boolean)
+      expect(delayedRevision).toBeTruthy()
+      captured = true
+      await delivery
+      await route.fulfill({ response })
+      delivered = true
+    } catch (error) {
+      captureError = error
+      await route.abort().catch(() => {})
+    }
   })
-
-  // The ordinary login in the second tab replaces the shared cookie only;
-  // this tab never authenticates with it.
-  const other = await context.newPage()
-  await other.goto(`${baseURL}/login?redirect_to=/editProfile`)
-  await other.getByTestId('username-field').fill(cookieParticipant.username)
-  await other.getByTestId('password-field').fill(STUDENT_PASSWORD)
-  await other.getByTestId('submit-login').click()
-  await expect(other).toHaveURL((url) => url.pathname.endsWith('/editProfile'))
-  await expectParticipantIdentity(other, cookieParticipant)
-  expect(
-    (await context.cookies()).some(
-      (cookie) => cookie.name === 'participant_token'
+  const pending = driver
+    .evaluate(
+      async ({ api, revision, username, password }) => {
+        const response = await fetch(api, {
+          method: 'POST',
+          credentials: 'include',
+          signal: AbortSignal.timeout(25_000),
+          headers: {
+            'content-type': 'application/json',
+            'x-graphql-yoga-csrf': '1',
+            'x-participant-session': revision!,
+          },
+          body: JSON.stringify({
+            operationName: 'LoginParticipant',
+            query:
+              'mutation LoginParticipant($usernameOrEmail: String!, $password: String!) { loginParticipant(usernameOrEmail: $usernameOrEmail, password: $password) }',
+            variables: { usernameOrEmail: username, password },
+          }),
+        })
+        return response.json()
+      },
+      {
+        api,
+        revision: initialRevision,
+        username: ltiUsername,
+        password: STUDENT_PASSWORD,
+      }
     )
-  ).toBe(true)
+    .catch(() => null)
+  try {
+    await expect
+      .poll(() => captured || !!captureError, { timeout: 12_000 })
+      .toBe(true)
+    expect(captureError).toBeUndefined()
+    expect(await sessionRevision(context)).toBe(initialRevision)
+    const earlier = waitForChatIdentity(context, loginThreadId)
+    await signInAs(first, baseURL!, loginUsername)
+    const earlierRevision = await sessionRevision(context)
+    expect(earlierRevision).not.toBe(initialRevision)
+    await expectChatIdentity(chat, await earlier, loginThreadId)
+    await expectIdentity(second, { email: loginEmail, username: loginUsername })
+    expect(deliveryTimedOut).toBe(false)
+    expect(delivered).toBe(false)
 
-  // This tab keeps sending its explicit credential and shows its own identity.
-  const afterLogin = page.waitForRequest(
-    (request) => graphqlOperationName(request) === 'Self'
-  )
-  await page.goto(`${baseURL}/editProfile`)
-  expect((await explicitBearerPayload(await afterLogin))?.sub).toBe(studentId)
-  await expectParticipantIdentity(page, explicitParticipant)
-
-  // Logout in the second tab ends the cookie session for that tab.
-  await other.getByTestId('header-avatar').click()
-  await other.getByTestId('logout').click()
-  await expect(other).toHaveURL(/\/login(?:\?|$)/)
-  expect(
-    (await context.cookies()).some(
-      (cookie) => cookie.name === 'participant_token'
-    )
-  ).toBe(false)
-
-  // This tab still holds and sends its own credential afterwards.
-  const afterLogout = page.waitForRequest(
-    (request) => graphqlOperationName(request) === 'Self'
-  )
-  await page.goto(`${baseURL}/editProfile`)
-  expect((await explicitBearerPayload(await afterLogout))?.sub).toBe(studentId)
-  await expectParticipantIdentity(page, explicitParticipant)
-  expect(await storedExplicitToken(page)).toBe(explicitToken)
-  expect(observedSelf).not.toContain(otherId)
+    const last = waitForChatIdentity(context, ltiThreadId)
+    release()
+    expect((await pending)?.data.loginParticipant).toBeTruthy()
+    expect(await sessionRevision(context)).toBe(delayedRevision)
+    expect(delayedRevision).not.toBe(earlierRevision)
+    await expectIdentity(first, { email: ltiEmail, username: ltiUsername })
+    await expectIdentity(second, { email: ltiEmail, username: ltiUsername })
+    await chat.bringToFront()
+    await expectChatIdentity(chat, await last, ltiThreadId)
+  } finally {
+    clearTimeout(deadline)
+    release()
+    await pending
+    await driver.close()
+    await isolated.dispose()
+  }
 })
 
-test('a declined header logout keeps the explicit identity and its retry ends it without falling back to the cookie', async ({
+test('rejected logout and account deletion keep the shared session and succeed on retry', async ({
   page,
   context,
   baseURL,
 }, info) => {
-  skipWithoutLocalCookies(info.project.name)
-  const prisma = await getPrisma()
-  const explicitParticipant = await prisma.participant.findUniqueOrThrow({
-    where: { id: studentId },
-  })
-  await context.addCookies([
-    {
-      name: 'participant_token',
-      value: await signed({ sub: otherId, role: 'PARTICIPANT' }, '14d'),
-      domain: `.${process.env.COOKIE_DOMAIN!}`,
-      path: '/',
-      secure: true,
-      httpOnly: true,
-      sameSite: 'None',
-    },
-  ])
-  await retainExplicitSession(
-    page,
-    baseURL!,
-    await signed({ sub: studentId, role: 'PARTICIPANT' }, '14d')
-  )
-  await expectParticipantIdentity(page, explicitParticipant)
-
-  // The server-declared rejection is fulfilled before any backend mutation.
+  skipWithoutCookieSessions(info.project.name)
+  // A declined logout leaves this tab signed in and does not discard the
+  // shared session for the other tab.
+  await signInAs(page, baseURL!, loginUsername)
+  await expectIdentity(page, { email: loginEmail, username: loginUsername })
+  const second = await context.newPage()
+  await second.goto(`${baseURL}/editProfile`)
+  await expectIdentity(second, { email: loginEmail, username: loginUsername })
   await page.route('**/api/graphql*', async (route) => {
-    if (graphqlOperationName(route.request()) === 'LogoutParticipant') {
+    if (route.request().postData()?.includes('LogoutParticipant')) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -1329,46 +943,20 @@ test('a declined header logout keeps the explicit identity and its retry ends it
   })
   await page.getByTestId('header-avatar').click()
   await page.getByTestId('logout').click()
-  await expect(toastItems(page).first()).toBeVisible()
   await expect(page).toHaveURL((url) => url.pathname.endsWith('/editProfile'))
-  await expectParticipantIdentity(page, explicitParticipant)
-  expect(
-    (await context.cookies()).some(
-      (cookie) => cookie.name === 'participant_token'
-    )
-  ).toBe(true)
-
-  const retained = page.waitForRequest(
-    (request) => graphqlOperationName(request) === 'Self'
-  )
-  await page.goto(`${baseURL}/editProfile`)
-  expect((await explicitBearerPayload(await retained))?.sub).toBe(studentId)
-  await expectParticipantIdentity(page, explicitParticipant)
-
-  // The retry runs the real command: this tab's credential and the applicable
-  // cookie both end, and the page settles into recovery.
+  await expectIdentity(page, { email: loginEmail, username: loginUsername })
+  await second.goto(`${baseURL}/editProfile`)
+  await expectIdentity(second, { email: loginEmail, username: loginUsername })
+  // The retry runs the real command and ends the session for both tabs.
   await page.unroute('**/api/graphql*')
-  await page.getByTestId('header-avatar').click()
-  await page.getByTestId('logout').click()
-  await expect(page).toHaveURL(/\/login(?:\?|$)/)
-  expect(
-    (await context.cookies()).some(
-      (cookie) => cookie.name === 'participant_token'
-    )
-  ).toBe(false)
-  expect(await storedExplicitToken(page)).toBeNull()
-  await page.goto(`${baseURL}/editProfile`)
-  await expect(page.getByTestId('participant-session-recovery')).toBeVisible()
-  await expect(page.getByTestId('update-account-email')).toHaveCount(0)
-  await expect(page.getByTestId('participant-session-login')).toBeVisible()
-})
+  await signOut(page)
+  expect(await sessionRevision(context)).toBeTruthy()
+  await second.goto(`${baseURL}/editProfile`)
+  await expect(second.getByTestId('participant-session-recovery')).toBeVisible()
+  await expect(second.getByTestId('update-account-email')).toHaveCount(0)
 
-test('a declined account deletion keeps the disposable participant and a retry deletes it', async ({
-  page,
-  context,
-  baseURL,
-}) => {
-  test.setTimeout(120_000)
+  // A declined account deletion keeps the disposable participant; the retry
+  // deletes it and ends the shared session.
   const prisma = await getPrisma()
   const disposableUsername = `pa${randomUUID().slice(0, 8)}`
   const disposable = await prisma.participant.create({
@@ -1379,20 +967,33 @@ test('a declined account deletion keeps the disposable participant and a retry d
       ...completedDataUse(),
     },
   })
+  const disposableSsoId = `synthetic-deletion-${randomUUID()}`
+  await prisma.participantAccount.create({
+    data: {
+      ssoId: disposableSsoId,
+      ssoEmail: disposable.email!,
+      ssoType: 'LTI1.3',
+      participantId: disposable.id,
+    },
+  })
   try {
-    await retainExplicitSession(
-      page,
-      baseURL!,
-      await signed({ sub: disposable.id, role: 'PARTICIPANT' }, '14d')
+    const disposableJwt = await signed(
+      { sub: disposableSsoId, scope: 'LTI1.3' },
+      '1h'
     )
-    await expectParticipantIdentity(page, disposable)
-
-    // The false result is declared before any backend mutation runs.
+    await page.goto(
+      `${baseURL}/editProfile?jwt=${encodeURIComponent(disposableJwt)}`
+    )
+    await expect(page).toHaveURL((url) => url.pathname.endsWith('/editProfile'))
+    await expectIdentity(page, {
+      email: disposable.email,
+      username: disposable.username,
+    })
     let declineDelete = true
     await page.route('**/api/graphql*', async (route) => {
       if (
         declineDelete &&
-        graphqlOperationName(route.request()) === 'DeleteParticipantAccount'
+        route.request().postData()?.includes('DeleteParticipantAccount')
       ) {
         await route.fulfill({
           status: 200,
@@ -1403,24 +1004,19 @@ test('a declined account deletion keeps the disposable participant and a retry d
     })
     await page.getByTestId('confirm-delete-account').click()
     await page.getByTestId('delete-account-command').click()
-    // The declined command renders feedback, closes the modal, and leaves both
-    // the account and this tab's credential intact.
-    await expect(toastItems(page).first()).toBeVisible()
+    await expect(
+      page.locator('[data-sonner-toast][data-type="error"]').first()
+    ).toBeVisible()
     await expect(page.getByTestId('delete-account-command')).toBeHidden()
     expect(
       await prisma.participant.findUnique({ where: { id: disposable.id } })
     ).not.toBeNull()
+    await page.reload()
+    await expectIdentity(page, {
+      email: disposable.email,
+      username: disposable.username,
+    })
 
-    const retained = page.waitForRequest(
-      (request) => graphqlOperationName(request) === 'Self'
-    )
-    await page.goto(`${baseURL}/editProfile`)
-    expect((await explicitBearerPayload(await retained))?.sub).toBe(
-      disposable.id
-    )
-    await expectParticipantIdentity(page, disposable)
-
-    // The retry runs the real command and ends this synthetic session.
     declineDelete = false
     await page.getByTestId('confirm-delete-account').click()
     await page.getByTestId('delete-account-command').click()
@@ -1429,342 +1025,18 @@ test('a declined account deletion keeps the disposable participant and a retry d
         prisma.participant.findUnique({ where: { id: disposable.id } })
       )
       .toBeNull()
+    await page.goto(`${baseURL}/editProfile`)
     await expect(page.getByTestId('participant-session-recovery')).toBeVisible()
     await expect(page.getByTestId('update-account-email')).toHaveCount(0)
-    expect(await storedExplicitToken(page)).toBeNull()
-    expect(
-      (await context.cookies()).some(
-        (cookie) => cookie.name === 'participant_token'
-      )
-    ).toBe(false)
   } finally {
     await prisma.participant.deleteMany({ where: { id: disposable.id } })
   }
 })
 
-test('an expired retained credential does not fall back to a valid ambient cookie and a fresh launch recovers', async ({
-  page,
-  context,
-  baseURL,
-}, info) => {
-  test.setTimeout(120_000)
-  skipWithoutLocalCookies(info.project.name)
-  const prisma = await getPrisma()
-  const ambientParticipant = await prisma.participant.findUniqueOrThrow({
-    where: { id: otherId },
-  })
-  await context.addCookies([
-    {
-      name: 'participant_token',
-      value: await signed({ sub: otherId, role: 'PARTICIPANT' }, '14d'),
-      domain: `.${process.env.COOKIE_DOMAIN!}`,
-      path: '/',
-      secure: true,
-      httpOnly: true,
-      sameSite: 'None',
-    },
-  ])
-  await page.goto(`${baseURL}/editProfile`)
-  await expectParticipantIdentity(page, ambientParticipant)
-  await page.evaluate(
-    (value) => sessionStorage.setItem('participant_token', value),
-    await signed(
-      { sub: studentId, role: 'PARTICIPANT' },
-      Math.floor(Date.now() / 1000) - 60
-    )
-  )
+const responseApi = (baseURL: string) =>
+  `${baseURL.replace('://pwa.', '://response-api.')}/AddResponse`
 
-  // The unusable bearer is authoritative: the page settles into recovery
-  // without an identity from the still-valid ambient cookie and without the
-  // login redirect an Unauthorized error would trigger.
-  const expiredSelf = page.waitForRequest(
-    (request) => graphqlOperationName(request) === 'Self'
-  )
-  const recoverySelf = waitForSelfResponse(page)
-  await page.reload()
-  await expect(page.getByTestId('participant-session-recovery')).toBeVisible()
-  await expect(page.getByTestId('participant-session-login')).toBeVisible()
-  await expect(page.getByTestId('update-account-email')).toHaveCount(0)
-  await expect(page).toHaveURL((url) => url.pathname === '/editProfile')
-  const expiredPayload = await explicitBearerPayload(await expiredSelf)
-  expect(expiredPayload?.sub).toBe(studentId)
-  expect(expiredPayload?.exp).toBeLessThan(Date.now() / 1000)
-  expect((await (await recoverySelf).json()).data.self).toBeNull()
-
-  // The same expired credential also fails a protected, read-only membership
-  // operation while the valid ambient cookie is still attached by the browser.
-  const protectedResult = await page.evaluate(
-    async ({ apiUrl, courseId }) => {
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'content-type': 'application/json',
-          'x-graphql-yoga-csrf': 'true',
-          authorization: `Bearer ${sessionStorage.getItem('participant_token')}`,
-        },
-        body: JSON.stringify({
-          query:
-            'mutation EnsureParticipation($courseId: String!) { ensureParticipation(courseId: $courseId) }',
-          operationName: 'EnsureParticipation',
-          variables: { courseId },
-        }),
-      })
-      return response.json()
-    },
-    {
-      apiUrl: `${baseURL!.replace('://pwa.', '://api.')}/api/graphql`,
-      courseId: COURSE_ID_TEST,
-    }
-  )
-  expect(protectedResult.data?.ensureParticipation).not.toBe(true)
-  expect(protectedResult.errors).toEqual(
-    expect.arrayContaining([
-      expect.objectContaining({ message: 'Unauthorized' }),
-    ])
-  )
-
-  // The ambient cookie is valid for this browser: removing only the tab's
-  // credential reveals it, which the settled recovery above refused to do.
-  await page.evaluate(() => sessionStorage.clear())
-  await page.reload()
-  await expectParticipantIdentity(page, ambientParticipant)
-
-  // A fresh handoff replaces the tab session with the launched participant.
-  const launchSelf = waitForSelfResponse(page)
-  await page.goto(
-    `${baseURL}/editProfile?jwt=${encodeURIComponent(await signed({ sub: ssoId, scope: 'LTI1.3' }))}`
-  )
-  expect((await (await launchSelf).json()).data.self.id).toBe(studentId)
-  await expectParticipantIdentity(
-    page,
-    await prisma.participant.findUniqueOrThrow({ where: { id: studentId } })
-  )
-  const stored = (await storedExplicitToken(page))!
-  const storedPayload = JSON.parse(
-    Buffer.from(stored.split('.')[1]!, 'base64url').toString()
-  ) as { sub?: string; exp?: number }
-  expect(storedPayload.sub).toBe(studentId)
-  expect(storedPayload.exp).toBeGreaterThan(Date.now() / 1000)
-})
-
-test('the course chatbot entry gate makes no bridge request while an explicit credential exists', async ({
-  page,
-  context,
-  baseURL,
-}, info) => {
-  test.setTimeout(120_000)
-  skipWithoutLocalCookies(info.project.name)
-  const prisma = await getPrisma()
-  const cookieParticipant = await prisma.participant.findUniqueOrThrow({
-    where: { id: otherId },
-  })
-  await retainExplicitSession(
-    page,
-    baseURL!,
-    await signed({ sub: studentId, role: 'PARTICIPANT' }, '14d')
-  )
-  const bridgeRequests: string[] = []
-  const popups: Page[] = []
-  page.on('request', (request) => {
-    if (request.url().includes(`/course/${COURSE_ID_TEST}/chatbot/`))
-      bridgeRequests.push(request.url())
-  })
-  page.on('popup', (popup) => popups.push(popup))
-
-  // Explicit B without a cookie: recovery guidance instead of the bridge.
-  expect(
-    (await context.cookies()).some(
-      (cookie) => cookie.name === 'participant_token'
-    )
-  ).toBe(false)
-  const courseUrl = `${baseURL}/course/${COURSE_ID_TEST}`
-  await page.goto(courseUrl)
-  await expect(
-    page.getByTestId('student-course-chatbot-recovery')
-  ).toBeVisible()
-  await expect(page.getByTestId('student-course-chatbot-link')).toHaveCount(0)
-  expect(bridgeRequests).toEqual([])
-  expect(popups).toEqual([])
-  await page.getByTestId('student-course-chatbot-recovery').click()
-  await expect(page.getByTestId('course-chatbot-recovery-modal')).toBeVisible()
-  await page.getByTestId('course-chatbot-recovery-close').click()
-  await expect(page.getByTestId('course-chatbot-recovery-modal')).toBeHidden()
-  await page.getByTestId('student-course-chatbot-recovery').click()
-  await page.getByTestId('course-chatbot-recovery-cancel').click()
-  await expect(page.getByTestId('course-chatbot-recovery-modal')).toBeHidden()
-  expect(bridgeRequests).toEqual([])
-  expect(popups).toEqual([])
-
-  const explicitParticipant = await prisma.participant.findUniqueOrThrow({
-    where: { id: studentId },
-  })
-  const afterCancel = waitForSelfResponse(page)
-  await page.goto(`${baseURL}/editProfile`)
-  const retainedResponse = await afterCancel
-  expect((await explicitBearerPayload(retainedResponse.request()))?.sub).toBe(
-    studentId
-  )
-  expect((await retainedResponse.json()).data.self.id).toBe(studentId)
-  await expectParticipantIdentity(page, explicitParticipant)
-
-  // A conflicting ambient cookie keeps the same conservative gate.
-  await context.addCookies([
-    {
-      name: 'participant_token',
-      value: await signed({ sub: otherId, role: 'PARTICIPANT' }, '14d'),
-      domain: `.${process.env.COOKIE_DOMAIN!}`,
-      path: '/',
-      secure: true,
-      httpOnly: true,
-      sameSite: 'None',
-    },
-  ])
-  const conflictingSelf = waitForSelfResponse(page)
-  await page.goto(courseUrl)
-  const conflictingResponse = await conflictingSelf
-  expect(
-    (await explicitBearerPayload(conflictingResponse.request()))?.sub
-  ).toBe(studentId)
-  expect((await conflictingResponse.json()).data.self.id).toBe(studentId)
-  await expect(
-    page.getByTestId('student-course-chatbot-recovery')
-  ).toBeVisible()
-  await expect(page.getByTestId('student-course-chatbot-link')).toHaveCount(0)
-  expect(bridgeRequests).toEqual([])
-
-  // An ordinary login in this tab ends the explicit credential and restores
-  // the cookie-mode link.
-  await page.getByTestId('student-course-chatbot-recovery').click()
-  await page.getByTestId('course-chatbot-recovery-login').click()
-  await expect(page).toHaveURL(
-    (url) =>
-      url.pathname === '/login' &&
-      url.searchParams.get('redirect_to') === `/course/${COURSE_ID_TEST}`
-  )
-  await page.getByTestId('username-field').fill(cookieParticipant.username)
-  await page.getByTestId('password-field').fill(STUDENT_PASSWORD)
-  await page.getByTestId('submit-login').click()
-  await expect(page).toHaveURL((url) =>
-    url.pathname.endsWith(`/course/${COURSE_ID_TEST}`)
-  )
-  await expect(page.getByTestId('student-course-chatbot-link')).toBeVisible()
-  await expect(page.getByTestId('student-course-chatbot-recovery')).toHaveCount(
-    0
-  )
-  expect(await storedExplicitToken(page)).toBeNull()
-  const identitySelf = waitForCookieModeSelf(page)
-  await page.goto(`${baseURL}/editProfile`)
-  const response = await identitySelf
-  const headers = await response.request().allHeaders()
-  expect(headers.authorization ?? '').not.toMatch(/^Bearer /)
-  expect((await response.json()).data.self.id).toBe(otherId)
-  expect(popups).toEqual([])
-
-  const chatRequests = observeChatRedirects(context)
-  await page.goto(courseUrl)
-  const chatLink = page.locator('a').filter({
-    has: page.getByTestId('student-course-chatbot-link'),
-  })
-  await expect(chatLink).toHaveAttribute('target', '_blank')
-  const bridgePath = await chatLink.getAttribute('href')
-  expect(bridgePath).toContain(`/course/${COURSE_ID_TEST}/chatbot/`)
-  const popupPromise = page.waitForEvent('popup')
-  await chatLink.click()
-  const popup = await popupPromise
-  await expect.poll(() => chatRequests.length).toBe(1)
-  expect(new URL(chatRequests[0]!).pathname).toBe(
-    `/${bridgePath!.split('/').at(-1)}`
-  )
-  await popup.close()
-
-  // A fresh OLAT launch restores an explicit session and therefore still
-  // needs ordinary login before another cross-app bridge navigation.
-  await page.goto(
-    `${baseURL}/editProfile?jwt=${encodeURIComponent(await signed({ sub: ssoId, scope: 'LTI1.3' }))}`
-  )
-  await expectParticipantIdentity(page, explicitParticipant)
-  await page.goto(courseUrl)
-  await expect(
-    page.getByTestId('student-course-chatbot-recovery')
-  ).toBeVisible()
-  await expect(page.getByTestId('student-course-chatbot-link')).toHaveCount(0)
-  expect(chatRequests).toHaveLength(1)
-})
-
-test('the direct chatbot bridge authorizes its own cookie principal despite a conflicting tab credential', async ({
-  context,
-  baseURL,
-}, info) => {
-  skipWithoutLocalCookies(info.project.name)
-  const chatRequests = observeChatRedirects(context)
-  const bridgePath = `/course/${bridgeCourseId}/chatbot/${bridgeChatbotId}`
-  for (const cookieId of [null, bridgeMemberId, bridgeOutsiderId]) {
-    await context.clearCookies()
-    if (cookieId) {
-      await context.addCookies([
-        {
-          name: 'participant_token',
-          value: await signed({ sub: cookieId, role: 'PARTICIPANT' }, '14d'),
-          domain: `.${process.env.COOKIE_DOMAIN!}`,
-          path: '/',
-          secure: true,
-          httpOnly: true,
-          sameSite: 'None',
-        },
-      ])
-    }
-    const page = await context.newPage()
-    const explicitId =
-      cookieId === bridgeMemberId ? bridgeOutsiderId : bridgeMemberId
-    await retainExplicitSession(
-      page,
-      baseURL!,
-      await signed({ sub: explicitId, role: 'PARTICIPANT' }, '14d')
-    )
-    const ownRequest = page.waitForRequest(
-      (request) =>
-        request.isNavigationRequest() &&
-        new URL(request.url()).pathname.endsWith(bridgePath)
-    )
-    const redirectsBefore = chatRequests.length
-    await page.goto(`${baseURL}${bridgePath}`)
-    expect(
-      (await (await ownRequest).allHeaders()).authorization ?? ''
-    ).not.toMatch(/^Bearer /)
-    if (!cookieId) {
-      await expect(page).toHaveURL(
-        (url) =>
-          url.pathname.endsWith('/login') &&
-          (url.searchParams.get('redirect_to') ?? '').endsWith(bridgePath)
-      )
-      expect(chatRequests).toHaveLength(redirectsBefore)
-    } else if (cookieId === bridgeMemberId) {
-      await expect.poll(() => chatRequests.length).toBe(redirectsBefore + 1)
-      expect(new URL(chatRequests.at(-1)!).pathname).toBe(`/${bridgeChatbotId}`)
-    } else {
-      await expect(page).toHaveURL((url) => url.pathname.endsWith(bridgePath))
-      // The server-generated result is structured evidence of the failed
-      // membership check, independent of localized notification wording.
-      expect(
-        await page
-          .locator('#__NEXT_DATA__')
-          .evaluate(
-            (element) =>
-              JSON.parse(element.textContent!).props.pageProps
-                .participationError
-          )
-      ).toBe(true)
-      await expect(
-        page.locator(`a[href$="/course/${bridgeCourseId}"]`).last()
-      ).toBeVisible()
-      expect(chatRequests).toHaveLength(redirectsBefore)
-    }
-    await page.close()
-  }
-})
-
-test('a live quiz answer counts for the participant the frame shows, not a later cookie session', async ({
+test('a live quiz answer and a practice submission are recorded for the shared cookie participant', async ({
   page,
   context,
   baseURL,
@@ -1774,45 +1046,88 @@ test('a live quiz answer counts for the participant the frame shows, not a later
   const participations = await prisma.participation.findMany({
     where: {
       courseId: COURSE_ID_TEST,
-      participantId: { in: [studentId, otherId] },
+      participantId: { in: [loginId, ltiId] },
     },
   })
   expect(participations).toHaveLength(2)
-  const responseApi = `${baseURL!.replace('://pwa.', '://response-api.')}/AddResponse`
-  const a = await signed({ sub: otherId, role: 'PARTICIPANT' }, '14d')
+
+  // Before any launch, an unauthenticated tab cannot answer: the response API
+  // refuses a request whose revision does not match the browser cookies.
+  const anonymous = await request.post(responseApi(baseURL!), {
+    headers: {
+      origin: new URL(baseURL!).origin,
+      'x-participant-session': 'stale-revision',
+      cookie: 'participant_session=current-revision',
+    },
+    data: { response: { choices: [1] }, liveQuizId, instanceId: 0 },
+  })
+  expect(anonymous.status()).toBe(409)
+
   const frame = await launch(
     page,
     `${baseURL}/editProfile?jwt=${encodeURIComponent(await signed({ sub: ssoId, scope: 'LTI1.3' }))}`
   )
-  await profile(frame)
-  // A cookie session for another participant established after the launch,
-  // e.g. by a login in another tab, reaches the response API on every answer
-  // the browser sends with cookies.
-  await context.addCookies([
-    {
-      name: 'participant_token',
-      value: a,
-      domain: `.${process.env.COOKIE_DOMAIN!}`,
-      path: '/',
-      secure: true,
-      httpOnly: true,
-      sameSite: 'None',
-    },
-  ])
-  const started = await lecturer(
+  const outcome = await settleLaunch(frame, () =>
+    expectIdentity(frame, { email: ltiEmail, username: ltiUsername })
+  )
+  if (
+    info.project.name.endsWith('-blocked') ||
+    info.project.name.startsWith('webkit-')
+  )
+    expect(outcome).toBe('cookies-refused')
+  const cookieSessions = outcome === 'accepted'
+  if (!cookieSessions) {
+    info.annotations.push({
+      type: 'skipped-step',
+      description:
+        'Browser refused the shared cookie, so the frame fails closed before quiz access',
+    })
+    return
+  }
+  expect(await sessionRevision(context)).toBeTruthy()
+
+  // The practice quiz is answered in the frame under the shared cookie.
+  await navigate(frame, `/course/${COURSE_ID_TEST}/practiceQuizzes/${quizId}`)
+  await expect(frame.getByTestId('start-practice-quiz')).toBeVisible()
+  await expect(
+    frame.getByTestId('login-to-student-login-collect-points')
+  ).toHaveCount(0)
+  await frame.getByTestId('start-practice-quiz').click()
+  await frame.getByTestId('sc-0-answer-option-1').click()
+  await frame.getByTestId('student-stack-submit').click()
+  await expect
+    .poll(
+      () =>
+        prisma.questionResponse.count({
+          where: { practiceQuizId: quizId, participantId: ltiId },
+        }),
+      { timeout: 30_000 }
+    )
+    .toBe(1)
+  expect(
+    await prisma.questionResponse.count({
+      where: { practiceQuizId: quizId, participantId: loginId },
+    })
+  ).toBe(0)
+
+  // The live quiz answer is attributed to the same shared cookie participant;
+  // a request carrying a mismatched revision is refused instead.
+  await lecturer(
     request,
     baseURL!,
     'mutation ($id: String!) { startLiveQuiz(id: $id) { id } }',
     { id: liveQuizId }
   )
-  expect(started.startLiveQuiz.id).toBe(liveQuizId)
   const instanceId = (
     await prisma.elementInstance.findFirstOrThrow({
       where: { elementBlockId: liveQuizBlockId },
     })
   ).id
+  const participationSnapshot = participations.map(({ id, isActive }) => ({
+    id,
+    isActive,
+  }))
   try {
-    // Leaderboard rows only exist for participants who opted in.
     await prisma.participation.updateMany({
       where: { id: { in: participations.map(({ id }) => id) } },
       data: { isActive: true },
@@ -1823,43 +1138,27 @@ test('a live quiz answer counts for the participant the frame shows, not a later
       'mutation ($quizId: String!, $blockId: Int!) { activateLiveQuizBlock(quizId: $quizId, blockId: $blockId) { id } }',
       { quizId: liveQuizId, blockId: liveQuizBlockId }
     )
-    // A credential the response API cannot use is refused instead of being
-    // recorded under the cookie identity.
-    const refused = await request.post(responseApi, {
+    const stale = await request.post(responseApi(baseURL!), {
       headers: {
         origin: new URL(baseURL!).origin,
-        authorization: 'Bearer invalid',
-        cookie: `participant_token=${a}`,
+        'x-participant-session': 'stale-revision',
+        cookie: `participant_session=${await sessionRevision(context)}; participant_token=${(await context.cookies()).find((cookie) => cookie.name === 'participant_token')?.value ?? ''}`,
       },
-      data: {
-        response: { choices: [1] },
-        liveQuizId,
-        instanceId,
-      },
+      data: { response: { choices: [1] }, liveQuizId, instanceId },
     })
-    expect(refused.status()).toBe(401)
-    if (await localStorageDenied(frame)) {
-      info.annotations.push({
-        type: 'skipped-step',
-        description: 'live quiz needs localStorage, which this frame is denied',
-      })
-      return
-    }
+    expect(stale.status()).toBe(409)
+
     await navigate(frame, `/session/${liveQuizId}`)
     const answer = page.waitForRequest(
-      (item) => item.url() === responseApi && item.method() === 'POST'
+      (item) => item.url() === responseApi(baseURL!) && item.method() === 'POST'
     )
     await frame.getByTestId('sc-0-answer-option-1').click()
     await frame.getByTestId('student-submit-answer').click()
     const sent = await answer
-    const bearer = /^Bearer (\S+)$/.exec(
-      (await sent.allHeaders()).authorization ?? ''
-    )?.[1]
-    expect(bearer).toBeDefined()
-    expect(
-      JSON.parse(Buffer.from(bearer!.split('.')[1]!, 'base64url').toString())
-        .sub
-    ).toBe(studentId)
+    const headers = await sent.allHeaders()
+    expect(headers['x-participant-session']).toBe(
+      await sessionRevision(context)
+    )
     expect((await sent.response())?.status()).toBe(200)
     await expect
       .poll(
@@ -1873,7 +1172,8 @@ test('a live quiz answer counts for the participant the frame shows, not a later
             )
           ).cockpitQuiz.blocks.find(
             ({ id }: { id: number }) => id === liveQuizBlockId
-          )?.numOfParticipants
+          )?.numOfParticipants,
+        { timeout: 30_000 }
       )
       .toBe(1)
     await lecturer(
@@ -1886,9 +1186,7 @@ test('a live quiz answer counts for the participant the frame shows, not a later
       where: { liveQuizId },
       select: { participantId: true },
     })
-    expect(scored.map(({ participantId }) => participantId)).toEqual([
-      studentId,
-    ])
+    expect(scored.map(({ participantId }) => participantId)).toEqual([ltiId])
   } finally {
     try {
       await lecturer(
@@ -1898,7 +1196,7 @@ test('a live quiz answer counts for the participant the frame shows, not a later
         { id: liveQuizId }
       )
     } finally {
-      for (const { id, isActive } of participations)
+      for (const { id, isActive } of participationSnapshot)
         await prisma.participation.update({ where: { id }, data: { isActive } })
     }
   }

@@ -9,8 +9,8 @@ import { H2, UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
-import Layout from '../../../../components/Layout'
 import LinkButton from '../../../../components/common/LinkButton'
+import Layout from '../../../../components/Layout'
 
 function LiveQuizOverview({
   isInactive,
@@ -131,19 +131,26 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    const { participantToken, cookiesAvailable, sessionState, tokenSource } =
-      await getParticipantToken({
-        apolloClient,
-        courseId: ctx.params.courseId,
-        ctx,
-      })
+    const {
+      participantToken,
+      cookiesAvailable,
+      sessionState,
+      sessionRevision,
+      sessionEstablished,
+    } = await getParticipantToken({
+      apolloClient,
+      courseId: ctx.params.courseId,
+      ctx,
+    })
 
     if (participantToken) {
       return {
         props: {
           sessionState,
-          tokenSource,
-          participantToken,
+          sessionRevision,
+          sessionEstablished,
+          participantToken:
+            process.env.ASSESSMENT_MODE === 'true' ? participantToken : null,
           cookiesAvailable,
           courseId: ctx.params.courseId,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
@@ -155,7 +162,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     return addApolloState(apolloClient, {
       props: {
         sessionState,
-        tokenSource,
+        sessionRevision,
+        sessionEstablished,
         courseId: ctx.params.courseId,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,

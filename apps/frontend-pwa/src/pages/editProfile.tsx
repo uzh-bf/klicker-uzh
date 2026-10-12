@@ -6,8 +6,8 @@ import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import { Button, toast } from '@uzh-bf/design-system'
 import type { GetServerSidePropsContext } from 'next'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
 import { useEffect, useState } from 'react'
 import AccountDeletionForm from '../components/forms/AccountDeletionForm'
@@ -173,7 +173,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       participantToken,
       cookiesAvailable,
       sessionState,
-      tokenSource,
+      sessionRevision,
+      sessionEstablished,
       signedLtiData,
     } = await getParticipantToken({
       apolloClient,
@@ -198,10 +199,12 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     return addApolloState(apolloClient, {
       props: {
-        participantToken,
+        participantToken:
+          process.env.ASSESSMENT_MODE === 'true' ? participantToken : null,
         cookiesAvailable,
         sessionState,
-        tokenSource,
+        sessionRevision,
+        sessionEstablished,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },

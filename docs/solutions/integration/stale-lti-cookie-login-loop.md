@@ -38,13 +38,13 @@ retained LTI state. Without a handoff, pending LTI state still precedes ambient
 participant state. Invalid explicit credentials must not silently select another
 signed-in participant. Cookie cleanup belongs after successful authentication.
 
-The same symptom can arise after a successful launch if an old browser bearer
-or API cookie still selects the previous identity. A cookie probe establishes
-transport availability only; it does not prove API identity. Replace browser
-session state before queries and verify the first and subsequent Self results.
-Known cookie variants can be expired only in the current partition. See
+The same symptom can arise when cookies are refused in an embedded context.
+The shared-session contract requires a successful cookie replacement; there is
+no independent tab bearer fallback. Verify the first and subsequent Self
+results in both the launch tab and another open tab. Known cookie variants can
+be expired only in the current partition. See
 [regular session recovery](../../auth-model.md#regular-participant-session-recovery)
-for the resulting selection and lifetime contract.
+for selection, synchronization and recovery behavior.
 
 ## Verification lessons
 
@@ -59,7 +59,6 @@ login paths. Local browser checks covered stale-cookie recovery, same-page
 return, and cancelled or rejected navigation. These checks do not establish
 production deployment or verify a chatbot answer.
 
-The October recovery repair has signed-token, browser-state and database-backed
-source verification. Its cross-browser embedded journeys and recovery screenshots
-remain pending. Installation-wide expiry counts and anonymous-profile screenshots
-do not identify a browser policy, course-specific failure or broken account link.
+Local ltijs with a mocked LMS exercises launch behavior; it does not prove a
+real OLAT launch or production deployment. Browser policy and cookie-domain
+limitations must remain explicit in the verification record.

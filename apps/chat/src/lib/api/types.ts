@@ -1,4 +1,8 @@
 import {
+  assertParticipantSession,
+  participantFetch,
+} from '@klicker-uzh/shared-components/src/utils/participantSession'
+import {
   ExtendedThreadMessageLike,
   MessageRating,
   Thread,
@@ -110,7 +114,7 @@ export const apiCall = async <T = unknown>(
   url: string,
   options: RequestInit = {}
 ): Promise<T> => {
-  const response = await fetch(`/api${url}`, {
+  const response = await participantFetch(`/api${url}`, {
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,
@@ -145,7 +149,9 @@ export const apiCall = async <T = unknown>(
     throw error
   }
 
-  return await response.json()
+  const result = await response.json()
+  assertParticipantSession()
+  return result
 }
 
 /**

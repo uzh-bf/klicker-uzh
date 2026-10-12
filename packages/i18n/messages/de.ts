@@ -914,9 +914,6 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
         'Für diesen Chatbot benötigen Sie ein KlickerUZH-Konto. Bitte melden Sie sich an oder erstellen Sie zuerst ein Konto.',
       goToLogin: 'Zum Login',
       openCourseChat: 'KI-Tutor',
-      sessionRecoveryTitle: 'Vor dem Öffnen des KI-Tutors anmelden',
-      sessionRecoveryMessage:
-        'Sie haben KlickerUZH über OLAT geöffnet. Melden Sie sich für den KI-Tutor in diesem Tab mit Ihrem KlickerUZH-Konto an. Dies ersetzt die aktuelle OLAT-Sitzung und setzt voraus, dass Cookies erlaubt sind. Ein erneutes Öffnen über OLAT stellt diese Sitzung wieder her, schaltet den Link zum KI-Tutor jedoch nicht frei. Sie können abbrechen und Ihre aktuelle Sitzung weiterverwenden.',
       participationRequiredMessage:
         'Ihre Kursteilnahme für diesen Chatbot konnte nicht eingerichtet werden. Öffnen Sie den Kurs in OLAT/KlickerUZH und treten Sie ihm bei, bevor Sie es erneut versuchen.',
       goToCourse: 'Kurs öffnen',
@@ -1422,6 +1419,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Ihre Sitzung konnte nicht gestartet werden, da der Start aus Ihrer Lernplattform ungültig oder abgelaufen ist. Um eine neue Sitzung zu starten, öffnen Sie diese KlickerUZH-Aktivität erneut aus OLAT oder Ihrer Lernplattform.',
       freshLaunchRecoveryEmbedded:
         'Diese Seite ist in Ihrer Lernplattform eingebettet; eine neue Sitzung muss von dort aus gestartet werden.',
+      cookiesRequiredMessage:
+        'Ihr Browser hat die Cookies blockiert, die für die Anmeldung bei KlickerUZH erforderlich sind. Öffnen Sie diese Seite in einem neuen Tab ausserhalb Ihrer Lernplattform und melden Sie sich dort an oder starten Sie die Aktivität neu.',
+      cookiesRequiredAction: 'In neuem Tab öffnen',
     },
     avatar: {
       hair: 'Frisur',

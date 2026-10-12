@@ -907,9 +907,6 @@ Other participants will only see your public **participant profile**, including 
         'You need a KlickerUZH account to access this chatbot. Please log in or create an account first.',
       goToLogin: 'Go to login',
       openCourseChat: 'AI tutor',
-      sessionRecoveryTitle: 'Log in before opening the AI tutor',
-      sessionRecoveryMessage:
-        'You opened KlickerUZH through OLAT. To use the AI tutor, log in with your KlickerUZH account in this tab. This replaces the current OLAT session and requires cookies to be allowed. Opening KlickerUZH again through OLAT restores that session but does not unlock this AI tutor link. You can cancel to keep using your current session.',
       participationRequiredMessage:
         'We could not activate your participation for this course. Open the course in OLAT/KlickerUZH and ensure you have joined it before trying again.',
       goToCourse: 'Open course',
@@ -1417,6 +1414,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Your session could not be started because the launch from your learning platform is invalid or has expired. To start a fresh session, reopen this Klicker activity from OLAT or your learning platform.',
       freshLaunchRecoveryEmbedded:
         'This page is embedded in your learning platform; a fresh session has to be started from there.',
+      cookiesRequiredMessage:
+        'Your browser blocked the cookies required to sign in to KlickerUZH. Open this page outside your learning platform in a new browser tab and log in or relaunch the activity there.',
+      cookiesRequiredAction: 'Open in a new tab',
     },
     avatar: {
       hair: 'Hair',

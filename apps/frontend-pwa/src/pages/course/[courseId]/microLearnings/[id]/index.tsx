@@ -10,20 +10,20 @@ import {
   SelfDocument,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import { Button, H3, Prose, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
-import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
-import Layout from '../../../../../components/Layout'
 import PreviewMessage from '../../../../../components/common/PreviewMessage'
+import Layout from '../../../../../components/Layout'
 import MicroLearningSubscriber from '../../../../../components/microLearning/MicroLearningSubscriber'
 
 function MicrolearningIntroduction({
@@ -225,19 +225,26 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     const apolloClient = initializeApollo()
 
-    const { participantToken, cookiesAvailable, sessionState, tokenSource } =
-      await getParticipantToken({
-        apolloClient,
-        courseId: ctx.params.courseId,
-        ctx,
-      })
+    const {
+      participantToken,
+      cookiesAvailable,
+      sessionState,
+      sessionRevision,
+      sessionEstablished,
+    } = await getParticipantToken({
+      apolloClient,
+      courseId: ctx.params.courseId,
+      ctx,
+    })
 
     if (participantToken) {
       return {
         props: {
           sessionState,
-          tokenSource,
-          participantToken,
+          sessionRevision,
+          sessionEstablished,
+          participantToken:
+            process.env.ASSESSMENT_MODE === 'true' ? participantToken : null,
           cookiesAvailable,
           id: ctx.params.id,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
@@ -249,7 +256,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     return addApolloState(apolloClient, {
       props: {
         sessionState,
-        tokenSource,
+        sessionRevision,
+        sessionEstablished,
         id: ctx.params.id,
         courseId: ctx.params.courseId,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))

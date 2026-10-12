@@ -453,6 +453,17 @@ describe('Participant session cookie retention', () => {
       issuance[1] as string,
       process.env.APP_SECRET
     )
+    const revision = calls.find(([name]) => name === 'participant_session')!
+    expect(revision[1]).toEqual(expect.any(String))
+    expect(revision[2]).toMatchObject({ ...issuance[2], httpOnly: false })
+    await loginParticipant(
+      { usernameOrEmail: 'synthetic-user', password: 'synthetic-password' },
+      ctx
+    )
+    const revisions = vi
+      .mocked(ctx.res.cookie)
+      .mock.calls.filter(([name]) => name === 'participant_session')
+    expect(revisions.at(-1)?.[1]).not.toBe(revision[1])
     expect(issuance[2]).toMatchObject({
       maxAge: 1000 * 60 * 60 * 24 * 13,
       httpOnly: true,

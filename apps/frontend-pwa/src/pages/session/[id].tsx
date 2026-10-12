@@ -15,10 +15,10 @@ import {
   SelfDocument,
   SetLiveQuizPinDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { participantFetch } from '@klicker-uzh/shared-components/src/utils/participantSession'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import { getParticipantSessionToken } from '@lib/participantSession'
 import {
   Button,
   FormikAlphaNumericPinField,
@@ -30,9 +30,9 @@ import {
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { GetServerSidePropsContext } from 'next'
-import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
 import Layout from '../../components/Layout'
@@ -59,18 +59,9 @@ async function handleNewResponse({
   correlationKey?: string | null
 }): // statusCode: 0 = client-side invalid input / general error; otherwise HTTP status codes 200, 208, 400, 401, 404, 500
 Promise<{ statusCode: number; responseTimestamp?: number }> {
-  // The tab's explicit credential takes precedence over cookies, so the
-  // answer is recorded for the participant the page shows.
-  const participantToken =
-    process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true'
-      ? getParticipantSessionToken()
-      : null
   let requestOptions: RequestInit = {
     method: 'POST',
     credentials: 'include',
-    ...(participantToken && {
-      headers: { Authorization: `Bearer ${participantToken}` },
-    }),
   }
 
   if (QUESTION_GROUPS.CHOICES.includes(type)) {
@@ -131,7 +122,9 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
   }
 
   try {
-    const response = await fetch(
+    const response = await (process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
+      ? fetch
+      : participantFetch)(
       process.env.NEXT_PUBLIC_ADD_RESPONSE_URL as string,
       requestOptions
     )

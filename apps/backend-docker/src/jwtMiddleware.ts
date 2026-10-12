@@ -1,11 +1,12 @@
 import {
   isCookieDomainOrigin,
-  verifyExplicitParticipantBearer,
+  participantSessionMatches,
   verifyJWT,
 } from '@klicker-uzh/util'
 
 async function jwtMiddleware(req: any, res: any, next: any) {
   let token = null
+  let regularCookieRequest = false
 
   // Assessment mode: only check for student NextAuth cookie
   if (process.env.ASSESSMENT_MODE === 'true') {
@@ -44,18 +45,14 @@ async function jwtMiddleware(req: any, res: any, next: any) {
       // the cookie domain may select them.
       isCookieDomainOrigin(req.headers.origin)
     ) {
-      const authorization = req.headers['authorization']
-
-      // A present authorization is authoritative: a value that is not a
-      // usable explicit bearer fails closed instead of falling back to
-      // ambient cookies.
-      if (authorization !== undefined && authorization !== '') {
-        const bearer = await verifyExplicitParticipantBearer(
-          authorization,
-          process.env.APP_SECRET as string
+      regularCookieRequest = true
+      if (
+        !participantSessionMatches(
+          req.headers['x-participant-session'],
+          req.cookies ?? {}
         )
-        req.locals = { user: bearer?.payload ?? null }
-        return next()
+      ) {
+        return res.status(409).json({ error: 'participant_session_changed' })
       }
 
       token =
@@ -66,7 +63,9 @@ async function jwtMiddleware(req: any, res: any, next: any) {
   }
 
   // ! DO NOT TOUCH - assessment live quiz mode relies on it
-  token = token ?? req.headers['authorization']?.replace('Bearer ', '') ?? null
+  if (!regularCookieRequest)
+    token =
+      token ?? req.headers['authorization']?.replace('Bearer ', '') ?? null
 
   let user = null
   if (token) {

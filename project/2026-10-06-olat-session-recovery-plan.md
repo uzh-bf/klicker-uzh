@@ -134,7 +134,26 @@ Reuse unaffected evidence only where source and contract have not changed.
 
 ## Progress
 
-Remote refreshed 12 October 2026; task HEAD a7b505417765a4a9300dcec84f04d5cc3e36543c,
-upstream equal, origin/v3 has 3 unique commits and task 43. Existing PR targets v3.
-No integration blocker identified. Planner corrections incorporated: explicit revision protocol, redirect and registration confirmation, completed-response ordering and retained assessment contracts. Next:
-validate shared-session design, implement and verify the approved batch.
+Shared-login implementation is in verification. Removed tab token storage,
+explicit-bearer precedence, the Chat login gate and their obsolete tests. Added
+one shared revision boundary for PWA and Chat, guarded requests/results and
+cookie-acceptance recovery. Temporary login reloads after cookie replacement.
+The browser spec now observes existing PWA and Chat tabs and completed-response
+ordering; it has not yet run against this implementation.
+
+Planner approved the revised contract. Container checks passed: 30 PWA tests,
+24 backend tests, PWA/backend/Chat/response API/shared component/GraphQL type
+checks, and backend production build. Chat suite: 744 passed, 21 skipped,
+one Headers-representation assertion corrected; its five-test file then passed.
+No earlier tab-isolation browser result counts toward the new contract.
+
+The retained runtime is stopped after an OIDC Compose configuration guard
+blocked startup. A separate detached verification checkout preserves its data:
+`trees/olat-shared-login-verification`. Its managed initial build stalled after producing the backend bundle; stopping
+through devrouter cancelled startup but hit the same OIDC Compose hash guard.
+Browser verification is blocked until the runtime reaches readiness.
+The 125 host launcher/workflow checks passed. Full container checks encountered
+an existing parallel Prisma generation race and an offline Analytics dependency
+fetch; focused consumer checks above passed. Next: complete browser verification, simplify and review the committed
+correction, build, publish current evidence and update the existing PR. Stop
+both exact runtime targets and verify route release before closing.

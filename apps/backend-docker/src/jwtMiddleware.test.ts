@@ -58,14 +58,35 @@ async function runMiddleware({
   headers?: Record<string, unknown>
   cookies?: Record<string, string>
 } = {}) {
-  const req: any = { headers, cookies }
+  const req: {
+    headers: Record<string, unknown>
+    cookies: Record<string, string>
+    locals?: { user: { sub?: string; role?: string } | null }
+  } = { headers, cookies }
+  const responses: { statusCode?: number; body?: unknown } = {}
+  const res = {
+    status(statusCode: number) {
+      responses.statusCode = statusCode
+      return this
+    },
+    json(body: unknown) {
+      responses.body = body
+      return this
+    },
+  }
   let nextCalled = false
 
-  await jwtMiddleware(req, {}, () => {
+  await jwtMiddleware(req, res, () => {
     nextCalled = true
   })
 
-  return { user: req.locals?.user, nextCalled }
+  return {
+    user: req.locals?.user,
+    locals: req.locals,
+    nextCalled,
+    statusCode: responses.statusCode,
+    body: responses.body,
+  }
 }
 
 describe('jwtMiddleware', () => {
@@ -107,7 +128,59 @@ describe('jwtMiddleware', () => {
   })
 
   describe('regular PWA origin', () => {
-    it('prefers a valid explicit bearer over an expired ambient cookie', async () => {
+    it('keeps the participant cookie ahead of any authorization header', async () => {
+      const validBearer = await signParticipantToken({
+        sub: 'bearer-user',
+        exp: futureExpiry(),
+      })
+      const foreignBearer = await signParticipantToken({
+        sub: 'bearer-user',
+        exp: futureExpiry(),
+        secret: FOREIGN_SECRET,
+      })
+      const expiredBearer = await signParticipantToken({
+        sub: 'bearer-user',
+        exp: expiredExpiry(),
+      })
+
+      for (const authorization of [
+        `Bearer ${validBearer}`,
+        `Bearer ${foreignBearer}`,
+        `Bearer ${expiredBearer}`,
+        'Bearer not-a-jwt',
+        'Bearer',
+        'Basic YWJj',
+        '',
+        [`Bearer ${validBearer}`],
+      ] as unknown[]) {
+        const { user, nextCalled } = await runMiddleware({
+          headers: { origin: PWA_ORIGIN, authorization },
+          cookies: { participant_token: validCookieToken },
+        })
+
+        assert.equal(nextCalled, true)
+        assert.equal(user?.sub, 'cookie-user')
+      }
+    })
+
+    it('ignores a valid bearer when the participant cookie is absent', async () => {
+      const bearerToken = await signParticipantToken({
+        sub: 'bearer-user',
+        exp: futureExpiry(),
+      })
+
+      const { user, nextCalled } = await runMiddleware({
+        headers: {
+          origin: PWA_ORIGIN,
+          authorization: `Bearer ${bearerToken}`,
+        },
+      })
+
+      assert.equal(nextCalled, true)
+      assert.equal(user, null)
+    })
+
+    it('does not fall back to a bearer when the participant cookie is unusable', async () => {
       const expiredCookieToken = await signParticipantToken({
         sub: 'cookie-user',
         exp: expiredExpiry(),
@@ -126,177 +199,78 @@ describe('jwtMiddleware', () => {
       })
 
       assert.equal(nextCalled, true)
-      assert.equal(user?.sub, 'bearer-user')
+      assert.equal(user, null)
     })
 
-    it('prefers a valid explicit bearer over a conflicting valid ambient cookie', async () => {
-      const bearerToken = await signParticipantToken({
-        sub: 'bearer-user',
-        exp: futureExpiry(),
-      })
-
-      const { user } = await runMiddleware({
-        headers: {
-          origin: PWA_ORIGIN,
-          authorization: `Bearer ${bearerToken}`,
-        },
-        cookies: { participant_token: validCookieToken },
-      })
-
-      assert.equal(user?.sub, 'bearer-user')
-    })
-
-    it('accepts a verified temporary participant bearer', async () => {
-      const bearerToken = await signParticipantToken({
+    it('uses the temporary participant cookie only without a regular cookie', async () => {
+      const temporaryToken = await signParticipantToken({
         sub: 'temporary-user',
         role: 'TEMPORARY_PARTICIPANT',
         exp: futureExpiry(),
       })
 
-      const { user } = await runMiddleware({
-        headers: {
-          origin: PWA_ORIGIN,
-          authorization: `Bearer ${bearerToken}`,
-        },
-      })
-
-      assert.equal(user?.sub, 'temporary-user')
-      assert.equal(user?.role, 'TEMPORARY_PARTICIPANT')
-    })
-
-    it('fails closed for a bearer with an invalid signature without cookie fallback', async () => {
-      const bearerToken = await signParticipantToken({
-        sub: 'bearer-user',
-        exp: futureExpiry(),
-        secret: FOREIGN_SECRET,
-      })
-
-      const { user } = await runMiddleware({
-        headers: {
-          origin: PWA_ORIGIN,
-          authorization: `Bearer ${bearerToken}`,
-        },
-        cookies: { participant_token: validCookieToken },
-      })
-
-      assert.equal(user, null)
-    })
-
-    it('fails closed for a malformed bearer credential without cookie fallback', async () => {
-      const { user } = await runMiddleware({
-        headers: {
-          origin: PWA_ORIGIN,
-          authorization: 'Bearer not-a-jwt',
-        },
-        cookies: { participant_token: validCookieToken },
-      })
-
-      assert.equal(user, null)
-    })
-
-    it('fails closed for a bearer scheme without a credential', async () => {
-      const { user } = await runMiddleware({
-        headers: {
-          origin: PWA_ORIGIN,
-          authorization: 'Bearer',
-        },
-        cookies: { participant_token: validCookieToken },
-      })
-
-      assert.equal(user, null)
-    })
-
-    it('fails closed for an expired bearer without cookie fallback', async () => {
-      const bearerToken = await signParticipantToken({
-        sub: 'bearer-user',
-        exp: expiredExpiry(),
-      })
-
-      const { user } = await runMiddleware({
-        headers: {
-          origin: PWA_ORIGIN,
-          authorization: `Bearer ${bearerToken}`,
-        },
-        cookies: { participant_token: validCookieToken },
-      })
-
-      assert.equal(user, null)
-    })
-
-    it('fails closed for a bearer without a subject', async () => {
-      const bearerToken = await signParticipantToken({
-        sub: '',
-        exp: futureExpiry(),
-      })
-
-      const { user } = await runMiddleware({
-        headers: {
-          origin: PWA_ORIGIN,
-          authorization: `Bearer ${bearerToken}`,
-        },
-        cookies: { participant_token: validCookieToken },
-      })
-
-      assert.equal(user, null)
-    })
-
-    it('fails closed for a bearer without an expiration', async () => {
-      const bearerToken = await signParticipantToken({ sub: 'bearer-user' })
-
-      const { user } = await runMiddleware({
-        headers: {
-          origin: PWA_ORIGIN,
-          authorization: `Bearer ${bearerToken}`,
-        },
-        cookies: { participant_token: validCookieToken },
-      })
-
-      assert.equal(user, null)
-    })
-
-    it('fails closed for a bearer with a non-participant role', async () => {
-      const bearerToken = await signParticipantToken({
-        sub: 'bearer-user',
-        role: 'ADMIN',
-        exp: futureExpiry(),
-      })
-
-      const { user } = await runMiddleware({
-        headers: {
-          origin: PWA_ORIGIN,
-          authorization: `Bearer ${bearerToken}`,
-        },
-        cookies: { participant_token: validCookieToken },
-      })
-
-      assert.equal(user, null)
-    })
-
-    it('fails closed for a scoped bearer without cookie fallback', async () => {
-      const bearerToken = await signParticipantToken({
-        sub: 'bearer-user',
-        scope: 'chat:read',
-        exp: futureExpiry(),
-      })
-
-      const { user } = await runMiddleware({
-        headers: {
-          origin: PWA_ORIGIN,
-          authorization: `Bearer ${bearerToken}`,
-        },
-        cookies: { participant_token: validCookieToken },
-      })
-
-      assert.equal(user, null)
-    })
-
-    it('uses the participant cookie when the authorization header is absent', async () => {
-      const { user } = await runMiddleware({
+      const preferred = await runMiddleware({
         headers: { origin: PWA_ORIGIN },
+        cookies: {
+          participant_token: validCookieToken,
+          temporary_participant_token: temporaryToken,
+        },
+      })
+      assert.equal(preferred.user?.sub, 'cookie-user')
+
+      const temporary = await runMiddleware({
+        headers: { origin: PWA_ORIGIN },
+        cookies: { temporary_participant_token: temporaryToken },
+      })
+      assert.equal(temporary.user?.sub, 'temporary-user')
+      assert.equal(temporary.user?.role, 'TEMPORARY_PARTICIPANT')
+    })
+
+    it('rejects a revision mismatch with HTTP 409 before next', async () => {
+      const mismatched = await runMiddleware({
+        headers: { origin: PWA_ORIGIN, 'x-participant-session': 'rev-other' },
+        cookies: {
+          participant_token: validCookieToken,
+          participant_session: 'rev-1',
+        },
+      })
+
+      assert.equal(mismatched.statusCode, 409)
+      assert.deepEqual(mismatched.body, {
+        error: 'participant_session_changed',
+      })
+      assert.equal(mismatched.nextCalled, false)
+      assert.equal(mismatched.locals, undefined)
+
+      const missingCookieRevision = await runMiddleware({
+        headers: { origin: PWA_ORIGIN, 'x-participant-session': 'rev-1' },
         cookies: { participant_token: validCookieToken },
       })
 
-      assert.equal(user?.sub, 'cookie-user')
+      assert.equal(missingCookieRevision.statusCode, 409)
+      assert.equal(missingCookieRevision.nextCalled, false)
+    })
+
+    it('accepts a matching revision or the none marker', async () => {
+      const matching = await runMiddleware({
+        headers: { origin: PWA_ORIGIN, 'x-participant-session': 'rev-1' },
+        cookies: {
+          participant_token: validCookieToken,
+          participant_session: 'rev-1',
+        },
+      })
+
+      assert.equal(matching.statusCode, undefined)
+      assert.equal(matching.nextCalled, true)
+      assert.equal(matching.user?.sub, 'cookie-user')
+
+      const anonymous = await runMiddleware({
+        headers: { origin: PWA_ORIGIN, 'x-participant-session': 'none' },
+      })
+
+      assert.equal(anonymous.statusCode, undefined)
+      assert.equal(anonymous.nextCalled, true)
+      assert.equal(anonymous.user, null)
     })
 
     it('ignores participant cookies for a foreign origin containing the subdomain', async () => {
@@ -321,58 +295,6 @@ describe('jwtMiddleware', () => {
         process.env.COOKIE_DOMAIN = '.klicker.localhost'
       }
     })
-
-    it('treats an empty authorization header as absent for cookie-only requests', async () => {
-      const { user } = await runMiddleware({
-        headers: { origin: PWA_ORIGIN, authorization: '' },
-        cookies: { participant_token: validCookieToken },
-      })
-
-      assert.equal(user?.sub, 'cookie-user')
-    })
-
-    it('fails closed for a non-bearer authorization header without cookie fallback', async () => {
-      const { user } = await runMiddleware({
-        headers: { origin: PWA_ORIGIN, authorization: 'Basic YWJj' },
-        cookies: { participant_token: validCookieToken },
-      })
-
-      assert.equal(user, null)
-    })
-
-    it('fails closed for a non-string authorization header', async () => {
-      const bearerToken = await signParticipantToken({
-        sub: 'bearer-user',
-        exp: futureExpiry(),
-      })
-
-      const { user } = await runMiddleware({
-        headers: {
-          origin: PWA_ORIGIN,
-          authorization: [`Bearer ${bearerToken}`],
-        },
-        cookies: { participant_token: validCookieToken },
-      })
-
-      assert.equal(user, null)
-    })
-
-    it('fails closed for a bearer with a whitespace-only subject', async () => {
-      const bearerToken = await signParticipantToken({
-        sub: '   ',
-        exp: futureExpiry(),
-      })
-
-      const { user } = await runMiddleware({
-        headers: {
-          origin: PWA_ORIGIN,
-          authorization: `Bearer ${bearerToken}`,
-        },
-        cookies: { participant_token: validCookieToken },
-      })
-
-      assert.equal(user, null)
-    })
   })
 
   describe('other audience branches', () => {
@@ -392,6 +314,23 @@ describe('jwtMiddleware', () => {
       })
 
       assert.equal(user?.sub, 'cookie-user')
+    })
+
+    it('falls back to a bearer in assessment mode when the assessment cookie is absent', async () => {
+      process.env.ASSESSMENT_MODE = 'true'
+      const bearerToken = await signParticipantToken({
+        sub: 'bearer-user',
+        exp: futureExpiry(),
+      })
+
+      const { user } = await runMiddleware({
+        headers: {
+          origin: ASSESSMENT_ORIGIN,
+          authorization: `Bearer ${bearerToken}`,
+        },
+      })
+
+      assert.equal(user?.sub, 'bearer-user')
     })
 
     it('keeps the manage and control session cookie ahead of a bearer', async () => {

@@ -7,6 +7,7 @@ import {
   Token,
 } from '@capacitor/push-notifications'
 import { config } from '@fortawesome/fontawesome-svg-core'
+import ParticipantSessionBoundary from '@klicker-uzh/shared-components/src/ParticipantSessionBoundary'
 import '@fortawesome/fontawesome-svg-core/styles.css'
 import { getMessageFallback, onError, routing } from '@klicker-uzh/i18n'
 import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
@@ -17,7 +18,7 @@ import { Toaster } from '@uzh-bf/design-system'
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 import { Locale, NextIntlClientProvider } from 'next-intl'
-import { useEffect, useMemo } from 'react'
+import { useEffect } from 'react'
 
 import 'katex/dist/katex.min.css'
 import '../globals.css'
@@ -31,16 +32,7 @@ function App({ Component, pageProps }: AppProps) {
   const router = useRouter()
   const { locale } = router
 
-  const sessionProps = useMemo(
-    () => ({
-      ...pageProps,
-      resetParticipantSession:
-        router.pathname === '/serverError' &&
-        router.query.freshLaunch === 'true',
-    }),
-    [pageProps, router.pathname, router.query.freshLaunch]
-  )
-  const apolloClient = useApollo(sessionProps)
+  const apolloClient = useApollo(pageProps)
   const recovering =
     process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
     (pageProps.sessionState === 'rejected' ||
@@ -120,7 +112,16 @@ function App({ Component, pageProps }: AppProps) {
       >
         <ApolloProvider client={apolloClient}>
           <Toaster closeButton position="top-right" />
-          {recovering ? <Loader /> : <Component {...pageProps} />}
+          {process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true' ? (
+            <Component {...pageProps} />
+          ) : (
+            <ParticipantSessionBoundary
+              expectedRevision={pageProps.sessionRevision}
+              requireCookie={pageProps.sessionEstablished}
+            >
+              {recovering ? <Loader /> : <Component {...pageProps} />}
+            </ParticipantSessionBoundary>
+          )}
         </ApolloProvider>
       </NextIntlClientProvider>
       <style>{`

@@ -1,7 +1,7 @@
 ---
 type: Decision
 title: Regular participant session recovery
-description: Fresh participant identity takes precedence over retained browser credentials within the existing regular PWA audience.
+description: A successful LTI or ordinary login replaces the shared regular participant session across PWA and Chat tabs.
 timestamp: '2026-10-06'
 status: accepted
 tags:
@@ -9,54 +9,42 @@ tags:
   - integration
 ---
 
-# Explicit participant identity supersedes ambient session state
+# One shared regular participant login
 
-A verified OLAT login can coexist with an expired cookie or a previous
-participant's browser bearer. Selecting ambient credentials first prevents the
-fresh login from taking effect and can restore the wrong account. Within the
-existing regular PWA audience, use a verified explicit participant session
-before cookies and bind a client/cache to that identity before child queries.
-Only explicit credentials (an LTI exchange or LTI-backed account creation) are
-kept in the tab; ambient cookie sessions are never copied into its persistent
-credential store. Logout affects subsequent requests in cookie-authenticated
-tabs, without immediately clearing their rendered data. Another tab holding
-an explicit credential continues as its launched participant. Ordinary login
-in that same tab clears the explicit credential and returns it to cookie mode.
-Logout is local credential cleanup, not server-side JWT revocation.
-A URL never carries a participant session token. Retire the client of an ended
-identity, reject further transport work and retries, and ignore its late
-responses. Already-dispatched server work cannot be undone. Invalid explicit
-credentials fail closed; scoped OTP/activation credentials must undergo their own exchange.
-Because participant cookies are SameSite=None and CORS reflects any origin,
-only an origin inside the cookie domain may select or receive them. Manage and
-control cookies stay SameSite=Lax. Assessment and other origin audiences retain their
-existing credential selection and authorization.
+A successful LTI launch replaces the regular participant login for the browser
+cookie context. Ordinary login follows the same rule. PWA and Chat tabs use the
+shared HttpOnly credential rather than keeping independent participant tokens.
+Separate profiles and browser cookie partitions remain separate contexts.
 
-Keep the established cookie name/domain/path and bound registered retention by
-the signed session. Expire known legacy partitioned state in the current
-partition before canonical issuance. A browser-only memory fallback supports
-the current document when storage is denied; it cannot provide identity after
-a credential-free reload. Provide relaunch recovery for that boundary.
+The `participant_session` cookie contains a random, non-secret revision with the
+credential's domain, path, security policy and lifetime. Login, logout and
+successful account deletion replace it. Clients bind their rendered state to
+that revision, check before requests and after responses, and discard/reload
+stale state on change. Focus, interaction and periodic checks synchronize idle
+tabs across app origins. Browser requests send `x-participant-session`; APIs
+reject mismatches with HTTP 409 before executing work under another identity.
+The revision is not an authentication credential. Existing sessions without a
+revision use an empty binding until their next session transition.
 
-The Header chatbot action must not send an explicitly authenticated tab to a
-server-rendered bridge that may select a different cookie identity. Show
-recovery guidance without navigation or prefetch whenever that tab holds an
-explicit credential. Offer ordinary login in the same tab; a fresh LTI launch
-recovers the PWA but does not unlock this action. This deliberately withholds
-the link even when a cookie might match. Cookie-mode entry retains its new-tab
-behavior. A directly opened bridge still authenticates its own request and
-cannot infer another tab's identity. No new token transfer to Chat is added.
+LTI exchange and account creation must confirm cookie acceptance. A refused
+cookie leads to recovery outside the LMS frame, never a memory-only login or
+silent use of the former participant. The Chat link opens normally; its bridge
+checks course membership and confirms any newly exchanged session before
+navigation. Invalid launches block their protected view and clear the regular
+session. Rejected logout/deletion retain the current session and offer feedback.
 
-HttpOnly protects the cookie, not a JWT separately exposed to JavaScript.
-Explicit credentials remain readable in memory/sessionStorage; pre-existing
-ambient JWT page props also remain readable. Ordinary password, magic-link
-and activation login still depend on cookies, and manual registration returns
-no participant-session JWT.
+The last completed cookie-changing response determines the browser session.
+Already-dispatched server work and Set-Cookie responses cannot be undone by
+ignoring a late JavaScript result. Logout is cookie cleanup and client-state
+invalidation, not global JWT revocation. Lost responses can leave an uncertain
+server outcome; clients observe the resulting revision when it is available.
 
-Longer launch-token lifetimes would hide stale state and increase credential
-exposure. A session token in a URL would let any participant link another into
-their own account. Falling back to another credential after explicit
-failure risks an unintended account switch. Browser protection changes remain
-a diagnostic possibility, not a required product workaround established by the
-reported screenshots. See [Auth Model](../auth-model.md) for the resulting
-contract and evidence limits.
+Regular PWA browser requests authenticate only from cookies. Server-side and
+non-browser bearer callers and the separate assessment/lecturer contracts
+remain supported. Assessment fallback is not a retained regular-session mode.
+Participant cookies require a configured COOKIE_DOMAIN and origin checks;
+SameSite=None does not authorize foreign-origin cookie selection or issuance.
+Current-partition cookie cleanup does not claim to clear every browser partition.
+
+This decision replaces the earlier tab-isolation policy and Chat login gate.
+Their implementation is removed; prior rationale remains in Git history.

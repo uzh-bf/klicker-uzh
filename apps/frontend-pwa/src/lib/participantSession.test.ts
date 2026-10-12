@@ -1,104 +1,140 @@
 import assert from 'node:assert/strict'
 import { it } from 'node:test'
 import {
-  applyParticipantPageSession,
-  getParticipantSessionGeneration,
-  getParticipantSessionToken,
-  invalidateParticipantSession,
-  isSuccessfulParticipantSessionResult,
-  resolveParticipantPageToken,
-  setParticipantSessionToken,
-} from './participantSession'
+  acceptParticipantSession,
+  checkParticipantSession,
+  isParticipantSessionStale,
+  participantFetch,
+  participantReloadUrl,
+  participantSessionHeaders,
+  subscribeParticipantSession,
+} from '@klicker-uzh/shared-components/src/utils/participantSession'
+import { isSuccessfulParticipantSessionResult } from './participantSession'
 
-function installWindow(values = new Map<string, string>()) {
+function installDocument(cookie: string) {
+  const doc = { cookie }
+  Object.defineProperty(globalThis, 'document', {
+    configurable: true,
+    value: doc,
+  })
+  return doc
+}
+
+function removeDocument() {
+  delete (globalThis as { document?: unknown }).document
+}
+
+function installWindow(value: Record<string, unknown> = {}) {
   Object.defineProperty(globalThis, 'window', {
     configurable: true,
-    value: {
-      sessionStorage: {
-        getItem: (key: string) => values.get(key) ?? null,
-        setItem: (key: string, value: string) => values.set(key, value),
-        removeItem: (key: string) => values.delete(key),
-      },
-    },
+    value,
   })
-  return values
 }
 
 function removeWindow() {
   delete (globalThis as { window?: unknown }).window
 }
 
-it('never retains browser credentials in server state', () => {
-  setParticipantSessionToken('server-token')
-  assert.equal(getParticipantSessionToken(), null)
+function restoreEnvironment(previousEnvironment: string | undefined) {
+  if (previousEnvironment === undefined)
+    Reflect.deleteProperty(process.env, 'NODE_ENV')
+  else Object.assign(process.env, { NODE_ENV: previousEnvironment })
+}
+
+it('sends the bound revision, or the none marker without one', () => {
+  const doc = installDocument('participant_session=rev-1')
+  acceptParticipantSession()
+  assert.deepEqual(participantSessionHeaders(), {
+    'x-participant-session': 'rev-1',
+  })
+  doc.cookie = ''
+  acceptParticipantSession()
+  assert.deepEqual(participantSessionHeaders(), {
+    'x-participant-session': 'none',
+  })
+  removeDocument()
 })
 
-it('keeps only explicit credentials, ahead of any cookie session', () => {
-  const values = installWindow()
-  const explicit = {
-    participantToken: 'participant-b',
-    tokenSource: 'explicit' as const,
-    sessionState: 'authenticated' as const,
-  }
-  const ambient = {
-    participantToken: 'participant-a',
-    tokenSource: 'ambient' as const,
-    sessionState: 'authenticated' as const,
-  }
-
-  assert.equal(resolveParticipantPageToken(ambient), null)
-  applyParticipantPageSession(ambient)
-  assert.equal(values.has('participant_token'), false)
-
-  assert.equal(resolveParticipantPageToken(explicit), 'participant-b')
-  applyParticipantPageSession(explicit)
-  assert.equal(values.get('participant_token'), 'participant-b')
-
-  // A page without a launch, such as one inside a cookie-blocking frame,
-  // keeps the credential this tab received.
-  assert.equal(
-    resolveParticipantPageToken({ sessionState: 'no_launch' }),
-    'participant-b'
+it('marks and notifies a document whose revision another tab replaced', () => {
+  const doc = installDocument('participant_session=rev-1')
+  acceptParticipantSession()
+  let notified = 0
+  const unsubscribe = subscribeParticipantSession(() => {
+    notified += 1
+  })
+  doc.cookie = 'participant_session=rev-2'
+  assert.equal(checkParticipantSession(), false)
+  assert.equal(notified, 1)
+  assert.equal(isParticipantSessionStale(), true)
+  assert.throws(
+    () => participantSessionHeaders(),
+    /Participant session changed/
   )
-
-  // A cookie session for another participant cannot replace the launch.
-  assert.equal(resolveParticipantPageToken(ambient), 'participant-b')
-  applyParticipantPageSession(ambient)
-  assert.equal(values.get('participant_token'), 'participant-b')
-  removeWindow()
+  unsubscribe()
+  acceptParticipantSession()
+  assert.equal(isParticipantSessionStale(), false)
+  assert.deepEqual(participantSessionHeaders(), {
+    'x-participant-session': 'rev-2',
+  })
+  removeDocument()
 })
 
-it('ends the identity for rejected, unregistered, failed and reset launches', () => {
-  installWindow()
-  for (const page of [
-    { sessionState: 'rejected' as const },
-    { sessionState: 'registration_required' as const },
-    { sessionState: 'exchange_unavailable' as const },
-    { resetParticipantSession: true },
-  ]) {
-    setParticipantSessionToken('participant-b')
-    const before = getParticipantSessionGeneration()
-    assert.equal(resolveParticipantPageToken(page), null)
-    applyParticipantPageSession(page)
-    assert.equal(getParticipantSessionToken(), null)
-    assert.ok(getParticipantSessionGeneration() > before)
-  }
-  removeWindow()
+it('rejects an in-flight request and its response once the revision is replaced', async (t) => {
+  const doc = installDocument('participant_session=rev-1')
+  acceptParticipantSession()
+  const requests: Headers[] = []
+  let releaseResponse!: (response: Response) => void
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async (_input: unknown, init?: RequestInit) => {
+      requests.push(new Headers(init?.headers))
+      if (requests.length === 1) {
+        return new Promise<Response>((resolve) => {
+          releaseResponse = resolve
+        })
+      }
+      return new Response('{}')
+    }
+  )
+  const pending = participantFetch('/graphql', {
+    headers: { 'x-synthetic': 'kept' },
+  })
+  doc.cookie = 'participant_session=rev-2'
+  releaseResponse(new Response('{}'))
+  await assert.rejects(pending, /Participant session changed/)
+  assert.equal(requests[0]?.get('x-participant-session'), 'rev-1')
+  assert.equal(requests[0]?.get('x-synthetic'), 'kept')
+
+  // A stale document refuses new work before it reaches the network.
+  await assert.rejects(
+    participantFetch('/graphql'),
+    /Participant session changed/
+  )
+  assert.equal(requests.length, 1)
+
+  // Only accepting the replacement resumes work under the new revision.
+  acceptParticipantSession()
+  const response = await participantFetch('/graphql')
+  assert.equal(response.status, 200)
+  assert.equal(requests.length, 2)
+  assert.equal(requests[1]?.get('x-participant-session'), 'rev-2')
+  removeDocument()
 })
 
-it('retains the credential in memory when session storage is denied', () => {
-  Object.defineProperty(globalThis, 'window', {
-    configurable: true,
-    value: {
-      get sessionStorage() {
-        throw new Error('denied')
-      },
+it('drops launch parameters when a replaced document reloads', () => {
+  installWindow({
+    location: {
+      href: 'https://pwa.klicker.localhost/course/1?jwt=launch&participantToken=old&token=legacy&session=stale&keep=1',
     },
   })
-  setParticipantSessionToken('participant-c')
-  assert.equal(getParticipantSessionToken(), 'participant-c')
-  invalidateParticipantSession()
-  assert.equal(getParticipantSessionToken(), null)
+  const url = new URL(participantReloadUrl())
+  assert.equal(url.searchParams.has('jwt'), false)
+  assert.equal(url.searchParams.has('participantToken'), false)
+  assert.equal(url.searchParams.has('token'), false)
+  assert.equal(url.searchParams.has('session'), false)
+  assert.equal(url.searchParams.get('keep'), '1')
+  assert.equal(url.pathname, '/course/1')
   removeWindow()
 })
 
@@ -106,16 +142,19 @@ it('recognizes only successful session-changing mutation results', () => {
   for (const result of [
     { data: { deleteParticipantAccount: false } },
     { data: { logoutParticipant: null } },
+    { data: { createParticipantAccount: { participantToken: null } } },
     { errors: [{}], data: { logoutParticipant: 'participant-b' } },
     { data: null },
   ]) {
     assert.equal(isSuccessfulParticipantSessionResult(result), false)
   }
   for (const data of [
+    { createParticipantAccount: { participantToken: 'participant-d' } },
     { deleteParticipantAccount: true },
     { logoutTemporaryParticipant: true },
     { logoutParticipant: 'participant-b' },
     { loginParticipant: 'participant-c' },
+    { loginTemporaryParticipant: 'participant-c' },
     { loginParticipantMagicLink: 'participant-c' },
     { activateParticipantAccount: 'participant-c' },
   ]) {
@@ -123,190 +162,7 @@ it('recognizes only successful session-changing mutation results', () => {
   }
 })
 
-it('gives each participant binding its own Apollo cache', async () => {
-  process.env.NEXT_PUBLIC_API_URL = 'https://api.example.invalid/api/graphql'
-  const { initializeApollo } = await import('./apollo')
-  installWindow()
-  const state = {
-    ROOT_QUERY: { __typename: 'Query', self: { __ref: 'Participant:a' } },
-    'Participant:a': { __typename: 'Participant', id: 'a' },
-  }
-  const first = initializeApollo(state, undefined, {
-    token: 'participant-a',
-    key: '0:participant-a',
-  })
-  assert.equal(
-    initializeApollo(undefined, undefined, {
-      token: 'participant-a',
-      key: '0:participant-a',
-    }),
-    first
-  )
-  const second = initializeApollo(undefined, undefined, {
-    token: null,
-    key: '1:',
-  })
-  assert.notEqual(second, first)
-  assert.equal(second.extract()['Participant:a'], undefined)
-  first.stop()
-  second.stop()
-  removeWindow()
-})
-
-for (const outcome of [
-  'success',
-  'unauthorized',
-  'data-use',
-  'login',
-] as const) {
-  it(`rejects retained-client work and delayed ${outcome} after logout`, {
-    timeout: 5000,
-  }, async (t) => {
-    process.env.NEXT_PUBLIC_API_URL = 'https://api.example.invalid/api/graphql'
-    const previousEnvironment = process.env.NODE_ENV
-    Object.assign(process.env, { NODE_ENV: 'development' })
-    const { gql } = await import('@apollo/client')
-    const { initializeApollo, hasExplicitParticipantSession } = await import(
-      './apollo'
-    )
-    const { default: Router } = await import('next/router')
-    const redirects = t.mock.method(Router, 'push', async () => true)
-    const replacements = t.mock.method(Router, 'replace', async () => true)
-    const values = installWindow()
-    setParticipantSessionToken('participant-b')
-    const requests: string[] = []
-    let releaseOldResult!: (response: Response) => void
-    let requestStarted!: () => void
-    const started = new Promise<void>((resolve) => {
-      requestStarted = resolve
-    })
-    t.mock.method(
-      globalThis,
-      'fetch',
-      async (_input: unknown, init?: RequestInit) => {
-        const { operationName } = JSON.parse(String(init?.body))
-        requests.push(operationName)
-        if (
-          operationName === 'QDelayedSelf' ||
-          operationName === 'MDelayedLogin'
-        ) {
-          requestStarted()
-          return new Promise<Response>((resolve) => {
-            releaseOldResult = resolve
-          })
-        }
-        return new Response(
-          JSON.stringify({
-            data:
-              operationName === 'MLogoutParticipant'
-                ? { logoutParticipant: 'participant-b' }
-                : { self: { __typename: 'Participant', id: 'participant-a' } },
-          }),
-          {
-            headers: { 'content-type': 'application/json' },
-          }
-        )
-      }
-    )
-    const old = initializeApollo(undefined, undefined, {
-      token: 'participant-b',
-      key: `retirement:${outcome}:participant-b`,
-    })
-    let current: typeof old | undefined
-    t.after(() => {
-      old.stop()
-      current?.stop()
-      removeWindow()
-      if (previousEnvironment === undefined)
-        Reflect.deleteProperty(process.env, 'NODE_ENV')
-      else Object.assign(process.env, { NODE_ENV: previousEnvironment })
-    })
-    assert.equal(hasExplicitParticipantSession(old), true)
-    const delayed =
-      outcome === 'login'
-        ? old.mutate({
-            mutation: gql`mutation MDelayedLogin { loginParticipant(usernameOrEmail: "synthetic", password: "synthetic") }`,
-          })
-        : old.query({
-            query: gql`query QDelayedSelf { self { id __typename } }`,
-            fetchPolicy: 'network-only',
-          })
-    const rejectedDelayed = assert.rejects(
-      delayed,
-      /Participant session changed/
-    )
-    await started
-    await old.mutate({
-      mutation: gql`mutation MLogoutParticipant { logoutParticipant }`,
-    })
-    assert.equal(getParticipantSessionToken(), null)
-    assert.equal(values.has('participant_token'), false)
-    const generation = getParticipantSessionGeneration()
-    current = initializeApollo(undefined, undefined, {
-      token: null,
-      key: `retirement:${outcome}:cookie`,
-    })
-    assert.equal(hasExplicitParticipantSession(current), false)
-    const self = gql`query QCurrentSelf { self { id __typename } }`
-    assert.equal(
-      (await current.query({ query: self, fetchPolicy: 'network-only' })).data
-        .self.id,
-      'participant-a'
-    )
-    releaseOldResult(
-      new Response(
-        JSON.stringify(
-          outcome === 'login'
-            ? { data: { loginParticipant: 'participant-b' } }
-            : outcome === 'success'
-              ? {
-                  data: {
-                    self: { __typename: 'Participant', id: 'participant-b' },
-                  },
-                }
-              : {
-                  errors: [
-                    {
-                      message:
-                        outcome === 'unauthorized'
-                          ? 'Unauthorized'
-                          : 'Data use required',
-                      extensions:
-                        outcome === 'data-use'
-                          ? { code: 'PARTICIPANT_DATA_USE_COMPLETION_REQUIRED' }
-                          : { code: 'UNAUTHENTICATED' },
-                    },
-                  ],
-                }
-        ),
-        {
-          headers: { 'content-type': 'application/json' },
-        }
-      )
-    )
-    await rejectedDelayed
-    old.stop()
-    await assert.rejects(
-      old.query({ query: self, fetchPolicy: 'network-only' }),
-      /Participant session changed/
-    )
-    assert.deepEqual(requests, [
-      outcome === 'login' ? 'MDelayedLogin' : 'QDelayedSelf',
-      'MLogoutParticipant',
-      'QCurrentSelf',
-    ])
-    assert.equal(
-      current.readQuery<{ self: { id: string } }>({ query: self })?.self.id,
-      'participant-a'
-    )
-    assert.equal(old.extract()['Participant:participant-b'], undefined)
-    assert.equal(getParticipantSessionGeneration(), generation)
-    assert.equal(redirects.mock.callCount(), 0)
-    assert.equal(replacements.mock.callCount(), 0)
-  })
-}
-
-it('does not retry a failed request after its participant binding retires', {
+it('drops a delayed result and refuses new work on a replaced binding', {
   timeout: 5000,
 }, async (t) => {
   process.env.NEXT_PUBLIC_API_URL = 'https://api.example.invalid/api/graphql'
@@ -314,7 +170,106 @@ it('does not retry a failed request after its participant binding retires', {
   Object.assign(process.env, { NODE_ENV: 'development' })
   const { gql } = await import('@apollo/client')
   const { initializeApollo } = await import('./apollo')
+  const doc = installDocument('participant_session=rev-1')
   installWindow()
+  t.after(() => {
+    removeDocument()
+    removeWindow()
+    restoreEnvironment(previousEnvironment)
+  })
+  acceptParticipantSession()
+  const requests: string[] = []
+  let releaseDelayed!: (response: Response) => void
+  let delayedStarted!: () => void
+  const started = new Promise<void>((resolve) => {
+    delayedStarted = resolve
+  })
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async (_input: unknown, init?: RequestInit) => {
+      const { operationName } = JSON.parse(String(init?.body))
+      requests.push(operationName)
+      if (operationName === 'QDelayedSelf') {
+        delayedStarted()
+        return new Promise<Response>((resolve) => {
+          releaseDelayed = resolve
+        })
+      }
+      if (operationName === 'MLogoutParticipant') {
+        // The completed command replaces the shared revision.
+        doc.cookie = 'participant_session=rev-2'
+      }
+      return new Response(
+        JSON.stringify({
+          data:
+            operationName === 'MLogoutParticipant'
+              ? { logoutParticipant: 'participant-b' }
+              : { self: { __typename: 'Participant', id: 'participant-b' } },
+        }),
+        { headers: { 'content-type': 'application/json' } }
+      )
+    }
+  )
+  const old = initializeApollo(undefined, undefined, { revision: 'rev-1' })
+  const delayed = old.query({
+    query: gql`query QDelayedSelf { self { id __typename } }`,
+    fetchPolicy: 'network-only',
+  })
+  const rejectedDelayed = assert.rejects(delayed, /Participant session changed/)
+  await started
+  await old.mutate({
+    mutation: gql`mutation MLogoutParticipant { logoutParticipant }`,
+  })
+  releaseDelayed(
+    new Response(
+      JSON.stringify({
+        data: { self: { __typename: 'Participant', id: 'participant-a' } },
+      }),
+      { headers: { 'content-type': 'application/json' } }
+    )
+  )
+  await rejectedDelayed
+  await assert.rejects(
+    old.query({
+      query: gql`query QNotSentSelf { self { id } }`,
+      fetchPolicy: 'network-only',
+    }),
+    /Participant session changed/
+  )
+  assert.deepEqual(requests, ['QDelayedSelf', 'MLogoutParticipant'])
+  const current = initializeApollo(undefined, undefined, { revision: 'rev-2' })
+  assert.notEqual(current, old)
+  const result = await current.query({
+    query: gql`query QCurrentSelf { self { id } }`,
+    fetchPolicy: 'network-only',
+  })
+  assert.equal(result.data?.self.id, 'participant-b')
+  assert.deepEqual(requests, [
+    'QDelayedSelf',
+    'MLogoutParticipant',
+    'QCurrentSelf',
+  ])
+  old.stop()
+  current.stop()
+})
+
+it('does not retry a failed request once the shared revision is replaced', {
+  timeout: 5000,
+}, async (t) => {
+  process.env.NEXT_PUBLIC_API_URL = 'https://api.example.invalid/api/graphql'
+  const previousEnvironment = process.env.NODE_ENV
+  Object.assign(process.env, { NODE_ENV: 'development' })
+  const { gql } = await import('@apollo/client')
+  const { initializeApollo } = await import('./apollo')
+  const doc = installDocument('participant_session=rev-1')
+  installWindow()
+  t.after(() => {
+    removeDocument()
+    removeWindow()
+    restoreEnvironment(previousEnvironment)
+  })
+  acceptParticipantSession()
   t.mock.timers.enable({ apis: ['setTimeout'] })
   let attempts = 0
   t.mock.method(
@@ -326,31 +281,20 @@ it('does not retry a failed request after its participant binding retires', {
         attempts += 1
         throw new Error('Synthetic transport failure')
       }
+      doc.cookie = 'participant_session=rev-2'
       return new Response(
         JSON.stringify({ data: { logoutParticipant: 'participant-b' } }),
-        {
-          headers: { 'content-type': 'application/json' },
-        }
+        { headers: { 'content-type': 'application/json' } }
       )
     }
   )
-  const client = initializeApollo(undefined, undefined, {
-    token: 'participant-b',
-    key: 'retry:participant-b',
-  })
-  t.after(() => {
-    client.stop()
-    removeWindow()
-    if (previousEnvironment === undefined)
-      Reflect.deleteProperty(process.env, 'NODE_ENV')
-    else Object.assign(process.env, { NODE_ENV: previousEnvironment })
-  })
+  const client = initializeApollo(undefined, undefined, { revision: 'rev-1' })
   const pending = client.query({
     query: gql`query QRetrySelf { self { id } }`,
     fetchPolicy: 'network-only',
   })
   const rejected = assert.rejects(pending, /Participant session changed/)
-  // Let the failed request schedule its retry, then retire before that timer.
+  // Let the failed request schedule its retry, then retire the binding.
   await new Promise<void>((resolve) => setImmediate(resolve))
   assert.equal(attempts, 1)
   await client.mutate({
@@ -359,4 +303,36 @@ it('does not retry a failed request after its participant binding retires', {
   t.mock.timers.tick(3000)
   await rejected
   assert.equal(attempts, 1)
+  client.stop()
+})
+
+it('gives a replacement revision its own client and cache', async (t) => {
+  process.env.NEXT_PUBLIC_API_URL = 'https://api.example.invalid/api/graphql'
+  const previousEnvironment = process.env.NODE_ENV
+  Object.assign(process.env, { NODE_ENV: 'development' })
+  const { initializeApollo } = await import('./apollo')
+  const doc = installDocument('participant_session=rev-1')
+  installWindow()
+  t.after(() => {
+    removeDocument()
+    removeWindow()
+    restoreEnvironment(previousEnvironment)
+  })
+  acceptParticipantSession()
+  const state = {
+    ROOT_QUERY: { __typename: 'Query', self: { __ref: 'Participant:a' } },
+    'Participant:a': { __typename: 'Participant', id: 'a' },
+  }
+  const first = initializeApollo(state, undefined, { revision: 'rev-1' })
+  assert.equal(
+    initializeApollo(undefined, undefined, { revision: 'rev-1' }),
+    first
+  )
+  doc.cookie = 'participant_session=rev-2'
+  acceptParticipantSession()
+  const second = initializeApollo(undefined, undefined, { revision: 'rev-2' })
+  assert.notEqual(second, first)
+  assert.equal(second.extract()['Participant:a'], undefined)
+  first.stop()
+  second.stop()
 })

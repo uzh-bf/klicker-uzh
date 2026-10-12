@@ -1,15 +1,20 @@
 import { EnsureParticipationDocument } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { buildChatbotRedirectParams } from '@klicker-uzh/shared-components/src/utils/handoff'
 import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseEmbedParam'
+import { readParticipantSession } from '@klicker-uzh/shared-components/src/utils/participantSession'
 import { UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
+import { useEffect } from 'react'
 import Layout from '../../../../components/Layout'
 import { initializeApollo } from '../../../../lib/apollo'
 import getParticipantToken from '../../../../lib/getParticipantToken'
 
 type ChatbotPageProps = {
+  chatDestination?: string
+  sessionRevision?: string
   participationError?: boolean
   courseLink?: string
 }
@@ -34,7 +39,12 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     const embedded = parseEmbedParam(ctx.query.embed)
     const handoffParameters = buildChatbotRedirectParams(ctx.query, embedded)
 
-    const { participantToken, sessionState } = await getParticipantToken({
+    const {
+      participantToken,
+      sessionState,
+      sessionRevision,
+      sessionEstablished,
+    } = await getParticipantToken({
       apolloClient,
       courseId,
       ctx,
@@ -108,6 +118,19 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       chatDestination.searchParams.set(key, value)
     }
 
+    if (sessionRevision)
+      chatDestination.searchParams.set('session', sessionRevision)
+    if (sessionEstablished)
+      return {
+        props: {
+          chatDestination: chatDestination.toString(),
+          sessionRevision,
+          sessionEstablished,
+          messages: (
+            await import(`@klicker-uzh/i18n/messages/${ctx.locale ?? 'en'}`)
+          ).default,
+        },
+      }
     return {
       redirect: {
         destination: chatDestination.toString(),
@@ -126,8 +149,22 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   }
 }
 
-const ChatbotPage = ({ participationError, courseLink }: ChatbotPageProps) => {
+const ChatbotPage = ({
+  participationError,
+  courseLink,
+  chatDestination,
+  sessionRevision,
+}: ChatbotPageProps) => {
   const t = useTranslations()
+  useEffect(() => {
+    if (!chatDestination) return
+    window.location.replace(
+      readParticipantSession() === sessionRevision
+        ? chatDestination
+        : '/serverError?cookiesRequired=true'
+    )
+  }, [chatDestination, sessionRevision])
+  if (chatDestination) return <Loader />
 
   if (participationError) {
     return (

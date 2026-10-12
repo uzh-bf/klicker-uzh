@@ -53,7 +53,16 @@ function participantCookieSettings(ctx: Context): CookieOptions {
   }
 }
 
+function setParticipantSessionRevision(ctx: Context) {
+  if (process.env.ASSESSMENT_MODE === 'true') return
+  ctx.res.cookie('participant_session', uuidv4(), {
+    ...participantCookieSettings(ctx),
+    httpOnly: false,
+  })
+}
+
 function expireParticipantCookie(ctx: Context) {
+  setParticipantSessionRevision(ctx)
   // Clear the current partition before issuing the canonical session cookie.
   if (process.env.ASSESSMENT_MODE !== 'true') {
     ctx.res.cookie('participant_token', '', {
@@ -64,6 +73,10 @@ function expireParticipantCookie(ctx: Context) {
       partitioned: true,
     })
   }
+  ctx.res.cookie('temporary_participant_token', '', {
+    ...COOKIE_SETTINGS,
+    maxAge: 0,
+  })
   ctx.res.cookie('participant_token', 'logoutString', {
     ...participantCookieSettings(ctx),
     maxAge: 0,
@@ -245,6 +258,7 @@ export async function loginTemporaryParticipant(
 
   // create and return a new valid token for the temporary participant
   const jwt = await createTemporaryParticipantToken(temporaryParticipant.id)
+  if (process.env.ASSESSMENT_MODE !== 'true') expireParticipantCookie(ctx)
   ctx.res.cookie('temporary_participant_token', jwt, COOKIE_SETTINGS)
   return jwt
 }
@@ -460,6 +474,7 @@ export async function logoutTemporaryParticipant(
   })
 
   // delete the cookie
+  setParticipantSessionRevision(ctx)
   ctx.res.cookie('temporary_participant_token', 'logoutString', {
     ...COOKIE_SETTINGS,
     maxAge: 0,

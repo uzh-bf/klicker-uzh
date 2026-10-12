@@ -25,7 +25,20 @@ function context(query: GetServerSidePropsContext['query'], cookie = '') {
   }
 }
 
-it('exchanges a fresh explicit launch instead of an expired retained launch', async () => {
+function responseCookies(headers: Map<string, string | string[] | number>) {
+  const value = headers.get('Set-Cookie')
+  if (value === undefined) return []
+  return Array.isArray(value) ? value : [String(value)]
+}
+
+function writtenCookie(values: string[], name: string) {
+  const serialized = values
+    .filter((value) => value.startsWith(`${name}=`))
+    .at(-1)
+  return serialized?.slice(name.length + 1).split(';')[0]
+}
+
+it('exchanges a fresh launch, rotates the retained revision and writes the session cookies', async () => {
   const stale = await signJWT(
     {
       sub: 'synthetic-student',
@@ -56,11 +69,28 @@ it('exchanges a fresh explicit launch instead of an expired retained launch', as
       return { data: { loginParticipantWithLti: { participantToken } } }
     },
   } as unknown as ApolloClient<NormalizedCacheObject>
-  const { ctx, headers } = context({ jwt: fresh }, `lti-token=${stale}`)
+  const { ctx, headers } = context(
+    { jwt: fresh },
+    `lti-token=${stale}; participant_session=retained-revision`
+  )
   const result = await getParticipantToken({ apolloClient: client, ctx })
+  assert.equal(result.sessionState, 'authenticated')
   assert.equal(result.participantToken, participantToken)
   assert.equal(exchanged, fresh)
-  assert.match(String(headers.get('Set-Cookie')), /Max-Age=1123200(?:;|,)/)
+  assert.equal(result.sessionEstablished, true)
+  assert.ok(result.sessionRevision)
+  assert.notEqual(result.sessionRevision, 'retained-revision')
+  const cookies = responseCookies(headers)
+  assert.equal(
+    writtenCookie(cookies, 'participant_session'),
+    result.sessionRevision
+  )
+  const participantCookie = cookies.find((value) =>
+    value.startsWith(`participant_token=${participantToken}`)
+  )
+  assert.ok(participantCookie)
+  assert.match(participantCookie, /Max-Age=1123200(?:;|$)/)
+  assert.ok(cookies.some((value) => value.startsWith('lti-token=;')))
 })
 
 it('rejects malformed launches and unusable participant cookies instead of using an ambient account', async () => {
@@ -120,14 +150,26 @@ it('rejects malformed launches and unusable participant cookies instead of using
       Object.hasOwn(query, 'jwt') ? 'rejected' : 'no_launch'
     )
     assert.equal(result.participantToken, null)
-    assert.match(
-      String(headers.get('Set-Cookie')),
-      /participant_token=; Max-Age=0/
+    assert.equal(result.sessionEstablished, false)
+    const cookies = responseCookies(headers)
+    // The unusable retained session expires and the revision rotates to the
+    // anonymous state the page can bind.
+    assert.ok(result.sessionRevision)
+    assert.equal(
+      writtenCookie(cookies, 'participant_session'),
+      result.sessionRevision
     )
+    const expiration = cookies.find(
+      (value) =>
+        value.startsWith('participant_token=;') &&
+        !value.includes('; Partitioned')
+    )
+    assert.ok(expiration)
+    assert.ok(Number(expiration.match(/Max-Age=(-?\d+)/)?.[1]) <= 0)
   }
 })
 
-it('ignores participant tokens in the URL and keeps the ambient account', async () => {
+it('ignores participant tokens in the URL and keeps the ambient account and revision', async () => {
   const ambient = await signJWT(
     { sub: 'participant-a', role: 'PARTICIPANT' },
     secret,
@@ -146,18 +188,21 @@ it('ignores participant tokens in the URL and keeps the ambient account', async 
   for (const participantToken of [other, 'not-a-jwt', '', [other, other]]) {
     const { ctx, headers } = context(
       { participantToken },
-      `participant_token=${ambient}`
+      `participant_token=${ambient}; participant_session=ambient-revision`
     )
     const result = await getParticipantToken({ apolloClient: client, ctx })
     assert.equal(result.sessionState, 'authenticated')
-    assert.equal(result.tokenSource, 'ambient')
     assert.equal(result.participantToken, ambient)
+    assert.equal(result.sessionRevision, 'ambient-revision')
+    assert.equal(result.sessionEstablished, false)
     assert.equal(headers.get('Set-Cookie'), undefined)
   }
   const { ctx } = context({ participantToken: other })
   const anonymous = await getParticipantToken({ apolloClient: client, ctx })
   assert.equal(anonymous.sessionState, 'no_launch')
   assert.equal(anonymous.participantToken, null)
+  assert.equal(anonymous.sessionRevision, '')
+  assert.equal(anonymous.sessionEstablished, false)
 })
 
 it('returns one verified registration context and classifies exchange failure without exposing ambient identity', async () => {
@@ -172,6 +217,7 @@ it('returns one verified registration context and classifies exchange failure wi
   const { ctx } = context({ jwt: fresh })
   const registration = await getParticipantToken({ apolloClient: missing, ctx })
   assert.equal(registration.sessionState, 'registration_required')
+  assert.equal(registration.sessionEstablished, false)
   assert.deepEqual(registration.signedLtiData, {
     token: fresh,
     ssoId: 'student-b',
@@ -185,6 +231,7 @@ it('returns one verified registration context and classifies exchange failure wi
   const result = await getParticipantToken({ apolloClient: unavailable, ctx })
   assert.equal(result.sessionState, 'exchange_unavailable')
   assert.equal(result.participantToken, null)
+  assert.equal(result.sessionEstablished, false)
 })
 
 it('authenticates a linked LTI subject without email but refuses registration without email', async () => {
@@ -209,6 +256,7 @@ it('authenticates a linked LTI subject without email but refuses registration wi
   const result = await getParticipantToken({ apolloClient: client, ctx })
   assert.equal(result.sessionState, 'authenticated')
   assert.equal(result.participantToken, participantToken)
+  assert.equal(result.sessionEstablished, true)
   assert.equal(exchanged, fresh)
   const missing = {
     mutate: async () => ({ data: { loginParticipantWithLti: null } }),
@@ -216,6 +264,7 @@ it('authenticates a linked LTI subject without email but refuses registration wi
   const unlinked = await getParticipantToken({ apolloClient: missing, ctx })
   assert.equal(unlinked.sessionState, 'rejected')
   assert.equal(unlinked.participantToken, null)
+  assert.equal(unlinked.sessionEstablished, false)
   assert.equal(unlinked.signedLtiData, undefined)
 })
 
@@ -236,8 +285,13 @@ it('never retains an exchanged session cookie beyond the signed session expiry',
     }),
   } as unknown as ApolloClient<NormalizedCacheObject>
   const { ctx, headers } = context({ jwt: launch })
-  await getParticipantToken({ apolloClient: client, ctx })
-  const values = headers.get('Set-Cookie') as string[]
+  const result = await getParticipantToken({ apolloClient: client, ctx })
+  assert.equal(result.sessionEstablished, true)
+  const values = responseCookies(headers)
+  assert.equal(
+    writtenCookie(values, 'participant_session'),
+    result.sessionRevision
+  )
   const cookie = values.find((value) =>
     value.startsWith(`participant_token=${fresh}`)
   )
@@ -265,6 +319,8 @@ it('retains assessment credential selection without applying regular participant
     })
     assert.equal(result.participantToken, 'cookie-assessment-session')
     assert.equal(result.cookiesAvailable, true)
+    assert.equal(result.sessionRevision, '')
+    assert.equal(result.sessionEstablished, false)
   } finally {
     if (previous === undefined) delete process.env.ASSESSMENT_MODE
     else process.env.ASSESSMENT_MODE = previous
@@ -284,7 +340,14 @@ it('expires a retained invalid participant cookie without a launch and reports n
   })
   assert.equal(result.sessionState, 'no_launch')
   assert.equal(result.participantToken, null)
-  const canonical = (headers.get('Set-Cookie') as string[]).find(
+  assert.equal(result.sessionEstablished, false)
+  const cookies = responseCookies(headers)
+  assert.ok(result.sessionRevision)
+  assert.equal(
+    writtenCookie(cookies, 'participant_session'),
+    result.sessionRevision
+  )
+  const canonical = cookies.find(
     (value) =>
       value.startsWith('participant_token=;') &&
       !value.includes('; Partitioned')

@@ -13,19 +13,17 @@ tags:
 
 **The non-obvious core: request `Origin` selects the credential audience.** `jwtMiddleware` (`apps/backend-docker/src/jwtMiddleware.ts`) inspects `req.headers.origin` against the `APP_MANAGE_SUBDOMAIN`/`APP_CONTROL_SUBDOMAIN`/`APP_STUDENT_SUBDOMAIN` env vars (defaults `manage`/`control`/`pwa`):
 
-| Request origin                      | Cookie(s) tried, in order                                                                                              |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| manage / control                    | `next-auth.session-token`                                                                                              |
-| pwa                                 | Explicit participant bearer; otherwise `participant_token` → `temporary_participant_token` → `next-auth.session-token` |
-| assessment (`ASSESSMENT_MODE=true`) | `next-auth.participant-session-token`                                                                                  |
+| Request origin                      | Cookie(s) tried, in order                                                       |
+| ----------------------------------- | ------------------------------------------------------------------------------- |
+| manage / control                    | `next-auth.session-token`                                                       |
+| pwa                                 | `participant_token` → `temporary_participant_token` → `next-auth.session-token` |
+| assessment (`ASSESSMENT_MODE=true`) | `next-auth.participant-session-token`                                           |
 
-In the regular PWA branch, a nonempty explicit Authorization header takes
-precedence over ambient cookies. It must be a valid Bearer JWT with a nonempty
-subject, future expiry, role PARTICIPANT or TEMPORARY_PARTICIPANT, and no scoped
-purpose. A malformed or invalid explicit bearer yields an unauthenticated
-context without cookie fallback. This lets a fresh participant login supersede
-an expired or different retained session. Cookie-only requests retain the
-existing selection order. The PWA branch also requires the origin host to lie
+Regular PWA browser requests use the shared cookie identity and ignore bearer
+headers. A supplied `x-participant-session` must match the non-secret
+`participant_session` cookie (`none` represents no revision); mismatches return
+HTTP 409 before executing work. Missing headers preserve non-browser callers.
+The PWA branch also requires the origin host to lie
 inside `COOKIE_DOMAIN`: participant cookies are SameSite=None and CORS reflects
 any origin, so a foreign host that merely contains `pwa` must not select them.
 For the same reason, participant login issues a SameSite=None cookie only to an
@@ -52,7 +50,7 @@ The NextAuth cookie domain is derived by stripping the first subdomain label fro
 
 ## Participant login (`apps/frontend-pwa`)
 
-- **Username/password** — PWA `LoginForm` → login mutation → `participant_token` cookie; successful login clears any explicit tab credential and replaces the Apollo client before subsequent Self queries.
+- **Username/password** — PWA `LoginForm` → login mutation → `participant_token` cookie; successful login replaces the shared session and invalidates old PWA and Chat state.
 - **Magic link** — `services/accounts.ts:sendMagicLink` signs a 15-minute JWT and emails `${APP_ORIGIN_PWA}/magicLogin?token=…`; the `magicLogin` page exchanges it via `LoginParticipantMagicLinkDocument` (`loginParticipantMagicLink`).
 - **Edu-ID for participants** — separate NextAuth config in the same auth app (`EduIDParticipantProvider`), same `EDUID_CLIENT_SECRET` gating.
 - **Temporary (anonymous)** — `temporary_participant_token` cookie, role `TEMPORARY_PARTICIPANT`.
@@ -66,95 +64,39 @@ Note the account-duplication trap: participant emails are only unique per auth m
 
 ## Regular participant session recovery
 
-A fresh explicit OLAT handoff is selected before retained LTI/participant
-cookies. Competing, repeated, empty, expired or wrong-purpose credentials fail
-closed. The SSR helper verifies one LTI 1.3 context and returns either an
-established participant, verified registration context, rejected state, exchange
-failure, or no launch. It never retries another account after explicit failure.
-An unusable participant cookie without a launch is expired and reported as no
-launch, so an explicit credential the tab already holds remains selected.
-OTP and activation credentials require their own exchange; their participant
-role does not make them session tokens.
-A `participantToken` URL parameter is ignored in the regular PWA: a session
-token in a link would let one participant place another in their account.
-Edit Profile carries the verified signed LTI handoff through its registration
-redirect, so Create Account does not substitute an older or missing LTI cookie.
+A fresh verified LTI handoff overrides an existing regular participant login.
+PWA and Chat use one shared HttpOnly cookie identity per browser cookie context.
+They never retain a regular participant bearer in memory or sessionStorage.
+The LTI helper verifies the signed launch before exchanging it; malformed,
+expired or wrong-purpose launches block the protected page and clear the
+regular session instead of falling back to another account. A participant JWT
+in a URL cannot create a session. Registration retains the verified LTI handoff,
+not an ambient older launch.
 
-Both cookie and bearer transports carry participant-session JWTs. The
-application boundary binds an Apollo client to the page credential before
-child queries. Only explicit credentials, from an LTI exchange or LTI-backed
-account creation, are kept in the tab (memory, plus sessionStorage when
-available). Manual registration sends an activation email and returns no
-participant-session JWT.
-Explicit credentials let a frame that refuses cookies keep its identity across navigation.
-A kept credential takes precedence over any cookie session, and server-rendered
-data from a different cookie session is not shown in its place. Live-quiz
-answers carry the kept credential to the response API as a bearer. The API
-verifies it as it does for GraphQL, queues the answer for that participant in
-place of any cookie identity, and refuses an unusable credential with 401. Tabs without
-one send no bearer, so a logout in one tab reaches every cookie-authenticated
-tab on its next request; no broadcast immediately clears another tab's screen.
-A tab holding an explicit credential continues as its launched participant
-even when another tab logs in or logs out. Its own successful ordinary login
-returns it to cookie mode. A page that ends the identity, or a successful
-session-changing mutation, retires the client. A guard after asynchronous
-authentication and persisted-query processing rejects new transport work and
-late results from retired clients; their errors cannot trigger recovery
-navigation or retries. Already-dispatched server operations cannot be undone.
-With both cookies and storage unavailable, the active document can continue;
-a credential-free full reload has no identity and requires a fresh launch.
+A random, non-secret `participant_session` revision accompanies cookie changes.
+PWA and Chat bind state and requests to it; stale requests are rejected before
+execution and late results are discarded. Open tabs reload on interaction,
+focus or a periodic revision check. Full reload clears Apollo, Chat stores and
+stream state. The revision contains no participant ID or credential. Browser
+requests use `x-participant-session`; the GraphQL, Chat and response APIs reject
+mismatched revisions with HTTP 409. It is a consistency check, not authorization.
 
-The SSR chatbot bridge cannot read browser memory or sessionStorage. While
-the PWA tab holds an explicit credential, its Header chatbot action opens
-recovery guidance without a link, prefetch, new window or bridge participation
-check. `ensureParticipation` currently checks an existing course participation;
-it does not create one.
-This gate also applies when the cookie is absent, belongs to another account,
-or might match: the client does not establish that equivalence. The guidance
-offers ordinary login in the same tab, which replaces the explicit session and
-requires usable cookies. A fresh LTI launch restores PWA access but keeps the
-explicit credential, so it does not unlock the chatbot action. Cookie-mode
-entry keeps its new-tab link. Directly opening the bridge still uses that
-request's verified launch or cookie; it cannot infer another tab's identity.
+Successful login, logout and account deletion replace the shared session.
+Rejected logout/deletion preserve it and provide retry feedback. Cookie-changing
+responses are ordered by completion; already dispatched work and Set-Cookie
+responses cannot be revoked locally. Logout does not globally revoke JWTs.
+Assessment and lecturer authentication keep their existing separate contracts.
 
-Successful logout or account deletion clears memory, storage and the client
-cache. False/error responses retain the session. Regular logout reports a
-rejected command on the current page so the participant can retry.
-Account-deletion cookies expire
-only after the database transaction succeeds. Direct password, magic-link and
-activation success clear prior bearer state before cookie-authenticated queries.
-These operations return a participant ID, not a browser-retained JWT. They
-cannot maintain ordinary login in a frame that refuses the cookie. Logout
-expires applicable cookies and clears this document's explicit state; it does
-not revoke already-issued JWTs held in other contexts. A response lost after
-a server mutation commits has an uncertain outcome; a known rejection before
-the mutation runs is the case targeted by the failure-retention tests.
+LTI and registration confirm cookie acceptance before using protected pages.
+If cookies are refused, recovery opens ordinary login outside the LMS frame.
+There is no tab-token fallback. The normal Chat link opens in a new tab without
+a recovery gate. Its bridge checks membership without creating enrollment and
+confirms a newly exchanged cookie before redirecting; Chat verifies the expected
+revision on arrival. Regular SSR props omit participant JWTs; the HttpOnly
+cookie remains the browser credential.
 
-HttpOnly protects the cookie itself. Explicit JWTs in memory/sessionStorage
-remain readable by application JavaScript. Some SSR pages also serialize
-ambient JWTs in page props, as they did before this change; omitting them from
-the persistent tab store does not make cookie-mode browsing free of
-JavaScript-readable credentials.
-
-Registered-session cookies use thirteen-day retention, within the fourteen-day
-signed session. Express accepts milliseconds; nookies/wire Max-Age uses seconds.
-Direct and SSR issuance use the existing domain and root path, HttpOnly,
-unpartitioned, Secure+SameSite=None for secure deployments and SameSite=Lax
-for local HTTP. Direct issuance to an origin outside `COOKIE_DOMAIN` uses Lax,
-as described above. SSR issuance cannot apply that origin rule: a navigation
-into an LMS frame carries no Origin header, yet the frame needs SameSite=None
-to store the cookie. SSR issues a participant cookie only after exchanging a
-verified signed LTI handoff. Known explicitly partitioned cookies expire before canonical
-issuance, in the current partition only. Preserve other Set-Cookie headers;
-nookies 2.5.2 drops unknown Partitioned attributes when reserializing headers,
-so its legacy expiration must be inserted after its serialization work. Lecturer,
-temporary-participant and assessment issuance retain their established settings.
-Explicit participant logout continues expiring the assessment participant cookie.
-
-[ADR 0044](./adr/0044-regular-participant-session-recovery.md) records why explicit
-participant identity takes precedence and why longer handoff lifetimes are not
-used as recovery. Synthetic verification does not establish Firefox-specific
-causality for a reported OLAT incident.
+See [ADR 0044](adr/0044-regular-participant-session-recovery.md) for the shared
+session contract and its browser-partition and concurrent-request limits.
 
 ## Participant account completion
 

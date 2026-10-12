@@ -1,6 +1,11 @@
 'use client'
 
 import {
+  assertParticipantSession,
+  participantFetch,
+} from '@klicker-uzh/shared-components/src/utils/participantSession'
+
+import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
@@ -154,9 +159,12 @@ function useDisclaimerGate(chatbotId: string, participationRequired: boolean) {
   useEffect(() => {
     const fetchDisclaimerInfo = async () => {
       try {
-        const response = await fetch(`/api/chatbots/${chatbotId}/disclaimer`)
+        const response = await participantFetch(
+          `/api/chatbots/${chatbotId}/disclaimer`
+        )
         if (response.ok) {
           const data = await response.json()
+          assertParticipantSession()
           setDisclaimer(data.disclaimer)
           setDisclaimerStatus(data.status)
 
@@ -192,16 +200,19 @@ function useDisclaimerGate(chatbotId: string, participationRequired: boolean) {
     setDisclaimerActionError(false)
 
     try {
-      const response = await fetch(`/api/chatbots/${chatbotId}/disclaimer`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'accept',
-          disclaimerId: disclaimer.id,
-        }),
-      })
+      const response = await participantFetch(
+        `/api/chatbots/${chatbotId}/disclaimer`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'accept',
+            disclaimerId: disclaimer.id,
+          }),
+        }
+      )
 
       if (response.ok) {
         setDisclaimerStatus((prev) => ({
@@ -227,15 +238,18 @@ function useDisclaimerGate(chatbotId: string, participationRequired: boolean) {
     setDisclaimerActionError(false)
 
     try {
-      const response = await fetch(`/api/chatbots/${chatbotId}/disclaimer`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'decline',
-        }),
-      })
+      const response = await participantFetch(
+        `/api/chatbots/${chatbotId}/disclaimer`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'decline',
+          }),
+        }
+      )
 
       if (response.ok) {
         setDisclaimerStatus((prev) => ({

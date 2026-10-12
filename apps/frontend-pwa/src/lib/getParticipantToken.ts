@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import type {
   ApolloClient,
   FetchResult,
@@ -20,7 +21,8 @@ export interface ParticipantSessionResult {
     | 'registration_required'
     | 'rejected'
     | 'exchange_unavailable'
-  tokenSource: 'explicit' | 'ambient' | null
+  sessionRevision: string
+  sessionEstablished: boolean
   signedLtiData?: { token: string; ssoId: string; email: string }
 }
 
@@ -49,8 +51,23 @@ function expirePartitionedParticipantCookie(ctx: GetServerSidePropsContext) {
   ])
 }
 
-function clearParticipantCookie(ctx: GetServerSidePropsContext) {
+function clearParticipantCookie(
+  ctx: GetServerSidePropsContext,
+  maxAge = 60 * 60 * 24 * 13
+) {
+  nookies.destroy(
+    ctx,
+    'temporary_participant_token',
+    participantCookieOptions()
+  )
   nookies.destroy(ctx, 'participant_token', participantCookieOptions())
+  const revision = randomUUID()
+  nookies.set(ctx, 'participant_session', revision, {
+    ...participantCookieOptions(),
+    httpOnly: false,
+    maxAge,
+  })
+  return revision
 }
 
 function setParticipantCookie(
@@ -58,7 +75,7 @@ function setParticipantCookie(
   token: string,
   maxAge: number
 ) {
-  clearParticipantCookie(ctx)
+  const revision = clearParticipantCookie(ctx, maxAge)
   // set a proper participant_token
   nookies.set(ctx, 'participant_token', token, {
     ...participantCookieOptions(),
@@ -70,6 +87,7 @@ function setParticipantCookie(
     path: '/',
   })
   expirePartitionedParticipantCookie(ctx)
+  return revision
 }
 
 export default async function getParticipantToken({
@@ -89,7 +107,8 @@ export default async function getParticipantToken({
     })
     return {
       ...result,
-      tokenSource: 'ambient',
+      sessionRevision: '',
+      sessionEstablished: false,
       sessionState: result.participantToken ? 'authenticated' : 'no_launch',
     } as ParticipantSessionResult
   }
@@ -100,10 +119,11 @@ export default async function getParticipantToken({
   const base = {
     participantToken: null,
     cookiesAvailable: !!ambient,
-    tokenSource: null,
-  } as const
+    sessionRevision: cookies.participant_session ?? '',
+    sessionEstablished: false,
+  }
   const expireRetainedSession = () => {
-    clearParticipantCookie(ctx)
+    base.sessionRevision = clearParticipantCookie(ctx)
     nookies.destroy(ctx, 'lti-token', {
       domain: process.env.COOKIE_DOMAIN,
       path: '/',
@@ -142,12 +162,12 @@ export default async function getParticipantToken({
       return {
         participantToken: token,
         cookiesAvailable: !!ambient,
-        tokenSource: 'ambient',
+        sessionRevision: cookies.participant_session ?? '',
+        sessionEstablished: false,
         sessionState: 'authenticated',
       }
     } catch {
-      // An unusable cookie is not a launch: expire it and continue without an
-      // ambient session, so an explicit credential this tab holds stays valid.
+      // An unusable cookie is not a launch: expire it and continue signed out.
       expireRetainedSession()
       return { ...base, sessionState: 'no_launch' }
     }
@@ -184,20 +204,21 @@ export default async function getParticipantToken({
     const token = result.data?.loginParticipantWithLti?.participantToken
     if (!token) {
       if (!signedLtiData.email.trim()) return reject()
-      clearParticipantCookie(ctx)
+      base.sessionRevision = clearParticipantCookie(ctx)
       expirePartitionedParticipantCookie(ctx)
       return { ...base, sessionState: 'registration_required', signedLtiData }
     }
     const maxAge = await verifyParticipant(token)
-    setParticipantCookie(ctx, token, maxAge)
+    const sessionRevision = setParticipantCookie(ctx, token, maxAge)
     return {
       participantToken: token,
       cookiesAvailable: !!cookies['lti-token'],
-      tokenSource: 'explicit',
+      sessionRevision,
+      sessionEstablished: true,
       sessionState: 'authenticated',
     }
   } catch {
-    clearParticipantCookie(ctx)
+    base.sessionRevision = clearParticipantCookie(ctx)
     expirePartitionedParticipantCookie(ctx)
     return { ...base, sessionState: 'exchange_unavailable' }
   }

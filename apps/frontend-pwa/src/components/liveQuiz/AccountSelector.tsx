@@ -26,9 +26,9 @@ import {
   toast,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
-import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
@@ -196,10 +196,17 @@ function AccountSelector({
                 avatar: values.avatar !== '' ? values.avatar : undefined,
               },
               // refetch is required here to ensure up-to-date data with temporary leaderboard entry
-              refetchQueries: [{ query: SelfDocument }],
+              refetchQueries:
+                process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
+                  ? [{ query: SelfDocument }]
+                  : [],
             })
 
             if (data?.loginTemporaryParticipant) {
+              if (process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true') {
+                window.location.reload()
+                return
+              }
               setLoginState('temporary')
               setOpen(false)
 

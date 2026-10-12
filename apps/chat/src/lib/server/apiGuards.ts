@@ -1,5 +1,6 @@
 import { prisma } from '@klicker-uzh/prisma'
 import { ChatbotStatus, type Prisma } from '@klicker-uzh/prisma/client'
+import { participantSessionMatches } from '@klicker-uzh/util'
 import { jwtVerify } from 'jose'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -107,6 +108,20 @@ export async function withChatbotAuth(
   | { participantId: string; chatbot: { courseId: string } }
   | { response: NextResponse }
 > {
+  if (
+    !participantSessionMatches(
+      req.headers.get('x-participant-session') ?? undefined,
+      {
+        participant_session: req.cookies.get('participant_session')?.value,
+      }
+    )
+  )
+    return {
+      response: NextResponse.json(
+        { error: 'participant_session_changed' },
+        { status: 409 }
+      ),
+    }
   return withChatbotTokenAuth(
     req.cookies.get('participant_token')?.value,
     chatbotId
