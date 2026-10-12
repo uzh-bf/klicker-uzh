@@ -48,6 +48,16 @@ const PERSISTED_LOGIN_BODY = {
   },
 }
 
+test('participant login hash matches the generated operation registry', async () => {
+  const registry = JSON.parse(
+    await readFile(
+      new URL('../../../packages/graphql/dist/client.json', import.meta.url),
+      'utf8'
+    )
+  )
+  assert.equal(LOGIN_OPERATION_HASH, registry.LoginParticipant)
+})
+
 test('frontmatter projection contains only target-safe question metadata', () => {
   const metadata = parseGroundTruthFrontmatter(
     `---

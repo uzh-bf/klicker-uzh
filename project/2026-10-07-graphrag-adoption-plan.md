@@ -178,7 +178,7 @@ User approved fixing the evaluation adapter login and comparing actual STG
 teaching data, including a graph-free extra-search control, within the remaining
 CHF 20 total ceiling. Astra approved the bounded exploratory protocol on October
 12. Prior conservatively accounted spend is CHF 1.07826744. The combined prior
-spend and new reservations total CHF 16.54880504; unknown costs retain their full
+spend and new reservations total CHF 17.61048824; unknown costs retain their full
 reservation. Graph cost uses the separately approved application charge basis.
 
 Main owns STG scope, source-version and publication checks, paid-call admission,
@@ -236,6 +236,43 @@ source review found no P0-P2 issues. Full repository checks were attempted and
 remain unavailable because the disposable container cannot run host Git/devrouter
 contract tests, and its network-disabled analytics lint could not fetch tooling.
 Keep full qualification pending; these focused receipts do not clear it.
+
+October 12 outcome: the adapter logs into STG through the registered operation,
+receives a participant cookie, and reads the restored test graph with HTTP 200.
+A regression check compares its login hash with the generated operation registry.
+The deployed unknown-hash rejection is HTTP 200 with `PersistedQueryNotFound`.
+Hosted build, check, unit and Playwright checks pass at the original source head;
+the optional OpenRouter review remains skipped as requested. Subsequent commits
+require their own exact-head CI receipt.
+
+The baseline and graph-free extra-search arms completed six answers and 24 metric
+results through the existing framework, with 54 judge calls and no errors or skips.
+Mean semantic scores were 0.9333 and 0.7000; context recall was 0.8778 and 0.6333.
+Faithfulness was 1.0 for all six answers. The extra-search arm lost an
+answer-bearing passage on a bridge case; extracted mathematical text was also
+unreadable. These are diagnostic pilot results. The frozen expected answers mix
+factual expectations and citation requirements, which limits recall calibration;
+one judge explanation overstated source coverage. Native agent acceptance counters
+are zero. Review evidence and citations separately before any quality claim.
+
+The fresh build failed during category normalization: a LightRAG entity edit timed
+out while flushing graph updates. `DOMAIN_CATEGORY_VALIDATION_FAILED` is the
+terminal application code, not proof of invalid source categories. No fresh graph
+was published, so GraphRAG scoring and teaching-data browser acceptance remain
+blocked. The test chatbot's original binding and feature settings were restored.
+No provider replay, rebuild, category-policy relaxation or broader activation was
+performed.
+
+Next, diagnose and repair the provider edit/flush timeout independently of data
+ingestion. Harden the private admission guard's exclusive reservations, protocol
+hash checks, strict schema/token validation and complete case/metric identity
+checks before more paid calls. Reconcile the failed graph's application charge
+before releasing its reservation. Resume the frozen GraphRAG arm only after a
+fresh publication and bounded admission. Preserve answer-bearing baseline evidence
+when evaluating fusion changes; verify document coverage and citations. Qualify
+formula extraction independently, then use a larger clean holdout with factual
+answers separated from citation constraints. Native persisted-chat and graph UI
+acceptance remain separate rollout gates.
 
 October 9: approved source-artifact repair is planned in the linked implementation
 plan and added as milestone 1a. Historical source and review receipts below remain
