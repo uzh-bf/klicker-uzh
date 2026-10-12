@@ -20,7 +20,47 @@ and paid evaluation remain separate gates; OpenRouter review remains waived.
 
 ## Current state and next decision
 
-### October 12 correction and next bounded probe (awaiting approval)
+### October 12 latest execution: noise classification blocks recovery
+
+The user approved the two-probe batch and conditional delivery sequence below.
+Provider MR !42 exact-head pipeline **682060 passed** at
+`1d84e768301ff9e9cad3498e989070ca21a1e174`. Existing source reviews and
+86-test qualification remain valid. Live qualification failed before delivery.
+
+One noise-classifier call ran through the approved Azure gateway with the exact
+source, frozen policy, three residual names and synthetic retained concept.
+It returned HTTP 200, stop finish, no refusal, and all four decisions. It retained
+two residual examples as theory, removed one as noise, and retained the synthetic
+concept. This fails the required three-noise/one-theory result. The outcome comes
+from the raw response, not preservation defaults. Strict validation remains intact.
+The category probe was not dispatched; no merge, deployment, graph build,
+activation, answer generation or judge call followed.
+
+Gateway response metadata reports 726 input and 162 output tokens, zero retries
+or fallbacks, and USD 0.0001536. Exact billing lookups by both the response ID and
+gateway call ID returned no rows. Retain the full CHF 0.20 reservation, plus the
+prior CHF 0.10 hold. Conservative accounting including holds is now
+**CHF 6.99857084**, leaving **CHF 13.00142916** of the original CHF 20 ceiling.
+This is reserved accounting, not a claim of reconciled actual spend.
+
+The test chatbot's original bindings/settings, KB resource inventory and hashes,
+content digest, active-build pointer and graph publication were verified unchanged.
+No restoration mutation was needed. The owned tunnel closed; ports 14000 and
+14001 were verified closed. Private response, admission, cost and cleanup receipts
+remain in the existing private protocol directory. Both source and evaluation
+requests remain draft; the conditional merge/build sequence is stopped.
+
+The next investigation should test why the names-only noise prompt retains these
+examples, using the saved response and source evidence before another paid call.
+Moving noise removal earlier fixes ordering but does not establish semantic
+recovery. Evaluate whether descriptions and relation context let the existing
+policy distinguish examples from reusable concepts. Preserve uncertain nodes and
+strict category validation; do not force deletion or assign fallback categories
+just to pass this dataset. Any changed classifier needs offline qualification and
+a revised bounded live admission. The three-arm retrieval comparison remains
+incomplete, so no new retrieval-quality conclusion is supported.
+
+### October 12 correction and bounded probe (approved; acceptance failed)
 
 The empty result exposed a responsibility conflict: strict category repair required
 labels for policy-excluded concrete examples before noise removal could inspect
@@ -37,7 +77,7 @@ invalid categories alone never authorize deletion. Ingestion remains independent
 with no database changes. Offline qualification: 86 tests and Ruff pass under
 LightRAG 1.5.7; source `1d84e768301ff9e9cad3498e989070ca21a1e174`.
 
-**Proposed next batch.** Main owns admission, effects and cleanup. Reopen only
+**Approved batch specification.** Main owns admission, effects and cleanup. Reopen only
 `127.0.0.1:14000 -> stg-litellm/litellm:4000` through existing STG access, inject the
 existing restricted gateway credential, recheck prices/retry/fallback controls and
 reconcile the prior probe when its billing row exists. Preserve its CHF 0.10 hold
