@@ -428,3 +428,25 @@ exact-head publication close delivery. Framework-first landing and final merged-
 pin reconciliation remain subsequent human-controlled gates. No paid evaluation
 has run. Before a paid comparative judge run, qualify whether selected metrics
 serialize diagnostic metadata, so arm labels cannot bias assessment.
+
+## Approved framework landing and pin reconciliation
+
+The user authorized merging framework MR 54, then updating the pin and verifying
+CI in PR 6489 while keeping it draft. The framework task branch integrated main
+`b2611c33873505a4da421c77fe1508b1ae6b08f9` to resolve its upstream schema conflict.
+Capture results follow upstream `success` and `cost_usd`, retaining planned,
+selected, assessed and strict-coverage fields. All 395 framework tests passed
+offline with frozen upstream dependencies and external network denied. Focused
+integrated final review passed with no findings and canonical schema validation.
+
+MR 54 merged as `e545dfcfa9979eddeae22197fd7c0f0b053049df`; exact-head pipeline
+682951 and merged-main pipeline 682952 passed. GitLab forced source-branch cleanup
+despite the keep-branch flag; the reviewed task branch was restored at
+`d32fefd36df6156630625c258065d6070742eb0c` without a force push.
+
+The public gitlink, launcher harness and setup instructions now use the merged
+revision. The existing launcher check passed with one synthetic loopback artifact,
+no external model traffic and no Infisical invocation. No application behavior
+changed in this pin reconciliation. Hosted PR checks are the remaining exact-head
+verification gate; the draft-only final AI review gate remains deferred. PR 6489
+stays draft. No paid evaluation, production change or deployment is authorized.
