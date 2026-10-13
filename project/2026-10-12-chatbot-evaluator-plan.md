@@ -241,3 +241,54 @@ ambiguous one. This package never resets an existing ledger or applies live prom
   run, qualify current tariffs and every billable application egress path; source
   tests alone do not prove live routing. Unix-socket path length and lock
   contention remain fail-closed operational qualification considerations.
+
+## Approved routing continuation — 2026-10-13
+
+The user approved fixes in draft PR #6489, a host Devrouter upgrade and
+zero-spend application routing qualification. No paid evaluation, provider
+generation, merge, readiness change or deployment is authorized. Planner
+approved the revised continuation after resolving startup precedence and the
+qualification bootstrap. Target remains `v3`; source starts at `acf2edec2f`.
+
+1. Executor owns only `apps/chat/scripts/evaluation-spend-guard.mjs` and its
+   existing guard tests. Accept exactly the application's two true cache-bypass
+   flags and strip this proxy-only field before forwarding. Validate and retain
+   a nonempty native `prompt_cache_key` of at most 64 characters. Keep every
+   other field and spend restriction intact.
+2. Main owns `openaiCachePolicy.ts`, its existing tests and the chat route.
+   Optional `KLICKER_EVAL_GUARD_ORIGIN` binds the default provider to that
+   local origin plus `/v1` and rejects chatbot key/base overrides before
+   decryption or provider construction. Production behavior without this
+   opt-in remains unchanged.
+3. Main owns `.devcontainer/post-start.sh`, `turbo.json` and existing
+   `util/test-dev-runtime.sh`. Capture explicit incoming evaluation settings
+   before canonical sourcing, restore them immediately afterward, and require
+   complete guarded configuration. Fingerprint origin, effective base URL,
+   registry JSON and nonsecret `KLICKER_EVAL_GUARD_GENERATION`, never credentials.
+   Generate a new marker whenever synthetic credentials change. Existing
+   managed process replacement supplies restart acceptance.
+4. Main owns private `project/_local/qualify-application-routing.mjs`, ignored
+   wire-proof output, existing evaluation README and this plan. After both
+   source slices, run the exact Chat/API/MCP application against a fake local
+   Responses upstream in its container. Use the existing ledger lease and turn
+   primitives directly; preserve the production runner's qualification gate.
+   An evaluation-only registry maps selection `gpt-6-luna` to deployment
+   `openai/gpt-6-luna`. Force one pre-stream failure, observe the actual SDK
+   retry and MCP tool step, and read durable reservations at every upstream
+   arrival. Verify persisted messages, override/mismatch rejection, managed
+   restart and shutdown. This synthetic transport proof is not a positive
+   real-provider qualification receipt.
+
+Test portfolio: extend guard tests for field validation/forwarding; extend
+cache-policy tests for endpoint and override enforcement; extend managed
+runtime tests for configuration precedence/fingerprint contracts. Add no
+maintained end-to-end suite: the named private probe provides bounded runtime
+evidence. No new dependencies, schema, production registry or provider config.
+
+Host Devrouter needs at least 0.3.0. Shared state was written by 0.3.1, so the
+approved upgrade follows that compatible version rather than downgrading state.
+Use only the exact worktree's `chat,mcp` selection; retain volumes. Complete
+container-native focused checks, committed-slice simplification/risk review,
+integrated final review, ordinary push and existing draft PR update. Stop and
+verify the exact runtime afterward. Source recovery is an ordinary revert;
+retain ledgers and never reset an exhausted experiment.

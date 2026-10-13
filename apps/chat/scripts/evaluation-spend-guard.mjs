@@ -24,6 +24,8 @@ const COMMON_FIELDS = [
   'temperature',
   'top_p',
   'parallel_tool_calls',
+  'cache',
+  'prompt_cache_key',
 ]
 const REQUEST_FIELDS = {
   '/v1/responses': [
@@ -154,6 +156,27 @@ export function requestReservation(policy, pathname, body) {
   ) {
     throw budgetError('provider_tool_unqualified')
   }
+  // `cache` is a proxy-only client hint; only the two true bypass flags are
+  // accepted and the guard strips the field before the native upstream call.
+  if (
+    body.cache !== undefined &&
+    (typeof body.cache !== 'object' ||
+      body.cache === null ||
+      Array.isArray(body.cache) ||
+      Object.keys(body.cache).length !== 2 ||
+      body.cache['no-cache'] !== true ||
+      body.cache['no-store'] !== true)
+  ) {
+    throw budgetError('provider_request_unqualified')
+  }
+  if (
+    body.prompt_cache_key !== undefined &&
+    (typeof body.prompt_cache_key !== 'string' ||
+      !body.prompt_cache_key.trim() ||
+      body.prompt_cache_key.length > 64)
+  ) {
+    throw budgetError('provider_request_unqualified')
+  }
   const input = pathname === '/v1/responses' ? body.input : body.messages
   if (!(typeof input === 'string' || Array.isArray(input)))
     throw budgetError('provider_input_invalid')
@@ -265,6 +288,10 @@ export async function createSpendGuard({
       const body = await requestBody(request)
       const microUsd = requestReservation(policy, url.pathname, body)
       await reserveProviderSpend(budgetFile, policyHash, microUsd)
+      // The guard consumes the proxy-only `cache` hint; the native upstream
+      // does not support it, so forward the reserved request without it.
+      const forwarded = { ...body }
+      delete forwarded.cache
       timeout = setTimeout(() => controller.abort(), timeoutMs)
       response.once('close', () => {
         if (!response.writableEnded) controller.abort()
@@ -281,7 +308,7 @@ export async function createSpendGuard({
           Authorization: 'Bearer ' + upstreamKey,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify(forwarded),
       })
       if (!result.ok || !result.body) {
         await result.body?.cancel()

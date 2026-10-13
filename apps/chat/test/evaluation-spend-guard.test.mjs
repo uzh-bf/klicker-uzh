@@ -171,6 +171,19 @@ test('unpriced, unbounded, multiple-completion and paid-tool requests never reac
       { ...request, service_tier: 'priority' },
       { ...request, previous_response_id: 'unbounded-history' },
       { ...request, max_tokens: 100 },
+      { ...request, cache: {} },
+      { ...request, cache: { 'no-cache': true } },
+      { ...request, cache: { 'no-cache': true, 'no-store': false } },
+      {
+        ...request,
+        cache: { 'no-cache': true, 'no-store': true, 'max-age': 0 },
+      },
+      { ...request, cache: false },
+      { ...request, cache: 'no-store' },
+      { ...request, prompt_cache_key: '' },
+      { ...request, prompt_cache_key: '   ' },
+      { ...request, prompt_cache_key: 'x'.repeat(65) },
+      { ...request, prompt_cache_key: 7 },
     ]) {
       const response = await send(invalid)
       assert.equal(response.status, 502)
@@ -191,6 +204,29 @@ test('unpriced, unbounded, multiple-completion and paid-tool requests never reac
     assert.equal(
       (await readBudgetLedger(budgetFile)).reservedProviderMicroUsd,
       0
+    )
+  })
+})
+
+test('the two true cache-bypass flags are stripped before forwarding and the native prompt cache key is retained', async () => {
+  validatePricingPolicy(policy)
+  const hinted = {
+    ...request,
+    cache: { 'no-cache': true, 'no-store': true },
+    prompt_cache_key: 'synthetic-prompt-cache-key',
+  }
+  assert.equal(requestReservation(policy, '/v1/responses', hinted), 1200)
+  await scenario(async ({ budgetFile, send, calls }) => {
+    await beginBudgetTurn(budgetFile)
+    const response = await send(hinted)
+    assert.equal(response.status, 200)
+    await response.text()
+    assert.equal(calls.length, 1)
+    assert.equal(calls[0].body.cache, undefined)
+    assert.equal(calls[0].body.prompt_cache_key, 'synthetic-prompt-cache-key')
+    assert.equal(
+      (await readBudgetLedger(budgetFile)).reservedProviderMicroUsd,
+      1200
     )
   })
 })
