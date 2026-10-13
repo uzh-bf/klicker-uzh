@@ -15,7 +15,8 @@ tags:
 ## Draft sync PR maintenance
 
 `maintain-draft-sync-prs.yml` maintains the exact forward pairs `v3` ->
-`v3-ai` and `v3-ai` -> `v3-audit`. Each sync PR's head is a bot-owned branch,
+`v3-ai`, `v3-ai` -> `v3-audit`, and `v3-ai` -> `v3-adaptive-learning`. Each
+sync PR's head is a bot-owned branch,
 `sync/<source>-into-<target>-<sha10>`, never the long-lived source branch. The
 suffix is the source SHA the PR started from, so every new sync PR gets a fresh
 branch. GitHub's
@@ -84,14 +85,16 @@ accepted only after the matching open PR is found.
 
 ### Sync direction guard
 
-`sync-ancestry-guard.yml` also rejects `v3-audit` history in `v3-ai`. Every
-pull request into `v3-ai` and every push to it fails when the new head contains
-`v3-audit`'s oldest own first-parent commit, pinned in `DOWNSTREAM_ROOTS`.
-Every later `v3-audit` commit descends from that root, so any merge of
-`v3-audit` into `v3-ai` carries it. The check is a branch-health gate: once
-`v3-ai` contains the root, every later pull request and push fails as well,
-until recovery removes it. A pin that is no longer on `v3-audit`'s first-parent
-line fails the check instead of passing it. Ordinary CI cannot see this: the
+`sync-ancestry-guard.yml` also rejects `v3-audit` and `v3-adaptive-learning`
+history in `v3-ai`. Every pull request into `v3-ai` and every push to it fails
+when the new head contains `v3-audit`'s oldest own first-parent commit, pinned
+in `DOWNSTREAM_ROOTS`. `v3-adaptive-learning` was branched from `v3-audit`, so
+the same commit is on its first-parent line too. Every later commit on either
+branch descends from that root, so any merge of either into `v3-ai` carries it.
+The check is a branch-health gate: once `v3-ai` contains the root, every later
+pull request and push fails as well, until recovery removes it. A pin that is no
+longer on each downstream branch's first-parent line fails the check instead of
+passing it. Ordinary CI cannot see this: the
 2026-10-12 back-merge of `v3-audit` into `v3-ai` passed every other check.
 
 The guard covers only that edge. `v3-ai` history in `v3` is not checked,
@@ -146,7 +149,8 @@ The `sync-ancestry` pull-request check fails for every non-sync pull request
 into a target with an unrepaired squashed sync. Any sync pull request, including
 the restore pull request, passes with a warning to use a merge commit, because
 merging it restores the ancestry. The block takes effect as a required check in
-a dedicated ruleset scoped to `v3-ai` and `v3-audit` only. The
+a dedicated ruleset scoped to `v3-ai` and `v3-audit` only; on
+`v3-adaptive-learning` the guard reports without being required. The
 `v3 integration baseline CI` ruleset also matches other `v3-*` branches, where
 the guard never reports, so requiring it there would block every pull request
 into those branches. It evaluates when a pull request's
@@ -530,7 +534,7 @@ reports itself as not applicable and can be removed with the branch.
 
 ## Deployment values (facts, not procedures)
 
-- **stg** (`*.klicker.stg.df-app.ch`): `STG_SOURCE_BRANCH` selects the supported `v3*` branch that publishes staging candidates; it currently selects `v3-audit`. The release-ref design makes ArgoCD track `stg-release` and inject its resolved full commit SHA as the first-party image tag. Automatic promotion is active, so the selected source advances staging on every qualified candidate — see [Staging promotion](#staging-promotion) below.
+- **stg** (`*.klicker.stg.df-app.ch`): `STG_SOURCE_BRANCH` selects the supported `v3*` branch that publishes staging candidates; it currently selects `v3-adaptive-learning`. The release-ref design makes ArgoCD track `stg-release` and inject its resolved full commit SHA as the first-party image tag. Automatic promotion is active, so the selected source advances staging on every qualified candidate — see [Staging promotion](#staging-promotion) below.
 - **prd** (`*.klicker.uzh.ch`): pinned version tags, `replicaCount: 2` for web/API services.
 - **Secrets are external**: deployments reference `envFrom.secretRef` names, but the chart defines no `Secret` manifests — provision them out-of-band with matching names. GrowthBook-ready Node workloads reference the optional shared `<rendered-chart-fullname>-secret-growthbook`, which supplies only `GROWTHBOOK_API_HOST` and the server SDK `GROWTHBOOK_CLIENT_KEY`; `GROWTHBOOK_ENV` comes from the global ConfigMap. The primary GraphQL backend separately retains the optional `<rendered-chart-fullname>-secret-growthbook-management` reference for `GROWTHBOOK_MANAGEMENT_API_URL` and `GROWTHBOOK_MANAGEMENT_API_KEY`. Beta preferences are stored in the application database, so enrollment does not use that management connection or a saved-group identifier. Optional references preserve startup before provisioning.
 - **Hatchet endpoint pair**: `hatchet.client.apiUrl` in the environment values renders `HATCHET_API_URL`, while the external secret supplies `HATCHET_CLIENT_HOST_PORT`. They must resolve to the same Hatchet installation; worker health alone does not validate programmatic schedule creation over the HTTP API. Staging uses `app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080`, and production uses `app-hatchet-svc-api.prd-hatchet-svc.svc.cluster.local:8080` (see [Async & Workers](./async-and-workers.md)).
