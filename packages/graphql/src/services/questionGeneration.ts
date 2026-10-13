@@ -431,8 +431,12 @@ async function dispatchPreparingQuestionBuild(
     build.librarySnapshotArtifact as QuestionGenerationArtifactRef | null
   if (librarySnapshotArtifact) {
     await runtime.downloadVerified(librarySnapshotArtifact)
-  } else if (questionLibraryComparisonEnabled()) {
-    const librarySnapshotBytes = await createQuestionLibrarySnapshot(ctx)
+  } else if (await questionLibraryComparisonEnabled(ctx)) {
+    const librarySnapshotBytes = await createQuestionLibrarySnapshot(
+      ctx,
+      process.env,
+      { schemaVersion: 2 }
+    )
     const librarySnapshotSha256 = createHash('sha256')
       .update(librarySnapshotBytes)
       .digest('hex')

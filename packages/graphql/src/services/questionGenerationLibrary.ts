@@ -5,6 +5,7 @@ import type {
   QuestionPoolSnapshotQuestion,
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '@/lib/context.js'
+import { isFeatureFlagEnabled } from '../lib/featureFlags.js'
 import { canonicalElementGenerationJson } from './elementGenerationProvider.js'
 import { MAX_BUFFERED_QUESTION_GENERATION_ARTIFACT_BYTES } from './questionGenerationContracts.js'
 import {
@@ -103,9 +104,9 @@ function normalizeChoices(
 }
 
 export function questionLibraryComparisonEnabled(
-  env: RuntimeEnvironment = process.env
-): boolean {
-  return env.KB_QUESTION_LIBRARY_COMPARISON_ENABLED?.trim() === 'true'
+  ctx: ContextWithUser
+): Promise<boolean> {
+  return isFeatureFlagEnabled(ctx, 'question-library-comparison')
 }
 
 export function questionLibraryComparisonMaxElements(

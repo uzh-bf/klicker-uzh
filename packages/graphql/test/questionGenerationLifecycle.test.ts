@@ -428,7 +428,6 @@ describe('question-generation preparation lifecycle', () => {
   })
 
   it('pins an owned library snapshot before dispatching payload v4', async () => {
-    vi.stubEnv('KB_QUESTION_LIBRARY_COMPARISON_ENABLED', 'true')
     vi.stubEnv('KB_QUESTION_LIBRARY_COMPARISON_MAX_ELEMENTS', '500')
     try {
       const build = preparingBuild()
@@ -468,6 +467,11 @@ describe('question-generation preparation lifecycle', () => {
       }
       const ctx = {
         user: { sub: fixtures.ownerId },
+        featureFlags: { isEnabled: vi.fn(() => true) },
+        betaPreference: {
+          userId: fixtures.ownerId,
+          value: Promise.resolve(true),
+        },
         elementGenerationRuntime: runtime,
         prisma: {
           element: {
@@ -522,8 +526,14 @@ describe('question-generation preparation lifecycle', () => {
       expect(
         JSON.parse(snapshotUpload?.[1].toString('utf8') ?? '')
       ).toMatchObject({
+        schema_version: 2,
         reference_count: 1,
-        questions: [{ element_id: 17, version: 2 }],
+        questions: [
+          {
+            source: { namespace: 'klicker', item_id: '17', revision: '2' },
+            allowed_uses: ['comparison'],
+          },
+        ],
       })
       expect(updateMany).toHaveBeenNthCalledWith(
         2,

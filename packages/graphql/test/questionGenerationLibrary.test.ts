@@ -46,18 +46,19 @@ function context(rows: ReturnType<typeof element>[]) {
 }
 
 describe('question-library snapshot', () => {
-  it('is disabled unless explicitly enabled', () => {
-    expect(questionLibraryComparisonEnabled({})).toBe(false)
-    expect(
-      questionLibraryComparisonEnabled({
-        KB_QUESTION_LIBRARY_COMPARISON_ENABLED: 'true',
-      })
-    ).toBe(true)
-    expect(
-      questionLibraryComparisonEnabled({
-        KB_QUESTION_LIBRARY_COMPARISON_ENABLED: 'false',
-      })
-    ).toBe(false)
+  it('fails closed without an evaluator and targets the lecturer', async () => {
+    const { ctx } = context([])
+    expect(await questionLibraryComparisonEnabled(ctx)).toBe(false)
+    const isEnabled = vi.fn(() => true)
+    ctx.featureFlags = { isEnabled } as never
+    ctx.betaPreference = { userId: ctx.user.sub, value: Promise.resolve(true) }
+    expect(await questionLibraryComparisonEnabled(ctx)).toBe(true)
+    expect(isEnabled).toHaveBeenCalledWith(
+      'question-library-comparison',
+      expect.objectContaining({ id: ctx.user.sub, actorType: 'user' })
+    )
+    isEnabled.mockReturnValue(false)
+    expect(await questionLibraryComparisonEnabled(ctx)).toBe(false)
   })
 
   it('validates the adjustable bounded library size', () => {

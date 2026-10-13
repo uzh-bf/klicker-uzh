@@ -673,7 +673,6 @@ backendGraphql:
     outputContainer: 'question-results'
     outputPrefix: 'question-builds'
     libraryComparison:
-      enabled: false
       maxElements: 500
     cost:
       questionMinorUnits: '1'

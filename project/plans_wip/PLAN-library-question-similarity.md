@@ -266,3 +266,124 @@ TypeScript path mapping and isolated Vitest resolver do not establish runtime
 alias support. This corrects the accepted review suggestion without changing
 code-generation configuration or adding dependencies. Hosted build verification
 remains required for the correction.
+
+
+## Lecturer STG end-to-end preparation — 13 October 2026
+
+This section supersedes the earlier environment-toggle and staging-branch rollout
+instructions. The requested outcome is a real synthetic lecturer journey through
+Manage, the backend, Hatchet, the worker, review and keeping generated questions.
+Offline schema qualification and general Playwright CI do not establish this.
+
+### Prepared source
+
+The producer now uses the existing fail-closed GrowthBook evaluator with
+`question-library-comparison`, default false, evaluated for the authenticated
+lecturer. Remove the old global enable environment variable; retain the 500-item
+size setting. Enabled new preparations emit snapshot schema 2. Persisted schema-1
+and schema-2 artifacts remain authoritative on recovery, including after flag
+disablement. No-pool builds still emit workflow schema 3. Comparison builds use
+workflow schema 4; snapshot schema and workflow schema are separate contracts.
+Neither this preparation nor a merge enables the flag or dispatches inference.
+
+### Live prerequisites and landing order
+
+The repository setting currently selects `v3-adaptive-learning` for STG.
+The healthy serving backend is `e8b0b3619200ff420a29ebbfe20c23e574457087`
+(the existing v3-ai sync). This PR is not in that branch. The STG question worker
+is healthy at its existing embedding-receipt image; the shared-pool stack is not
+deployed. GitOps main and the running worker agree on its image digest.
+
+1. Generator [!27](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/27)
+   through [!33](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/33)
+   all have passing exact-head pipelines and are ready/mergeable at inspection.
+   Land bottom-up into main, retargeting the next layer only after its predecessor
+   lands and rechecking the resulting diff, required CI and approvals. Preserve
+   branches. Current main adds the embedding-timeout fix after the reviewed tip;
+   a tree-only merge preview is clean. The merged result must retain that fix.
+2. The !33 tip already contains both comparison
+   [!34](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/34)
+   and external-pool
+   [!35](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/35)
+   commits. Standalone !34 conflicts with main. Do not merge a duplicate comparison
+   path: verify ancestry in the landed main, then close those superseded MRs only
+   with named authorization. Their branch deletion is unnecessary.
+3. Verify the final main worker image build and immutable digest. Prepare the
+   single-image change in the existing Helm repository path
+   `kg-question-generation/stg/kustomization.yaml`, validate the render and CI,
+   merge the pin and verify Argo synchronization, ready replicas, running digest
+   and workflow registration. Leave the graph worker and PRD unchanged. An exact
+   pin cannot be selected before the approved main merge/build produces it.
+4. Finish current-head checks and the authorized solo review of
+   [#6317](https://github.com/uzh-bf/klicker-uzh/pull/6317), mark it ready and merge
+   into `v3-ai`. The platform AI-review status is distinct from the user's accepted
+   self-review; do not forge it. Current branch rules do not list that status as a
+   required check. The additive snapshot JSONB migration must run before serving
+   the new backend.
+5. Create and verify a `v3-ai` to `v3-adaptive-learning` sync PR. Merge only after
+   CI, then let the existing staging promoter/GitOps path advance the deployment.
+   Verify the backend and Manage serving revision and migration completion.
+6. Create the disabled GrowthBook flag, then target only the synthetic lecturer
+   in staging. Verify evaluation for that actor and denial for a second synthetic
+   actor. Keep production disabled. Existing AI-access and focus-topic gates must
+   also be evaluated for the test actor, without changing other actors' access.
+
+No merge, retarget, closure, flag write, deployment or cluster mutation occurred
+during preparation. Named approval is required for the exact landing/deployment
+sequence above under the repository authority rules.
+
+### Synthetic acceptance protocol
+
+- Use the existing synthetic lecturer and graph after verifying ownership and
+  graph readiness. Seed only synthetic owned SC/MC/KPRIM references through the
+  supported UI/API. Include known related content, an unrelated control and an
+  archived reference. No real library or participant data is needed.
+- With comparison disabled, confirm the ordinary generation configuration and
+  no-pool admission path. Enable only the synthetic actor and submit a two-question
+  batch with a chosen focus topic. Record the build, graph and snapshot hashes;
+  verify snapshot schema 2, comparison-only permission and workflow schema 4.
+- Review the design, generate questions, inspect overlap and truncation warnings,
+  confirm explicit acknowledgement is needed, then finalize and keep the two
+  drafts. Verify their saved content, provenance and warning state after reload.
+  A live semantic score is probabilistic: record a missing overlap warning as an
+  unmet acceptance check, not permission to lower the threshold or regenerate.
+- If truncation needs a reduced selection cap, use a separately reviewed STG-only
+  configuration change with its previous value recorded and restored. Verify
+  archived/other-owner exclusions. Do not broaden database discovery.
+- Validate pinned-snapshot reuse with a bounded, explicitly authorized recovery
+  only; changing the live pool must not change the pinned digest. Do not manufacture
+  a failure or replay paid work just to exercise this case. Offline recovery tests
+  remain supporting evidence until the live path is actually observed.
+- Restore flag rules and temporary settings, retain the synthetic test records
+  and receipts, and summarize each acceptance result independently. Deletion of
+  synthetic records and publishing beyond the synthetic lecturer remain separate.
+
+### Cost and remaining acceptance gates
+
+The original USD 2 experiment and unresolved reservations remain intact. Its
+prior ledger report accounted for USD 1.23866106; that is historical evidence,
+not new spend authority or proof of current remaining balance. The previous
+focused/unfocused comparison completed before the combined quality changes;
+repeating it after rollout is a separate quality qualification.
+
+Generator [!39](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/39)
+contains an isolated stage driver. It does not intercept the browser-to-Hatchet
+worker path and is not a prerequisite merge or an enforceable budget for this
+lecturer test. Before paid UI dispatch, qualify a finite test-specific admission
+bound covering generation, embeddings, validation, automatic repairs and provider
+retries, and obtain the corresponding fresh allowance. Do not reuse the old
+ledger's nominal remainder or claim that attribution alone enforces a ceiling.
+
+On failed checks or an unhealthy rollout, hold dependent actions. Disable new
+comparison admission before reverting the producer; let accepted builds finish
+on a compatible worker. Retain the nullable database column and pinned artifacts.
+Rollback the STG worker pin only after draining incompatible accepted workflows.
+
+
+Preparation verification: 20 producer tests and 27 feature-flag contract tests
+pass in the isolated container harness. All 26 preparation/recovery lifecycle
+tests pass with current-schema enums, real Prisma error classes and unrelated
+publication calls stubbed to fail if invoked. The harness uses the repository's
+pinned saxes and stream-json versions; no repository dependency was added.
+Biome and diff checks pass. Hosted CI remains required for the complete package
+build and types; these focused harness checks are not live STG proof.
