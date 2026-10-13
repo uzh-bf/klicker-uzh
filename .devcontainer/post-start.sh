@@ -30,7 +30,7 @@ set +a
 if [ "${#evaluation_values[@]}" -gt 0 ]; then
   for evaluation_index in "${!evaluation_names[@]}"; do
     [ -n "${evaluation_values[$evaluation_index]}" ] || {
-      echo "[post-start] ERROR: guarded evaluation configuration is incomplete." >&2
+      echo "[post-start] ERROR: guarded evaluation configuration is incomplete: ${evaluation_names[$evaluation_index]} is unset or empty." >&2
       exit 2
     }
     export "${evaluation_names[$evaluation_index]}=${evaluation_values[$evaluation_index]}"

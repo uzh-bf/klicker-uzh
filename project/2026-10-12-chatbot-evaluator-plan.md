@@ -483,3 +483,15 @@ an initial two-volume container lacked transitive workspace dependencies.
 Scoped ESLint, Biome, Prettier and plain-Node launcher help pass. The continuation
 adds 343 substantive changed lines before review, excluding project artifacts.
 Committed-range reviews, thread dispositions and fresh hosted CI remain pending.
+
+The subsequent hosted review added eleven inline comments and nine summary
+suggestions. Main owns launcher guard prerequisites, consistent target labels,
+scoped credential forwarding and diagnostic corrections. A bounded read-only
+worker tested the import retry and sequential run leases on Node 24.21.0 with
+network disabled; both reported defects were refuted. The existing guard test
+now covers reacquiring the same run lease and preserving accumulated spend.
+The wrapper's synthetic suite verifies preflight refusal before child startup,
+matching target labels, credential isolation and cleanup on success or failure.
+All 55 focused tests, wrapper checks, static checks, plain-Node help and the
+synthetic development-runtime harness pass. Current source reviews and hosted
+CI will be rerun for this correction; PR 6489 remains draft with no paid run.

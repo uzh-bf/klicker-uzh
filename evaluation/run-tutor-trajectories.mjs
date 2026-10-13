@@ -54,7 +54,7 @@ const USAGE = [
   '',
   'Credentials come from KLICKER_EVAL_API_ORIGIN, KLICKER_EVAL_CHAT_ORIGIN,',
   'KLICKER_EVAL_PARTICIPANT_USERNAME and KLICKER_EVAL_PARTICIPANT_PASSWORD;',
-  'KLICKER_EVAL_MODEL_ID defaults to the fixed gpt-6-luna selection.',
+  `KLICKER_EVAL_MODEL_ID defaults to the fixed ${DEFAULT_MODEL_ID} selection.`,
 ].join('\n')
 
 export function parseArguments(argv) {
@@ -169,7 +169,7 @@ function progressLine({ arm, receipt, credits, ledger }) {
     'arm=' + arm,
     'case=' + receipt.caseId,
     'turn=' + receipt.turn,
-    'credits=' + (credits === null ? 'unaccounted' : credits),
+    'credits=' + credits,
     'submitted=' + ledger.submittedTurns + '/' + ledger.maxSubmittedTurns,
     'creditTotal=' + ledger.creditsUsed,
     'reservedMicroUsd=' +
@@ -277,7 +277,6 @@ export async function runTutorTrajectories({
               summary.creditsUsed = ledger.creditsUsed
               summary.uncertain = ledger.uncertain
               log(progressLine({ arm, receipt, credits, ledger }))
-              if (credits === null) throw evaluationError('credits_unaccounted')
             },
           })
         }

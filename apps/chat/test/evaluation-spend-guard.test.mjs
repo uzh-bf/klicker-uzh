@@ -307,6 +307,15 @@ test('guard denies calls without active turn and qualification binds experiment 
         { code: 'guard_qualification_invalid' }
       )
       await assert.rejects(
+        verifyGuardQualification({
+          ...config,
+          filePath: join(directory, 'missing-qualification.json'),
+        }),
+        (error) =>
+          error.code === 'guard_qualification_unavailable' &&
+          error.cause?.code === 'ENOENT'
+      )
+      await assert.rejects(
         verifyGuardQualification({ ...config, key: 'wrong' }),
         { code: 'guard_unavailable' }
       )
@@ -376,13 +385,21 @@ test('abandoned run leases and uncertain guard restarts cannot forward another r
       await admitted.text()
       assert.equal(admitted.status, 200)
       await release()
+      const releaseNextRun = await acquireBudgetLock(budgetFile, '.run')
+      try {
+        const next = await send()
+        assert.equal(next.status, 200)
+        await next.text()
+      } finally {
+        await releaseNextRun()
+      }
       await writeFile(budgetFile + '.run', 'stale-token')
       const denied = await send()
       assert.equal((await denied.json()).error, 'budget_run_inactive')
-      assert.equal(calls.length, 1)
+      assert.equal(calls.length, 2)
       assert.equal(
         (await readBudgetLedger(budgetFile)).reservedProviderMicroUsd,
-        1200
+        2400
       )
       await assert.rejects(
         createSpendGuard({

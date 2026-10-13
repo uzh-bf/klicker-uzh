@@ -394,6 +394,14 @@ local API and Chat origins, seeded participant credentials, and the approved
 target environment. Do not start an application stack as part of the portable
 integration check.
 
+The launcher preflights `KLICKER_EVAL_BUDGET_FILE`,
+`KLICKER_EVAL_QUALIFICATION_FILE`, `KLICKER_EVAL_GUARD_ORIGIN`, and
+`KLICKER_EVAL_GUARD_KEY`. Prepare these with the guarded workflow above and
+start its qualified guard separately; the adapter verifies its live status
+before starting. `--check` checks only offline prerequisites. The adapter and
+framework target label share `KLICKER_EVAL_MODEL_ID` (default `gpt-6-luna`);
+judge model and capability settings remain independent.
+
 The adapter resolves the exact question and mode from FineCo frontmatter and
 returns the completed persisted answer as an OpenAI Chat Completions target.
 The committed `evaluation/data/canaries/klicker_local_mcp.json` canary proves

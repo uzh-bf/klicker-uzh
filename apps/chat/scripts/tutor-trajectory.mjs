@@ -240,14 +240,24 @@ const {
 const SOURCE_MAPPING_DESCRIPTOR = Object.freeze({
   version: SOURCE_MAPPING_VERSION,
   maxSources: MAX_SOURCES,
-  fingerprint: SOURCE_MAPPER_FILES.reduce(
-    (hash, path) =>
-      hash
-        .update(path + '\0')
-        .update(readFileSync(new URL(path, import.meta.url))),
-    createHash('sha256')
-  ).digest('hex'),
+  fingerprint: sourceMapperFingerprint(),
 })
+
+function sourceMapperFingerprint() {
+  try {
+    return SOURCE_MAPPER_FILES.reduce(
+      (hash, path) =>
+        hash
+          .update(path + '\0')
+          .update(readFileSync(new URL(path, import.meta.url))),
+      createHash('sha256')
+    ).digest('hex')
+  } catch (error) {
+    throw Object.assign(evaluationError('source_mapper_unavailable'), {
+      cause: error,
+    })
+  }
+}
 
 // Reconstructs the application's per-call citation mapping from persisted tool
 // results: for every original source position, the first-appearance registry

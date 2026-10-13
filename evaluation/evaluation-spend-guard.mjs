@@ -396,7 +396,9 @@ export async function verifyGuardQualification({
   } catch (error) {
     if (error?.code?.startsWith('budget_') || error?.code?.startsWith('guard_'))
       throw error
-    throw budgetError('guard_qualification_unavailable')
+    throw Object.assign(budgetError('guard_qualification_unavailable'), {
+      cause: error,
+    })
   }
 }
 
@@ -429,7 +431,10 @@ export async function main(env = process.env, argv = process.argv.slice(2)) {
       ready()
     })
   })
-  const shutdown = () => server.close(() => process.exit(0))
+  const shutdown = () => {
+    server.close(() => process.exit(0))
+    server.closeAllConnections()
+  }
   process.once('SIGTERM', shutdown)
   process.once('SIGINT', shutdown)
   process.stdout.write(
