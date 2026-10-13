@@ -352,85 +352,23 @@ test.describe.serial('Live-quiz collaboration and access workflows', () => {
       )
   }
 
-  async function installTemporaryParticipantToken(token: string) {
-    await page.context().addCookies([
-      {
-        name: 'temporary_participant_token',
-        value: token,
-        domain: '.klicker.com',
-        path: '/',
-        httpOnly: true,
-        sameSite: 'Lax',
-        secure: true,
-      },
-      {
-        name: 'temporary_participant_token',
-        value: token,
-        url: 'http://127.0.0.1:3000',
-        httpOnly: true,
-        sameSite: 'Lax',
-        secure: false,
-      },
-      {
-        name: 'temporary_participant_token',
-        value: token,
-        url: 'http://localhost:3000',
-        httpOnly: true,
-        sameSite: 'Lax',
-        secure: false,
-      },
-      {
-        name: 'temporary_participant_token',
-        value: token,
-        url: 'http://127.0.0.1:7078',
-        httpOnly: true,
-        sameSite: 'Lax',
-        secure: false,
-      },
-      {
-        name: 'temporary_participant_token',
-        value: token,
-        url: 'http://localhost:7078',
-        httpOnly: true,
-        sameSite: 'Lax',
-        secure: false,
-      },
-      {
-        name: 'temporary_participant_token',
-        value: token,
-        url: 'https://response-api.klicker.com',
-        httpOnly: true,
-        sameSite: 'Lax',
-        secure: true,
-      },
-    ])
-    await page
-      .evaluate((token) => {
-        sessionStorage.setItem('participant_token', token)
-      }, token)
-      .catch(() => undefined)
-  }
-
   async function submitPseudonymAndAvatar() {
-    const tokenResponse = page.waitForResponse(async (response) => {
-      if (
-        !response.url().includes('/graphql') ||
-        response.request().method() !== 'POST'
-      ) {
-        return false
-      }
-
-      const body = await response.json().catch(() => null)
-      const token = body?.data?.loginTemporaryParticipant
-      if (typeof token !== 'string' || token.length === 0) return false
-
-      await installTemporaryParticipantToken(token)
-      return true
-    })
+    const previousToken = (
+      await page.context().cookies(env('URL_STUDENT'))
+    ).find((cookie) => cookie.name === 'temporary_participant_token')?.value
 
     await page.getByTestId('submit-pseudonym-and-avatar').click()
-    await tokenResponse
-    await page.reload({ waitUntil: 'domcontentloaded' })
+    await expect
+      .poll(async () => {
+        const token = (await page.context().cookies(env('URL_STUDENT'))).find(
+          (cookie) => cookie.name === 'temporary_participant_token'
+        )?.value
+        return Boolean(token && token !== previousToken)
+      })
+      .toBe(true)
+    await expect(
+      page.getByTestId('submit-pseudonym-and-avatar')
+    ).not.toBeVisible()
   }
 
   async function rememberStudentPwaState(page: Page) {
@@ -2770,8 +2708,9 @@ test.describe.serial('Live-quiz collaboration and access workflows', () => {
     )
     {
       const quizLink = aliases.get('quizLink')
-      await page.context().clearCookies()
       await page.evaluate(() => localStorage.clear()).catch(() => undefined)
+      await page.goto('about:blank')
+      await page.context().clearCookies()
       await page.goto(String(quizLink), { waitUntil: 'commit' })
       {
         const __originArgs = {
@@ -2876,8 +2815,9 @@ test.describe.serial('Live-quiz collaboration and access workflows', () => {
     )
     {
       const quizLink = aliases.get('quizLink')
-      await page.context().clearCookies()
       await page.evaluate(() => localStorage.clear()).catch(() => undefined)
+      await page.goto('about:blank')
+      await page.context().clearCookies()
       await page.goto(String(quizLink), { waitUntil: 'commit' })
       {
         const __originArgs = { data: data }
@@ -2976,8 +2916,9 @@ test.describe.serial('Live-quiz collaboration and access workflows', () => {
     )
     {
       const quizLink = aliases.get('quizLink')
-      await page.context().clearCookies()
       await page.evaluate(() => localStorage.clear()).catch(() => undefined)
+      await page.goto('about:blank')
+      await page.context().clearCookies()
       await page.goto(String(quizLink), { waitUntil: 'commit' })
       {
         const __originArgs = {
@@ -3821,16 +3762,18 @@ test.describe.serial('Live-quiz collaboration and access workflows', () => {
     await getPinProtectedQuizLinks(data)
     {
       const link = aliases.get('protectedQuizLink')
+      await page.evaluate(() => localStorage.clear()).catch(() => undefined)
+      await page.goto('about:blank')
       await page.context().clearCookies()
       clearLiveQuizPinCookies()
-      await page.evaluate(() => localStorage.clear()).catch(() => undefined)
       await studentAccountLinkAccess(String(link), data, true, true)
     }
     {
       const link = aliases.get('protectedQuizLink2')
+      await page.evaluate(() => localStorage.clear()).catch(() => undefined)
+      await page.goto('about:blank')
       await page.context().clearCookies()
       clearLiveQuizPinCookies()
-      await page.evaluate(() => localStorage.clear()).catch(() => undefined)
       await studentAccountLinkAccess(String(link), data, true, false)
     }
   })
@@ -3846,9 +3789,10 @@ test.describe.serial('Live-quiz collaboration and access workflows', () => {
     await endPinProtectedLiveQuizzes(data)
     await createAndStartProtectedLiveQuizzes(data)
     await getPinProtectedQuizLinks(data)
+    await page.evaluate(() => localStorage.clear()).catch(() => undefined)
+    await page.goto('about:blank')
     await page.context().clearCookies()
     clearLiveQuizPinCookies()
-    await page.evaluate(() => localStorage.clear()).catch(() => undefined)
     {
       const link = aliases.get('protectedQuizLink')
       await studentAccountLinkAccess(String(link), data, false, true)
