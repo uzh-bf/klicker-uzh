@@ -488,11 +488,18 @@ function translateMistralRequest(body, history = createHistoryStore()) {
   if (!Array.isArray(body.messages) || body.messages.length === 0) {
     throw new AdapterError('invalid_request', 'request must include messages')
   }
+  const effort = body.reasoning_effort ?? MISTRAL_EFFORT
+  if (effort !== 'high' && effort !== 'max') {
+    throw new AdapterError(
+      'invalid_request',
+      'reasoning effort must be high or max'
+    )
+  }
 
   const translated = {
     model: MISTRAL_MODEL,
     messages: history.restoreMessages(body.messages),
-    reasoning_effort: MISTRAL_EFFORT,
+    reasoning_effort: effort,
   }
   for (const field of PASSTHROUGH_FIELDS) {
     if (body[field] !== undefined && body[field] !== null) {

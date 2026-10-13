@@ -445,14 +445,13 @@ test('normalization rejects a response with no completion status', () => {
   })
 })
 
-test('translateMistralRequest converts fields and forces model and reasoning', () => {
+test('translateMistralRequest converts fields and defaults reasoning to max', () => {
   const translated = translateMistralRequest(
     {
       model: MISTRAL_MODEL,
       messages: [{ role: 'user', content: 'hi' }],
       max_completion_tokens: 123,
       reasoning: { effort: 'high' },
-      reasoning_effort: 'low',
       provider: { order: ['x'] },
       thinking: { type: 'enabled' },
       stream_options: { include_usage: true },
@@ -474,6 +473,41 @@ test('translateMistralRequest converts fields and forces model and reasoning', (
     'stream',
   ]) {
     assert.equal(translated[dropped], undefined, `${dropped} should be dropped`)
+  }
+})
+
+test('loopback enforces high or max reasoning before calling upstream', async () => {
+  const fetchImpl = upstream(() =>
+    jsonResponse(200, completion({ role: 'assistant', content: 'done' }))
+  )
+  const adapter = await startAdapter({ apiKey: 'sk-synthetic', fetchImpl })
+  const body = {
+    model: MISTRAL_MODEL,
+    messages: [{ role: 'user', content: 'synthetic review' }],
+  }
+  try {
+    for (const effort of ['low', 'medium', 'none', '', 'MAX', 1, {}]) {
+      const response = await postJson(adapter, {
+        ...body,
+        reasoning_effort: effort,
+      })
+      assert.equal(response.status, 400)
+      assert.equal(response.json.error.code, 'invalid_request')
+      assert.equal(fetchImpl.calls.length, 0)
+    }
+    for (const effort of [undefined, 'high', 'max']) {
+      const response = await postJson(adapter, {
+        ...body,
+        reasoning_effort: effort,
+      })
+      assert.equal(response.status, 200)
+      assert.equal(
+        fetchImpl.calls.at(-1).body.reasoning_effort,
+        effort ?? 'max'
+      )
+    }
+  } finally {
+    await adapter.close()
   }
 })
 
@@ -520,14 +554,14 @@ test('request conversion and native replay work over the loopback listener', asy
       provider: { order: ['x'] },
       thinking: { type: 'enabled' },
       stream_options: { include_usage: true },
-      reasoning_effort: 'low',
+      reasoning_effort: 'high',
       stream: false,
       temperature: 0.1,
     })
     assert.equal(first.status, 200)
     const forwarded = fetchImpl.calls[0]
     assert.equal(forwarded.body.model, MISTRAL_MODEL)
-    assert.equal(forwarded.body.reasoning_effort, 'max')
+    assert.equal(forwarded.body.reasoning_effort, 'high')
     assert.equal(forwarded.body.max_tokens, 55)
     assert.equal(forwarded.body.temperature, 0.1)
     for (const dropped of [
@@ -554,6 +588,7 @@ test('request conversion and native replay work over the loopback listener', asy
 
     const second = await postJson(adapter, {
       model: MISTRAL_MODEL,
+      reasoning_effort: 'high',
       messages: [
         { role: 'system', content: 's' },
         { role: 'user', content: 'u' },
@@ -562,6 +597,7 @@ test('request conversion and native replay work over the loopback listener', asy
       ],
     })
     assert.equal(second.status, 200)
+    assert.equal(fetchImpl.calls[1].body.reasoning_effort, 'high')
     const restored = fetchImpl.calls[1].body.messages[2]
     assert.deepEqual(restored, native)
   } finally {

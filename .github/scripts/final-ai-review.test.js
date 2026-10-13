@@ -982,7 +982,7 @@ test('routes automatic drafts through the same pinned Mistral adapter', () => {
   )
   assert.match(source, /llm_model: zai-glm-5-3/)
   assert.match(source, /ocr_version: '1.13.0'/)
-  assert.match(source, /llm_extra_body: '\{"reasoning_effort":"max"\}'/)
+  assert.match(source, /llm_extra_body: '\{"reasoning_effort":"high"\}'/)
   assert.match(
     source,
     /llm_auth_token: \$\{\{ steps.adapter.outputs.token \}\}/
