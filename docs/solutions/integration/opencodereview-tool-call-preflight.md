@@ -34,7 +34,11 @@ metadata remain separate so strict topology JSON stays parseable.
 The upstream `MISTRAL_API_KEY` exists only in the adapter or direct request
 process. OCR receives a random loopback capability, and its mode-0600 config
 uses `auth_token_cmd` to read that capability from the environment. The attempt
-wrapper closes the adapter before returning. Draft reviews use a trusted
+wrapper closes the adapter before returning. The config must omit `llm.url`:
+OCR 1.13.0 gives a saved URL precedence over `OCR_LLM_URL`, so a saved upstream
+URL bypasses the adapter and a saved loopback URL becomes stale on the next
+attempt. The released-binary probe exposed this precedence; each attempt now
+supplies its fresh URL through the environment. Draft reviews use a trusted
 runner-temporary copy and authenticated always-run shutdown; cleanup fails if
 listener termination cannot be proved. Live compatibility is proved by the
 first authorized hosted runs after secret provisioning and activation.

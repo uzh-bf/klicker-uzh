@@ -57,7 +57,8 @@ authorize merging, marking ready, deployment, billing changes or a paid replay.
    `.github/scripts/final-ai-review.test.js`, `.github/scripts/final-ai-stack-review.js`,
    `.github/scripts/final-ai-stack-review.test.js`, `docs/ci-and-deployment.md`,
    `docs/solutions/integration/opencodereview-tool-call-preflight.md`, and the
-   affected provider wording in `AGENTS.md`. It depends on the adapter slice.
+   affected provider wording in `AGENTS.md`. The existing `check.yml` job also
+   runs the adapter and individual/stack helper suites. It depends on the adapter slice.
    Acceptance: existing review/stack validators and workflow gates plus exact
    OCR 1.13 synthetic full/grouped/partial-resume receipts when runnable.
 
@@ -101,19 +102,21 @@ integrated final review; human review and hosted CI remain distinct evidence.
   completed items. Strict producer and resume-merge validators accept the
   results; combined usage is 75 synthetic tokens. Native thinking is restored
   on real OCR tool replay. No real Mistral calls or charges occurred.
-- Independent slice risk review: `PASS_WITH_LIMITATIONS` on the uncommitted
-  source. It verifies the saved-URL and missing-completion-status corrections.
-  The focused correction pass also passed bounded shutdown for stalled request
-  bodies; no open source findings remain. Its report is saved under
-  `project/_local/reviews/2026-10-13-ocr-mistral-slice-risk.md`. This patch review does not substitute for committed-package review.
+- Committed slice risk review: `PASS_WITH_LIMITATIONS` on the complete
+  `e4c6f0d7a1..d9cb6f06d9` package. All 11 committed hashes match the reviewed
+  snapshot. No open source findings remain. The report is saved under
+  `project/_local/reviews/2026-10-13-ocr-mistral-slice-risk.md`.
 - The final immutable source manifest is
   `71cb6489958545405a2ca407e255c168a8738d1c56f4452bb2aac2c29639edbb`.
   Scratch evidence remains under `/private/tmp/ocr-mistral-prototype/` and
   `/private/tmp/ocr-review-snapshot-v2/`; these contain synthetic data only.
-- The initial sandbox denied creation of the task worktree index lock.
-  Permissions have since been repaired and delivery is resuming. Plan/source
-  commits, committed-package review gates, ordinary push and draft PR creation
-  are the remaining source-delivery steps.
+- Git writes are restored. The plan and both source slices are committed and
+  published on the task branch. [Draft PR #6493](https://github.com/uzh-bf/klicker-uzh/pull/6493)
+  targets `v3`; hosted CI and committed-package simplification are running.
+  Integrated final review remains pending simplification disposition.
+- Follow-up inspection found that PR CI did not execute the adapter and helper
+  suites. They are now wired into the existing codebase check job. The existing
+  solution page also records saved-URL precedence exposed by the binary probe.
 - GitHub confirms the current account has repository `ADMIN` permission, and
   values-free secret listing confirms `MISTRAL_API_KEY` is not provisioned yet.
   Secret provisioning, key-specific entitlement, live tool/structured-output
