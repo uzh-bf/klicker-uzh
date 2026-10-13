@@ -3,7 +3,11 @@ const fs = require('node:fs')
 const path = require('node:path')
 const test = require('node:test')
 const YAML = require('yaml')
-const { acceptsEvent, maintainDraftSyncPrs } = require('./draft-sync-prs.cjs')
+const {
+  acceptsEvent,
+  maintainDraftSyncPrs,
+  syncBranch,
+} = require('./draft-sync-prs.cjs')
 
 const repository = 'uzh-bf/klicker-uzh'
 const context = {
@@ -22,16 +26,72 @@ const context = {
   },
 }
 
-function fixture({ ahead = 1, files = [{}], createError, race = false } = {}) {
+function fixture({
+  ahead = 1,
+  files = [{}],
+  createError,
+  race = false,
+  status = 'ahead',
+  mergeError,
+} = {}) {
   const prs = []
   const creates = []
   const comparisons = []
+  const refs = new Map()
+  const refWrites = []
+  const merges = []
+  const sources = { v3: 'v3-tip', 'v3-ai': 'v3-ai-tip' }
+  const comments = []
+  const control = { mergeError }
   const github = {
-    paginate: async (_, { head, base }) =>
-      prs.filter(
-        (pr) => `uzh-bf:${pr.head.ref}` === head && pr.base.ref === base
-      ),
+    paginate: async (method, { base, issue_number }) =>
+      method === github.rest.issues.listComments
+        ? comments.filter((comment) => comment.issue_number === issue_number)
+        : prs.filter((pr) => pr.base.ref === base),
     rest: {
+      git: {
+        async createRef({ ref, sha }) {
+          const name = ref.replace('refs/heads/', '')
+          if (refs.has(name)) {
+            throw Object.assign(new Error('Reference already exists'), {
+              status: 422,
+            })
+          }
+          refs.set(name, sha)
+          refWrites.push({ op: 'create', name, sha })
+        },
+        async getRef({ ref }) {
+          return {
+            data: { object: { sha: refs.get(ref.replace('heads/', '')) } },
+          }
+        },
+        async updateRef({ ref, sha, force }) {
+          const name = ref.replace('heads/', '')
+          refs.set(name, sha)
+          refWrites.push({ op: 'update', name, sha, force })
+        },
+      },
+      users: {
+        async getAuthenticated() {
+          return { data: { login: 'sync-bot' } }
+        },
+      },
+      issues: {
+        listComments() {},
+        async createComment({ issue_number, body }) {
+          const id = comments.length + 1
+          comments.push({ id, issue_number, body, user: { login: 'sync-bot' } })
+        },
+        async updateComment({ comment_id, body }) {
+          comments.find(({ id }) => id === comment_id).body = body
+        },
+        async deleteComment({ comment_id }) {
+          comments.splice(
+            comments.findIndex(({ id }) => id === comment_id),
+            1
+          )
+        },
+      },
       pulls: {
         list() {},
         async create(input) {
@@ -39,7 +99,11 @@ function fixture({ ahead = 1, files = [{}], createError, race = false } = {}) {
           const pr = {
             number: prs.length + 1,
             draft: input.draft,
-            head: { ref: input.head, repo: { full_name: repository } },
+            head: {
+              ref: input.head,
+              sha: refs.get(input.head),
+              repo: { full_name: repository },
+            },
             base: { ref: input.base, repo: { full_name: repository } },
           }
           if (!createError || race) prs.push(pr)
@@ -48,14 +112,32 @@ function fixture({ ahead = 1, files = [{}], createError, race = false } = {}) {
         },
       },
       repos: {
+        async getBranch({ branch }) {
+          return { data: { commit: { sha: sources[branch] } } }
+        },
         async compareCommitsWithBasehead(input) {
           comparisons.push(input)
-          return { data: { ahead_by: ahead, files } }
+          return { data: { ahead_by: ahead, files, status } }
+        },
+        async merge(input) {
+          merges.push(input)
+          if (control.mergeError) throw control.mergeError
         },
       },
     },
   }
-  return { github, prs, creates, comparisons }
+  return {
+    github,
+    prs,
+    creates,
+    comparisons,
+    refs,
+    refWrites,
+    merges,
+    sources,
+    comments,
+    control,
+  }
 }
 
 test('creates only the two forward pairs as drafts and preserves ready PRs on rerun', async () => {
@@ -69,6 +151,12 @@ test('creates only the two forward pairs as drafts and preserves ready PRs on re
     ]
   )
   assert.ok(state.creates.every((pr) => pr.draft === true))
+  // Every PR head is a bot-owned sync branch, never the long-lived source.
+  assert.deepEqual(
+    state.creates.map(({ head }) => head),
+    ['sync/v3-into-v3-ai-v3-tip', 'sync/v3-ai-into-v3-audit-v3-ai-tip']
+  )
+  assert.equal(state.refs.get('sync/v3-into-v3-ai-v3-tip'), 'v3-tip')
   state.prs[0].draft = false
   const second = await maintainDraftSyncPrs({
     ...state,
@@ -88,7 +176,111 @@ test('default preview reads live comparisons without writing', async () => {
   assert.equal(state.creates.length, 0)
   assert.deepEqual(
     state.comparisons.map(({ basehead }) => basehead),
-    ['v3-ai...v3', 'v3-audit...v3-ai']
+    ['v3-ai...v3-tip', 'v3-audit...v3-ai-tip']
+  )
+  assert.equal(state.refWrites.length, 0)
+})
+
+test('advances an open sync head without ever writing the source branch', async () => {
+  for (const [status, expected] of [
+    ['ahead', 'advanced'],
+    ['diverged', 'merged-source'],
+    ['behind', 'existing'],
+  ]) {
+    const state = fixture({ status })
+    await maintainDraftSyncPrs({ ...state, context, dryRun: false })
+    state.sources.v3 = 'v3-next'
+    state.sources['v3-ai'] = 'v3-ai-next'
+    state.refWrites.length = 0
+    const results = await maintainDraftSyncPrs({
+      ...state,
+      context,
+      dryRun: false,
+    })
+    assert.ok(results.every(({ action }) => action === expected))
+    const written = [
+      ...state.refWrites.map(({ name }) => name),
+      ...state.merges.map(({ base }) => base),
+    ]
+    assert.ok(written.every((name) => name.startsWith('sync/')))
+    // A maintainer's resolution on a diverged head is merged into, not reset.
+    assert.ok(state.refWrites.every(({ force }) => force === false))
+  }
+})
+
+test('reports a conflicting source merge for maintainers to resolve', async () => {
+  const state = fixture({
+    status: 'diverged',
+    mergeError: Object.assign(new Error('conflict'), { status: 409 }),
+  })
+  await maintainDraftSyncPrs({ ...state, context, dryRun: false })
+  state.sources.v3 = 'v3-next'
+  const results = await maintainDraftSyncPrs({
+    ...state,
+    context,
+    dryRun: false,
+  })
+  assert.equal(results[0].action, 'conflict')
+  // One visible notice per PR, refreshed for the newest blocked source commit.
+  const notices = () =>
+    state.comments.filter(({ issue_number }) => issue_number === 1)
+  state.comments.push({
+    id: 99,
+    issue_number: 1,
+    body: '<!-- sync-pr-source-conflict --> forged',
+    user: { login: 'someone' },
+  })
+  state.sources.v3 = 'v3-later'
+  await maintainDraftSyncPrs({ ...state, context, dryRun: false })
+  assert.equal(notices().length, 2)
+  assert.match(notices()[0].body, /v3-later/)
+  // Once the source merges again, only the bot's notice is removed.
+  state.control.mergeError = undefined
+  await maintainDraftSyncPrs({ ...state, context, dryRun: false })
+  assert.deepEqual(
+    notices().map(({ id }) => id),
+    [99]
+  )
+})
+
+test('leaves pull requests headed by the source branch itself untouched', async () => {
+  const state = fixture()
+  state.prs.push({
+    number: 99,
+    head: { ref: 'v3-ai', repo: { full_name: repository } },
+    base: { ref: 'v3-audit', repo: { full_name: repository } },
+  })
+  const results = await maintainDraftSyncPrs({
+    ...state,
+    context,
+    dryRun: false,
+  })
+  assert.deepEqual(results[1], {
+    head: 'v3-ai',
+    base: 'v3-audit',
+    branch: 'v3-ai',
+    action: 'legacy',
+    number: 99,
+  })
+  assert.deepEqual(
+    state.creates.map(({ head }) => head),
+    [syncBranch({ head: 'v3', base: 'v3-ai' }, 'v3-tip')]
+  )
+})
+
+test('never overwrites a leftover sync branch at another commit', async () => {
+  const state = fixture()
+  state.refs.set('sync/v3-into-v3-ai-v3-tip', 'someone-else')
+  const results = await maintainDraftSyncPrs({
+    ...state,
+    context,
+    dryRun: false,
+  })
+  assert.equal(results[0].action, 'stale-branch')
+  assert.equal(state.refs.get('sync/v3-into-v3-ai-v3-tip'), 'someone-else')
+  assert.deepEqual(
+    state.creates.map(({ head }) => head),
+    ['sync/v3-ai-into-v3-audit-v3-ai-tip']
   )
 })
 
@@ -130,7 +322,10 @@ test('recovers a creation race but propagates permission and validation errors',
 test('ignores same-named fork PRs', async () => {
   const state = fixture()
   state.prs.push({
-    head: { ref: 'v3', repo: { full_name: 'someone/klicker-uzh' } },
+    head: {
+      ref: 'sync/v3-into-v3-ai-v3-tip',
+      repo: { full_name: 'someone/klicker-uzh' },
+    },
     base: { ref: 'v3-ai', repo: { full_name: repository } },
   })
   await maintainDraftSyncPrs({ ...state, context, dryRun: false })
@@ -232,12 +427,26 @@ test('workflow entrypoint creates drafts on automatic runs and previews manual d
     await entrypoint(
       state.github,
       { ...context, eventName },
-      { info() {} },
+      {
+        info() {},
+        warning() {},
+        setFailed: assert.fail,
+        summary: {
+          addHeading() {
+            return this
+          },
+          addTable() {
+            return this
+          },
+          async write() {},
+        },
+      },
       {
         env: {
           DRY_RUN: String(
             evaluateDryRun({ event_name: eventName }, { dry_run: input })
           ),
+          HAS_SYNC_TOKEN: 'true',
         },
       },
       () => ({ maintainDraftSyncPrs })
@@ -245,4 +454,35 @@ test('workflow entrypoint creates drafts on automatic runs and previews manual d
     assert.equal(state.creates.length, expectedCreates)
     assert.ok(state.creates.every(({ draft }) => draft === true))
   }
+})
+
+test('workflow entrypoint refuses to write without the sync bot token', async () => {
+  const workflow = YAML.parse(
+    fs.readFileSync(
+      path.join(__dirname, '../workflows/maintain-draft-sync-prs.yml'),
+      'utf8'
+    )
+  )
+  const step = workflow.jobs.maintain.steps[1]
+  const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor
+  const entrypoint = new AsyncFunction(
+    'github',
+    'context',
+    'core',
+    'process',
+    'require',
+    step.with.script
+  )
+  const state = fixture()
+  const failures = []
+  await entrypoint(
+    state.github,
+    context,
+    { info() {}, setFailed: (message) => failures.push(message) },
+    { env: { DRY_RUN: 'false', HAS_SYNC_TOKEN: 'false' } },
+    () => ({ maintainDraftSyncPrs })
+  )
+  assert.equal(failures.length, 1)
+  assert.equal(state.creates.length, 0)
+  assert.equal(state.refWrites.length, 0)
 })
