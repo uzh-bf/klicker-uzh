@@ -59,6 +59,9 @@ trajectory's first-turn grounding check still requires `KB_doc_query`.
 They contain hashed identities and numeric page/video positions, not source text,
 titles or URLs. Reconstruction from persisted tools does not establish the exact
 historical model input. Receipt version 2 identifies the mapper fingerprint.
+Identity hashes are deterministic diagnostics, not anonymization: candidate
+titles or URLs may be guessed and checked against them. Keep receipts private
+even when they omit raw identifiers; operator corpora must remain synthetic.
 
 Both the trajectory CLI and the listening evaluation target require a shared
 version-2 budget for operator runs. Application credits remain observational;
@@ -176,6 +179,10 @@ Save that proof in a private `KLICKER_EVAL_QUALIFICATION_FILE`: `version: 1`,
 and runtime-injected guard key to the runner. It checks the receipt and authenticated
 guard status before login; reachability alone is not routing proof. Keep policies,
 receipts, ledger and synthetic transcripts in approved private custody, outside Git.
+Named `.localhost` routes rely on the qualified local development resolver.
+Verify that each guard route resolves to loopback; use literal `127.0.0.1` or
+`[::1]` when that resolver is unavailable. Endpoint-string checks alone do not
+establish network routing.
 
 Zero-spend qualification can exercise the real application with a fake local
 Responses upstream, including SDK retries, MCP execution and persistence. Use
@@ -401,6 +408,9 @@ start its qualified guard separately; the adapter verifies its live status
 before starting. `--check` checks only offline prerequisites. The adapter and
 framework target label share `KLICKER_EVAL_MODEL_ID` (default `gpt-6-luna`);
 judge model and capability settings remain independent.
+An explicitly set origin or generation activates guarded startup checks, even
+when empty. After stopping evaluation, unset both markers to deliberately return
+to canonical development settings; blank values are incomplete configuration.
 
 The adapter resolves the exact question and mode from FineCo frontmatter and
 returns the completed persisted answer as an OpenAI Chat Completions target.

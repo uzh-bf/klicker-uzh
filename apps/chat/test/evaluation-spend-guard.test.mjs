@@ -149,8 +149,11 @@ async function scenario(body, cap = 2400) {
       }
     }
   }
-  if (upstreamFailures.length > 0) throw upstreamFailures[0]
-  if (bodyError) throw bodyError
+  const failures = [...upstreamFailures]
+  if (bodyError) failures.push(bodyError)
+  if (failures.length === 1) throw failures[0]
+  if (failures.length > 1)
+    throw new AggregateError(failures, 'evaluation guard scenario failed')
 }
 
 test('guard reserves each step and retry durably before forwarding and never refunds failures', async () => {

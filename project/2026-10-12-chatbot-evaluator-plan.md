@@ -495,3 +495,13 @@ matching target labels, credential isolation and cleanup on success or failure.
 All 55 focused tests, wrapper checks, static checks, plain-Node help and the
 synthetic development-runtime harness pass. Current source reviews and hosted
 CI will be rerun for this correction; PR 6489 remains draft with no paid run.
+
+The next hosted review was checked against producing code before changes.
+IPv6 hostname claims were refuted on the pinned Node runtime. The alleged
+result-envelope parity gap omitted the persistence adapter's safe-error mapping;
+the existing parity test now exercises that mapping explicitly without weakening
+the retrieval gate. Main owns missing retrieval-call identity refusal and empty
+evaluation-marker startup refusal. One executor owns handling a reset lease
+socket and retaining multiple fixture errors; it reproduced an unhandled
+ECONNRESET before the fix and a normal exit afterward. The existing tests cover
+these seams; no new module, dependency, refund, recovery or paid run is added.

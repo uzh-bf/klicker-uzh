@@ -33,6 +33,7 @@ import {
   validateTrajectoryCorpus,
 } from '../scripts/tutor-trajectory.mjs'
 import { withModelCitationIndices } from '../src/lib/server/citationInstructions'
+import { mapAssistantStepContent } from '../src/lib/server/persistedAssistantContent'
 import { MAX_SOURCES } from '../src/lib/sources/normalizeSources'
 
 test('numerical references use annual compounding and decimal returns', () => {
@@ -780,7 +781,7 @@ test('source receipts match the application citation projection and suppress raw
     ),
   ]
 
-  const receipt = buildSourceReceipt(parts)
+  parts.push(part('call-error', { ...documents(alphaChunk), isError: true }))
   const steps = parts.map((entry) => ({
     content: [
       {
@@ -809,10 +810,11 @@ test('source receipts match the application citation projection and suppress raw
     ],
   }))
 
+  const receipt = buildSourceReceipt(mapAssistantStepContent(steps))
   const applicationEntries = []
   withModelCitationIndices(messages, steps).forEach((message, index) => {
     const payload = JSON.parse(message.content[0].output.value)
-    payload.sources.forEach((source, position) => {
+    ;(payload.sources ?? []).forEach((source, position) => {
       applicationEntries.push({
         toolCallId: parts[index].toolCallId,
         sourcePosition: position + 1,
@@ -836,6 +838,15 @@ test('source receipts match the application citation projection and suppress raw
     })),
   ]
   assert.deepEqual(applicationEntries, expectedEntries)
+  for (const toolCallId of [undefined, null, 123, '']) {
+    assert.throws(
+      () =>
+        buildSourceReceipt([
+          part(toolCallId, documents(alphaChunk), 'COURSE_doc_query_01234567'),
+        ]),
+      { code: 'trajectory_tool_identity_mismatch' }
+    )
+  }
   assert.deepEqual(
     receipt.sources.map(({ toolCallId, sourcePosition, citationIndex }) => ({
       toolCallId,

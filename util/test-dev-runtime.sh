@@ -587,11 +587,11 @@ fi
 printf "%s\n" "$*" >>"$KLICKER_TEST_HELPER_LOG"
 [ "$1" = ensure ] || exit 0
 if [ -n "${KLICKER_TEST_EVALUATION_GENERATION:-}" ]; then
-  [ "$KLICKER_EVAL_GUARD_ORIGIN" = "http://127.0.0.1:1418" ] || exit 31
-  [ "$OPENAI_BASE_URL" = "http://127.0.0.1:1418/v1" ] || exit 32
-  [ "$OPENAI_API_KEY" = "synthetic-evaluation-key" ] || exit 33
-  [ "$CHAT_MODEL_REGISTRY_JSON" = "[]" ] || exit 34
-  [ "$KLICKER_EVAL_GUARD_GENERATION" = "$KLICKER_TEST_EVALUATION_GENERATION" ] || exit 35
+  [ "${KLICKER_EVAL_GUARD_ORIGIN:-}" = "http://127.0.0.1:1418" ] || exit 31
+  [ "${OPENAI_BASE_URL:-}" = "http://127.0.0.1:1418/v1" ] || exit 32
+  [ "${OPENAI_API_KEY:-}" = "synthetic-evaluation-key" ] || exit 33
+  [ "${CHAT_MODEL_REGISTRY_JSON:-}" = "[]" ] || exit 34
+  [ "${KLICKER_EVAL_GUARD_GENERATION:-}" = "$KLICKER_TEST_EVALUATION_GENERATION" ] || exit 35
   for name in KLICKER_EVAL_GUARD_ORIGIN OPENAI_BASE_URL CHAT_MODEL_REGISTRY_JSON KLICKER_EVAL_GUARD_GENERATION; do
     case ",$DEVROUTER_PROCESS_FINGERPRINT_ENV," in
       *",$name,"*) ;;
@@ -648,13 +648,22 @@ KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-he
 grep -Fx 'evaluation-generation:synthetic-generation' "$HELPER_LOG" >/dev/null || \
   fail 'managed helper did not receive restored guarded configuration'
 : >"$HELPER_LOG"
-if KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+incomplete_status=0
+KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
   KLICKER_EVAL_GUARD_ORIGIN=http://127.0.0.1:1418 OPENAI_BASE_URL=http://127.0.0.1:1418/v1 \
   OPENAI_API_KEY=synthetic-evaluation-key CHAT_MODEL_REGISTRY_JSON='[]' \
   KLICKER_EVAL_GUARD_GENERATION='' \
-  bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1; then
-  fail 'incomplete guarded configuration was accepted'
-fi
+  bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1 || incomplete_status=$?
+[ "$incomplete_status" -eq 2 ] || fail 'incomplete guarded configuration did not use its failure status'
 [ ! -s "$HELPER_LOG" ] || fail 'incomplete guarded configuration reached the helper'
+
+incomplete_status=0
+KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+  KLICKER_EVAL_GUARD_ORIGIN='' OPENAI_BASE_URL=http://127.0.0.1:1418/v1 \
+  OPENAI_API_KEY=synthetic-evaluation-key CHAT_MODEL_REGISTRY_JSON='[]' \
+  KLICKER_EVAL_GUARD_GENERATION=synthetic-generation \
+  bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1 || incomplete_status=$?
+[ "$incomplete_status" -eq 2 ] || fail 'empty guarded origin did not fail closed'
+[ ! -s "$HELPER_LOG" ] || fail 'empty guarded origin reached the helper'
 
 echo '[test-dev-runtime] PASS'

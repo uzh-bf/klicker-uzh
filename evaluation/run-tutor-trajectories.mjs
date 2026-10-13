@@ -55,6 +55,8 @@ const USAGE = [
   'Credentials come from KLICKER_EVAL_API_ORIGIN, KLICKER_EVAL_CHAT_ORIGIN,',
   'KLICKER_EVAL_PARTICIPANT_USERNAME and KLICKER_EVAL_PARTICIPANT_PASSWORD;',
   `KLICKER_EVAL_MODEL_ID defaults to the fixed ${DEFAULT_MODEL_ID} selection.`,
+  'Guard prerequisites: KLICKER_EVAL_QUALIFICATION_FILE,',
+  'KLICKER_EVAL_GUARD_ORIGIN and KLICKER_EVAL_GUARD_KEY.',
 ].join('\n')
 
 export function parseArguments(argv) {

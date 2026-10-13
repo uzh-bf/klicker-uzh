@@ -179,6 +179,7 @@ export function validateTrajectoryCorpus(value) {
 // application's extensionless imports, so on failure the tsx loader is
 // registered once and the import retried. Both paths load the exact shipped
 // module, keeping the evaluator's numbering identical to the application's.
+// Keep this list aligned with the mapper's runtime imports when they change.
 const SOURCE_MAPPER_FILES = [
   '../src/lib/sources/normalizeSources.ts',
   '../src/lib/config/toolNames.ts',
@@ -279,6 +280,9 @@ function mapSourceEntries(parts, registry) {
     const payload = parseDocQueryPayload(part.result)
     if (!payload || 'error' in payload || !Array.isArray(payload.sources)) {
       continue
+    }
+    if (typeof part.toolCallId !== 'string' || !part.toolCallId.trim()) {
+      throw evaluationError('trajectory_tool_identity_mismatch')
     }
     const indices = sourceCitationIndices(payload, registry)
     payload.sources.forEach((rawSource, position) => {

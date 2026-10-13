@@ -164,7 +164,10 @@ export async function acquireBudgetLock(filePath, suffix = '.lock') {
   }
   let lease
   if (suffix === '.run') {
-    lease = createServer((socket) => socket.end(token))
+    lease = createServer((socket) => {
+      socket.on('error', () => socket.destroy())
+      socket.end(token)
+    })
     try {
       await new Promise((ready, reject) => {
         lease.once('error', reject)
