@@ -24,7 +24,6 @@ import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '../../packages/util/src
 import { getPrisma } from '../global-setup.js'
 import {
   APP_SECRET,
-  COURSE_ID_TEST,
   PARTICIPANT_IDS,
   STUDENT_PASSWORD,
   USER_ID_TEST,
@@ -48,6 +47,7 @@ test.beforeEach(async ({}, info) => {
 
 const lms = 'https://lms.example.invalid'
 const ssoId = `synthetic-olat-recovery-${randomUUID()}`
+const courseId = randomUUID()
 const quizId = randomUUID()
 const liveQuizId = randomUUID()
 const loginThreadId = randomUUID()
@@ -259,14 +259,30 @@ test.beforeAll(async ({}, info) => {
       participantId: ltiId,
     },
   })
-  // The course Chat link needs a published chatbot on the seeded course.
+  // Own the course so its Chat link cannot select another suite's chatbot.
+  const now = new Date()
+  const tomorrow = new Date(now.getTime() + 86_400_000)
+  await prisma.course.create({
+    data: {
+      id: courseId,
+      name: 'Synthetic shared session course',
+      displayName: 'Synthetic shared session course',
+      ownerId: USER_ID_TEST,
+      startDate: now,
+      endDate: tomorrow,
+      groupDeadlineDate: tomorrow,
+      participations: {
+        create: [loginId, ltiId].map((participantId) => ({ participantId })),
+      },
+    },
+  })
   chatbotId = (
     await prisma.chatbot.create({
       data: {
         name: 'Synthetic session recovery chatbot',
         status: 'PUBLISHED',
         ownerId: USER_ID_TEST,
-        courseId: COURSE_ID_TEST,
+        courseId,
       },
     })
   ).id
@@ -315,13 +331,13 @@ test.beforeAll(async ({}, info) => {
       name: 'Synthetic session recovery',
       displayName: 'Synthetic session recovery',
       status: 'PUBLISHED',
-      courseId: COURSE_ID_TEST,
+      courseId,
       ownerId: USER_ID_TEST,
       stacks: {
         create: {
           type: ElementStackType.PRACTICE_QUIZ,
           order: 0,
-          courseId: COURSE_ID_TEST,
+          courseId,
           elements: {
             create: {
               type: ElementInstanceType.PRACTICE_QUIZ,
@@ -347,7 +363,7 @@ test.beforeAll(async ({}, info) => {
       displayName: 'Synthetic session recovery live quiz',
       status: 'PUBLISHED',
       isGamificationEnabled: true,
-      courseId: COURSE_ID_TEST,
+      courseId,
       ownerId: USER_ID_TEST,
       blocks: {
         create: {
@@ -392,6 +408,7 @@ test.afterAll(async ({}, info) => {
     await prisma.chatThread.deleteMany({ where: { chatbotId } })
     await prisma.chatbot.deleteMany({ where: { id: chatbotId } })
   }
+  await prisma.course.deleteMany({ where: { id: courseId } })
 })
 
 // Observe the application's own request, so a fresh test-authored fetch cannot
@@ -441,7 +458,7 @@ async function expectChatIdentity(
 }
 
 async function openChat(page: Page, baseURL: string) {
-  await page.goto(`${baseURL}/course/${COURSE_ID_TEST}`)
+  await page.goto(`${baseURL}/course/${courseId}`)
   const identity = waitForChatIdentity(page.context(), loginThreadId)
   const popup = page.waitForEvent('popup', { timeout: 30_000 })
   await page.getByTestId('student-course-chatbot-link').click()
@@ -1154,7 +1171,7 @@ test('a live quiz answer and a practice submission are recorded for the shared c
   const prisma = await getPrisma()
   const participations = await prisma.participation.findMany({
     where: {
-      courseId: COURSE_ID_TEST,
+      courseId,
       participantId: { in: [loginId, ltiId] },
     },
   })
@@ -1210,7 +1227,7 @@ test('a live quiz answer and a practice submission are recorded for the shared c
   expect(await sessionRevision(frame)).toBeTruthy()
 
   // The practice quiz is answered in the frame under the shared cookie.
-  await navigate(frame, `/course/${COURSE_ID_TEST}/practiceQuizzes/${quizId}`)
+  await navigate(frame, `/course/${courseId}/practiceQuizzes/${quizId}`)
   await expect(frame.getByTestId('start-practice-quiz')).toBeVisible()
   await expect(
     frame.getByTestId('login-to-student-login-collect-points')

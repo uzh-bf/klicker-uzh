@@ -297,3 +297,16 @@ boundary withholds server-rendered children, including the segment that throws
 chatbot layout after its authorization/not-found checks. All current protected
 Chat pages remain guarded; public error pages retain their HTTP status. Verify
 the existing unknown/malformed chatbot assertions and cross-tab Chat switches.
+
+The Chat browser fixture now uses a distinct synthetic ID from the devcontainer
+MCP fixture and restores its own seeded course when reused. Both previously
+shared one ID, so running the preserved-database suite could move the local MCP
+bot into the test course and make the next ownership-checked startup fail. The
+exact synthetic fixture was restored; the runtime guard remains unchanged.
+The five Chat authentication/access checks pass with the isolated fixture.
+
+Running the two suites together also exposed course-level fixture interference:
+the PWA header correctly chose another published chatbot on the shared seeded
+course. The shared-login spec now owns one course and two memberships so its
+header navigation and thread-identity assertions exercise the same chatbot.
+The fixture is removed after the spec. This correction requires re-verification.

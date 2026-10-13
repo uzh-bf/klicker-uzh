@@ -17,9 +17,12 @@ shared HttpOnly credential rather than keeping independent participant tokens.
 Separate browser profiles remain separate contexts. Embedded pages must confirm
 unpartitioned cookie access before mounting authenticated UI; a partitioned
 LMS login cannot coexist as another usable identity. The boundary covers every
-regular PWA and Chat page, including anonymous entry points: their shared layout
-and queries can discover a participant cookie. Until hydration establishes the
-browser context, page content is withheld. Top-level pages proceed immediately
+regular PWA page, including anonymous entry points: its shared layout and queries
+can discover a participant cookie. In Chat, it wraps authenticated chatbot content
+after the server access checks. Public login and error pages contain no participant
+data and render outside the boundary, preserving their HTTP status. Until
+hydration establishes the browser context, guarded page content is withheld.
+Top-level pages proceed immediately
 after that check; embedded pages without shared access offer top-level recovery.
 This deliberately trades server-rendered first paint and anonymous embedded use
 for one consistent browser identity. Server-fetched data remains available for
