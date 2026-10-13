@@ -290,8 +290,7 @@ export async function createSpendGuard({
       await reserveProviderSpend(budgetFile, policyHash, microUsd)
       // The guard consumes the proxy-only `cache` hint; the native upstream
       // does not support it, so forward the reserved request without it.
-      const forwarded = { ...body }
-      delete forwarded.cache
+      delete body.cache
       timeout = setTimeout(() => controller.abort(), timeoutMs)
       response.once('close', () => {
         if (!response.writableEnded) controller.abort()
@@ -308,7 +307,7 @@ export async function createSpendGuard({
           Authorization: 'Bearer ' + upstreamKey,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(forwarded),
+        body: JSON.stringify(body),
       })
       if (!result.ok || !result.body) {
         await result.body?.cancel()
