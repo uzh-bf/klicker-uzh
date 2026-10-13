@@ -533,3 +533,32 @@ pre-existing missing-rate-limit finding also present on `v3`. No alert state or
 analysis records have been changed. Removing the obsolete category would delete
 historical analysis data and requires named approval. Final review remains
 withheld until current-head CI and CodeQL are settled, as requested.
+
+### Navigation verification receipt (2026-10-13)
+
+Application source `fa1552b06d` passes the completed browser acceptance checks.
+The shared-login matrix produced 48 passes, 11 WebKit environment skips and one
+Chromium test-side race: reading the session revision while its page reloaded
+lost the JavaScript execution context. Moving that unchanged assertion after
+the existing replacement-profile assertion resolves the race. The focused
+scenario then passes all four Chromium/Firefox projects, with one WebKit skip.
+Combined unique coverage is 49 passing cases and 11 environment skips; this is
+combined evidence, not a single clean full-suite run. All four applicable
+projects pass the cancelled-navigation regression and real local ltijs launch.
+Real OLAT and Safari login remain unverified.
+
+All five Chat authentication/access checks pass in one Chromium run (7.5 seconds,
+zero failures or skips). The browser assertion correction passes Playwright
+types and Prettier. The 33 PWA unit tests, 14 backend JWT tests, 11 auth helper
+tests and relevant type/lint checks recorded above remain applicable. Dedicated
+simplification and auth/lifecycle slice review pass through `fa1552b06d`.
+
+CodeQL analysis 1945758314 analyzed merge `3b58ba387a39`, whose parents are
+`v3` at `0a8d4652915c` and task head `fa1552b06d`. Both cookie-parser findings
+are absent. Security-result check 115462273377 still fails on the JWT-selection
+finding 3499, existing rate-limit finding 1091 and obsolete JavaScript category.
+No security alert or historical analysis state was changed. Companion PR 6497
+passes code checks, the production build and all eight hosted browser shards;
+its merge and the CodeQL dispositions remain pending. The required public final
+review therefore remains withheld. New commits still require their own hosted
+check results; this receipt does not carry forward a green CI claim.

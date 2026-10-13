@@ -992,9 +992,9 @@ test('LTI B replaces A in an existing PWA profile and existing Chat tab', async 
     )
     await expectIdentity(first, { email: ltiEmail, username: ltiUsername })
   }
-  expect(await sessionRevision(second)).not.toBe(loginRevision)
   await second.bringToFront()
   await expectIdentity(second, { email: ltiEmail, username: ltiUsername })
+  expect(await sessionRevision(second)).not.toBe(loginRevision)
   await chat.bringToFront()
   await expectChatIdentity(chat, await replacement, ltiThreadId)
 })
