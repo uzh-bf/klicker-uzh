@@ -1,389 +1,344 @@
-# Generated-question similarity against the lecturer library
+# Pool-informed question generation for lecturers
 
+## Approval summary
 
-## Shared quiz-pool contract — 12 October 2026
+**Current direction, 13 October 2026:** generate useful new questions using
+relevant existing questions before generation, suppress detected duplicates
+before lecturer review, and replace discarded candidates within a finite run
+budget. This replaces the earlier warning-only acceptance target and its proposed
+immediate STG activation. The course graph continues to cover all course content;
+the generation request supplies the focus, objectives, format, language,
+difficulty and Bloom targets.
 
-QP1 extends the existing snapshot producer with explicit `{ schemaVersion: 2 }`
-opt-in. Existing callers still emit schema 1. Schema 2 preserves opaque source
-identity (`klicker`, element ID, version), nullable correctness and per-choice
-feedback, and declares `owned_active_library` scope and comparison-only use.
-It uses the existing authorized query, bounds, canonical serialization and
-immutable artifact transport. A lecturer-wide library is not a same-course
-exemplar pool. No new database access path or runtime toggle is introduced.
+The existing immutable snapshot, source identity, similarity, calibration and
+style-selection work is the foundation. Use a broad authorized corpus for
+comparison and a small request-relevant subset for examples. Existing questions
+provide style and coverage context; course evidence establishes correctness.
+Questions that share a topic can still be useful and distinct. Semantic scores
+nominate pairs for adjudication; the old warning threshold is insufficient proof
+for automatic rejection.
 
-The paired worker change in !35 validates this representation and normalizes
-existing file-import records into the same content contract. It reuses !34/!35's
-semantic scorer. Examples, empirical calibration, reuse and update remain the
-subsequent QP2/QP3 work; format-adapter qualification remains QP4. Legacy hashes
-and no-pool behavior retain compatibility. Deploy a compatible worker before
-activating schema 2 at a caller; this slice does not activate it.
+The engineer owns refinement of [Klicker PR #6317](https://github.com/uzh-bf/klicker-uzh/pull/6317).
+Keep it draft until the stronger contract is implemented and verified. Our side
+owns the generic worker selection, duplicate admission, bounded replacement,
+accounting and cross-consumer qualification. Shared interface decisions precede
+implementation on either side. This document is the coordination source; no
+parallel Klicker implementation is assigned to us.
 
-Validation: 12 producer tests pass in an isolated container harness with real
-Prisma enums and a stub for unrelated graph access. Both schemas retain the
-artifact byte cap. A synthetic snapshot emitted by the actual TypeScript
-producer passes the Python worker model and existing comparison-record builder.
-Biome passes for the changed source and tests. Full monorepo type/build checks
-remain the PR CI obligation; these focused checks do not replace them.
+This request authorizes plan and PR-description refinement. It does not execute
+merges, deployments, flag activation or paid generation. Existing source receipts
+remain useful but do not establish the new behavior. Completion requires a real
+synthetic lecturer journey that exposes only accepted candidates, preserves
+request intent and reports any shortfall honestly. The earlier USD 2 ledger and
+unresolved reservations remain intact; a browser-triggered run needs its own
+qualified allowance and enforcement.
 
+## Execution details
 
-## Goal
+### Verified baseline and reusable components
 
-Warn a lecturer during question-generation review when a newly planned SC, MC,
-or KPRIM question is semantically similar to an existing question owned by that
-lecturer. Detect meaning-level overlap even when wording and distractors differ,
-while keeping the result advisory and reviewable.
+Klicker source baseline: `e24d1abcf6`; target `v3-ai`. Refreshed remote state is
+12 commits ahead and 65 behind that target. Refresh and integrate deliberately
+when implementation readiness requires it; this documentation change does not
+merge target code. Generator source baseline: remote tip `9bb6593c50` of
+`rs/exam-quality-p6-style-pool`; generator main is `dbf5e57`. These tips moved since
+the previous deployment preparation. Prior final review does not cover those
+additional changes.
 
-This follows the same-build semantic comparison introduced by worker MR !34.
-It extends that mechanism with an immutable, permission-scoped reference
-snapshot supplied by Klicker.
+| Existing component | Current behavior | Reuse and remaining gap |
+| --- | --- | --- |
+| `questionGenerationLibrary.ts` in Klicker | Selects recent active owned SC/MC/KPRIM records, capped at 500; pins a schema-2 comparison-only snapshot | Preserve authorization, stable identity, byte limits, hashes and recovery. Replace recency-only selection; supply eligible examples and trustworthy metadata. |
+| `Element` and `GeneratedElementDraft` | Element has tags and optional reviewed difficulty; generated drafts may carry Bloom metadata | Reuse available, current provenance. There is no universal topic/Bloom classification for all library questions. Missing or stale metadata stays unknown. |
+| Worker `question_library.py` and `question_blueprint_tasks.py` | Validate snapshots and pass explicitly permitted generation references into existing design/stem/final generation paths | Klicker currently grants no `example` permission. Existing conversion requires complete keys and at most five choices. Do not grant example use to every comparison record. |
+| Worker `past_papers.py` and `quality_metrics.py` | Per-slot selection uses module, difficulty, Bloom and lexical relevance; caller-provided examples have generic quiz framing and source-aware style handling | Extend these existing consumers. Shared wire metadata currently lacks topic/Bloom/language selection fields; avoid a second selector in Klicker. |
+| `semantic_distinctness.py` and existing review flow | Reuse stable comparison records, embeddings, candidate bands and overlap warnings | Add adjudicated acceptance and replacement in the maintained worker path. A warning acknowledgement must no longer admit a detected duplicate in the new mode. |
 
-## Recommended first slice
+Relevant implementation seams in Klicker are
+`packages/graphql/src/services/questionGenerationLibrary.ts`,
+`questionGeneration.ts`, `questionGenerationArtifacts.ts`,
+`questionGenerationDrafts.ts`, `packages/types/src/questionGeneration.ts`, and the
+existing generation/review components. Worker seams are under
+`lightrag_research/hatchet_workflows/` and
+`lightrag_research/questions_generation/`. Extend those modules and their tests;
+new services, indexes and permanent metadata migrations need demonstrated need.
 
-- Compare against non-deleted, non-archived `Element` records owned by the
-  authenticated `User`.
-- Include `DRAFT`, `REVIEW`, and `READY` elements of type `SC`, `MC`, or `KPRIM`.
-- Compare across those three supported question types, not only the generated
-  type, because equivalent questions can use different response formats.
-- Exclude shared and dependency-derived elements. Sending another lecturer's
-  content to the generation worker is a separate product and data-boundary
-  decision.
-- Do not infer a course scope. `Element` is the reusable library source;
-  `ElementInstance` is a placement snapshot in an activity, not a course-owned
-  question.
-- Emit warnings only. Do not block, discard, regenerate, or rewrite questions.
-- Reuse the existing plan-review warning and acknowledgement UI.
+### Product primitive impact
 
-## Non-goals
+| Product primitive | Disposition | Contract change and owner |
+| --- | --- | --- |
+| Owned question and immutable pool snapshot | Extend | Klicker authorizes content and permitted purposes, exports selection metadata and coverage, and pins the exact input. Worker consumes it without a database connection. |
+| Generation request and approved design | Extend | Preserve requested coverage and pedagogical targets while selecting examples and replacing rejected candidates. Klicker owns intent; worker owns execution. |
+| Generated candidate and accepted draft | Extend | Worker records accepted/rejected/unresolved disposition before returning reviewable content. Klicker exposes and saves only accepted candidates. |
+| Build attempt and cost receipt | Extend | Worker enforces one aggregate allowance across attempts, validates outputs and preserves lineage; Klicker settles once using the agreed billing outcome. |
 
-- Comparing with shared elements or questions owned by another lecturer.
-- A course selector or activity-specific comparison scope.
-- Automatic deduplication, deletion, rewriting, or acceptance decisions.
-- Comparing against generated drafts that have not been kept as `Element`
-  records.
-- Building a persistent vector index in the first slice.
-- Deploying, changing staging data, or calibrating a production threshold in
-  this plan.
+### Lecturer workflow and usefulness
 
-## Domain and authorization
+1. The lecturer chooses course evidence and generation targets, including an
+   optional focus. Explain that eligible owned questions inform generation and
+   duplicate screening. Use existing controls where possible; use a request-level
+   opt-out for style examples while keeping comparison active in this mode.
+2. Before producing candidate questions, pin the authorized pool and request.
+   Plan source-grounded slots against relevant existing coverage. Prefer useful
+   gaps, new applications or reasoning tasks within the requested objectives;
+   existing coverage never excludes an entire topic automatically.
+3. Select a few suitable examples per slot. Guide clarity, structure, expected
+   reasoning and plausible distractors. Generate from course evidence, then check
+   correctness, answer validity, focus/target alignment and novelty.
+4. Replace rejected candidates internally, keeping accepted work. Show progress
+   and counts without exposing discarded question text as review cards. The
+   lecturer may still review the design; candidate stems must pass screening
+   before the first screen that displays them for review.
+5. The lecturer reviews and edits accepted questions, then saves selected drafts.
+   Material edits to stems, choices or keys invalidate their screening status and
+   require bounded revalidation before saving. Display partial completion and
+   coverage limits when applicable; do not promise an absolute duplicate-free
+   library or empirical difficulty accuracy.
 
-- The actor is the authenticated lecturer `User`; generation retains the
-  existing `asUserFullAccess` and AI-preview capability checks.
-- The comparison corpus contains owned `Element` records only
-  (`ownerId = ctx.user.sub`). It does not use `DerivedPermission`, so readable
-  shared content cannot enter the snapshot accidentally.
-- `ElementInstance` is out of scope. It contains an activity-time copy and
-  would create duplicate and stale comparison records.
-- The snapshot contains the minimum useful semantic representation: element
-  id, version, type, name, stem/content, and normalized choices including which
-  choices are correct. Exclude feedback, tags, statistics, activity placement,
-  owner identity, and participant data. This describes schema 1; the optional
-  schema-2 contract above additionally preserves choice feedback.
-- Gamification is unaffected: no points, XP, responses, or leaderboards change.
+Usefulness means source-grounded, correct, aligned with the requested objective,
+format and cognitive demand, with plausible distractors and useful novelty. It
+is measured separately from stylistic resemblance. The existing quality stack
+owns these checks; prompt examples cannot substitute for them.
 
-## Cross-repository contract
+### Pool selection and metadata contract
 
-Klicker owns authorization and snapshot creation. The content-generation worker
-owns embeddings, similarity scoring, and warning production.
+**Comparison corpus.** Include authorized active, directly owned SC/MC/KPRIM
+questions across formats, including drafts, review and ready states. Shared,
+derived, archived and deleted content remains excluded under the existing
+boundary. A topic, difficulty or Bloom mismatch must not remove a possible
+semantic duplicate. Do not duplicate `ElementInstance` placement snapshots.
 
-1. At build preparation, Klicker queries the eligible owned `Element` records
-   in deterministic order and serializes a versioned
-   `question_library_snapshot` artifact.
-2. Klicker uploads the artifact create-only, stores its artifact reference on
-   `ElementGenerationBuild`, and includes the reference in a new version of the
-   Hatchet start payload. Retries reuse the same pinned snapshot even if the
-   live library changes.
-3. The worker validates the artifact hash, schema, row count, text lengths, and
-   supported element types before use.
-4. The worker embeds the external references once, compares each planned
-   question with the references, and does not perform library-to-library
-   comparisons.
-5. A score at or above
-   `QUESTION_LIBRARY_SEMANTIC_REVIEW_THRESHOLD` produces a structured
-   `LIBRARY_SEMANTIC_OVERLAP` warning containing the generated question id,
-   matched element id/version, and score. The default starts at `0.79`, matching
-   the synthetic pilot for MR !34, but remains independently configurable.
-6. Klicker maps the structured warning into the existing
-   `QuestionGenerationWarning { code, message }` review model. Approval still
-   requires explicit warning acknowledgement.
+**Style examples.** From the authorized corpus, select only records explicitly
+permitted for `example` use, with usable keys and supported representations.
+Prefer READY records with reliable provenance; READY alone is not evidence of
+correctness. Exclude unresolved quality defects and ambiguous keys. Unknown-key
+or oversized-option records can still participate in comparison. Never infer
+`reuse`, `update` or empirical `calibration` permission from ownership or example
+permission; generated output remains new-only.
 
-The snapshot size has a configurable hard safety limit,
-`KB_QUESTION_LIBRARY_COMPARISON_MAX_ELEMENTS`, initially `500`. Selection is by
-`updatedAt DESC, id DESC`. If eligible elements exceed the limit, the plan must
-also show `LIBRARY_COMPARISON_TRUNCATED`; the feature must not imply that the
-entire library was checked. Synthetic benchmarks at 100, 500, and 2,000
-references decide whether to raise the default or proceed to a persistent
-embedding index.
+Klicker performs authorization and bounded candidate retrieval; the worker owns
+one shared per-slot semantic ranking policy for DB and file inputs. Resolve
+selection in this order:
 
-## Layer footprint
+- Hard eligibility: allowed purpose, usable format/key, explicit source scope,
+  exclusions and configured byte/token limits. Same response format and requested
+  language are the initial style-example policy; cross-format comparison remains.
+- Relevance: requested objectives and focus, then topic or verified module
+  alignment. Tags are useful signals, not proof of a course/module identity.
+- Pedagogical fit: labelled difficulty proximity and Bloom demand, followed by
+  quality/provenance. Bloom and difficulty remain separate dimensions.
+- Diversity: avoid several paraphrases of one example, cover varied reasoning
+  and distractor patterns, and use stable identity as the final tie-break.
 
-### KlickerUZH
+Start with up to three examples per slot within a token cap. If suitable examples
+are scarce, widen soft difficulty/Bloom preferences before relaxing relevance;
+use fewer or no examples when necessary. Never silently import unrelated topics
+or another owner's questions. Record selected IDs, scores/reasons, policy version
+and fallback level so the run can be explained and reproduced.
 
-- `packages/prisma`: add the immutable library-snapshot artifact reference to
-  `ElementGenerationBuild`; create a migration and sync the analytics schema.
-- `packages/types`: define the snapshot and structured warning contracts.
-- `packages/graphql`: create/validate/upload the snapshot, extend start-payload
-  schema and fingerprinting, parse worker warnings, and test authorization,
-  filtering, deterministic truncation, and retry reuse.
-- `apps/frontend-manage`: no new component is expected. Confirm that the
-  existing plan-review warning list renders the message and requires
-  acknowledgement. Add translations only if frontend-owned explanatory copy is
-  introduced.
-- GraphQL schema/operations are unchanged unless implementation reveals a need
-  for structured link metadata in the UI. If changed, run codegen and commit the
-  public SDL update.
+Preserve source namespace, ID, revision and content hash. Add only the metadata
+needed for selection: topic/tags or mapped objectives, language, Bloom and
+labelled difficulty with provenance and mapping version. Reuse reviewed labels
+and version-matching generation metadata first. Optional model inference must be
+explicitly labelled and included in the budget; it must not mutate source
+questions or masquerade as lecturer review. Empirical calibration additionally
+requires its existing setting, scoring basis and sample-size context. This phase
+does not query participant-level responses or introduce IRT calibration.
 
-### kg-content-generation worker
+The current recent-first 500-record snapshot can miss older relevant questions.
+First reuse existing permitted search/filter infrastructure and deterministic
+selection, with a complete comparison corpus when it fits. For larger pools,
+select a broad request-relevant comparison corpus independently of the example
+subset, record eligible/considered/included counts and truncation, and qualify
+recall against older duplicates. Keep an explicit coverage warning. A persistent
+embedding index is deferred until measurements justify it; absence of an index
+must not be presented as complete-library screening.
 
-- Add the optional external-reference artifact to the strict Hatchet input
-  contract and bump its supported schema version.
-- Extend MR !34's semantic-distinctness module with generated-vs-reference
-  comparison rather than another all-pairs implementation.
-- Add a separate adjustable library threshold and bounded batch processing.
-- Emit stable code-prefixed overlap and truncation warnings without modifying
-  questions.
+Freeze the comparison corpus and example candidates once per build. Before each
+slot is generated, pin its chosen example IDs and selection policy; replacements
+can select different examples only from that frozen input, recording the change.
+Content hashes must continue to describe content, while the build fingerprint
+also covers permissions, metadata and selection policy. Do not silently overload
+`module_id`, `scope` or calibration fields with new semantics.
 
-## Review and PR structure
+Both current worker models and request envelopes are strict. Agree a versioned
+contract extension before adding metadata or execution policy. Preserve snapshot
+v1/v2 and no-pool readers; deploy the compatible worker before the producer emits
+the new revision. New strict behavior requires explicit worker capability and a
+pinned policy; old snapshots must not gain example permission by default.
 
-1. Keep worker MR !34 unchanged as the same-build comparison foundation.
-2. Create a worker MR stacked on !34 for the external-reference contract and
-   cross-set scoring. It can retarget `main` after !34 merges.
-3. Create a separate KlickerUZH PR from current `origin/v3-ai` to `v3-ai` for
-   authorization, snapshot persistence, Hatchet payload v4, parsing, and UI
-   verification.
-4. Promote through the normal `v3-ai -> v3-audit` staging path only after both
-   repositories' compatible revisions are available. Worker and Klicker rollout
-   order must be documented; no payload v4 dispatch before the compatible
-   worker is deployed.
+### Duplicate admission and bounded replacement
 
-Do not combine this scope into MR !34. The follow-up adds authorization,
-cross-repository compatibility, storage, and deployment concerns that deserve
-independent review and rollback.
+Use the existing canonicalization, embeddings and semantic comparison records.
+Check against the frozen comparison corpus, other candidates in the batch, and
+all accepted candidates retained during replacement. Reject repeated source IDs
+or exact content matches deterministically. Use semantic retrieval to shortlist
+likely overlaps, then a bounded adjudicator with the question, expected answer,
+objective, evidence target and reasoning operation to distinguish:
 
-## Implementation slices
+| Decision | Treatment in the new mode |
+| --- | --- |
+| Exact duplicate or confirmed near-duplicate | Retain audit evidence, discard from the reviewable result, attempt a replacement if allowance remains. |
+| Related but substantively distinct | Retain if other quality gates pass, even with high topical similarity. |
+| Unresolved, checker unavailable or conflicting evidence | Quarantine from reviewable content; finish with an explicit shortfall/failure if it cannot be resolved within bounds. |
 
-1. **Contract fixtures:** freeze snapshot v1, Hatchet payload v4, warning shape,
-   limits, and representative SC/MC/KPRIM fixtures in both repositories.
-2. **Worker cross-set scoring:** implement artifact validation, reference
-   embedding, nearest-match scoring, warning output, configuration, and
-   synthetic performance measurements.
-3. **Klicker snapshot producer:** query only owned eligible elements, normalize
-   their options, create and persist the immutable artifact, and preserve it
-   across retries.
-4. **Klicker integration:** dispatch payload v4 behind a rollout gate, parse
-   structured warnings, and retain existing review acknowledgement behavior.
-5. **Verification and rollout notes:** complete package checks, local worker
-   integration, mandatory browser verification, and an exact compatibility and
-   rollback sequence. Keep deployment separately authorized.
+Do not turn the existing synthetic warning threshold (`0.79`) into an automatic
+rejection threshold. Calibrate candidate retrieval and final decisions separately
+on a labelled set of paraphrases, translations, equivalent numeric variants,
+changed option order, different response formats and related-distinct reasoning.
+Record false rejection as well as missed duplicates. The same topic, Bloom level
+or answer value is insufficient for automatic rejection.
 
-## Test level and evidence
+Screen planned stems before teacher stem review to avoid spending on obvious
+repeats. Recheck completed questions after options, keys and repairs are final;
+changing these can change the assessed task. Pool records and question content
+are untrusted data, never generation or judge instructions. Prevent copying from
+examples; the duplicate gate includes the examples themselves.
 
-- Worker unit tests:
-  - a paraphrased generated question matches the correct library reference;
-  - a related but meaningfully distinct question stays below the threshold;
-  - two generated questions retain their own results;
-  - library references are not compared with one another;
-  - malformed, oversized, or hash-mismatched snapshots fail closed;
-  - changing the threshold changes warning behavior without rebuilding code.
-- GraphQL/service tests:
-  - owned active SC/MC/KPRIM elements are included;
-  - shared, dependency-derived, archived, deleted, and unsupported elements are
-    excluded;
-  - selection and truncation are deterministic;
-  - the snapshot hash changes when an included element version/content changes;
-  - retries reuse the persisted artifact and payload fingerprint;
-  - a worker overlap warning survives parsing into the plan summary.
-- Cross-repository fixture test: two generated questions plus two library
-  references; exactly one generated question receives the expected library
-  warning with the correct element id/version.
-- Focused checks for every affected package, Prisma migration validation and
-  sync, plus GraphQL codegen if the schema or operations change.
-- Mandatory `agent-browser` verification with synthetic local data: create an
-  existing owned question, generate a paraphrase and a distinct question,
-  observe exactly one warning in plan review, verify acknowledgement gating,
-  and confirm a shared question's text never appears. Capture before/after and
-  reload evidence.
-- Staging verification remains separate from code-level proof and requires an
-  explicitly authorized deployment of compatible worker and Klicker revisions.
+For requested count N, the proposed initial policy is at most **2N total
+candidates**, with at most **two replacement rounds** and at most **three attempts
+for any slot**, all also subject to one money ceiling, time limit and bounded
+validator/repair calls. The earliest exhausted limit stops further work. These
+are proposed test defaults, not measured optimal values or current behavior.
+Generate replacements only for deficits. Preserve each slot's objective, format,
+focus, difficulty/Bloom target and evidence scope. Carry rejection reasons and
+avoidance references so a replacement tries a different angle instead of another
+paraphrase. A final same-build check resolves duplicates across concurrent slots
+before committing the accepted set; choose a deterministic survivor using quality
+results and stable identity.
 
-## Risks and follow-ups
+Persist attempt identity, reservations, candidate lineage and disposition before
+external calls/acceptance commits. Hatchet redelivery resumes the same attempt;
+it must not redispatch an ambiguous paid call or regenerate accepted slots.
+Automatic replacement is part of the approved run budget, not permission for
+unbounded workflow retries. Reserve worst-case costs for generation, embedding,
+adjudication, validation, repair and provider retries. Preserve unresolved spend
+exposure. Keep existing no-charge-for-failed-build behavior. Provider spend and
+lecturer credit settlement are separate; partial acceptance must settle only
+once and must not silently charge for rejected candidates. Agree how partial
+results map to the current billing policy before activation.
 
-- Re-embedding up to 500 references adds latency and usage. Measure it before
-  rollout; a persistent model-versioned embedding index is the likely follow-up
-  if the cap is too restrictive or latency is material.
-- The 0.79 default is supported only by the current synthetic pilot. Keep
-  warnings advisory, record de-identified score distributions, and adjust the
-  library threshold independently after supervised staging evidence.
-- Recent-first truncation can miss older duplicates. The UI warning must state
-  this when truncation occurs.
-- Supporting shared or course-scoped questions requires a separate decision on
-  permissions, data transfer, and what "course library" means.
+If the cap is reached, return K accepted candidates and an N−K shortfall with
+machine-readable reasons. The lecturer can retain the accepted subset or start
+a separately authorized run. Never pad with rejected items or count placeholders
+as successful questions. If K=0, report no acceptable results. The existing worker
+asserts `len(questions) == requested`; both this boundary and Klicker artifact
+validation need an explicit partial-result contract, not a removed assertion.
 
-## Progress
+The strict result includes accepted candidate IDs, requested/accepted/rejected
+counts, unresolved/shortfall reasons, comparison coverage, policy/input hashes
+and internal audit references. Teacher APIs and save endpoints enforce accepted
+status; hiding a card only in React is insufficient. Raw rejected questions stay
+in restricted build artifacts, outside teacher review lists and exports.
 
-- 2026-09-28: Created the design from current `origin/v3-ai` in an isolated
-  worktree. Confirmed `Element` ownership, `ElementInstance` placement semantics,
-  the existing warning UI, immutable artifact flow, and the strict Hatchet
-  payload boundary.
-- 2026-09-28: Implemented the worker follow-up on top of MR !34 and the separate
-  Klicker producer on `codex/library-question-similarity-plan`. The fixed
-  contract is payload v4 plus snapshot v1. Worker comparison is warning-only,
-  uses one shared embedding batch, reports strongest generated-to-library
-  matches, and surfaces snapshot truncation once. Klicker pins the owned,
-  recent-first snapshot before dispatch and maps the stable warning codes into
-  the existing acknowledgement gate.
-- Verification completed so far: worker focused suite `172 passed` (with an
-  earlier full `621 passed` run), Klicker focused suite `128 passed`, GraphQL
-  codegen/schema and TypeScript checks, shared-types and Prisma checks, and a
-  clean replay of the additive migration. Local delegated browser login and
-  `/elements/generate` reload passed; end-to-end semantic warning generation is
-  not locally proven because the seeded lecturer has AI generation disabled and
-  the companion worker is not deployed into the local runtime.
-- Next: commit both reviewable branches, open a worker MR stacked on !34 and a
-  separate Klicker PR to `v3-ai`, then obtain supervisor approval for compatible
-  staging deployment. Keep both rollout gates disabled until both revisions are
-  available.
+The novelty claim is scoped to the pinned corpus. Before saving, Klicker checks
+whether this build's accepted drafts changed or relevant library content changed
+since pinning. A detected change requires bounded revalidation or a clear stale
+state; it cannot silently imply a fresh whole-library check. Revalidation uses a
+new recorded check input without rewriting the original snapshot. Initial scope
+does not guarantee cross-build uniqueness under simultaneous independent saves;
+make that limit explicit rather than adding global locks without a use case.
 
-## QP2–QP4 shared-core integration — 12 October 2026
+### Ownership and delivery sequence
 
-The generator's existing !33 integration branch now combines !34/!35 snapshots
-and similarity with source-aware identity, frozen empirical calibration and
-purpose-specific generation references. This consumer adds only optional wire
-metadata for module, selection rule and calibration context; the producer still
-emits comparison-only snapshots and defaults to schema 1. No observation or
-permission is inferred from the Klicker database.
+| Owner | Work and boundary | Completion evidence |
+| --- | --- | --- |
+| Engineer — Klicker PR | Own #6317 application code: authorized retrieval, metadata projection and purpose grant, UI controls, pinned request, strict result parsing, accepted-only review/save, shortfall and billing handling. Preserve existing auth and snapshot recovery. | Actual TS snapshots accepted by the worker; endpoint enforcement, relevant UI interactions and saved-draft reload verified. |
+| Our side — generator | Reuse current pool selector/style/calibration/scorer; extend the shared contract and implement pre-generation coverage, adjudication and bounded replacement in the maintained workflow. No parallel Klicker implementation. | Same behavior through injected DB snapshots and file-based quiz pools; durable attempts, budget and accepted-set invariants verified. |
+| Our side — qualification and release preparation | Maintain cross-consumer fixtures, novelty/usefulness evaluation, exact-head worker review, image/rollout preparation and synthetic STG protocol. Coordinate with engineer's final head. | Comparable metrics, pinned source/image evidence and a joint end-to-end result; source checks reported separately from live acceptance. |
 
-Twelve producer tests, focused wire-type checking and Biome pass in an isolated
-container. The verified alias-import review finding is fixed. Full branch CI
-remains separate from these focused results. No feature activation, database
-access or deployment occurred; compatible worker rollout precedes schema-2 use.
+Contract coordination is a dependency, not two implementations. The engineer
+owns the proposed request/result schema on the Klicker side; we implement and
+review its Python counterpart together before either side activates it. This
+plan update sends no message to the engineer and assigns no unsolicited review.
 
-### Code-generation compatibility correction
+Implementation order after agreement:
 
-CI job 115004867694 at `3360ab47db` failed when graphql-codegen's Jiti loader
-resolved the new runtime path aliases. Restore relative imports for executable
-service dependencies; retain the type-only and test aliases. The package's
-TypeScript path mapping and isolated Vitest resolver do not establish runtime
-alias support. This corrects the accepted review suggestion without changing
-code-generation configuration or adding dependencies. Hosted build verification
-remains required for the correction.
+1. Freeze request/pool/result semantics and synthetic examples, including unknown
+   metadata, allowed uses, partial results, cost policy and old-version behavior.
+2. Engineer implements pool projection and UI integration while our side extends
+   shared selection and screening against those frozen fixtures.
+3. Complete bounded replacement, idempotent accounting and accepted-only API/save
+   enforcement; verify both adapters and legacy consumers.
+4. Review both exact heads, deploy compatible worker before producer, enable only
+   the synthetic STG actor, then execute the lecturer acceptance protocol.
 
+### What can merge and what remains held
 
-## Lecturer STG end-to-end preparation — 13 October 2026
+| Delivery | Recommendation and condition |
+| --- | --- |
+| Existing generator [!27](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/27) through [!33](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/33) | Foundation merge candidates independently of the Klicker refinement. All seven current heads have successful matching pipelines and are mergeable as inspected. Review the new changes since earlier review, then land bottom-up only under named merge authority, checking each retargeted layer. Merge does not establish the new strict behavior or authorize activation. |
+| Generator [!34](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/34) and [!35](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/35) | Both current tips are ancestors of the integrated generator tip. Preserve one landing path; verify inclusion after landing and close superseded MRs only when authorized. They are currently mergeable; the previous conflict observation is stale. |
+| [Klicker #6317](https://github.com/uzh-bf/klicker-uzh/pull/6317) | Hold draft for the engineer's refinement even though existing code/tests pass. Warning-only completion is no longer the requested product. Preserve the existing nullable snapshot migration and GrowthBook wiring. |
+| Shared worker refinement | Our next implementation package after agreeing the contract. Reuse existing integration work; do not create competing code on active generator branches. Resolve the current owner before writing, then choose a follow-up against landed main or the agreed stack tip. No new stack topology is assumed approved here. |
+| STG rollout and paid lecturer E2E | Hold activation until both refined components and the enforced test allowance are ready. Follow `v3-ai` → configured STG source (`v3-adaptive-learning` at last verification), with compatible worker first. PRD activation remains separate. |
 
-This section supersedes the earlier environment-toggle and staging-branch rollout
-instructions. The requested outcome is a real synthetic lecturer journey through
-Manage, the backend, Hatchet, the worker, review and keeping generated questions.
-Offline schema qualification and general Playwright CI do not establish this.
+The existing [comparison budget driver !39](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/39)
+is a stage-test tool. It does not enforce the browser-to-Hatchet allowance and is
+not a dependency for this new worker loop. The old ledger reported USD 1.23866106
+accounted; that historical value neither proves current headroom nor grants new
+spend. Do not repeat paid runs until the applicable allowance is established.
 
-### Prepared source
+### Verification portfolio and acceptance
 
-The producer now uses the existing fail-closed GrowthBook evaluator with
-`question-library-comparison`, default false, evaluated for the authenticated
-lecturer. Remove the old global enable environment variable; retain the 500-item
-size setting. Enabled new preparations emit snapshot schema 2. Persisted schema-1
-and schema-2 artifacts remain authoritative on recovery, including after flag
-disablement. No-pool builds still emit workflow schema 3. Comparison builds use
-workflow schema 4; snapshot schema and workflow schema are separate contracts.
-Neither this preparation nor a merge enables the flag or dispatches inference.
+Extend the existing suites rather than duplicating identity, import, calibration
+or similarity tests. The following are behavioral obligations, not prose or
+fixture-content snapshots.
 
-### Live prerequisites and landing order
+| Risk / behavior | Test obligation and primary seam | Acceptance evidence |
+| --- | --- | --- |
+| Unauthorized or unsuitable examples | Extend producer and shared selector tests | Other-owner/archived content excluded; unknown keys remain comparison-only; stale metadata is unknown; no empirical claims inferred. |
+| Request relevance and pre-generation influence | Extend selector and real producer→worker fixture tests | Topic/objective, format and pedagogical targets affect chosen examples and gap planning before generation; missing labels and empty pools have explicit fallbacks. |
+| False duplicate decisions | Extend semantic evaluation fixtures | Exact/near duplicates withheld; related-distinct reasoning survives; cross-format, multilingual and numerical cases scored with recall and false-rejection reports. |
+| Replacement, budget and replay | Extend workflow tests with synthetic deterministic providers | Deficit-only replacement, at most 2N candidates and configured limits, unresolved reservations retained, resumed attempts not redispatched, accepted slots retained, correct partial counts. |
+| Review and save boundary | Extend GraphQL/artifact tests plus browser E2E | Rejected/unresolved text absent from review responses/cards/exports; direct save refuses it; material edits and stale evidence require revalidation; shortfall survives reload. |
+| Compatibility and generalizability | Extend existing DB/CSV/XLSX qualification | Equivalent normalized inputs select equivalent records; v1/v2/no-pool and comparison-only paths keep their declared behavior; new policy requires capability negotiation. |
 
-The repository setting currently selects `v3-adaptive-learning` for STG.
-The healthy serving backend is `e8b0b3619200ff420a29ebbfe20c23e574457087`
-(the existing v3-ai sync). This PR is not in that branch. The STG question worker
-is healthy at its existing embedding-receipt image; the shared-pool stack is not
-deployed. GitOps main and the running worker agree on its image digest.
+Before paid qualification, agree an explicit success rubric on a held-out
+synthetic set. Compare the baseline against the new mode with the same graph,
+requests, models and allowance. Measure accepted useful questions per requested
+question, duplicate leakage, false rejection of related-distinct items,
+focus/objective/Bloom alignment, difficulty appraisal, distractor validity,
+accepted yield, latency and cost per accepted question. Predicted difficulty and
+Bloom fit remain appraisals until validated by appropriate observations. Report
+sample size and uncertainty; one successful pair is functional proof, not a
+quality claim. Starting rollout targets are zero known duplicates in the review
+set and zero rejected/unresolved records admitted by API tests; semantic quality
+must be judged on the held-out examples without tuning on those same cases.
 
-1. Generator [!27](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/27)
-   through [!33](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/33)
-   all have passing exact-head pipelines and are ready/mergeable at inspection.
-   Land bottom-up into main, retargeting the next layer only after its predecessor
-   lands and rechecking the resulting diff, required CI and approvals. Preserve
-   branches. Current main adds the embedding-timeout fix after the reviewed tip;
-   a tree-only merge preview is clean. The merged result must retain that fix.
-2. The !33 tip already contains both comparison
-   [!34](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/34)
-   and external-pool
-   [!35](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/35)
-   commits. Standalone !34 conflicts with main. Do not merge a duplicate comparison
-   path: verify ancestry in the landed main, then close those superseded MRs only
-   with named authorization. Their branch deletion is unnecessary.
-3. Verify the final main worker image build and immutable digest. Prepare the
-   single-image change in the existing Helm repository path
-   `kg-question-generation/stg/kustomization.yaml`, validate the render and CI,
-   merge the pin and verify Argo synchronization, ready replicas, running digest
-   and workflow registration. Leave the graph worker and PRD unchanged. An exact
-   pin cannot be selected before the approved main merge/build produces it.
-4. Finish current-head checks and the authorized solo review of
-   [#6317](https://github.com/uzh-bf/klicker-uzh/pull/6317), mark it ready and merge
-   into `v3-ai`. The platform AI-review status is distinct from the user's accepted
-   self-review; do not forge it. Current branch rules do not list that status as a
-   required check. The additive snapshot JSONB migration must run before serving
-   the new backend.
-5. Create and verify a `v3-ai` to `v3-adaptive-learning` sync PR. Merge only after
-   CI, then let the existing staging promoter/GitOps path advance the deployment.
-   Verify the backend and Manage serving revision and migration completion.
-6. Create the disabled GrowthBook flag, then target only the synthetic lecturer
-   in staging. Verify evaluation for that actor and denial for a second synthetic
-   actor. Keep production disabled. Existing AI-access and focus-topic gates must
-   also be evaluated for the test actor, without changing other actors' access.
+The STG journey uses the synthetic lecturer and ready synthetic course graph:
+prepare relevant/unrelated pool controls, request a small focused batch, inspect
+selection receipts and internal rejected/replacement lineage, review only
+accepted questions, save a subset and reload it. Observe a replacement and a
+bounded shortfall through an isolated synthetic provider harness first; do not
+alter production application code or manufacture paid failures to force them.
+Real-model STG checks validate the actual application path; absence of a live
+rejection event is reported as unobserved, not fabricated evidence. Restore
+actor flag rules and temporary configuration afterward. Keep receipts and
+synthetic drafts; deletion requires separate authority.
 
-No merge, retarget, closure, flag write, deployment or cluster mutation occurred
-during preparation. Named approval is required for the exact landing/deployment
-sequence above under the repository authority rules.
+## Progress and review provenance
 
-### Synthetic acceptance protocol
-
-- Use the existing synthetic lecturer and graph after verifying ownership and
-  graph readiness. Seed only synthetic owned SC/MC/KPRIM references through the
-  supported UI/API. Include known related content, an unrelated control and an
-  archived reference. No real library or participant data is needed.
-- With comparison disabled, confirm the ordinary generation configuration and
-  no-pool admission path. Enable only the synthetic actor and submit a two-question
-  batch with a chosen focus topic. Record the build, graph and snapshot hashes;
-  verify snapshot schema 2, comparison-only permission and workflow schema 4.
-- Review the design, generate questions, inspect overlap and truncation warnings,
-  confirm explicit acknowledgement is needed, then finalize and keep the two
-  drafts. Verify their saved content, provenance and warning state after reload.
-  A live semantic score is probabilistic: record a missing overlap warning as an
-  unmet acceptance check, not permission to lower the threshold or regenerate.
-- If truncation needs a reduced selection cap, use a separately reviewed STG-only
-  configuration change with its previous value recorded and restored. Verify
-  archived/other-owner exclusions. Do not broaden database discovery.
-- Validate pinned-snapshot reuse with a bounded, explicitly authorized recovery
-  only; changing the live pool must not change the pinned digest. Do not manufacture
-  a failure or replay paid work just to exercise this case. Offline recovery tests
-  remain supporting evidence until the live path is actually observed.
-- Restore flag rules and temporary settings, retain the synthetic test records
-  and receipts, and summarize each acceptance result independently. Deletion of
-  synthetic records and publishing beyond the synthetic lecturer remain separate.
-
-### Cost and remaining acceptance gates
-
-The original USD 2 experiment and unresolved reservations remain intact. Its
-prior ledger report accounted for USD 1.23866106; that is historical evidence,
-not new spend authority or proof of current remaining balance. The previous
-focused/unfocused comparison completed before the combined quality changes;
-repeating it after rollout is a separate quality qualification.
-
-Generator [!39](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/39)
-contains an isolated stage driver. It does not intercept the browser-to-Hatchet
-worker path and is not a prerequisite merge or an enforceable budget for this
-lecturer test. Before paid UI dispatch, qualify a finite test-specific admission
-bound covering generation, embeddings, validation, automatic repairs and provider
-retries, and obtain the corresponding fresh allowance. Do not reuse the old
-ledger's nominal remainder or claim that attribution alone enforces a ceiling.
-
-On failed checks or an unhealthy rollout, hold dependent actions. Disable new
-comparison admission before reverting the producer; let accepted builds finish
-on a compatible worker. Retain the nullable database column and pinned artifacts.
-Rollback the STG worker pin only after draining incompatible accepted workflows.
-
-
-Preparation verification: 20 producer tests and 27 feature-flag contract tests
-pass in the isolated container harness. All 26 preparation/recovery lifecycle
-tests pass with current-schema enums, real Prisma error classes and unrelated
-publication calls stubbed to fail if invoked. The harness uses the repository's
-pinned saxes and stream-json versions; no repository dependency was added.
-Biome and diff checks pass. Hosted CI remains required for the complete package
-build and types; these focused harness checks are not live STG proof.
+- Execution mode: solo, with main-session source investigation and plan
+  self-review. This turn changes documentation only. Product-primitives,
+  sliced-workflow and writing-for-agents guidance inform this revision.
+- Existing source acceptance: both snapshot schemas passed actual TS→Python
+  compatibility probes after control-character validation was corrected at
+  `5db997597a`. At `e24d1abcf6`, 20 producer, 27 feature-flag and 26 lifecycle
+  tests passed in focused containers. Hosted required checks, GraphQL/unit tests,
+  full build and all eight Playwright shards now pass. The pending platform
+  final-AI-review status is distinct from the previously user-approved self-review.
+- Existing local browser evidence covers route rendering and reload, not this
+  stronger accepted-only workflow. No full lecturer STG acceptance is claimed.
+- Current generator pipelines verified at `0a117f9bda`, `737426fab4`,
+  `8ef3cdf2c4`, `b6cf1b8362`, `330683c6bc`, `af4cb170a9`, `9bb6593c50`.
+  All are open; none was merged during this refinement. Earlier receipts and
+  superseded warning-only plans remain recoverable in Git history.
+- Current terminal: publish this plan revision and align the existing PR
+  description, then leave Klicker implementation with the engineer. The immediate
+  next implementation step is joint contract agreement, followed by our shared
+  worker package. No merge, live configuration, deployment or inference in this
+  planning task. No new tests are needed for the documentation-only change. Main-session
+  plan review checked ownership, compatibility, accepted-only boundaries, bounded
+  spend and partial-result semantics; no blocking inconsistency remains. Source
+  references and links were checked, with diff and staged secret checks required
+  before publication. This is self-review, not independent review evidence.
