@@ -41,6 +41,47 @@ No failed model request or graph build is automatically replayed. A timeout stop
 new dispatch; it does not authorize cancellation or a replacement run. Named
 human review requirements remain blocking; agents do not request reviewers.
 
+**October 13 execution status — STG blocked at the capability gate.** The
+private guards pass their offline checks and independent admission review. The
+billing suite rejects 41 invalid cases; the actual relay also verifies serialized
+billing, duplicate rejection, queued-call rejection after a billing failure and
+halting after a disconnected client. Dispatch requires the dated admission and
+hash-bound review receipt. Generation and billing use elapsed-time deadlines.
+Historical captures, accounting holds and the evaluation protocol remain pinned.
+
+Provider [MR !42](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/42)
+was marked ready and merged at `dbf5e572c1c3c8e73d104079126fc01f494d749d`.
+The merged tree equals the reviewed `7a09d426` tree. All required MR checks passed;
+the existing legacy quality audit remains an allowed failure. Main
+[pipeline 682353](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/pipelines/682353)
+passed and its exact image job 2184888 published
+`sha256:590f33aa1d82fcaf08f1def3c14823a0fd102047af8d692627062ab3137d58c5`.
+A network-disabled, read-only container verifies six source/dependency-file hashes,
+LightRAG 1.5.7, imports, the 180-second embedding default and all three pipeline
+initialization bindings. Kustomize rendering and independent final review confirm
+that the prepared GitOps change affects only the named STG worker image.
+[GitOps MR !146](https://gitlab.uzh.ch/uzh-bf/cloud/helm-charts/-/merge_requests/146)
+is published as draft at `891bb8d`; readiness, merge and deployment stay blocked.
+Its exact-head [pipeline 682377](https://gitlab.uzh.ch/uzh-bf/cloud/helm-charts/-/pipelines/682377)
+passes the configured secret-detection job; rendered scope is verified separately.
+
+The installed STG Hatchet server is **v0.98.9**. Its
+[workflow-update handler](https://github.com/hatchet-dev/hatchet/blob/v0.98.9/api/v1/server/handlers/workflows/update.go)
+executes `panic("deprecated")`. The generated SDK's `isPaused` field does not prove
+a working server control. The official changelog introduces supported workflow
+pausing in **v0.105.2**. No pause call was attempted. Therefore the approved
+GitOps merge, worker rollout, fresh graph build, test activation and remaining
+paid evaluation cannot proceed. An alternative admission mechanism or Hatchet
+upgrade needs a separately reviewed plan and named authority. Do not substitute a
+worker-local pause or release work without preserving the queue admission boundary.
+
+The terminal read confirms unchanged frozen resources, digest, publication, build
+pointers and original test-chatbot settings. No new paid call or graph build ran.
+The accepted ledger still counts **CHF 6.99894925**, including all prior holds,
+with **CHF 13.00105075 remaining**. Owned loopback ports 14000 and 14001 are closed;
+the user's cluster API tunnel remains untouched. The full comparison is blocked,
+and provider source delivery alone establishes no retrieval-quality improvement.
+
 **Fresh preparation evidence.** Provider draft !42 is at
 `7a09d4263ac7713bc08ed3264d979b4fe4378080`, with successful pipeline 682099.
 The source correction `40ff610` retains 93 passing offline tests, Ruff and
