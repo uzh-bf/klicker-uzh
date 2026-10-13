@@ -362,7 +362,7 @@ UV_OFFLINE=true uv run --frozen --offline \
 ```
 
 The harness requires the framework gitlink at revision
-04cf82fc3097db1b6a473f02d35a1d76f8532ad7.
+fb386403e6a3479b65a8352a76e6b61246fb4b68.
 
 The harness invokes the real launcher from outside the repository, uses one
 temporary synthetic ground-truth case and output directory (including paths

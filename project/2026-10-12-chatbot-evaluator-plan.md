@@ -417,6 +417,14 @@ context. The existing portable launcher passed at the exact new framework pin
 with synthetic loopback only. No application stack was started for relocation.
 Prior application routing proof remains applicable to unchanged behavior.
 
-Integrated final review and exact-head draft publication are the remaining
-delivery steps. Framework-first landing and final merged-SHA pin reconciliation
-remain subsequent human-controlled gates. No paid evaluation has run.
+Integrated full-range final review passes with no reportable findings. Main
+verified a below-threshold identity concern by reproducing a checkpoint failure
+with a valid leading-whitespace case ID. Framework correction
+`fb386403e6a3479b65a8352a76e6b61246fb4b68` preserves exact capture IDs without
+changing legacy normalization. The existing regression test now covers that
+case; all 62 offline tests pass. The public pin, launcher harness and current
+setup instructions follow this correction. Focused final-review follow-up and
+exact-head publication close delivery. Framework-first landing and final merged-SHA
+pin reconciliation remain subsequent human-controlled gates. No paid evaluation
+has run. Before a paid comparative judge run, qualify whether selected metrics
+serialize diagnostic metadata, so arm labels cannot bias assessment.
