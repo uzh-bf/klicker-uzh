@@ -375,3 +375,27 @@ The approved delivery target is existing draft
 note and the refreshed whole-branch description. Required hosted checks remain
 a separate exact-head gate. Real-provider qualification, paid evaluation, prompt
 application, ready/merge and deployment remain outside this completed batch.
+
+## Approved evaluation ownership follow-up
+
+The user approved framework compatibility first, then evaluator relocation and
+an exact framework pin through coordinated drafts. The private framework plan
+is `project/2026-10-13-klicker-trajectory-compatibility-plan.md` in the evaluation
+repository. Its optional receipt importer preserves every planned case/repeat,
+including stopped and unsupported captures, and reports planned, selected and
+assessed counts. Supplied corpus provenance is recorded; capture-time identity
+remains caller-attested. Hash-only sources are diagnostic, not factual context.
+
+After offline compatibility acceptance, move the trajectory runner, numeric
+reference, budget and guard into `evaluation/`. Chat retains the actual target,
+source mapper and persisted ancestry checks, plus the authored-corpus producer
+validator. Update existing callers and synthetic tests, then pin the exact
+pushed framework revision and rerun the portable loopback harness. Keep target
+guard and ledger on the same host/filesystem. Judge cost accounting remains
+post-completion and is not covered by the target-provider hard cap.
+
+Main owns framework compatibility and pin/publication integration; a public
+executor owns mechanical relocation after compatibility passes. The framework
+draft must land first, followed by final merged-SHA pin reconciliation before
+Klicker landing. This approval covers ordinary task-branch publication and
+draft updates, not paid evaluation, live qualification, ready/merge or deployment.
