@@ -443,3 +443,93 @@ state and zero exact routes verified by source path. Runtime data is retained.
 Hosted CI, CodeQL disposition, release-branch deployment parity and the required
 public final review remain separate merge gates; CI polling and public review
 remain withheld under the existing instruction.
+
+### Current PR checks and feedback (2026-10-13, head e035522a26)
+
+The user authorized checking CI/reviews, resolving blockers and requesting the
+public final review after CI and CodeQL settle. This supersedes earlier polling
+and final-review holds. The PR remains open and mergeable against `v3`; its live
+head matches this checkout. Host `gh` works, but the Git fetch remote-state gate
+fails with `Operation not permitted` writing this worktree's `FETCH_HEAD`.
+No source edit or new commit was made during this inspection.
+
+The fail-fast CI watcher terminated on the current-head `check-suite` failure.
+Job 115430880885 proves deployment parity fails on the Chat ConfigMap against
+`v3-ai`; preserve its required `COOKIE_DOMAIN` binding. Unit/GraphQL tests, the
+Playwright public-PR build and all three CodeQL analyses were pending. OLAT API
+tests, dependency review and secret scanning passed. Do not retry a deterministic
+parity failure or weaken the check; release-branch coordination remains required.
+
+The latest Greptile finding (discussion r4252297702) is valid by source tracing:
+`sessionResultLink` retires its binding, accepts the new cookie revision and
+clears the module singleton, but `useApollo` only changes on page props and the
+accept function does not notify subscribers. `Header` then awaits navigation.
+If navigation fails or is cancelled, the old provider and old page state remain,
+and the boundary sees neither a stale flag nor a cookie mismatch. The next fix
+must invalidate mounted old identity state and refresh the active provider after
+a successful command independently of navigation, while preserving rejected
+commands, late-result rejection, intended redirects and assessment behavior.
+Add browser coverage that aborts or cancels the post-command navigation and
+proves old participant content is removed and the new session remains usable.
+Existing pure transport tests do not exercise this mounted-provider seam.
+
+CodeQL's latest completed JavaScript analysis is 1944852029 for merge commit
+`90774fdf4010` (parents `0a8d4652915c` and `5ed39205b733`), not this head. It still
+reports alerts 3506/3507 on cookie-parser property assignment despite the
+null-prototype dictionary, 3499 on bearer selection before JWT verification, and
+1091 on missing rate limiting. Alert 1091 dates from 2025 and also appears on
+base `v3`. No alert/analysis state was changed. Source hardening alone has not
+settled the parser findings. Current-head analysis and the historical missing
+`language:javascript` category require an explicit evidence-backed disposition.
+
+Browser verification cannot start: canonical devrouter 0.3.1 ensure for the
+existing verification snapshot fails with `Could not prove lifecycle worker
+incarnation`. The route read reports `ps spawn failed (EPERM)` and a direct
+`ps` probe confirms sandbox denial. Do not bypass the lifecycle ownership lock.
+This attempt did not prove runtime startup or fresh stopped/route state; the
+previous terminal stopped/zero-routes receipt is retained historical evidence.
+The current sandbox therefore blocks both the Git workflow and required browser
+verification. Restore permitted host Git metadata/process access before the
+next implementation and verification pass. No final-review command was posted.
+
+
+### Navigation correction and CI follow-up (2026-10-13)
+
+Host Git and canonical devrouter access are restored. The task remains on
+`rs/olat-session-recovery`, with `v3` as the PR target. Execution mode remains
+standard. The existing verification checkout is reused with retained synthetic
+data. A planner reviewed the correction before implementation.
+
+A successful cookie-changing command now makes the initiating document stale
+and immediately notifies the mounted boundary. The caller owns a full navigation
+to its intended destination. The old document cannot silently accept a new
+identity if that navigation is held or cancelled. This avoids rebuilding Apollo
+around old SSR props or replaying activation effects. Assessment navigation
+retains its existing behavior. Ordinary login preserves locale and return URLs;
+temporary-session reloads strip consumed credentials. A browser regression holds
+and cancels logout navigation with polling paused, then retries a fresh login.
+The focused Chromium run passes. PWA unit tests pass all 33 cases; PWA lint has
+zero errors and 13 existing warnings. PWA and Playwright types pass, as do the
+11 focused auth helper tests and 14 backend JWT middleware tests. Broader browser
+verification and source review are in progress.
+
+The cookie parser now uses a Map for untrusted cookie names, eliminating the
+property assignments reported by CodeQL while preserving decoding behavior.
+The response API reads only the session revision it needs. A backend regression
+confirms missing and forged credentials never authenticate a request across
+regular PWA, lecturer and nonbrowser request origins.
+
+Deployment parity needs the same Chat COOKIE_DOMAIN binding on `v3-ai`.
+Draft companion PR [#6497](https://github.com/uzh-bf/klicker-uzh/pull/6497)
+contains that one-line change; Helm rendering, diff inspection and staged
+secret scanning pass. It needs a separately authorized merge before the main
+PR's parity gate can pass. The gate is unchanged.
+
+The completed CodeQL result at `e035522a26` still reports four high alerts and
+the obsolete `language:javascript` configuration. Parser alerts 3506/3507 need
+analysis of the new source. Alert 3499 guards JWT verification on token presence;
+the new regression supports a false-positive disposition. Alert 1091 is the
+pre-existing missing-rate-limit finding also present on `v3`. No alert state or
+analysis records have been changed. Removing the obsolete category would delete
+historical analysis data and requires named approval. Final review remains
+withheld until current-head CI and CodeQL are settled, as requested.

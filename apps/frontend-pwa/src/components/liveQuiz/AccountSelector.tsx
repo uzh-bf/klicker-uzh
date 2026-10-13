@@ -13,6 +13,7 @@ import {
   SelfDocument,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
+import { participantReloadUrl } from '@klicker-uzh/shared-components/src/utils/participantSession'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import {
   Button,
@@ -204,7 +205,7 @@ function AccountSelector({
 
             if (data?.loginTemporaryParticipant) {
               if (process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true') {
-                window.location.reload()
+                window.location.replace(participantReloadUrl())
                 return
               }
               setLoginState('temporary')

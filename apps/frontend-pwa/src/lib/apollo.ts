@@ -15,9 +15,9 @@ import { RetryLink } from '@apollo/client/link/retry'
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions'
 import hashes from '@klicker-uzh/graphql/dist/client.json'
 import {
-  acceptParticipantSession,
   assertParticipantSession,
   bindParticipantSession,
+  completeParticipantSessionCommand,
   participantSessionHeaders,
   readParticipantSession,
 } from '@klicker-uzh/shared-components/src/utils/participantSession'
@@ -108,7 +108,7 @@ function createIsomorphLink(
   })
 
   // A successful login, logout or account deletion changes the cookie
-  // identity, so the client bound to the previous identity is replaced.
+  // identity, so the old document must retire before its caller navigates.
   const sessionResultLink = new ApolloLink((operation, forward) =>
     forward(operation).map((result) => {
       if (
@@ -121,9 +121,13 @@ function createIsomorphLink(
           throw new Error('Shared participant cookie was not accepted')
         }
         binding.retired = true
-        acceptParticipantSession()
-        apolloClient = undefined
-        apolloBinding = undefined
+        completeParticipantSessionCommand()
+        const retiredClient = apolloClient
+        // Let the successful mutation reach its caller before disposal.
+        setTimeout(() => {
+          retiredClient?.stop()
+          retiredClient?.cache.restore({})
+        }, 0)
       }
       return result
     })

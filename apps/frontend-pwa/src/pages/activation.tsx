@@ -4,6 +4,7 @@ import {
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { navigateParticipantSession } from '@lib/participantSession'
 import { H2, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -40,7 +41,7 @@ function Activation() {
           clearTimeout(redirectionTimeout.current)
           if (process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true')
             await fetchSelf()
-          router.push('/')
+          void navigateParticipantSession(router, '/')
         } else {
           toast({
             type: 'error',

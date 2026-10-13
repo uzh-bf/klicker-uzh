@@ -4,6 +4,7 @@ import {
   SelfDocument,
   SendMagicLinkDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { navigateParticipantSession } from '@lib/participantSession'
 import { toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { GetServerSidePropsContext } from 'next'
@@ -94,11 +95,7 @@ function Login({ redirectPath }: Readonly<LoginProps>) {
         if (process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true') await fetchSelf()
 
         // redirect to the specified redirect path (default: question pool)
-        if (redirectPath.startsWith('/')) {
-          await router.push(redirectPath)
-        } else {
-          window.location.assign(redirectPath)
-        }
+        await navigateParticipantSession(router, redirectPath)
       }
     } catch (e) {
       console.error(e)

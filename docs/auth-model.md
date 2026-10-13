@@ -85,6 +85,10 @@ requests use `x-participant-session`; the GraphQL, Chat and response APIs reject
 mismatched revisions with HTTP 409. It is a consistency check, not authorization.
 
 Successful login, logout and account deletion replace the shared session.
+The initiating PWA document immediately hides its old identity state and retires
+its Apollo client. Its caller navigates to a fresh document, preserving the
+locale and intended destination. A cancelled navigation leaves the old document
+unusable until reload; it never rebinds old page state to the new identity.
 Rejected logout/deletion preserve it and provide retry feedback. Cookie-changing
 responses are ordered by completion; already dispatched work and Set-Cookie
 responses cannot be revoked locally. Logout does not globally revoke JWTs.
@@ -152,7 +156,7 @@ does not implement expiry of retention periods or an operator deletion workflow.
 Manage and PWA login pages treat return targets as untrusted input:
 
 - Manage preserves the current path when an authenticated query fails (`apps/frontend-manage/src/components/Layout.tsx:Layout`). Its login page resolves `redirect_to` against `NEXT_PUBLIC_MANAGE_URL` and accepts only that exact origin. External or malformed targets fall back to the manage root before the page redirects to the auth app (`apps/frontend-manage/src/pages/login.tsx:getServerSideProps`).
-- PWA login accepts paths on the exact origin the build is served from and normalizes them to relative navigation. It also accepts the exact `NEXT_PUBLIC_CHAT_URL` origin because chat login must return to a different app. Every other origin and malformed value falls back to the app root (`apps/frontend-pwa/src/pages/login.tsx:getSafeRedirectPath`). Local PWA targets use the Next router; chat targets use a full browser navigation after password login (`apps/frontend-pwa/src/pages/login.tsx:Login`).
+- PWA login accepts paths on the exact origin the build is served from and normalizes them to relative navigation. It also accepts the exact `NEXT_PUBLIC_CHAT_URL` origin because chat login must return to a different app. Every other origin and malformed value falls back to the app root (`apps/frontend-pwa/src/pages/login.tsx:getSafeRedirectPath`). Regular PWA and chat targets use a full browser navigation after password login; assessment targets retain Next router navigation (`apps/frontend-pwa/src/pages/login.tsx:Login`).
 
 **The anchoring origin is build-specific.** The regular build anchors on `NEXT_PUBLIC_PWA_URL`, the assessment build on `NEXT_PUBLIC_ASSESSMENT_URL`, and either falls back to the request `Host` when its variable is unset (`apps/frontend-pwa/src/pages/login.tsx:getServerSideProps`). Anchoring assessment mode on `NEXT_PUBLIC_PWA_URL` is a regression, not a shortcut: the two builds run on separate origins with separate sessions, and the regular PWA offers no Edu-ID login, so students sent there after Edu-ID cannot sign in at all. The Next.js 16 upgrade (#5166) introduced exactly that regression on `v3`; production never shipped it, because prd stayed pinned to a pre-#5166 tag while staging floats `v3`.
 

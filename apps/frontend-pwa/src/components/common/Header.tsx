@@ -22,6 +22,8 @@ import {
   StudentCourse,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
+import { participantReloadUrl } from '@klicker-uzh/shared-components/src/utils/participantSession'
+import { navigateParticipantSession } from '@lib/participantSession'
 import { Button, Dropdown, H1, H2, toast } from '@uzh-bf/design-system'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -387,7 +389,7 @@ function Header({
                         })
                         return
                       }
-                      await router.push('/login')
+                      await navigateParticipantSession(router, '/login')
                     },
                     data: { cy: 'logout' },
                   },
@@ -414,16 +416,24 @@ function Header({
                         // log out temporary participant for this live quiz
                         const { data } = await logoutTemporaryParticipant({
                           variables: { liveQuizId },
-                          refetchQueries: [
-                            { query: SelfDocument, variables: { liveQuizId } },
-                          ],
+                          refetchQueries:
+                            process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
+                              ? [
+                                  {
+                                    query: SelfDocument,
+                                    variables: { liveQuizId },
+                                  },
+                                ]
+                              : [],
                         })
 
                         if (data?.logoutTemporaryParticipant) {
                           // remove local storage entry for temporary participant
                           localStorage.removeItem(`login-state-${liveQuizId}`)
 
-                          router.reload()
+                          if (process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true')
+                            router.reload()
+                          else window.location.replace(participantReloadUrl())
                         } else {
                           toast({
                             type: 'error',

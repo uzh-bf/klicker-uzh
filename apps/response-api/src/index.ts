@@ -129,10 +129,11 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
   // Only forward participant-related cookies. If both exist, include both.
   let cookie: string | undefined
   if (
-    !participantSessionMatches(
-      req.headers['x-participant-session'],
-      parseCookiesHeader(req.headers.cookie)
-    )
+    !participantSessionMatches(req.headers['x-participant-session'], {
+      participant_session: parseCookiesHeader(req.headers.cookie).get(
+        'participant_session'
+      ),
+    })
   ) {
     return sendJson(req, res, 409, { error: 'participant_session_changed' })
   }

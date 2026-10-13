@@ -12,26 +12,22 @@ describe('Auth helpers', () => {
   describe('parseCookiesHeader', () => {
     it('treats prototype-shaped cookie names as ordinary data', () => {
       const cookies = parseCookiesHeader('__proto__=value; constructor=%')
-      expect(Object.getPrototypeOf(cookies)).toBeNull()
-      expect(Object.hasOwn(cookies, '__proto__')).toBe(true)
-      expect(Object.getOwnPropertyDescriptor(cookies, '__proto__')?.value).toBe(
-        'value'
-      )
-      expect(cookies.constructor).toBe('%')
-      expect(parseCookiesHeader('').constructor).toBeUndefined()
+      expect(cookies.get('__proto__')).toBe('value')
+      expect(cookies.get('constructor')).toBe('%')
+      expect(parseCookiesHeader('').get('constructor')).toBeUndefined()
     })
 
     it('parses and decodes cookie header pairs', () => {
       const header = 'a=1; b=hello%20world; c=with=equals; d=;  e=%'
       const cookies = parseCookiesHeader(header)
-      expect(cookies['a']).toBe('1')
-      expect(cookies['b']).toBe('hello world')
+      expect(cookies.get('a')).toBe('1')
+      expect(cookies.get('b')).toBe('hello world')
       // value with equals is preserved after first '='
-      expect(cookies['c']).toBe('with=equals')
+      expect(cookies.get('c')).toBe('with=equals')
       // empty value
-      expect(cookies['d']).toBe('')
+      expect(cookies.get('d')).toBe('')
       // invalid encoding falls back to raw
-      expect(cookies['e']).toBe('%')
+      expect(cookies.get('e')).toBe('%')
     })
   })
 

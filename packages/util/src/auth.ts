@@ -4,9 +4,9 @@
  */
 export function parseCookiesHeader(
   cookieHeader: string | undefined
-): Record<string, string> {
+): Map<string, string> {
   const header = cookieHeader || ''
-  const map: Record<string, string> = Object.create(null)
+  const map = new Map<string, string>()
   header.split(';').forEach((part) => {
     const [rawKey, ...rawVal] = part.split('=')
     if (!rawKey) return
@@ -14,9 +14,9 @@ export function parseCookiesHeader(
     const value = rawVal.join('=').trim()
     if (!key) return
     try {
-      map[key] = decodeURIComponent(value)
+      map.set(key, decodeURIComponent(value))
     } catch {
-      map[key] = value
+      map.set(key, value)
     }
   })
   return map

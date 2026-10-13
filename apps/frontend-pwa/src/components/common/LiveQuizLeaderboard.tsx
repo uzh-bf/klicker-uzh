@@ -11,6 +11,7 @@ import React, { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
+import { participantReloadUrl } from '@klicker-uzh/shared-components/src/utils/participantSession'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import Rank1Img from '../../../public/rank1.svg'
@@ -183,7 +184,9 @@ function LiveQuizLeaderboard({
                   <span
                     onClick={async () => {
                       await logoutParticipant()
-                      router.reload()
+                      if (process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true')
+                        router.reload()
+                      else window.location.replace(participantReloadUrl())
                     }}
                     className="cursor-pointer underline"
                   >
@@ -217,7 +220,9 @@ function LiveQuizLeaderboard({
                     <span
                       onClick={async () => {
                         await logoutParticipant()
-                        router.reload()
+                        if (process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true')
+                          router.reload()
+                        else window.location.replace(participantReloadUrl())
                       }}
                       className="cursor-pointer underline"
                     >

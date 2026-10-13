@@ -10,6 +10,7 @@ import {
   test,
 } from '@playwright/test'
 import {
+  CourseAuthType,
   ElementInstanceType,
   ElementStackType,
   ElementType,
@@ -268,6 +269,7 @@ test.beforeAll(async ({}, info) => {
     data: {
       id: courseId,
       name: 'Synthetic shared session course',
+      authType: CourseAuthType.SSO,
       displayName: 'Synthetic shared session course',
       ownerId: USER_ID_TEST,
       startDate: now,
@@ -525,6 +527,83 @@ test('existing PWA and Chat tabs adopt ordinary login and clear on logout', asyn
   await expect(chat.getByTestId('chat-composer-input')).toHaveCount(0)
 })
 
+test('successful commands hide old state while destination navigation is cancelled', async ({
+  page,
+  baseURL,
+}, info) => {
+  skipWithoutCookieSessions(info.project.name)
+  await signInAs(page, baseURL!, loginUsername)
+  await page.goto(`${baseURL}/de/editProfile`)
+  await expectIdentity(page, { email: loginEmail, username: loginUsername })
+  // The profile owns unsaved local form state as well as Apollo identity data.
+  await page.getByTestId('update-account-username').fill('unsavedprofile')
+  const revision = await sessionRevision(page)
+  await page.clock.install()
+  await page.clock.pauseAt(new Date())
+  let hidden = false
+  await page.exposeFunction('recordSessionPageHidden', () => {
+    hidden = true
+  })
+  const observeSessionPage = () => {
+    new MutationObserver(() => {
+      if (
+        !document.querySelector(
+          '[data-cy="update-account-email"], [data-cy="username-field"]'
+        )
+      ) {
+        void (
+          window as unknown as { recordSessionPageHidden: () => Promise<void> }
+        ).recordSessionPageHidden()
+      }
+    }).observe(document.body, { childList: true, subtree: true })
+  }
+  await page.evaluate(observeSessionPage)
+  let destination: Route | undefined
+  await page.route('**/*', async (route) => {
+    const url = new URL(route.request().url())
+    if (
+      url.pathname === '/de/login' ||
+      url.pathname.endsWith('/de/login.json')
+    ) {
+      destination = route
+    } else await route.continue()
+  })
+  await page.getByTestId('header-avatar').click()
+  await page.getByTestId('logout').click({ noWaitAfter: true })
+  await expect.poll(() => !!destination).toBe(true)
+  const cookies = await page.context().cookies()
+  expect(
+    cookies.find((cookie) => cookie.name === 'participant_session')?.value
+  ).not.toBe(revision)
+  // Page evaluation waits for pending navigation. Observe removal from the
+  // old document itself while the destination request is still held.
+  await expect.poll(() => hidden).toBe(true)
+  await destination!.abort()
+  await expect(page.getByTestId('update-account-email')).toHaveCount(0)
+  await page.unroute('**/*')
+  await page.clock.resume()
+
+  // Explicit retry loads a fresh document. The next successful login also
+  // uses the intended locale and mounts no old form while its response waits.
+  await page.goto(`${baseURL}/de/login?redirect_to=/editProfile`)
+  await page.getByTestId('username-field').fill(ltiUsername)
+  await page.getByTestId('password-field').fill(STUDENT_PASSWORD)
+  destination = undefined
+  hidden = false
+  await page.evaluate(observeSessionPage)
+  await page.route('**/*', async (route) => {
+    const url = new URL(route.request().url())
+    if (url.pathname === '/de/editProfile') destination = route
+    else await route.continue()
+  })
+  await page.getByTestId('submit-login').click({ noWaitAfter: true })
+  await expect.poll(() => !!destination).toBe(true)
+  await expect.poll(() => hidden).toBe(true)
+  await destination!.continue()
+  await expect(page).toHaveURL((url) => url.pathname === '/de/editProfile')
+  await expectIdentity(page, { email: ltiEmail, username: ltiUsername })
+})
+
 test('refused launch cookies show recovery in the standalone page and LMS frame', async ({
   page,
   context,
@@ -616,6 +695,7 @@ test('Chat participation failure still requires acceptance of replacement cookie
   const course = await prisma.course.create({
     data: {
       name: 'Synthetic rejected participation',
+      authType: CourseAuthType.SSO,
       displayName: 'Synthetic rejected participation',
       ownerId: USER_ID_TEST,
       startDate: now,

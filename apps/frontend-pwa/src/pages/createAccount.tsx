@@ -6,6 +6,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
+import { navigateParticipantSession } from '@lib/participantSession'
 import { toast } from '@uzh-bf/design-system'
 import generatePassword from 'generate-password'
 import type { GetServerSidePropsContext } from 'next'
@@ -71,7 +72,11 @@ function CreateAccount({
           const participantToken = createResult?.participantToken ?? null
 
           if (participantToken) {
-            await router.replace('/editProfile?newAccount=true')
+            await navigateParticipantSession(
+              router,
+              '/editProfile?newAccount=true',
+              true
+            )
             return
           }
 

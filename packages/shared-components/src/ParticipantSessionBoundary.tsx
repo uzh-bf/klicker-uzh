@@ -10,6 +10,7 @@ import {
 import {
   bindParticipantSession,
   checkParticipantSession,
+  hasLocalParticipantSessionChange,
   hasSharedParticipantCookies,
   isParticipantSessionStale,
   participantReloadUrl,
@@ -94,7 +95,7 @@ export default function ParticipantSessionBoundary({
       if (checkParticipantSession()) return
       // A new document may already have replaced the cookies before this
       // document unloads. Do not overwrite its navigation with our old URL.
-      if (leaving) return
+      if (leaving || hasLocalParticipantSessionChange()) return
       event?.preventDefault()
       event?.stopImmediatePropagation()
       window.location.replace(participantReloadUrl())

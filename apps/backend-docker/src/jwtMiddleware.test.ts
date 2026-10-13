@@ -127,6 +127,31 @@ describe('jwtMiddleware', () => {
     }
   })
 
+  it('never authenticates a request that omits or forges the selected credential', async (t) => {
+    t.mock.method(console, 'error', () => {})
+    t.mock.method(console, 'log', () => {})
+    for (const origin of [
+      undefined,
+      PWA_ORIGIN,
+      'https://manage.klicker.localhost',
+    ]) {
+      for (const token of [undefined, 'forged.invalid.signature']) {
+        const result = await runMiddleware({
+          headers: {
+            origin,
+            authorization: token ? `Bearer ${token}` : undefined,
+          },
+          cookies: {
+            participant_token: token,
+            'next-auth.session-token': token,
+          },
+        })
+        assert.equal(result.user, null)
+        assert.equal(result.nextCalled, true)
+      }
+    }
+  })
+
   describe('regular PWA origin', () => {
     it('keeps the participant cookie ahead of any authorization header', async () => {
       const validBearer = await signParticipantToken({

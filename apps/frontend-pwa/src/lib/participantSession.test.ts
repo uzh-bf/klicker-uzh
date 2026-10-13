@@ -3,6 +3,8 @@ import { it } from 'node:test'
 import {
   acceptParticipantSession,
   checkParticipantSession,
+  completeParticipantSessionCommand,
+  hasLocalParticipantSessionChange,
   hasSharedParticipantCookies,
   isParticipantSessionStale,
   participantFetch,
@@ -10,7 +12,10 @@ import {
   participantSessionHeaders,
   subscribeParticipantSession,
 } from '@klicker-uzh/shared-components/src/utils/participantSession'
-import { isSuccessfulParticipantSessionResult } from './participantSession'
+import {
+  isSuccessfulParticipantSessionResult,
+  navigateParticipantSession,
+} from './participantSession'
 
 function installDocument(cookie: string) {
   const doc = { cookie }
@@ -260,6 +265,8 @@ it('drops a delayed result and refuses new work on a replaced binding', {
     /Participant session changed/
   )
   assert.deepEqual(requests, ['QDelayedSelf', 'MLogoutParticipant'])
+  // A new document initializes against the replacement cookie.
+  acceptParticipantSession()
   const current = initializeApollo(undefined, undefined, { revision: 'rev-2' })
   assert.notEqual(current, old)
   const result = await current.query({
@@ -357,4 +364,54 @@ it('gives a replacement revision its own client and cache', async (t) => {
   assert.equal(second.extract()['Participant:a'], undefined)
   first.stop()
   second.stop()
+})
+
+it('keeps a completed command stale until a new document initializes', () => {
+  const doc = installDocument('participant_session=before')
+  acceptParticipantSession()
+  let notified = 0
+  const unsubscribe = subscribeParticipantSession(() => {
+    notified += 1
+  })
+  doc.cookie = 'participant_session=after'
+  completeParticipantSessionCommand()
+  assert.equal(notified, 1)
+  assert.equal(isParticipantSessionStale(), true)
+  assert.equal(hasLocalParticipantSessionChange(), true)
+  assert.throws(
+    () => participantSessionHeaders(),
+    /Participant session changed/
+  )
+  unsubscribe()
+  acceptParticipantSession()
+  assert.equal(hasLocalParticipantSessionChange(), false)
+  assert.deepEqual(participantSessionHeaders(), {
+    'x-participant-session': 'after',
+  })
+  removeDocument()
+})
+
+it('keeps locale, external destinations and history semantics on full navigation', () => {
+  const calls: string[] = []
+  installWindow({
+    location: {
+      assign: (url: string) => calls.push(`push:${url}`),
+      replace: (url: string) => calls.push(`replace:${url}`),
+    },
+  })
+  const router = {
+    locale: 'de',
+    defaultLocale: 'en',
+    locales: ['en', 'de'],
+    basePath: '',
+  } as unknown as Parameters<typeof navigateParticipantSession>[0]
+  navigateParticipantSession(router, '/editProfile?newAccount=true', true)
+  navigateParticipantSession(router, '/de/course/course-id')
+  navigateParticipantSession(router, 'https://chat.example.invalid/bot')
+  assert.deepEqual(calls, [
+    'replace:/de/editProfile?newAccount=true',
+    'push:/de/course/course-id',
+    'push:https://chat.example.invalid/bot',
+  ])
+  removeWindow()
 })

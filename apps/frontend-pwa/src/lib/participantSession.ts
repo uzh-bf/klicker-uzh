@@ -1,3 +1,5 @@
+import type { NextRouter } from 'next/router'
+
 export function isSuccessfulParticipantSessionResult(result: {
   data?: Record<string, unknown> | null
   errors?: readonly unknown[]
@@ -21,4 +23,32 @@ export function isSuccessfulParticipantSessionResult(result: {
       'activateParticipantAccount',
     ].some((field) => typeof data[field] === 'string' && !!data[field])
   )
+}
+
+// Full navigation discards page state and SSR props after a cookie change.
+// Preserve Next's locale prefix and the caller's push/replace semantics.
+export function navigateParticipantSession(
+  router: NextRouter,
+  destination: string,
+  replace = false
+) {
+  if (
+    process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true' &&
+    destination.startsWith('/')
+  ) {
+    return replace ? router.replace(destination) : router.push(destination)
+  }
+  const hasLocale = router.locales?.some(
+    (locale) =>
+      destination === `/${locale}` || destination.startsWith(`/${locale}/`)
+  )
+  const prefix =
+    !hasLocale && router.locale && router.locale !== router.defaultLocale
+      ? `/${router.locale}`
+      : ''
+  const href = destination.startsWith('/')
+    ? `${router.basePath}${prefix}${destination}`
+    : destination
+  if (replace) window.location.replace(href)
+  else window.location.assign(href)
 }

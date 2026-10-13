@@ -5,6 +5,7 @@ export const PARTICIPANT_SESSION_HEADER = 'x-participant-session'
 
 let revision: string | undefined
 let stale = false
+let localSessionChange = false
 const listeners = new Set<() => void>()
 
 export async function hasSharedParticipantCookies() {
@@ -25,8 +26,7 @@ export function readParticipantSession() {
 }
 
 export function bindParticipantSession(expected?: string) {
-  revision ??= expected ?? readParticipantSession()
-  return revision
+  return revision ?? acceptParticipantSession(expected)
 }
 
 export function isParticipantSessionStale() {
@@ -53,11 +53,24 @@ export function assertParticipantSession(expected = bindParticipantSession()) {
     throw new Error('Participant session changed')
 }
 
-// Called only after a successful cookie-changing command in this document.
-// Other tabs keep their old binding and reload when they observe the revision.
-export function acceptParticipantSession() {
-  revision = readParticipantSession()
+// Initialize a new document against its server-rendered session, if supplied.
+export function acceptParticipantSession(expected?: string) {
+  revision = expected ?? readParticipantSession()
   stale = false
+  localSessionChange = false
+  return revision
+}
+
+export function hasLocalParticipantSessionChange() {
+  return localSessionChange
+}
+
+// The command's caller owns the destination. Keep this document unusable even
+// if that navigation is delayed or cancelled; only a new document can rebind.
+export function completeParticipantSessionCommand() {
+  localSessionChange = true
+  stale = true
+  listeners.forEach((listener) => listener())
 }
 
 export function participantSessionHeaders() {
