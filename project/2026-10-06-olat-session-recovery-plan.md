@@ -618,8 +618,27 @@ no ownership guard or global configuration changed. Production build passes all
 23 tasks. Its first producing attempt mixed generated development/production
 route types; the exact helper-owned dev process was stopped and only generated
 dev-type directories were preserved outside compiler inputs before the passing
-build. No application configuration or type checks were disabled. Committed
-slice review, source delivery and final runtime release are the next steps.
+build. No application configuration or type checks were disabled.
+
+Correction source is committed as `2ff1357e021328d35b78833e6d2c5429d54359b7`.
+Its six-path simplification and focused security/navigation review found no
+actionable issue. Both reports are retained in the ignored local review folder.
+The correction adds one composition test and one actual-login browser scenario;
+it updates existing locale/history and missing-token coverage without new test
+files. Its 176 substantive changed lines include the verbatim validator move;
+the whole branch has 5,696 substantive lines plus 646 project/generated lines.
+It remains in the approved existing PR rather than changing delivery topology.
+
+Canonical runtime stop completed after the build. Fresh source-resolved provider
+status confirms both implementation and verification workspaces are stopped,
+and route inventory confirms zero matching routes for each. Runtime data and
+worktrees are retained. The host checkout already contains dependencies, so a
+normal commit hook unexpectedly ran checks with Node 26 and failed frontend
+types; those outputs are not accepted validation. The commit and ordinary push
+use equivalent Node 24 container checks plus host secret and identity checks,
+with the hook disabled to prevent host build/test repeats. No host install or
+global configuration change was made. Public final review still waits for
+CI/CodeQL settlement; this correction review does not replace that gate.
 
 The CodeQL cleanup inventory is now recorded with exact ref, tool and category:
 2,081 records under `refs/heads/v3`, tool `CodeQL`, category
