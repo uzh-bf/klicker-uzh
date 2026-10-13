@@ -103,6 +103,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         props: {
           participationError: true,
           courseLink: coursePath,
+          sessionRevision,
+          sessionEstablished,
           messages: (
             await import(`@klicker-uzh/i18n/messages/${ctx.locale ?? 'en'}`)
           ).default,

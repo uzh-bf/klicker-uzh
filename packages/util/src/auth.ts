@@ -6,7 +6,7 @@ export function parseCookiesHeader(
   cookieHeader: string | undefined
 ): Record<string, string> {
   const header = cookieHeader || ''
-  const map: Record<string, string> = {}
+  const map: Record<string, string> = Object.create(null)
   header.split(';').forEach((part) => {
     const [rawKey, ...rawVal] = part.split('=')
     if (!rawKey) return

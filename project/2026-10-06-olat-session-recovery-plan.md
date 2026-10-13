@@ -229,3 +229,46 @@ and its tests were removed rather than retained as a second login mode. Hosted C
 the required public final review remain outstanding merge gates. Do not poll
 CI or trigger the final review before the user reports the required conditions.
 No merge, deployment, human review request or CodeQL state change is included.
+
+## Review corrections — 2026-10-13
+
+The follow-up review of `9cc4bd996e` identifies two accepted recovery defects.
+This correction keeps the approved shared-cookie policy and existing PR.
+Execution mode remains standard. The main session owns the accepted-launch
+boundary, browser verification and integration; a bounded executor owns the
+Chat bridge's participation-error metadata.
+
+1. After the boundary confirms the expected replacement revision and shared,
+   unpartitioned cookies, use a shallow Pages Router replacement to remove
+   launch parameters without a second exchange. Refused-cookie recovery retains
+   the original handoff. Verify a real expired handoff followed by refresh,
+   unchanged B identity/revision, and a second open tab.
+2. Preserve `sessionRevision` and `sessionEstablished` on the Chat bridge's
+   participation-error props. Verify an actual failed participation check after
+   a valid exchange with replacement Set-Cookie headers withheld, while A's
+   cookie remains readable. Only cookie recovery may mount.
+3. Repair the translation probe's assumption that protected page children
+   render on the server. Its disposable production build mounts the same
+   shared hook directly under the existing intl provider, outside the cookie
+   boundary; production application behavior remains gated.
+4. Harden the cookie parser's dictionary against prototype-shaped property
+   names, addressing the two concrete property-injection annotations. Keep
+   JWT verification and strict explicit-launch validation unchanged.
+
+The new browser regressions cover the page/boundary seam directly. An attempted
+unit test importing the full page graph required unsupported design-system
+CommonJS exports and duplicated those regressions with an HTTP stub; it was
+removed instead of expanding the test harness.
+
+A one-time inspection of the reported terminal CI runs confirms failed browser,
+translation and deployment-parity checks. Further polling remains withheld.
+The Chat ConfigMap's `COOKIE_DOMAIN` is required by the shared-cookie origin
+check; removing it or weakening deployment parity is not a resolution. Aligning
+release branches requires the normal authorized integration sequence.
+CodeQL reports the missing historical `language:javascript` category while the
+current workflow publishes `language:javascript-typescript`; its source is
+identical to current `origin/v3`. Alert 1091 is the
+existing backend rate-limit finding from 2025; alert 3499 concerns the bearer
+selection branch, after which every selected credential still passes JWT
+verification. Neither is dismissed by this change. No CodeQL alert state or
+required public final-review state is changed.

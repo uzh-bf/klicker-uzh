@@ -12,13 +12,14 @@ import '@fortawesome/fontawesome-svg-core/styles.css'
 import { getMessageFallback, onError, routing } from '@klicker-uzh/i18n'
 import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { participantReloadUrl } from '@klicker-uzh/shared-components/src/utils/participantSession'
 import { useApollo } from '@lib/apollo'
 import { init } from '@socialgouv/matomo-next'
 import { Toaster } from '@uzh-bf/design-system'
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 import { Locale, NextIntlClientProvider } from 'next-intl'
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 
 import 'katex/dist/katex.min.css'
 import '../globals.css'
@@ -31,6 +32,13 @@ const MATOMO_SITE_ID = process.env.NEXT_PUBLIC_MATOMO_SITE_ID
 function App({ Component, pageProps }: AppProps) {
   const router = useRouter()
   const { locale } = router
+
+  const discardAcceptedHandoff = useCallback(() => {
+    const destination = participantReloadUrl()
+    if (destination !== window.location.href) {
+      void router.replace(destination, undefined, { shallow: true })
+    }
+  }, [router])
 
   const apolloClient = useApollo(pageProps)
   const recovering =
@@ -127,6 +135,7 @@ function App({ Component, pageProps }: AppProps) {
             <ParticipantSessionBoundary
               expectedRevision={pageProps.sessionRevision}
               requireCookie={pageProps.sessionEstablished}
+              onSessionEstablished={discardAcceptedHandoff}
             >
               <Component {...pageProps} />
             </ParticipantSessionBoundary>

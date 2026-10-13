@@ -543,6 +543,97 @@ test('refused launch cookies show recovery in the standalone page and LMS frame'
   await expect(frame.getByTestId('update-account-email')).toHaveCount(0)
 })
 
+test('refresh after an accepted handoff expires preserves B in both tabs', async ({
+  page,
+  context,
+  baseURL,
+}, info) => {
+  skipWithoutCookieSessions(info.project.name)
+  await signInAs(page, baseURL!, loginUsername)
+  await expectIdentity(page, { email: loginEmail, username: loginUsername })
+  const observer = await context.newPage()
+  await observer.goto(`${baseURL}/editProfile`)
+  await expectIdentity(observer, { email: loginEmail, username: loginUsername })
+  const expiresAt = Math.floor(Date.now() / 1000) + 30
+  const handoff = await signed({ sub: ssoId, scope: 'LTI1.3' }, expiresAt)
+  await page.goto(
+    `${baseURL}/editProfile?jwt=${encodeURIComponent(handoff)}&keep=1`
+  )
+  await expectIdentity(page, { email: ltiEmail, username: ltiUsername })
+  await expect(page).toHaveURL((url) => !url.searchParams.has('jwt'))
+  expect(new URL(page.url()).searchParams.get('keep')).toBe('1')
+  const revision = await sessionRevision(page)
+  expect(revision).toBeTruthy()
+  await expectIdentity(observer, { email: ltiEmail, username: ltiUsername })
+  // The server uses wall-clock expiry; advancing only the browser clock would
+  // not exercise an expired handoff on refresh.
+  await expect
+    .poll(() => Date.now() / 1000, {
+      timeout: 35_000,
+      intervals: [1000],
+    })
+    .toBeGreaterThan(expiresAt + 1)
+  await page.reload()
+  await expectIdentity(page, { email: ltiEmail, username: ltiUsername })
+  expect(await sessionRevision(page)).toBe(revision)
+  await observer.reload()
+  await expectIdentity(observer, { email: ltiEmail, username: ltiUsername })
+  expect(await sessionRevision(observer)).toBe(revision)
+})
+
+test('Chat participation failure still requires acceptance of replacement cookies', async ({
+  page,
+  baseURL,
+  request,
+}, info) => {
+  skipWithoutCookieSessions(info.project.name)
+  await signInAs(page, baseURL!, loginUsername)
+  await expectIdentity(page, { email: loginEmail, username: loginUsername })
+  const previousRevision = await sessionRevision(page)
+  const prisma = await getPrisma()
+  // A pending deletion rejects EnsureParticipation after a valid LTI exchange.
+  // This course belongs only to this test; the seeded course stays usable.
+  const now = new Date()
+  const course = await prisma.course.create({
+    data: {
+      name: 'Synthetic rejected participation',
+      displayName: 'Synthetic rejected participation',
+      ownerId: USER_ID_TEST,
+      startDate: now,
+      endDate: now,
+      groupDeadlineDate: now,
+      deletionRequestedAt: now,
+    },
+  })
+  try {
+    const destination = `${baseURL}/course/${course.id}/chatbot/${chatbotId}?jwt=${encodeURIComponent(await signed({ sub: ssoId, scope: 'LTI1.3' }))}`
+    await page.route(`**/course/${course.id}/chatbot/*`, async (route) => {
+      const response = await request.fetch(route.request())
+      const headers = { ...response.headers() }
+      delete headers['set-cookie']
+      await route.fulfill({ response, headers })
+    })
+    await page.goto(destination)
+    const props = await page.evaluate(
+      () =>
+        JSON.parse(document.querySelector('#__NEXT_DATA__')!.textContent!).props
+          .pageProps
+    )
+    expect(props.participationError).toBe(true)
+    expect(props.sessionEstablished).toBe(true)
+    expect(props.sessionRevision).not.toBe(previousRevision)
+    await expect(page.getByTestId('cookies-required-recovery')).toBeVisible()
+    await expect(page.getByTestId('header-avatar')).toHaveCount(0)
+    await expect(page.locator(`a[href$="/course/${course.id}"]`)).toHaveCount(0)
+    expect(await sessionRevision(page)).toBe(previousRevision)
+    await expect(
+      page.getByTestId('cookies-required-recovery').locator('a')
+    ).toHaveAttribute('href', destination)
+  } finally {
+    await prisma.course.delete({ where: { id: course.id } })
+  }
+})
+
 test('an invalid launch or query token cannot create a session or retain an identity', async ({
   page,
   context,

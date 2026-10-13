@@ -42,10 +42,12 @@ export default function ParticipantSessionBoundary({
   children,
   expectedRevision,
   requireCookie = false,
+  onSessionEstablished,
 }: {
   children: ReactNode
   expectedRevision?: string
   requireCookie?: boolean
+  onSessionEstablished?: () => void
 }) {
   const [sharedCookies, setSharedCookies] = useState<boolean>()
   if (typeof window !== 'undefined') bindParticipantSession(expectedRevision)
@@ -81,6 +83,12 @@ export default function ParticipantSessionBoundary({
       window.location.replace(participantReloadUrl())
     }
     check()
+    // Keep the handoff available for cookie recovery until the replacement
+    // is accepted. A later refresh must use the shared session, not replay
+    // a short-lived launch credential.
+    if (requireCookie && checkParticipantSession()) {
+      onSessionEstablished?.()
+    }
     const timer = window.setInterval(check, 1000)
     const events = [
       'focus',
@@ -96,7 +104,7 @@ export default function ParticipantSessionBoundary({
       window.clearInterval(timer)
       events.forEach((name) => window.removeEventListener(name, check, true))
     }
-  }, [refused, sharedCookies])
+  }, [refused, sharedCookies, requireCookie, onSessionEstablished])
 
   if (refused || sharedCookies === false) {
     const current =

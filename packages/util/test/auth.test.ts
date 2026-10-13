@@ -10,6 +10,17 @@ import {
 
 describe('Auth helpers', () => {
   describe('parseCookiesHeader', () => {
+    it('treats prototype-shaped cookie names as ordinary data', () => {
+      const cookies = parseCookiesHeader('__proto__=value; constructor=%')
+      expect(Object.getPrototypeOf(cookies)).toBeNull()
+      expect(Object.hasOwn(cookies, '__proto__')).toBe(true)
+      expect(Object.getOwnPropertyDescriptor(cookies, '__proto__')?.value).toBe(
+        'value'
+      )
+      expect(cookies.constructor).toBe('%')
+      expect(parseCookiesHeader('').constructor).toBeUndefined()
+    })
+
     it('parses and decodes cookie header pairs', () => {
       const header = 'a=1; b=hello%20world; c=with=equals; d=;  e=%'
       const cookies = parseCookiesHeader(header)
