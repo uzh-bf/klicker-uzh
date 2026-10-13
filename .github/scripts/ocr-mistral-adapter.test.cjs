@@ -434,11 +434,19 @@ test('translateMistralRequest converts fields and forces model and reasoning', (
 test('request conversion and native replay work over the loopback listener', async () => {
   const native = {
     role: 'assistant',
-    content: 'checking',
-    reasoning_content: 'think ',
+    content: [
+      {
+        type: 'thinking',
+        thinking: [{ type: 'text', text: 'think ' }],
+        signature: 'synthetic-signature',
+        closed: true,
+      },
+      { type: 'text', text: 'checking' },
+    ],
     tool_calls: [
       {
         id: 'call_a',
+        index: 0,
         type: 'function',
         function: { name: 'read', arguments: '{"path":"a"}' },
       },
@@ -449,7 +457,7 @@ test('request conversion and native replay work over the loopback listener', asy
     return jsonResponse(
       200,
       last.role === 'user'
-        ? completion(native, 'tool_calls')
+        ? completion({ ...native, index: 0 }, 'tool_calls')
         : completion({ role: 'assistant', content: 'done' })
     )
   })
@@ -509,9 +517,7 @@ test('request conversion and native replay work over the loopback listener', asy
     })
     assert.equal(second.status, 200)
     const restored = fetchImpl.calls[1].body.messages[2]
-    assert.equal(restored.content, 'checking')
-    assert.equal(restored.reasoning_content, 'think ')
-    assert.equal(restored.tool_calls[0].function.arguments, '{"path":"a"}')
+    assert.deepEqual(restored, native)
   } finally {
     await adapter.close()
   }

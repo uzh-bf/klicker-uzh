@@ -428,7 +428,10 @@ function createHistoryStore(options = {}) {
         'native assistant state is unavailable for a replayed turn'
       )
     }
-    return JSON.parse(existing.serialized)
+    const nativeMessage = JSON.parse(existing.serialized)
+    // Mistral returns a message index but rejects it in request messages.
+    delete nativeMessage.index
+    return nativeMessage
   }
 
   function restoreMessages(messages) {
