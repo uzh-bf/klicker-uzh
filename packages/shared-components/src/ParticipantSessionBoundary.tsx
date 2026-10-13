@@ -50,6 +50,7 @@ export default function ParticipantSessionBoundary({
   onSessionEstablished?: () => void
 }) {
   const [sharedCookies, setSharedCookies] = useState<boolean>()
+  const [confirmedRevision, setConfirmedRevision] = useState<string>()
   if (typeof window !== 'undefined') bindParticipantSession(expectedRevision)
   const stale = useSyncExternalStore(
     subscribeParticipantSession,
@@ -62,7 +63,15 @@ export default function ParticipantSessionBoundary({
   const refused =
     typeof window !== 'undefined' &&
     requireCookie &&
+    (expectedRevision === undefined ||
+      confirmedRevision !== expectedRevision) &&
     expectedRevision !== readParticipantSession()
+
+  useEffect(() => {
+    if (!requireCookie || confirmedRevision !== expectedRevision) {
+      setConfirmedRevision(undefined)
+    }
+  }, [confirmedRevision, expectedRevision, requireCookie])
 
   useEffect(() => {
     let active = true
@@ -95,6 +104,7 @@ export default function ParticipantSessionBoundary({
     // is accepted. A later refresh must use the shared session, not replay
     // a short-lived launch credential.
     if (requireCookie && checkParticipantSession()) {
+      setConfirmedRevision(expectedRevision)
       onSessionEstablished?.()
     }
     const timer = window.setInterval(check, 1000)
@@ -114,7 +124,13 @@ export default function ParticipantSessionBoundary({
       window.clearInterval(timer)
       events.forEach((name) => window.removeEventListener(name, check, true))
     }
-  }, [refused, sharedCookies, requireCookie, onSessionEstablished])
+  }, [
+    refused,
+    sharedCookies,
+    requireCookie,
+    expectedRevision,
+    onSessionEstablished,
+  ])
 
   if (refused || sharedCookies === false) {
     const current =

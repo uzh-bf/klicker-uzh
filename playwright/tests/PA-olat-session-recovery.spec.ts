@@ -1,8 +1,10 @@
 import {
   expect,
+  type APIResponse,
   type BrowserContext,
   type Frame,
   type Page,
+  type Request,
   type Response,
   type Route,
   test,
@@ -915,6 +917,135 @@ test('LTI B replaces A in an existing PWA profile and existing Chat tab', async 
   await expectIdentity(second, { email: ltiEmail, username: ltiUsername })
   await chat.bringToFront()
   await expectChatIdentity(chat, await replacement, ltiThreadId)
+})
+
+test('a late Self response after a second login reloads the accepted LTI tab', async ({
+  page: first,
+  context,
+  baseURL,
+  playwright,
+}, info) => {
+  test.setTimeout(60_000)
+  skipWithoutCookieSessions(info.project.name)
+  await first.clock.install()
+
+  const api = `${baseURL!.replace('://pwa.', '://api.')}/api/graphql`
+  const isolated = await playwright.request.newContext({
+    ignoreHTTPSErrors: true,
+  })
+  const operationName = (request: Request) => {
+    if (request.method() === 'POST') {
+      return (request.postDataJSON() as { operationName?: string } | null)
+        ?.operationName
+    }
+    return new URL(request.url()).searchParams.get('operationName') ?? undefined
+  }
+  let releaseSelf!: () => void
+  const selfDelivery = new Promise<void>((resolve) => {
+    releaseSelf = resolve
+  })
+  let releaseLogin!: () => void
+  const loginDelivery = new Promise<void>((resolve) => {
+    releaseLogin = resolve
+  })
+  let holdingSelf = false
+  let selfCaptured = false
+  let loginResponse: APIResponse | undefined
+  let captureError: unknown
+  const second = await context.newPage()
+
+  try {
+    await first.route(`${api}*`, async (route) => {
+      if (holdingSelf || operationName(route.request()) !== 'Self') {
+        await route.continue()
+        return
+      }
+      holdingSelf = true
+      try {
+        const response = await route.fetch({ timeout: 10_000 })
+        expect(response.ok()).toBe(true)
+        expect((await response.json()).data.self.id).toBe(ltiId)
+        selfCaptured = true
+        await selfDelivery
+        await route.fulfill({ response })
+      } catch (error) {
+        captureError = error
+        await route.abort().catch(() => {})
+      }
+    })
+    const launch = await signed({ sub: ssoId, scope: 'LTI1.3' })
+    await first.goto(`${baseURL}/editProfile?jwt=${encodeURIComponent(launch)}`)
+    await expect
+      .poll(() => selfCaptured || !!captureError, { timeout: 30_000 })
+      .toBe(true)
+    expect(captureError).toBeUndefined()
+    // URL cleanup proves the boundary confirmed this launch while Self waits.
+    await expect(first).toHaveURL((url) => !url.searchParams.has('jwt'))
+    const content = first.locator('#layout-scroll-container')
+    await expect(content).toHaveCount(1)
+    const acceptedRevision = await sessionRevision(first)
+    expect(acceptedRevision).toBeTruthy()
+
+    await second.goto(`${baseURL}/login?redirect_to=/editProfile`)
+    await second.getByTestId('username-field').fill(loginUsername)
+    await second.getByTestId('password-field').fill(STUDENT_PASSWORD)
+    await second.route(`${api}*`, async (route) => {
+      if (
+        loginResponse ||
+        operationName(route.request()) !== 'LoginParticipant'
+      ) {
+        await route.continue()
+        return
+      }
+      try {
+        // An isolated context holds Set-Cookie until the browser receives it.
+        const response = await isolated.fetch(route.request(), {
+          timeout: 10_000,
+        })
+        expect(response.ok()).toBe(true)
+        expect((await response.json()).data.loginParticipant).toBeTruthy()
+        loginResponse = response
+        await loginDelivery
+        await route.fulfill({ response })
+      } catch (error) {
+        captureError = error
+        await route.abort().catch(() => {})
+      }
+    })
+    await second.getByTestId('submit-login').click()
+    await expect
+      .poll(() => !!loginResponse || !!captureError, { timeout: 15_000 })
+      .toBe(true)
+    expect(captureError).toBeUndefined()
+    expect(await sessionRevision(first)).toBe(acceptedRevision)
+
+    // Pause before publishing the replacement cookie. Timers advanced by
+    // pauseAt still see B; no subsequent poll can precede the late response.
+    await first.clock.pauseAt(Date.now() + 1_000)
+    releaseLogin()
+    await expect
+      .poll(() => sessionRevision(first), { timeout: 15_000 })
+      .not.toBe(acceptedRevision)
+    await expect(content).toHaveCount(1)
+    releaseSelf()
+    // Observe React removing stale content before polling can run. The old
+    // boundary also removes the layout, but incorrectly mounts recovery here.
+    await expect(content).toHaveCount(0)
+    await expect(first.getByTestId('cookies-required-recovery')).toHaveCount(0)
+    expect(captureError).toBeUndefined()
+    await first.clock.resume()
+    await expectIdentity(first, {
+      email: loginEmail,
+      username: loginUsername,
+    })
+    await expect(first.getByTestId('cookies-required-recovery')).toHaveCount(0)
+  } finally {
+    releaseLogin()
+    releaseSelf()
+    await first.unrouteAll({ behavior: 'wait' })
+    await second.unrouteAll({ behavior: 'wait' })
+    await isolated.dispose()
+  }
 })
 
 test('the last completed login response replaces earlier cookies and cached identities', async ({

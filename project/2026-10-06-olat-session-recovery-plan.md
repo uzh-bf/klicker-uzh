@@ -347,3 +347,43 @@ with types and the final browser runs. Hosted production builds remain a gate.
 No authentication guard or browser assertion was weakened, no dependency was
 added, and no CodeQL alert was dismissed. Remaining merge gates are hosted CI,
 release-branch deployment parity, CodeQL disposition and the public final review.
+
+### Accepted launch replaced before polling (2026-10-13)
+
+The follow-up review examined `9cc4bd996e`; the current published head is
+`54f4a6f8c3`. Consumed-handoff cleanup and Chat participation-error metadata
+are already corrected there. Its additional late-response finding is valid:
+an accepted launch can mistake a later shared login for initial cookie refusal
+and remove the monitoring that would reload the page.
+
+The local correction records the confirmed launch revision and resets that
+confirmation when launch props change. After acceptance, a later revision
+continues to withhold stale content and keeps normal reload monitoring active.
+Initial cookie refusal still renders recovery. The added browser regression
+holds a real Self response and releases it after another tab replaces the
+shared cookie. It requires the mounted layout to disappear while polling is
+paused, with no cookie-recovery UI, before resuming and requiring adoption of
+the replacement identity. This prevents the test passing because polling won
+the race. The regression passes in Chromium with the correction and fails
+against the previous boundary because cookie recovery appears while polling
+is paused. The old boundary was restored only in the verification snapshot
+for that negative control and then replaced with the correction.
+
+Host access is restored. The task branch integrates `origin/v3` at
+`0a8d465291` to resolve the reported merge conflict. The only conflict was the
+unit-test dependency build command; its resolution retains both GraphQL and
+Markdown builds. The exact combined command passes all eight build tasks.
+The implementation and retained verification snapshot match for every tracked
+source file. PWA unit tests pass all 31 cases. PWA, Chat and Playwright types
+pass; PWA lint has zero errors and 13 existing warnings. Scoped formatting
+and `git diff --check` pass. The full browser matrix and source reviews remain
+pending before publication.
+
+Canonical startup succeeds for verification workspace
+`users-rschlae-git-klick-665e8559`. Installed devrouter 0.3.1 also resolves
+one-shot exec correctly; the initial local repair CLI resolved a removed
+container, so the first checks used the exact container from canonical
+startup. The host hook also detected an old dependency
+install and was stopped; relevant package checks run in the container, with
+staged secret and Git-identity checks performed separately. Keep CI polling
+and the public final review withheld under the existing user instruction.
