@@ -21,6 +21,27 @@ tags:
 
 # OpenCodeReview preflight passed while tool-bearing reviews failed
 
+## Current Mistral route
+
+As of the 1.13.0 upgrade, both draft and manual reviews use Mistral-hosted
+`zai-glm-5-3` at `reasoning_effort=max`. The manual tool canary and stack topology
+request call the fixed Mistral endpoint directly. OCR uses the runner-local
+[adapter](../../../.github/scripts/ocr-mistral-adapter.cjs), which translates
+`max_completion_tokens` to `max_tokens` and restores native thinking chunks
+from bounded memory when OCR replays an assistant turn. Answer text and thinking
+metadata remain separate so strict topology JSON stays parseable.
+
+The upstream `MISTRAL_API_KEY` exists only in the adapter or direct request
+process. OCR receives a random loopback capability, and its mode-0600 config
+uses `auth_token_cmd` to read that capability from the environment. The attempt
+wrapper closes the adapter before returning. Draft reviews use a trusted
+runner-temporary copy and authenticated always-run shutdown; cleanup fails if
+listener termination cannot be proved. Live compatibility is proved by the
+first authorized hosted runs after secret provisioning and activation.
+
+The sections below record the original OpenRouter failure and its resolution.
+Their provider selection and high-reasoning settings are historical.
+
 ## Problem
 
 The manually triggered final-review workflow used `ocr llm test` as its model
