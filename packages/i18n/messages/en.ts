@@ -2675,7 +2675,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatAccountUsageClassUnavailable:
         'This usage class is not enabled for your account.',
       chatAccountUsageAdvancedCostCenter:
-        'Advanced models require a cost center that AI usage can be billed to.',
+        'Advanced models require the advanced AI subscription and a cost center that AI usage can be billed to.',
       chatAccountUsageRefreshing: 'Refreshing usage…',
       chatAccountUsageStale:
         'The latest usage could not be loaded. The values below may be out of date.',
@@ -5230,6 +5230,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Participants can choose among these models. Select at least one.',
       selectedModel: 'Selected model',
       allowedModels: 'Allowed models',
+      modelUnavailableHint:
+        'Advanced models need the advanced AI subscription with a cost center.',
+      modelUnavailableSelected:
+        'Your account cannot use this advanced model, so participants cannot chat with it. Choose another model.',
       allowedModelsAll: 'All',
       chatbotModelSettings: 'Model & Reasoning Settings',
       reasoningEffortsByModel: 'Reasoning efforts by model',

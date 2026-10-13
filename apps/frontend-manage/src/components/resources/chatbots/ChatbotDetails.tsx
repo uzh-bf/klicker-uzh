@@ -5,7 +5,9 @@ import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
   ChatbotStatus,
   type ChatModelCapability,
+  ChatUsageClass,
   CreditResetPeriod,
+  GetChatAccountUsageDocument,
   MSaveChatbotRevisionDocument,
   QGetCatalystRequestAccessDocument,
   QGetChatbotsInfoWithKnowledgeBasesDocument,
@@ -197,6 +199,13 @@ function ChatbotDetails({
   const graphRetrievalAvailable = useFeatureFlag('chatbot-graphrag')
   const { locale } = useRouter()
   const { data: scopeData } = useQuery(QGetCatalystRequestAccessDocument)
+  // Only the owner edits a chatbot, so the viewer's own entitlement decides
+  // which models its participants can actually use.
+  const { data: accountUsageData } = useQuery(GetChatAccountUsageDocument)
+  const advancedModelsEntitled =
+    accountUsageData?.getChatAccountUsage?.advancedModelUsage.entitled ?? false
+  const isModelUnavailable = (model: ChatModelCapability) =>
+    model.usageClass === ChatUsageClass.Advanced && !advancedModelsEntitled
   const [saveRevision, { loading: isSaving }] = useMutation(
     MSaveChatbotRevisionDocument
   )
@@ -1475,9 +1484,27 @@ function ChatbotDetails({
                         value: model.id,
                         label: model.name,
                         tooltip: model.description,
+                        disabled:
+                          isModelUnavailable(model) &&
+                          model.id !== fixedModelId,
                       }))}
                       onChange={handleFixedModelChange}
                     />
+                    {modelRegistry.some(
+                      (model) =>
+                        model.id === fixedModelId && isModelUnavailable(model)
+                    ) ? (
+                      <p
+                        className="text-xs text-amber-700"
+                        data-cy="chatbot-fixed-model-unavailable"
+                      >
+                        {t('manage.resources.modelUnavailableSelected')}
+                      </p>
+                    ) : modelRegistry.some(isModelUnavailable) ? (
+                      <p className="text-xs text-gray-500">
+                        {t('manage.resources.modelUnavailableHint')}
+                      </p>
+                    ) : null}
                   </div>
                 ) : (
                   <div className="space-y-2 border-t pt-4">
@@ -1494,6 +1521,7 @@ function ChatbotDetails({
                         const checked = allowedModelIds.includes(model.id)
                         const isLastSelected =
                           checked && allowedModelIds.length === 1
+                        const unavailable = isModelUnavailable(model)
                         return (
                           <div
                             key={`allowed-model-${model.id}`}
@@ -1511,7 +1539,8 @@ function ChatbotDetails({
                                 isSaving ||
                                 !modelSettingsEditable ||
                                 revisionPending ||
-                                isLastSelected
+                                isLastSelected ||
+                                (unavailable && !checked)
                               }
                               aria-label={model.name}
                               data={{ cy: `chatbot-model-${model.id}` }}
@@ -1526,6 +1555,23 @@ function ChatbotDetails({
                                   <span className="text-xs text-gray-500">
                                     {model.description}
                                   </span>
+                                  {unavailable ? (
+                                    <span
+                                      className={twMerge(
+                                        'text-xs',
+                                        checked
+                                          ? 'text-amber-700'
+                                          : 'text-gray-500'
+                                      )}
+                                      data-cy={`chatbot-model-unavailable-${model.id}`}
+                                    >
+                                      {t(
+                                        checked
+                                          ? 'manage.resources.modelUnavailableSelected'
+                                          : 'manage.resources.modelUnavailableHint'
+                                      )}
+                                    </span>
+                                  ) : null}
                                 </span>
                               }
                             />
