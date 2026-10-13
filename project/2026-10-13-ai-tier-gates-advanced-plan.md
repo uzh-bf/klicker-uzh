@@ -117,4 +117,15 @@ staging data change, asked for separately.
 
 - 2026-10-13: plan drafted. Revised the same day: the picker and the
   cost-center implication were added at the user's request, and a migration
-  replaced the manual production backfill. Awaiting approval.
+  replaced the manual production backfill. Approved and implemented in draft
+  PR #6491.
+- Verified: affected chat suites in the offline container (120 tests), GraphQL
+  codegen and typecheck, the migration applied twice to a throwaway Postgres,
+  and the picker in a browser for a base-tier and an advanced-tier owner.
+- The built-in registries keep Auto `ADVANCED` (deployed registries override it
+  to `BASE`), so the CI and local stacks treat Auto as advanced. The seeded
+  `lecturer` therefore receives the advanced tier and a synthetic cost center,
+  keeping the authoring e2e flow that adds Auto valid.
+- Open: hosted CI for the GraphQL DB suites and Playwright; the account usage
+  hint was not seen in a browser because its section is flag-gated on the
+  local stack.

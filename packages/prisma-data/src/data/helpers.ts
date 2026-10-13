@@ -30,6 +30,8 @@ export async function prepareUser({
   publicPreview?: boolean
   privatePreview?: boolean
   aiFeaturesEnabled?: boolean
+  aiSubscriptionTier?: Prisma.AiSubscriptionTier
+  aiChatbotCostCenter?: string
   role?: Prisma.UserRole
 }) {
   const hashedPassword = await bcrypt.hash(password, 12)
