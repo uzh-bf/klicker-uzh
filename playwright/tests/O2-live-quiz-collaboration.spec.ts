@@ -339,57 +339,17 @@ test.describe.serial('Live-quiz collaboration and access workflows', () => {
     }
   }
 
-  async function copyLocalParticipantTokenToKlickerDomain() {
-    let participantCookie = (
-      await page.context().cookies('http://127.0.0.1:3000')
-    ).find((cookie) => cookie.name === 'participant_token')
-
-    if (!participantCookie) {
-      await setSessionCookieForUrl({
-        context: page.context(),
-        cookieName: 'next-auth.participant-session-token',
-        targetUrl: 'https://api.klicker.com',
-        tokenData: {
-          email: env('STUDENT_EMAIL'),
-          sub: PARTICIPANT_IDS[0]!,
-          role: 'PARTICIPANT' as const,
-        },
-      })
-
-      participantCookie = (
-        await page.context().cookies('https://api.klicker.com')
-      ).find((cookie) => cookie.name === 'next-auth.participant-session-token')
-    }
-
-    if (!participantCookie) {
-      throw new Error('Could not create participant token for PWA login')
-    }
-
-    await page.context().addCookies([
-      {
-        name: 'next-auth.participant-session-token',
-        value: participantCookie.value,
-        domain: '.klicker.com',
-        path: '/',
-        httpOnly: true,
-        sameSite: 'Lax',
-        secure: true,
-      },
-      {
-        name: 'participant_token',
-        value: participantCookie.value,
-        domain: '.klicker.com',
-        path: '/',
-        httpOnly: true,
-        sameSite: 'Lax',
-        secure: true,
-      },
-    ])
-    await page
-      .evaluate((token) => {
-        sessionStorage.setItem('participant_token', token)
-      }, participantCookie.value)
-      .catch(() => undefined)
+  async function waitForParticipantLogin() {
+    await page.waitForURL((url) => !url.pathname.endsWith('/login'))
+    await expect
+      .poll(async () =>
+        (await page.context().cookies(env('URL_STUDENT'))).map(
+          (cookie) => cookie.name
+        )
+      )
+      .toEqual(
+        expect.arrayContaining(['participant_token', 'participant_session'])
+      )
   }
 
   async function installTemporaryParticipantToken(token: string) {
@@ -2856,8 +2816,7 @@ test.describe.serial('Live-quiz collaboration and access workflows', () => {
         await page.getByTestId('username-field').fill(username)
         await page.getByTestId('password-field').fill(password)
         await page.getByTestId('submit-login').click()
-        await page.waitForTimeout(500)
-        await copyLocalParticipantTokenToKlickerDomain()
+        await waitForParticipantLogin()
         await page.goto(env('URL_STUDENT'), { waitUntil: 'commit' })
 
         const liveQuizTile = page.getByTestId(
@@ -3034,8 +2993,7 @@ test.describe.serial('Live-quiz collaboration and access workflows', () => {
         await typeInto(page.getByTestId('username-field'), username)
         await typeInto(page.getByTestId('password-field'), password)
         await page.getByTestId('submit-login').click()
-        await page.waitForTimeout(500)
-        await copyLocalParticipantTokenToKlickerDomain()
+        await waitForParticipantLogin()
         await page.goto(String(quizLink), { waitUntil: 'commit' })
         await expect(page.getByTestId('header-page-title')).toContainText(
           quizName
