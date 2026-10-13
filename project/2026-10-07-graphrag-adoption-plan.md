@@ -20,6 +20,34 @@ and paid evaluation remain separate gates; OpenRouter review remains waived.
 
 ## Current state and next decision
 
+### October 13 approved context probe: connectivity blocked before dispatch
+
+The user approved the bounded CHF 0.50 context probe within the original CHF 20
+budget. Exact provider draft head `7a09d4263ac7713bc08ed3264d979b4fe4378080`
+now has successful pipeline **682099**. Source remains unchanged and prior
+93-test, Ruff and independent review evidence remains applicable. All eight
+private harness guard variants passed again; source and frozen input pins match.
+The billing lookup uses the actual dispatch date, including the next UTC day.
+
+The existing `aks-stg-apps-admin` Kubernetes endpoint is `localhost:6443`, which
+refuses connections. The user-provided STG API tunnel is unavailable. Consequently
+current gateway retry semantics, prices and prior billing cannot be refreshed,
+so admission stopped before any live claim or paid request. No replacement cluster
+route was established. Loopback ports 6443, 14000 and 14001 are closed.
+
+No new spend or hold was consumed: conservative accounting remains
+**CHF 6.99857084**, with **CHF 13.00142916** remaining. CHF 0.50 is approved for
+this next probe, but not counted as spent before dispatch. The last verified original
+test-chatbot/source/publication state is the October 12 terminal receipt; live
+reverification is unavailable through the disconnected cluster. No state mutation,
+merge, deployment or graph build occurred in this step.
+
+Resume the same approved probe after the existing STG API tunnel is restored.
+Refresh gateway-version/configuration-bound cost qualification and exact billing,
+then perform the guarded noise call and conditional category call. Existing user
+approval persists; restoring capability does not require another probe approval.
+The prior failed calls remain non-replayable and all uncertain billing holds remain.
+
 ### October 12 names-only diagnosis and next context probe (prepared)
 
 Saved evidence confirms the raw noise response kept two of three residual examples.
