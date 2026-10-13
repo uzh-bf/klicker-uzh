@@ -110,7 +110,7 @@ jobs:
             let timedOut = false
             const childEnv = { ...process.env, OCR_LLM_URL: `${adapter.url}/v1/chat/completions`, OCR_LLM_TOKEN: adapter.token, OCR_LLM_MODEL: MISTRAL_MODEL, OCR_LLM_PROTOCOL: 'openai', OCR_USE_ANTHROPIC: 'false' }
             delete childEnv.MISTRAL_API_KEY
-            const child = spawn('ocr', ['review', '--repo', repo, '--from', base, '--to', head, '--audience', 'agent', '--effort', 'low', '--timeout', '3', '--concurrency', '1', '--max-tokens-budget', '30000', '--format', 'json', '--background', 'Public synthetic fixture: total computes an order value as quantity multiplied by unit price. Review the arithmetic change.'], { env: childEnv, stdio: ['ignore', 'pipe', 'ignore'] })
+            const child = spawn('ocr', ['review', '--repo', repo, '--from', base, '--to', head, '--audience', 'agent', '--effort', 'low', '--timeout', '3', '--concurrency', '1', '--max-tokens-budget', '30000', '--format', 'json', '--rule', path.resolve('.github/open-code-review/final-review-rules.json'), '--background', 'Public synthetic fixture: total computes an order value as quantity multiplied by unit price. Review the arithmetic change.'], { env: childEnv, stdio: ['ignore', 'pipe', 'ignore'] })
             child.stdout.on('data', chunk => { resultText += chunk })
             const timer = setTimeout(() => { timedOut = true; child.kill('SIGTERM') }, 180000)
             const killTimer = setTimeout(() => child.kill('SIGKILL'), 190000)
@@ -123,7 +123,14 @@ jobs:
               receipt.ocr_budget_exceeded = produced.summary?.budget_exceeded ?? false
               assert.equal(timedOut, false)
               assert.equal(exitCode, 0)
-              const result = helper.validateOCRResult(produced)
+              phase = 'ocr_result'
+              receipt.ocr_tokens = Number.isSafeInteger(produced.summary?.total_tokens) ? produced.summary.total_tokens : null
+              receipt.findings = Array.isArray(produced.comments) ? produced.comments.length : null
+              let result
+              try { result = helper.validateOCRResult(produced) } catch (error) {
+                receipt.result_validation_error = /^(?:OCR result|OCR exhausted|Complete OCR result|Finding [1-9][0-9]{0,2}) [a-zA-Z0-9 ;]+$/.test(error.message) ? error.message : 'unclassified_result_validation'
+                throw error
+              }
               assert.equal(result.summary.files_reviewed, 1)
               assert.ok(result.summary.total_tokens <= 30000)
               assert.ok(result.comments.some(comment => comment.path === 'total.js'))
