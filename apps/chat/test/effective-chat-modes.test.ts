@@ -522,6 +522,7 @@ describe('effective chatbot modes', () => {
         description:
           'Guides students with focused questions, hints, and feedback.',
       },
+      explainer: expect.any(Object),
       quizzer: {
         description:
           'Practises exam-style course questions one at a time, with formative feedback.',
@@ -594,6 +595,87 @@ describe('effective chatbot modes', () => {
     expect(
       resolveEffectiveMCPConfigurations(configurations, 'cm_custom')
     ).toHaveLength(1)
+  })
+
+  test('lets Explainer inherit only the required Tutor document-query binding', () => {
+    const configurations = [
+      config({
+        allowedTools: ['doc_query'],
+        chatMode: 'tutor',
+        parameters: { required: true, toolAlias: 'doc_query', kb_id: 'kb' },
+        serverId: 'kb',
+      }),
+      config({
+        allowedTools: ['library_docs'],
+        chatMode: 'tutor',
+        serverId: 'docs',
+      }),
+    ]
+
+    expect(
+      resolveEffectiveMCPConfigurations(configurations, 'explainer')
+    ).toEqual([
+      expect.objectContaining({
+        allowedTools: ['doc_query'],
+        chatMode: 'explainer',
+        mcpServer: { id: 'kb' },
+        parameters: { required: true, toolAlias: 'doc_query', kb_id: 'kb' },
+      }),
+    ])
+    expect(
+      resolveEffectiveChatModeOptions(null, configurations)
+    ).toHaveProperty('explainer')
+  })
+
+  test('keeps an exact Explainer row over the inherited Tutor binding', () => {
+    const configurations = [
+      config({
+        allowedTools: ['doc_query'],
+        chatMode: 'tutor',
+        parameters: { required: true, toolAlias: 'doc_query' },
+        serverId: 'kb',
+      }),
+      config({
+        allowedTools: ['course_outline_expert'],
+        chatMode: 'explainer',
+        parameters: { required: true, toolAlias: 'doc_query' },
+        serverId: 'kb',
+      }),
+    ]
+
+    expect(
+      resolveEffectiveMCPConfigurations(configurations, 'explainer')
+    ).toEqual([
+      expect.objectContaining({
+        allowedTools: ['course_outline_expert'],
+        chatMode: 'explainer',
+      }),
+    ])
+  })
+
+  test('lets a disabled Explainer row opt its server out of inheritance', () => {
+    const configurations = [
+      config({
+        allowedTools: ['doc_query'],
+        chatMode: 'tutor',
+        parameters: { required: true, toolAlias: 'doc_query' },
+        serverId: 'kb',
+      }),
+      config({
+        allowedTools: ['doc_query'],
+        chatMode: 'explainer',
+        isEnabled: false,
+        parameters: { required: true, toolAlias: 'doc_query' },
+        serverId: 'kb',
+      }),
+    ]
+
+    expect(
+      resolveEffectiveMCPConfigurations(configurations, 'explainer')
+    ).toEqual([])
+    expect(
+      resolveEffectiveChatModeOptions(null, configurations)
+    ).not.toHaveProperty('explainer')
   })
 
   test('keeps an exact server-less custom binding', () => {

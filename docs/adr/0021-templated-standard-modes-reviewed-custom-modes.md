@@ -55,6 +55,11 @@ replacing:
   Runtime scope checks reject conflicting stored bindings across modes, while
   authorizing the selected request from the effective configuration produced by
   this inheritance rule.
+- Explainer inherits only Tutor's required single-tool `doc_query` alias, so a
+  knowledge-base chatbot needs one stored Tutor binding for all three standard
+  modes. An exact Explainer row takes precedence per server, and a disabled
+  exact Explainer row blocks inheritance from that server. Optional Tutor tools
+  are never inherited.
 - The server may hide any mode that cannot satisfy the chatbot's required-MCP
   policy. The same effective-mode resolver drives participant presentation,
   settings data, request validation, and request-time MCP selection, so a

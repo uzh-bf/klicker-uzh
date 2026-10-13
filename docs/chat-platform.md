@@ -755,7 +755,9 @@ resolver excludes modes that cannot satisfy
 the chatbot's required-MCP policy, and exposes Quizzer only with a provably restricted course
 `doc_query` binding. Exact Quizzer configuration shadows Tutor inheritance per MCP server,
 including disabled exact rows; inherited optional bindings are narrowed to `doc_query`, while
-required single-tool aliases preserve their raw tool restriction and remain fail-closed. The
+required single-tool aliases preserve their raw tool restriction and remain fail-closed.
+Explainer likewise inherits Tutor's required single-tool `doc_query` alias, never optional Tutor
+tools; an exact Explainer row, enabled or disabled, shadows that inheritance per server. The
 layout, participant settings endpoint, chat request validation, and request-time MCP selection all
 use this resolver. The browser receives resolved mode descriptions but never MCP server
 configuration. If typed flags or explicit opt-outs leave no effective mode, the client replaces
@@ -1365,8 +1367,8 @@ the chatbot MCP configuration: `{ "required": true, "toolAlias": "doc_query",
 "kb_id": "<UUID>" }`. The target server name is exactly `KB`. Enabled `KB`
 configurations must contain at most one binding per stored mode, with one server
 ID and one normalized UUID across the chatbot. The selected effective mode must
-resolve exactly one matching binding; Quizzer may safely inherit Tutor's
-restricted `doc_query` binding under ADR 0021.
+resolve exactly one matching binding; Quizzer and Explainer may safely inherit
+Tutor's restricted `doc_query` binding under ADR 0021.
 Any malformed, missing, duplicate, conflicting, or misplaced `kb_id` fails as
 `503 REQUIRED_MCP_UNAVAILABLE` before provider or message work. A valid binding
 sends a five-minute ES256 token in `X-Doc-Query-Scope-Token`. When the
