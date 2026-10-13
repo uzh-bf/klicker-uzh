@@ -141,10 +141,12 @@ describe('jwtMiddleware', () => {
             origin,
             authorization: token ? `Bearer ${token}` : undefined,
           },
-          cookies: {
-            participant_token: token,
-            'next-auth.session-token': token,
-          },
+          cookies: token
+            ? {
+                participant_token: token,
+                'next-auth.session-token': token,
+              }
+            : {},
         })
         assert.equal(result.user, null)
         assert.equal(result.nextCalled, true)

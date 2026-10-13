@@ -562,3 +562,85 @@ passes code checks, the production build and all eight hosted browser shards;
 its merge and the CodeQL dispositions remain pending. The required public final
 review therefore remains withheld. New commits still require their own hosted
 check results; this receipt does not carry forward a green CI claim.
+
+### Return-origin regression correction (2026-10-13)
+
+The focused re-review accepts the earlier lifecycle fixes and identifies a valid
+P2 redirect regression. `getSafeRedirectPath` accepts a same-origin absolute URL
+whose pathname starts with `//` or `///`; native navigation interprets that
+returned pathname as a foreign authority. A source-function diagnostic reproduces
+both escapes at published head `c3b097e235`.
+
+The correction prefixes regular local native-navigation destinations with the
+current browser origin before preserving the existing base path and locale.
+Absolute Chat destinations remain subject to the existing origin allowlist.
+The validator moves verbatim into the existing session module so one unit test
+can exercise the validator and navigation helper together. The existing
+locale/history test is retained; the new composition test covers ambiguous
+paths, direct foreign rejection, locale/base-path combinations and Chat. One
+browser scenario performs actual password login for double/triple-slash return
+paths in English and German, asserting the requested and final origin, path,
+query and fragment. No external site is contacted by its intercepted destination.
+Planner correction pass approved. Main owns the coupled fix; acceptance is the
+composition regression, relevant unit/types/format checks and focused browser
+verification before commit/publication and the normal review gates.
+
+Host escalation restores Git and canonical devrouter access. Fetch confirms the
+published task baseline `c3b097e235` and target `v3`
+`dcbec1ede200f6f7482d32b82bf7aff172e97b60`. The three intervening target commits
+change CI workflows and do not conflict with this correction; no integration is
+needed for its acceptance. All 67 existing PR paths byte-match the retained
+verification snapshot before checks.
+
+The PWA suite passes 34 tests, including validator/navigation composition.
+PWA/Playwright types, scoped Biome/Prettier and PWA lint pass (zero errors,
+13 existing warnings). The focused browser scenario passes all four applicable
+Chromium/Firefox configurations, with one WebKit cookie-environment skip. Its
+negative control restores only the original navigation line in the verification
+snapshot and fails at the destination-origin assertion: the original code
+requests `outside.example.invalid`. Fixed source is restored in `finally` and
+byte equality checked. Manual agent-browser password login also preserves the
+PWA origin, query and fragment for English double-slash and German triple-slash
+paths; the latter retains `/de`. The synthetic missing path correctly displays
+the local 404. Before/after captures were inspected; this routing correction
+does not change UI design or copy.
+
+The broad pre-commit command requires split host/container execution: 39 host
+launcher tests and 86 host CI contract tests pass. The container-compatible
+groups pass lint, syncpack, AGENTS, Git-identity, removed-artifact and Prisma-sync
+checks. Type checking completes 34 of 35 tasks, exposing two errors in this PR's
+missing-token JWT fixture: its cookie map assigns `undefined` despite a string
+value contract. The fixture now supplies an empty cookie map for absent tokens.
+All 25 backend unit tests, backend types and its scoped formatter pass afterward.
+These are combined check results, not a single green `check:all` invocation.
+Transient devrouter stale-container inventory errors were retried canonically;
+no ownership guard or global configuration changed. Production build passes all
+23 tasks. Its first producing attempt mixed generated development/production
+route types; the exact helper-owned dev process was stopped and only generated
+dev-type directories were preserved outside compiler inputs before the passing
+build. No application configuration or type checks were disabled. Committed
+slice review, source delivery and final runtime release are the next steps.
+
+The CodeQL cleanup inventory is now recorded with exact ref, tool and category:
+2,081 records under `refs/heads/v3`, tool `CodeQL`, category
+`.github/workflows/codeql-analysis.yml:analyze/language:javascript`, dated
+2023-01-22 through 2026-09-14. Sanitized analysis and relevant alert metadata are
+exported under the ignored local review directory. Replacement categories
+`javascript-typescript`, `python` and `actions` all have successful current
+analyses on target `v3`. This identifies a possible cleanup scope, not permission
+to delete it; no analysis or alert state changed. Any cleanup approval must name
+this exact category/ref and preserve replacement configurations.
+
+The companion's previous final-review workflow completed without performing a
+review: authorization requires an open, ready PR, and PR 6497 remains draft.
+Its final-review gate is still pending. Reviewer support for readiness/merge and
+security dispositions is advisory; separately reserved actions remain pending
+human approval. Alert 1091 remains open existing debt with no asserted deployment
+mitigation or indefinite acceptance. A concrete follow-up owner or tracker item
+must be supplied before recording a PR-specific acceptance.
+
+The main codebase job stops at deploy parity; downstream formatting, lint,
+schema drift, dependency conformity and TypeScript steps were skipped. They
+remain unverified until parity is resolved and the full job completes. The
+previous wording that parity was the only failure refers only to the first
+observed blocker and does not establish those later checks passed.

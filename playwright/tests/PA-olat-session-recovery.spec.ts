@@ -604,6 +604,50 @@ test('successful commands hide old state while destination navigation is cancell
   await expectIdentity(page, { email: ltiEmail, username: ltiUsername })
 })
 
+test('password login keeps ambiguous return paths on the PWA origin', async ({
+  page,
+  baseURL,
+}, info) => {
+  skipWithoutCookieSessions(info.project.name)
+  const origin = new URL(baseURL!).origin
+  let destinationRequest = ''
+  await page.route('**/*', async (route) => {
+    const url = new URL(route.request().url())
+    if (
+      route.request().isNavigationRequest() &&
+      url.pathname.endsWith('/phish')
+    ) {
+      destinationRequest = url.toString()
+      await route.fulfill({
+        contentType: 'text/html',
+        body: '<main data-cy="return-destination"></main>',
+      })
+    } else await route.continue()
+  })
+  for (const locale of ['', '/de']) {
+    for (const path of [
+      '//outside.example.invalid/phish',
+      '///outside.example.invalid/phish',
+    ]) {
+      destinationRequest = ''
+      const redirectTo = `${origin}${path}?keep=1#overview`
+      await page.goto(
+        `${baseURL}${locale}/login?redirect_to=${encodeURIComponent(redirectTo)}`
+      )
+      await page.getByTestId('username-field').fill(loginUsername)
+      await page.getByTestId('password-field').fill(STUDENT_PASSWORD)
+      await page.getByTestId('submit-login').click()
+      await expect(page.getByTestId('return-destination')).toBeAttached()
+      const destination = new URL(page.url())
+      expect(new URL(destinationRequest).origin).toBe(origin)
+      expect(destination.origin).toBe(origin)
+      expect(destination.pathname).toBe(`${locale}${path}`)
+      expect(destination.search).toBe('?keep=1')
+      expect(destination.hash).toBe('#overview')
+    }
+  }
+})
+
 test('refused launch cookies show recovery in the standalone page and LMS frame', async ({
   page,
   context,

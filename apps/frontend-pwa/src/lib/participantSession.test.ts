@@ -13,6 +13,7 @@ import {
   subscribeParticipantSession,
 } from '@klicker-uzh/shared-components/src/utils/participantSession'
 import {
+  getSafeRedirectPath,
   isSuccessfulParticipantSessionResult,
   navigateParticipantSession,
 } from './participantSession'
@@ -395,6 +396,7 @@ it('keeps locale, external destinations and history semantics on full navigation
   const calls: string[] = []
   installWindow({
     location: {
+      origin: 'https://pwa.example.invalid',
       assign: (url: string) => calls.push(`push:${url}`),
       replace: (url: string) => calls.push(`replace:${url}`),
     },
@@ -410,10 +412,65 @@ it('keeps locale, external destinations and history semantics on full navigation
   navigateParticipantSession(router, '/de?course=example#overview')
   navigateParticipantSession(router, 'https://chat.example.invalid/bot')
   assert.deepEqual(calls, [
-    'replace:/de/editProfile?newAccount=true',
-    'push:/de/course/course-id',
-    'push:/de?course=example#overview',
+    'replace:https://pwa.example.invalid/de/editProfile?newAccount=true',
+    'push:https://pwa.example.invalid/de/course/course-id',
+    'push:https://pwa.example.invalid/de?course=example#overview',
     'push:https://chat.example.invalid/bot',
   ])
+  removeWindow()
+})
+
+it('keeps validated return paths on the PWA origin through native navigation', () => {
+  const origin = 'https://pwa.example.invalid'
+  const chat = 'https://chat.example.invalid'
+  let destination = ''
+  installWindow({
+    location: {
+      origin,
+      assign: (url: string) => {
+        destination = url
+      },
+    },
+  })
+  for (const locale of ['en', 'de']) {
+    for (const basePath of ['', '/app']) {
+      const router = {
+        locale,
+        defaultLocale: 'en',
+        locales: ['en', 'de'],
+        basePath,
+      } as unknown as Parameters<typeof navigateParticipantSession>[0]
+      const prefix = `${basePath}${locale === 'de' ? '/de' : ''}`
+      for (const path of [
+        '/editProfile?keep=1#overview',
+        '//outside.example.invalid/phish?keep=1#overview',
+        '///outside.example.invalid/phish?keep=1#overview',
+      ]) {
+        const validated = getSafeRedirectPath(`${origin}${path}`, origin, chat)
+        navigateParticipantSession(router, validated)
+        const target = new URL(destination, origin)
+        assert.equal(target.origin, origin)
+        assert.equal(target.pathname, `${prefix}${path.split('?')[0]}`)
+        assert.equal(target.search, '?keep=1')
+        assert.equal(target.hash, '#overview')
+      }
+      for (const rejected of [
+        'https://outside.example.invalid/phish',
+        '//outside.example.invalid/phish',
+      ]) {
+        navigateParticipantSession(
+          router,
+          getSafeRedirectPath(rejected, origin, chat)
+        )
+        assert.equal(destination, `${origin}${prefix}/`)
+      }
+      const chatDestination = `${chat}/bot?keep=1#overview`
+      navigateParticipantSession(
+        router,
+        getSafeRedirectPath(chatDestination, origin, chat)
+      )
+      assert.equal(destination, chatDestination)
+    }
+  }
   removeWindow()
 })

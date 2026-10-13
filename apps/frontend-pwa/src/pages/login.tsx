@@ -4,7 +4,10 @@ import {
   SelfDocument,
   SendMagicLinkDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { navigateParticipantSession } from '@lib/participantSession'
+import {
+  getSafeRedirectPath,
+  navigateParticipantSession,
+} from '@lib/participantSession'
 import { toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { GetServerSidePropsContext } from 'next'
@@ -17,31 +20,6 @@ import LoginForm from '../components/forms/LoginForm'
 
 interface LoginProps {
   redirectPath: string
-}
-
-function getSafeRedirectPath(
-  value: string | string[] | undefined,
-  pwaUrl: string,
-  chatUrl: string | undefined
-) {
-  const redirectTo = Array.isArray(value) ? value[0] : value
-  if (!redirectTo) return '/'
-
-  try {
-    const pwaOrigin = new URL(pwaUrl)
-    const target = new URL(redirectTo, pwaOrigin)
-    if (target.origin === pwaOrigin.origin) {
-      return `${target.pathname}${target.search}${target.hash}`
-    }
-
-    if (chatUrl && target.origin === new URL(chatUrl).origin) {
-      return target.toString()
-    }
-
-    return '/'
-  } catch {
-    return '/'
-  }
 }
 
 function Login({ redirectPath }: Readonly<LoginProps>) {
