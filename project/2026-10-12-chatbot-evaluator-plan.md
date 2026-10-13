@@ -358,3 +358,20 @@ condition or cap expansion. There is still no real-provider receipt or paid run.
 Whole-branch substantive size is 2,859 lines excluding project artifacts before
 this narrow integration; the continuation adds 334 substantive lines. This
 remains the approved coherent evaluator defect package in the existing draft.
+
+Completion record: initial integrated review and the single integration follow-up
+pass, with zero findings and canonical schema validation. Reviewed source head
+is `1a3bae5279284f6518b6c1072cc46722731f4799`; this closing note changes no
+behavior. Final substantive size is 2,862 lines excluding project artifacts.
+Credential heuristics flagged only test-owned synthetic assignments; inspected
+staged content and gitleaks passed before the explicit false-positive override.
+Equivalent focused container checks cover the host hook's missing dependencies.
+
+The exact worktree `/Users/rschlae/Git/klicker/klicker-uzh/trees/chatbot-evaluator`,
+workspace `enhance-chatbot-evaluator`, is stopped. Owning Devsy provider status
+is `Stopped` and the fresh exact-route read-back is empty; data and volumes remain.
+The approved delivery target is existing draft
+[PR #6489](https://github.com/uzh-bf/klicker-uzh/pull/6489), including this closure
+note and the refreshed whole-branch description. Required hosted checks remain
+a separate exact-head gate. Real-provider qualification, paid evaluation, prompt
+application, ready/merge and deployment remain outside this completed batch.
