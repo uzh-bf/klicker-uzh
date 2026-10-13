@@ -1651,7 +1651,8 @@ export async function POST(
             }),
             ...(process.env.KLICKER_EVAL_GUARD_ORIGIN &&
               selectedModelConfig.usesResponsesApi &&
-              selectedModelConfig.supportsReasoning && {
+              selectedModelConfig.supportsReasoning &&
+              providerReasoningEffort && {
                 forceReasoning: true,
               }),
             ...(providerReasoningEffort && {

@@ -110,8 +110,9 @@ OpenRouter route. Preserve the registry's fallback and usage policy requirements
 Key the guard's pricing policy by the deployment ID actually sent upstream;
 keep the runner and receipt `modelId` equal to the application selection ID.
 Do not change the production registry or infer qualification from this example.
-For guarded Responses requests, the application uses the registry's reasoning
-capability to set the SDK's `forceReasoning` override. Otherwise prefixed model
+For guarded Responses requests with a positive selected effort, the application
+uses the registry's reasoning capability to set the SDK's `forceReasoning`
+override. Otherwise prefixed model
 aliases can lose their requested reasoning effort during SDK serialization.
 
 For managed local startup, pass the guard origin, base URL, key, registry JSON

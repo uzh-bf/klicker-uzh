@@ -636,19 +636,17 @@ fi
 write_file "$ROOT/.devcontainer/devcontainer.env" 'OPENAI_BASE_URL=http://litellm:4000/v1
 OPENAI_API_KEY=synthetic-default-key
 CHAT_MODEL_REGISTRY_JSON=default-registry'
-for generation in first second; do
-  : >"$HELPER_LOG"
-  KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
-    KLICKER_EVAL_GUARD_ORIGIN=http://127.0.0.1:1418 \
-    OPENAI_BASE_URL=http://127.0.0.1:1418/v1 OPENAI_API_KEY=synthetic-evaluation-key \
-    CHAT_MODEL_REGISTRY_JSON='[]' KLICKER_EVAL_GUARD_GENERATION="$generation" \
-    KLICKER_TEST_EVALUATION_GENERATION="$generation" \
-    KLICKER_TEST_PNPM_FAIL_MATCH='exec turbo run build' \
-    bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1 && \
-    fail 'synthetic preparation failure unexpectedly succeeded'
-  grep -Fx "evaluation-generation:$generation" "$HELPER_LOG" >/dev/null || \
-    fail 'managed helper did not receive restored guarded configuration'
-done
+: >"$HELPER_LOG"
+KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+  KLICKER_EVAL_GUARD_ORIGIN=http://127.0.0.1:1418 \
+  OPENAI_BASE_URL=http://127.0.0.1:1418/v1 OPENAI_API_KEY=synthetic-evaluation-key \
+  CHAT_MODEL_REGISTRY_JSON='[]' KLICKER_EVAL_GUARD_GENERATION=synthetic-generation \
+  KLICKER_TEST_EVALUATION_GENERATION=synthetic-generation \
+  KLICKER_TEST_PNPM_FAIL_MATCH='exec turbo run build' \
+  bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1 && \
+  fail 'synthetic preparation failure unexpectedly succeeded'
+grep -Fx 'evaluation-generation:synthetic-generation' "$HELPER_LOG" >/dev/null || \
+  fail 'managed helper did not receive restored guarded configuration'
 : >"$HELPER_LOG"
 if KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
   KLICKER_EVAL_GUARD_ORIGIN=http://127.0.0.1:1418 OPENAI_BASE_URL=http://127.0.0.1:1418/v1 \

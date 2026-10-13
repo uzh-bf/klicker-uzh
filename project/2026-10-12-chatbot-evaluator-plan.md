@@ -330,3 +330,12 @@ suite passes; its unchanged boundary evidence is reused. Only pre-existing
 Biome warnings remain. No browser interaction or visible UI changed.
 Devrouter active host CLI and delivered helper are 0.3.1; minimal `chat,mcp`
 runtime startup passed with no LiteLLM service. Delivery and reviews pending.
+
+App slice review found no high-severity issue. Its positive-effort concern is
+accepted: `forceReasoning` additionally requires a concrete provider effort.
+This preserves the qualified low-effort path and avoids forcing reasoning for
+`none`. The documented nonsecret credential-generation requirement is retained;
+the synthetic test credential is not a secret exposure. Simplification accepts
+one guarded shell fixture instead of two equivalent fresh-process runs.
+Exact runtime stop succeeded and removed four routes; fresh route read-back
+contains zero routes for this worktree. No volumes or workspace were deleted.
