@@ -663,3 +663,42 @@ schema drift, dependency conformity and TypeScript steps were skipped. They
 remain unverified until parity is resolved and the full job completes. The
 previous wording that parity was the only failure refers only to the first
 observed blocker and does not establish those later checks passed.
+
+### Approved release coordination and security dispositions
+
+On 2026-10-13 the user explicitly approved the conditional readiness, final
+review and squash merge of [companion PR 6497](https://github.com/uzh-bf/klicker-uzh/pull/6497) into `v3-ai`, followed by the main
+PR's parity rerun. The companion may merge only after applicable checks and
+review pass. This authority excludes merging [PR 6414](https://github.com/uzh-bf/klicker-uzh/pull/6414) or deployment.
+
+The user also approved deleting only the verified 2,081 obsolete CodeQL analysis
+IDs under `refs/heads/v3`, tool `CodeQL`, category
+`.github/workflows/codeql-analysis.yml:analyze/language:javascript`. The exported
+IDs were re-enumerated and unchanged before cleanup. Active replacement
+JavaScript/TypeScript, Python and Actions configurations retain successful
+analysis on current `v3`. Each authorized deletion has an ignored receipt; any
+unexpected ID, category or ref stops cleanup.
+
+Alert 3499 is dismissed as a false positive with the token-verification
+rationale and 25-test backend receipt. The user approved a PR-specific exception
+for existing missing-rate-limit alert 1091, keeping it open. Follow-up owner is
+`rschlaefli`, with resolution or a reviewed endpoint policy due before the next
+production release. This exception does not assert a deployed mitigation or
+indefinite risk acceptance. The optional CodeQL result may retain that finding;
+required CI and all other security findings still require disposition.
+
+Current `ff8dcaffbe` codebase failure was confirmed at the single Chat ConfigMap
+parity path; later steps were skipped. Companion readiness and final review are
+now in progress, and obsolete-analysis cleanup is in progress. The external
+review of `ff8dcaffbe` closes the redirect finding with nine isolated test groups
+and a negative control; it reports no new blocking code finding. Its CodeQL
+snapshot preceded completion and is superseded by the producing check's two
+high findings and one obsolete configuration, not a clean result.
+
+One readiness integration uses target `v3` at
+`92b586b52c7ca463c7e2116cc7d9ffd13bd80660` because branch policy requires freshness.
+Its four commits affect CI/review policy and production image configuration;
+application source is unchanged. Prior local browser/build evidence is reused
+at its producing source. This is a history-preserving task-branch merge, with
+fresh hosted checks required on the resulting head. Public final review remains
+ordered after CI and these dispositions settle. Local runtimes remain stopped.
