@@ -41,6 +41,29 @@ jobs:
           const receipt = { source_sha: process.env.GITHUB_SHA, model: MISTRAL_MODEL, reasoning_effort: 'max', requests: 0, statuses: [], assistant_replays: 0 }
           let phase = 'tool_canary'
           let blocked = false
+          const schemaFields = new Set(['body', 'messages', 'content', 'role', 'tool_calls', 'tool_call_id', 'function', 'name', 'arguments', 'id', 'index', 'type', 'thinking', 'text', 'signature', 'closed', 'prefix', 'reasoning_content', 'AssistantMessage', 'ToolMessage', 'UserMessage', 'SystemMessage', 'TextChunk', 'ThinkChunk', 'tools', 'model', 'response_format', 'json_schema', 'schema', 'strict'])
+          const errorTypes = new Set(['missing', 'extra_forbidden', 'string_type', 'list_type', 'dict_type', 'literal_error', 'union_tag_invalid', 'union_tag_not_found', 'value_error', 'model_attributes_type', 'enum', 'json_invalid', 'string_pattern_mismatch', 'string_too_short', 'string_too_long'])
+          function safeField(value) { return Number.isInteger(value) ? value : schemaFields.has(value) ? value : '_other' }
+          function shape(message) {
+            const content = message.content
+            return { role: ['assistant', 'tool', 'user', 'system'].includes(message.role) ? message.role : '_other', fields: Object.keys(message).map(safeField), content_type: content === null ? 'null' : Array.isArray(content) ? 'array' : typeof content, chunks: Array.isArray(content) ? content.map(chunk => ({ type: ['thinking', 'text', 'image_url'].includes(chunk.type) ? chunk.type : '_other', fields: Object.keys(chunk).map(safeField) })) : undefined, tool_calls: message.tool_calls?.map(call => ({ fields: Object.keys(call).map(safeField), argument_type: typeof call.function?.arguments })) }
+          }
+          async function validationDiagnostics(response, body) {
+            const reader = response.clone().body.getReader()
+            const chunks = []
+            let bytes = 0
+            for (;;) {
+              const { done, value } = await reader.read()
+              if (done) break
+              bytes += value.length
+              if (bytes > 65536) { reader.cancel().catch(() => {}); return { truncated: true } }
+              chunks.push(Buffer.from(value))
+            }
+            let payload
+            try { payload = JSON.parse(Buffer.concat(chunks).toString('utf8')) } catch { return { non_json: true } }
+            const details = Array.isArray(payload.detail) ? payload.detail : []
+            return { errors: details.slice(0, 20).map(item => ({ location: Array.isArray(item.loc) ? item.loc.map(safeField) : [], type: errorTypes.has(item.type) ? item.type : '_other' })), detail_type: Array.isArray(payload.detail) ? 'array' : typeof payload.detail, messages: body.messages.map(shape) }
+          }
           async function fetchImpl(url, init) {
             assert.equal(url, MISTRAL_URL)
             if (blocked || receipt.requests >= 8) throw new Error('smoke_admission_closed')
@@ -52,7 +75,10 @@ jobs:
             try {
               const response = await fetch(url, init)
               receipt.statuses.push(response.status)
-              if (!response.ok) blocked = true
+              if (!response.ok) {
+                blocked = true
+                if (response.status === 422) receipt.validation = await validationDiagnostics(response, body)
+              }
               return response
             } catch (error) {
               blocked = true
