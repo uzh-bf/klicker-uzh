@@ -48,6 +48,13 @@ function boundedText(value: unknown, field: string, maxLength: number): string {
       `Question-library ${field} must contain 1-${maxLength} characters`
     )
   }
+  for (const character of value) {
+    if (character.charCodeAt(0) < 32 && !'\t\n\r'.includes(character)) {
+      return configurationError(
+        `Question-library ${field} must not contain control characters`
+      )
+    }
+  }
   return value
 }
 

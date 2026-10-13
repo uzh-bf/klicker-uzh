@@ -173,6 +173,72 @@ describe('question-library snapshot', () => {
     warning.mockRestore()
   })
 
+  describe.each([
+    1, 2,
+  ] as const)('schema %i text validation', (schemaVersion) => {
+    it.each([
+      'name',
+      'content',
+      'choice',
+    ] as const)('skips records with forbidden controls in %s', async (field) => {
+      const warning = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      try {
+        const rows = Array.from({ length: 32 }, (_, code) => code)
+          .filter((code) => ![9, 10, 13].includes(code))
+          .map((code) => {
+            const value = `Before${String.fromCharCode(code)}After`
+            return element({
+              id: code + 100,
+              ...(field === 'choice'
+                ? { options: { choices: [{ ix: 0, value, correct: true }] } }
+                : { [field]: value }),
+            })
+          })
+        const valid = element()
+        const { ctx } = context([...rows, valid])
+        const snapshot = JSON.parse(
+          (
+            await createQuestionLibrarySnapshot(ctx, {}, { schemaVersion })
+          ).toString('utf8')
+        )
+        expect(snapshot).toMatchObject({
+          schema_version: schemaVersion,
+          reference_count: 1,
+          truncated: true,
+        })
+        expect(snapshot.questions).toEqual([
+          schemaVersion === 1
+            ? normalizeQuestionLibraryElement(valid)
+            : normalizeQuestionPoolElement(valid),
+        ])
+      } finally {
+        warning.mockRestore()
+      }
+    })
+
+    it('preserves tab, newline and carriage return in text', async () => {
+      const text = 'Before\tMiddle\nNext\rAfter'
+      const { ctx } = context([
+        element({
+          name: text,
+          content: text,
+          options: { choices: [{ ix: 0, value: text, correct: true }] },
+        }),
+      ])
+      const snapshot = JSON.parse(
+        (
+          await createQuestionLibrarySnapshot(ctx, {}, { schemaVersion })
+        ).toString('utf8')
+      )
+      expect(snapshot).toMatchObject({
+        schema_version: schemaVersion,
+        reference_count: 1,
+        truncated: false,
+        questions: [{ name: text, stem: text, choices: [{ text }] }],
+      })
+    })
+  })
+
   it.each([
     1, 2,
   ] as const)('bounds schema %i snapshots by the artifact byte limit', async (schemaVersion) => {
