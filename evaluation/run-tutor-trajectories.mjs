@@ -227,7 +227,14 @@ export async function runTutorTrajectories({
   try {
     output = await openExclusive(outputPath)
   } catch (error) {
-    await releaseRun()
+    try {
+      await releaseRun()
+    } catch (releaseError) {
+      error.cause = new AggregateError(
+        [error.cause, releaseError].filter(Boolean),
+        'Output creation failed and its run lease could not be released'
+      )
+    }
     throw error
   }
   const arm = options.arm

@@ -229,6 +229,7 @@ if [ "$LOCAL_TARGET" = true ] && [ "$MODE" = 'eval' ]; then
 fi
 
 if [ "$LOCAL_TARGET" = true ]; then
+  # Keep this fallback aligned with DEFAULT_MODEL_ID in the local target adapter.
   export KLICKER_EVAL_MODEL_ID="${KLICKER_EVAL_MODEL_ID:-gpt-6-luna}"
 fi
 
@@ -522,7 +523,8 @@ run_offline_check() {
 
   if [ "$NEEDS_TARGET" = true ]; then
     if [ "$LOCAL_TARGET" = true ]; then
-      printf '%s\n' 'Required target variables: KLICKER_EVAL_API_ORIGIN KLICKER_EVAL_CHAT_ORIGIN KLICKER_EVAL_PARTICIPANT_USERNAME KLICKER_EVAL_PARTICIPANT_PASSWORD'
+      printf '%s\n' 'Required target variables: KLICKER_EVAL_API_ORIGIN KLICKER_EVAL_CHAT_ORIGIN KLICKER_EVAL_PARTICIPANT_USERNAME KLICKER_EVAL_PARTICIPANT_PASSWORD KLICKER_EVAL_GUARD_ORIGIN KLICKER_EVAL_GUARD_KEY'
+      printf '%s\n' 'Required target files: KLICKER_EVAL_BUDGET_FILE KLICKER_EVAL_QUALIFICATION_FILE'
       check_environment_variable KLICKER_EVAL_API_ORIGIN
       check_environment_variable KLICKER_EVAL_CHAT_ORIGIN
       check_environment_variable KLICKER_EVAL_PARTICIPANT_USERNAME

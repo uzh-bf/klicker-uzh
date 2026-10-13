@@ -505,3 +505,13 @@ evaluation-marker startup refusal. One executor owns handling a reset lease
 socket and retaining multiple fixture errors; it reproduced an unhandled
 ECONNRESET before the fix and a normal exit afterward. The existing tests cover
 these seams; no new module, dependency, refund, recovery or paid run is added.
+
+The following review repeated the mapper-cache and stale-lock suggestions;
+the pinned-runtime probes and documented fail-closed recovery contract still
+apply. One executor owns complementary coverage for ordinary startup with
+canonical OpenAI settings and no evaluation markers. Main owns coded cleanup
+and malformed-upstream diagnostics, complete offline preflight guidance, and
+cross-references between the existing target-model defaults. Existing source
+reviews remain applicable outside this small correction. The final head needs
+focused checks, incremental reviews, and exact-head hosted CI; the draft and
+zero-spend boundaries remain in place.

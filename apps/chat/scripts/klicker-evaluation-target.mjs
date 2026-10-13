@@ -15,6 +15,7 @@ import {
 import { verifyGuardQualification } from '../../../evaluation/evaluation-spend-guard.mjs'
 
 export const DEFAULT_CHATBOT_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
+// Keep the local launcher fallback in util/_run_klicker_eval.sh aligned.
 export const DEFAULT_MODEL_ID = 'gpt-6-luna'
 export const DEFAULT_MAX_STREAM_BYTES = 8 * 1024 * 1024
 export const DEFAULT_POLL_INTERVAL_MS = 250

@@ -239,7 +239,8 @@ export async function mutateBudget(filePath, mutate) {
   try {
     await release()
   } catch (error) {
-    if (!mutationError) throw error
+    if (!mutationError)
+      throw Object.assign(budgetError('budget_lock_failed'), { cause: error })
     mutationError.cause = new AggregateError(
       [mutationError.cause, error].filter(Boolean),
       'Budget mutation failed and its lock could not be released'

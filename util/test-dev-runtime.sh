@@ -603,6 +603,14 @@ if [ -n "${KLICKER_TEST_EVALUATION_GENERATION:-}" ]; then
   esac
   echo "evaluation-generation:$KLICKER_EVAL_GUARD_GENERATION" >>"$KLICKER_TEST_HELPER_LOG"
 fi
+if [ -n "${KLICKER_TEST_EXPECT_CANONICAL:-}" ]; then
+  [ "${OPENAI_BASE_URL:-}" = "http://litellm:4000" ] || exit 41
+  [ "${OPENAI_API_KEY:-}" = "synthetic-default-key" ] || exit 42
+  [ "${CHAT_MODEL_REGISTRY_JSON:-}" = "default-registry" ] || exit 43
+  [ "${KLICKER_EVAL_GUARD_ORIGIN+x}" != x ] || exit 44
+  [ "${KLICKER_EVAL_GUARD_GENERATION+x}" != x ] || exit 45
+  echo "canonical-openai-base-url:${OPENAI_BASE_URL}" >>"$KLICKER_TEST_HELPER_LOG"
+fi
 shift
 while [ "$#" -gt 0 ]; do
   if [ "$1" = --prepare-command ]; then
@@ -633,7 +641,7 @@ fi
 [ ! -s "$CURL_LOG" ] || fail 'failed preparation reached readiness'
 
 # Canonical development defaults cannot displace explicit guarded settings.
-write_file "$ROOT/.devcontainer/devcontainer.env" 'OPENAI_BASE_URL=http://litellm:4000/v1
+write_file "$ROOT/.devcontainer/devcontainer.env" 'OPENAI_BASE_URL=http://litellm:4000
 OPENAI_API_KEY=synthetic-default-key
 CHAT_MODEL_REGISTRY_JSON=default-registry'
 : >"$HELPER_LOG"
@@ -647,6 +655,21 @@ KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-he
   fail 'synthetic preparation failure unexpectedly succeeded'
 grep -Fx 'evaluation-generation:synthetic-generation' "$HELPER_LOG" >/dev/null || \
   fail 'managed helper did not receive restored guarded configuration'
+
+# Complementary ordinary path: compose's canonical OPENAI_* values arrive via
+# env_file without the guard markers. Post-start must pass them through and
+# fail only on the simulated dependency preparation, never on the guarded gate.
+: >"$HELPER_LOG"
+canonical_status=0
+KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+  OPENAI_BASE_URL=http://litellm:4000 OPENAI_API_KEY=synthetic-default-key \
+  CHAT_MODEL_REGISTRY_JSON=default-registry \
+  KLICKER_TEST_EXPECT_CANONICAL=1 \
+  KLICKER_TEST_PNPM_FAIL_MATCH='exec turbo run build' \
+  bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1 || canonical_status=$?
+assert_equal "$canonical_status" 17
+grep -Fx 'canonical-openai-base-url:http://litellm:4000' "$HELPER_LOG" >/dev/null || \
+  fail 'helper did not receive canonical configuration without guard markers'
 : >"$HELPER_LOG"
 incomplete_status=0
 KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \

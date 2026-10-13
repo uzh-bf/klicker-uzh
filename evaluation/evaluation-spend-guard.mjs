@@ -258,9 +258,9 @@ export async function createSpendGuard({
   if (ledger.policyHash !== policyHash)
     throw budgetError('budget_policy_mismatch')
   assertBudgetCanStart(ledger)
-  const upstream = new URL(upstreamOrigin)
   if (!apiKey || !upstreamKey || upstreamOrigin !== policy.upstreamOrigin)
     throw budgetError('provider_guard_configuration_invalid')
+  const upstream = new URL(upstreamOrigin)
 
   return createServer(async (request, response) => {
     let timeout

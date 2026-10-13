@@ -342,6 +342,16 @@ test('guard denies calls without active turn and qualification binds experiment 
         }),
         { code: 'provider_guard_configuration_invalid' }
       )
+      await assert.rejects(
+        createSpendGuard({
+          policy: qualifiedPolicy,
+          budgetFile,
+          apiKey: 'synthetic',
+          upstreamKey: 'synthetic',
+          upstreamOrigin: 'not a URL',
+        }),
+        { code: 'provider_guard_configuration_invalid' }
+      )
     }
   )
 })
@@ -430,6 +440,14 @@ test('a lock-release failure preserves the mutation error and leaves the ledger 
         error.code === 'budget_invalid' &&
         error.cause instanceof AggregateError &&
         error.cause.errors[0].code === 'ENOENT'
+    )
+    assert.deepEqual(await readBudgetLedger(budgetFile), before)
+    await assert.rejects(
+      mutateBudget(budgetFile, () => {
+        unlinkSync(budgetFile + '.lock')
+      }),
+      (error) =>
+        error.code === 'budget_lock_failed' && error.cause?.code === 'ENOENT'
     )
     assert.deepEqual(await readBudgetLedger(budgetFile), before)
   })
