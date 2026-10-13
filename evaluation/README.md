@@ -13,7 +13,45 @@ Klicker application stack.
 
 ## Trajectories and provider admission
 
-`apps/chat/scripts/run-tutor-trajectories.mjs` accepts synthetic Tutor, Explainer
+Experiment orchestration, numeric references and the shared spend guard live in
+`evaluation/`. Chat retains the application transport, authored-corpus validation,
+canonical source mapping and persisted-history verification in
+`apps/chat/scripts/`. Generic import, assessment and reporting belong to the
+private framework; these app checks remain covered by Chat's focused tests.
+
+The framework compatibility change is coordinated with
+[framework draft MR 54](https://gitlab.uzh.ch/ai-infrastructure/evaluation/-/merge_requests/54).
+Land that change first, then reconcile this repository's framework pin to the
+final merged revision before landing the Klicker change.
+
+### Offline capture import
+
+With the pinned framework dependencies already installed, import sanitized
+version-2 receipts and their authored corpus without querying a model:
+
+```bash
+uv run --frozen --offline --project evaluation/framework \
+  python evaluation/framework/src/adapters/klicker_trajectories.py \
+  project/_local/tutor-baseline.jsonl \
+  --corpus evaluation/data/trajectories/tutor-attribution-v2.json \
+  --group development --output project/_local/tutor-baseline-conversations.json
+```
+
+The output must be new; import never replaces an existing artifact. It preserves
+all planned cases, including incomplete and unstarted captures. Complete Tutor
+and Explainer captures are eligible for explicit framework assessment; Quizzer
+remains unsupported and unassessed. Assessment limits select eligible cases
+without shrinking planned coverage. Rubrics supply expected outcomes, while
+hashed source mappings remain diagnostics without retrieval context. The corpus
+hash records import provenance; capture-time corpus identity is caller-attested.
+
+Import is offline. Later judge execution requires separate approval and an
+explicit profile. The target spend guard bounds application requests only;
+the framework's post-completion judge-cost reporting is not a shared hard cap.
+
+### Provider admission
+
+`evaluation/run-tutor-trajectories.mjs` accepts synthetic Tutor, Explainer
 and Quizzer corpora. Receipts reconstruct citation positions with the application's
 source mapper, including cross-call duplicates and null indices for overflow.
 The receipt includes every application-recognized retrieval server; the local
@@ -67,7 +105,7 @@ objects and unknown request fields remain unqualified.
 Choose a new private `KLICKER_EVAL_BUDGET_FILE`, then initialize it offline once:
 
 ```bash
-node apps/chat/scripts/evaluation-spend-guard.mjs --initialize-budget
+node evaluation/evaluation-spend-guard.mjs --initialize-budget
 ```
 
 Initialization creates an immutable `.identity` receipt alongside the mutable
@@ -83,7 +121,7 @@ The approved evaluation-only route is application → local spend guard → qual
 upstream. Inject `KLICKER_EVAL_GUARD_KEY` and `KLICKER_EVAL_UPSTREAM_KEY` at runtime
 through the existing secret operator. Set `KLICKER_EVAL_UPSTREAM_ORIGIN` to the
 OpenAI-compatible API base (for example `https://<qualified-host>/openai/v1`).
-Run `node apps/chat/scripts/evaluation-spend-guard.mjs` in the guard process.
+Run `node evaluation/evaluation-spend-guard.mjs` in the guard process.
 It prints its port, binds to loopback by default and sends only authenticated
 model requests upstream. Container access requires an explicitly selected private
 `KLICKER_EVAL_GUARD_HOST`; exposing it publicly is outside this workflow.
@@ -324,7 +362,7 @@ UV_OFFLINE=true uv run --frozen --offline \
 ```
 
 The harness requires the framework gitlink at revision
-2a75632a98a8f8e8382a7f7ecaa4fda9f715e12b.
+04cf82fc3097db1b6a473f02d35a1d76f8532ad7.
 
 The harness invokes the real launcher from outside the repository, uses one
 temporary synthetic ground-truth case and output directory (including paths

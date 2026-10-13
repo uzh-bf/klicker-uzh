@@ -399,3 +399,24 @@ executor owns mechanical relocation after compatibility passes. The framework
 draft must land first, followed by final merged-SHA pin reconciliation before
 Klicker landing. This approval covers ordinary task-branch publication and
 draft updates, not paid evaluation, live qualification, ready/merge or deployment.
+
+Compatibility and relocation verification pass. Framework revision
+`04cf82fc3097db1b6a473f02d35a1d76f8532ad7` is published in
+[draft MR 54](https://gitlab.uzh.ch/ai-infrastructure/evaluation/-/merge_requests/54).
+The private slice passed Astra simplification and trusted native risk review;
+two duplicate-test reductions were accepted. Its 62 offline tests preserve
+planned coverage through limits, conversion failures and late judge errors.
+It adds 1,368 substantive lines, including 836 lines of regression tests.
+
+The public executor relocated four files, with budget, guard and numeric logic
+unchanged. Chat's 42 affected Node tests pass in an isolated network-disabled
+container. An actual `runTrajectory` producer roundtrip with synthetic persisted
+messages passed: six turns, three planned modes, two eligible conversations,
+Quizzer retained, scenario and expected outcomes present, no invented retrieval
+context. The existing portable launcher passed at the exact new framework pin
+with synthetic loopback only. No application stack was started for relocation.
+Prior application routing proof remains applicable to unchanged behavior.
+
+Integrated final review and exact-head draft publication are the remaining
+delivery steps. Framework-first landing and final merged-SHA pin reconciliation
+remain subsequent human-controlled gates. No paid evaluation has run.

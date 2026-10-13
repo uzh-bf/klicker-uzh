@@ -12,13 +12,13 @@ import {
   initializeBudget,
   readBudgetLedger,
   reserveProviderSpend,
-} from '../scripts/evaluation-budget.mjs'
+} from '../../../evaluation/evaluation-budget.mjs'
 import {
   createSpendGuard,
   requestReservation,
   validatePricingPolicy,
   verifyGuardQualification,
-} from '../scripts/evaluation-spend-guard.mjs'
+} from '../../../evaluation/evaluation-spend-guard.mjs'
 
 const policy = {
   version: 1,

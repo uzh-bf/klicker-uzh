@@ -11,21 +11,21 @@ import {
   MAX_SUBMITTED_TURNS,
   readBudgetLedger,
   reserveProviderSpend,
-} from '../scripts/evaluation-budget.mjs'
-import { requestReservation } from '../scripts/evaluation-spend-guard.mjs'
-import {
-  DEFAULT_CHATBOT_ID,
-  KlickerEvaluationTarget,
-} from '../scripts/klicker-evaluation-target.mjs'
+} from '../../../evaluation/evaluation-budget.mjs'
+import { requestReservation } from '../../../evaluation/evaluation-spend-guard.mjs'
 import {
   parseArguments,
   runTutorTrajectories,
-} from '../scripts/run-tutor-trajectories.mjs'
+} from '../../../evaluation/run-tutor-trajectories.mjs'
 import {
   calculateTutorReference,
   compareTutorNumericClaim,
   validateNumericSidecar,
-} from '../scripts/tutor-numeric-reference.mjs'
+} from '../../../evaluation/tutor-numeric-reference.mjs'
+import {
+  DEFAULT_CHATBOT_ID,
+  KlickerEvaluationTarget,
+} from '../scripts/klicker-evaluation-target.mjs'
 import {
   buildSourceReceipt,
   EXPECTED_DOC_QUERY_TOOL,

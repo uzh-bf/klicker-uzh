@@ -10,8 +10,8 @@ import {
   initializeBudget,
   readBudgetLedger,
   reserveProviderSpend,
-} from '../scripts/evaluation-budget.mjs'
-import { requestReservation } from '../scripts/evaluation-spend-guard.mjs'
+} from '../../../evaluation/evaluation-budget.mjs'
+import { requestReservation } from '../../../evaluation/evaluation-spend-guard.mjs'
 import {
   buildGroundTruthIndex,
   createEvaluationServer,
