@@ -34,11 +34,7 @@ function completion(message, finishReason = 'stop') {
 
 function jsonResponse(status, payload) {
   const text = typeof payload === 'string' ? payload : JSON.stringify(payload)
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    text: async () => text,
-  }
+  return new Response(text, { status })
 }
 
 // Records every upstream call and delegates the reply to the handler.
@@ -700,52 +696,6 @@ test('a replay with reasoning but no native state fails closed', async () => {
   }
 })
 
-test('a replay that omits reasoning_content still restores the native turn', async () => {
-  const native = {
-    role: 'assistant',
-    content: 'text',
-    reasoning_content: 'think',
-    tool_calls: [
-      {
-        id: 'call_a',
-        type: 'function',
-        function: { name: 'read', arguments: '{}' },
-      },
-    ],
-  }
-  const fetchImpl = upstream((record) =>
-    record.body.messages.at(-1).role === 'tool'
-      ? jsonResponse(200, completion({ role: 'assistant', content: 'done' }))
-      : jsonResponse(200, completion(native, 'tool_calls'))
-  )
-  const adapter = await startAdapter({ apiKey: 'sk', fetchImpl })
-  try {
-    const first = await postJson(adapter, {
-      model: MISTRAL_MODEL,
-      messages: [{ role: 'user', content: 'u' }],
-    })
-    const echoed = first.json.choices[0].message
-    // The SDK accepts reasoning_content but does not echo it back on replay.
-    const stripped = {
-      role: 'assistant',
-      content: echoed.content,
-      tool_calls: echoed.tool_calls,
-    }
-    const second = await postJson(adapter, {
-      model: MISTRAL_MODEL,
-      messages: [
-        { role: 'user', content: 'u' },
-        stripped,
-        { role: 'tool', tool_call_id: 'call_a', content: 'r' },
-      ],
-    })
-    assert.equal(second.status, 200)
-    assert.deepEqual(fetchImpl.calls[1].body.messages[1], native)
-  } finally {
-    await adapter.close()
-  }
-})
-
 test('a conflicting native for an identical turn is a collision', async () => {
   const fetchImpl = upstream((_record, count) =>
     jsonResponse(
@@ -1013,6 +963,7 @@ test('callMistral normalizes a direct canary request', async () => {
   })
   assert.equal(result.choices[0].message.content, 'pong')
   assert.equal(fetchImpl.calls[0].url, MISTRAL_URL)
+  assert.equal(fetchImpl.calls[0].init.redirect, 'error')
   assert.equal(fetchImpl.calls[0].body.max_tokens, 9)
   assert.equal(fetchImpl.calls[0].body.reasoning_effort, 'max')
   assert.equal(fetchImpl.calls[0].body.reasoning, undefined)
@@ -1020,27 +971,6 @@ test('callMistral normalizes a direct canary request', async () => {
     fetchImpl.calls[0].init.headers.authorization,
     'Bearer sk-direct'
   )
-})
-
-test('callMistral consumes a native Response and forces redirect error', async () => {
-  const inits = []
-  const fetchImpl = async (_url, options) => {
-    inits.push(options)
-    return new Response(
-      JSON.stringify(completion({ role: 'assistant', content: 'pong' })),
-      { status: 200, headers: { 'content-type': 'application/json' } }
-    )
-  }
-  const result = await callMistral({
-    apiKey: 'sk-direct',
-    fetchImpl,
-    body: {
-      model: MISTRAL_MODEL,
-      messages: [{ role: 'user', content: 'ping' }],
-    },
-  })
-  assert.equal(result.choices[0].message.content, 'pong')
-  assert.equal(inits[0].redirect, 'error')
 })
 
 test('callMistral rejects a non-2xx upstream with a sanitized status', async () => {

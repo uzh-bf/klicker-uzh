@@ -618,7 +618,6 @@ async function drain(response, limit) {
 async function startAdapter(options = {}) {
   const apiKey = options.apiKey
   const fetchImpl = options.fetchImpl ?? globalThis.fetch
-  const upstreamUrl = options.upstreamUrl ?? MISTRAL_URL
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const maxLifetimeMs = options.maxLifetimeMs ?? DEFAULT_MAX_LIFETIME_MS
   const maxRequestBytes = options.maxRequestBytes ?? MAX_REQUEST_BYTES
@@ -724,7 +723,7 @@ async function startAdapter(options = {}) {
     }, timeoutMs)
 
     try {
-      const upstream = await fetchImpl(upstreamUrl, {
+      const upstream = await fetchImpl(MISTRAL_URL, {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
@@ -821,7 +820,6 @@ async function startAdapter(options = {}) {
 async function callMistral(options = {}) {
   const apiKey = options.apiKey
   const fetchImpl = options.fetchImpl ?? globalThis.fetch
-  const upstreamUrl = options.upstreamUrl ?? MISTRAL_URL
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const maxResponseBytes = options.maxResponseBytes ?? MAX_RESPONSE_BYTES
 
@@ -842,7 +840,7 @@ async function callMistral(options = {}) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {
-    const response = await fetchImpl(upstreamUrl, {
+    const response = await fetchImpl(MISTRAL_URL, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',

@@ -83,7 +83,8 @@ integrated final review; human review and hosted CI remain distinct evidence.
 - Both workflows and the individual/stack helpers now use Mistral `zai-glm-5-3`
   at max reasoning, with OCR/action 1.13.0. Runtime configuration omits `llm.url`
   because OCR's saved URL shadows its per-attempt loopback environment URL.
-- Final focused run: 174 tests passed, no failures. Syntax, YAML parsing,
+- Initial focused run: 174 tests passed, no failures. After consolidating two
+  redundant tests, the final focused run passed all 172 remaining tests. Syntax, YAML parsing,
   formatting, exact diff inspection and source secret scans passed. Full
   monorepo checks and hosted CI remain pending. The worktree has no dependency
   installation; existing hooks explicitly skip pnpm checks in this case and
@@ -106,14 +107,17 @@ integrated final review; human review and hosted CI remain distinct evidence.
   `e4c6f0d7a1..d9cb6f06d9` package. All 11 committed hashes match the reviewed
   snapshot. No open source findings remain. The report is saved under
   `project/_local/reviews/2026-10-13-ocr-mistral-slice-risk.md`.
-- The final immutable source manifest is
+- The pre-simplification immutable source manifest is
   `71cb6489958545405a2ca407e255c168a8738d1c56f4452bb2aac2c29639edbb`.
   Scratch evidence remains under `/private/tmp/ocr-mistral-prototype/` and
   `/private/tmp/ocr-review-snapshot-v2/`; these contain synthetic data only.
 - Git writes are restored. The plan and both source slices are committed and
   published on the task branch. [Draft PR #6493](https://github.com/uzh-bf/klicker-uzh/pull/6493)
-  targets `v3`; hosted CI and committed-package simplification are running.
-  Integrated final review remains pending simplification disposition.
+  targets `v3`; hosted CI is running. Simplification is complete and all three
+  recommendations are applied: native `Response` fixtures, consolidated replay
+  and direct-call coverage, and removal of unused upstream URL overrides.
+  Production callers retain the same fixed endpoint. Integrated final review
+  is the remaining local delivery gate.
 - Follow-up inspection found that PR CI did not execute the adapter and helper
   suites. They are now wired into the existing codebase check job. The existing
   solution page also records saved-URL precedence exposed by the binary probe.
@@ -124,9 +128,7 @@ integrated final review; human review and hosted CI remain distinct evidence.
 
 ## Resume
 
-Inspect and commit the plan first,
-then commit the scoped source package. Complete the simplifier and required
-committed-source review gates, ordinary task push and draft PR creation with
-`enhance(ci): use Mistral GLM 5.3 max for OCR 1.13`. Retain the already passing
-checks for unchanged code. Leave marking ready, merge, activation, and paid live
+Complete integrated final review, publish the final task head and update
+[Draft PR #6493](https://github.com/uzh-bf/klicker-uzh/pull/6493) with final evidence.
+Retain the already passing checks for unchanged code. Leave marking ready, merge, activation, and paid live
 runs to their separately named authority; this batch grants none of them.
