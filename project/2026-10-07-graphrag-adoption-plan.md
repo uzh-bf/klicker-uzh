@@ -20,6 +20,299 @@ and paid evaluation remain separate gates; OpenRouter review remains waived.
 
 ## Current state and next decision
 
+### October 13 provider rollout and single-build comparison — approved
+
+**Goal.** Deliver the qualified classifier correction to the STG provider, build
+one graph from the frozen teaching sources, and complete the three-arm evaluation.
+Strict validation and independently operated ingestion remain required. The user approved this batch; deployment, publication and retrieval acceptance
+still require their evidence gates.
+
+**Authority and terminal condition.** Main owns secrets, live effects, accounting,
+test activation and restoration. The user approved the named batch:
+ marking provider !42 ready and merging it into `main`, its
+configured image publication, marking ready and merging one STG image-reference
+MR into GitOps `main`, the resulting STG worker rollout, one fresh graph build,
+test-only activation, remaining paid evaluation and temporary connectivity.
+The batch also names a temporary pause/restoration of the three STG KG provider
+workflows during rollout, with queued work preserved and no cancellation.
+Stop at a verified report with restored test settings and closed owned ports, or
+at the first failed admission, CI, rollout, publication, accounting or spend gate.
+No failed model request or graph build is automatically replayed. A timeout stops
+new dispatch; it does not authorize cancellation or a replacement run. Named
+human review requirements remain blocking; agents do not request reviewers.
+
+**Fresh preparation evidence.** Provider draft !42 is at
+`7a09d4263ac7713bc08ed3264d979b4fe4378080`, with successful pipeline 682099.
+The source correction `40ff610` retains 93 passing offline tests, Ruff and
+completed independent risk, simplification and integrated final reviews. Both
+small live classifier probes passed strict raw contracts and now have matching
+billing records. This does not prove that the next whole graph will pass.
+
+The STG worker has one ready replica, zero restarts, and serves
+`sha256:75bd8dc45365f9ac0ccd50acf424bffe63fe0da4918f05dc148c30dd8edaeeb0`.
+Argo `argo/app-kg-content-generation-stg` tracks GitOps `main`; the observed source
+revision is `e20be146e64cabfba65c347ffbce07f9a38c1c38`. Its destination is
+`stg-kg-content-generation`, deployment
+`kg-content-generation-hatchet-worker`. The frozen resource inventory, raw hashes,
+content digest, publication/build pointers and original test-chatbot settings
+still match the restoration snapshot. The six baseline/control captures and
+seven generation ledgers remain saved. No new live effect ran during preparation.
+
+**Budget admission.** All amounts are conservative CHF ceilings, not forecasts.
+
+| Component                                       |     Maximum CHF | Basis                                                                                                                                 |
+| ----------------------------------------------- | --------------: | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Prior accounting including uncertain-cost holds |      6.99894925 | Accepted private ledger; older unknown-cost and failed-build holds retained                                                           |
+| One new graph                                   |            2.50 | Previously approved application-charge basis; balanced charge currently CHF 1; underlying provider token spend remains unattributable |
+| Three GraphRAG answers                          |       0.4718592 | Existing fixed low-effort model, four upstream attempts reserved per answer, CHF 2/USD                                                |
+| Twenty-seven judge calls                        |       4.0697856 | Existing fixed high-effort judge, four upstream attempts reserved per call, CHF 2/USD                                                 |
+| Additional retrieval / native Auto generation   |               0 | At most six searches covered by the existing retrieval hold; no paid native Auto turn admitted                                        |
+| Combined ceiling                                | **14.04059405** | Within CHF 20; **5.95940595** remains unallocated                                                                                     |
+
+Before each paid phase, recompute this envelope from the latest accepted ledger,
+current model prices and installed retry/fallback semantics. Use finite, complete
+usage and exact correlation receipts. Any unsupported bound or unknown cost
+retains its entire phase reservation and blocks subsequent paid dispatch. The
+unallocated headroom authorizes no extra calls, builds or substitutions.
+
+**Execution sequence and acceptance checks.**
+
+1. **Pin admission and qualify the existing private guards.** Continue in the
+   evaluation task worktree and existing framework; preserve protocol hash
+   `22bdb92634f6dc707ec98bc54ac242538b932a5e82e0a78188229a688cb038ac`,
+   frozen cases, goldens, metrics, prompts and six accepted baseline/control
+   answers. The current `generate.py` and `budgeted-eval.py` still hard-code the
+   older recovery budget. Update only these private harness helpers and
+   `recovery-cost-reconcile.py`, reusing the already-qualified
+   `classifier-billing-identity-query.py` for exact billing correlation. Extend
+   the existing `--selftest` cases in the two guards and add offline fixture mode
+   to the existing reconciliation helper. Use a new dated admission addendum: prior
+   CHF 6.99894925, graph 2.50, targets 0.4718592, judges 4.0697856, native 0.
+   Keep historical admissions, raw responses, holds and receipts unchanged.
+   Bind the new addendum to the exact helper/source hashes, historical snapshot,
+   restored test scope and user approval. Paid continuation stays disabled until
+   offline guard checks and a read-only independent admission review pass.
+   Reject altered totals, nonfinite values, weaker caps, changed historical files,
+   missing/surplus billing matches and duplicate dispatch claims. Preserve the
+   exclusive process lock and global caps: 10 target attempts, 81 judge calls,
+   15 searches including previous usage. The three remaining answers allow at
+   most six new searches and 27 judges. Retain the explicit already-approved
+   failed baseline/replacement accounting; admit no new replacements.
+
+   Accounting must resolve `metadata.litellm_call_id` to the stored upstream
+   Responses request ID, then verify the exact API record against identity,
+   model/status, token counters and cost. Each new dispatch ledger must retain
+   the gateway call ID, returned response ID and dispatch timestamp before billing
+   observation. Missing identity keeps the hold and blocks dependent dispatch.
+   Preserve historical reconciled receipts without rewriting old captures.
+   A public transformed Chat ID or response
+   charge header alone is insufficient. Use only identified call IDs and bounded
+   time windows. A single blocking observer may await asynchronous persistence for
+   at most 300 seconds, with bounded backoff, 20-second API deadlines and a 45-second
+   scoped database-read deadline. It issues no model request; expiry preserves
+   the full hold and stops.
+   Reopen only `127.0.0.1:14000 -> stg-litellm/litellm:4000` through existing
+   `aks-stg-apps-admin` access, with local guard relay 14001 if needed. Use the
+   existing restricted `ai-generic-stg` operator credentials at runtime only.
+   Current cluster API connectivity must exist; do not establish another route.
+
+2. **Deliver provider and stage its exact image.** Re-fetch provider !42, verify
+   exact-head required CI, resolved discussions and any required human approval.
+   If substantive source or dependencies changed, stop and requalify that range
+   before merging. Mark ready and merge !42 into provider `main`; verify the
+   actual merged tree and main pipeline. The configured
+   `build_lightrag_latest_arm` publishes `:latest`; derive and record its immutable
+   registry digest from that exact main job, rather than treating the mutable tag
+   as source proof. Require the candidate image's source/qualified function hashes,
+   LightRAG 1.5.7, imports and both 180-second embedding initializers to match.
+   CI/publication failure stops before GitOps delivery. Existing PRD GitOps pins
+   a separate commit tag; this batch changes only STG.
+
+   Create task worktree `helm-charts/trees/rs/kg-classifier-stg`, branch
+   `rs/kg-classifier-stg`, from fresh GitOps `main` in the existing
+   `uzh-bf/cloud/helm-charts` repository. Create one draft MR changing only the
+   image digest in `kg-content-generation/stg/kustomization.yaml`. Inspect the
+   rendered diff, required CI and an applicable independent final review. Preserve
+   PRD/base manifests and existing resource requests/limits. Before ready/merge,
+   qualify the installed Hatchet workflow pause semantics before mutation. The
+   current SDK 1.33.13 exposes `workflow_update` with `isPaused`; read-only STG
+   metadata exposes pause state on the exact named workflows. Current docs
+   distinguish workflow-global pause from worker-local pause. This is API/source
+   evidence, not a live pause test. Verify the deployed server preserves queued
+   and scheduled work and existing retries, and maintains pause across replacement
+   workers and workflow registration. If that cannot be established, stop before
+   GitOps merge; do not upgrade Hatchet or substitute a worker-only pause.
+
+   Snapshot pause state and IDs for exact-name `course-kg-ingestion`,
+   `course-kg-correction-preview` and `course-kg-correction-materialization` only,
+   in the existing STG content-provider tenant. Prefix/name-substring matches
+   (including smoke workflows) are excluded. Confirm these three workflows cover
+   all actions served by the named content-profile worker; extra coverage or
+   another owner blocks rollout. Temporarily pause only these workflows through
+   the existing supported REST control, preserving all queued work and original
+   paused states. Only these KG workflow IDs are selected; independently operated data ingestion
+   workflows are outside this pause scope. No cancellation, eviction, queue deletion or TTL changes.
+   New STG KG build/correction requests may be delayed during this rollout window.
+   The supported rollout observer has a 15-minute overall window from first pause.
+   Expiry stops new effects and records current pause/queue/worker state; it does
+   not authorize unpausing, cancellation or rollback.
+
+   Require zero existing running/retry-pending/durable-active work and all worker
+   slots idle after pause, with no active application builds; use one bounded
+   observer for existing work settlement. Queued new requests remain preserved,
+   explicitly recorded, and cannot start while pause is held. Reverify exclusive
+   admission just before merge, throughout rollout and after registration. A lost
+   pause or unexpected task stops rollout acceptance. Keep the pause through
+   source/image verification, then compare-before-write and restore original
+   pause states only after safe serving capacity is verified; prove restoration
+   and queued-work preservation before admitting the test build.
+   If unrelated work prevents settlement before deployment changes, restore
+   pause state using compare-before-write and stop without interrupting it. Verify
+   the existing one-replica Deployment is the replica owner (no HPA/KEDA owner),
+   and capacity for its one-pod surge at 250m CPU/1Gi request and 1 CPU/1Gi limit.
+   No namespace ResourceQuota is currently present; absence is not capacity proof.
+   If unrelated work or capacity blocks this gate, pause without interruption or
+   quota/resource changes. Mark the STG-only MR ready and merge into GitOps `main`.
+   Allow Argo to update only the named STG worker. Require Synced/Healthy,
+   observed generation, the exact new registry digest, one ready worker, no old
+   active worker, pinned source hashes and LightRAG version before any build.
+   Snapshot the previous digest. On failed rollout, stop and report that exact
+   revert target; this proposal does not authorize an automatic rollback mutation.
+
+3. **Submit one fresh graph from the frozen sources.** Recheck all six identified
+   course-content resources, active raw hashes/versions, content digest and
+   independently operated ingestion status. Dynamic bytes must satisfy expected
+   hashes; do not refresh sources or bypass validation. Require available build
+   quota, no active/duplicate build and unchanged original publication. Submit
+   exactly one balanced build for the identified test teaching KB through the
+   existing application workflow. Record new build and external operation IDs
+   in a private addendum; preserve every prior failed build and response.
+   Use one supported blocking watcher for that run. Require strict cleaning,
+   allowed categories, nonempty persisted graph, complete frozen source provenance
+   and committed fresh FalkorDB publication with matching build ID and digest.
+   Inspect this exact run's `cleaning_report.json`, classifier batch/count logs,
+   normalization candidate/selected/cap-excluded/accepted/relabelled/unmapped
+   counts, preserved/rejected outcomes, noise-pass attempted/executed/failed
+   counts, persisted-write checks and final/pre-export validation evidence.
+   Require completed strict cleaning without restored-pre-clean defaults and no
+   rejected classifier batch hidden by preservation fallback. Legitimate
+   conservative retention is separate from failed classifier preservation; if
+   available logs/reports cannot distinguish them, record the evidence gap and
+   stop recovery acceptance without another build or validator relaxation.
+   A zero-candidate category pass is valid but does not prove live repair; retain
+   the narrow probe evidence and describe the distinction.
+   Reuse the existing publication verifier with the new exact IDs. Failure or
+   watcher expiry preserves the build/hold and blocks activation/evaluation.
+   Do not reuse a stale publication as successful recovery evidence.
+
+4. **Evaluate only the existing test chatbot.** After publication, capture fresh
+   original-state metadata and verify it still matches the restoration snapshot.
+   Temporarily bind only the identified STG E2E test chatbot to this teaching KB
+   and enable its KG display/GraphRAG within the existing test-only GrowthBook
+   targeting and lecturer policy. Preserve all other chatbot/cohort settings.
+   If existing targeting cannot isolate this bot, stop before activation rather
+   than widening the feature. Use the already-qualified participant adapter with
+   runtime-only restricted credentials or issued token; verify authenticated bot
+   access without a paid message before collection.
+
+   Use framework `2a75632a98a8f8e8382a7f7ecaa4fda9f715e12b`, production retrieval
+   functions and frozen fusion/context limits. Collect three GraphRAG selections,
+   at most six document searches, three fixed-model answers and 27 judges. Target
+   request content stays within 65,536 UTF-8 bytes/73,728 reserved input tokens,
+   output 4,096; judge content within 40,960 bytes/45,056 reserved input tokens,
+   output 8,192. Revalidate complete routes, prices, reasoning efforts, disabled
+   fallback/client retries and the conservative four-attempt gateway bound before
+   dispatch. Inputs beyond caps stop; do not silently truncate the test cases.
+   Require receipts proving the fresh build used by actual retrieval. For each
+   of the two frozen bridge cases, require useful attributable graph expansion
+   and source evidence; absent contributions are mechanism failure even when
+   baseline evidence yields a fluent answer. For the frozen unsupported-topic
+   case, accept appropriately declined expansion and an evidence-grounded
+   unsupported response. Do not require invented graph contributions there.
+   Reconcile each paid request
+   before admitting the next paid phase. Do not alter frozen expected answers or
+   regenerate baseline/control results.
+
+   On student UI, check sidebar, autocomplete/navigation, fullscreen and node/
+   relation “ask about this” prefill without sending. Record real interaction
+   evidence and private screenshots. These checks establish map interaction;
+   harness answer quality and native persisted-chat acceptance remain separate.
+   Paid Auto-mode/persisted-message E2E requires later cost qualification.
+
+5. **Close out and restore on every terminal branch.** Report all nine accepted
+   answers by case/arm with semantic/context/faithfulness metrics, citation/source
+   retention, graph contributions, latency and reconciled costs. State incomplete
+   arms and failures explicitly; three cases do not establish statistical uplift.
+   Verify retained baseline/control hashes and report goldens' existing rubric
+   limitations. Restore exact original test bindings and both feature settings,
+   preserving unrelated operator changes through a fresh compare-before-write;
+   a conflicting edit blocks restoration of that field and is reported for the
+   operator. Verify source/build/publication state expected from this one build.
+   Keep a successful graph publication; do not delete/revert data. Restore changed
+   workflow pause states using compare-before-write before deployment changes,
+   or after verifying safe serving capacity. Otherwise retain the pause, record
+   each workflow’s known/unknown state and preserved queued-work evidence, and
+   report the operator blocker without claiming restored closure. The 15-minute
+   observation deadline authorizes neither unsafe unpausing nor rollback. Close only
+   owned loopback forwarding and guard relay processes, prove ports 14000/14001
+   closed and preserve the user's API tunnel. Preserve all unknown-cost holds.
+
+**Delegation Map.** Main owns each effect-bearing step; privacy, secrets, shared
+worker coordination and cumulative accounting make these steps coupled. Review
+roles are read-only and own no operational writes.
+
+| Step / owner | Dependency                                            | Acceptance                                                                                |
+| ------------ | ----------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| 1 / main     | Reviewed plan and named batch approval                | Immutable admission, offline guards and independent admission reviewer pass               |
+| 2 / main     | Accepted classifier probes and step 1                 | Exact main image, reviewed STG digest MR, exclusive pause and healthy serving proof       |
+| 3 / main     | Step 2 and restored provider admission                | One fresh strictly validated, provenance-complete publication                             |
+| 4 / main     | Step 3, authenticated isolated bot and admitted costs | Three frozen GraphRAG cases, 27 judges and private map interaction evidence               |
+| 5 / main     | Success or any terminal failure                       | Honest complete/incomplete report, retained holds, restored states and closed owned ports |
+
+Astra is the plan challenger. An independent admission reviewer covers the new
+private guard/accounting changes and an independent GitOps final reviewer covers
+the one image-reference change. Reuse source reviews on unchanged provider code;
+new source changes require their applicable review and qualification.
+
+**Feature-wide test portfolio.** Extend existing guard self-tests for cumulative
+accounting, duplicate dispatch, historical file/cap tampering and nonfinite input.
+Reuse and extend the existing billing fixtures for transformed response IDs,
+asynchronous zero-then-one persistence, ambiguous/missing records, mismatched
+usage/status/model and deadlines. Verify six accepted selection hashes and seven
+historical generation ledgers unchanged. No new provider tests for unchanged
+qualified behavior; existing 93-test evidence is reused. Check only the rendered
+STG image diff and workflow pause contract for delivery; no new app/runtime or
+production-source changes solely for tests. UI checks use the existing browser
+and scoped authenticated test actor.
+
+**Private artifact contract.** All files below live in the existing private
+`/private/tmp/graphrag-teaching-stg-20261012` directory. New files use exclusive
+creation; historical files remain immutable. The new batch uses
+`rollout-budget-admission-20261013.json`,
+`rollout-admission-review-20261013.json` and
+`rollout-guard-offline-20261013.json` for admission;
+`rollout-workflow-pause-snapshot-20261013.json` and
+`rollout-serving-proof-20261013.json` for rollout;
+`rollout-build-receipt-20261013.json` and
+`rollout-publication-receipt-20261013.json` for the new exact run; and
+`rollout-cost-receipt-20261013.json`, `rollout-comparison-20261013.json` and
+`rollout-cleanup-receipt-20261013.json` for closeout. Update only `recovery-publication.mjs` and
+`recovery-comparison-summary.py` receipt inputs to these explicit names, preserving
+their verification behavior. Existing case selection, answer, generation, graph
+judge/guard filenames remain exclusive and are created only if absent.
+`continuation-state.json` records links and admission status; it never replaces
+raw receipts or authorizes a stopped paid request. No new evaluation framework.
+
+**Progress / next action.** The user approved the complete bounded batch.
+Main starts with fresh guard qualification and preserves each conditional gate. The existing native goal remains blocked
+until its supported resume control is available; do not replace it or mark the
+full comparison complete. Provider !42 and Klicker #6478 remain draft. Main owns
+admission and operational execution; Astra challenges this plan, and independent
+admission/GitOps reviews cover their named new scopes before effects. Strict
+validators, taxonomy, ingestion interfaces and database schema remain unchanged.
+Raw teaching material, tokens, classifier bodies, private IDs and cost receipts
+stay under `/private/tmp/graphrag-teaching-stg-20261012`, outside public Git.
+
 ### October 13 billing resolved and remaining category probe qualified
 
 The user approved diagnosing accounting and running the unused category call once
