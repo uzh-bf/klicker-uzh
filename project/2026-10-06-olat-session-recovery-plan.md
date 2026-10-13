@@ -412,3 +412,34 @@ containers and data remain available for a dedicated runtime repair. Hosted CI,
 CodeQL disposition, release-branch deployment parity and public final review
 remain open merge gates. CI polling and public review remain withheld under the
 existing instruction.
+
+### Chat runtime recovery and acceptance (2026-10-13)
+
+The remaining runtime blocker is resolved. Integrating `v3` changed the local
+`CHAT_FALLBACK_MODEL_ID` from `gpt-5.6-luna` to `gpt-6-luna`, while the retained
+container still had the former environment. Substituting that single value in
+an in-memory Compose render reproduced its recorded hash exactly. Temporarily
+restoring the prior committed environment file allowed canonical devrouter
+repair to complete; the current file was restored immediately afterward.
+A subsequent managed stop/start recreated the app container with the current
+setting. Its recorded Compose hash now matches the current rendered model.
+No ownership guard or global devrouter installation was changed.
+
+The final five Chat authentication/access checks pass in one Chromium run
+(9.9 seconds, zero skips or failures) against the runtime source at
+`5ed39205b7`. They cover unauthenticated redirection, the login-return surface,
+unknown and malformed chatbot HTTP 404 responses, and authenticated participant
+access. An intermediate run passed four cases and failed in fixture setup
+because the preserved development database lacked the Playwright course ID.
+The guarded local repair added only that synthetic course and its membership,
+using an unused PIN because the development course already owned the normal
+test PIN. Existing fixture identities were verified before writing. Product
+source, test source and assertions are unchanged. Earlier verification remains
+identified by its original producing run; these five passes replace the blocked
+rerun recorded above.
+
+The verification runtime is stopped after the final browser run, with provider
+state and zero exact routes verified by source path. Runtime data is retained.
+Hosted CI, CodeQL disposition, release-branch deployment parity and the required
+public final review remain separate merge gates; CI polling and public review
+remain withheld under the existing instruction.
