@@ -21,7 +21,8 @@ import {
  * Only the LLM endpoint (POST /chat) is mocked.
  */
 
-export const CHATBOT_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
+// Keep the browser fixture separate from the devcontainer's local MCP chatbot.
+export const CHATBOT_ID = '41e3f15e-0c8b-4ac5-97b9-586af828c780'
 export const DISCLAIMER_ID = '1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f'
 
 // participant enrolled in COURSE_ID_TEST by Playwright seed
