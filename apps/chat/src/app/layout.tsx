@@ -3,7 +3,6 @@ import {
   monoSpaceFont,
   sourceSansPro,
 } from '@klicker-uzh/shared-components/src/font'
-import ParticipantSessionBoundary from '@klicker-uzh/shared-components/src/ParticipantSessionBoundary'
 import { messagesByLocale } from '@/src/types/i18n'
 import 'katex/dist/katex.min.css'
 import type { Metadata, Viewport } from 'next'
@@ -72,13 +71,7 @@ export default async function RootLayout({
           {t('chat.a11y.skipToContent')}
         </a>
         <RootIntlProvider locale={locale} messages={messages}>
-          <ParticipantSessionBoundary
-            expectedRevision={
-              cookieStore.get('participant_session')?.value ?? ''
-            }
-          >
-            {children}
-          </ParticipantSessionBoundary>
+          {children}
         </RootIntlProvider>
       </body>
     </html>

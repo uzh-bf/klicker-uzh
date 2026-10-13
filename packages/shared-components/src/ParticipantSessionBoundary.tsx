@@ -76,8 +76,16 @@ export default function ParticipantSessionBoundary({
 
   useEffect(() => {
     if (refused || !sharedCookies) return
+    let leaving = false
+    const onBeforeUnload = () => {
+      leaving = true
+    }
     const check = (event?: Event) => {
+      if (event?.type === 'pageshow') leaving = false
       if (checkParticipantSession()) return
+      // A new document may already have replaced the cookies before this
+      // document unloads. Do not overwrite its navigation with our old URL.
+      if (leaving) return
       event?.preventDefault()
       event?.stopImmediatePropagation()
       window.location.replace(participantReloadUrl())
@@ -99,8 +107,10 @@ export default function ParticipantSessionBoundary({
       'keydown',
       'submit',
     ]
+    window.addEventListener('beforeunload', onBeforeUnload)
     events.forEach((name) => window.addEventListener(name, check, true))
     return () => {
+      window.removeEventListener('beforeunload', onBeforeUnload)
       window.clearInterval(timer)
       events.forEach((name) => window.removeEventListener(name, check, true))
     }

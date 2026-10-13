@@ -272,3 +272,28 @@ existing backend rate-limit finding from 2025; alert 3499 concerns the bearer
 selection branch, after which every selected credential still passes JWT
 verification. Neither is dismissed by this change. No CodeQL alert state or
 required public final-review state is changed.
+
+### Browser and CI follow-up
+
+Firefox exposed an old-document reload racing the incoming LTI navigation after
+its response had replaced the cookie. The boundary now suppresses that redirect
+once `beforeunload` starts and resets on `pageshow`; request guards still reject
+stale work. Both Firefox expiry-refresh regressions pass. The full matrix then
+passed 41 cases with nine WebKit environment skips and no failures; the later
+Chat layout correction requires its own focused re-verification.
+
+The hosted live-quiz tests replaced the response API's Cookie header with only
+the participant JWT, losing the session revision sent by the page. Their
+interceptors now preserve that revision as well. The affected serial suites
+remain required verification. No server revision guard is weakened.
+
+Focused source review of the first correction commit found no blocking issue;
+its simplification pass found no justified reduction. The final review must
+include the browser-discovered navigation correction and test interceptors.
+
+The hosted Chat status failures identify another affected seam: the root session
+boundary withholds server-rendered children, including the segment that throws
+`notFound()`. Move the same boundary and expected revision to the authenticated
+chatbot layout after its authorization/not-found checks. All current protected
+Chat pages remain guarded; public error pages retain their HTTP status. Verify
+the existing unknown/malformed chatbot assertions and cross-tab Chat switches.

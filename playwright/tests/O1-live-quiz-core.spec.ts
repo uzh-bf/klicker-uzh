@@ -340,10 +340,16 @@ test.describe.serial('Core live-quiz workflows', () => {
         sessionStorage.setItem('participant_token', token)
       }, participantCookie.value)
       await page.route('**/AddResponse', async (route) => {
+        const revision = (
+          await page.context().cookies(env('URL_STUDENT'))
+        ).find((cookie) => cookie.name === 'participant_session')
         const response = await route.fetch({
           headers: {
             ...route.request().headers(),
-            cookie: `participant_token=${participantCookie.value}`,
+            cookie: [
+              `participant_token=${participantCookie.value}`,
+              ...(revision ? [`participant_session=${revision.value}`] : []),
+            ].join('; '),
           },
         })
         await route.fulfill({ response })

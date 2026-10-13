@@ -38,7 +38,9 @@ revision use an empty binding until their next session transition.
 LTI exchange and account creation must confirm cookie acceptance. A refused
 cookie or partition-only access leads to recovery outside the LMS frame, never a memory-only login or
 silent use of the former participant. Recovery preserves an LTI launch URL for
-opening in a top-level tab, where it replaces the shared login. The Chat link
+opening in a top-level tab, where it replaces the shared login. Once the
+replacement cookies are accepted, the landing URL drops the consumed handoff
+without another exchange; refresh then uses the shared cookie session. The Chat link
 opens normally; its bridge
 checks course membership and confirms any newly exchanged session before
 navigation. Invalid launches block their protected view and clear the regular
