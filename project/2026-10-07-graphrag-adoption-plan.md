@@ -20,6 +20,50 @@ and paid evaluation remain separate gates; OpenRouter review remains waived.
 
 ## Current state and next decision
 
+### October 13 context probe: noise decisions accepted; billing blocks continuation
+
+After the user restored the existing STG API tunnel, the approved CHF 0.50 probe
+passed fresh admission. The installed gateway is LiteLLM 1.96.0; effective model
+prices, retry/fallback controls and installed routing semantics establish the
+conservative 24-attempt envelope within CHF 0.4416. Exact provider head
+`7a09d4263ac7713bc08ed3264d979b4fe4378080` retains successful pipeline 682099.
+Frozen source and input hashes matched before dispatch.
+
+One context-aware noise call returned HTTP 200, stop finish, no refusal, and the
+complete expected four-item map: all three frozen incidental examples were noise,
+and the synthetic concept was retained. The raw result passed unique-key and
+complete-map validation. This is narrow live evidence for the descriptions-based
+noise correction; it does not establish survivor category repair, whole-graph
+publication or retrieval quality. The gateway reported 993 input and 89 output
+tokens, zero retries/fallbacks, and USD 0.0001438.
+
+The harness's exact billing lookup returned zero rows. A terminal read by both
+response ID and gateway call ID also returned zero rows. Consequently spend is
+unreconciled, the category request was not dispatched, and the conditional
+sequence stopped. No replacement request, merge, deployment, graph build,
+activation, answer generation or judge call followed. Preserve the exclusive
+noise claim and private raw response; do not replay the accepted request.
+
+Retain the full new CHF 0.50 hold and every previous uncertain-cost hold.
+Conservative accounting is **CHF 7.49857084**, leaving **CHF 12.50142916** of
+CHF 20. The gateway's small response charge is reported metadata, not reconciled
+actual spend. The future graph/answer/judge planning ceiling remains
+CHF 14.54021564; those effects have not been admitted by this probe.
+
+Original test-chatbot bindings/settings, source inventory and hashes, content
+digest, active-build pointer and publication match the restoration snapshot.
+No restoration mutation was needed. The owned loopback tunnel stopped and ports
+14000 and 14001 are closed; the user's STG API tunnel was preserved. Receipts and
+real teaching evidence remain outside the public repository. Provider MR !42 and
+Klicker PR #6478 remain draft; source qualification is separate from delivery.
+
+Next, diagnose why exact gateway spend records are absent using the saved request
+identifiers and scoped gateway accounting evidence. Establish a reconciled cost
+receipt before admitting the unused conditional category call; do not repeat the
+noise call. Only successful category qualification can support a new reviewed
+conditional merge, STG rollout, single-build and remaining-evaluation plan.
+Strict validation and ingestion independence remain required throughout.
+
 ### October 13 approved context probe: connectivity blocked before dispatch
 
 The user approved the bounded CHF 0.50 context probe within the original CHF 20
