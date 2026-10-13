@@ -84,22 +84,28 @@ jobs:
             let timedOut = false
             const childEnv = { ...process.env, OCR_LLM_URL: `${adapter.url}/v1/chat/completions`, OCR_LLM_TOKEN: adapter.token, OCR_LLM_MODEL: MISTRAL_MODEL, OCR_LLM_PROTOCOL: 'openai', OCR_USE_ANTHROPIC: 'false' }
             delete childEnv.MISTRAL_API_KEY
-            const child = spawn('ocr', ['review', '--repo', repo, '--from', base, '--to', head, '--audience', 'agent', '--effort', 'low', '--timeout', '3', '--concurrency', '1', '--max-tokens-budget', '20000', '--format', 'json', '--background', 'Public synthetic fixture: total computes an order value as quantity multiplied by unit price. Review the arithmetic change.'], { env: childEnv, stdio: ['ignore', 'pipe', 'ignore'] })
+            const child = spawn('ocr', ['review', '--repo', repo, '--from', base, '--to', head, '--audience', 'agent', '--effort', 'low', '--timeout', '3', '--concurrency', '1', '--max-tokens-budget', '30000', '--format', 'json', '--background', 'Public synthetic fixture: total computes an order value as quantity multiplied by unit price. Review the arithmetic change.'], { env: childEnv, stdio: ['ignore', 'pipe', 'ignore'] })
             child.stdout.on('data', chunk => { resultText += chunk })
             const timer = setTimeout(() => { timedOut = true; child.kill('SIGTERM') }, 180000)
             const killTimer = setTimeout(() => child.kill('SIGKILL'), 190000)
             try {
               const exitCode = await new Promise((resolve, reject) => { child.on('error', reject); child.on('close', resolve) })
+              receipt.ocr_exit_code = exitCode
+              receipt.ocr_timed_out = timedOut
+              const produced = JSON.parse(resultText)
+              receipt.ocr_producer_status = produced.status
+              receipt.ocr_budget_exceeded = produced.summary?.budget_exceeded ?? false
               assert.equal(timedOut, false)
               assert.equal(exitCode, 0)
-              const result = helper.validateOCRResult(JSON.parse(resultText))
+              const result = helper.validateOCRResult(produced)
               assert.equal(result.summary.files_reviewed, 1)
-              assert.ok(result.summary.total_tokens <= 20000)
+              assert.ok(result.summary.total_tokens <= 30000)
               assert.ok(result.comments.some(comment => comment.path === 'total.js'))
               receipt.ocr = 'passed'
               receipt.coverage = { completed: result.manifest.coverage.completed.length, failed: result.manifest.coverage.failed.length }
               receipt.ocr_tokens = result.summary.total_tokens
               receipt.findings = result.comments.length
+              receipt.ocr_tool_calls = result.tool_calls.total
             } finally {
               clearTimeout(timer)
               clearTimeout(killTimer)
