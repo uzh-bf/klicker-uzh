@@ -302,63 +302,69 @@ export async function duplicateCompetenceTree(
   if (!source) {
     throw competenceTreeServiceError('Competence tree not found.', 'NOT_FOUND')
   }
+  return await createCompetenceTree(
+    { input: buildCompetenceTreeCopyInput(source, input) },
+    ctx
+  )
+}
+
+// Maps a stored tree to the create input of an independent copy: levels,
+// nodes, coverages and element assignments are re-keyed, while course links,
+// scale versions and calibration history stay with the source.
+export function buildCompetenceTreeCopyInput(
+  source: CompetenceTreeDetail,
+  input?: DuplicateCompetenceTreeInput | null
+): CompetenceTreeInput {
   const levelKeys = new Map(
     source.levels.map((level) => [level.id, `level-${level.id}`])
   )
   const nodeKeys = new Map(
     source.nodes.map((node) => [node.id, `node-${node.id}`])
   )
-  return await createCompetenceTree(
-    {
-      input: {
-        name: input?.name?.trim() || `${source.name} copy`,
-        displayName:
-          input?.displayName?.trim() || `${source.displayName} (copy)`,
-        description: source.description,
-        maxDepth: source.maxDepth,
-        thetaMin: source.thetaMin,
-        thetaMax: source.thetaMax,
-        defaultDiscrimination: source.defaultDiscrimination,
-        levelMappingRule: source.levelMappingRule,
-        defaultTotalQuestionCap: source.defaultTotalQuestionCap,
-        defaultTimeLimitSeconds: source.defaultTimeLimitSeconds,
-        levels: source.levels.map((level) => ({
-          key: levelKeys.get(level.id)!,
-          label: level.label,
-          order: level.order,
-          color: level.color,
-        })),
-        nodes: source.nodes.map((node) => ({
-          key: nodeKeys.get(node.id)!,
-          parentKey:
-            node.parentId === null ? null : nodeKeys.get(node.parentId)!,
-          kind: node.kind,
-          name: node.name,
-          description: node.description,
-          order: node.order,
-          weight: node.weight,
-        })),
-        coverages: source.levelCoverages.map((coverage) => ({
-          leafKey: nodeKeys.get(coverage.leafNodeId)!,
-          levelKey: levelKeys.get(coverage.levelId)!,
-          targetItemCount: coverage.targetItemCount,
-          enabled: coverage.enabled,
-        })),
-        assignments: source.elementAssignments.map((assignment) => ({
-          elementId: assignment.elementId,
-          leafKey: nodeKeys.get(assignment.leafNodeId)!,
-          additionalLeafKeys: assignment.additionalLeafNodeIds.map(
-            (id) => nodeKeys.get(id)!
-          ),
-          levelKey: levelKeys.get(assignment.levelId)!,
-          enabled: assignment.enabled,
-          discrimination: assignment.discrimination,
-          enablePercentInput: assignment.enablePercentInput,
-        })),
-      },
-    },
-    ctx
-  )
+  return {
+    name: input?.name?.trim() || `${source.name} copy`,
+    displayName: input?.displayName?.trim() || `${source.displayName} (copy)`,
+    description: source.description,
+    maxDepth: source.maxDepth,
+    thetaMin: source.thetaMin,
+    thetaMax: source.thetaMax,
+    defaultDiscrimination: source.defaultDiscrimination,
+    levelMappingRule: source.levelMappingRule,
+    defaultTotalQuestionCap: source.defaultTotalQuestionCap,
+    defaultTimeLimitSeconds: source.defaultTimeLimitSeconds,
+    levels: source.levels.map((level) => ({
+      key: levelKeys.get(level.id)!,
+      label: level.label,
+      order: level.order,
+      color: level.color,
+    })),
+    nodes: source.nodes.map((node) => ({
+      key: nodeKeys.get(node.id)!,
+      parentKey: node.parentId === null ? null : nodeKeys.get(node.parentId)!,
+      kind: node.kind,
+      name: node.name,
+      description: node.description,
+      order: node.order,
+      weight: node.weight,
+    })),
+    coverages: source.levelCoverages.map((coverage) => ({
+      leafKey: nodeKeys.get(coverage.leafNodeId)!,
+      levelKey: levelKeys.get(coverage.levelId)!,
+      targetItemCount: coverage.targetItemCount,
+      enabled: coverage.enabled,
+    })),
+    assignments: source.elementAssignments.map((assignment) => ({
+      elementId: assignment.elementId,
+      leafKey: nodeKeys.get(assignment.leafNodeId)!,
+      additionalLeafKeys: assignment.additionalLeafNodeIds.map(
+        (id) => nodeKeys.get(id)!
+      ),
+      levelKey: levelKeys.get(assignment.levelId)!,
+      enabled: assignment.enabled,
+      discrimination: assignment.discrimination,
+      enablePercentInput: assignment.enablePercentInput,
+    })),
+  }
 }
 
 export async function linkCompetenceTreeToCourse(
