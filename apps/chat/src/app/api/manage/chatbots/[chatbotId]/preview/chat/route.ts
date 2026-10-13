@@ -381,6 +381,9 @@ async function handlePOST(
           }),
           ...(reasoningEffort && reasoningEffort !== 'none'
             ? {
+                // See the participant chat route: deployment ids defeat the
+                // SDK's model-id based reasoning detection.
+                forceReasoning: true,
                 reasoningEffort,
                 reasoningSummary: 'auto' as const,
               }

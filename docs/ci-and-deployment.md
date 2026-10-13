@@ -2,7 +2,7 @@
 type: Operations
 title: CI & Deployment
 description: PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
-timestamp: '2026-09-20'
+timestamp: '2026-10-12'
 tags:
   - ci
   - deployment
@@ -15,12 +15,39 @@ tags:
 ## Draft sync PR maintenance
 
 `maintain-draft-sync-prs.yml` maintains the exact forward pairs `v3` ->
-`v3-ai` and `v3-ai` -> `v3-audit`. It opens a draft only when the source has
-commits and a non-empty diff absent from the target and no matching open PR.
-Existing PR descriptions and draft/ready states are preserved. Source pushes
-already update their diffs, so maintenance does not edit PR metadata, update
-branches, resolve conflicts, merge, or enforce merge methods. Maintainers choose
-when to mark ready and merge with a merge commit to preserve ancestry.
+`v3-ai` and `v3-ai` -> `v3-audit`. Each sync PR's head is a bot-owned branch,
+`sync/<source>-into-<target>-<sha10>`, never the long-lived source branch. The
+suffix is the source SHA the PR started from, so every new sync PR gets a fresh
+branch. GitHub's
+"Update branch" button and web conflict edits write to a PR's head. With the
+source branch as head, one click merged `v3-audit` back into the production
+branch `v3-ai`. With a sync branch as head, the same click only changes the
+sync branch, and merging it moves changes in the intended direction.
+
+On every run, for each pair, the controller:
+
+1. Skips a pair whose open PR still has the source branch as head (`legacy`).
+   Closing that PR lets the next run migrate the pair.
+2. Advances an open sync PR's head to the current source tip. It fast-forwards
+   an unchanged head. A head that maintainers changed, for example by resolving
+   conflicts or using "Update branch", is never reset: the source is merged
+   into it. A merge conflict is reported as `conflict`, and the controller
+   keeps one comment on the PR naming the blocked source SHA until a later
+   merge succeeds. The PR can stay mergeable into its target meanwhile, so
+   check for that comment before merging.
+3. Otherwise opens a draft when the source has commits and a non-empty diff
+   absent from the target. It creates a fresh sync branch at the source tip.
+   If a branch of that name already exists at another commit, the controller
+   reports `stale-branch` and leaves it alone; delete it to let the next run
+   proceed.
+
+Existing PR descriptions and draft/ready states are preserved. Ready sync PRs
+keep tracking the source; review and merge decisions apply to the latest
+synchronized head. The run summary lists each pair's result. The controller
+never force-updates a branch, never writes the source or target branches and
+never merges. Maintainers
+choose when to mark ready and merge with a merge commit to preserve ancestry.
+Resolve conflicts directly on the sync branch.
 
 The controller runs from `v3` after Check codebase completes for a push to
 either source branch, regardless of the check result. Completion is a wakeup,
@@ -37,19 +64,65 @@ gh workflow run maintain-draft-sync-prs.yml --ref v3 -f dry_run=true
 gh workflow run maintain-draft-sync-prs.yml --ref v3 -f dry_run=false
 ```
 
-The ordinary `GITHUB_TOKEN` has contents-read and pull-requests-write access;
-GitHub Actions must be allowed to create PRs in repository settings. No separate
-bot credential is needed. GitHub may require approval before running workflows
-for token-created PRs. Drafts skip staging image builds and some analysis, but
-other PR checks and source-branch push CI can still run. Marking ready invokes
-the existing ready-state validation; required checks must pass before merging.
+Writes use the `SYNC_PR_BOT_TOKEN` repository secret: a fine-grained token
+for this repository only, with Contents, Pull requests, and Workflows
+read/write. Workflows write is needed because GitHub refuses ref updates that
+bring `.github/workflows` changes without it. The separate token lets sync-PR
+CI start without manual approval: `GITHUB_TOKEN` updates start no push
+workflows, and the pull request workflows they trigger wait for approval. A
+GitHub App installation token would remove the dependence on one person's
+account. Without the secret, automatic and
+non-preview runs fail and previews still work. The sync branches are not
+protected integration branches, so the token needs no ruleset bypass. Drafts
+skip staging image builds and some analysis. Marking ready invokes the existing
+ready-state validation; required checks must pass before merging.
 
 Closing a sync PR without merging does not pause maintenance: the next eligible
-run may create a new draft if changes remain. Conflicts remain a maintainer
-task. Avoid Update branch on these PRs because it merges the target back into
-the long-lived source branch. An API failure is reported rather than treated
-as evidence that a PR exists; a duplicate-creation response is accepted only
-after the matching open PR is found.
+run may create a new draft if changes remain. An API failure is reported rather
+than treated as evidence that a PR exists; a duplicate-creation response is
+accepted only after the matching open PR is found.
+
+### Sync direction guard
+
+`sync-ancestry-guard.yml` also rejects `v3-audit` history in `v3-ai`. Every
+pull request into `v3-ai` and every push to it fails when the new head contains
+`v3-audit`'s oldest own first-parent commit, pinned in `DOWNSTREAM_ROOTS`.
+Every later `v3-audit` commit descends from that root, so any merge of
+`v3-audit` into `v3-ai` carries it. The check is a branch-health gate: once
+`v3-ai` contains the root, every later pull request and push fails as well,
+until recovery removes it. A pin that is no longer on `v3-audit`'s first-parent
+line fails the check instead of passing it. Ordinary CI cannot see this: the
+2026-10-12 back-merge of `v3-audit` into `v3-ai` passed every other check.
+
+The guard covers only that edge. `v3-ai` history in `v3` is not checked,
+because ADR 0007 plans to fold `v3-ai` back into `v3`. It also checks commit
+ancestry only: a cherry-pick or rebased copy of downstream work is a new commit
+and passes. Guard changes take effect per target as the sync chain delivers
+them, because each push and pull request runs the copy of the guard on its own
+branch.
+
+Recovery from a back-merge that already landed is a force push of the target to
+its last good SHA, not a revert. A revert commit would travel with the next sync
+and delete the downstream's own work there. Several rulesets without bypass block it, so a repository
+admin:
+
+1. Records every active ruleset whose `include` matches the target, for
+   example with `gh api repos/uzh-bf/klicker-uzh/rulesets`. For `v3-ai` these
+   are `v3 integration branch protection`, `v3-ai direct integration
+protection`, and `sync targets require pull requests`; for `v3-audit` the
+   first and the last.
+2. Sets each of them to `enforcement: disabled` with
+   `gh api -X PUT repos/uzh-bf/klicker-uzh/rulesets/<id> -f enforcement=disabled`.
+3. Pushes `git push --force-with-lease=<target>:<bad SHA> origin <good SHA>:<target>`.
+4. Sets each recorded ruleset back to `enforcement: active`, then confirms with
+   `gh api repos/uzh-bf/klicker-uzh/rules/branches/<target>` that the
+   `deletion`, `non_fast_forward`, and `pull_request` rules apply again.
+
+Afterwards, check that no remote branch or open PR contains the bad SHA
+(`git branch -r --contains <sha>`) and ask anyone who fetched the target in that
+window to rebase. If a `sync/` branch already followed the bad SHA, close its PR
+and delete that branch. The next controller run opens a new draft on a fresh
+branch from the recovered tip.
 
 ### Squashed sync guard
 
@@ -201,7 +274,7 @@ see **Bounded codebase check** below. Pushes always run the full suite.
 - **Minimum validation envelope**: One repository-owned classifier (`.github/scripts/minimum-validation-class.cjs`) turns the rename-aware changed-path records into exactly one change class and the decisions that class requires: `documentation-and-planning` for Markdown and assets under `docs/`, `project/`, and `.agents/skills/`, which runs no Playwright, no application build, and no static analysis; `ci-orchestration` for `.github/workflows/` and `.github/scripts/`, which runs a bounded Playwright selection, a bounded codebase check, and still the static analysis, because `.github/scripts` is analyzed source and a workflow file is analyzed input; and `application` for everything else. It fails closed: an empty, unresolvable, renamed, copied, or deleted diff, a path outside those trees, a mixed documentation-and-CI diff, and a root `README.md` or `AGENTS.md` all expand to the application envelope. The class travels with the run: the Playwright plan artifact and its `envelope_class` output carry it into the required status reporter, the codebase check uploads a classification receipt naming the paths that justified the class, and `.github/actions/change-envelope` is the one adapter every lane calls. Narrowing applies to pull requests only, so every push validates a deployment candidate in full whatever the class of its changed paths. A lane reads an empty or unreadable decision as the full envelope, and a classifier failure widens the lane with a warning instead of failing it, so a broken classification can neither remove validation nor block a required context. Class boundaries are reviewable source changes, and the reduced coverage a bounded class accepts is an explicit review contract rather than a silent path filter.
 - **Bounded codebase check**: A pull request whose class is bounded still installs dependencies and still runs every contract suite that can falsify the class, including the CI queue and workflow contracts, the Playwright CI contracts, formatting, syncpack, and the documentation and policy drift checks; it deliberately skips the application-wide steps, which are the Turbo build, the TypeScript check, ESLint, Biome, Knip, and the Prisma schema-sync drift check. Pushes run all of them. The envelope is computed inside the suite job, on the checkout it already performs, so it never delays the suite behind a second runner allocation, and every skipped step is gated on its class output, so an unproven class runs it.
 - **Playwright cache contract**: The pnpm store uses a stable dependency fingerprint containing Node/pnpm compatibility, the lockfile, workspace configuration, package manifests, `.npmrc`, `.pnpmfile.cjs`, and tracked patches. It does not create a duplicate store for each source commit or invalidate dependencies for a telemetry-only workflow edit. The separate `.turbo` fingerprint retains the conservative build configuration, synthetic environment schema, and immutable build-image contract, with source-specific snapshots. Both cache families include OS and architecture in their keys. The trusted `v3` cache-seed matrix builds on hosted ARM64 and x64 runners and is the only writer; public PR jobs remain restore-only readers. Restore stays disabled for PRs until a global or exact canary control enables it. Cache-service errors fall back to an ordinary install/build, while actual build failures remain failures. Compact build, shard, route, selector, and queue telemetry is retained for seven days; large build outputs and diagnostics keep their existing short retention. Seed telemetry artifacts include the architecture in their names. The hosted, checkout-free Playwright status job collects queue telemetry with only `actions: read` permission; telemetry errors do not alter the test result. Configuration and successful seeding are not performance proof: verify compatible matched keys, Turbo task hits, output equivalence, and a normalized comparison cohort before claiming a speedup.
-- **Profile-aware Playwright runtime**: `playwright/profiles.json` assigns every active spec exactly once and the timing-aware sharder emits the canonical profile union for each shard. Exact `@devrouter/cli` `0.2.0` resolves that union and validates it against the repository-owned `playwright/runtime-contract.yml` without runtime access. When the trusted planner assigns a candidate-only spec to `full`, the adapter resolves that trusted union through the explicit `playwright` Devrouter profile, which covers every CI-supported application without selecting local-only MCP, LiteLLM, or MailHog resources. Activity-lifecycle specs that publish, schedule, start, or end activities select `live-quiz` because it owns both Hatchet workers. Both hosted and public-PR workflows fail closed when planning is unavailable or unexpected, then start only the selected app processes without exposing the host Docker socket. A caller checkout created before profile runtimes existed may use the explicit legacy full-stack startup only when all three profile-runtime files are absent; partial migrations fail closed. The job-level Postgres, Redis, and Hatchet containers remain fixed. The corrected manifest selects 57 app and worker process instances across eight shards instead of the previous fixed 72, a configuration-derived 20.8% reduction; this is not yet measured end-to-end speedup evidence.
+- **Profile-aware Playwright runtime**: `playwright/profiles.json` assigns every active spec exactly once and the timing-aware sharder emits the canonical profile union for each shard. Exact `@devrouter/cli` `0.3.0` resolves that union and validates it against the repository-owned `playwright/runtime-contract.yml` without runtime access. When the trusted planner assigns a candidate-only spec to `full`, the adapter resolves that trusted union through the explicit `playwright` Devrouter profile, which covers every CI-supported application without selecting local-only MCP, LiteLLM, or MailHog resources. Activity-lifecycle specs that publish, schedule, start, or end activities select `live-quiz` because it owns both Hatchet workers. Both hosted and public-PR workflows fail closed when planning is unavailable or unexpected, then start only the selected app processes without exposing the host Docker socket. A caller checkout created before profile runtimes existed may use the explicit legacy full-stack startup only when all three profile-runtime files are absent; partial migrations fail closed. The job-level Postgres, Redis, and Hatchet containers remain fixed. The corrected manifest selects 57 app and worker process instances across eight shards instead of the previous fixed 72, a configuration-derived 20.8% reduction; this is not yet measured end-to-end speedup evidence.
 - **Stacked pull requests**: The consolidated `check` workflow runs for every opened, synchronized, or reopened pull request target, including feature-branch targets used by stacked PRs. Its push trigger remains limited to `v3` and `v3*`.
 - **Status reporting and cancellation**: GraphQL and Playwright status jobs report real failures and successful path skips. Draft and ready PRs run the same Playwright execution envelope. Every push and every ready PR must show successful execution in full mode with the complete eight-shard matrix; a draft may attest the narrower plan the trusted envelope selected for it, which is a partial shard set or a skip, while any other mode, a partial matrix on a full plan, unexpected skips, missing outputs, failures, and cancellations without proven supersession fail. Smart-draft selection stays off until the `PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_ENABLED` repository variable, or its exact-canary PR variable, enables it for an eligible same-repository draft; forks, bots, private repositories, and the force-hosted canary keep the full plan. PR closure cancels running execution through the same checkout-free no-op job; a conversion to draft no longer cancels, because the running plan stays valid evidence. They exclude workflow cancellation and canceled execution dependencies, so obsolete reporters do not keep waiting for a runner. Playwright retains one route-neutral concurrency group on its reusable-workflow caller; the called workflow has no concurrency and its sibling jobs cannot cancel each other. The status job stays outside this group. Queue telemetry and metadata uploads run in that same hosted reporter, including after test failures, and stop on cancellation.
 - **Equivalent push validation**: Non-`v3` pushes may reuse completed successful hosted Playwright PR validation. Unit reuse applies to push reruns only, so initial unit validation does not acquire an extra runner or scheduling wait. The read-only gate requires one open, ready, same-repository PR with the exact head and base, an equivalent merge tree, the latest workflow run and attempt, and actual successful test coverage. A run- and attempt-bound artifact records the actual checkout tree; older runs without it cannot be reused. Playwright also requires the same trusted control revision and a matching full eight-shard plan. The summary links the reused run. Missing, stale, failed, skipped, partial, or ambiguous evidence runs normal validation. Default-branch pushes and manual runs remain independent; other workflows retain their different path/build semantics. Translation validation is already PR-only. Playwright performs its lookup inside the existing preparation job, so it can check first attempts without adding another runner allocation. Preparation inherits caller permissions: older contents-only callers continue normal validation when API access is insufficient, while updated callers forward read access to Actions and pull requests. Execution jobs retain explicit contents-only tokens.
