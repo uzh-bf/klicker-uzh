@@ -33,6 +33,7 @@ import {
   validateTrajectoryCorpus,
 } from '../scripts/tutor-trajectory.mjs'
 import { withModelCitationIndices } from '../src/lib/server/citationInstructions'
+import { MAX_SOURCES } from '../src/lib/sources/normalizeSources'
 
 test('numerical references use annual compounding and decimal returns', () => {
   assert.ok(
@@ -490,7 +491,7 @@ test('trajectory chains persisted ancestry and repeats only the visible answer',
     assert.equal(receipts[0].receiptVersion, 2)
     assert.deepEqual(receipts[0].sourceMapping, {
       version: 1,
-      maxSources: 12,
+      maxSources: MAX_SOURCES,
       fingerprint: receipts[0].sourceMapping.fingerprint,
     })
     assert.match(receipts[0].sourceMapping.fingerprint, /^[0-9a-f]{64}$/)
@@ -763,7 +764,7 @@ test('source receipts match the application citation projection and suppress raw
             type: 'text',
             text: JSON.stringify(
               documents(
-                ...Array.from({ length: 12 }, (_, index) => ({
+                ...Array.from({ length: MAX_SOURCES }, (_, index) => ({
                   reference: 'urn:c' + index,
                   title: 'Doc ' + index,
                   chunks: [
@@ -852,14 +853,16 @@ test('source receipts match the application citation projection and suppress raw
   )
   // Capacity overflow past the application constant yields explicit nulls.
   const callC = receipt.sources.filter((entry) => entry.toolCallId === 'call-c')
-  assert.equal(callC.length, 12)
+  assert.equal(callC.length, MAX_SOURCES)
   assert.deepEqual(
     callC.map((entry) => entry.citationIndex),
-    [4, 5, 6, 7, 8, 9, 10, 11, 12, null, null, null]
+    Array.from({ length: MAX_SOURCES }, (_, index) =>
+      index + 4 <= MAX_SOURCES ? index + 4 : null
+    )
   )
   assert.ok(
     callC
-      .slice(9)
+      .slice(MAX_SOURCES - 3)
       .every(
         (entry) => entry.type === 'document' && entry.identityHash !== null
       )

@@ -339,3 +339,22 @@ the synthetic test credential is not a secret exposure. Simplification accepts
 one guarded shell fixture instead of two equivalent fresh-process runs.
 Exact runtime stop succeeded and removed four routes; fresh route read-back
 contains zero routes for this worktree. No volumes or workspace were deleted.
+
+The initial integrated final review passed at `83ac675f43`. A fresh fetch then
+identified target `0a8d4652915c9ee6d86136050186bb97e054387d`, which raises the
+application citation cap to 99. One standing-approved readiness integration
+resolves the shared solution-note conflict by retaining both independently
+applicable explanations. The evaluator already consumes the application cap;
+its existing parity fixture now crosses that imported cap instead of pinning
+12. Recheck the affected mapper and integrated focused suite, then perform the
+single focused final-review follow-up for this newly merged contract.
+
+Integration verification passes: 133 focused checks including the application
+normalizer, chat typecheck, affected-test ESLint/Biome and document formatting.
+The second stale 12-source metadata expectation now also uses the imported cap.
+No new test was added. The earlier synthetic application wire proof is reused:
+its low-effort request and one-source MCP response are unchanged by the effort
+condition or cap expansion. There is still no real-provider receipt or paid run.
+Whole-branch substantive size is 2,859 lines excluding project artifacts before
+this narrow integration; the continuation adds 334 substantive lines. This
+remains the approved coherent evaluator defect package in the existing draft.
