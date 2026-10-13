@@ -38,9 +38,9 @@ export function navigateParticipantSession(
   ) {
     return replace ? router.replace(destination) : router.push(destination)
   }
+  const pathname = destination.split(/[?#]/, 1)[0]
   const hasLocale = router.locales?.some(
-    (locale) =>
-      destination === `/${locale}` || destination.startsWith(`/${locale}/`)
+    (locale) => pathname === `/${locale}` || pathname?.startsWith(`/${locale}/`)
   )
   const prefix =
     !hasLocale && router.locale && router.locale !== router.defaultLocale

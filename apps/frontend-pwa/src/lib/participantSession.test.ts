@@ -407,10 +407,12 @@ it('keeps locale, external destinations and history semantics on full navigation
   } as unknown as Parameters<typeof navigateParticipantSession>[0]
   navigateParticipantSession(router, '/editProfile?newAccount=true', true)
   navigateParticipantSession(router, '/de/course/course-id')
+  navigateParticipantSession(router, '/de?course=example#overview')
   navigateParticipantSession(router, 'https://chat.example.invalid/bot')
   assert.deepEqual(calls, [
     'replace:/de/editProfile?newAccount=true',
     'push:/de/course/course-id',
+    'push:/de?course=example#overview',
     'push:https://chat.example.invalid/bot',
   ])
   removeWindow()
