@@ -56,7 +56,12 @@ describe('Integration tests for lecturer chatbot management', () => {
     userTwoCtx = ctx2
     await prisma.user.updateMany({
       where: { id: { in: [userOneCtx.user.sub, userTwoCtx.user.sub] } },
-      data: { aiFeaturesEnabled: true },
+      // The built-in model registry classifies Auto as advanced.
+      data: {
+        aiFeaturesEnabled: true,
+        aiSubscriptionTier: 'ADVANCED',
+        aiChatbotCostCenter: 'KST-1',
+      },
     })
   })
 
@@ -469,6 +474,10 @@ describe('Integration tests for lecturer chatbot management', () => {
     }
 
     it('rejects adding an advanced model the owner cannot use but keeps a saved one', async () => {
+      await prisma.user.update({
+        where: { id: userOneCtx.user.sub },
+        data: { aiSubscriptionTier: 'BASE', aiChatbotCostCenter: null },
+      })
       const chatbot = await seedOwnedChatbot()
       const save = (
         allowedModelIds: string[],
@@ -479,7 +488,13 @@ describe('Integration tests for lecturer chatbot management', () => {
             chatbotId: chatbot.id,
             expectedRevisionVersion,
             input: {
-              modelPolicy: { modelSelection: true, allowedModelIds },
+              modelPolicy: {
+                modelSelection: true,
+                allowedModelIds,
+                allowedReasoningEffortsByModel: [
+                  { modelId: 'gpt-6-luna', efforts: ['low', 'medium'] },
+                ],
+              },
             },
           },
           userOneCtx
