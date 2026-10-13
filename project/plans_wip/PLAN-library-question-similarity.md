@@ -22,8 +22,10 @@ The engineer owns refinement of [Klicker PR #6317](https://github.com/uzh-bf/kli
 Keep it draft until the stronger contract is implemented and verified. Our side
 owns the generic worker selection, duplicate admission, bounded replacement,
 accounting and cross-consumer qualification. Shared interface decisions precede
-implementation on either side. This document is the coordination source; no
-parallel Klicker implementation is assigned to us.
+implementation on either side. The Form A continuation currently owns the
+existing worker release candidate and its LightRAG E2E gate; our generalization
+follows that candidate without a competing writer. This document is the
+coordination source; no parallel Klicker implementation is assigned to us.
 
 This request authorizes plan and PR-description refinement. It does not execute
 merges, deployments, flag activation or paid generation. Existing source receipts
@@ -38,12 +40,14 @@ qualified allowance and enforcement.
 ### Verified baseline and reusable components
 
 Klicker source baseline: `e24d1abcf6`; target `v3-ai`. Refreshed remote state is
-12 commits ahead and 65 behind that target. Refresh and integrate deliberately
-when implementation readiness requires it; this documentation change does not
+13 commits ahead and 66 behind that target at this alignment check. Refresh and
+integrate deliberately when implementation readiness requires it; this documentation change does not
 merge target code. Generator source baseline: remote tip `9bb6593c50` of
 `rs/exam-quality-p6-style-pool`; generator main is `dbf5e57`. These tips moved since
-the previous deployment preparation. Prior final review does not cover those
-additional changes.
+the previous deployment preparation. The Form A thread has since verified source
+reviews and CI for those heads,
+but explicitly holds merge readiness on fresh real-provider LightRAG E2E. Source
+readiness and that live acceptance gate remain separate.
 
 | Existing component | Current behavior | Reuse and remaining gap |
 | --- | --- | --- |
@@ -61,6 +65,78 @@ existing generation/review components. Worker seams are under
 `lightrag_research/hatchet_workflows/` and
 `lightrag_research/questions_generation/`. Extend those modules and their tests;
 new services, indexes and permanent metadata migrations need demonstrated need.
+
+### Reuse and generalize the existing exam mechanisms
+
+The implementation is one shared generator with distinct consumer policies.
+Extend the following maintained mechanisms; creating equivalent selectors,
+detectors, repair loops or accounting implementations in Klicker is out of scope.
+Historical Python names containing `exam` or `pastpaper` are not a reason to
+rename modules or build another framework.
+
+| Mechanism already implemented | Generic extension required | Boundary to preserve |
+| --- | --- | --- |
+| `question_library.py`: validated snapshots, `pool_generation_items`, source identities and purpose permissions | Carry request-selection metadata consistently from DB and file inputs into the same representation | Permission and eligibility are separate; unknown keys stay comparison-only. |
+| `past_papers.py`: `select_pastpaper_examples`; `quality_metrics.py`: `style_profile_for_source`; existing prompt builders | Reuse per-slot selection and source-aware style guidance for any permitted quiz pool; add missing metadata projection and explicit fallback receipts | Example content is not course evidence. Calibration retains its separate evidence and purpose rules. |
+| `graph_retrieval.py` and assessment-design planning | Reuse relevant evidence routing, coverage registry and pool-overlap re-anchoring to plan useful new slots | A covered topic is not a banned topic; preserve objectives and intentional exam reuse/update. |
+| `two_stage.py`: `_enforce_blueprint_stem_distinctness`, `_generate_blueprint_stem`, existing repairs and checkpoints; `semantic_distinctness.py`: comparison/scoring | Extend exact-stem correction to confirmed semantic/library duplicates and one bounded accepted-set completion policy | Today exhausted correction retains a draft with `DUPLICATE_STEM` for review. Strict new-only generation must quarantine it and report a shortfall instead. |
+| `autonomous_run.py`, existing usage receipts and workflow checkpoints | Reuse reservations, native lineage, acceptance evidence and resume semantics through the Hatchet application path | Existing call limits omit some validator costs; one aggregate allowance must include all nested calls. A CLI accounting root does not by itself enforce application spend. |
+
+Generalize inputs around source identity, allowed uses, requested learning
+objectives and an explicit execution policy, not an `is_klicker`/`is_exam` fork.
+Consumer adapters own source authorization and output presentation. Share core
+eligibility, selection, validation, comparison, repair and accounting functions.
+Extract a small helper only where both existing callers demonstrably need it;
+keep legacy entrypoints and artifact readers compatible.
+
+The new strict policy applies to newly generated candidates. Exam assembly may
+still intentionally reuse or update an authorized source question; keep those
+slots and their frozen ancestry distinguishable from new-question candidates.
+Do not convert intentional reuse into automatic replacement, rewrite historical
+accepted banks, or silently change legacy warning-mode behavior. An exam caller
+can opt into strict screening for its new slots without changing its reuse slots.
+Exam-wide quotas, form assembly and DOCX/reviewer exports remain consumer work.
+
+Count existing inner generation, grounding and repair attempts in the proposed
+outer replacement budget. Do not wrap the current retry loop in another loop
+whose effective spend multiplies unnoticed. Map the existing checkpoints and
+terminal outcomes into the new result contract; adapt the strict count assertion
+and failure/partial result handling together. Verify this through the actual
+Hatchet tasks, not only the standalone exam runner.
+
+### Alignment with the Form A work
+
+Read-only alignment on 13 October 2026 inspected **Resume exam form A draft**
+and its user-created continuation **LightRAG 1.5.7 full E2E before merge**, plus
+the continuation handoff. The previous unqualified source-ready merge advice is
+superseded by the user's real E2E acceptance gate. No merge authority travels
+from either thread into this plan.
+
+- The Form A work owns the preserved source-pool, generated-bank, assembled-form
+  and reviewer/export artifacts. This feature does not edit or regenerate them.
+  Preserve native outputs, actual mappings, repair ancestry and existing receipts.
+- Its LightRAG continuation owns the current generator candidate, source fixes
+  required for real document processing → graph generation/cleaning → persistence
+  and fresh-process reload → retrieval → question generation, and affected
+  reviews/CI. Reuse its resulting source and runtime evidence when unchanged.
+- Its latest completed preflight reported an SC-only accountable question runner
+  and unresolved runtime/provider access. The user then restored permissions and
+  asked it to retry; that retry is in progress at inspection. Do not claim access
+  remains blocked, has recovered, or E2E passed until it reports fresh evidence.
+- The proposed USD 20 E2E allowance is unapproved at inspection. It is separate
+  from the historical USD 2 comparison ledger and any future lecturer allowance.
+  This thread neither spends those allocations nor repeats the E2E in parallel.
+- Before shared-generator edits, recheck the continuation's terminal evidence and
+  branch ownership. Consume its final head in the agreed follow-up; do not write
+  the same worker files/branches while its candidate is under qualification.
+  The lecturer test must additionally prove the application path, pool behavior,
+  accepted-only results and supported MC/KPRIM paths; SC E2E is not that proof.
+
+This alignment is based on reading the current work and its artifacts. It is not
+an acknowledgement from the other owner and does not dispatch work or messages.
+Any overlap discovered during contract work is assigned to one implementation
+owner before coding. The engineer can prepare Klicker changes against frozen
+fixtures while the existing worker candidate is being qualified.
 
 ### Product primitive impact
 
@@ -243,20 +319,25 @@ make that limit explicit rather than adding global locks without a use case.
 | Owner | Work and boundary | Completion evidence |
 | --- | --- | --- |
 | Engineer — Klicker PR | Own #6317 application code: authorized retrieval, metadata projection and purpose grant, UI controls, pinned request, strict result parsing, accepted-only review/save, shortfall and billing handling. Preserve existing auth and snapshot recovery. | Actual TS snapshots accepted by the worker; endpoint enforcement, relevant UI interactions and saved-draft reload verified. |
-| Our side — generator | Reuse current pool selector/style/calibration/scorer; extend the shared contract and implement pre-generation coverage, adjudication and bounded replacement in the maintained workflow. No parallel Klicker implementation. | Same behavior through injected DB snapshots and file-based quiz pools; durable attempts, budget and accepted-set invariants verified. |
-| Our side — qualification and release preparation | Maintain cross-consumer fixtures, novelty/usefulness evaluation, exact-head worker review, image/rollout preparation and synthetic STG protocol. Coordinate with engineer's final head. | Comparable metrics, pinned source/image evidence and a joint end-to-end result; source checks reported separately from live acceptance. |
+| This thread — shared generator follow-up | Generalize the mechanisms named above after the current candidate owner finishes or explicitly releases the affected paths. Own shared contract, strict admission and bounded completion; no parallel Klicker implementation. | DB and file pools use the same selectors, repairs and accounting; strict new slots and intentional exam reuse retain different policies. |
+| Form A / LightRAG continuation — existing worker candidate | Own current candidate fixes, real LightRAG E2E and affected reviews/CI; preserve Form A review artifacts. | Verified document-to-question runtime chain and exact source receipts. Current accountable runner covers SC only. |
+| This thread — integration qualification | Reuse the continuation's compatible source/runtime receipts, then verify shared behavior and the engineer's application integration. Own the later synthetic lecturer STG protocol. | Accepted-only lecturer workflow plus DB/file and supported-format evidence; no duplicate LightRAG experiment. |
 
 Contract coordination is a dependency, not two implementations. The engineer
 owns the proposed request/result schema on the Klicker side; we implement and
-review its Python counterpart together before either side activates it. This
-plan update sends no message to the engineer and assigns no unsolicited review.
+review its Python counterpart together before either side activates it. The Form A
+continuation retains ownership of the current generator candidate.
+This plan update sends no message to either owner and assigns no unsolicited review.
 
 Implementation order after agreement:
 
-1. Freeze request/pool/result semantics and synthetic examples, including unknown
+1. Read the Form A continuation's current head, acceptance and ownership state;
+   freeze request/pool/result semantics and synthetic examples, including unknown
    metadata, allowed uses, partial results, cost policy and old-version behavior.
-2. Engineer implements pool projection and UI integration while our side extends
-   shared selection and screening against those frozen fixtures.
+2. Engineer implements pool projection and UI integration against those fixtures.
+   After the current worker candidate is released for follow-up, our side extends
+   existing selection, distinctness correction and accounting against the same
+   fixtures.
 3. Complete bounded replacement, idempotent accounting and accepted-only API/save
    enforcement; verify both adapters and legacy consumers.
 4. Review both exact heads, deploy compatible worker before producer, enable only
@@ -266,10 +347,10 @@ Implementation order after agreement:
 
 | Delivery | Recommendation and condition |
 | --- | --- |
-| Existing generator [!27](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/27) through [!33](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/33) | Foundation merge candidates independently of the Klicker refinement. All seven current heads have successful matching pipelines and are mergeable as inspected. Review the new changes since earlier review, then land bottom-up only under named merge authority, checking each retargeted layer. Merge does not establish the new strict behavior or authorize activation. |
+| Existing generator [!27](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/27) through [!33](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/33) | Foundations can land independently of the future Klicker refinement, but only after the Form A continuation's fresh LightRAG E2E gate passes. Matching source reviews and pipelines are already recorded; they do not satisfy live E2E. Then obtain named merge authority and check each bottom-up retargeted layer. Merge does not establish the new strict behavior or authorize activation. |
 | Generator [!34](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/34) and [!35](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/35) | Both current tips are ancestors of the integrated generator tip. Preserve one landing path; verify inclusion after landing and close superseded MRs only when authorized. They are currently mergeable; the previous conflict observation is stale. |
 | [Klicker #6317](https://github.com/uzh-bf/klicker-uzh/pull/6317) | Hold draft for the engineer's refinement even though existing code/tests pass. Warning-only completion is no longer the requested product. Preserve the existing nullable snapshot migration and GrowthBook wiring. |
-| Shared worker refinement | Our next implementation package after agreeing the contract. Reuse existing integration work; do not create competing code on active generator branches. Resolve the current owner before writing, then choose a follow-up against landed main or the agreed stack tip. No new stack topology is assumed approved here. |
+| Shared worker refinement | Our next package after contract agreement and coordination with the active LightRAG candidate owner. Extend existing mechanisms; do not create competing code on its branches. Use the resulting qualified head in a follow-up against landed main or the explicitly agreed stack tip. No new stack topology is assumed approved here. |
 | STG rollout and paid lecturer E2E | Hold activation until both refined components and the enforced test allowance are ready. Follow `v3-ai` → configured STG source (`v3-adaptive-learning` at last verification), with compatible worker first. PRD activation remains separate. |
 
 The existing [comparison budget driver !39](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/39)
@@ -289,9 +370,9 @@ fixture-content snapshots.
 | Unauthorized or unsuitable examples | Extend producer and shared selector tests | Other-owner/archived content excluded; unknown keys remain comparison-only; stale metadata is unknown; no empirical claims inferred. |
 | Request relevance and pre-generation influence | Extend selector and real producer→worker fixture tests | Topic/objective, format and pedagogical targets affect chosen examples and gap planning before generation; missing labels and empty pools have explicit fallbacks. |
 | False duplicate decisions | Extend semantic evaluation fixtures | Exact/near duplicates withheld; related-distinct reasoning survives; cross-format, multilingual and numerical cases scored with recall and false-rejection reports. |
-| Replacement, budget and replay | Extend workflow tests with synthetic deterministic providers | Deficit-only replacement, at most 2N candidates and configured limits, unresolved reservations retained, resumed attempts not redispatched, accepted slots retained, correct partial counts. |
+| Replacement, budget and replay | Extend existing stem-correction, autonomous-run and Hatchet tests with synthetic deterministic providers | Deficit-only replacement, at most 2N candidates and configured limits, nested calls counted, unresolved reservations retained, resumed attempts not redispatched, accepted slots retained, correct partial counts. |
 | Review and save boundary | Extend GraphQL/artifact tests plus browser E2E | Rejected/unresolved text absent from review responses/cards/exports; direct save refuses it; material edits and stale evidence require revalidation; shortfall survives reload. |
-| Compatibility and generalizability | Extend existing DB/CSV/XLSX qualification | Equivalent normalized inputs select equivalent records; v1/v2/no-pool and comparison-only paths keep their declared behavior; new policy requires capability negotiation. |
+| Compatibility and generalizability | Extend existing DB/CSV/XLSX qualification | Equivalent normalized inputs select equivalent records; v1/v2/no-pool and comparison-only paths keep their declared behavior; new policy requires capability negotiation; intentional exam reuse/update is not rejected by new-only duplicate rules. |
 
 Before paid qualification, agree an explicit success rubric on a held-out
 synthetic set. Compare the baseline against the new mode with the same graph,
@@ -342,3 +423,10 @@ synthetic drafts; deletion requires separate authority.
   spend and partial-result semantics; no blocking inconsistency remains. Source
   references and links were checked, with diff and staged secret checks required
   before publication. This is self-review, not independent review evidence.
+
+- Alignment update: explicit mechanism reuse, generic policy boundaries and named
+  thread ownership added after reading the Form A and LightRAG continuation.
+  Source-only merge readiness corrected to include the pending real E2E gate.
+  Scope remains plan/PR-description only; no other thread's files or outputs
+  changed. Self-review checked that new strict behavior extends existing repair
+  and accounting paths without changing intentional exam reuse or legacy runs.
