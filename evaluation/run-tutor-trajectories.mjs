@@ -310,8 +310,11 @@ export async function runTutorTrajectories({
     summary.uncertain = ledger.uncertain
     await output.write(JSON.stringify(summary) + '\n')
   } finally {
-    await output.close()
-    await releaseRun()
+    try {
+      await output.close()
+    } finally {
+      await releaseRun()
+    }
   }
 
   return summary

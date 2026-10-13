@@ -822,13 +822,27 @@ test('source receipts match the application citation projection and suppress raw
       })
     })
   })
+  const expectedEntries = [
+    ...[1, 2, 1].map((citationIndex, index) => ({
+      toolCallId: 'call-a',
+      sourcePosition: index + 1,
+      citationIndex,
+    })),
+    { toolCallId: 'call-b', sourcePosition: 1, citationIndex: 3 },
+    ...Array.from({ length: MAX_SOURCES }, (_, index) => ({
+      toolCallId: 'call-c',
+      sourcePosition: index + 1,
+      citationIndex: index + 4 <= MAX_SOURCES ? index + 4 : null,
+    })),
+  ]
+  assert.deepEqual(applicationEntries, expectedEntries)
   assert.deepEqual(
     receipt.sources.map(({ toolCallId, sourcePosition, citationIndex }) => ({
       toolCallId,
       sourcePosition,
       citationIndex,
     })),
-    applicationEntries
+    expectedEntries
   )
 
   // Deduplication keeps the first-appearance index across calls.
@@ -1352,6 +1366,7 @@ async function withRunnerScenario(
       .map((line) => JSON.parse(line))
 
   const originalFetch = globalThis.fetch
+  let releaseRunLock
   try {
     await writeFile(paths.corpus, JSON.stringify({ version: 1, cases }))
     const ledger = await initializeBudget(paths.budget, policyHash, {
@@ -1380,7 +1395,8 @@ async function withRunnerScenario(
       policyHash,
       statusPolicyHash,
     })
-    if (holdRunLock) await acquireBudgetLock(paths.budget, '.run')
+    if (holdRunLock)
+      releaseRunLock = await acquireBudgetLock(paths.budget, '.run')
     await body({
       argv: argvFor(),
       argvFor,
@@ -1393,7 +1409,11 @@ async function withRunnerScenario(
     })
   } finally {
     globalThis.fetch = originalFetch
-    await rm(directory, { recursive: true, force: true })
+    try {
+      await releaseRunLock?.()
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
   }
 }
 

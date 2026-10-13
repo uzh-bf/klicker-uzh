@@ -17,6 +17,16 @@ describe('evaluation provider boundary', () => {
 
   test('permits only the bound default provider when evaluation is enabled', () => {
     expect(() => assertEvaluationRouting({}, env)).not.toThrow()
+    const ipv6Origin = 'http://[::1]:1418'
+    expect(() =>
+      assertEvaluationRouting(
+        {},
+        {
+          KLICKER_EVAL_GUARD_ORIGIN: ipv6Origin,
+          OPENAI_BASE_URL: `${ipv6Origin}/v1`,
+        }
+      )
+    ).not.toThrow()
     for (const override of [
       { openaiApiKey: 'synthetic-override' },
       { openaiBaseUrl: 'http://localhost:4000/v1' },

@@ -1,4 +1,5 @@
 import { strict as assert } from 'node:assert'
+import { unlinkSync } from 'node:fs'
 import { mkdtemp, rm, unlink, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
@@ -10,11 +11,13 @@ import {
   fingerprint,
   finishBudgetTurn,
   initializeBudget,
+  mutateBudget,
   readBudgetLedger,
   reserveProviderSpend,
 } from '../../../evaluation/evaluation-budget.mjs'
 import {
   createSpendGuard,
+  main,
   requestReservation,
   validatePricingPolicy,
   verifyGuardQualification,
@@ -43,7 +46,13 @@ const request = {
 }
 
 async function listen(server) {
-  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+  await new Promise((resolve, reject) => {
+    server.once('error', reject)
+    server.listen(0, '127.0.0.1', () => {
+      server.removeListener('error', reject)
+      resolve()
+    })
+  })
   return 'http://127.0.0.1:' + server.address().port
 }
 async function close(server) {
@@ -55,49 +64,65 @@ async function scenario(body, cap = 2400) {
   const directory = await mkdtemp(join(tmpdir(), 'evaluation-guard-'))
   const budgetFile = join(directory, 'budget.json')
   const calls = []
-  const upstream = createServer(async (req, res) => {
-    const chunks = []
-    for await (const chunk of req) chunks.push(chunk)
-    calls.push({
-      url: req.url,
-      headers: req.headers,
-      body: JSON.parse(Buffer.concat(chunks)),
-    })
-    const ledger = await readBudgetLedger(budgetFile)
-    assert.ok(ledger.reservedProviderMicroUsd >= 1200)
-    if (calls.at(-1).body.instructions === 'fail') {
-      res.writeHead(500)
-      res.end('private upstream error')
-    } else {
-      res.writeHead(200, { 'Content-Type': 'text/event-stream' })
-      res.end('data: synthetic\n\n')
-    }
-  })
-  const upstreamOrigin = await listen(upstream)
-  const qualifiedPolicy = { ...policy, upstreamOrigin: upstreamOrigin + '/v1' }
-  await initializeBudget(budgetFile, fingerprint(qualifiedPolicy), {
-    maxProviderMicroUsd: cap,
-  })
-  const guard = await createSpendGuard({
-    policy: qualifiedPolicy,
-    budgetFile,
-    apiKey: 'synthetic-guard-key',
-    upstreamKey: 'synthetic-upstream-key',
-    upstreamOrigin: upstreamOrigin + '/v1',
-  })
-  const origin = await listen(guard)
-  const release = await acquireBudgetLock(budgetFile, '.run')
-  const send = (payload = request, headers = {}) =>
-    fetch(origin + '/v1/responses', {
-      method: 'POST',
-      headers: {
-        Authorization: 'Bearer synthetic-guard-key',
-        'Content-Type': 'application/json',
-        ...headers,
-      },
-      body: JSON.stringify(payload),
-    })
+  // A fixture assertion or body-parse failure must not be swallowed by the
+  // async HTTP handler; respond so the client unblocks, then surface it.
+  const upstreamFailures = []
+  let upstream
+  let guard
+  let release = null
+  let bodyError = null
   try {
+    upstream = createServer(async (req, res) => {
+      try {
+        const chunks = []
+        for await (const chunk of req) chunks.push(chunk)
+        calls.push({
+          url: req.url,
+          headers: req.headers,
+          body: JSON.parse(Buffer.concat(chunks)),
+        })
+        const ledger = await readBudgetLedger(budgetFile)
+        assert.ok(ledger.reservedProviderMicroUsd >= 1200)
+        if (calls.at(-1).body.instructions === 'fail') {
+          res.writeHead(500)
+          res.end('private upstream error')
+        } else {
+          res.writeHead(200, { 'Content-Type': 'text/event-stream' })
+          res.end('data: synthetic\n\n')
+        }
+      } catch (error) {
+        upstreamFailures.push(error)
+        if (!res.headersSent) res.writeHead(500)
+        res.end('synthetic upstream fixture failure')
+      }
+    })
+    const upstreamOrigin = await listen(upstream)
+    const qualifiedPolicy = {
+      ...policy,
+      upstreamOrigin: upstreamOrigin + '/v1',
+    }
+    await initializeBudget(budgetFile, fingerprint(qualifiedPolicy), {
+      maxProviderMicroUsd: cap,
+    })
+    guard = await createSpendGuard({
+      policy: qualifiedPolicy,
+      budgetFile,
+      apiKey: 'synthetic-guard-key',
+      upstreamKey: 'synthetic-upstream-key',
+      upstreamOrigin: upstreamOrigin + '/v1',
+    })
+    const origin = await listen(guard)
+    release = await acquireBudgetLock(budgetFile, '.run')
+    const send = (payload = request, headers = {}) =>
+      fetch(origin + '/v1/responses', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer synthetic-guard-key',
+          'Content-Type': 'application/json',
+          ...headers,
+        },
+        body: JSON.stringify(payload),
+      })
     await body({
       directory,
       budgetFile,
@@ -107,12 +132,25 @@ async function scenario(body, cap = 2400) {
       qualifiedPolicy,
       release,
     })
+  } catch (error) {
+    bodyError = error
   } finally {
-    await release()
-    await close(guard)
-    await close(upstream)
-    await rm(directory, { recursive: true, force: true })
+    try {
+      if (release) await release()
+    } finally {
+      try {
+        if (guard) await close(guard)
+      } finally {
+        try {
+          if (upstream) await close(upstream)
+        } finally {
+          await rm(directory, { recursive: true, force: true })
+        }
+      }
+    }
   }
+  if (upstreamFailures.length > 0) throw upstreamFailures[0]
+  if (bodyError) throw bodyError
 }
 
 test('guard reserves each step and retry durably before forwarding and never refunds failures', async () => {
@@ -358,4 +396,79 @@ test('abandoned run leases and uncertain guard restarts cannot forward another r
       )
     }
   )
+})
+
+test('a lock-release failure preserves the mutation error and leaves the ledger unchanged', async () => {
+  await scenario(async ({ budgetFile }) => {
+    const before = await readBudgetLedger(budgetFile)
+    await assert.rejects(
+      mutateBudget(budgetFile, (ledger) => {
+        ledger.creditsUsed = -1
+        unlinkSync(budgetFile + '.lock')
+      }),
+      (error) =>
+        error.code === 'budget_invalid' &&
+        error.cause instanceof AggregateError &&
+        error.cause.errors[0].code === 'ENOENT'
+    )
+    assert.deepEqual(await readBudgetLedger(budgetFile), before)
+  })
+})
+
+test('deeply nested request input is refused before reservation or upstream dispatch', async () => {
+  let nested = 'synthetic input'
+  for (let depth = 0; depth < 80; depth += 1) nested = [nested]
+  const deep = { ...request, input: nested }
+  assert.throws(() => requestReservation(policy, '/v1/responses', deep), {
+    code: 'provider_request_invalid',
+  })
+  await scenario(async ({ budgetFile, send, calls }) => {
+    await beginBudgetTurn(budgetFile)
+    const response = await send(deep)
+    assert.equal(response.status, 502)
+    assert.equal((await response.json()).error, 'provider_request_invalid')
+    assert.equal(calls.length, 0)
+    assert.equal(
+      (await readBudgetLedger(budgetFile)).reservedProviderMicroUsd,
+      0
+    )
+  })
+})
+
+test('guard startup rejects a bind failure with EADDRINUSE and registers no shutdown signals', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'evaluation-guard-'))
+  const budgetFile = join(directory, 'budget.json')
+  const policyFile = join(directory, 'pricing.json')
+  const occupied = createServer(() => {})
+  try {
+    const port = await new Promise((resolve) => {
+      occupied.listen(0, '127.0.0.1', () => resolve(occupied.address().port))
+    })
+    await writeFile(policyFile, JSON.stringify(policy))
+    await initializeBudget(budgetFile, fingerprint(policy))
+    const signals = ['SIGTERM', 'SIGINT']
+    const before = signals.map((signal) => process.listenerCount(signal))
+    await assert.rejects(
+      main(
+        {
+          KLICKER_EVAL_PRICING_FILE: policyFile,
+          KLICKER_EVAL_BUDGET_FILE: budgetFile,
+          KLICKER_EVAL_GUARD_KEY: 'synthetic-guard-key',
+          KLICKER_EVAL_UPSTREAM_ORIGIN: policy.upstreamOrigin,
+          KLICKER_EVAL_UPSTREAM_KEY: 'synthetic-upstream-key',
+          KLICKER_EVAL_GUARD_PORT: String(port),
+          KLICKER_EVAL_GUARD_HOST: '127.0.0.1',
+        },
+        []
+      ),
+      { code: 'EADDRINUSE' }
+    )
+    assert.deepEqual(
+      signals.map((signal) => process.listenerCount(signal)),
+      before
+    )
+  } finally {
+    await close(occupied)
+    await rm(directory, { recursive: true, force: true })
+  }
 })

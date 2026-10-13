@@ -20,7 +20,8 @@ import { evaluationError, finiteCredits } from './klicker-evaluation-target.mjs'
 // The first turn requires a completed, non-error result from this retrieval
 // tool. Follow-up turns may use the already retrieved conversation context. The
 // local chatbot exposes a single KB server, so no disambiguation suffix is
-// expected; a suffixed name fails closed rather than silently passing.
+// expected; a suffixed name cannot satisfy the first-turn grounding gate.
+// Source receipts still include every application-recognized retrieval tool.
 export const EXPECTED_DOC_QUERY_TOOL = 'KB_doc_query'
 
 export const TRAJECTORY_GROUPS = ['development', 'reserved', 'control']
@@ -178,17 +179,27 @@ export function validateTrajectoryCorpus(value) {
 // application's extensionless imports, so on failure the tsx loader is
 // registered once and the import retried. Both paths load the exact shipped
 // module, keeping the evaluator's numbering identical to the application's.
-const SOURCE_MAPPER_FILE = new URL(
+const SOURCE_MAPPER_FILES = [
   '../src/lib/sources/normalizeSources.ts',
-  import.meta.url
-)
+  '../src/lib/config/toolNames.ts',
+  '../src/lib/sources/sourceUrl.ts',
+]
 
 async function importSourceMapper() {
   try {
     return await import('../src/lib/sources/normalizeSources.ts')
-  } catch {
-    await import('tsx')
-    return await import('../src/lib/sources/normalizeSources.ts')
+  } catch (originalError) {
+    try {
+      await import('tsx')
+      return await import('../src/lib/sources/normalizeSources.ts')
+    } catch (retryError) {
+      throw Object.assign(evaluationError('source_mapper_unavailable'), {
+        cause: new AggregateError(
+          [originalError, retryError],
+          'Application source mapper imports failed with and without tsx'
+        ),
+      })
+    }
   }
 }
 
@@ -206,7 +217,9 @@ function selectSourceMapper(namespace) {
     typeof mapper?.sourceCitationIndices !== 'function' ||
     !Number.isInteger(mapper?.MAX_SOURCES)
   ) {
-    throw evaluationError('source_mapper_unavailable')
+    throw Object.assign(evaluationError('source_mapper_unavailable'), {
+      cause: new Error('Application source mapper exports are incompatible'),
+    })
   }
   return mapper
 }
@@ -221,15 +234,19 @@ const {
 } = SOURCE_MAPPER
 
 // Identifies the reconstruction for a reviewer: the receipt schema version, the
-// application capacity in force, and a fingerprint of the exact mapper file.
-// The fingerprint is a file hash, so a reviewer can recompute it from the
-// checked-out source and see when the application mapping changes.
+// application capacity in force, and a fingerprint of the mapper and its
+// runtime source dependencies. Hash ordered relative paths and file contents
+// so a reviewer can recompute it from the checked-out source.
 const SOURCE_MAPPING_DESCRIPTOR = Object.freeze({
   version: SOURCE_MAPPING_VERSION,
   maxSources: MAX_SOURCES,
-  fingerprint: createHash('sha256')
-    .update(readFileSync(SOURCE_MAPPER_FILE))
-    .digest('hex'),
+  fingerprint: SOURCE_MAPPER_FILES.reduce(
+    (hash, path) =>
+      hash
+        .update(path + '\0')
+        .update(readFileSync(new URL(path, import.meta.url))),
+    createHash('sha256')
+  ).digest('hex'),
 })
 
 // Reconstructs the application's per-call citation mapping from persisted tool

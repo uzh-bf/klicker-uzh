@@ -116,6 +116,10 @@ and run `.run` leases fail closed if held or left by interruption. A responsive
 Unix socket `.lease` proves that the run owner is alive; runner and guard must
 share the same local OS/filesystem. Guard restarts reject uncertain ledgers. Investigate
 such state before recovery; there is no automatic reset or refund.
+Interrupted initialization can leave an identity receipt without a ledger; retain
+it for investigation rather than retrying initialization at that path. Failed
+ledger replacements may retain temporary files as diagnostic evidence. Do not
+promote those files or remove stale locks automatically.
 
 The approved evaluation-only route is application → local spend guard → qualified
 upstream. Inject `KLICKER_EVAL_GUARD_KEY` and `KLICKER_EVAL_UPSTREAM_KEY` at runtime
@@ -125,6 +129,9 @@ Run `node evaluation/evaluation-spend-guard.mjs` in the guard process.
 It prints its port, binds to loopback by default and sends only authenticated
 model requests upstream. Container access requires an explicitly selected private
 `KLICKER_EVAL_GUARD_HOST`; exposing it publicly is outside this workflow.
+The guard's `timeoutMs` bounds the entire upstream exchange, including streamed
+output, and defaults to 120 seconds. A timeout retains its spend reservation and
+may leave the interrupted target turn uncertain.
 
 The evaluation application's `OPENAI_BASE_URL` must point to that guard's `/v1`
 and its `OPENAI_API_KEY` must be the guard key. Keep the upstream key only in the

@@ -180,8 +180,8 @@ export function requestReservation(policy, pathname, body) {
   const input = pathname === '/v1/responses' ? body.input : body.messages
   if (!(typeof input === 'string' || Array.isArray(input)))
     throw budgetError('provider_input_invalid')
-  const checkModalities = (value) => {
-    if (Array.isArray(value)) return value.forEach(checkModalities)
+  const checkModalities = (value, depth = 0) => {
+    if (depth > 64) throw budgetError('provider_request_invalid')
     if (!value || typeof value !== 'object') return
     if (
       typeof value.type === 'string' &&
@@ -191,7 +191,7 @@ export function requestReservation(policy, pathname, body) {
     ) {
       throw budgetError('provider_modality_unqualified')
     }
-    Object.values(value).forEach(checkModalities)
+    for (const entry of Object.values(value)) checkModalities(entry, depth + 1)
   }
   checkModalities(input)
   const output =
@@ -419,17 +419,22 @@ export async function main(env = process.env, argv = process.argv.slice(2)) {
     upstreamOrigin: env.KLICKER_EVAL_UPSTREAM_ORIGIN,
     upstreamKey: env.KLICKER_EVAL_UPSTREAM_KEY,
   })
-  const shutdown = () => server.close(() => process.exit(0))
-  process.once('SIGTERM', shutdown)
-  process.once('SIGINT', shutdown)
   const port = Number(env.KLICKER_EVAL_GUARD_PORT || 0)
   if (!Number.isInteger(port) || port < 0 || port > 65535)
     throw budgetError('provider_guard_port_invalid')
-  server.listen(port, env.KLICKER_EVAL_GUARD_HOST || '127.0.0.1', () => {
-    process.stdout.write(
-      'KLICKER_EVAL_GUARD_PORT=' + server.address().port + '\n'
-    )
+  await new Promise((ready, reject) => {
+    server.once('error', reject)
+    server.listen(port, env.KLICKER_EVAL_GUARD_HOST || '127.0.0.1', () => {
+      server.removeListener('error', reject)
+      ready()
+    })
   })
+  const shutdown = () => server.close(() => process.exit(0))
+  process.once('SIGTERM', shutdown)
+  process.once('SIGINT', shutdown)
+  process.stdout.write(
+    'KLICKER_EVAL_GUARD_PORT=' + server.address().port + '\n'
+  )
 }
 
 if (

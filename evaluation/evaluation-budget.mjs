@@ -210,8 +210,10 @@ export async function assertRunLease(filePath) {
 export async function mutateBudget(filePath, mutate) {
   const path = resolve(filePath)
   const release = await acquireBudgetLock(path)
+  let ledger
+  let mutationError
   try {
-    const ledger = await readBudgetLedger(path)
+    ledger = await readBudgetLedger(path)
     const identity = IDENTITY.map((key) => ledger[key])
     const previousTurns = ledger.submittedTurns
     const previousSpend = ledger.reservedProviderMicroUsd
@@ -228,10 +230,20 @@ export async function mutateBudget(filePath, mutate) {
     await exclusive(temporary, JSON.stringify(ledger) + '\n')
     await rename(temporary, path)
     await syncDirectory(path)
-    return ledger
-  } finally {
-    await release()
+  } catch (error) {
+    mutationError = error
   }
+  try {
+    await release()
+  } catch (error) {
+    if (!mutationError) throw error
+    mutationError.cause = new AggregateError(
+      [mutationError.cause, error].filter(Boolean),
+      'Budget mutation failed and its lock could not be released'
+    )
+  }
+  if (mutationError) throw mutationError
+  return ledger
 }
 
 export function assertBudgetCanStart(ledger) {

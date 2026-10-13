@@ -450,3 +450,36 @@ no external model traffic and no Infisical invocation. No application behavior
 changed in this pin reconciliation. Hosted PR checks are the remaining exact-head
 verification gate; the draft-only final AI review gate remains deferred. PR 6489
 stays draft. No paid evaluation, production change or deployment is authorized.
+
+## Approved review-comment follow-up
+
+The user requested disposition of remaining comments and fresh exact-head CI in
+[draft PR #6489](https://github.com/uzh-bf/klicker-uzh/pull/6489). Execution mode
+remains standard. Main owns mapper diagnostics/fingerprint, independent citation
+expectations, IPv6 loopback consistency, request depth and startup errors. One
+executor owns runner output-close cleanup and synthetic guard fixture cleanup.
+Acceptance uses the existing offline evaluator and cache-policy suites, scoped
+format/lint/type checks, committed-range reviews, comment replies and exact-head
+hosted CI. No new dependencies, modules, paid evaluation or readiness change.
+
+The approved fail-closed contract governs interrupted initialization, stale
+mutation locks and interrupted active turns. Automatic cleanup/reconciliation
+could erase durable evidence or permit a second budget, so those suggestions
+receive evidence-backed replies rather than recovery behavior. Source receipts
+retain all application-recognized retrieval tools; the exact KB tool fields
+describe the grounding canary. Tests remain repository-level integration checks
+for Chat's adapter; root evaluation utilities need no new workspace package.
+
+Fresh target `dcbec1ede200f6f7482d32b82bf7aff172e97b60` adds only independent CI
+workflow updates. The PR is mergeable with no required-freshness blocker, so
+no target integration is needed. Existing reviewed framework pin and synthetic
+application routing proof remain applicable outside these changed seams.
+
+Verification: 55 focused offline tests pass across trajectory, target, guard and
+cache-policy suites, including independent citation expectations, rejected deep
+input, occupied-port startup and preservation of mutation errors during cleanup
+failure. Chat typechecking passes with all existing dependency volumes mounted;
+an initial two-volume container lacked transitive workspace dependencies.
+Scoped ESLint, Biome, Prettier and plain-Node launcher help pass. The continuation
+adds 343 substantive changed lines before review, excluding project artifacts.
+Committed-range reviews, thread dispositions and fresh hosted CI remain pending.

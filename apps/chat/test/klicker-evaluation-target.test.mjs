@@ -707,6 +707,7 @@ test('guarded runQuestion accounts completed failures and refuses an over-budget
 
     await target.runQuestion(question)
 
+    assert.ok(statusReads > 0)
     const afterTurn = await readBudgetLedger(budgetFile)
     assert.equal(afterTurn.submittedTurns, 1)
     assert.equal(afterTurn.reservedProviderMicroUsd, SYNTHETIC_RESERVATION)
