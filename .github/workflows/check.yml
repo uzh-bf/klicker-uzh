@@ -161,7 +161,7 @@ jobs:
       - name: Check hosted pnpm cache policy
         run: node --test ./.github/scripts/hosted-pnpm-cache.test.cjs
 
-      - name: Check CI queue policy
+      - name: Check CI and review contracts
         run: |
           node --test \
             .github/scripts/direct-script-invocations.test.cjs \
@@ -175,6 +175,9 @@ jobs:
             .github/scripts/sync-ancestry-guard.test.cjs \
             .github/scripts/required-ci-status.test.cjs \
             .github/scripts/ocr-self-update-guard.test.cjs \
+            .github/scripts/ocr-mistral-adapter.test.cjs \
+            .github/scripts/final-ai-review.test.js \
+            .github/scripts/final-ai-stack-review.test.js \
             .github/scripts/stg-release-promoter.test.js \
             .github/scripts/staging-image-plan.test.cjs \
             .github/scripts/staging-image-status.test.cjs \
