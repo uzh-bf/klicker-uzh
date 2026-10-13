@@ -85,14 +85,16 @@ accepted only after the matching open PR is found.
 
 ### Sync direction guard
 
-`sync-ancestry-guard.yml` also rejects `v3-audit` history in `v3-ai`. Every
-pull request into `v3-ai` and every push to it fails when the new head contains
-`v3-audit`'s oldest own first-parent commit, pinned in `DOWNSTREAM_ROOTS`.
-Every later `v3-audit` commit descends from that root, so any merge of
-`v3-audit` into `v3-ai` carries it. The check is a branch-health gate: once
-`v3-ai` contains the root, every later pull request and push fails as well,
-until recovery removes it. A pin that is no longer on `v3-audit`'s first-parent
-line fails the check instead of passing it. Ordinary CI cannot see this: the
+`sync-ancestry-guard.yml` also rejects `v3-audit` and `v3-adaptive-learning`
+history in `v3-ai`. Every pull request into `v3-ai` and every push to it fails
+when the new head contains `v3-audit`'s oldest own first-parent commit, pinned
+in `DOWNSTREAM_ROOTS`. `v3-adaptive-learning` was branched from `v3-audit`, so
+the same commit is on its first-parent line too. Every later commit on either
+branch descends from that root, so any merge of either into `v3-ai` carries it.
+The check is a branch-health gate: once `v3-ai` contains the root, every later
+pull request and push fails as well, until recovery removes it. A pin that is no
+longer on each downstream branch's first-parent line fails the check instead of
+passing it. Ordinary CI cannot see this: the
 2026-10-12 back-merge of `v3-audit` into `v3-ai` passed every other check.
 
 The guard covers only that edge. `v3-ai` history in `v3` is not checked,
