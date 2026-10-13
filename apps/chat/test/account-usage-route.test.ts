@@ -229,7 +229,11 @@ function chatbot(overrides: Record<string, unknown> = {}) {
   return {
     id: 'chatbot-1',
     ownerId: 'owner-1',
-    owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: 'cost-center-1' },
+    owner: {
+      aiFeaturesEnabled: true,
+      aiSubscriptionTier: 'ADVANCED',
+      aiChatbotCostCenter: 'cost-center-1',
+    },
     course: { displayName: 'Test Course' },
     systemPrompts: { tutor: { prompt: 'Use course material.' } },
     mcpConfigurations: [],
@@ -701,6 +705,7 @@ describe('account usage chat route', () => {
         owner: {
           aiFeaturesEnabled: true,
           betaEnabled: false,
+          aiSubscriptionTier: 'ADVANCED',
           aiChatbotCostCenter: 'cost-center-1',
         },
       })
@@ -881,7 +886,11 @@ describe('account usage chat route', () => {
     mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(false)
     mocks.chatbotFindUnique.mockResolvedValue(
       chatbot({
-        owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: null },
+        owner: {
+          aiFeaturesEnabled: true,
+          aiSubscriptionTier: 'BASE',
+          aiChatbotCostCenter: null,
+        },
       })
     )
 
@@ -900,6 +909,30 @@ describe('account usage chat route', () => {
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
+  test('refuses an advanced model for a base-tier owner with a cost center', async () => {
+    mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(false)
+    mocks.chatbotFindUnique.mockResolvedValue(
+      chatbot({
+        owner: {
+          aiFeaturesEnabled: true,
+          aiSubscriptionTier: 'BASE',
+          aiChatbotCostCenter: 'cost-center-1',
+        },
+      })
+    )
+
+    const response = await POST(createRequest({ selectedModel: 'gpt-4.1' }), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(403)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Chat model usage is unavailable',
+      code: 'CHAT_MODEL_UNAVAILABLE_ADVANCED',
+    })
+    expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
   test('refuses the automatic default without a cost center while enforcement is off', async () => {
     vi.stubEnv('CHAT_PRIMARY_MODEL_ID', 'auto')
     mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(false)
@@ -907,7 +940,11 @@ describe('account usage chat route', () => {
       chatbot({
         modelSelection: false,
         allowedModelIds: ['auto', 'gpt-6-luna'],
-        owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: null },
+        owner: {
+          aiFeaturesEnabled: true,
+          aiSubscriptionTier: 'BASE',
+          aiChatbotCostCenter: null,
+        },
       })
     )
 
@@ -927,7 +964,11 @@ describe('account usage chat route', () => {
     mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(false)
     mocks.chatbotFindUnique.mockResolvedValue(
       chatbot({
-        owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: null },
+        owner: {
+          aiFeaturesEnabled: true,
+          aiSubscriptionTier: 'BASE',
+          aiChatbotCostCenter: null,
+        },
       })
     )
 

@@ -12,6 +12,7 @@ import {
   CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH,
   getChatModelAutoPolicyIssues,
   getChatModelBasePolicyIssues,
+  isChatUsageClassEntitled,
   normalizeChatbotCustomModeConfig,
   normalizeChatbotStandardModeConfig,
   parseChatbotCustomModeConfigInput,
@@ -1258,6 +1259,48 @@ async function assertGraphRetrievalTransition(
     throw chatbotError('Graph retrieval is not available', 'FORBIDDEN')
 }
 
+// Rejects a model policy that adds a model the owner's account cannot use, so
+// an owner cannot configure a chatbot whose turns are refused. Models the
+// current policy already allows stay saveable: an owner whose entitlement was
+// withdrawn must still be able to edit the chatbot and remove them.
+async function assertModelPolicyEntitled(
+  tx: Prisma.TransactionClient,
+  ownerId: string,
+  currentModelIds: readonly string[],
+  nextModelIds: readonly string[]
+): Promise<void> {
+  const addedModelIds = nextModelIds.filter(
+    (modelId) => !currentModelIds.includes(modelId)
+  )
+  if (addedModelIds.length === 0) return
+
+  const owner = await tx.user.findUnique({
+    where: { id: ownerId },
+    select: {
+      aiFeaturesEnabled: true,
+      aiSubscriptionTier: true,
+      aiChatbotCostCenter: true,
+    },
+  })
+  const modelById = new Map(
+    getChatModelRegistry().map((model) => [model.id, model])
+  )
+  const unavailableModelIds = addedModelIds.filter((modelId) => {
+    const model = modelById.get(modelId)
+    return (
+      !owner ||
+      !model ||
+      !isChatUsageClassEntitled({ usageClass: model.usageClass, ...owner })
+    )
+  })
+  if (unavailableModelIds.length > 0) {
+    throw chatbotError(
+      `Model(s) not available for this account: ${unavailableModelIds.join(', ')}`,
+      'BAD_USER_INPUT'
+    )
+  }
+}
+
 export async function saveChatbotRevision(
   args: {
     chatbotId: string
@@ -1360,6 +1403,12 @@ export async function saveChatbotRevision(
       chatbot.ownerId,
       current.knowledgeGraphRetrievalEnabled,
       next.knowledgeGraphRetrievalEnabled
+    )
+    await assertModelPolicyEntitled(
+      tx,
+      chatbot.ownerId,
+      current.allowedModelIds,
+      next.allowedModelIds
     )
     if (disclaimer) {
       const title = normalizeDisclaimerText(disclaimer.title)
