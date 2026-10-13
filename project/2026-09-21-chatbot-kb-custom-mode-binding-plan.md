@@ -413,10 +413,19 @@ malformed/stale row retirement and disabled override preservation. No new test
 file or assertion-only test is added. The UI files are unchanged, so the
 October 12 browser captures and interaction evidence remain applicable.
 
-Verification: utility normalization 16 cases and knowledge attachment/CRUD 71
-cases passed in the retained task container. Chat seam verification and normal
-commit hooks are next, followed by read-only Standards/simplification and
-Spec/slice review, integrated final review and the ordinary push.
+Verification: utility normalization 16 cases, knowledge attachment/CRUD 71
+cases and chat approval/inheritance/scope/route 80 cases passed. Normal hooks
+passed 42 type/schema tasks, 7 lint tasks, formatting, dependency consistency,
+host contracts, secret scanning and the 27-task full build. Focused Opengrep
+scanned the two changed source files with no findings or errors.
+
+The first reduction is pushed as `70eb77294b`. Independent Standards review
+covered all 31 PR paths and verified the attachment reduction. Its sole optional
+finding is accepted: remove the private `isTypedStandardMode` forwarding
+wrapper and call the shared predicate directly at its three sites. This is a
+mechanical correction preserving type narrowing; the effective-mode suite is
+rerun and normal hooks verify the complete state. Spec/slice review and the
+integrated final review remain pending. Reports live in `project/_local/reviews/`.
 The previous exact-head hosted application checks passed; OCR failed with
 HTTP 402, and final AI review is pending. This source review cannot replace
 those hosted statuses.

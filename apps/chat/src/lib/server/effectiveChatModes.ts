@@ -130,7 +130,7 @@ function sortByPriority<T extends ChatModeMCPConfiguration>(configs: T[]): T[] {
 export function resolveEffectiveMCPConfigurations<
   T extends ChatModeMCPConfiguration,
 >(configs: readonly T[], selectedMode: string): EffectiveMCPConfiguration<T>[] {
-  if (selectedMode !== 'quizzer' && isTypedStandardMode(selectedMode)) {
+  if (selectedMode !== 'quizzer' && isChatbotStandardModeKey(selectedMode)) {
     return sortByPriority(
       configs.filter(
         (config) => config.chatMode === selectedMode && isEnabled(config)
@@ -235,12 +235,6 @@ function isModeExplicitlyDisabled(
   return modeConfig?.enabled === false
 }
 
-function isTypedStandardMode(
-  mode: string
-): mode is 'tutor' | 'explainer' | 'quizzer' {
-  return isChatbotStandardModeKey(mode)
-}
-
 function isStandardModeEnabled(
   standardModeConfig: unknown,
   systemPrompts: unknown,
@@ -251,7 +245,7 @@ function isStandardModeEnabled(
     systemPrompts
   )
 
-  if (isTypedStandardMode(mode)) {
+  if (isChatbotStandardModeKey(mode)) {
     if (mode === 'tutor') return normalizedConfig.tutorEnabled
     if (mode === 'explainer') return normalizedConfig.explainerEnabled
     return normalizedConfig.quizzerEnabled
@@ -281,7 +275,7 @@ function getApprovedCustomModesByKey(
   for (const mode of modes) {
     // Standard-mode keys stay platform-owned, so a stored entry that reuses one
     // can never replace the platform label or the platform mode contract.
-    if (isTypedStandardMode(mode.key) || modesByKey.has(mode.key)) continue
+    if (isChatbotStandardModeKey(mode.key) || modesByKey.has(mode.key)) continue
     modesByKey.set(mode.key, mode)
   }
 
