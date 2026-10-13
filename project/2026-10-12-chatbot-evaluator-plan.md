@@ -292,3 +292,41 @@ container-native focused checks, committed-slice simplification/risk review,
 integrated final review, ordinary push and existing draft PR update. Stop and
 verify the exact runtime afterward. Source recovery is an ordinary revert;
 retain ledgers and never reset an exhausted experiment.
+
+Continuation discoveries: preserve the real boundary export in the existing
+`account-usage-route.test.ts` partial mock; its route imports the new check.
+Extend the existing OpenRouter local Chat solution with the zero-spend lesson,
+rather than creating another document. Devrouter's generated discovery refresh
+would remove custom repository guidance; its unrelated edits were restored.
+
+Continuation progress: guard slice `8f2e622e36` passed risk review; accepted
+simplification removes the unnecessary parsed-request clone. Sixteen focused
+checks and the managed runtime suite pass in the exact container. Source
+credential heuristics flagged only synthetic prompt-cache assignments; exact
+staged inspection and gitleaks passed before the documented false-positive
+override. Full application proof and final delivery remain in progress.
+
+Actual SDK qualification exposed an additional alias seam: prefixed deployment
+IDs are not recognized as reasoning models. Main extends the existing Responses
+provider options with the SDK's supported `forceReasoning` override only for
+guarded evaluation of registry-declared reasoning models. Extend the existing
+cache-policy SDK test for the reproduced missing reasoning settings; no new
+provider abstraction or production routing change.
+
+Routing acceptance: real API login, seeded participant/disclaimer/thread,
+Responses serialization, forced pre-stream failure and actual SDK retry,
+local authenticated MCP execution and persisted answer/tool passed against
+only a fake loopback upstream. Three arrivals observed durable cumulative
+reservations of 531,144, 1,062,288 and 1,593,432 microdollars. These are
+synthetic reservations, not billed dollars. Chatbot base/key overrides and
+an application endpoint mismatch produced no additional upstream arrival.
+Two managed process replacements passed. Private wire proof is retained
+separately; no positive real-provider qualification receipt was created.
+
+Verification: 86 focused Vitest checks across evaluator, cache/provider and
+affected account route pass. Container chat typecheck, scoped ESLint, Biome,
+shell syntax and documentation formatting pass. Existing managed runtime
+suite passes; its unchanged boundary evidence is reused. Only pre-existing
+Biome warnings remain. No browser interaction or visible UI changed.
+Devrouter active host CLI and delivered helper are 0.3.1; minimal `chat,mcp`
+runtime startup passed with no LiteLLM service. Delivery and reviews pending.

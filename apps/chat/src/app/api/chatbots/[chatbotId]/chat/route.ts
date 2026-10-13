@@ -49,7 +49,10 @@ import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
-import { createOpenAIFetch } from '@/src/lib/server/openaiCachePolicy'
+import {
+  assertEvaluationRouting,
+  createOpenAIFetch,
+} from '@/src/lib/server/openaiCachePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import {
   buildAbortedAssistantContent,
@@ -153,6 +156,7 @@ function getOpenAIModel(
 }
 
 function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
+  assertEvaluationRouting(chatbot)
   // Use per-chatbot configuration if available
   const hasCustomKey =
     typeof chatbot.openaiApiKey === 'string' && chatbot.openaiApiKey.length > 0
@@ -1645,6 +1649,11 @@ export async function POST(
             ...(selectedModelConfig.usesResponsesApi && {
               store: getOpenAIResponsesStore(),
             }),
+            ...(process.env.KLICKER_EVAL_GUARD_ORIGIN &&
+              selectedModelConfig.usesResponsesApi &&
+              selectedModelConfig.supportsReasoning && {
+                forceReasoning: true,
+              }),
             ...(providerReasoningEffort && {
               reasoningEffort: providerReasoningEffort,
               reasoningSummary: 'auto',

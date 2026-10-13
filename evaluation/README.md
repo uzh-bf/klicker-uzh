@@ -59,6 +59,10 @@ reasoning-inclusive `max_completion_tokens`, respectively. Unpriced models,
 legacy `max_tokens`, hosted tools, multimodal input, multiple completions,
 provider price overrides and redirects fail closed. Function tools execute in
 the application; their separate paid egress must be qualified independently.
+The guard accepts only the exact two true `cache` bypass flags emitted by the
+application, then removes this proxy-only field before forwarding. A nonblank
+native `prompt_cache_key` of at most 64 characters is preserved. Other cache
+objects and unknown request fields remain unqualified.
 
 Choose a new private `KLICKER_EVAL_BUDGET_FILE`, then initialize it offline once:
 
@@ -93,6 +97,31 @@ classifier/embedding requests can bypass this text-model seam. Pin the fixed
 routing. The qualified provider must support the application's fixed low
 reasoning effort and explicit output bound.
 
+Set `KLICKER_EVAL_GUARD_ORIGIN` in the application process as well as the runner.
+When present, the application rejects a mismatched default endpoint and any
+chatbot-specific base URL or key before constructing the provider. The origin
+must be canonical and local, without a path, query or credentials. Without this
+opt-in, ordinary chatbot routing retains its existing behavior.
+
+Use the existing `CHAT_MODEL_REGISTRY_JSON` override to distinguish the selected
+application ID from the upstream deployment ID. For example, an evaluation-only
+`gpt-6-luna` entry can use `deploymentId: "openai/gpt-6-luna"` for a qualified
+OpenRouter route. Preserve the registry's fallback and usage policy requirements.
+Key the guard's pricing policy by the deployment ID actually sent upstream;
+keep the runner and receipt `modelId` equal to the application selection ID.
+Do not change the production registry or infer qualification from this example.
+For guarded Responses requests, the application uses the registry's reasoning
+capability to set the SDK's `forceReasoning` override. Otherwise prefixed model
+aliases can lose their requested reasoning effort during SDK serialization.
+
+For managed local startup, pass the guard origin, base URL, key, registry JSON
+and a fresh nonsecret `KLICKER_EVAL_GUARD_GENERATION` to `post-start.sh`. These
+explicit settings survive canonical development environment sourcing. The
+managed process fingerprint includes routing settings and the generation,
+never key values. Change the generation whenever credentials change and use
+the owned process helper for replacement. Runner and guard still need the same
+local OS/filesystem for their live lease.
+
 Save that proof in a private `KLICKER_EVAL_QUALIFICATION_FILE`: `version: 1`,
 `experimentId` and `policyHash` from the initialized ledger, exact `guardOrigin`,
 `chatOrigin`, `chatbotId`, `modelId`, canonical policy `upstreamOrigin`,
@@ -102,10 +131,14 @@ and runtime-injected guard key to the runner. It checks the receipt and authenti
 guard status before login; reachability alone is not routing proof. Keep policies,
 receipts, ledger and synthetic transcripts in approved private custody, outside Git.
 
-This source package proves local admission with synthetic transports and zero
-provider spend. It does not qualify live application wiring, current provider
-tariffs, browser behavior or chatbot answer quality. Run qualification and paid
-experiments require their own approved environment and spend boundary.
+Zero-spend qualification can exercise the real application with a fake local
+Responses upstream, including SDK retries, MCP execution and persistence. Use
+the ledger lease and turn primitives directly for this diagnostic; the paid
+runner's prior-qualification gate remains intact. Record a separate synthetic
+wire-proof artifact. It is not a positive real-provider qualification receipt
+and establishes neither provider capabilities nor chatbot answer quality.
+Current tariffs and paid experiments require their own approved environment
+and spend boundary.
 
 ## One-time setup
 
