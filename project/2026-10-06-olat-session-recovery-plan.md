@@ -45,8 +45,10 @@ revision so servers can reject a request whose cookies changed after the UI's
 check. Already committed server operations cannot be undone by a later login.
 LTI SSR publishes the expected revision so refused cookies cannot silently
 continue using the former login. Embedded UI also confirms unpartitioned access
-with document.hasStorageAccess before mounting any regular PWA or Chat page,
-including anonymous entry points whose layout can query participant identity.
+with document.hasStorageAccess before mounting PWA pages or authenticated Chat content,
+including anonymous PWA entry points whose layout can query participant identity.
+Chat guards its authenticated chatbot segment; public login and error pages
+remain outside the boundary so missing chatbots retain HTTP 404 responses.
 Content waits for the client context check; server-fetched data remains available
 for matching-revision hydration. Without shared access, the boundary
 offers the original LTI launch in a top-level tab. Do not replay launch parameters when reloading.
@@ -159,8 +161,8 @@ deletion reloads a credential-stripped URL rather than replaying the deleted
 account's LTI launch. Both received scoped independent review without blocking
 findings. The browser tests observe signed-out state rather than competing with
 application redirects; deletion starts in a fresh tab after the logout scenario.
-The optional suggestion to strip every successful launch URL immediately remains
-outside this correction; deletion and revision reloads already strip credentials.
+The later accepted-launch correction below also strips a successful launch URL
+after confirming replacement-cookie acceptance.
 
 ### Verification
 
@@ -309,4 +311,39 @@ Running the two suites together also exposed course-level fixture interference:
 the PWA header correctly chose another published chatbot on the shared seeded
 course. The shared-login spec now owns one course and two memberships so its
 header navigation and thread-identity assertions exercise the same chatbot.
-The fixture is removed after the spec. This correction requires re-verification.
+The fixture is removed after the spec. The final full matrix passed 41 cases
+with nine WebKit environment skips and zero failures (6.0 minutes). This run
+includes the relocated Chat boundary, isolated course, both reported defects,
+and all four real local ltijs launches against the synthetic LMS.
+
+The integrated source review of corrections through `02118037ab` found no
+blocking issue. It covers all fourteen changed paths and the necessary callers;
+browser results and hosted merge gates remain separate. A focused final pass
+on the subsequent login-test helper correction also found no blocking issue.
+
+The first full live-quiz run passed 66 cases, including all 39 core scenarios,
+then failed in the collaboration suite's obsolete login-cookie helper. Sixteen
+serial dependents did not run. That helper now waits for the actual UI login
+and accepted cookie names at the configured PWA origin instead of manufacturing
+a retired cookie on a hard-coded domain. The temporary-login helper likewise
+observes a newly accepted cookie and dialog dismissal instead of copying tokens
+or racing the application's reload. Synthetic cookie resets first leave the
+authenticated page to prevent its sign-out redirect interrupting the test.
+
+The final collaboration suite passed all 44 cases (4.0 minutes), including
+ordinary and temporary logins, reload persistence, leaderboard identity,
+gamified answer submission and PIN access. Together with the unchanged core
+suite's 39 passing cases, this covers all 83 quiz cases across two producing
+runs. The focused seven-case login run also passed. These results follow
+failed attempts; they are not one clean combined run. One intervening setup
+attempt saw browser network suspension. Docker later temporarily timed out
+before the queued runtime validation recovered without a host-wide restart.
+
+Final source review and both focused follow-ups found no blocking issue.
+Playwright types and scoped formatting passed after the test-helper cleanup.
+The production PWA build and EN/DE probe result above comes from the first
+feedback-correction tree; later navigation and Chat layout changes were checked
+with types and the final browser runs. Hosted production builds remain a gate.
+No authentication guard or browser assertion was weakened, no dependency was
+added, and no CodeQL alert was dismissed. Remaining merge gates are hosted CI,
+release-branch deployment parity, CodeQL disposition and the public final review.
