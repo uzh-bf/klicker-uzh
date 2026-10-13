@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.87](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.86...v3.4.0-alpha.87) (2026-10-13)
+
+
+### Bug Fixes
+
+* **chat:** keep the reply language in owner preview after tool output ([#6475](https://github.com/uzh-bf/klicker-uzh/issues/6475)) ([d48bd2a](https://github.com/uzh-bf/klicker-uzh/commit/d48bd2a08ed53ca0b4dd810be9f83d69b4884899))
+* **chat:** preserve citations beyond the source preview limit ([#6483](https://github.com/uzh-bf/klicker-uzh/issues/6483)) ([0a8d465](https://github.com/uzh-bf/klicker-uzh/commit/0a8d4652915c9ee6d86136050186bb97e054387d))
+* **chat:** send reasoning effort to Azure reasoning deployments ([#6473](https://github.com/uzh-bf/klicker-uzh/issues/6473)) ([8484788](https://github.com/uzh-bf/klicker-uzh/commit/8484788dea7db4090d6088b40c2f84714158fdb6))
+* **chat:** validate registries with the released model policy ([#6467](https://github.com/uzh-bf/klicker-uzh/issues/6467)) ([df2bfa4](https://github.com/uzh-bf/klicker-uzh/commit/df2bfa41d8753c04af2f07f185b78d842cbdcd92))
+* **ci:** head sync PRs with bot-owned branches and guard sync direction ([#6477](https://github.com/uzh-bf/klicker-uzh/issues/6477)) ([bcdccb8](https://github.com/uzh-bf/klicker-uzh/commit/bcdccb81cd05886510133f6a1b9106d89f987575))
+* **deps:** bump manage-assistant eval pyjwt to 2.14.0 ([#6471](https://github.com/uzh-bf/klicker-uzh/issues/6471)) ([60dc8bf](https://github.com/uzh-bf/klicker-uzh/commit/60dc8bfe1645c0d28fbf7dc820186f9cab89c984))
+* **knowledge:** keep ingestion and graph workflows independent ([#6460](https://github.com/uzh-bf/klicker-uzh/issues/6460)) ([b2f839f](https://github.com/uzh-bf/klicker-uzh/commit/b2f839f34ff8071131e19f3e52d778e8ed67eca3))
+* **mcp-student:** report the data-use gate instead of a backend outage ([#6474](https://github.com/uzh-bf/klicker-uzh/issues/6474)) ([b35104f](https://github.com/uzh-bf/klicker-uzh/commit/b35104f97aab070388559c65da0ffdf1455dc70b))
+
+
+### Build and CI
+
+* **devrouter:** install devrouter 0.3.0 in CI ([#6479](https://github.com/uzh-bf/klicker-uzh/issues/6479)) ([01945fa](https://github.com/uzh-bf/klicker-uzh/commit/01945fadbc2696e712fdf3d92686b42ffb2542ff))
+
+
+### Enhancements
+
+* **chat:** render supported video links inline ([#6484](https://github.com/uzh-bf/klicker-uzh/issues/6484)) ([5f8ff74](https://github.com/uzh-bf/klicker-uzh/commit/5f8ff74716f15c44eceaae9b3d2c6308462d6352))
+* **deploy:** make Auto the production automatic primary ([#6472](https://github.com/uzh-bf/klicker-uzh/issues/6472)) ([537b3f3](https://github.com/uzh-bf/klicker-uzh/commit/537b3f3a8440e965bd37316c1c909713fe302cd4))
+* **deploy:** promote Auto as the production automatic primary to v3 ([#6482](https://github.com/uzh-bf/klicker-uzh/issues/6482)) ([ff54b0b](https://github.com/uzh-bf/klicker-uzh/commit/ff54b0b0ec04a0fe2dcdafb53d328fcc71aee968))
+* **devrouter:** require devrouter 0.3.0 for Docker leftover cleanup ([#6485](https://github.com/uzh-bf/klicker-uzh/issues/6485)) ([bf96b70](https://github.com/uzh-bf/klicker-uzh/commit/bf96b7059b8b07c52f874245361b0547f2daf17d))
+
 ## [3.4.0-alpha.86](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.85...v3.4.0-alpha.86) (2026-10-10)
 
 
