@@ -1276,11 +1276,7 @@ async function assertModelPolicyEntitled(
 
   const owner = await tx.user.findUnique({
     where: { id: ownerId },
-    select: {
-      aiFeaturesEnabled: true,
-      aiSubscriptionTier: true,
-      aiChatbotCostCenter: true,
-    },
+    select: { aiSubscriptionTier: true, aiChatbotCostCenter: true },
   })
   const modelById = new Map(
     getChatModelRegistry().map((model) => [model.id, model])
@@ -1290,7 +1286,13 @@ async function assertModelPolicyEntitled(
     return (
       !owner ||
       !model ||
-      !isChatUsageClassEntitled({ usageClass: model.usageClass, ...owner })
+      // Owners without AI access may still prepare drafts; publication
+      // checks that access, so only the subscription is checked here.
+      !isChatUsageClassEntitled({
+        usageClass: model.usageClass,
+        aiFeaturesEnabled: true,
+        ...owner,
+      })
     )
   })
   if (unavailableModelIds.length > 0) {

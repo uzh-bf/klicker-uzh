@@ -97,9 +97,10 @@ account to base, unless the same call names a tier. Migration
 already had a cost center. `Auto` deliberately stays `BASE`: it is the
 sanctioned way for base-tier accounts to reach some Sol through routing, while
 directly selected Sol models need the advanced tier. Saving a chatbot revision
-rejects a newly added model the owner is not entitled to, and Manage disables
-such models in the model picker; models a chatbot already allows stay saveable
-so an owner can remove them.
+rejects a newly added advanced model unless the owner has the advanced tier and
+a cost center, and Manage disables such models in the model picker. Models a
+chatbot already allows stay saveable so an owner can remove them. AI access is
+checked at publication, so drafts can still be prepared without it.
 
 The original design assigned one account-wide monthly budget per class to the
 lecturer. ADR 0041 supersedes that write ownership for the trusted pilot:

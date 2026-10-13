@@ -3,6 +3,7 @@ import { faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
+  AiSubscriptionTier,
   ChatbotStatus,
   type ChatModelCapability,
   ChatUsageClass,
@@ -202,8 +203,12 @@ function ChatbotDetails({
   // Only the owner edits a chatbot, so the viewer's own entitlement decides
   // which models its participants can actually use.
   const { data: accountUsageData } = useQuery(GetChatAccountUsageDocument)
-  const advancedModelsEntitled =
-    accountUsageData?.getChatAccountUsage?.advancedModelUsage.entitled ?? false
+  // Drafts can be prepared without AI access, so an unauthorized owner falls
+  // back to the subscription tier; saving still requires its cost center.
+  const accountUsage = accountUsageData?.getChatAccountUsage
+  const advancedModelsEntitled = accountUsage?.authorized
+    ? accountUsage.advancedModelUsage.entitled
+    : accountUsage?.subscriptionTier === AiSubscriptionTier.Advanced
   const isModelUnavailable = (model: ChatModelCapability) =>
     model.usageClass === ChatUsageClass.Advanced && !advancedModelsEntitled
   const [saveRevision, { loading: isSaving }] = useMutation(

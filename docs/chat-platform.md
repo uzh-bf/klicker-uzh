@@ -391,8 +391,10 @@ and a non-blank cost center. Setting a cost center grants the advanced tier
 ([ADR 0020](./adr/0020-two-tier-chatbot-approval.md)). Both deployed automatic
 primaries (GPT-6 Luna) and `auto` are `BASE`, so an approved base-tier account
 keeps its automatic default; only directly selected Sol models need the
-advanced tier. Saving a chatbot revision rejects a newly added model the owner
-is not entitled to, and the Manage model picker disables such models.
+advanced tier. Saving a chatbot revision rejects a newly added advanced model
+unless the owner has the advanced tier and a cost center, and the Manage model
+picker disables such models. AI access is checked at publication, so drafts can
+still be prepared without it.
 
 An account with no configured base budget receives the default
 `DEFAULT_BASE_CHAT_BUDGET_CREDITS` (`packages/util/src/chatUsage.ts`) for the
