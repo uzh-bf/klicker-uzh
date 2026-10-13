@@ -3151,11 +3151,7 @@ function runCli() {
     return verifyMistralToolAccess({
       token: process.env.MISTRAL_API_KEY,
     }).then(({ provider }) => {
-      console.log(
-        provider
-          ? `Mistral tool canary passed via ${provider}`
-          : 'Mistral tool canary passed via automatic routing'
-      )
+      console.log(`Mistral tool canary passed via ${provider}`)
     })
   }
   if (command === 'validate-ocr-result') {

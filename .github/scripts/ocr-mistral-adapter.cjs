@@ -227,16 +227,27 @@ function normalizeAssistantMessage(message) {
   if (!isPlainObject(message)) {
     throw new AdapterError('malformed_response', 'response message is missing')
   }
-  const { text, thinking } = splitContent(message.content)
-  const reasoning = thinking + extractReasoning(message.reasoning_content)
-  const toolCalls = normalizeToolCalls(message.tool_calls)
-  // The OCR-facing content is the final text only: strict topology JSON must
-  // parse and private thinking must never be mixed into review content. The
-  // thinking is retained separately in reasoning_content.
-  const normalized = { role: 'assistant', content: text }
-  if (reasoning) normalized.reasoning_content = reasoning
-  if (toolCalls) normalized.tool_calls = toolCalls
-  return normalized
+  try {
+    const { text, thinking } = splitContent(message.content)
+    const reasoning = thinking + extractReasoning(message.reasoning_content)
+    const toolCalls = normalizeToolCalls(message.tool_calls)
+    // The OCR-facing content is the final text only: strict topology JSON must
+    // parse and private thinking must never be mixed into review content. The
+    // thinking is retained separately in reasoning_content.
+    const normalized = { role: 'assistant', content: text }
+    if (reasoning) normalized.reasoning_content = reasoning
+    if (toolCalls) normalized.tool_calls = toolCalls
+    return normalized
+  } catch (error) {
+    if (
+      error instanceof AdapterError &&
+      (error.code === 'malformed_chunk' ||
+        error.code === 'malformed_tool_calls')
+    ) {
+      throw new AdapterError('malformed_response', 'invalid assistant response')
+    }
+    throw error
+  }
 }
 
 function normalizeUsage(usage) {
@@ -552,7 +563,12 @@ function readRequestBody(req, limit) {
     req.on('data', (chunk) => {
       received += chunk.length
       if (tooLarge) {
-        if (received > limit * 4) req.destroy()
+        if (received > limit * 4) {
+          reject(
+            new AdapterError('request_too_large', 'request body too large')
+          )
+          req.destroy()
+        }
         return
       }
       if (received > limit) {
@@ -570,6 +586,11 @@ function readRequestBody(req, limit) {
       resolve(Buffer.concat(chunks).toString('utf8'))
     })
     req.on('error', reject)
+    req.on('close', () => {
+      if (!req.complete) {
+        reject(new AdapterError('invalid_request', 'request body incomplete'))
+      }
+    })
   })
 }
 
@@ -597,17 +618,10 @@ async function readBoundedBody(response, limit) {
     }
     return Buffer.concat(chunks).toString('utf8')
   }
-  if (typeof response.text === 'function') {
-    const text = await response.text()
-    if (Buffer.byteLength(text, 'utf8') > limit) {
-      throw new AdapterError(
-        'response_too_large',
-        'upstream response too large'
-      )
-    }
-    return text
-  }
-  throw new AdapterError('upstream_error', 'upstream returned no body')
+  throw new AdapterError(
+    'upstream_error',
+    'upstream returned no streaming body'
+  )
 }
 
 async function drain(response, limit) {
@@ -751,15 +765,10 @@ async function startAdapter(options = {}) {
       } catch {
         throw new AdapterError('malformed_response', 'invalid upstream JSON')
       }
-      const message = payload?.choices?.[0]?.message
-      if (!isPlainObject(message)) {
-        throw new AdapterError(
-          'malformed_response',
-          'missing assistant message'
-        )
-      }
+      const normalized = normalizeMistralResponse(payload)
+      const message = payload.choices[0].message
       history.remember(body.messages, message)
-      sendJson(res, 200, normalizeMistralResponse(payload))
+      sendJson(res, 200, normalized)
     } catch (error) {
       sendAdapterError(res, error)
     } finally {

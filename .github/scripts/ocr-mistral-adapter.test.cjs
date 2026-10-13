@@ -5,7 +5,9 @@ const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
+const vm = require('node:vm')
 const { spawn } = require('node:child_process')
+const { EventEmitter } = require('node:events')
 
 const {
   MISTRAL_URL,
@@ -103,23 +105,68 @@ async function waitForListenerClose(url) {
   }
 }
 
-function runCli(args, env) {
+// Runs the CLI in a child with a bounded lifetime. A wedged child is asked to
+// stop with SIGTERM and then SIGKILL, and the promise always settles so a hung
+// invocation surfaces as a normal assertion instead of a hung test run.
+function runCli(args, env, options = {}) {
+  const timeoutMs = options.timeoutMs ?? 15000
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [ADAPTER, ...args], {
       env: { ...process.env, ...env },
     })
     let stdout = ''
     let stderr = ''
+    let settled = false
+    let termTimer
+    let killTimer
+    const finish = (result) => {
+      if (settled) return
+      settled = true
+      clearTimeout(termTimer)
+      clearTimeout(killTimer)
+      resolve(result)
+    }
     child.stdout.on('data', (chunk) => {
       stdout += chunk
     })
     child.stderr.on('data', (chunk) => {
       stderr += chunk
     })
-    child.on('exit', (code, signal) =>
-      resolve({ code, signal, stdout, stderr })
+    child.on('exit', (code, signal) => finish({ code, signal, stdout, stderr }))
+    child.on('error', (error) =>
+      finish({ code: null, signal: null, stdout, stderr, error })
     )
+    termTimer = setTimeout(() => {
+      child.kill('SIGTERM')
+      killTimer = setTimeout(() => {
+        child.kill('SIGKILL')
+        killTimer = setTimeout(
+          () => finish({ code: null, signal: 'SIGKILL', stdout, stderr }),
+          2000
+        )
+      }, 2000)
+    }, timeoutMs)
   })
+}
+
+// Loads the production readRequestBody in an isolated context so body
+// settlement can be exercised without exporting internals or standing up a
+// listener. The appended line is test-only; the adapter source is unchanged.
+function loadReadRequestBody() {
+  const source = fs.readFileSync(ADAPTER, 'utf8').replace(/^#!.*\n/, '')
+  const sandboxModule = { exports: {} }
+  const context = vm.createContext({
+    require,
+    module: sandboxModule,
+    exports: sandboxModule.exports,
+    process,
+    Buffer,
+  })
+  vm.runInContext(
+    `${source}\nmodule.exports.__readRequestBody = readRequestBody\n`,
+    context
+  )
+  return sandboxModule.exports.__readRequestBody
 }
 
 test('normalizeMistralResponse keeps plain text and drops no data', () => {
@@ -162,7 +209,7 @@ test('normalizeMistralResponse rejects an unknown chunk shape', () => {
           content: [{ type: 'image', url: 'x' }],
         })
       ),
-    (error) => error.code === 'malformed_chunk'
+    (error) => error.code === 'malformed_response'
   )
 })
 
@@ -664,6 +711,58 @@ test('a conflicting native for an identical turn is a collision', async () => {
   }
 })
 
+test('a rejected response is never cached, so a valid retry replays natively', async () => {
+  const wrongModel = completion({ role: 'assistant', content: 'answer' })
+  wrongModel.model = 'mistral-large-latest'
+  const missingFinish = completion({ role: 'assistant', content: 'answer' })
+  delete missingFinish.choices[0].finish_reason
+  const badPayloads = [
+    { code: 'response_model_mismatch', payload: wrongModel },
+    { code: 'malformed_response', payload: missingFinish },
+  ]
+  for (const { code, payload } of badPayloads) {
+    // The retry answers the same normalized turn with a different native
+    // representation, so caching the rejected reply would collide and fail
+    // closed on the second request.
+    const native = {
+      role: 'assistant',
+      content: [{ type: 'text', text: 'answer' }],
+    }
+    const fetchImpl = upstream((_record, count) =>
+      jsonResponse(200, count === 1 ? payload : completion(native))
+    )
+    const adapter = await startAdapter({ apiKey: 'sk', fetchImpl })
+    try {
+      const rejected = await postJson(adapter, {
+        model: MISTRAL_MODEL,
+        messages: [{ role: 'user', content: 'u' }],
+      })
+      assert.equal(rejected.status, 502)
+      assert.equal(rejected.json.error.code, code)
+
+      const retry = await postJson(adapter, {
+        model: MISTRAL_MODEL,
+        messages: [{ role: 'user', content: 'u' }],
+      })
+      assert.equal(retry.status, 200)
+      assert.equal(retry.json.choices[0].message.content, 'answer')
+
+      const replay = await postJson(adapter, {
+        model: MISTRAL_MODEL,
+        messages: [
+          { role: 'user', content: 'u' },
+          retry.json.choices[0].message,
+          { role: 'user', content: 'again' },
+        ],
+      })
+      assert.equal(replay.status, 200)
+      assert.deepEqual(fetchImpl.calls[2].body.messages[1], native)
+    } finally {
+      await adapter.close()
+    }
+  }
+})
+
 test('native memory fails closed when its bound is exceeded', async () => {
   const fetchImpl = upstream(() =>
     jsonResponse(200, completion({ role: 'assistant', content: 'ok' }))
@@ -776,6 +875,34 @@ test('closing the adapter terminates a stalled request body', async () => {
   }
 })
 
+test('an oversized request body settles once the socket is torn down', async () => {
+  const readRequestBody = loadReadRequestBody()
+  const limit = 8
+  const req = new EventEmitter()
+  req.complete = false
+  let destroyed = false
+  req.destroy = () => {
+    destroyed = true
+    req.emit('close')
+  }
+  const settled = readRequestBody(req, limit)
+  req.emit('data', Buffer.alloc(limit + 4, 1))
+  req.emit('data', Buffer.alloc(limit * 4, 1))
+  assert.equal(destroyed, true)
+  await assert.rejects(settled, (error) => error.code === 'request_too_large')
+})
+
+test('a request body closed before completion rejects as invalid', async () => {
+  const readRequestBody = loadReadRequestBody()
+  const req = new EventEmitter()
+  req.complete = false
+  req.destroy = () => {}
+  const settled = readRequestBody(req, 1024)
+  req.emit('data', Buffer.from('{'))
+  req.emit('close')
+  await assert.rejects(settled, (error) => error.code === 'invalid_request')
+})
+
 test('upstream failures are redacted to a fixed safe error', async () => {
   const secret = 'sk-synthetic-upstream-secret'
   const fetchImpl = upstream(() =>
@@ -799,15 +926,97 @@ test('upstream failures are redacted to a fixed safe error', async () => {
   }
 })
 
-test('request and response sizes are bounded', async () => {
+test('malformed upstream content fails closed as 502, malformed requests as 400', async () => {
+  const badMessages = [
+    { role: 'assistant', content: [{ type: 'image', url: 'x' }] },
+    { role: 'assistant', content: 'x', tool_calls: 'not-an-array' },
+  ]
+  for (const message of badMessages) {
+    const fetchImpl = upstream(() => jsonResponse(200, completion(message)))
+    const adapter = await startAdapter({ apiKey: 'sk', fetchImpl })
+    try {
+      const result = await postJson(adapter, {
+        model: MISTRAL_MODEL,
+        messages: [{ role: 'user', content: 'u' }],
+      })
+      assert.equal(result.status, 502)
+      assert.equal(result.json.error.code, 'malformed_response')
+    } finally {
+      await adapter.close()
+    }
+  }
+
+  // The same client faults stay 400 because they are request-side, not an
+  // upstream response that failed validation.
   const fetchImpl = upstream(() =>
     jsonResponse(200, completion({ role: 'assistant', content: 'ok' }))
   )
   const adapter = await startAdapter({ apiKey: 'sk', fetchImpl })
   try {
+    const badContent = await postJson(adapter, {
+      model: MISTRAL_MODEL,
+      messages: [
+        { role: 'assistant', content: [{ type: 'image', url: 'x' }] },
+        { role: 'user', content: 'u' },
+      ],
+    })
+    assert.equal(badContent.status, 400)
+    assert.equal(badContent.json.error.code, 'malformed_chunk')
+    const badTools = await postJson(adapter, {
+      model: MISTRAL_MODEL,
+      messages: [
+        { role: 'user', content: 'u' },
+        { role: 'assistant', content: 'a', tool_calls: 'not-an-array' },
+      ],
+    })
+    assert.equal(badTools.status, 400)
+    assert.equal(badTools.json.error.code, 'malformed_tool_calls')
+    assert.equal(fetchImpl.calls.length, 0)
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('a non-streaming upstream response fails closed without calling text()', async () => {
+  let textCalls = 0
+  const fetchImpl = async () => ({
+    status: 200,
+    ok: true,
+    body: null,
+    async text() {
+      textCalls += 1
+      return JSON.stringify(completion({ role: 'assistant', content: 'ok' }))
+    },
+  })
+  const adapter = await startAdapter({ apiKey: 'sk', fetchImpl })
+  try {
+    const result = await postJson(adapter, {
+      model: MISTRAL_MODEL,
+      messages: [{ role: 'user', content: 'u' }],
+    })
+    assert.equal(result.status, 502)
+    assert.equal(result.json.error.code, 'upstream_error')
+    assert.equal(textCalls, 0)
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('request and response sizes are bounded', async () => {
+  const fetchImpl = upstream(() =>
+    jsonResponse(200, completion({ role: 'assistant', content: 'ok' }))
+  )
+  // A small explicit limit keeps the oversize case hermetic: the body stays
+  // inside the hard-stop window so the socket is not torn down before the 413.
+  const adapter = await startAdapter({
+    apiKey: 'sk',
+    fetchImpl,
+    maxRequestBytes: 1024,
+  })
+  try {
     const oversized = await postJson(adapter, {
       model: MISTRAL_MODEL,
-      messages: [{ role: 'user', content: 'x'.repeat(2 * 1024 * 1024 + 64) }],
+      messages: [{ role: 'user', content: 'x'.repeat(2048) }],
     })
     assert.equal(oversized.status, 413)
     assert.equal(oversized.json.error.code, 'request_too_large')
@@ -875,21 +1084,24 @@ test('shutdown acknowledges then stops the listener', async () => {
     jsonResponse(200, completion({ role: 'assistant', content: 'ok' }))
   )
   const adapter = await startAdapter({ apiKey: 'sk', fetchImpl })
-  const response = await fetch(`${adapter.url}${SHUTDOWN_PATH}`, {
-    method: 'POST',
-    headers: { authorization: `Bearer ${adapter.token}` },
-  })
-  assert.equal(response.status, 200)
-  assert.deepEqual(await response.json(), { ok: true, closed: true })
-  await waitForListenerClose(adapter.url)
-  let refused = false
   try {
-    await fetch(`${adapter.url}${CHAT_PATH}`, { method: 'POST', body: '{}' })
-  } catch {
-    refused = true
+    const response = await fetch(`${adapter.url}${SHUTDOWN_PATH}`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${adapter.token}` },
+    })
+    assert.equal(response.status, 200)
+    assert.deepEqual(await response.json(), { ok: true, closed: true })
+    await waitForListenerClose(adapter.url)
+    let refused = false
+    try {
+      await fetch(`${adapter.url}${CHAT_PATH}`, { method: 'POST', body: '{}' })
+    } catch {
+      refused = true
+    }
+    assert.equal(refused, true)
+  } finally {
+    await adapter.close()
   }
-  assert.equal(refused, true)
-  await adapter.close()
 })
 
 test('callMistral normalizes a direct canary request', async () => {
@@ -997,7 +1209,7 @@ test('run propagates the child exit code', async () => {
   assert.equal(result.code, 7)
 })
 
-test('start/serve/stop own the listener lifecycle', async () => {
+test('start/serve/stop own the listener lifecycle', async (t) => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-adapter-lifecycle-'))
   const statePath = path.join(tmp, 'state.json')
   const outputPath = path.join(tmp, 'github-output.txt')
@@ -1007,6 +1219,12 @@ test('start/serve/stop own the listener lifecycle', async () => {
     RUNNER_TEMP: tmp,
     GITHUB_OUTPUT: outputPath,
   }
+
+  // The detached serve outlives an assertion failure, so stop it no matter how
+  // the test ends; stop is idempotent when the state file is already gone.
+  t.after(async () => {
+    await runCli(['stop', statePath], env)
+  })
 
   const started = await runCli(['start', statePath], env)
   assert.equal(started.code, 0, started.stderr)
@@ -1088,24 +1306,35 @@ test('run terminates its listener on SIGTERM', async () => {
   child.stdout.on('data', (chunk) => {
     stdout += chunk
   })
-  const url = await waitFor(() =>
-    /(http:\/\/127\.0\.0\.1:\d+\/v1\/chat\/completions)/.exec(stdout)
-  )
-  assert.ok(url, 'listener url was not printed')
   const exited = new Promise((resolve) => {
     child.on('exit', (code, signal) => resolve({ code, signal }))
+    child.on('error', () => resolve({ code: null, signal: null }))
   })
-  child.kill('SIGTERM')
-  const result = await Promise.race([
-    exited,
-    delay(8000).then(() => ({ timeout: true })),
-  ])
-  assert.ok(!result.timeout, 'run did not exit after SIGTERM')
-  let refused = false
+  let timer
   try {
-    await fetch(url[1], { method: 'POST', body: '{}' })
-  } catch {
-    refused = true
+    const url = await waitFor(() =>
+      /(http:\/\/127\.0\.0\.1:\d+\/v1\/chat\/completions)/.exec(stdout)
+    )
+    assert.ok(url, 'listener url was not printed')
+    child.kill('SIGTERM')
+    const result = await Promise.race([
+      exited,
+      new Promise((resolve) => {
+        timer = setTimeout(() => resolve({ timeout: true }), 8000)
+      }),
+    ])
+    assert.ok(!result.timeout, 'run did not exit after SIGTERM')
+    let refused = false
+    try {
+      await fetch(url[1], { method: 'POST', body: '{}' })
+    } catch {
+      refused = true
+    }
+    assert.equal(refused, true)
+  } finally {
+    // Whatever happened above, the child must not survive the test.
+    clearTimeout(timer)
+    child.kill('SIGKILL')
+    await exited
   }
-  assert.equal(refused, true)
 })

@@ -143,9 +143,30 @@ integrated final review; human review and hosted CI remain distinct evidence.
 
 ## Remaining activation gates
 
-The authorized source package is delivered as
-[Draft PR #6493](https://github.com/uzh-bf/klicker-uzh/pull/6493).
-Add `MISTRAL_API_KEY`, obtain the corrected head's required CI and human review,
-and separately authorize merge and any paid live validation. The first trusted
-hosted runs must prove actual key entitlement, tool calls and strict topology
-JSON. This task does not activate the new route on the default branch.
+The user provisioned `MISTRAL_API_KEY` and authorized bounded live validation.
+[Run 38437378281](https://github.com/uzh-bf/klicker-uzh/actions/runs/38437378281)
+passed actual OCR 1.13.0 execution with six HTTP 200 responses, three native
+assistant replays, complete coverage and strict structured output. All eight
+required checks passed on `372145f4b2fe3f2d0e315b5dab46cb63a315b477`.
+Trusted automatic and manual workflows still require default-branch activation;
+human review, marking ready and merge remain separate gates.
+
+### Review-comment correction
+
+The user authorized fixing the verified PR findings on 2026-10-13. Standard
+execution continues in the existing worktree. Main owns adapter error handling,
+response validation before cache insertion, bounded upstream reading, and the
+small canary diagnostic and CI step-label corrections. Executor owns only
+`.github/scripts/ocr-mistral-adapter.test.cjs`: unconditional listener/child
+cleanup, bounded CLI waits, explicit request-size limits and regressions for
+the reproduced adapter failures. The fixed model assertion remains a protocol
+check; the stack request's explicit max effort remains consistent with the
+adapter's fixed policy.
+
+Acceptance requires focused synthetic contract tests, formatting, diff and
+staged secret inspection, committed slice review and simplification, integrated
+final review, ordinary task-branch push and exact-head required CI. Existing
+live success is evidence for the preceding adapter version; this correction
+does not claim a new paid provider run. Terminal condition is verified source
+delivery through draft PR #6493. No merge or default-branch activation is
+authorized by this correction.

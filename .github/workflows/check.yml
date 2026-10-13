@@ -161,7 +161,7 @@ jobs:
       - name: Check hosted pnpm cache policy
         run: node --test ./.github/scripts/hosted-pnpm-cache.test.cjs
 
-      - name: Check CI queue policy
+      - name: Check CI and review contracts
         run: |
           node --test \
             .github/scripts/direct-script-invocations.test.cjs \
