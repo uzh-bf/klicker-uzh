@@ -84,7 +84,8 @@ integrated final review; human review and hosted CI remain distinct evidence.
   at max reasoning, with OCR/action 1.13.0. Runtime configuration omits `llm.url`
   because OCR's saved URL shadows its per-attempt loopback environment URL.
 - Initial focused run: 174 tests passed, no failures. After consolidating two
-  redundant tests, the final focused run passed all 172 remaining tests. Syntax, YAML parsing,
+  redundant tests, a focused run passed all 172 remaining tests. Final-review
+  corrections passed all 168 tests after further consolidation. Syntax, YAML parsing,
   formatting, exact diff inspection and source secret scans passed. Full
   monorepo checks and hosted CI remain pending. The worktree has no dependency
   installation; existing hooks explicitly skip pnpm checks in this case and
@@ -117,7 +118,11 @@ integrated final review; human review and hosted CI remain distinct evidence.
   recommendations are applied: native `Response` fixtures, consolidated replay
   and direct-call coverage, and removal of unused upstream URL overrides.
   Production callers retain the same fixed endpoint. Integrated final review
-  is the remaining local delivery gate.
+  found two low-severity issues. Version checks now unset the upstream key in
+  their subshells; existing extracted-workflow fixtures assert key absence for
+  both jobs and key availability for the adapter. Overlapping tests are
+  consolidated, preserving empty-message rejection and both unknown-history
+  variants. One bounded final-review correction pass remains.
 - Follow-up inspection found that PR CI did not execute the adapter and helper
   suites. They are now wired into the existing codebase check job. The existing
   solution page also records saved-URL precedence exposed by the binary probe.
@@ -128,7 +133,7 @@ integrated final review; human review and hosted CI remain distinct evidence.
 
 ## Resume
 
-Complete integrated final review, publish the final task head and update
+Complete the final-review correction pass, publish the final task head and update
 [Draft PR #6493](https://github.com/uzh-bf/klicker-uzh/pull/6493) with final evidence.
 Retain the already passing checks for unchanged code. Leave marking ready, merge, activation, and paid live
 runs to their separately named authority; this batch grants none of them.

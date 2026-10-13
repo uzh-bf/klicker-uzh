@@ -175,21 +175,6 @@ test('normalizeMistralResponse rejects an unexpected upstream model', () => {
   )
 })
 
-test('thinking chunks inside content become reasoning_content', () => {
-  const normalized = normalizeMistralResponse(
-    completion({
-      role: 'assistant',
-      content: [
-        { type: 'thinking', thinking: [{ type: 'text', text: 'reason' }] },
-        { type: 'text', text: 'answer' },
-      ],
-    })
-  )
-  const message = normalized.choices[0].message
-  assert.equal(message.content, 'answer')
-  assert.equal(message.reasoning_content, 'reason')
-})
-
 test('content thinking and reasoning_content concatenate deterministically', () => {
   const normalized = normalizeMistralResponse(
     completion({
@@ -245,24 +230,40 @@ test('thinking-in-content replays the exact native message', async () => {
   }
 })
 
-test('an unmapped assistant replay fails closed without reasoning_content', async () => {
+test('an unmapped assistant replay fails closed with or without reasoning', async () => {
   const fetchImpl = upstream(() =>
     jsonResponse(200, completion({ role: 'assistant', content: 'ok' }))
   )
   const adapter = await startAdapter({ apiKey: 'sk', fetchImpl })
   try {
-    const result = await postJson(adapter, {
-      model: MISTRAL_MODEL,
-      messages: [
-        { role: 'system', content: 's' },
-        { role: 'user', content: 'u' },
-        { role: 'assistant', content: 'earlier answer' },
-        { role: 'user', content: 'again' },
-      ],
-    })
-    assert.equal(result.status, 409)
-    assert.equal(result.json.error.code, 'history_missing')
-    assert.equal(fetchImpl.calls.length, 0)
+    for (const assistant of [
+      { role: 'assistant', content: 'earlier answer' },
+      {
+        role: 'assistant',
+        content: 'earlier answer',
+        reasoning_content: 'unretained reasoning',
+        tool_calls: [
+          {
+            id: 'call_unknown',
+            type: 'function',
+            function: { name: 'read', arguments: '{}' },
+          },
+        ],
+      },
+    ]) {
+      const result = await postJson(adapter, {
+        model: MISTRAL_MODEL,
+        messages: [
+          { role: 'system', content: 's' },
+          { role: 'user', content: 'u' },
+          assistant,
+          { role: 'user', content: 'again' },
+        ],
+      })
+      assert.equal(result.status, 409)
+      assert.equal(result.json.error.code, 'history_missing')
+      assert.equal(fetchImpl.calls.length, 0)
+    }
   } finally {
     await adapter.close()
   }
@@ -428,41 +429,6 @@ test('translateMistralRequest converts fields and forces model and reasoning', (
   ]) {
     assert.equal(translated[dropped], undefined, `${dropped} should be dropped`)
   }
-})
-
-test('translateMistralRequest rejects streaming and a model mismatch', () => {
-  const messages = [{ role: 'user', content: 'hi' }]
-  assert.throws(
-    () =>
-      translateMistralRequest({ model: MISTRAL_MODEL, messages, stream: true }),
-    (error) => error.code === 'stream_unsupported'
-  )
-  assert.throws(
-    () => translateMistralRequest({ model: 'other-model', messages }),
-    (error) => error.code === 'model_mismatch'
-  )
-  assert.throws(
-    () => translateMistralRequest({ model: MISTRAL_MODEL, messages: [] }),
-    (error) => error.code === 'invalid_request'
-  )
-})
-
-test('translateMistralRequest fails closed on an unmapped assistant replay', () => {
-  assert.throws(
-    () =>
-      translateMistralRequest(
-        {
-          model: MISTRAL_MODEL,
-          messages: [
-            { role: 'user', content: 'u' },
-            { role: 'assistant', content: 'prior answer' },
-            { role: 'user', content: 'again' },
-          ],
-        },
-        createHistoryStore()
-      ),
-    (error) => error.code === 'history_missing'
-  )
 })
 
 test('request conversion and native replay work over the loopback listener', async () => {
@@ -658,39 +624,6 @@ test('native memory restores assistant turns without tool calls', async () => {
       { type: 'text', text: 'part2' },
     ])
     assert.equal(fetchImpl.calls[1].body.messages[1].reasoning_content, 'why')
-  } finally {
-    await adapter.close()
-  }
-})
-
-test('a replay with reasoning but no native state fails closed', async () => {
-  const fetchImpl = upstream(() =>
-    jsonResponse(200, completion({ role: 'assistant', content: 'ok' }))
-  )
-  const adapter = await startAdapter({ apiKey: 'sk', fetchImpl })
-  try {
-    const result = await postJson(adapter, {
-      model: MISTRAL_MODEL,
-      messages: [
-        { role: 'user', content: 'u' },
-        {
-          role: 'assistant',
-          content: 'x',
-          reasoning_content: 'y',
-          tool_calls: [
-            {
-              id: 'call_z',
-              type: 'function',
-              function: { name: 'n', arguments: '{}' },
-            },
-          ],
-        },
-        { role: 'tool', tool_call_id: 'call_z', content: 'r' },
-      ],
-    })
-    assert.equal(result.status, 409)
-    assert.equal(result.json.error.code, 'history_missing')
-    assert.equal(fetchImpl.calls.length, 0)
   } finally {
     await adapter.close()
   }
@@ -919,6 +852,12 @@ test('streaming and model mismatch are rejected before any upstream call', async
     })
     assert.equal(mismatch.status, 400)
     assert.equal(mismatch.json.error.code, 'model_mismatch')
+    const empty = await postJson(adapter, {
+      model: MISTRAL_MODEL,
+      messages: [],
+    })
+    assert.equal(empty.status, 400)
+    assert.equal(empty.json.error.code, 'invalid_request')
     assert.equal(fetchImpl.calls.length, 0)
   } finally {
     await adapter.close()

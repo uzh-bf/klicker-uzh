@@ -424,7 +424,10 @@ jobs:
             local now
             local version
             local exit_code=0
-            if version=$(ocr version 2>/dev/null); then
+            if version=$(
+              unset MISTRAL_API_KEY
+              ocr version 2>/dev/null
+            ); then
               if [[ "${version}" != 'open-code-review v1.13.0 '* ]]; then
                 exit_code=1
               fi
@@ -997,7 +1000,10 @@ jobs:
             local now
             local version
             local exit_code=0
-            if version=$(ocr version 2>/dev/null); then
+            if version=$(
+              unset MISTRAL_API_KEY
+              ocr version 2>/dev/null
+            ); then
               if [[ "${version}" != 'open-code-review v1.13.0 '* ]]; then
                 exit_code=1
               fi
