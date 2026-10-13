@@ -1,4 +1,5 @@
 import { MAX_SOURCES } from '../sources/normalizeSources'
+import { maskCodeRegions } from './streamingMath'
 
 // Transforms `[n]` and contiguous `[n–m]` citation markers (written by the
 // model per the S5 prompt contract) into adjacent markdown link nodes pointing
@@ -37,13 +38,41 @@ export interface MarkdownAstNode {
 // inside code never reaches the `text`-node branch in the first place.
 const SKIPPED_PARENT_TYPES = new Set(['link', 'linkReference'])
 
-// Complete numbered marker, e.g. `[1]`, `[12]`, or `[2–4]`. Hyphen and em
-// dash variants are accepted because models do not reliably emit one dash
-// character. No `g` flag — safe to `.test()` repeatedly without shared-state
-// bugs; the `g`-flagged exec below is a separate regex instance used only
-// inside `splitCitationMarkers`.
-const HAS_CITATION_MARKER_RE = /\[\d{1,2}(?:[ \t]*[-–—][ \t]*\d{1,2})?\]/
-const CITATION_MARKER_EXEC_RE = /\[(\d{1,2})(?:[ \t]*[-–—][ \t]*(\d{1,2}))?\]/g
+// A page detail that some models append inside a marker, e.g.
+// `[1, p. 6–7]` or `[1, S. 8-18]`. Only a *labelled* page is accepted: a
+// bare `[1, 2]` is overwhelmingly a coordinate or a bracket list in real
+// course answers, while no observed course citation omits the label.
+//
+// The label must be followed by digits, so a Roman chapter numeral
+// (`Kapitel IV`) never matches and such a marker stays literal. Both
+// regexes below carry `i`, because the German labels are nouns and arrive
+// capitalised while the English ones usually do not.
+// The German `S`/`s` keeps the same optional dot as the English `p`/`pp`,
+// so `[1, S 8]` and `[1, S. 8]` are treated alike.
+const PAGE_LABEL = '(?:pages?|seiten?|kapitel|kap\\.|p{1,2}\\.|s\\.|p{1,2}|s)'
+// The label and its digits are mandatory inside this group; only the comma
+// branch that wraps it is optional. Without this, a bare comma such as
+// `[1,]` or `[2, ]` would match, swallow the comma and silently degrade
+// to a citation chip. `[1]` still matches because the wrapper stays optional.
+// The start and end page digits are captured so `extractCitedPages` can read
+// the page an answer cites; the pre-check below ignores the extra groups.
+const PAGE_REFERENCE = `(?:${PAGE_LABEL}[ \t]*(\\d{1,3})(?:[ \t]*[-–—][ \t]*(\\d{1,3}))?)`
+
+// Complete numbered marker, e.g. `[1]`, `[12]`, `[2–4]`, or `[2–4, S. 10–12]`.
+// Hyphen and em dash variants are accepted because models do not reliably emit
+// one dash character. No `g` flag — safe to `.test()` repeatedly without
+// shared-state bugs; the `g`-flagged exec below is a separate regex instance
+// used only inside `splitCitationMarkers`. Its groups are 1 the marker index,
+// 2 the end of a contiguous index range, and 3 and 4 the start and end page of
+// the labelled detail.
+const HAS_CITATION_MARKER_RE = new RegExp(
+  `\\[\\d{1,2}(?:[ \\t]*[-–—][ \\t]*\\d{1,2})?(?:[ \\t]*,[ \\t]*${PAGE_REFERENCE})?\\]`,
+  'i'
+)
+const CITATION_MARKER_EXEC_RE = new RegExp(
+  `\\[(\\d{1,2})(?:[ \\t]*[-–—][ \\t]*(\\d{1,2}))?(?:[ \\t]*,[ \\t]*${PAGE_REFERENCE})?\\]`,
+  'gi'
+)
 
 export function citationHrefFor(index: number): string {
   return `#cite-${index}`
@@ -129,6 +158,49 @@ export function splitCitationMarkers(value: string): MarkdownAstNode[] {
   }
 
   return nodes
+}
+
+/**
+ * The pages an answer actually cites, keyed by the source index it cites
+ * them for.
+ *
+ * The labelled page detail inside a single-index marker is the only page
+ * signal the answer carries (`[1, S. 6–7]`); a retrieval payload describes the
+ * chunks that came back, not the ones the answer used. A marker spanning
+ * several sources (`[2–4, S. 10–12]`) names one detail for the whole group, so
+ * no single source can claim it and the detail is dropped. A detail the
+ * renderer keeps literal (descending range, bare number without a label) is
+ * dropped as well, which keeps this scan and the rendered chips on one
+ * grammar. Code fences and code spans are masked first: brackets inside code
+ * are content, never markers.
+ */
+export function extractCitedPages(source: string): Map<number, number[]> {
+  const cited = new Map<number, number[]>()
+  const masked = maskCodeRegions(source)
+  CITATION_MARKER_EXEC_RE.lastIndex = 0
+
+  while (true) {
+    const match = CITATION_MARKER_EXEC_RE.exec(masked)
+    if (!match) break
+
+    const [, firstDigits, lastDigits, pageDigits, pageEndDigits] = match
+    if (lastDigits !== undefined && Number(lastDigits) !== Number(firstDigits))
+      continue
+    if (pageDigits === undefined) continue
+
+    const start = Number(pageDigits)
+    const end = pageEndDigits === undefined ? start : Number(pageEndDigits)
+    if (end < start) continue
+
+    const index = Number(firstDigits)
+    const pages = cited.get(index) ?? []
+    for (let page = start; page <= end; page += 1) {
+      if (!pages.includes(page)) pages.push(page)
+    }
+    cited.set(index, pages)
+  }
+
+  return cited
 }
 
 /**

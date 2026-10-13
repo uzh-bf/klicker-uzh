@@ -235,3 +235,68 @@ export function hideIncompleteMath(input: string) {
     ? input
     : input.slice(0, incompleteMathStart)
 }
+
+/** CommonMark closes a code span with a backtick run of the same length. */
+function findCodeSpanEnd(
+  input: string,
+  index: number,
+  runLength: number
+): number {
+  const run = '`'.repeat(runLength)
+  let candidate = input.indexOf(run, index + runLength)
+  while (candidate !== -1 && input[candidate + runLength] === '`') {
+    candidate = input.indexOf(run, candidate + 1)
+  }
+  return candidate
+}
+
+/**
+ * Blanks out fenced code blocks and code spans while keeping the input length
+ * and every offset outside those regions, so a text scan can skip exactly what
+ * the Markdown parser treats as literal code. An unterminated fence masks the
+ * rest of the input, matching how the renderer shows a half-streamed answer.
+ */
+export function maskCodeRegions(input: string): string {
+  if (!input.includes('`') && !input.includes('~')) return input
+
+  const masked = input.split('')
+  const blank = (start: number, end: number) => {
+    for (let cursor = start; cursor < end && cursor < masked.length; cursor++) {
+      if (masked[cursor] !== '\n') masked[cursor] = ' '
+    }
+  }
+
+  let index = 0
+  while (index < input.length) {
+    const fence = isLineStart(input, index) ? readFence(input, index) : null
+    if (fence) {
+      let cursor = fence.start + fence.length
+      while (cursor < input.length) {
+        const close = isLineStart(input, cursor)
+          ? readFence(input, cursor)
+          : null
+        if (close && isFenceClose(input, cursor, fence)) {
+          cursor = close.start + close.length
+          break
+        }
+        cursor += 1
+      }
+      blank(fence.start, cursor)
+      index = cursor
+      continue
+    }
+
+    if (input[index] === '`') {
+      const runLength = countRun(input, index, '`')
+      const closing = findCodeSpanEnd(input, index, runLength)
+      const end = closing === -1 ? input.length : closing + runLength
+      blank(index, end)
+      index = end
+      continue
+    }
+
+    index += 1
+  }
+
+  return masked.join('')
+}

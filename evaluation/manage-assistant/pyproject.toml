@@ -1,0 +1,36 @@
+[project]
+name = "klicker-uzh-manage-assistant-eval"
+version = "0.0.1"
+description = "Deterministic route-level eval harness for the KlickerUZH Manage lecturer assistant (E1 tool selection, E5 refusal/do-not-save, E6 prompt-injection resistance)."
+authors = [{ name = "Roland Schlaefli", email = "roland.schlaefli@df.uzh.ch" }]
+license = "AGPL-3.0"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "deepeval==4.1.5",
+  "httpx==0.28.1",
+  "psycopg[binary]==3.2.10",
+  "pyjwt==2.10.1",
+  "pytest==8.4.2",
+  "pyyaml==6.0.3",
+]
+
+[dependency-groups]
+dev = ["ruff==0.15.18"]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = [
+  "offline: pure-Python test that must run without the dev stack, DB, or network (see tests/conftest.py)",
+]

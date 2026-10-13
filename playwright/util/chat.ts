@@ -22,6 +22,7 @@ import {
  */
 
 export const CHATBOT_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
+export const SECOND_CHATBOT_ID = '9a0d3f2e-5c8b-4d4f-a06e-2b3c4d5e6f70'
 export const DISCLAIMER_ID = '1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f'
 
 // participant enrolled in COURSE_ID_TEST by Playwright seed
@@ -35,6 +36,30 @@ export const chatUrl = () => process.env.URL_CHAT ?? URL_CHAT
 
 function chatSecret() {
   return new TextEncoder().encode(process.env.APP_SECRET ?? APP_SECRET)
+}
+
+/**
+ * Origin of a sibling app used by an LTI launch.
+ *
+ * Chat verifies the account session issuer against `APP_ORIGIN_API` and the
+ * LTI launch issuer against `APP_ORIGIN_LTI`; the legacy PWA chatbot route
+ * lives on the student app. CI exports these origins directly, while the host
+ * launcher only maps `URL_CHAT`/`URL_STUDENT` to the workspace hosts
+ * (`{app}.klicker[.<workspace>].localhost`), so the namespace is used as the
+ * fallback.
+ */
+export function siblingAppOrigin(app: 'api' | 'lti' | 'pwa'): string {
+  const explicit = {
+    api: process.env.APP_ORIGIN_API,
+    lti: process.env.APP_ORIGIN_LTI,
+    pwa: process.env.URL_STUDENT,
+  }[app]
+  if (explicit) return new URL(explicit).origin
+
+  const chat = new URL(chatUrl())
+  const [label, ...rest] = chat.hostname.split('.')
+  if (label !== 'chat' || rest.length === 0) return chat.origin
+  return `${chat.protocol}//${app}.${rest.join('.')}`
 }
 
 // ---------------------------------------------------------------------------
@@ -100,10 +125,48 @@ export async function ensureChatbotSeeded() {
   })
 }
 
-/** Mint a participant_token (HS256/APP_SECRET, sub = participantId) */
+/** Add a second chatbot to the seeded course for selector/drawer coverage. */
+export async function ensureSecondChatbotSeeded() {
+  const prisma = await getPrisma()
+  await prisma.chatbot.upsert({
+    where: { id: SECOND_CHATBOT_ID },
+    create: {
+      id: SECOND_CHATBOT_ID,
+      name: 'E2E Chatbot Two',
+      description: 'Second chatbot used by the Playwright drawer suite.',
+      ownerId: USER_ID_TEST,
+      courseId: COURSE_ID_TEST,
+      systemPrompts: {
+        tutor: {
+          prompt: 'You are a second helpful tutor.',
+          description: 'Tutor mode.',
+        },
+      },
+      status: 'PUBLISHED',
+    },
+    update: { status: 'PUBLISHED' },
+  })
+}
+
+export async function removeSecondChatbotSeed() {
+  const prisma = await getPrisma()
+  await prisma.chatbot.deleteMany({ where: { id: SECOND_CHATBOT_ID } })
+}
+
+/**
+ * Mint an account session `participant_token`.
+ *
+ * Chat treats this cookie as a bearer credential, so the token carries the
+ * same claims the backend signs into a real session: subject, the
+ * `PARTICIPANT` role, an expiry and the API issuer.
+ */
 export async function setParticipantToken(page: Page, participantId: string) {
-  const token = await new jose.SignJWT({ sub: participantId })
+  const token = await new jose.SignJWT({
+    sub: participantId,
+    role: 'PARTICIPANT',
+  })
     .setProtectedHeader({ alg: 'HS256' })
+    .setIssuer(siblingAppOrigin('api'))
     .setIssuedAt()
     .setExpirationTime('2h')
     .sign(chatSecret())
@@ -119,6 +182,93 @@ export async function setParticipantToken(page: Page, participantId: string) {
       secure: url.protocol === 'https:',
     },
   ])
+}
+
+// ---------------------------------------------------------------------------
+// LTI 1.3 launch handoff
+// ---------------------------------------------------------------------------
+
+export interface LtiLaunchSubject {
+  /** LMS subject (`sub`) of the launching user. */
+  sub: string
+  courseId: string
+  chatbotId: string
+  email?: string
+  /** Launch lifetime in seconds; negative values mint an expired launch. */
+  expiresInSeconds?: number
+}
+
+/**
+ * Mint the short-lived launch token `apps/lti` signs after verifying an LMS
+ * launch, including the chatbot binding the launch target selects.
+ */
+export async function mintLtiLaunchToken({
+  sub,
+  courseId,
+  chatbotId,
+  email,
+  expiresInSeconds = 300,
+}: LtiLaunchSubject): Promise<string> {
+  return new jose.SignJWT({
+    sub,
+    scope: 'LTI1.3',
+    chatbotLaunch: { courseId, chatbotId },
+    ...(email ? { email } : {}),
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuer(siblingAppOrigin('lti'))
+    .setIssuedAt()
+    .setExpirationTime(Math.floor(Date.now() / 1000) + expiresInSeconds)
+    .sign(chatSecret())
+}
+
+/** Chat's account-or-guest entry URL for a verified chatbot launch. */
+export function ltiLaunchUrl({
+  jwt,
+  courseId,
+  chatbotId,
+}: {
+  jwt: string
+  courseId: string
+  chatbotId: string
+}) {
+  const url = new URL('/auth/lti', chatUrl())
+  url.searchParams.set('jwt', jwt)
+  url.searchParams.set('courseId', courseId)
+  url.searchParams.set('chatbotId', chatbotId)
+  return url.toString()
+}
+
+/**
+ * Mark the `lti-token` probe cookie the LTI service sets for a launch.
+ *
+ * Its presence is how Chat decides that third-party cookies survived the LMS
+ * iframe. The launch is expected to consume and clear it either way.
+ */
+export async function setLtiProbeCookie(page: Page) {
+  const chat = new URL(chatUrl())
+  // Playwright rejects a cookie that carries both `url` and `path`.
+  await page.context().addCookies([
+    {
+      name: 'lti-token',
+      value: 'placeholder',
+      url: chat.origin,
+      httpOnly: true,
+      sameSite: 'Lax',
+      secure: chat.protocol === 'https:',
+    },
+  ])
+}
+
+/** Unsigned JWT payload read of a chat session cookie (`sub` only). */
+export function cookieTokenSubject(token: string | undefined): string | null {
+  if (!token) return null
+  const payload = token.split('.')[1]
+  if (!payload) return null
+  const decoded = JSON.parse(
+    Buffer.from(payload, 'base64url').toString('utf8')
+  ) as { sub?: string }
+  return decoded.sub ?? null
 }
 
 export async function clearChatCookies(page: Page) {

@@ -40,6 +40,9 @@ model Element {
   status ElementStatus @default(READY)
   type   ElementType
 
+  // Optional reviewed AI difficulty on generated assessment questions.
+  difficultyLevel Int?
+
   tags Tag[]
 
   elementInstances ElementInstance[]
@@ -54,6 +57,8 @@ model Element {
   accessRequests     AccessRequest[]
   catalogAssignments CatalogCollectionAssignment[]
   activityLog        ActivityLogEntry[]
+
+  generatedDraft GeneratedElementDraft?
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid

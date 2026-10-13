@@ -78,6 +78,7 @@ case "$url" in
   */api/auth/providers) printf "200\tapplication/json" ;;
   */_devPagesManifest.json) printf "{\"pages\":[\"/item/[id]\"]}\n200\tapplication/json" ;;
   */api/chatbots/*) printf "401\tapplication/json" ;;
+  http://localhost:7081/healthz) printf "200\ttext/plain; charset=utf-8" ;;
   */healthz) printf "200\tapplication/json" ;;
   *) printf "307\ttext/html" ;;
 esac'
@@ -245,6 +246,29 @@ grep -Fq 'HATCHET_CLIENT_TOKEN=synthetic-test-token' \
   fail 'relative post-create root wrote the Hatchet environment incorrectly'
 bash "$RUNTIME_SCRIPT" require-bootstrap >/dev/null
 : > "$INSTALL_LOG"
+mkdir -p "$ROOT/util/local-kb"
+cp "$REPO_ROOT/util/local-kb/runtime-environment.sh" "$ROOT/util/local-kb/runtime-environment.sh"
+(
+  . "$ROOT/util/local-kb/runtime-environment.sh"
+  local_kb_capture_environment >/dev/null 2>&1 || true
+  for key in "${LOCAL_KB_ENV_KEYS[@]}"; do
+    export "$key=synthetic-isolated-value"
+  done
+KLICKER_DEVCONTAINER_ROOT="$ROOT" \
+  KLICKER_LOCAL_KB_RUNTIME_ONLY=1 \
+  HATCHET_CLIENT_TOKEN=synthetic-isolated-token \
+  bash "$REPO_ROOT/.devcontainer/post-create.sh" >/dev/null
+)
+if grep -Eq 'prisma:reset:raw|prisma:push:raw|seed:raw' "$INSTALL_LOG"; then
+  fail 'isolated post-create mutated the database'
+fi
+grep -Fq 'exec turbo run build' "$INSTALL_LOG" || \
+  fail 'isolated post-create skipped the application build'
+grep -Fq 'HATCHET_CLIENT_TOKEN=synthetic-test-token' \
+  "$ROOT/.devcontainer/.hatchet.env" || \
+  fail 'isolated post-create overwrote existing token state'
+bash "$RUNTIME_SCRIPT" require-bootstrap >/dev/null
+: > "$INSTALL_LOG"
 rm -f "$ROOT/node_modules/.klicker-dependency-fingerprint"
 
 post_start_status=0
@@ -257,6 +281,65 @@ post_start_output="$(
 process_helper_error='Run devrouter ensure to start this managed application process.'
 [[ "$post_start_output" == *"$process_helper_error"* ]] || \
   fail 'post-start did not use the configured root before its process-helper gate'
+
+# Verify the environment delivered to managed processes across profile switches.
+mkdir -p "$ROOT/packages/prisma/src"
+mkdir -p "$ROOT/apps/chat/scripts"
+write_file "$ROOT/apps/chat/scripts/local-mcp-server.mjs" 'export {}'
+cp "$REPO_ROOT/packages/prisma/src/disposableDatabase.ts" "$ROOT/packages/prisma/src/disposableDatabase.ts"
+cp "$REPO_ROOT/util/profile-resolver.sh" "$ROOT/util/profile-resolver.sh"
+write_file "$ROOT/.devcontainer/devcontainer.env" 'DATABASE_URL=postgresql://klicker_test:synthetic@postgres:5432/klicker_test
+SHADOW_DATABASE_URL=postgresql://klicker_test:synthetic@postgres:5432/klicker_test_shadow'
+write_file "$FAKE_BIN/process-helper" '#!/usr/bin/env bash
+if [ "${2:-}" = --help ]; then
+  echo --prepare-command
+  exit 0
+fi
+[ "$1" = ensure ] || exit 0
+printf "%s\n%s\n" "$DATABASE_URL" "$SHADOW_DATABASE_URL" >"$KLICKER_TEST_PROCESS_ENV"
+exit 23'
+chmod +x "$FAKE_BIN/process-helper"
+export KLICKER_TEST_PROCESS_ENV="$TEST_ROOT/process-env"
+for profile in mcp chat; do
+  status=0
+  KLICKER_DEVCONTAINER_ROOT="$ROOT" \
+    DEVROUTER_PROFILE="$profile" \
+    DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+    LOCAL_MCP_BOOTSTRAPPED="$([ "$profile" = mcp ] && echo 1 || echo 0)" \
+    LOCAL_MCP_GENERATION=synthetic-generation \
+    DATABASE_URL=postgresql://klicker_test:synthetic@mcp_postgres:5432/klicker_test \
+    SHADOW_DATABASE_URL=postgresql://klicker_test:synthetic@mcp_postgres:5432/klicker_test_shadow \
+    bash "$REPO_ROOT/.devcontainer/post-start.sh" >"$TEST_ROOT/profile-start.log" 2>&1 || status=$?
+  [ "$status" = 23 ] || cat "$TEST_ROOT/profile-start.log" >&2
+  assert_equal "$status" 23
+  expected_host=postgres
+  [ "$profile" != mcp ] || expected_host=mcp_postgres
+  assert_equal "$(sed -n '1p' "$KLICKER_TEST_PROCESS_ENV")" \
+    "postgresql://klicker_test:synthetic@${expected_host}:5432/klicker_test"
+  assert_equal "$(sed -n '2p' "$KLICKER_TEST_PROCESS_ENV")" \
+    "postgresql://klicker_test:synthetic@${expected_host}:5432/klicker_test_shadow"
+done
+write_file "$ROOT/.devcontainer/devcontainer.env" ''
+: > "$INSTALL_LOG"
+
+# An opted-in signer must be private and must not be followed through a symlink.
+signer_fixture="$TEST_ROOT/signer.env"
+signer_effect="$TEST_ROOT/signer-loaded"
+write_file "$signer_fixture" "touch '$signer_effect'"
+chmod 644 "$signer_fixture"
+KLICKER_DEVCONTAINER_ROOT="$ROOT" LOCAL_KB_SIGNER_ENV_FILE="$signer_fixture" \
+  bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1 && \
+  fail 'post-start accepted a readable-by-others signer'
+assert_absent "$signer_effect"
+chmod 600 "$signer_fixture"
+ln -s "$signer_fixture" "$TEST_ROOT/signer-link.env"
+KLICKER_DEVCONTAINER_ROOT="$ROOT" LOCAL_KB_SIGNER_ENV_FILE="$TEST_ROOT/signer-link.env" \
+  bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1 && \
+  fail 'post-start accepted a symlink signer'
+assert_absent "$signer_effect"
+KLICKER_DEVCONTAINER_ROOT="$ROOT" LOCAL_KB_SIGNER_ENV_FILE="$signer_fixture" \
+  bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1 || true
+assert_exists "$signer_effect"
 
 bash "$INIT_ROOT/initialize.sh"
 bash "$INIT_ROOT/initialize.sh"
@@ -462,6 +545,19 @@ classification_output="$(
 assert_equal "$classification_status" '22'
 assert_equal "$classification_output" 'unexpected: HTTP 404 text/html'
 
+assert_equal \
+  "$(bash "$RUNTIME_SCRIPT" classify-response health-text 200 'text/plain; charset=utf-8')" \
+  'ready: HTTP 200 text/plain; charset=utf-8'
+
+# The stale Next.js classification must not apply to text probes: a 404
+# from the lecturer MCP health endpoint is unexpected, not stale.
+classification_status=0
+classification_output="$(
+  bash "$RUNTIME_SCRIPT" classify-response health-text 404 'text/html'
+)" || classification_status=$?
+assert_equal "$classification_status" '22'
+assert_equal "$classification_output" 'unexpected: HTTP 404 text/html'
+
 classification_status=0
 classification_output="$(
   bash "$RUNTIME_SCRIPT" classify-response html-shell 404 'text/html'
@@ -497,6 +593,10 @@ assert_equal "$(cat "$CURL_LOG")" 'http://localhost:3010/api/auth/providers'
 : >"$CURL_LOG"
 READINESS_APPS=response-api bash "$RUNTIME_SCRIPT" doctor >/dev/null
 assert_equal "$(cat "$CURL_LOG")" 'http://localhost:7078/healthz'
+
+: >"$CURL_LOG"
+READINESS_APPS='response-api mcp-lecturer' bash "$RUNTIME_SCRIPT" doctor >/dev/null
+assert_equal "$(cat "$CURL_LOG")" $'http://localhost:7078/healthz\nhttp://localhost:7081/healthz'
 
 : >"$CURL_LOG"
 READINESS_APPS='' bash "$RUNTIME_SCRIPT" doctor >/dev/null
@@ -537,17 +637,21 @@ for command in \
   fi
 done
 
+write_file "$ROOT/node_modules/.bin/turbo" '#!/usr/bin/env bash
+[ "${KLICKER_TEST_TURBO_FAIL:-false}" != true ] || exit 17
+printf "turbo %s\n" "$*" >>"$KLICKER_TEST_INSTALL_LOG"'
+chmod +x "$ROOT/node_modules/.bin/turbo"
 : >"$INSTALL_LOG"
 if bash "$RUNTIME_SCRIPT" prepare --filter=@klicker-uzh/auth >/dev/null 2>&1; then
   fail 'preparation accepted an app build selector'
 fi
 [ ! -s "$INSTALL_LOG" ] || fail 'invalid preparation changed dependencies'
 # shellcheck disable=SC2086 # validated flags emitted by preparation-filters
-bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null
-assert_before "$INSTALL_LOG" 'install --frozen-lockfile' 'exec turbo run build'
+KLICKER_TEST_PNPM_FAIL_MATCH='exec turbo' bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null
+assert_before "$INSTALL_LOG" 'install --frozen-lockfile' 'turbo run build'
 status=0
 # shellcheck disable=SC2086
-KLICKER_TEST_PNPM_FAIL_MATCH='exec turbo run build' bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null || status=$?
+KLICKER_TEST_TURBO_FAIL=true bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null || status=$?
 assert_equal "$status" 17
 
 write_file "$FAKE_BIN/ps" '#!/usr/bin/env bash
@@ -574,6 +678,30 @@ fi
 if KLICKER_TEST_PROCESS_SCAN_FAIL=true bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null 2>&1; then
   fail 'preparation accepted a failed process scan'
 fi
+rm "$FAKE_BIN/ps"
+
+write_file "$FAKE_BIN/ps" '#!/usr/bin/env bash
+if [ "$1" = "-o" ]; then
+  echo 123
+  exit 0
+fi
+count=0
+[ ! -f "$KLICKER_TEST_PS_COUNT" ] || count=$(<"$KLICKER_TEST_PS_COUNT")
+count=$((count + 1))
+printf "%s\n" "$count" >"$KLICKER_TEST_PS_COUNT"
+if [ "$count" -lt 3 ]; then
+  printf "%s S git\n" "$KLICKER_TEST_GIT_GROUP"
+fi'
+chmod +x "$FAKE_BIN/ps"
+export KLICKER_TEST_PS_COUNT="$TEST_ROOT/ps-count"
+# A finishing Git child delays completion, but another process group does not.
+# shellcheck disable=SC2086
+KLICKER_TEST_GIT_GROUP=123 bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null
+assert_equal "$(<"$KLICKER_TEST_PS_COUNT")" 3
+printf '0\n' >"$KLICKER_TEST_PS_COUNT"
+# shellcheck disable=SC2086
+KLICKER_TEST_GIT_GROUP=456 bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null
+assert_equal "$(<"$KLICKER_TEST_PS_COUNT")" 1
 rm "$FAKE_BIN/ps"
 
 HELPER_LOG="$TEST_ROOT/helper.log"
@@ -606,7 +734,7 @@ fi
 [ ! -s "$HELPER_LOG" ] || fail 'unsupported helper caused a lifecycle operation'
 [ ! -s "$CURL_LOG" ] || fail 'unsupported helper reached readiness'
 if KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
-  KLICKER_TEST_PNPM_FAIL_MATCH='exec turbo run build' \
+  KLICKER_TEST_TURBO_FAIL=true \
   bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1; then
   fail 'post-start ignored preparation failure'
 fi
@@ -614,5 +742,102 @@ if grep -Fx launched "$HELPER_LOG" >/dev/null; then
   fail 'post-start launched after failed preparation'
 fi
 [ ! -s "$CURL_LOG" ] || fail 'failed preparation reached readiness'
+
+# A managed process that is not live once ensure returns must fail the start in
+# seconds with its log instead of stalling the readiness pass.
+write_file "$FAKE_BIN/process-helper-accepted" '#!/usr/bin/env bash
+set -euo pipefail
+if [ "${2:-}" = --help ]; then
+  echo --prepare-command
+  exit 0
+fi
+[ "$1" = ensure ] || exit 0'
+chmod +x "$FAKE_BIN/process-helper-accepted"
+: >"$CURL_LOG"
+dead_start_started=$SECONDS
+dead_start_status=0
+dead_start_output="$(
+  KLICKER_DEVCONTAINER_ROOT="$ROOT" \
+    DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper-accepted" \
+    DEVROUTER_PROCESS_STATE_DIR="$TEST_ROOT/dead-process-state" \
+    bash "$REPO_ROOT/.devcontainer/post-start.sh" 2>&1
+)" || dead_start_status=$?
+[ "$dead_start_status" -ne 0 ] || fail 'post-start accepted a managed process that is not live'
+[ "$((SECONDS - dead_start_started))" -lt 30 ] || \
+  fail 'post-start stalled on a managed process that is not live'
+[[ "$dead_start_output" == *'failed to stay up'* ]] || \
+  fail 'post-start did not report the managed process that is not live'
+[ ! -s "$CURL_LOG" ] || fail 'a dead managed process reached the readiness pass'
+
+# A managed process that dies inside the liveness grace interval must fail the
+# start after that interval and stay out of the readiness pass, and the process
+# recorded in the state file must really be gone by then. The state file exists
+# with a valid id, so the guard has to observe the process itself rather than
+# fall back to the missing-state path.
+write_file "$FAKE_BIN/process-helper-dying" '#!/usr/bin/env bash
+set -euo pipefail
+if [ "${2:-}" = --help ]; then
+  echo --prepare-command
+  exit 0
+fi
+[ "$1" = ensure ] || exit 0
+mkdir -p "${DEVROUTER_PROCESS_STATE_DIR}"
+sleep 4 &
+printf "%s dying-process\n" "$!" >"${DEVROUTER_PROCESS_STATE_DIR}/devrouter-process-klicker-dev.state"'
+chmod +x "$FAKE_BIN/process-helper-dying"
+dying_state_dir="$TEST_ROOT/dying-process-state"
+: >"$CURL_LOG"
+dying_started=$SECONDS
+dying_status=0
+dying_log="$TEST_ROOT/dying-start.log"
+KLICKER_DEVCONTAINER_ROOT="$ROOT" \
+  DEVROUTER_PROFILE=chat \
+  DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper-dying" \
+  DEVROUTER_PROCESS_STATE_DIR="$dying_state_dir" \
+  bash "$REPO_ROOT/.devcontainer/post-start.sh" >"$dying_log" 2>&1 || dying_status=$?
+[ "$dying_status" -ne 0 ] || {
+  cat "$dying_log" >&2
+  fail 'post-start accepted a managed process that died during the grace interval'
+}
+[ "$((SECONDS - dying_started))" -ge 4 ] || \
+  fail 'post-start skipped the grace interval before failing a managed process'
+assert_exists "$dying_state_dir/devrouter-process-klicker-dev.state"
+dying_pid="$(cut -d' ' -f1 <"$dying_state_dir/devrouter-process-klicker-dev.state")"
+[ -z "$(ps -o stat= -p "$dying_pid" 2>/dev/null | tr -d '[:space:]')" ] || \
+  fail 'the managed process recorded during the grace interval was still live after it'
+[ ! -s "$CURL_LOG" ] || fail 'a process that died during the grace interval reached the readiness pass'
+
+# A managed process that survives the interval must advance into the readiness
+# pass; the same guard must not fail a live process merely because it rechecked.
+write_file "$FAKE_BIN/process-helper-survivor" '#!/usr/bin/env bash
+set -euo pipefail
+if [ "${2:-}" = --help ]; then
+  echo --prepare-command
+  exit 0
+fi
+[ "$1" = ensure ] || exit 0
+mkdir -p "${DEVROUTER_PROCESS_STATE_DIR}"
+sleep 30 &
+printf "%s surviving-process\n" "$!" >"${DEVROUTER_PROCESS_STATE_DIR}/devrouter-process-klicker-dev.state"'
+chmod +x "$FAKE_BIN/process-helper-survivor"
+survivor_state_dir="$TEST_ROOT/survivor-process-state"
+: >"$CURL_LOG"
+survivor_status=0
+survivor_output="$(
+  KLICKER_DEVCONTAINER_ROOT="$ROOT" \
+    DEVROUTER_PROFILE=chat \
+    DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper-survivor" \
+    DEVROUTER_PROCESS_STATE_DIR="$survivor_state_dir" \
+    bash "$REPO_ROOT/.devcontainer/post-start.sh" 2>&1
+)" || survivor_status=$?
+assert_exists "$survivor_state_dir/devrouter-process-klicker-dev.state"
+survivor_pid="$(cut -d' ' -f1 <"$survivor_state_dir/devrouter-process-klicker-dev.state")"
+kill "$survivor_pid" 2>/dev/null || true
+[ "$survivor_status" -eq 0 ] || {
+  printf '%s\n' "$survivor_output" >&2
+  fail 'post-start failed a managed process that survived the grace interval'
+}
+grep -Fq 'http://localhost:3004/api/chatbots/' "$CURL_LOG" || \
+  fail 'a surviving managed process did not reach the readiness pass'
 
 echo '[test-dev-runtime] PASS'

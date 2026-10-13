@@ -47,6 +47,8 @@ export type ExtendedThreadMessageLike = ThreadMessageLike & {
   reasoningContent?: string | null
   creditsUsed?: number | null
   rating?: MessageRating | null
+  // Verified learning-context snapshot on eLearning-origin user messages.
+  learningContext?: unknown
   imageAttachments?: {
     id?: string
     type: 'image'
@@ -75,6 +77,7 @@ export interface Thread {
   createdAt: Date
   updatedAt: Date
   lastChatMode?: string | null // mode of the thread's most recent message (D6)
+  origin?: string | null // where the conversation began ('elearning' | 'pwa')
   lastRunOutcome?: ThreadRunOutcome | null // reset when a new run starts
 }
 
@@ -84,6 +87,12 @@ interface ChatState {
   isLoading: boolean
   participationRequired: boolean
   participationMessage: string | null
+  /**
+   * KG workspace entry point: a 403 on the knowledge-graph read means the
+   * guest/participant has no course participation. Delegates to the shared
+   * participation notice (or clears it when the read succeeds again).
+   */
+  setParticipationRequired: (required: boolean, message?: string) => void
   /**
    * Set when `loadThreads` fails for a reason other than the 403
    * participation case (which `handleApiError` already surfaces via
@@ -99,7 +108,10 @@ interface ChatState {
   ratingErrors: Record<string, boolean>
 
   // thread management actions
-  createThread: (chatbotId: string) => Promise<string>
+  createThread: (
+    chatbotId: string,
+    options?: { background?: boolean }
+  ) => Promise<string>
   loadThreads: (chatbotId: string) => Promise<void>
   switchToThread: (chatbotId: string, threadId: string) => Promise<boolean>
   /**
@@ -168,6 +180,15 @@ export const useChatStore = create<ChatState>((set, get) => {
       // instead of an English string the store cannot translate.
       participationMessage: message?.trim() ? message : null,
     })
+  }
+
+  const setParticipationRequired = (required: boolean, message?: string) => {
+    if (required) {
+      markParticipationRequired(message)
+      return
+    }
+
+    clearParticipationNotice()
   }
 
   const clearParticipationNotice = () => {
@@ -266,6 +287,7 @@ export const useChatStore = create<ChatState>((set, get) => {
     isLoading: false,
     participationRequired: false,
     participationMessage: null,
+    setParticipationRequired,
     threadsLoadError: false,
     ratingErrors: {},
 
@@ -276,9 +298,12 @@ export const useChatStore = create<ChatState>((set, get) => {
      * @param chatbotId - The ID of the chatbot to create the thread for
      * @returns Promise<string> The ID of the created thread
      */
-    createThread: async (chatbotId: string) => {
+    createThread: async (
+      chatbotId: string,
+      options?: { background?: boolean }
+    ) => {
       try {
-        set({ isLoading: true })
+        if (!options?.background) set({ isLoading: true })
         const apiThread = await apiCall<ApiThread>(
           `/chatbots/${chatbotId}/threads`,
           {

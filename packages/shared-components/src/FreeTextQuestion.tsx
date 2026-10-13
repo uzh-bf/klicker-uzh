@@ -2,6 +2,7 @@ import type {
   FreeTextElementOptions,
   FreeTextInstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
+import { twMerge } from 'tailwind-merge'
 import FTEvaluation from './evaluation/FTEvaluation'
 import PracticeQuizPoints from './evaluation/PracticeQuizPoints'
 import QuestionExplanation from './evaluation/QuestionExplanation'
@@ -21,6 +22,7 @@ interface FreeTextQuestionProps {
   evaluation?: FreeTextInstanceEvaluation
   noPoints: boolean
   disabled?: boolean
+  compact?: boolean
 }
 
 function FreeTextQuestion({
@@ -35,13 +37,14 @@ function FreeTextQuestion({
   evaluation,
   noPoints,
   disabled,
+  compact = false,
 }: FreeTextQuestionProps) {
   return (
-    <div className="flex flex-col gap-4 md:flex-row">
+    <div className={twMerge('flex flex-col gap-4', !compact && 'md:flex-row')}>
       <div className="flex-1">
         <QuestionContent content={content} noPoints={noPoints} />
 
-        {evaluation && evaluation.explanation && (
+        {evaluation?.explanation && (
           <QuestionExplanation explanation={evaluation.explanation} />
         )}
 
@@ -60,9 +63,12 @@ function FreeTextQuestion({
         />
       </div>
 
-      {evaluation && evaluation.solutions && !preview ? (
+      {evaluation?.solutions && !preview ? (
         <div
-          className="col-span-1 mr-2 rounded-md border border-solid bg-slate-50 px-2 py-4 md:ml-2 md:mr-0 md:w-64 md:px-0 lg:w-80"
+          className={twMerge(
+            'col-span-1 mr-2 rounded-md border border-solid bg-slate-50 px-2 py-4',
+            !compact && 'md:ml-2 md:mr-0 md:w-64 md:px-0 lg:w-80'
+          )}
           key={`evaluation-${elementIx}`}
         >
           <div className="flex flex-col gap-4 md:px-4">

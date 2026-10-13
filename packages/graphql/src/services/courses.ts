@@ -4257,6 +4257,41 @@ export async function getCoursePracticeQuiz(
   }
 }
 
+export async function getStudentMcpCoursePracticeQuiz(
+  { chatbotId, courseId }: { chatbotId: string; courseId: string },
+  ctx: ContextWithUser
+) {
+  if (ctx.user.role !== DB.UserRole.PARTICIPANT) {
+    return null
+  }
+
+  const [chatbot, participation] = await Promise.all([
+    ctx.prisma.chatbot.findFirst({
+      select: { id: true },
+      where: {
+        courseId,
+        id: chatbotId,
+        status: DB.ChatbotStatus.PUBLISHED,
+      },
+    }),
+    ctx.prisma.participation.findUnique({
+      select: { id: true },
+      where: {
+        courseId_participantId: {
+          courseId,
+          participantId: ctx.user.sub,
+        },
+      },
+    }),
+  ])
+
+  if (!chatbot || !participation) {
+    return null
+  }
+
+  return getCoursePracticeQuiz({ courseId }, ctx)
+}
+
 export async function enableGamification(
   { courseId }: { courseId: string },
   ctx: ContextWithUser

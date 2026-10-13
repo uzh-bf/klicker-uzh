@@ -60,7 +60,45 @@ case "$mode" in
   range)
     shift
     [[ "$#" -gt 0 ]] || fail 'range mode requires a Git revision range'
-    check_range "$@"
+    range_spec=$1
+    shift
+    # Commits already published on the integration branches cannot be
+    # rewritten, so optional --published refs and --published-glob patterns
+    # exclude them from the scan. Only commits that are new relative to every
+    # published integration branch must satisfy the identity contract.
+    # All refs share one --not flag: repeating --not would toggle the
+    # exclusion back off for every second ref.
+    published_refs=()
+    while [[ "$#" -gt 0 ]]; do
+      case "$1" in
+        --published)
+          shift
+          while [[ "$#" -gt 0 && "$1" != --* ]]; do
+            if git rev-parse --verify -q "$1" >/dev/null 2>&1; then
+              published_refs+=("$1")
+            fi
+            shift
+          done
+          ;;
+        --published-glob)
+          shift
+          [[ "$#" -gt 0 ]] || fail '--published-glob requires a ref pattern'
+          while IFS= read -r published_ref; do
+            [[ -n "$published_ref" ]] || continue
+            published_refs+=("$published_ref")
+          done < <(git for-each-ref --format='%(refname)' "$1")
+          shift
+          ;;
+        *)
+          fail "unknown range argument: $1"
+          ;;
+      esac
+    done
+    if [[ "${#published_refs[@]}" -gt 0 ]]; then
+      check_range "$range_spec" --not "${published_refs[@]}"
+    else
+      check_range "$range_spec"
+    fi
     ;;
   *)
     fail "unknown mode: ${mode}"
