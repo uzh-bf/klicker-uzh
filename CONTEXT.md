@@ -179,8 +179,10 @@ the two usage lanes shown for chatbot accounts.
 ### Authorization and lifecycle
 
 **AI usage authorization**:
-An account-level approval that requires an approved cost center and permits
-both base and advanced model usage. It is separate from publication approval.
+An account-level approval that permits base model usage. Advanced model usage
+additionally needs the advanced subscription tier and an approved cost center;
+setting a cost center grants that tier. It is separate from publication
+approval.
 _Avoid_: base authorization, advanced authorization, per-model approval
 
 **Publication approval**:
