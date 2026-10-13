@@ -108,8 +108,7 @@ async function waitForListenerClose(url) {
 // Runs the CLI in a child with a bounded lifetime. A wedged child is asked to
 // stop with SIGTERM and then SIGKILL, and the promise always settles so a hung
 // invocation surfaces as a normal assertion instead of a hung test run.
-function runCli(args, env, options = {}) {
-  const timeoutMs = options.timeoutMs ?? 15000
+function runCli(args, env) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [ADAPTER, ...args], {
       env: { ...process.env, ...env },
@@ -145,7 +144,7 @@ function runCli(args, env, options = {}) {
           2000
         )
       }, 2000)
-    }, timeoutMs)
+    }, 15000)
   })
 }
 
