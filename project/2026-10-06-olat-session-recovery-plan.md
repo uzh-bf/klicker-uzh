@@ -350,9 +350,9 @@ release-branch deployment parity, CodeQL disposition and the public final review
 
 ### Accepted launch replaced before polling (2026-10-13)
 
-The follow-up review examined `9cc4bd996e`; the current published head is
-`54f4a6f8c3`. Consumed-handoff cleanup and Chat participation-error metadata
-are already corrected there. Its additional late-response finding is valid:
+The follow-up review examined `9cc4bd996e`; this correction started from
+published head `54f4a6f8c3`. Consumed-handoff cleanup and Chat participation-error
+metadata are already corrected there. Its additional late-response finding is valid:
 an accepted launch can mistake a later shared login for initial cookie refusal
 and remove the monitoring that would reload the page.
 
@@ -376,14 +376,39 @@ Markdown builds. The exact combined command passes all eight build tasks.
 The implementation and retained verification snapshot match for every tracked
 source file. PWA unit tests pass all 31 cases. PWA, Chat and Playwright types
 pass; PWA lint has zero errors and 13 existing warnings. Scoped formatting
-and `git diff --check` pass. The full browser matrix and source reviews remain
-pending before publication.
+and `git diff --check` pass. The full matrix passes 45 cases with ten WebKit
+localhost-cookie skips and zero failures in one run. All four Chromium/Firefox
+configurations pass the new regression and the real local ltijs launch against
+a synthetic LMS. Thirty-two auth/JWT tests and 118 focused Chat tests covering
+the integrated upstream changes pass. Manual synthetic login, profile and
+reload checks pass. The simplification, slice and integrated final source
+reviews found no blocking issue through `060ee4e46c`. Earlier quiz evidence
+above remains reused; no hosted production build or real OLAT result is claimed.
 
 Canonical startup succeeds for verification workspace
-`users-rschlae-git-klick-665e8559`. Installed devrouter 0.3.1 also resolves
-one-shot exec correctly; the initial local repair CLI resolved a removed
+`users-rschlae-git-klick-665e8559`. The absolute CLI
+`/opt/homebrew/bin/devrouter` at 0.3.1 resolves one-shot exec correctly; the initial local repair CLI resolved a removed
 container, so the first checks used the exact container from canonical
 startup. The host hook also detected an old dependency
 install and was stopped; relevant package checks run in the container, with
 staged secret and Git-identity checks performed separately. Keep CI polling
 and the public final review withheld under the existing user instruction.
+
+The additional five-case Chat access rerun did not reach browser execution.
+The selective-profile transition stalled after Rollup emitted its bundle and
+was cancelled before stopping the exact runtime. Subsequent startup reported
+generated-configuration drift: the generated full-profile service list differed
+from the recorded selective profile. Restoring that generated file to the exact
+recorded SHA-256 resolved that check, but supported repair then refused the
+retained app container with `Managed Compose configuration changed for service
+'app'`. No ownership guard was bypassed, data deleted or global tool installation
+changed. These five Chat checks retain their earlier passing evidence; the
+fresh shared-login matrix includes the changed Chat/session behavior. The extra
+rerun remains blocked by runtime reconciliation, separate from source correctness.
+
+The task runtime and verification runtime are stopped at publication, with
+provider state and zero exact routes checked by source path. Their retained
+containers and data remain available for a dedicated runtime repair. Hosted CI,
+CodeQL disposition, release-branch deployment parity and public final review
+remain open merge gates. CI polling and public review remain withheld under the
+existing instruction.
