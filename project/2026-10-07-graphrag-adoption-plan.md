@@ -20,6 +20,62 @@ and paid evaluation remain separate gates; OpenRouter review remains waived.
 
 ## Current state and next decision
 
+### October 13 billing resolved and remaining category probe qualified
+
+The user approved diagnosing accounting and running the unused category call once
+its prerequisite reconciled. Scoped, read-only queries found the noise record by
+its exact saved gateway call ID in `metadata.litellm_call_id`. LiteLLM 1.96.0 logs
+the upstream Responses response ID; its Responses-to-Chat transformation returns
+a different generated Chat ID. Treating either the public Chat ID or gateway call
+ID as the billing primary key explains the previous empty lookups. An exact API
+lookup using the discovered stored ID returned the same record, matching all three
+token counters, successful status, model group and cost. The noise cost reconciles
+at USD 0.0001438, conservatively CHF 0.0002876.
+
+The category-only continuation preserves the frozen source/input pins, accepted
+noise evidence and all earlier uncertain-cost holds. Its exclusive claim prevents
+noise replay and a second category request. Five offline response variants and
+15 billing rejection variants pass. The independent admission review accepted
+corrections binding accounting to the maximum validated charge and imposing an
+overall billing-read deadline. Fresh gateway identity, prices and retry/fallback
+controls match prior qualification; the category reservation is CHF 0.2784.
+
+Exactly one category call ran on the retained synthetic concept. Its raw response
+contains the complete expected allowed category, stop finish and no refusal. It
+reports 219 input and 47 output tokens, zero retries/fallbacks, and
+USD 0.000045400000000000006. The immediate billing query found no row, so the
+online guard withheld acceptance; the provider function recorded a malformed
+outcome after that guard exception. A single terminal exact lookup found the
+persisted record. Its identity, usage and cost match both the database and API.
+The unchanged production parser accepts the saved response offline. This separates
+raw semantic success and parser qualification from the initial accounting race;
+no second model call was made.
+
+Both narrow probe phases are now semantically accepted and reconciled. The unused
+probe hold is released. Conservative total accounting, rounded upward and retaining
+all older uncertain-cost holds, is **CHF 6.99894925**, with **CHF 13.00105075**
+remaining. These results qualify the two classifier contracts on this small
+sample; they do not prove fresh whole-graph publication or retrieval quality.
+Future graph/answer/judge reservations would yield a planning ceiling of
+CHF 14.04059405, leaving CHF 5.95940595 unallocated. Those effects remain gated.
+
+Original test bindings/settings, source inventory/hashes, content digest, build
+pointer and graph publication match the restoration snapshot. The owned tunnel
+stopped and ports 14000/14001 are closed; the user API tunnel is preserved. No
+provider or gateway configuration, ingestion workflow, database schema, strict
+validator or feature activation changed. No merge, deployment, graph build,
+answer generation or judge call ran. Provider MR !42 and Klicker PR #6478 remain
+draft; exact provider pipeline 682099 still passes at `7a09d42`.
+
+Next, prepare a new conditional delivery and single-build comparison plan using
+this accepted probe evidence, with named approval before its live effects. Preserve
+the frozen sources, three
+GraphRAG cases, 27 remaining judge calls, baseline and extra-search control.
+Future accounting should resolve the stored request ID through the exact gateway
+correlation metadata and tolerate asynchronous persistence through a bounded
+observer; never substitute response-header cost for complete reconciliation.
+Native Auto-mode cost qualification remains a separate gate.
+
 ### October 13 context probe: noise decisions accepted; billing blocks continuation
 
 After the user restored the existing STG API tunnel, the approved CHF 0.50 probe
