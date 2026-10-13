@@ -122,7 +122,17 @@ integrated final review; human review and hosted CI remain distinct evidence.
   their subshells; existing extracted-workflow fixtures assert key absence for
   both jobs and key availability for the adapter. Overlapping tests are
   consolidated, preserving empty-message rejection and both unknown-history
-  variants. One bounded final-review correction pass remains.
+  variants. The bounded correction pass returned schema-validated `pass` for
+  `0a8d4652915c9ee6d86136050186bb97e054387d..eccfd24925bfb3cfc08770f20ebfa808fdb97fc6`,
+  with no open findings. Its report is saved under
+  `project/_local/reviews/2026-10-13-ocr-mistral-final-review.md`.
+- Source delivery is complete: the reviewed package and this evidence update
+  are published through [Draft PR #6493](https://github.com/uzh-bf/klicker-uzh/pull/6493).
+  Eight required CI checks passed on the preceding published head
+  `091a81270fb054d264aa4cf6e8eafc184ea623a7`; the corrected head needs its own
+  hosted result. The existing default-branch draft OCR and manual final status
+  remain separate from this source-only review. Marking ready, merge and live
+  provider acceptance remain pending named authority and the missing secret.
 - Follow-up inspection found that PR CI did not execute the adapter and helper
   suites. They are now wired into the existing codebase check job. The existing
   solution page also records saved-URL precedence exposed by the binary probe.
@@ -131,9 +141,11 @@ integrated final review; human review and hosted CI remain distinct evidence.
   Secret provisioning, key-specific entitlement, live tool/structured-output
   acceptance and trusted default-branch activation remain separate evidence.
 
-## Resume
+## Remaining activation gates
 
-Complete the final-review correction pass, publish the final task head and update
-[Draft PR #6493](https://github.com/uzh-bf/klicker-uzh/pull/6493) with final evidence.
-Retain the already passing checks for unchanged code. Leave marking ready, merge, activation, and paid live
-runs to their separately named authority; this batch grants none of them.
+The authorized source package is delivered as
+[Draft PR #6493](https://github.com/uzh-bf/klicker-uzh/pull/6493).
+Add `MISTRAL_API_KEY`, obtain the corrected head's required CI and human review,
+and separately authorize merge and any paid live validation. The first trusted
+hosted runs must prove actual key entitlement, tool calls and strict topology
+JSON. This task does not activate the new route on the default branch.
