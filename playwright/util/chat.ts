@@ -93,6 +93,7 @@ export async function ensureChatbotSeeded() {
       status: 'PUBLISHED',
     },
     update: {
+      courseId: COURSE_ID_TEST,
       modelSelection: true,
       disclaimerId: DISCLAIMER_ID,
       status: 'PUBLISHED',
