@@ -1064,6 +1064,12 @@ describe('Integration tests for knowledge base CRUD', () => {
     const firstKb = await createKb({ name: 'First KB' }, userOneCtx)
     const secondKb = await createKb({ name: 'Second KB' }, userOneCtx)
     const course = await seedCourse({}, userOneCtx)
+    const mode = (key: string, name: string) => ({
+      key,
+      name,
+      description: null,
+      personaText: null,
+    })
     const chatbot = await prisma.chatbot.create({
       data: {
         name: 'Case interview trainer',
@@ -1073,18 +1079,13 @@ describe('Integration tests for knowledge base CRUD', () => {
         systemPrompts: { 'legacy-removed': { description: 'Retained prompt' } },
         customModeConfig: {
           modes: [
-            {
-              key: 'cm_approved',
-              name: 'Scenario',
-              description: null,
-              personaText: null,
-            },
-            {
-              key: 'cm_disabled',
-              name: 'Optional scenario',
-              description: null,
-              personaText: null,
-            },
+            mode('cm_approved', 'Scenario'),
+            mode('cm_disabled', 'Optional scenario'),
+            mode('Case', 'Uppercase'),
+            mode('', 'Blank'),
+            mode('   ', 'Whitespace'),
+            mode('quizzer', 'Platform collision'),
+            mode('cm_approved', 'Duplicate'),
           ],
         },
       },
@@ -1101,6 +1102,10 @@ describe('Integration tests for knowledge base CRUD', () => {
       data: [
         { chatMode: 'cm_approved', isEnabled: true },
         { chatMode: 'cm_disabled', isEnabled: false },
+        { chatMode: 'Case', isEnabled: true },
+        { chatMode: 'case', isEnabled: true },
+        { chatMode: '', isEnabled: true },
+        { chatMode: '   ', isEnabled: true },
         { chatMode: 'legacy-removed', isEnabled: true },
         { chatMode: 'quizzer', isEnabled: false },
       ].map((configuration) => ({
@@ -1125,7 +1130,7 @@ describe('Integration tests for knowledge base CRUD', () => {
       orderBy: { chatMode: 'asc' },
     })
     expect(configurations.filter(({ isEnabled }) => isEnabled)).toEqual(
-      ['cm_approved', 'explainer', 'tutor'].map((chatMode) =>
+      ['Case', 'cm_approved', 'explainer', 'tutor'].map((chatMode) =>
         expect.objectContaining({
           chatMode,
           parameters: {
@@ -1137,15 +1142,16 @@ describe('Integration tests for knowledge base CRUD', () => {
       )
     )
     expect(configurations.filter(({ isEnabled }) => !isEnabled)).toEqual(
-      ['cm_disabled', 'legacy-removed', 'quizzer'].map((chatMode) =>
-        expect.objectContaining({
-          chatMode,
-          parameters: {
-            required: true,
-            toolAlias: 'doc_query',
-            kb_id: firstKb.id,
-          },
-        })
+      ['', '   ', 'case', 'cm_disabled', 'legacy-removed', 'quizzer'].map(
+        (chatMode) =>
+          expect.objectContaining({
+            chatMode,
+            parameters: {
+              required: true,
+              toolAlias: 'doc_query',
+              kb_id: firstKb.id,
+            },
+          })
       )
     )
     expect(

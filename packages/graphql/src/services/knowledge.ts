@@ -39,7 +39,7 @@ import {
   CHATBOT_KB_RETRIEVAL_MODE_KEYS,
   getBlobStorageAccountUrl,
   isChatbotStandardModeKey,
-  resolveChatbotKbRetrievalModeKeys,
+  normalizeChatbotCustomModeConfig,
 } from '@klicker-uzh/util'
 import { normalizePublicHttpUrl } from '@klicker-uzh/util/public-url'
 import { createHash, randomUUID } from 'crypto'
@@ -1213,8 +1213,12 @@ export async function attachKbToChatbot(
 
     // Approved custom modes inherit the required standard retrieval binding.
     // Existing exact rows stay eligible only while their approved keys remain.
-    const retrievalModeKeys =
-      resolveChatbotKbRetrievalModeKeys(customModeConfig)
+    const exactModeKeys = [
+      ...(normalizeChatbotCustomModeConfig(customModeConfig)?.modes ?? [])
+        .map(({ key }) => key)
+        .filter((mode) => !isChatbotStandardModeKey(mode)),
+      'quizzer',
+    ]
 
     // A binding for a mode the chatbot no longer declares would keep grounding
     // retrieval that the owner removed. An exact Quizzer row is exempt, because
@@ -1224,11 +1228,18 @@ export async function attachKbToChatbot(
         chatbotId,
         mcpServerId: mcpServer.id,
         isEnabled: true,
-        chatMode: { notIn: [...retrievalModeKeys, 'quizzer'] },
+        chatMode: {
+          notIn: [...CHATBOT_KB_RETRIEVAL_MODE_KEYS, ...exactModeKeys],
+        },
       },
       data: { isEnabled: false },
     })
 
+    const retrievalBinding = {
+      allowedTools: ['doc_query'],
+      parameters: { required: true, toolAlias: 'doc_query', kb_id: kbId },
+      priority: 0,
+    }
     for (const chatMode of CHATBOT_KB_RETRIEVAL_MODE_KEYS) {
       await prisma.chatbotMCPConfig.upsert({
         where: {
@@ -1242,15 +1253,11 @@ export async function attachKbToChatbot(
           chatbotId,
           mcpServerId: mcpServer.id,
           chatMode,
-          allowedTools: ['doc_query'],
-          parameters: { required: true, toolAlias: 'doc_query', kb_id: kbId },
-          priority: 0,
+          ...retrievalBinding,
           isEnabled: true,
         },
         update: {
-          allowedTools: ['doc_query'],
-          parameters: { required: true, toolAlias: 'doc_query', kb_id: kbId },
-          priority: 0,
+          ...retrievalBinding,
           isEnabled: true,
         },
       })
@@ -1262,18 +1269,10 @@ export async function attachKbToChatbot(
       where: {
         chatbotId,
         mcpServerId: mcpServer.id,
-        chatMode: {
-          in: retrievalModeKeys
-            .filter((mode) => !isChatbotStandardModeKey(mode))
-            .concat('quizzer'),
-        },
+        chatMode: { in: exactModeKeys },
         isEnabled: true,
       },
-      data: {
-        allowedTools: ['doc_query'],
-        parameters: { required: true, toolAlias: 'doc_query', kb_id: kbId },
-        priority: 0,
-      },
+      data: retrievalBinding,
     })
 
     const [chatbot, kb] = await Promise.all([

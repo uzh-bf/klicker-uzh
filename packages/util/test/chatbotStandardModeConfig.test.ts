@@ -4,7 +4,6 @@ import {
   isChatbotStandardModeKey,
   normalizeChatbotStandardModeConfig,
   parseChatbotStandardModeConfigInput,
-  resolveChatbotKbRetrievalModeKeys,
 } from '../src/chatbotStandardModeConfig.js'
 
 describe('chatbot standard mode configuration', () => {
@@ -147,34 +146,5 @@ describe('chatbot standard mode configuration', () => {
     expect(isChatbotStandardModeKey('quizzer')).toBe(true)
     expect(isChatbotStandardModeKey('Quizzer')).toBe(false)
     expect(isChatbotStandardModeKey('case-interview')).toBe(false)
-  })
-
-  it('derives eligible exact bindings from normalized approved modes', () => {
-    const mode = (key: string, name: string) => ({
-      key,
-      name,
-      description: null,
-      personaText: null,
-    })
-    expect(resolveChatbotKbRetrievalModeKeys(null)).toEqual([
-      'tutor',
-      'explainer',
-    ])
-    expect(resolveChatbotKbRetrievalModeKeys({ 'legacy-mode': {} })).toEqual([
-      'tutor',
-      'explainer',
-    ])
-    expect(
-      resolveChatbotKbRetrievalModeKeys({
-        modes: [
-          mode('cm_approved', 'Scenario'),
-          mode('Case', 'Uppercase'),
-          mode('', 'Blank'),
-          mode('   ', 'Whitespace'),
-          mode('quizzer', 'Platform collision'),
-          mode('cm_approved', 'Duplicate'),
-        ],
-      })
-    ).toEqual(['tutor', 'explainer', 'cm_approved', 'Case'])
   })
 })

@@ -138,8 +138,8 @@ shared standard-mode key list lives in the existing
 shared list equals the chat runtime's prompt registry keys — lives in the
 `apps/chat` test suite, because the runtime registry (`DEFAULT_PROMPT` in
 `apps/chat/src/lib/config/prompts`) is not importable from the utility package;
-util tests cover key derivation, including blank keys and exact custom-key
-casing.
+utility tests cover standard keys. Attachment integration tests cover approved
+custom-key normalization, including blank keys and exact custom-key casing.
 
 ### Decision 3 — The lecturer MCP surface is retired and the public field is deprecated
 
@@ -387,6 +387,39 @@ captures; `$rs-mr-description-writer` writes the pull-request body with the
 screenshot table.
 
 ## Progress
+
+### October 13 review and simplification
+
+The user requested review and simplification of the existing draft. Execution
+mode: standard (main model identity unavailable). Main owns the coupled
+attachment source and test changes; independent roles review the committed
+result. Existing approval covers checks, reviews, commits and ordinary task
+branch pushes. Merge, deployment, marking ready and live writes remain gated.
+
+The refreshed target is `a2f97e9c7bfe5ef6f2fa134b8189dccbdbd72a1f`
+(`v3-ai`); the PR remains mergeable, so no further integration is needed.
+The previous pushed head is `2b2c28991bef87eb9e8e86a5681b6a9cc71883a3`.
+
+The attachment-only `resolveChatbotKbRetrievalModeKeys` helper is removed.
+`attachKbToChatbot` normalizes approved custom keys directly and reuses the
+exact custom/Quizzer key set for retirement and replacement. Its three copies
+of the retrieval payload become one local value; enabling standard rows stays
+separate from repointing already-enabled exact overrides. No behavior or
+product primitive changes.
+
+Test obligation: replace/consolidate. The removed helper's fixture moves into
+the existing attachment integration test, which verifies case-sensitive keys,
+malformed/stale row retirement and disabled override preservation. No new test
+file or assertion-only test is added. The UI files are unchanged, so the
+October 12 browser captures and interaction evidence remain applicable.
+
+Verification: utility normalization 16 cases and knowledge attachment/CRUD 71
+cases passed in the retained task container. Chat seam verification and normal
+commit hooks are next, followed by read-only Standards/simplification and
+Spec/slice review, integrated final review and the ordinary push.
+The previous exact-head hosted application checks passed; OCR failed with
+HTTP 402, and final AI review is pending. This source review cannot replace
+those hosted statuses.
 
 ### October 12 reconciliation (current contract)
 
