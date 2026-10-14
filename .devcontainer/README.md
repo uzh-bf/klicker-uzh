@@ -147,7 +147,7 @@ starting the backend or workers.
 
 ## Playwright runs on the host
 
-Run `pnpm playwright:host -- <args>` from a host shell. The launcher reconciles
+Run `node util/run-playwright-host.mjs <args>` from a host shell. The launcher reconciles
 this exact checkout, uses its namespaced HTTPS routes, and discovers the
 workspace Postgres container's random loopback port for test cleanup and
 seeding. The Playwright process, Node dependencies, and browser binaries stay
@@ -157,7 +157,7 @@ The default starts the full profile. For focused activity tests, request the
 required profile union explicitly before the Playwright arguments:
 
 ```bash
-pnpm playwright:host -- --runtime-profile manage,live-quiz --project=chromium tests/MA-elements-operations.spec.ts
+node util/run-playwright-host.mjs --runtime-profile manage,live-quiz --project=chromium tests/MA-elements-operations.spec.ts
 ```
 
 The caller must include every profile the selected tests need; the launcher
@@ -182,9 +182,10 @@ pinned host Node (`volta run node ./util/run-playwright-host.mjs ...`) so it
 can stop the exact checkout before installing. If the CLI exists but dependency
 links are stale, stop that exact checkout first and run the existing filtered
 frozen install explicitly; the launcher does not repair a warm dependency tree.
-The outer `pnpm playwright:host` entrypoint is still the normal warm-run
-command, but pnpm's fail-closed policy intentionally stops it before the
-launcher when its own dependency validation detects a stale workspace.
+The `pnpm playwright:host` package script runs the same launcher, but pnpm's
+fail-closed policy intentionally stops it before the launcher whenever its own
+dependency validation finds a missing or stale host install. That is the normal
+state of a devcontainer checkout, so the direct `node` form is canonical.
 
 Direct local Playwright commands fail before global setup, and this container
 sets its Playwright browser path to a non-directory target. Do not run Playwright

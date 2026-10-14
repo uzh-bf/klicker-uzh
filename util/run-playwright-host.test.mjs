@@ -218,6 +218,7 @@ function createLauncherHarness({
 } = {}) {
   const calls = []
   const logs = []
+  const writes = []
   const root = '/synthetic/klicker-uzh'
   const workspaceGitDir = '/synthetic/git/worktrees/launcher'
   const testsRoot = `${root}/playwright/tests`
@@ -279,6 +280,7 @@ function createLauncherHarness({
   return {
     calls,
     logs,
+    writes,
     dependencies: {
       resolveDevrouterFn: () => '/synthetic/bin/devrouter',
       commandExistsFn: () => false,
@@ -287,6 +289,7 @@ function createLauncherHarness({
       log: (message) => logs.push(message),
       pathExists,
       readFile,
+      writeFile: (path) => writes.push(path),
       readDirectory: (path) => {
         if (path === testsRoot) return [...specFiles].sort()
         throw new Error(`unexpected synthetic directory: ${path}`)
@@ -898,6 +901,9 @@ test('cold runs stop before host preparation and reconcile afterward', () => {
   assert.ok(stop >= 0)
   assert.ok(install > stop)
   assert.ok(ensure > install)
+  assert.deepEqual(harness.writes, [
+    '/synthetic/klicker-uzh/node_modules/.playwright-host-filtered-install',
+  ])
   assert.equal(
     harness.calls.filter(
       ({ command, args }) => command === 'pnpm' && args.includes('playwright')

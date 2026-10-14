@@ -1,7 +1,13 @@
 #!/usr/bin/env node
 
 import { spawnSync } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs'
+import {
+  existsSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import {
@@ -29,6 +35,12 @@ const {
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 export const PNPM_VERIFY_DEPS_ENV = 'pnpm_config_verify_deps_before_run'
 export const PLAYWRIGHT_PROFILE_FALLBACK = 'playwright'
+// Marks the root install as the launcher's Playwright-only filtered install so
+// util/run-hook-pnpm.sh does not mistake it for a full host install.
+export const FILTERED_INSTALL_MARKER = join(
+  'node_modules',
+  '.playwright-host-filtered-install'
+)
 
 const PLAYWRIGHT_OPTIONS_WITH_VALUES = new Set([
   '--browser',
@@ -268,6 +280,7 @@ function createRuntime({
   commandExistsFn = (command) => commandExists(command),
   pathExists = existsSync,
   readFile = readFileSync,
+  writeFile = writeFileSync,
   readDirectory = readdirSync,
   parseProfileManifestFn = parseProfileManifest,
   clock = defaultClock,
@@ -285,6 +298,7 @@ function createRuntime({
     log,
     pathExists,
     readFile,
+    writeFile,
     readDirectory,
     parseProfileManifestFn,
     clock,
@@ -575,6 +589,7 @@ function ensureHostDependencies(runtime, playwrightArgs) {
       '@klicker-uzh/playwright...',
       '--frozen-lockfile',
     ])
+    runtime.writeFile(join(runtime.repoRoot, FILTERED_INSTALL_MARKER), '')
   }
 
   if (
@@ -719,6 +734,9 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
     timer.begin('browser')
     runtime.log(
       `[playwright:host] Running on the host against ${resolvedEnvironment.URL_MANAGE}`
+    )
+    runtime.log(
+      `[playwright:host] Stack: Next dev servers (CI tests production builds), profile=${runtimeProfile}, database=127.0.0.1:${databasePort}`
     )
     runtime.runPnpm(
       [
