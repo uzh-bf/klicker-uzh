@@ -856,6 +856,24 @@ describe('assessment report credential services', () => {
     )
     expect(repeated.token).toBe(final.token)
 
+    // A cohort change alone must not produce a second, differing comparison.
+    const latePeer = await prisma.participant.create({
+      data: {
+        username: `${TEST_PREFIX}-late-peer-${fixture.course.id}`,
+        password: 'not-used',
+        isActive: true,
+        participations: {
+          create: { courseId: fixture.course.id, isActive: true },
+        },
+      },
+    })
+    fixtureIds.participantIds.push(latePeer.id)
+    const afterCohortChange = await issueAssessmentReport(
+      { courseId: fixture.course.id },
+      fixture.participantCtx
+    )
+    expect(afterCohortChange.token).toBe(final.token)
+
     await prisma.course.update({
       where: { id: fixture.course.id },
       data: { displayName: 'Renamed After Course End' },
@@ -865,7 +883,7 @@ describe('assessment report credential services', () => {
       fixture.participantCtx
     )
     expect(replacement.token).not.toBe(final.token)
-    expect(replacement.snapshot.comparison).toMatchObject({ cohortSize: 10 })
+    expect(replacement.snapshot.comparison).toMatchObject({ cohortSize: 11 })
   })
 
   it('replaces a mid-course comparison with the current one after the course end', async () => {

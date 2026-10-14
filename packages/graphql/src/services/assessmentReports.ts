@@ -562,18 +562,21 @@ async function issueAssessmentReportInTransaction({
     courseId,
     type: DB.CredentialType.COURSE_ASSESSMENT_INSIGHTS,
   }
-  const activeRecord = await prisma.verifiableCredential.findFirst({
-    where: { ...recordKey, status: DB.CredentialStatus.ACTIVE },
-  })
+  const [activeRecord, course] = await Promise.all([
+    prisma.verifiableCredential.findFirst({
+      where: { ...recordKey, status: DB.CredentialStatus.ACTIVE },
+    }),
+    prisma.course.findUnique({
+      where: { id: courseId },
+      select: { endDate: true },
+    }),
+  ])
   const fullSnapshot = await buildAssessmentReportSnapshot({
     courseId,
     participantId,
     prisma,
   })
   const fullSnapshotHash = hashAssessmentReportSnapshot(fullSnapshot)
-  const privateReplacementHash = hashAssessmentReportSnapshot(
-    withoutAssessmentReportComparison(fullSnapshot)
-  )
 
   if (activeRecord) {
     const activeSnapshot = parseAssessmentReportSnapshot(activeRecord)
@@ -583,19 +586,23 @@ async function issueAssessmentReportInTransaction({
     ) {
       throw assessmentReportError('ASSESSMENT_REPORT_INVALID_DATA')
     }
-    // Once the course has ended, every report carries the current peer
-    // comparison, so an active record is reused only when it is identical.
+    // While the student's own claims are unchanged, a report issued after the
+    // course end keeps its comparison. Reissuing only because peer scores
+    // changed would let two reports be differenced to infer a peer's change.
+    // A comparison issued before the course end is replaced by a current one.
+    const keepsComparison =
+      fullSnapshot.comparison === null ||
+      (activeSnapshot.comparison !== null &&
+        course !== null &&
+        activeRecord.issuedAt >= course.endDate)
     if (
       activeRecord.snapshotHash === fullSnapshotHash ||
-      (fullSnapshot.comparison === null &&
+      (keepsComparison &&
         assessmentReportClaimsMatch(activeSnapshot, fullSnapshot))
     ) {
       return toIssuedAssessmentReport(activeRecord)
     }
   }
-
-  const snapshot = fullSnapshot
-  const snapshotHash = fullSnapshotHash
 
   const revokedRecords = await prisma.verifiableCredential.findMany({
     where: {
@@ -619,7 +626,6 @@ async function issueAssessmentReportInTransaction({
 
     return (
       record.snapshotHash === fullSnapshotHash ||
-      record.snapshotHash === privateReplacementHash ||
       assessmentReportClaimsMatch(revokedSnapshot, fullSnapshot)
     )
   })
@@ -646,10 +652,10 @@ async function issueAssessmentReportInTransaction({
       type: recordKey.type,
       participantId,
       courseId,
-      subjectEmail: snapshot.subject.email,
-      snapshot,
-      snapshotVersion: snapshot.version,
-      snapshotHash,
+      subjectEmail: fullSnapshot.subject.email,
+      snapshot: fullSnapshot,
+      snapshotVersion: fullSnapshot.version,
+      snapshotHash: fullSnapshotHash,
     },
   })
   return toIssuedAssessmentReport(created)

@@ -48,9 +48,10 @@ ruler with a marker at the student's inclusive percentile rank; do not imply
 that the score groups form a normal or continuous distribution. The comparison
 remains omitted below the existing cohort threshold and in interim reports
 issued before the course end date. Every report issued after the course end
-includes the current comparison; an active report is reused only while its
-snapshot, including the comparison, is unchanged. The stored V1 report contract
-is unchanged.
+includes a comparison. While the student's own claims are unchanged, the active
+post-end report is reused even if peer scores change, so two reports cannot be
+differenced to infer a single peer's change. The stored V1 report contract is
+unchanged.
 
 ## Next.js tooling
 
