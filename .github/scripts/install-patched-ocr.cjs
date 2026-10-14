@@ -61,7 +61,7 @@ function install(directory, archive) {
       '--location',
       '--output',
       archivePath,
-      `https://api.github.com/repos/alibaba/open-code-review/tarball/${SOURCE_COMMIT}`,
+      `https://codeload.github.com/alibaba/open-code-review/legacy.tar.gz/${SOURCE_COMMIT}`,
     ])
   }
   verifyArchive(fs.readFileSync(archivePath))
