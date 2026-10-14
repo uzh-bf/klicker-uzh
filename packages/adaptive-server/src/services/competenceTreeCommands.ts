@@ -44,7 +44,10 @@ export async function validateCompetenceTreeInput(
   ctx: ContextWithUser
 ): Promise<CompetenceTreeValidationResult> {
   const prepared = prepareTreeInput(input)
-  const elements = await getAccessibleElements(prepared.assignments, ctx)
+  const elements = await getAccessibleElements(prepared.assignments, {
+    prisma: ctx.prisma,
+    userId: ctx.user.sub,
+  })
   return validatePreparedTree(prepared, elements)
 }
 
@@ -52,19 +55,31 @@ export async function createCompetenceTree(
   { input }: { input: CompetenceTreeInput },
   ctx: ContextWithUser
 ): Promise<CompetenceTreeDetail> {
+  const treeId = await ctx.prisma.$transaction((tx) =>
+    createCompetenceTreeInTransaction(tx, { input, ownerId: ctx.user.sub })
+  )
+  return await getRequiredCompetenceTree(treeId, ctx)
+}
+
+// Validates and persists a new tree inside the caller's transaction, so a
+// caller can create the tree together with other rows it depends on.
+export async function createCompetenceTreeInTransaction(
+  tx: PrismaTransactionClient,
+  { input, ownerId }: { input: CompetenceTreeInput; ownerId: string }
+): Promise<string> {
   const prepared = prepareTreeInput(input)
-  const elements = await getAccessibleElements(prepared.assignments, ctx)
+  const elements = await getAccessibleElements(prepared.assignments, {
+    prisma: tx,
+    userId: ownerId,
+  })
   assertValidTree(prepared, elements)
   const metadata = normalizeTreeMetadata(prepared)
-  const treeId = await ctx.prisma.$transaction(async (tx) => {
-    const tree = await tx.competenceTree.create({
-      data: { ...metadata, ownerId: ctx.user.sub },
-      select: { id: true },
-    })
-    await persistTreeStructure(tx, tree.id, prepared)
-    return tree.id
+  const tree = await tx.competenceTree.create({
+    data: { ...metadata, ownerId },
+    select: { id: true },
   })
-  return await getRequiredCompetenceTree(treeId, ctx)
+  await persistTreeStructure(tx, tree.id, prepared)
+  return tree.id
 }
 
 export async function replaceCompetenceTree(
@@ -82,7 +97,10 @@ export async function replaceCompetenceTree(
     )
   }
   const prepared = prepareTreeInput(input)
-  const elements = await getAccessibleElements(prepared.assignments, ctx)
+  const elements = await getAccessibleElements(prepared.assignments, {
+    prisma: ctx.prisma,
+    userId: ctx.user.sub,
+  })
   assertValidTree(prepared, elements)
   const metadata = normalizeTreeMetadata(prepared)
   await ctx.prisma.$transaction(async (tx) => {

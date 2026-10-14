@@ -2,6 +2,8 @@ import type { CompetenceTreeInput } from '@klicker-uzh/adaptive-server/services/
 import {
   filterReadableAssignments,
   readCopyCompetenceTreeConfig,
+  remapAssignedElements,
+  summarizeIds,
 } from '../src/scripts/copyCompetenceTree.js'
 
 const TREE_ID = '11111111-1111-4111-8111-111111111111'
@@ -17,7 +19,7 @@ describe('copyCompetenceTree config', () => {
       sourceTreeId: TREE_ID,
       targetUsername: 'lecturer2',
       targetUserId: null,
-      unreadableAssignments: 'fail',
+      assignedElements: 'require-readable',
       dryRun: true,
     })
   })
@@ -52,9 +54,17 @@ describe('copyCompetenceTree config', () => {
       {
         SOURCE_TREE_ID: TREE_ID,
         TARGET_USERNAME: 'x',
-        UNREADABLE_ASSIGNMENTS: 'skip',
+        ASSIGNED_ELEMENTS: 'skip',
       },
-      'UNREADABLE_ASSIGNMENTS',
+      'ASSIGNED_ELEMENTS must be one of',
+    ],
+    [
+      {
+        SOURCE_TREE_ID: TREE_ID,
+        TARGET_USERNAME: 'x',
+        UNREADABLE_ASSIGNMENTS: 'drop',
+      },
+      'replaced by ASSIGNED_ELEMENTS',
     ],
   ])('rejects invalid input %#', (env, message) => {
     expect(() => readCopyCompetenceTreeConfig(env)).toThrow(message)
@@ -87,5 +97,39 @@ describe('filterReadableAssignments', () => {
     expect(result.droppedElementIds).toEqual([1, 3])
     expect(result.input.assignments.map((a) => a.elementId)).toEqual([2])
     expect(input.assignments).toHaveLength(4)
+  })
+})
+
+describe('remapAssignedElements', () => {
+  it('points copied questions at their copies and keeps owned ones', () => {
+    const input = {
+      name: 'tree',
+      displayName: 'Tree',
+      levels: [],
+      nodes: [],
+      coverages: [],
+      assignments: [
+        { elementId: 1, leafKey: 'a', levelKey: 'l', enabled: true },
+        { elementId: 2, leafKey: 'b', levelKey: 'l', enabled: true },
+      ],
+    } as unknown as CompetenceTreeInput
+    const result = remapAssignedElements(input, new Map([[1, 101]]))
+    expect(result.assignments.map((a) => a.elementId)).toEqual([101, 2])
+    expect(result.assignments[0]).toMatchObject({ leafKey: 'a' })
+    expect(input.assignments[0]?.elementId).toBe(1)
+  })
+})
+
+describe('summarizeIds', () => {
+  it('prints short lists in full', () => {
+    expect(summarizeIds([1, 2, 3])).toBe('1, 2, 3')
+  })
+
+  it('truncates long lists and states the total', () => {
+    const ids = Array.from({ length: 3822 }, (_, index) => index + 1)
+    const summary = summarizeIds(ids)
+    expect(summary.startsWith('1, 2, 3')).toBe(true)
+    expect(summary).toContain('(3822 in total')
+    expect(summary).not.toContain(', 21,')
   })
 })
