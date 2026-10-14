@@ -205,12 +205,23 @@ function ChatbotDetails({
   const { data: accountUsageData } = useQuery(GetChatAccountUsageDocument)
   // Drafts can be prepared without AI access, so an unauthorized owner falls
   // back to the subscription tier; saving still requires its cost center.
+  // Delegated logins cannot read the overview; the server's save check stays
+  // authoritative, so an unknown entitlement leaves every model enabled.
   const accountUsage = accountUsageData?.getChatAccountUsage
-  const advancedModelsEntitled = accountUsage?.authorized
-    ? accountUsage.advancedModelUsage.entitled
-    : accountUsage?.subscriptionTier === AiSubscriptionTier.Advanced
+  const advancedModelsEntitled = !accountUsage
+    ? true
+    : accountUsage.authorized
+      ? accountUsage.advancedModelUsage.entitled
+      : accountUsage.subscriptionTier === AiSubscriptionTier.Advanced
+  // Models in the saved revision stay selectable, as the server accepts them.
+  const savedModelIds = useMemo(
+    () => (chatbot ? getChatbotRevisionValues(chatbot).allowedModelIds : []),
+    [chatbot]
+  )
   const isModelUnavailable = (model: ChatModelCapability) =>
     model.usageClass === ChatUsageClass.Advanced && !advancedModelsEntitled
+  const isModelLocked = (model: ChatModelCapability) =>
+    isModelUnavailable(model) && !savedModelIds.includes(model.id)
   const [saveRevision, { loading: isSaving }] = useMutation(
     MSaveChatbotRevisionDocument
   )
@@ -1490,8 +1501,7 @@ function ChatbotDetails({
                         label: model.name,
                         tooltip: model.description,
                         disabled:
-                          isModelUnavailable(model) &&
-                          model.id !== fixedModelId,
+                          isModelLocked(model) && model.id !== fixedModelId,
                       }))}
                       onChange={handleFixedModelChange}
                     />
@@ -1545,7 +1555,7 @@ function ChatbotDetails({
                                 !modelSettingsEditable ||
                                 revisionPending ||
                                 isLastSelected ||
-                                (unavailable && !checked)
+                                (isModelLocked(model) && !checked)
                               }
                               aria-label={model.name}
                               data={{ cy: `chatbot-model-${model.id}` }}
