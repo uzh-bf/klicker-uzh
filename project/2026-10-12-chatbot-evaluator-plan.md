@@ -534,3 +534,13 @@ specific platform gate. Finish the independently approved refresh and CI first;
 leave the gate pending until the user authorizes a readiness transition. Do not
 change policy, synthesize a passing status, or send an ineligible review command.
 No paid evaluation, merge to target, release or deployment is authorized.
+
+The refreshed hosted review identified an incomplete return-to-development
+instruction. Clear all five guarded settings after stopping evaluation, because
+the canonical file does not replace the evaluation key or registry. Main
+corrects only the diagnostic and README guidance, and aligns the existing
+synthetic canonical fixture with the actual base-URL-only file. The ordinary
+and guarded startup contracts remain unchanged. The OR-trigger warning claim
+was refuted against the existing capture condition. Prior source reviews remain
+applicable to this non-behavioral correction; rerun the synthetic startup harness
+and formatting, then hold the corrected head through fresh hosted CI.

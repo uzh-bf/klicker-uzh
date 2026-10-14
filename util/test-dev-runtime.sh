@@ -641,9 +641,7 @@ fi
 [ ! -s "$CURL_LOG" ] || fail 'failed preparation reached readiness'
 
 # Canonical development defaults cannot displace explicit guarded settings.
-write_file "$ROOT/.devcontainer/devcontainer.env" 'OPENAI_BASE_URL=http://litellm:4000
-OPENAI_API_KEY=synthetic-default-key
-CHAT_MODEL_REGISTRY_JSON=default-registry'
+write_file "$ROOT/.devcontainer/devcontainer.env" 'OPENAI_BASE_URL=http://litellm:4000'
 : >"$HELPER_LOG"
 KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
   KLICKER_EVAL_GUARD_ORIGIN=http://127.0.0.1:1418 \

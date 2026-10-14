@@ -409,8 +409,12 @@ before starting. `--check` checks only offline prerequisites. The adapter and
 framework target label share `KLICKER_EVAL_MODEL_ID` (default `gpt-6-luna`);
 judge model and capability settings remain independent.
 An explicitly set origin or generation activates guarded startup checks, even
-when empty. After stopping evaluation, unset both markers to deliberately return
-to canonical development settings; blank values are incomplete configuration.
+when empty. After stopping evaluation, unset all five guarded settings to return
+to ordinary development: `KLICKER_EVAL_GUARD_ORIGIN`, `OPENAI_BASE_URL`,
+`OPENAI_API_KEY`, `CHAT_MODEL_REGISTRY_JSON` and `KLICKER_EVAL_GUARD_GENERATION`.
+Clearing only the markers can leave the evaluation key and registry in the
+environment because the canonical file does not define their replacements.
+Blank markers are incomplete configuration.
 
 The adapter resolves the exact question and mode from FineCo frontmatter and
 returns the completed persisted answer as an OpenAI Chat Completions target.
