@@ -310,8 +310,9 @@ runs:
         retention-days: 1
 
     # A passing retry still needs the failed attempt retained for diagnosis.
+    # Missing/failed summary output is unknown evidence, not zero flakes.
     - name: Upload Playwright diagnostics
-      if: ${{ !cancelled() && (failure() || steps.flaky-summary.outputs.flaky-count > 0) }}
+      if: ${{ !cancelled() && (failure() || steps.flaky-summary.outputs.flaky-count > 0 || steps.flaky-summary.outputs.flaky-count == '') }}
       uses: actions/upload-artifact@v4
       with:
         name: playwright-diagnostics-${{ inputs.shard-index }}-of-${{ inputs.shard-total }}

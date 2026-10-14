@@ -97,7 +97,8 @@ available; 3.5 seconds of removed fixed delays is not a measured wall-clock savi
 
 The existing summary helper writes a numeric `flaky-count` to the trusted
 `GITHUB_OUTPUT` file. The existing diagnostics upload runs after failure or a
-nonzero count, excluding cancellation. Names, paths and one-day retention remain
+nonzero count or missing summary output, excluding cancellation. Unknown evidence
+also retains diagnostics instead of being treated as a stable run. Names, paths and one-day retention remain
 unchanged. Tests cover nested flaky outcomes, stable/skipped/failed outcomes,
 missing/malformed reports, output isolation, and action wiring. No new workflow,
 credential, reporting service, or paid model call is introduced.

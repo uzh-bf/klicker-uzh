@@ -149,7 +149,7 @@ test('workflow outputs contain only the numeric count, never report titles', (t)
   assert.equal(result.output, 'flaky-count=1\n')
 })
 
-test('shard retains failed and flaky diagnostics without changing artifact scope', () => {
+test('shard retains failed, flaky and unknown diagnostics without changing artifact scope', () => {
   const action = YAML.parse(
     fs.readFileSync(
       path.join(__dirname, '../actions/playwright-shard/action.yml'),
@@ -169,7 +169,7 @@ test('shard retains failed and flaky diagnostics without changing artifact scope
   )
   assert.equal(
     upload.if,
-    `\${{ !cancelled() && (failure() || steps.flaky-summary.outputs.flaky-count > 0) }}`
+    `\${{ !cancelled() && (failure() || steps.flaky-summary.outputs.flaky-count > 0 || steps.flaky-summary.outputs.flaky-count == '') }}`
   )
   assert.equal(upload.with['retention-days'], 1)
   assert.equal(

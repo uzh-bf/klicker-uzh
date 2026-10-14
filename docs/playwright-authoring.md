@@ -89,7 +89,9 @@ The existing configuration retains traces for failed attempts and reports flaky
 outcomes in JSON. The shard action now also uploads its existing diagnostics when
 that report contains a passed-on-retry test, even when the job succeeds. The
 report helper exposes only a numeric `flaky-count`; a missing report or malformed JSON
-does not assert a zero-flake result. Failure-triggered uploads remain enabled.
+does not assert a zero-flake result. Unknown summary evidence also triggers an
+upload, so a reporting failure cannot silently discard the remaining diagnostics.
+Failure-triggered uploads remain enabled.
 
 Artifact paths/names and one-day retention are unchanged. These diagnostics can
 contain DOM snapshots, requests, cookies, screenshots, and service logs: retain
