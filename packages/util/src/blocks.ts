@@ -331,6 +331,7 @@ export async function updateLiveQuizBlockResultsFromCache({
   redisAssessmentExec,
   updateResults,
   updateLeaderboards,
+  closeBlock,
 }: {
   quizId: string
   blockId: number
@@ -339,25 +340,41 @@ export async function updateLiveQuizBlockResultsFromCache({
   redisAssessmentExec: Redis
   updateResults: boolean
   updateLeaderboards: boolean
+  // true: close the active block and persist its results (block closure)
+  // false: re-aggregate an already closed block (delayed aggregation)
+  closeBlock: boolean
 }) {
   const quiz = await prisma.liveQuiz.findUnique({
     where: { id: quizId },
     include: {
       course: true,
-      activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
-      blocks: { orderBy: { id: 'asc' } },
+      blocks: {
+        orderBy: { id: 'asc' },
+        include: { elements: { orderBy: { order: 'asc' } } },
+      },
     },
   })
 
-  if (!quiz || !quiz.activeBlock) return null
+  if (!quiz) return null
 
-  // if the block is not the active one, return early
-  if (quiz.activeBlockId !== blockId) return null
+  const block = quiz.blocks.find((b) => b.id === blockId)
+  if (!block) return null
+
+  // closing requires the block to be the active one, re-aggregation requires
+  // it to be closed already (and not to have been reactivated)
+  if (closeBlock && quiz.activeBlockId !== blockId) return null
+  if (
+    !closeBlock &&
+    (block.status !== DB.ElementBlockStatus.EXECUTED ||
+      quiz.activeBlockId === blockId)
+  ) {
+    return null
+  }
 
   try {
     const cachedResults = await getCachedBlockResults({
       redisExec: quiz.isAssessmentEnabled ? redisAssessmentExec : redisExec,
-      activeBlock: quiz.activeBlock,
+      activeBlock: block,
     })
 
     if (!cachedResults) return null
@@ -499,20 +516,31 @@ export async function updateLiveQuizBlockResultsFromCache({
       })
     }
 
+    // skip instances without cached results (e.g., expired cache entries),
+    // so that persisted results are never overwritten with empty ones
+    const cachedInstanceResults = Object.entries(instanceResults).filter(
+      ([, instanceResult]) =>
+        Number.isFinite(instanceResult.anonymousResults.total)
+    )
+
     const updatedQuiz = await prisma.liveQuiz.update({
       where: { id: quizId },
       data: {
-        activeBlock: { disconnect: true },
+        ...(closeBlock ? { activeBlock: { disconnect: true } } : {}),
         blocks: {
           update: {
             where: { id: blockId },
             data: {
-              status: DB.ElementBlockStatus.EXECUTED,
-              closedAt: new Date(),
+              ...(closeBlock
+                ? {
+                    status: DB.ElementBlockStatus.EXECUTED,
+                    closedAt: new Date(),
+                  }
+                : {}),
               ...(updateResults
                 ? {
                     elements: {
-                      update: Object.entries(instanceResults).map(
+                      update: cachedInstanceResults.map(
                         ([id, instanceResult]) => ({
                           where: { id: Number(id) },
                           // update the anonymous results for regular live quizzes and the normal results for assessment live quizzes
