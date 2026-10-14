@@ -4,14 +4,15 @@ const { PAIRS } = require('./draft-sync-prs.cjs')
 const REPOSITORY = 'uzh-bf/klicker-uzh'
 // Integration branch -> the branch whose history it must keep as ancestry.
 const SOURCES = Object.fromEntries(PAIRS.map(({ head, base }) => [base, head]))
-// Sync target -> the branch it feeds, which must never flow back into it,
-// pinned to that downstream branch's oldest own first-parent commit. Every later
-// downstream commit descends from the root, so any back-merge carries it, even
-// after an earlier bypass already contaminated the target. v3 has no entry:
-// ADR 0007 plans to fold v3-ai back into v3, and this guard does not run there.
+// Sync target -> the branches it feeds, which must never flow back into it,
+// pinned to their oldest own first-parent commit. Every later downstream commit
+// descends from the root, so any back-merge carries it, even after an earlier
+// bypass already contaminated the target. v3-adaptive-learning was branched
+// from v3-audit, so one root covers both. v3 has no entry: ADR 0007 plans to
+// fold v3-ai back into v3, and this guard does not run there.
 const DOWNSTREAM_ROOTS = {
   'v3-ai': {
-    downstream: 'v3-audit',
+    downstreams: ['v3-audit', 'v3-adaptive-learning'],
     root: 'f9c8fa7c72f201bec66e99c0b886b1f6a9e87ef1',
   },
 }
@@ -187,17 +188,22 @@ async function guardSyncAncestry({ github, context, core, cwd }) {
   const sourceSha = git(cwd, ['rev-parse', `origin/${source}`])
 
   const edge = DOWNSTREAM_ROOTS[base]
-  const downstream = edge?.downstream
+  const downstream = edge?.downstreams.join(' and ')
   const before = pullRequest ? baseSha : context.payload.before
   const head = pullRequest ? pullRequest.head.sha : baseSha
   // A branch creation or a force push may leave no comparable parent.
+  // Every downstream line must still carry the root; the results agree.
   const backflow = edge
-    ? findBackflow(cwd, {
-        parent: before && hasCommit(cwd, before) ? before : null,
-        head,
-        downstreamSha: git(cwd, ['rev-parse', `origin/${downstream}`]),
-        root: edge.root,
-      })
+    ? edge.downstreams
+        .map((branch) =>
+          findBackflow(cwd, {
+            parent: before && hasCommit(cwd, before) ? before : null,
+            head,
+            downstreamSha: git(cwd, ['rev-parse', `origin/${branch}`]),
+            root: edge.root,
+          })
+        )
+        .find(Boolean)
     : null
   const leakMessage = !backflow
     ? null
