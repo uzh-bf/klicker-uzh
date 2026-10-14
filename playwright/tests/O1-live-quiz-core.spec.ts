@@ -1998,12 +1998,11 @@ test.describe.serial('Core live-quiz workflows', () => {
     await page.getByTestId('create-live-quiz').click()
     await typeInto(page.getByTestId('insert-live-quiz-name'), 'TEMP')
     await page.getByTestId('next-or-submit').click()
-    await page.waitForTimeout(500)
+    await expect(page.getByTestId('insert-live-display-name')).toBeVisible()
     await typeInto(page.getByTestId('insert-live-display-name'), 'TEMP DISPLAY')
     await page.getByTestId('next-or-submit').click()
-    await page.waitForTimeout(500)
+    await expect(page.getByTestId('select-course')).toBeVisible()
     await page.getByTestId('next-or-submit').click()
-    await page.waitForTimeout(500)
     await expectByAssertion(
       page.getByTestId('block-container-header'),
       'have.length',
@@ -2093,10 +2092,13 @@ test.describe.serial('Core live-quiz workflows', () => {
       data.course1.quiz.name
     )
     await page.getByTestId('next-or-submit').click()
-    await page.waitForTimeout(500)
+    await expect(page.getByTestId('insert-live-display-name')).toBeVisible()
     await page.getByTestId('back-activity-creation').click()
+    await expect(page.getByTestId('insert-live-quiz-name')).toHaveValue(
+      data.course1.quiz.name
+    )
     await page.getByTestId('next-or-submit').click()
-    await page.waitForTimeout(500)
+    await expect(page.getByTestId('insert-live-display-name')).toBeVisible()
     await expectByAssertion(page.getByTestId('next-or-submit'), 'be.disabled')
     await typeInto(
       page.getByTestId('insert-live-display-name'),
@@ -2111,10 +2113,16 @@ test.describe.serial('Core live-quiz workflows', () => {
       data.course1.quiz.description
     )
     await page.getByTestId('next-or-submit').click()
-    await page.waitForTimeout(500)
+    await expect(page.getByTestId('select-course')).toBeVisible()
     await page.getByTestId('back-activity-creation').click()
+    await expect(page.getByTestId('insert-live-display-name')).toHaveValue(
+      data.course1.quiz.displayName
+    )
+    await expect(page.getByTestId('insert-live-description')).toContainText(
+      data.course1.quiz.description
+    )
     await page.getByTestId('next-or-submit').click()
-    await page.waitForTimeout(500)
+    await expect(page.getByTestId('select-course')).toBeVisible()
     await expectByAssertion(
       page.getByTestId('next-or-submit'),
       'not.be.disabled'

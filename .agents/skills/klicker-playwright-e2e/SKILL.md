@@ -7,6 +7,18 @@ description: Create, refactor, run, and debug Playwright E2E tests for KlickerUZ
 
 Use this skill for Klicker-specific Playwright work. Combine it with `playwright-best-practices` when generic Playwright API guidance is needed.
 
+## Agent-authored changes
+
+Follow [the agent authoring and review contract](../../../docs/playwright-authoring.md)
+before generating or repairing tests. Start with the user-visible contract and
+existing fixtures; inspect the live page before inventing a locator. If browser
+execution is unavailable, label the patch unverified rather than claiming it ran.
+Never let an automatic healer skip/fixme a failure, weaken an assertion, or expand
+retries/timeouts to force green. Preserve the behavior and report product defects.
+Use the current workflow and its exact-head receipts for execution claims, not a
+cached skill description. The behavior-parity and stale-CI guidance corrections
+are tracked in [test hygiene PR #6516](https://github.com/uzh-bf/klicker-uzh/pull/6516).
+
 ## Repo Map
 
 - Active specs: `playwright/tests/**/*.spec.ts`
