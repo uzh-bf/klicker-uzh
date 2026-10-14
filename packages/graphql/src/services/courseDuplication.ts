@@ -876,6 +876,37 @@ function getPermissionTargetObjectId(
   return target.groupActivityId
 }
 
+// build the compound unique selector for a direct permission on the given
+// target object and user, used to upsert permissions (one per object and user)
+function getPermissionTargetUserUnique(
+  target: CourseDuplicationPermissionTarget,
+  userId: string
+):
+  | { courseId_userId: { courseId: string; userId: string } }
+  | { liveQuizId_userId: { liveQuizId: string; userId: string } }
+  | { practiceQuizId_userId: { practiceQuizId: string; userId: string } }
+  | { microLearningId_userId: { microLearningId: string; userId: string } }
+  | { groupActivityId_userId: { groupActivityId: string; userId: string } } {
+  if ('courseId' in target)
+    return { courseId_userId: { courseId: target.courseId, userId } }
+  if ('liveQuizId' in target)
+    return { liveQuizId_userId: { liveQuizId: target.liveQuizId, userId } }
+  if ('practiceQuizId' in target)
+    return {
+      practiceQuizId_userId: { practiceQuizId: target.practiceQuizId, userId },
+    }
+  if ('microLearningId' in target)
+    return {
+      microLearningId_userId: {
+        microLearningId: target.microLearningId,
+        userId,
+      },
+    }
+  return {
+    groupActivityId_userId: { groupActivityId: target.groupActivityId, userId },
+  }
+}
+
 const courseDuplicationInclude = {
   directPermissions: true,
   practiceQuizzes: {
@@ -1032,33 +1063,37 @@ async function copyCourseDuplicationDirectPermissions({
   }
 }
 
-async function grantDuplicatedCourseAccessToSourceOwner({
-  sourceCourseId,
+// a source owner keeps ADMIN access on the copied object, since ownership is
+// carried by an owner column on the source object rather than a permission row
+// and would otherwise be lost during duplication
+async function grantDuplicatedAccessToSourceOwner({
+  sourceObjectType,
+  sourceObjectId,
+  targetObjectType,
+  target,
   sourceOwnerId,
-  targetCourseId,
   ctx,
   prisma,
 }: {
-  sourceCourseId: string
+  sourceObjectType: DB.ObjectType
+  sourceObjectId: string
+  targetObjectType: DB.ObjectType
+  target: CourseDuplicationPermissionTarget
   sourceOwnerId: string
-  targetCourseId: string
   ctx: ContextWithUser
   prisma: PrismaTransactionClient
 }) {
   if (sourceOwnerId === ctx.user.sub) return
 
+  const targetObjectId = getPermissionTargetObjectId(target)
+
   const copiedPermission = await prisma.permission.upsert({
-    where: {
-      courseId_userId: {
-        courseId: targetCourseId,
-        userId: sourceOwnerId,
-      },
-    },
+    where: getPermissionTargetUserUnique(target, sourceOwnerId),
     create: {
       permissionLevel: DB.PermissionLevel.ADMIN,
       propagation: false,
-      courseId: targetCourseId,
       userId: sourceOwnerId,
+      ...target,
     },
     update: {
       permissionLevel: DB.PermissionLevel.ADMIN,
@@ -1069,11 +1104,11 @@ async function grantDuplicatedCourseAccessToSourceOwner({
   await prisma.auditLogEntry.create({
     data: {
       type: DB.AuditLogType.PERMISSION_GRANTED,
-      objectType: DB.ObjectType.COURSE,
-      objectId: targetCourseId,
+      objectType: targetObjectType,
+      objectId: targetObjectId,
       sourceUserId: ctx.user.sub,
       targetUserId: sourceOwnerId,
-      message: `Source course owner ${sourceOwnerId} kept ADMIN access during course duplication from COURSE (ID ${sourceCourseId}) to COURSE (ID ${targetCourseId}) by user ${ctx.user.sub}.`,
+      message: `Source ${sourceObjectType} owner ${sourceOwnerId} kept ADMIN access during course duplication from ${sourceObjectType} (ID ${sourceObjectId}) to ${targetObjectType} (ID ${targetObjectId}) by user ${ctx.user.sub}.`,
     },
   })
 
@@ -1354,7 +1389,11 @@ async function duplicateSelectedCourseActivities({
 }
 
 async function copyMappedActivityPermissions<
-  TSourceActivity extends { id: string; directPermissions: DB.Permission[] },
+  TSourceActivity extends {
+    id: string
+    ownerId: string
+    directPermissions: DB.Permission[]
+  },
 >({
   sourceActivities,
   copiedIdBySourceId,
@@ -1376,12 +1415,24 @@ async function copyMappedActivityPermissions<
     const copiedActivityId = copiedIdBySourceId.get(sourceActivity.id)
     if (!copiedActivityId) continue
 
+    const target = targetFromId(copiedActivityId)
+
     await copyCourseDuplicationDirectPermissions({
       sourcePermissions: sourceActivity.directPermissions,
       sourceObjectType,
       sourceObjectId: sourceActivity.id,
       targetObjectType,
-      target: targetFromId(copiedActivityId),
+      target,
+      ctx,
+      prisma,
+    })
+
+    await grantDuplicatedAccessToSourceOwner({
+      sourceObjectType,
+      sourceObjectId: sourceActivity.id,
+      targetObjectType,
+      target,
+      sourceOwnerId: sourceActivity.ownerId,
       ctx,
       prisma,
     })
@@ -1741,10 +1792,12 @@ export async function duplicateCourse(
         prisma,
       })
 
-      await grantDuplicatedCourseAccessToSourceOwner({
-        sourceCourseId: oldCourse.id,
+      await grantDuplicatedAccessToSourceOwner({
+        sourceObjectType: DB.ObjectType.COURSE,
+        sourceObjectId: oldCourse.id,
+        targetObjectType: DB.ObjectType.COURSE,
+        target: { courseId: newCourse.id },
         sourceOwnerId: oldCourse.ownerId,
-        targetCourseId: newCourse.id,
         ctx,
         prisma,
       })

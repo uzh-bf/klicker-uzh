@@ -7,7 +7,10 @@ import {
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma/client'
-import { recomputeDerivedPermissions } from '@klicker-uzh/util'
+import {
+  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  recomputeDerivedPermissions,
+} from '@klicker-uzh/util'
 import { afterAll, afterEach, describe, expect, it } from 'vitest'
 import { schema } from '../src/index.js'
 import type { Context, ContextWithUser } from '../src/lib/context.js'
@@ -27,6 +30,17 @@ import {
 } from '../src/services/verification.js'
 
 const TEST_PREFIX = `assessment-report-test-${Date.now()}`
+
+// Assessment-report participants exercise resolver-level authorization; the
+// account gate needs their persisted data-use state to read as complete.
+const acknowledgedParticipantDataUse = {
+  dataUseAcknowledgedAt: new Date(),
+  dataUseAcknowledgedVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  researchConsentChoiceAt: new Date(),
+  researchConsentDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  learningAnalyticsChoiceAt: new Date(),
+  learningAnalyticsDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+}
 const fixtureIds: {
   courseIds: string[]
   participantIds: string[]
@@ -102,6 +116,7 @@ async function createFixture() {
       email: `${TEST_PREFIX}-untrusted-${suffix}@example.net`,
       password: 'not-used',
       isActive: true,
+      ...acknowledgedParticipantDataUse,
       invitations: {
         create: {
           courseId: course.id,

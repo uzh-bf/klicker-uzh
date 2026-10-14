@@ -176,6 +176,7 @@ describe('generation start failure ordering', () => {
                   sourceScopes: [],
                   objectives: [],
                   bloomLevels: ['remember'],
+                  focusTopic: null,
                 }
               : { language: 'en', flashcardCount: 1, objectives: [] },
           requestedElementCount: 1,

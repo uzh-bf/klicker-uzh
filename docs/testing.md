@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
-timestamp: '2026-09-03'
+timestamp: '2026-09-20'
 tags:
   - testing
   - ci
@@ -10,7 +10,10 @@ tags:
 
 # Testing
 
-**There is no component-test layer.** Coverage is pure-function vitest at the bottom and full-stack e2e at the top — nothing in between (no @testing-library/react). Don't look for one, and don't assume a React component is covered unless an e2e spec exercises it.
+**There is no React component-test layer** (no @testing-library/react).
+Vitest covers pure logic and server-side integrations; Playwright covers
+browser user flows. Server-rendered HTML tests do not prove hydration or
+browser interaction.
 
 Coverage is published, not enforced. `test-unit.yml` and `test-graphql.yml` run their
 existing Vitest suites with the v8 provider and upload LCOV as the `coverage-lcov`
@@ -85,6 +88,8 @@ errors, which can contain credentials. For retained volumes, follow the
 | React/browser feature-flag behavior                                               | browser verification; use e2e when a user flow covers it                                                | `npx agent-browser@0.32.2` against the adopting app                                                                 |
 | GraphQL services/resolvers                                                        | `packages/graphql` vitest — needs marked disposable Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN` | `pnpm --filter @klicker-uzh/graphql test` inside the provisioned self-contained environment                         |
 | Auth adapter against shared Prisma client                                         | disposable local PostgreSQL through the guarded Auth round-trip                                         | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                                               |
+| Auth routing, cookies and API handlers                                            | Vitest unit and handler integration projects; no database or real identity provider                     | `pnpm --filter @klicker-uzh/auth test:run`                                                                          |
+| Compiled auth proxy and server-rendered recovery                                  | Vitest built-app integration project; requires an auth production build                                 | `pnpm --filter @klicker-uzh/auth test:built`                                                                        |
 | UI / user flows                                                                   | Playwright e2e                                                                                          | `pnpm playwright:host -- <args>` from the host; see routing below                                                   |
 | Office Add-in URL validation                                                      | Node's built-in test runner — safe without services                                                     | `pnpm --filter @klicker-uzh/office-addin test`                                                                      |
 
@@ -120,6 +125,23 @@ synthetic chatbot/examples for local review; none of these paths mutate
 production data. A green GraphQL test proves the owner lifecycle and cascade
 contract without relying on the development seed.
 
+Auth tests live in `apps/auth/test/` and use the named Vitest projects `unit`,
+`integration`, and `built`. `test:run` runs the first two; `test:unit` and
+`test:integration` select them individually. Handler integration tests exercise
+the real NextAuth library with mocked account/database operations and a local
+synthetic OpenID Connect provider. They do not prove real Edu-ID compatibility
+or database persistence; the guarded Prisma adapter suite remains separate.
+
+The `built` project starts and stops its own production auth servers on random
+loopback ports. It checks HTTP and HTTPS deployment policy, configured deep
+links and initial recovery HTML without a database or external provider.
+HTTPS policy is selected through `NEXTAUTH_URL`; the local HTTP listener models
+an application behind a TLS proxy, not a TLS-handshake test. Build with
+`pnpm exec turbo run build --filter=@klicker-uzh/auth... --concurrency=4` before
+running it. The unit CI workflow runs all three projects, builds auth before
+the built-app checks, and publishes coverage from the unit/handler suites.
+Browser login and request-ordering journeys remain in `playwright/tests/A-login.spec.ts`.
+
 For OpenAI-compatible chat stream changes, run
 `apps/chat/test/openai-chat-streaming.test.ts` first. It injects an
 OpenAI-compatible SSE response whose first tool call uses a sparse provider
@@ -144,7 +166,7 @@ does not replace environment values in an existing service container. The
 target adapter reads only namespaced local API/Chat origins and seeded
 participant credentials from the invoking shell, then removes those variables
 from the evaluator child. The wrapper pins a loopback Chat Completions target,
-one in-flight request, direct gpt-5.6-luna, and cleanup on every exit.
+one in-flight request, direct gpt-6-luna, and cleanup on every exit.
 
 The local KB_doc_query canary is a transport check for authentication, thread
 and message persistence, mode handling, and expected-tool evidence. It is not
@@ -241,15 +263,17 @@ adapter requires the exact completion marker written at the end of successful
 bootstrap. `bash util/test-dev-runtime.sh` covers missing, malformed,
 symlinked, invalidated, and valid marker states plus the script ordering. This
 is static lifecycle evidence; cold DevPod and Devsy startup remain the
-provider-level acceptance check.
+provider-level acceptance check. The same harness proves the managed-process
+liveness guard: a process that dies inside the grace interval fails startup
+before any readiness probe, and a survivor advances into the readiness pass.
 
-- The local Chat model simulation includes LiteLLM's `auto-router` and
-  the GPT-5.6 Luna/Sol target aliases. Start it with
+- The local Chat model simulation includes LiteLLM's `auto-router` (v1) and
+  `auto-router-v2`, plus the GPT-6 Luna/Sol target aliases with GPT-5.6 fallbacks. Start it with
   `devrouter ensure . --profile chat,ai`; add `mcp` for the seeded synthetic
   tool path. Then verify the
   LiteLLM liveness endpoint, direct embedding/model probes, expected Auto V2
   routing decisions in LiteLLM logs, and the chat credits response before
-  browser testing the `Auto Mode`/`GPT-5.6 Luna` picker. A real
+  browser testing the `Auto Mode`/`GPT-6 Luna`/`GPT-6 Sol` picker. A real
   `UPSTREAM_OPENAI_API_KEY` is required for these calls; service health alone is
   not classification or answer-stream evidence.
 - Tests that **publish, schedule, or end activities** need the Hatchet **general worker** running on top of the test stack — otherwise mutations fail with `workflow not found`. Use `live-quiz`, `manage,live-quiz`, or `full`; the worker needs `DATABASE_URL` pointed at the test DB ([Async & Workers](./async-and-workers.md)).
@@ -258,7 +282,7 @@ provider-level acceptance check.
   response-processor worker descendants before reporting ready. Without those
   processes and matching `APP_SECRET`/Redis/Postgres settings, the UI can
   accept answers that never reach cockpit/evaluation.
-- The PWA course-chat drawer is covered in `playwright/tests/Y-course-chat-drawer.spec.ts`: modal relationships and focus containment, root isolation and restoration, multiple-chatbot selection, new-tab and iframe targets, desktop and embedded-mobile close controls, and both missing-participation and no-chatbot entry fallbacks.
+- The PWA course-chat drawer is covered in `playwright/tests/Y-course-chat-drawer.spec.ts`: modal relationships and focus containment, root isolation and restoration, multiple-chatbot selection, new-tab and iframe targets, the launcher being omitted inside an embed but kept in the standalone app, and both missing-participation and no-chatbot entry fallbacks.
 - The Manage lecturer assistant is covered in `playwright/tests/Y-manage-assistant.spec.ts`. The suite covers the non-modal page interaction contract, compact modal isolation and focus restoration, cross-origin Escape and focus restoration, persistent context and change announcements, short mobile viewports, desktop-only size persistence, viewport-clamped size presets, breakpoint transitions that preserve the conversation, readiness loading state, retained resizing, in-session reset without iframe reload, trusted proposal revisions, complete correctness/feedback review, localized draft confirmation and parent-owned editor navigation, and proposal clearance above the composer. Its route-error cases prove that 401 and 429 responses render only the generic `chat-assistant-message-error` UI, do not leak the raw status/body or stack details into the transcript, and leave the composer able to complete a retry.
 - GrowthBook-backed AI availability is covered in `playwright/tests/Y-ai-beta-availability.spec.ts`. The suite injects the authenticated capability query, verifies that an enabled-to-temporarily-unavailable transition keeps the AI entry visible but disabled with recovery guidance, confirms the direct Generate route remains a stable retryable state, and proves recovery without a full reload. Its explicit-denial case verifies that the AI entry remains hidden and the direct route stays unavailable. This is presentation evidence; backend authorization remains covered by the GraphQL and Chat contract tests.
 - Ordinary Playwright runs and CI shards stay Chromium-only. Set `PLAYWRIGHT_RELEASE_MATRIX=true` to make the named `firefox` and `webkit` projects available for targeted release checks. Those projects must pass against production builds before release; a development-server result or browser-startup failure is environment evidence, not product compatibility evidence.
@@ -358,7 +382,7 @@ trusted planner assigns candidate-only specs to `full`. The runtime adapter
 resolves a union containing `full` through the explicit `playwright` Devrouter
 profile, which includes every CI-supported application but excludes local-only
 MCP, LiteLLM, and MailHog resources.
-CI installs `@devrouter/cli` version `0.0.72` through
+CI installs `@devrouter/cli` version `0.3.0` through
 `.github/scripts/install-devrouter.sh` in a job-local tool prefix, with install
 scripts disabled. The shard action uses the trusted control checkout's installer
 and passes its absolute executable path to the runtime adapter, including for
@@ -427,7 +451,26 @@ Root typecheck includes the Playwright compiler surface through its package `che
 
 Check-only configs must state their no-output role with `noEmit`. When they extend a declaration-emitting config, `noEmit` alone does not disable declaration portability analysis: GraphQL and Prisma therefore also set `declaration: false` and `declarationMap: false`. Incremental checks use `tsconfig.check.tsbuildinfo` rather than overwriting the emitting compiler's state. The full compiler-role matrix lives in [Getting Started](./getting-started.md#toolchain-verified-2026-07-07).
 
-For framework upgrades, run both bundler paths: `pnpm run build:test` must exercise Turbopack in all five Next apps, while `pnpm run build` must exercise production Turbopack for auth/chat and production Webpack for control/manage/PWA. All five Next builds use their canonical `tsconfig.json`; the three PWA apps reserve `tsconfig.check.json` for raw package checks that must exclude stale development validators. Inspect `.next/standalone` for all five apps and the service worker, Workbox, and custom worker outputs for control/manage/PWA. Treat configuration inspection as **config-derived**; call the artifacts verified only when the command, date, and tested SHA are recorded.
+For framework upgrades, `pnpm run build:test` delegates to each Next app's canonical production build with `NODE_ENV=production`: Turbopack for auth/chat and Webpack for control/manage/PWA. `start:test` serves the resulting standalone server, not a development server or a test-mode Next build. All five Next builds use their canonical `tsconfig.json`; the three PWA apps reserve `tsconfig.check.json` for raw package checks that must exclude stale development validators. Inspect `.next/standalone` for all five apps and the service worker, Workbox, and custom worker outputs for control/manage/PWA. Treat configuration inspection as **config-derived**; call the artifacts verified only when the command, date, and tested SHA are recorded.
+
+### Playwright production frontend artifacts
+
+`util/playwright-next-runtime.mjs` packages each standalone server, `.next/static`,
+and generated public assets into `.next/playwright-runtime.tar`. The existing
+trusted CI archive carries this file even though it excludes `.next/standalone`.
+Each shard extracts it into a fresh temporary directory, verifies its app, build
+command and build ID, and starts `server.js` with `NODE_ENV=production`. Missing
+or inconsistent artifacts fail startup; there is no development fallback. The
+receipt in the build and startup logs identifies the artifact actually served.
+
+The scoped `KLICKER_PLAYWRIGHT_FIXTURES=1` setting enables only local image
+optimization and the existing synthetic GrowthBook proxy. It does not disable
+PWA plugins, service workers, production optimizations, or standalone output.
+Backend test mode still owns synthetic feature flags, coverage instrumentation,
+and arbitrary GraphQL operations used by the harness. CI frontend parity does
+not imply that these backend fixtures or the deployed image digest are identical
+to production. Local `playwright:host` uses the development runtime for fast
+iteration; required CI and explicit production browser checks provide acceptance.
 
 ## Local recovery regression checks
 

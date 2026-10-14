@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-control",
-  "version": "3.4.0-alpha.76",
+  "version": "3.4.0-alpha.87",
   "license": "AGPL-3.0",
   "dependencies": {
     "@apollo/client": "3.13.8",
@@ -27,6 +27,7 @@
     "graphql-codegen-persisted-query-ids": "0.2.0",
     "graphql-ws": "5.16.0",
     "js-cookie": "3.0.7",
+    "katex": "0.16.22",
     "localforage": "1.10.0",
     "next": "16.3.4",
     "next-intl": "4.13.7",
@@ -34,7 +35,7 @@
     "react-dom": "19.2.8",
     "react-select": "5.10.2",
     "remeda": "2.15.0",
-    "sharp": "0.35.4",
+    "sharp": "0.35.5",
     "tailwind-merge": "3.3.1",
     "yup": "1.6.1"
   },
@@ -60,7 +61,7 @@
   },
   "scripts": {
     "build": "next build --webpack",
-    "build:test": "cross-env NODE_ENV=test next build --turbopack",
+    "build:test": "node ../../util/playwright-next-runtime.mjs build",
     "check": "next typegen && tsc --noEmit -p tsconfig.check.json",
     "dev": "cross-env NODE_ENV=development next dev --turbopack --port 3003",
     "dev:assessment": "pnpm run dev",
@@ -69,7 +70,7 @@
     "dev:test": "cross-env NODE_ENV=test next dev --turbopack --port 3003",
     "lint": "eslint .",
     "start": "next start --port 3003",
-    "start:test": "cross-env NODE_ENV=test pnpm start"
+    "start:test": "node ../../util/playwright-next-runtime.mjs start 3003"
   },
   "engines": {
     "node": "=24"

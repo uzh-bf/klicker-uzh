@@ -106,8 +106,13 @@ vi.mock('@/src/services/credits', () => ({
   },
 }))
 
-vi.mock('@/src/services/accountUsage', () => {
+vi.mock('@/src/services/accountUsage', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('@/src/services/accountUsage')>()
   return {
+    CHAT_MODEL_UNAVAILABLE_ADVANCED: 'CHAT_MODEL_UNAVAILABLE_ADVANCED',
+    CHAT_MODEL_UNAVAILABLE_BASE: 'CHAT_MODEL_UNAVAILABLE_BASE',
+    chatModelUnavailableResponse: actual.chatModelUnavailableResponse,
     CHAT_TURN_ALREADY_COMPLETED_CODE: 'CHAT_TURN_ALREADY_COMPLETED',
     ChatTurnConflictError: mocks.ChatTurnConflictError,
     claimChatTurn: mocks.claimChatTurn,
@@ -132,6 +137,7 @@ vi.mock('@/src/lib/server/langfuseTracing', () => ({
   registerLangfuseTelemetry: vi.fn().mockResolvedValue(undefined),
   flushLangfuseTelemetry: mocks.flushLangfuseTelemetry,
   getChatTraceContext: mocks.getChatTraceContext,
+  getTraceIdForMessage: vi.fn().mockResolvedValue('synthetic-trace-id'),
   getLangfuseAiSdkIntegration: mocks.getLangfuseAiSdkIntegration,
   isAiTelemetryEnabled: mocks.isAiTelemetryEnabled,
   LANGFUSE_CHAT_TRACE_NAME: 'generate-chat-response',
@@ -168,6 +174,14 @@ vi.mock('ai', async (importOriginal) => {
 })
 
 import { POST } from '../src/app/api/chatbots/[chatbotId]/chat/route'
+import { stepReminder } from '../src/lib/server/calculatorTool'
+
+// Tutor and quizzer steps end with one system message that carries the
+// precision rule and the reply-language reminder.
+const STEP_REMINDER = {
+  role: 'system',
+  content: expect.stringContaining(stepReminder('tutor').content),
+}
 
 type StreamCallbacks = {
   onEnd: (result: {
@@ -215,12 +229,12 @@ function chatbot(overrides: Record<string, unknown> = {}) {
   return {
     id: 'chatbot-1',
     ownerId: 'owner-1',
-    owner: { aiFeaturesEnabled: true },
+    owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: 'cost-center-1' },
     course: { displayName: 'Test Course' },
     systemPrompts: { tutor: { prompt: 'Use course material.' } },
     mcpConfigurations: [],
     modelSelection: true,
-    allowedModelIds: ['gpt-4.1', 'gpt-5.6-luna'],
+    allowedModelIds: ['gpt-4.1', 'gpt-6-luna'],
     allowedReasoningEffortsByModel: null,
     openaiApiKey: null,
     openaiBaseUrl: null,
@@ -515,7 +529,6 @@ describe('account usage chat route', () => {
     })
     expect(mocks.buildPromptCacheRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        instructions: expect.stringContaining('Synthetic lecturer guidance.'),
         tools: expect.objectContaining({
           search_response_examples: responseExampleTool,
         }),
@@ -558,7 +571,6 @@ describe('account usage chat route', () => {
     expect(mocks.streamText).toHaveBeenCalledOnce()
     expect(mocks.buildPromptCacheRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        instructions: expect.not.stringContaining('Response-example skill'),
         tools: expect.not.objectContaining({
           search_response_examples: expect.anything(),
         }),
@@ -566,6 +578,7 @@ describe('account usage chat route', () => {
     )
     expect(mocks.streamText).toHaveBeenCalledWith(
       expect.objectContaining({
+        instructions: expect.not.stringContaining('Response-example skill'),
         runtimeContext: {
           responseExampleRole: 'included',
           responseExampleSkillAvailable: false,
@@ -601,9 +614,6 @@ describe('account usage chat route', () => {
     expect(response.status).toBe(200)
     expect(mocks.buildPromptCacheRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        instructions: expect.not.stringContaining(
-          'Synthetic lecturer guidance.'
-        ),
         tools: expect.not.objectContaining({
           search_response_examples: expect.anything(),
         }),
@@ -642,9 +652,6 @@ describe('account usage chat route', () => {
     expect(mocks.createResponseExampleSearchTool).not.toHaveBeenCalled()
     expect(mocks.buildPromptCacheRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        instructions: expect.not.stringContaining(
-          'Synthetic lecturer guidance.'
-        ),
         tools: expect.objectContaining({ search_response_examples: mcpTool }),
       })
     )
@@ -690,7 +697,13 @@ describe('account usage chat route', () => {
 
   test('allows participant model use when an approved owner opts out of beta', async () => {
     mocks.chatbotFindUnique.mockResolvedValue(
-      chatbot({ owner: { aiFeaturesEnabled: true, betaEnabled: false } })
+      chatbot({
+        owner: {
+          aiFeaturesEnabled: true,
+          betaEnabled: false,
+          aiChatbotCostCenter: 'cost-center-1',
+        },
+      })
     )
 
     const response = await POST(createRequest(), {
@@ -828,7 +841,7 @@ describe('account usage chat route', () => {
 
     const response = await POST(
       createRequest({
-        selectedModel: 'gpt-5.6-luna',
+        selectedModel: 'gpt-6-luna',
         images: ['data:image/png;base64,AAAA'],
       }),
       { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
@@ -850,7 +863,7 @@ describe('account usage chat route', () => {
     mocks.isChatAccountUsageAvailable.mockResolvedValue(false)
 
     const response = await POST(
-      createRequest({ selectedModel: 'gpt-5.6-luna' }),
+      createRequest({ selectedModel: 'gpt-6-luna' }),
       { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
     )
 
@@ -864,15 +877,99 @@ describe('account usage chat route', () => {
     expect(mocks.streamText).toHaveBeenCalledOnce()
   })
 
+  test('refuses an advanced model without a cost center while enforcement is off', async () => {
+    mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(false)
+    mocks.chatbotFindUnique.mockResolvedValue(
+      chatbot({
+        owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: null },
+      })
+    )
+
+    const response = await POST(createRequest({ selectedModel: 'gpt-4.1' }), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(403)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Chat model usage is unavailable',
+      code: 'CHAT_MODEL_UNAVAILABLE_ADVANCED',
+    })
+    expect(mocks.isChatAccountUsageAvailable).not.toHaveBeenCalled()
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.threadFindFirst).not.toHaveBeenCalled()
+    expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
+  test('refuses the automatic default without a cost center while enforcement is off', async () => {
+    vi.stubEnv('CHAT_PRIMARY_MODEL_ID', 'auto')
+    mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(false)
+    mocks.chatbotFindUnique.mockResolvedValue(
+      chatbot({
+        modelSelection: false,
+        allowedModelIds: ['auto', 'gpt-6-luna'],
+        owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: null },
+      })
+    )
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(403)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Chat model usage is unavailable',
+      code: 'CHAT_MODEL_UNAVAILABLE_ADVANCED',
+    })
+    expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
+  test('keeps the base model open without a cost center while enforcement is off', async () => {
+    mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(false)
+    mocks.chatbotFindUnique.mockResolvedValue(
+      chatbot({
+        owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: null },
+      })
+    )
+
+    const response = await POST(
+      createRequest({ selectedModel: 'gpt-6-luna' }),
+      { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
+    )
+
+    expect(response.status).toBe(200)
+    expect(mocks.streamText).toHaveBeenCalledOnce()
+  })
+
   test.each([
-    'tutor',
-    'quizzer',
-  ] as const)('forces %s course retrieval only on the first model step', async (selectedMode) => {
+    ['tutor', null, true],
+    ['explainer', null, true],
+    ['quizzer', null, true],
+    ['cm_roleplay', null, false],
+    [
+      'cm_roleplay',
+      {
+        required: true,
+        toolAlias: 'doc_query',
+        kb_id: '7016810d-31e9-4b39-9529-cd46feb2bf63',
+      },
+      false,
+    ],
+  ] as const)('selects %s retrieval on the first step with binding %j', async (selectedMode, parameters, forceRetrieval) => {
     mocks.chatbotFindUnique.mockResolvedValueOnce(
       chatbot({
         systemPrompts: {
           tutor: { prompt: 'Use course material.' },
           quizzer: { prompt: 'Ask course questions.' },
+        },
+        customModeConfig: {
+          modes: [
+            {
+              key: 'cm_roleplay',
+              name: 'Synthetic Roleplay',
+              description: 'Synthetic roleplay with retrieval.',
+              personaText: null,
+            },
+          ],
         },
         mcpConfigurations: [
           {
@@ -880,8 +977,8 @@ describe('account usage chat route', () => {
             isEnabled: true,
             priority: 0,
             allowedTools: ['doc_query'],
-            parameters: null,
-            mcpServer: { id: 'server-1' },
+            parameters,
+            mcpServer: { id: 'server-1', name: parameters ? 'KB' : 'IW' },
           },
         ],
       })
@@ -896,16 +993,24 @@ describe('account usage chat route', () => {
     })
 
     expect(response.status).toBe(200)
+    expect(mocks.streamConfig?.toolChoice).toBe('auto')
+    expect(mocks.streamConfig?.tools).toHaveProperty('KB_doc_query')
     const prepareStep = mocks.streamConfig?.prepareStep as (input: {
       stepNumber: number
       steps?: Array<{ content: unknown[] }>
       initialMessages?: unknown[]
       responseMessages?: unknown[]
     }) => unknown
-    expect(prepareStep({ stepNumber: 0 })).toEqual({
-      toolChoice: { type: 'tool', toolName: 'KB_doc_query' },
-    })
     const initialMessages = [{ role: 'user', content: 'Question' }]
+    const stepMessage = { role: 'system', content: expect.any(String) }
+    expect(
+      prepareStep({ stepNumber: 0, initialMessages, responseMessages: [] })
+    ).toEqual({
+      ...(forceRetrieval
+        ? { toolChoice: { type: 'tool', toolName: 'KB_doc_query' } }
+        : {}),
+      messages: [initialMessages[0], stepMessage],
+    })
     const raw = {
       mode: 'documents',
       sources: [{ reference: 'urn:source:a', chunks: [] }],
@@ -965,14 +1070,42 @@ describe('account usage chat route', () => {
             },
           ],
         },
+        stepMessage,
       ],
+    })
+  })
+
+  test('ends every model step with the precision and language reminders', async () => {
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.streamConfig?.allowSystemInMessages).toBe(true)
+    const prepareStep = mocks.streamConfig?.prepareStep as (input: {
+      stepNumber: number
+      steps: unknown[]
+      initialMessages: unknown[]
+      responseMessages: unknown[]
+    }) => unknown
+    const initialMessages = [{ role: 'user', content: 'Question' }]
+    const toolMessage = { role: 'tool', content: [] }
+    expect(
+      prepareStep({
+        stepNumber: 1,
+        steps: [],
+        initialMessages,
+        responseMessages: [toolMessage],
+      })
+    ).toEqual({
+      messages: [initialMessages[0], toolMessage, STEP_REMINDER],
     })
   })
 
   test('routes zero-credit ADVANCED usage to Luna BASE', async () => {
     mocks.chatbotFindUnique.mockResolvedValueOnce(
       chatbot({
-        allowedModelIds: ['gpt-4.1', 'gpt-5.6-luna'],
+        allowedModelIds: ['gpt-4.1', 'gpt-6-luna'],
       })
     )
     mocks.previewUserCredits.mockResolvedValueOnce({ current: 0, total: 5 })
@@ -995,7 +1128,7 @@ describe('account usage chat route', () => {
     mocks.chatbotFindUnique.mockResolvedValueOnce(
       chatbot({
         modelSelection: false,
-        allowedModelIds: ['auto', 'gpt-5.6-luna'],
+        allowedModelIds: ['auto', 'gpt-6-luna'],
       })
     )
     mocks.previewUserCredits.mockResolvedValueOnce({ current: 0, total: 5 })
@@ -1015,7 +1148,7 @@ describe('account usage chat route', () => {
   test('does not use another class when the ADVANCED account budget is unavailable', async () => {
     mocks.chatbotFindUnique.mockResolvedValueOnce(
       chatbot({
-        allowedModelIds: ['gpt-4.1', 'gpt-5.6-luna'],
+        allowedModelIds: ['gpt-4.1', 'gpt-6-luna'],
       })
     )
     mocks.isChatAccountUsageAvailable.mockResolvedValueOnce(false)
@@ -1073,7 +1206,7 @@ describe('account usage chat route', () => {
     )
 
     const response = await POST(
-      createRequest({ selectedModel: 'gpt-5.6-luna' }),
+      createRequest({ selectedModel: 'gpt-6-luna' }),
       { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
     )
 
@@ -1087,7 +1220,7 @@ describe('account usage chat route', () => {
 
   test('finalizes the sole BASE model once and returns the rounded amount', async () => {
     const response = await POST(
-      createRequest({ selectedModel: 'gpt-5.6-luna' }),
+      createRequest({ selectedModel: 'gpt-6-luna' }),
       { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
     )
     expect(response.status).toBe(200)
@@ -1115,8 +1248,8 @@ describe('account usage chat route', () => {
         assistantMessageId: 'assistant-1',
         participantId: 'participant-1',
         lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
-        modelId: 'gpt-5.6-luna',
-        rawCreditsUsed: 0.000008,
+        modelId: 'gpt-6-luna',
+        rawCreditsUsed: 0.0000035,
       })
     )
     expect(mocks.decrementCredits).not.toHaveBeenCalled()
@@ -1130,8 +1263,8 @@ describe('account usage chat route', () => {
         },
       })
     ).toMatchObject({
-      modelId: 'gpt-5.6-luna',
-      creditsUsed: 0.000008,
+      modelId: 'gpt-6-luna',
+      creditsUsed: 0.000003,
     })
   })
 

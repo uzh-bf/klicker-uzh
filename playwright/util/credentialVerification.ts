@@ -9,6 +9,7 @@ import {
   PublicationStatus,
   ResponseCorrectness,
 } from '@klicker-uzh/prisma/client'
+import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '../../packages/util/src/participantAccountDataUse.js'
 import type {
   ChoicesElementData,
   ElementInstanceOptions,
@@ -30,6 +31,17 @@ import {
   LIVE_QUIZ_ID_ASSESSMENT_REPORT,
   USER_ID_TEST,
 } from './constants.js'
+
+// Assessment-report participants must pass the persisted account data-use
+// gate; a refusal of both optional purposes is a valid completed state.
+const acknowledgedParticipantDataUse = () => ({
+  dataUseAcknowledgedAt: new Date(),
+  dataUseAcknowledgedVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  researchConsentChoiceAt: new Date(),
+  researchConsentDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  learningAnalyticsChoiceAt: new Date(),
+  learningAnalyticsDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+})
 
 export async function seedAssessmentReportFixture() {
   const prisma = await getPrisma()
@@ -85,6 +97,7 @@ export async function seedAssessmentReportFixture() {
       username,
       email,
       password: participantPassword,
+      ...acknowledgedParticipantDataUse(),
     })),
   })
   await prisma.participation.createMany({
@@ -260,6 +273,7 @@ export async function seedAssessmentReportTenBinFixture() {
       username,
       email,
       password: participantPassword,
+      ...acknowledgedParticipantDataUse(),
     })),
   })
   await prisma.participation.createMany({

@@ -8,6 +8,7 @@
 {{- $chatTelemetryEnabled = $chatTelemetry.enabled -}}
 {{- end -}}
 {{- $langfuseRelease := .Values.global.imageTag | default .Values.chat.image.tag | default .Chart.AppVersion -}}
+{{- $scopedMcpEnv := include "chart.docQueryScopedMcpEnv" . -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -15,6 +16,7 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
+  COOKIE_DOMAIN: {{ .Values.backendGraphql.cookieDomain | quote }}
   KB_FALKORDB_HOST: {{ .Values.backendGraphql.knowledgeGraph.host | quote }}
   KB_FALKORDB_PORT: {{ .Values.backendGraphql.knowledgeGraph.port | quote }}
   KB_FALKORDB_TLS: {{ .Values.backendGraphql.knowledgeGraph.tls | quote }}
@@ -33,6 +35,9 @@ data:
   DOC_QUERY_SCOPE_ISSUER: {{ .Values.chat.docQueryScope.issuer | quote }}
   DOC_QUERY_SCOPE_AUDIENCE: {{ .Values.chat.docQueryScope.audience | quote }}
   DOC_QUERY_SCOPE_KID: {{ .Values.chat.docQueryScope.keyId | quote }}
+  {{- if $scopedMcpEnv }}
+  {{- $scopedMcpEnv | nindent 2 }}
+  {{- end }}
   {{- if .Values.chat.lifecycleWritersEnabled }}
   CHAT_TURN_LIFECYCLE_WRITES_ENABLED: "true"
   {{- end }}

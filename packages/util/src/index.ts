@@ -46,8 +46,12 @@ export * from './chatModelRegistry.js'
 // export standard chatbot mode configuration validation and normalization
 export * from './chatbotStandardModeConfig.js'
 
+// export custom chatbot mode limits, validation, and key generation
+export * from './chatbotCustomModeConfig.js'
+
 // export everything from the eLearning chat handoff module
 export * from './elearningChatHandoff.js'
+export * from './participantAccountDataUse.js'
 
 // export the shared guest chat persona identity derivation
 export * from './chatGuestIdentity.js'

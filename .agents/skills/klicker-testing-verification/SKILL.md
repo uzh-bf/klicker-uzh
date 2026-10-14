@@ -96,7 +96,7 @@ the exact checkout and rerun this command. Run the wrapper fake-runtime test
 before credentialed traffic. Set namespaced KLICKER_EVAL_API_ORIGIN and
 KLICKER_EVAL_CHAT_ORIGIN plus seeded participant credentials in the invoking
 shell; the wrapper keeps them out of the evaluator child and creates an
-ephemeral loopback target key. Use --local-target with direct gpt-5.6-luna and
+ephemeral loopback target key. Use --local-target with direct gpt-6-luna and
 one in-flight request.
 
 The KB_doc_query canary is only synthetic transport evidence. It proves the
@@ -164,9 +164,9 @@ value. Keep environment-specific mappings in the app's `.env.stg` and
 `.env.prd` files and add a build failure when silently omitting the value would
 withdraw a user-facing surface.
 
-For Next framework or bundler changes, verify both repository-supported paths. `pnpm run build:test` uses Turbopack in all five Next apps. `pnpm run build` uses Turbopack for auth/chat and Webpack for control/manage/PWA until their service-worker integration moves to Serwist. Confirm standalone server paths for all five apps and `sw.js`, Workbox, and custom worker outputs for the three PWA apps.
+For Next framework or bundler changes, `pnpm run build:test` must delegate to each app's canonical production build with `NODE_ENV=production`: Turbopack for auth/chat and Webpack for control/manage/PWA until their service-worker integration moves to Serwist. Its standalone runtime archive is served by `start:test`; inspect build/start receipts and exercise real browser flows. Confirm standalone server paths for all five apps and `sw.js`, Workbox, and custom worker outputs for the three PWA apps.
 
-The Playwright build job must tar the five `.next` trees before artifact upload and extract them in each shard. Direct artifact upload dereferences Turbopack's `.next/node_modules` symlinks and can omit transitive runtime links, producing HTTP 500 before the suite starts. Each shard restores the generated GraphQL client map from `packages/graphql/dist/client.json` before tests because Turbo cache hits do not restore generated source files.
+The Playwright build job must tar the five `.next` trees before artifact upload and extract them in each shard. Direct artifact upload dereferences Turbopack's `.next/node_modules` symlinks and can omit transitive runtime links, producing HTTP 500 before the suite starts. The archive also carries `.next/playwright-runtime.tar`, which contains each production standalone server and its static/public assets. Verify the relocated server, including service workers; a successful build alone is insufficient. Each shard restores the generated GraphQL client map from `packages/graphql/dist/client.json` before tests because Turbo cache hits do not restore generated source files.
 
 Public PR ARM64 jobs may restore GitHub caches but must use the restore-only
 cache action. They must not spend post-job time uploading pnpm or Turbo caches
@@ -219,7 +219,7 @@ During the live stream, a completed tool chip may precede answer text, but the
 source section must stay absent for the assistant message's entire running
 state, including after answer text begins. A terminal incomplete or aborted
 tool-only turn must still expose valid completed sources after reload.
-Use direct `GPT-5.6 Luna` only to isolate the router from the model/tool path.
+Use direct `GPT-6 Luna` only to isolate the router from the model/tool path.
 
 For source citation presentation changes, the browser pass must verify that
 source cards keep the source name and locator visible while excerpts stay in
@@ -244,6 +244,8 @@ For Hatchet deployment endpoint changes, render the target environment's Helm ch
 For a staging source-branch or image-tag change, render the target environment's Helm chart from the exact branch ArgoCD will track and inspect every workload image tag. After an authorized sync, verify `Synced` and `Healthy` independently, then inspect non-ready pods for image-pull failures, restarts, and memory termination. A green image build or successful ArgoCD sync does not prove runtime readiness. See [CI & Deployment](../../../docs/ci-and-deployment.md#staging-promotion).
 
 For a Node ESM service that TypeScript emits without bundling, import the emitted module with Node after compilation. Source checks and Vitest can resolve package directories that the production Node ESM loader rejects. The student MCP package build includes this check for its Apollo-backed GraphQL client.
+
+For deployment scheduling changes (`topologySpreadConstraints`, affinity, selectors), a values-file read is not render proof: the production spread constraints stayed inert precisely because the values existed but no template rendered them. Run `node deploy/scripts/verify-topology-spread.mjs` — it invokes `helm lint` and `helm template` for chart defaults, staging values, and production values, parses the result with the repo's `yaml` library, and asserts that each of the seven expected Deployments (three Hatchet workers, assessment frontend, assessment backend, MCP student, MCP lecturer) carries exactly one zone and one hostname constraint at `spec.template.spec` with `maxSkew: 1`, `whenUnsatisfiable: ScheduleAnyway`, and selectors matching the pod component labels, that defaults and staging render no spread field, and that no unlisted workload carries one. The same script compares the contract's values paths with the production values in both directions, so a workload cannot leave the assertions unnoticed. The required `check` workflow runs that script together with the negative cases in `deploy/scripts/verify-topology-spread.test.mjs`, which is what the check counts as render proof. Render proof is still not live-rollout proof: after Argo sync, confirm the deployed pod specs and actual pod placement.
 
 For TypeScript or other compiler/toolchain upgrades, root `check:all` includes the Playwright compiler through its package `check` script. Also run `pnpm run build:test` and the Docs production build; those surfaces remain outside the root check. Use direct package `tsc --noEmit -p tsconfig.json` commands only to isolate a Playwright failure. When a check config extends a declaration-emitting config, verify the resolved compiler options: `noEmit` does not disable declaration portability analysis, so the check may also need explicit `declaration: false` and `declarationMap: false`. Incremental checks must use a different `tsBuildInfoFile` from the emitting build.
 

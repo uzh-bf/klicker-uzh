@@ -556,6 +556,224 @@ or an explicit evidence-backed decision to defer it. Report source, merged
 activation and performance separately. No infrastructure change is currently
 required from the user.
 
+## 2026-09-19 output-reuse prioritization
+
+This refresh records the next efficiency horizon after the event, staging-image,
+public-ARM64, and lifecycle-reuse packages have landed. The controlling question
+is no longer whether the runners can execute more work; it is whether Klicker can
+produce fewer equivalent outputs. The baseline is current `v3` at
+`50a1549d2c`, repository controls read through the GitHub API, and a
+350-record Actions sample from 18:49-19:30 UTC on 2026-09-19.
+
+The sample reported 101 queued, 22 pending, 12 in-progress, and 215 completed
+workflow records. Those counts are workflow records, not occupied runner slots.
+Nevertheless, duplicate push and pull-request records for the same integration
+branch head were visible in the sample. A readable subset of the production tag
+builds was more concrete: nine successful `build-arm` jobs consumed 26.7
+execution minutes, with a median queue of 7.0 minutes and median execution of
+3.0 minutes. At that ratio, suppressing an unnecessary build is worth more than
+micro-optimizing a build that must run.
+
+### Current state worth preserving
+
+- One consolidated staging-image workflow resolves affected targets from trusted
+  workspace closures. Draft image legs are deferred, and the terminal status job
+  owns the required context.
+- Playwright builds once per route and distributes outputs to shards. Public
+  ARM64 jobs restore trusted pnpm and Turbo caches but never write them.
+- Public ready pull requests use the restricted ARM64 pool; its workflow
+  boundary remains Klicker-only and tied to the trusted reusable workflow.
+- Metadata-only edits and unchanged lifecycle events can reuse successful
+  validation when their exact evidence contract matches.
+- AMD publication remains disabled except for the optional targets whose AMD
+  jobs are explicitly disabled; no broad AMD fan-out has returned.
+
+### Priority R1: activate change-based draft Playwright selection
+
+The narrowed draft selector and its status coverage are merged, but the
+repository-level control list contained no
+`PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_ENABLED` or canary variable. Organization or
+environment inheritance could not be inspected with the current token. Until an
+effective control is present, an eligible draft falls back to a full hosted
+Playwright wave.
+
+Execute this first because it is already implemented and its qualification sample
+showed material avoidable work: documentation-only drafts previously consumed a
+full eight-shard wave, while the selector can emit `skip`, a bounded smoke
+selection, or a small partial plan. Use one exact draft canary first, inspect the
+execution plan, route, selected jobs, and status receipt, then enable the global
+control. Ready pull requests must continue to require the full eight-shard plan.
+
+Acceptance is live proof on one canary draft and one ready pull request that the
+draft mode is honored without weakening the ready-state full-coverage gate. This
+activation is a repository settings change and needs its existing named gate.
+
+Current state (2026-09-20, read from the repository variable list): the variable
+set contains `PUBLIC_PR_ARM64_PLAYWRIGHT_CANARY_PR`, `PUBLIC_PR_ARM64_PLAYWRIGHT_ENABLED`,
+`PUBLIC_PR_PLAYWRIGHT_CACHE_CANARY_PR`, `PUBLIC_PR_PLAYWRIGHT_CACHE_ENABLED`,
+`PUBLIC_PR_PLAYWRIGHT_WORKERS`, and the promotion and release-branch variables. The
+two variables this priority needs are still absent, so an eligible draft falls
+back to a full hosted wave. The outstanding request is one named-authority
+change with two steps: set `PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_CANARY_PR` to one
+draft and read its execution plan, route, selected jobs, and status receipt, then
+set `PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_ENABLED=true` and prove the same on one
+ready pull request.
+
+### Priority R1a: define a minimum validation envelope for bounded changes
+
+Several validation lanes are already path-aware (`test-unit`, `test-graphql`,
+`test-olat-api`, `test-intl-production`, and the staging-image plan), but a
+pull request that only changes documentation, workflow orchestration, or agent
+guidance can still pay for a full codebase install/build/typecheck, full
+Playwright on ready pull requests, and Sonar/CodeQL analysis. That mismatch is
+the remaining source of avoidable waves after smart drafts.
+
+Introduce one repository-owned minimum-validation classifier rather than a
+second selector in each workflow. It receives the same merge-base diff and emits
+a validated change class together with the exact required contexts that class
+must satisfy. The first classes should be:
+
+- `documentation-and-planning`: Markdown under `docs/`, `project/`, and
+  `.agents/skills/`. Required evidence is the codebase check's documentation
+  and policy validation, gitleaks, and image/status reporters that can prove a
+  no-change selection. No Playwright, unit, GraphQL, OLAT, i18n smoke, Sonar, or
+  CodeQL.
+- `ci-orchestration`: files under `.github/workflows/` and
+  `.github/scripts/`. Required evidence is the codebase check's CI contract
+  suite (including the workflow validators and event-gate tests), gitleaks, and
+  the status reporters that validate skips. Playwright runs only the trusted
+  bounded smoke selection unless the diff also touches application or spec
+  inputs. Unit/GraphQL suites run only when their declared inputs changed.
+
+The classifier must fail closed like the Playwright selector: an empty diff,
+unknown path, deleted spec, renamed file, workflow that no longer declares its
+trigger, or candidate tree that lost the bounded spec expands to the full
+validation envelope. Base retargets, non-empty diffs after a metadata-only edit,
+and unresolvable diffs also expand. A skip is admissible only with a recorded
+class, the paths that justified it, and the required-context result that
+validated it; it must never inherit a prior failed or pending result.
+
+Keep the ready-state full Playwright gate for changes that can affect application
+behaviour or the tested runtime. The minimum envelope intentionally accepts
+lower test coverage for bounded CI/docs changes; the class definitions and their
+fail-closed expansion rules are therefore explicit review contracts, not silent
+path filters. Changing a class boundary is a reviewable source change.
+
+Acceptance is two live PR proofs: a documentation-only PR and a CI-only PR. Each
+must show the bounded codebase check, validated skips for irrelevant suites, no
+Playwright beyond the bounded smoke plan, no Sonar/CodeQL where the class
+excludes them, and a normal full envelope when one unrelated application file is
+added to the same diff. Branch protection must keep every required context
+reporting, with skips validated by the terminal reporter rather than absent.
+
+### Priority R2: give trusted image publication its own BuildKit cache
+
+Same-repository staging pull requests import and export a GHCR BuildKit cache,
+but consolidated staging push builds still force `no-cache: true`, and the
+release-tag production workflows also build uncached. This leaves the most
+trusted, expensive publications colder than ordinary pull-request builds.
+
+Add a separately controlled trusted cache namespace for branch-push and
+release-tag publication. A push may import both its branch cache and a protected
+baseline cache, but must not consume a cache written by an untrusted pull
+request. Keep `mode=max` for intermediate install and build layers. Introduce a
+periodic base-image refresh job so cache reuse does not preserve obsolete base
+packages indefinitely; vulnerability admission and image receipts remain
+unchanged.
+
+Qualify one representative backend image and one representative Next image. A
+cold build seeds the trusted cache; a second trusted build with unchanged inputs
+must show cache hits, equivalent runtime configuration and labels, successful
+scan admission, and lower execution time. Record queue and execution separately.
+Only after that proof should the cache contract expand to all staging and release
+targets.
+
+### Priority R3: reuse unchanged component images by input identity
+
+The current full-SHA publication guard prevents rebuilding only when the exact
+commit tag already exists. A squash merge or an unrelated documentation commit
+creates a new SHA and therefore rebuilds every selected component even when its
+build inputs are unchanged.
+
+Introduce a canonical input fingerprint per image target, derived from the same
+trusted dependency closure that already drives staging selection, plus Dockerfile,
+build arguments, environment file selection, lockfile, manifests, and base-image
+digest. Persist a complete release manifest that maps every target to its
+original source SHA, canonical input fingerprint, image digest, architecture,
+and qualification receipts. A missing target remains a failure; reuse never
+produces an incomplete release.
+
+Start with backend, worker, migrator, and other runtime-configured services.
+They are the best candidates for one build promoted across environments. The
+frontend images need a separate decision: their staging and production workflows
+replace environment files and pass `NEXT_PUBLIC_*` build arguments, and Next.js
+freezes those values into the browser bundle at build time. Until those values
+move behind a runtime-injected configuration seam, unchanged frontend images must
+not be promoted from staging to production.
+
+Acceptance is a release whose manifest deliberately reuses several unchanged
+backend components and rebuilds one changed component. The promoter must bind the
+reused digest to its original qualification evidence and the current release
+manifest, and must reject any incomplete, ambiguous, or frontend-unsafe reuse.
+
+### Priority R4: remove duplicate integration-branch validation
+
+Integration branches currently receive both pull-request and push workflows for
+the same head. The equivalent-run contract deliberately excludes every `v3*`
+push because those branches can be deployment sources. Preserve that caution,
+but extend reuse only where the tested tree, event semantics, route, coverage,
+environment inputs, and trusted control revisions are exactly equivalent.
+
+The safest first slice is a read-only audit that groups same-head push and PR
+runs and counts which pairs satisfy a proposed equivalence predicate. Use it to
+identify one non-deployment-critical workflow, confirm that its inputs cannot
+differ between the two events, and then implement reuse for that workflow. Do
+not globally let a pull-request result satisfy a candidate push until release
+admission can distinguish equivalent validation from a deployment candidate that
+needs its own push evidence.
+
+### Priority R5: stop occupying runners while Sonar waits
+
+The Sonar workflow can hold a hosted runner for up to ten minutes while polling
+for unit and GraphQL coverage producers. Convert coverage collection to an
+event-driven path or make the waiter runner-neutral. If GitHub has no suitable
+runner-neutral dependency mechanism, split analysis so the scanner starts only
+after its producers have terminal artifacts, without introducing a generic
+runner-consuming poller.
+
+Acceptance is a representative run where the Sonar job starts after producer
+completion and no hosted job spends its timeout waiting on another queued run.
+Coverage receipts and the fail-closed missing-artifact policy stay unchanged.
+
+### Priority R6: narrow Playwright build work to the selected plan
+
+Once smart drafts are active, a `skip` or bounded draft must not first build
+every package and application. Derive the minimum build graph from the selected
+spec profile and its application/runtime dependencies. Keep the current full
+`build:test` graph for full ready-state waves. This should follow R1 so the
+selector's live behavior, rather than its shadow artifacts, defines the graph.
+
+### Priority R7: repair Turbo cache consumers without adding infrastructure
+
+Do not add another cache provider yet. Codebase checks already use remote
+caching, while GraphQL and unit validation restore dependencies but rebuild their
+dependency graphs locally. First make those consumers restore compatible build
+artifacts. Then narrow task-local environment hashes instead of using the broad
+`globalEnv` list for every package, and reconsider type-check caching only with
+output-equivalence proof.
+
+Any Turbo change must compare restored outputs and task hits, not only elapsed
+time. Environment inputs that materially affect an output stay in that task's
+hash; narrowing them is a correctness-reviewed change, not a mechanical cleanup.
+
+### Runner disposition
+
+Keep the current two-host, eight-process public pool and one Playwright worker
+per shard. The prior two-worker experiment regressed and exposed shared seeded
+course state. Do not place trusted image publication or credential-adjacent
+reporting on the persistent public pool. Any proposal to add VMs or hosted
+concurrency must now compete against R1-R5, which remove work entirely.
+
 ## Progress
 - 2026-09-13 slice C1 (affected-image path filters): each `v3_*-stg.yml`
   pull-request filter now lists that image's transitive workspace dependency
@@ -937,3 +1155,1103 @@ required from the user.
   unexpected `skipped` failure or let a later metadata edit overwrite an earlier
   failed build. A sound version needs an explicit signal in the evidence
   artifact or a run-age comparison, which is why it is scoped separately.
+- 2026-09-16 full-portfolio review (branch `rs/ci-roadmap-review`, this
+  revision): re-measured the whole roadmap after the #5924 sonar/canary,
+  #5936 merge-base selection, #5948 reuse, #5971 image-cache, #5977
+  metadata-skip, #5987 build-cache-scope and #6087 flake-fix deliveries.
+  Queue: ~300 queued runs on 2026-09-14 fell to 14 queued / 1 running at
+  review time (Actions API `status=queued` / `in_progress`), against 299
+  queued at the 09-13 observation. Open Dependabot PRs: 0 (grouping config
+  live on `v3`). Current v3 head `8cf526e6ce` ran the complete
+  public-ARM64 Playwright wave green: prepare, build 2m56s and 8/8 shards
+  SUCCESS (run `35117591566`). AMD stays disabled everywhere (re-verified:
+  every `build-amd` leg is `if: false`; only `v3-audit`'s `mcp-*`
+  workflows still carry active legs, now part of the B3 integration gate).
+  Build Fallback: 30 runs on 09-16, mean 5min / max 23min; the 2103s
+  polling baseline is gone behind the single required context. Playwright
+  wall-minutes on 09-16 across five executions: about 65. The one real
+  Playwright failure (`35130087179`, `v3-ai` push, 25min) was not a test
+  or product defect: pnpm restored 0/3608 packages on the hosted shard (no
+  compatible seed) and `sharp@0.32.6`'s libvips fetch hit a transient
+  GitHub Releases HTTP 500; no retry hardened the install step, so the
+  failure cost a full 8-shard wave. Promotion-controller waste
+  re-measured: 100 records on 09-16, 94 skipped, 1 success, same
+  wake-per-producer shape as the 44-runs-for-one-commit finding.
+- 2026-09-16 low-hanging-fruit re-ranking (same revision), measured against
+  the live fleet. Ranked by wall-time saved per unit of risk, with the
+  contract boundary that a merge-ready PR keeps full-coverage proof:
+
+  1. **Playwright install resilience (new, highest value).** The only
+     Playwright failure since #6087 was a cold-install flake: hosted shard
+     restored 0/3608 packages, then `sharp@0.32.6`'s libvips fetch hit
+     GitHub Releases HTTP 500 and one shard failed the whole 8-shard wave
+     (run `35130087179`, 25min wasted, non-retried). Minimal fix: retry
+     the pnpm install step (bounded, e.g. two retries with backoff) and
+     prefer a prebuilt `sharp` platform package in the lockfile so the
+     runtime binary download disappears from the install path. Rescues a
+     full wave per occurrence at near-zero risk. No trust boundary moves.
+
+  2. **Promotion-controller wakeup consolidation (already specified in B3).**
+     100 records / 94 skipped / 1 success on 09-16. The fix is already
+     designed in the B3 spec (needs-based aggregation or a single
+     post-qualification wakeup). Nothing new to design; it lands with the
+     B3 integration package after `v3` merges into `v3-audit`. Until
+     then it is pure queued-record noise, not runner-minutes, because each
+     skipped controller run occupies a hosted slot only briefly.
+
+  3. **Docs-only and metadata-only PR routing.** A prose-only PR still runs
+     `check` (full typecheck, today's suite: 100 records, 707
+     wall-minutes, avg 7min / max 29min) and the full Playwright wave. The
+     blocker named on 09-14 is real but narrow: the required
+     `build-images-status` reporter binds the newest same-head run, so the
+     slice needs the explicit evidence-artifact signal (or run-age
+     comparison) first. First slice: extend the existing evidence artifact
+     with a run-action field and make the reporter accept a validated
+     metadata-only skip. Then a docs-path filter on `check.yml` and
+     selected-coverage Playwright on prose-only PRs becomes safe. This is
+     the largest remaining runner-minute class after resilience.
+
+  4. **Hosted pnpm seed coverage for `v3` pushes and `v3-*` integration
+     branches.** The failed wave's shard restored 0 packages; today's
+     successful waves still show per-shard installs. The seed workflow
+     exists but its fingerprints rarely match PR shards. First slice:
+     publish the seed from trusted required builds on `v3` (inputs already
+     match by construction) and let PRs consume read-only. Roadmap contract
+     3 already authorizes this shape; no new trust surface.
+
+  5. **check.yml path scoping for non-build docs.** Companion to item 3;
+     once the evidence-artifact signal exists, prose-only PRs can skip the
+     7-29min typecheck with the same validated no-change selection the four
+     path-filtered suites already use. Keep gitleaks unconditional.
+
+  Not re-ranked, confirmed done or idle: C1 image path filters (live), B2
+  ARM BuildKit cache (live; warm-hit timing proof still unmeasured),
+  single image status context (live), reuse/lifecycle guards (live,
+  positive-case proof still thin), AMD (inert everywhere on `v3`),
+  Dependabot fan-out (0 open), ARM64 pool rollout (green on current
+  head). Profile-aware packing and runner placement stay mid-roadmap
+  pending measurement; the 16:08 snapshot of 9 queued `Promote to stg`
+  wakeups was stale-superseded records from 09-13, not new queue
+  pressure.
+- 2026-09-16 independent review correction (same branch, follow-up
+  commit): the self-review audited every number in the two entries above
+  against the live API and found one wrong figure plus two classifications
+  that needed sharpening before the roadmap PR merges.
+
+  Corrected figures. (1) The "build 2m56s" line belonged to the PR-head
+  run `35101325026`; the merged-v3 wave in run `35117591566` built in
+  2m21s (job 104916253330). (2) Build Fallback on 09-16: 75 non-cancelled
+  records, success mean 7.1min / max 27min (n=73), failures 2 at mean
+  4min; including 25 cancelled records the mean was 5.9min. The entry
+  above's "mean 5min / max 23min" mixed windows; use the corrected
+  numbers. (3) check.yml on 09-16: 100 completed records, 720
+  wall-minutes, mean 7.2 / max 29min — not 707. (4) The "~65min across
+  five Playwright executions" figure was wrong in scope: the five
+  executions were only one conclusion class. Full-day totals: 95
+  completed records, 1956 wall-minutes (success 55 records / 1547min /
+  mean 28.1 / max 67; failure 5 / 175min; cancelled 32 / 234min / mean
+  7.3). Success p50 29min, p90 55min. (5) Promotion controller on 09-16:
+  100 records, 94 skipped, 6 cancelled, 0 success in the first-100 API
+  window; one success (`35117043318`, 15:41:33Z) sits just outside it —
+  201 records in the gh view, 170 skipped / 23 cancelled / 6 failure / 1
+  success. The "94 skipped" figure stands; the "1 success" belonged to
+  the wider window. (6) The 9 queued `Promote to stg` wakeups at 16:08
+  were 09-13 stale records, as recorded above; live promotion wakeups
+  from 09-16 complete in seconds (skipped records, mean under a minute).
+
+  Failure-cause classification, which changes the fruit ranking. Four of
+  the five failed Playwright waves were real spec failures that failed
+  twice (base attempt plus retry), not flakes: `Y-chat.spec.ts:3460`
+  "Citations and source cards render on a live streamed answer" failed in
+  two waves on two branches with the same assertion shape — the
+  viewport-scroll growth predicate saw the score climb to 533 while
+  expecting <= 1 (test at lines 3576-3581 of the spec), i.e. the
+  streaming autoscroll fix is not holding on the hosted route yet;
+  `U-catalog.spec.ts:1656` (toBeHidden), `O1-live-quiz-core.spec.ts:4695`
+  (toContainText) and `T-resources.spec.ts:3249` each failed one wave.
+  Only `35130087179` (v3-ai push) was the cold-install sharp/libvips
+  HTTP 500 flake. The install-resilience fruit therefore remains valid
+  but drops to one occurrence today; the top actionable item from this
+  review is the recurring `Y-chat.spec.ts:3460` scroll-predicate failure
+  (two waves, two branches, same-day, deterministic shape) — either the
+  test's growth predicate races the newly-fixed autoscroll hook or the
+  hosted environment behaves differently from the ARM64 pool where the
+  same test passed 8/8.
+
+  AMD guard re-verification. The two 09-13-era entries claim "every
+  build-amd job is gated if: false". Re-verified on this branch against
+  current `origin/v3`: all 28 `v3_*.yml` workflow files that declare
+  `build-amd:` guard it with `if: ${{ false }}` (spot-checked six files
+  via API plus a full-worktree grep; the worktree is diff-clean against
+  `origin/v3` at `8cf526e6ce`). The claim stands.
+
+  Queue at re-verification: 16-18 queued / 5-6 running, consistent with
+  the 14/1 snapshot inside normal wave churn; the ~300x improvement
+  claim is not sensitive to this drift.
+
+- 2026-09-16 Y-chat scroll-predicate correction (same branch, follow-up
+  commit). The entry above ranked the recurring `Y-chat.spec.ts:3460`
+  failure as this review's top actionable item. A direct API re-check shows
+  that classification is wrong: the failure is already fixed, and all four
+  failing waves were stale branch trees.
+
+  Evidence. Every 2026-09-16 Playwright failure list from the workflow API:
+  `35089499369` (v3, head `7102b5c062`, 11:17Z), `35097666640` (v3-ai,
+  `96450029fc`, 12:45Z), `35108292375` (codex/course-images/contracts,
+  `18a02b26ae`, 14:24Z), `35108301912` (codex/course-images/display,
+  `114c7dd68c`, 14:24Z), and the cold-install flake `35130087179` (v3-ai,
+  `b3fde174f3`, 17:44Z). All four spec-failure heads ran before the
+  autoscroll fix squash-merged at 15:11:21Z (`901ce575711c`), and
+  `compare/901ce575711c...<head>` reports `behind_by=3` for each of them.
+  On the old head `7102b5c062` line 304 of
+  `apps/chat/src/components/thread.tsx` still carries the buggy
+  `scroll-smooth` class; current v3 head `8cf526e6ce` does not, and
+  line 303 carries the explanatory comment.
+
+  Post-fix recurrence check: no `Y-chat.spec.ts:3460` failure occurred in
+  any Playwright run created after 15:11:21Z. The post-fix green wave
+  `35117591566` (v3, `8cf526e6ce`, 15:46Z) ran 8/8 shards SUCCESS,
+  including this spec. Later post-fix runs are green or deliberately
+  cancelled.
+
+  Consequence for the fruit ranking: this item is closed as fixed, not
+  actionable, and the roadmap's "top actionable item" claim above should be
+  read as superseded. The re-ranked first fruit is now the Playwright
+  install resilience package (the `35130087179` cold-install
+  `sharp@0.32.6` libvips fetch failure against GitHub Releases), which
+  today has a single observed occurrence.
+
+  Unrelated observation from the same window, recorded for triage rather
+  than action: on this PR's own head, the `CodeQL - Code Quality` check
+  passed at 18:38 (`35135651773`, all three languages success) and then
+  failed at 18:59 (`35137841317`) with
+  `Code quality is not enabled for this repository ... enable code quality
+  in the repository settings` on javascript-typescript, java-kotlin and
+  python alike. That is a repository-setting flap rather than a property of
+  this documentation-only change, and it is not a required context for this
+  roadmap package. No settings change was made.
+
+
+- 2026-09-16 package: Playwright install resilience (PR #6103, branch
+  `rs/ci-playwright-install-resilience`, draft). This is the re-ranked first
+  fruit after the Y-chat correction above. Implementation is the bound
+  retry the roadmap specified; the lockfile half was measured and
+  deliberately deferred.
+
+  Root cause, confirmed from the registry and the lockfile rather than
+  inferred: `@docusaurus/lqip-loader@3.8.1` declares `sharp: ^0.32.3` as a
+  hard dependency, resolving to `sharp@0.32.6`. That release's manifest
+  runs `node install/libvips` during its install script, fetching the
+  libvips archive from GitHub Releases. `sharp@0.35.4` declares no install
+  script and instead ships 25 `@img/sharp-*`/`@img/sharp-libvips-*`
+  platform packages as optional dependencies, which is why the newer line
+  has no runtime download. The cold hosted shard had restored 0/3608
+  packages, so the failing install was the one that had to build sharp from
+  scratch and had no retry.
+
+  Delivered: `.github/scripts/pnpm-install-retry.sh` wraps the install with
+  three bounded attempts and exponential backoff (15s then 30s), forwards
+  arguments, and preserves the original pnpm exit status when the failure
+  persists so a genuine install break still fails loudly. Wired into all
+  three install sites that matter for this failure mode: the
+  `playwright-build` composite action, the `playwright-shard` composite
+  action, and the `playwright-cache-seed` workflow that produces the store
+  every PR shard restores. Covered by
+  `.github/scripts/pnpm-install-retry.test.cjs` (retry, argument
+  forwarding, bounded budget, preserved fatal exit status, and proof that
+  all three call sites install only through the wrapper), wired into the
+  `check` workflow.
+
+  Verification: 72/72 then 65/65 across the Playwright CI suites after the
+  seeder addition, Prettier clean, Biome clean, `bash -n` clean. No trust
+  boundary moved; the wrapper runs from the trusted control checkout and
+  the ARM64 pool policy is unchanged. Draft PR only.
+
+  Lockfile half measured and deferred on evidence. Widening the override to
+  `sharp@>=0.32.0 <0.35.4` does work — `pnpm install --lockfile-only`
+  resolves and `sharp@0.32.6` plus its 16 exclusive build-chain packages
+  (`prebuild-install`, `tar-fs`, `bare-*`, `color`, `node-addon-api`,
+  and others) disappear entirely, with no package versions added. It was
+  still kept out of this package for three reasons. (1) A null-hypothesis
+  run proved the churn is caused by this change and not by regenerating at
+  all: reverting only the override reproduces a byte-identical lockfile.
+  The change costs roughly 1567 insertions / 2082 deletions across
+  unrelated packages. (2) The repo's override policy states each entry
+  "stays inside one major line, unless the advisory has no fix in the older
+  line"; this lift crosses 0.32 to 0.35, and the entry carries an
+  image-scan remediation comment. (3) The only consumer is `apps/docs`,
+  which has no CI coverage. The correct path is most likely a Docusaurus
+  upgrade rather than an override widening, and it belongs in its own
+  reviewed package.
+
+
+- 2026-09-16 package: hosted pnpm seed coverage (PR #6104, branch
+  `rs/ci-seed-coverage`, draft). Ranked fruit 4, and the upstream half of
+  the same failure mode as the install-resilience package above.
+
+  Root cause, established from shard telemetry rather than inference. The
+  Playwright actions restored the pnpm store with an exact-key-only lookup,
+  and the cache key embeds the full dependency fingerprint
+  (`playwright-<os>-<arch>-pnpm-<fingerprint>`). The seed workflow
+  publishes only on `v3` pushes, so any branch whose dependency manifests
+  differ can never match exactly. The failing shard's telemetry records
+  `pnpmCacheHit: false` with `pnpmCacheMatchedKey: null` — no fallback was
+  attempted at all — while a green shard from the same day records an exact
+  match. `compare/v3...v3-ai` shows `apps/auth`, `apps/backend-docker`,
+  `apps/chat` and `apps/docs` manifests diverging, so `v3-ai`
+  fingerprints cannot equal the `v3` seed by construction. This is the
+  cold-install condition that made the `sharp` libvips fetch fatal.
+
+  Separately measured and recorded, not fixed here: 19 of the last 40
+  seeder runs are `cancelled` (21 success), consistent with its
+  `cancel-in-progress` concurrency group superseding runs during rapid
+  `v3` pushes. Because cancelled seeds still often leave a prior
+  exact-fingerprint entry in place, this is a coverage-timing risk rather
+  than a proven cause, and it is not what produced the observed mismatch.
+
+  Delivered: both public Playwright actions and the seeder now declare a
+  same-platform `restore-keys` prefix, so a near-match store is reused
+  instead of installing from empty. The fallback keeps `runner.os` and
+  `runner.arch` in the prefix, so no ARM64 store can feed an x64 job.
+  Public readers still cannot write the cache — the validator continues to
+  reject `actions/cache/save@v4` in both actions — so the seed cannot be
+  poisoned. Because a partial restore reports `cache-hit=false`, the
+  seeder's existing save condition still republishes the complete
+  exact-fingerprint store; the new test pins that condition so the fallback
+  cannot quietly degrade the seed.
+
+  Verification: 66/66 across the Playwright CI suite including the existing
+  workflow boundary validator and cache-contract tests; new
+  `.github/scripts/playwright-pnpm-seed-fallback.test.cjs` covers the
+  fallback prefix, the absence of any public write path, and the preserved
+  seeder save condition. Prettier clean, Biome clean. Draft PR only; no
+  runner-group, host, or settings change.
+
+
+- 2026-09-17 package: metadata-only edit re-validation (branch
+  `rs/ci-metadata-edit-validation`, draft [PR #6108](https://github.com/uzh-bf/klicker-uzh/pull/6108)). Closes the selection-integrity
+  half of the #5977 metadata rule and the first half of the second selection
+  finding above.
+
+  Defect found in shipped CI, not introduced by this package. The merged
+  `edited` shortcut in `.github/actions/changed-paths` returned
+  `should_run=false` for _any_ metadata-only edit, and
+  `decideResult`'s `no-change` state passes when the suite job is
+  `skipped` or `success`. Nothing re-read the prior outcome, so on a head
+  whose `test-unit`, `test-graphql`, `test-olat-api` or
+  `test-intl-production` suite had **failed**, editing the PR title turned
+  `test-unit-status` and siblings green. All four are required contexts on
+  `v3` and `v3-*` (rulesets 23042571 and 23042613), so the title edit was
+  a merge gate bypass, not just a saved run. Only `test-playwright` was
+  safe, because #5977's reuse gate binds the prior run identity.
+
+  Delivered: the skip now consults the head's `filter=latest` check-run for
+  the workflow's own always-reporting terminal context and skips only on a
+  completed `success`. A `failure`, `in_progress`, missing check, non-40-hex
+  head/base, or any API error runs the suite. A base retarget still bypasses
+  the whole path. The selector queries the `-status` context rather than the
+  suite job on purpose: the matrix-expanded translation job is really named
+  `intl-production-smoke (${{ matrix.app }})`, so the previously wired
+  `intl-production-smoke` input could never match and its lookup would always
+  have failed closed. All four workflows now also declare `checks: read`;
+  without it the check-run endpoint is forbidden and the lookup is inert.
+
+  Verification: 11/11 `.github/scripts/changed-paths.test.cjs` cases against
+  the composite's verbatim step script with a local check-run mock: prior
+  success skips, prior failure/pending/missing/500/foreign-head all re-run, an
+  unset name performs no request at all, retarget re-selects, synchronize and a
+  non-edited event never consult the check, and an empty push diff fails open.
+  Prettier clean. `gh api` semantics confirmed against a real head:
+  `check_name` filters by exact name, verified live: querying `test-unit`
+  returns only the suite job and not `test-unit-status`, so the lookup cannot
+  accidentally read the suite job it is meant to gate.
+  Draft PR only; no runner-group, host, or settings change.
+
+  Verification on the delivered head: 34 checks pass, 13 skip, and the only
+  non-terminal context is the manual final-ai-review. check (which runs
+  changed-paths.test.cjs 11/11 in CI), check-gitleaks, build-images-status,
+  all four path-filter jobs and all eight hosted Playwright shards pass on
+  exact head d590c5cd8c. The four filter jobs exercise the new lookup, and
+  the metadata-only live proof below ran on the identical-content predecessor
+  head 0fc7242923.
+
+  Deliberately left alone, still open in the second selection finding below:
+  `check.yml` and `test-playwright.yml` have no path filter, and the
+  `build-images-status` reporter binds the newest run for the head, so a
+  metadata skip there needs an explicit evidence signal.
+
+- 2026-09-17 slice B2 activation evidence (PR #5971, merged `136a867280`). The
+  2026-09-13 entry recorded the registry cache as "deployed and inert" because
+  GHCR listed no `-arm:buildcache` tag and every post-merge image run was a
+  draft deferral or a saturated-queue push. Re-checked live and it is now
+  active: `ghcr.io/uzh-bf/klicker-uzh/<image>-arm:buildcache` exists for
+  `auth-arm` (2026-09-16T14:11:03Z), `backend-docker-arm`
+  (14:13:44Z), `frontend-manage-arm` (14:14:49Z), `chat-arm`
+  (18:41:17Z), `response-api-arm` (09-16T12:12:03Z) and `frontend-pwa-arm`
+  (09-17T10:31:02Z). Only a same-repository pull-request build can write that
+  tag, so its presence is direct evidence the cache path executed.
+
+  Confirmed in the build log rather than inferred from the tag.
+  Run `35209304702` (`Build Docker image for frontend-assessment (stg)`,
+  PR `rs/v3-audit-sync-20260917`, head `16c54e785aac`, success) logs
+  `#8 importing cache manifest from ghcr.io/.../frontend-assessment-arm:buildcache`,
+  then `#9`-`#12 CACHED` and `#29 exporting cache to registry`. The sibling
+  `frontend-pwa` build `35209304457` on the same head ran the same contract.
+
+  Sizing caveat recorded rather than claimed as a win: the two cached PR
+  builds took 303s and 302s wall (10:26:05->10:31:08Z and
+  10:29:07->10:34:09Z). Both are cold on the heavy Next compile because the
+  cache was written only minutes earlier on the same branch; a first-ever write
+  cannot pay itself back. A meaningful warm-vs-cold duration comparison needs a
+  second PR build on the same image whose inputs are unchanged, which is the
+  next measurement, not this one. The cache is proven to work; its payoff is
+  not yet measured.
+
+- 2026-09-17 slice B2 registry scope note: only the six named repositories
+  carried a `buildcache` tag; `analytics-arm` had none (its Dockerfile has no
+  pnpm store stage, so there is little to reuse) and `rabbitmq-arm` is not a
+  package under the `klicker-uzh` namespace. The Go-backend migrator and the
+  MCP images were not probed by name here and remain unverified for cache tags.
+
+- 2026-09-17 live activation proof for the metadata-only guard (PR #6108,
+  head `0fc7242923`). The roadmap requires an exact-head transition rather
+  than a repository claim, so the proof was produced on GitHub itself.
+
+  Positive case: a metadata-only title edit on the unchanged head
+  `0fc7242923` fired the four suites' `edited` runs at 12:10:25Z
+  (`35219622608`, `35219622614`, `35219622594`, `35219622755`). Each filter
+  job logged
+  `Metadata-only edited event; prior completed success validates this unchanged tree.`
+  and emitted `should_run=false`. All four suites report `skipped` and all
+  four required contexts report `success`: `test-unit`/`test-unit-status`,
+  `test-graphql`/`test-graphql-status`,
+  `test-olat-api`/`test-olat-api-status`, and
+  `intl-production-smoke (${{ matrix.app }})`/`test-intl-production-status`.
+  The four runs completed in roughly 25 seconds each instead of re-running the
+  suites, and their `Build Fallback` sibling `35219622677` passed in 29s.
+
+  This is the state that previously could not be produced honestly, because
+  the old shortcut skipped unconditionally instead of reading the prior result.
+  The discriminating negative case is covered where it can be checked
+  deterministically: `changed-paths.test.cjs` drives the same step script with
+  a mock whose prior result is `failure`, `in_progress`, absent, HTTP 500, or
+  belongs to a different head, and asserts `should_run=true` every time. It is
+  not reproduced on the live repository because that would require deliberately
+  publishing a failing suite.
+- 2026-09-18 queue forensics and obsolete-run hygiene (branch
+  `rs/ci-obsolete-run-hygiene`). A live snapshot at 07:24 took 132 queued workflow
+  runs: Playwright 15, Final AI review 14, unit 11, GraphQL 11, OLAT-API 10,
+  Promote to stg 10, lecturer MCP 8, translation context 8, gitleaks 5, check 4,
+  CodeQL 3, Build Fallback 3, and 16 staging image builds. The reaper inventory
+  (`node .github/scripts/ci-obsolete-runs.cjs`) returned 31 active runs and
+  rejected every one as `current-head`.
+
+  **Six of the fifteen queued Playwright runs were redundant.** Three were
+  same-head pairs, one per branch: `de900cbe` on `rs/v3-audit-sync-20260918`
+  (`35318160764` with `35318351559`), `5b4f5949` on `v3-ai` (`35317794684` with
+  `35317799687`) and `cdf50fe3` on `rs/v3-ai-sync-20260917b` (`35317150179` with
+  `35317775815`). A push and a pull-request event for one branch use different
+  concurrency groups, because the group key falls back to `github.ref_name` for
+  pushes and uses the pull-request number otherwise, so neither event cancels
+  the other and both create a wave for the same tree. `35245361536`
+  (`rs/kg-focus-topic-ui`) waited about fifteen hours, and `34749125387`
+  (`rs/audit-ci-fixtures`) has been queued since 2026-09-13 with `updated_at`
+  equal to `created_at`, so it never reached a runner.
+
+  **Why the existing reaper could not touch them.** `allowedRun` required exactly
+  one pull-request binding, so the September 13 run, whose `pull_requests` array
+  is empty, was outside the policy entirely. For runs that are bound, `inspectRun`
+  returned `current-head` as soon as the run's sha matched the pull request head,
+  which is exactly the duplicate case: both runs are current-head by definition.
+  The reaper therefore had no path for either gap.
+
+  **What the fix adds.** Two reasons. `redundant-queued-duplicate` applies when
+  the run is still `queued`, so it has consumed no runner time, and a newer run of
+  the same workflow already covers the same head; the newer run carries the
+  authoritative plan and is validated by the same `bindsReplacement` contract the
+  superseded-head path uses. `unbound-head` applies to a pull-request run with no
+  binding whose head no open pull request claims, gated on a 24-hour window
+  because GitHub attaches the binding a moment after creation and a newer pull
+  request can still claim the same head. A run that does not satisfy either rule
+  keeps its previous verdict, so nothing that could still report a required
+  status is dropped.
+
+  **Live verification.** `--run-id 34749125387` now reports
+  `eligible=true, reason=unbound-head`; `35318160764` reports
+  `unbound-recent`, correctly refusing to cancel a 24-hour-young unbound run;
+  `35316321922` reports `current-head`; and `35317794684` is
+  `outside-policy` because it completed before the query. Nine new tests cover a
+  redundant queued duplicate, a duplicate that already started, a sole queued run,
+  a newer run from another workflow, an abandoned unbound run, the binding
+  window, a live pull request on the same head, a missing creation timestamp, and
+  the relaxed run policy; all 33 tests pass.
+
+  **The docs-only routing premise in the 2026-09-16 ranking is stale.** Rank 3
+  assumed a prose-only pull request pays a full typecheck. Step timings from
+  check run `35316998769` show the opposite: `Check Next.js development
+  configuration and readiness` 117s, install 56s, `Check linting` 29s, checkout
+  20s, KB lifecycle contracts 18s and file formatting 10s, while `Build packages
+  for typecheck (turbo)` took 1s and `Check typescript types`, `Check Prisma
+  schema sync drift`, `Check syncpack conformity` and knip took 0 to 1s each
+  because the turbo affected filter and the remote cache already collapse them.
+  A docs-only fast path would save at most the 29s lint step, so rank 3 should
+  drop below the review and deployment fan-out it was ranked above.
+
+- 2026-09-18 reaper hardening and reaper-PR collision (same branch). The
+  September 13 run cannot be cleared at all: cancelling a run GitHub never
+  enqueued answers `409 ... has not been queued yet` from the cancel and the
+  force-cancel endpoint alike, so that record holds no runner slot and the
+  reaped capacity is capped rather than freed. Two consequences for the tool.
+  First, that refusal used to end the sweep with "No further runs were changed",
+  so one inert record protected every later one; the reaper now reports
+  `not-queued` and continues. Second, the two new reasons were re-measured
+  against the live event types, and the earlier description of the three pairs
+  was wrong. Two are not cross-event. `rs/v3-audit-sync-20260918`
+  (`35318160764` before `35318351559`) and `rs/v3-ai-sync-20260917b`
+  (`35317150179` before `35317775815`) are both `pull_request` runs on one
+  head, so the `redundant-queued-duplicate` rule does reach them. Only the
+  `v3-ai` pair is cross-event: `35317794684` is a `push` run and
+  `35317799687` is the `pull_request` run for the same `5b4f5949` head. The
+  duplicate mechanism is therefore a single-head race for two branches and a
+  push/pull-request split for one, and the two fixes are complementary rather
+  than overlapping: the queued-duplicate rule reclaims the pull-request members,
+  and #6075's branch-tip rule reclaims the push member.
+
+  **Deliberately not applied.** The two gaps are real and still unreclaimed: an
+  older *queued* same-head pull-request run, and a pull-request run whose
+  binding never appeared. Both are mechanics only, and neither changes what a
+  tool is allowed to cancel, so they are left to the reaper PR that carries the
+  rest of the design rather than layered on top of it.
+
+  **Three competing reaper heads now exist and must be reconciled before any of
+  them merges.** PR #6075 (`rs/ci-push-run-sweep`, open, not draft, head
+  `6798c82fa2`, `BEHIND`, all checks green, no human review yet) extends the same
+  two files to reclaim push runs behind the branch tip, to treat a detached
+  binding as merged-or-closed after proving the head branch is gone, and to
+  survive the `409`/`422` not-cancellable answer instead of aborting. PR #6132
+  (`rs/ci-obsolete-run-hygiene`, draft, head `2abd85d0d8`) adds the queued
+  duplicate, the unbound run and the never-queued continue. Both edit
+  `.github/scripts/ci-obsolete-runs.cjs` and
+  `.github/scripts/ci-obsolete-runs.test.cjs` in the same functions, and #6075
+  is behind `v3`, so they conflict textually and overlap semantically.
+  Whichever lands first, the second must be rebased and rebuilt on top; they
+  are not disjoint and neither is a superset. #6075 is the better base where
+  they overlap, because it parameterises the detached branch instead of
+  hardcoding the unbound case, since the two are the same defect, and because
+  it already carries the not-cancellable continue that this branch re-derived
+  independently.
+
+  **Re-measured fan-out over 24h** (created at or after 2026-09-17 08:00Z,
+  first 600 runs): `Promote to stg` 49, `Final AI review` 34, Playwright 24,
+  `Check codebase` 23, unit/graphql/SonarCloud/gitleaks/Build-Fallback 22 each,
+  CodeQL 21, OLAT-API 20, translation context 20, then thirteen
+  `Build Docker image for * (stg)` workflows at 17 to 19 each, plus 14
+  OpenCodeReview. The thirteen staging workflows are the largest single
+  structural class at roughly 237 runs, which makes the B3 consolidation the
+  highest-value remaining structural slice. The promotion controller's 49
+  records remain the largest avoidable class and are the confirmed
+  wake-per-producer symptom, not runner-minutes.
+
+  **Rejected fix, recorded so it is not attempted.** The three same-head
+  duplicate pairs exist because the group key is
+  `${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}`,
+  so a push and a pull request for one branch land in different groups and
+  neither cancels the other. Unifying them onto
+  `${{ github.workflow }}-${{ github.head_ref || github.ref_name }}` would make the
+  two events share a group and cancel one another, which removes the duplicate
+  wave at the source. It must not be done. For any `v3-*` branch, the push run
+  is the one the promotion controller validates as candidate evidence, and a
+  pull-request run cancelling it reproduces exactly the failure already recorded
+  on 2026-09-15, when `build-images-status` failed closed because the staging
+  build evidence for the candidate had been cancelled behind the backlog. The
+  duplicate is better left to the reaper, which reclaims a queued run only after
+  proving a newer validated replacement exists.
+
+- 2026-09-18 AMD ruling: the scope is branch-local, and the MCP shape is
+  different, not broken. The goal carried "all build-amd jobs already if:false
+  everywhere including prd tags", and the 09-16 re-verification confirmed it for
+  `origin/v3`: all 26 workflow files on that branch that declare `build-amd:`
+  guard it with an always-false condition. Re-checking the same claim against
+  `v3-audit`, where the assistant and MCP workflows live, shows four MCP
+  workflows whose `build-amd` job is not always-false:
+  `v3_mcp-lecturer-stg.yml`, `v3_mcp-student-stg.yml`,
+  `v3_mcp-lecturer-prd.yml` and `v3_mcp-student-prd.yml`.
+
+  **First reading was wrong; the record is corrected here.** The MCP
+  `build-amd` is not the disabled legacy QEMU job. It runs on `ubuntu-latest`
+  with a native `platforms: linux/amd64` build, installs no QEMU, and gates
+  publication on `.github/scripts/stg-image-publish-guard.sh` so a push only
+  rebuilds when the full-SHA tag is absent. Push run `35318844446` on
+  `v3-audit` (07:19Z, success) ran it from 07:24:50Z to 07:26:21Z, 91 seconds,
+  and `v3_mcp-lecturer-stg.yml` is still picking up pull-request runs behind
+  the queue (run `35323224032`, queued). So AMD is not "inert everywhere"; it
+  is live on exactly the four MCP workflows, which is the intended shape for
+  the two MCP images and not a regression. `required-build-status.cjs` on
+  `v3-audit` agrees, listing `jobs: ['build-arm', 'build-amd']` for the two MCP
+  staging workflows and `['build-arm']` for every other entry, and the
+  inventory invariant test passes there (24/24), including the assertion that
+  an active `build-*` job installs no QEMU.
+
+  **Consequence for the ruling.** "AMD stays disabled" is accurate for `v3`
+  and for every non-MCP `v3-audit` image, and it is the wrong description of
+  the MCP pair. The 91-second native rebuild per MCP push is small and
+  guarded, so it is not a queue-relief target; the ruling stands as written
+  for the images it was about, with the MCP exception now recorded so the next
+  audit does not re-derive it or mistake it for a defect.
+
+- 2026-09-18 reaper merge and the false-policy blocker. Both authorized reapers
+  landed: #6132 merged as `c504f78776f44437c02d866464c0619770590729` at
+  10:34:47Z with the queued-duplicate rule layered onto #6075's push-sweep and
+  detached-run proof, and #6075 closed as superseded rather than merged: its
+  three touched files are byte-identical between `v3` and #6132's verified
+  head (`ci-obsolete-runs.cjs`, `ci-obsolete-runs.test.cjs`,
+  `docs/ci-and-deployment.md`), so it conflicted only because its content had
+  already landed. Nothing was lost; the superseded-closure note records the
+  comparison.
+
+  **A stale mergeability evaluation reported a policy block that did not
+  exist.** `gh pr merge 6132 --squash` reported "the base branch policy
+  prohibits the merge" and suggested `--auto` or `--admin`, and
+  `mergeStateStatus` read `BLOCKED`. All eight required contexts had a
+  SUCCESS at the head `5d27b67577`, the head contained the current `v3` tip,
+  and the `pull_request` ruleset's `require_code_owner_review` and
+  `require_extra_approval_for_unattributed_changes` were satisfied: every
+  commit is attributed to `rschlaefli`, the same author as the successfully
+  merged #6104. The identical PUT to `/pulls/6132/merge` succeeded on the
+  first attempt and returned `c504f78776`, so the block was GitHub's
+  asynchronous mergeability cache, not an unmet requirement.
+
+  **Correction to the first reading of this entry.** I initially attributed the
+  block to two `test-playwright-status` FAILURE check runs (ids
+  `105543062758`, `105543064279`, completed 09:37:16Z and 09:37:57Z) left by
+  cancelled Playwright runs, because they appear in the check-run listing next
+  to a later SUCCESS. That attribution is not supported: `filter=latest`
+  subsequently resolved `test-playwright-status` to a non-failure, and the
+  other blocked PRs I checked did **not** share the signature. #6133
+  (`87ccc36b`) and #6095 (`114c7dd6`) both carry genuine `failure`
+  conclusions at their newest check-run ids, so stale-cancelled failures are
+  not a general explanation for `BLOCKED`. What remains proven is narrower and
+  still worth recording: cancelled workflow runs do leave `failure` check runs
+  on the head, the same cancellation-artifact class as the earlier
+  `test-playwright-status` and `Promote to stg` findings, and that residue
+  should be cleared by the reaper and the `cancel-closed-pr` path.
+
+  Practical rule for this repository: when `gh pr merge` reports a policy
+  block, first confirm every required context has a success at the exact head
+  and that the head contains the base tip. If both hold, retry through the
+  merge API rather than reaching for `--admin`; the state is usually a stale
+  evaluation. `--admin` bypasses the requirement rather than satisfying it and
+  stays out of bounds.
+
+- 2026-09-18 first applied reap on the merged `v3` reaper. Read-only inventory
+  at 12:5xZ over 25 active allowlisted runs found 6 `merged-or-closed-PR`
+  entries, all residue from the deleted `rs/v3-audit-sync-20260918b` and
+  `rs/audit-ci-fixtures` branches; the earlier queued duplicates had already
+  drained. `--apply` cancelled three to terminal `completed/cancelled`
+  (`35336300690`, `35336300770`, `35336300579`). Three accepted the
+  cancellation but had not reached terminal state at readback
+  (`35336300710`, `34749125387`), and `35336008675` had already left the
+  allowlist by the time it was processed (`outside-policy`).
+
+  Two behaviours worth keeping. First, the fail-closed readback works as
+  designed: an unconfirmed cancellation stops the batch and sets exit code 1, so
+  the remaining IDs need separate invocations rather than a retry loop. Second,
+  `34749125387` again returned `409 has not been queued yet`, confirming that
+  this run holds no runner slot and that its reap caps rather than frees
+  capacity.
+
+  Queue depth moved from 134 queued / 15 in progress at 09:00Z to 45 queued /
+  8 in progress by ~13:0xZ. Most of that is normal draining, not the six reaps;
+  the reaps removed dead entries that could never run. The measured structural
+  conclusion is unchanged: the queue is dominated by real work fanned out across
+  many workflows, which keeps B3 staging consolidation and the promotion-wakeup
+  consolidation as the highest-value remaining slices.
+
+
+  Live reaper evidence at merge time, read-only over 59 active allowlisted
+  runs: 8 `redundant-queued-duplicate` (PRs #6124, #6133, #5970), 1
+  `merged-or-closed-PR` (run 34749125387, the run that answers 409 to both
+  `/cancel` and `/force-cancel` and therefore holds no runner slot), and 50
+  correctly kept `current-head`. Repo-wide queue at 09:00Z was 134 queued
+  against 15 in progress, and the ARM pool was saturated by five concurrent
+  Playwright runs, which is why #6075's eight shards waited rather than failed.
+
+- 2026-09-18 codebase-check reuse for metadata-only edits. The path selector
+  already reuses a validated prior success for the four path-filtered suites,
+  but the required check workflow stayed unconditional and did not use the
+  action, so a title or body edit repeated the full validation on an unchanged
+  tree. Measured before the fix: Check codebase ran 5 times for the single head
+  87ccc36b on PR #6133 and 4 times for c4b7ba95 on #5970, at 7 to 29
+  wall-minutes each. The workflow now selects through changed-paths with an
+  unrestricted pattern, runs the suite as a separate job, and reports the
+  required context from a terminal job that always runs, so only a validated
+  metadata-only edit reuses the suite while an unexpected skip, a cancellation,
+  or a failed suite still fails the context. ready_for_review and base
+  retargets keep running the suite, and pushes still force a run, so promotion
+  candidate evidence is unaffected.
+
+  The same window also explains the persistent queue reading: 24 queued and 11
+  in progress at 13:3xZ, of which 9 were five-day-old Promote to stg records
+  with zero jobs (created 2026-09-13 for the same candidate 927f2336, never
+  scheduled, no check runs). They hold no runner slot, and the reaper correctly
+  refuses them: the documented contract excludes deployments, final-review
+  writers, and cancellation by age. The queue metric therefore overstates real
+  pending work by those inert records, which matters because capacity decisions
+  were being made against it.
+- 2026-09-18 package: smart draft Playwright routing (branch
+  `rs/ci-smart-draft-routing`). Draft pull requests now run the same
+  change-based selection as ready pull requests instead of a forced full
+  eight-shard wave. The package also completes the coverage half of the
+  contract, so a narrowed draft reports honest `selected` or `skip` metadata
+  rather than being rejected by the status reporter.
+
+  **Why the guard was lifted now.** The roadmap held the routing change behind a
+  qualification gate: implement lifecycle guards first, then restore smart
+  selection and ready-state proof as one coherent change, because
+  `playwright-route.cjs` hard-forced `selectorPrState: 'ready'` and the shadow
+  selector could not be activated by a variable alone. That gate is now met by
+  measured shadow artifacts rather than by design intent.
+
+  **Qualification sample.** 53 shadow artifacts across 21 distinct branches,
+  collected in `/tmp/pw-shadow-evidence/`. Chosen mode: `full:8` on 32
+  artifacts, `selected:1` on 2, `selected:4` on 2, and `skip:0` on 17. Reason
+  codes: `global-surface` 29, `unknown-path` 20, `documentation-only` 17,
+  `spec-changed` 10, `feature-group` 4, `spec-added` 3. The 17 skips are the
+  material finding: those drafts had no application-behaviour change at all and
+  still held ARM capacity.
+
+  **Proof that skips were burning full waves.** Runs `35216658570`
+  (`rs/v3-audit-sync-20260917b`) and `35212907412`
+  (`rs/course-video-import-plan-update`) each recorded shadow mode `skip` with
+  reason `documentation-only`, yet each executed eight shards. Nine shard jobs
+  were scheduled and eight ran.
+
+  **Shard cost, measured.** On `35316262518` and `35317146279` all eight shards
+  consistently reported roughly 0.1 minutes of wait and 16 to 20 minutes of
+  duration. Wall clock tracks the slowest shard while wave-seconds track the
+  sum, so removing shards cuts ARM occupancy directly, which is what releases
+  the queued waves that block other pull requests.
+
+  **Implementation.** `playwright/relevance-manifest.json` gains
+  `draftBoundedPathPrefixes` and `draftBoundedSpecs`, and its `reviewRule`
+  explains that these name paths which cannot change application behaviour.
+  `playwright-selector.cjs` learns a `bounded` classification. For a draft, a
+  path under a `draftBoundedPathPrefixes` entry returns `bounded` through a rule
+  placed deliberately before the full-surface checks, so a CI-only `.github/`
+  change narrows instead of expanding to the whole suite; the selection is the
+  `draftBoundedSpecs` present in the candidate set, reported as
+  `draft-bounded-surface`. A `full` verdict still wins over `bounded` inside one
+  change set. `validateRelevanceManifest` enforces both keys as arrays,
+  rejects duplicate specs, and requires each `draftBoundedSpecs` entry to be a
+  trusted non-production spec. `playwright-route.cjs` replaces the unconditional
+  draft override with `selectorPrState: 'draft'` only when `smartDraftApplies`
+  holds, which requires public eligibility, an enabled or canary control, a
+  non-bot author, and a valid draft state. Drafts stay on the hosted route, so
+  narrowing never takes public ARM slots from ready pull requests. Any unset,
+  malformed, or non-matching control keeps the full plan, as does a
+  force-hosted canary.
+
+  **Coverage half of the contract.** The reusable workflow renames its step to
+  `Build opposite-state selector shadow plan` and derives the shadow state from
+  `selectorPrState`, so qualification keeps measuring the plan the draft did not
+  run in both directions. In `test-playwright.yml`, the status reporter accepts
+  `full`, `selected`, or `skip` for drafts while every other event still
+  requires `full`, requires `should_run=false` exactly for `skip`, and validates
+  the embedded shard matrix: eight unique shards for `full`, a positive number
+  of unique valid shards for a partial plan, and no matrix check for `skip`.
+  Partial shards must carry `shardIndex` 1 to 8 with `shardTotal` 8. The
+  `cancel-closed-pr` comment now records that a draft conversion must not cancel
+  an in-flight run, because that run stays valid evidence.
+
+  **Verification.** All 331 tests across the check.yml script set pass, including
+  `playwright-selector` 10/10, `playwright-route` 14/14, and
+  `validate-public-playwright-workflow` 8/8. New coverage includes a draft
+  narrowing a CI-only change to the bounded smoke selection with no
+  `global-surface` reason, the same change staying full on a ready pull request,
+  a mixed `.github/` and `pnpm-lock.yaml` change staying full, draft acceptance
+  of partial and skip plans, and rejections for ready partial, ready skipped,
+  push partial, partial without shards, partial with duplicate shards, full with
+  a partial matrix, and skip that still selects tests. Prettier is clean on both
+  workflows, the manifest and the docs page; Biome is clean on all six scripts.
+
+  **Activation gate and its limit.** `test-playwright.yml` calls the reusable
+  workflow pinned to `@v3`, so a pre-merge run proves only the caller and
+  reporter half of this change. The narrowed selector cannot be exercised until
+  the branch is on `v3` and repository variable
+  `PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_ENABLED` is set, or a single pull request is
+  targeted through `PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_CANARY_PR`. That variable
+  change is a repository settings change and stays behind named authority.
+
+- 2026-09-18 slice B3 merged and activated (PRs #6141 and #6147). The thirteen
+  `v3_*-stg.yml` workflows and `v3_build-fallback.yml` are gone; one
+  `v3_images-stg.yml` builds the affected-image matrix and a needs-based
+  `build-images-status` job owns the unchanged required context.
+  - **#6141** merged to `v3` as `0de1f3de1b`; **#6147** merged to `v3-audit`
+    as `c1cfd2f7c6`. Both landed minutes apart so no candidate ever carried the
+    per-image files while the other line rejected them.
+  - **Draft path proved before merge.** Draft runs `35361628890` (`v3`,
+    head `eb6abcd255`) and `35360584817` (`v3-audit`, head `2be208ee30`)
+    passed `plan` and `build-images-status` with all six `matrix.jobName`
+    legs skipped and no runner allocated. Queue depth fell from roughly 153 to
+    14 across that window.
+  - **Build and publish path proved after merge.** The `v3` push run
+    `35386896558` on the merge commit `0de1f3de1b` succeeded: 18 of 19 jobs
+    passed, including all fourteen `build-arm-*` legs, both
+    `scan-arm-backend-docker*` legs, and `build-images-status`; the only skip
+    is the `matrix.jobName` sentinel. The audit line's own push run
+    `35390209041` is building the same matrix on `c1cfd2f7c6`.
+  - **The fail-closed gate behaved as designed, twice, with no bad promotion.**
+    The merged promoter rejects any candidate still carrying a per-image
+    workflow. While `v3-audit` still had all fifteen, the current candidate
+    tree failed that predicate - verified directly against the committed
+    `LEGACY_STAGING_PATTERN` and predicate. Promotion run `35391131388`
+    failed closed with "staging build evidence is incomplete ..." rather than
+    promoting stale evidence. After #6147 merged, the same probe over
+    `origin/v3-audit` reports zero legacy files and the gate passes.
+  - **Slice B2's cache contract survived the consolidation.** All three
+    consolidated ARM build jobs keep the `no-cache: ${ github.event_name ==
+    'push' }}` / `cache-from` / `cache-to ... mode=max` triple for
+    same-repository pull requests, and AMD stays `if: false`. First live
+    evidence that the cache is no longer inert: `<image>-arm:buildcache`
+    versions now exist for `auth-arm`, `chat-arm`, `backend-docker-arm`,
+    `frontend-manage-arm`, `frontend-pwa-arm` and `analytics-arm`, where the
+    2026-09-13 audit had found the tag absent across 100 versions each.
+  - **Two format/version regressions fixed on the way.** The new plan and
+    status helpers carried Biome format errors that failed `check-suite` on
+    both PRs; and after merging `v3`, ten audit-only packages still floated
+    `vitest: ~3.2.4` against `v3`'s exact `3.2.4` pin from #6137, failing
+    `syncpack lint` on the audit line alone. Both are corrected; `check-suite`
+    is green on the merged audit head.
+  - **Still open.** The consolidated workflow's AMD legs are `optional: true`
+    and remain `if: false`. The live promotion that consumes the audit line
+    had not yet completed at the time of this record.
+- 2026-09-19 roadmap refresh at `v3` `50a1549d2c`: smart-draft routing is
+  merged and verified on the exact head, staging-image consolidation is active,
+  public Playwright caching is enabled, and production/release output reuse is
+  now the highest-value frontier. A 350-record Actions sample showed 101 queued,
+  22 pending, and 12 in-progress workflow records; a readable production-build
+  subset spent a median 7.0 minutes queued versus 3.0 minutes executing across
+  nine successful jobs. The new `2026-09-19 output-reuse prioritization`
+  section sequences R1 smart-draft activation, R2 trusted BuildKit caches, R3
+  input-identity image reuse, R4 duplicate integration-branch validation, R5
+  runner-neutral Sonar coverage collection, R6 selected-plan build graphs, and
+  R7 Turbo consumer repair. Immediate next actions are the exact-draft
+  smart-routing canary and the backend-plus-Next trusted-cache qualification;
+  capacity expansion is deferred until those work-removal slices are measured.
+- 2026-09-20 roadmap amendment at `v3` `0e2c0e8b76`: added priority R1a, a
+  minimum-validation envelope for bounded changes. Documentation/planning-only
+  and CI-orchestration-only pull requests should not pay for application builds,
+  Playwright waves, Sonar, CodeQL, or unrelated test suites when their changed
+  inputs cannot affect those outcomes. The slice must use one repository-owned,
+  fail-closed classifier with recorded class evidence and validated terminal
+  skips; unknown paths, empty diffs, deleted or renamed specs, missing bounded
+  specs, retargets, and mixed application changes expand back to the full
+  envelope. R1 remains first because smart-draft activation already provides the
+  draft-side selector and status machinery that R1a reuses.
+- 2026-09-20 slice R1a (minimum validation envelope, implementation on
+  `rs/ci-output-reuse-roadmap`): one classifier
+  (`.github/scripts/minimum-validation-class.cjs`) now resolves the changed-path
+  records into `documentation-and-planning`, `ci-orchestration`, or
+  `application` with the decisions that class requires, and every lane reads its
+  own decision from it. The Playwright lane derives the class from the records it
+  already fetched, carries `envelope_class` into its plan artifact and workflow
+  outputs, and the required status reporter validates mode and class together;
+  the bounded classes narrow only on pull requests, never on a push. The
+  required codebase check classifies inside its own suite job, keeps every
+  contract suite, skips the Turbo build, the type check, ESLint, Biome, Knip,
+  and the Prisma drift check for a bounded class, uploads a classification
+  receipt, and gates each skipped step on `!= 'bounded'` so an absent or broken
+  classification widens the suite. CodeQL and SonarCloud skip a
+  documentation-and-planning pull request through a small `classify` job and
+  repeat the pull-request-only boundary in their analysis condition.
+  `.github/actions/change-envelope` is the one lane adapter, and
+  `.github/actions/changed-paths` now writes rename-aware records for its
+  consumers, where a missing record file stays an unproven diff. Contract tests
+  cover the classifier, the selector and plan metadata, the workflow validator,
+  the gating shape, and the records contract: the 330-test check-suite set and
+  the 71 Playwright CI contracts pass locally. Live acceptance on a
+  documentation-only and a CI-only pull request, including the full-envelope
+  contrast when one application file joins the same diff, is still pending on
+  this branch.
+- 2026-09-20 slice R5 (runner-neutral Sonar analysis, implementation on
+  `rs/ci-output-reuse-roadmap`): the analysis no longer holds a runner while it
+  waits for its coverage producers. Five consecutive runs measured the old
+  `Collect verified coverage inputs` step at 2 s, 63 s, 184 s, and 378 s
+  (`35472129815`, `35471995800`, `35470927162`, `35470527301`,
+  `35468150000`), and the long waits ended only when producers that were queued
+  behind other runs finished: in `35470527301` the `test-unit` suite ran
+  21:29:03-21:32:34 UTC and `test-graphql` 21:29:11-21:35:34 UTC while the
+  analysis job held its runner. One reusable `.github/workflows/sonar-analysis.yml`
+  now owns the single analysis definition. Both coverage producers call it from
+  a job that needs their own suite, and `v3_sonarcloud.yml` calls it at the
+  branch and ready-for-review boundary; the workflow that observes every
+  producer terminal imports the coverage and analyzes, and one that still sees a
+  queued producer defers with a named reason and returns immediately. At most
+  one analysis is published per pull request, head, and base: a successful scan
+  uploads a receipt artifact named for that revision, a later host that finds
+  the receipt defers, the caller-level concurrency group plus that lookup close
+  the race between the two producers, and `run_attempt > 1` ignores the receipt
+  so an explicit re-run analyzes again. The coverage identity checks are
+  unchanged (head, base, tested tree, and artifact), and the wait window
+  constants are gone, with a contract test that fails if a coverage wait
+  returns. The decision reads the live pull request rather than the event
+  payload, because a producer job is evaluated minutes after its event.
+  Accepted limitation: a pull request that becomes ready between a producer run
+  and its job evaluation receives its analysis at the ready boundary, which
+  imports the coverage the draft already produced. The 359-test check-suite set
+  and the 71 Playwright CI contracts pass locally; live acceptance is the
+  analysis of this branch's own pull request.
+- 2026-09-20 slice R7a (shared Turbo remote cache for the validation suites,
+  implementation on `rs/ci-output-reuse-roadmap`): the unit and GraphQL
+  workflows ran `turbo run build` without cache credentials, so a filtered
+  dependency build compiled locally even though the codebase check had already
+  published the identical task outputs for the same commit; a codebase-check log
+  from `0e2c0e8b76` shows the remote cache working there (the lint task
+  reported `FULL TURBO` and the typecheck build replayed 24 cached tasks). Both
+  workflows now declare the same `TURBO_TOKEN`, `TURBO_TEAM`, and
+  `TURBO_REMOTE_ONLY` as the codebase check, and a contract test pins the
+  credential to exactly those three trusted consumers and requires every
+  workflow that runs `turbo run` to restore the shared cache. The measure is
+  the Turbo cache-hit lines in the `Build unit-test dependencies` and GraphQL
+  build steps of the next run, not elapsed time. The public Playwright route
+  stays on its read-only Actions cache, because a public pull request may not
+  hold a credential that can write the shared cache. `check: { cache: false }`
+  was already configured, so the remaining R7 work is the broad `globalEnv`
+  list: narrowing it needs per-task environment attribution evidence, since a
+  task that genuinely reads a removed variable would restore a stale artifact
+  instead of rebuilding.
+
+- 2026-09-20 slice R2 (trusted image-publication cache, implementation on
+  `rs/ci-output-reuse-roadmap`): a push to a staging branch built every selected
+  image with `no-cache: true`, so the publication a deployment is promoted from
+  was the coldest build in the pipeline while an ordinary same-repository pull
+  request already imported and exported a GHCR BuildKit cache. The three ARM
+  build jobs in `.github/workflows/v3_images-stg.yml` now read and write
+  `ghcr.io/<repo>/<image>-arm:buildcache-trusted-<epoch>,mode=max`, where the
+  plan job resolves the epoch as the ISO week (`date -u +%G-W%V`) and records it
+  in the run summary and the `cache-epoch` workflow output. A publication never
+  reads the pull-request namespace, a same-repository pull request keeps exactly
+  that namespace, a cross-repository pull request still gets no cache, and the
+  release-tag production workflows keep their own `no-cache` contract because
+  they are out of this slice. Rebuilding the base layer at least once per epoch
+  replaces the roadmap's proposed periodic base-image refresh job: reuse cannot
+  preserve obsolete `apk` packages indefinitely, the previous epoch is
+  deliberately not imported, and the scanner still enforces the same
+  HIGH/CRITICAL admission on the pushed digest. The trusted promotion validator
+  rejects any other cache shape; `validateBuildCache` in
+  `.github/scripts/staging-image-workflow.cjs` compares both inputs against the
+  exact expected expression, requires `mode=max`, and fails a publication that
+  disables the shared cache, with three new negative cases in
+  `stg-release-promoter.test.js`. Verification: 31/31 promotion tests, 17/17
+  event gates, the staging workflow validator against the edited workflow, and
+  Prettier clean. Live qualification (a cold seed, then a second trusted build
+  with unchanged inputs showing hits, equivalent labels, successful scan
+  admission, and lower execution time, with queue and execution recorded
+  separately) still requires a staging push and is not claimed here.
+- 2026-09-20 slice R6 (build only the planned Playwright graph, implementation on
+  `rs/ci-output-reuse-roadmap`): the Playwright build job built every workspace
+  package and every application even when the canonical plan had already
+  selected a bounded set of specs, so a bounded draft paid the whole
+  application build (approximately 218 s of application builds in the ARM64
+  sample of run 34747467117) to run a handful of specs. The build action now
+  resolves the minimum graph from the plan before it installs anything: every
+  shard declares the devrouter profile it resolves at startup, and the union of
+  those profiles is the smallest graph that can serve the wave. The union is
+  resolved by the candidate's own profile runtime
+  (`util/playwright-profile-runtime.mjs resolve`), so the built filters are the
+  same `--filter=@klicker-uzh/…` selectors the shards pass to
+  `turbo run start:test`, and Turbo's `^build:test` dependency edges still pull
+  the shared packages those applications import. Only a bounded `selected` plan
+  narrows the graph; a full plan, a skip, a missing profile runtime, a maximal
+  profile (`full`/`playwright`), a shard without a profile, an unavailable
+  resolver, a filter that is not a workspace package selector, or a build that
+  arrived without usable filters all keep the complete graph and warn, because
+  an incomplete graph fails the shards while an oversized one only costs time.
+  The archive carries the Next outputs that exist, so a bounded wave publishes
+  a readable archive for the applications it actually built, and the build
+  telemetry records `buildGraphMode`, `buildGraphProfile`, and
+  `buildGraphReason` so the next run proves which graph executed. Verification:
+  224 local contract tests (including the new
+  `.github/scripts/playwright-build-graph.test.cjs`), the public Playwright
+  workflow validator, `bash -n` on every changed step, GNU tar 1.34 in a Debian
+  container for the archive in both the populated and the empty form, and the
+  real resolver in this checkout (profile `manage,pwa` resolves to
+  `api,auth,manage,pwa`). The live measure is the build-graph mode and build
+  duration of the next bounded pull-request wave, which this entry does not yet
+  claim.
+
+- 2026-09-20 slice R7b (Turbo cache consumers measured on `faa84591ce`,
+  measurement only, no source change): the R7a wiring is live, but the effect is
+  not yet visible in either validation suite on that head. The unit wave
+  (`test-unit` run 35503927853, job `Build unit-test dependencies`) replayed
+  nothing: every task logged `cache miss, executing <hash>` for
+  `0523b2d1b7c4adee`, `8135b963558b8670`, `b08269a2410e3d03` and
+  `dc980cda9239a016`, and only the pnpm store came from a cache. The GraphQL
+  wave (`test-graphql` run 35503927846, job `Build dependency packages`) proves
+  the consumer works: it reported `Remote caching enabled`, replayed
+  `0523b2d1b7c4adee` (`@klicker-uzh/prisma:build`) from the remote cache, missed
+  the other seven tasks (including `@klicker-uzh/feature-flags`, `types`,
+  `hatchet`, `grading` and `util`), and finished all eight tasks in 50.7 s. One
+  hit of eight is the shape expected when a consumer starts before its producer:
+  the codebase check publishes these task outputs for the same commit, and the
+  unit wave began while that check was still queued, so there was nothing to
+  replay yet. The same log printed a `TURBO_REMOTE_ONLY` deprecation warning,
+  which is unrelated to this change and does not affect the hits. The measure
+  stays the cache-hit lines of a suite that starts after the codebase check for
+  the same commit, not elapsed time. Narrowing the 126-entry `globalEnv` list
+  stays unimplemented on purpose: removing a variable from a task hash needs
+  per-task evidence of which variables that task actually reads, and no such
+  evidence exists yet, so the broad list keeps the restored outputs correct.
+
+- 2026-09-20 slice R4 (integration-branch duplicate validation audited, reuse
+  deliberately not implemented, on `rs/ci-output-reuse-roadmap`): the read-only
+  audit covers 1000 push and 1000 pull-request runs from 2026-09-17T19:18Z to
+  2026-09-20T10:19Z. It found 985 integration push runs (`v3`, `v3-*`), of which
+  132 share a head and workflow with a pull-request run; those pairs consumed
+  about 2082 push-side wall minutes. The proposed equivalence predicate admits
+  none of them. In 132 of 132 pairs the push run started first, 131 pairs
+  overlap in time, and the one pair that ran sequentially had its pull-request
+  run start after the push run had already finished, which is the wrong
+  direction to save anything. The reverse direction has no pool to reclaim
+  either: 144 pull-request runs on `v3*` heads total 1708.7 wall minutes, and 132
+  of them are twin-concurrent waves that start within five minutes of the push
+  run for the same head, which is the ordinary `synchronize` shape rather than a
+  sequential lifecycle retest. Tree comparison shows why the pairs cannot be
+  treated as equivalent: a pull-request run validates the merge of the head into
+  its base, while the push run validates the head's own tree. Two structural
+  facts make the omission deliberate rather than a temporary measurement.
+  `deploy-stg-promote.yml` collects nine gated workflows from *push* runs of the
+  candidate SHA on the selected source branch, so no pull-request result can
+  satisfy release admission; and the selected source branch is a `v3-*` branch,
+  which is exactly why `ci-equivalent-run.cjs` excludes every `v3*` push.
+  Duplicate Playwright cost on those pushes already lands on hosted runners,
+  because `playwright-route.cjs` routes every push to `hosted`, so it never
+  occupied the self-hosted pool. The decision is to keep the equivalence
+  predicate unchanged and to leave supersede reclamation to the existing
+  `ci-obsolete-runs.cjs` inventory, which is already policy-limited and still
+  has no CI invocation path; adding one would cancel other contributors' runs
+  and needs its own authorization. The query and the predicate are preserved as
+  `.github/scripts/ci-duplicate-audit.cjs` so the next refresh can re-measure
+  them instead of rebuilding the analysis, with focused tests over synthetic run
+  records.
+
+- 2026-09-20 slice R3 (canonical image-input fingerprints, reuse records, and a
+  release manifest in the promotion controller, implementation on
+  `rs/ci-output-reuse-roadmap`): the full-SHA publication guard skipped a
+  rebuild only when the exact commit tag already existed, so a squash merge or a
+  documentation commit rebuilt every selected image even when its build inputs
+  were unchanged. Three pieces now close that gap. `image-input-fingerprint.cjs`
+  derives one canonical SHA-256 per target over the trusted dependency closure,
+  the Dockerfile, the build arguments, the selected environment file, the
+  lockfile and manifests, and the resolved base-image digests.
+  `staging-image-targets.cjs` marks ten runtime-configured targets
+  `reuse: true`; the Next.js frontends stay unmarked because their staging and
+  production builds freeze `NEXT_PUBLIC_*` values into the browser bundle, which
+  is the R1 exclusion the manifest validator now enforces as
+  `unexpected-fingerprint`. In `.github/workflows/v3_images-stg.yml` each ARM64
+  job resolves its fingerprint after checkout and publishes it as the
+  content-addressed tag `fp-<fingerprint>` through
+  `.github/actions/staging-image-input-fingerprint` and
+  `.github/scripts/stg-image-reuse-guard.sh`. The guard runs in `check` mode
+  before the build: when the tag already exists it adopts that digest instead of
+  building, and on every path it writes a reuse record, so a publication can
+  never carry a fingerprint without saying whether it rebuilt. The job uploads
+  `build-digest-<targetId>` with `digest.txt`, the fingerprint record, and the
+  reuse record. Promotion reads those records from the exact promoted run and
+  refuses a missing, duplicated, expired, or oversized artifact, then validates
+  each record against the trusted inventory: matching target, canonical
+  fingerprint, tag derived from that fingerprint, `reuseEligible === true`, a
+  known schema version, a boolean `adopted`, and a digest whenever the record
+  claims an adoption. The assembled release manifest binds every promoted digest
+  to its target, architecture, fingerprint, and scan receipt, and an adopted
+  digest additionally names the commit it was built from. That commit is read
+  from the image's own `org.opencontainers.image.revision` label (index or image
+  manifest, then the single `linux/arm64` platform manifest, then the config
+  blob) rather than from a run id, and the promoter proves it is an ancestor of
+  the candidate before the manifest is admissible. Rejections are named:
+  `reuse-ancestry`, `reuse-digest`, `reuse-fingerprint`, `reuse-provenance`,
+  `reuse-not-eligible`, `incomplete-reuse`, `unexpected-fingerprint`,
+  `unexpected-receipt`, and `missing-target`; an adoption whose digest is not the
+  published one fails earlier with `adopted <digest> but published <digest>`. The
+  `stg-release-promotion/v2` receipt now carries `release_manifest` and
+  `reuse: {rebuilt, reused}`. Deliberately out of scope: frontend reuse (the R1
+  exclusion above) and the AMD64 legs, which publish nothing the controller
+  promotes. Two consequences of adoption are accepted rather than solved. The
+  first publisher of a fingerprint keeps the tag, so a later publication with
+  the same inputs adopts the digest that publication produced instead of building
+  its own. The tag is shared by every line that publishes this image, so when a
+  `v3` commit changes a target's inputs and the release line adopts that digest
+  before `v3` has been merged, the promotion fails closed with
+  `reuse-ancestry`; the recovery is the standing `v3` to `v3-audit` merge, after
+  which the same digest is a proven ancestor and the next complete push promotes
+  it. Adoption is also what makes the resolved fingerprint and the promoted
+  digest the same object: `adopt` mode creates the immutable full-SHA tag from
+  the adopted digest with `docker buildx imagetools create`, so the scan leg
+  judges exactly the digest the release later promotes and no step rebuilds a
+  digest that is already qualified. The step order is part of that contract, and
+  the trusted validator now rejects a job that resolves reuse after the publish
+  guard. One boundary stays open on purpose. The input set is declared by the
+  candidate tree (the inventory's globs and prep steps), so the promotion side
+  proves that an adopted digest carries a fingerprint of a trusted-eligible
+  target, that the scan admitted exactly that digest, and that the digest's own
+  revision label is an ancestor of the candidate; it does not recompute the
+  fingerprint, because that would load candidate files into the trusted process.
+  A publisher that narrows a target's closure can therefore adopt a digest that
+  does not describe its tree. That needs push access to a `v3` line, which
+  already carries the ability to publish and promote images for that line, and a
+  closure narrowed for a target the trusted inventory does not mark reusable is
+  still rejected as `unexpected-fingerprint`. Verification:
+  `stg-release-promoter.test.js` grew from 31 to 46
+  tests covering the reuse path with its receipt, a same-commit re-run, a
+  non-ancestor reuse source, an adoption of a foreign digest, records of
+  non-eligible targets being ignored instead of trusted, an incomplete record
+  pair, six record shapes that contradict the inventory, and a publication
+  missing its digest artifact; `release-image-manifest.test.js` is 11 tests,
+  `image-input-fingerprint.test.js` 10, the check-suite set is 403 green, the
+  workflow mutation suite rejects 22 weakened candidates including one that
+  resolves reuse after the publish guard, and the guard was executed against a
+  fake `docker` with the tag present and absent.
+  Live qualification is not claimed here: the first staging push publishes
+  fingerprints without adopting anything, and only a later push with unchanged
+  inputs can show an adoption. The measure is `reuse.reused` in the promotion
+  receipt and the `release_manifest` entries of that run.
+
+- 2026-09-20 R4 audit repaired and re-measured (same branch). The preserved
+  `ci-duplicate-audit.cjs` could not be re-run as documented: its example asked
+  `gh run list --json` for `id` and `workflowPath`, which this `gh` does not
+  expose; a record whose run had not started aborted the whole measurement; and
+  the example passed `--json` without the value the argument parser required.
+  The script now accepts the run-id spellings `id` and `databaseId`, the
+  workflow spellings `workflowPath`, `path`, `workflowName` and `name`, and
+  the start spellings `startedAt`, `started_at` and `run_started_at`. A record
+  whose run never started is skipped and counted in
+  `skippedPushRecordsWithoutStart` / `skippedPullRequestRecordsWithoutStart`
+  rather than failing the audit, and `--json` works as the documented switch.
+  Four tests were added, including one that executes the documented command line
+  end to end and parses its report; the queue-policy suite is 407 green.
+
+  Measurement with the repaired query (1000 push and 1000 pull-request records,
+  2026-09-20 13:42Z): 985 push runs sat on integration branches, 132 of them
+  paired with a same-workflow pull-request run on the same head within five
+  minutes, and the push side of those pairs accounts for 2052.3 wall minutes.
+  Every pair has one topology: `v3-ai` pushed while the standing release pull
+  request #5092 (`v3-ai` → `v3`) revalidates the same head. Per workflow, the
+  push-side duplicate minutes are 297 Playwright, 274 Build staging images, 231
+  Check codebase, 221 test-graphql, 216 production translation context, 215
+  test-unit, 185 test-OLAT-API, 156 Test lecturer MCP server, 104 CodeQL, 87
+  SonarCloud and 61 gitleaks. Nine of those eleven workflows are release
+  admission evidence (`REQUIRED_CI_WORKFLOWS` in `stg-release-promoter.js` and
+  the `deploy-stg-promote.yml` watch list), so the roadmap's precondition — one
+  non-deployment-critical workflow — is met only by `Test lecturer MCP server`
+  and `CodeQL`, which together account for 260 of the 2052 minutes.
+
+  The second half of R4 stays unimplemented for a reason the measurement makes
+  concrete. A pull-request run checks out `refs/pull/5092/merge` while the push
+  run checks out the branch head, so the two validate the same tree only while
+  the base branch is already an ancestor of that head; that property changes as
+  `v3` advances. Reuse therefore needs a per-event proof (compare the merge
+  commit's tree with the head tree) and a reporter that reads the push run's
+  outcome after the fact instead of waiting on a runner while it runs, which is
+  the shape R5 established for Sonar coverage. Both change what validates the
+  release pull request, so they stay behind an explicit decision instead of
+  being inferred from this audit.

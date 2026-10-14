@@ -1,4 +1,7 @@
-import type { PrismaClient } from '@klicker-uzh/prisma/client'
+import {
+  KBResourceMaterialType,
+  type PrismaClient,
+} from '@klicker-uzh/prisma/client'
 import { createHash } from 'node:crypto'
 
 type KBContentDigestPrisma = Pick<PrismaClient, 'kBResource'>
@@ -9,9 +12,10 @@ export type KBContentDigestEntry = {
 }
 
 /**
- * The KB's content identity: every resource currently serving RAG, pinned by the
- * content hash ingestion last published for it. A graph build is made from exactly
- * this set, so comparing digests answers "has the KB moved on since this build?".
+ * The KB's content identity: every resource a graph build is made from, pinned by
+ * the content hash ingestion last published for it. A graph build covers exactly
+ * the course-content resources serving RAG, so comparing digests answers "has the
+ * KB moved on since this build?".
  *
  * Computed on demand rather than materialized on KB, so it can never drift from
  * the resources it describes.
@@ -27,6 +31,11 @@ export async function readKBContentDigestEntries(
       // `status` belongs to the newest ingestion operation. Its predecessor can
       // still be serving while that operation is queued or processing.
       activeContentSha256: { not: null },
+      // A graph covers only lecturer-curated course material, so administrative
+      // uploads must not count as the KB moving on. This filter mirrors the
+      // build path; without it a re-uploaded syllabus reports the graph stale
+      // while its content is unchanged.
+      materialType: KBResourceMaterialType.COURSE_CONTENT,
     },
     select: { id: true, activeContentSha256: true },
     orderBy: { id: 'asc' },

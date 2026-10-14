@@ -66,6 +66,7 @@ function ImportedSourceRow({ source }: { source: ImportedSource }) {
   const sourceLink = getSafeSourceLink(source.sourceUrl)
   const typeLabel = getSourceTypeLabel(source.sourceType)
   const isVideo = source.sourceType?.toLowerCase() === 'video'
+  const isManaged = source.origin === 'MANAGED'
 
   return (
     <ShadcnTableRow
@@ -80,7 +81,17 @@ function ImportedSourceRow({ source }: { source: ImportedSource }) {
             aria-hidden="true"
           />
           <div className="min-w-0">
-            <div className="break-words font-medium">{source.title}</div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="break-words font-medium">{source.title}</span>
+              <Badge
+                variant={isManaged ? 'default' : 'outline'}
+                data-cy={`kb-imported-source-origin-${source.id}`}
+              >
+                {isManaged
+                  ? t('kb.importedSourceManagedBadge')
+                  : t('kb.importedSourceImportedBadge')}
+              </Badge>
+            </div>
             {sourceLink ? (
               <a
                 href={sourceLink.toString()}

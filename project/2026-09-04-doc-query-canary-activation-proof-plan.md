@@ -405,11 +405,16 @@ Implementation reviews assess the resulting local code and remain required.
   `canary_positive_failed`; no isolation or rejection call ran. The mandatory
   rollback completed, and readback confirms both source configurations enabled
   and both managed target configurations disabled.
-- [ ] Values-free service-log classification identified ES256 signature
+- [x] Values-free service-log classification identified ES256 signature
   verification failure for the recognized key ID. Before another canary can be
   authorized, the Klicker signing private key and the production Doc Query
   public-key trust entry must be reconciled through their owning secret and
   GitOps workflows. The failed canary must not be retried under this receipt.
+  Resolved 2026-09-05: deployment MR !727 (`201d5e7b`, GitLab
+  `ai-infrastructure/deployment`) aligned the production public-key trust entry
+  to the Klicker signer through the GitOps workflow, including the pinned
+  `public_key_sha256`; the re-entry canary and its nine-call proof passed the
+  same day.
 - [x] A restricted in-process comparison confirmed that the current Infisical
   private key and the merged production public key are both valid keys but do
   not form a pair. The live ConfigMap public-key fingerprint matches the merged

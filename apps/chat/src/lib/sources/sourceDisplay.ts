@@ -149,28 +149,59 @@ export function getSourcePageLabel(value?: string): string | undefined {
 }
 
 /**
- * The page value to display: a publisher-labelled range when the chunks carry
- * integer labels, otherwise the physical page envelope, otherwise a single
- * publisher label. A single physical page is never displayed — it is a PDF
+ * The page value a card may show on its own, without the answer having named a
+ * page: the single publisher label the retrieved chunks agree on.
+ *
+ * A retrieved span is never displayed. `page`/`pageEnd` and
+ * `labeledPage`/`labeledPageEnd` are the envelope of everything retrieval
+ * returned, so one question about a 127-page script arrives as `2–127`; a card
+ * that prints it reads as "the answer used pages 2 to 127". Only the answer's
+ * own page detail may produce a displayed range (see
+ * `formatCitedPageRanges`), which is why a span degrades to no page line here.
+ * A single physical page stays hidden for the older reason: it is a PDF
  * navigation position, not the number printed on the page (see
- * `getSourceNavigationUrl`), so only a real range is worth showing there.
+ * `getSourceNavigationUrl`).
  */
 export function getSourcePageRange(source: ChatSource): string | undefined {
   const label = getSourcePageLabel(source.labeledPage)
-  if (label) {
-    const end = getSourcePageLabel(source.labeledPageEnd)
-    return end && end !== label ? `${label}–${end}` : label
-  }
+  if (!label) return undefined
 
-  if (
-    source.page !== undefined &&
-    source.pageEnd !== undefined &&
-    source.pageEnd > source.page
-  ) {
-    return `${source.page}–${source.pageEnd}`
-  }
+  // `labeledPageEnd` is derived only when the chunk labels disagree, so its
+  // presence is exactly the "retrieval spread past one page" case.
+  return source.labeledPageEnd === undefined ? label : undefined
+}
 
-  return undefined
+/**
+ * The smallest set of page ranges that covers exactly the given pages:
+ * `[2, 3, 7]` becomes `2–3, 7`. Nothing between cited pages is added, so a
+ * card never claims pages the answer did not use — the span from the first to
+ * the last of 20 retrieved chunks (`2–95` for an answer that cites pages 6–7)
+ * is what this replaces.
+ */
+export function formatCitedPageRanges(
+  pages: readonly number[]
+): string | undefined {
+  const sorted = [
+    ...new Set(pages.filter((page) => Number.isSafeInteger(page))),
+  ].sort((left, right) => left - right)
+  const first = sorted[0]
+  if (first === undefined) return undefined
+
+  const ranges: string[] = []
+  let start = first
+  let end = first
+  for (const page of sorted.slice(1)) {
+    if (page === end + 1) {
+      end = page
+      continue
+    }
+    ranges.push(start === end ? `${start}` : `${start}–${end}`)
+    start = page
+    end = page
+  }
+  ranges.push(start === end ? `${start}` : `${start}–${end}`)
+
+  return ranges.join(', ')
 }
 
 /**
@@ -180,15 +211,20 @@ export function getSourcePageRange(source: ChatSource): string | undefined {
  * page at all, so the line stays informative instead of empty. `null` only
  * when nothing at all is known.
  *
+ * `citedPageRange` is the page range the answer itself cites for this source
+ * (see `formatCitedPageRanges`). It wins over the retrieved envelope, which
+ * spans every chunk retrieval returned and is not what the answer used.
+ *
  * Shared so the source card and the citation preview render an identical
  * secondary line for the same source.
  */
 export function getSourceSecondaryLine(
   source: ChatSource,
-  t: Translate
+  t: Translate,
+  citedPageRange?: string
 ): string | null {
   const parts: string[] = []
-  const pageLabel = getSourcePageRange(source)
+  const pageLabel = citedPageRange ?? getSourcePageRange(source)
 
   if (source.type === 'video') {
     const timestamp = getSourceTimestamp(source)

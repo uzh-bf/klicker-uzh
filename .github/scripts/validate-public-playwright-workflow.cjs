@@ -347,7 +347,7 @@ function validatePublicPlaywrightWorkflow(root) {
     issues.push('the reusable workflow must expose one trusted canonical plan')
   }
   if (
-    !publicWorkflow.includes('Build draft selector shadow plan') ||
+    !publicWorkflow.includes('Build opposite-state selector shadow plan') ||
     !publicWorkflow.includes('playwright-selector-shadow.json')
   ) {
     issues.push(
@@ -383,7 +383,7 @@ function validatePublicPlaywrightWorkflow(root) {
 
   if (
     publicWorkflow.includes('group: public-pr-arm64') &&
-    publicWorkflow.includes('Build draft selector shadow plan') &&
+    publicWorkflow.includes('Build opposite-state selector shadow plan') &&
     !publicWorkflow.includes(
       "if: github.event_name == 'pull_request' && github.event.pull_request.draft == true"
     )

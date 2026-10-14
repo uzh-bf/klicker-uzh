@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
+  ElementGenerationSlotFailure,
   ElementManipulationInput,
   GeneratedQuestionEditable,
   QuestionGenerationArtifactRef,
@@ -12,6 +13,7 @@ import {
   assertElementGenerationCostAccounted,
   createElementGenerationBuildWithSpend,
   releaseUnclaimedElementGenerationSpend,
+  reserveElementGenerationRetrySpend,
 } from './elementGenerationAccounting.js'
 import { completeElementGeneration } from './elementGenerationCompletion.js'
 import { dispatchCostAccountedElementGeneration } from './elementGenerationDispatch.js'
@@ -70,11 +72,48 @@ import type {
 } from './questionGenerationRuntime.js'
 
 const REVIEW_DISPATCH_RECOVERY_MILLISECONDS = 15_000
+
+// Rollout gate for the partial-result capability. The deployed
+// content-generation worker rejects unknown start-payload fields, so
+// allow_partial_results may only be emitted while a worker release that
+// accepts it is live. Raise this constant once that release is deployed and
+// verified in the target environment; lower it again if the worker is rolled
+// back to a build without the field.
+//
+// Raised on 2026-09-22 after verifying the deployed staging question worker
+// (kg-content-generation ea3fa3fa, which contains the structured-slot-failure
+// release 59aad81): it accepts the field and reports the partial bank together
+// with one reason per unsupplied slot. Production is unaffected, because the
+// element-generation services are not part of v3; verify the production worker
+// release before the feature is promoted there.
+//
+// The flag is part of a build's canonical start-manifest hash, so raise it
+// while no build sits between dispatch and plan synchronization; such a build
+// would recompute a hash its worker never saw.
+export const QUESTION_PARTIAL_RESULTS_ENABLED = true
+
 const TERMINAL_STATUSES = new Set<DB.ElementGenerationBuildStatus>([
   DB.ElementGenerationBuildStatus.COMPLETED,
+  DB.ElementGenerationBuildStatus.INCOMPLETE,
   DB.ElementGenerationBuildStatus.REJECTED,
   DB.ElementGenerationBuildStatus.FAILED,
 ])
+// The statuses whose result manifest carries structured per-slot reasons. A
+// failed run reports them for the slots it could not produce, and a partial
+// run reports them alongside the passing subset it delivered.
+const SLOT_FAILURE_STATUSES = new Set<DB.ElementGenerationBuildStatus>([
+  DB.ElementGenerationBuildStatus.FAILED,
+  DB.ElementGenerationBuildStatus.INCOMPLETE,
+  DB.ElementGenerationBuildStatus.AWAITING_INCOMPLETE_PUBLICATION,
+  DB.ElementGenerationBuildStatus.PUBLISHING_INCOMPLETE,
+])
+// A partial question run settles as INCOMPLETE with only the grounded drafts.
+// Those drafts stay fully reviewable, exactly like a completed run's; the
+// remaining per-slot reasons render as attention cards next to the review.
+const QUESTION_REVIEWABLE_STATUSES: DB.ElementGenerationBuildStatus[] = [
+  DB.ElementGenerationBuildStatus.COMPLETED,
+  DB.ElementGenerationBuildStatus.INCOMPLETE,
+]
 const QUESTION_ELEMENT_TYPES: DB.ElementType[] = [
   DB.ElementType.SC,
   DB.ElementType.MC,
@@ -145,7 +184,7 @@ function requireRuntime(ctx: ContextWithUser): QuestionGenerationRuntime {
   return ctx.elementGenerationRuntime
 }
 
-function questionWorkflowStartManifestSha256(
+export function questionWorkflowStartManifestSha256(
   payload: QuestionWorkflowStartPayload
 ): string {
   const normalized = {
@@ -279,6 +318,36 @@ async function recordBuildFailure(
   throw normalized
 }
 
+export function questionWorkflowStartPayload(
+  input: {
+    buildId: string
+    graphVersionId: string
+    graphManifest: QuestionGenerationArtifactRef
+    storageName: string
+    blueprint: QuestionGenerationArtifactRef
+    output: { containerName: string; blobPrefix: string }
+    language: QuestionGenerationConfiguration['language']
+  },
+  options: { allowPartialResults?: boolean } = {}
+): QuestionWorkflowStartPayload {
+  const allowPartialResults =
+    options.allowPartialResults ?? QUESTION_PARTIAL_RESULTS_ENABLED
+  return {
+    schema_version: 3,
+    question_build_id: input.buildId,
+    graph_version_id: input.graphVersionId,
+    graph_manifest: elementGenerationArtifactPayload(input.graphManifest),
+    storage_name: input.storageName,
+    blueprint: elementGenerationArtifactPayload(input.blueprint),
+    output: {
+      container_name: input.output.containerName,
+      blob_prefix: input.output.blobPrefix,
+    },
+    language: input.language,
+    ...(allowPartialResults ? { allow_partial_results: true } : {}),
+  }
+}
+
 function questionWorkflowPayload(
   build: Pick<
     QuestionBuild,
@@ -297,21 +366,18 @@ function questionWorkflowPayload(
     )
   }
   const configuration = build.configuration as QuestionGenerationConfiguration
-  return {
-    schema_version: 3,
-    question_build_id: build.id,
-    graph_version_id: build.sourceGraphBuild.id,
-    graph_manifest: elementGenerationArtifactPayload(
-      build.sourceGraphBuild.graphManifestArtifact
-    ),
-    storage_name: build.sourceGraphBuild.graphBundleStorageName,
-    blueprint: elementGenerationArtifactPayload(build.blueprintArtifact),
+  return questionWorkflowStartPayload({
+    buildId: build.id,
+    graphVersionId: build.sourceGraphBuild.id,
+    graphManifest: build.sourceGraphBuild.graphManifestArtifact,
+    storageName: build.sourceGraphBuild.graphBundleStorageName,
+    blueprint: build.blueprintArtifact,
     output: {
-      container_name: runtime.questionOutputContainer,
-      blob_prefix: runtime.questionOutputPrefix,
+      containerName: runtime.questionOutputContainer,
+      blobPrefix: runtime.questionOutputPrefix,
     },
     language: configuration.language,
-  }
+  })
 }
 
 async function dispatchPreparingQuestionBuild(
@@ -365,6 +431,12 @@ async function dispatchPreparingQuestionBuild(
         ),
     })
 
+  // A question retry reserves under the shared QUESTION_GENERATION spend
+  // class, which cannot identify a retry on its own. The reservation therefore
+  // marks the build in its stage until this dispatch consumes the mark and
+  // counts the retry.
+  const retryDispatch = build.stage === 'retry_dispatching'
+
   const updated = await ctx.prisma.elementGenerationBuild.updateMany({
     where: {
       id: build.id,
@@ -379,6 +451,7 @@ async function dispatchPreparingQuestionBuild(
       status: DB.ElementGenerationBuildStatus.DESIGNING,
       stage: 'design',
       startedAt: new Date(),
+      ...(retryDispatch ? { retryCount: { increment: 1 } } : {}),
     },
   })
   if (updated.count !== 1) {
@@ -486,6 +559,46 @@ export async function startQuestionGeneration(
   )
 }
 
+export async function retryQuestionGeneration(
+  buildId: string,
+  ctx: ContextWithUser
+) {
+  await assertQuestionGenerationPreviewAccess(ctx)
+  const runtime = requireRuntime(ctx)
+  const build = await findOwnedBuild(buildId, ctx)
+  assertElementGenerationCostAccounted(build)
+  if (
+    build.status !== DB.ElementGenerationBuildStatus.FAILED ||
+    build.errorRetryable !== true
+  ) {
+    return serviceError(
+      'INVALID_STAGE',
+      'Only a retryable failed question build can be retried'
+    )
+  }
+  const dispatchAttemptId = randomUUID()
+  const claimed = await reserveElementGenerationRetrySpend(ctx.prisma, {
+    buildId: build.id,
+    ownerId: ctx.user.sub,
+    dispatchAttemptId,
+    spendClass: DB.KBGraphQuotaSpendClass.QUESTION_GENERATION,
+    elementTypes: QUESTION_ELEMENT_TYPES,
+    expectedStatus: DB.ElementGenerationBuildStatus.FAILED,
+    clearCompletedAt: true,
+  })
+  if (!claimed) {
+    return serviceError(
+      'CONCURRENT_MODIFICATION',
+      'Question build was changed by another request'
+    )
+  }
+  return resumePreparingQuestionBuild(
+    await findOwnedBuild(build.id, ctx),
+    runtime,
+    ctx
+  )
+}
+
 async function synchronizeLeasedBuild(
   build: Awaited<ReturnType<typeof findOwnedBuild>>,
   runtime: QuestionGenerationRuntime,
@@ -543,6 +656,15 @@ async function synchronizeLeasedBuild(
         })
       }
       if (run.status === 'FAILED' || run.status === 'CANCELLED') {
+        // A worker that aborted on unsupplied slots may still have written a
+        // failed result manifest carrying their structured reasons. Read it
+        // opportunistically so the reviewing client gets the per-slot cards
+        // instead of only the generic workflow message; a run with no usable
+        // manifest keeps that generic message.
+        const failedReasons = await readQuestionResultSlotFailures(
+          build,
+          artifactPath
+        )
         await ctx.prisma.elementGenerationBuild.updateMany({
           where: { id: build.id, syncLeaseOwner: leaseOwner },
           data: {
@@ -550,8 +672,24 @@ async function synchronizeLeasedBuild(
             stage: 'failed',
             errorCode: `WORKFLOW_${run.status}`,
             errorMessage: 'Question-generation workflow did not complete',
-            errorRetryable: false,
+            errorRetryable: failedReasons
+              ? slotFailuresAreRetryable(failedReasons.slotFailures)
+              : false,
             completedAt: new Date(),
+            ...(failedReasons
+              ? {
+                  resultManifestArtifact: failedReasons.artifact,
+                  ...(failedReasons.slotFailures.length > 0
+                    ? {
+                        planSummary: {
+                          ...((build.planSummary ??
+                            {}) as QuestionGenerationPlanSummary),
+                          slotFailures: failedReasons.slotFailures,
+                        },
+                      }
+                    : {}),
+                }
+              : {}),
           },
         })
         return
@@ -598,19 +736,21 @@ async function synchronizeLeasedBuild(
             'Question-generation build has incomplete dispatched graph evidence'
           )
         }
-        const startPayload: QuestionWorkflowStartPayload = {
-          schema_version: 3,
-          question_build_id: build.id,
-          graph_version_id: build.sourceGraphBuild.id,
-          graph_manifest: elementGenerationArtifactPayload(graphManifest),
-          storage_name: build.sourceGraphBuild.graphBundleStorageName!,
-          blueprint: elementGenerationArtifactPayload(blueprint),
+        // The provenance check recomputes the dispatched start-manifest hash,
+        // so this payload must be built by the same function as the dispatch
+        // payload above; otherwise the optional rollout-gated fields diverge.
+        const startPayload = questionWorkflowStartPayload({
+          buildId: build.id,
+          graphVersionId: build.sourceGraphBuild.id,
+          graphManifest,
+          storageName: build.sourceGraphBuild.graphBundleStorageName!,
+          blueprint,
           output: {
-            container_name: runtime.questionOutputContainer,
-            blob_prefix: runtime.questionOutputPrefix,
+            containerName: runtime.questionOutputContainer,
+            blobPrefix: runtime.questionOutputPrefix,
           },
           language: configuration.language,
-        }
+        })
         v3Evidence = {
           graphVersionId: build.sourceGraphBuild.id,
           graphManifest,
@@ -668,9 +808,21 @@ async function synchronizeLeasedBuild(
             stage: 'failed',
             errorCode: 'WORKFLOW_FAILED',
             errorMessage: 'Question-generation workflow reported a failure',
-            errorRetryable: false,
+            errorRetryable: slotFailuresAreRetryable(result.slotFailures),
             completedAt: new Date(),
             lastSynchronizedAt: new Date(),
+            // A partial run whose slots all failed arrives as a failed result
+            // that still carries its reasons, so the attention cards survive
+            // the terminal transition.
+            ...(result.slotFailures.length > 0
+              ? {
+                  planSummary: {
+                    ...((build.planSummary ??
+                      {}) as QuestionGenerationPlanSummary),
+                    slotFailures: result.slotFailures,
+                  },
+                }
+              : {}),
           },
         })
       } else {
@@ -794,6 +946,12 @@ async function synchronizeLeasedBuild(
             buildId: build.id,
             leaseOwner,
             questions,
+            resultStatus:
+              result.status === 'completed_partial'
+                ? 'incomplete'
+                : 'completed',
+            unresolvedElementCount: result.slotFailures.length,
+            slotFailures: result.slotFailures,
             resultManifestArtifact: artifact.ref,
             finalBankArtifact: finalQuestions,
             questionProvenanceIndexArtifact: provenanceIndex,
@@ -846,6 +1004,83 @@ async function synchronizeLeasedBuild(
   }
 }
 
+// A build whose slots all failed is only worth re-dispatching when the reasons
+// are the system's to fix. A user_input reason would repeat until the lecturer
+// changes the request, so it keeps the build terminal with no retry offered.
+function slotFailuresAreRetryable(
+  failures: ElementGenerationSlotFailure[]
+): boolean {
+  return (
+    failures.length > 0 &&
+    failures.every((failure) => failure.failureClass !== 'user_input')
+  )
+}
+
+// A run that the provider reports as failed or cancelled may still have
+// written a failed result manifest, and the worker that aborted on unsupplied
+// slots records their structured reasons there. Reading it opportunistically
+// turns the generic workflow failure into the same per-slot surface a
+// synchronizer-observed failure produces. Only a manifest that parses as a
+// failed result is accepted, so a partial or completed manifest written by an
+// unrelated run outcome cannot be reported as a failed build; a missing or
+// unreadable artifact yields the generic message.
+async function readQuestionResultSlotFailures(
+  build: Awaited<ReturnType<typeof findOwnedBuild>>,
+  artifactPath: (suffix: string) => Promise<{
+    ref: QuestionGenerationArtifactRef
+    bytes: Buffer
+  }>
+): Promise<{
+  artifact: QuestionGenerationArtifactRef
+  slotFailures: ElementGenerationSlotFailure[]
+} | null> {
+  try {
+    const artifact = await artifactPath('result.json')
+    const result = parseQuestionGenerationResult(artifact.bytes, {
+      buildId: build.id,
+      questionCount: build.requestedElementCount,
+    })
+    if (result.status !== 'failed') return null
+    return { artifact: artifact.ref, slotFailures: result.slotFailures }
+  } catch {
+    return null
+  }
+}
+
+// The structured per-slot failure reasons are persisted with the result
+// manifest and, for a partial run, also on the build summary. The summary copy
+// is read first because it needs no artifact download; a build written before
+// the summary copy existed, a manifest written before the failure surface
+// existed, or an artifact that is no longer readable keeps the legacy failure
+// surface instead of failing the query.
+async function withQuestionSlotFailureReasons(
+  build: Awaited<ReturnType<typeof findOwnedBuild>>,
+  runtime: QuestionGenerationRuntime
+) {
+  const persisted = (
+    build.planSummary as
+      | (QuestionGenerationPlanSummary & {
+          slotFailures?: ElementGenerationSlotFailure[]
+        })
+      | null
+  )?.slotFailures
+  if (persisted && persisted.length > 0) {
+    return { ...build, slotFailures: persisted }
+  }
+  const artifact =
+    build.resultManifestArtifact as QuestionGenerationArtifactRef | null
+  if (!artifact) return build
+  try {
+    const result = parseQuestionGenerationResult(
+      await runtime.downloadVerified(artifact),
+      { buildId: build.id, questionCount: build.requestedElementCount }
+    )
+    return { ...build, slotFailures: result.slotFailures }
+  } catch {
+    return build
+  }
+}
+
 export async function getQuestionGenerationBuild(
   buildId: string,
   ctx: ContextWithUser
@@ -853,10 +1088,22 @@ export async function getQuestionGenerationBuild(
   await assertQuestionGenerationPreviewAccess(ctx)
   const build = await findOwnedBuild(buildId, ctx)
   const runtime = ctx.elementGenerationRuntime
-  if (!runtime || TERMINAL_STATUSES.has(build.status)) return build
+  if (!runtime) return build
+  // The reviewing client stops polling on the first settled status, so the
+  // poll that observes a failure or a partial delivery has to carry the
+  // structured reasons with it. Every other status keeps the persisted shape.
+  const withFailureReasons = (current: typeof build) =>
+    SLOT_FAILURE_STATUSES.has(current.status)
+      ? withQuestionSlotFailureReasons(current, runtime)
+      : current
+  if (TERMINAL_STATUSES.has(build.status)) {
+    return withFailureReasons(build)
+  }
   assertElementGenerationCostAccounted(build)
   if (build.status === DB.ElementGenerationBuildStatus.PREPARING_INPUT) {
-    return resumePreparingQuestionBuild(build, runtime, ctx)
+    return withFailureReasons(
+      await resumePreparingQuestionBuild(build, runtime, ctx)
+    )
   }
 
   const leaseOwner = await acquireElementGenerationLease(ctx.prisma, {
@@ -870,7 +1117,7 @@ export async function getQuestionGenerationBuild(
       await releaseElementGenerationLease(ctx.prisma, build.id, leaseOwner)
     }
   }
-  return findOwnedBuild(buildId, ctx)
+  return withFailureReasons(await findOwnedBuild(buildId, ctx))
 }
 
 function questionReviewState(
@@ -1210,7 +1457,7 @@ export async function saveGeneratedQuestions(
         elementType: {
           in: [DB.ElementType.SC, DB.ElementType.MC, DB.ElementType.KPRIM],
         },
-        status: DB.ElementGenerationBuildStatus.COMPLETED,
+        status: { in: QUESTION_REVIEWABLE_STATUSES },
       },
       select: {
         drafts: {

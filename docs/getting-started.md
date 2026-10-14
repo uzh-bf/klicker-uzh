@@ -62,7 +62,7 @@ The lecturer MCP server (`apps/mcp-lecturer`, port 7081) and the student MCP ser
    ```
    The same command owns primary and linked checkout startup. It prints the exact DevPod ID when an interactive shell is needed.
 2. **Accessing the apps:**
-   - **Mode 1 (Primary checkout):** Stable routes such as `https://manage.klicker.localhost` plus the fixed localhost ports. Lecturer login is `lecturer`/`abcd`.
+   - **Mode 1 (Primary checkout):** Stable routes such as `https://manage.klicker.localhost` plus the fixed localhost application ports; the database listens on an ephemeral loopback port or `db.klicker.localhost:5432` through the router. Lecturer login is `lecturer`/`abcd`.
    - **Mode 2 (linked checkout):** Routes linked-worktree traffic over HTTPS at `https://manage.klicker.<workspace>.localhost`. Requires:
      1. Install devrouter ≥ 0.0.55 and run `devrouter setup --yes` once. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery, 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime, and 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct retained-runtime configuration and mount comparison.
      2. From an existing linked worktree, start and prove the environment with:
@@ -75,20 +75,22 @@ The lecturer MCP server (`apps/mcp-lecturer`, port 7081) and the student MCP ser
 4. **Browser E2E:** Run Playwright from the host with `pnpm playwright:host -- --project=chromium <spec>`. The launcher reconciles the routed devrouter workspace, maps the app URLs and seed database, and reuses the host browser cache. Never install Playwright browser binaries in a DevPod. The existing global setup resets and reseeds the mapped database, so use only a disposable local test runtime.
 
 Choose an application profile such as `manage`, `pwa`, `chat`, or
-`live-quiz`. Add the orthogonal `ai`, `mcp`, or `email` capability only when
-needed; for example, `devrouter ensure . --profile chat,ai,mcp`. Capability-only
-profiles run no Turbo app process. Omitting `--profile` keeps the compatibility
-default `full`. Profile unions are additive and order-insensitive, and a warm
-transition does not recreate the app container or reset persistent data.
+`live-quiz`. Add the orthogonal `ai`, `mcp`, `email`, or `eduid` capability
+only when needed; for example, `devrouter ensure . --profile chat,ai,mcp`, or
+`devrouter ensure . --profile manage,eduid` for Edu-ID login through the
+local OIDC mock. Capability-only profiles run no Turbo app process. Omitting
+`--profile` keeps the compatibility default `full`. Profile unions are additive
+and order-insensitive, and a warm transition does not recreate the app
+container or reset persistent data.
 
 Parallel task work should use one linked worktree per task and the smallest
 matching profile. A Manage-only task uses `manage`; Chat AI uses `chat,ai`;
-tool-calling work adds `mcp`; email work adds `email`. Independent worktrees
-keep separate app caches, database state, routes, and processes while sharing
-only the package-download cache. Do not default every parallel worktree to
-`full`, because that starts LiteLLM, MCP, MailHog, every routed app, and both
-workers in each environment. The Turbo local cache is shared across all
-worktrees and bounded in size/age; see
+tool-calling work adds `mcp`; email work adds `email`; Edu-ID login work adds
+`eduid`. Independent worktrees keep separate app caches, database state,
+routes, and processes while sharing only the package-download cache. Do not
+default every parallel worktree to `full`, because that starts LiteLLM, MCP,
+MailHog, every routed app, and both workers in each environment. The Turbo
+local cache is shared across all worktrees and bounded in size/age; see
 [Local Disk and Caches](./local-disk-and-caches.md) for the cache layout and
 the `clean:cache` / `clean:generated` / `clean:worktree` / `disk:usage`
 commands.

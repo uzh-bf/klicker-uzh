@@ -5,8 +5,11 @@ export const DOC_QUERY_TOOL_NAME = `${DOC_QUERY_MCP_SERVER_NAME}_doc_query`
 // The shared doc-query client owns the transport-security allowlist and the
 // scope-token header so the chat and graphql workloads cannot drift apart.
 export {
-  DOC_QUERY_SCOPE_TOKEN_HEADER,
   assertDocQueryTransportSecurity,
+  createDocQueryScopedFetch,
+  DOC_QUERY_SCOPE_TOKEN_HEADER,
+  type DocQueryScopedFetch,
+  resolveDocQueryScopedRoute,
 } from '@klicker-uzh/doc-query-client'
 
 const UUID_PATTERN =

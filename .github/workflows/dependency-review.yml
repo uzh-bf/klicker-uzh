@@ -17,6 +17,10 @@ on:
     # documented lifecycle role (see ci-event-gates.test.cjs).
     types: [opened, synchronize, reopened]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   # The action publishes its findings summary as a comment on the pull request.

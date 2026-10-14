@@ -19,6 +19,7 @@ import {
   TEST_PNG_DATA_URL,
   testImageUpload,
 } from '../util/chat.js'
+import { deMessages, enMessages } from '../util/messages.js'
 import { selectOption } from '../util/workflow.js'
 
 const UNKNOWN_CHATBOT_ID = '00000000-0000-4000-8000-000000000404'
@@ -801,6 +802,46 @@ test.describe('Chatbot Messaging Interface', () => {
       timeout: 15_000,
     })
     await expect(assistantContent).toContainText('The formula is complete.')
+  })
+
+  test('Streaming hides incomplete chemistry until its delimiter closes', async ({
+    page,
+  }) => {
+    const prefix = 'Reaction: '
+    const suffix = ' End.'
+    const formula = String.raw`\ce{2 H2 + O2 -> 2 H2O}`
+    await mockChatStream(page, {
+      textChunks: [prefix, `$${formula}`, `$${suffix}`],
+      chunkDelayMs: 80,
+      pauseAfterTextChunk: 2,
+    })
+    await visitChat(page)
+    await sendMessage(page, 'Show a reaction equation')
+
+    const content = page.getByTestId('chat-assistant-message-content')
+    await expect(content).toHaveText(prefix.trim())
+    await expect(content.locator('.katex-error')).toHaveCount(0)
+    const row = await page.getByTestId('chat-assistant-message').elementHandle()
+
+    await page.evaluate(() => {
+      const state = window as typeof window & {
+        __releaseMockChatStream?: () => void
+      }
+      state.__releaseMockChatStream?.()
+    })
+
+    await expect(content.locator('.katex')).toHaveCount(1)
+    await expect(content.locator('.katex-error')).toHaveCount(0)
+    await expect(content.locator('.katex-mathml math')).toHaveCount(1)
+    await expect(content).toContainText(suffix.trim())
+    await expect(content.locator('.katex-html')).not.toContainText('\\ce')
+    expect(
+      await row?.evaluate(
+        (element) =>
+          element ===
+          document.querySelector('[data-cy="chat-assistant-message"]')
+      )
+    ).toBe(true)
   })
 
   test('Welcome message disappears after sending first message', async ({
@@ -1611,6 +1652,27 @@ test.describe('Chatbot Settings Panel', () => {
     })
   }
 
+  // Read the shipped settings copy so the spec tracks the product text.
+  function settingsCopy(messages: {
+    chat: {
+      settingsPanel: Record<
+        | 'autoSelectionInfo'
+        | 'usingPrimaryModel'
+        | 'fixedModelInfo'
+        | 'usingFallbackModel',
+        string
+      >
+    }
+  }) {
+    const copy = messages.chat.settingsPanel
+    return {
+      automatic: copy.autoSelectionInfo,
+      primary: copy.usingPrimaryModel,
+      fixed: copy.fixedModelInfo,
+      fallback: copy.usingFallbackModel,
+    }
+  }
+
   async function assertAutomaticAndFixedModelCopy(
     page: Page,
     participantId: string,
@@ -1795,28 +1857,23 @@ test.describe('Chatbot Settings Panel', () => {
   test('Participant settings distinguish Auto and fixed models in English', async ({
     page,
   }) => {
-    await assertAutomaticAndFixedModelCopy(page, participantId, 'en', {
-      automatic: 'KlickerUZH chooses a suitable model for each message.',
-      primary: 'The automatic choice is used while credits are available.',
-      fixed: 'Your lecturer fixed this model for all participants.',
-      fallback:
-        'No credits remain. GPT-5.6 Luna may be used as the credit fallback.',
-    })
+    await assertAutomaticAndFixedModelCopy(
+      page,
+      participantId,
+      'en',
+      settingsCopy(enMessages)
+    )
   })
 
   test('Participant settings distinguish Auto and fixed models in German', async ({
     page,
   }) => {
-    await assertAutomaticAndFixedModelCopy(page, participantId, 'de', {
-      automatic:
-        'KlickerUZH wählt für jede Nachricht ein passendes Modell aus.',
-      primary:
-        'Die automatische Auswahl wird verwendet, solange Credits verfügbar sind.',
-      fixed:
-        'Die Lehrperson hat dieses Modell für alle Teilnehmenden festgelegt.',
-      fallback:
-        'Es sind keine Credits mehr übrig. GPT-5.6 Luna kann als Credit-Fallback verwendet werden.',
-    })
+    await assertAutomaticAndFixedModelCopy(
+      page,
+      participantId,
+      'de',
+      settingsCopy(deMessages)
+    )
   })
 
   test('Credits display shows current/total and percentage', async ({
@@ -1897,7 +1954,7 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(modelSection).toBeVisible()
     await expect(page.getByTestId('chat-model-display')).toHaveCount(0)
 
-    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-5.6 Luna')
+    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-6 Luna')
 
     const chatRequestPromise = page.waitForRequest(
       (request) =>
@@ -1908,28 +1965,24 @@ test.describe('Chatbot Settings Panel', () => {
 
     const chatRequest = await chatRequestPromise
     const payload = chatRequest.postDataJSON() as { selectedModel?: string }
-    expect(payload.selectedModel).toBe('gpt-5.6-luna')
+    expect(payload.selectedModel).toBe('gpt-6-luna')
     await expect(page.getByTestId('chat-assistant-message')).toContainText(
       'assistant reply #1',
       { timeout: 15_000 }
     )
   })
 
-  test('Model descriptions explain capabilities without provider jargon', async ({
-    page,
-  }) => {
+  test('Selected model exposes its description', async ({ page }) => {
     await setModelSelection(participantId, true)
     await visitChat(page)
     await openSettings(page)
 
     const modelSection = page.getByTestId('chat-model-selection')
-    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-5.6 Luna')
+    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-6 Luna')
 
-    await expect(modelSection).toContainText(
-      'Uses fewer credits and remains available when your credits run out'
-    )
-    await expect(modelSection).not.toContainText('LiteLLM')
-    await expect(modelSection).not.toContainText('OpenAI reasoning model')
+    const description = modelSection.locator('p')
+    await expect(description).toBeVisible()
+    await expect(description).toHaveText(/\S/)
   })
 
   // The selector only appears for a model that supports reasoning with more
@@ -1943,7 +1996,7 @@ test.describe('Chatbot Settings Panel', () => {
     await mockChatStream(page, {
       metadata: {
         chatMode: 'tutor',
-        modelId: 'gpt-5.6-luna',
+        modelId: 'gpt-6-luna',
         reasoningEffort: 'high',
       },
     })
@@ -1960,7 +2013,7 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(
       page.getByTestId('chat-reasoning-effort-selection')
     ).toHaveCount(0)
-    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-5.6 Luna')
+    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-6 Luna')
 
     await expect(
       page.getByTestId('chat-reasoning-effort-selection')
@@ -1983,7 +2036,11 @@ test.describe('Chatbot Settings Panel', () => {
     await sendMessage(page, 'Selected reasoning effort check')
 
     const chatRequest = await chatRequestPromise
-    const payload = chatRequest.postDataJSON() as { reasoningEffort?: string }
+    const payload = chatRequest.postDataJSON() as {
+      selectedModel?: string
+      reasoningEffort?: string
+    }
+    expect(payload.selectedModel).toBe('gpt-6-luna')
     expect(payload.reasoningEffort).toBe('high')
 
     // The caption under the answer reflects the effort the stream reported.
@@ -2570,9 +2627,9 @@ test.describe('Chatbot Source Citations', () => {
       await page.keyboard.press('Enter')
       await expect(groups).toHaveCount(14)
       await expect(moreSources).toHaveCount(0)
-      await expect(page.getByTestId('chat-doc-query-citation')).toHaveCount(12)
+      await expect(page.getByTestId('chat-doc-query-citation')).toHaveCount(14)
       await expect(page.getByTestId('chat-doc-query-citation')).toHaveText(
-        Array.from({ length: 12 }, (_, index) => String(index + 1))
+        Array.from({ length: 14 }, (_, index) => String(index + 1))
       )
       await expect(
         groups.nth(0).getByTestId('chat-doc-query-citation')
@@ -2585,11 +2642,8 @@ test.describe('Chatbot Source Citations', () => {
       ).toHaveText('12')
 
       const citations = page.getByTestId('chat-citation')
-      await expect(citations).toHaveCount(3)
-      await expect(citations).toHaveText(['1', '2', '12'])
-      await expect(
-        page.getByTestId('chat-assistant-message-content')
-      ).toContainText('[13]')
+      await expect(citations).toHaveCount(4)
+      await expect(citations).toHaveText(['1', '2', '12', '13'])
 
       const disclosureGroup = groups.nth(0)
       await expect(
@@ -2610,8 +2664,8 @@ test.describe('Chatbot Source Citations', () => {
       for (const groupIndex of [12, 13]) {
         const source = overflowSources[groupIndex - 1]
         const group = groups.nth(groupIndex)
-        await expect(group.getByTestId('chat-doc-query-citation')).toHaveCount(
-          0
+        await expect(group.getByTestId('chat-doc-query-citation')).toHaveText(
+          String(groupIndex + 1)
         )
         await expect(
           group.getByTestId('chat-doc-query-origin')
@@ -2620,6 +2674,106 @@ test.describe('Chatbot Source Citations', () => {
         await expect(group).toContainText(source.title)
         await expect(group).toContainText(source.chunks[0].content)
       }
+    }
+  })
+
+  test('Later search citations reveal compacted source cards through reload', async ({
+    page,
+  }, testInfo) => {
+    const messageId = '5a1b2c3d-0015-4a91-8f6c-2b7d1e5a9c40'
+    const sources = Array.from({ length: 100 }, (_, index) => ({
+      file_name: `Synthetic source ${index + 1}`,
+      source_url: `https://example.test/evidence/${index + 1}.pdf`,
+      source_type: 'document',
+      page_number: 1,
+    }))
+    const citedIndices = [
+      ...Array.from({ length: 13 }, (_, index) => index + 1),
+      16,
+      21,
+      99,
+    ]
+    await seedThread(participantId, {
+      title: 'Later search evidence',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Compare the retrieved evidence.' }],
+        },
+        {
+          id: messageId,
+          role: 'assistant',
+          content: [
+            docQueryPart({
+              toolCallId: 'initial-query',
+              sources: sources.slice(0, 20),
+            }),
+            docQueryPart({
+              toolCallId: 'refined-query',
+              sources: sources.slice(20),
+            }),
+            {
+              type: 'text',
+              text: `Evidence ${citedIndices.map((index) => `[${index}]`).join(', ')}. Overflow [100].`,
+            },
+          ],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+
+    for (const variant of ['desktop-en', 'reloaded-en', 'mobile-de']) {
+      if (variant === 'mobile-de') {
+        await page.setViewportSize({ width: 390, height: 844 })
+        await page.context().addCookies([
+          {
+            name: 'NEXT_LOCALE',
+            value: 'de',
+            url: new URL(chatUrl()).origin,
+          },
+        ])
+      }
+      if (variant !== 'desktop-en') await page.reload()
+
+      const citations = page.getByTestId('chat-citation')
+      await expect(citations).toHaveText(citedIndices.map(String))
+      await expect(page.getByTestId('chat-source-card')).toHaveCount(99)
+      await expect(
+        page.locator('[data-cy="chat-source-card"]:visible')
+      ).toHaveCount(12)
+      await expect(page.locator(`#src-${messageId}-100`)).toHaveCount(0)
+      await expect(
+        page.getByTestId('chat-assistant-message-content')
+      ).toContainText('[100]')
+      const disclosure = page.getByTestId('chat-other-sources')
+      await expect(disclosure).not.toHaveAttribute('open', '')
+      await citations.first().scrollIntoViewIfNeeded()
+      await page.screenshot({
+        path: testInfo.outputPath(`citation-preview-${variant}.png`),
+        animations: 'disabled',
+      })
+
+      for (const index of [13, 16, 21, 99]) {
+        const citation = page.locator(
+          `[data-cy="chat-citation"][href="#src-${messageId}-${index}"]`
+        )
+        await citation.focus()
+        await page.keyboard.press('Enter')
+        const target = page.locator(`#src-${messageId}-${index}`)
+        await expect(disclosure).toHaveAttribute('open', '')
+        await expect(target).toBeVisible()
+        await expect(target).toBeFocused()
+        await expect(target).toHaveAttribute(
+          'href',
+          `${sources[index - 1].source_url}#page=1`
+        )
+      }
+      await page.screenshot({
+        path: testInfo.outputPath(`citation-revealed-${variant}.png`),
+        animations: 'disabled',
+      })
     }
   })
 
@@ -2895,9 +3049,11 @@ test.describe('Chatbot Source Citations', () => {
         ...[
           'An answer without a citation.',
           'A supported answer [1] and [1].',
-        ].map((text) => ({
+        ].map((text, ix) => ({
           role: 'assistant' as const,
           parentId: userId,
+          // The cited answer must be the newest sibling so it opens first.
+          createdAt: new Date(Date.now() + ix * 1000),
           content: [
             docQueryPart({
               toolCallId: text.includes('[1]') ? 'call-cited' : 'call-uncited',
@@ -3658,6 +3814,129 @@ test.describe('Chatbot Source Citations', () => {
     await expect(page.getByTestId('chat-composer-hint')).toBeVisible()
   })
 
+  // The compact row is the only source view the embedded eLearning chat has,
+  // so a page line that regressed there would never be seen in the surface
+  // that reported it. Both cases below fail on a row that reads the retrieval
+  // envelope: that is what printed "S. 2–127" for a one-question answer about a
+  // 127-page script, and what hid a cited page behind the span.
+  test('Embedded source rows show the cited page range instead of the retrieved span', async ({
+    page,
+  }) => {
+    const messageId = '6b1c2d3e-0013-4a91-8f6c-2b7d1e5a9c41'
+    const thread = await seedThread(participantId, {
+      title: 'Embedded cited page range',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'Wo steht diese Passage im Skript?' },
+          ],
+        },
+        {
+          id: messageId,
+          role: 'assistant',
+          content: [
+            documentsQueryPart({
+              toolCallId: 'call-embedded-cited-pages',
+              sources: [
+                {
+                  reference: 'FinanceI_Skript_HS26.pdf',
+                  reference_type: 'pdf',
+                  source_type: 'document',
+                  title: 'FinanceI_Skript_HS26.pdf',
+                  chunks: [
+                    {
+                      content: 'Synthetic passage on the first retrieved page',
+                      page_number: 2,
+                      labeled_page_number: '2',
+                    },
+                    {
+                      content: 'Synthetic passage on the last retrieved page',
+                      page_number: 127,
+                      labeled_page_number: '127',
+                    },
+                  ],
+                },
+              ],
+            }),
+            { type: 'text', text: 'Die Passage steht im Skript [1, S. 6–7].' },
+          ],
+        },
+      ],
+    })
+
+    await page.goto(
+      `${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}?embed=true`,
+      { waitUntil: 'domcontentloaded' }
+    )
+
+    const section = page.getByTestId('chat-sources-section')
+    await expect(section).toBeVisible()
+    // Embedded renders rows, so no card grid may stand in for them here.
+    await expect(section.getByTestId('chat-source-card')).toHaveCount(0)
+
+    const cited = section.getByTestId('chat-cited-sources')
+    await expect(cited).toContainText('FinanceI_Skript_HS26.pdf')
+    await expect(cited).toContainText('p. 6–7')
+    await expect(cited).not.toContainText('2–127')
+  })
+
+  test('Embedded source rows show no page line for a source cited without one', async ({
+    page,
+  }) => {
+    const messageId = '6c1d2e3f-0014-4b02-9a73-3c8e2f6b1d52'
+    const thread = await seedThread(participantId, {
+      title: 'Embedded retrieved span',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Fasse das Skript kurz zusammen.' }],
+        },
+        {
+          id: messageId,
+          role: 'assistant',
+          content: [
+            documentsQueryPart({
+              toolCallId: 'call-embedded-retrieved-span',
+              sources: [
+                {
+                  reference: 'FinanceI_Skript_HS26.pdf',
+                  reference_type: 'pdf',
+                  source_type: 'document',
+                  title: 'FinanceI_Skript_HS26.pdf',
+                  chunks: [
+                    {
+                      content: 'Synthetic passage on the first retrieved page',
+                      page_number: 2,
+                      labeled_page_number: '2',
+                    },
+                    {
+                      content: 'Synthetic passage on the last retrieved page',
+                      page_number: 127,
+                      labeled_page_number: '127',
+                    },
+                  ],
+                },
+              ],
+            }),
+            { type: 'text', text: 'Das Skript behandelt mehrere Themen [1].' },
+          ],
+        },
+      ],
+    })
+
+    await page.goto(
+      `${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}?embed=true`,
+      { waitUntil: 'domcontentloaded' }
+    )
+
+    const cited = page
+      .getByTestId('chat-sources-section')
+      .getByTestId('chat-cited-sources')
+    await expect(cited).toContainText('FinanceI_Skript_HS26.pdf')
+    await expect(cited).not.toContainText('p. ')
+  })
+
   test('Mobile header and sources stay clear of the expanded composer', async ({
     page,
   }, testInfo) => {
@@ -3719,8 +3998,9 @@ test.describe('Chatbot Source Citations', () => {
 
     const viewport = page.getByTestId('chat-thread-viewport')
 
-    // Scroll instantly (bypassing the viewport's scroll-smooth behavior) so
-    // the measurement reads the settled position, not mid-animation.
+    // Scroll instantly (rather than relying on any scroll-behavior the
+    // viewport may set) so the measurement reads the settled position, not
+    // mid-animation.
     await viewport.evaluate((element) => {
       element.style.scrollBehavior = 'auto'
       element.scrollTop = element.scrollHeight

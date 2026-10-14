@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   withChatbotAuth: vi.fn(),
@@ -131,19 +131,24 @@ function createChatbot(overrides: Record<string, unknown> = {}) {
   return {
     id: 'chatbot-1',
     ownerId: 'owner-1',
-    owner: { aiFeaturesEnabled: true },
+    owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: 'cost-center-1' },
     course: { displayName: 'Informatik und Wirtschaft' },
     allowedModelIds: ['gpt-4.1'],
     modelSelection: true,
     systemPrompts: { tutor: { prompt: 'Use course material.' } },
     knowledgeBases: [],
     standardModeConfig: null,
+    customModeConfig: null,
     mcpConfigurations: [createMcpConfiguration()],
     ...overrides,
   }
 }
 
 describe('required MCP chat preflight', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.withChatbotAuth.mockResolvedValue({
@@ -304,7 +309,7 @@ describe('required MCP chat preflight', () => {
     mocks.findUnique.mockResolvedValueOnce({
       id: 'chatbot-1',
       ownerId: 'owner-1',
-      owner: { aiFeaturesEnabled: true },
+      owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: 'cost-center-1' },
       allowedModelIds: ['gpt-4.1'],
       modelSelection: true,
       systemPrompts: { tutor: { prompt: 'Use course material.' } },
@@ -377,6 +382,9 @@ describe('required MCP chat preflight', () => {
   })
 
   test('selects and passes the course display name to prompt compilation', async () => {
+    // The practice tool is registered by deployment capability, so the test
+    // pins a practice MCP URL instead of inheriting it from the environment.
+    vi.stubEnv('MCP_STUDENT_URL', 'http://mcp-student.test/mcp')
     const displayName = 'Informatik und Wirtschaft'
     mocks.findUnique.mockResolvedValueOnce(
       createChatbot({ course: { displayName } })
@@ -398,7 +406,9 @@ describe('required MCP chat preflight', () => {
     expect(mocks.findUnique).toHaveBeenCalledWith({
       where: { id: 'chatbot-1' },
       include: {
-        owner: { select: { aiFeaturesEnabled: true } },
+        owner: {
+          select: { aiFeaturesEnabled: true, aiChatbotCostCenter: true },
+        },
         course: { select: { displayName: true } },
         mcpConfigurations: {
           include: { mcpServer: true },
@@ -411,7 +421,8 @@ describe('required MCP chat preflight', () => {
       'tutor',
       {
         courseDisplayName: displayName,
-        toolNames: [],
+        customModeConfig: null,
+        toolNames: ['start_student_practice_quiz'],
         standardModeConfig: null,
       }
     )
@@ -595,6 +606,16 @@ describe('required MCP chat preflight', () => {
   test('preserves the exact key for a mixed-case custom mode', async () => {
     mocks.findUnique.mockResolvedValueOnce(
       createChatbot({
+        customModeConfig: {
+          modes: [
+            {
+              key: 'QuickCheck',
+              name: 'QuickCheck',
+              description: 'Asks one brief diagnostic question.',
+              personaText: 'Ask one brief question.',
+            },
+          ],
+        },
         systemPrompts: {
           QuickCheck: { prompt: 'Ask one brief question.' },
         },
@@ -628,5 +649,34 @@ describe('required MCP chat preflight', () => {
         sessionId: 'thread-1',
       }
     )
+  })
+
+  test('rejects a stored mode key that the chatbot has not approved', async () => {
+    mocks.findUnique.mockResolvedValueOnce(
+      createChatbot({
+        systemPrompts: {
+          tutor: { prompt: 'Use course material.' },
+          QuickCheck: { prompt: 'Ask one brief question.' },
+        },
+        mcpConfigurations: [
+          createMcpConfiguration({
+            allowedTools: ['course_search'],
+            chatMode: 'QuickCheck',
+            parameters: { required: true, toolAlias: 'doc_query' },
+            mcpServer: createMcpServer({ name: 'Course' }),
+          }),
+        ],
+      })
+    )
+
+    const response = await POST(createRequest('QuickCheck'), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Unsupported chat mode: QuickCheck',
+    })
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
   })
 })

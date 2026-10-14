@@ -20,6 +20,7 @@ import { ManageAssistantWidget } from '../components/assistant/ManageAssistantWi
 import { CourseDuplicationProvider } from '../components/courses/CourseDuplicationStatusProvider'
 import ManageFeatureFlagProvider from '../components/featureFlags/ManageFeatureFlagProvider'
 import { GenerationStatusProvider } from '../components/generation/GenerationStatusProvider'
+import 'katex/dist/katex.min.css'
 import '../globals.css'
 import { useApollo } from '../lib/apollo'
 import { isPublicLiveQuizEvaluationRoute } from '../lib/isPublicLiveQuizEvaluationRoute'

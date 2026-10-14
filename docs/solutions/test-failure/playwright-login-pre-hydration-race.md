@@ -67,9 +67,11 @@ missing interactivity; the helper needs a hydration gate, not a longer deadline.
 The LTI cookie repair in
 `docs/solutions/integration/stale-lti-cookie-login-loop.md` is unrelated: no
 request is ever sent, so the cookie path is not involved. Two other CI failures
-that were initially grouped with this one are different defects and were not
-fixed here: a chat viewport scroll assertion in `Y-chat.spec.ts` and a
-disabled-state assertion in `V-template.spec.ts`.
+that were initially grouped with this one are different defects and were fixed
+separately: the chat viewport scroll assertion in `Y-chat.spec.ts` (see
+`./chat-viewport-scroll-smooth-restarts-streaming-autoscroll.md`) and the
+disabled-state assertion in `V-template.spec.ts`, where the gamified-prompt
+helper returned early and skipped its own wait for the participant answer form.
 
 ## Solution and prevention
 

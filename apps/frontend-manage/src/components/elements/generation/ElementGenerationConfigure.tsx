@@ -3,9 +3,8 @@ import {
   ElementGenerationBloomLevel,
   ElementGenerationCapabilitiesDocument,
   ElementGenerationDifficultyPreset,
-  ElementGenerationLanguage,
   type ElementGenerationSourceScopeInput,
-  ElementGenerationSourcesDocument,
+  ElementGenerationSourcesWithLanguageDocument,
   GeneratableElementType,
   StartElementGenerationDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -25,10 +24,11 @@ type SourceScopeValue = ElementGenerationSourceScopeInput & {
   pageToText: string
 }
 
-const DEFAULT_BLOOM_LEVELS = [
-  ElementGenerationBloomLevel.Understand,
-  ElementGenerationBloomLevel.Apply,
-]
+// Klicker cannot tell before dispatch whether the selected material can ground a
+// higher cognitive level: the worker raises its evidence bar per level and only
+// then finds out whether a script anchor exists. The form therefore opens without
+// pre-selecting Apply, so the default request is one thin material can satisfy.
+const DEFAULT_BLOOM_LEVELS = [ElementGenerationBloomLevel.Understand]
 const DIFFICULTY_LEVELS = [
   ElementGenerationDifficultyPreset.D1,
   ElementGenerationDifficultyPreset.D2,
@@ -91,14 +91,11 @@ export default function ElementGenerationConfigure({
   const t = useTranslations('manage.elementGeneration')
   const format = useFormatter()
   const capabilitiesQuery = useQuery(ElementGenerationCapabilitiesDocument)
-  const sourcesQuery = useQuery(ElementGenerationSourcesDocument)
+  const sourcesQuery = useQuery(ElementGenerationSourcesWithLanguageDocument)
   const [startGeneration] = useMutation(StartElementGenerationDocument)
   const [graphBuildId, setGraphBuildId] = useState('')
   const [elementType, setElementType] = useState<GeneratableElementType>(
     GeneratableElementType.Sc
-  )
-  const [language, setLanguage] = useState<ElementGenerationLanguage>(
-    ElementGenerationLanguage.De
   )
   const [elementCount, setElementCount] = useState(6)
   const [difficulty, setDifficulty] =
@@ -111,6 +108,7 @@ export default function ElementGenerationConfigure({
   const [objectives, setObjectives] = useState<
     Array<{ id: string; text: string }>
   >([])
+  const [focusTopic, setFocusTopic] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [validationError, setValidationError] = useState<string>()
   const [submissionError, setSubmissionError] = useState<string>()
@@ -133,6 +131,7 @@ export default function ElementGenerationConfigure({
   const selectedSource = sources.find(
     (source) => source.graphBuildId === graphBuildId
   )
+  const language = selectedSource?.language
   const selectedCapability = capabilities?.typeCapabilities.find(
     (capability) => capability.elementType === elementType
   )
@@ -215,7 +214,12 @@ export default function ElementGenerationConfigure({
     setValidationError(undefined)
     setSubmissionError(undefined)
 
-    if (!graphBuildId || !selectedCapability) {
+    if (
+      !selectedSource ||
+      !language ||
+      !capabilities?.languages.includes(language) ||
+      !selectedCapability
+    ) {
       setValidationError(t('validation.sourceRequired'))
       return
     }
@@ -275,6 +279,9 @@ export default function ElementGenerationConfigure({
             })),
           }
         : {}),
+      ...(selectedCapability.supportsFocusTopic && focusTopic.trim()
+        ? { focusTopic: focusTopic.trim() }
+        : {}),
       objectives: objectives
         .map(({ text }) => text.trim())
         .filter(Boolean)
@@ -295,15 +302,17 @@ export default function ElementGenerationConfigure({
           input: { ...input, idempotencyKey: idempotencyRef.current.key },
         },
       })
-      const buildId = result.data?.startElementGeneration.id
-      if (!buildId) throw new Error('Element generation did not return a build')
+      const build = result.data?.startElementGeneration
+      if (!build?.id)
+        throw new Error('Element generation did not return a build')
+      const buildId = build.id
       window.dispatchEvent(
         new CustomEvent(GENERATION_STARTED_EVENT, {
           detail: {
             kind: 'element',
             id: buildId,
             label: t(`elementTypes.${elementType}.label`),
-            startedAt: Date.now(),
+            startedAt: new Date(build.createdAt).getTime(),
           },
         })
       )
@@ -313,6 +322,12 @@ export default function ElementGenerationConfigure({
       setSubmissionError(
         code ? t('errors.withCode', { code }) : t('errors.start')
       )
+      // A rejected configuration can mean this form's capabilities are stale,
+      // because the rollout may have moved since the page was opened. Refresh
+      // them so the next attempt offers only what the deployment admits now.
+      if (code === 'CONFIGURATION_INVALID') {
+        void capabilitiesQuery.refetch()
+      }
     } finally {
       setSubmitting(false)
     }
@@ -595,18 +610,18 @@ export default function ElementGenerationConfigure({
               <label className="text-sm font-semibold text-slate-700">
                 {t('configure.language')}
                 <select
-                  value={language}
-                  onChange={(event) =>
-                    setLanguage(event.target.value as ElementGenerationLanguage)
-                  }
+                  value={language ?? ''}
+                  disabled
                   className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 font-normal"
                   data-cy="element-generation-language"
                 >
-                  {capabilities.languages.map((value) => (
-                    <option key={value} value={value}>
-                      {t(`language.${value}`)}
-                    </option>
-                  ))}
+                  {capabilities.languages
+                    .filter((value) => value === language)
+                    .map((value) => (
+                      <option key={value} value={value}>
+                        {t(`language.${value}`)}
+                      </option>
+                    ))}
                 </select>
               </label>
               {selectedCapability?.supportsDifficulty ? (
@@ -645,6 +660,23 @@ export default function ElementGenerationConfigure({
                     ))}
                   </div>
                 </fieldset>
+              ) : null}
+              {selectedCapability?.supportsFocusTopic ? (
+                <label className="text-sm font-semibold text-slate-700 md:col-span-2">
+                  {t('configure.focusTopic')}
+                  <input
+                    type="text"
+                    value={focusTopic}
+                    maxLength={300}
+                    placeholder={t('configure.focusTopicPlaceholder')}
+                    onChange={(event) => setFocusTopic(event.target.value)}
+                    className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 font-normal"
+                    data-cy="element-generation-focus-topic"
+                  />
+                  <span className="mt-1 block text-xs font-normal text-slate-500">
+                    {t('configure.focusTopicHelp')}
+                  </span>
+                </label>
               ) : null}
             </div>
 

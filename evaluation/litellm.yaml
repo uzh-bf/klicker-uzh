@@ -1,0 +1,19 @@
+litellm_settings:
+  drop_params: true
+
+general_settings:
+  # Development-only key for the loopback evaluation judge. Do not reuse it
+  # outside this disposable local service.
+  master_key: sk-klicker-eval-local
+  disable_spend_logs: true
+
+model_list:
+  - model_name: klickeruzh/azure/gpt-5.6-luna-high
+    litellm_params:
+      model: openai/gpt-5.6-luna
+      api_base: os.environ/AZURE_OPENAI_BASE_URL
+      api_key: os.environ/AZURE_OPENAI_API_KEY
+      reasoning_effort: high
+      timeout: 120
+
+request_timeout: 120

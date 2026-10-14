@@ -5,6 +5,7 @@ import {
   type DocQueryMcpClient,
   type DocQueryMcpClientOptions,
   isDocQuerySessionNotFound,
+  resolveDocQueryScopedRoute,
   signDocQueryScopeToken,
 } from '@klicker-uzh/doc-query-client'
 import { safeDecrypt } from '@klicker-uzh/util'
@@ -13,13 +14,22 @@ export const KB_SOURCES_TOOL_NAME = 'doc_query_sources'
 export const KB_SOURCES_REQUEST_TIMEOUT_MS = 30_000
 
 export interface KbMcpServerEndpoint {
+  id: string
   url: string | null
   authType: string
   authSecret?: string | null
+  isActive?: boolean
 }
 
 export interface KbImportedSourceItem {
   id: string
+  /**
+   * Provenance recorded by the writing lane: the app-managed ingestion API
+   * stores the KB resource id here, while operator imports either store their
+   * own marker or nothing at all. Kept internal; the resolver decides the
+   * user-facing origin by matching it against the knowledge base resources.
+   */
+  externalResourceId: string | null
   title: string
   sourceType: string | null
   sourceUrl: string | null
@@ -130,6 +140,7 @@ function parseInventory(payload: unknown): KbImportedSourceInventory {
       id: createHash('sha256')
         .update(`${identityField}\n${identityValue}`)
         .digest('hex'),
+      externalResourceId: toNonEmptyString(source.external_resource_id),
       title: toNonEmptyString(source.title) ?? identityValue,
       sourceType: toNonEmptyString(source.source_type),
       sourceUrl: toNonEmptyString(source.source_url),
@@ -179,20 +190,37 @@ export async function fetchKbSourceInventory(
   if (!serverUrl) {
     throw new DocQueryInventoryError('KB MCP server has no URL')
   }
-  assertDocQueryTransportSecurity(serverUrl)
 
-  const scopeToken = await signScopeToken({ kbIds: [kbId] })
-  const authorization =
-    server.authType === 'bearer' && server.authSecret
-      ? decryptSecret(server.authSecret)
-      : undefined
+  // All three deployment variables absent keeps the stored transport bearer;
+  // a bound scoped route mints a fresh scope token per HTTP request and never
+  // reads the stored credential, so a database URL or credential edit cannot
+  // redirect or weaken the inventory call.
+  const scopedTarget = resolveDocQueryScopedRoute(server)
+  assertDocQueryTransportSecurity(scopedTarget?.href ?? serverUrl)
+
+  let clientOptions: DocQueryMcpClientOptions
+  if (scopedTarget) {
+    clientOptions = {
+      url: scopedTarget.href,
+      scoped: {
+        target: scopedTarget,
+        kbIds: [kbId],
+        signToken: signScopeToken,
+      },
+    }
+  } else {
+    clientOptions = {
+      url: serverUrl,
+      authorization:
+        server.authType === 'bearer' && server.authSecret
+          ? decryptSecret(server.authSecret)
+          : undefined,
+      scopeToken: await signScopeToken({ kbIds: [kbId] }),
+    }
+  }
 
   const callOnce = async (): Promise<KbImportedSourceInventory> => {
-    const handle = await createClient({
-      url: serverUrl,
-      authorization,
-      scopeToken,
-    })
+    const handle = await createClient(clientOptions)
     try {
       const result = await handle.client.callTool(
         {

@@ -5,12 +5,19 @@ on:
     branches: ['v3', 'v3*']
   pull_request:
     branches: ['v3', 'v3*']
-    # "edited" re-evaluates the internal selector on a base retarget.
-    types: [opened, synchronize, reopened, edited]
+    # No "edited": a title or body edit never changes the tested tree, and a
+    # base retarget is revalidated by the restack push or a close and reopen.
+    types: [opened, synchronize, reopened]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
+  # The selector reads this workflow's prior required-status result for the head
+  # to decide whether a metadata-only edit may skip the suite.
+  checks: read
 
 jobs:
   filter:
@@ -25,6 +32,7 @@ jobs:
         uses: ./.github/actions/changed-paths
         with:
           pattern: '^(\.devcontainer/disposable-test-init\.sql$|\.github/scripts/olat-runner\.test\.cjs$|apps/olat-api/|packages/prisma/|packages/grading/|packages/util/|package\.json$|pnpm-lock\.yaml$|tsconfig\.json$|\.github/workflows/test-olat-api\.yml$|\.github/actions/changed-paths/|\.github/scripts/required-ci-status\.cjs$)'
+          prior-check-name: test-olat-api-status
 
   test-olat-api:
     needs: filter

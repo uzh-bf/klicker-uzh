@@ -33,6 +33,10 @@ export type QuestionWorkflowStartPayload = {
     blob_prefix: string
   }
   language: 'de' | 'en'
+  // Opt-in capability for the partial-result worker release. The key is
+  // omitted entirely while the rollout gate is closed, so the start-manifest
+  // hash of every legacy build stays byte-identical.
+  allow_partial_results?: boolean
 }
 
 export type QuestionWorkflowReviewEvent = {

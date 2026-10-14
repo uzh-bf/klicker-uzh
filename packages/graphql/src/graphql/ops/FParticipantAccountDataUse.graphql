@@ -1,0 +1,11 @@
+fragment ParticipantAccountDataUseData on ParticipantAccountDataUse {
+  researchConsent
+  learningAnalyticsConsent
+  researchChoiceRecorded
+  learningAnalyticsChoiceRecorded
+  dataUseRevision
+  dataUseAcknowledgedAt
+  dataUseAcknowledgedVersion
+  currentDisclosureVersion
+  isComplete
+}

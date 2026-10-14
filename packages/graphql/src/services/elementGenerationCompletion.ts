@@ -1,8 +1,10 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
+  ElementGenerationSlotFailure,
   GeneratedFlashcard,
   GeneratedQuestionWithProvenance,
   QuestionGenerationArtifactRef,
+  QuestionGenerationPlanSummary,
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
 import { normalizeGeneratedFlashcardEditable } from './flashcardGenerationDrafts.js'
@@ -24,6 +26,15 @@ type QuestionElementGenerationCompletionInput = {
   buildId: string
   leaseOwner: string
   questions: GeneratedQuestionWithProvenance[]
+  // A partial run delivers the passing subset of the bank and settles as
+  // INCOMPLETE, which is the reviewable terminal state the flashcard
+  // incomplete-publication flow also uses. A strict run settles as COMPLETED.
+  resultStatus: 'completed' | 'incomplete'
+  unresolvedElementCount?: number
+  // The per-slot reasons of a partial run. They are persisted with the build
+  // summary so the reviewing client can serve the attention cards without
+  // downloading the result manifest again.
+  slotFailures?: ElementGenerationSlotFailure[]
   resultManifestArtifact: QuestionGenerationArtifactRef
   finalBankArtifact: QuestionGenerationArtifactRef
   questionProvenanceIndexArtifact: QuestionGenerationArtifactRef | null
@@ -70,7 +81,7 @@ export async function completeElementGeneration(
               status: { in: FLASHCARD_COMPLETION_STATUSES },
               syncLeaseOwner: input.leaseOwner,
             },
-      select: { elementType: true },
+      select: { elementType: true, planSummary: true },
     })
     if (!build) {
       throw questionGenerationServiceError(
@@ -95,6 +106,20 @@ export async function completeElementGeneration(
     const completion =
       input.kind === 'questions'
         ? {
+            // planSummary is the schema-less build-summary JSON. A partial run
+            // stores its per-slot attention cards alongside the reviewed Plan
+            // so the build query can serve them without re-reading the result
+            // manifest; a strict run leaves the summary untouched.
+            summaryData:
+              input.slotFailures && input.slotFailures.length > 0
+                ? {
+                    planSummary: {
+                      ...((build.planSummary ??
+                        {}) as QuestionGenerationPlanSummary),
+                      slotFailures: input.slotFailures,
+                    },
+                  }
+                : {},
             draftData: input.questions.map((question, order) => {
               const { provenance, ...original } = question
               return {
@@ -138,10 +163,15 @@ export async function completeElementGeneration(
               provenanceIndexArtifact:
                 input.questionProvenanceIndexArtifact ?? DB.Prisma.DbNull,
               generatedElementCount: input.questions.length,
+              unresolvedElementCount: input.unresolvedElementCount ?? 0,
             },
-            terminalStatus: DB.ElementGenerationBuildStatus.COMPLETED,
+            terminalStatus:
+              input.resultStatus === 'incomplete'
+                ? DB.ElementGenerationBuildStatus.INCOMPLETE
+                : DB.ElementGenerationBuildStatus.COMPLETED,
           }
         : {
+            summaryData: {},
             draftData: input.cards.map((card, order) => ({
               buildId: input.buildId,
               sourceElementId: card.sourceFlashcardId,
@@ -197,6 +227,7 @@ export async function completeElementGeneration(
     const completed = await transaction.elementGenerationBuild.updateMany({
       where: completion.updateWhere,
       data: {
+        ...completion.summaryData,
         ...completion.updateData,
         status: completion.terminalStatus,
         stage:

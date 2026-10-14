@@ -1,5 +1,5 @@
 // Shared, dependency-free contract for the always-reporting required status
-// jobs. The unit, OLAT, translation, and GraphQL reporters use the same
+// jobs. The unit, OLAT, translation, GraphQL, and codebase reporters use the same
 // validated selection/result decision plus the same machine-readable evidence
 // artifact, so a required context can never pass on missing selection data, an
 // unexpected skip, or a missing selection.

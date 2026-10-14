@@ -10,6 +10,38 @@ export type KBGraphQuotaConfiguration = {
   semesterQuotaMinorUnits: number
 }
 
+export type KBGraphQuotaLimitResolution = {
+  limitMinorUnits: number
+  source: 'configured' | 'granted'
+  configuredBelowGranted: boolean
+}
+
+// The configured semester quota may be raised without touching existing ledger
+// rows: a configured value at or above the granted row limit becomes the
+// effective limit. A configured value below the granted limit never shrinks a
+// quota that was already granted; lowering it is a deliberate administrative
+// change to the row itself.
+export function resolveKBGraphQuotaLimit(
+  grantedLimitMinorUnits: number,
+  configuredLimitMinorUnits: number | null
+): KBGraphQuotaLimitResolution {
+  if (
+    configuredLimitMinorUnits !== null &&
+    configuredLimitMinorUnits >= grantedLimitMinorUnits
+  ) {
+    return {
+      limitMinorUnits: configuredLimitMinorUnits,
+      source: 'configured',
+      configuredBelowGranted: false,
+    }
+  }
+  return {
+    limitMinorUnits: grantedLimitMinorUnits,
+    source: 'granted',
+    configuredBelowGranted: configuredLimitMinorUnits !== null,
+  }
+}
+
 export type LockedKBGraphQuota = {
   id: string
   ownerId: string
@@ -73,15 +105,52 @@ export async function ensureLockedKBGraphQuota(
   if (
     locked.ownerId !== ownerId ||
     locked.semesterKey !== config.semesterKey ||
-    locked.currency !== config.currency ||
-    locked.limitMinorUnits !== config.semesterQuotaMinorUnits
+    locked.currency !== config.currency
   ) {
     throw new GraphQLError(
       'KB graph quota configuration changed mid-semester',
       { extensions: { code: 'KB_GRAPH_QUOTA_CONFIGURATION_CHANGED' } }
     )
   }
-  return locked
+
+  const resolution = resolveKBGraphQuotaLimit(
+    locked.limitMinorUnits,
+    config.semesterQuotaMinorUnits
+  )
+  if (resolution.limitMinorUnits > locked.limitMinorUnits) {
+    // The row is already locked FOR UPDATE, so admissions are serialized. The
+    // strictly-lower guard additionally keeps the write monotonic: a stale or
+    // repeated raise matches no row and can never reduce a granted limit.
+    const raised = await prisma.kBGraphQuota.updateMany({
+      where: {
+        id: locked.id,
+        limitMinorUnits: { lt: resolution.limitMinorUnits },
+      },
+      data: { limitMinorUnits: resolution.limitMinorUnits },
+    })
+    if (raised.count !== 1) {
+      throw new Error('KB graph quota limit could not be raised')
+    }
+    console.info('KB graph quota limit raised to the configured value', {
+      event: 'kb_graph_quota_limit_raised',
+      quotaId: locked.id,
+      semesterKey: locked.semesterKey,
+      previousLimitMinorUnits: locked.limitMinorUnits,
+      limitMinorUnits: resolution.limitMinorUnits,
+    })
+  } else if (resolution.configuredBelowGranted) {
+    console.warn(
+      'KB graph quota configuration is below the granted limit; keeping the granted limit',
+      {
+        event: 'kb_graph_quota_limit_lowering_ignored',
+        quotaId: locked.id,
+        semesterKey: locked.semesterKey,
+        grantedLimitMinorUnits: locked.limitMinorUnits,
+        configuredLimitMinorUnits: config.semesterQuotaMinorUnits,
+      }
+    )
+  }
+  return { ...locked, limitMinorUnits: resolution.limitMinorUnits }
 }
 
 export async function reserveKBGraphQuotaAmount(

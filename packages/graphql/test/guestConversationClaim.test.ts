@@ -1,4 +1,7 @@
-import { prisma as prismaClient } from '@klicker-uzh/prisma'
+import {
+  createDisposableTestPrismaClient,
+  requireDisposableDatabase,
+} from '@klicker-uzh/prisma'
 import { PrismaClient } from '@klicker-uzh/prisma/client'
 import { deriveGuestSsoId, signJWT } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
@@ -62,6 +65,8 @@ function createCtx(): Context {
 }
 
 async function cleanupTestData() {
+  if (!prisma) return
+  await requireDisposableDatabase(prisma)
   const participants = await prisma.participant.findMany({
     where: {
       OR: [
@@ -208,8 +213,7 @@ describe('guest chat conversation claim', () => {
     process.env.CHAT_GUEST_SEED =
       process.env.CHAT_GUEST_SEED ?? 'test-chat-guest-seed'
 
-    prisma = prismaClient
-    await prisma.$connect()
+    prisma = await createDisposableTestPrismaClient(process.env.DATABASE_URL!)
     await cleanupTestData()
   }, 60000)
 
@@ -220,7 +224,7 @@ describe('guest chat conversation claim', () => {
 
   afterAll(async () => {
     await cleanupTestData()
-    await prisma.$disconnect()
+    await prisma?.$disconnect()
   }, 60000)
 
   it('moves a guest persona threads onto the account on a verified launch', async () => {
@@ -489,6 +493,58 @@ describe('guest chat conversation claim', () => {
     expect(owned.map((t) => t.id).sort()).toEqual(
       [guestThread.id, accountThread.id].sort()
     )
+  })
+
+  it('rolls back transferred threads when the transaction fails after reassignment', async () => {
+    const { user, course } = await createTestCourse('rollback')
+    const chatbot = await createChatbot(user.id, course.id)
+    const sub = ssoIdFor('rollback-sub')
+    const persona = await createGuestPersona({
+      ltiSub: sub,
+      courseId: course.id,
+      label: 'rollback',
+    })
+    await prisma.chatThread.createMany({
+      data: Array.from({ length: 3 }, () => ({
+        participantId: persona.id,
+        chatbotId: chatbot.id,
+      })),
+    })
+    const account = await createAccountForSubject({
+      ltiSub: sub,
+      courseId: course.id,
+      label: 'rollback',
+    })
+    let reassigned = 0
+    const ctx = createCtx()
+    ctx.prisma = {
+      ...prisma,
+      $transaction: (claim: (tx: any) => Promise<unknown>) =>
+        prisma.$transaction((tx) =>
+          claim({
+            ...tx,
+            chatThread: {
+              ...tx.chatThread,
+              updateMany: async (args: any) => {
+                const moved = await tx.chatThread.updateMany(args)
+                reassigned = moved.count
+                throw new Error('synthetic failure after reassignment')
+              },
+            },
+          })
+        ),
+    } as any
+
+    await expect(
+      claimGuestChatThreads({ ltiSub: sub, participantId: account.id }, ctx)
+    ).rejects.toThrow('synthetic failure after reassignment')
+    expect(reassigned).toBe(3)
+    expect(
+      await prisma.chatThread.count({ where: { participantId: persona.id } })
+    ).toBe(3)
+    expect(
+      await prisma.chatThread.count({ where: { participantId: account.id } })
+    ).toBe(0)
   })
 
   it('still returns ACCOUNT and issues a token when the claim throws', async () => {

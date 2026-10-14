@@ -1,6 +1,9 @@
 import { prisma as prismaClient } from '@klicker-uzh/prisma'
 import { CourseAuthType, PrismaClient } from '@klicker-uzh/prisma/client'
-import { signJWT } from '@klicker-uzh/util'
+import {
+  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  signJWT,
+} from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import { EventEmitter } from 'events'
 import {
@@ -25,6 +28,15 @@ const TEST_PREFIX = `codex-lti-${Date.now()}`
 const emailFor = (label: string) => `${TEST_PREFIX}-${label}@example.com`
 const usernameFor = (label: string) => `${TEST_PREFIX}-${label}`.slice(0, 48)
 const ssoIdFor = (label: string) => `${TEST_PREFIX}-${label}`
+
+// New accounts are created with the current disclosure version; a refusal of
+// both optional purposes is the valid completed state for this boundary test.
+const validDataUse = {
+  disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  researchConsent: false,
+  learningAnalyticsConsent: false,
+  acknowledged: true,
+}
 
 let prisma: PrismaClient
 
@@ -312,6 +324,7 @@ describe('LTI participant linking and creation', () => {
         password: 'password123',
         isProfilePublic: true,
         signedLtiData,
+        dataUse: validDataUse,
       },
       createCtx()
     )
@@ -451,6 +464,7 @@ describe('LTI participant linking and creation', () => {
         username: usernameFor('cross-mode-new'),
         password: 'password123',
         isProfilePublic: true,
+        dataUse: validDataUse,
       },
       createCtx()
     )

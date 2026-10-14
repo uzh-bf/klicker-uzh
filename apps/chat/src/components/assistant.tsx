@@ -19,6 +19,7 @@ import { useEmbedded } from '../hooks/useEmbedded'
 import { useEmbeddedChatContext } from '../hooks/useEmbeddedChatContext'
 import { usePwaEmbedTokenBootstrap } from '../hooks/usePwaEmbedTokenBootstrap'
 import { authedFetch } from '../lib/client/authedFetch'
+import type { ChatModeOptions } from '../lib/config/modes'
 import { getKlickerChatContextLabel } from '../services/chatContext'
 import { useChatContextStore } from '../stores/chatContextStore'
 import { useChatStore } from '../stores/chatStore'
@@ -26,11 +27,7 @@ import { AppSidebar } from './app-sidebar'
 import { ChatUiProvider, useChatUi } from './chat-ui-context'
 import { MobileCreditsBar } from './credits-footer'
 import { DisclaimerModal } from './disclaimer-modal'
-import {
-  EmbeddedCreditsBar,
-  EmbeddedNewConversation,
-  EmbeddedSettings,
-} from './embedded-settings'
+import { EmbeddedToolbar } from './embedded-settings'
 import { ChatGraphModeSwitch } from './knowledge-graph/ChatGraphModeSwitch'
 import {
   ChatKnowledgeGraphPanel,
@@ -60,7 +57,7 @@ interface DisclaimerStatus {
 
 interface AssistantProps {
   readonly chatbot: { id: string; name: string; avatar?: string }
-  readonly initialModeOptions: Record<string, string>
+  readonly initialModeOptions: ChatModeOptions
   readonly initialModeOptionsAreFallback?: boolean
   readonly knowledgeGraphVisible: boolean
 }
@@ -512,7 +509,7 @@ function SidebarMain({
   chatbot: { id: string; name: string; avatar?: string }
   graphPanel: ReturnType<typeof useChatGraphPanel>
   knowledgeGraphVisible: boolean
-  initialModeOptions: Record<string, string>
+  initialModeOptions: ChatModeOptions
   initialModeOptionsAreFallback: boolean
 }) {
   const t = useTranslations()
@@ -631,7 +628,7 @@ function AssistantLayout({
   knowledgeGraphVisible,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
-  initialModeOptions: Record<string, string>
+  initialModeOptions: ChatModeOptions
   initialModeOptionsAreFallback: boolean
   knowledgeGraphVisible: boolean
 }) {
@@ -665,10 +662,8 @@ function AssistantLayout({
 
   return (
     <div className="flex h-dvh w-full flex-col overflow-hidden">
-      <div className="bg-muted/50 flex shrink-0 items-center justify-between gap-3 border-b px-3 py-2">
-        <EmbeddedCreditsBar />
-        <EmbeddedSettings />
-        <EmbeddedNewConversation />
+      <div className="bg-muted/50 flex shrink-0 items-center border-b px-3 py-2">
+        <EmbeddedToolbar />
       </div>
       <main
         id="main-content"

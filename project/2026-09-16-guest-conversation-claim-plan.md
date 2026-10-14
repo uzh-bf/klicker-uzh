@@ -38,9 +38,11 @@ and thread suites green, browser proof of guest→account transition with histor
 visible in the account, and a reviewed draft PR into v3-ai. Deployment and
 production data changes are withheld.
 
-This is a direction-only plan. Approval covers the planning work and the plan
-artifact only. Implementation, task-branch commits and pushes, PR creation and
-any production effect each need their own explicit ruling.
+This is an approved executable batch. The user approved implementation and draft
+delivery on 2026-09-16, then authorized updating the existing PR against current
+v3-ai and completing its remaining reviews on 2026-10-14. Ordinary task-branch
+commits, non-force pushes, verification and review corrections are authorized.
+Merge, marking ready, deployment and production data changes remain withheld.
 
 ## Execution details
 
@@ -254,11 +256,11 @@ split; record the split honestly if the hook cannot run whole.
 
 ### Authority and pause conditions
 
-Authority (this plan): direction-only approval covers the planning work and
-this committed plan. Implementation slices, ordinary task-branch commits and
-pushes, draft PR delivery, and any production effect each require a further
-explicit user ruling. The plan records the expected delivery path so the user
-can approve it in one word later.
+Authority: the approved batch covers implementation, ordinary task-branch commits
+and non-force pushes, draft PR updates, verification and review corrections.
+Repository policy also authorizes the final AI review command after CI and
+ordinary feedback are settled. Merge, marking ready, deployment and production
+data changes require separate authority.
 
 Terminal (post-implementation approval): verified, reviewed draft PR into
 v3-ai; deployment and production data changes withheld.
@@ -299,7 +301,8 @@ secrets. Never print or commit secret values; query by key/status only.
 
 Plan constructed and grounded in this session (2026-09-16) by the main session
 with repository evidence verified at baseline c4f0ecde20. Product-primitive
-impact mapped with rs-product-primitives conventions. No implementation exists.
+impact mapped with rs-product-primitives conventions. Implementation had not yet
+started at that checkpoint.
 
 Plan-hardening completed 2026-09-16 in round 1 under a user-authorized
 native-model substitution. The configured planner child (gpt-6-astra, medium)
@@ -314,7 +317,8 @@ own-transaction placement (contract 1), byte-identical derivation invariant
 (contract 10), portfolio coexistence row, and the documented benign in-flight
 race (contract 4). Provenance is native-self-review, not an independent child;
 an implementation-time planner-child pass remains possible as a fresh round.
-Next action: user approval of this plan; implementation remains withheld.
+The user subsequently approved implementation; this planning checkpoint is
+historical.
 
 ### S1 implemented 2026-09-16 (commit b67b17c8e8)
 
@@ -373,3 +377,21 @@ deployment's environment. The chart's backend-graphql container currently reads
 only `secret-backend-graphql` plus GrowthBook; Chat receives the seed through
 the out-of-band `…-secret-chat`. Adding it to the backend secret is an
 infrastructure change and is withheld here.
+
+### Refresh and review completion 2026-10-14
+
+The user authorized bringing [PR #6097](https://github.com/uzh-bf/klicker-uzh/pull/6097)
+up to date with current `v3-ai` and completing the reviews before a merge decision.
+The existing branch and worktree are reused. Integration target:
+`be6ae67368b3249dc01c2284bd6a8d66812a062d`; reason: 314 upstream commits since the
+previous verified baseline, including account, runtime and review-workflow changes.
+The ordinary merge preserves both guest identity and participant data-use exports.
+
+Execution mode: standard; the current runtime identifies GPT-6 without an exact
+allowlisted model ID. Main owns integration and verification because they are on
+the critical path. Scoped simplification and risk review precede integrated final
+review. Previous planner self-review remains applicable to the unchanged design.
+
+Next: run focused account/guest tests and browser proof, finish the integration
+commit, publish the updated draft, resolve review findings and record CI and final
+AI review for the resulting head. The runtime will be stopped after verification.

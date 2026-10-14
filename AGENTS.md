@@ -9,12 +9,14 @@
 
 ## Stacked PRs
 
-- To bring `v3` back into `v3-ai` or a similar feature branch, use a normal merge commit on the receiving branch and a normal, non-force push to that branch. Do not open an integration PR or substitute selective cherry-picks for this branch synchronization. This convention applies to integrating `v3` into feature branches, not promoting feature work into `v3`; retain the applicable verification and merge/deployment authorization gates.
-- **Branch promotion chain**: `v3` -> `v3-ai` -> `v3-audit`. Never merge `v3` into `v3-audit` directly, and do not cherry-pick around a hop. `v3-audit` is the branch staging builds from, so every `v3-ai` commit it is meant to release has to arrive through a `v3-ai` -> `v3-audit` merge.
+- Use the maintained draft sync PRs for `v3` -> `v3-ai`, `v3-ai` -> `v3-audit`, and `v3-ai` -> `v3-adaptive-learning`. Merge these integrations with normal merge commits to preserve ancestry; a squashed sync fails the `sync-ancestry` check until the restore PR the guard opens is merged with a merge commit (see [Squashed sync guard](docs/ci-and-deployment.md#squashed-sync-guard)). Retain the applicable verification and merge/deployment authorization gates. Other feature-branch synchronization remains manual.
+- **Branch promotion chain**: `v3` -> `v3-ai`, which feeds both `v3-audit` and `v3-adaptive-learning`. Never merge `v3` into a branch below `v3-ai` directly, and do not cherry-pick around a hop. `STG_SOURCE_BRANCH` selects the branch staging builds from (currently `v3-adaptive-learning`), so every `v3-ai` commit it is meant to release has to arrive through a `v3-ai` -> source merge. When an approved change adds, renames, reorders, or retires an integration branch, agents must maintain the explicit sync pairs and their workflow triggers, tests, and documentation together; follow [Changing the sync chain](docs/ci-and-deployment.md#changing-the-sync-chain).
+- **Integration mechanics**: the `v3` and `v3-*` rulesets block deletion and force-push, and their required checks evaluate both pull requests and direct pushes. `v3-ai` and `v3-audit` change only through pull requests; admins may bypass required checks on pull requests. A non-fast-forward push is rejected when the branch has moved, so duplicate syncs cannot land.
+- **Sync routing**: automation creates drafts for those three pairs only, headed by bot-owned `sync/<source>-into-<target>-<sha10>` branches that follow the source. Never open a PR whose head is `v3`, `v3-ai`, `v3-audit`, or `v3-adaptive-learning`: "Update branch" on it merges the target back into the source. Maintainers control readiness, conflict resolution (on the sync branch), and merging. The `sync-ancestry` check fails every change to `v3-ai` while its head contains `v3-audit` or `v3-adaptive-learning` history; `v3-ai` history in `v3` is not checked. The staging promoter independently re-validates the exact head of the selected staging source before moving `stg-release`. See [Draft sync PR maintenance](docs/ci-and-deployment.md#draft-sync-pr-maintenance) for triggers and CI behavior.
 - GitHub stacked PRs are enabled for this repository. Always use `$stacked-change` and `$gh-stack` for larger features: substantial cross-layer or multi-concern work, changes with distinct reviewer audiences or runtime models, and existing large branches that need decomposition. Keep an ordinary single PR for small, cohesive changes only.
 - `v3-ai` is a long-lived consolidation branch that combines AI feature work for deployment to environments such as staging. Treat PRs targeting `v3-ai` as ordinary PRs into that branch. Never stack them with the separate eventual promotion PR from `v3-ai` into `v3`; that promotion can remain open or draft for an extended period.
 - This is a KlickerUZH repository capability, not a GitHub-wide assumption. Verify native stack support before using the workflow in another repository.
-- Final AI review is standing-authorized for all KlickerUZH PRs. Once exact-head CI and ordinary feedback are settled, agents may post `/final-review` for an unstacked PR or ordinary stack layer, and `/final-review-stack` only on the top PR of a verified native stack, without asking again. This approval covers sending the public PR diff to the workflow's configured OpenRouter model and the resulting usage cost; it does not authorize merging, approving, force-pushing, or exposing uncommitted or private data.
+- Final AI review is standing-authorized for all KlickerUZH PRs. Once exact-head CI and ordinary feedback are settled, agents may post `/final-review` for an unstacked PR or ordinary stack layer, and `/final-review-stack` only on the top PR of a verified native stack, without asking again. This approval covers sending the public PR diff to the workflow's configured Mistral model and the resulting usage cost; it does not authorize merging, approving, force-pushing, or exposing uncommitted or private data.
 
 ## Release preparation
 
@@ -210,18 +212,20 @@ upstream and the Azure-specific chatbot disclaimer does not describe this
 local path.
 
 Local Auto Mode is selected by `CHAT_PRIMARY_MODEL_ID=auto`. Chat sends the
-`auto-router` deployment to LiteLLM at `http://litellm:4000`; LiteLLM classifies
-the request with the current Auto V2 policy in `util/litellm/config.yaml`.
-Classification uses Luna low; semantic corpus matching uses
-`openai/text-embedding-3-small`; SIMPLE, MEDIUM, and COMPLEX route to Luna
-medium, high, and xhigh; REASONING routes to Sol medium. LiteLLM then forwards
-all three request types through OpenRouter's OpenAI-compatible endpoint;
-OpenRouter supplies the selected models but does not make the routing decision.
-This adds one classifier request and, for semantic matching, one embedding
-request to the same external OpenRouter data boundary. It therefore adds local
-latency and usage cost. LiteLLM falls back from Sol medium to `gpt-5.1` on an
-upstream failure. Separately, zero-credit fallback remains within the selected
-usage class. Chat can select allow-listed Luna for a BASE selection before
+`auto-router-v2` deployment to LiteLLM at `http://litellm:4000`; LiteLLM
+classifies the request with the current Auto V2 policy in
+`util/litellm/config.yaml`. Classification uses GPT-6 Luna low; semantic corpus
+matching uses `openai/text-embedding-3-small`; SIMPLE routes to GPT-6 Luna
+high, and MEDIUM, COMPLEX and REASONING route to GPT-6.1 Sol low, medium and
+high. The v1 `auto-router` remains available for comparison. LiteLLM then
+forwards all three request types through OpenRouter's OpenAI-compatible
+endpoint; OpenRouter supplies the selected models but does not make the
+routing decision. This adds one classifier request and, for semantic matching,
+one embedding request to the same external OpenRouter data boundary. It
+therefore adds local latency and usage cost. Each GPT-6 alias falls back to its
+GPT-5.6 twin, and each GPT-6.1 Sol alias to its GPT-6 Sol twin, on an upstream
+failure. Separately, zero-credit fallback remains within the selected usage
+class. Chat can select allow-listed Luna for a BASE selection before
 calling LiteLLM; current ADVANCED selections such as Auto are denied while no
 ADVANCED fallback is allow-listed.
 
@@ -236,10 +240,10 @@ Search for `portfolio diversification` and tell me the exact marker it
 returns.” A successful turn calls `KB_doc_query` and shows
 `KLICKER_LOCAL_MCP_OK` in a non-empty final answer plus the synthetic source
 card. Reload the thread and require the tool result, answer, and source to
-remain visible. Use the direct `GPT-5.6 Luna` option only when isolating the
+remain visible. Use the direct `GPT-6 Luna` option only when isolating the
 router from the model/tool integration.
 
-**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.72 fronts the stack over the shared `devnet` network. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery, 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime, and 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct retained-runtime configuration and mount comparison. One-time host setup must happen **before** the container starts:
+**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.3.0 fronts the stack over the shared `devnet` network. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery, 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime, 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct retained-runtime configuration and mount comparison, 0.2.0 reads the `worktrees` cleanup declarations in `.devrouter.yml`, and 0.3.0 removes Docker leftovers of deleted worktrees (see devrouter's [worktree cleanup guide](https://github.com/rschlaefli/devrouter/blob/main/docs/WORKTREE_CLEANUP.md)). One-time host setup must happen **before** the container starts:
 
 ```bash
 devrouter setup --yes # Traefik + devnet + mkcert CA
@@ -333,7 +337,7 @@ Read the relevant pages before working in an unfamiliar area. Update `docs/` and
 
 ## AI Assistance (Skills)
 
-Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and `.github/skills` symlink to it, so Claude Code and GitHub stay in sync. Task-shaped `klicker-*` skills cover the feature lifecycle — environment diagnosis (`klicker-environment-doctor`), design (`klicker-feature-design`), API (`klicker-graphql-api`), schema/data (`klicker-data-model`), UI (`klicker-frontend-ui`), testing/verification (`klicker-testing-verification`), e2e (`klicker-playwright-e2e`), and wiki upkeep (`klicker-wiki-maintenance`).
+Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and `.github/skills` symlink to it, so Claude Code and GitHub stay in sync. Task-shaped `klicker-*` skills cover the feature lifecycle — environment diagnosis (`klicker-environment-doctor`), design (`klicker-feature-design`), API (`klicker-graphql-api`), schema/data (`klicker-data-model`), UI (`klicker-frontend-ui`), testing/verification (`klicker-testing-verification`), e2e (`klicker-playwright-e2e`), dependency overrides (`klicker-dependency-overrides`), and wiki upkeep (`klicker-wiki-maintenance`).
 
 - **`agent-browser`** — **mandatory** verification for any change touching frontend apps, shared components, styling, i18n text, frontend-facing GraphQL ops, or auth/redirect/cookie flows. Open the page and confirm with before/after screenshots; don't rely on "the logic looks correct". Run via `npx agent-browser`, and log in with **delegated** access, not Edu-ID (credentials under [Test credentials](#test-credentials-local-seeded-db-only)). Full workflow + Traefik troubleshooting: [.agents/skills/agent-browser/SKILL.md](.agents/skills/agent-browser/SKILL.md).
 - **`web-design-guidelines`** — UI/UX/accessibility review ([SKILL.md](.agents/skills/web-design-guidelines/SKILL.md)).

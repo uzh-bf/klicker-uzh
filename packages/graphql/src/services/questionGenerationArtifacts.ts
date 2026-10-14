@@ -10,11 +10,13 @@ import type {
   QuestionGenerationArtifactRef,
   QuestionGenerationConfiguration,
   QuestionGenerationDesignSummary,
+  QuestionGenerationFailureClass,
   QuestionGenerationItemType,
   QuestionGenerationPlanSummary,
   QuestionGenerationProvenanceIndex,
   QuestionGenerationQuestionProvenance,
   QuestionGenerationReviewSourceSummary,
+  QuestionGenerationSlotFailure,
   QuestionGenerationWarning,
 } from '@klicker-uzh/types'
 import { SaxesParser, type SaxesTagNS } from 'saxes'
@@ -31,6 +33,8 @@ const MAX_WARNING_COUNT = 100
 const MAX_CITATION_SOURCES = 50
 const MAX_REVIEW_CITATIONS = 8
 const MAX_CHUNK_IDS = 200
+const MAX_SLOT_FAILURE_COUNT = 20
+const MAX_FAILURE_SUGGESTIONS = 20
 const SHA256_PATTERN = /^[0-9a-f]{64}$/
 const AZURE_CONTAINER_PATTERN = /^(?!.*--)[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])$/
 const NODE_ID_PATTERN = /^node_[0-9a-f]{32}$/
@@ -317,6 +321,41 @@ const provenanceIndexSchema = z
   })
   .strict()
 
+// The worker persists resolved_slots[].graph_resolution with its evidence
+// candidates. Only the entity ids of the primary candidate (or the fallback
+// entity_ids list) may leave the server, so this schema reads those and keeps
+// the rest of graph_resolution opaque behind .passthrough().
+const designGraphResolutionSchema = z
+  .object({
+    evidence_candidates: z
+      .array(
+        z
+          .object({
+            entity_ids: z.array(boundedText(200)).max(200).optional(),
+          })
+          .passthrough()
+      )
+      .max(50)
+      .optional(),
+    entity_ids: z.array(boundedText(200)).max(200).optional(),
+  })
+  .passthrough()
+  .optional()
+
+const designSlotSchema = z
+  .object({
+    design_slot_id: boundedText(200),
+    module_id: boundedText(100),
+    objective_id: z.string().trim().max(100),
+    origin_mode: z.string().optional(),
+    allocated_origin_mode: z.string().optional(),
+    item_format: z.enum(['single_choice', 'multiple_choice', 'kprim']),
+    difficulty_scale: z.number().int().min(1).max(5),
+    bloom_level: z.union([z.enum(BLOOM_LEVELS), z.literal('')]),
+    graph_resolution: designGraphResolutionSchema,
+  })
+  .passthrough()
+
 const designSchema = z
   .object({
     schema_version: z.literal(1),
@@ -363,23 +402,7 @@ const designSchema = z
           .passthrough()
       )
       .max(100),
-    resolved_slots: z
-      .array(
-        z
-          .object({
-            design_slot_id: boundedText(200),
-            module_id: boundedText(100),
-            objective_id: z.string().trim().max(100),
-            origin_mode: z.string().optional(),
-            allocated_origin_mode: z.string().optional(),
-            item_format: z.enum(['single_choice', 'multiple_choice', 'kprim']),
-            difficulty_scale: z.number().int().min(1).max(5),
-            bloom_level: z.union([z.enum(BLOOM_LEVELS), z.literal('')]),
-          })
-          .passthrough()
-      )
-      .min(1)
-      .max(20),
+    resolved_slots: z.array(designSlotSchema).min(1).max(20),
     topic_overview: z
       .object({
         coverage_warnings: z.array(boundedText(1000)).max(MAX_WARNING_COUNT),
@@ -443,6 +466,60 @@ const planSchema = z
   })
   .strict()
 
+// The worker reports one structured reason per unsupported slot. Reason codes
+// are an open, append-only set, so the code stays a plain string and an
+// unknown code never rejects an artifact; the failure class carries the
+// rendering contract of the reviewing client.
+const slotFailureSchema = z
+  .object({
+    slot_id: boundedText(200),
+    module_id: boundedText(100).nullable().optional(),
+    objective: boundedText(1000).nullable().optional(),
+    objective_source: z.string().trim().max(50).nullable().optional(),
+    requested_level: z.string().trim().max(50).nullable().optional(),
+    evidence_target: boundedText(1024).nullable().optional(),
+    reason_code: boundedText(200),
+    failure_class: z.string().trim().min(1).max(50),
+    detail: boundedText(2000).nullable().optional(),
+    suggestions: z
+      .array(boundedText(500))
+      .max(MAX_FAILURE_SUGGESTIONS)
+      .optional(),
+  })
+  .passthrough()
+
+function normalizeFailureClass(value: string): QuestionGenerationFailureClass {
+  // An unknown class from a future worker release keeps the artifact valid and
+  // falls back to the system surface, which never claims a user-input cause.
+  return value === 'user_input' ||
+    value === 'self_repairable' ||
+    value === 'system'
+    ? value
+    : 'system'
+}
+
+function normalizeSlotFailure(
+  slot: z.infer<typeof slotFailureSchema>
+): QuestionGenerationSlotFailure {
+  return {
+    slotId: slot.slot_id,
+    moduleId: optionalText(slot.module_id),
+    objective: optionalText(slot.objective),
+    objectiveSource:
+      slot.objective_source === 'provided' ||
+      slot.objective_source === 'neutral'
+        ? slot.objective_source
+        : null,
+    requestedLevel:
+      BLOOM_LEVELS.find((level) => level === slot.requested_level) ?? null,
+    evidenceTarget: optionalText(slot.evidence_target),
+    reasonCode: slot.reason_code,
+    failureClass: normalizeFailureClass(slot.failure_class),
+    detail: optionalText(slot.detail),
+    suggestions: slot.suggestions ?? [],
+  }
+}
+
 const resultSchema = z
   .object({
     schema_version: z.union([z.literal(1), z.literal(2)]),
@@ -450,6 +527,7 @@ const resultSchema = z
     status: z.enum([
       'completed',
       'completed_with_review',
+      'completed_partial',
       'rejected',
       'failed',
     ]),
@@ -465,6 +543,10 @@ const resultSchema = z
       .optional(),
     rejected_at: z.enum(['design_review', 'plan_review']).nullable(),
     reviewed_by: boundedText(200).nullable(),
+    slot_failures: z
+      .array(slotFailureSchema)
+      .max(MAX_SLOT_FAILURE_COUNT)
+      .optional(),
   })
   .strict()
 
@@ -555,13 +637,19 @@ const finalBankSchema = z
 
 export type QuestionGenerationResultManifest = {
   schemaVersion: 1 | 2
-  status: 'completed' | 'completed_with_review' | 'rejected' | 'failed'
+  status:
+    | 'completed'
+    | 'completed_with_review'
+    | 'completed_partial'
+    | 'rejected'
+    | 'failed'
   requestedQuestions: number | null
   generatedQuestions: number
   finalQuestions: QuestionGenerationArtifactRef | null
   questionProvenanceIndex: QuestionGenerationArtifactRef | null
   reviewRequiredQuestions: number
   reviewRequiredQuestionIds: string[]
+  slotFailures: QuestionGenerationSlotFailure[]
   legacyCompleted: boolean
   rejectedAt: 'design_review' | 'plan_review' | null
   reviewedBy: string | null
@@ -589,6 +677,25 @@ export type QuestionGenerationProvenanceAuthority = {
 function optionalText(value: string | null | undefined): string | null {
   const normalized = value?.trim() ?? ''
   return normalized || null
+}
+
+// The worker records the evidence candidates grounding each planned slot. Only
+// the primary candidate's entity ids (or the older top-level entity_ids list)
+// may leave the server; the rest of graph_resolution stays opaque. Entity ids
+// are deduplicated in order so the review surface and its concentration check
+// see a stable set.
+function designSlotEvidenceEntityIds(
+  slot: z.infer<typeof designSlotSchema>
+): string[] {
+  const resolution = slot.graph_resolution
+  const candidates = resolution?.evidence_candidates ?? []
+  const raw = candidates[0]?.entity_ids ?? resolution?.entity_ids ?? []
+  const entityIds: string[] = []
+  for (const value of raw) {
+    const entityId = value.trim()
+    if (entityId && !entityIds.includes(entityId)) entityIds.push(entityId)
+  }
+  return entityIds
 }
 
 function normalizedPlainText(value: string): string {
@@ -1784,6 +1891,7 @@ export function parseQuestionGenerationDesign(
       objectiveId: optionalText(slot.objective_id),
       bloomLevel: slot.bloom_level === '' ? null : slot.bloom_level,
       targetDifficulty: slot.difficulty_scale,
+      evidenceEntityIds: designSlotEvidenceEntityIds(slot),
     })),
     warnings: design.topic_overview.coverage_warnings.map((message) =>
       warning('PIPELINE_COVERAGE_WARNING', message)
@@ -1953,11 +2061,28 @@ export function parseQuestionGenerationResult(
     requestedPresent && reviewCountPresent && reviewIdsPresent
   const reviewRequiredQuestions = result.review_required_questions ?? 0
   const reviewRequiredQuestionIds = result.review_required_question_ids ?? []
+  const slotFailures = (result.slot_failures ?? []).map(normalizeSlotFailure)
   const questionProvenanceIndex = result.question_provenance_index ?? null
   if (result.question_build_id !== expected.buildId) {
     return artifactError('Question-generation result belongs to another build')
   }
-  if (
+  if (result.status === 'completed_partial') {
+    // A partial result carries the passing subset of the final bank plus the
+    // reasons for the slots it could not produce. A run whose slots all failed
+    // reports the failed status instead, so a partial result without passing
+    // questions or without reasons is inconsistent.
+    if (
+      result.final_questions === null ||
+      slotFailures.length === 0 ||
+      result.rejected_at !== null ||
+      result.reviewed_by !== null ||
+      new Set(reviewRequiredQuestionIds).size !==
+        reviewRequiredQuestionIds.length ||
+      reviewRequiredQuestions !== reviewRequiredQuestionIds.length
+    ) {
+      return artifactError('Partial question-generation result is inconsistent')
+    }
+  } else if (
     result.status === 'completed' ||
     result.status === 'completed_with_review'
   ) {
@@ -1971,6 +2096,11 @@ export function parseQuestionGenerationResult(
         (result.schema_version !== 2 || questionProvenanceIndex === null)) ||
       (result.schema_version === 2 && questionProvenanceIndex === null) ||
       (result.schema_version === 1 && questionProvenanceIndex !== null) ||
+      // Per-slot reasons describe slots a result could not supply. A status
+      // that claims the complete requested bank cannot also report missing
+      // slots, or the reviewing client would surface attention cards for a
+      // build that has nothing missing.
+      slotFailures.length !== 0 ||
       result.rejected_at !== null ||
       result.reviewed_by !== null ||
       new Set(reviewRequiredQuestionIds).size !==
@@ -2022,6 +2152,7 @@ export function parseQuestionGenerationResult(
       : null,
     reviewRequiredQuestions,
     reviewRequiredQuestionIds,
+    slotFailures,
     legacyCompleted,
     rejectedAt: result.rejected_at,
     reviewedBy: result.reviewed_by,
@@ -2046,6 +2177,10 @@ export function parseQuestionGenerationFinalBank(
   }
   const bank = parsed.data
   const expectedItemType = expected.itemType ?? 'SC'
+  // A partial result delivers only the slots the worker could ground, so its
+  // bank is a non-empty subset of the Plan universe. A strict run still has to
+  // match the requested count exactly.
+  const partialBank = expected.result.status === 'completed_partial'
   if (
     (expected.result.schemaVersion === 2 &&
       (!expected.lineage ||
@@ -2057,16 +2192,19 @@ export function parseQuestionGenerationFinalBank(
       expectedItemType,
       expected.result.schemaVersion === 2
     ) ||
-    bank.metadata.total_questions !== expected.questionCount ||
-    bank.questions.length !== expected.questionCount ||
     new Set(bank.questions.map((question) => question.id)).size !==
       bank.questions.length ||
     new Set(expected.expectedQuestionIds).size !==
       expected.expectedQuestionIds.length ||
-    expected.expectedQuestionIds.length !== expected.questionCount ||
     bank.questions.some(
       (question) => !expected.expectedQuestionIds.includes(question.id)
-    )
+    ) ||
+    (partialBank
+      ? bank.metadata.total_questions !== bank.questions.length ||
+        bank.questions.length > expected.questionCount
+      : bank.metadata.total_questions !== expected.questionCount ||
+        bank.questions.length !== expected.questionCount ||
+        expected.expectedQuestionIds.length !== expected.questionCount)
   ) {
     return artifactError('Final question bank does not match the build')
   }

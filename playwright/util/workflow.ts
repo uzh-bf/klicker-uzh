@@ -400,7 +400,12 @@ export async function acceptGamifiedLiveQuizAccountPrompt(
       .then(() => true)
       .catch(() => false)
 
-    if (!promptAppeared) return
+    // Break rather than return: the block activation propagates to the
+    // participant client asynchronously, so the answer form can still be
+    // arriving when the prompt no longer appears. Returning here skipped the
+    // visibility wait below and left the caller asserting against a locator
+    // that did not exist yet.
+    if (!promptAppeared) break
 
     await page.getByTestId('participate-anonymously').click()
     await expect(dialog).toBeHidden()

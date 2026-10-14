@@ -87,10 +87,18 @@ runs:
       with:
         path: ${{ env.STORE_PATH }}
         key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.dependency-fingerprint }}
+        # See playwright-build: an exact-key-only restore leaves any branch
+        # with different manifests (v3-ai does) installing from an empty
+        # store. A content-addressed near-match reuses compatible packages
+        # and is read-only for public readers, so the seed cannot be poisoned.
+        restore-keys: |
+          playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-
 
     - name: Install dependencies
       shell: bash
-      run: pnpm install
+      # Runs from the trusted control checkout so a cached-store miss or a
+      # transient native-binary download failure cannot fail the whole wave.
+      run: bash .ci-control/.github/scripts/pnpm-install-retry.sh
 
     - name: Install Devrouter profile planner
       shell: bash
@@ -262,6 +270,12 @@ runs:
         REDIS_ASSESSMENT_PORT: 6379
         REDIS_ASSESSMENT_PASS: ''
         REDIS_ASSESSMENT_HOST: redis_assessment_exec
+        EMAIL_HOST: mailhog
+        EMAIL_PORT: '1025'
+        EMAIL_FROM: noreply@klicker.test
+        # The MailHog image is amd64-only, so only the hosted route runs it;
+        # the one-time login link test skips on the arm64 public-pr route.
+        MAILHOG_URL: ${{ inputs.route == 'hosted' && 'http://mailhog:8025' || '' }}
         HATCHET_CHECK_HOST: hatchet
         HATCHET_HTTP_PORT: 8888
         HATCHET_GRPC_PORT: 7077
@@ -278,6 +292,12 @@ runs:
         APP_ORIGIN_CONTROL: http://127.0.0.1:3003
         APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
         APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
+
+    - name: Report tests that passed only on retry
+      if: always()
+      continue-on-error: true
+      shell: bash
+      run: node .ci-control/.github/scripts/playwright-flaky-summary.cjs playwright/test-results/results.json "$GITHUB_STEP_SUMMARY"
 
     - name: Upload Playwright JUnit results
       if: always()
