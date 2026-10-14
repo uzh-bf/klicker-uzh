@@ -1,10 +1,10 @@
-import type { GetPendingChatbotPublicationsQuery } from '@klicker-uzh/graphql/dist/ops'
+import type { GetPendingChatbotRevisionReviewsQuery } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
 import ChatbotDisclaimerPreview from '../resources/chatbots/ChatbotDisclaimerPreview'
 
 type Review =
-  GetPendingChatbotPublicationsQuery['getPendingChatbotPublications'][number]
+  GetPendingChatbotRevisionReviewsQuery['getPendingChatbotPublications'][number]
 
 function ReviewField({
   label,
@@ -28,10 +28,17 @@ function ChatbotPublicationDetails({
   models,
 }: {
   review: Review
-  models: GetPendingChatbotPublicationsQuery['getChatModelRegistry']
+  models: GetPendingChatbotRevisionReviewsQuery['getChatModelRegistry']
 }) {
   const t = useTranslations()
-  const { chatbot } = review
+  const revision = review.chatbot.authoringRevision
+  const chatbot = { ...review.chatbot, ...revision }
+  const disclaimerTitle = revision
+    ? revision.disclaimerTitle
+    : review.disclaimerTitle
+  const disclaimerIntroText = revision
+    ? revision.disclaimerIntroText
+    : review.disclaimerIntroText
   const config = chatbot.standardModeConfig
   const unknown = t('shared.generic.unknown')
   const modelNames = chatbot.allowedModelIds.length
@@ -98,6 +105,16 @@ function ChatbotPublicationDetails({
             ? t('manage.resources.modelSelectionEnabled')
             : t('manage.resources.modelSelectionDisabled')}
         </ReviewField>
+        <ReviewField label={t('manage.resources.knowledgeGraphVisible')}>
+          {chatbot.knowledgeGraphVisible
+            ? t('shared.generic.yes')
+            : t('shared.generic.no')}
+        </ReviewField>
+        <ReviewField label={t('manage.resources.knowledgeGraphRetrieval')}>
+          {chatbot.knowledgeGraphRetrievalEnabled
+            ? t('shared.generic.yes')
+            : t('shared.generic.no')}
+        </ReviewField>
         <ReviewField label={t('manage.resources.allowedModels')}>
           {modelNames}
         </ReviewField>
@@ -156,10 +173,10 @@ function ChatbotPublicationDetails({
           )}
         </ReviewField>
       </dl>
-      {review.disclaimerTitle ? (
+      {disclaimerTitle ? (
         <ChatbotDisclaimerPreview
-          title={review.disclaimerTitle}
-          introText={review.disclaimerIntroText ?? ''}
+          title={disclaimerTitle}
+          introText={disclaimerIntroText ?? ''}
         />
       ) : (
         <p className="text-sm text-amber-800">

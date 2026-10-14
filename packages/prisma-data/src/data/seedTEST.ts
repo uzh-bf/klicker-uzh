@@ -41,6 +41,7 @@ import {
   seedMCPServers,
 } from './seedMCPServers.js'
 import { seedUsers } from './seedUsers.js'
+import { seedResponseExamples } from './seedResponseExamples.js'
 
 // uuids for 50 participants
 export const PARTICIPANT_IDS = [
@@ -378,6 +379,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   )
 
   await seedChatbots(prisma)
+  await seedResponseExamples(prisma)
   const mcpServers = await seedMCPServers(prisma)
   await seedChatbotMCPConfigurations(prisma, mcpServers)
 

@@ -1,14 +1,17 @@
 'use client'
 
-import { hasAvailableChatMode } from '@/src/lib/config/modes'
+import {
+  hasAvailableChatMode,
+  type ChatModeOptions,
+} from '@/src/lib/config/modes'
 import { createContext, type PropsWithChildren, useContext } from 'react'
 
-const ModeOptionsContext = createContext<Record<string, string> | null>(null)
+const ModeOptionsContext = createContext<ChatModeOptions | null>(null)
 
 export function ModeOptionsProvider({
   children,
   modeOptions,
-}: PropsWithChildren<{ modeOptions: Record<string, string> }>) {
+}: PropsWithChildren<{ modeOptions: ChatModeOptions }>) {
   return (
     <ModeOptionsContext.Provider value={modeOptions}>
       {children}
@@ -16,7 +19,7 @@ export function ModeOptionsProvider({
   )
 }
 
-export function useEffectiveModeOptions(): Record<string, string> {
+export function useEffectiveModeOptions(): ChatModeOptions {
   const modeOptions = useContext(ModeOptionsContext)
   if (modeOptions === null) {
     throw new Error('useEffectiveModeOptions requires ModeOptionsProvider')

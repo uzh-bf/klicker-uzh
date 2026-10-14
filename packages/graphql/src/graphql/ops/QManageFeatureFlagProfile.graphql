@@ -1,0 +1,8 @@
+query ManageFeatureFlagProfile {
+  userProfile {
+    id
+    role
+    catalyst
+    aiFeaturesEnabled
+  }
+}
