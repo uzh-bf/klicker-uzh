@@ -1572,7 +1572,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The chart shows the aggregated distribution of total scores for active participants. Your score range is highlighted.',
       histogramUserRange: 'Your score range: {range}.',
       notEnoughDataForComparison:
-        'No peer comparison is available. It is only included for at least 10 active participants and a non-zero available score range.',
+        'This report contains no peer comparison. It is included once, in the first report issued after the course has ended, and only for at least 10 active participants and a non-zero available score range. Reports issued during the course or refreshed afterwards contain your points only.',
       exportReportButton: 'Export Performance Report',
       exportReportExplanation:
         'Issue a report from the current assessment record. Once it is ready, you can view it in your browser or use the browser print dialog to save a single-page A4 PDF. The report includes a link for checking its current status and claims.',
@@ -1598,7 +1598,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       exportReportPrintError:
         'The report could not be opened for printing. Allow pop-ups for this page and try again.',
       privacyAndTransparencyNotice:
-        'Peer comparison is released only for at least 10 active participants. Ten initial score ranges are merged until every displayed range represents at least 3 participants. The report contains no peer scores or identifiers.',
+        'Peer comparison is released once per student, in the first report issued after the course has ended, and only for at least 10 active participants. Ten initial score ranges are merged until every displayed range represents at least 3 participants. The report contains no peer scores or identifiers.',
       courseNameLabel: 'Course',
       studentNameLabel: 'Student name',
       studentEmailAddressLabel: 'Email address',

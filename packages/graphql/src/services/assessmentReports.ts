@@ -377,6 +377,7 @@ export async function buildAssessmentReportSnapshotV1({
       id: true,
       name: true,
       displayName: true,
+      endDate: true,
       participantInvitations: {
         where: {
           participantId,
@@ -441,11 +442,16 @@ export async function buildAssessmentReportSnapshotV1({
       totalPoints,
       availableTotalPoints,
     },
-    comparison: buildAssessmentReportComparison({
-      scores,
-      studentScore: totalPoints,
-      availableTotalPoints,
-    }),
+    // Interim reports during the course carry no peer comparison; it belongs
+    // to the final report issued after the course end date.
+    comparison:
+      course.endDate <= new Date()
+        ? buildAssessmentReportComparison({
+            scores,
+            studentScore: totalPoints,
+            availableTotalPoints,
+          })
+        : null,
   } satisfies AssessmentReportSnapshotV1)
 
   if (!parsed.success) {
@@ -556,15 +562,27 @@ async function issueAssessmentReportInTransaction({
     courseId,
     type: DB.CredentialType.COURSE_ASSESSMENT_INSIGHTS,
   }
-  const [activeRecord, historyRecord] = await Promise.all([
+  const course = await prisma.course.findUnique({
+    where: { id: courseId },
+    select: { endDate: true },
+  })
+  if (!course) {
+    throw assessmentReportError('ASSESSMENT_REPORT_NOT_ELIGIBLE')
+  }
+  const [activeRecord, finalRecords] = await Promise.all([
     prisma.verifiableCredential.findFirst({
       where: { ...recordKey, status: DB.CredentialStatus.ACTIVE },
     }),
-    prisma.verifiableCredential.findFirst({
-      where: recordKey,
-      select: { id: true },
+    prisma.verifiableCredential.findMany({
+      where: { ...recordKey, issuedAt: { gte: course.endDate } },
+      select: { snapshot: true, snapshotVersion: true },
     }),
   ])
+  // Reports issued before the course end never release the final comparison.
+  // An unreadable final record is treated as released to stay conservative.
+  const comparisonReleased = finalRecords.some(
+    (record) => parseAssessmentReportSnapshot(record)?.comparison !== null
+  )
   const fullSnapshot = await buildAssessmentReportSnapshot({
     courseId,
     participantId,
@@ -577,7 +595,10 @@ async function issueAssessmentReportInTransaction({
     privateReplacementSnapshot
   )
 
-  if (activeRecord) {
+  const releasesComparison =
+    fullSnapshot.comparison !== null && !comparisonReleased
+
+  if (activeRecord && !releasesComparison) {
     const activeSnapshot = parseAssessmentReportSnapshot(activeRecord)
     if (
       !activeSnapshot ||
@@ -595,8 +616,12 @@ async function issueAssessmentReportInTransaction({
 
   // Comparisons are released only once. Replacements omit them so two
   // downloadable reports cannot be differenced after a cohort change.
-  const snapshot = historyRecord ? privateReplacementSnapshot : fullSnapshot
-  const snapshotHash = historyRecord ? privateReplacementHash : fullSnapshotHash
+  const snapshot = releasesComparison
+    ? fullSnapshot
+    : privateReplacementSnapshot
+  const snapshotHash = releasesComparison
+    ? fullSnapshotHash
+    : privateReplacementHash
 
   const revokedRecords = await prisma.verifiableCredential.findMany({
     where: {

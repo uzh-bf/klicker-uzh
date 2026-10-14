@@ -1579,7 +1579,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Das Diagramm zeigt die aggregierte Verteilung der Gesamtpunktzahlen aktiver Teilnehmender. Dein Punktebereich ist hervorgehoben.',
       histogramUserRange: 'Dein Punktebereich: {range}.',
       notEnoughDataForComparison:
-        'Es ist kein Peer-Vergleich verfügbar. Er wird nur bei mindestens 10 aktiven Teilnehmenden und einem verfügbaren Punktebereich grösser als null ausgegeben.',
+        'Dieser Bericht enthält keinen Peer-Vergleich. Er wird einmalig im ersten Bericht nach Kursende ausgegeben, und nur bei mindestens 10 aktiven Teilnehmenden und einem verfügbaren Punktebereich grösser als null. Berichte während des Kurses oder später aktualisierte Berichte enthalten nur deine Punkte.',
       exportReportButton: 'Performance-Bericht exportieren',
       exportReportExplanation:
         'Stelle einen Bericht aus dem aktuellen Assessment-Datensatz aus. Sobald er bereit ist, kannst du ihn im Browser ansehen oder über den Druckdialog des Browsers als einseitige A4-PDF speichern. Der Bericht enthält einen Link zur Prüfung seines aktuellen Status und seiner Angaben.',
@@ -1605,7 +1605,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       exportReportPrintError:
         'Der Bericht konnte nicht zum Drucken geöffnet werden. Erlaube Pop-ups für diese Seite und versuche es erneut.',
       privacyAndTransparencyNotice:
-        'Ein Peer-Vergleich wird erst ab 10 aktiven Teilnehmenden ausgegeben. Zehn initiale Punktebereiche werden zusammengeführt, bis jeder angezeigte Bereich mindestens 3 Teilnehmende repräsentiert. Der Bericht enthält keine einzelnen Peer-Punktzahlen oder Identifikatoren.',
+        'Ein Peer-Vergleich wird pro Person einmalig im ersten Bericht nach Kursende ausgegeben, und nur ab 10 aktiven Teilnehmenden. Zehn initiale Punktebereiche werden zusammengeführt, bis jeder angezeigte Bereich mindestens 3 Teilnehmende repräsentiert. Der Bericht enthält keine einzelnen Peer-Punktzahlen oder Identifikatoren.',
       courseNameLabel: 'Kurs',
       studentNameLabel: 'Name der studierenden Person',
       studentEmailAddressLabel: 'E-Mail-Adresse',
