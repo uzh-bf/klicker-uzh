@@ -393,9 +393,10 @@ allowlisted model ID. Main owns integration and verification because they are on
 the critical path. Scoped simplification and risk review precede integrated final
 review. Previous planner self-review remains applicable to the unchanged design.
 
-Next: run focused account/guest tests and browser proof, finish the integration
-commit, publish the updated draft, resolve review findings and record CI and final
-AI review for the resulting head. The runtime will be stopped after verification.
+Local implementation and verification are complete. The updated draft continues
+through integrated final review, hosted CI and the repository's final AI review.
+Those delivery gates are tracked on [PR #6097](https://github.com/uzh-bf/klicker-uzh/pull/6097).
+The exact runtime will be stopped after the pre-push build.
 
 Integration committed as `68df3b42e47d08bd4a82daefbf46a7d779036007` with all
 repository hooks enabled. Full root checks passed; the initial unbounded build
@@ -412,3 +413,11 @@ inside the same transaction and retains the owner predicate, preserving thread
 timestamps. The existing coexistence test now verifies timestamp and history
 ordering, and the rollback test forces a failure after this actual update.
 This correction preserves the approved thread-only transfer contract.
+
+Correction committed as `2a2289aa8fc57c68f6b75adc07587f7872d6544f`. The chronology
+regression failed before the correction and passes with it. All 30 focused tests
+and the type check passed; all root commit hooks passed with no bypass, and the
+updated LTI browser spec passed 9 tests in 41.4 seconds. Synthetic placeholder
+hashes are now explicitly labeled as dummy values so the hygiene gate recognizes
+their fixture status. No runtime, deployment or merge acceptance is inferred from
+these local results.
