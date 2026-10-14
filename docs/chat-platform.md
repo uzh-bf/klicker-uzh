@@ -307,9 +307,9 @@ conservative, because a missing class must never imply base usage.
 
 New chatbots use a fixed GPT-6 Luna policy by default: the owner projection
 contains one effective `gpt-6-luna` model and no reasoning entries. A registry
-without that BASE model keeps a single `auto` model instead. Staging sets
-`auto` as the automatic primary so existing automatic-selection chatbots
-exercise `auto-router-v2`; production keeps GPT-6 Luna. The strict owner-only
+without that BASE model keeps a single `auto` model instead. Staging and
+production set `auto` as the automatic primary, so existing automatic-selection
+chatbots use `auto-router-v2`. The strict owner-only
 `saveChatbotRevision` mutation uses its `modelPolicy` section to require exactly
 one active model for fixed mode, one supported reasoning effort when that model
 supports reasoning, and at least one active model plus valid reasoning entries
@@ -473,10 +473,10 @@ planning target, while the reset date is exact; in-flight requests may exceed
 the target. It is read-only for account owners, and it does not expose
 internal funding or provider details.
 
-On staging, the deployed Klicker Auto option is the LiteLLM `auto-router-v2`
-endpoint; production Auto still uses `auto-router`.
+On staging and production, the deployed Klicker Auto option is the LiteLLM
+`auto-router-v2` endpoint.
 The only in-repo record of its tier map is the comment above `modelRegistry`
-in `deploy/env-uzh-stg/values.yaml`: SIMPLE = `gpt-6-luna-high`, MEDIUM
+in `deploy/env-uzh-stg/values.yaml` and `deploy/env-uzh-prd/values.yaml`: SIMPLE = `gpt-6-luna-high`, MEDIUM
 = `gpt-6.1-sol-low`, COMPLEX = `gpt-6.1-sol-medium`, REASONING =
 `gpt-6.1-sol-high` (match_threshold 0.55). The v1 `auto-router` stays
 deployed with the same classifier and corpus (MEDIUM = `gpt-6-luna-xhigh`,
@@ -499,6 +499,9 @@ id that answered.
 Migration `20261008120000_chat_drop_retired_model_ids` later removed the
 retired `gpt-4.1` and `gpt-5.4` ids from live and draft chatbot policies, so
 edits to those chatbots still pass registry validation.
+Migration `20261009120000_chat_drop_unregistered_model_ids` does the same for
+`gpt-4.1-mini` and `gpt-5.5`, which published chatbots still named although
+neither registry lists them.
 Both staging and production now use `auto` as the global automatic-model
 primary, so chatbots using automatic model selection use Auto by default.
 Chatbots with an explicit model selection can continue using that selection.
@@ -844,10 +847,14 @@ aborted, and tool-only turns still show valid completed sources instead of
 losing them on reload. The source component suppresses the section when
 normalization produces no sources.
 Within that section, sources with a valid rendered citation appear under
-“Cited in this answer”. Other eligible sources remain available behind a
-collapsed “Other retrieved material” disclosure. With no citations, including
-tool-only turns, all source cards start collapsed. Grouping preserves original
-source indices and does not claim to identify every source the model used.
+“Cited in this answer”, previewed as the first 12 cited cards. The remaining
+cited cards and the uncited sources stay available behind a collapsed “Other
+retrieved material” disclosure, whose count covers everything it holds. With no
+citations, including tool-only turns, all source cards start collapsed.
+Grouping preserves original source indices and does not claim to identify every
+source the model used. Every cited card keeps its DOM target: a citation chip
+whose card sits in the collapsed disclosure opens it before scrolling to and
+focusing the card.
 The runtime render boundary is deliberately narrow: `RuntimeProvider` selects only the active
 thread's messages/running state and the actions it calls, while `Thread` renders its message rows
 through the assistant-ui 0.15 children renderer and passes the chatbot avatar through context. Runtime
@@ -1336,7 +1343,11 @@ the normalizer unwraps that compatibility layer before applying the same rules. 
 pipeline's literal `"N/A"` as absent; it dedupes by file/page/url and normalized video range
 (`startSec`/`endSec`), so citations for different video ranges remain separate, then numbers what
 survives **1..N in first-appearance order across every doc_query call in one message**, capped at
-`MAX_SOURCES`. Two rules follow from that numbering and are easy to break independently:
+`MAX_SOURCES` (99, the largest two-digit marker the chip parser and `parseCitationHref` accept).
+Sources beyond the cap are not dropped: they stay in the model-facing projection with a null
+`citation_index`, so the model still reads their text but cannot cite them, and the prompt contract
+tells the model not to infer absence from a null index. Two rules follow from that numbering and
+are easy to break independently:
 
 Chatbot MCP configs are optional unless their existing `parameters` JSON contains the reserved
 runtime policy `{ "required": true, "toolAlias": "<name>" }`. A strict config must allow exactly
@@ -1632,3 +1643,21 @@ grading, and util once before the four suites because
 import ([Testing](./testing.md)).
 
 > **Do not run `pnpm --filter @klicker-uzh/chat check` while the devcontainer dev stack is up.** `check` is `next typegen && tsc --noEmit`, and typegen rewrites the same `.next/` the running dev server owns: from the next `✓ Compiled` line onward every chat route returns a bare Next 404 with nothing in `/tmp/dev.log`, including routes that just served 200. It is not a code bug — restart with `devrouter ensure .` from the host. Typecheck before the browser pass, not during it.
+
+## Independent graph inputs
+
+The knowledge base owns RAG and graph projections with independently operated
+workflows. Klicker submits source references and expected raw content hashes;
+the graph worker extracts those sources through the document-processing service.
+It requires no ingestion reader, operation lookup or shared admission flag.
+Successful graph completion checks source freshness and pending deletion before
+publication while retaining measured costs. See
+[independent input ownership](./adr/canonical-ingestion-input-ownership.md).
+
+A dynamic URL can change between downloads. The expected-hash check rejects that
+input before graph generation but cannot recover earlier bytes; parsing may
+already have incurred cost. Producer-owned immutable raw snapshots and automatic
+parser-only freshness remain deferred. Parser changes require an explicit rebuild.
+The existing `chatbot-graphrag` GrowthBook flag and lecturer controls govern
+student graph retrieval. Map interaction and retrieval quality remain separate
+acceptance checks.

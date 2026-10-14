@@ -17,11 +17,13 @@ import {
   getAutomaticModelId,
   getModelsForChatbot,
 } from '@/src/lib/server/chatModelRegistry'
+import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
 import {
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
 } from '@/src/lib/server/effectiveChatModes'
+import { REPLY_LANGUAGE_REMINDER } from '@/src/lib/server/languageInstructions'
 import {
   MANAGE_CHAT_BODY_TIMEOUT_MS,
   MANAGE_CHAT_TOTAL_TIMEOUT_MS,
@@ -313,10 +315,9 @@ async function handlePOST(
 
   try {
     const toolNames = Object.keys(tools)
+    const docQueryToolName = toolNames.find(isDocQueryToolName)
     const quizzerDocQueryToolName =
-      selectedMode === 'quizzer'
-        ? toolNames.find(isDocQueryToolName)
-        : undefined
+      selectedMode === 'quizzer' ? docQueryToolName : undefined
 
     if (selectedMode === 'quizzer' && !quizzerDocQueryToolName) {
       await closeMcpTools()
@@ -380,6 +381,9 @@ async function handlePOST(
           }),
           ...(reasoningEffort && reasoningEffort !== 'none'
             ? {
+                // See the participant chat route: deployment ids defeat the
+                // SDK's model-id based reasoning detection.
+                forceReasoning: true,
                 reasoningEffort,
                 reasoningSummary: 'auto' as const,
               }
@@ -388,17 +392,34 @@ async function handlePOST(
       },
       stopWhen: isStepCount(5),
       toolChoice: 'auto',
-      prepareStep: quizzerDocQueryToolName
-        ? ({ stepNumber }) =>
-            stepNumber === 0
-              ? {
-                  toolChoice: {
-                    type: 'tool' as const,
-                    toolName: quizzerDocQueryToolName,
-                  },
-                }
-              : {}
-        : undefined,
+      // The reply-language reminder ends every step, after tool output, so
+      // retrieved material in another language cannot set the reply language.
+      allowSystemInMessages: true,
+      // Step continuations carry the canonical citation indices, the same
+      // contract the participant chat applies. Without them the model has no
+      // index to cite and falls back to prose citations without chips.
+      prepareStep: ({
+        stepNumber,
+        steps,
+        initialMessages,
+        responseMessages,
+      }) => ({
+        ...(quizzerDocQueryToolName && stepNumber === 0
+          ? {
+              toolChoice: {
+                type: 'tool' as const,
+                toolName: quizzerDocQueryToolName,
+              },
+            }
+          : {}),
+        messages: [
+          ...initialMessages,
+          ...(docQueryToolName && stepNumber > 0
+            ? withModelCitationIndices(responseMessages, steps)
+            : responseMessages),
+          REPLY_LANGUAGE_REMINDER,
+        ],
+      }),
       tools: promptCacheRequest?.tools ?? tools,
       toolOrder: promptCacheRequest?.toolOrder,
       onEnd: closeMcpTools,
