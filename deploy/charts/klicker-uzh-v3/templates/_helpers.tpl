@@ -95,3 +95,16 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Adaptive engine base URL for the backend and the general Hatchet worker. An
+explicit backendGraphql.adaptiveEngine.url wins; otherwise the chart's own
+engine Service is used when adaptiveEngine.enabled. Empty means unconfigured.
+*/}}
+{{- define "chart.adaptiveEngineUrl" -}}
+{{- if .Values.backendGraphql.adaptiveEngine.url -}}
+{{- .Values.backendGraphql.adaptiveEngine.url -}}
+{{- else if .Values.adaptiveEngine.enabled -}}
+{{- printf "http://%s-adaptive-engine:%v" (include "chart.fullname" .) .Values.adaptiveEngine.service.port -}}
+{{- end -}}
+{{- end }}

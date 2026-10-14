@@ -1,4 +1,6 @@
 import { PrismaAdapter } from '@auth/prisma-adapter'
+import type { AppLogger } from '@klicker-uzh/logging/node'
+import { resolveRequestContext } from '@klicker-uzh/logging/request'
 import { prisma } from '@klicker-uzh/prisma'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
 import {
@@ -7,7 +9,6 @@ import {
   reduceCatalyst,
 } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
-import crypto from 'crypto'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import type { NextAuthOptions } from 'next-auth'
 import NextAuth from 'next-auth'
@@ -43,6 +44,7 @@ import {
 import { decode as jwtDecode, encode as jwtEncode } from '@/lib/jwt'
 import { isSameOriginRedirect } from '@/lib/redirect'
 import { hostFromUrl, validateRedirectTarget } from '@/lib/redirectTarget'
+import { logger } from '@/lib/server/logger'
 import { authEvent } from '@/lib/telemetry'
 import { sendTeamsNotifications } from '@/lib/util'
 
@@ -156,8 +158,10 @@ function participantReturnTarget({
 
 function getParticipantConfig({
   requestId,
+  log,
 }: {
   requestId: string
+  log: AppLogger
 }): NextAuthOptions {
   // Derive shared cookie domain for NextAuth session cookies by removing the first
   // label from the NEXTAUTH_URL hostname (e.g., auth.klicker.com -> klicker.com).
@@ -265,7 +269,8 @@ function getParticipantConfig({
 
         try {
           const participant = await createOrLinkParticipant(
-            profile as ExtendedProfile
+            profile as ExtendedProfile,
+            log
           )
 
           if (!participant) {
@@ -357,8 +362,10 @@ function getParticipantConfig({
 
 function getLecturerConfig({
   requestId,
+  log,
 }: {
   requestId: string
+  log: AppLogger
 }): NextAuthOptions {
   // Derive shared cookie domain for NextAuth session cookies by removing the first
   // label from the NEXTAUTH_URL hostname (e.g., auth.klicker.com -> klicker.com).
@@ -539,7 +546,8 @@ function getLecturerConfig({
             // upsert affiliations for existing user
             await createUserAffiliations(
               user.id,
-              profileData.swissEduIDLinkedAffiliationUniqueID
+              profileData.swissEduIDLinkedAffiliationUniqueID,
+              log
             )
 
             if (user.firstLogin) {
@@ -581,7 +589,8 @@ function getLecturerConfig({
             try {
               await createUserAffiliations(
                 userData.id,
-                profileData.swissEduIDLinkedAffiliationUniqueID
+                profileData.swissEduIDLinkedAffiliationUniqueID,
+                log
               )
             } catch (error) {
               console.error(
@@ -658,11 +667,14 @@ function sendRestartRedirect(res: NextApiResponse) {
 // handler runs so a query can never replace verified transaction context.
 export default async function auth(req: NextApiRequest, res: NextApiResponse) {
   const startedAt = Date.now()
-  const headerRequestId = Array.isArray(req.headers['x-request-id'])
-    ? req.headers['x-request-id'][0]
-    : req.headers['x-request-id']
-  const requestId =
-    headerRequestId || `na-${crypto.randomBytes(6).toString('hex')}`
+  const requestContext = resolveRequestContext({
+    requestId: req.headers['x-request-id'],
+    correlationId: req.headers['x-correlation-id'],
+  })
+  const requestId = requestContext.requestId
+  res.setHeader('x-request-id', requestId)
+  res.setHeader('x-correlation-id', requestContext.correlationId)
+  const log = logger.child(requestContext)
 
   const { nextauth, ...query } = req.query as { nextauth?: string[] } & Record<
     string,
@@ -785,8 +797,8 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
   function runAudienceConfig(audience: AuthAudience) {
     const authOptions =
       audience === 'participant'
-        ? getParticipantConfig({ requestId })
-        : getLecturerConfig({ requestId })
+        ? getParticipantConfig({ requestId, log })
+        : getLecturerConfig({ requestId, log })
 
     if (audience === 'participant') {
       // A failure inside the library returns a redirect to its generic

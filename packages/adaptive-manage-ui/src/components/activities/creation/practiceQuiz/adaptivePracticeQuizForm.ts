@@ -1,0 +1,358 @@
+import {
+  type AdaptivePresetName,
+  getAdaptivePresetDefaults,
+} from '@klicker-uzh/adaptive-contract'
+import {
+  AdaptiveAttemptSelectionPolicy,
+  AdaptiveLevelMappingRule,
+  type AdaptivePracticeQuizConfigInput,
+  AdaptivePracticeQuizPreset,
+  PracticeQuizMode,
+  type QAdaptivePracticeQuizPreviewWithRuntimeLimitsQuery,
+} from '@klicker-uzh/graphql/dist/ops'
+import type {
+  AdaptivePracticeQuizConfigFormValues,
+  PracticeQuizFormValues,
+} from '../../../../types/practiceQuiz'
+
+export const ADAPTIVE_MAX_QUESTION_CAP = 1000
+export const ADAPTIVE_MAX_CLASSIFICATION_Z = 5
+export const ADAPTIVE_MAX_DISCRIMINATION = 10
+export const PLACEMENT_PILOT_MIN_QUESTIONS_PER_LEAF = 4
+
+// The calibrated IRT v2 track (competence scales and the scale-based placement
+// pilot) is not offered to authors. Without a scale every quiz runs on IRT v1.
+// Existing v2 configurations keep their scale; flip this to show the v2
+// authoring UI again.
+export const ADAPTIVE_V2_AUTHORING_ENABLED = false
+
+// The non-classifying research / calibration preset is not offered to authors,
+// so new quizzes only use the diagnostic preset. Existing research quizzes keep
+// their preset and keep working; flip this to offer the preset again.
+export const ADAPTIVE_RESEARCH_AUTHORING_ENABLED = false
+
+// Presets offered in the authoring UI. The current preset stays listed so an
+// existing quiz still shows what it was created with.
+export function getAuthorableAdaptivePresets(
+  currentPreset: AdaptivePracticeQuizPreset
+): AdaptivePracticeQuizPreset[] {
+  const presets = [
+    AdaptivePracticeQuizPreset.Diagnostic,
+    ...(ADAPTIVE_RESEARCH_AUTHORING_ENABLED
+      ? [AdaptivePracticeQuizPreset.Research]
+      : []),
+    ...(ADAPTIVE_V2_AUTHORING_ENABLED
+      ? [AdaptivePracticeQuizPreset.Placement]
+      : []),
+  ]
+  return presets.includes(currentPreset) ? presets : [...presets, currentPreset]
+}
+
+export function createAdaptivePracticeQuizDefaultConfig(): AdaptivePracticeQuizConfigFormValues {
+  const defaults = getAdaptivePresetDefaults('DIAGNOSTIC')
+
+  return {
+    competenceTreeId: undefined,
+    scaleVersionId: undefined,
+    preset: AdaptivePracticeQuizPreset.Diagnostic,
+    totalQuestionCap: String(defaults.totalQuestionCap),
+    timeLimitMinutes: '',
+    perLeafQuestionCap: nullableNumberToString(defaults.perLeafQuestionCap),
+    minQuestionsPerLeaf: String(defaults.minQuestionsPerLeaf),
+    minItemsPerCoverageCell: String(defaults.minItemsPerCoverageCell),
+    classificationZ: String(defaults.classificationZ),
+    // Exact level by default: a tolerance needs an upgraded engine and is an
+    // explicit authoring choice.
+    classificationToleranceBands: String(defaults.classificationToleranceBands),
+    showTimer: defaults.showTimer,
+    retakeStartFromPreviousResult: defaults.retakeStartFromPreviousResult,
+    retakeStartMaxAgeDays: String(defaults.retakeStartMaxAgeDays),
+    retakePreferNewQuestions: defaults.retakePreferNewQuestions,
+    attemptSelectionPolicy: toAttemptSelectionPolicy(
+      defaults.attemptSelectionPolicy
+    ),
+    levelMappingRule: toLevelMappingRule(defaults.levelMappingRule),
+    topInformationRatio: String(defaults.topInformationRatio),
+    defaultDiscrimination: '',
+    nodeOverrides: [],
+    elementOverrides: [],
+  }
+}
+
+export function createEmptyPracticeQuizStack() {
+  return {
+    displayName: '',
+    description: '',
+    elements: [],
+  }
+}
+
+export function hasStandardPracticeQuizContent(
+  values: PracticeQuizFormValues
+): boolean {
+  return values.stacks.some(
+    (stack) =>
+      stack.elements.length > 0 ||
+      Boolean(stack.displayName?.trim()) ||
+      Boolean(stack.description?.trim())
+  )
+}
+
+export function hasAdaptivePracticeQuizConfiguration(
+  values: PracticeQuizFormValues
+): boolean {
+  return (
+    JSON.stringify(values.adaptiveConfig) !==
+    JSON.stringify(createAdaptivePracticeQuizDefaultConfig())
+  )
+}
+
+export function switchPracticeQuizMode(
+  values: PracticeQuizFormValues,
+  mode: PracticeQuizMode
+): PracticeQuizFormValues {
+  if (mode === PracticeQuizMode.Adaptive) {
+    return {
+      ...values,
+      mode,
+      stacks: [],
+      adaptiveConfig: createAdaptivePracticeQuizDefaultConfig(),
+    }
+  }
+
+  return {
+    ...values,
+    mode,
+    stacks: [createEmptyPracticeQuizStack()],
+    adaptiveConfig: createAdaptivePracticeQuizDefaultConfig(),
+  }
+}
+
+/**
+ * IRT v2 (calibrated scale) authoring is disabled, so a new quiz never carries
+ * a scale, even one restored from an older wizard draft or copied from a
+ * duplicated v2 quiz; the server would reject an inactive scale. Editing an
+ * existing quiz keeps its scale.
+ */
+export function withoutUnauthorableScale(
+  config: AdaptivePracticeQuizConfigFormValues,
+  editMode: boolean
+): AdaptivePracticeQuizConfigFormValues {
+  return ADAPTIVE_V2_AUTHORING_ENABLED || editMode || !config.scaleVersionId
+    ? config
+    : { ...config, scaleVersionId: undefined }
+}
+
+export function serializeAdaptivePracticeQuizConfig(
+  config: AdaptivePracticeQuizConfigFormValues
+): AdaptivePracticeQuizConfigInput | undefined {
+  if (!config.competenceTreeId) return undefined
+  const defaults = getAdaptivePresetDefaults(
+    config.preset as AdaptivePresetName
+  )
+
+  const researchSettings =
+    config.preset === AdaptivePracticeQuizPreset.Research
+      ? {
+          attemptSelectionPolicy: config.scaleVersionId
+            ? AdaptiveAttemptSelectionPolicy.LatestCompleted
+            : config.attemptSelectionPolicy,
+          levelMappingRule: config.levelMappingRule,
+          topInformationRatio: requiredNumber(
+            config.topInformationRatio,
+            defaults.topInformationRatio
+          ),
+          defaultDiscrimination: undefined,
+        }
+      : undefined
+
+  return {
+    competenceTreeId: config.competenceTreeId,
+    scaleVersionId: config.scaleVersionId,
+    preset: config.preset,
+    totalQuestionCap: requiredNumber(
+      config.totalQuestionCap,
+      defaults.totalQuestionCap
+    ),
+    timeLimitSeconds: config.timeLimitMinutes?.trim()
+      ? Math.round(Number(config.timeLimitMinutes) * 60)
+      : null,
+    perLeafQuestionCap: optionalNumber(config.perLeafQuestionCap),
+    minQuestionsPerLeaf: requiredNumber(
+      config.minQuestionsPerLeaf,
+      defaults.minQuestionsPerLeaf
+    ),
+    minItemsPerCoverageCell: requiredNumber(
+      config.minItemsPerCoverageCell,
+      defaults.minItemsPerCoverageCell
+    ),
+    classificationZ: config.scaleVersionId
+      ? undefined
+      : requiredNumber(config.classificationZ, defaults.classificationZ),
+    // IRT_V1 only: calibrated-scale (IRT v2) quizzes reject a tolerance.
+    classificationToleranceBands: config.scaleVersionId
+      ? undefined
+      : requiredNumber(
+          config.classificationToleranceBands,
+          defaults.classificationToleranceBands
+        ),
+    showTimer: config.showTimer,
+    // IRT_V1 retake settings; calibrated-scale (IRT v2) quizzes ignore them.
+    retakeStartFromPreviousResult: config.retakeStartFromPreviousResult,
+    retakeStartMaxAgeDays: requiredNumber(
+      config.retakeStartMaxAgeDays,
+      defaults.retakeStartMaxAgeDays
+    ),
+    retakePreferNewQuestions: config.retakePreferNewQuestions,
+    nodeOverrides: config.nodeOverrides.map((override) => ({
+      nodeId: override.nodeId,
+      enabled: override.enabled,
+      weight: optionalNumber(override.weight),
+      questionCap: optionalNumber(override.questionCap),
+    })),
+    elementOverrides: config.elementOverrides.map((override) => ({
+      assignmentId: override.assignmentId,
+      enabled: override.enabled,
+      discrimination: undefined,
+    })),
+    researchSettings,
+  }
+}
+
+export function isManageAdaptivePresetSelectable(
+  preset: AdaptivePracticeQuizPreset,
+  scaleVersionId?: string
+): boolean {
+  return (
+    preset !== AdaptivePracticeQuizPreset.Placement || Boolean(scaleVersionId)
+  )
+}
+
+export function applyPlacementPilotDefaults(
+  config: AdaptivePracticeQuizConfigFormValues
+): AdaptivePracticeQuizConfigFormValues {
+  return {
+    ...config,
+    preset: AdaptivePracticeQuizPreset.Placement,
+    minQuestionsPerLeaf: String(PLACEMENT_PILOT_MIN_QUESTIONS_PER_LEAF),
+  }
+}
+
+export function isPlacementPilotConfig(
+  config: Pick<
+    AdaptivePracticeQuizConfigFormValues,
+    'preset' | 'scaleVersionId'
+  >
+): boolean {
+  return (
+    config.preset === AdaptivePracticeQuizPreset.Placement &&
+    Boolean(config.scaleVersionId)
+  )
+}
+
+export function getAdaptivePracticeQuizEffectiveSettings(
+  config: AdaptivePracticeQuizConfigFormValues
+) {
+  const research = config.preset === AdaptivePracticeQuizPreset.Research
+  const placementPilot = isPlacementPilotConfig(config)
+  const defaults = getAdaptivePresetDefaults(
+    config.preset as AdaptivePresetName
+  )
+
+  return {
+    attemptSelectionPolicy: placementPilot
+      ? AdaptiveAttemptSelectionPolicy.LatestCompleted
+      : research
+        ? config.attemptSelectionPolicy
+        : toAttemptSelectionPolicy(defaults.attemptSelectionPolicy),
+    levelMappingRule: placementPilot
+      ? AdaptiveLevelMappingRule.Nearest
+      : research
+        ? config.levelMappingRule
+        : toLevelMappingRule(defaults.levelMappingRule),
+  }
+}
+
+type PersistedAdaptivePreview = NonNullable<
+  QAdaptivePracticeQuizPreviewWithRuntimeLimitsQuery['adaptivePracticeQuizPreview']
+>
+
+export function mapAdaptivePracticeQuizPreviewToForm(
+  preview: PersistedAdaptivePreview
+): AdaptivePracticeQuizConfigFormValues {
+  return {
+    competenceTreeId: preview.config.competenceTreeId,
+    scaleVersionId: preview.config.scaleVersionId ?? undefined,
+    preset: preview.config.preset,
+    totalQuestionCap: String(preview.config.totalQuestionCap),
+    timeLimitMinutes:
+      preview.config.timeLimitSeconds == null
+        ? ''
+        : String(preview.config.timeLimitSeconds / 60),
+    perLeafQuestionCap: nullableNumberToString(
+      preview.config.perLeafQuestionCap
+    ),
+    minQuestionsPerLeaf: String(preview.config.minQuestionsPerLeaf),
+    minItemsPerCoverageCell: String(preview.config.minItemsPerCoverageCell),
+    classificationZ: String(preview.config.classificationZ),
+    classificationToleranceBands: String(
+      preview.config.classificationToleranceBands
+    ),
+    showTimer: preview.config.showTimer,
+    retakeStartFromPreviousResult: preview.config.retakeStartFromPreviousResult,
+    retakeStartMaxAgeDays: String(preview.config.retakeStartMaxAgeDays),
+    retakePreferNewQuestions: preview.config.retakePreferNewQuestions,
+    attemptSelectionPolicy: preview.config.attemptSelectionPolicy,
+    levelMappingRule: preview.config.levelMappingRule,
+    topInformationRatio: String(preview.config.topInformationRatio),
+    defaultDiscrimination: String(preview.config.defaultDiscrimination),
+    nodeOverrides: preview.nodes.map((node) => ({
+      nodeId: node.id,
+      enabled: node.overrideEnabled,
+      // A switched-off competence reports weight 0 (it has no share of the
+      // overall level); it keeps no weight of its own in the form.
+      weight:
+        node.overrideEnabled && node.weight !== 0
+          ? nullableNumberToString(node.weight)
+          : '',
+      questionCap: nullableNumberToString(node.questionCap),
+    })),
+    elementOverrides: preview.assignments.map((assignment) => ({
+      assignmentId: assignment.id,
+      enabled: assignment.overrideEnabled,
+      discrimination: nullableNumberToString(assignment.overrideDiscrimination),
+    })),
+  }
+}
+
+function optionalNumber(value: string): number | undefined {
+  if (value.trim() === '') return undefined
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+function requiredNumber(value: string, fallback: number): number {
+  return optionalNumber(value) ?? fallback
+}
+
+function nullableNumberToString(value: number | null | undefined): string {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? String(value)
+    : ''
+}
+
+function toAttemptSelectionPolicy(
+  value: 'FIRST_COMPLETED' | 'LATEST_COMPLETED'
+): AdaptiveAttemptSelectionPolicy {
+  return value === 'FIRST_COMPLETED'
+    ? AdaptiveAttemptSelectionPolicy.FirstCompleted
+    : AdaptiveAttemptSelectionPolicy.LatestCompleted
+}
+
+function toLevelMappingRule(
+  value: 'MASTERY' | 'NEAREST'
+): AdaptiveLevelMappingRule {
+  return value === 'MASTERY'
+    ? AdaptiveLevelMappingRule.Mastery
+    : AdaptiveLevelMappingRule.Nearest
+}

@@ -1,0 +1,96 @@
+fragment CompetenceTreeCalibrationData on CompetenceTreeCalibration {
+  treeId
+  treeName
+  canManage
+  readiness {
+    status
+    activeScaleVersion
+    enabledAssignmentCount
+    calibratedAssignmentCount
+    blockingAssignmentCount
+    detailsRedacted
+  }
+  scales {
+    id
+    version
+    status
+    supersedesVersionId
+    priorMean
+    priorStandardDeviation
+    gridMin
+    gridMax
+    gridStep
+    classificationPolicyVersion
+    submittedForReviewAt
+    createdAt
+    levels {
+      id
+      order
+      label
+      lowerBound
+      itemDifficultyPrior
+      sourceLevelId
+    }
+    approvals {
+      id
+      method
+      methodVersion
+      panelSize
+      standardSettingDate
+      cutRationale
+      decision
+      reviewedAt
+      createdAt
+    }
+    scaleLinks {
+      id
+      status
+      fromScaleVersionId
+      toScaleVersionId
+      method
+      implementationVersion
+      reviewedAt
+      createdAt
+    }
+    calibrationCounts {
+      provisional
+      pilot
+      calibrated
+      flagged
+      retired
+    }
+    calibrations {
+      id
+      assignmentId
+      elementId
+      elementVersion
+      version
+      model
+      status
+      discrimination
+      difficulty
+      guessing
+      parameterUncertainty
+      responseCount
+      participantCount
+      diagnostics
+      modelImplementationVersion
+      approvedAt
+      createdAt
+    }
+    empiricalValidations {
+      id
+      configId
+      status
+      measurementVersion
+      estimatorImplementationVersion
+      classificationPolicyVersion
+      calibrationPolicyVersion
+      approvedProbabilityThreshold
+      aggregateMetrics
+      stratumMetrics
+      submittedAt
+      reviewedAt
+    }
+  }
+}
