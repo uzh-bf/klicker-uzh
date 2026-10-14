@@ -577,7 +577,7 @@ test('a provider ignoring required tool use fails without entering OCR prose ret
 })
 
 test('compression restores only exact reasoned turns, retaining native thinking and bounds', () => {
-  const history = createHistoryStore({ maxEntries: 2 })
+  const history = createHistoryStore({ maxEntries: 3 })
   const prefix = [
     { role: 'system', content: 's' },
     { role: 'user', content: 'original' },
@@ -632,13 +632,21 @@ test('compression restores only exact reasoned turns, retaining native thinking 
     )
   const secondPrefix = [prefix[0], { role: 'user', content: 'another group' }]
   history.remember(secondPrefix, { ...native, index: 1 })
+  assert.deepEqual(
+    history.restoreMessages([...compressed, turn]).at(-1),
+    expected
+  )
+  history.remember([{ role: 'user', content: 'third group' }], {
+    ...native,
+    content: [{ ...native.content[0], signature: 'different native state' }],
+  })
   assert.deepEqual(history.restoreMessages([...prefix, turn]).at(-1), expected)
   assert.throws(
     () => history.restoreMessages([...compressed, turn]),
     /ambiguous/
   )
   assert.throws(
-    () => history.remember([{ role: 'user', content: 'third group' }], native),
+    () => history.remember([{ role: 'user', content: 'fourth group' }], native),
     /bound/
   )
 })
@@ -1383,6 +1391,20 @@ test('run propagates the child exit code', async () => {
   assert.equal(diagnostics.schema_version, 1)
   assert.equal(diagnostics.upstream_attempts, 0)
   assert.doesNotMatch(JSON.stringify(diagnostics), /sk-synthetic-run/)
+  const missing = await runCli(
+    ['run', '--', process.execPath, '-e', 'process.exit(0)'],
+    {
+      MISTRAL_API_KEY: 'sk-synthetic-run',
+      OCR_ADAPTER_DIAGNOSTICS_PATH: path.join(
+        directory,
+        'absent',
+        'receipt.jsonl'
+      ),
+    }
+  )
+  assert.equal(missing.code, 0)
+  assert.match(missing.stderr, /execution counters unavailable/)
+  assert.doesNotMatch(missing.stderr, /ENOENT|absent|sk-synthetic-run/)
   fs.rmSync(directory, { recursive: true, force: true })
 })
 

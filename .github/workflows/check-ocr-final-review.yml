@@ -440,14 +440,9 @@ jobs:
               echo 'Pinned OCR executable verification failed; raw output is suppressed.' >&2
               return "${exit_code}"
             fi
-            [[ "${REVIEW_JOB_STARTED_AT}" =~ ^[1-9][0-9]*$ ]]
-            now="$(date +%s)"
-            if (( now + 2760 > REVIEW_JOB_STARTED_AT + 4800 )); then
-              echo 'Refusing to start OCR without the reserved cleanup window' >&2
-              return 1
-            fi
-            for prompt_limit in 200000 32768; do
-              if ! (unset MISTRAL_API_KEY; ocr review --preview \
+            local baseline_limit=200000 bounded_limit=32768
+            for prompt_limit in "${baseline_limit}" "${bounded_limit}"; do
+              if ! (unset MISTRAL_API_KEY; timeout --kill-after=10 120 ocr review --preview \
                 --from "${REVIEW_FROM}" --to "${HEAD_SHA}" \
                 --max-tokens "${prompt_limit}" --format json --audience agent \
                 --rule .github/open-code-review/final-review-rules.json) \
@@ -457,9 +452,15 @@ jobs:
               fi
             done
             if ! node .github/scripts/final-ai-review.js validate-ocr-preview \
-              "${output_path}.preview-200000" "${output_path}.preview-32768" \
+              "${output_path}.preview-${baseline_limit}" "${output_path}.preview-${bounded_limit}" \
               >/dev/null 2>>"${STDERR_PATH}"; then
               echo 'Bounded OCR context changed file coverage; review refused.' >&2
+              return 1
+            fi
+            [[ "${REVIEW_JOB_STARTED_AT}" =~ ^[1-9][0-9]*$ ]]
+            now="$(date +%s)"
+            if (( now + 2760 > REVIEW_JOB_STARTED_AT + 4800 )); then
+              echo 'Refusing to start OCR without the reserved cleanup window' >&2
               return 1
             fi
             if [[ -n "${session_id}" ]]; then
@@ -471,7 +472,7 @@ jobs:
               --audience agent \
               --effort low \
               --timeout 45 \
-              --max-tokens 32768 \
+              --max-tokens "${bounded_limit}" \
               --max-tokens-budget "${token_budget}" \
               --format json \
               --background "${BACKGROUND}" \
@@ -1043,14 +1044,9 @@ jobs:
               echo 'Pinned OCR executable verification failed; raw output is suppressed.' >&2
               return "${exit_code}"
             fi
-            [[ "${REVIEW_JOB_STARTED_AT}" =~ ^[1-9][0-9]*$ ]]
-            now="$(date +%s)"
-            if (( now + 1860 > REVIEW_JOB_STARTED_AT + 4200 )); then
-              echo 'Refusing to start OCR without the reserved topology and cleanup window' >&2
-              return 1
-            fi
-            for prompt_limit in 200000 32768; do
-              if ! (unset MISTRAL_API_KEY; ocr review --preview \
+            local baseline_limit=200000 bounded_limit=32768
+            for prompt_limit in "${baseline_limit}" "${bounded_limit}"; do
+              if ! (unset MISTRAL_API_KEY; timeout --kill-after=10 120 ocr review --preview \
                 --from "${review_from}" --to "${review_to}" \
                 --max-tokens "${prompt_limit}" --format json --audience agent \
                 --rule .github/open-code-review/final-review-rules.json) \
@@ -1060,9 +1056,15 @@ jobs:
               fi
             done
             if ! node .github/scripts/final-ai-review.js validate-ocr-preview \
-              "${output_path}.preview-200000" "${output_path}.preview-32768" \
+              "${output_path}.preview-${baseline_limit}" "${output_path}.preview-${bounded_limit}" \
               >/dev/null 2>>"${STDERR_PATH}"; then
               echo 'Bounded OCR context changed file coverage; review refused.' >&2
+              return 1
+            fi
+            [[ "${REVIEW_JOB_STARTED_AT}" =~ ^[1-9][0-9]*$ ]]
+            now="$(date +%s)"
+            if (( now + 1860 > REVIEW_JOB_STARTED_AT + 4200 )); then
+              echo 'Refusing to start OCR without the reserved topology and cleanup window' >&2
               return 1
             fi
             if [[ -n "${session_id}" ]]; then
@@ -1074,7 +1076,7 @@ jobs:
               --audience agent \
               --effort low \
               --timeout 30 \
-              --max-tokens 32768 \
+              --max-tokens "${bounded_limit}" \
               --max-tokens-budget "${token_budget}" \
               --format json \
               --background "${BACKGROUND}" \

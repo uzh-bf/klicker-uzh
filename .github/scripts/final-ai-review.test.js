@@ -230,6 +230,7 @@ function executeExtractedOCRAttempt({
   versionMode = 'ok',
   versionStatus = 0,
   reviewStatus = 0,
+  previewStatus = 0,
 }) {
   const directory = fs.mkdtempSync(
     path.join(os.tmpdir(), 'final-review-ocr-shell-')
@@ -260,6 +261,7 @@ function executeExtractedOCRAttempt({
     MISTRAL_API_KEY: 'synthetic-upstream-key',
     OCR_CALLS_PATH: callsPath,
     OCR_REVIEW_STATUS: String(reviewStatus),
+    OCR_PREVIEW_STATUS: String(previewStatus),
     OCR_STDERR_SENTINEL: stderrSentinel,
     OCR_STDOUT_SENTINEL: stdoutSentinel,
     OCR_VERSION_MODE: versionMode,
@@ -284,6 +286,12 @@ function executeExtractedOCRAttempt({
     'set -euo pipefail',
     functionText,
     '',
+    'timeout() {',
+    '  [[ "$1" == --kill-after=10 && "$2" == 120 ]] || return 99',
+    '  (( OCR_PREVIEW_STATUS == 0 )) || return "$OCR_PREVIEW_STATUS"',
+    '  shift 2',
+    '  "$@"',
+    '}',
     'node() {',
     '  if [[ "$1" == .github/scripts/final-ai-review.js && "$2" == validate-ocr-preview ]]; then',
     '    command node "$@" || return',
@@ -446,6 +454,12 @@ test('executes both workflow OCR command boundaries with pinned version diagnost
   }
 
   for (const form of [forms[0], forms[2]]) {
+    const previewFailure = runCase(form, { previewStatus: 124 })
+    assert.equal(previewFailure.process.status, 1)
+    assert.match(previewFailure.process.stderr, /coverage preview failed/)
+    assert.equal(previewFailure.output, null)
+    assert.doesNotMatch(previewFailure.calls, /review no_update/)
+    assertNoOCRSentinels(previewFailure)
     for (const outcome of [
       { name: 'review 127', reviewStatus: 127, expectedStatus: 127 },
       { name: 'review 2', reviewStatus: 2, expectedStatus: 2 },
@@ -489,7 +503,7 @@ test('bounds individual and stack review retries, tokens, and runtime', () => {
 
   assert.equal(source.match(/--timeout 45/g)?.length, 1)
   assert.equal(source.match(/--timeout 30/g)?.length, 1)
-  assert.equal(source.match(/--max-tokens 32768/g)?.length, 2)
+  assert.equal(source.match(/--max-tokens "\$\{bounded_limit\}"/g)?.length, 2)
   assert.equal(source.match(/plan-ocr-resume/g)?.length, 2)
   assert.equal(source.match(/merge-ocr-resume/g)?.length, 2)
   assert.match(source, /run_ocr_attempt "\$\{RESULT_PATH\}" 3000000/)

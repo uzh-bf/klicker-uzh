@@ -430,7 +430,9 @@ function createHistoryStore(options = {}) {
         'native reasoning history bound exceeded'
       )
     }
-    const entry = { serialized, size }
+    const restorable = { ...nativeMessage }
+    delete restorable.index
+    const entry = { serialized, size, digest: hashIdentity(restorable) }
     native.set(key, entry)
     const turnKey = reasonedKey(normalized)
     if (turnKey) {
@@ -438,8 +440,7 @@ function createHistoryStore(options = {}) {
       // distinct native payload can be restored independently of that prefix.
       const prior = reasonedTurns.get(turnKey)
       if (!reasonedTurns.has(turnKey)) reasonedTurns.set(turnKey, entry)
-      else if (prior?.serialized !== serialized)
-        reasonedTurns.set(turnKey, null)
+      else if (prior?.digest !== entry.digest) reasonedTurns.set(turnKey, null)
     }
     entries += 1
     bytes += size
@@ -563,7 +564,7 @@ function hasCompletionTool(body) {
     Array.isArray(body.tools) &&
     body.tools.some(
       (tool) => tool?.type === 'function' && tool.function?.name === 'task_done'
-    ) === true
+    )
   )
 }
 
@@ -1178,11 +1179,15 @@ async function commandRun(args) {
   await adapter.close()
   const diagnosticsPath = process.env.OCR_ADAPTER_DIAGNOSTICS_PATH
   if (diagnosticsPath) {
-    fs.appendFileSync(
-      diagnosticsPath,
-      `${JSON.stringify(adapter.diagnostics())}\n`,
-      { mode: 0o600 }
-    )
+    try {
+      fs.appendFileSync(
+        diagnosticsPath,
+        `${JSON.stringify(adapter.diagnostics())}\n`,
+        { mode: 0o600 }
+      )
+    } catch {
+      process.stderr.write('OCR adapter execution counters unavailable\n')
+    }
   }
   if (result.failed) {
     throw new AdapterError(
