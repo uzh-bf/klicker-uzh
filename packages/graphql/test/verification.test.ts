@@ -829,7 +829,7 @@ describe('assessment report credential services', () => {
     })
   })
 
-  it('releases the peer comparison once, in the first report after the course end', async () => {
+  it('includes the peer comparison in every report issued after the course end', async () => {
     const fixture = await createFixture()
     await addComparisonCohort(fixture)
 
@@ -865,10 +865,10 @@ describe('assessment report credential services', () => {
       fixture.participantCtx
     )
     expect(replacement.token).not.toBe(final.token)
-    expect(replacement.snapshot.comparison).toBeNull()
+    expect(replacement.snapshot.comparison).toMatchObject({ cohortSize: 10 })
   })
 
-  it('ignores a comparison released in a report issued before the course end', async () => {
+  it('replaces a mid-course comparison with the current one after the course end', async () => {
     const fixture = await createFixture()
     await addComparisonCohort(fixture)
     const interim = await issueAssessmentReport(

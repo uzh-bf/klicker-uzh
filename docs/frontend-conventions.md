@@ -47,11 +47,10 @@ exact range/count table for accessible detail. Show percentile as a 0–100
 ruler with a marker at the student's inclusive percentile rank; do not imply
 that the score groups form a normal or continuous distribution. The comparison
 remains omitted below the existing cohort threshold and in interim reports
-issued before the course end date. Each student receives it once, in the first
-report issued after the course end; later replacements omit it so two reports
-cannot be differenced. The release is derived from reports issued at or after
-the current end date, so extending the end date after final reports exist
-allows a second comparison. The stored V1 report contract is unchanged.
+issued before the course end date. Every report issued after the course end
+includes the current comparison; an active report is reused only while its
+snapshot, including the comparison, is unchanged. The stored V1 report contract
+is unchanged.
 
 ## Next.js tooling
 
