@@ -29,7 +29,7 @@ import {
   PLAYWRIGHT_PROFILE_FALLBACK,
   PNPM_VERIFY_DEPS_ENV,
   parseLocalOptions,
-  parsePublishedPort,
+  parseHostEnvironment,
   resolvePlaywrightEnvironment,
   main as runPlaywrightHost,
 } from './run-playwright-host.mjs'
@@ -207,6 +207,27 @@ test('profile inference falls back when the manifest cannot be read', () => {
   )
 })
 
+function syntheticHostEnvironment({
+  workspace = 'synthetic-launcher',
+  loopback = { host: '127.0.0.1', port: 49153 },
+  loopbackReason,
+} = {}) {
+  return JSON.stringify({
+    version: 1,
+    workspace,
+    apps: [
+      { name: 'manage', protocol: 'http' },
+      {
+        name: 'db',
+        protocol: 'tcp',
+        tcpProtocol: 'postgres',
+        loopback,
+        ...(loopbackReason ? { loopbackReason } : {}),
+      },
+    ],
+  })
+}
+
 function createLauncherHarness({
   playwrightCli = true,
   prismaDist = true,
@@ -238,8 +259,8 @@ function createLauncherHarness({
       return '/synthetic/git'
     }
     if (command === 'docker' && args[0] === 'ps') return 'container-id'
-    if (command === 'docker' && args[0] === 'port') {
-      return '127.0.0.1:49153'
+    if (command === '/synthetic/bin/devrouter' && args[0] === 'env') {
+      return syntheticHostEnvironment()
     }
 
     return ''
@@ -796,9 +817,35 @@ test('workspace URLs and the loopback database port resolve together', () => {
   )
 })
 
-test('Docker port output resolves IPv4 and IPv6 bindings', () => {
-  assert.equal(parsePublishedPort('127.0.0.1:49153'), 49153)
-  assert.equal(parsePublishedPort('[::1]:49154'), 49154)
+test('the devrouter env report resolves the workspace and loopback database', () => {
+  assert.deepEqual(parseHostEnvironment(syntheticHostEnvironment()), {
+    workspace: 'synthetic-launcher',
+    databaseHost: '127.0.0.1',
+    databasePort: 49153,
+  })
+  assert.deepEqual(
+    parseHostEnvironment(
+      syntheticHostEnvironment({
+        workspace: null,
+        loopback: { host: '::1', port: 49154 },
+      })
+    ),
+    { workspace: '', databaseHost: '[::1]', databasePort: 49154 }
+  )
+  assert.throws(
+    () =>
+      parseHostEnvironment(
+        syntheticHostEnvironment({
+          loopback: null,
+          loopbackReason: 'not-running',
+        })
+      ),
+    /not-running/
+  )
+  assert.throws(
+    () => parseHostEnvironment(JSON.stringify({ version: 2, apps: [] })),
+    /unsupported devrouter env report version/
+  )
 })
 
 test('every local Playwright package script routes through the host launcher', () => {
@@ -925,10 +972,7 @@ test('a fresh worktree installs without stopping a runtime that does not exist y
     workspaceIdentity: false,
   })
 
-  assert.throws(
-    () => runPlaywrightHost(['--list'], harness.dependencies),
-    /did not persist a workspace token/
-  )
+  runPlaywrightHost(['--list'], harness.dependencies)
 
   assert.equal(
     commandIndex(harness.calls, '/synthetic/bin/devrouter', 'stop'),

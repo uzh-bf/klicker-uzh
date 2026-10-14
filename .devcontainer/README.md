@@ -43,7 +43,7 @@ The primary checkout keeps fixed localhost application ports, publishes the data
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.3.0 and set it up:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.4.0 and set it up:
    ```bash
    devrouter setup --yes   # Traefik + the shared `devnet` + mkcert CA
    ```
@@ -93,7 +93,7 @@ marker creation to work around a refusal.
 
 ## Profiles
 
-This repository pins devrouter 0.3.0. Managed profiles, introduced in 0.0.40,
+This repository pins devrouter 0.4.0. Managed profiles, introduced in 0.0.40,
 select three independent dimensions: routed
 apps, optional Compose services, and managed processes. Merged selections are
 additive and order-insensitive; omitting `--profile` keeps the all-on `full`
@@ -148,9 +148,9 @@ starting the backend or workers.
 ## Playwright runs on the host
 
 Run `node util/run-playwright-host.mjs <args>` from a host shell. The launcher reconciles
-this exact checkout, uses its namespaced HTTPS routes, and discovers the
-workspace Postgres container's random loopback port for test cleanup and
-seeding. The Playwright process, Node dependencies, and browser binaries stay
+this exact checkout, uses its namespaced HTTPS routes, and reads the
+workspace Postgres container's random loopback port from `devrouter env --json`
+for test cleanup and seeding. The Playwright process, Node dependencies, and browser binaries stay
 on the host; applications and services stay in this devcontainer.
 
 The default starts the full profile. For focused activity tests, request the

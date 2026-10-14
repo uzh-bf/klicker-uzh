@@ -400,13 +400,37 @@ export function readCommittedEnvironment(contents) {
   return values
 }
 
-export function parsePublishedPort(output) {
-  for (const line of output.split(/\r?\n/)) {
-    const match = line.trim().match(/:(\d+)$/)
-    if (match) return Number(match[1])
+// `devrouter env --json` (report version 1) attributes the loopback port to
+// this checkout's own devcontainer and names the reason when it cannot.
+export function parseHostEnvironment(output) {
+  let report
+  try {
+    report = JSON.parse(output)
+  } catch {
+    fail('devrouter env did not return a JSON report')
   }
-
-  fail('the workspace Postgres container has no loopback host port')
+  if (report?.version !== 1) {
+    fail(`unsupported devrouter env report version ${report?.version}`)
+  }
+  const databases = (report.apps ?? []).filter(
+    (app) => app.protocol === 'tcp' && app.tcpProtocol === 'postgres'
+  )
+  if (databases.length !== 1) {
+    fail(
+      `expected one Postgres app in devrouter env, found ${databases.length}`
+    )
+  }
+  const [{ loopback, loopbackReason }] = databases
+  if (!loopback) {
+    fail(`the workspace Postgres has no loopback host port (${loopbackReason})`)
+  }
+  return {
+    workspace: report.workspace ?? '',
+    databaseHost: loopback.host.includes(':')
+      ? `[${loopback.host}]`
+      : loopback.host,
+    databasePort: loopback.port,
+  }
 }
 
 export function parseLocalOptions(argv) {
@@ -464,6 +488,7 @@ export function parseLocalOptions(argv) {
 export function resolvePlaywrightEnvironment({
   appSecret,
   databaseTemplate,
+  databaseHost = '127.0.0.1',
   databasePort,
   postgresContainer,
   workspace,
@@ -472,7 +497,7 @@ export function resolvePlaywrightEnvironment({
   const appUrl = (app) => `https://${app}.klicker${namespace}.localhost`
   const databaseUrl = new URL(databaseTemplate)
 
-  databaseUrl.hostname = '127.0.0.1'
+  databaseUrl.hostname = databaseHost
   databaseUrl.port = String(databasePort)
 
   const studentUrl = appUrl('pwa')
@@ -532,19 +557,6 @@ function hasLinkedWorkspaceIdentity(runtime) {
   )
 }
 
-function resolveWorkspace(runtime) {
-  const { gitDir, commonDir } = resolveGitDirectories(runtime)
-
-  if (gitDir === commonDir) return ''
-
-  const workspaceFile = join(gitDir, 'devrouter-workspace')
-  if (!runtime.pathExists(workspaceFile)) {
-    fail('devrouter did not persist a workspace token for this worktree')
-  }
-
-  return runtime.readFile(workspaceFile, 'utf8').trim()
-}
-
 export function resolvePostgresContainer(runtime) {
   const workingDirectory = join(runtime.repoRoot, '.devcontainer')
   const containerIds = runtime
@@ -572,16 +584,14 @@ export function resolvePostgresContainer(runtime) {
   return containerIds[0]
 }
 
-export function resolveDatabasePort(runtime, containerId) {
-  if (!containerId) fail('a Postgres container id is required')
-
-  const publishedPort = runtime.commandRunner(
-    'docker',
-    ['port', containerId, '5432/tcp'],
-    { capture: true }
+function resolveHostEnvironment(runtime) {
+  return parseHostEnvironment(
+    runtime.commandRunner(
+      runtime.devrouter(),
+      ['env', runtime.repoRoot, '--json'],
+      { capture: true }
+    )
   )
-
-  return parsePublishedPort(publishedPort)
 }
 
 function ensureHostDependencies(runtime, playwrightArgs) {
@@ -707,9 +717,9 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
     ])
     queueWaitSeconds = queueWaitSecondsFrom(runtime.readFile, ensureTelemetry)
 
-    const workspace = resolveWorkspace(runtime)
+    const { workspace, databaseHost, databasePort } =
+      resolveHostEnvironment(runtime)
     const postgresContainer = resolvePostgresContainer(runtime)
-    const databasePort = resolveDatabasePort(runtime, postgresContainer)
     const committedEnvironment = readCommittedEnvironment(
       runtime.readFile(
         join(runtime.repoRoot, '.devcontainer', 'devcontainer.env'),
@@ -726,6 +736,7 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
     const resolvedEnvironment = resolvePlaywrightEnvironment({
       appSecret,
       databaseTemplate,
+      databaseHost,
       databasePort,
       postgresContainer,
       workspace,
@@ -735,7 +746,7 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
       runtime.log(
         JSON.stringify(
           {
-            databaseHost: `127.0.0.1:${databasePort}`,
+            databaseHost: `${databaseHost}:${databasePort}`,
             postgresContainer,
             manageUrl: resolvedEnvironment.URL_MANAGE,
             studentUrl: resolvedEnvironment.URL_STUDENT,
@@ -753,7 +764,7 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
       `[playwright:host] Running on the host against ${resolvedEnvironment.URL_MANAGE}`
     )
     runtime.log(
-      `[playwright:host] Stack: Next dev servers (CI tests production builds), profile=${runtimeProfile}, database=127.0.0.1:${databasePort}`
+      `[playwright:host] Stack: Next dev servers (CI tests production builds), profile=${runtimeProfile}, database=${databaseHost}:${databasePort}`
     )
     runtime.runPnpm(
       [
