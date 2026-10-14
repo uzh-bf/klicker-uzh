@@ -3,22 +3,38 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'vitest'
-
-import { KlickerEvaluationTarget } from '../scripts/klicker-evaluation-target.mjs'
+import {
+  acquireBudgetLock,
+  fingerprint,
+  initializeBudget,
+  MAX_PROVIDER_MICRO_USD,
+  MAX_SUBMITTED_TURNS,
+  readBudgetLedger,
+  reserveProviderSpend,
+} from '../../../evaluation/evaluation-budget.mjs'
+import { requestReservation } from '../../../evaluation/evaluation-spend-guard.mjs'
 import {
   parseArguments,
   runTutorTrajectories,
-} from '../scripts/run-tutor-trajectories.mjs'
+} from '../../../evaluation/run-tutor-trajectories.mjs'
 import {
   calculateTutorReference,
   compareTutorNumericClaim,
   validateNumericSidecar,
-} from '../scripts/tutor-numeric-reference.mjs'
+} from '../../../evaluation/tutor-numeric-reference.mjs'
 import {
+  DEFAULT_CHATBOT_ID,
+  KlickerEvaluationTarget,
+} from '../scripts/klicker-evaluation-target.mjs'
+import {
+  buildSourceReceipt,
   EXPECTED_DOC_QUERY_TOOL,
   runTrajectory,
   validateTrajectoryCorpus,
 } from '../scripts/tutor-trajectory.mjs'
+import { withModelCitationIndices } from '../src/lib/server/citationInstructions'
+import { mapAssistantStepContent } from '../src/lib/server/persistedAssistantContent'
+import { MAX_SOURCES } from '../src/lib/sources/normalizeSources'
 
 test('numerical references use annual compounding and decimal returns', () => {
   assert.ok(
@@ -159,7 +175,9 @@ test('numerical sidecar obligations must reference corpus assessment turns', asy
   }
 })
 
-const SYNTHETIC_MODEL = 'gpt-5.6-luna'
+// Pinned so the mock and the target agree even when the application default
+// model changes; the target is always constructed with this id explicitly.
+const SYNTHETIC_MODEL = 'gpt-6-luna'
 
 const TURN_RECEIPT_FIELDS = [
   'arm',
@@ -174,7 +192,9 @@ const TURN_RECEIPT_FIELDS = [
   'model',
   'parentId',
   'recordedAt',
+  'receiptVersion',
   'repeat',
+  'sourceMapping',
   'sources',
   'support',
   'threadId',
@@ -200,16 +220,45 @@ function trajectoryCase(overrides = {}) {
   }
 }
 
-function budgetLedger(overrides = {}) {
-  return {
-    version: 1,
-    maxSubmittedTurns: 160,
-    maxApplicationCredits: 3,
-    submittedTurns: 0,
-    creditsUsed: 0,
-    uncertain: false,
-    ...overrides,
+// Operator-qualified pricing policy and canonical upstream base for the
+// synthetic guard placement. The provider base and prices are fixed test
+// inputs, never a copied tariff.
+const SYNTHETIC_UPSTREAM = 'https://synthetic.example/v1'
+const SYNTHETIC_POLICY = {
+  version: 1,
+  provider: 'synthetic',
+  qualification: 'synthetic-guard',
+  upstreamOrigin: SYNTHETIC_UPSTREAM,
+  models: {
+    [SYNTHETIC_MODEL]: {
+      contextTokens: 1_000,
+      maxOutputTokens: 100,
+      inputMicroUsdPerMillion: 1_000_000,
+      outputMicroUsdPerMillion: 2_000_000,
+      outputIncludesReasoning: true,
+    },
+  },
+}
+const SYNTHETIC_POLICY_HASH = fingerprint(SYNTHETIC_POLICY)
+// The guard reserves the full qualified input context plus the output ceiling
+// before dispatch; the synthetic application issues one such call per turn.
+const SYNTHETIC_RESERVATION = requestReservation(
+  SYNTHETIC_POLICY,
+  '/v1/chat/completions',
+  {
+    model: SYNTHETIC_MODEL,
+    messages: [{ role: 'user', content: 'synthetic' }],
+    max_completion_tokens: 100,
   }
+)
+const GUARD_ORIGIN = 'http://127.0.0.1:9'
+const GUARD_KEY = 'synthetic-guard-key'
+
+// The version-2 ledger identity receipt covers the immutable fields only, so a
+// test may patch mutable lifecycle state without breaking the identity check.
+async function seedLedger(path, patch) {
+  const ledger = JSON.parse(await readFile(path, 'utf8'))
+  await writeFile(path, JSON.stringify({ ...ledger, ...patch }) + '\n')
 }
 
 function trajectoryEnv(overrides = {}) {
@@ -221,6 +270,10 @@ function trajectoryEnv(overrides = {}) {
     KLICKER_EVAL_POLL_INTERVAL_MS: '1',
     KLICKER_EVAL_POLL_TIMEOUT_MS: '1000',
     KLICKER_EVAL_REQUEST_TIMEOUT_MS: '1000',
+    KLICKER_EVAL_QUALIFICATION_FILE: '/tmp/unused-qualification.json',
+    KLICKER_EVAL_GUARD_ORIGIN: GUARD_ORIGIN,
+    KLICKER_EVAL_GUARD_KEY: GUARD_KEY,
+    KLICKER_EVAL_UPSTREAM_ORIGIN: SYNTHETIC_UPSTREAM,
     ...overrides,
   }
 }
@@ -308,9 +361,12 @@ function syntheticChatFetch({ turnConfig = () => ({}) } = {}) {
                       mode: 'answer',
                       sources: [
                         {
-                          reference: 'synthetic-source-ref',
-                          title: 'Synthetic source title',
+                          display_name: 'Synthetic source title',
+                          file_name: 'synthetic-source.pdf',
+                          page_number: 3,
                           excerpt: 'private excerpt',
+                          source_url:
+                            'https://private.example.internal/synthetic.pdf',
                         },
                       ],
                     }),
@@ -396,6 +452,7 @@ function createTrajectoryTarget(overrides = {}) {
     pollTimeoutMs: 1000,
     pollIntervalMs: 1,
     requestTimeoutMs: 1000,
+    modelId: SYNTHETIC_MODEL,
     ...overrides,
   })
 }
@@ -432,9 +489,29 @@ test('trajectory chains persisted ancestry and repeats only the visible answer',
     assert.equal(result.threadId, 'thread-1')
     assert.equal(receipts.length, 2)
     assert.deepEqual(Object.keys(receipts[0]).sort(), TURN_RECEIPT_FIELDS)
-    assert.deepEqual(receipts[0].sources, [
-      { ref: 'synthetic-source-ref', title: 'Synthetic source title' },
-    ])
+    assert.equal(receipts[0].receiptVersion, 2)
+    assert.deepEqual(receipts[0].sourceMapping, {
+      version: 1,
+      maxSources: MAX_SOURCES,
+      fingerprint: receipts[0].sourceMapping.fingerprint,
+    })
+    assert.match(receipts[0].sourceMapping.fingerprint, /^[0-9a-f]{64}$/)
+    assert.equal(receipts[0].sources.length, 1)
+    const [sourceEntry] = receipts[0].sources
+    assert.match(sourceEntry.identityHash, /^[0-9a-f]{64}$/)
+    assert.deepEqual(
+      { ...sourceEntry, identityHash: '<hash>' },
+      {
+        toolCallId: 'tool-1',
+        sourcePosition: 1,
+        citationIndex: 1,
+        identityHash: '<hash>',
+        type: 'document',
+        page: 3,
+        startSec: null,
+        endSec: null,
+      }
+    )
     assert.equal(receipts[0].toolName, EXPECTED_DOC_QUERY_TOOL)
     assert.equal(receipts[0].toolStatus, 'completed')
     assert.equal(receipts[0].creditsUsed, 0.25)
@@ -486,6 +563,9 @@ test('trajectory chains persisted ancestry and repeats only the visible answer',
       'private tool arguments',
       'retrieval output',
       'private excerpt',
+      'Synthetic source title',
+      'synthetic-source.pdf',
+      'private.example.internal',
       'reasoningContent',
       'participant_token',
     ]) {
@@ -597,6 +677,239 @@ test('trajectory requires a completed non-error retrieval result', async () => {
   }
 })
 
+test('trajectory accepts Explainer with the same stream and persistence checks', async () => {
+  const app = syntheticChatFetch({
+    turnConfig: ({ turn }) => ({
+      answerText: 'Synthetic explainer answer ' + turn + '.',
+    }),
+  })
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = app.fetchImpl
+  try {
+    const result = await runTrajectory(
+      createTrajectoryTarget(),
+      trajectoryCase({
+        mode: 'explainer',
+        turns: [{ message: 'Explain synthetic topic' }],
+      })
+    )
+    assert.equal(result.receipts.length, 1)
+    assert.equal(result.receipts[0].mode, 'explainer')
+    assert.equal(result.receipts[0].toolStatus, 'completed')
+    assert.equal(
+      result.receipts[0].assistantText,
+      'Synthetic explainer answer 1.'
+    )
+    assert.equal(result.receipts[0].sources.length, 1)
+    assert.equal(result.receipts[0].sources[0].citationIndex, 1)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+// The evaluator reconstructs the application's per-call citation mapping
+// instead of reimplementing it. This proves parity with the application
+// projection (withModelCitationIndices) across multiple calls, cross-call
+// deduplication, page and video positions, an MCP text envelope, capacity
+// overflow and a suppressed private URL.
+test('source receipts match the application citation projection and suppress raw sources', () => {
+  const documents = (...sources) => ({ mode: 'documents', sources })
+  const answer = (...sources) => ({ mode: 'answer', sources })
+  const part = (toolCallId, result, toolName = EXPECTED_DOC_QUERY_TOOL) => ({
+    type: 'tool-call',
+    toolCallId,
+    toolName,
+    result,
+  })
+  const alphaChunk = {
+    reference: 'urn:alpha',
+    title: 'Alpha',
+    chunks: [{ content: 'passage one', page_number: 1 }],
+  }
+  const parts = [
+    part(
+      'call-a',
+      documents(
+        alphaChunk,
+        {
+          reference: 'urn:video',
+          source_type: 'video',
+          title: 'Beta',
+          chunks: [
+            {
+              content: 'passage two',
+              page_number: 2,
+              start_sec: 10,
+              end_sec: 20,
+            },
+          ],
+        },
+        alphaChunk
+      )
+    ),
+    part(
+      'call-b',
+      answer({
+        display_name: 'Private Doc',
+        page_number: 5,
+        source_url: 'https://private.example.internal/secret.pdf',
+        excerpt: 'private-chunk-text',
+      }),
+      'COURSE_doc_query'
+    ),
+    part(
+      'call-c',
+      {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              documents(
+                ...Array.from({ length: MAX_SOURCES }, (_, index) => ({
+                  reference: 'urn:c' + index,
+                  title: 'Doc ' + index,
+                  chunks: [
+                    { content: 'chunk ' + index, page_number: index + 1 },
+                  ],
+                }))
+              )
+            ),
+          },
+        ],
+      },
+      'COURSE_doc_query_01234567'
+    ),
+  ]
+
+  parts.push(part('call-error', { ...documents(alphaChunk), isError: true }))
+  const steps = parts.map((entry) => ({
+    content: [
+      {
+        type: 'tool-call',
+        toolCallId: entry.toolCallId,
+        toolName: entry.toolName,
+        input: {},
+      },
+      {
+        type: 'tool-result',
+        toolCallId: entry.toolCallId,
+        toolName: entry.toolName,
+        output: entry.result,
+      },
+    ],
+  }))
+  const messages = parts.map((entry) => ({
+    role: 'tool',
+    content: [
+      {
+        type: 'tool-result',
+        toolCallId: entry.toolCallId,
+        toolName: entry.toolName,
+        output: { type: 'text', value: '{}' },
+      },
+    ],
+  }))
+
+  const receipt = buildSourceReceipt(mapAssistantStepContent(steps))
+  const applicationEntries = []
+  withModelCitationIndices(messages, steps).forEach((message, index) => {
+    const payload = JSON.parse(message.content[0].output.value)
+    ;(payload.sources ?? []).forEach((source, position) => {
+      applicationEntries.push({
+        toolCallId: parts[index].toolCallId,
+        sourcePosition: position + 1,
+        citationIndex: Number.isInteger(source.citation_index)
+          ? source.citation_index
+          : null,
+      })
+    })
+  })
+  const expectedEntries = [
+    ...[1, 2, 1].map((citationIndex, index) => ({
+      toolCallId: 'call-a',
+      sourcePosition: index + 1,
+      citationIndex,
+    })),
+    { toolCallId: 'call-b', sourcePosition: 1, citationIndex: 3 },
+    ...Array.from({ length: MAX_SOURCES }, (_, index) => ({
+      toolCallId: 'call-c',
+      sourcePosition: index + 1,
+      citationIndex: index + 4 <= MAX_SOURCES ? index + 4 : null,
+    })),
+  ]
+  assert.deepEqual(applicationEntries, expectedEntries)
+  for (const toolCallId of [undefined, null, 123, '']) {
+    assert.throws(
+      () =>
+        buildSourceReceipt([
+          part(toolCallId, documents(alphaChunk), 'COURSE_doc_query_01234567'),
+        ]),
+      { code: 'trajectory_tool_identity_mismatch' }
+    )
+  }
+  assert.deepEqual(
+    receipt.sources.map(({ toolCallId, sourcePosition, citationIndex }) => ({
+      toolCallId,
+      sourcePosition,
+      citationIndex,
+    })),
+    expectedEntries
+  )
+
+  // Deduplication keeps the first-appearance index across calls.
+  const callA = receipt.sources.filter((entry) => entry.toolCallId === 'call-a')
+  assert.deepEqual(
+    callA.map((entry) => entry.citationIndex),
+    [1, 2, 1]
+  )
+  // Video positions stay numeric and the type is the normalized one.
+  assert.deepEqual(
+    { ...callA[1], identityHash: '<hash>' },
+    {
+      toolCallId: 'call-a',
+      sourcePosition: 2,
+      citationIndex: 2,
+      identityHash: '<hash>',
+      type: 'video',
+      page: 2,
+      startSec: 10,
+      endSec: 20,
+    }
+  )
+  // Capacity overflow past the application constant yields explicit nulls.
+  const callC = receipt.sources.filter((entry) => entry.toolCallId === 'call-c')
+  assert.equal(callC.length, MAX_SOURCES)
+  assert.deepEqual(
+    callC.map((entry) => entry.citationIndex),
+    Array.from({ length: MAX_SOURCES }, (_, index) =>
+      index + 4 <= MAX_SOURCES ? index + 4 : null
+    )
+  )
+  assert.ok(
+    callC
+      .slice(MAX_SOURCES - 3)
+      .every(
+        (entry) => entry.type === 'document' && entry.identityHash !== null
+      )
+  )
+
+  // Raw references, titles, URLs, chunks and excerpts never reach the receipt.
+  const serialized = JSON.stringify(receipt)
+  for (const forbidden of [
+    'urn:alpha',
+    'urn:video',
+    'Alpha',
+    'Beta',
+    'Private Doc',
+    'private.example.internal',
+    'secret.pdf',
+    'private-chunk-text',
+    'passage one',
+  ]) {
+    assert.equal(serialized.includes(forbidden), false)
+  }
+})
+
 test('trajectory requires completed tool evidence in the stream itself', async () => {
   const originalFetch = globalThis.fetch
   const baseEvents = [
@@ -696,7 +1009,7 @@ test('trajectory corpus validation rejects invalid shapes', () => {
       'corpus_case_duplicate',
     ],
     [
-      { version: 1, cases: [trajectoryCase({ mode: 'explainer' })] },
+      { version: 1, cases: [trajectoryCase({ mode: 'summarizer' })] },
       'trajectory_case_mode_invalid',
     ],
     [
@@ -833,6 +1146,9 @@ test('runner validates corpus and shared budget before any network effect', asyn
     throw new Error('network use is not expected')
   }
 
+  const env = trajectoryEnv({
+    KLICKER_EVAL_QUALIFICATION_FILE: join(directory, 'qualification.json'),
+  })
   const argv = [
     '--corpus',
     corpusPath,
@@ -855,7 +1171,7 @@ test('runner validates corpus and shared budget before any network effect', asyn
     await assert.rejects(
       runTutorTrajectories({
         argv: [...argv, '--group', 'reserved'],
-        env: trajectoryEnv(),
+        env,
         log: () => {},
       }),
       { code: 'group_selection_empty' }
@@ -865,28 +1181,98 @@ test('runner validates corpus and shared budget before any network effect', asyn
       corpusPath,
       JSON.stringify({ version: 2, cases: [trajectoryCase()] })
     )
-    await assert.rejects(
-      runTutorTrajectories({ argv, env: trajectoryEnv(), log: () => {} }),
-      { code: 'corpus_version_unsupported' }
-    )
+    await assert.rejects(runTutorTrajectories({ argv, env, log: () => {} }), {
+      code: 'corpus_version_unsupported',
+    })
 
     await writeFile(
       corpusPath,
       JSON.stringify({ version: 1, cases: [trajectoryCase()] })
     )
-    for (const [ledger, code] of [
-      [budgetLedger({ submittedTurns: 160 }), 'budget_turns_exhausted'],
-      [budgetLedger({ creditsUsed: 3 }), 'budget_credits_exhausted'],
-      [budgetLedger({ uncertain: true }), 'budget_uncertain'],
-      [budgetLedger({ version: 2 }), 'budget_invalid'],
-      [budgetLedger({ creditsUsed: -1 }), 'budget_invalid'],
-      [budgetLedger({ unplanned: true }), 'budget_invalid'],
+
+    // Auto model routing has no qualified finite price and is refused before
+    // the ledger or any transport is read.
+    await assert.rejects(
+      runTutorTrajectories({
+        argv,
+        env: { ...env, KLICKER_EVAL_MODEL_ID: 'auto' },
+        log: () => {},
+      }),
+      { code: 'provider_model_unqualified' }
+    )
+
+    // A missing ledger fails closed.
+    await assert.rejects(runTutorTrajectories({ argv, env, log: () => {} }), {
+      code: 'budget_missing',
+    })
+
+    // A legacy ledger fails with a migration code instead of becoming spend
+    // evidence under the version-2 schema.
+    await writeFile(
+      budgetPath,
+      JSON.stringify({
+        version: 1,
+        maxSubmittedTurns: 120,
+        maxApplicationCredits: 3,
+        submittedTurns: 0,
+        creditsUsed: 0,
+        uncertain: false,
+      })
+    )
+    await assert.rejects(runTutorTrajectories({ argv, env, log: () => {} }), {
+      code: 'budget_version_unsupported',
+    })
+
+    // A malformed version-2 ledger is rejected before its identity is read.
+    await writeFile(
+      budgetPath,
+      JSON.stringify({
+        version: 2,
+        experimentId: 'synthetic-experiment',
+        policyHash: SYNTHETIC_POLICY_HASH,
+        maxSubmittedTurns: 120,
+        maxProviderMicroUsd: MAX_PROVIDER_MICRO_USD,
+        submittedTurns: 0,
+        reservedProviderMicroUsd: 0,
+        creditsUsed: -1,
+        uncertain: false,
+        activeTurn: null,
+      })
+    )
+    await assert.rejects(runTutorTrajectories({ argv, env, log: () => {} }), {
+      code: 'budget_invalid',
+    })
+
+    // An interrupted active turn, exhausted turns and exhausted spend all stop
+    // the run before login while the ledger identity receipt stays intact.
+    for (const [code, limits, patch] of [
+      [
+        'budget_uncertain',
+        { maxSubmittedTurns: 1, maxProviderMicroUsd: MAX_PROVIDER_MICRO_USD },
+        {
+          submittedTurns: 1,
+          uncertain: true,
+          activeTurn: 'synthetic-interrupted-turn',
+        },
+      ],
+      [
+        'budget_turns_exhausted',
+        { maxSubmittedTurns: 1, maxProviderMicroUsd: MAX_PROVIDER_MICRO_USD },
+        { submittedTurns: 1 },
+      ],
+      [
+        'budget_spend_exhausted',
+        { maxSubmittedTurns: MAX_SUBMITTED_TURNS, maxProviderMicroUsd: 1000 },
+        { reservedProviderMicroUsd: 1000 },
+      ],
     ]) {
-      await writeFile(budgetPath, JSON.stringify(ledger))
-      await assert.rejects(
-        runTutorTrajectories({ argv, env: trajectoryEnv(), log: () => {} }),
-        { code }
-      )
+      await rm(budgetPath, { force: true })
+      await rm(budgetPath + '.identity', { force: true })
+      await initializeBudget(budgetPath, SYNTHETIC_POLICY_HASH, limits)
+      await seedLedger(budgetPath, patch)
+      await assert.rejects(runTutorTrajectories({ argv, env, log: () => {} }), {
+        code,
+      })
     }
 
     assert.equal(fetchCalls, 0)
@@ -897,17 +1283,78 @@ test('runner validates corpus and shared budget before any network effect', asyn
   }
 })
 
+// The synthetic application mirrors the production placement
+// (application -> local guard -> qualified upstream). An authenticated status
+// read reflects the durable ledger, and every model call reserves the full
+// qualified cost from the guard before the fake chat result is produced.
+function syntheticGuardFetch({
+  app,
+  budgetPath,
+  policyHash = SYNTHETIC_POLICY_HASH,
+  statusPolicyHash = policyHash,
+}) {
+  return async (url, options = {}) => {
+    const requestUrl = String(url)
+    if (requestUrl.startsWith(GUARD_ORIGIN)) {
+      if (!requestUrl.endsWith('/status'))
+        throw new Error('Unexpected guard request: ' + requestUrl)
+      assert.equal(options.headers?.Authorization, 'Bearer ' + GUARD_KEY)
+      const ledger = await readBudgetLedger(budgetPath)
+      return Response.json({
+        experimentId: ledger.experimentId,
+        policyHash: statusPolicyHash,
+        upstreamOrigin: SYNTHETIC_UPSTREAM,
+        maxSubmittedTurns: ledger.maxSubmittedTurns,
+        maxProviderMicroUsd: ledger.maxProviderMicroUsd,
+        reservedProviderMicroUsd: ledger.reservedProviderMicroUsd,
+      })
+    }
+    if (requestUrl.endsWith('/chat') && (options.method || 'GET') === 'POST') {
+      try {
+        await reserveProviderSpend(
+          budgetPath,
+          policyHash,
+          SYNTHETIC_RESERVATION
+        )
+      } catch (error) {
+        if (
+          error?.code === 'budget_spend_exhausted' ||
+          error?.code === 'budget_busy'
+        ) {
+          return new Response(JSON.stringify({ error: error.code }), {
+            status: 429,
+          })
+        }
+        throw error
+      }
+    }
+    return app(url, options)
+  }
+}
+
 // Runner scenarios share one lifecycle: a scratch directory with corpus,
-// budget and output paths, a scripted fetch replacement, cleanup, and JSONL
-// receipt reads. Each scenario keeps its own inputs and assertions.
+// budget, qualification and output paths, a scripted fetch replacement,
+// cleanup, and JSONL receipt reads. Each scenario keeps its own inputs and
+// assertions.
 async function withRunnerScenario(
-  { cases, budget = null, arm = 'baseline', fetchImpl },
+  {
+    cases,
+    arm = 'baseline',
+    fetchImpl,
+    spendLimit = MAX_PROVIDER_MICRO_USD,
+    turnsLimit = MAX_SUBMITTED_TURNS,
+    policyHash = SYNTHETIC_POLICY_HASH,
+    statusPolicyHash = policyHash,
+    holdRunLock = false,
+    qualificationOverrides = {},
+  },
   body
 ) {
   const directory = await mkdtemp(join(tmpdir(), 'klicker-tutor-run-'))
   const paths = {
     corpus: join(directory, 'corpus.json'),
     budget: join(directory, 'budget.json'),
+    qualification: join(directory, 'qualification.json'),
     output: join(directory, 'output.jsonl'),
     secondOutput: join(directory, 'output-2.jsonl'),
   }
@@ -930,22 +1377,54 @@ async function withRunnerScenario(
       .map((line) => JSON.parse(line))
 
   const originalFetch = globalThis.fetch
-  globalThis.fetch = fetchImpl
+  let releaseRunLock
   try {
     await writeFile(paths.corpus, JSON.stringify({ version: 1, cases }))
-    if (budget !== null) {
-      await writeFile(paths.budget, JSON.stringify(budget))
-    }
+    const ledger = await initializeBudget(paths.budget, policyHash, {
+      maxSubmittedTurns: turnsLimit,
+      maxProviderMicroUsd: spendLimit,
+    })
+    await writeFile(
+      paths.qualification,
+      JSON.stringify({
+        version: 1,
+        experimentId: ledger.experimentId,
+        policyHash,
+        guardOrigin: GUARD_ORIGIN,
+        chatOrigin: 'https://chat.klicker.localhost',
+        upstreamOrigin: SYNTHETIC_UPSTREAM,
+        chatbotId: DEFAULT_CHATBOT_ID,
+        modelId: SYNTHETIC_MODEL,
+        allBillableEgressGuarded: true,
+        evidence: 'synthetic qualification evidence',
+        ...qualificationOverrides,
+      })
+    )
+    globalThis.fetch = syntheticGuardFetch({
+      app: fetchImpl,
+      budgetPath: paths.budget,
+      policyHash,
+      statusPolicyHash,
+    })
+    if (holdRunLock)
+      releaseRunLock = await acquireBudgetLock(paths.budget, '.run')
     await body({
       argv: argvFor(),
       argvFor,
-      env: trajectoryEnv(),
+      env: trajectoryEnv({
+        KLICKER_EVAL_QUALIFICATION_FILE: paths.qualification,
+      }),
       paths,
+      ledger,
       readReceipts,
     })
   } finally {
     globalThis.fetch = originalFetch
-    await rm(directory, { recursive: true, force: true })
+    try {
+      await releaseRunLock?.()
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
   }
 }
 
@@ -968,8 +1447,6 @@ test('runner writes one verified receipt per turn and keeps the ledger honest', 
           ],
         }),
       ],
-      // The planned canary warmup already counted one submitted turn.
-      budget: budgetLedger({ submittedTurns: 1, creditsUsed: 0.25 }),
     },
     async ({ argv, env, paths, readReceipts }) => {
       const summary = await runTutorTrajectories({
@@ -982,14 +1459,18 @@ test('runner writes one verified receipt per turn and keeps the ledger honest', 
       assert.equal(summary.stopCode, null)
       assert.equal(summary.completedTurns, 2)
       assert.equal(summary.runSubmittedTurns, 2)
-      assert.equal(summary.submittedTurns, 3)
-      assert.equal(summary.creditsUsed, 1.25)
+      assert.equal(summary.submittedTurns, 2)
+      assert.equal(summary.creditsUsed, 1)
+      assert.equal(summary.reservedProviderMicroUsd, 2 * SYNTHETIC_RESERVATION)
       assert.equal(summary.uncertain, false)
-      assert.equal(summary.model, 'gpt-5.6-luna')
-      assert.deepEqual(
-        JSON.parse(await readFile(paths.budget, 'utf8')),
-        budgetLedger({ submittedTurns: 3, creditsUsed: 1.25 })
-      )
+      assert.equal(summary.model, SYNTHETIC_MODEL)
+
+      const ledger = await readBudgetLedger(paths.budget)
+      assert.equal(ledger.submittedTurns, 2)
+      assert.equal(ledger.creditsUsed, 1)
+      assert.equal(ledger.reservedProviderMicroUsd, 2 * SYNTHETIC_RESERVATION)
+      assert.equal(ledger.uncertain, false)
+      assert.equal(ledger.activeTurn, null)
 
       const lines = await readReceipts()
       assert.deepEqual(
@@ -1011,7 +1492,8 @@ test('runner writes one verified receipt per turn and keeps the ledger honest', 
         progress.every(
           (line) =>
             line.startsWith('klicker-tutor-trajectories ') &&
-            !line.includes('Synthetic answer')
+            !line.includes('Synthetic answer') &&
+            line.includes('reservedMicroUsd=')
         ),
         true
       )
@@ -1049,21 +1531,25 @@ test('runner stops on unaccounted credits and refuses every later call', async (
 
       assert.equal(summary.status, 'stopped')
       assert.equal(summary.stopCode, 'credits_unaccounted')
-      assert.equal(summary.completedTurns, 1)
+      assert.equal(summary.completedTurns, 0)
       assert.equal(summary.runSubmittedTurns, 1)
       assert.equal(summary.uncertain, true)
-      assert.deepEqual(
-        JSON.parse(await readFile(paths.budget, 'utf8')),
-        budgetLedger({ submittedTurns: 1, uncertain: true })
-      )
+      assert.equal(summary.reservedProviderMicroUsd, SYNTHETIC_RESERVATION)
+
+      const ledger = await readBudgetLedger(paths.budget)
+      assert.equal(ledger.submittedTurns, 1)
+      assert.equal(ledger.creditsUsed, 0)
+      assert.equal(ledger.reservedProviderMicroUsd, SYNTHETIC_RESERVATION)
+      assert.equal(ledger.uncertain, true)
+      assert.notEqual(ledger.activeTurn, null)
 
       const lines = await readReceipts()
       assert.deepEqual(
         lines.map((line) => line.type),
-        ['turn', 'error', 'summary']
+        ['error', 'summary']
       )
-      assert.equal(lines[1].code, 'credits_unaccounted')
-      assert.equal(lines[1].turn, 1)
+      assert.equal(lines[0].code, 'credits_unaccounted')
+      assert.equal(lines[0].turn, 1)
       assert.equal(JSON.stringify(lines).includes('errorText'), false)
 
       const callsBefore = app.calls.length
@@ -1083,9 +1569,9 @@ test('runner stops on unaccounted credits and refuses every later call', async (
   )
 })
 
-test('runner lets the crossing request finish and then stops at the credit ceiling', async () => {
+test('runner refuses dispatch when the guard cannot reserve the remaining spend', async () => {
   const app = syntheticChatFetch({
-    turnConfig: () => ({ creditsUsed: 0.5 }),
+    turnConfig: () => ({ creditsUsed: 5 }),
   })
   await withRunnerScenario(
     {
@@ -1098,7 +1584,9 @@ test('runner lets the crossing request finish and then stops at the credit ceili
           ],
         }),
       ],
-      budget: budgetLedger({ creditsUsed: 2.9 }),
+      // Room for one turn's reservation but not a second. Credits are recorded
+      // only and never admit or refuse a model call.
+      spendLimit: SYNTHETIC_RESERVATION + 100,
     },
     async ({ argv, env, paths, readReceipts }) => {
       const summary = await runTutorTrajectories({
@@ -1108,20 +1596,28 @@ test('runner lets the crossing request finish and then stops at the credit ceili
       })
 
       assert.equal(summary.status, 'stopped')
-      assert.equal(summary.stopCode, 'budget_credits_exhausted')
+      assert.equal(summary.stopCode, 'chat_submit_http_429')
       assert.equal(summary.completedTurns, 1)
-      assert.equal(summary.runSubmittedTurns, 1)
-      assert.equal(summary.creditsUsed, 3.4)
+      assert.equal(summary.runSubmittedTurns, 2)
+      assert.equal(summary.creditsUsed, 5)
+      assert.equal(summary.reservedProviderMicroUsd, SYNTHETIC_RESERVATION)
+
+      // A refused reservation was never taken, so the ledger still holds only
+      // the earlier admitted reservation and never exceeds the cap.
+      const ledger = await readBudgetLedger(paths.budget)
+      assert.equal(ledger.reservedProviderMicroUsd, SYNTHETIC_RESERVATION)
+      assert.ok(ledger.reservedProviderMicroUsd <= ledger.maxProviderMicroUsd)
+      assert.equal(ledger.creditsUsed, 5)
+      assert.equal(ledger.uncertain, true)
+      assert.notEqual(ledger.activeTurn, null)
 
       const lines = await readReceipts()
       assert.deepEqual(
         lines.map((line) => line.type),
         ['turn', 'error', 'summary']
       )
-      assert.deepEqual(
-        JSON.parse(await readFile(paths.budget, 'utf8')),
-        budgetLedger({ submittedTurns: 1, creditsUsed: 3.4 })
-      )
+      assert.equal(lines[1].code, 'chat_submit_http_429')
+      assert.equal(lines[1].turn, 2)
     }
   )
 })
@@ -1203,10 +1699,16 @@ test('runner keeps a failed request uncertain so a restart cannot spend again', 
       assert.equal(summary.completedTurns, 0)
       assert.equal(summary.runSubmittedTurns, 1)
       assert.equal(summary.uncertain, true)
-      assert.deepEqual(
-        JSON.parse(await readFile(paths.budget, 'utf8')),
-        budgetLedger({ submittedTurns: 1, uncertain: true })
-      )
+      assert.equal(summary.reservedProviderMicroUsd, SYNTHETIC_RESERVATION)
+
+      // The failed turn keeps its reservation and stays uncertain so a restart
+      // cannot spend again.
+      const ledger = await readBudgetLedger(paths.budget)
+      assert.equal(ledger.submittedTurns, 1)
+      assert.equal(ledger.creditsUsed, 0)
+      assert.equal(ledger.reservedProviderMicroUsd, SYNTHETIC_RESERVATION)
+      assert.equal(ledger.uncertain, true)
+      assert.notEqual(ledger.activeTurn, null)
 
       const lines = await readReceipts()
       assert.deepEqual(
@@ -1228,6 +1730,40 @@ test('runner keeps a failed request uncertain so a restart cannot spend again', 
       await assert.rejects(readFile(paths.secondOutput, 'utf8'), {
         code: 'ENOENT',
       })
+    }
+  )
+})
+
+test('runner fails closed on a held run lease and a drifted guard policy before login', async () => {
+  const heldApp = syntheticChatFetch()
+  await withRunnerScenario(
+    {
+      fetchImpl: heldApp.fetchImpl,
+      cases: [trajectoryCase()],
+      holdRunLock: true,
+    },
+    async ({ argv, env }) => {
+      await assert.rejects(runTutorTrajectories({ argv, env, log: () => {} }), {
+        code: 'budget_busy',
+      })
+      assert.equal(heldApp.calls.length, 0)
+    }
+  )
+
+  // A guard bound to a different canonical pricing policy cannot qualify the
+  // ledger, so the run stops before login.
+  const driftApp = syntheticChatFetch()
+  await withRunnerScenario(
+    {
+      fetchImpl: driftApp.fetchImpl,
+      cases: [trajectoryCase()],
+      statusPolicyHash: 'f'.repeat(64),
+    },
+    async ({ argv, env }) => {
+      await assert.rejects(runTutorTrajectories({ argv, env, log: () => {} }), {
+        code: 'guard_qualification_invalid',
+      })
+      assert.equal(driftApp.calls.length, 0)
     }
   )
 })

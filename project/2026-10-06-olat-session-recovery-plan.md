@@ -682,10 +682,20 @@ unexpected ID, category or ref stops cleanup.
 Alert 3499 is dismissed as a false positive with the token-verification
 rationale and 25-test backend receipt. The user approved a PR-specific exception
 for existing missing-rate-limit alert 1091, keeping it open. Follow-up owner is
-`rschlaefli`, with resolution or a reviewed endpoint policy due before the next
-production release. This exception does not assert a deployed mitigation or
-indefinite risk acceptance. The optional CodeQL result may retain that finding;
+`rschlaefli`. On 2026-10-14 the user extended this exception for the OLAT
+production rollout through 21 October 2026, with remediation due by that date
+and alert 1091 kept open. This supersedes the before-next-release condition
+only for this rollout; it does not assert a deployed mitigation or indefinite
+risk acceptance. The optional CodeQL result may retain that finding;
 required CI and all other security findings still require disposition.
+
+The user also accepted the ten already-dispositioned bot follow-ups concerning
+assessment typing, storage and URL transport, redacted diagnostics, existing
+lecturer/assessment origin matching, and the retained five-minute LTI credential
+in URLs. Only those ten unchanged threads were resolved, with all 44 current
+threads verified resolved. This accepts disclosed risks, including URL history
+and log exposure; it does not fix them or pre-accept new review findings. The user
+requested that this chat remain isolated, without peer coordination messages.
 
 Current `ff8dcaffbe` codebase failure was confirmed at the single Chat ConfigMap
 parity path; later steps were skipped. Companion readiness and final review are

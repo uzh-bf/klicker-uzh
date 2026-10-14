@@ -11,6 +11,188 @@ Klicker application stack.
   truth cases under `data/ground_truth/`. Do not add production or personal
   data.
 
+## Trajectories and provider admission
+
+Experiment orchestration, numeric references and the shared spend guard live in
+`evaluation/`. Chat retains the application transport, authored-corpus validation,
+canonical source mapping and persisted-history verification in
+`apps/chat/scripts/`. Generic import, assessment and reporting belong to the
+private framework; these app checks remain covered by Chat's focused tests.
+
+The framework compatibility change is coordinated with
+[framework draft MR 54](https://gitlab.uzh.ch/ai-infrastructure/evaluation/-/merge_requests/54).
+Land that change first, then reconcile this repository's framework pin to the
+final merged revision before landing the Klicker change.
+
+### Offline capture import
+
+With the pinned framework dependencies already installed, import sanitized
+version-2 receipts and their authored corpus without querying a model:
+
+```bash
+uv run --frozen --offline --project evaluation/framework \
+  python evaluation/framework/src/adapters/klicker_trajectories.py \
+  project/_local/tutor-baseline.jsonl \
+  --corpus evaluation/data/trajectories/tutor-attribution-v2.json \
+  --group development --output project/_local/tutor-baseline-conversations.json
+```
+
+The output must be new; import never replaces an existing artifact. It preserves
+all planned cases, including incomplete and unstarted captures. Complete Tutor
+and Explainer captures are eligible for explicit framework assessment; Quizzer
+remains unsupported and unassessed. Assessment limits select eligible cases
+without shrinking planned coverage. Rubrics supply expected outcomes, while
+hashed source mappings remain diagnostics without retrieval context. The corpus
+hash records import provenance; capture-time corpus identity is caller-attested.
+
+Import is offline. Later judge execution requires separate approval and an
+explicit profile. The target spend guard bounds application requests only;
+the framework's post-completion judge-cost reporting is not a shared hard cap.
+
+### Provider admission
+
+`evaluation/run-tutor-trajectories.mjs` accepts synthetic Tutor, Explainer
+and Quizzer corpora. Receipts reconstruct citation positions with the application's
+source mapper, including cross-call duplicates and null indices for overflow.
+The receipt includes every application-recognized retrieval server; the local
+trajectory's first-turn grounding check still requires `KB_doc_query`.
+They contain hashed identities and numeric page/video positions, not source text,
+titles or URLs. Reconstruction from persisted tools does not establish the exact
+historical model input. Receipt version 2 identifies the mapper fingerprint.
+Identity hashes are deterministic diagnostics, not anonymization: candidate
+titles or URLs may be guessed and checked against them. Keep receipts private
+even when they omit raw identifiers; operator corpora must remain synthetic.
+
+Both the trajectory CLI and the listening evaluation target require a shared
+version-2 budget for operator runs. Application credits remain observational;
+they are not provider dollars. The budget admits at most 120 submitted turns and
+US$5 of conservative provider reservations across all arms. Each upstream model
+step or retry reserves its qualified full input-context cost plus its bounded
+output cost before dispatch. Reservations are retained on success and failure.
+This may exhaust the dollar cap long before 120 turns.
+
+Set `KLICKER_EVAL_PRICING_FILE` to a private JSON policy with this shape. The numbers
+below are synthetic examples, not tariffs or provider qualification:
+
+```json
+{
+  "version": 1,
+  "provider": "synthetic",
+  "upstreamOrigin": "https://synthetic.example/v1",
+  "qualification": "Evidence of enforced context/output bounds and upper tariffs",
+  "models": {
+    "synthetic-model": {
+      "contextTokens": 1000,
+      "maxOutputTokens": 100,
+      "inputMicroUsdPerMillion": 1000000,
+      "outputMicroUsdPerMillion": 2000000,
+      "outputIncludesReasoning": true
+    }
+  }
+}
+```
+
+Use provider-enforced architectural context bounds and conservative upper prices
+for the exact provider/model route, including reasoning tokens. One dollar is
+1,000,000 microdollars. The guard accepts only text `/v1/responses` and
+`/v1/chat/completions` requests with an explicit `max_output_tokens` or
+reasoning-inclusive `max_completion_tokens`, respectively. Unpriced models,
+legacy `max_tokens`, hosted tools, multimodal input, multiple completions,
+provider price overrides and redirects fail closed. Function tools execute in
+the application; their separate paid egress must be qualified independently.
+The guard accepts only the exact two true `cache` bypass flags emitted by the
+application, then removes this proxy-only field before forwarding. A nonblank
+native `prompt_cache_key` of at most 64 characters is preserved. Other cache
+objects and unknown request fields remain unqualified.
+
+Choose a new private `KLICKER_EVAL_BUDGET_FILE`, then initialize it offline once:
+
+```bash
+node evaluation/evaluation-spend-guard.mjs --initialize-budget
+```
+
+Initialization creates an immutable `.identity` receipt alongside the mutable
+ledger. Never replace an exhausted, interrupted or legacy ledger to resume the
+same experiment. Legacy application-credit budgets must be retained as historical
+records; create a new explicitly authorized experiment instead. Mutation `.lock`
+and run `.run` leases fail closed if held or left by interruption. A responsive
+Unix socket `.lease` proves that the run owner is alive; runner and guard must
+share the same local OS/filesystem. Guard restarts reject uncertain ledgers. Investigate
+such state before recovery; there is no automatic reset or refund.
+Interrupted initialization can leave an identity receipt without a ledger; retain
+it for investigation rather than retrying initialization at that path. Failed
+ledger replacements may retain temporary files as diagnostic evidence. Do not
+promote those files or remove stale locks automatically.
+
+The approved evaluation-only route is application → local spend guard → qualified
+upstream. Inject `KLICKER_EVAL_GUARD_KEY` and `KLICKER_EVAL_UPSTREAM_KEY` at runtime
+through the existing secret operator. Set `KLICKER_EVAL_UPSTREAM_ORIGIN` to the
+OpenAI-compatible API base (for example `https://<qualified-host>/openai/v1`).
+Run `node evaluation/evaluation-spend-guard.mjs` in the guard process.
+It prints its port, binds to loopback by default and sends only authenticated
+model requests upstream. Container access requires an explicitly selected private
+`KLICKER_EVAL_GUARD_HOST`; exposing it publicly is outside this workflow.
+The guard's `timeoutMs` bounds the entire upstream exchange, including streamed
+output, and defaults to 120 seconds. A timeout retains its spend reservation and
+may leave the interrupted target turn uncertain.
+
+The evaluation application's `OPENAI_BASE_URL` must point to that guard's `/v1`
+and its `OPENAI_API_KEY` must be the guard key. Keep the upstream key only in the
+guard process. Prove that all model steps, summaries, retries and other billable
+paths traverse the guard before a paid run. Auto routing is unqualified because
+classifier/embedding requests can bypass this text-model seam. Pin the fixed
+`KLICKER_EVAL_MODEL_ID` (default `gpt-6-luna`); an `auto` arm label grants no Auto
+routing. The qualified provider must support the application's fixed low
+reasoning effort and explicit output bound.
+
+Set `KLICKER_EVAL_GUARD_ORIGIN` in the application process as well as the runner.
+When present, the application rejects a mismatched default endpoint and any
+chatbot-specific base URL or key before constructing the provider. The origin
+must be canonical and local, without a path, query or credentials. Without this
+opt-in, ordinary chatbot routing retains its existing behavior.
+
+Use the existing `CHAT_MODEL_REGISTRY_JSON` override to distinguish the selected
+application ID from the upstream deployment ID. For example, an evaluation-only
+`gpt-6-luna` entry can use `deploymentId: "openai/gpt-6-luna"` for a qualified
+OpenRouter route. Preserve the registry's fallback and usage policy requirements.
+Key the guard's pricing policy by the deployment ID actually sent upstream;
+keep the runner and receipt `modelId` equal to the application selection ID.
+Do not change the production registry or infer qualification from this example.
+For guarded Responses requests with a positive selected effort, the application
+uses the registry's reasoning capability to set the SDK's `forceReasoning`
+override. Otherwise prefixed model
+aliases can lose their requested reasoning effort during SDK serialization.
+
+For managed local startup, pass the guard origin, base URL, key, registry JSON
+and a fresh nonsecret `KLICKER_EVAL_GUARD_GENERATION` to `post-start.sh`. These
+explicit settings survive canonical development environment sourcing. The
+managed process fingerprint includes routing settings and the generation,
+never key values. Change the generation whenever credentials change and use
+the owned process helper for replacement. Runner and guard still need the same
+local OS/filesystem for their live lease.
+
+Save that proof in a private `KLICKER_EVAL_QUALIFICATION_FILE`: `version: 1`,
+`experimentId` and `policyHash` from the initialized ledger, exact `guardOrigin`,
+`chatOrigin`, `chatbotId`, `modelId`, canonical policy `upstreamOrigin`,
+`allBillableEgressGuarded: true`, and a nonempty
+`evidence` reference. Export the same `KLICKER_EVAL_GUARD_ORIGIN` (without `/v1`)
+and runtime-injected guard key to the runner. It checks the receipt and authenticated
+guard status before login; reachability alone is not routing proof. Keep policies,
+receipts, ledger and synthetic transcripts in approved private custody, outside Git.
+Named `.localhost` routes rely on the qualified local development resolver.
+Verify that each guard route resolves to loopback; use literal `127.0.0.1` or
+`[::1]` when that resolver is unavailable. Endpoint-string checks alone do not
+establish network routing.
+
+Zero-spend qualification can exercise the real application with a fake local
+Responses upstream, including SDK retries, MCP execution and persistence. Use
+the ledger lease and turn primitives directly for this diagnostic; the paid
+runner's prior-qualification gate remains intact. Record a separate synthetic
+wire-proof artifact. It is not a positive real-provider qualification receipt
+and establishes neither provider capabilities nor chatbot answer quality.
+Current tariffs and paid experiments require their own approved environment
+and spend boundary.
+
 ## One-time setup
 
 Use the repository's pinned Node 24 and pnpm versions. pnpm warns about missing or
@@ -194,7 +376,7 @@ UV_OFFLINE=true uv run --frozen --offline \
 ```
 
 The harness requires the framework gitlink at revision
-2a75632a98a8f8e8382a7f7ecaa4fda9f715e12b.
+e545dfcfa9979eddeae22197fd7c0f0b053049df.
 
 The harness invokes the real launcher from outside the repository, uses one
 temporary synthetic ground-truth case and output directory (including paths
@@ -218,6 +400,21 @@ FineCo quality evidence. It requires the exact worktree runtime, namespaced
 local API and Chat origins, seeded participant credentials, and the approved
 target environment. Do not start an application stack as part of the portable
 integration check.
+
+The launcher preflights `KLICKER_EVAL_BUDGET_FILE`,
+`KLICKER_EVAL_QUALIFICATION_FILE`, `KLICKER_EVAL_GUARD_ORIGIN`, and
+`KLICKER_EVAL_GUARD_KEY`. Prepare these with the guarded workflow above and
+start its qualified guard separately; the adapter verifies its live status
+before starting. `--check` checks only offline prerequisites. The adapter and
+framework target label share `KLICKER_EVAL_MODEL_ID` (default `gpt-6-luna`);
+judge model and capability settings remain independent.
+An explicitly set origin or generation activates guarded startup checks, even
+when empty. After stopping evaluation, unset all five guarded settings to return
+to ordinary development: `KLICKER_EVAL_GUARD_ORIGIN`, `OPENAI_BASE_URL`,
+`OPENAI_API_KEY`, `CHAT_MODEL_REGISTRY_JSON` and `KLICKER_EVAL_GUARD_GENERATION`.
+Clearing only the markers can leave the evaluation key and registry in the
+environment because the canonical file does not define their replacements.
+Blank markers are incomplete configuration.
 
 The adapter resolves the exact question and mode from FineCo frontmatter and
 returns the completed persisted answer as an OpenAI Chat Completions target.

@@ -136,7 +136,10 @@ vi.mock('@langfuse/tracing', () => ({
   startActiveObservation: mocks.startActiveObservation,
 }))
 
-vi.mock('@/src/lib/server/openaiCachePolicy', () => ({
+vi.mock('@/src/lib/server/openaiCachePolicy', async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import('../src/lib/server/openaiCachePolicy')
+  >()),
   createOpenAIFetch: vi.fn(),
 }))
 

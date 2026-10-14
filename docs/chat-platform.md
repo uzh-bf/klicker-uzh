@@ -283,7 +283,7 @@ the target process. The committed KB_doc_query canary proves synthetic
 transport and persistence only; it must not be reported as FineCo quality or
 replace an authorized EXPERT_df_fineco_expert binding.
 
-For assistance-attribution checks, `apps/chat/scripts/run-tutor-trajectories.mjs`
+For assistance-attribution checks, `evaluation/run-tutor-trajectories.mjs`
 uses the same local target directly, without extending its single-message HTTP
 API. The corpus schema, per-turn verification and trajectory driver live in
 `apps/chat/scripts/tutor-trajectory.mjs`; the target module keeps transport. It follows actual persisted replies and parent IDs across a trajectory,
@@ -301,7 +301,7 @@ obligations to case IDs and one-based assessment turns without changing the
 strict trajectory schema. Pass it with `--numeric` so the runner rejects an
 obligation without a matching assessment turn before login. Annotate claims from visible responses, convert their
 units, then call `compareTutorNumericClaim` from
-`apps/chat/scripts/tutor-numeric-reference.mjs` with the formula, explicit
+`evaluation/tutor-numeric-reference.mjs` with the formula, explicit
 inputs, numeric claim and the sidecar's absolute tolerance. Rates are decimal
 fractions and cash flows use annual periods. Missing claims remain unassessed;
 a numerical match alone does not establish correct assistance attribution.
@@ -319,11 +319,11 @@ Run the script on the host against the exact routed synthetic runtime. Supply
 `KLICKER_EVAL_PARTICIPANT_USERNAME`, and `KLICKER_EVAL_PARTICIPANT_PASSWORD` through
 the existing local evaluation environment. Trust the local CA through
 `NODE_EXTRA_CA_CERTS` when using HTTPS; do not disable certificate verification.
-The default model is the fixed `gpt-5.6-luna` selection. Test `auto` separately
-through `KLICKER_EVAL_MODEL_ID`; it is not a controlled fixed-model comparison.
+The default model is the fixed `gpt-6-luna` selection. Auto routing remains
+unqualified for paid evaluation; an `auto` arm label does not select that route.
 
 ```sh
-node apps/chat/scripts/run-tutor-trajectories.mjs \
+node evaluation/run-tutor-trajectories.mjs \
   --corpus evaluation/data/trajectories/tutor-attribution-v2.json \
   --numeric evaluation/data/trajectories/tutor-attribution-v2-numeric.json \
   --output project/_local/tutor-baseline.jsonl --arm baseline --repeats 2 \
