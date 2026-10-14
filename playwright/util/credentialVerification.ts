@@ -225,7 +225,7 @@ function assessmentReportFixtureResponse({
 }: {
   participantId: string
   index: number
-  instanceId: string
+  instanceId: number
 }) {
   const totalPoints = (index + 1) * 2
   return {
