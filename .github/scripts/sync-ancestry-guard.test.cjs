@@ -145,9 +145,15 @@ test('flags downstream history in its upstream branch until recovery', () => {
 })
 
 test('pins backflow roots only for chain edges into guarded targets', () => {
-  for (const [base, { downstream, root }] of Object.entries(DOWNSTREAM_ROOTS)) {
+  for (const [base, { downstreams, root }] of Object.entries(
+    DOWNSTREAM_ROOTS
+  )) {
     assert.ok(SOURCES[base])
-    assert.equal(SOURCES[downstream], base)
+    // Every target fed by this branch is protected against flowing back.
+    const fed = Object.keys(SOURCES).filter(
+      (target) => SOURCES[target] === base
+    )
+    assert.deepEqual([...downstreams].sort(), fed.sort())
     assert.match(root, /^[0-9a-f]{40}$/)
   }
   assert.deepEqual(Object.keys(DOWNSTREAM_ROOTS), ['v3-ai'])

@@ -515,3 +515,22 @@ cross-references between the existing target-model defaults. Existing source
 reviews remain applicable outside this small correction. The final head needs
 focused checks, incremental reviews, and exact-head hosted CI; the draft and
 zero-spend boundaries remain in place.
+
+## Approved target refresh and manual review — 2026-10-14
+
+The user approved refreshing [PR #6489](https://github.com/uzh-bf/klicker-uzh/pull/6489)
+from `v3`, completing the manual final-review gate and verifying CI, while
+retaining draft status and withholding paid evaluation. Main owns integration,
+hosted checks and publication. Target `92b586b52c7ca463c7e2116cc7d9ffd13bd80660`
+adds four commits to prior head `c2ec7bedf2d46cdbe1e10a4fa024c4a16370eee6`.
+The history-preserving merge has no conflicts or changes to evaluator source,
+framework pin or synthetic fixtures. Existing focused checks and independent
+reviews remain applicable; the incoming CI policy needs fresh offline checks
+and hosted exact-head CI. No new slice, dependency or product change is added.
+
+The trusted final-review implementation requires an open, ready PR and rejects
+drafts before provider dispatch. Keeping the PR draft therefore blocks that
+specific platform gate. Finish the independently approved refresh and CI first;
+leave the gate pending until the user authorizes a readiness transition. Do not
+change policy, synthesize a passing status, or send an ineligible review command.
+No paid evaluation, merge to target, release or deployment is authorized.

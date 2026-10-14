@@ -3171,7 +3171,7 @@ test('skips the stack pull-request comment when code and topology have no findin
   assert.equal(createdReviews.length, 0)
 })
 
-test('sends strict high-reasoning topology requests and rejects invalid owners', async () => {
+test('sends strict max-reasoning topology requests and rejects invalid owners', async () => {
   const { github } = stackFixture()
   const membership = await resolveStackMembership({
     github,
@@ -3193,10 +3193,8 @@ test('sends strict high-reasoning topology requests and rejects invalid owners',
     schema: { type: 'object' },
     fetchImpl: async (_url, options) => {
       request = JSON.parse(options.body)
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
+      return new Response(
+        JSON.stringify({
           model: FINAL_STACK_REVIEW_MODEL,
           choices: [
             {
@@ -3210,13 +3208,13 @@ test('sends strict high-reasoning topology requests and rejects invalid owners',
             },
           ],
           usage: { total_tokens: 50, prompt_tokens: 35, completion_tokens: 15 },
-        }),
-      }
+        })
+      )
     },
   })
   assert.equal(response.status, 'complete')
-  assert.equal(request.provider.require_parameters, true)
-  assert.equal(request.reasoning.effort, 'high')
+  assert.equal(Object.hasOwn(request, 'provider'), false)
+  assert.equal(request.reasoning_effort, 'max')
   assert.equal(request.max_tokens, 4096)
   assert.equal(request.response_format.json_schema.strict, true)
   assert.equal(request.messages[0].content.includes('dummy-token'), false)
