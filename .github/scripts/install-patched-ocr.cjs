@@ -16,8 +16,12 @@ const PATCH_PATH = path.resolve(
 const digest = (bytes) =>
   crypto.createHash('sha256').update(bytes).digest('hex')
 
+function commitTag(patch) {
+  return `${SOURCE_COMMIT.slice(0, 12)}+compression-${digest(patch).slice(0, 12)}`
+}
+
 function expectedVersion(patch = fs.readFileSync(PATCH_PATH)) {
-  return `open-code-review v1.13.0 (${SOURCE_COMMIT.slice(0, 12)}+compression-${digest(patch).slice(0, 12)}) `
+  return `open-code-review v1.13.0 (${commitTag(patch)}) `
 }
 
 function verifyVersion(version, patch) {
@@ -45,8 +49,17 @@ function install(directory, archive) {
   delete env.GH_TOKEN
   delete env.GITHUB_TOKEN
   const run = (command, args, options = {}) =>
-    execFileSync(command, args, { env, stdio: 'inherit', ...options })
-  const goVersion = execFileSync('go', ['version'], { env, encoding: 'utf8' })
+    execFileSync(command, args, {
+      env,
+      stdio: 'inherit',
+      timeout: 10 * 60 * 1000,
+      ...options,
+    })
+  const goVersion = execFileSync('go', ['version'], {
+    env,
+    encoding: 'utf8',
+    timeout: 30000,
+  })
   if (!goVersion.startsWith('go version go1.26.9 ')) {
     throw new Error('OCR source build requires Go 1.26.9')
   }
@@ -59,6 +72,10 @@ function install(directory, archive) {
       '--silent',
       '--show-error',
       '--location',
+      '--connect-timeout',
+      '20',
+      '--max-time',
+      '120',
       '--output',
       archivePath,
       `https://codeload.github.com/alibaba/open-code-review/legacy.tar.gz/${SOURCE_COMMIT}`,
@@ -72,8 +89,9 @@ function install(directory, archive) {
   run('go', ['test', '-race', './internal/llmloop', './internal/agent'], {
     cwd: source,
   })
-  const patchDigest = digest(fs.readFileSync(PATCH_PATH))
-  const commit = `${SOURCE_COMMIT.slice(0, 12)}+compression-${patchDigest.slice(0, 12)}`
+  const patchBytes = fs.readFileSync(PATCH_PATH)
+  const patchDigest = digest(patchBytes)
+  const commit = commitTag(patchBytes)
   const binary = path.join(directory, 'ocr')
   run(
     'go',

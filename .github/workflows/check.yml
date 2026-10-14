@@ -204,6 +204,7 @@ jobs:
           cache: false
 
       - name: Qualify the pinned OCR compression engine
+        timeout-minutes: 15
         if: steps.ocr_engine.outputs.should_run != 'false'
         run: node .github/scripts/install-patched-ocr.cjs "${RUNNER_TEMP}/patched-ocr"
 
