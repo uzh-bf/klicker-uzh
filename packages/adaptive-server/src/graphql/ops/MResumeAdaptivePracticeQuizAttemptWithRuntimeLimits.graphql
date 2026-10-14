@@ -1,0 +1,7 @@
+mutation MResumeAdaptivePracticeQuizAttemptWithRuntimeLimits(
+  $attemptId: String!
+) {
+  resumeAdaptivePracticeQuizAttempt(attemptId: $attemptId) {
+    ...FAdaptivePracticeQuizAttemptStateWithRuntimeLimits
+  }
+}

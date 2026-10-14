@@ -10,6 +10,7 @@
     "includes": [
       "**",
       "!playwright/**",
+      "!external/catalyst/**",
       "!**/ops.ts",
       "!**/nexus-typegen.ts",
       "!**/client.json",

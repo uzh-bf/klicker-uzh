@@ -66,6 +66,7 @@ export function prepareCourse({
   description?: string
   isGamificationEnabled: boolean
   isAssessmentEnabled?: boolean
+  isAdaptiveLearningEnabled?: boolean
   ownerId: string
   color?: string
   pinCode?: number | null
@@ -79,6 +80,7 @@ export function prepareCourse({
 }) {
   const data = {
     ...args,
+    isAdaptiveLearningEnabled: args.isAdaptiveLearningEnabled ?? false,
     authType: args.isAssessmentEnabled
       ? Prisma.CourseAuthType.SSO
       : Prisma.CourseAuthType.PIN,
