@@ -4,6 +4,7 @@ import {
   getDefaultChatAccountUsage,
   getZurichMonthReset,
   getZurichMonthStart,
+  isChatUsageClassEntitled,
   parseChatUsageCredits,
 } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
@@ -12,6 +13,7 @@ import { isFeatureFlagEnabled } from '../lib/featureFlags.js'
 
 export interface ChatAccountUsageLane {
   usageClass: DB.ChatUsageClass
+  entitled: boolean
   budgetCredits: number
   usedCredits: number
   remainingCredits: number
@@ -20,6 +22,7 @@ export interface ChatAccountUsageLane {
 
 export interface ChatAccountUsageOverview {
   authorized: boolean
+  subscriptionTier: DB.AiSubscriptionTier
   baseModelUsage: ChatAccountUsageLane
   advancedModelUsage: ChatAccountUsageLane
 }
@@ -72,6 +75,7 @@ function resolveBudgetOwnerId(
 
 function projectLane(
   usageClass: DB.ChatUsageClass,
+  entitled: boolean,
   usage: Pick<DB.ChatAccountUsage, 'budgetCredits' | 'usedCredits'> | null,
   resetAt: Date
 ): ChatAccountUsageLane {
@@ -79,6 +83,7 @@ function projectLane(
     const defaults = getDefaultChatAccountUsage()
     return {
       usageClass,
+      entitled,
       ...defaults,
       remainingCredits: 0,
       resetAt,
@@ -88,6 +93,7 @@ function projectLane(
   const remaining = usage.budgetCredits.minus(usage.usedCredits)
   return {
     usageClass,
+    entitled,
     budgetCredits: usage.budgetCredits.toNumber(),
     usedCredits: usage.usedCredits.toNumber(),
     remainingCredits: remaining.isPositive() ? remaining.toNumber() : 0,
@@ -97,11 +103,15 @@ function projectLane(
 
 function projectOverview({
   authorized,
+  subscriptionTier,
+  aiChatbotCostCenter,
   baseModelUsage,
   advancedModelUsage,
   resetAt,
 }: {
   authorized: boolean
+  subscriptionTier: DB.AiSubscriptionTier
+  aiChatbotCostCenter: string | null
   baseModelUsage: Pick<
     DB.ChatAccountUsage,
     'budgetCredits' | 'usedCredits'
@@ -112,15 +122,25 @@ function projectOverview({
   > | null
   resetAt: Date
 }): ChatAccountUsageOverview {
+  const entitledFor = (usageClass: DB.ChatUsageClass) =>
+    isChatUsageClassEntitled({
+      usageClass,
+      aiFeaturesEnabled: authorized,
+      aiChatbotCostCenter,
+    })
+
   return {
     authorized,
+    subscriptionTier,
     baseModelUsage: projectLane(
       DB.ChatUsageClass.BASE,
+      entitledFor(DB.ChatUsageClass.BASE),
       baseModelUsage,
       resetAt
     ),
     advancedModelUsage: projectLane(
       DB.ChatUsageClass.ADVANCED,
+      entitledFor(DB.ChatUsageClass.ADVANCED),
       advancedModelUsage,
       resetAt
     ),
@@ -141,7 +161,11 @@ export async function getChatAccountUsage(
   const monthStart = getZurichMonthStart(now)
   const owner = await ctx.prisma.user.findUnique({
     where: { id: ownerId },
-    select: { aiFeaturesEnabled: true },
+    select: {
+      aiFeaturesEnabled: true,
+      aiChatbotCostCenter: true,
+      aiSubscriptionTier: true,
+    },
   })
   if (!owner) return null
 
@@ -160,6 +184,8 @@ export async function getChatAccountUsage(
 
   return projectOverview({
     authorized: owner.aiFeaturesEnabled,
+    subscriptionTier: owner.aiSubscriptionTier,
+    aiChatbotCostCenter: owner.aiChatbotCostCenter,
     baseModelUsage,
     advancedModelUsage,
     resetAt: getZurichMonthReset(now),
@@ -188,7 +214,11 @@ export async function setChatAccountUsageBudgets(
   return ctx.prisma.$transaction(async (tx) => {
     const owner = await tx.user.findUnique({
       where: { id: ownerId },
-      select: { aiFeaturesEnabled: true },
+      select: {
+        aiFeaturesEnabled: true,
+        aiChatbotCostCenter: true,
+        aiSubscriptionTier: true,
+      },
     })
     if (!owner) return null
     if (!owner.aiFeaturesEnabled) {
@@ -232,6 +262,8 @@ export async function setChatAccountUsageBudgets(
 
     return projectOverview({
       authorized: true,
+      subscriptionTier: owner.aiSubscriptionTier,
+      aiChatbotCostCenter: owner.aiChatbotCostCenter,
       baseModelUsage,
       advancedModelUsage,
       resetAt,

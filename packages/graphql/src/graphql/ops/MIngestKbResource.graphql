@@ -1,0 +1,6 @@
+mutation IngestKbResource($id: ID!) {
+  ingestKbResource(id: $id) {
+    id
+    status
+  }
+}

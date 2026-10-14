@@ -4,6 +4,10 @@ import {
   type ServerResponse,
 } from 'node:http'
 import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
+import {
+  createDocQueryMcpClient,
+  DOC_QUERY_SCOPED_ROUTE_PATH,
+} from '@klicker-uzh/doc-query-client'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
@@ -18,16 +22,12 @@ import {
   vi,
 } from 'vitest'
 import { z } from 'zod'
-import { createDocQueryScopedFetch } from '../src/lib/server/docQueryScopeToken'
 import { REQUIRED_MCP_UNAVAILABLE_CODE } from '../src/lib/server/mcpRuntimePolicy'
 import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
 } from '../src/services/mcpClients'
-import {
-  DOC_QUERY_SCOPE_TOKEN_HEADER,
-  DOC_QUERY_SCOPED_ROUTE_PATH,
-} from '../src/services/mcpScope'
+import { createDocQueryScopedFetch } from '../src/services/mcpScope'
 
 const TEST_ISSUER = 'https://chat.klicker.test'
 const TEST_AUDIENCE = 'klicker-doc-query-test'
@@ -45,6 +45,7 @@ const TURN_AFTER_EXPIRY = new Date('2026-09-20T10:06:00.000Z')
 type RecordedRequest = {
   jti: string | undefined
   subject: string | undefined
+  chatbotId: string | undefined
   kbId: unknown
   issuedAt: number
   expiresAt: number
@@ -104,6 +105,22 @@ function listen(httpServer: ReturnType<typeof createServer>): Promise<string> {
   })
 }
 
+function createSyntheticDocQueryServer(): McpServer {
+  const mcpServer = new McpServer({
+    name: 'synthetic-doc-query',
+    version: '1.0.0',
+  })
+  mcpServer.tool('doc_query', { query: z.string() }, async ({ query }) => ({
+    content: [
+      {
+        type: 'text',
+        text: JSON.stringify({ query, marker: 'SYNTHETIC_SCOPED_ROUTE_OK' }),
+      },
+    ],
+  }))
+  return mcpServer
+}
+
 function closeServer(
   httpServer: ReturnType<typeof createServer>
 ): Promise<void> {
@@ -124,7 +141,7 @@ async function authorizeRequest(
   method: string | undefined
 ): Promise<RecordedRequest | undefined> {
   const authorization = request.headers.authorization ?? null
-  const rawToken = request.headers[DOC_QUERY_SCOPE_TOKEN_HEADER.toLowerCase()]
+  const rawToken = request.headers['x-doc-query-scope-token']
   const tokenHeader = Array.isArray(rawToken) ? rawToken[0] : rawToken
 
   if (authorization !== null) {
@@ -172,6 +189,8 @@ async function authorizeRequest(
   const entry: RecordedRequest = {
     jti: typeof payload.jti === 'string' ? payload.jti : undefined,
     subject: typeof payload.sub === 'string' ? payload.sub : undefined,
+    chatbotId:
+      typeof payload.chatbot_id === 'string' ? payload.chatbot_id : undefined,
     kbId: payload.kb_id,
     issuedAt,
     expiresAt,
@@ -200,8 +219,6 @@ describe('scoped KB transport over real HTTP', () => {
     vi.stubEnv('DOC_QUERY_SCOPE_ISSUER', TEST_ISSUER)
     vi.stubEnv('DOC_QUERY_SCOPE_AUDIENCE', TEST_AUDIENCE)
 
-    let transport: StreamableHTTPServerTransport | undefined
-
     server = createServer(
       async (request: IncomingMessage, response: ServerResponse) => {
         const isPost = request.method === 'POST'
@@ -226,37 +243,18 @@ describe('scoped KB transport over real HTTP', () => {
           return
         }
 
-        if (!transport) {
-          if (method !== 'initialize') {
-            response.writeHead(400).end()
-            return
-          }
-          transport = new StreamableHTTPServerTransport({
-            sessionIdGenerator: undefined,
-            enableJsonResponse: true,
-          })
-          const mcpServer = new McpServer({
-            name: 'synthetic-doc-query',
-            version: '1.0.0',
-          })
-          mcpServer.tool(
-            'doc_query',
-            { query: z.string() },
-            async ({ query }) => ({
-              content: [
-                {
-                  type: 'text',
-                  text: JSON.stringify({
-                    query,
-                    marker: 'SYNTHETIC_SCOPED_ROUTE_OK',
-                  }),
-                },
-              ],
-            })
-          )
-          await mcpServer.connect(transport)
-        }
-
+        // The transport runs stateless, so every request needs its own
+        // transport and server instance.
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: undefined,
+          enableJsonResponse: true,
+        })
+        const mcpServer = createSyntheticDocQueryServer()
+        response.on('close', () => {
+          void transport.close()
+          void mcpServer.close()
+        })
+        await mcpServer.connect(transport)
         await transport.handleRequest(request, response, body)
       }
     )
@@ -287,28 +285,29 @@ describe('scoped KB transport over real HTTP', () => {
     const start = recorded.length
     const firstTurnIssuedAt = Math.floor(TURN_START.getTime() / 1000)
 
-    const tools = await getAggregatedMCPTools(
+    const handle = await getAggregatedMCPTools(
       [scopedServerChain(KB_ID)],
       TEST_CHATBOT_ID,
       { kbIds: [KB_ID], sessionId: 'thread-first-turn' }
     )
 
-    expect(Object.keys(tools)).toEqual(['KB_doc_query'])
+    expect(Object.keys(handle.tools)).toEqual(['KB_doc_query'])
     const discovery = recorded.slice(start)
     expect(discovery.length).toBeGreaterThanOrEqual(3)
     expect(rejections).toEqual([])
     expect(new Set(discovery.map(({ jti }) => jti)).size).toBe(discovery.length)
     expect(
       discovery.every(
-        ({ kbId, subject, issuedAt, expiresAt }) =>
+        ({ kbId, subject, chatbotId, issuedAt, expiresAt }) =>
           kbId === KB_ID &&
           subject === 'thread-first-turn' &&
+          chatbotId === TEST_CHATBOT_ID &&
           issuedAt === firstTurnIssuedAt &&
           expiresAt - issuedAt === 300
       )
     ).toBe(true)
 
-    const tool = tools.KB_doc_query as {
+    const tool = handle.tools.KB_doc_query as {
       execute?: (input: { query: string }) => Promise<unknown>
     }
     await expect(
@@ -349,30 +348,19 @@ describe('scoped KB transport over real HTTP', () => {
           expiresAt - issuedAt === 300
       )
     ).toBe(true)
+
+    await handle.close()
   })
 
   test('keeps concurrent turns on their own authorized scope', async () => {
     const start = recorded.length
-    const [firstTools, secondTools] = await Promise.all([
+    const [firstHandle, secondHandle] = await Promise.all([
       getAggregatedMCPTools([scopedServerChain(KB_ID)], TEST_CHATBOT_ID, {
         kbIds: [KB_ID],
         sessionId: 'thread-concurrent-a',
       }),
       getAggregatedMCPTools(
-        [
-          {
-            ...scopedServerChain(SECOND_KB_ID),
-            config: {
-              allowedTools: ['doc_query'],
-              priority: 0,
-              parameters: {
-                required: true,
-                toolAlias: 'doc_query',
-                kb_id: SECOND_KB_ID,
-              },
-            },
-          },
-        ],
+        [scopedServerChain(SECOND_KB_ID)],
         TEST_CHATBOT_ID,
         { kbIds: [SECOND_KB_ID], sessionId: 'thread-concurrent-b' }
       ),
@@ -380,16 +368,18 @@ describe('scoped KB transport over real HTTP', () => {
 
     await Promise.all([
       (
-        firstTools.KB_doc_query as {
+        firstHandle.tools.KB_doc_query as {
           execute?: (input: { query: string }) => Promise<unknown>
         }
       ).execute?.({ query: 'first scope' }),
       (
-        secondTools.KB_doc_query as {
+        secondHandle.tools.KB_doc_query as {
           execute?: (input: { query: string }) => Promise<unknown>
         }
       ).execute?.({ query: 'second scope' }),
     ])
+
+    await Promise.all([firstHandle.close(), secondHandle.close()])
 
     const scoped = recorded.slice(start)
     expect(scoped.length).toBeGreaterThan(0)
@@ -402,6 +392,12 @@ describe('scoped KB transport over real HTTP', () => {
       )
     ).toBe(true)
     expect(scoped.some(({ kbId }) => kbId === SECOND_KB_ID)).toBe(true)
+    expect(
+      scoped.some(
+        ({ kbId, subject }) =>
+          kbId === KB_ID && subject === 'thread-concurrent-a'
+      )
+    ).toBe(true)
   })
 
   test('surfaces a rejection without falling back to the stored bearer', async () => {
@@ -411,7 +407,10 @@ describe('scoped KB transport over real HTTP', () => {
       getAggregatedMCPTools(
         [scopedServerChain(REJECTED_KB_ID)],
         TEST_CHATBOT_ID,
-        { kbIds: [REJECTED_KB_ID], sessionId: 'thread-rejected' }
+        {
+          kbIds: [REJECTED_KB_ID],
+          sessionId: 'thread-rejected',
+        }
       )
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
 
@@ -421,7 +420,6 @@ describe('scoped KB transport over real HTTP', () => {
   })
 
   test('aborts an in-flight scoped request when the client closes', async () => {
-    const start = recorded.length
     const target = new URL(scopedUrl)
     const transport = new StreamableHTTPClientTransport(target, {
       requestInit: { redirect: 'error' },
@@ -436,12 +434,75 @@ describe('scoped KB transport over real HTTP', () => {
 
     const startedAt = performance.now()
     const pending = client.listTools()
-    await vi.waitFor(() => expect(recorded[start]?.kbId).toBe(SLOW_KB_ID))
+    await new Promise((resolvePromise) => setTimeout(resolvePromise, 40))
     await client.close()
 
     await expect(pending).rejects.toThrow()
     expect(performance.now() - startedAt).toBeLessThan(SLOW_RESPONSE_MS)
     expect(rejections).toEqual([])
     expect(recorded.some(({ kbId }) => kbId === SLOW_KB_ID)).toBe(true)
+  })
+
+  test('authenticates the shared backend client per request without a bearer', async () => {
+    const start = recorded.length
+    const issuedAt = Math.floor(TURN_START.getTime() / 1000)
+    const target = new URL(scopedUrl)
+
+    const handle = await createDocQueryMcpClient({
+      url: legacyUrl,
+      scoped: { target, kbIds: [KB_ID] },
+    })
+
+    try {
+      const result = await handle.client.callTool({
+        name: 'doc_query',
+        arguments: { query: 'inventory' },
+      })
+      expect(JSON.stringify(result)).toContain('SYNTHETIC_SCOPED_ROUTE_OK')
+    } finally {
+      await handle.close()
+    }
+
+    const inventoryRequests = recorded.slice(start)
+    expect(inventoryRequests.length).toBeGreaterThanOrEqual(2)
+    expect(rejections).toEqual([])
+    expect(
+      inventoryRequests.every(
+        ({ kbId, subject, chatbotId, issuedAt: issued, expiresAt }) =>
+          kbId === KB_ID &&
+          subject === undefined &&
+          chatbotId === undefined &&
+          issued === issuedAt &&
+          expiresAt - issued === 300
+      )
+    ).toBe(true)
+
+    // The stored transport bearer never reaches the wire, and the expired
+    // first credential is replaced by a fresh one for the next client.
+    vi.setSystemTime(TURN_AFTER_EXPIRY)
+    const beforeRefresh = recorded.length
+    const refreshedHandle = await createDocQueryMcpClient({
+      url: legacyUrl,
+      scoped: { target, kbIds: [KB_ID] },
+    })
+    try {
+      await refreshedHandle.client.callTool({
+        name: 'doc_query',
+        arguments: { query: 'inventory after expiry' },
+      })
+    } finally {
+      await refreshedHandle.close()
+    }
+
+    const refreshed = recorded.slice(beforeRefresh)
+    expect(refreshed.length).toBeGreaterThanOrEqual(2)
+    expect(rejections).toEqual([])
+    expect(
+      refreshed.every(
+        ({ issuedAt: issued, expiresAt }) =>
+          issued === Math.floor(TURN_AFTER_EXPIRY.getTime() / 1000) &&
+          expiresAt - issued === 300
+      )
+    ).toBe(true)
   })
 })

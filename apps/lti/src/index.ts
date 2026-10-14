@@ -2,13 +2,20 @@ import { signJWT } from '@klicker-uzh/util'
 import { Provider } from 'ltijs'
 // @ts-ignore
 import Database from 'ltijs-sequelize'
-import { appendJwt, resolveLaunchTarget } from './launchTarget.js'
+import {
+  appendJwt,
+  getChatbotLaunchBinding,
+  resolveLaunchTarget,
+} from './launchTarget.js'
+import { resolvePlatforms } from './platforms.js'
 
 // Validate required environment variables
 if (!process.env.APP_ORIGIN_LTI) {
   console.error('APP_ORIGIN_LTI is required but not defined')
   process.exit(1)
 }
+
+const platforms = resolvePlatforms(process.env)
 
 const PROVIDER_OPTIONS = {
   appRoute: '/',
@@ -60,34 +67,10 @@ if (process.env.LTI_DB_TYPE === 'postgres') {
 // LTI launch callback (token has been verified by ltijs beforehand)
 // @ts-ignore The type here is wrong, a Promise is accepted as per official docs
 Provider.onConnect(async (token, req, res) => {
-  console.log('LTI launch callback:', token)
-
   if (!process.env.APP_ORIGIN_LTI) {
     console.error('APP_ORIGIN_LTI is required but not defined')
     process.exit(1)
   }
-
-  const jwt = await signJWT(
-    {
-      sub: token.user,
-      email: token.userInfo.email,
-      scope: 'LTI1.3',
-    },
-    process.env.APP_SECRET as string,
-    {
-      algorithm: 'HS256',
-      expiresIn: '5m',
-      issuer: process.env.APP_ORIGIN_LTI,
-    }
-  )
-
-  res.cookie('lti-token', jwt, {
-    maxAge: 5 * 60 * 1000,
-    path: '/',
-    secure: true,
-    sameSite: 'none',
-    domain: process.env.COOKIE_DOMAIN as string,
-  })
 
   const launchTarget = resolveLaunchTarget(token, {
     query: req.query as Record<string, unknown>,
@@ -112,6 +95,32 @@ Provider.onConnect(async (token, req, res) => {
     })
   }
 
+  const jwt = await signJWT(
+    {
+      sub: token.user,
+      email: token.userInfo.email,
+      scope: 'LTI1.3',
+      chatbotLaunch: getChatbotLaunchBinding(launchTarget.target),
+    },
+    process.env.APP_SECRET as string,
+    {
+      algorithm: 'HS256',
+      expiresIn: '5m',
+      issuer: process.env.APP_ORIGIN_LTI,
+    }
+  )
+
+  res.cookie('lti-token', jwt, {
+    maxAge: 5 * 60 * 1000,
+    path: '/',
+    secure: true,
+    sameSite: 'none',
+    domain: process.env.COOKIE_DOMAIN as string,
+  })
+
+  res.setHeader('Cache-Control', 'no-store')
+  res.setHeader('Referrer-Policy', 'no-referrer')
+
   const redirectUrl = appendJwt(launchTarget.target, jwt)
   console.log(
     `event=lti_launch_redirect targetSource=${launchTarget.source} targetHost=${launchTarget.target.hostname}`
@@ -127,24 +136,13 @@ const setup = async () => {
   })
   console.log(result)
 
-  // Optional: Register platform if you're setting this up for the first time
-  const platform = await Provider.registerPlatform({
-    url: process.env.LTI_URL as string,
-    name: process.env.LTI_NAME as string,
-    clientId: process.env.LTI_CLIENT_ID as string,
-    authenticationEndpoint: process.env.LTI_AUTH_ENDPOINT as string,
-    accesstokenEndpoint: process.env.LTI_TOKEN_ENDPOINT as string,
-    authConfig: {
-      method: 'JWK_SET',
-      key: process.env.LTI_KEYS_ENDPOINT as string,
-    },
-  })
-
-  if (!platform) {
-    throw new Error('Failed to register platform')
+  for (const registration of platforms) {
+    const platform = await Provider.registerPlatform(registration)
+    if (!platform) {
+      throw new Error('Failed to register platform')
+    }
   }
-
-  console.log(await platform.platformPublicKey())
+  console.log(`Registered ${platforms.length} LTI platforms`)
 }
 
 // Get user and context information
@@ -173,7 +171,10 @@ Provider.app.get('/info', async (req, res) => {
   return res.send(info)
 })
 
-setup().catch((e) => console.error(e))
+setup().catch(() => {
+  console.error('LTI platform initialization failed')
+  process.exit(1)
+})
 
 function getRawType(value: unknown): string {
   if (value === null) return 'null'

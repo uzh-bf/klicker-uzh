@@ -61,7 +61,7 @@ const USAGE = [
   '',
   'Credentials come from KLICKER_EVAL_API_ORIGIN, KLICKER_EVAL_CHAT_ORIGIN,',
   'KLICKER_EVAL_PARTICIPANT_USERNAME and KLICKER_EVAL_PARTICIPANT_PASSWORD;',
-  'KLICKER_EVAL_MODEL_ID defaults to the fixed gpt-5.6-luna selection.',
+  'KLICKER_EVAL_MODEL_ID defaults to the fixed gpt-6-luna selection.',
 ].join('\n')
 
 export function parseArguments(argv) {

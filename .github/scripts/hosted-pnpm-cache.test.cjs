@@ -128,3 +128,77 @@ test('the check push is the only configured hosted writer and helper edits reach
     assert.ok(unitFilter.with.pattern.includes(marker), marker)
   }
 })
+
+test('the lecturer MCP workflow keeps disposable database wiring guarded', () => {
+  const workflow = readYaml('.github/workflows/test-mcp-lecturer.yml')
+  const filter = workflow.jobs.filter.steps.find(
+    (step) => step.uses === './.github/actions/changed-paths'
+  )
+  const filterPattern = new RegExp(filter.with.pattern)
+  for (const changedPath of [
+    '.devcontainer/disposable-test-init.sql',
+    '.github/scripts/provision-disposable-postgres.sh',
+    'pnpm-workspace.yaml',
+  ]) {
+    assert.match(changedPath, filterPattern)
+  }
+
+  const job = workflow.jobs['test-mcp-lecturer']
+  assert.deepEqual(job.services.postgres.env, {
+    POSTGRES_USER: 'klicker',
+    POSTGRES_PASSWORD: 'klicker',
+    POSTGRES_DB: 'klicker-prod',
+  })
+
+  const steps = job.steps
+  const provision = steps.find((step) => step.id === 'provision_db')
+  const setup = steps.find((step) => step.id === 'setup_db')
+  const seed = steps.find((step) => step.id === 'seed_db')
+  const smoke = steps.find((step) => step.id === 'smoke')
+
+  assert.ok(provision)
+  assert.ok(setup)
+  assert.ok(seed)
+  assert.ok(smoke)
+
+  assert.equal(
+    provision.run,
+    `bash .github/scripts/provision-disposable-postgres.sh "\${{ job.services.postgres.id }}"`
+  )
+  assert.equal(provision.if, undefined)
+  assert.ok(steps.indexOf(provision) < steps.indexOf(setup))
+  assert.ok(steps.indexOf(setup) < steps.indexOf(seed))
+  assert.equal(
+    setup.env.DATABASE_URL,
+    'postgresql://klicker_test:klicker@localhost:5432/klicker_test'
+  )
+  assert.equal(
+    setup.env.SHADOW_DATABASE_URL,
+    'postgresql://klicker_test:klicker@localhost:5432/klicker_test_shadow'
+  )
+  assert.equal(setup.if, undefined)
+  assert.equal(seed.env.DATABASE_URL, setup.env.DATABASE_URL)
+  assert.equal(seed.if, undefined)
+  assert.ok(steps.indexOf(seed) < steps.indexOf(smoke))
+  assert.equal(smoke.env.DATABASE_URL, setup.env.DATABASE_URL)
+  assert.equal(smoke.if, undefined)
+  assert.match(smoke.run, /curl -fsS http:\/\/localhost:7081\/healthz/)
+  assert.match(
+    smoke.run,
+    /pnpm --filter @klicker-uzh\/mcp-lecturer run smoke:local/
+  )
+  assert.match(
+    smoke.run,
+    /pnpm --filter @klicker-uzh\/mcp-lecturer run smoke:negative/
+  )
+
+  for (const step of steps) {
+    assert.equal(step['continue-on-error'], undefined, step.name)
+    assert.doesNotMatch(step.if ?? '', /\balways\(\)/, step.name)
+  }
+  assert.doesNotMatch(job.if ?? '', /\balways\(\)/)
+
+  const status = workflow.jobs['test-mcp-lecturer-status']
+  assert.deepEqual(status.needs, ['filter', 'test-mcp-lecturer'])
+  assert.match(status.steps.at(-1).run, /needs\.test-mcp-lecturer\.result/)
+})
