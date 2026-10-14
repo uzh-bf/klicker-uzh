@@ -32,13 +32,13 @@ import {
   USER_ID_TEST,
 } from './constants.js'
 
-// Assessment-report participants must pass the persisted account data-use
-// gate; a refusal of both optional purposes is a valid completed state.
 // Reports include the peer comparison only after the course end date, so the
 // fixture course has already ended.
 const assessmentReportCourseEndDate = () =>
   new Date(Date.now() - 24 * 60 * 60 * 1000)
 
+// Assessment-report participants must pass the persisted account data-use
+// gate; a refusal of both optional purposes is a valid completed state.
 const acknowledgedParticipantDataUse = () => ({
   dataUseAcknowledgedAt: new Date(),
   dataUseAcknowledgedVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
@@ -207,26 +207,133 @@ export async function seedAssessmentReportFixture() {
   })
   const reportInstanceId = reportLiveQuiz.blocks[0]!.elements[0]!.id
   await prisma.liveQuizResponse.createMany({
-    data: ASSESSMENT_REPORT_PARTICIPANT_IDS.map((participantId, index) => {
-      const totalPoints = (index + 1) * 2
-      return {
-        submittedAt: finishedAt,
-        response: {
-          choices: [
-            { ix: 0, selected: false },
-            { ix: 1, selected: true },
-          ],
-        },
-        timeSpent: 30,
-        correctness: ResponseCorrectness.PARTIAL,
-        basePoints: Math.min(totalPoints, 10),
-        correctnessPoints: Math.max(totalPoints - 10, 0),
-        bonusPoints: 0,
-        instanceId: reportInstanceId,
-        elementBlockExecution: 0,
+    data: ASSESSMENT_REPORT_PARTICIPANT_IDS.map((participantId, index) =>
+      assessmentReportFixtureResponse({
         participantId,
-      }
+        index,
+        instanceId: reportInstanceId,
+      })
+    ),
+  })
+}
+
+// Participant n (zero-based) scores 2 * (n + 1) of the 20 available points.
+function assessmentReportFixtureResponse({
+  participantId,
+  index,
+  instanceId,
+}: {
+  participantId: string
+  index: number
+  instanceId: string
+}) {
+  const totalPoints = (index + 1) * 2
+  return {
+    submittedAt: new Date(`${new Date().getUTCFullYear()}-02-01T11:00:00.000Z`),
+    response: {
+      choices: [
+        { ix: 0, selected: false },
+        { ix: 1, selected: true },
+      ],
+    },
+    timeSpent: 30,
+    correctness: ResponseCorrectness.PARTIAL,
+    basePoints: Math.min(totalPoints, 10),
+    correctnessPoints: Math.max(totalPoints - 10, 0),
+    bonusPoints: 0,
+    instanceId,
+    elementBlockExecution: 0,
+    participantId,
+  }
+}
+
+const ASSESSMENT_REPORT_LAST_PEER_INDEX =
+  ASSESSMENT_REPORT_PARTICIPANT_IDS.length - 1
+
+async function getAssessmentReportInstanceId() {
+  const prisma = await getPrisma()
+  const instance = await prisma.elementInstance.findFirstOrThrow({
+    where: { elementBlock: { liveQuizId: LIVE_QUIZ_ID_ASSESSMENT_REPORT } },
+    select: { id: true },
+  })
+  return instance.id
+}
+
+// Restores the last peer's enrollment and original score after a test removed
+// it or changed it.
+async function restoreAssessmentReportLastPeer() {
+  const prisma = await getPrisma()
+  const participantId =
+    ASSESSMENT_REPORT_PARTICIPANT_IDS[ASSESSMENT_REPORT_LAST_PEER_INDEX]!
+  const instanceId = await getAssessmentReportInstanceId()
+  await prisma.participation.upsert({
+    where: {
+      courseId_participantId: {
+        courseId: COURSE_ID_ASSESSMENT_REPORT,
+        participantId,
+      },
+    },
+    create: {
+      courseId: COURSE_ID_ASSESSMENT_REPORT,
+      participantId,
+      isActive: true,
+    },
+    update: {},
+  })
+  await prisma.liveQuizResponse.deleteMany({
+    where: { participantId, instanceId },
+  })
+  await prisma.liveQuizResponse.create({
+    data: assessmentReportFixtureResponse({
+      participantId,
+      index: ASSESSMENT_REPORT_LAST_PEER_INDEX,
+      instanceId,
     }),
+  })
+}
+
+export async function setAssessmentReportCourseEnded(ended: boolean) {
+  const prisma = await getPrisma()
+  const offset = 24 * 60 * 60 * 1000
+  await prisma.course.update({
+    where: { id: COURSE_ID_ASSESSMENT_REPORT },
+    data: { endDate: new Date(Date.now() + (ended ? -offset : offset)) },
+  })
+}
+
+// Changes a peer's score without touching the report subject's own claims.
+export async function changeAssessmentReportPeerScore() {
+  const prisma = await getPrisma()
+  const result = await prisma.liveQuizResponse.updateMany({
+    where: {
+      participantId:
+        ASSESSMENT_REPORT_PARTICIPANT_IDS[ASSESSMENT_REPORT_LAST_PEER_INDEX],
+      instance: {
+        elementBlock: { liveQuizId: LIVE_QUIZ_ID_ASSESSMENT_REPORT },
+      },
+    },
+    data: { basePoints: 0, correctnessPoints: 0 },
+  })
+  if (result.count !== 1) {
+    throw new Error('ASSESSMENT_REPORT_FIXTURE_RESPONSE_NOT_FOUND')
+  }
+}
+
+// Leaves nine participants, one below the comparison threshold.
+export async function removeAssessmentReportLastPeer() {
+  const prisma = await getPrisma()
+  const participantId =
+    ASSESSMENT_REPORT_PARTICIPANT_IDS[ASSESSMENT_REPORT_LAST_PEER_INDEX]!
+  await prisma.liveQuizResponse.deleteMany({
+    where: { participantId, instanceId: await getAssessmentReportInstanceId() },
+  })
+  await prisma.participation.delete({
+    where: {
+      courseId_participantId: {
+        courseId: COURSE_ID_ASSESSMENT_REPORT,
+        participantId,
+      },
+    },
   })
 }
 
@@ -338,6 +445,7 @@ export async function seedAssessmentReportTenBinFixture() {
 export async function resetAssessmentReportFixture() {
   const prisma = await getPrisma()
   await cleanupAssessmentReportTenBinFixture()
+  await restoreAssessmentReportLastPeer()
   await prisma.verifiableCredential.deleteMany({
     where: { courseId: COURSE_ID_ASSESSMENT_REPORT },
   })
