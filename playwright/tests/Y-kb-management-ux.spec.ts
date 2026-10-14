@@ -562,6 +562,12 @@ test.describe('Knowledge base management workspace', () => {
         mimeType: 'text/plain',
         buffer: Buffer.from('pending upload'),
       })
+      const uploadButton = page.getByTestId('confirm-kb-file-upload')
+      await expect(uploadButton).toBeDisabled()
+      await page.getByTestId('kb-rights-confirmation').click()
+      await expect(uploadButton).toBeDisabled()
+      await page.getByTestId('kb-personal-data-confirmation').click()
+      await uploadButton.click()
       await uploadStarted
       await expect(page.getByTestId('close-kb-add-resource-modal')).toHaveCount(
         0
@@ -585,6 +591,8 @@ test.describe('Knowledge base management workspace', () => {
         'Administrative'
       )
       failNextKbMetricsRefresh = true
+      await page.getByTestId('kb-rights-confirmation').click()
+      await page.getByTestId('kb-personal-data-confirmation').click()
       await page.getByTestId('add-kb-url-resource').click()
       await expect(modal).toBeHidden()
       await page.reload()
@@ -674,6 +682,11 @@ test.describe('Knowledge base management workspace', () => {
         page.getByTestId('confirm-kb-file-replacement')
       ).toBeVisible()
       failNextKbMetricsRefresh = true
+      await expect(
+        page.getByTestId('confirm-kb-file-replacement')
+      ).toBeDisabled()
+      await page.getByTestId('kb-rights-confirmation').click()
+      await page.getByTestId('kb-personal-data-confirmation').click()
       await page.getByTestId('confirm-kb-file-replacement').click()
       await expect(replaceModal).toBeHidden()
       expect(replaceCalls).toBe(1)
