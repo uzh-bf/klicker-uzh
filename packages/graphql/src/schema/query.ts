@@ -2,6 +2,7 @@ import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import type { PrismaTransactionContextWithUser } from '@/lib/context.js'
 import builder from '../builder.js'
+import * as AiFeatureGateService from '../lib/manageAiFeatureGate.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
 import * as AnalyticsService from '../services/analytics.js'
@@ -10,9 +11,8 @@ import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
-import * as ElementService from '../services/elements.js'
 import * as ElementGenerationService from '../services/elementGeneration.js'
-import { elementGenerationGraphQLResult } from '../services/questionGenerationErrors.js'
+import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
 import * as KnowledgeService from '../services/knowledge.js'
@@ -22,12 +22,12 @@ import { getParticipantAccountDataUse } from '../services/participantAccountData
 import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
+import { elementGenerationGraphQLResult } from '../services/questionGenerationErrors.js'
 import * as ResourcesService from '../services/resources.js'
 import * as ResponseExamplesService from '../services/responseExamples.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
 import * as TemplateService from '../services/templates.js'
-import * as AiFeatureGateService from '../lib/manageAiFeatureGate.js'
 import {
   ActivityDetails,
   CourseActivityList,
@@ -73,12 +73,12 @@ import {
   Tag,
   UserElementList,
 } from './element.js'
+import { ElementStatus, ElementType } from './elementData.js'
 import {
   ElementGenerationBuildRef,
   ElementGenerationCapabilitiesRef,
   ElementGenerationSourceRef,
 } from './elementGeneration.js'
-import { ElementStatus, ElementType } from './elementData.js'
 import { ActivityEvaluation } from './evaluation.js'
 import {
   GroupActivity,
@@ -103,14 +103,15 @@ import {
   KBResourceType,
 } from './knowledge.js'
 import {
+  EvaluationDisplaySetting,
   Feedback,
   LiveQuiz,
   LiveQuizEmbeddingInfo,
   LiveQuizInfo,
   LiveQuizSummary,
 } from './liveQuiz.js'
-import { MicroLearning } from './microLearning.js'
 import { ManageAiCapabilityState } from './manageAi.js'
+import { MicroLearning } from './microLearning.js'
 import {
   Participant,
   ParticipantAccountDataUse,
@@ -132,9 +133,9 @@ import {
 import {
   AnswerCollection,
   AnswerCollectionPreviewEntry,
-  ChatbotAuthoringRevision,
   ChatAccountUsageOverviewRef,
   Chatbot,
+  ChatbotAuthoringRevision,
   ChatbotPublic,
   ChatbotPublicationReview,
   ChatModelCapability,
@@ -672,6 +673,20 @@ export const Query = builder.queryType({
         ),
       }),
 
+      controlLiveQuizFeedbacks: t.withAuth(asUser).field({
+        nullable: true,
+        type: LiveQuiz,
+        args: { id: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.id }),
+          // unpublished questions are only visible to those who moderate
+          DB.PermissionLevel.EXECUTE,
+          async (_, args, ctx) => {
+            return await LiveQuizService.getControlLiveQuizFeedbacks(args, ctx)
+          }
+        ),
+      }),
+
       practiceQuiz: t.field({
         nullable: true,
         type: PracticeQuiz,
@@ -785,6 +800,37 @@ export const Query = builder.queryType({
           }
 
           return await LiveQuizService.getLiveQuizEvaluation(args, ctx)
+        },
+      }),
+
+      liveQuizEvaluationDisplay: t.field({
+        nullable: true,
+        type: [EvaluationDisplaySetting],
+        args: {
+          id: t.arg.string({ required: true }),
+          hmac: t.arg.string(),
+        },
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on live quiz required if hmac is not provided
+          if (!args.hmac) {
+            const validAccess = ctx.user?.sub
+              ? await checkAccess(
+                  [
+                    {
+                      liveQuizId: args.id,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ],
+                  ctx as PrismaTransactionContextWithUser
+                )
+              : false
+
+            if (!validAccess) {
+              return null
+            }
+          }
+
+          return await LiveQuizService.getLiveQuizEvaluationDisplay(args, ctx)
         },
       }),
 

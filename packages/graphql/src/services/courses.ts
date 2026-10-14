@@ -3490,11 +3490,18 @@ export async function getControlCourses(ctx: ContextWithUser) {
       courses: {
         where: { deletionRequestedAt: null },
         orderBy: { createdAt: 'desc' },
+        include: {
+          // minimal quiz data for the controller course overview (counts only)
+          liveQuizzes: {
+            where: { isDeleted: false },
+            select: { id: true, name: true, status: true },
+          },
+        },
       },
     },
   })
 
-  return user?.courses ?? []
+  return (user?.courses ?? []) as ICourse[]
 }
 
 function getPermissionBooleans({
@@ -4178,6 +4185,8 @@ export async function getControlCourse(
           id: quiz.id,
           name: quiz.name,
           status: quiz.status,
+          isAssessmentEnabled: quiz.isAssessmentEnabled,
+          availableFrom: quiz.availableFrom,
         })),
       } as ICourse)
     : null

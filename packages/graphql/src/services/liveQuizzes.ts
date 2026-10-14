@@ -1,26 +1,27 @@
+import { createHash, createHmac } from 'node:crypto'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
+  type ElementBlockInput,
   ElementData,
   ElementInstanceResults,
   ElementResultsCaseStudy,
-  ElementResultsOpen,
-  HatchetHandlers,
-  type ElementBlockInput,
   type ElementResultsChoices,
+  ElementResultsOpen,
   type ElementResultsSelection,
   type ElementStackInput,
+  HatchetHandlers,
 } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
   getCachedBlockResults,
   getInitialInstanceResults,
   levelFromXp,
+  type PrismaTransactionClient,
   propagateActivityToElements,
   recomputeDerivedPermissions,
   signJWT,
   updateLiveQuizBlockResultsFromCache,
-  type PrismaTransactionClient,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import generatePassword from 'generate-password'
@@ -28,11 +29,11 @@ import { GraphQLError } from 'graphql'
 import type { Redis } from 'ioredis'
 import { min } from 'mathjs'
 import schedule from 'node-schedule'
-import { createHash, createHmac } from 'node:crypto'
 import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { computeRanks, temporaryLeaderboardEntryId } from '../lib/util.js'
+import type { IEvaluationDisplaySetting } from '../schema/liveQuiz.js'
 import {
   getPermissionBooleans,
   liveQuizCourseVisibilityFilter,
@@ -737,7 +738,20 @@ export async function getControlLiveQuiz(
     return null
   }
 
-  return quiz
+  const blockParticipants = await getBlockParticipants({
+    quizId: id,
+    blocks: quiz.blocks,
+    activeBlockId: quiz.activeBlockId,
+    redis: quiz.isAssessmentEnabled ? ctx.redisAssessmentExec : ctx.redisExec,
+  })
+
+  return {
+    ...quiz,
+    blocks: quiz.blocks.map((block) => ({
+      ...block,
+      numOfParticipants: blockParticipants[block.id],
+    })),
+  }
 }
 
 export async function getShortnameQuizzes(
@@ -973,6 +987,78 @@ export async function unpublishLiveQuiz(
   return updatedLiveQuiz
 }
 
+// Number of participants per block: closed blocks from the persisted instance
+// results, the active block from the response cache (minimum over instances).
+async function getBlockParticipants({
+  quizId,
+  blocks,
+  activeBlockId,
+  redis,
+}: {
+  quizId: string
+  blocks: (DB.ElementBlock & { elements: DB.ElementInstance[] })[]
+  activeBlockId: number | null
+  redis: Redis
+}) {
+  const blockParticipants = blocks.reduce<Record<number, number>>(
+    (acc, block) => {
+      acc[block.id] = block.elements.reduce(
+        (instanceAcc, instance) =>
+          min(
+            instanceAcc,
+            instance.results.total + instance.anonymousResults.total
+          ),
+        100000
+      )
+      return acc
+    },
+    {}
+  )
+
+  const activeBlock = blocks.find((block) => block.id === activeBlockId)
+  if (activeBlock) {
+    const redisMulti = redis.pipeline()
+    activeBlock.elements.forEach((instance) => {
+      redisMulti.hgetall(`lq:${quizId}:i:${instance.id}:results`)
+    })
+    const cacheContent = (await redisMulti.exec()) as
+      | [
+          Error | null,
+          { participants: string }, // TODO: extend type with more content of cache (as needed)
+        ][]
+      | null
+
+    const activeBlockParticipants = cacheContent
+      ?.map(([_, result]) => parseInt(result?.participants, 10))
+      .reduce((acc, val) => min(acc, val), 100000)
+    blockParticipants[activeBlock.id] =
+      activeBlockParticipants ?? blockParticipants[activeBlock.id] ?? 0
+  }
+
+  return blockParticipants
+}
+
+// Q&A moderation in the controller: settings plus all feedbacks (including
+// unpublished ones), without the blocks and results the cockpit loads
+export async function getControlLiveQuizFeedbacks(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  return await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id,
+      status: DB.PublicationStatus.PUBLISHED,
+      ...liveQuizCourseVisibilityFilter,
+    },
+    include: {
+      feedbacks: {
+        include: { responses: { orderBy: { createdAt: 'asc' } } },
+        orderBy: { createdAt: 'desc' },
+      },
+    },
+  })
+}
+
 export async function getCockpitQuiz(
   { id }: { id: string },
   ctx: ContextWithUser
@@ -1004,43 +1090,13 @@ export async function getCockpitQuiz(
     ? ctx.redisAssessmentExec
     : ctx.redisExec
 
-  // number of participants per block
-  const blockParticipants = liveQuiz.blocks.reduce<Record<number, number>>(
-    (acc, block) => {
-      acc[block.id] = block.elements.reduce(
-        (instanceAcc, instance) =>
-          min(
-            instanceAcc,
-            instance.results.total + instance.anonymousResults.total
-          ),
-        100000
-      )
-      return acc
-    },
-    {}
-  )
-
-  if (liveQuiz.activeBlock && liveQuiz.activeBlock.id) {
-    const activeInstanceIds = liveQuiz.activeBlock?.elements.map(
-      (instance) => instance.id
-    )
-    const redisMulti = redis.pipeline()
-    activeInstanceIds?.forEach((instanceId) => {
-      redisMulti.hgetall(`lq:${id}:i:${instanceId}:results`)
-    })
-    const cacheContent = (await redisMulti.exec()) as
-      | [
-          Error | null,
-          { participants: string }, // TODO: extend type with more content of cache (as needed)
-        ][]
-      | null
-
-    const activeBlockParticipants = cacheContent
-      ?.map(([_, result]) => parseInt(result?.participants))
-      .reduce((acc, val) => min(acc, val), 100000)
-    blockParticipants[liveQuiz.activeBlock.id] =
-      activeBlockParticipants ?? blockParticipants[liveQuiz.activeBlock.id] ?? 0
-  }
+  // number of participants per block (live from the cache for the active block)
+  const blockParticipants = await getBlockParticipants({
+    quizId: id,
+    blocks: liveQuiz.blocks,
+    activeBlockId: liveQuiz.activeBlockId,
+    redis,
+  })
 
   // recude live quiz to only contain what is required for the lecturer cockpit
   const reducedQuiz = {
@@ -2233,6 +2289,154 @@ export async function cancelLiveQuiz(
   }
 }
 
+// evaluate whether the hashed liveQuiz.namespace and liveQuiz.id equals the hmac
+// (public access for embedded evaluations, e.g. in PowerPoint)
+function isValidLiveQuizHmac(
+  liveQuiz: { id: string; namespace: string },
+  hmac: string
+) {
+  const hmacEncoder = createHmac('sha256', process.env.APP_SECRET as string)
+  hmacEncoder.update(liveQuiz.namespace + liveQuiz.id)
+  return hmacEncoder.digest('hex') === hmac
+}
+
+// --- evaluation display settings: the controller decides per question how the
+// projected evaluation (PPT embed) is shown; the embed reads them while polling
+const EVALUATION_DISPLAY_CHART_TYPES = [
+  'barChart',
+  'histogram',
+  'wordCloud',
+  'table',
+]
+const EVALUATION_DISPLAY_TTL_SECONDS = 60 * 60 * 24 * 7
+
+function parseEvaluationDisplaySetting(
+  instanceId: number,
+  raw?: string | null
+): IEvaluationDisplaySetting {
+  let parsed: Partial<IEvaluationDisplaySetting> = {}
+  try {
+    parsed = raw ? JSON.parse(raw) : {}
+  } catch {
+    parsed = {}
+  }
+  return {
+    instanceId,
+    chartType:
+      typeof parsed.chartType === 'string' &&
+      EVALUATION_DISPLAY_CHART_TYPES.includes(parsed.chartType)
+        ? parsed.chartType
+        : null,
+    showSolution: parsed.showSolution === true,
+    showPercentages: parsed.showPercentages === true,
+  }
+}
+
+export async function getLiveQuizEvaluationDisplay(
+  { id, hmac }: { id: string; hmac?: string | null },
+  ctx: Context
+) {
+  if ((!ctx.user?.sub && typeof hmac !== 'string') || hmac == '') {
+    return null
+  }
+
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id,
+      status: {
+        in: [DB.PublicationStatus.PUBLISHED, DB.PublicationStatus.ENDED],
+      },
+      isDeleted: false,
+      ...liveQuizCourseVisibilityFilter,
+    },
+    select: { id: true, namespace: true, isAssessmentEnabled: true },
+  })
+
+  if (!liveQuiz) return null
+  if (typeof hmac === 'string' && !isValidLiveQuizHmac(liveQuiz, hmac)) {
+    return null
+  }
+  // nothing of an assessment is projected
+  if (liveQuiz.isAssessmentEnabled) return []
+
+  const entries = await ctx.redisExec.hgetall(`lq:${id}:display`)
+  return Object.entries(entries).map(([instanceId, raw]) =>
+    parseEvaluationDisplaySetting(Number(instanceId), raw)
+  )
+}
+
+export async function updateEvaluationDisplay(
+  {
+    quizId,
+    instanceId,
+    chartType,
+    showSolution,
+    showPercentages,
+  }: {
+    quizId: string
+    instanceId: number
+    chartType?: string | null
+    showSolution?: boolean | null
+    showPercentages?: boolean | null
+  },
+  ctx: ContextWithUser
+) {
+  if (
+    typeof chartType === 'string' &&
+    !EVALUATION_DISPLAY_CHART_TYPES.includes(chartType)
+  ) {
+    return null
+  }
+
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id: quizId,
+      status: {
+        in: [DB.PublicationStatus.PUBLISHED, DB.PublicationStatus.ENDED],
+      },
+      isDeleted: false,
+    },
+    select: {
+      isAssessmentEnabled: true,
+      blocks: { select: { elements: { select: { id: true } } } },
+    },
+  })
+
+  if (!liveQuiz || liveQuiz.isAssessmentEnabled) return null
+  const belongsToQuiz = liveQuiz.blocks.some((block) =>
+    block.elements.some((element) => element.id === instanceId)
+  )
+  if (!belongsToQuiz) return null
+
+  const key = `lq:${quizId}:display`
+  const current = parseEvaluationDisplaySetting(
+    instanceId,
+    await ctx.redisExec.hget(key, String(instanceId))
+  )
+  const next: IEvaluationDisplaySetting = {
+    ...current,
+    ...(typeof chartType === 'string' ? { chartType } : {}),
+    ...(typeof showSolution === 'boolean' ? { showSolution } : {}),
+    ...(typeof showPercentages === 'boolean' ? { showPercentages } : {}),
+  }
+
+  await ctx.redisExec
+    .multi()
+    .hset(
+      key,
+      String(instanceId),
+      JSON.stringify({
+        chartType: next.chartType,
+        showSolution: next.showSolution,
+        showPercentages: next.showPercentages,
+      })
+    )
+    .expire(key, EVALUATION_DISPLAY_TTL_SECONDS)
+    .exec()
+
+  return next
+}
+
 export async function getLiveQuizEvaluation(
   { id, hmac }: { id: string; hmac?: string | null },
   ctx: Context
@@ -2270,15 +2474,8 @@ export async function getLiveQuizEvaluation(
     return null
   }
 
-  if (typeof hmac === 'string') {
-    const hmacEncoder = createHmac('sha256', process.env.APP_SECRET as string)
-    hmacEncoder.update(liveQuiz.namespace + liveQuiz.id)
-    const quizHmac = hmacEncoder.digest('hex')
-
-    // evaluate whether the hashed liveQuiz.namespace and liveQuiz.id equals the hmac
-    if (quizHmac !== hmac) {
-      return null
-    }
+  if (typeof hmac === 'string' && !isValidLiveQuizHmac(liveQuiz, hmac)) {
+    return null
   }
 
   // depending on the quiz assessment setting, select the corresponding redis instance
