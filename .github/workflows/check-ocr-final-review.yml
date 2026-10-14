@@ -471,10 +471,10 @@ jobs:
           }
 
           : >"${STDERR_PATH}"
-          run_ocr_attempt "${RESULT_PATH}" 1000000
+          run_ocr_attempt "${RESULT_PATH}" 3000000
           RESUME_PLAN_PATH="${RESULT_PATH}.resume-plan"
           if ! node .github/scripts/final-ai-review.js plan-ocr-resume \
-            "${RESULT_PATH}" 1000000 >"${RESUME_PLAN_PATH}"; then
+            "${RESULT_PATH}" 3000000 >"${RESUME_PLAN_PATH}"; then
             mkdir -p "${REJECTED_DIR}"
             cp -- "${RESULT_PATH}" "${REJECTED_DIR}/initial-result.json"
             echo 'validation_failure=true' >>"${GITHUB_OUTPUT}"
@@ -492,7 +492,7 @@ jobs:
             run_ocr_attempt \
               "${RESUMED_PATH}" "${REMAINING_TOKENS}" "${SESSION_ID}"
             if ! node .github/scripts/final-ai-review.js merge-ocr-resume \
-              "${RESULT_PATH}" "${RESUMED_PATH}" 1000000 >"${MERGED_PATH}"; then
+              "${RESULT_PATH}" "${RESUMED_PATH}" 3000000 >"${MERGED_PATH}"; then
               mkdir -p "${REJECTED_DIR}"
               cp -- "${RESULT_PATH}" "${REJECTED_DIR}/initial-result.json"
               cp -- "${RESUMED_PATH}" "${REJECTED_DIR}/resumed-result.json"
