@@ -24,6 +24,38 @@ const gitEnvironment = Object.fromEntries(
   Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))
 )
 
+const cli = fileURLToPath(
+  new URL('./test-hygiene-inventory.mjs', import.meta.url)
+)
+
+function createHygieneFixture(t) {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'klicker-hygiene-'))
+  t.after(() => rmSync(root, { recursive: true, force: true }))
+  const git = (...args) =>
+    execFileSync('git', args, {
+      cwd: root,
+      encoding: 'utf8',
+      env: gitEnvironment,
+    })
+  git('init', '-q')
+  const commit = () =>
+    git(
+      '-c',
+      'user.name=Test Hygiene Fixture',
+      '-c',
+      'user.email=test-hygiene@example.invalid',
+      '-c',
+      'core.hooksPath=/dev/null',
+      '-c',
+      'commit.gpgSign=false',
+      'commit',
+      '-q',
+      '-m',
+      'Synthetic inventory fixture'
+    )
+  return { root, git, commit }
+}
+
 test('separates active Playwright from references and recognizes runner conventions', () => {
   assert.equal(
     classifyTestFile('playwright/tests/A.spec.ts'),
@@ -90,142 +122,79 @@ test('aggregation counts files separately from occurrences and has no pass thres
   assert.deepEqual(summarize([]), { files: 0, categories: {}, signals: {} })
 })
 
-test('read-only CLI uses tracked working-tree files and rejects incomplete reads', () => {
-  const root = mkdtempSync(path.join(os.tmpdir(), 'klicker-hygiene-'))
-  const git = (...args) =>
-    execFileSync('git', args, {
-      cwd: root,
-      encoding: 'utf8',
-      env: gitEnvironment,
-    })
-  const cli = fileURLToPath(
-    new URL('./test-hygiene-inventory.mjs', import.meta.url)
+test('read-only CLI uses tracked working-tree files and rejects incomplete reads', (t) => {
+  const { root, git, commit } = createHygieneFixture(t)
+  mkdirSync(path.join(root, 'playwright/tests'), { recursive: true })
+  writeFileSync(
+    path.join(root, 'playwright/tests/A.spec.ts'),
+    'await page.waitForTimeout(1)'
   )
-  try {
-    git('init', '-q')
-    mkdirSync(path.join(root, 'playwright/tests'), { recursive: true })
-    writeFileSync(
-      path.join(root, 'playwright/tests/A.spec.ts'),
-      'await page.waitForTimeout(1)'
-    )
-    writeFileSync(path.join(root, 'removed.test.mjs'), '')
-    symlinkSync('removed.test.mjs', path.join(root, 'linked.test.mjs'))
-    git('add', '--all')
-    git(
-      '-c',
-      'user.name=Test Hygiene Fixture',
-      '-c',
-      'user.email=test-hygiene@example.invalid',
-      '-c',
-      'core.hooksPath=/dev/null',
-      '-c',
-      'commit.gpgSign=false',
-      'commit',
-      '-q',
-      '-m',
-      'Synthetic inventory fixture'
-    )
-    writeFileSync(
-      path.join(root, 'playwright/tests/A.spec.ts'),
-      'await expect(button).toBeFocused()'
-    )
-    writeFileSync(
-      path.join(root, 'untracked.test.mjs'),
-      'PRIVATE_FIXTURE_CONTENT'
-    )
-    rmSync(path.join(root, 'removed.test.mjs'))
-    const before = git('status', '--porcelain')
-    const result = inventory(root)
-    assert.match(result.contentsSha256, /^[a-f0-9]{64}$/)
-    assert.equal(result.activePlaywright.files, 1)
-    assert.deepEqual(result.files[0].signals, {})
-    assert.deepEqual(result.unreadable, [
-      { path: 'linked.test.mjs', reason: 'NOT_REGULAR_FILE' },
-      { path: 'removed.test.mjs', reason: 'ENOENT' },
-    ])
-    assert.equal(result.summary.files, 1)
-    const run = spawnSync(process.execPath, [cli, '--root', root, '--json'], {
-      env: { ...process.env, GIT_DIR: '/invalid-inherited-git-dir' },
-      encoding: 'utf8',
-    })
-    assert.equal(run.status, 1)
-    assert.deepEqual(JSON.parse(run.stdout), result)
-    assert.equal(git('status', '--porcelain'), before)
-    assert.throws(
-      () => inventory(path.join(root, 'playwright')),
-      /repository root/
-    )
-    const badArgs = spawnSync(process.execPath, [cli, '--fix'], {
-      encoding: 'utf8',
-    })
-    assert.equal(badArgs.status, 1)
-    assert.match(badArgs.stderr, /Usage:/)
-  } finally {
-    rmSync(root, { recursive: true, force: true })
-  }
+  writeFileSync(path.join(root, 'removed.test.mjs'), '')
+  symlinkSync('removed.test.mjs', path.join(root, 'linked.test.mjs'))
+  git('add', '--all')
+  commit()
+  writeFileSync(
+    path.join(root, 'playwright/tests/A.spec.ts'),
+    'await expect(button).toBeFocused()'
+  )
+  writeFileSync(
+    path.join(root, 'untracked.test.mjs'),
+    'PRIVATE_FIXTURE_CONTENT'
+  )
+  rmSync(path.join(root, 'removed.test.mjs'))
+  const before = git('status', '--porcelain')
+  const result = inventory(root)
+  assert.match(result.contentsSha256, /^[a-f0-9]{64}$/)
+  assert.equal(result.activePlaywright.files, 1)
+  assert.deepEqual(result.files[0].signals, {})
+  assert.deepEqual(result.unreadable, [
+    { path: 'linked.test.mjs', reason: 'NOT_REGULAR_FILE' },
+    { path: 'removed.test.mjs', reason: 'ENOENT' },
+  ])
+  assert.equal(result.summary.files, 1)
+  const run = spawnSync(process.execPath, [cli, '--root', root, '--json'], {
+    env: { ...process.env, GIT_DIR: '/invalid-inherited-git-dir' },
+    encoding: 'utf8',
+  })
+  assert.equal(run.status, 1)
+  assert.deepEqual(JSON.parse(run.stdout), result)
+  assert.equal(git('status', '--porcelain'), before)
+  assert.throws(
+    () => inventory(path.join(root, 'playwright')),
+    /repository root/
+  )
+  const badArgs = spawnSync(process.execPath, [cli, '--fix'], {
+    encoding: 'utf8',
+  })
+  assert.equal(badArgs.status, 1)
+  assert.match(badArgs.stderr, /Usage:/)
 })
 
-test('CLI succeeds with indicators and never invokes configured Git hooks/filters', () => {
-  const root = mkdtempSync(path.join(os.tmpdir(), 'klicker-hygiene-'))
-  const git = (...args) =>
-    execFileSync('git', args, {
-      cwd: root,
-      encoding: 'utf8',
-      env: gitEnvironment,
-    })
-  const cli = fileURLToPath(
-    new URL('./test-hygiene-inventory.mjs', import.meta.url)
+test('CLI succeeds with indicators and never invokes configured Git hooks/filters', (t) => {
+  const { root, git, commit } = createHygieneFixture(t)
+  writeFileSync(path.join(root, 'a.test.ts'), 'await page.waitForTimeout(1000)')
+  git('add', '--all')
+  commit()
+  const marker = path.join(root, 'hook-invoked')
+  const hook = path.join(root, 'hook.sh')
+  writeFileSync(hook, `#!/bin/sh\nprintf invoked > '${marker}'\n`, {
+    mode: 0o755,
+  })
+  git('config', 'core.fsmonitor', hook)
+  git('config', 'filter.hygiene.clean', hook)
+  writeFileSync(path.join(root, '.gitattributes'), '*.test.ts filter=hygiene\n')
+  writeFileSync(path.join(root, 'a.test.ts'), 'await page.waitForTimeout(999)')
+  const run = spawnSync(process.execPath, [cli, '--root', root], {
+    encoding: 'utf8',
+  })
+  assert.equal(run.status, 0)
+  assert.match(run.stdout, /fixedWait/)
+  assert.match(run.stdout, /Not runner discovery/)
+  assert.equal(
+    existsSync(marker),
+    false,
+    'inventory must not invoke Git hooks/filters'
   )
-  try {
-    git('init', '-q')
-    writeFileSync(
-      path.join(root, 'a.test.ts'),
-      'await page.waitForTimeout(1000)'
-    )
-    git('add', '--all')
-    git(
-      '-c',
-      'user.name=Test Hygiene Fixture',
-      '-c',
-      'user.email=test-hygiene@example.invalid',
-      '-c',
-      'core.hooksPath=/dev/null',
-      '-c',
-      'commit.gpgSign=false',
-      'commit',
-      '-q',
-      '-m',
-      'Synthetic inventory fixture'
-    )
-    const marker = path.join(root, 'hook-invoked')
-    const hook = path.join(root, 'hook.sh')
-    writeFileSync(hook, `#!/bin/sh\nprintf invoked > '${marker}'\n`, {
-      mode: 0o755,
-    })
-    git('config', 'core.fsmonitor', hook)
-    git('config', 'filter.hygiene.clean', hook)
-    writeFileSync(
-      path.join(root, '.gitattributes'),
-      '*.test.ts filter=hygiene\n'
-    )
-    writeFileSync(
-      path.join(root, 'a.test.ts'),
-      'await page.waitForTimeout(999)'
-    )
-    const run = spawnSync(process.execPath, [cli, '--root', root], {
-      encoding: 'utf8',
-    })
-    assert.equal(run.status, 0)
-    assert.match(run.stdout, /fixedWait/)
-    assert.match(run.stdout, /Not runner discovery/)
-    assert.equal(
-      existsSync(marker),
-      false,
-      'inventory must not invoke Git hooks/filters'
-    )
-  } finally {
-    rmSync(root, { recursive: true, force: true })
-  }
 })
 
 test('read failures expose only bounded filesystem categories', () => {
