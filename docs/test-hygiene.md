@@ -63,7 +63,10 @@ that the checkout is clean; Git status/filters are not invoked. It recognizes co
 manual smoke scripts, custom runners, generated cases, external evaluations and
 untracked files require separate inspection. It includes commented code and
 fixture strings in heuristic matches, emits no source snippets, and keeps active
-Playwright specs separate from retained/reference specs. Exit 1 means incomplete
+Playwright specs separate from retained/reference specs. Unreadable candidates
+include a bounded reason code (for example `ENOENT`, `EACCES` or
+`NOT_REGULAR_FILE`), never the raw filesystem error. Scanner errors surface
+separately rather than being counted as unreadable files. Exit 1 means incomplete
 reads or invalid invocation, never a quality threshold. Compare snapshots only
 with matching discovery scope. Runner discovery and CI execution are separate.
 

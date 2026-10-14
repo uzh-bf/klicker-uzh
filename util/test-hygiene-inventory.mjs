@@ -67,6 +67,20 @@ export function summarize(files) {
   return { files: files.length, categories, signals }
 }
 
+export function readFailureReason(error) {
+  // Allow only known filesystem classes, never arbitrary messages or codes.
+  const allowed = new Set([
+    'ENOENT',
+    'EACCES',
+    'EPERM',
+    'ELOOP',
+    'EIO',
+    'ENAMETOOLONG',
+    'ENOTDIR',
+  ])
+  return allowed.has(error?.code) ? error.code : 'READ_ERROR'
+}
+
 export function inventory(root) {
   const canonicalRoot = realpathSync(root)
   const git = (...args) =>
@@ -92,20 +106,27 @@ export function inventory(root) {
   const contents = createHash('sha256')
   for (const file of paths) {
     if (!classifyTestFile(file)) continue
+    let source
     try {
       const absolute = path.join(canonicalRoot, file)
-      if (!lstatSync(absolute).isFile()) throw new Error('not a regular file')
+      if (!lstatSync(absolute).isFile()) {
+        unreadable.push({ path: file, reason: 'NOT_REGULAR_FILE' })
+        continue
+      }
       const relative = path.relative(canonicalRoot, realpathSync(absolute))
       if (relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
-        throw new Error('outside repository')
+        unreadable.push({ path: file, reason: 'OUTSIDE_REPOSITORY' })
+        continue
       }
-      const source = readFileSync(absolute, 'utf8')
-      contents.update(JSON.stringify([file, source]))
-      files.push(inspectTestFile(file, source))
-    } catch {
-      // No error details or source text: inventories must not leak local data.
-      unreadable.push(file)
+      source = readFileSync(absolute, 'utf8')
+    } catch (error) {
+      // Diagnose filesystem failures without exposing error messages or source.
+      unreadable.push({ path: file, reason: readFailureReason(error) })
+      continue
     }
+    // Scanner/programming errors must surface, not masquerade as unreadable files.
+    contents.update(JSON.stringify([file, source]))
+    files.push(inspectTestFile(file, source))
   }
   return {
     schemaVersion: 1,

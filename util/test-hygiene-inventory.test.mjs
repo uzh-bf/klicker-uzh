@@ -16,6 +16,7 @@ import {
   classifyTestFile,
   inspectTestFile,
   inventory,
+  readFailureReason,
   summarize,
 } from './test-hygiene-inventory.mjs'
 
@@ -138,7 +139,10 @@ test('read-only CLI uses tracked working-tree files and rejects incomplete reads
     assert.match(result.contentsSha256, /^[a-f0-9]{64}$/)
     assert.equal(result.activePlaywright.files, 1)
     assert.deepEqual(result.files[0].signals, {})
-    assert.deepEqual(result.unreadable, ['linked.test.mjs', 'removed.test.mjs'])
+    assert.deepEqual(result.unreadable, [
+      { path: 'linked.test.mjs', reason: 'NOT_REGULAR_FILE' },
+      { path: 'removed.test.mjs', reason: 'ENOENT' },
+    ])
     assert.equal(result.summary.files, 1)
     const run = spawnSync(process.execPath, [cli, '--root', root, '--json'], {
       env: { ...process.env, GIT_DIR: '/invalid-inherited-git-dir' },
@@ -221,5 +225,26 @@ test('CLI succeeds with indicators and never invokes configured Git hooks/filter
     )
   } finally {
     rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('read failures expose only bounded filesystem categories', () => {
+  for (const code of [
+    'ENOENT',
+    'EACCES',
+    'EPERM',
+    'ELOOP',
+    'EIO',
+    'ENAMETOOLONG',
+    'ENOTDIR',
+  ]) {
+    assert.equal(readFailureReason({ code, message: 'PRIVATE_CONTENT' }), code)
+  }
+  for (const error of [
+    null,
+    new Error('PRIVATE_CONTENT'),
+    { code: 'PRIVATE_CONTENT' },
+  ]) {
+    assert.equal(readFailureReason(error), 'READ_ERROR')
   }
 })
