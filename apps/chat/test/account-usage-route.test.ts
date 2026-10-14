@@ -982,14 +982,35 @@ describe('account usage chat route', () => {
   })
 
   test.each([
-    'tutor',
-    'quizzer',
-  ] as const)('forces %s course retrieval only on the first model step', async (selectedMode) => {
+    ['tutor', null, true],
+    ['explainer', null, true],
+    ['quizzer', null, true],
+    ['cm_roleplay', null, false],
+    [
+      'cm_roleplay',
+      {
+        required: true,
+        toolAlias: 'doc_query',
+        kb_id: '7016810d-31e9-4b39-9529-cd46feb2bf63',
+      },
+      false,
+    ],
+  ] as const)('selects %s retrieval on the first step with binding %j', async (selectedMode, parameters, forceRetrieval) => {
     mocks.chatbotFindUnique.mockResolvedValueOnce(
       chatbot({
         systemPrompts: {
           tutor: { prompt: 'Use course material.' },
           quizzer: { prompt: 'Ask course questions.' },
+        },
+        customModeConfig: {
+          modes: [
+            {
+              key: 'cm_roleplay',
+              name: 'Synthetic Roleplay',
+              description: 'Synthetic roleplay with retrieval.',
+              personaText: null,
+            },
+          ],
         },
         mcpConfigurations: [
           {
@@ -997,8 +1018,8 @@ describe('account usage chat route', () => {
             isEnabled: true,
             priority: 0,
             allowedTools: ['doc_query'],
-            parameters: null,
-            mcpServer: { id: 'server-1' },
+            parameters,
+            mcpServer: { id: 'server-1', name: parameters ? 'KB' : 'IW' },
           },
         ],
       })
@@ -1013,6 +1034,8 @@ describe('account usage chat route', () => {
     })
 
     expect(response.status).toBe(200)
+    expect(mocks.streamConfig?.toolChoice).toBe('auto')
+    expect(mocks.streamConfig?.tools).toHaveProperty('KB_doc_query')
     const prepareStep = mocks.streamConfig?.prepareStep as (input: {
       stepNumber: number
       steps?: Array<{ content: unknown[] }>
@@ -1020,11 +1043,14 @@ describe('account usage chat route', () => {
       responseMessages?: unknown[]
     }) => unknown
     const initialMessages = [{ role: 'user', content: 'Question' }]
+    const stepMessage = { role: 'system', content: expect.any(String) }
     expect(
       prepareStep({ stepNumber: 0, initialMessages, responseMessages: [] })
     ).toEqual({
-      toolChoice: { type: 'tool', toolName: 'KB_doc_query' },
-      messages: [initialMessages[0], STEP_REMINDER],
+      ...(forceRetrieval
+        ? { toolChoice: { type: 'tool', toolName: 'KB_doc_query' } }
+        : {}),
+      messages: [initialMessages[0], stepMessage],
     })
     const raw = {
       mode: 'documents',
@@ -1085,7 +1111,7 @@ describe('account usage chat route', () => {
             },
           ],
         },
-        STEP_REMINDER,
+        stepMessage,
       ],
     })
   })

@@ -23,6 +23,7 @@ import {
 } from 'ai'
 import { after, type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { withCalculatorTool } from '@/src/lib/server/calculatorTool'
@@ -2030,7 +2031,13 @@ export async function POST(
           initialMessages,
           responseMessages,
         }) => ({
-          ...(docQueryToolName && stepNumber === 0
+          // Standard platform modes retrieve first, so the answer is grounded
+          // before it is written. Custom modes keep the retrieval tool offered
+          // but choose for themselves, so attaching a knowledge base never
+          // forces a retrieval call ahead of the persona's own answer.
+          ...(docQueryToolName &&
+          Object.hasOwn(DEFAULT_PROMPT, selectedMode) &&
+          stepNumber === 0
             ? {
                 toolChoice: {
                   type: 'tool' as const,
