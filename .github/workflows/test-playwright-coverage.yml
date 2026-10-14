@@ -1,0 +1,72 @@
+name: Experimental auth browser coverage
+
+# Explicit isolated prototype. The ordinary E2E and deployment lanes never set
+# KLICKER_BROWSER_COVERAGE. This lane has no secrets, services or cache writes.
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'playwright/coverage-pilot/**'
+      - 'playwright/coverage.config.ts'
+      - 'apps/auth/next.config.mjs'
+      - 'apps/auth/browser-coverage.config.mjs'
+      - '.github/workflows/test-playwright-coverage.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: auth-browser-coverage-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      APP_SECRET: synthetic-browser-coverage-secret
+      APP_ORIGIN_AUTH: http://127.0.0.1:3010
+      NEXTAUTH_URL: http://127.0.0.1:3010
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Trust exact mounted checkout
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.0
+          run_install: false
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Test coverage tooling
+        run: pnpm --filter @klicker-uzh/playwright test:coverage-tools
+      - name: Build auth dependencies
+        run: pnpm exec turbo run build --filter='@klicker-uzh/auth^...' --concurrency=4
+      - name: Build disposable auth production runtime with browser maps
+        # Direct app build deliberately bypasses Turbo's application cache.
+        # Coverage and normal deployment builds cannot share an app cache key.
+        run: pnpm --filter @klicker-uzh/auth build:test
+        env:
+          KLICKER_BROWSER_COVERAGE: '1'
+      - name: Measure two synthetic anonymous browser journeys
+        run: pnpm --filter @klicker-uzh/playwright exec playwright test --config=coverage.config.ts
+        env:
+          KLICKER_BROWSER_COVERAGE: '1'
+      - name: Upload sanitized measurements only
+        # A failed or partial measurement is not a baseline. No raw V8 source,
+        # maps, builds, network bodies, sessions, HTML, screenshots or traces.
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-browser-coverage-summary
+          path: playwright/test-results/coverage-pilot-summary/*.json
+          if-no-files-found: error
+          retention-days: 7

@@ -1,5 +1,6 @@
 import { getNextBaseConfig } from '@klicker-uzh/next-config'
 import createNextIntlPlugin from 'next-intl/plugin'
+import { enableCoverageMaps } from './browser-coverage.config.mjs'
 
 const withNextIntl = createNextIntlPlugin('./src/types/i18n.ts')
 
@@ -10,4 +11,4 @@ const nextConfig = getNextBaseConfig({
   NEXT_PUBLIC_ENV: process.env.NEXT_PUBLIC_ENV,
 })
 
-export default withNextIntl(nextConfig)
+export default withNextIntl(enableCoverageMaps(nextConfig))
