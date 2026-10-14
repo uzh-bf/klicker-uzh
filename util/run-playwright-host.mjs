@@ -424,6 +424,9 @@ export function parseHostEnvironment(output) {
   if (!loopback) {
     fail(`the workspace Postgres has no loopback host port (${loopbackReason})`)
   }
+  if (typeof loopback.host !== 'string' || !Number.isInteger(loopback.port)) {
+    fail('the workspace Postgres loopback endpoint lacks a host or port')
+  }
   return {
     workspace: report.workspace ?? '',
     databaseHost: loopback.host.includes(':')

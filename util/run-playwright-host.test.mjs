@@ -25,6 +25,7 @@ import {
   preserveLocalDatabase,
 } from './playwright-host-policy.mjs'
 import {
+  FILTERED_INSTALL_MARKER,
   inferPlaywrightProfile,
   PLAYWRIGHT_PROFILE_FALLBACK,
   PNPM_VERIFY_DEPS_ENV,
@@ -843,8 +844,23 @@ test('the devrouter env report resolves the workspace and loopback database', ()
     /not-running/
   )
   assert.throws(
+    () =>
+      parseHostEnvironment(
+        syntheticHostEnvironment({ loopback: { host: '127.0.0.1' } })
+      ),
+    /lacks a host or port/
+  )
+  assert.throws(
     () => parseHostEnvironment(JSON.stringify({ version: 2, apps: [] })),
     /unsupported devrouter env report version/
+  )
+})
+
+test('the Git hook checks the marker the launcher writes', () => {
+  const hook = readFileSync(join(repoRoot, 'util', 'run-hook-pnpm.sh'), 'utf8')
+  assert.match(
+    hook,
+    new RegExp(`^filtered_marker=${FILTERED_INSTALL_MARKER}$`, 'm')
   )
 })
 
