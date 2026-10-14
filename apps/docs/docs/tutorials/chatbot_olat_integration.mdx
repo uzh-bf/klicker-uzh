@@ -1,0 +1,347 @@
+---
+title: Integrate a Chatbot into OLAT with Your Agent
+---
+
+You can use your own AI agent to help integrate an **existing, published
+KlickerUZH chatbot** into an **existing OLAT course**. The
+[`klicker-olat-integration` skill](https://github.com/uzh-bf/klicker-uzh/tree/v3/.agents/skills/klicker-olat-integration)
+provides a guided procedure: agree on the learning use and settings, construct
+the correct course-specific LTI URL, configure an OLAT LTI page, and test an
+actual chat response. You can also follow the procedure manually.
+
+The integration uses OLAT's institutionally configured **KlickerUZH LTI
+provider**. It does not depend on a native Chatbot choice in OLAT's Klicker
+element or a chatbot-specific "Copy OLAT URL" button in Klicker. Those features
+are not prerequisites of this guide.
+
+:::info Scope
+Installing the skill gives your agent instructions, not access to your accounts
+or permission to change them. This guide is for course instructors and course
+teams. Creating a bot, provisioning its knowledge base, registering an LTI
+provider, and granting operator privileges are separate tasks. The repository's
+[`klicker-course-chatbot-provisioning` skill](https://github.com/uzh-bf/klicker-uzh/tree/v3/.agents/skills/klicker-course-chatbot-provisioning)
+describes the operator workflow; those privileges are not required to use an
+already configured bot.
+:::
+
+## Before you start
+
+You need:
+
+- The exact OLAT course, published chatbot, and linked KlickerUZH course.
+- Permission to edit the relevant OLAT course element. Reviewing or changing
+  chatbot settings also requires the corresponding Klicker permissions.
+- A working institutional LTI registration. At UZH, **KlickerUZH** is selected
+  in the LTI page's **LTI Version** field.
+- An authenticated browser that your agent can control through its supported
+  browser tools, if you want it to carry out the configuration.
+- A decision about who may test, what small amount of test usage is acceptable,
+  and whether the result should remain an unpublished draft.
+
+Log in yourself when the agent cannot complete authentication. Do not put
+passwords, session tokens, signed login URLs, or participant conversations into
+the skill files. An agent without browser control can still explain the setup,
+prepare the URL, and review settings you provide; you then enter and test them
+yourself.
+
+## Obtain and load the complete skill
+
+1. Obtain the repository from its official GitHub page, using a clone or the
+   repository ZIP download. Copy the **whole**
+   `.agents/skills/klicker-olat-integration/` directory, keeping its relative
+   structure. It includes `SKILL.md`, references, a record template, and the
+   optional URL helper. Downloading only `SKILL.md` omits important instructions.
+2. Review the files and use your agent product's documented skill installation
+   or folder-loading mechanism. Some agents discover a project skill directory;
+   others require an import. There is no universal installer for every agent.
+   If an import expects an archive, follow that product's required archive
+   layout rather than uploading the entire KlickerUZH repository.
+3. Confirm that the agent can read both `SKILL.md` and its referenced files.
+   Ask it to identify the skill and explain the proposed scope before editing.
+4. Give it the actual course and bot links, your existing decisions, and the
+   boundary between inspection, configuration, and publication.
+
+A useful initial request is:
+
+> Use the klicker-olat-integration skill to inspect this published chatbot and
+> existing OLAT course. Preserve the current working bot configuration. Help me
+> decide any missing setup options and show the proposed changes before making
+> them. Keep OLAT changes unpublished until I explicitly approve publication.
+
+Python 3 is only needed for the optional URL helper. It is not needed to read
+the skill or complete the integration manually.
+
+## Agree on the setup together
+
+The agent should first inspect what already exists and ask only questions that
+the course context does not answer. Questions should include a recommendation
+and its consequence. A request to inspect the skill is not permission to run
+it against a live course.
+
+### Learning use, people, and models
+
+| Decision                             | What to clarify and why                                                                                                                                                                                                                                                                                                                                            |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Intended learning use                | Is the bot for explanations, guided practice, self-testing, or another agreed purpose? Preserve existing modes and materials unless their revision is part of the task. A tutor may correctly respond with a question instead of a complete answer.                                                                                                                |
+| Audience and access                  | Identify the intended cohort, approximate number of participants, intensive users, course dates, and languages. Check the exact linked Klicker course and instructor permissions; access to one course does not prove access to another. If the linked course is fixed after creation in the current UI, escalate a mismatch rather than promising to reassign it. |
+| Course materials and wider knowledge | Check which knowledge base and tools are actually connected and ready. Agree how students should distinguish course information from broader model knowledge. A mode's instructions do not grant web access or connect a missing tool.                                                                                                                             |
+| Model choice                         | Inspect the models and reasoning options offered in this deployment. Agree on a default and whether learners may choose among allowed models. Greater reasoning effort or longer exchanges can increase latency and usage; a model's name alone does not establish its cost or entitlement.                                                                        |
+| Existing configuration               | Keep working modes, sources, model policies, account links, and funding unless a specific change is agreed. Explain whether a proposed change needs a saved revision and review before becoming live. A pending review may lock editing until the review is resolved.                                                                                              |
+
+In the revision-based management interface, review the existing bot under
+**Resources → Chatbots**. Where the corresponding controls are available:
+
+- **Behavior:** compare Tutor, Explainer, and Quizzer with the learning goal.
+  Review mode-specific prerequisites; a mode that requires retrieval needs the
+  appropriate connected capability. Custom modes can add a different teaching
+  approach within the interface's limit. Agree its instructions, language, and
+  expected response before changing the current modes.
+- **Models:** choose one fixed model or allow participant selection, then check
+  the offered model and reasoning-effort combinations. An automatic option can
+  simplify the learner's choice, but does not mean a fixed cost per answer.
+- **Knowledge:** confirm the active knowledge base and source readiness.
+  A connected source that is still processing is not proof that the bot can
+  retrieve it. Changes to course materials need their own agreed scope.
+- **Disclaimer:** review the course-specific introduction and the platform's
+  fixed terms. Explain the actual data handling and review access described
+  there; do not replace it with an agent's assumptions. Each learner makes
+  their own acceptance decision.
+- **Usage:** compare the live credit policy, any pending policy, and the usage
+  summary before recommending a change.
+
+If a control is unavailable, read-only, or locked for review, record that
+specific limitation and use the supported review process. An instructor's
+integration task does not authorise backend writes to unlock it.
+
+### Participant allowance and funding
+
+Start with what you want students to be able to do, not an arbitrary credit
+number. For example, discuss the expected frequency and length of study
+sessions, the model choices, the teaching period, and whether occasional
+intensive use should be possible. Use a small authorised test to observe costs
+before recommending a larger allowance.
+
+**Credits are an application allowance per participant and chatbot.** They are
+not raw model tokens, a fixed number of messages, or a universal currency
+amount. A displayed cost for one short answer does not predict all later
+answers. Long conversation histories, models, and reasoning settings can
+change the cost.
+
+| Setting or question      | Consequence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Desired unit             | If you ask for "tokens per student per week", clarify whether you mean a practical usage allowance or a strict raw-token ceiling. The credit fields described here do not provide an exact raw-token quota.                                                                                                                                                                                                                                                                                               |
+| Initial credits          | Starting balance when a participant first uses this bot. Raising it does not by itself top up existing users.                                                                                                                                                                                                                                                                                                                                                                                             |
+| Reset period             | Determines the refill schedule, or no automatic refill. Check the next refill shown by the interface; a weekly policy is not a fresh allowance on every login.                                                                                                                                                                                                                                                                                                                                            |
+| Reset amount             | Credits **added** at a due refill, subject to the maximum. It is not necessarily a replacement balance.                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Max credits              | Limits accumulation. Unspent credits can carry over up to this cap; the cap is not multiplied by the number of students for each individual account.                                                                                                                                                                                                                                                                                                                                                      |
+| Changing a live policy   | On the revision-based flow, approval does not immediately top up or clamp existing balances. Initial credits affect new users; the next ordinary refill uses the approved policy. Verify the current flow and timing before promising an immediate change.                                                                                                                                                                                                                                                |
+| Exhaustion               | Check the current model admission and fallback policy. Some configurations allow a smaller permitted fallback; others can deny a turn. Do not promise unlimited chatting, or a strict stop at zero, from the credit settings alone.                                                                                                                                                                                                                                                                       |
+| Owner budget and funding | Participant allowances and the owner's service budget are separate controls. Where available to the account owner, inspect account settings → chat usage for Base/Advanced budgets, used and remaining amounts, and the reset date. This view is read-only and may be unavailable to delegated course-team users. Check who funds the deployment; budget changes require the responsible operator. A student allowance does not guarantee provider capacity, model access, or a separately funded budget. |
+
+For example, with a refill amount of 4 and a cap of 8, a balance of 6 becomes 8
+at the next due refill; a balance of 3 becomes 7. These numbers illustrate
+bounded additive refill, not a recommended allowance. Each eligible participant
+receives their own allowance for the bot; it is not one shared class balance.
+
+Use the actual field validation when proposing a policy: the revision-based
+editor requires non-negative whole-number settings, initial and refill amounts
+within the maximum, and a positive refill amount when automatic refill is
+enabled. Changing the period or selecting no refill has timing consequences;
+read the saved-policy explanation and next refill instead of assuming an
+immediate bonus refill.
+
+### OLAT entry and approval
+
+| Decision                       | Consequence                                                                                                                                                                                                                                                                           |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Embedded chat or new window    | Embedding keeps the chat inside the course. A separate-window course link provides an alternative for login, consent, or browser restrictions. Test every route you keep.                                                                                                             |
+| Launch page or immediate entry | **Skip launch page** removes an extra OLAT launch step. It is separate from any data-transfer acceptance setting and the Klicker chatbot disclaimer.                                                                                                                                  |
+| Identity transmission          | Agree what data the particular element needs. Do not enable optional name/email transfer on the chat element by default. The separate **Manage Account** element has its own documented email requirement.                                                                            |
+| Draft or publication           | Saving an OLAT editor change, publishing that change, and making the course available to learners are separate steps. A draft test does not prove ordinary student access.                                                                                                            |
+| Test account                   | Use the instructor's existing session for the functional check. A separate authorised participant account is an optional, recommended way to check first-time learner access when one is already available. The agent must not create an identity or accept terms for another person. |
+
+Before consequential changes, review a concrete proposed-settings summary:
+the affected elements, current and proposed values, reasons, expected access
+and data effects, likely test cost, and publication scope. Give explicit
+approval for those changes. Existing answers and authorisations should be
+carried forward rather than requested again. Publication requests to the
+Klicker team and OLAT publication need to be within that agreed scope.
+
+## Build the course-specific LTI URL
+
+Use the chatbot's participant link for the **intended linked course**, not an
+owner-preview link or a link to an existing conversation. The destination has
+this form in the UZH setup:
+
+```text
+https://pwa.klicker.uzh.ch/en/course/COURSE_UUID/chatbot/BOT_UUID?embed=true
+```
+
+The LTI launch URL combines the institution's exact registered LTI base with
+that entire destination, URL-encoded **once**:
+
+```text
+VERIFIED_LTI_BASE?redirectTo=URL_ENCODED_DESTINATION
+```
+
+The UZH case verified in October 2026 used `https://lti.klicker.uzh.ch` as the
+base, with no path or slash before `?redirectTo=`. This is a fact about that
+registration, not a rule for all LTI installations. Older examples may show
+`/lti`; another installation may register a different path. Compare the
+current provider registration and deployment guidance before changing a URL.
+Do not try random variants or copy signed authentication parameters.
+
+The optional helper produces the launch URL, embedded destination, and
+new-window destination without contacting a service. From the downloaded skill
+directory, this example uses **synthetic identifiers that must be replaced**:
+
+```bash
+python scripts/build_launch_url.py --course-id 11111111-1111-4111-8111-111111111111 --bot-id 22222222-2222-4222-8222-222222222222 --locale en --lti-base https://lti.klicker.uzh.ch --participant-origin https://pwa.klicker.uzh.ch
+```
+
+Supply both `--lti-base` and `--participant-origin` when overriding the URL
+defaults. The participant origin contains only the HTTPS scheme and authority;
+the LTI base preserves its registered path and trailing slash. With neither
+option, the helper uses its documented UZH defaults, which still need current
+verification. Successful helper output proves syntax and encoding, not the
+provider registration, course membership, publication, or access.
+
+Without Python, construct the destination above, encode the complete
+destination once with a trusted local URL-encoding tool, and append it as the
+`redirectTo` parameter of the verified LTI base. Decode it once to check the
+course, bot, language, and `embed=true` before use. No credentials are needed
+to construct the URL.
+
+## Configure and save the OLAT element
+
+After approval, inspect existing elements and reuse a suitable one where
+possible. Preserve unrelated course edits and the working **Manage Account**
+entry.
+
+1. In the OLAT course editor, create or open the relevant **LTI page**.
+2. Under **Page content**, select **KlickerUZH** in **LTI Version**. The generic
+   **LTI 1.0 / 1.1** form with Key and Password is not this institutional
+   provider. If the preset is missing, ask the institution's administrator;
+   do not invent credentials or register a provider as an incidental fix.
+3. Enter the prepared launch URL in **URL**. Leave the deployment identity
+   supplied by the institutional provider unchanged.
+4. Choose the agreed display mode, such as **Embedded in course (iFrame)**,
+   and the agreed **Skip launch page** setting.
+5. Check identity transmission, additional attributes, title, visibility, and
+   access. Leave score transfer off for an ordinary support chatbot unless an
+   assessment integration has separately been agreed.
+6. Save, leave the settings, and reopen the element. Check that the URL and
+   every relevant option persisted.
+7. If agreed, add a clearly labelled **External page** opening the
+   course-specific participant URL in a new browser window. Use the destination
+   without `?embed=true` for that route, and test it too.
+
+The [general LTI tutorial](/tutorials/lti_integration/) explains the separate
+**Manage Account** page. Its account-linking setup requires **Transmit E-Mail
+address**; do not disable it by applying the chatbot element's optional-field
+choices to that page. If it needs to be added or changed, explain and agree the
+data transfer first.
+
+## Check publication states separately
+
+Management screens and approval workflows can differ between deployed releases.
+Use the visible state of this bot and the matching implementation, not an
+older tutorial or a different branch alone.
+
+- **Published chatbot:** the configuration currently available to participants.
+- **Saved or pending revision:** proposed changes, which may still need review.
+  On the revision-based flow, the previously published configuration keeps
+  serving while review is pending. The owner preview can use the **live**
+  configuration, so it is not proof that a saved revision is active.
+- **OLAT editor draft:** the integration settings saved in the editor.
+- **Published OLAT element and course access:** the actual learner route,
+  including course lifecycle, visibility, groups, and access restrictions.
+
+A pending bot improvement need not prevent integrating its already published
+version. Conversely, publishing an OLAT element does not approve a Klicker
+revision. Report what is saved, submitted, live, and tested separately.
+
+For an unpublished draft, saving can also update a summary labelled **Live
+configuration**. That label does not make the draft available to participants:
+check the explicit publication status and access notice.
+
+## Verify the integration
+
+A welcome screen or input box alone does not establish a working integration.
+Use a short synthetic prompt with no participant data, such as:
+
+> Integration test by the course team: help me practise one basic course
+> concept in English. Follow the selected mode and use a course source if one
+> is available.
+
+Wait for a **completed answer**, inspect the expected mode and language, and
+check source use if the bot has course materials. Record any error and the
+displayed credit cost; rounded values are not exact billing estimates. Reopen
+the element and verify that the saved configuration still works.
+
+### Optional first-use check with an existing participant account
+
+A separate participant account is **not a prerequisite** for using the skill
+or completing the instructor's setup. Do not request student credentials or
+create an account to remove a testing limitation. If an appropriate account
+is already available and its use is authorised, it is useful to check the
+first-use path:
+
+1. The learner can access the intended OLAT course and element.
+2. LTI creates or links the correct participant identity through the supported
+   account flow. Existing Klicker users should check **Manage Account** to
+   avoid an unintended separate identity.
+3. The course-specific link leads to the intended linked course and bot, with
+   the required participant membership. A direct chat link working elsewhere
+   does not prove this path.
+4. The learner sees and can make their own disclaimer choice. A declined
+   disclaimer blocks chatting; where the embedded view does not expose the
+   change-of-choice control, use the supported standalone entry.
+5. A first message receives a completed response and the allowance is visible.
+6. Reopening the course element and the agreed new-window alternative works.
+
+The earlier successful UZH integration was tested with an owner's existing
+login in OLAT's participant preview, including real English and German
+responses. It did **not** establish a separate new student's first login.
+Keep that limitation in your own record until the separate-account test has
+actually been completed; an OLAT preview role does not change the browser's
+Klicker identity. If no separate account is available, finish the authorised
+instructor setup and report that the optional first-use check remains untested.
+
+If OLAT publication is approved, inspect the selected changes before
+publishing: other authors' pending edits may be included. Publish only the
+agreed scope and repeat the check in the ordinary course view. Otherwise keep
+the saved draft and state which access check remains outstanding.
+
+## Diagnose failures without weakening protections
+
+| Symptom                                         | Next check                                                                                                                                                                                            |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Key and Password fields are empty               | Select the configured **KlickerUZH** provider rather than the generic LTI 1.0/1.1 option. If unavailable, resolve institutional setup.                                                                |
+| Authentication or redirect error                | Compare the exact registered LTI base, destination, and encoding. Investigate a documented mismatch before testing one correction; paths and trailing slashes can matter.                             |
+| Chat loads but a message fails                  | Read the actual error, login, disclaimer, model eligibility, and allowance state. Test the supported new-window route. A plain External page iframe may have different sandbox restrictions from LTI. |
+| Direct chat works but course entry fails        | Check the chosen course, linked bot, participant identity, membership, and live publication.                                                                                                          |
+| New mode or credit setting does not appear      | Compare saved/pending and live configuration. Approval and subsequent refill timing can be required; preview alone may show the old live settings.                                                    |
+| Credits are exhausted or a model is unavailable | Check the effective model/fallback policy and separate owner budget or entitlement. Raising participant credits may not address the cause.                                                            |
+| Only an owner can use the bot                   | Test the actual participant permissions and first-use flow. Do not grant students instructor rights to bypass a failure.                                                                              |
+| Publication includes unrelated edits            | Keep the draft until the authorised change can be separated or the course team agrees on the concrete wider publication.                                                                              |
+
+Do not disable browser security, frame restrictions, consent, or authentication
+to make an embed work. If a registered provider or account prerequisite is
+missing, document it for the responsible team. Restore the previous saved
+settings when an agreed change breaks an existing route; remove only your own
+disposable test elements with the appropriate authorisation.
+
+## Keep a concise handover
+
+Use the skill's `assets/integration-record.md` to record the final settings,
+publication states, routes tested, account category, actual results, and open
+checks. Keep private records outside public contributions; exclude signed
+URLs, credentials, participant content, and identifying screenshots.
+
+For current deployment differences and the source of the URL, credit, and
+publication rules, see the skill's
+[source references](https://github.com/uzh-bf/klicker-uzh/blob/v3/.agents/skills/klicker-olat-integration/references/sources.md).
+The [student chatbot guide](/student_tutorials/chatbot/) and
+[participant account guide](/student_tutorials/student_accounts/) can support
+your course-specific onboarding instructions.

@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Klicker–OLAT Integration'
+  short_description: 'Connect published Klicker chatbots to OLAT courses'
+  default_prompt: 'Use $klicker-olat-integration to help me as an instructor connect my published KlickerUZH chatbot to an existing OLAT course, explain setup consequences, carry out authorised settings, and verify the available access routes.'

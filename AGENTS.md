@@ -341,6 +341,8 @@ Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and 
 
 ## Agent skills
 
+For instructor-facing setup of a published chatbot in an existing OLAT course, use [.agents/skills/klicker-olat-integration/SKILL.md](.agents/skills/klicker-olat-integration/SKILL.md). It covers authorised browser configuration, LTI launch URLs, credits and publication boundaries; privileged provisioning remains a separate workflow.
+
 ### Issue tracker
 
 Issues and specs live in ClickUp, reached through the `clickup_*` MCP tools; GitHub Issues are not used. See `docs/agents/issue-tracker.md`.
@@ -374,4 +376,5 @@ Quick validation sequence:
 - Host/docker runtime app only: `devrouter app run <host-app> --repo . --yes`
 - `devrouter ls`
 - Managed devcontainer source configs with `postCreateCommand` and a managed post-start adapter must set `waitFor` exactly to `postCreateCommand` or `postStartCommand`; generated managed configs preserve lifecycle fields and change only `runServices`.
+
 <!-- /devrouter -->
