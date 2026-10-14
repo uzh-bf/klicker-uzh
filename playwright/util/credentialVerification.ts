@@ -34,6 +34,11 @@ import {
 
 // Assessment-report participants must pass the persisted account data-use
 // gate; a refusal of both optional purposes is a valid completed state.
+// Reports include the peer comparison only after the course end date, so the
+// fixture course has already ended.
+const assessmentReportCourseEndDate = () =>
+  new Date(Date.now() - 24 * 60 * 60 * 1000)
+
 const acknowledgedParticipantDataUse = () => ({
   dataUseAcknowledgedAt: new Date(),
   dataUseAcknowledgedVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
@@ -59,7 +64,7 @@ export async function seedAssessmentReportFixture() {
       authType: CourseAuthType.SSO,
       color: '#0028A5',
       startDate: new Date(`${currentYear - 1}-01-01T00:00`),
-      endDate: new Date(`${currentYear + 10}-01-01T23:59`),
+      endDate: assessmentReportCourseEndDate(),
       isGroupCreationEnabled: false,
       groupDeadlineDate: new Date(`${currentYear - 1}-01-01T00:00`),
       owner: { connect: { id: USER_ID_TEST } },
@@ -347,7 +352,10 @@ export async function resetAssessmentReportFixture() {
   })
   await prisma.course.update({
     where: { id: COURSE_ID_ASSESSMENT_REPORT },
-    data: { displayName: ASSESSMENT_REPORT_COURSE_NAME },
+    data: {
+      displayName: ASSESSMENT_REPORT_COURSE_NAME,
+      endDate: assessmentReportCourseEndDate(),
+    },
   })
   await prisma.participant.update({
     where: { id: ASSESSMENT_REPORT_PARTICIPANT_IDS[0] },
