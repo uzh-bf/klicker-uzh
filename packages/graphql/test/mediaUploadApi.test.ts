@@ -1,5 +1,5 @@
+import { createRequire } from 'node:module'
 import { UserLoginScope, UserRole } from '@klicker-uzh/prisma/client'
-import { graphql } from 'graphql'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Context } from '../src/lib/context.js'
 
@@ -14,6 +14,12 @@ vi.mock('../src/services/mediaStorage/azure.js', () => ({
 }))
 
 import { schema } from '../src/index.js'
+
+// Pothos uses GraphQL's CommonJS classes. Resolve the executor in the same
+// realm under both the focused config and the full integration suite.
+const { graphql } = createRequire(import.meta.url)(
+  'graphql'
+) as typeof import('graphql')
 
 const ownerId = '11111111-1111-4111-8111-111111111111'
 const descriptor = {
