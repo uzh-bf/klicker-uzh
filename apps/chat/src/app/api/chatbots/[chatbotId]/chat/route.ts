@@ -2081,10 +2081,10 @@ export async function POST(
         onEnd: async (result) => {
           await closeMcpTools()
           sawFinish = true
-          // ai@7 still flushes onEnd after an abort once at least one step
-          // completed. onAbort already persisted the partial answer and charged
-          // the per-step cost, so continuing here would overwrite it with
-          // completed-steps-only content and re-run the credit deduction.
+          // Older AI SDK 7 patches could flush onEnd after a completed step
+          // followed by an abort. Keep this guard defensive: onAbort already
+          // persisted the partial answer and charged the per-step cost, so a
+          // late completion must not overwrite it or repeat the deduction.
           if (sawAbort) {
             logEvent('stream.finish', {
               elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
