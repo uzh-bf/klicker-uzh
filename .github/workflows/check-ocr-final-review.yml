@@ -414,6 +414,7 @@ jobs:
           RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
           REJECTED_DIR: ${{ runner.temp }}/final-ai-individual-publisher-failure
           STDERR_PATH: ${{ runner.temp }}/final-ai-review-stderr.log
+          OCR_ADAPTER_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-review-adapter-diagnostics.jsonl
         run: |
           set -euo pipefail
           run_ocr_attempt() {
@@ -439,6 +440,24 @@ jobs:
               echo 'Pinned OCR executable verification failed; raw output is suppressed.' >&2
               return "${exit_code}"
             fi
+            local baseline_limit=200000 bounded_limit=32768
+            for prompt_limit in "${baseline_limit}" "${bounded_limit}"; do
+              if ! (unset MISTRAL_API_KEY; timeout --kill-after=10 120 ocr review --preview \
+                --from "${REVIEW_FROM}" --to "${HEAD_SHA}" \
+                --max-tokens "${prompt_limit}" --format json --audience agent \
+                --rule .github/open-code-review/final-review-rules.json) \
+                >"${output_path}.preview-${prompt_limit}" 2>>"${STDERR_PATH}"; then
+                echo 'OCR coverage preview failed; raw output is suppressed.' >&2
+                return 1
+              fi
+            done
+            if ! node .github/scripts/final-ai-review.js validate-ocr-preview \
+              "${output_path}.preview-${baseline_limit}" "${output_path}.preview-${bounded_limit}" \
+              >/dev/null 2>>"${STDERR_PATH}"; then
+              printf 'OCR stage=preview-validation exit=1\n' >>"${GITHUB_STEP_SUMMARY}"
+              echo 'OCR preview validation failed: malformed preview or changed file coverage; review refused.' >&2
+              return 1
+            fi
             [[ "${REVIEW_JOB_STARTED_AT}" =~ ^[1-9][0-9]*$ ]]
             now="$(date +%s)"
             if (( now + 2760 > REVIEW_JOB_STARTED_AT + 4800 )); then
@@ -454,6 +473,7 @@ jobs:
               --audience agent \
               --effort low \
               --timeout 45 \
+              --max-tokens "${bounded_limit}" \
               --max-tokens-budget "${token_budget}" \
               --format json \
               --background "${BACKGROUND}" \
@@ -471,10 +491,10 @@ jobs:
           }
 
           : >"${STDERR_PATH}"
-          run_ocr_attempt "${RESULT_PATH}" 1000000
+          run_ocr_attempt "${RESULT_PATH}" 3000000
           RESUME_PLAN_PATH="${RESULT_PATH}.resume-plan"
           if ! node .github/scripts/final-ai-review.js plan-ocr-resume \
-            "${RESULT_PATH}" 1000000 >"${RESUME_PLAN_PATH}"; then
+            "${RESULT_PATH}" 3000000 >"${RESUME_PLAN_PATH}"; then
             mkdir -p "${REJECTED_DIR}"
             cp -- "${RESULT_PATH}" "${REJECTED_DIR}/initial-result.json"
             echo 'validation_failure=true' >>"${GITHUB_OUTPUT}"
@@ -492,7 +512,7 @@ jobs:
             run_ocr_attempt \
               "${RESUMED_PATH}" "${REMAINING_TOKENS}" "${SESSION_ID}"
             if ! node .github/scripts/final-ai-review.js merge-ocr-resume \
-              "${RESULT_PATH}" "${RESUMED_PATH}" 1000000 >"${MERGED_PATH}"; then
+              "${RESULT_PATH}" "${RESUMED_PATH}" 3000000 >"${MERGED_PATH}"; then
               mkdir -p "${REJECTED_DIR}"
               cp -- "${RESULT_PATH}" "${REJECTED_DIR}/initial-result.json"
               cp -- "${RESUMED_PATH}" "${REJECTED_DIR}/resumed-result.json"
@@ -625,6 +645,15 @@ jobs:
           name: final-ai-individual-publisher-failure-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/final-ai-individual-publisher-failure
           if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload sanitized individual execution counters
+        if: always() && needs.start.outputs.run_review == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: final-ai-individual-execution-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/final-ai-review-adapter-diagnostics.jsonl
+          if-no-files-found: warn
           retention-days: 1
 
   finalize:
@@ -986,6 +1015,7 @@ jobs:
           RANGE_DIR: ${{ runner.temp }}/final-ai-stack-code-ranges
           REJECTED_DIR: ${{ runner.temp }}/final-ai-stack-publisher-failure
           STDERR_PATH: ${{ runner.temp }}/final-ai-stack-code-stderr.log
+          OCR_ADAPTER_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
         run: |
           set -euo pipefail
           RESUME_USED=false
@@ -1015,6 +1045,24 @@ jobs:
               echo 'Pinned OCR executable verification failed; raw output is suppressed.' >&2
               return "${exit_code}"
             fi
+            local baseline_limit=200000 bounded_limit=32768
+            for prompt_limit in "${baseline_limit}" "${bounded_limit}"; do
+              if ! (unset MISTRAL_API_KEY; timeout --kill-after=10 120 ocr review --preview \
+                --from "${review_from}" --to "${review_to}" \
+                --max-tokens "${prompt_limit}" --format json --audience agent \
+                --rule .github/open-code-review/final-review-rules.json) \
+                >"${output_path}.preview-${prompt_limit}" 2>>"${STDERR_PATH}"; then
+                echo 'OCR coverage preview failed; raw output is suppressed.' >&2
+                return 1
+              fi
+            done
+            if ! node .github/scripts/final-ai-review.js validate-ocr-preview \
+              "${output_path}.preview-${baseline_limit}" "${output_path}.preview-${bounded_limit}" \
+              >/dev/null 2>>"${STDERR_PATH}"; then
+              printf 'OCR stage=preview-validation exit=1\n' >>"${GITHUB_STEP_SUMMARY}"
+              echo 'OCR preview validation failed: malformed preview or changed file coverage; review refused.' >&2
+              return 1
+            fi
             [[ "${REVIEW_JOB_STARTED_AT}" =~ ^[1-9][0-9]*$ ]]
             now="$(date +%s)"
             if (( now + 1860 > REVIEW_JOB_STARTED_AT + 4200 )); then
@@ -1030,6 +1078,7 @@ jobs:
               --audience agent \
               --effort low \
               --timeout 30 \
+              --max-tokens "${bounded_limit}" \
               --max-tokens-budget "${token_budget}" \
               --format json \
               --background "${BACKGROUND}" \
@@ -1246,6 +1295,15 @@ jobs:
           name: final-ai-stack-publisher-failure-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/final-ai-stack-publisher-failure
           if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload sanitized stack execution counters
+        if: always() && needs.start_stack.outputs.run_review == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: final-ai-stack-execution-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
+          if-no-files-found: warn
           retention-days: 1
 
   finalize_stack:
