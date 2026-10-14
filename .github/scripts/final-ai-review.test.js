@@ -46,6 +46,7 @@ const {
   requiresColdIncrementalReview,
   startFinalReview,
   validateOCRResult,
+  validateOCRPreview,
   verifyMistralToolAccess,
   writeOCRConfig,
 } = require('./final-ai-review.js')
@@ -135,6 +136,8 @@ function expectedOCRArgs({ from, to, timeout, budget, sessionId }) {
     'low',
     '--timeout',
     String(timeout),
+    '--max-tokens',
+    '32768',
     '--max-tokens-budget',
     String(budget),
     '--format',
@@ -191,6 +194,9 @@ function assertReviewAttempt(result, form, expectedExit) {
 
   const lines = result.calls.trim().split('\n')
   assert.equal(lines.shift(), 'version no_update=1', form.name)
+  assert.equal(lines.shift(), 'preview no_update=1 limit=200000', form.name)
+  assert.equal(lines.shift(), 'preview no_update=1 limit=32768', form.name)
+  assert.equal(lines.shift(), 'coverage checked', form.name)
   assert.equal(lines.shift(), 'review no_update=1', form.name)
   assert.deepEqual(
     lines.map((line) => line.replace(/^review_arg=/, '')),
@@ -279,6 +285,11 @@ function executeExtractedOCRAttempt({
     functionText,
     '',
     'node() {',
+    '  if [[ "$1" == .github/scripts/final-ai-review.js && "$2" == validate-ocr-preview ]]; then',
+    '    command node "$@" || return',
+    '    printf "coverage checked\\n" >>"${OCR_CALLS_PATH}"',
+    '    return 0',
+    '  fi',
     '  [[ "$1" == .github/scripts/ocr-mistral-adapter.cjs && "$2" == run && "$3" == -- && "$4" == ocr ]] || return 99',
     '  [[ "${MISTRAL_API_KEY-}" == synthetic-upstream-key ]] || return 98',
     '  shift 4',
@@ -297,6 +308,17 @@ function executeExtractedOCRAttempt({
     '      printf \'%s\' "${OCR_VERSION_OUTPUT}"',
     '      ;;',
     '    review)',
+    '      if [[ " $* " == *" --preview "* ]]; then',
+    '        [[ -z "${MISTRAL_API_KEY+x}" ]] || return 97',
+    '        local prompt_limit',
+    '        while (($#)); do',
+    '          if [[ "$1" == --max-tokens ]]; then prompt_limit="$2"; fi',
+    '          shift',
+    '        done',
+    '        printf "preview no_update=%s limit=%s\\n" "${OCR_NO_UPDATE-}" "${prompt_limit}" >>"${OCR_CALLS_PATH}"',
+    '        printf \'{"total_files":1,"files":[{"path":"src/test.ts","will_review":true}]}\'',
+    '        return 0',
+    '      fi',
     '      printf \'review no_update=%s\\n\' "${OCR_NO_UPDATE-}" >>"${OCR_CALLS_PATH}"',
     '      shift',
     '      while (($#)); do',
@@ -467,6 +489,7 @@ test('bounds individual and stack review retries, tokens, and runtime', () => {
 
   assert.equal(source.match(/--timeout 45/g)?.length, 1)
   assert.equal(source.match(/--timeout 30/g)?.length, 1)
+  assert.equal(source.match(/--max-tokens 32768/g)?.length, 2)
   assert.equal(source.match(/plan-ocr-resume/g)?.length, 2)
   assert.equal(source.match(/merge-ocr-resume/g)?.length, 2)
   assert.match(source, /run_ocr_attempt "\$\{RESULT_PATH\}" 3000000/)
@@ -489,6 +512,52 @@ test('bounds individual and stack review retries, tokens, and runtime', () => {
   assert.match(
     source,
     /Only one partial OCR result may be resumed per stack job/
+  )
+})
+
+test('bounded context must preserve every preview path and exclusion reason', () => {
+  const baseline = {
+    total_files: 2,
+    files: [
+      { path: 'src/a.ts', will_review: true },
+      {
+        path: 'src/a.test.ts',
+        will_review: false,
+        exclude_reason: 'default_path',
+      },
+    ],
+  }
+  validateOCRPreview(baseline, {
+    ...baseline,
+    files: [...baseline.files].reverse(),
+  })
+  assert.throws(
+    () =>
+      validateOCRPreview(baseline, {
+        ...baseline,
+        files: [
+          {
+            ...baseline.files[0],
+            will_review: false,
+            exclude_reason: 'too_large',
+          },
+          baseline.files[1],
+        ],
+      }),
+    /changes file coverage/
+  )
+  assert.throws(
+    () =>
+      validateOCRPreview(baseline, { ...baseline, files: [baseline.files[0]] }),
+    /Invalid OCR preview/
+  )
+  assert.throws(
+    () =>
+      validateOCRPreview(baseline, {
+        ...baseline,
+        files: [baseline.files[0], baseline.files[0]],
+      }),
+    /Invalid OCR preview file/
   )
 })
 

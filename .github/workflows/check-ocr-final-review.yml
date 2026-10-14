@@ -414,6 +414,7 @@ jobs:
           RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
           REJECTED_DIR: ${{ runner.temp }}/final-ai-individual-publisher-failure
           STDERR_PATH: ${{ runner.temp }}/final-ai-review-stderr.log
+          OCR_ADAPTER_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-review-adapter-diagnostics.jsonl
         run: |
           set -euo pipefail
           run_ocr_attempt() {
@@ -445,6 +446,22 @@ jobs:
               echo 'Refusing to start OCR without the reserved cleanup window' >&2
               return 1
             fi
+            for prompt_limit in 200000 32768; do
+              if ! (unset MISTRAL_API_KEY; ocr review --preview \
+                --from "${REVIEW_FROM}" --to "${HEAD_SHA}" \
+                --max-tokens "${prompt_limit}" --format json --audience agent \
+                --rule .github/open-code-review/final-review-rules.json) \
+                >"${output_path}.preview-${prompt_limit}" 2>>"${STDERR_PATH}"; then
+                echo 'OCR coverage preview failed; raw output is suppressed.' >&2
+                return 1
+              fi
+            done
+            if ! node .github/scripts/final-ai-review.js validate-ocr-preview \
+              "${output_path}.preview-200000" "${output_path}.preview-32768" \
+              >/dev/null 2>>"${STDERR_PATH}"; then
+              echo 'Bounded OCR context changed file coverage; review refused.' >&2
+              return 1
+            fi
             if [[ -n "${session_id}" ]]; then
               resume_args=(--resume "${session_id}")
             fi
@@ -454,6 +471,7 @@ jobs:
               --audience agent \
               --effort low \
               --timeout 45 \
+              --max-tokens 32768 \
               --max-tokens-budget "${token_budget}" \
               --format json \
               --background "${BACKGROUND}" \
@@ -625,6 +643,15 @@ jobs:
           name: final-ai-individual-publisher-failure-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/final-ai-individual-publisher-failure
           if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload sanitized individual execution counters
+        if: always() && needs.start.outputs.run_review == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: final-ai-individual-execution-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/final-ai-review-adapter-diagnostics.jsonl
+          if-no-files-found: warn
           retention-days: 1
 
   finalize:
@@ -986,6 +1013,7 @@ jobs:
           RANGE_DIR: ${{ runner.temp }}/final-ai-stack-code-ranges
           REJECTED_DIR: ${{ runner.temp }}/final-ai-stack-publisher-failure
           STDERR_PATH: ${{ runner.temp }}/final-ai-stack-code-stderr.log
+          OCR_ADAPTER_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
         run: |
           set -euo pipefail
           RESUME_USED=false
@@ -1021,6 +1049,22 @@ jobs:
               echo 'Refusing to start OCR without the reserved topology and cleanup window' >&2
               return 1
             fi
+            for prompt_limit in 200000 32768; do
+              if ! (unset MISTRAL_API_KEY; ocr review --preview \
+                --from "${review_from}" --to "${review_to}" \
+                --max-tokens "${prompt_limit}" --format json --audience agent \
+                --rule .github/open-code-review/final-review-rules.json) \
+                >"${output_path}.preview-${prompt_limit}" 2>>"${STDERR_PATH}"; then
+                echo 'OCR coverage preview failed; raw output is suppressed.' >&2
+                return 1
+              fi
+            done
+            if ! node .github/scripts/final-ai-review.js validate-ocr-preview \
+              "${output_path}.preview-200000" "${output_path}.preview-32768" \
+              >/dev/null 2>>"${STDERR_PATH}"; then
+              echo 'Bounded OCR context changed file coverage; review refused.' >&2
+              return 1
+            fi
             if [[ -n "${session_id}" ]]; then
               resume_args=(--resume "${session_id}")
             fi
@@ -1030,6 +1074,7 @@ jobs:
               --audience agent \
               --effort low \
               --timeout 30 \
+              --max-tokens 32768 \
               --max-tokens-budget "${token_budget}" \
               --format json \
               --background "${BACKGROUND}" \
@@ -1246,6 +1291,15 @@ jobs:
           name: final-ai-stack-publisher-failure-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/final-ai-stack-publisher-failure
           if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload sanitized stack execution counters
+        if: always() && needs.start_stack.outputs.run_review == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: final-ai-stack-execution-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
+          if-no-files-found: warn
           retention-days: 1
 
   finalize_stack:

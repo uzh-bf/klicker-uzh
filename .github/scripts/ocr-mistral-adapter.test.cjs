@@ -511,6 +511,138 @@ test('loopback enforces high or max reasoning before calling upstream', async ()
   }
 })
 
+test('OCR completion conversations require tools; auxiliary requests retain their choice', () => {
+  const tools = [{ type: 'function', function: { name: 'task_done' } }]
+  const request = { messages: [{ role: 'user', content: 'synthetic' }], tools }
+  for (const tool_choice of [undefined, 'auto', 'required', 'none']) {
+    assert.equal(
+      translateMistralRequest({ ...request, tool_choice }).tool_choice,
+      'any'
+    )
+  }
+  const explicit = { type: 'function', function: { name: 'task_done' } }
+  assert.deepEqual(
+    translateMistralRequest({ ...request, tool_choice: explicit }).tool_choice,
+    explicit
+  )
+  assert.equal(
+    translateMistralRequest({ ...request, tools: [] }).tool_choice,
+    undefined
+  )
+  assert.equal(
+    translateMistralRequest({ ...request, tools: [], tool_choice: 'none' })
+      .tool_choice,
+    'none'
+  )
+})
+
+test('a provider ignoring required tool use fails without entering OCR prose retries', async () => {
+  const fetchImpl = upstream(() =>
+    jsonResponse(
+      200,
+      completion(
+        {
+          role: 'assistant',
+          content: 'private synthetic response',
+          reasoning_content: 'private synthetic reasoning',
+        },
+        'length'
+      )
+    )
+  )
+  const adapter = await startAdapter({
+    apiKey: 'private synthetic key',
+    fetchImpl,
+  })
+  try {
+    const result = await postJson(adapter, {
+      messages: [{ role: 'user', content: 'private synthetic prompt' }],
+      tools: [{ type: 'function', function: { name: 'task_done' } }],
+    })
+    assert.equal(fetchImpl.calls[0].body.tool_choice, 'any')
+    assert.equal(result.status, 422)
+    assert.equal(result.json.error.code, 'required_tool_call_missing')
+    const receipt = adapter.diagnostics()
+    assert.equal(receipt.upstream_attempts, 1)
+    assert.equal(receipt.main_no_tool_responses, 1)
+    assert.equal(receipt.length_finishes, 1)
+    assert.equal(receipt.prompt_tokens, 3)
+    assert.equal(receipt.completion_tokens, 4)
+    assert.ok(receipt.max_request_bytes > 0)
+    assert.doesNotMatch(JSON.stringify(receipt), /private synthetic/)
+    assert.doesNotMatch(result.text, /private synthetic/)
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('compression restores only exact reasoned turns, retaining native thinking and bounds', () => {
+  const history = createHistoryStore({ maxEntries: 2 })
+  const prefix = [
+    { role: 'system', content: 's' },
+    { role: 'user', content: 'original' },
+  ]
+  const native = {
+    role: 'assistant',
+    index: 0,
+    content: [
+      { type: 'thinking', thinking: [{ type: 'text', text: 'reasoning' }] },
+    ],
+    tool_calls: [
+      {
+        id: 'id1',
+        type: 'function',
+        function: { name: 'file_read', arguments: '{"file_path":"a.ts"}' },
+      },
+    ],
+  }
+  history.remember(prefix, native)
+  const turn = normalizeMistralResponse(completion(native, 'tool_calls'))
+    .choices[0].message
+  const compressed = [
+    prefix[0],
+    { role: 'user', content: 'compressed summary' },
+  ]
+  const expected = { ...native }
+  delete expected.index
+  assert.deepEqual(
+    history.restoreMessages([...compressed, turn]).at(-1),
+    expected
+  )
+  assert.equal(history.diagnostics().compressed_hits, 1)
+  assert.equal(history.entryCount(), 1)
+  for (const altered of [
+    { ...turn, reasoning_content: undefined },
+    { ...turn, reasoning_content: 'different' },
+    { ...turn, content: 'different' },
+    { ...turn, tool_calls: [{ ...turn.tool_calls[0], id: 'id2' }] },
+    {
+      ...turn,
+      tool_calls: [
+        {
+          ...turn.tool_calls[0],
+          function: { name: 'file_read', arguments: '{"file_path":"b.ts"}' },
+        },
+      ],
+    },
+  ])
+    assert.throws(
+      () => history.restoreMessages([...compressed, altered]),
+      /unavailable/
+    )
+  const secondPrefix = [prefix[0], { role: 'user', content: 'another group' }]
+  history.remember(secondPrefix, { ...native, index: 1 })
+  assert.deepEqual(history.restoreMessages([...prefix, turn]).at(-1), expected)
+  assert.throws(
+    () => history.restoreMessages([...compressed, turn]),
+    /ambiguous/
+  )
+  assert.throws(
+    () => history.remember([{ role: 'user', content: 'third group' }], native),
+    /bound/
+  )
+})
+
 test('request conversion and native replay work over the loopback listener', async () => {
   const native = {
     role: 'assistant',
@@ -1237,11 +1369,21 @@ test('run strips the upstream key and injects the OCR environment', async () => 
 })
 
 test('run propagates the child exit code', async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-diagnostics-'))
+  const diagnosticsPath = path.join(directory, 'diagnostics.jsonl')
   const result = await runCli(
     ['run', '--', process.execPath, '-e', 'process.exit(7)'],
-    { MISTRAL_API_KEY: 'sk-synthetic-run' }
+    {
+      MISTRAL_API_KEY: 'sk-synthetic-run',
+      OCR_ADAPTER_DIAGNOSTICS_PATH: diagnosticsPath,
+    }
   )
   assert.equal(result.code, 7)
+  const diagnostics = JSON.parse(fs.readFileSync(diagnosticsPath, 'utf8'))
+  assert.equal(diagnostics.schema_version, 1)
+  assert.equal(diagnostics.upstream_attempts, 0)
+  assert.doesNotMatch(JSON.stringify(diagnostics), /sk-synthetic-run/)
+  fs.rmSync(directory, { recursive: true, force: true })
 })
 
 test('start/serve/stop own the listener lifecycle', async (t) => {

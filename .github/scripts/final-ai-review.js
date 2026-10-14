@@ -2163,6 +2163,37 @@ function validateOCRTokenCounters(summary, label) {
   }
 }
 
+function validateOCRPreview(baseline, bounded) {
+  const selection = (preview) => {
+    if (
+      !Array.isArray(preview?.files) ||
+      preview.files.length !== preview.total_files
+    ) {
+      throw new Error('Invalid OCR preview')
+    }
+    const paths = new Set()
+    return preview.files
+      .map((file) => {
+        if (
+          typeof file.path !== 'string' ||
+          !file.path ||
+          paths.has(file.path) ||
+          typeof file.will_review !== 'boolean'
+        ) {
+          throw new Error('Invalid OCR preview file')
+        }
+        paths.add(file.path)
+        return [file.path, file.will_review, file.exclude_reason ?? '']
+      })
+      .sort((a, b) => a[0].localeCompare(b[0]))
+  }
+  if (
+    JSON.stringify(selection(baseline)) !== JSON.stringify(selection(bounded))
+  ) {
+    throw new Error('Bounded OCR context changes file coverage; review refused')
+  }
+}
+
 function validateOCRCoverage(manifest, label) {
   const coverage = manifest?.coverage
   const keys = ['selected', 'completed', 'reused', 'failed', 'waived']
@@ -3154,6 +3185,20 @@ function runCli() {
       console.log(`Mistral tool canary passed via ${provider}`)
     })
   }
+  if (command === 'validate-ocr-preview') {
+    const baselinePath = process.argv[3]
+    const boundedPath = process.argv[4]
+    if (!baselinePath || !boundedPath)
+      throw new Error(
+        'Usage: final-ai-review.js validate-ocr-preview <baseline> <bounded>'
+      )
+    validateOCRPreview(
+      JSON.parse(fs.readFileSync(baselinePath, 'utf8')),
+      JSON.parse(fs.readFileSync(boundedPath, 'utf8'))
+    )
+    console.log('Bounded OCR context preserves file coverage')
+    return
+  }
   if (command === 'validate-ocr-result') {
     const resultPath = process.argv[3]
     if (!resultPath) {
@@ -3284,6 +3329,7 @@ module.exports = {
   startFinalReview,
   validateDispositionRecord,
   validateOCRResult,
+  validateOCRPreview,
   validateFinding,
   verifyMistralToolAccess,
   writeOCRConfig,

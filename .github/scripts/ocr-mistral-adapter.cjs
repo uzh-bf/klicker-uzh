@@ -384,6 +384,13 @@ function createHistoryStore(options = {}) {
   const maxEntries = options.maxEntries ?? DEFAULT_MAX_HISTORY_ENTRIES
   const maxBytes = options.maxBytes ?? DEFAULT_MAX_HISTORY_BYTES
   const native = new Map()
+  const reasonedTurns = new Map()
+  const diagnostics = {
+    prefix_hits: 0,
+    compressed_hits: 0,
+    misses: 0,
+    replay_bytes: 0,
+  }
   let entries = 0
   let bytes = 0
 
@@ -392,6 +399,12 @@ function createHistoryStore(options = {}) {
       prefix: prefixIdentities,
       assistant: assistantIdentity,
     })
+  }
+
+  function reasonedKey(message) {
+    const reasoning = extractReasoning(message.reasoning_content)
+    if (!reasoning) return undefined
+    return hashIdentity({ assistant: messageIdentity(message), reasoning })
   }
 
   function remember(prefixMessages, nativeMessage) {
@@ -417,7 +430,17 @@ function createHistoryStore(options = {}) {
         'native reasoning history bound exceeded'
       )
     }
-    native.set(key, { serialized, size })
+    const entry = { serialized, size }
+    native.set(key, entry)
+    const turnKey = reasonedKey(normalized)
+    if (turnKey) {
+      // Compression rewrites the prefix. Only an exact reasoned turn with one
+      // distinct native payload can be restored independently of that prefix.
+      const prior = reasonedTurns.get(turnKey)
+      if (!reasonedTurns.has(turnKey)) reasonedTurns.set(turnKey, entry)
+      else if (prior?.serialized !== serialized)
+        reasonedTurns.set(turnKey, null)
+    }
     entries += 1
     bytes += size
   }
@@ -427,19 +450,31 @@ function createHistoryStore(options = {}) {
     const prefix = prefixMessages.map(messageIdentity)
     const identity = messageIdentity(normalized)
     const key = keyFor(prefix, identity)
-    const existing = native.get(key)
+    let existing = native.get(key)
+    if (existing) diagnostics.prefix_hits += 1
+    else {
+      const turnKey = reasonedKey(normalized)
+      existing = turnKey ? reasonedTurns.get(turnKey) : undefined
+      if (existing === null) {
+        diagnostics.misses += 1
+        throw new AdapterError('history_collision', 'ambiguous compressed turn')
+      }
+      if (existing) diagnostics.compressed_hits += 1
+    }
     if (!existing) {
       // Every replayed assistant turn must be one this adapter produced and
       // retained. A miss means flattening would silently lose the native
       // reasoning, so it fails closed even when the SDK omitted
       // reasoning_content, rather than falling back to the flattened turn. The
       // binary's first request carries no assistant messages.
+      diagnostics.misses += 1
       throw new AdapterError(
         'history_missing',
         'native assistant state is unavailable for a replayed turn'
       )
     }
     const nativeMessage = JSON.parse(existing.serialized)
+    diagnostics.replay_bytes += existing.size
     // Mistral returns a message index but rejects it in request messages.
     delete nativeMessage.index
     return nativeMessage
@@ -462,6 +497,7 @@ function createHistoryStore(options = {}) {
     restoreMessages,
     entryCount: () => entries,
     byteCount: () => bytes,
+    diagnostics: () => ({ ...diagnostics }),
   }
 }
 
@@ -514,7 +550,21 @@ function translateMistralRequest(body, history = createHistoryStore()) {
   if (maxTokens !== undefined && maxTokens !== null) {
     translated.max_tokens = maxTokens
   }
+  if (hasCompletionTool(body) && typeof translated.tool_choice !== 'object') {
+    // OCR completes through task_done. Optional tool use lets a prose answer
+    // enter its zero-tool retry path, which replays the growing history.
+    translated.tool_choice = 'any'
+  }
   return translated
+}
+
+function hasCompletionTool(body) {
+  return (
+    Array.isArray(body.tools) &&
+    body.tools.some(
+      (tool) => tool?.type === 'function' && tool.function?.name === 'task_done'
+    ) === true
+  )
 }
 
 function timingSafeEqual(left, right) {
@@ -547,6 +597,7 @@ function sendJson(res, status, payload) {
 }
 
 function statusForErrorCode(code) {
+  if (code === 'required_tool_call_missing') return 422
   if (code === 'request_too_large') return 413
   if (code === 'upstream_timeout') return 504
   if (code === 'history_missing') return 409
@@ -662,6 +713,20 @@ async function startAdapter(options = {}) {
     maxEntries: options.maxHistoryEntries,
     maxBytes: options.maxHistoryBytes,
   })
+  const diagnostics = {
+    requests: 0,
+    upstream_attempts: 0,
+    responses: 0,
+    missing_usage: 0,
+    main_requests: 0,
+    auxiliary_requests: 0,
+    main_no_tool_responses: 0,
+    length_finishes: 0,
+    prompt_tokens: 0,
+    completion_tokens: 0,
+    max_request_bytes: 0,
+    request_bytes: 0,
+  }
   const active = new Set()
   const sockets = new Set()
   let closing = null
@@ -728,6 +793,17 @@ async function startAdapter(options = {}) {
       return
     }
 
+    const main = hasCompletionTool(body)
+    diagnostics.requests += 1
+    diagnostics[main ? 'main_requests' : 'auxiliary_requests'] += 1
+    const requestBody = JSON.stringify(mistralBody)
+    const requestBytes = Buffer.byteLength(requestBody)
+    diagnostics.request_bytes += requestBytes
+    diagnostics.max_request_bytes = Math.max(
+      diagnostics.max_request_bytes,
+      requestBytes
+    )
+
     const controller = new AbortController()
     active.add(controller)
     const abort = () => {
@@ -747,13 +823,14 @@ async function startAdapter(options = {}) {
     }, timeoutMs)
 
     try {
+      diagnostics.upstream_attempts += 1
       const upstream = await fetchImpl(MISTRAL_URL, {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
           authorization: `Bearer ${apiKey}`,
         },
-        body: JSON.stringify(mistralBody),
+        body: requestBody,
         signal: controller.signal,
         redirect: 'error',
       })
@@ -773,6 +850,20 @@ async function startAdapter(options = {}) {
         throw new AdapterError('malformed_response', 'invalid upstream JSON')
       }
       const normalized = normalizeMistralResponse(payload)
+      diagnostics.responses += 1
+      if (normalized.usage) {
+        diagnostics.prompt_tokens += normalized.usage.prompt_tokens ?? 0
+        diagnostics.completion_tokens += normalized.usage.completion_tokens ?? 0
+      } else diagnostics.missing_usage += 1
+      const choice = normalized.choices[0]
+      if (choice.finish_reason === 'length') diagnostics.length_finishes += 1
+      if (main && !choice.message.tool_calls?.length) {
+        diagnostics.main_no_tool_responses += 1
+        throw new AdapterError(
+          'required_tool_call_missing',
+          'review requires a tool call'
+        )
+      }
       const message = payload.choices[0].message
       history.remember(body.messages, message)
       sendJson(res, 200, normalized)
@@ -833,7 +924,17 @@ async function startAdapter(options = {}) {
   }, maxLifetimeMs)
   if (typeof lifetime.unref === 'function') lifetime.unref()
 
-  return { url: baseUrl, token, close, closed }
+  return {
+    url: baseUrl,
+    token,
+    close,
+    closed,
+    diagnostics: () => ({
+      schema_version: 1,
+      ...diagnostics,
+      history: history.diagnostics(),
+    }),
+  }
 }
 
 async function callMistral(options = {}) {
@@ -1075,6 +1176,14 @@ async function commandRun(args) {
     child.on('exit', (code, signal) => resolve({ code, signal }))
   })
   await adapter.close()
+  const diagnosticsPath = process.env.OCR_ADAPTER_DIAGNOSTICS_PATH
+  if (diagnosticsPath) {
+    fs.appendFileSync(
+      diagnosticsPath,
+      `${JSON.stringify(adapter.diagnostics())}\n`,
+      { mode: 0o600 }
+    )
+  }
   if (result.failed) {
     throw new AdapterError(
       'child_spawn_failed',
