@@ -755,7 +755,9 @@ resolver excludes modes that cannot satisfy
 the chatbot's required-MCP policy, and exposes Quizzer only with a provably restricted course
 `doc_query` binding. Exact Quizzer configuration shadows Tutor inheritance per MCP server,
 including disabled exact rows; inherited optional bindings are narrowed to `doc_query`, while
-required single-tool aliases preserve their raw tool restriction and remain fail-closed. The
+required single-tool aliases preserve their raw tool restriction and remain fail-closed.
+Explainer likewise inherits Tutor's required single-tool `doc_query` alias, never optional Tutor
+tools; an exact Explainer row, enabled or disabled, shadows that inheritance per server. The
 layout, participant settings endpoint, chat request validation, and request-time MCP selection all
 use this resolver. The browser receives resolved mode descriptions but never MCP server
 configuration. If typed flags or explicit opt-outs leave no effective mode, the client replaces
@@ -1365,12 +1367,20 @@ the chatbot MCP configuration: `{ "required": true, "toolAlias": "doc_query",
 "kb_id": "<UUID>" }`. The target server name is exactly `KB`. Enabled `KB`
 configurations must contain at most one binding per stored mode, with one server
 ID and one normalized UUID across the chatbot. The selected effective mode must
-resolve exactly one matching binding; Quizzer may safely inherit Tutor's
-restricted `doc_query` binding under ADR 0021.
+resolve exactly one matching binding; Quizzer and Explainer may safely inherit
+Tutor's restricted `doc_query` binding under ADR 0021.
 Any malformed, missing, duplicate, conflicting, or misplaced `kb_id` fails as
 `503 REQUIRED_MCP_UNAVAILABLE` before provider or message work. A valid binding
-keeps the opaque bearer transport credential in `Authorization` and adds a
-five-minute ES256 token only in `X-Doc-Query-Scope-Token`. Its claims contain
+sends a five-minute ES256 token in `X-Doc-Query-Scope-Token`. When the
+deployment sets `DOC_QUERY_SCOPED_MCP_SERVER_ID`,
+`DOC_QUERY_SCOPED_MCP_LEGACY_URL` and `DOC_QUERY_SCOPED_MCP_URL` (chart values
+`docQuery.scopedMcp.*`) for the `KB` row, Chat and the GraphQL source inventory
+call the dedicated `/mcp/klicker/kb` route instead, mint a fresh scope token per
+request, and never attach the row's stored bearer. Without that binding they
+still send the row's opaque bearer in `Authorization` next to the scope token,
+so that stored credential's expiry gates retrieval. Production binds the scoped
+route; other `/mcp/klicker` rows, such as `Klicker-compat`, keep the bearer.
+The scope token's claims contain
 `kb_id`, `chatbot_id`, the owning thread as `sub`, and a request `jti`; issuer,
 audience, key ID, and private key come from `DOC_QUERY_SCOPE_ISSUER`,
 `DOC_QUERY_SCOPE_AUDIENCE`, `DOC_QUERY_SCOPE_KID`, and

@@ -129,7 +129,7 @@ function sortByPriority<T extends ChatModeMCPConfiguration>(configs: T[]): T[] {
 export function resolveEffectiveMCPConfigurations<
   T extends ChatModeMCPConfiguration,
 >(configs: readonly T[], selectedMode: string): EffectiveMCPConfiguration<T>[] {
-  if (selectedMode !== 'quizzer' && isTypedStandardMode(selectedMode)) {
+  if (selectedMode === 'tutor') {
     return sortByPriority(
       configs.filter(
         (config) => config.chatMode === selectedMode && isEnabled(config)
@@ -138,14 +138,21 @@ export function resolveEffectiveMCPConfigurations<
   }
 
   if (selectedMode !== 'quizzer') {
-    // Custom modes inherit only a required doc-query binding, re-tagged to
-    // the custom mode key so the scope assertion sees one binding per mode.
+    // Explainer and custom modes inherit only a required doc-query binding,
+    // re-tagged to the selected mode key so the scope assertion sees one
+    // binding per mode. Explainer inherits from Tutor alone, and a disabled
+    // Explainer row opts its server out of inheritance as it does for Quizzer.
+    const isExplainer = selectedMode === 'explainer'
     const exactByServer = new Map<string, T>()
     const exactWithoutServer: T[] = []
 
     for (const config of configs) {
-      if (config.chatMode !== selectedMode || !isEnabled(config)) continue
+      if (config.chatMode !== selectedMode) continue
       const serverId = getServerId(config)
+      if (!isEnabled(config)) {
+        if (isExplainer && serverId) exactByServer.set(serverId, config)
+        continue
+      }
       if (serverId) {
         exactByServer.set(serverId, config)
       } else {
@@ -155,10 +162,13 @@ export function resolveEffectiveMCPConfigurations<
 
     const resolved: EffectiveMCPConfiguration<T>[] = [
       ...exactWithoutServer,
-      ...Array.from(exactByServer.values()),
+      ...Array.from(exactByServer.values()).filter(isEnabled),
     ].map((config) => ({ ...config, chatMode: selectedMode }))
 
-    for (const sourceMode of ['tutor', 'explainer'] as const) {
+    const sourceModes = isExplainer
+      ? (['tutor'] as const)
+      : (['tutor', 'explainer'] as const)
+    for (const sourceMode of sourceModes) {
       for (const config of configs) {
         if (
           config.chatMode !== sourceMode ||
