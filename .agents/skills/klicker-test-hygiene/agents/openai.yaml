@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Klicker Test Hygiene'
+  short_description: 'Audit test value and plan safe cleanup'
+  default_prompt: 'Use $klicker-test-hygiene to review a bounded KlickerUZH feature slice and propose an evidence-backed improvement plan before editing tests.'

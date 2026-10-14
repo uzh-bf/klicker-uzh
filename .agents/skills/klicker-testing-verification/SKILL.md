@@ -5,6 +5,8 @@ description: Choose the right test level and verify changes before a KlickerUZH 
 
 # KlickerUZH Testing & Verification
 
+For periodic test-value reviews or cleanup proposals, use `klicker-test-hygiene` first; keep defect-detection evidence before moving or retiring coverage.
+
 Facts about the test landscape: [docs/testing.md](../../../docs/testing.md). This skill is the procedure.
 
 ## Route the change
@@ -176,7 +178,7 @@ seconds so container readiness is detected promptly.
 
 ## Decide whether e2e is warranted locally
 
-CI runs Playwright (8-way shard) on almost every code PR — CI is the real e2e gate. Run e2e locally only when your change plausibly breaks a flow (new UI, changed selectors/`data-cy`, auth/redirect changes, activity lifecycle). If you do:
+CI is the production e2e gate. Inspect its canonical selector plan and exact-head evidence: ready PRs select the full eight-shard suite for relevant changes; drafts can run full or explicitly enabled change-based plans. An irrelevant-path skip or verified evidence reuse is not a fresh execution. Run e2e locally only when your change plausibly breaks a flow (new UI, changed selectors/`data-cy`, auth/redirect changes, activity lifecycle). If you do:
 
 - Run `pnpm playwright:host -- <args>` from the host. Never invoke Playwright or install browsers through `devrouter exec`, a DevPod shell, or another local container.
 - You are **authorized to start the required servers for this purpose** through the host launcher. By default it reconciles the full devrouter profile, including the Hatchet workers, response-api, and response processor. For focused tests with an existing synthetic baseline, explicit local options `--runtime-profile chat --preserve-database` before Playwright arguments select Chat dependencies and skip global reset/seed. Inspect the selected spec's own fixture writes and cleanup first; those remain active. CI and default setup are unchanged.
