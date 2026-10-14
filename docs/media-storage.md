@@ -168,6 +168,15 @@ to development/test. A runtime ConfigMap cannot alter an already-built Next
 image allow-list. A build explicitly configured for S3 fails if the public base
 is missing. The public base is safe to expose; credentials are not.
 
+The repository's Manage, PWA, Control, Chat and Auth Dockerfiles accept these
+two public build arguments. For example, add
+`--build-arg MEDIA_STORAGE_PROVIDER=s3` and
+`--build-arg MEDIA_STORAGE_PUBLIC_URL=https://media.example.org` to each frontend
+`docker build` command. They default to Azure when omitted. Do not pass AWS
+credentials as image build arguments. If running Next without the standalone
+Docker image, keep these public settings in the environment for both build and
+start.
+
 The reusable chart accepts:
 
 ```yaml
