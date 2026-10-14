@@ -124,6 +124,13 @@ export function prepareHatchetTasks({
     retries: 0,
     onCrons: ['*/5 * * * *'],
     executionTimeout: '30m',
+    // A run can outlast the cron interval; overlapping runs would race on the
+    // same manifest chains, so a tick that finds a run active is skipped.
+    concurrency: {
+      expression: '"seal-assessment-audit"',
+      maxRuns: 1,
+      limitStrategy: ConcurrencyLimitStrategy.CANCEL_NEWEST,
+    },
     fn: async (_, executionContext) => ({
       success: await handlers.handleSealAssessmentAudit(
         {},

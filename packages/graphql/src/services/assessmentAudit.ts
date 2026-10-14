@@ -101,9 +101,13 @@ export const handleSealAssessmentAudit: HatchetHandlers['handleSealAssessmentAud
       reader: new AzureTableAuditReader(clients.tables),
       manifests: new AzureAuditManifestStore(clients.blobs.manifests),
     })
-    await executionCtx.logger.info(
-      JSON.stringify({ operation: 'ASSESSMENT_AUDIT_SEAL', ...summary })
-    )
+    const metadata = JSON.stringify({
+      operation: 'ASSESSMENT_AUDIT_SEAL',
+      ...summary,
+    })
+    // Failure details (quiz and reason) must be visible at error level.
+    if (summary.failures.length > 0) await executionCtx.logger.error(metadata)
+    else await executionCtx.logger.info(metadata)
     if (summary.failures.length > 0 || summary.deferredCount > 0) {
       throw new Error(
         `Audit sealing: ${summary.failures.length} failed assessments, ${summary.deferredCount} events deferred to the next run`

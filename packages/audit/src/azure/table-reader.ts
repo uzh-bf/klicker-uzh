@@ -8,6 +8,7 @@ import {
   type AuditEnvelope,
   parseCanonicalAuditEnvelope,
 } from '../contract/envelope.js'
+import { mapInParallel } from '../util/map-in-parallel.js'
 import { auditLocatorPartitionKey } from './table-mapping.js'
 
 export interface AuditTableReaderClientPort {
@@ -47,6 +48,8 @@ type LocatorEntity = {
 type RootEntity = {
   recordKind: string
   eventId: string
+  liveQuizId?: string
+  lifecycleEpoch?: number
   eventHash: string
   canonicalHash: string
   canonicalByteLength: number
@@ -197,25 +200,16 @@ function assertRetention(
   assertInteger(row.lifecycleEpoch, 'retention lifecycleEpoch')
 }
 
-async function mapInParallel<T, R>(
-  values: readonly T[],
-  concurrency: number,
-  callback: (value: T) => Promise<R>
-): Promise<R[]> {
-  const results = new Array<R>(values.length)
-  let next = 0
-  const workers = Array.from(
-    { length: Math.min(concurrency, values.length) },
-    async () => {
-      while (next < values.length) {
-        const index = next
-        next += 1
-        results[index] = await callback(values[index]!)
-      }
-    }
+/** Participant-scoped exports keep shared assessment events and the participant's own. */
+export function matchesExportParticipantScope(
+  envelope: VerifiedAuditEvidence['envelope'],
+  participantId: string | undefined
+): boolean {
+  return (
+    participantId === undefined ||
+    envelope.scope.participantId === undefined ||
+    envelope.scope.participantId === participantId
   )
-  await Promise.all(workers)
-  return results
 }
 
 function assertRequestedScope(
@@ -405,9 +399,17 @@ export class AzureTableAuditReader {
     for await (const entity of this.clients.evidence.listEntities<RootEntity>({
       queryOptions: {
         filter: `${partitionFilter} and recordKind eq 'EVENT_ROOT'`,
+        select: ['eventId', 'recordKind', 'liveQuizId', 'lifecycleEpoch'],
       },
     })) {
-      if (entity.recordKind !== 'EVENT_ROOT') continue
+      if (
+        entity.recordKind !== 'EVENT_ROOT' ||
+        entity.liveQuizId !== input.liveQuizId ||
+        (input.lifecycleEpoch !== undefined &&
+          entity.lifecycleEpoch !== input.lifecycleEpoch)
+      ) {
+        continue
+      }
       assertString(entity.eventId, 'root eventId')
       eventIds.add(entity.eventId)
     }
@@ -432,10 +434,8 @@ export class AzureTableAuditReader {
     const participantScoped =
       input.participantId === undefined
         ? evidence
-        : evidence.filter(
-            ({ envelope }) =>
-              envelope.scope.participantId === undefined ||
-              envelope.scope.participantId === input.participantId
+        : evidence.filter(({ envelope }) =>
+            matchesExportParticipantScope(envelope, input.participantId)
           )
     return participantScoped.sort(
       (left, right) =>
@@ -515,10 +515,8 @@ export class AzureTableAuditReader {
     const participantScoped =
       input.participantId === undefined
         ? verified
-        : verified.filter(
-            ({ envelope }) =>
-              envelope.scope.participantId === undefined ||
-              envelope.scope.participantId === input.participantId
+        : verified.filter(({ envelope }) =>
+            matchesExportParticipantScope(envelope, input.participantId)
           )
     return {
       verified: participantScoped.sort(

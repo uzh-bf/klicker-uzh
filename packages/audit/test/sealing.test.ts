@@ -3,6 +3,7 @@ import {
   type AuditManifest,
   type AuditManifestStore,
   type AuditSealRepository,
+  type AzureTableAuditReader,
   buildAuditExport,
   canonicalizeJson,
   createCanonicalAuditEvent,
@@ -70,8 +71,19 @@ function fixture() {
       return item
     }),
   }
+  // Outbox states: events default to DELIVERED_UNSEALED until marked SEALED.
+  const inFlight = new Set<string>()
   const repository: AuditSealRepository = {
     listQuizIds: async () => [quiz],
+    getSealingState: vi.fn(async () => ({
+      sealable: new Set(
+        records
+          .map(({ envelope }) => envelope.eventId)
+          .filter((id) => !marked.has(id) && !inFlight.has(id))
+      ),
+      inFlight: new Set(inFlight),
+      sealed: new Set(marked),
+    })),
     markSealed: vi.fn(async (items) => {
       let count = 0
       for (const item of items) {
@@ -82,15 +94,20 @@ function fixture() {
     }),
   }
   const reader = {
-    exportQuizWithFailures: vi.fn(async () => ({
-      verified: [...records],
-      failures: [],
-    })),
+    exportQuizWithFailures: vi.fn(
+      async (): Promise<
+        Awaited<ReturnType<AzureTableAuditReader['exportQuizWithFailures']>>
+      > => ({
+        verified: [...records],
+        failures: [],
+      })
+    ),
   }
   return {
     records,
     stored,
     marked,
+    inFlight,
     manifests,
     repository,
     reader,
@@ -240,5 +257,137 @@ describe('assessment sealing', () => {
     }
     const report = await buildAuditExport({ ...f, liveQuizId: quiz })
     expect(report.verification.sealStatus).toBe('INVALID')
+  })
+
+  it('waits for delivery: in-flight events neither block nor enter a manifest', async () => {
+    const f = fixture()
+    const delivering = event()
+    f.records.push(delivering)
+    f.inFlight.add(delivering.envelope.eventId)
+    f.reader.exportQuizWithFailures.mockImplementation(async () => ({
+      verified: [...f.records],
+      failures: [
+        {
+          eventId: delivering.envelope.eventId,
+          reason: 'LOCATOR_MISSING' as const,
+          detail: 'locator not written yet',
+        },
+      ],
+    }))
+    expect(await sealAssessmentAudit(f)).toMatchObject({
+      sealedCount: 1,
+      awaitingDeliveryCount: 1,
+      deferredCount: 0,
+      failures: [],
+    })
+    expect(
+      f.stored.flatMap(({ manifest }) => manifest.events.map((e) => e.eventId))
+    ).not.toContain(delivering.envelope.eventId)
+    f.inFlight.clear()
+    f.reader.exportQuizWithFailures.mockImplementation(async () => ({
+      verified: [...f.records],
+      failures: [],
+    }))
+    expect(await sealAssessmentAudit(f)).toMatchObject({
+      sealedCount: 1,
+      manifestCount: 1,
+      failures: [],
+    })
+  })
+
+  it('still fails on verification failures of delivered events', async () => {
+    const f = fixture()
+    f.reader.exportQuizWithFailures.mockImplementation(async () => ({
+      verified: [...f.records],
+      failures: [
+        {
+          eventId: randomUUID(),
+          reason: 'EVIDENCE_MISSING' as const,
+          detail: 'root row missing',
+        },
+      ],
+    }))
+    const result = await sealAssessmentAudit(f)
+    expect(result.failures[0]?.detail).toContain('verification failures')
+    expect(f.stored).toHaveLength(0)
+  })
+
+  it('detects whole manifest loss from the PostgreSQL SEALED checkpoint', async () => {
+    const f = fixture()
+    await sealAssessmentAudit(f)
+    expect(f.marked.size).toBe(1)
+    f.stored.length = 0
+    const result = await sealAssessmentAudit(f)
+    expect(result.failures[0]?.detail).toContain(
+      'SEALED in PostgreSQL but absent from every manifest'
+    )
+  })
+
+  it('renews retention without reading evidence when nothing is sealable', async () => {
+    const f = fixture()
+    await sealAssessmentAudit(f)
+    f.reader.exportQuizWithFailures.mockClear()
+    const list = vi.spyOn(f.manifests, 'list')
+    expect(await sealAssessmentAudit(f)).toMatchObject({
+      sealedCount: 0,
+      manifestCount: 0,
+      failures: [],
+    })
+    expect(list).toHaveBeenCalledWith(
+      quiz,
+      expect.objectContaining({ repairPending: true })
+    )
+    expect(f.reader.exportQuizWithFailures).not.toHaveBeenCalled()
+  })
+
+  it('rejects non-positive batch limits', async () => {
+    await expect(
+      sealAssessmentAudit({ ...fixture(), maxBatchEvents: 0 })
+    ).rejects.toThrow('positive integers')
+  })
+
+  it('redacts other participants from manifests in participant exports', async () => {
+    const f = fixture()
+    const own = event()
+    const other = event()
+    const participantId = randomUUID()
+    own.envelope.scope.participantId = participantId
+    other.envelope.scope.participantId = randomUUID()
+    f.records.push(own, other)
+    await sealAssessmentAudit(f)
+    const report = await buildAuditExport({
+      reader: f.reader,
+      manifests: f.manifests,
+      liveQuizId: quiz,
+      participantId,
+    })
+    expect(report.verification.sealStatus).toBe('SEALED')
+    const listed = report.manifests!.flatMap(({ manifest }) =>
+      manifest.events.map(({ eventId }) => eventId)
+    )
+    expect(listed).toContain(own.envelope.eventId)
+    expect(listed).not.toContain(other.envelope.eventId)
+    expect(report.manifests![0]!.redactedEventCount).toBe(1)
+    const full = await buildAuditExport({
+      reader: f.reader,
+      manifests: f.manifests,
+      liveQuizId: quiz,
+    })
+    expect(full.manifests![0]!.redactedEventCount).toBeUndefined()
+  })
+
+  it('keeps Table evidence statuses when only the manifest listing fails', async () => {
+    const f = fixture()
+    const healthy = await buildAuditExport({ ...f, liveQuizId: quiz })
+    f.manifests.list = async () => {
+      throw new Error('broken manifest chain')
+    }
+    const report = await buildAuditExport({ ...f, liveQuizId: quiz })
+    expect(report.verification).toMatchObject({
+      sealStatus: 'INVALID',
+      sealFailures: ['broken manifest chain'],
+      evidenceStatus: healthy.verification.evidenceStatus,
+      coverageStatus: healthy.verification.coverageStatus,
+    })
   })
 })

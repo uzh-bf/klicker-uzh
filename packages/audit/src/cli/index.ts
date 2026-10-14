@@ -126,14 +126,12 @@ async function main() {
       liveQuizId: evidence.envelope.scope.liveQuizId,
       lifecycleEpoch: evidence.envelope.scope.lifecycleEpoch,
     })
-    const sealStatus =
-      report.verification.sealStatus === 'INVALID'
-        ? 'INVALID'
-        : report.manifests?.some(({ manifest }) =>
-              manifest.events.some((event) => event.eventId === args.eventId)
-            )
-          ? 'SEALED'
-          : 'UNSEALED'
+    const isMember = report.manifests?.some(({ manifest }) =>
+      manifest.events.some((event) => event.eventId === args.eventId)
+    )
+    let sealStatus: 'INVALID' | 'SEALED' | 'UNSEALED' = 'UNSEALED'
+    if (report.verification.sealStatus === 'INVALID') sealStatus = 'INVALID'
+    else if (isMember) sealStatus = 'SEALED'
     process.stdout.write(
       `${JSON.stringify({
         eventId: evidence.envelope.eventId,

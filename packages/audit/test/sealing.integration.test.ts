@@ -51,7 +51,15 @@ it('only transitions matching delivered evidence, survives replay, and rejects a
       emitAuditEvents(tx, context, [draft])
     )
     expect(await repository.listQuizIds()).toContain(liveQuizId)
-    expect(await repository.markSealed([evidence], sealedAt)).toBe(0)
+    expect(await repository.getSealingState(liveQuizId)).toEqual({
+      sealable: new Set(),
+      inFlight: new Set([record.envelope.eventId]),
+      sealed: new Set(),
+    })
+    // A manifest member whose row cannot transition is surfaced, never skipped.
+    await expect(repository.markSealed([evidence], sealedAt)).rejects.toThrow(
+      'is PENDING'
+    )
     await prisma.assessmentAuditOutboxEvent.update({
       where: { eventId: record.envelope.eventId },
       data: {
@@ -59,7 +67,9 @@ it('only transitions matching delivered evidence, survives replay, and rejects a
         deliveredAt: new Date('2026-09-28T10:06:00.000Z'),
       },
     })
-    expect(await repository.markSealed([evidence], sealedAt)).toBe(0)
+    await expect(repository.markSealed([evidence], sealedAt)).rejects.toThrow(
+      'is DELIVERED_UNSEALED'
+    )
     await prisma.assessmentAuditOutboxEvent.update({
       where: { eventId: record.envelope.eventId },
       data: { deliveredAt: new Date('2026-09-28T10:01:00.000Z') },
@@ -75,12 +85,28 @@ it('only transitions matching delivered evidence, survives replay, and rejects a
       })
     ).toMatchObject({ deliveryState: 'SEALED', sealedAt })
     expect(await repository.markSealed([evidence], sealedAt)).toBe(0)
+    expect(await repository.getSealingState(liveQuizId)).toEqual({
+      sealable: new Set(),
+      inFlight: new Set(),
+      sealed: new Set([record.envelope.eventId]),
+    })
     await expect(
       repository.markSealed(
         [{ ...evidence, canonicalEnvelope: `${evidence.canonicalEnvelope} ` }],
         sealedAt
       )
     ).rejects.toThrow('Outbox differs')
+    await expect(
+      repository.markSealed(
+        [
+          {
+            ...evidence,
+            envelope: { ...evidence.envelope, eventId: randomUUID() },
+          },
+        ],
+        sealedAt
+      )
+    ).rejects.toThrow('Outbox record missing')
   } finally {
     await prisma.assessmentAuditOutboxEvent.deleteMany({
       where: { liveQuizId },

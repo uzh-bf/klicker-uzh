@@ -375,13 +375,28 @@ containing the oldest remaining event, then its oldest 100 events. A nonzero
 deferred count fails the Hatchet run visibly until the queue drains. This replaces the historical daily
 manifest proposal for the currently implemented event store.
 
+Only events whose outbox row is `DELIVERED_UNSEALED` can enter a manifest. The
+dispatcher writes Table rows before it marks a row delivered, so evidence of
+`PENDING` or `LEASED` rows may be incomplete: those events are left for a later
+run, reported as `awaitingDeliveryCount`, and their Table verification failures
+do not block the rest of the assessment. Verification failures of any other
+event still fail the assessment. Every retained scope is visited on each run so
+that listing renews manifest retention; a scope without sealable rows skips the
+Table read. PostgreSQL is also an independent checkpoint for manifest loss: an
+event marked `SEALED` that no listed manifest contains fails the run. The task
+runs with a Hatchet concurrency limit of one; a tick that finds a run still
+active is cancelled, so manifest chains are never extended concurrently by
+scheduled runs.
+
 The immutable manifest is the durable retry checkpoint at
 `audit-manifests/manifest/v1/<quiz>/<epoch>/<12-digit-sequence>.json`.
 Concurrent workers use create-only writes at the same next sequence and verify
 the winning batch. After exact-version byte/hash/MIME/policy readback and a fresh
-Table verification, the sealer conditionally changes matching
-`DELIVERED_UNSEALED` rows to `SEALED`, setting `sealedAt`. A crash before that
-transition is recovered from the existing manifest on the next run. PostgreSQL
+Table verification, the sealer changes the matching `DELIVERED_UNSEALED` rows
+of a batch to `SEALED` in one transaction, setting one `sealedAt`. A manifest
+member whose row is missing, differs, or is in any other state aborts that
+transition instead of being skipped. A crash before that transition is recovered
+from the existing manifest on the next run. PostgreSQL
 state is operational bookkeeping, never the export's proof of immutability.
 
 Exports enumerate **all blob versions** under the quiz prefix, verify locked
@@ -390,8 +405,13 @@ manifest member with Table evidence. This detects disappearance even when all
 Table indexes are gone; version enumeration also prevents a base-blob deletion
 or replacement from hiding protected versions. Conflicting versions, chain gaps,
 missing evidence, or verification errors yield `INVALID`, `PARTIAL` evidence,
-and an unsuccessful CLI exit status. Participant filtering happens after this
-whole-scope check. Exported manifests contain inventory hashes, not image data.
+and an unsuccessful CLI exit status. A manifest inventory that cannot be listed
+yields `INVALID` with the cause in `sealFailures` but keeps the Table evidence
+statuses. Participant filtering happens after this whole-scope check, so a
+failure anywhere in the assessment still invalidates a participant export's seal.
+Participant exports embed manifests with only the exported events' entries and a
+`redactedEventCount`; the complete version remains verifiable in storage by blob
+name and version. Exported manifests contain inventory hashes, not image data.
 New unsealed arrivals are reported explicitly; sealing is an inventory checkpoint,
 not a declaration that an assessment can never produce another event.
 

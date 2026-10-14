@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { matchesBlobMetadata } from '../azure/blob-metadata.js'
 import { canonicalizeJson } from '../canonical/canonicalize.js'
 import { sha256Hex } from '../canonical/hash.js'
+import { mapInParallel } from '../util/map-in-parallel.js'
 
 const FORMAT = 'KLICKER_ASSESSMENT_AUDIT_MANIFEST' as const
 const UUID =
@@ -98,10 +99,35 @@ export function validateAuditManifest(value: unknown): AuditManifest {
   return manifest
 }
 
+// Single source of truth for the manifest blob layout used by create and list.
+const MANIFEST_NAME_PREFIX = 'manifest/v1'
+const MANIFEST_SEQUENCE_DIGITS = 12
+const MANIFEST_NAME_PATTERN = new RegExp(
+  `^${MANIFEST_NAME_PREFIX}/([^/]+)/(\\d+)/(\\d{${MANIFEST_SEQUENCE_DIGITS}})\\.json$`
+)
+const MANIFEST_READ_CONCURRENCY = 8
+
+function quizPrefix(liveQuizId: string): string {
+  return `${MANIFEST_NAME_PREFIX}/${liveQuizId}/`
+}
+
 function nameFor(
   manifest: Pick<AuditManifest, 'liveQuizId' | 'lifecycleEpoch' | 'sequence'>
 ): string {
-  return `manifest/v1/${manifest.liveQuizId}/${manifest.lifecycleEpoch}/${String(manifest.sequence).padStart(12, '0')}.json`
+  return `${quizPrefix(manifest.liveQuizId)}${manifest.lifecycleEpoch}/${String(manifest.sequence).padStart(MANIFEST_SEQUENCE_DIGITS, '0')}.json`
+}
+
+function parseName(
+  name: string
+): { liveQuizId: string; lifecycleEpoch: number; sequence: number } | null {
+  const parsed = MANIFEST_NAME_PATTERN.exec(name)
+  return parsed
+    ? {
+        liveQuizId: parsed[1]!,
+        lifecycleEpoch: Number(parsed[2]!),
+        sequence: Number(parsed[3]!),
+      }
+    : null
 }
 
 function conflict(error: unknown): boolean {
@@ -212,38 +238,42 @@ export class AzureAuditManifestStore implements AuditManifestStore {
       Number.isNaN(options.minimumRetainUntil.getTime())
     )
       throw new TypeError('minimumRetainUntil must be a valid date')
-    const prefix = `manifest/v1/${liveQuizId}/`
-    const manifests: StoredAuditManifest[] = []
-    const bySequence = new Map<string, StoredAuditManifest>()
+    // List first, then read the exact listed versions with bounded concurrency;
+    // the chain order is only established after all versions are read.
+    const listed: { name: string; versionId: string }[] = []
     for await (const item of this.container.listBlobsFlat({
-      prefix,
+      prefix: quizPrefix(liveQuizId),
       includeVersions: true,
     })) {
-      const parsed = /^manifest\/v1\/([^/]+)\/(\d+)\/(\d{12})\.json$/.exec(
-        item.name
-      )
-      if (!parsed || parsed[1] !== liveQuizId)
+      if (parseName(item.name)?.liveQuizId !== liveQuizId)
         throw new Error(`Invalid manifest blob name ${item.name}`)
-      const listedVersionId = item.versionId
-      if (!listedVersionId)
+      if (!item.versionId)
         throw new Error(
           `Manifest ${item.name} was listed without a version identity`
         )
-      const stored = await this.read(item.name, {
-        repairPending: options.repairPending,
-        minimumRetainUntil: options.minimumRetainUntil,
-        expectedVersionId: listedVersionId,
-        expected: {
-          liveQuizId,
-          lifecycleEpoch: Number(parsed[2]!),
-          sequence: Number(parsed[3]!),
-        },
-      })
-      const key = `${stored.manifest.lifecycleEpoch}/${stored.manifest.sequence}`
+      listed.push({ name: item.name, versionId: item.versionId })
+    }
+    const stored = await mapInParallel(
+      listed,
+      MANIFEST_READ_CONCURRENCY,
+      async ({ name, versionId }) => {
+        const scope = parseName(name)!
+        return await this.read(name, {
+          repairPending: options.repairPending,
+          minimumRetainUntil: options.minimumRetainUntil,
+          expectedVersionId: versionId,
+          expected: scope,
+        })
+      }
+    )
+    const manifests: StoredAuditManifest[] = []
+    const bySequence = new Map<string, StoredAuditManifest>()
+    for (const item of stored) {
+      const key = `${item.manifest.lifecycleEpoch}/${item.manifest.sequence}`
       const prior = bySequence.get(key)
-      if (prior && prior.manifestHash !== stored.manifestHash)
+      if (prior && prior.manifestHash !== item.manifestHash)
         throw new Error(`Conflicting manifest versions for ${key}`)
-      if (!prior) bySequence.set(key, stored)
+      if (!prior) bySequence.set(key, item)
     }
     manifests.push(...bySequence.values())
     manifests.sort(

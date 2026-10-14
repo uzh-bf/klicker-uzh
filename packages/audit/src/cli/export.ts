@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { link, lstat, open, rename, unlink } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
-import type {
-  AzureTableAuditReader,
-  VerifiedAuditEvidence,
+import {
+  type AzureTableAuditReader,
+  matchesExportParticipantScope,
+  type VerifiedAuditEvidence,
 } from '../azure/table-reader.js'
 import {
   aggregateAssessmentBaselineParts,
@@ -84,7 +85,47 @@ export type AuditExportDocument = {
     limitations: string[]
   }
   events: VerifiedAuditEvidence['envelope'][]
-  manifests?: StoredAuditManifest[]
+  manifests?: ExportedAuditManifest[]
+}
+
+/**
+ * A manifest as embedded in an export. Participant-scoped exports keep only the
+ * entries of exported events and state how many entries of other events were
+ * withheld; the full version stays verifiable in storage by blob name and version.
+ */
+export type ExportedAuditManifest = StoredAuditManifest & {
+  redactedEventCount?: number
+}
+
+export function deriveSealStatus(input: {
+  failureCount: number
+  selectedCount: number
+  sealedCount: number
+}): AuditExportDocument['verification']['sealStatus'] {
+  if (input.failureCount > 0) return 'INVALID'
+  if (input.selectedCount > 0 && input.sealedCount === input.selectedCount) {
+    return 'SEALED'
+  }
+  if (input.sealedCount > 0) return 'PARTIALLY_SEALED'
+  return 'UNSEALED'
+}
+
+function manifestsForExport(
+  manifests: StoredAuditManifest[],
+  participantId: string | undefined,
+  exportedEventIds: ReadonlySet<string>
+): ExportedAuditManifest[] {
+  if (participantId === undefined) return manifests
+  return manifests.map((stored) => {
+    const events = stored.manifest.events.filter(({ eventId }) =>
+      exportedEventIds.has(eventId)
+    )
+    return {
+      ...stored,
+      manifest: { ...stored.manifest, events },
+      redactedEventCount: stored.manifest.events.length - events.length,
+    }
+  })
 }
 
 function verifyBaseline(
@@ -467,7 +508,7 @@ export async function buildAuditExport(input: {
   // Discover the immutable boundary first so concurrently arriving events do not
   // appear in a manifest newer than the Table snapshot used for verification.
   let manifests: StoredAuditManifest[] | undefined
-  let manifestFailure: string | undefined
+  let manifestListFailure: string | undefined
   if (input.manifests) {
     try {
       manifests = (await input.manifests.list(input.liveQuizId)).filter(
@@ -476,43 +517,42 @@ export async function buildAuditExport(input: {
           manifest.lifecycleEpoch === input.lifecycleEpoch
       )
     } catch (error) {
-      manifestFailure = error instanceof Error ? error.message : String(error)
+      manifestListFailure =
+        error instanceof Error ? error.message : String(error)
     }
   }
+  // With manifests, the whole scope is read so every manifest member is checked;
+  // participant filtering happens afterwards.
   const { verified, failures } = await input.reader.exportQuizWithFailures({
     liveQuizId: input.liveQuizId,
     lifecycleEpoch: input.lifecycleEpoch,
     participantId: input.manifests ? undefined : input.participantId,
   })
-  const selected =
-    input.participantId === undefined
-      ? verified
-      : verified.filter(
-          ({ envelope }) =>
-            envelope.scope.participantId === undefined ||
-            envelope.scope.participantId === input.participantId
-        )
+  const selected = verified.filter(({ envelope }) =>
+    matchesExportParticipantScope(envelope, input.participantId)
+  )
   const verification = exportStatuses(selected, input.participantId, failures)
-  if (input.manifests) {
+  if (manifestListFailure !== undefined) {
+    // The blob inventory could not be verified; the Table evidence statuses
+    // above remain accurate, but no seal can be claimed.
+    verification.sealStatus = 'INVALID'
+    verification.sealFailures = [manifestListFailure]
+  } else if (manifests !== undefined) {
     try {
-      if (manifestFailure !== undefined) throw new Error(manifestFailure)
       const sealed = verifyManifestEvidence(
-        manifests ?? [],
+        manifests,
         verified,
         input.liveQuizId
       )
-      const sealedCount = selected.filter((item) =>
-        sealed.has(item.envelope.eventId)
-      ).length
-      verification.sealStatus =
-        failures.length > 0
-          ? 'INVALID'
-          : selected.length > 0 && sealedCount === selected.length
-            ? 'SEALED'
-            : sealedCount > 0
-              ? 'PARTIALLY_SEALED'
-              : 'UNSEALED'
+      verification.sealStatus = deriveSealStatus({
+        failureCount: failures.length,
+        selectedCount: selected.length,
+        sealedCount: selected.filter((item) =>
+          sealed.has(item.envelope.eventId)
+        ).length,
+      })
     } catch (error) {
+      // A sealed manifest member is missing or changed: evidence is incomplete.
       verification.sealStatus = 'INVALID'
       verification.evidenceStatus = 'PARTIAL'
       verification.coverageStatus = 'EVIDENCE_INCOMPLETE'
@@ -536,7 +576,15 @@ export async function buildAuditExport(input: {
     },
     verification,
     events: selected.map(({ envelope }) => envelope),
-    ...(manifests === undefined ? {} : { manifests }),
+    ...(manifests === undefined
+      ? {}
+      : {
+          manifests: manifestsForExport(
+            manifests,
+            input.participantId,
+            new Set(selected.map(({ envelope }) => envelope.eventId))
+          ),
+        }),
   }
 }
 
