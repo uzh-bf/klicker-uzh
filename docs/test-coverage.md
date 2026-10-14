@@ -164,7 +164,7 @@ Playwright 1.58.2 container:
 ```sh
 pnpm install --frozen-lockfile
 pnpm --filter @klicker-uzh/playwright test:coverage-tools
-pnpm exec turbo run build --filter='@klicker-uzh/auth^...' --concurrency=4
+pnpm --recursive --filter='@klicker-uzh/auth^...' --workspace-concurrency=4 run build
 KLICKER_BROWSER_COVERAGE=1 pnpm --filter @klicker-uzh/auth build:test
 KLICKER_BROWSER_COVERAGE=1 pnpm --filter @klicker-uzh/playwright exec playwright test --config=coverage.config.ts
 ```

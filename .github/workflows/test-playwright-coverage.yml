@@ -50,7 +50,7 @@ jobs:
       - name: Test coverage tooling
         run: pnpm --filter @klicker-uzh/playwright test:coverage-tools
       - name: Build auth dependencies
-        run: pnpm exec turbo run build --filter='@klicker-uzh/auth^...' --concurrency=4
+        run: pnpm --recursive --filter='@klicker-uzh/auth^...' --workspace-concurrency=4 run build
       - name: Build disposable auth production runtime with browser maps
         # Direct app build deliberately bypasses Turbo's application cache.
         # Coverage and normal deployment builds cannot share an app cache key.

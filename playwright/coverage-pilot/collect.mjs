@@ -27,6 +27,7 @@ export function sourcePath(source) {
     relative.includes('..') ||
     relative.includes('\\') ||
     !/\.(?:ts|tsx|js|jsx)$/.test(relative) ||
+    /\/(?:sourcesanspro|monospacefont)_[a-f0-9]+\.js$/.test(relative) ||
     /(?:^|\/)(?:node_modules|dist|api|types)(?:\/|$)/.test(relative) ||
     /(?:\.d\.ts|\.(?:test|spec)\.[^.]+|\/_document\.tsx)$/.test(relative) ||
     !INCLUDED.some((prefix) => relative.startsWith(prefix))
@@ -50,6 +51,20 @@ export function chunkPath(url, origin, root) {
   const resolved = path.resolve(base, relative)
   assert(resolved.startsWith(`${base}${path.sep}`), 'Invalid chunk path')
   return resolved
+}
+
+// Turbopack 16 uses independent hashes for a chunk and its map. Never guess
+// `${chunk}.map` or follow arbitrary network/path references from build content.
+export function mapPath(source, chunk) {
+  const matches = [...source.matchAll(/^\/\/# sourceMappingURL=(\S+)\s*$/gm)]
+  if (!matches.length) return null
+  assert.equal(matches.length, 1, 'Ambiguous source map reference')
+  const name = matches[0][1]
+  assert(
+    /^[a-zA-Z0-9_-]+\.js\.map$/.test(name),
+    'Unsupported source map reference'
+  )
+  return path.join(path.dirname(chunk), name)
 }
 
 export async function remapEntry(entry, map, root) {
@@ -126,9 +141,14 @@ export async function collectCoverage({
       (await readFile(chunk, 'utf8')) === entry.source,
       'Executed chunk does not match the build'
     )
+    const mappingFile = mapPath(entry.source, chunk)
+    if (!mappingFile) {
+      diagnostics.missingMaps++
+      continue
+    }
     let sourceMap
     try {
-      sourceMap = JSON.parse(await readFile(`${chunk}.map`, 'utf8'))
+      sourceMap = JSON.parse(await readFile(mappingFile, 'utf8'))
     } catch (error) {
       if (error.code !== 'ENOENT') throw error
       diagnostics.missingMaps++

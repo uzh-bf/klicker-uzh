@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
-import { chunkPath, remapEntry, sourcePath } from './collect.mjs'
+import { chunkPath, mapPath, remapEntry, sourcePath } from './collect.mjs'
 
 test('source allowlist rejects vendors, server code, traversal and unknown maps', () => {
   assert.equal(
@@ -96,4 +96,28 @@ test('indexed maps remap verified source and retain uncovered branches', async (
   } finally {
     await rm(root, { recursive: true, force: true })
   }
+})
+
+test('map reference follows the independent Turbopack hash and rejects unsafe paths', () => {
+  assert.equal(
+    mapPath('//# sourceMappingURL=other-hash.js.map\n', '/repo/chunk.js'),
+    '/repo/other-hash.js.map'
+  )
+  assert.equal(mapPath('no map', '/repo/chunk.js'), null)
+  for (const name of [
+    '../secret.js.map',
+    'https://external.invalid/a.js.map',
+    'data:application/json,{}',
+  ]) {
+    assert.throws(
+      () => mapPath(`//# sourceMappingURL=${name}\n`, '/repo/chunk.js'),
+      /Unsupported source map/
+    )
+  }
+  assert.equal(
+    sourcePath(
+      'turbopack:///[project]/packages/shared-components/src/sourcesanspro_4957bc4.js'
+    ),
+    null
+  )
 })
