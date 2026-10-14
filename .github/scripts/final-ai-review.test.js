@@ -469,7 +469,7 @@ test('bounds individual and stack review retries, tokens, and runtime', () => {
   assert.equal(source.match(/--timeout 30/g)?.length, 1)
   assert.equal(source.match(/plan-ocr-resume/g)?.length, 2)
   assert.equal(source.match(/merge-ocr-resume/g)?.length, 2)
-  assert.match(source, /run_ocr_attempt "\$\{RESULT_PATH\}" 1000000/)
+  assert.match(source, /run_ocr_attempt "\$\{RESULT_PATH\}" 3000000/)
   assert.match(source, /"\$\{REVIEW_FROM\}" "\$\{HEAD_SHA\}" 20000000/)
   assert.match(source, /resume_partial_result[\s\S]*750000 "\$\{RANGE_PATH\}"/)
   assert.equal(
