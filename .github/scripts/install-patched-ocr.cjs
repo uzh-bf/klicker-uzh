@@ -82,9 +82,12 @@ function install(directory, archive) {
     ])
   }
   verifyArchive(fs.readFileSync(archivePath))
-  run('tar', ['-xzf', archivePath, '--strip-components=1', '-C', source])
+  run('tar', ['-xzf', archivePath, '--strip-components=1', '-C', source], {
+    timeout: 30000,
+  })
   run('patch', ['--batch', '--fuzz=0', '-p1', '--input', PATCH_PATH], {
     cwd: source,
+    timeout: 30000,
   })
   run('go', ['test', '-race', './internal/llmloop', './internal/agent'], {
     cwd: source,
@@ -110,6 +113,7 @@ function install(directory, archive) {
   const version = execFileSync(binary, ['version'], {
     env: { ...env, OCR_NO_UPDATE: '1' },
     encoding: 'utf8',
+    timeout: 30000,
   })
   verifyVersion(version)
   fs.writeFileSync(

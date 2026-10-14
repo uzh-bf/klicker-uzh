@@ -388,7 +388,7 @@ jobs:
           cache: false
 
       - name: Install pinned OpenCodeReview CLI
-        timeout-minutes: 15
+        timeout-minutes: 25
         if: needs.start.outputs.run_review == 'true'
         run: |
           node .github/scripts/install-patched-ocr.cjs "${RUNNER_TEMP}/patched-ocr"
@@ -1003,7 +1003,7 @@ jobs:
           cache: false
 
       - name: Install pinned OpenCodeReview CLI
-        timeout-minutes: 15
+        timeout-minutes: 25
         if: needs.start_stack.outputs.run_review == 'true'
         run: |
           node .github/scripts/install-patched-ocr.cjs "${RUNNER_TEMP}/patched-ocr"
