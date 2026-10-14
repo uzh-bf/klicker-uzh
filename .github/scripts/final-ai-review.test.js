@@ -581,6 +581,16 @@ test('bounded context must preserve every preview path and exclusion reason', ()
       }),
     /Invalid OCR preview file/
   )
+  for (const excludeReason of [12, [], {}]) {
+    const malformed = {
+      ...baseline,
+      files: [
+        baseline.files[0],
+        { ...baseline.files[1], exclude_reason: excludeReason },
+      ],
+    }
+    assert.throws(() => validateOCRPreview(malformed, malformed))
+  }
   const unicodePaths = {
     total_files: 2,
     files: [

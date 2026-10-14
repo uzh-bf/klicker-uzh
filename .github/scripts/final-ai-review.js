@@ -2178,14 +2178,20 @@ function validateOCRPreview(baseline, bounded) {
           typeof file?.path !== 'string' ||
           !file.path ||
           paths.has(file.path) ||
-          typeof file.will_review !== 'boolean'
+          typeof file.will_review !== 'boolean' ||
+          (file.exclude_reason != null &&
+            typeof file.exclude_reason !== 'string')
         ) {
           throw new Error('Invalid OCR preview file')
         }
         paths.add(file.path)
         return [file.path, file.will_review, file.exclude_reason ?? '']
       })
-      .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
+      .sort((a, b) => {
+        if (a[0] < b[0]) return -1
+        if (a[0] > b[0]) return 1
+        return 0
+      })
   }
   if (
     JSON.stringify(selection(baseline)) !== JSON.stringify(selection(bounded))

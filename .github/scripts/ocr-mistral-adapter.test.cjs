@@ -1378,34 +1378,37 @@ test('run strips the upstream key and injects the OCR environment', async () => 
 
 test('run propagates the child exit code', async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-diagnostics-'))
-  const diagnosticsPath = path.join(directory, 'diagnostics.jsonl')
-  const result = await runCli(
-    ['run', '--', process.execPath, '-e', 'process.exit(7)'],
-    {
-      MISTRAL_API_KEY: 'sk-synthetic-run',
-      OCR_ADAPTER_DIAGNOSTICS_PATH: diagnosticsPath,
-    }
-  )
-  assert.equal(result.code, 7)
-  const diagnostics = JSON.parse(fs.readFileSync(diagnosticsPath, 'utf8'))
-  assert.equal(diagnostics.schema_version, 1)
-  assert.equal(diagnostics.upstream_attempts, 0)
-  assert.doesNotMatch(JSON.stringify(diagnostics), /sk-synthetic-run/)
-  const missing = await runCli(
-    ['run', '--', process.execPath, '-e', 'process.exit(0)'],
-    {
-      MISTRAL_API_KEY: 'sk-synthetic-run',
-      OCR_ADAPTER_DIAGNOSTICS_PATH: path.join(
-        directory,
-        'absent',
-        'receipt.jsonl'
-      ),
-    }
-  )
-  assert.equal(missing.code, 0)
-  assert.match(missing.stderr, /execution counters unavailable/)
-  assert.doesNotMatch(missing.stderr, /ENOENT|absent|sk-synthetic-run/)
-  fs.rmSync(directory, { recursive: true, force: true })
+  try {
+    const diagnosticsPath = path.join(directory, 'diagnostics.jsonl')
+    const result = await runCli(
+      ['run', '--', process.execPath, '-e', 'process.exit(7)'],
+      {
+        MISTRAL_API_KEY: 'sk-synthetic-run',
+        OCR_ADAPTER_DIAGNOSTICS_PATH: diagnosticsPath,
+      }
+    )
+    assert.equal(result.code, 7)
+    const diagnostics = JSON.parse(fs.readFileSync(diagnosticsPath, 'utf8'))
+    assert.equal(diagnostics.schema_version, 1)
+    assert.equal(diagnostics.upstream_attempts, 0)
+    assert.doesNotMatch(JSON.stringify(diagnostics), /sk-synthetic-run/)
+    const missing = await runCli(
+      ['run', '--', process.execPath, '-e', 'process.exit(0)'],
+      {
+        MISTRAL_API_KEY: 'sk-synthetic-run',
+        OCR_ADAPTER_DIAGNOSTICS_PATH: path.join(
+          directory,
+          'absent',
+          'receipt.jsonl'
+        ),
+      }
+    )
+    assert.equal(missing.code, 0)
+    assert.match(missing.stderr, /execution counters unavailable/)
+    assert.doesNotMatch(missing.stderr, /ENOENT|absent|sk-synthetic-run/)
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
 })
 
 test('start/serve/stop own the listener lifecycle', async (t) => {

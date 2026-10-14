@@ -454,7 +454,8 @@ jobs:
             if ! node .github/scripts/final-ai-review.js validate-ocr-preview \
               "${output_path}.preview-${baseline_limit}" "${output_path}.preview-${bounded_limit}" \
               >/dev/null 2>>"${STDERR_PATH}"; then
-              echo 'Bounded OCR context changed file coverage; review refused.' >&2
+              printf 'OCR stage=preview-validation exit=1\n' >>"${GITHUB_STEP_SUMMARY}"
+              echo 'OCR preview validation failed: malformed preview or changed file coverage; review refused.' >&2
               return 1
             fi
             [[ "${REVIEW_JOB_STARTED_AT}" =~ ^[1-9][0-9]*$ ]]
@@ -1058,7 +1059,8 @@ jobs:
             if ! node .github/scripts/final-ai-review.js validate-ocr-preview \
               "${output_path}.preview-${baseline_limit}" "${output_path}.preview-${bounded_limit}" \
               >/dev/null 2>>"${STDERR_PATH}"; then
-              echo 'Bounded OCR context changed file coverage; review refused.' >&2
+              printf 'OCR stage=preview-validation exit=1\n' >>"${GITHUB_STEP_SUMMARY}"
+              echo 'OCR preview validation failed: malformed preview or changed file coverage; review refused.' >&2
               return 1
             fi
             [[ "${REVIEW_JOB_STARTED_AT}" =~ ^[1-9][0-9]*$ ]]
