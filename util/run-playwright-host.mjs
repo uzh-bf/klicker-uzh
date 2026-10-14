@@ -496,7 +496,7 @@ export function resolvePlaywrightEnvironment({
   }
 }
 
-function resolveWorkspace(runtime) {
+function resolveGitDirectories(runtime) {
   const gitDir = runtime.commandRunner(
     'git',
     [
@@ -519,6 +519,21 @@ function resolveWorkspace(runtime) {
     ],
     { capture: true }
   )
+  return { gitDir, commonDir }
+}
+
+// A linked worktree gets its devrouter workspace identity on its first ensure.
+// Before that no devcontainer can exist, so there is nothing to stop.
+function hasLinkedWorkspaceIdentity(runtime) {
+  const { gitDir, commonDir } = resolveGitDirectories(runtime)
+  return (
+    gitDir === commonDir ||
+    runtime.pathExists(join(gitDir, 'devrouter-workspace'))
+  )
+}
+
+function resolveWorkspace(runtime) {
+  const { gitDir, commonDir } = resolveGitDirectories(runtime)
 
   if (gitDir === commonDir) return ''
 
@@ -580,8 +595,10 @@ function ensureHostDependencies(runtime, playwrightArgs) {
   )
 
   if (!runtime.pathExists(playwrightCli)) {
-    runtime.log('[playwright:host] Stopping the devcontainer before install')
-    runtime.commandRunner(runtime.devrouter(), ['stop', runtime.repoRoot])
+    if (hasLinkedWorkspaceIdentity(runtime)) {
+      runtime.log('[playwright:host] Stopping the devcontainer before install')
+      runtime.commandRunner(runtime.devrouter(), ['stop', runtime.repoRoot])
+    }
     runtime.log('[playwright:host] Installing host Playwright dependencies')
     runtime.runPnpm([
       'install',

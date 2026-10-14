@@ -211,6 +211,7 @@ function createLauncherHarness({
   playwrightCli = true,
   prismaDist = true,
   typesDist = true,
+  workspaceIdentity = true,
   failWhen,
   environment = { PATH: '/synthetic/bin' },
   specFiles = syntheticSpecFiles,
@@ -253,7 +254,7 @@ function createLauncherHarness({
     }
     if (path.endsWith('/packages/prisma/dist/index.js')) return prismaDist
     if (path.endsWith('/packages/types/dist/index.js')) return typesDist
-    if (path.endsWith('/devrouter-workspace')) return true
+    if (path.endsWith('/devrouter-workspace')) return workspaceIdentity
     if (
       path.startsWith(`${testsRoot}/`) &&
       specFiles.includes(path.slice(testsRoot.length + 1))
@@ -915,6 +916,27 @@ test('cold runs stop before host preparation and reconcile afterward', () => {
     pnpmCalls(harness.calls).every(
       ({ options }) => options.env?.[PNPM_VERIFY_DEPS_ENV] === 'error'
     )
+  )
+})
+
+test('a fresh worktree installs without stopping a runtime that does not exist yet', () => {
+  const harness = createLauncherHarness({
+    playwrightCli: false,
+    workspaceIdentity: false,
+  })
+
+  assert.throws(
+    () => runPlaywrightHost(['--list'], harness.dependencies),
+    /did not persist a workspace token/
+  )
+
+  assert.equal(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'stop'),
+    -1
+  )
+  assert.ok(commandIndex(harness.calls, 'pnpm', 'install') >= 0)
+  assert.ok(
+    ensureIndex(harness.calls) > commandIndex(harness.calls, 'pnpm', 'install')
   )
 })
 
