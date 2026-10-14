@@ -130,7 +130,9 @@ describe('OpenAI-compatible streamed tool calls', () => {
 
   test('streams a tool result and continued answer through the UI protocol', async () => {
     const requests: Record<string, unknown>[] = []
-    const execute = vi.fn(async (_input: { query: string }) => ({
+    const execute = vi.fn<
+      (input: { query: string }) => Promise<{ marker: string }>
+    >(async () => ({
       marker: 'SYNTHETIC_KB_RESULT',
     }))
     const fetch = vi.fn(
