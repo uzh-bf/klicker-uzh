@@ -2175,7 +2175,7 @@ function validateOCRPreview(baseline, bounded) {
     return preview.files
       .map((file) => {
         if (
-          typeof file.path !== 'string' ||
+          typeof file?.path !== 'string' ||
           !file.path ||
           paths.has(file.path) ||
           typeof file.will_review !== 'boolean'
@@ -2185,7 +2185,7 @@ function validateOCRPreview(baseline, bounded) {
         paths.add(file.path)
         return [file.path, file.will_review, file.exclude_reason ?? '']
       })
-      .sort((a, b) => a[0].localeCompare(b[0]))
+      .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
   }
   if (
     JSON.stringify(selection(baseline)) !== JSON.stringify(selection(bounded))

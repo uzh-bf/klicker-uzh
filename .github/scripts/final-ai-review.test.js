@@ -573,6 +573,25 @@ test('bounded context must preserve every preview path and exclusion reason', ()
       }),
     /Invalid OCR preview file/
   )
+  assert.throws(
+    () =>
+      validateOCRPreview(baseline, {
+        ...baseline,
+        files: [null, baseline.files[1]],
+      }),
+    /Invalid OCR preview file/
+  )
+  const unicodePaths = {
+    total_files: 2,
+    files: [
+      { path: 'src/\u00e9.ts', will_review: true },
+      { path: 'src/e\u0301.ts', will_review: true },
+    ],
+  }
+  validateOCRPreview(unicodePaths, {
+    ...unicodePaths,
+    files: [...unicodePaths.files].reverse(),
+  })
 })
 
 test('accepts only the exact command and calculated write permissions', () => {
