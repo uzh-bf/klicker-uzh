@@ -59,12 +59,16 @@ export async function claimGuestChatThreads(
       if (!personaAccount || personaAccount.participantId === participantId)
         continue
 
-      const moved = await prisma.chatThread.updateMany({
-        where: { participantId: personaAccount.participantId },
-        data: { participantId },
-      })
+      // Ownership transfer is not conversation activity. A parameterized
+      // update preserves updatedAt, which Prisma model updates refresh and
+      // the sidebar uses to order conversations.
+      const moved = await prisma.$executeRaw`
+        UPDATE "ChatThread"
+        SET "participantId" = ${participantId}::uuid
+        WHERE "participantId" = ${personaAccount.participantId}::uuid
+      `
       personas += 1
-      threads += moved.count
+      threads += moved
     }
 
     return { personas, threads }

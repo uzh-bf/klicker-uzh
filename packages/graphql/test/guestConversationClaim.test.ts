@@ -161,7 +161,7 @@ async function createGuestPersona({
   return prisma.participant.create({
     data: {
       username: usernameFor(`guest-${label}`),
-      password: 'unused-test-hash',
+      password: 'dummy-test-hash',
       isSSOAccount: true,
       accounts: {
         create: {
@@ -187,7 +187,7 @@ async function createAccountForSubject({
   return prisma.participant.create({
     data: {
       username: usernameFor(`acct-${label}`),
-      password: 'unused-test-hash',
+      password: 'dummy-test-hash',
       isSSOAccount: true,
       accounts: { create: { ssoId: ltiSub, ssoType: 'LTI1.3' } },
       participations: { create: { isActive: false, courseId } },
@@ -293,7 +293,7 @@ describe('guest chat conversation claim', () => {
     const other = await prisma.participant.create({
       data: {
         username: usernameFor('cookie-other'),
-        password: 'unused-test-hash',
+        password: 'dummy-test-hash',
       },
     })
 
@@ -450,6 +450,8 @@ describe('guest chat conversation claim', () => {
   })
 
   it('keeps existing account history alongside claimed threads', async () => {
+    const guestUpdatedAt = new Date('2020-01-01T00:00:00Z')
+    const accountUpdatedAt = new Date('2020-01-02T00:00:00Z')
     const { user, course } = await createTestCourse('coexist')
     const chatbot = await createChatbot(user.id, course.id)
     const sub = ssoIdFor('coexist-sub')
@@ -463,6 +465,7 @@ describe('guest chat conversation claim', () => {
         participantId: persona.id,
         chatbotId: chatbot.id,
         title: 'Guest',
+        updatedAt: guestUpdatedAt,
       },
     })
     const account = await createAccountForSubject({
@@ -475,6 +478,7 @@ describe('guest chat conversation claim', () => {
         participantId: account.id,
         chatbotId: chatbot.id,
         title: 'Account',
+        updatedAt: accountUpdatedAt,
       },
     })
 
@@ -489,10 +493,12 @@ describe('guest chat conversation claim', () => {
 
     const owned = await prisma.chatThread.findMany({
       where: { participantId: account.id },
+      orderBy: { updatedAt: 'desc' },
     })
-    expect(owned.map((t) => t.id).sort()).toEqual(
-      [guestThread.id, accountThread.id].sort()
-    )
+    expect(owned.map((t) => t.id)).toEqual([accountThread.id, guestThread.id])
+    expect(owned[0]?.updatedAt).toEqual(accountUpdatedAt)
+    expect(owned[1]?.updatedAt).toEqual(guestUpdatedAt)
+    expect(owned[1]?.createdAt).toEqual(guestThread.createdAt)
   })
 
   it('rolls back transferred threads when the transaction fails after reassignment', async () => {
@@ -523,13 +529,9 @@ describe('guest chat conversation claim', () => {
         prisma.$transaction((tx) =>
           claim({
             ...tx,
-            chatThread: {
-              ...tx.chatThread,
-              updateMany: async (args: any) => {
-                const moved = await tx.chatThread.updateMany(args)
-                reassigned = moved.count
-                throw new Error('synthetic failure after reassignment')
-              },
+            $executeRaw: async (...args: Parameters<typeof tx.$executeRaw>) => {
+              reassigned = await tx.$executeRaw(...args)
+              throw new Error('synthetic failure after reassignment')
             },
           })
         ),

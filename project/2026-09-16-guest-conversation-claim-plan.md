@@ -85,7 +85,7 @@ model; no change to eLearning learner binding or origin tagging.
   treats a valid cookie session as the account (session precedence). The claim
   must NEVER run keyed on that cookie identity.
 - ChatThread (participantId, chatbotId) owns messages and attachments via
-  cascade; reassignment is updateMany on participantId.
+   cascade; reassignment updates participantId only, preserving activity timestamps.
 - ChatUsageCredits and disclaimer acceptance are keyed to (participantId,
   chatbotId) and persona-scoped; they are intentionally not merged.
 - docs/auth-model.md:63 records "Guest history is not transferred to an
@@ -124,7 +124,8 @@ model; no change to eLearning learner binding or origin tagging.
 3. Thread scope. Claim all ChatThread rows of the found persona(s), regardless
    of chatbot lifecycle status. Persona derivation is per-course, so one
    persona lookup per (ltiSub, courseId) pair over the account's participations,
-   claiming every thread each found persona owns. Chatbot access gating
+   claiming every thread each found persona owns without changing its creation or
+   activity timestamps. Chatbot access gating
    (PUBLISHED checks in the thread routes) already governs visibility, so a
    PAUSED bot's claimed history simply appears if the bot is ever resumed;
    restricting the claim to PUBLISHED bots would strand paused-bot threads for
@@ -133,8 +134,8 @@ model; no change to eLearning learner binding or origin tagging.
 
 4. Idempotency and concurrency. Re-running the claim is a no-op (threads
    already on the account match nothing). Concurrent launches: guard with the
-   persona row lock or updateMany natural semantics (WHERE participantId =
-   personaId); updateMany cannot double-apply. Log claimed thread count per
+   persona row lock or conditional update semantics (WHERE participantId =
+   personaId); an ownership-guarded update cannot double-apply. Log claimed thread count per
    persona for observability (structured event, no message content). Known
    benign race: a guest turn in flight during the claim keeps writing to its
    thread id, which now belongs to the account — the message lands correctly
@@ -395,3 +396,19 @@ review. Previous planner self-review remains applicable to the unchanged design.
 Next: run focused account/guest tests and browser proof, finish the integration
 commit, publish the updated draft, resolve review findings and record CI and final
 AI review for the resulting head. The runtime will be stopped after verification.
+
+Integration committed as `68df3b42e47d08bd4a82daefbf46a7d779036007` with all
+repository hooks enabled. Full root checks passed; the initial unbounded build
+stall was cleared through exact-runtime stop and bounded verification. The
+focused account/claim suites passed 30 tests, guest/access regressions passed 36,
+and the host LTI browser suite passed all 9, including claimed-history visibility.
+Independent simplification and risk reviews of the original implementation found
+no reportable issues; their reports are in `project/_local/reviews/`.
+
+Main-session contract inspection reproduced a chronology defect: Prisma's
+`@updatedAt` refresh on ownership reassignment promoted old guest conversations
+above newer account history. The claim now uses a tagged, parameterized update
+inside the same transaction and retains the owner predicate, preserving thread
+timestamps. The existing coexistence test now verifies timestamp and history
+ordering, and the rollback test forces a failure after this actual update.
+This correction preserves the approved thread-only transfer contract.
