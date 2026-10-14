@@ -1,13 +1,13 @@
 ---
 name: klicker-olat-integration
-description: Guide instructors through supported KlickerUZH chatbot setup decisions and integrate an existing published chatbot into an existing OLAT course, with safe LTI URLs, credit-policy review, access checks and real-response verification.
+description: Guide teaching staff through supported KlickerUZH chatbot setup decisions and integrate an existing published chatbot into an existing OLAT course, with safe LTI URLs, credit-policy review, access checks and real-response verification.
 metadata:
   version: '1.1.0'
 ---
 
 # Klicker–OLAT Integration
 
-Help instructors and teaching assistants make informed setup choices and provide a working learner entry to an existing published chatbot in an existing OLAT course. Preserve the working procedure: **inspect → agree settings → configure the named LTI provider → save/reopen → test → publish only when authorised**.
+Help teaching staff make informed setup choices and provide a working learner entry to an existing published chatbot in an existing OLAT course. Preserve the working procedure: **inspect → agree settings → configure the named LTI provider → save/reopen → test → publish only when authorised**.
 
 An explanation, skill review or preparation request remains read-only against live services. Installing or sharing this skill does not grant account permissions or authorise course, chatbot or budget changes.
 
@@ -15,9 +15,9 @@ An explanation, skill review or preparation request remains read-only against li
 
 Identify the exact OLAT course, published chatbot, linked Klicker course, signed-in account and permitted roles from current links and UI. Inspect existing elements before adding another. Keep unrelated nodes, materials, modes and pending work.
 
-Use supported authenticated connectors or browser tools to execute authorised changes. The skill supplies instructions and an offline URL helper, not browser control, a login or service access. Without browser control, guide the instructor through the same manual steps; do not claim they were executed. When tools and permissions are available, carry out the agreed integration and verify the saved result rather than stopping at advice.
+Use supported authenticated connectors or browser tools to execute authorised changes. The skill supplies instructions and an offline URL helper, not browser control, a login or service access. Without browser control, guide teaching staff through the same manual steps; do not claim they were executed. When tools and permissions are available, carry out the agreed integration and verify the saved result rather than stopping at advice.
 
-This is the **instructor workflow**. Institutional LTI registration, service credentials, account entitlement, funding approval and backend administration belong to authorised operators. The repository's [course-chatbot provisioning skill](https://github.com/uzh-bf/klicker-uzh/blob/v3/.agents/skills/klicker-course-chatbot-provisioning/SKILL.md) covers that separate role. Its database, credential and administrator procedures are not instructor prerequisites.
+This is the **workflow for teaching staff**. Institutional LTI registration, service credentials, account entitlement, funding approval and backend administration belong to authorised operators. The repository's [course-chatbot provisioning skill](https://github.com/uzh-bf/klicker-uzh/blob/v3/.agents/skills/klicker-course-chatbot-provisioning/SKILL.md) covers that separate role. Its database, credential and administrator procedures are not prerequisites for teaching staff.
 
 ## 2. Agree the learning and integration setup
 
@@ -46,7 +46,7 @@ Preserve the exact registered launch path and trailing slash. Never use a signed
 
 ## 4. Apply only approved chatbot changes
 
-If setup changes are in scope, execute the approved fields through the available instructor UI, section by section, and read back each saved result. Use [chatbot setup](references/chatbot-setup.md) and [credits and publication](references/credits-and-publication.md) for the actual controls and safe stop conditions. Do not bypass a pending revision lock or switch to operator credentials.
+If setup changes are in scope, execute the approved fields through the available UI for teaching staff, section by section, and read back each saved result. Use [chatbot setup](references/chatbot-setup.md) and [credits and publication](references/credits-and-publication.md) for the actual controls and safe stop conditions. Do not bypass a pending revision lock or switch to operator credentials.
 
 Credits are a per-participant, per-chatbot allowance, not raw tokens, a fixed number of replies or money. A request for an exact token ceiling needs clarification; do not implement it by relabelling credits. Explain model choice, initial balance, additive refill, period, cap/carryover, depletion behaviour and separate owner funding before a proposed change.
 
@@ -56,7 +56,7 @@ Inspect the current UI and relevant release when instructions conflict. A reposi
 
 Use [verification and recovery](references/verification-and-recovery.md). Read back saved fields after reopening. A chat shell or old conversation is not success: with permission for a small synthetic test, require a completed new answer through each retained route and record the visible cost and source behaviour where relevant.
 
-First-time learner access is an optional additional check only when a suitable authorised separate account is already available. It is not a prerequisite or blocker for instructor setup, skill development, installation or contribution. An owner login in OLAT participant preview does not establish a new student's access. Do not request student credentials, inspect participant conversations, accept terms for another person, sign out the owner or create test identities merely to complete this optional check.
+First-time learner access is an optional additional check only when a suitable authorised separate account is already available. It is not a prerequisite or blocker for setup by teaching staff, skill development, installation or contribution. An owner login in OLAT participant preview does not establish a new student's access. Do not request student credentials, inspect participant conversations, accept terms for another person, sign out the owner or create test identities merely to complete this optional check.
 
 If publishing is authorised, inspect OLAT's change selection and publish only the agreed scope. Recheck the ordinary learner-facing course. If unrelated edits cannot be separated, pause that step and explain the conflict. Otherwise deliver the saved draft and state that it is not yet published.
 

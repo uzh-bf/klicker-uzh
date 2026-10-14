@@ -10,7 +10,7 @@ If the user asks for "tokens per student per week", first clarify the unit:
 
 > Do you want a practical Klicker credit allowance, or an exact raw-token ceiling?
 > I recommend keeping the existing credit allowance for the integration. The
-> inspected instructor controls do not implement an exact token ceiling.
+> inspected controls for teaching staff do not implement an exact token ceiling.
 
 Credits are not raw tokens, a fixed number of messages or a guaranteed amount of
 money. The inspected runtime calculates consumption using model-specific input
@@ -23,7 +23,7 @@ discussion; reuse answers already given:
 
 - How many students and coaches will use this bot, and how many intensively?
 - What learning activities, likely session lengths and course dates must it cover?
-- Should the instructor fix the model or allow learners to choose from an agreed
+- Should teaching staff select a fixed model or allow learners to choose from an agreed
   set? Which reasoning levels are appropriate? Use the actual available models.
 - How much starting credit, what refill amount and cadence, and what maximum
   balance should apply? Should unused credit carry forward within that cap?
@@ -117,7 +117,7 @@ it. An absent view is not evidence that no account budget exists. [Owner usage v
 Use the current funding agreement and responsible contact. Do not infer a
 currency conversion or subsidy from an older example. Do not change cost centres,
 operator budgets, account entitlements, provider credentials or paid-model
-access as part of an ordinary instructor integration. Report the missing
+access as part of an ordinary integration by teaching staff. Report the missing
 prerequisite to the responsible operator when necessary.
 
 ## Save, submission and live configuration
@@ -179,7 +179,7 @@ or what a particular account can edit. [Configured image][deployment-version]
 
 For a new run, record the observed UI and source/deployment version separately.
 If they disagree, preserve the working integration and resolve the mismatch
-before providing concrete mutation instructions. Use supported instructor UI;
+before providing concrete mutation instructions. Use supported UI for teaching staff;
 operator provisioning APIs, direct database writes and credentials are not
 prerequisites for this skill.
 

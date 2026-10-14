@@ -16,8 +16,7 @@ are not prerequisites of this guide.
 
 :::info Scope
 Installing the skill gives your agent instructions, not access to your accounts
-or permission to change them. This guide is for course instructors and course
-teams. Creating a bot, provisioning its knowledge base, registering an LTI
+or permission to change them. This guide is for teaching staff, including teaching assistants. Creating a bot, provisioning its knowledge base, registering an LTI
 provider, and granting operator privileges are separate tasks. The repository's
 [`klicker-course-chatbot-provisioning` skill](https://github.com/uzh-bf/klicker-uzh/tree/v3/.agents/skills/klicker-course-chatbot-provisioning)
 describes the operator workflow; those privileges are not required to use an
@@ -80,13 +79,13 @@ it against a live course.
 
 ### Learning use, people, and models
 
-| Decision                             | What to clarify and why                                                                                                                                                                                                                                                                                                                                            |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Intended learning use                | Is the bot for explanations, guided practice, self-testing, or another agreed purpose? Preserve existing modes and materials unless their revision is part of the task. A tutor may correctly respond with a question instead of a complete answer.                                                                                                                |
-| Audience and access                  | Identify the intended cohort, approximate number of participants, intensive users, course dates, and languages. Check the exact linked Klicker course and instructor permissions; access to one course does not prove access to another. If the linked course is fixed after creation in the current UI, escalate a mismatch rather than promising to reassign it. |
-| Course materials and wider knowledge | Check which knowledge base and tools are actually connected and ready. Agree how students should distinguish course information from broader model knowledge. A mode's instructions do not grant web access or connect a missing tool.                                                                                                                             |
-| Model choice                         | Inspect the models and reasoning options offered in this deployment. Agree on a default and whether learners may choose among allowed models. Greater reasoning effort or longer exchanges can increase latency and usage; a model's name alone does not establish its cost or entitlement.                                                                        |
-| Existing configuration               | Keep working modes, sources, model policies, account links, and funding unless a specific change is agreed. Explain whether a proposed change needs a saved revision and review before becoming live. A pending review may lock editing until the review is resolved.                                                                                              |
+| Decision                             | What to clarify and why                                                                                                                                                                                                                                                                                                                                                    |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Intended learning use                | Is the bot for explanations, guided practice, self-testing, or another agreed purpose? Preserve existing modes and materials unless their revision is part of the task. A tutor may correctly respond with a question instead of a complete answer.                                                                                                                        |
+| Audience and access                  | Identify the intended cohort, approximate number of participants, intensive users, course dates, and languages. Check the exact linked Klicker course and permissions for teaching staff; access to one course does not prove access to another. If the linked course is fixed after creation in the current UI, escalate a mismatch rather than promising to reassign it. |
+| Course materials and wider knowledge | Check which knowledge base and tools are actually connected and ready. Agree how students should distinguish course information from broader model knowledge. A mode's instructions do not grant web access or connect a missing tool.                                                                                                                                     |
+| Model choice                         | Inspect the models and reasoning options offered in this deployment. Agree on a default and whether learners may choose among allowed models. Greater reasoning effort or longer exchanges can increase latency and usage; a model's name alone does not establish its cost or entitlement.                                                                                |
+| Existing configuration               | Keep working modes, sources, model policies, account links, and funding unless a specific change is agreed. Explain whether a proposed change needs a saved revision and review before becoming live. A pending review may lock editing until the review is resolved.                                                                                                      |
 
 In the revision-based management interface, review the existing bot under
 **Resources → Chatbots**. Where the corresponding controls are available:
@@ -110,7 +109,7 @@ In the revision-based management interface, review the existing bot under
   summary before recommending a change.
 
 If a control is unavailable, read-only, or locked for review, record that
-specific limitation and use the supported review process. An instructor's
+specific limitation and use the supported review process. A teaching staff member's
 integration task does not authorise backend writes to unlock it.
 
 ### Participant allowance and funding
@@ -152,13 +151,13 @@ immediate bonus refill.
 
 ### OLAT entry and approval
 
-| Decision                       | Consequence                                                                                                                                                                                                                                                                           |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Embedded chat or new window    | Embedding keeps the chat inside the course. A separate-window course link provides an alternative for login, consent, or browser restrictions. Test every route you keep.                                                                                                             |
-| Launch page or immediate entry | **Skip launch page** removes an extra OLAT launch step. It is separate from any data-transfer acceptance setting and the Klicker chatbot disclaimer.                                                                                                                                  |
-| Identity transmission          | Agree what data the particular element needs. Do not enable optional name/email transfer on the chat element by default. The separate **Manage Account** element has its own documented email requirement.                                                                            |
-| Draft or publication           | Saving an OLAT editor change, publishing that change, and making the course available to learners are separate steps. A draft test does not prove ordinary student access.                                                                                                            |
-| Test account                   | Use the instructor's existing session for the functional check. A separate authorised participant account is an optional, recommended way to check first-time learner access when one is already available. The agent must not create an identity or accept terms for another person. |
+| Decision                       | Consequence                                                                                                                                                                                                                                                                                      |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Embedded chat or new window    | Embedding keeps the chat inside the course. A separate-window course link provides an alternative for login, consent, or browser restrictions. Test every route you keep.                                                                                                                        |
+| Launch page or immediate entry | **Skip launch page** removes an extra OLAT launch step. It is separate from any data-transfer acceptance setting and the Klicker chatbot disclaimer.                                                                                                                                             |
+| Identity transmission          | Agree what data the particular element needs. Do not enable optional name/email transfer on the chat element by default. The separate **Manage Account** element has its own documented email requirement.                                                                                       |
+| Draft or publication           | Saving an OLAT editor change, publishing that change, and making the course available to learners are separate steps. A draft test does not prove ordinary student access.                                                                                                                       |
+| Test account                   | Use the teaching staff member's existing session for the functional check. A separate authorised participant account is an optional, recommended way to check first-time learner access when one is already available. The agent must not create an identity or accept terms for another person. |
 
 Before consequential changes, review a concrete proposed-settings summary:
 the affected elements, current and proposed values, reasons, expected access
@@ -282,7 +281,7 @@ the element and verify that the saved configuration still works.
 ### Optional first-use check with an existing participant account
 
 A separate participant account is **not a prerequisite** for using the skill
-or completing the instructor's setup. Do not request student credentials or
+or completing setup by teaching staff. Do not request student credentials or
 create an account to remove a testing limitation. If an appropriate account
 is already available and its use is authorised, it is useful to check the
 first-use path:
@@ -306,7 +305,7 @@ responses. It did **not** establish a separate new student's first login.
 Keep that limitation in your own record until the separate-account test has
 actually been completed; an OLAT preview role does not change the browser's
 Klicker identity. If no separate account is available, finish the authorised
-instructor setup and report that the optional first-use check remains untested.
+setup by teaching staff and report that the optional first-use check remains untested.
 
 If OLAT publication is approved, inspect the selected changes before
 publishing: other authors' pending edits may be included. Publish only the
@@ -323,7 +322,7 @@ the saved draft and state which access check remains outstanding.
 | Direct chat works but course entry fails        | Check the chosen course, linked bot, participant identity, membership, and live publication.                                                                                                          |
 | New mode or credit setting does not appear      | Compare saved/pending and live configuration. Approval and subsequent refill timing can be required; preview alone may show the old live settings.                                                    |
 | Credits are exhausted or a model is unavailable | Check the effective model/fallback policy and separate owner budget or entitlement. Raising participant credits may not address the cause.                                                            |
-| Only an owner can use the bot                   | Test the actual participant permissions and first-use flow. Do not grant students instructor rights to bypass a failure.                                                                              |
+| Only an owner can use the bot                   | Test the actual participant permissions and first-use flow. Do not grant students authoring rights to bypass a failure.                                                                               |
 | Publication includes unrelated edits            | Keep the draft until the authorised change can be separated or the course team agrees on the concrete wider publication.                                                                              |
 
 Do not disable browser security, frame restrictions, consent, or authentication

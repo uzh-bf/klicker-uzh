@@ -1,4 +1,4 @@
-# Instructor-facing chatbot setup
+# Chatbot setup for teaching staff
 
 Use this reference when the user requests a setup review or a supported chatbot
 change alongside OLAT integration. For a link-only task, inspect what is needed
@@ -23,17 +23,17 @@ These are supported capabilities observed in the configured October 2026 release
 not promises that every deployment or account exposes all of them. Confirm the
 actual controls and their consequence before using them.
 
-| Area                 | Decision to discuss when relevant                                                                           | Consequence and boundary                                                                                                                                                                                                                                    |
-| -------------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Purpose and audience | Which learning activity, level, course topics and response language should the existing bot support?        | State a concrete learning purpose and test it. Course locale, interface language and language of answers are distinct. Do not treat a requested language as an available UI control unless it is shown.                                                     |
-| Overview             | Does the existing name and description explain the intended use? Is this the correct linked course?         | Metadata can be reviewed as a revision. The inspected course association is fixed after creation; do not invent a course-reassignment control or create a replacement bot silently.                                                                         |
-| Standard modes       | Retain or revise Tutor, Explainer and Quizzer? What short framing should apply?                             | Tutor guides learning, Explainer explains, Quizzer supports practice. Available modes depend on the actual runtime capabilities; check Quizzer's retrieval requirement. Preserve platform constraints and existing enabled modes unless a change is agreed. |
-| Custom modes         | Is a distinct additional learning method needed, and what should its onboarding ask?                        | A supported custom mode has a name, description and persona instructions. Specify question style, hint progression, solution boundaries and language handling. Do not present prompt instructions as guaranteed behaviour.                                  |
-| Knowledge            | Which existing course materials should answers draw on? What may broader model knowledge contribute?        | Inspect the active knowledge base and resource readiness. An OLAT link does not upload course materials or connect a knowledge base. Preserve bindings unless a separate change is authorised.                                                              |
-| Models and reasoning | One instructor-selected model or a learner choice from an agreed list? Which reasoning effort levels?       | The inspected UI supports a fixed model when learner selection is off; it does not always mean automatic routing. Model availability and funding are account/deployment-specific. Higher effort can affect latency and consumption.                         |
-| Disclaimer           | Is the course-specific title/introduction accurate?                                                         | Preserve fixed institutional sections. Explain data handling, verification expectations and refusal consequences using current platform wording. Changed approved text can require renewed learner acceptance.                                              |
-| Usage                | What starting allowance, refill, cap and planning period suit the activity?                                 | Use [credits and publication](credits-and-publication.md). Participant allowances, raw tokens, owner funding and model access are different concepts.                                                                                                       |
-| Review and test      | Save only, or also submit the exact agreed revision? Which tests can be performed with authorised accounts? | Live bot access and revision approval differ. Owner preview can still exercise the old approved configuration. First-time participant access requires its own observed test.                                                                                |
+| Area                 | Decision to discuss when relevant                                                                            | Consequence and boundary                                                                                                                                                                                                                                    |
+| -------------------- | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Purpose and audience | Which learning activity, level, course topics and response language should the existing bot support?         | State a concrete learning purpose and test it. Course locale, interface language and language of answers are distinct. Do not treat a requested language as an available UI control unless it is shown.                                                     |
+| Overview             | Does the existing name and description explain the intended use? Is this the correct linked course?          | Metadata can be reviewed as a revision. The inspected course association is fixed after creation; do not invent a course-reassignment control or create a replacement bot silently.                                                                         |
+| Standard modes       | Retain or revise Tutor, Explainer and Quizzer? What short framing should apply?                              | Tutor guides learning, Explainer explains, Quizzer supports practice. Available modes depend on the actual runtime capabilities; check Quizzer's retrieval requirement. Preserve platform constraints and existing enabled modes unless a change is agreed. |
+| Custom modes         | Is a distinct additional learning method needed, and what should its onboarding ask?                         | A supported custom mode has a name, description and persona instructions. Specify question style, hint progression, solution boundaries and language handling. Do not present prompt instructions as guaranteed behaviour.                                  |
+| Knowledge            | Which existing course materials should answers draw on? What may broader model knowledge contribute?         | Inspect the active knowledge base and resource readiness. An OLAT link does not upload course materials or connect a knowledge base. Preserve bindings unless a separate change is authorised.                                                              |
+| Models and reasoning | One model selected by teaching staff or a learner choice from an agreed list? Which reasoning effort levels? | The inspected UI supports a fixed model when learner selection is off; it does not always mean automatic routing. Model availability and funding are account/deployment-specific. Higher effort can affect latency and consumption.                         |
+| Disclaimer           | Is the course-specific title/introduction accurate?                                                          | Preserve fixed institutional sections. Explain data handling, verification expectations and refusal consequences using current platform wording. Changed approved text can require renewed learner acceptance.                                              |
+| Usage                | What starting allowance, refill, cap and planning period suit the activity?                                  | Use [credits and publication](credits-and-publication.md). Participant allowances, raw tokens, owner funding and model access are different concepts.                                                                                                       |
+| Review and test      | Save only, or also submit the exact agreed revision? Which tests can be performed with authorised accounts?  | Live bot access and revision approval differ. Owner preview can still exercise the old approved configuration. First-time participant access requires its own observed test.                                                                                |
 
 ## Convert teaching intent into a reviewable proposal
 
@@ -51,7 +51,7 @@ actual controls and their consequence before using them.
    explicit agreement where still missing; do not ask again for the same changes
    already approved. Integration authorisation alone does not authorise a new
    persona, uploaded materials, extra paid models or a disclaimer revision.
-5. Save only the agreed sections through supported instructor controls. Reopen
+5. Save only the agreed sections through supported controls for teaching staff. Reopen
    them and compare saved values, live values and revision state. Preserve other
    authors' edits, custom-mode identities and pending requests.
 6. Submit only the agreed revision when submission is authorised. State that a
@@ -120,7 +120,7 @@ examples into this reusable skill. [Response-example review][response-examples]
 Uploading or replacing materials, changing bindings and reviewing examples can
 have their own permissions and activation rules. Do not assume that they wait
 for the general bot revision merely because another section does. Use an existing
-supported instructor function only within the agreed scope. Refer missing
+supported function for teaching staff only within the agreed scope. Refer missing
 provisioning capabilities to the responsible operator; do not obtain database
 access, service credentials or administrative publication privileges.
 

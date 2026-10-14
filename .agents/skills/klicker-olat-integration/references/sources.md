@@ -17,9 +17,9 @@ Use the [configured production images][deployment] and resolve their release tag
 before comparing a live UI with source. The [revision architecture][revision]
 supersedes parts of older approval documents for the configuration it covers.
 The [operator provisioning skill][provisioning] describes another authority level;
-its privileged procedures are not instructor prerequisites.
+its privileged procedures are not prerequisites for teaching staff.
 
-The public [instructor chatbot tutorial][chatbot-tutorial] still described several
+The public [chatbot tutorial for teaching staff][chatbot-tutorial] still described several
 settings as team-maintained/read-only when checked. The tagged implementation and
 observed UI exposed a revision editor. Do not flatten these into one lifecycle,
 assume that a saved value is live, or infer a missing permission from a pending
@@ -48,7 +48,7 @@ Neither a future native Chatbot option nor a dedicated "Copy OLAT URL" button in
 Klicker is a prerequisite or an implemented deliverable of this skill. Build the
 reviewed URL from the actual course-specific link and exact registered base.
 
-## Instructor setup, credits and review
+## Setup by teaching staff, credits and review
 
 | Pinned source in the configured release                                                          | Relevant claim                                                                                                                                                                                                                                                |
 | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

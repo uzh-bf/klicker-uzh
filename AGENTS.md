@@ -341,7 +341,7 @@ Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and 
 
 ## Agent skills
 
-For instructor-facing setup of a published chatbot in an existing OLAT course, use [.agents/skills/klicker-olat-integration/SKILL.md](.agents/skills/klicker-olat-integration/SKILL.md). It covers authorised browser configuration, LTI launch URLs, credits and publication boundaries; privileged provisioning remains a separate workflow.
+For setup of a published chatbot by teaching staff in an existing OLAT course, use [.agents/skills/klicker-olat-integration/SKILL.md](.agents/skills/klicker-olat-integration/SKILL.md). It covers authorised browser configuration, LTI launch URLs, credits and publication boundaries; privileged provisioning remains a separate workflow.
 
 ### Issue tracker
 

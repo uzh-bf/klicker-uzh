@@ -1,11 +1,11 @@
 # Verification and recovery
 
-The configuring user is an instructor or teaching assistant. A separate student account is **optional**, not a prerequisite for executing this skill, improving it or contributing its source. Record which access path was actually tested.
+The configuring user is a member of the teaching staff. A separate student account is **optional**, not a prerequisite for executing this skill, improving it or contributing its source. Record which access path was actually tested.
 
 ## Functional verification after authorised changes
 
 1. Reopen the OLAT node and compare its saved provider, exact unsigned URL, display, launch/consent and access settings with the approved proposal.
-2. Launch the intended node from the course preview or ordinary course run, using the authorised signed-in instructor account. Confirm the correct published bot and usable input.
+2. Launch the intended node from the course preview or ordinary course run, using the authorised signed-in teaching staff account. Confirm the correct published bot and usable input.
 3. Send one small authorised synthetic message. Wait for a new completed response; a welcome screen, spinner, old conversation or copied screenshot is insufficient.
 4. Check expected mode/language/model behaviour and course-source use if relevant. A Tutor may ask a question instead of explaining; do not rewrite the persona to satisfy the wrong test expectation.
 5. Record displayed credit consumption without treating it as a guaranteed cost for future exchanges. Reopen the test conversation and check the answer persists.
@@ -28,7 +28,7 @@ If a suitable separate account is already available and authorised, an additiona
 
 Do not request student credentials, create identities or sign the owner out merely to complete this optional check. A learner declining the disclaimer must not be coerced into accepting it. Guest or fallback behaviour in source code does not establish access for this cohort.
 
-With only an owner login and an OLAT participant-preview role, report exactly that. Complete the authorised instructor setup and record first-time learner access as untested; it is not a blocker for the skill, its installation or a code/documentation contribution.
+With only an owner login and an OLAT participant-preview role, report exactly that. Complete the authorised setup by teaching staff and record first-time learner access as untested; it is not a blocker for the skill, its installation or a code/documentation contribution.
 
 ## Recovery from observed evidence
 

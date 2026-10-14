@@ -1,6 +1,6 @@
 # Guided setup decisions
 
-Start from the user's existing decisions and current UI. Inspect facts before asking: exact targets, current status, linked course, available controls, permissions and saved values. Ask each unresolved material decision separately, with a recommendation and the practical consequence. Do not make the instructor complete an irrelevant questionnaire.
+Start from the user's existing decisions and current UI. Inspect facts before asking: exact targets, current status, linked course, available controls, permissions and saved values. Ask each unresolved material decision separately, with a recommendation and the practical consequence. Do not make teaching staff complete an irrelevant questionnaire.
 
 ## Choose the scope first
 

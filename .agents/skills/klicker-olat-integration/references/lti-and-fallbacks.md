@@ -1,6 +1,6 @@
 # LTI construction and browser execution
 
-Checked 14 October 2026. This procedure is for instructors and teaching assistants with authoring rights. The existing published bot and the existing OLAT course remain the targets.
+Checked 14 October 2026. This procedure is for teaching staff with authoring rights. The existing published bot and the existing OLAT course remain the targets.
 
 ## Inspect before configuration
 
@@ -84,4 +84,4 @@ When agreed, create an **External page** opening **New browser window (source vi
 
 A plain embedded External page can have different sandbox restrictions. A welcome screen with failing messages is not success. Do not remove iframe restrictions, weaken cookies/authentication or keep several unverified alternatives.
 
-Preserve an existing **Manage Account** element. The official account-linking route may require e-mail transfer there; that is a separate purpose from optional identity fields on the chatbot node. New configuration requires a clear explanation and approval. Never require a student to configure the integration or ask the instructor to share student credentials.
+Preserve an existing **Manage Account** element. The official account-linking route may require e-mail transfer there; that is a separate purpose from optional identity fields on the chatbot node. New configuration requires a clear explanation and approval. Never require a student to configure the integration or ask teaching staff to share student credentials.

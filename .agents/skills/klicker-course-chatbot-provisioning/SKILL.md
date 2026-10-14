@@ -5,7 +5,7 @@ description: Provision and publish KlickerUZH course chatbots end to end — cou
 
 # KlickerUZH Course Chatbot Provisioning
 
-For instructors and teaching assistants connecting an existing published bot through the normal Manage and OLAT interfaces, use [Klicker–OLAT Integration](../klicker-olat-integration/SKILL.md). That workflow does not require this operator skill's database, ingestion or publication-approval access.
+For teaching staff, including teaching assistants connecting an existing published bot through the normal Manage and OLAT interfaces, use [Klicker–OLAT Integration](../klicker-olat-integration/SKILL.md). That workflow does not require this operator skill's database, ingestion or publication-approval access.
 
 Delivery loop: **resolve → build KB → configure → publish → embed → prove**. Every phase ends on a receipt: ids, statuses, flags, and counts. Receipts stay values-free — session tokens, secrets, and participant content never enter logs or chat.
 
