@@ -1,83 +1,116 @@
 import { useQuery } from '@apollo/client'
-import { faList, faPeopleGroup } from '@fortawesome/free-solid-svg-icons'
-import { GetControlCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetControlCourseOverviewDocument,
+  GetUnassignedLiveQuizzesDocument,
+  GetUserRunningLiveQuizzesDocument,
+  PublicationStatus,
+} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { H4, UserNotification } from '@uzh-bf/design-system'
-import { GetStaticPropsContext } from 'next'
+import { UserNotification } from '@uzh-bf/design-system'
+import type { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import { twMerge } from 'tailwind-merge'
+import ListRow from '../components/common/ListRow'
+import { cardClass } from '../components/common/styles'
 import Layout from '../components/Layout'
-import ListButton from '../components/common/ListButton'
+import HomeHeader from '../components/layout/HomeHeader'
+import RunningQuizBanner from '../components/liveQuizzes/RunningQuizBanner'
+
+// quizzes the controller can still act on (start or control); matches the
+// running + planned lists on the course page
+const CONTROLLABLE = [
+  PublicationStatus.Draft,
+  PublicationStatus.Scheduled,
+  PublicationStatus.Published,
+]
+
+function countControllable(quizzes?: { status: PublicationStatus }[] | null) {
+  return quizzes?.filter((quiz) => CONTROLLABLE.includes(quiz.status)).length
+}
 
 function Index() {
   const t = useTranslations()
-  const {
-    loading: loadingCourses,
-    error: errorCourses,
-    data: dataCourses,
-  } = useQuery(GetControlCoursesDocument)
+  // quizzes are started and ended on other screens, so revalidate on every
+  // visit instead of showing a stale running banner or stale counts
+  const { loading, error, data } = useQuery(GetControlCourseOverviewDocument, {
+    fetchPolicy: 'cache-and-network',
+  })
+  const { data: runningData } = useQuery(GetUserRunningLiveQuizzesDocument, {
+    fetchPolicy: 'cache-and-network',
+  })
+  const { data: unassignedData } = useQuery(GetUnassignedLiveQuizzesDocument, {
+    fetchPolicy: 'cache-and-network',
+  })
 
-  if (loadingCourses) {
+  const title = t('control.home.courseSelection')
+  const header = <HomeHeader />
+
+  if (loading && !data) {
     return (
-      <Layout title={t('control.home.courseSelection')}>
+      <Layout title={title} header={header}>
         <Loader />
       </Layout>
     )
   }
 
-  if ((!loadingCourses && !dataCourses) || errorCourses) {
+  if (!data || error) {
     return (
-      <Layout title={t('control.home.courseSelection')}>
+      <Layout title={title} header={header}>
         <UserNotification
           type="error"
           className={{ root: 'text-base' }}
-          message="Es ist ein Fehler aufgetreten beim Laden Ihrer Kurse. Bitte versuchen
-        Sie es später erneut."
+          message={t('control.home.errorLoadingCourse')}
         />
       </Layout>
     )
   }
 
-  return (
-    <Layout title={t('control.home.courseSelection')}>
-      <div className="flex w-full flex-col gap-4">
-        {dataCourses?.controlCourses && (
-          <div>
-            <H4>{t('control.home.selectCourse')}</H4>
-            <div className="flex flex-col gap-2">
-              {[...dataCourses?.controlCourses]
-                .sort((a, b) => (a.isArchived ? 1 : -1))
-                .map((course) => (
-                  <ListButton
-                    key={course.id}
-                    link={`/course/${course.id}`}
-                    icon={faPeopleGroup}
-                    label={
-                      !course.isArchived
-                        ? course.name
-                        : t
-                            .rich('control.home.archivedCourse', {
-                              courseName: course.name,
-                            })
-                            ?.toString() || course.name
-                    }
-                    data={{ cy: `course-${course.name}` }}
-                  />
-                ))}
-            </div>
-          </div>
-        )}
+  // archived courses go last; the reversed API order matches the order the
+  // previous controller displayed
+  const courses = [...(data.controlCourses ?? [])]
+    .reverse()
+    .sort((a, b) => Number(a.isArchived) - Number(b.isArchived))
 
-        <div>
-          <H4>{t('control.home.liveQuizzesNoCourse')}</H4>
-          <div className="flex flex-col gap-2">
-            <ListButton
-              link="/course/unassigned"
-              icon={faList}
-              label={t('control.home.listLiveQuizzesNoCourse')}
-              data={{ cy: 'unassigned-live-quizzes' }}
-            />
-          </div>
-        </div>
+  const unassignedCount = countControllable(
+    unassignedData?.unassignedLiveQuizzes
+  )
+
+  return (
+    <Layout title={title} header={header}>
+      {runningData?.userRunningLiveQuizzes?.map((quiz) => (
+        <RunningQuizBanner key={quiz.id} quiz={quiz} />
+      ))}
+
+      <h1 className="text-ctrl-ink text-xl font-bold">
+        {t('control.home.chooseCourse')}
+      </h1>
+      <div className={twMerge(cardClass, 'mt-2 overflow-hidden')}>
+        {courses.map((course) => (
+          <ListRow
+            key={course.id}
+            href={`/course/${course.id}`}
+            title={course.name}
+            meta={
+              course.isArchived
+                ? t('control.home.archived')
+                : t('control.home.liveQuizCount', {
+                    count: countControllable(course.liveQuizzes) ?? 0,
+                  })
+            }
+            dimmed={course.isArchived ?? false}
+            dataCy={`course-${course.name}`}
+          />
+        ))}
+        <ListRow
+          href="/course/unassigned"
+          title={t('control.home.noCourse')}
+          meta={
+            typeof unassignedCount === 'number'
+              ? t('control.home.liveQuizCount', { count: unassignedCount })
+              : undefined
+          }
+          dataCy="unassigned-live-quizzes"
+        />
       </div>
     </Layout>
   )

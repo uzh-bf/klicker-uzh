@@ -54,21 +54,25 @@ test.describe('Test functionalities of frontend-control application', () => {
     await page.getByTestId(`start-live-quiz-${CONTROL_DATA.quizName}`).click()
     await page.getByTestId('confirm-start-live-quiz').click()
 
-    // Mobile menu test (iphone-6: 375x667)
+    // Mobile navigation test (iphone-6: 375x667): app bar PPT and back buttons
     await page.setViewportSize(viewPorts.iphone6)
-    await page.getByTestId('ppt-button').click()
+    await page.getByTestId('session-ppt-link').click()
     await page.getByTestId('close-embedding-modal').click()
-    await page.getByTestId('home-button').click()
+    await page.getByTestId('app-bar-back').click() // session -> quiz list
+    await page.getByTestId('app-bar-back').click() // quiz list -> home
     await page.getByTestId('unassigned-live-quizzes').click()
     await page.getByTestId(`running-live-quiz-${CONTROL_DATA.quizName}`).click()
-    await page.getByTestId('back-button').click()
+    await page.getByTestId('app-bar-back').click()
     await page.getByTestId(`running-live-quiz-${CONTROL_DATA.quizName}`).click()
     await page.setViewportSize(viewPorts.default)
 
-    // Open block, deactivate, end quiz
+    // Open block, deactivate, end quiz (with confirmation)
     await page.getByTestId('activate-next-block').click()
     await page.getByTestId('deactivate-block').click()
     await page.getByTestId('end-live-quiz').click()
+    await page.getByTestId('confirm-end-live-quiz').click()
+    await expect(page.getByTestId('live-quiz-ended')).toBeVisible()
+    await page.getByTestId('back-to-course').click()
 
     await expect(
       page.getByTestId(`start-live-quiz-${CONTROL_DATA.quizName}`)

@@ -1,51 +1,85 @@
 import { useQuery } from '@apollo/client'
-import { faClipboard } from '@fortawesome/free-solid-svg-icons'
+import { faCheck, faCopy } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetLiveQuizEmbeddingInfoDocument,
   GetSingleLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H2, Modal } from '@uzh-bf/design-system'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import Link from 'next/link'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import ResponsiveSheet from '../common/ResponsiveSheet'
+import {
+  iconButtonClass,
+  outlineButtonClass,
+  sheetButtonClass,
+} from '../common/styles'
 
-function HMACLink({
+function EmbedRow({
+  label,
   quizId,
   hmac,
   params,
   identifier,
 }: {
+  label: string
   quizId: string
   hmac: string
   params: string
   identifier: string
 }) {
-  const link = `${
-    process.env.NEXT_PUBLIC_MANAGE_URL
-  }/quizzes/${quizId}/evaluation?hmac=${hmac}${params ? `&${params}` : ''}`
+  const t = useTranslations()
+  const [copied, setCopied] = useState(false)
+  const link = `${process.env.NEXT_PUBLIC_MANAGE_URL}/quizzes/${quizId}/evaluation?hmac=${hmac}&${params}`
+
+  useEffect(() => {
+    if (!copied) return
+    const timeout = setTimeout(() => setCopied(false), 1600)
+    return () => clearTimeout(timeout)
+  }, [copied])
 
   return (
-    <div className="bg-accent flex max-w-full flex-row items-center justify-between gap-3 rounded px-2 py-1">
-      <Link href={link} legacyBehavior passHref>
+    <div className="flex flex-col gap-1.5">
+      <div className="text-ctrl-ink truncate text-sm font-bold">{label}</div>
+      <div className="border-ctrl-border bg-ctrl-bg flex items-center gap-2 rounded-md border py-1 pr-1 pl-2.5">
         <a
-          data-cy={`open-embedding-link-${identifier}`}
-          className="max-w-[calc(100%-3.5rem)] break-words text-sm"
+          href={link}
           target="_blank"
           rel="noopener noreferrer"
+          data-cy={`open-embedding-link-${identifier}`}
+          className="text-ctrl-ink-2 min-w-0 flex-1 truncate font-[ui-monospace,SFMono-Regular,Menlo,monospace] text-xs"
         >
           {link}
         </a>
-      </Link>
-      <Button
-        onClick={() => navigator?.clipboard?.writeText(link)}
-        data={{ cy: `copy-embed-link-live-quiz-${quizId}` }}
-      >
-        <Button.Icon withoutLabel icon={faClipboard} />
-      </Button>
+        <Button
+          onClick={async () => {
+            try {
+              await navigator.clipboard?.writeText(link)
+              setCopied(true)
+            } catch {
+              setCopied(false)
+            }
+          }}
+          className={{ root: iconButtonClass }}
+          aria-label={
+            copied
+              ? t('control.course.linkCopied')
+              : t('control.course.copyLink')
+          }
+          data={{ cy: `copy-embed-link-live-quiz-${quizId}` }}
+        >
+          <FontAwesomeIcon
+            icon={copied ? faCheck : faCopy}
+            className={copied ? 'text-ctrl-good h-3.5 w-3.5' : 'h-3.5 w-3.5'}
+          />
+        </Button>
+      </div>
     </div>
   )
 }
 
+// PPT embedding: one copyable evaluation link per question plus the leaderboard
 function EmbeddingModal({
   onClose,
   quizId,
@@ -55,61 +89,67 @@ function EmbeddingModal({
 }) {
   const t = useTranslations()
   const { data: dataLiveQuiz } = useQuery(GetSingleLiveQuizDocument, {
-    variables: { quizId: quizId || '' },
+    variables: { quizId },
+    skip: !quizId,
+  })
+  const { data, loading } = useQuery(GetLiveQuizEmbeddingInfoDocument, {
+    variables: { id: quizId },
     skip: !quizId,
   })
 
-  const { data, loading } = useQuery(GetLiveQuizEmbeddingInfoDocument, {
-    variables: { id: quizId },
-    skip: !open,
-  })
-
+  // questionIx is the global index across all blocks of the quiz
   const questions = useMemo(
     () =>
       dataLiveQuiz?.liveQuiz?.blocks?.flatMap((block) => block.elements) || [],
     [dataLiveQuiz?.liveQuiz?.blocks]
   )
+  const hmac = data?.getLiveQuizEmbeddingInfo?.hmac
 
   return (
-    <Modal
+    <ResponsiveSheet
       open
-      hideCloseButton
-      loading={loading}
       onClose={onClose}
-      onSecondaryAction={onClose}
-      secondaryLabel={t('shared.generic.close')}
-      dataSecondaryAction={{ cy: 'close-embedding-modal' }}
+      title={t('control.course.pptEmbedding')}
+      dataCy="embedding-sheet"
+      actions={
+        <Button
+          onClick={onClose}
+          className={{ root: `${sheetButtonClass} ${outlineButtonClass}` }}
+          data={{ cy: 'close-embedding-modal' }}
+        >
+          {t('shared.generic.close')}
+        </Button>
+      }
     >
-      <H2>{t('control.course.pptEmbedding')}</H2>
-      <div className="flex flex-col gap-3">
-        {questions?.map((element, ix) => {
-          if (!element || !element.elementData) return null
-
-          return (
-            <div key={element.id}>
-              <div className="line-clamp-1 w-full font-bold">{`${ix + 1}. ${
-                element.elementData.name
-              }`}</div>
-              <HMACLink
+      <p className="text-ctrl-muted mb-3.5 text-sm">
+        {t('control.course.pptEmbeddingHint')}
+      </p>
+      {loading || !hmac ? (
+        <Loader />
+      ) : (
+        <div className="flex flex-col gap-3.5">
+          {questions.map((element, ix) =>
+            element?.elementData ? (
+              <EmbedRow
+                key={element.id}
+                label={`${ix + 1}. ${element.elementData.name}`}
                 quizId={quizId}
-                hmac={data?.getLiveQuizEmbeddingInfo?.hmac ?? ''}
+                hmac={hmac}
                 params={`questionIx=${ix}&hideControls=true`}
                 identifier={`question-${ix}`}
               />
-            </div>
-          )
-        })}
-      </div>
-      <div className="mt-3">
-        <div className="w-30 font-bold">{t('shared.generic.leaderboard')}:</div>
-        <HMACLink
-          quizId={quizId}
-          hmac={data?.getLiveQuizEmbeddingInfo?.hmac ?? ''}
-          params={`leaderboard=true&hideControls=true`}
-          identifier={`leaderboard`}
-        />
-      </div>
-    </Modal>
+            ) : null
+          )}
+          <EmbedRow
+            label={t('shared.generic.leaderboard')}
+            quizId={quizId}
+            hmac={hmac}
+            params="leaderboard=true&hideControls=true"
+            identifier="leaderboard"
+          />
+        </div>
+      )}
+    </ResponsiveSheet>
   )
 }
 

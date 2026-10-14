@@ -1,106 +1,156 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faArrowDown, faEllipsis } from '@fortawesome/free-solid-svg-icons'
+import {
+  faPersonChalkboard,
+  faPlay,
+  faStop,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivateLiveQuizBlockDocument,
   DeactivateLiveQuizBlockDocument,
   ElementBlockStatus,
   EndLiveQuizDocument,
-  GetControlLiveQuizDocument,
-  GetUnassignedLiveQuizzesDocument,
+  GetControlCourseLiveQuizzesDocument,
+  GetControlCourseOverviewDocument,
+  GetControlLiveQuizFeedbacksDocument,
+  GetControlLiveQuizSessionDocument,
+  GetUnassignedControlLiveQuizzesDocument,
+  GetUserRunningLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, H3, UserNotification } from '@uzh-bf/design-system'
-import { GetStaticPropsContext } from 'next'
-import { useTranslations } from 'next-intl'
+import { Button, toast, UserNotification } from '@uzh-bf/design-system'
+import type { GetStaticPropsContext } from 'next'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import { sort } from 'remeda'
+import ResponsiveSheet from '../../components/common/ResponsiveSheet'
+import {
+  dangerButtonClass,
+  iconButtonClass,
+  largeButtonClass,
+  outlineButtonClass,
+  primaryButtonClass,
+  sheetButtonClass,
+} from '../../components/common/styles'
 import Layout from '../../components/Layout'
-import LiveQuizBlock from '../../components/liveQuizzes/LiveQuizBlock'
+import AppBar from '../../components/layout/AppBar'
+import EmbeddingModal from '../../components/liveQuizzes/EmbeddingModal'
+import BlockProgress from '../../components/session/BlockProgress'
+import BlockStatusCard from '../../components/session/BlockStatusCard'
+import LeinwandCard from '../../components/session/LeinwandCard'
+import LiveEvaluationCard from '../../components/session/LiveEvaluationCard'
+import QAPanel from '../../components/session/QAPanel'
+import QuizEnded from '../../components/session/QuizEnded'
+import SessionTabs, {
+  type SessionTab,
+} from '../../components/session/SessionTabs'
+import StatsPanel from '../../components/session/StatsPanel'
 
 function RunningLiveQuiz() {
   const t = useTranslations()
   const router = useRouter()
-  const [nextBlockOrder, setNextBlockOrder] = useState(-1)
-  const [currentBlockOrder, setCurrentBlockOrder] = useState<
-    number | undefined
-  >(undefined)
+  const [endSheetOpen, setEndSheetOpen] = useState(false)
+  const [embedOpen, setEmbedOpen] = useState(false)
+  const [tab, setTab] = useState<SessionTab>('control')
+  // selected question of the evaluated block, shared by evaluation + Leinwand
+  const [selectedQuestion, setSelectedQuestion] = useState<{
+    blockId: number | null
+    index: number
+  }>({ blockId: null, index: 0 })
+  const [ended, setEnded] = useState<{
+    name: string
+    numOfBlocks: number
+    backHref: string
+  } | null>(null)
 
+  const quizId = router.query.id as string
+
+  const { loading, error, data } = useQuery(GetControlLiveQuizSessionDocument, {
+    variables: { id: quizId },
+    pollInterval: 1000,
+    skip: !quizId || !!ended,
+  })
+
+  // polled on both tabs so the Q&A tab can show the pending counter
+  const { data: qaData } = useQuery(GetControlLiveQuizFeedbacksDocument, {
+    variables: { id: quizId },
+    pollInterval: 3000,
+    skip: !quizId || !!ended,
+  })
+  const qa = qaData?.controlLiveQuizFeedbacks
+  const pendingQuestions = qa?.isModerationEnabled
+    ? (qa.feedbacks ?? []).filter(
+        (feedback) => !feedback.isPublished && !feedback.isResolved
+      ).length
+    : 0
+
+  const refetchQueries = [GetControlLiveQuizSessionDocument]
   const [activateLiveQuizBlock, { loading: activatingBlock }] = useMutation(
-    ActivateLiveQuizBlockDocument
+    ActivateLiveQuizBlockDocument,
+    { refetchQueries }
   )
   const [deactivateLiveQuizBlock, { loading: deactivatingBlock }] = useMutation(
-    DeactivateLiveQuizBlockDocument
+    DeactivateLiveQuizBlockDocument,
+    { refetchQueries }
   )
   const [endLiveQuiz, { loading: endingLiveQuiz }] = useMutation(
     EndLiveQuizDocument,
     {
-      update(cache, { data }) {
-        // verify that the quiz has been ended successfully
-        if (!data?.endLiveQuiz) return
-
-        // remove the ended live quiz from the unassigned list in control application (not shown here)
-        cache.updateQuery(
-          { query: GetUnassignedLiveQuizzesDocument },
-          (qData) => {
-            if (!qData?.unassignedLiveQuizzes) return qData
-
-            return {
-              unassignedLiveQuizzes: qData.unassignedLiveQuizzes.filter(
-                (q) => q.id !== data.endLiveQuiz!.id
-              ),
-            }
-          }
-        )
-      },
+      // the ended quiz leaves the lists, the overview counts and the banner
+      refetchQueries: [
+        GetControlCourseLiveQuizzesDocument,
+        GetUnassignedControlLiveQuizzesDocument,
+        GetControlCourseOverviewDocument,
+        GetUserRunningLiveQuizzesDocument,
+      ],
     }
   )
 
-  const {
-    loading: quizLoading,
-    error: quizError,
-    data: quizData,
-  } = useQuery(GetControlLiveQuizDocument, {
-    variables: {
-      id: router.query.id as string,
-    },
-    pollInterval: 1000,
-    skip: !router.query.id,
-  })
+  const runAction = async (action: () => Promise<unknown>) => {
+    try {
+      await action()
+    } catch {
+      toast({
+        type: 'error',
+        message: t('control.liveQuiz.actionFailed'),
+        options: { duration: 5000 },
+      })
+    }
+  }
 
-  useEffect(() => {
-    setCurrentBlockOrder(quizData?.controlLiveQuiz?.activeBlock?.order)
-  }, [quizData?.controlLiveQuiz?.id, quizData?.controlLiveQuiz?.activeBlock])
-
-  useEffect(() => {
-    if (!quizData?.controlLiveQuiz?.blocks) return
-
-    const sortedBlocks = sort(
-      quizData?.controlLiveQuiz?.blocks,
-      (a, b) => a.order - b.order
-    )
-
-    if (!sortedBlocks) return
-    const scheduledNext = sortedBlocks.find(
-      (block) => block.status === ElementBlockStatus.Scheduled
-    )
-    setNextBlockOrder(
-      typeof scheduledNext === 'undefined' ? -1 : scheduledNext.order
-    )
-  }, [quizData?.controlLiveQuiz?.blocks])
-
-  if (quizLoading) {
+  if (ended) {
     return (
-      <Layout title={t('control.liveQuiz.liveQuizControl')}>
+      <Layout
+        title={t('control.liveQuiz.ended')}
+        header={<AppBar title={ended.name} backHref={ended.backHref} />}
+      >
+        <QuizEnded {...ended} />
+      </Layout>
+    )
+  }
+
+  if (loading && !data) {
+    return (
+      <Layout
+        title={t('control.liveQuiz.liveQuizControl')}
+        header={
+          <AppBar title={t('control.liveQuiz.liveQuizControl')} backHref="/" />
+        }
+      >
         <Loader />
       </Layout>
     )
   }
 
-  if (!quizData?.controlLiveQuiz || quizError) {
+  if (!data?.controlLiveQuiz || error) {
     return (
-      <Layout title={t('control.liveQuiz.liveQuizControl')}>
+      <Layout
+        title={t('control.liveQuiz.liveQuizControl')}
+        header={
+          <AppBar title={t('control.liveQuiz.liveQuizControl')} backHref="/" />
+        }
+      >
         <UserNotification
           message={t('control.liveQuiz.errorLoadingLiveQuiz')}
           type="error"
@@ -109,11 +159,36 @@ function RunningLiveQuiz() {
     )
   }
 
-  const { id, name, course, blocks } = quizData?.controlLiveQuiz
+  const { id, name, course, isAssessmentEnabled } = data.controlLiveQuiz
+  const backHref = course ? `/course/${course.id}` : '/course/unassigned'
+  const blocks = sort(
+    data.controlLiveQuiz.blocks ?? [],
+    (a, b) => a.order - b.order
+  )
 
-  if (!blocks) {
+  const header = (
+    <AppBar
+      title={name}
+      eyebrow={
+        isAssessmentEnabled ? t('control.course.assessmentBadge') : undefined
+      }
+      backHref={backHref}
+      actions={
+        <Button
+          onClick={() => setEmbedOpen(true)}
+          className={{ root: iconButtonClass }}
+          aria-label={t('control.course.pptEmbedding')}
+          data={{ cy: 'session-ppt-link' }}
+        >
+          <FontAwesomeIcon icon={faPersonChalkboard} className="h-4 w-4" />
+        </Button>
+      }
+    />
+  )
+
+  if (blocks.length === 0) {
     return (
-      <Layout title={name}>
+      <Layout title={name} header={header}>
         <UserNotification
           type="warning"
           message={t('control.liveQuiz.containsNoQuestions')}
@@ -122,138 +197,179 @@ function RunningLiveQuiz() {
     )
   }
 
-  return (
-    <Layout
-      title={t('control.liveQuiz.liveQuizWithName', { name: name })}
-      quizId={id}
+  const activeBlock = blocks.find(
+    (block) => block.status === ElementBlockStatus.Active
+  )
+  const nextBlock = blocks.find(
+    (block) => block.status === ElementBlockStatus.Scheduled
+  )
+  // evaluation: the running block, otherwise the most recently closed one
+  const evaluationBlock =
+    activeBlock ??
+    blocks.findLast((block) => block.status === ElementBlockStatus.Executed)
+  // a new evaluated block starts at its first question
+  const selectedIndex =
+    selectedQuestion.blockId === evaluationBlock?.id
+      ? selectedQuestion.index
+      : 0
+  const selectQuestion = (index: number) =>
+    setSelectedQuestion({ blockId: evaluationBlock?.id ?? null, index })
+
+  const mainAction = activeBlock ? (
+    <Button
+      loading={deactivatingBlock}
+      onClick={() =>
+        runAction(() =>
+          deactivateLiveQuizBlock({
+            variables: { quizId: id, blockId: activeBlock.id },
+          })
+        )
+      }
+      className={{ root: `${largeButtonClass} ${primaryButtonClass}` }}
+      data={{ cy: 'deactivate-block' }}
     >
-      <div key={`${currentBlockOrder}-${nextBlockOrder}`}>
-        {typeof currentBlockOrder !== 'undefined' ? (
-          <div key={`${currentBlockOrder}-${nextBlockOrder}-child`}>
-            <H3>{t('control.liveQuiz.activeBlock')}</H3>
+      <FontAwesomeIcon icon={faStop} className="h-3 w-3" />
+      {t('control.liveQuiz.closeBlockN', { number: activeBlock.order + 1 })}
+    </Button>
+  ) : nextBlock ? (
+    <Button
+      loading={activatingBlock}
+      onClick={() =>
+        runAction(() =>
+          activateLiveQuizBlock({
+            variables: { quizId: id, blockId: nextBlock.id },
+          })
+        )
+      }
+      className={{ root: `${largeButtonClass} ${primaryButtonClass}` }}
+      data={{ cy: 'activate-next-block' }}
+    >
+      <FontAwesomeIcon icon={faPlay} className="h-3 w-3" />
+      {t('control.liveQuiz.startBlockN', { number: nextBlock.order + 1 })}
+    </Button>
+  ) : (
+    <Button
+      onClick={() => setEndSheetOpen(true)}
+      className={{ root: `${largeButtonClass} ${dangerButtonClass}` }}
+      data={{ cy: 'end-live-quiz' }}
+    >
+      {t('control.liveQuiz.endQuiz')}
+    </Button>
+  )
 
-            <LiveQuizBlock
-              block={blocks.find((block) => block.order === currentBlockOrder)}
-              active
-            />
-            {typeof currentBlockOrder !== 'undefined' &&
-              nextBlockOrder !== -1 &&
-              nextBlockOrder < blocks.length && (
-                <div className="mt-2 flex flex-col gap-2">
-                  <FontAwesomeIcon
-                    icon={faArrowDown}
-                    className="mx-auto w-full"
-                    size="2xl"
-                  />
+  return (
+    <Layout title={name} header={header}>
+      <BlockProgress blocks={blocks} />
+      <SessionTabs
+        tab={tab}
+        onChange={setTab}
+        pendingQuestions={pendingQuestions}
+      />
 
-                  <LiveQuizBlock
-                    block={blocks.find(
-                      (block) => block.order === nextBlockOrder
-                    )}
-                  />
-                </div>
+      {tab === 'qa' ? (
+        <div className="mt-4 max-w-[720px]">
+          {qa ? <QAPanel quizId={id} data={qa} /> : <Loader />}
+        </div>
+      ) : tab === 'stats' ? (
+        <div className="mt-4">
+          <StatsPanel
+            quizId={id}
+            blocks={blocks}
+            isAssessment={isAssessmentEnabled}
+            questions={
+              qa && (qa.isLiveQAEnabled || (qa.feedbacks?.length ?? 0) > 0)
+                ? {
+                    total: qa.feedbacks?.length ?? 0,
+                    unanswered: (qa.feedbacks ?? []).filter(
+                      (feedback) => !feedback.isResolved
+                    ).length,
+                  }
+                : undefined
+            }
+          />
+        </div>
+      ) : (
+        <>
+          {/* bottom padding keeps content clear of the fixed action bar on phones */}
+          {/* one grid item per card (no duplicated test hooks): phones stack them,
+          from 720px status + evaluation sit left, action + Leinwand right */}
+          <div className="mt-4 grid grid-cols-[minmax(0,1fr)] items-start gap-4 pb-20 min-[720px]:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] min-[720px]:pb-0">
+            <div className="flex min-w-0 flex-col gap-3 min-[720px]:row-span-2">
+              <BlockStatusCard
+                quizId={id}
+                activeBlock={activeBlock}
+                nextBlock={nextBlock}
+                numOfBlocks={blocks.length}
+                isAssessment={isAssessmentEnabled}
+              />
+              {evaluationBlock && (
+                <LiveEvaluationCard
+                  key={evaluationBlock.id}
+                  quizId={id}
+                  blockOrder={evaluationBlock.order}
+                  live={!!activeBlock}
+                  isAssessment={isAssessmentEnabled}
+                  selected={selectedIndex}
+                  onSelect={selectQuestion}
+                />
               )}
-            <Button
-              loading={deactivatingBlock}
-              onClick={async () => {
-                await deactivateLiveQuizBlock({
-                  variables: {
-                    quizId: id,
-                    blockId:
-                      blocks.find((block) => block.order === currentBlockOrder)
-                        ?.id || -1,
-                  },
-                })
-                setCurrentBlockOrder(undefined)
-              }}
-              className={{
-                root: 'float-right',
-              }}
-              data={{ cy: 'deactivate-block' }}
-            >
-              <Button.Label>{t('control.liveQuiz.closeBlock')}</Button.Label>
-            </Button>
-          </div>
-        ) : nextBlockOrder !== -1 ? (
-          <div>
-            <H3>{t('control.liveQuiz.nextBlock')}</H3>
-            {nextBlockOrder > 0 && (
-              <FontAwesomeIcon
-                icon={faEllipsis}
-                size="2xl"
-                className="mx-auto w-full"
-              />
+            </div>
+            {/* fixed bottom bar on phones, sticky right column from 720px */}
+            <div className="border-ctrl-border fixed inset-x-0 bottom-0 z-10 border-t bg-white p-4 min-[720px]:sticky min-[720px]:top-[72px] min-[720px]:z-auto min-[720px]:col-start-2 min-[720px]:row-start-1 min-[720px]:border-0 min-[720px]:bg-transparent min-[720px]:p-0">
+              {mainAction}
+            </div>
+            {evaluationBlock && (
+              <div className="min-w-0 min-[720px]:col-start-2 min-[720px]:row-start-2">
+                <LeinwandCard
+                  quizId={id}
+                  blockOrder={evaluationBlock.order}
+                  selected={selectedIndex}
+                  live={!!activeBlock}
+                  isAssessment={isAssessmentEnabled}
+                />
+              </div>
             )}
-            <LiveQuizBlock
-              block={blocks.find((block) => block.order === nextBlockOrder)}
-            />
-            {nextBlockOrder < blocks.length - 1 && (
-              <FontAwesomeIcon
-                icon={faEllipsis}
-                size="2xl"
-                className="mx-auto w-full"
-              />
-            )}
-            <Button
-              loading={activatingBlock}
-              onClick={async () => {
-                {
-                  await activateLiveQuizBlock({
-                    variables: {
-                      quizId: id,
-                      blockId:
-                        blocks.find((block) => block.order === nextBlockOrder)
-                          ?.id || -1,
-                    },
-                  })
-                  setCurrentBlockOrder(nextBlockOrder)
-                  setNextBlockOrder(nextBlockOrder + 1)
-                }
-              }}
-              className={{
-                root: 'bg-primary-80 float-right text-white',
-              }}
-              data={{ cy: 'activate-next-block' }}
-            >
-              <Button.Label>
-                {t('control.liveQuiz.activateBlockN', {
-                  number: nextBlockOrder + 1,
-                })}
-              </Button.Label>
-            </Button>
           </div>
-        ) : (
-          <div>
-            <UserNotification
-              type="info"
-              message={t('control.liveQuiz.hintAllBlocksClosed')}
-              className={{ root: 'mb-2' }}
-            />
+        </>
+      )}
+
+      <ResponsiveSheet
+        open={endSheetOpen}
+        onClose={() => setEndSheetOpen(false)}
+        title={t('control.liveQuiz.endSheetTitle')}
+        dataCy="end-live-quiz-sheet"
+        actions={
+          <>
+            <Button
+              onClick={() => setEndSheetOpen(false)}
+              className={{ root: `${sheetButtonClass} ${outlineButtonClass}` }}
+              data={{ cy: 'cancel-end-live-quiz' }}
+            >
+              {t('shared.generic.cancel')}
+            </Button>
             <Button
               loading={endingLiveQuiz}
-              onClick={async () => {
-                await endLiveQuiz({ variables: { id: id } })
-                router.push(
-                  course ? `/course/${course?.id}` : '/course/unassigned'
-                )
-              }}
-              className={{
-                root: 'bg-uzh-red-100 hover:bg-uzh-red-100 float-right text-white',
-              }}
-              data={{ cy: 'end-live-quiz' }}
+              onClick={() =>
+                runAction(async () => {
+                  await endLiveQuiz({ variables: { id } })
+                  setEndSheetOpen(false)
+                  setEnded({ name, numOfBlocks: blocks.length, backHref })
+                })
+              }
+              className={{ root: `${sheetButtonClass} ${dangerButtonClass}` }}
+              data={{ cy: 'confirm-end-live-quiz' }}
             >
-              <Button.Label>{t('control.liveQuiz.endQuiz')}</Button.Label>
+              {t('control.liveQuiz.endConfirm')}
             </Button>
-          </div>
-        )}
+          </>
+        }
+      >
+        {t('control.liveQuiz.endSheetBody')}
+      </ResponsiveSheet>
 
-        {typeof currentBlockOrder !== 'undefined' && nextBlockOrder == -1 && (
-          <UserNotification
-            message={t('control.liveQuiz.hintLastBlock')}
-            className={{ root: 'mt-14' }}
-          />
-        )}
-      </div>
+      {embedOpen && (
+        <EmbeddingModal quizId={id} onClose={() => setEmbedOpen(false)} />
+      )}
     </Layout>
   )
 }

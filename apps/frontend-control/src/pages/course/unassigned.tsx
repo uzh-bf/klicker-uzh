@@ -1,44 +1,33 @@
 import { useQuery } from '@apollo/client'
-import {
-  GetUnassignedLiveQuizzesDocument,
-  PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
+import { GetUnassignedControlLiveQuizzesDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import { useMemo } from 'react'
 import Layout from '../../components/Layout'
-import LiveQuizLists from '../../components/liveQuizzes/LiveQuizLists'
+import AppBar from '../../components/layout/AppBar'
+import LiveQuizList from '../../components/liveQuizzes/LiveQuizList'
 
 function UnassignedLiveQuizzes() {
   const t = useTranslations()
-  const { data, loading, error } = useQuery(GetUnassignedLiveQuizzesDocument)
+  const { data, loading, error } = useQuery(
+    GetUnassignedControlLiveQuizzesDocument
+  )
 
-  const runningQuizzes = useMemo(() => {
-    return data?.unassignedLiveQuizzes?.filter(
-      (quiz) => quiz.status === PublicationStatus.Published
-    )
-  }, [data])
-
-  const plannedQuizzes = useMemo(() => {
-    return data?.unassignedLiveQuizzes?.filter(
-      (quiz) =>
-        quiz.status === PublicationStatus.Scheduled ||
-        quiz.status === PublicationStatus.Draft
-    )
-  }, [data])
+  const title = t('control.home.noCourse')
+  const header = <AppBar title={title} backHref="/" />
 
   if (loading) {
     return (
-      <Layout title={t('control.home.liveQuizzesNoCourse')}>
+      <Layout title={title} header={header}>
         <Loader />
       </Layout>
     )
   }
+
   if (error || !data) {
     return (
-      <Layout title={t('control.home.liveQuizzesNoCourse')}>
+      <Layout title={title} header={header}>
         <UserNotification
           type="error"
           className={{ root: 'text-base' }}
@@ -49,11 +38,8 @@ function UnassignedLiveQuizzes() {
   }
 
   return (
-    <Layout title={t('control.home.liveQuizzesNoCourse')}>
-      <LiveQuizLists
-        runningLiveQuizzes={runningQuizzes || []}
-        plannedLiveQuizzes={plannedQuizzes || []}
-      />
+    <Layout title={title} header={header}>
+      <LiveQuizList liveQuizzes={data.unassignedLiveQuizzes ?? []} />
     </Layout>
   )
 }
