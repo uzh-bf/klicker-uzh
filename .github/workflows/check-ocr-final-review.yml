@@ -380,11 +380,27 @@ jobs:
           [[ "${REVIEW_FROM}" =~ ^[0-9a-f]{40}$ ]]
           echo "review_from=${REVIEW_FROM}" >>"${GITHUB_OUTPUT}"
 
+      - name: Set up pinned OCR build toolchain
+        if: needs.start.outputs.run_review == 'true'
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.26.9'
+          cache: false
+
       - name: Install pinned OpenCodeReview CLI
         if: needs.start.outputs.run_review == 'true'
         run: |
-          npm install -g @alibaba-group/open-code-review@1.13.0
-          ocr version
+          node .github/scripts/install-patched-ocr.cjs "${RUNNER_TEMP}/patched-ocr"
+          echo "${RUNNER_TEMP}/patched-ocr" >>"${GITHUB_PATH}"
+
+      - name: Upload pinned OCR executable provenance
+        if: needs.start.outputs.run_review == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: final-ai-individual-engine-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/patched-ocr/provenance.json
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Configure ephemeral Mistral access
         id: configure
@@ -429,7 +445,7 @@ jobs:
               unset MISTRAL_API_KEY
               ocr version 2>/dev/null
             ); then
-              if [[ "${version}" != 'open-code-review v1.13.0 '* ]]; then
+              if ! node .github/scripts/install-patched-ocr.cjs verify-version "${version}"; then
                 exit_code=1
               fi
             else
@@ -978,11 +994,27 @@ jobs:
           [[ "${REVIEW_MODE}" == "incremental" && "${REVIEW_FROM}" == "per-layer" || "${REVIEW_MODE}" == "full" && "${REVIEW_FROM}" =~ ^[0-9a-f]{40}$ ]]
           echo "review_from=${REVIEW_FROM}" >>"${GITHUB_OUTPUT}"
 
+      - name: Set up pinned OCR build toolchain
+        if: needs.start_stack.outputs.run_review == 'true'
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.26.9'
+          cache: false
+
       - name: Install pinned OpenCodeReview CLI
         if: needs.start_stack.outputs.run_review == 'true'
         run: |
-          npm install -g @alibaba-group/open-code-review@1.13.0
-          ocr version
+          node .github/scripts/install-patched-ocr.cjs "${RUNNER_TEMP}/patched-ocr"
+          echo "${RUNNER_TEMP}/patched-ocr" >>"${GITHUB_PATH}"
+
+      - name: Upload pinned OCR executable provenance
+        if: needs.start_stack.outputs.run_review == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: final-ai-stack-engine-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/patched-ocr/provenance.json
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Configure ephemeral Mistral access
         id: configure
@@ -1034,7 +1066,7 @@ jobs:
               unset MISTRAL_API_KEY
               ocr version 2>/dev/null
             ); then
-              if [[ "${version}" != 'open-code-review v1.13.0 '* ]]; then
+              if ! node .github/scripts/install-patched-ocr.cjs verify-version "${version}"; then
                 exit_code=1
               fi
             else

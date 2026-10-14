@@ -60,6 +60,8 @@ const FINAL_REVIEW_POLICY_PATHS = Object.freeze(
     '.github/scripts/final-ai-stack-review.js',
     '.github/scripts/native-stack.js',
     '.github/scripts/ocr-mistral-adapter.cjs',
+    '.github/scripts/install-patched-ocr.cjs',
+    '.github/open-code-review/ocr-compression.patch',
   ].sort()
 )
 const MISTRAL_TOOL_CANARY_MARKER = 'KLICKER_FINAL_REVIEW_TOOL_CANARY'
