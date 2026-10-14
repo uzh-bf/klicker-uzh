@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 
 import { randomUUID } from 'node:crypto'
-import { open, readFile, writeFile } from 'node:fs/promises'
+import { open, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-
 import {
   DEFAULT_CHATBOT_ID,
   DEFAULT_MAX_STREAM_BYTES,
@@ -15,20 +14,22 @@ import {
   evaluationError,
   finiteCredits,
   KlickerEvaluationTarget,
-} from './klicker-evaluation-target.mjs'
-import { validateNumericSidecar } from './tutor-numeric-reference.mjs'
+} from '../apps/chat/scripts/klicker-evaluation-target.mjs'
 import {
   runTrajectory,
   TRAJECTORY_GROUPS,
   validateTrajectoryCorpus,
-} from './tutor-trajectory.mjs'
+} from '../apps/chat/scripts/tutor-trajectory.mjs'
+import {
+  acquireBudgetLock,
+  assertBudgetCanStart,
+  beginBudgetTurn,
+  finishBudgetTurn,
+  readBudgetLedger,
+} from './evaluation-budget.mjs'
+import { verifyGuardQualification } from './evaluation-spend-guard.mjs'
+import { validateNumericSidecar } from './tutor-numeric-reference.mjs'
 
-// Experiment-wide limits shared by every arm through one budget file. The
-// ledger counts submitted requests before they leave the process and adds the
-// actual credits each finished turn reports; the request in flight may cross
-// the credit ceiling.
-export const DEFAULT_MAX_SUBMITTED_TURNS = 160
-export const DEFAULT_MAX_APPLICATION_CREDITS = 3
 export const TRAJECTORY_ARMS = ['baseline', 'candidate', 'auto']
 
 const VALUE_FLAGS = {
@@ -41,27 +42,21 @@ const VALUE_FLAGS = {
   '--numeric': 'numeric',
 }
 
-const BUDGET_LEDGER_FIELDS = new Set([
-  'version',
-  'maxSubmittedTurns',
-  'maxApplicationCredits',
-  'submittedTurns',
-  'creditsUsed',
-  'uncertain',
-])
-
 const USAGE = [
-  'Usage: node apps/chat/scripts/run-tutor-trajectories.mjs --corpus <file> --output <file> --arm <baseline|candidate|auto> --budget-file <file> [--repeats <n>] [--group <development|reserved|control>] [--numeric <sidecar>]',
+  'Usage: node evaluation/run-tutor-trajectories.mjs --corpus <file> --output <file> --arm <baseline|candidate|auto> --budget-file <file> [--repeats <n>] [--group <development|reserved|control>] [--numeric <sidecar>]',
   '',
   'Runs a frozen trajectory corpus against the local evaluation target and',
   'writes one sanitized JSONL receipt per verified turn. The output file is',
   'created exclusively and never overwritten. The shared budget ledger counts',
-  'submitted requests and actual credits across sequential arms. An optional',
+  'submitted requests and conservatively reserved provider dollars across arms.',
+  'A qualified provider guard and an initialized version-2 budget are required. An optional',
   'numerical sidecar is checked against the corpus before login.',
   '',
   'Credentials come from KLICKER_EVAL_API_ORIGIN, KLICKER_EVAL_CHAT_ORIGIN,',
   'KLICKER_EVAL_PARTICIPANT_USERNAME and KLICKER_EVAL_PARTICIPANT_PASSWORD;',
-  'KLICKER_EVAL_MODEL_ID defaults to the fixed gpt-5.6-luna selection.',
+  `KLICKER_EVAL_MODEL_ID defaults to the fixed ${DEFAULT_MODEL_ID} selection.`,
+  'Guard prerequisites: KLICKER_EVAL_QUALIFICATION_FILE,',
+  'KLICKER_EVAL_GUARD_ORIGIN and KLICKER_EVAL_GUARD_KEY.',
 ].join('\n')
 
 export function parseArguments(argv) {
@@ -130,90 +125,6 @@ export async function loadNumericSidecar(filePath, corpus) {
   }
 }
 
-export function createBudgetLedger() {
-  return {
-    version: 1,
-    maxSubmittedTurns: DEFAULT_MAX_SUBMITTED_TURNS,
-    maxApplicationCredits: DEFAULT_MAX_APPLICATION_CREDITS,
-    submittedTurns: 0,
-    creditsUsed: 0,
-    uncertain: false,
-  }
-}
-
-export function validateBudgetLedger(value) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw evaluationError('budget_invalid')
-  }
-  for (const key of Object.keys(value)) {
-    if (!BUDGET_LEDGER_FIELDS.has(key)) throw evaluationError('budget_invalid')
-  }
-  const {
-    version,
-    maxSubmittedTurns,
-    maxApplicationCredits,
-    submittedTurns,
-    creditsUsed,
-    uncertain,
-  } = value
-  if (version !== 1) throw evaluationError('budget_invalid')
-  if (!Number.isInteger(maxSubmittedTurns) || maxSubmittedTurns < 1) {
-    throw evaluationError('budget_invalid')
-  }
-  if (!Number.isFinite(maxApplicationCredits) || maxApplicationCredits <= 0) {
-    throw evaluationError('budget_invalid')
-  }
-  if (!Number.isInteger(submittedTurns) || submittedTurns < 0) {
-    throw evaluationError('budget_invalid')
-  }
-  if (!Number.isFinite(creditsUsed) || creditsUsed < 0) {
-    throw evaluationError('budget_invalid')
-  }
-  if (typeof uncertain !== 'boolean') throw evaluationError('budget_invalid')
-  return {
-    version,
-    maxSubmittedTurns,
-    maxApplicationCredits,
-    submittedTurns,
-    creditsUsed,
-    uncertain,
-  }
-}
-
-export async function readBudgetLedger(filePath) {
-  let raw
-  try {
-    raw = await readFile(filePath, 'utf8')
-  } catch (error) {
-    if (error?.code === 'ENOENT') return createBudgetLedger()
-    throw evaluationError('budget_unreadable')
-  }
-  let parsed
-  try {
-    parsed = JSON.parse(raw)
-  } catch {
-    throw evaluationError('budget_invalid')
-  }
-  return validateBudgetLedger(parsed)
-}
-
-export async function writeBudgetLedger(filePath, ledger) {
-  await writeFile(filePath, JSON.stringify(ledger, null, 2) + '\n')
-}
-
-// Refuses to start any new request once a recorded uncertainty leaves the true
-// spend unknown, the submitted-turn cap is reached, or the soft credit ceiling
-// is already met.
-export function assertBudgetCanStart(ledger) {
-  if (ledger.uncertain) throw evaluationError('budget_uncertain')
-  if (ledger.submittedTurns >= ledger.maxSubmittedTurns) {
-    throw evaluationError('budget_turns_exhausted')
-  }
-  if (ledger.creditsUsed >= ledger.maxApplicationCredits) {
-    throw evaluationError('budget_credits_exhausted')
-  }
-}
-
 function createTrajectoryTarget(env) {
   // The ephemeral key only satisfies the target constructor; the CLI never
   // starts the listening HTTP adapter.
@@ -260,9 +171,13 @@ function progressLine({ arm, receipt, credits, ledger }) {
     'arm=' + arm,
     'case=' + receipt.caseId,
     'turn=' + receipt.turn,
-    'credits=' + (credits === null ? 'unaccounted' : credits),
+    'credits=' + credits,
     'submitted=' + ledger.submittedTurns + '/' + ledger.maxSubmittedTurns,
-    'creditTotal=' + ledger.creditsUsed + '/' + ledger.maxApplicationCredits,
+    'creditTotal=' + ledger.creditsUsed,
+    'reservedMicroUsd=' +
+      ledger.reservedProviderMicroUsd +
+      '/' +
+      ledger.maxProviderMicroUsd,
   ].join(' ')
 }
 
@@ -293,15 +208,41 @@ export async function runTutorTrajectories({
   }
   const cases = selectCases(corpus.cases, options.group)
   const target = createTrajectoryTarget(env)
-  const ledger = await readBudgetLedger(budgetPath)
+  if (target.modelId === 'auto')
+    throw evaluationError('provider_model_unqualified')
+  let ledger = await readBudgetLedger(budgetPath)
   assertBudgetCanStart(ledger)
+  await verifyGuardQualification({
+    filePath: env.KLICKER_EVAL_QUALIFICATION_FILE,
+    origin: env.KLICKER_EVAL_GUARD_ORIGIN,
+    key: env.KLICKER_EVAL_GUARD_KEY,
+    budgetFile: budgetPath,
+    chatOrigin: target.chatOrigin,
+    chatbotId: target.chatbotId,
+    modelId: target.modelId,
+  })
 
-  const output = await openExclusive(outputPath)
+  const releaseRun = await acquireBudgetLock(budgetPath, '.run')
+  let output
+  try {
+    output = await openExclusive(outputPath)
+  } catch (error) {
+    try {
+      await releaseRun()
+    } catch (releaseError) {
+      error.cause = new AggregateError(
+        [error.cause, releaseError].filter(Boolean),
+        'Output creation failed and its run lease could not be released'
+      )
+    }
+    throw error
+  }
   const arm = options.arm
   let currentCase = null
   let currentTurn = null
   let currentRepeat = null
   let stopCode = null
+  let turnToken = null
   const summary = {
     type: 'summary',
     arm,
@@ -314,6 +255,7 @@ export async function runTutorTrajectories({
     completedTurns: 0,
     submittedTurns: ledger.submittedTurns,
     creditsUsed: ledger.creditsUsed,
+    reservedProviderMicroUsd: ledger.reservedProviderMicroUsd,
     uncertain: ledger.uncertain,
     recordedAt: new Date().toISOString(),
   }
@@ -331,29 +273,19 @@ export async function runTutorTrajectories({
             beforeTurn: async ({ caseId, turn }) => {
               currentCase = caseId
               currentTurn = turn
-              assertBudgetCanStart(ledger)
-              // Count the request and mark the spend unknown before it leaves
-              // the process: a crash or transport failure here must refuse
-              // every later call instead of assuming the turn was free.
-              ledger.submittedTurns += 1
-              ledger.uncertain = true
+              turnToken = await beginBudgetTurn(budgetPath)
               summary.runSubmittedTurns += 1
-              await writeBudgetLedger(budgetPath, ledger)
             },
             onTurn: async (receipt) => {
               const credits = finiteCredits(receipt.creditsUsed)
-              if (credits !== null) {
-                ledger.creditsUsed += credits
-                ledger.uncertain = false
-              }
-              await writeBudgetLedger(budgetPath, ledger)
+              ledger = await finishBudgetTurn(budgetPath, turnToken, credits)
+              turnToken = null
               await output.write(JSON.stringify(receipt) + '\n')
               summary.completedTurns += 1
               summary.submittedTurns = ledger.submittedTurns
               summary.creditsUsed = ledger.creditsUsed
               summary.uncertain = ledger.uncertain
               log(progressLine({ arm, receipt, credits, ledger }))
-              if (credits === null) throw evaluationError('credits_unaccounted')
             },
           })
         }
@@ -377,14 +309,20 @@ export async function runTutorTrajectories({
     }
 
     summary.recordedAt = new Date().toISOString()
+    ledger = await readBudgetLedger(budgetPath)
     summary.status = stopCode ? 'stopped' : 'completed'
     summary.stopCode = stopCode
     summary.submittedTurns = ledger.submittedTurns
     summary.creditsUsed = ledger.creditsUsed
+    summary.reservedProviderMicroUsd = ledger.reservedProviderMicroUsd
     summary.uncertain = ledger.uncertain
     await output.write(JSON.stringify(summary) + '\n')
   } finally {
-    await output.close()
+    try {
+      await output.close()
+    } finally {
+      await releaseRun()
+    }
   }
 
   return summary
