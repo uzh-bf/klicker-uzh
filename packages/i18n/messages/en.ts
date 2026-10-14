@@ -3509,6 +3509,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       cancelEditing: 'Cancel editing',
       mediaLibrary: 'Media Library',
       uploadImageHeader: 'Upload Media',
+      uploadImageError: 'The image could not be uploaded. Please try again.',
       uploadImageDescription:
         'Drag an image here to upload or click to open file explorer.',
       updateInstances: 'Update element instances in KlickerUZH activities',

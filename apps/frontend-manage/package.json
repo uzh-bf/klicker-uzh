@@ -5,7 +5,6 @@
   "license": "AGPL-3.0",
   "dependencies": {
     "@apollo/client": "3.13.8",
-    "@azure/storage-blob": "12.25.0",
     "@ducanh2912/next-pwa": "10.2.9",
     "@fortawesome/fontawesome-svg-core": "6.7.2",
     "@fortawesome/free-brands-svg-icons": "6.7.2",

@@ -1,31 +1,23 @@
-import {
-  BlobSASPermissions,
-  BlobServiceClient,
-  generateBlobSASQueryParameters,
-  StorageSharedKeyCredential,
-} from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
-  ActivityLogModificationDetails,
+  type ActivityLogModificationDetails,
   ActivityLogModificationFieldType,
   ActivityType,
   DisplayMode,
-  ElementManipulationInput,
-  GeneratedFlashcard,
-  GeneratedQuestionEditable,
+  type ElementManipulationInput,
+  type GeneratedFlashcard,
+  type GeneratedQuestionEditable,
   SharingType,
   SortByType,
 } from '@klicker-uzh/types'
 import {
-  getBlobStorageAccountUrl,
   getInitialInstanceResults,
-  PrismaTransactionClient,
+  type PrismaTransactionClient,
   processElementData,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
-import dayjs from 'dayjs'
-import EventEmitter from 'events'
+import type EventEmitter from 'events'
 import { GraphQLError } from 'graphql'
 import { prop, sortBy, swapIndices } from 'remeda'
 import type {
@@ -35,6 +27,12 @@ import type {
 import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
 import { validateElementDifficultyLevel } from '../lib/validateElementDifficultyLevel.js'
 import validateElementInputs from '../lib/validateElementInputs.js'
+import { AzureMediaStorage } from './mediaStorage/azure.js'
+import { createMediaStorage } from './mediaStorage/index.js'
+import type {
+  MediaUploadRequest,
+  SignedMediaUpload,
+} from './mediaStorage/types.js'
 import { getAnswerCollectionsElements } from './resources.js'
 import { checkAccess } from './sharing.js'
 import { getActivityAnswerCollectionIds } from './templates.js'
@@ -1219,73 +1217,50 @@ const FILE_EXTENSIONS: Record<string, string> = {
   'image/bmp': 'bmp',
 }
 
+/** Legacy Azure API retained for previously deployed clients. */
 export async function getFileUploadSas(
-  { fileName, contentType }: { fileName: string; contentType: string },
+  input: { fileName: string; contentType: string },
   ctx: ContextWithUser
 ) {
-  const sharedKeyCredential = new StorageSharedKeyCredential(
-    process.env.BLOB_STORAGE_ACCOUNT_NAME as string,
-    process.env.BLOB_STORAGE_ACCESS_KEY as string
-  )
+  return createMediaFileUpload(input, ctx, new AzureMediaStorage())
+}
 
-  const storageAccount = getBlobStorageAccountUrl(
-    process.env.BLOB_STORAGE_ACCOUNT_NAME as string,
-    process.env.BLOB_STORAGE_ACCOUNT_URL
-  )
-  const internalStorageAccount = getBlobStorageAccountUrl(
-    process.env.BLOB_STORAGE_ACCOUNT_NAME as string,
-    process.env.BLOB_STORAGE_INTERNAL_ACCOUNT_URL ?? storageAccount
-  )
+export async function requestMediaUpload(
+  input: { fileName: string; contentType: string },
+  ctx: ContextWithUser
+) {
+  return createMediaFileUpload(input, ctx, createMediaStorage())
+}
 
-  // if nonexistent, create a container for the user on blob storage
-  const client = new BlobServiceClient(
-    internalStorageAccount,
-    sharedKeyCredential
-  )
-  const containerClient = client.getContainerClient(ctx.user.sub)
-  if (!(await containerClient.exists())) {
-    client.createContainer(ctx.user.sub, {
-      access: 'blob',
+async function createMediaFileUpload<T extends SignedMediaUpload>(
+  { fileName, contentType }: { fileName: string; contentType: string },
+  ctx: ContextWithUser,
+  storage: { createUpload(request: MediaUploadRequest): Promise<T> }
+): Promise<T> {
+  const fileExtension = Object.hasOwn(FILE_EXTENSIONS, contentType)
+    ? FILE_EXTENSIONS[contentType]
+    : undefined
+  if (!fileExtension || !fileName.trim() || fileName.length > 512) {
+    throw new GraphQLError('Media file is invalid', {
+      extensions: { code: 'MEDIA_FILE_INVALID' },
     })
   }
-
-  const fileExtension = FILE_EXTENSIONS[contentType]
-
   const id = randomUUID()
-  const blobName = `${id}.${fileExtension}`
-  const fileHref = `${storageAccount}/${ctx.user.sub}/${blobName}`
-
-  // generate file upload SAS with blob storage service
-  const permissions = BlobSASPermissions.parse('w')
-  const startDate = dayjs()
-  const expiryDate = startDate.add(15, 'minutes')
-  const queryParams = generateBlobSASQueryParameters(
-    {
-      containerName: ctx.user.sub,
-      permissions: permissions,
-      expiresOn: expiryDate.toDate(),
-      blobName,
-      contentType,
-    },
-    sharedKeyCredential
-  )
-
+  const upload = await storage.createUpload({
+    ownerId: ctx.user.sub,
+    fileName: `${id}.${fileExtension}`,
+    contentType,
+  })
   await ctx.prisma.mediaFile.create({
     data: {
       id,
       ownerId: ctx.user.sub,
       type: contentType,
       name: fileName,
-      href: fileHref,
+      href: upload.uploadHref,
     },
   })
-
-  return {
-    uploadSasURL: `${storageAccount}?${queryParams}`,
-    uploadHref: fileHref,
-    containerName: ctx.user.sub,
-    fileName: blobName,
-  }
+  return upload
 }
 
 export async function getInstanceUpdateActivities(

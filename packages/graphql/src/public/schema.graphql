@@ -2767,6 +2767,17 @@ type MediaFile {
   type: String!
 }
 
+type MediaFileUpload {
+  uploadHeaders: [MediaUploadHeader!]!
+  uploadHref: String!
+  uploadUrl: String!
+}
+
+type MediaUploadHeader {
+  name: String!
+  value: String!
+}
+
 type MicroLearning {
   arePushNotificationsSent: Boolean
   course: Course
@@ -2941,6 +2952,7 @@ type Mutation {
   requestCourseDeletion(deleteDraftActivities: Boolean, id: String!): CourseDeletionRequestPayload
   requestKbFileReplacement(contentType: String!, fileName: String!, kbId: ID!, resourceId: ID!, sizeBytes: Int!): KBFileUpload!
   requestKbFileUpload(contentType: String!, fileName: String!, kbId: ID!, sizeBytes: Int!): KBFileUpload!
+  requestMediaUpload(contentType: String!, fileName: String!): MediaFileUpload
   resetAssessmentLiveQuiz(id: String!): ActivityInfo
   resolveActivityLogEntry(id: Int!): ActivityLogEntry
   resolveFeedback(id: Int!, isResolved: Boolean!, liveQuizId: String!): Feedback

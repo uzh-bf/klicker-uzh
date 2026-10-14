@@ -1,0 +1,12 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "dev": { "passThroughEnv": ["AWS_*"] },
+    "dev:assessment": { "passThroughEnv": ["AWS_*"] },
+    "dev:lti": { "passThroughEnv": ["AWS_*"] },
+    "dev:offline": { "passThroughEnv": ["AWS_*"] },
+    "dev:test": { "passThroughEnv": ["AWS_*"] },
+    "start": { "passThroughEnv": ["AWS_*"] },
+    "start:test": { "passThroughEnv": ["AWS_*"] }
+  }
+}
