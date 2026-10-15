@@ -728,6 +728,7 @@ type ChatAccountUsageLane {
 }
 
 type ChatAccountUsageOverview {
+  advancedModelConfigurationEntitled: Boolean!
   advancedModelUsage: ChatAccountUsageLane!
   authorized: Boolean!
   baseModelUsage: ChatAccountUsageLane!
