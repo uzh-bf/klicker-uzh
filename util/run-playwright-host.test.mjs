@@ -25,11 +25,12 @@ import {
   preserveLocalDatabase,
 } from './playwright-host-policy.mjs'
 import {
+  FILTERED_INSTALL_MARKER,
   inferPlaywrightProfile,
   PLAYWRIGHT_PROFILE_FALLBACK,
   PNPM_VERIFY_DEPS_ENV,
   parseLocalOptions,
-  parsePublishedPort,
+  parseHostEnvironment,
   resolvePlaywrightEnvironment,
   main as runPlaywrightHost,
 } from './run-playwright-host.mjs'
@@ -207,10 +208,32 @@ test('profile inference falls back when the manifest cannot be read', () => {
   )
 })
 
+function syntheticHostEnvironment({
+  workspace = 'synthetic-launcher',
+  loopback = { host: '127.0.0.1', port: 49153 },
+  loopbackReason,
+} = {}) {
+  return JSON.stringify({
+    version: 1,
+    workspace,
+    apps: [
+      { name: 'manage', protocol: 'http' },
+      {
+        name: 'db',
+        protocol: 'tcp',
+        tcpProtocol: 'postgres',
+        loopback,
+        ...(loopbackReason ? { loopbackReason } : {}),
+      },
+    ],
+  })
+}
+
 function createLauncherHarness({
   playwrightCli = true,
   prismaDist = true,
   typesDist = true,
+  workspaceIdentity = true,
   failWhen,
   environment = { PATH: '/synthetic/bin' },
   specFiles = syntheticSpecFiles,
@@ -218,6 +241,7 @@ function createLauncherHarness({
 } = {}) {
   const calls = []
   const logs = []
+  const writes = []
   const root = '/synthetic/klicker-uzh'
   const workspaceGitDir = '/synthetic/git/worktrees/launcher'
   const testsRoot = `${root}/playwright/tests`
@@ -236,8 +260,8 @@ function createLauncherHarness({
       return '/synthetic/git'
     }
     if (command === 'docker' && args[0] === 'ps') return 'container-id'
-    if (command === 'docker' && args[0] === 'port') {
-      return '127.0.0.1:49153'
+    if (command === '/synthetic/bin/devrouter' && args[0] === 'env') {
+      return syntheticHostEnvironment()
     }
 
     return ''
@@ -252,7 +276,7 @@ function createLauncherHarness({
     }
     if (path.endsWith('/packages/prisma/dist/index.js')) return prismaDist
     if (path.endsWith('/packages/types/dist/index.js')) return typesDist
-    if (path.endsWith('/devrouter-workspace')) return true
+    if (path.endsWith('/devrouter-workspace')) return workspaceIdentity
     if (
       path.startsWith(`${testsRoot}/`) &&
       specFiles.includes(path.slice(testsRoot.length + 1))
@@ -279,6 +303,7 @@ function createLauncherHarness({
   return {
     calls,
     logs,
+    writes,
     dependencies: {
       resolveDevrouterFn: () => '/synthetic/bin/devrouter',
       commandExistsFn: () => false,
@@ -287,6 +312,7 @@ function createLauncherHarness({
       log: (message) => logs.push(message),
       pathExists,
       readFile,
+      writeFile: (path) => writes.push(path),
       readDirectory: (path) => {
         if (path === testsRoot) return [...specFiles].sort()
         throw new Error(`unexpected synthetic directory: ${path}`)
@@ -792,9 +818,50 @@ test('workspace URLs and the loopback database port resolve together', () => {
   )
 })
 
-test('Docker port output resolves IPv4 and IPv6 bindings', () => {
-  assert.equal(parsePublishedPort('127.0.0.1:49153'), 49153)
-  assert.equal(parsePublishedPort('[::1]:49154'), 49154)
+test('the devrouter env report resolves the workspace and loopback database', () => {
+  assert.deepEqual(parseHostEnvironment(syntheticHostEnvironment()), {
+    workspace: 'synthetic-launcher',
+    databaseHost: '127.0.0.1',
+    databasePort: 49153,
+  })
+  assert.deepEqual(
+    parseHostEnvironment(
+      syntheticHostEnvironment({
+        workspace: null,
+        loopback: { host: '::1', port: 49154 },
+      })
+    ),
+    { workspace: '', databaseHost: '[::1]', databasePort: 49154 }
+  )
+  assert.throws(
+    () =>
+      parseHostEnvironment(
+        syntheticHostEnvironment({
+          loopback: null,
+          loopbackReason: 'not-running',
+        })
+      ),
+    /not-running/
+  )
+  assert.throws(
+    () =>
+      parseHostEnvironment(
+        syntheticHostEnvironment({ loopback: { host: '127.0.0.1' } })
+      ),
+    /lacks a host or port/
+  )
+  assert.throws(
+    () => parseHostEnvironment(JSON.stringify({ version: 2, apps: [] })),
+    /unsupported devrouter env report version/
+  )
+})
+
+test('the Git hook checks the marker the launcher writes', () => {
+  const hook = readFileSync(join(repoRoot, 'util', 'run-hook-pnpm.sh'), 'utf8')
+  assert.match(
+    hook,
+    new RegExp(`^filtered_marker=${FILTERED_INSTALL_MARKER}$`, 'm')
+  )
 })
 
 test('every local Playwright package script routes through the host launcher', () => {
@@ -898,6 +965,9 @@ test('cold runs stop before host preparation and reconcile afterward', () => {
   assert.ok(stop >= 0)
   assert.ok(install > stop)
   assert.ok(ensure > install)
+  assert.deepEqual(harness.writes, [
+    '/synthetic/klicker-uzh/node_modules/.playwright-host-filtered-install',
+  ])
   assert.equal(
     harness.calls.filter(
       ({ command, args }) => command === 'pnpm' && args.includes('playwright')
@@ -909,6 +979,24 @@ test('cold runs stop before host preparation and reconcile afterward', () => {
     pnpmCalls(harness.calls).every(
       ({ options }) => options.env?.[PNPM_VERIFY_DEPS_ENV] === 'error'
     )
+  )
+})
+
+test('a fresh worktree installs without stopping a runtime that does not exist yet', () => {
+  const harness = createLauncherHarness({
+    playwrightCli: false,
+    workspaceIdentity: false,
+  })
+
+  runPlaywrightHost(['--list'], harness.dependencies)
+
+  assert.equal(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'stop'),
+    -1
+  )
+  assert.ok(commandIndex(harness.calls, 'pnpm', 'install') >= 0)
+  assert.ok(
+    ensureIndex(harness.calls) > commandIndex(harness.calls, 'pnpm', 'install')
   )
 })
 

@@ -600,7 +600,10 @@ function buildOCRConfig() {
       // OCR's saved URL overrides the per-attempt loopback environment URL.
       model: policy.llm.model,
       protocol: policy.llm.protocol,
-      extra_body: policy.llm.extra_body,
+      extra_body: {
+        ...policy.llm.extra_body,
+        prompt_cache_key: '{ocr_session_key}',
+      },
       auth_token_cmd: 'printf "%s" "$OCR_LLM_TOKEN"',
     },
   }
