@@ -124,6 +124,9 @@ function extractShellFunction(script, functionName) {
   assert.fail(`unterminated shell function: ${functionName}`)
 }
 
+const SYNTHETIC_BACKGROUND =
+  'synthetic background "quoted" $(true) ; echo injected *'
+
 function expectedOCRArgs({ from, to, timeout, budget, sessionId }) {
   return [
     '--from',
@@ -137,13 +140,13 @@ function expectedOCRArgs({ from, to, timeout, budget, sessionId }) {
     '--timeout',
     String(timeout),
     '--max-tokens',
-    '32768',
+    '200000',
     '--max-tokens-budget',
     String(budget),
     '--format',
     'json',
     '--background',
-    'synthetic-background',
+    SYNTHETIC_BACKGROUND,
     '--rule',
     '.github/open-code-review/final-review-rules.json',
     ...(sessionId ? ['--resume', sessionId] : []),
@@ -193,9 +196,9 @@ function assertReviewAttempt(result, form, expectedExit) {
   assert.equal(result.ocrStderr, result.stderrSentinel, form.name)
 
   const lines = result.calls.trim().split('\n')
+  assert.equal(result.calls.match(/^preview /gm)?.length, 1, form.name)
   assert.equal(lines.shift(), 'version no_update=1', form.name)
   assert.equal(lines.shift(), 'preview no_update=1 limit=200000', form.name)
-  assert.equal(lines.shift(), 'preview no_update=1 limit=32768', form.name)
   assert.equal(lines.shift(), 'coverage checked', form.name)
   assert.equal(lines.shift(), 'review no_update=1', form.name)
   assert.deepEqual(
@@ -231,6 +234,7 @@ function executeExtractedOCRAttempt({
   versionStatus = 0,
   reviewStatus = 0,
   previewStatus = 0,
+  previewMode = 'ok',
 }) {
   const directory = fs.mkdtempSync(
     path.join(os.tmpdir(), 'final-review-ocr-shell-')
@@ -262,6 +266,7 @@ function executeExtractedOCRAttempt({
     OCR_CALLS_PATH: callsPath,
     OCR_REVIEW_STATUS: String(reviewStatus),
     OCR_PREVIEW_STATUS: String(previewStatus),
+    OCR_PREVIEW_MODE: previewMode,
     OCR_STDERR_SENTINEL: stderrSentinel,
     OCR_STDOUT_SENTINEL: stdoutSentinel,
     OCR_VERSION_MODE: versionMode,
@@ -277,7 +282,7 @@ function executeExtractedOCRAttempt({
     GITHUB_OUTPUT: path.join(directory, 'github-output'),
     REVIEW_FROM: environment.reviewFrom,
     HEAD_SHA: environment.reviewTo,
-    BACKGROUND: 'synthetic-background',
+    BACKGROUND: SYNTHETIC_BACKGROUND,
     REVIEW_JOB_STARTED_AT: String(Math.floor(Date.now() / 1000)),
     SESSION_ID: environment.sessionId ?? '',
   }
@@ -324,7 +329,11 @@ function executeExtractedOCRAttempt({
     '          shift',
     '        done',
     '        printf "preview no_update=%s limit=%s\\n" "${OCR_NO_UPDATE-}" "${prompt_limit}" >>"${OCR_CALLS_PATH}"',
-    '        printf \'{"total_files":1,"files":[{"path":"src/test.ts","will_review":true}]}\'',
+    '        case "$OCR_PREVIEW_MODE" in',
+    '          malformed) printf \'{"total_files":1,"files":[\' ;;',
+    '          too_large) printf \'{"total_files":2,"files":[{"path":"src/test.ts","will_review":true},{"path":"src/big.ts","will_review":false,"exclude_reason":"too_large"}]}\' ;;',
+    '          *) printf \'{"total_files":1,"files":[{"path":"src/test.ts","will_review":true}]}\' ;;',
+    '        esac',
     '        return 0',
     '      fi',
     '      printf \'review no_update=%s\\n\' "${OCR_NO_UPDATE-}" >>"${OCR_CALLS_PATH}"',
@@ -460,6 +469,16 @@ test('executes both workflow OCR command boundaries with pinned version diagnost
     assert.equal(previewFailure.output, null)
     assert.doesNotMatch(previewFailure.calls, /review no_update/)
     assertNoOCRSentinels(previewFailure)
+    for (const previewMode of ['malformed', 'too_large']) {
+      const result = runCase(form, { previewMode })
+      const label = `${form.name} ${previewMode}`
+      assert.equal(result.process.status, 1, label)
+      assert.match(result.process.stderr, /preview validation failed/, label)
+      assert.equal(result.output, null, label)
+      assert.equal(result.calls.match(/^preview /gm)?.length, 1, label)
+      assert.doesNotMatch(result.calls, /^review no_update=/m, label)
+      assertNoOCRSentinels(result)
+    }
     for (const outcome of [
       { name: 'review 127', reviewStatus: 127, expectedStatus: 127 },
       { name: 'review 2', reviewStatus: 2, expectedStatus: 2 },
@@ -503,7 +522,6 @@ test('bounds individual and stack review retries, tokens, and runtime', () => {
 
   assert.equal(source.match(/--timeout 45/g)?.length, 1)
   assert.equal(source.match(/--timeout 30/g)?.length, 1)
-  assert.equal(source.match(/--max-tokens "\$\{bounded_limit\}"/g)?.length, 2)
   assert.equal(source.match(/plan-ocr-resume/g)?.length, 2)
   assert.equal(source.match(/merge-ocr-resume/g)?.length, 2)
   assert.match(source, /run_ocr_attempt "\$\{RESULT_PATH\}" 6000000/)
@@ -529,8 +547,8 @@ test('bounds individual and stack review retries, tokens, and runtime', () => {
   )
 })
 
-test('bounded context must preserve every preview path and exclusion reason', () => {
-  const baseline = {
+test('validates one OCR preview selection and refuses oversized exclusions', () => {
+  const preview = {
     total_files: 2,
     files: [
       { path: 'src/a.ts', will_review: true },
@@ -541,55 +559,58 @@ test('bounded context must preserve every preview path and exclusion reason', ()
       },
     ],
   }
-  validateOCRPreview(baseline, {
-    ...baseline,
-    files: [...baseline.files].reverse(),
+  validateOCRPreview(preview)
+  validateOCRPreview({
+    ...preview,
+    files: [
+      preview.files[0],
+      { ...preview.files[1], exclude_reason: 'unsupported_type' },
+    ],
   })
   assert.throws(
     () =>
-      validateOCRPreview(baseline, {
-        ...baseline,
+      validateOCRPreview({
+        ...preview,
         files: [
           {
-            ...baseline.files[0],
+            ...preview.files[0],
             will_review: false,
             exclude_reason: 'too_large',
           },
-          baseline.files[1],
+          preview.files[1],
         ],
       }),
-    /changes file coverage/
+    /oversized file/
   )
   assert.throws(
-    () =>
-      validateOCRPreview(baseline, { ...baseline, files: [baseline.files[0]] }),
+    () => validateOCRPreview({ ...preview, files: [preview.files[0]] }),
     /Invalid OCR preview/
   )
   assert.throws(
     () =>
-      validateOCRPreview(baseline, {
-        ...baseline,
-        files: [baseline.files[0], baseline.files[0]],
+      validateOCRPreview({
+        ...preview,
+        files: [preview.files[0], preview.files[0]],
       }),
     /Invalid OCR preview file/
   )
   assert.throws(
     () =>
-      validateOCRPreview(baseline, {
-        ...baseline,
-        files: [null, baseline.files[1]],
+      validateOCRPreview({
+        ...preview,
+        files: [null, preview.files[1]],
       }),
     /Invalid OCR preview file/
   )
   for (const excludeReason of [12, [], {}]) {
     const malformed = {
-      ...baseline,
+      ...preview,
       files: [
-        baseline.files[0],
-        { ...baseline.files[1], exclude_reason: excludeReason },
+        preview.files[0],
+        { ...preview.files[1], exclude_reason: excludeReason },
       ],
     }
-    assert.throws(() => validateOCRPreview(malformed, malformed))
+    assert.throws(() => validateOCRPreview(malformed))
   }
   const unicodePaths = {
     total_files: 2,
@@ -598,10 +619,7 @@ test('bounded context must preserve every preview path and exclusion reason', ()
       { path: 'src/e\u0301.ts', will_review: true },
     ],
   }
-  validateOCRPreview(unicodePaths, {
-    ...unicodePaths,
-    files: [...unicodePaths.files].reverse(),
-  })
+  validateOCRPreview(unicodePaths)
 })
 
 test('accepts only the exact command and calculated write permissions', () => {

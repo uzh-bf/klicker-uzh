@@ -2163,40 +2163,30 @@ function validateOCRTokenCounters(summary, label) {
   }
 }
 
-function validateOCRPreview(baseline, bounded) {
-  const selection = (preview) => {
-    if (
-      !Array.isArray(preview?.files) ||
-      preview.files.length !== preview.total_files
-    ) {
-      throw new Error('Invalid OCR preview')
-    }
-    const paths = new Set()
-    return preview.files
-      .map((file) => {
-        if (
-          typeof file?.path !== 'string' ||
-          !file.path ||
-          paths.has(file.path) ||
-          typeof file.will_review !== 'boolean' ||
-          (file.exclude_reason != null &&
-            typeof file.exclude_reason !== 'string')
-        ) {
-          throw new Error('Invalid OCR preview file')
-        }
-        paths.add(file.path)
-        return [file.path, file.will_review, file.exclude_reason ?? '']
-      })
-      .sort((a, b) => {
-        if (a[0] < b[0]) return -1
-        if (a[0] > b[0]) return 1
-        return 0
-      })
-  }
+// The preview runs at the same prompt limit as the paid review, so an
+// oversized-file exclusion here means the selected range cannot be covered.
+function validateOCRPreview(preview) {
   if (
-    JSON.stringify(selection(baseline)) !== JSON.stringify(selection(bounded))
+    !Array.isArray(preview?.files) ||
+    preview.files.length !== preview.total_files
   ) {
-    throw new Error('Bounded OCR context changes file coverage; review refused')
+    throw new Error('Invalid OCR preview')
+  }
+  const paths = new Set()
+  for (const file of preview.files) {
+    if (
+      typeof file?.path !== 'string' ||
+      !file.path ||
+      paths.has(file.path) ||
+      typeof file.will_review !== 'boolean' ||
+      (file.exclude_reason != null && typeof file.exclude_reason !== 'string')
+    ) {
+      throw new Error('Invalid OCR preview file')
+    }
+    paths.add(file.path)
+    if (file.exclude_reason === 'too_large') {
+      throw new Error('OCR preview excludes an oversized file; review refused')
+    }
   }
 }
 
@@ -3192,17 +3182,13 @@ function runCli() {
     })
   }
   if (command === 'validate-ocr-preview') {
-    const baselinePath = process.argv[3]
-    const boundedPath = process.argv[4]
-    if (!baselinePath || !boundedPath)
+    const previewPath = process.argv[3]
+    if (!previewPath)
       throw new Error(
-        'Usage: final-ai-review.js validate-ocr-preview <baseline> <bounded>'
+        'Usage: final-ai-review.js validate-ocr-preview <preview-path>'
       )
-    validateOCRPreview(
-      JSON.parse(fs.readFileSync(baselinePath, 'utf8')),
-      JSON.parse(fs.readFileSync(boundedPath, 'utf8'))
-    )
-    console.log('Bounded OCR context preserves file coverage')
+    validateOCRPreview(JSON.parse(fs.readFileSync(previewPath, 'utf8')))
+    console.log('OCR preview selection validated')
     return
   }
   if (command === 'validate-ocr-result') {
