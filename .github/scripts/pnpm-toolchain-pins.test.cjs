@@ -49,6 +49,30 @@ test('Docker installs, package manifests, and current runtime fixtures use the r
   assert.ok(pins > 0, 'must inspect executable pnpm installation pins')
 })
 
+test('script-disabled Docker installs explicitly provision native pnpm bins', () => {
+  let nativeSetups = 0
+  for (const file of files.filter((name) =>
+    /^apps\/[^/]+\/Dockerfile$/.test(name)
+  )) {
+    const instructions = read(file)
+      .replace(/\\\r?\n\s*/g, ' ')
+      .split('\n')
+    for (const instruction of instructions) {
+      if (!/^RUN npm (?:i|install)\b.*\bpnpm@/.test(instruction)) continue
+      // Shell fallback can hide a shebang-less placeholder left by pnpm 12.
+      // Alpine child_process.spawnSync requires the installed native binary.
+      assert.match(instruction, /--ignore-scripts\b/, file)
+      assert.match(
+        instruction,
+        /&& node "\$\(npm root -g\)\/pnpm\/install\.js"\s*$/,
+        `${file} must provision native bins in the same successful install step`
+      )
+      nativeSetups += 1
+    }
+  }
+  assert.ok(nativeSetups > 0, 'must inspect Docker pnpm native setup')
+})
+
 test('every workflow and composite action installs the root pnpm version', () => {
   const actionFiles = files.filter((file) =>
     /^\.github\/(?:actions|workflows)\/.*\.ya?ml$/.test(file)
