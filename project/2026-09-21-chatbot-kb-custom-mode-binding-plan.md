@@ -48,10 +48,9 @@ withheld.
 
 ### Problem and evidence
 
-Problem: bot `1c6dec49-066b-4599-aa10-a18a89d1fe0f` ("Ethik-Rollenspiel",
-custom mode `ethik-rollenspiel`, standard modes disabled, `standardModeConfig`
-NULL, PUBLISHED) lost every available mode for participants as soon as a KB was
-attached.
+Problem: a published chatbot with only an approved custom mode, standard modes
+disabled and no `standardModeConfig` lost every available mode for participants
+as soon as a KB was attached. The incident was checked privately.
 
 Evidence: `attachKbToChatbot` (`packages/graphql/src/services/knowledge.ts:1181`)
 loops `KB_MCP_CHAT_MODES = ['tutor', 'explainer']` (`:76`) and creates required

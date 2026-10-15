@@ -53,11 +53,10 @@ session implements it in two slices.
    are set through the GraphQL mutation, so this server rule covers every
    path.
 4. Backfill as a data-only Prisma migration (no schema change): set tier
-   `ADVANCED` for every user whose cost center is non-blank. On production this
-   is exactly the one owner with a cost center, so their Sol-only bot keeps
-   working with no manual step. On staging it lifts the test owners, who all
-   have cost centers. Create it with `prisma migrate dev --create-only` in the
-   container; it holds one `UPDATE`.
+   `ADVANCED` for every user whose cost center is non-blank, so existing
+   accounts with a cost center retain advanced access without a manual step.
+   Deployment impact was checked privately. Create it with
+   `prisma migrate dev --create-only` in the container; it holds one `UPDATE`.
 5. Saving a chatbot revision rejects a newly added `ADVANCED` model when the
    bot's owner is not entitled to it (`normalizeRevisionModelPolicy` /
    `saveChatbotRevision` in `packages/graphql/src/services/chatbots.ts`).
