@@ -33,7 +33,7 @@ const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1'])
 const CHAT_PATH = '/v1/chat/completions'
 const SHUTDOWN_PATH = '/shutdown'
 
-// Only OpenAI-compatible sampling and tool fields reach Mistral. Anything else
+// Only explicitly supported OpenAI-compatible fields reach Mistral. Anything else
 // in the incoming body (reasoning, provider, thinking, stream_options, ...) is
 // dropped by omission rather than copied and filtered.
 const PASSTHROUGH_FIELDS = [
@@ -255,6 +255,15 @@ function normalizeUsage(usage) {
   const normalized = {}
   for (const key of ['prompt_tokens', 'completion_tokens', 'total_tokens']) {
     if (Number.isFinite(usage[key])) normalized[key] = usage[key]
+  }
+  const cached = usage.prompt_tokens_details?.cached_tokens
+  if (
+    Number.isSafeInteger(cached) &&
+    cached >= 0 &&
+    Number.isSafeInteger(normalized.prompt_tokens) &&
+    cached <= normalized.prompt_tokens
+  ) {
+    normalized.prompt_tokens_details = { cached_tokens: cached }
   }
   return Object.keys(normalized).length > 0 ? normalized : undefined
 }
@@ -538,6 +547,15 @@ function translateMistralRequest(body, history = createHistoryStore()) {
     messages: history.restoreMessages(body.messages),
     reasoning_effort: effort,
   }
+  if (body.prompt_cache_key !== undefined) {
+    if (
+      typeof body.prompt_cache_key !== 'string' ||
+      !/^[A-Za-z0-9_-]{1,64}$/.test(body.prompt_cache_key)
+    ) {
+      throw new AdapterError('invalid_request', 'invalid prompt cache key')
+    }
+    translated.prompt_cache_key = body.prompt_cache_key
+  }
   for (const field of PASSTHROUGH_FIELDS) {
     if (body[field] !== undefined && body[field] !== null) {
       translated[field] = body[field]
@@ -725,6 +743,11 @@ async function startAdapter(options = {}) {
     length_finishes: 0,
     prompt_tokens: 0,
     completion_tokens: 0,
+    cached_prompt_tokens: 0,
+    uncached_prompt_tokens: 0,
+    cache_usage_responses: 0,
+    missing_cache_usage: 0,
+    invalid_cache_usage: 0,
     max_request_bytes: 0,
     request_bytes: 0,
   }
@@ -856,6 +879,17 @@ async function startAdapter(options = {}) {
         diagnostics.prompt_tokens += normalized.usage.prompt_tokens ?? 0
         diagnostics.completion_tokens += normalized.usage.completion_tokens ?? 0
       } else diagnostics.missing_usage += 1
+      const cached = normalized.usage?.prompt_tokens_details?.cached_tokens
+      if (cached !== undefined) {
+        diagnostics.cache_usage_responses += 1
+        diagnostics.cached_prompt_tokens += cached
+        diagnostics.uncached_prompt_tokens +=
+          normalized.usage.prompt_tokens - cached
+      } else if (
+        payload.usage?.prompt_tokens_details?.cached_tokens !== undefined
+      ) {
+        diagnostics.invalid_cache_usage += 1
+      } else diagnostics.missing_cache_usage += 1
       const choice = normalized.choices[0]
       if (choice.finish_reason === 'length') diagnostics.length_finishes += 1
       if (main && !choice.message.tool_calls?.length) {
