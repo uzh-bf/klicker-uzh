@@ -558,6 +558,21 @@ test.describe('Chatbot Messaging Interface', () => {
       await page.getByTestId('chat-new-thread-button').click()
       await expect(welcome).toHaveText(welcomeMessage)
       await expect(starters).toHaveText(starterPrompts)
+      await page.goto(`${chatUrl()}/${CHATBOT_ID}?embed=true`, {
+        waitUntil: 'domcontentloaded',
+      })
+      const embeddedMode = page
+        .getByTestId('chat-embedded-toolbar')
+        .getByRole('combobox')
+      await embeddedMode.selectOption(modes[0].key)
+      await expect(welcome).toHaveText(welcomeMessage)
+      await expect(page.getByTestId('chat-welcome-mode')).toHaveCount(0)
+      await embeddedMode.selectOption(modes[1].key)
+      await expect(welcome).toHaveCount(0)
+      await expect(embeddedMode).toBeVisible()
+      await embeddedMode.selectOption(modes[0].key)
+      await expect(welcome).toHaveText(welcomeMessage)
+      await expect(page.getByTestId('chat-welcome-mode')).toHaveCount(0)
     } finally {
       await prisma.chatbot.update({
         where: { id: CHATBOT_ID },

@@ -712,31 +712,29 @@ const ThreadWelcome: FC<{
                 )}
               </>
             )}
-            {!welcomeMessage &&
-              (!embedded || customModeWelcome) &&
-              modeLabel && (
-                <div
-                  data-cy="chat-welcome-mode"
-                  className="border-border bg-muted/60 text-foreground animate-in fade-in slide-in-from-bottom-2 mt-5 max-w-md rounded-xl border px-4 py-3 text-left text-sm shadow-sm delay-150 duration-300 motion-reduce:animate-none"
-                >
-                  <p className="font-medium">
-                    {t('chat.thread.welcomeMode', { mode: modeLabel })}
+            {!welcomeMessage && !embedded && modeLabel && (
+              <div
+                data-cy="chat-welcome-mode"
+                className="border-border bg-muted/60 text-foreground animate-in fade-in slide-in-from-bottom-2 mt-5 max-w-md rounded-xl border px-4 py-3 text-left text-sm shadow-sm delay-150 duration-300 motion-reduce:animate-none"
+              >
+                <p className="font-medium">
+                  {t('chat.thread.welcomeMode', { mode: modeLabel })}
+                </p>
+                {Object.keys(modeOptions).length > 1 && (
+                  <div className="mt-3 flex justify-center">
+                    <ModeSwitcher
+                      modeOptions={modeOptions}
+                      testIdPrefix="chat-welcome-mode"
+                    />
+                  </div>
+                )}
+                {modeDescription ? (
+                  <p className="text-muted-foreground mt-1 text-pretty">
+                    {modeDescription}
                   </p>
-                  {Object.keys(modeOptions).length > 1 && (
-                    <div className="mt-3 flex justify-center">
-                      <ModeSwitcher
-                        modeOptions={modeOptions}
-                        testIdPrefix="chat-welcome-mode"
-                      />
-                    </div>
-                  )}
-                  {modeDescription ? (
-                    <p className="text-muted-foreground mt-1 text-pretty">
-                      {modeDescription}
-                    </p>
-                  ) : null}
-                </div>
-              )}
+                ) : null}
+              </div>
+            )}
             {contextLabel && (
               <p className="text-muted-foreground mt-1 max-w-xs text-xs">
                 {contextLabel}
