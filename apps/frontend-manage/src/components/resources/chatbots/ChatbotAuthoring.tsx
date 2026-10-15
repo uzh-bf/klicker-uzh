@@ -14,6 +14,7 @@ import {
   CHATBOT_CUSTOM_MODE_NAME_MAX_LENGTH,
   CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH,
   CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH,
+  CHATBOT_CUSTOM_MODE_WELCOME_MESSAGE_MAX_LENGTH,
 } from '@klicker-uzh/util/chatbot-custom-mode-limits'
 import {
   Accordion,
@@ -106,6 +107,7 @@ type CustomModeFormValues = {
     key: string
     name: string
     description: string
+    welcomeMessage: string
     personaText: string
   }[]
 }
@@ -122,6 +124,7 @@ function getCustomModeFormValues(
       key: mode.key,
       name: mode.name,
       description: mode.description ?? '',
+      welcomeMessage: mode.welcomeMessage ?? '',
       personaText: mode.personaText ?? '',
     })),
   }
@@ -134,6 +137,7 @@ function getCustomModeInputs(
     key: mode.key.startsWith('custom-mode-') ? null : mode.key,
     name: mode.name,
     description: mode.description || null,
+    welcomeMessage: mode.welcomeMessage || null,
     personaText: mode.personaText || null,
   }))
 }
@@ -578,6 +582,23 @@ function CustomModesEditor({
                         />
                         <FormikTextareaField
                           disabled={controlsDisabled}
+                          name={`modes[${index}].welcomeMessage`}
+                          label={t(
+                            'manage.resources.chatbotCustomModeWelcomeMessage'
+                          )}
+                          placeholder={t(
+                            'manage.resources.chatbotCustomModeWelcomePlaceholder'
+                          )}
+                          maxLength={
+                            CHATBOT_CUSTOM_MODE_WELCOME_MESSAGE_MAX_LENGTH
+                          }
+                          maxLengthUnit={t('shared.generic.characters')}
+                          data={{
+                            cy: `chatbot-custom-mode-welcome-${index}`,
+                          }}
+                        />
+                        <FormikTextareaField
+                          disabled={controlsDisabled}
                           name={`modes[${index}].personaText`}
                           label={t(
                             'manage.resources.chatbotCustomModePersonaText'
@@ -611,6 +632,7 @@ function CustomModesEditor({
                           key: `custom-mode-${nextClientKey.current}`,
                           name: '',
                           description: '',
+                          welcomeMessage: '',
                           personaText: '',
                         },
                       ])
@@ -1774,6 +1796,18 @@ function ChatbotAuthoring({
                           {mode.description ? (
                             <div className="mt-1 text-gray-700">
                               {mode.description}
+                            </div>
+                          ) : null}
+                          {mode.welcomeMessage ? (
+                            <div className="mt-1 text-gray-700">
+                              <span className="font-medium text-gray-600">
+                                {t(
+                                  'manage.resources.chatbotCustomModeWelcomeMessage'
+                                )}
+                              </span>
+                              <div className="whitespace-pre-wrap">
+                                {mode.welcomeMessage}
+                              </div>
                             </div>
                           ) : null}
                           {mode.personaText ? (

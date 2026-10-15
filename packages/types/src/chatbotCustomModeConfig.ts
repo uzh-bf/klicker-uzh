@@ -8,6 +8,11 @@ export type ChatbotCustomMode = {
   name: string
   description: string | null
   personaText: string | null
+  /**
+   * Authored interface text for an empty chat. Absent or null means the
+   * runtime falls back to its generic greeting; it is never sent to the model.
+   */
+  welcomeMessage?: string | null
 }
 
 /** Persisted, platform-constrained set of custom chat modes for one chatbot. */
@@ -25,6 +30,11 @@ export type ChatbotCustomModeInput = {
   name: string
   description?: string | null
   personaText?: string | null
+  /**
+   * Omission keeps the stored welcome of an existing mode; null or blank
+   * clears it.
+   */
+  welcomeMessage?: string | null
 }
 
 /** Full replacement input accepted by the section-patch save mutation. */

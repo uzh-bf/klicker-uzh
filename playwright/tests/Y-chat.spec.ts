@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { Prisma } from '@klicker-uzh/prisma/client'
 import { getPrisma } from '../global-setup.js'
 import {
   CHATBOT_ID,
@@ -465,6 +466,87 @@ test.describe('Chatbot Messaging Interface', () => {
       'Get step-by-step guidance with focused questions, hints, and feedback.'
     )
     await expect(page.getByTestId('chat-welcome-suggestion')).toHaveCount(2)
+  })
+
+  test('Custom-mode welcome follows the selected mode and empty-thread state', async ({
+    page,
+  }) => {
+    const prisma = await getPrisma()
+    const original = await prisma.chatbot.findUniqueOrThrow({
+      where: { id: CHATBOT_ID },
+      select: { customModeConfig: true, standardModeConfig: true },
+    })
+    const welcomeMessage =
+      'A synthetic introduction.\n<img src=x onerror=alert(1)>'
+    const modes = [
+      {
+        key: 'cm_intro_fixture',
+        name: 'Conversation practice',
+        description: null,
+        personaText: null,
+        welcomeMessage,
+      },
+      {
+        key: 'cm_legacy_fixture',
+        name: 'Independent practice',
+        description: null,
+        personaText: null,
+      },
+    ]
+    const chatRequests: string[] = []
+    page.on('request', (request) => {
+      if (
+        request.method() === 'POST' &&
+        request.url().endsWith(`/api/chatbots/${CHATBOT_ID}/chat`)
+      ) {
+        chatRequests.push(request.postData() ?? '')
+      }
+    })
+    try {
+      await prisma.chatbot.update({
+        where: { id: CHATBOT_ID },
+        data: {
+          standardModeConfig: {
+            tutorEnabled: false,
+            explainerEnabled: false,
+            quizzerEnabled: false,
+            scopeNote: null,
+          },
+          customModeConfig: { modes },
+        },
+      })
+      await visitChat(page)
+      const welcome = page.getByTestId('chat-custom-mode-welcome')
+      await expect(welcome).toHaveText(welcomeMessage)
+      await expect(welcome.locator('img')).toHaveCount(0)
+      await expect(page.getByTestId('chat-welcome-suggestions')).toHaveCount(0)
+      expect(chatRequests).toHaveLength(0)
+      await page.getByTestId('chat-welcome-mode-switcher').click()
+      await page
+        .getByTestId('chat-welcome-mode-option-cm_legacy_fixture')
+        .click()
+      await expect(welcome).toHaveCount(0)
+      await page.getByTestId('chat-welcome-mode-switcher').click()
+      await page
+        .getByTestId('chat-welcome-mode-option-cm_intro_fixture')
+        .click()
+      await expect(welcome).toHaveText(welcomeMessage)
+      await sendMessage(page, 'Synthetic student reply')
+      await expect(page.getByTestId('chat-assistant-message')).toBeVisible()
+      await expect(welcome).toHaveCount(0)
+      expect(chatRequests).toHaveLength(1)
+      expect(chatRequests[0]).not.toContain(welcomeMessage)
+      await page.getByTestId('chat-new-thread-button').click()
+      await expect(welcome).toHaveText(welcomeMessage)
+    } finally {
+      await prisma.chatbot.update({
+        where: { id: CHATBOT_ID },
+        data: {
+          customModeConfig: original.customModeConfig ?? Prisma.DbNull,
+          standardModeConfig: original.standardModeConfig ?? Prisma.DbNull,
+        },
+      })
+    }
   })
 
   test('Starter prompt is editable and contains no raw placeholder', async ({

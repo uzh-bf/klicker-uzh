@@ -5007,6 +5007,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotCustomModePersonaText: 'Persona and instructions',
       chatbotCustomModePersonaPlaceholder:
         'Describe how this mode should respond to participants.',
+      chatbotCustomModeWelcomeMessage: 'Welcome message',
+      chatbotCustomModeWelcomePlaceholder:
+        'Shown in an empty chat for this mode. Leave empty to use the standard greeting.',
       chatbotCustomModeAdd: 'Add custom mode',
       chatbotCustomModeRemove: 'Remove',
       chatbotCustomModesLimit: 'At most {count} custom modes are supported.',

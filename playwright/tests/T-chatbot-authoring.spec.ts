@@ -891,6 +891,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
   test('authors a custom mode that survives save and review', async ({
     page,
   }) => {
+    const welcomeMessage = 'Welcome to the synthetic debate.\nChoose a position to begin.'
     let customModeConfigVariables: Record<string, unknown> | undefined
     await page.route('**/api/graphql', async (route) => {
       const request = route.request()
@@ -916,6 +917,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await page
       .getByTestId('chatbot-custom-mode-persona-0')
       .fill('Challenge the participant with counter-arguments.')
+    await page.getByTestId('chatbot-custom-mode-welcome-0').fill(welcomeMessage)
     await expect(page.getByTestId('save-chatbot-custom-modes')).toBeEnabled()
     await page.getByTestId('save-chatbot-custom-modes').click()
     await expect
@@ -927,6 +929,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
             name: 'Debate coach',
             description: 'Argues both sides of a course question.',
             personaText: 'Challenge the participant with counter-arguments.',
+            welcomeMessage,
           },
         ],
       })
@@ -943,6 +946,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(page.getByTestId('chatbot-custom-mode-persona-0')).toHaveValue(
       'Challenge the participant with counter-arguments.'
     )
+    await expect(page.getByTestId('chatbot-custom-mode-welcome-0')).toHaveValue(welcomeMessage)
 
     await page.reload()
     await navigateToSetupStep(page, 'review')
@@ -955,6 +959,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(
       page.getByTestId('chatbot-review-custom-mode-0')
     ).toContainText('Challenge the participant with counter-arguments.')
+    await expect(page.getByTestId('chatbot-review-custom-mode-0')).toContainText(welcomeMessage)
 
     // Approval only applies to a revision that was submitted for review, so the
     // draft has to pass the publication gate before it can be approved.

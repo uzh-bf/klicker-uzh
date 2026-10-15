@@ -819,6 +819,7 @@ type ChatbotCustomMode {
   key: String!
   name: String!
   personaText: String
+  welcomeMessage: String
 }
 
 type ChatbotCustomModeConfig {
@@ -834,6 +835,7 @@ input ChatbotCustomModeInput {
   key: String
   name: String!
   personaText: String
+  welcomeMessage: String
 }
 
 type ChatbotDisclaimerSummary {

@@ -61,4 +61,14 @@ describe('thread suggestions', () => {
     ).toBe('custom')
     expect(resolveSelectedMode({}, 'tutor')).toBe('')
   })
+
+  test('keeps optional welcome text without trusting malformed presentation values', () => {
+    const welcomeMessage = 'Synthetic introduction\nSecond line'
+    expect(
+      parseModeOptions({ custom: { description: '', welcomeMessage } })
+    ).toEqual({ custom: { description: '', welcomeMessage } })
+    expect(
+      parseModeOptions({ custom: { description: '', welcomeMessage: {} } })
+    ).toEqual({ custom: { description: '' } })
+  })
 })

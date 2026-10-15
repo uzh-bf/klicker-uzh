@@ -912,6 +912,7 @@ describe('chatbot authoring revision transitions', () => {
 
   it('materializes an approved custom mode into the live column', async () => {
     const bot = await seed()
+    const approvedWelcome = 'First synthetic welcome.\nAsk about interviews.'
     const saved = await service.saveChatbotRevision(
       {
         chatbotId: bot.id,
@@ -923,6 +924,7 @@ describe('chatbot authoring revision transitions', () => {
                 name: 'Interview coach',
                 description: 'Practices interview questions',
                 personaText: 'You are an interview coach.',
+                welcomeMessage: approvedWelcome,
               },
             ],
           },
@@ -932,6 +934,9 @@ describe('chatbot authoring revision transitions', () => {
     )
     const key = saved?.authoringRevision?.customModeConfig?.modes[0]?.key
     expect(key).toMatch(/^cm_/)
+    expect(
+      saved?.authoringRevision?.customModeConfig?.modes[0]?.welcomeMessage
+    ).toBe(approvedWelcome)
     // A published chatbot keeps serving its live configuration until approval.
     expect((await read(bot.id)).customModeConfig).toBeNull()
 
@@ -946,6 +951,7 @@ describe('chatbot authoring revision transitions', () => {
             name: 'Interview coach',
             description: 'Practices interview questions',
             personaText: 'You are an interview coach.',
+            welcomeMessage: approvedWelcome,
           },
         ],
       },
@@ -964,9 +970,103 @@ describe('chatbot authoring revision transitions', () => {
           name: 'Interview coach',
           description: 'Practices interview questions',
           personaText: 'You are an interview coach.',
+          welcomeMessage: approvedWelcome,
         },
       ],
     })
+  })
+
+  it('keeps draft welcome changes away from the live configuration', async () => {
+    const bot = await seed()
+    const approvedWelcome = 'First synthetic welcome.'
+    const draftWelcome = 'Draft synthetic welcome.'
+    const readWelcome = (config: unknown) =>
+      (config as { modes: { welcomeMessage?: string | null }[] } | null)
+        ?.modes[0]?.welcomeMessage ?? null
+
+    const saved = await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 0,
+        input: {
+          customModeConfig: {
+            modes: [
+              {
+                name: 'Interview coach',
+                personaText: 'You are an interview coach.',
+                welcomeMessage: approvedWelcome,
+              },
+            ],
+          },
+        },
+      },
+      owner
+    )
+    const key = saved?.authoringRevision?.customModeConfig?.modes[0]?.key
+
+    await submit(bot.id, 1)
+    await service.approveChatbotRevision(
+      { id: bot.id, expectedRevisionVersion: 2 },
+      admin
+    )
+    expect(readWelcome((await read(bot.id)).customModeConfig)).toBe(
+      approvedWelcome
+    )
+
+    await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 3,
+        input: {
+          customModeConfig: {
+            modes: [
+              {
+                key,
+                name: 'Interview coach',
+                personaText: 'You are an interview coach.',
+                welcomeMessage: draftWelcome,
+              },
+            ],
+          },
+        },
+      },
+      owner
+    )
+    const staged = await read(bot.id)
+    // The draft column holds a full revision snapshot, so the configuration is
+    // nested one level deeper than in the live column.
+    expect(
+      readWelcome(
+        (staged.draftConfig as { customModeConfig: unknown }).customModeConfig
+      )
+    ).toBe(draftWelcome)
+    expect(readWelcome(staged.customModeConfig)).toBe(approvedWelcome)
+
+    // A save that omits the presentation field keeps the staged welcome.
+    await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 4,
+        input: {
+          customModeConfig: {
+            modes: [
+              {
+                key,
+                name: 'Hiring panel',
+                personaText: 'You are an interview coach.',
+              },
+            ],
+          },
+        },
+      },
+      owner
+    )
+    const afterOmitted = await read(bot.id)
+    expect(
+      (afterOmitted.draftConfig as { customModeConfig: unknown })
+        .customModeConfig
+    ).toMatchObject({ modes: [{ key, welcomeMessage: draftWelcome }] })
+    expect(readWelcome(afterOmitted.customModeConfig)).toBe(approvedWelcome)
   })
 
   it('keeps a rejected custom mode out of the live column', async () => {

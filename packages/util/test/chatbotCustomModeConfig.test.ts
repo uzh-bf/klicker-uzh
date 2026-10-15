@@ -4,6 +4,7 @@ import {
   CHATBOT_CUSTOM_MODE_NAME_MAX_LENGTH,
   CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH,
   CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH,
+  CHATBOT_CUSTOM_MODE_WELCOME_MESSAGE_MAX_LENGTH,
   normalizeChatbotCustomModeConfig,
   parseChatbotCustomModeConfigInput,
 } from '../src/chatbotCustomModeConfig.js'
@@ -38,7 +39,7 @@ describe('chatbot custom mode configuration', () => {
     )
   })
 
-  it('rejects over-long names, descriptions, and persona text', () => {
+  it('rejects over-long names, descriptions, persona text, and welcomes', () => {
     expect(() =>
       parseModes(
         [{ name: 'x'.repeat(CHATBOT_CUSTOM_MODE_NAME_MAX_LENGTH + 1) }],
@@ -70,6 +71,120 @@ describe('chatbot custom mode configuration', () => {
     ).toThrow(
       `personaText must be at most ${CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH}`
     )
+    expect(() =>
+      parseModes(
+        [
+          {
+            name: 'Mode',
+            welcomeMessage: 'x'.repeat(
+              CHATBOT_CUSTOM_MODE_WELCOME_MESSAGE_MAX_LENGTH + 1
+            ),
+          },
+        ],
+        null
+      )
+    ).toThrow(
+      `welcomeMessage must be at most ${CHATBOT_CUSTOM_MODE_WELCOME_MESSAGE_MAX_LENGTH}`
+    )
+  })
+
+  it('normalizes and round-trips an authored welcome message', () => {
+    const created = parseModes(
+      [
+        {
+          name: 'Interview coach',
+          welcomeMessage: '  Hello!\r\nAsk me about interviews.  ',
+        },
+      ],
+      null
+    )
+    const key = created.modes[0]?.key
+
+    expect(created.modes[0]?.welcomeMessage).toBe(
+      'Hello!\nAsk me about interviews.'
+    )
+    // Re-validating the stored configuration keeps the authored text.
+    expect(
+      parseModes(
+        [
+          {
+            key,
+            name: 'Interview coach',
+            welcomeMessage: created.modes[0]?.welcomeMessage,
+          },
+        ],
+        created
+      ).modes[0]?.welcomeMessage
+    ).toBe('Hello!\nAsk me about interviews.')
+  })
+
+  it('clears the stored welcome on an explicit null or blank write', () => {
+    const stored = parseModes(
+      [{ name: 'Interview coach', welcomeMessage: 'Hello there!' }],
+      null
+    )
+    const key = stored.modes[0]?.key
+
+    for (const cleared of [null, '   ']) {
+      expect(
+        parseModes(
+          [
+            {
+              key,
+              name: 'Interview coach',
+              welcomeMessage: cleared,
+            },
+          ],
+          stored
+        ).modes[0]?.welcomeMessage ?? null
+      ).toBeNull()
+    }
+  })
+
+  it('preserves the stored welcome when a save omits the field', () => {
+    const stored = parseModes(
+      [{ name: 'Interview coach', welcomeMessage: 'Hello there!' }],
+      null
+    )
+    const key = stored.modes[0]?.key
+
+    const resaved = parseModes(
+      [
+        { key, name: 'Interview coach', description: 'Narrowed scope' },
+        { name: 'Fresh mode' },
+      ],
+      stored
+    )
+
+    expect(resaved.modes[0]?.welcomeMessage).toBe('Hello there!')
+    // A newly authored mode never inherits another mode's welcome.
+    expect(resaved.modes[1]?.welcomeMessage ?? null).toBeNull()
+  })
+
+  it('discards only an invalid stored welcome and keeps the mode', () => {
+    const config = normalizeChatbotCustomModeConfig({
+      modes: [
+        { key: 'cm_number', name: 'Number welcome', welcomeMessage: 42 },
+        {
+          key: 'cm_long',
+          name: 'Long welcome',
+          welcomeMessage: 'x'.repeat(
+            CHATBOT_CUSTOM_MODE_WELCOME_MESSAGE_MAX_LENGTH + 1
+          ),
+        },
+        {
+          key: 'cm_valid',
+          name: 'Valid welcome',
+          welcomeMessage: '  Hi\r\nthere  ',
+        },
+      ],
+    })
+
+    expect(config?.modes.map((mode) => mode.welcomeMessage ?? null)).toEqual([
+      null,
+      null,
+      'Hi\nthere',
+    ])
   })
 
   it('applies the extended persona limit only to new or edited text', () => {

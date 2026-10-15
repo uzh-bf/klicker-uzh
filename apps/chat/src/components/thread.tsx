@@ -638,6 +638,10 @@ const ThreadWelcome: FC<{
   const modeDescription = activeMode
     ? getModeDescription(t, activeMode, modeOptions)
     : null
+  const customModeWelcome =
+    !welcomeMessage && !isKnownMode(activeMode)
+      ? modeOptions[activeMode]?.welcomeMessage
+      : undefined
   return (
     <AuiIf condition={(s) => s.thread.isEmpty}>
       <div
@@ -677,7 +681,20 @@ const ThreadWelcome: FC<{
                 {welcomeMessage}
               </div>
             )}
-            {!welcomeMessage && !embedded && (
+            {customModeWelcome && (
+              <>
+                <h2 className="text-2xl font-semibold text-pretty sm:text-3xl">
+                  {chatbotName}
+                </h2>
+                <div
+                  data-cy="chat-custom-mode-welcome"
+                  className="mt-4 max-w-xl whitespace-pre-wrap break-words text-left text-base"
+                >
+                  {customModeWelcome}
+                </div>
+              </>
+            )}
+            {!welcomeMessage && !customModeWelcome && !embedded && (
               <>
                 <h2 className="animate-in fade-in slide-in-from-bottom-2 text-3xl font-semibold text-pretty duration-300 motion-reduce:animate-none sm:text-4xl">
                   {t('chat.thread.welcomeTitle')}
@@ -688,34 +705,38 @@ const ThreadWelcome: FC<{
                 >
                   {t('chat.thread.welcomeTo', { chatbot: chatbotName })}
                 </p>
-                <p className="text-muted-foreground animate-in fade-in slide-in-from-bottom-2 mt-1 text-base text-pretty delay-100 duration-300 motion-reduce:animate-none">
-                  {t('chat.thread.welcomeSubtitle')}
-                </p>
-                {modeLabel && (
-                  <div
-                    data-cy="chat-welcome-mode"
-                    className="border-border bg-muted/60 text-foreground animate-in fade-in slide-in-from-bottom-2 mt-5 max-w-md rounded-xl border px-4 py-3 text-left text-sm shadow-sm delay-150 duration-300 motion-reduce:animate-none"
-                  >
-                    <p className="font-medium">
-                      {t('chat.thread.welcomeMode', { mode: modeLabel })}
-                    </p>
-                    {Object.keys(modeOptions).length > 1 && (
-                      <div className="mt-3 flex justify-center">
-                        <ModeSwitcher
-                          modeOptions={modeOptions}
-                          testIdPrefix="chat-welcome-mode"
-                        />
-                      </div>
-                    )}
-                    {modeDescription ? (
-                      <p className="text-muted-foreground mt-1 text-pretty">
-                        {modeDescription}
-                      </p>
-                    ) : null}
-                  </div>
+                {isKnownMode(activeMode) && (
+                  <p className="text-muted-foreground animate-in fade-in slide-in-from-bottom-2 mt-1 text-base text-pretty delay-100 duration-300 motion-reduce:animate-none">
+                    {t('chat.thread.welcomeSubtitle')}
+                  </p>
                 )}
               </>
             )}
+            {!welcomeMessage &&
+              (!embedded || customModeWelcome) &&
+              modeLabel && (
+                <div
+                  data-cy="chat-welcome-mode"
+                  className="border-border bg-muted/60 text-foreground animate-in fade-in slide-in-from-bottom-2 mt-5 max-w-md rounded-xl border px-4 py-3 text-left text-sm shadow-sm delay-150 duration-300 motion-reduce:animate-none"
+                >
+                  <p className="font-medium">
+                    {t('chat.thread.welcomeMode', { mode: modeLabel })}
+                  </p>
+                  {Object.keys(modeOptions).length > 1 && (
+                    <div className="mt-3 flex justify-center">
+                      <ModeSwitcher
+                        modeOptions={modeOptions}
+                        testIdPrefix="chat-welcome-mode"
+                      />
+                    </div>
+                  )}
+                  {modeDescription ? (
+                    <p className="text-muted-foreground mt-1 text-pretty">
+                      {modeDescription}
+                    </p>
+                  ) : null}
+                </div>
+              )}
             {contextLabel && (
               <p className="text-muted-foreground mt-1 max-w-xs text-xs">
                 {contextLabel}
