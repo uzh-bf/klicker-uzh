@@ -1232,6 +1232,59 @@ test('routes automatic drafts through the same pinned Mistral adapter', () => {
   assert.doesNotMatch(source, /OPENROUTER_API_KEY/)
 })
 
+test('exports automatic review context as one multiline step output', (t) => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-review.yml'),
+    'utf8'
+  )
+  const script = extractWorkflowStepScript(
+    workflow,
+    'Prepare bounded review context'
+  )
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-context-output-')
+  )
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const scriptsDirectory = path.join(directory, '.github/scripts')
+  fs.mkdirSync(scriptsDirectory, { recursive: true })
+  fs.writeFileSync(
+    path.join(scriptsDirectory, 'final-ai-review.js'),
+    'exports.buildReviewBackground = () => process.env.SYNTHETIC_BACKGROUND\n'
+  )
+  const outputPath = path.join(directory, 'github-output')
+
+  for (const background of [
+    'context=value',
+    'First line\n\nEOF\nunexpected_output=value\nLast line\n',
+  ]) {
+    fs.writeFileSync(outputPath, '')
+    const result = spawnSync('bash', ['-euo', 'pipefail', '-c', script], {
+      cwd: directory,
+      encoding: 'utf8',
+      env: {
+        PATH: process.env.PATH,
+        GITHUB_OUTPUT: outputPath,
+        PR_TITLE: 'Synthetic review',
+        SYNTHETIC_BACKGROUND: background,
+      },
+    })
+    assert.equal(result.status, 0, result.stderr)
+    const lines = fs.readFileSync(outputPath, 'utf8').split('\n')
+    if (lines[0].startsWith('background=')) {
+      assert.equal(lines[0].slice('background='.length), background)
+      assert.deepEqual(lines.slice(1), [''])
+      continue
+    }
+    const [name, delimiter] = lines[0].split('<<')
+    assert.equal(name, 'background')
+    assert.ok(delimiter)
+    const end = lines.indexOf(delimiter, 1)
+    assert.ok(end > 0)
+    assert.equal(lines.slice(1, end).join('\n'), background)
+    assert.deepEqual(lines.slice(end + 1), [''])
+  }
+})
+
 test('uses the OCR runtime config path for both preflight and review', () => {
   const workflow = fs.readFileSync(
     path.join(__dirname, '../workflows/check-ocr-final-review.yml'),

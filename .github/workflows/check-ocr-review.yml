@@ -41,10 +41,15 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           node - <<'NODE'
+          const { randomUUID } = require('node:crypto')
           const fs = require('node:fs')
           const { buildReviewBackground } = require('./.github/scripts/final-ai-review.js')
           const background = buildReviewBackground(process.env.PR_TITLE)
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `background=${background}\n`)
+          const delimiter = `ocr-context-${randomUUID()}`
+          fs.appendFileSync(
+            process.env.GITHUB_OUTPUT,
+            `background<<${delimiter}\n${background}\n${delimiter}\n`
+          )
           NODE
 
       - name: Start Mistral adapter
