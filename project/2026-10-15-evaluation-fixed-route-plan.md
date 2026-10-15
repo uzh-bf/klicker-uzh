@@ -127,7 +127,17 @@ not treated as a passed gate. The required planner gate is complete.
 
 ## Progress
 
-Plan hardening approved; implementation not started. Baseline guard suite passed
-10 tests in an offline container using existing dependency volumes.
-Required delivery: draft PR, mandatory fake-only proof, reviews and CI disposition.
-Next: finish plan hardening, commit this plan, implement the single slice.
+Plan hardening approved. The implementation closes the default-tier route,
+snapshots policy inputs and rejects unqualified cache/storage controls.
+The executor's first contract checks reproduced the missing behavior, followed
+by a passing integrated run: 47 tests across guard, target and trajectory suites
+in an offline container. Biome and Prettier checks passed; pre-existing Biome
+advisories remain. Focused Opengrep reported no findings in the changed
+executable files. No new dependency, module, schema or framework pin change.
+Substantive implementation size: 241 added and 34 removed lines; plan and
+documentation excluded. Test delta: two new contract tests, existing retry and
+denial cases extended, duplicate draft tests consolidated before commit.
+
+Required delivery remains draft PR, mandatory fake-only proof, slice reviews,
+integrated final review and CI disposition. Next: commit the implementation and
+run the configured immutable-range reviews while qualification proceeds.

@@ -71,6 +71,7 @@ export function validatePricingPolicy(policy) {
           'qualification',
           'upstreamOrigin',
           'models',
+          'fixedRoute',
         ].includes(key)
     )
   )
@@ -89,7 +90,23 @@ export function validatePricingPolicy(policy) {
     ) {
       throw new Error('invalid')
     }
+    const hostname = upstream.hostname.replace(/\.$/, '')
+    if (
+      (hostname === 'openrouter.ai' || hostname.endsWith('.openrouter.ai')) &&
+      policy.fixedRoute === undefined
+    ) {
+      throw new Error('missing fixed route')
+    }
   } catch {
+    throw budgetError('pricing_policy_invalid')
+  }
+  if (
+    policy.fixedRoute !== undefined &&
+    (!policy.fixedRoute ||
+      Object.keys(policy.fixedRoute).length !== 2 ||
+      policy.fixedRoute.type !== 'openrouter' ||
+      policy.fixedRoute.provider !== 'openai')
+  ) {
     throw budgetError('pricing_policy_invalid')
   }
   for (const [name, model] of Object.entries(policy.models)) {
@@ -142,6 +159,7 @@ export function requestReservation(policy, pathname, body) {
   if (!model) throw budgetError('provider_model_unqualified')
   if (body.n !== undefined && body.n !== 1)
     throw budgetError('provider_request_unbounded')
+  if (body.store === true) throw budgetError('provider_request_unqualified')
   if (body.truncation !== undefined && body.truncation !== 'disabled')
     throw budgetError('provider_request_unbounded')
   if (
@@ -183,6 +201,8 @@ export function requestReservation(policy, pathname, body) {
   const checkModalities = (value, depth = 0) => {
     if (depth > 64) throw budgetError('provider_request_invalid')
     if (!value || typeof value !== 'object') return
+    if (Object.hasOwn(value, 'cache_control'))
+      throw budgetError('provider_request_unqualified')
     if (
       typeof value.type === 'string' &&
       /image|audio|video|file|web_search|computer|code_interpreter/.test(
@@ -193,7 +213,7 @@ export function requestReservation(policy, pathname, body) {
     }
     for (const entry of Object.values(value)) checkModalities(entry, depth + 1)
   }
-  checkModalities(input)
+  checkModalities(body)
   const output =
     pathname === '/v1/responses'
       ? body.max_output_tokens
@@ -252,6 +272,7 @@ export async function createSpendGuard({
   upstreamKey,
   timeoutMs = 120_000,
 }) {
+  policy = structuredClone(policy)
   validatePricingPolicy(policy)
   const policyHash = fingerprint(policy)
   const ledger = await readBudgetLedger(budgetFile)
@@ -291,6 +312,21 @@ export async function createSpendGuard({
       // The guard consumes the proxy-only `cache` hint; the native upstream
       // does not support it, so forward the reserved request without it.
       delete body.cache
+      if (policy.fixedRoute) {
+        const model = policy.models[body.model]
+        body.service_tier = 'default'
+        body.provider = {
+          only: [policy.fixedRoute.provider],
+          order: [policy.fixedRoute.provider],
+          allow_fallbacks: false,
+          require_parameters: true,
+          max_price: {
+            prompt: String(model.inputMicroUsdPerMillion / 1_000_000),
+            completion: String(model.outputMicroUsdPerMillion / 1_000_000),
+            request: '0',
+          },
+        }
+      }
       timeout = setTimeout(() => controller.abort(), timeoutMs)
       response.once('close', () => {
         if (!response.writableEnded) controller.abort()

@@ -60,7 +60,14 @@ async function close(server) {
   await new Promise((resolve) => server.close(resolve))
 }
 
-async function scenario(body, cap = 2400) {
+async function scenario(body, options = {}) {
+  const settings = typeof options === 'number' ? { cap: options } : options
+  const {
+    cap = 2400,
+    basePolicy = policy,
+    path = '/v1/responses',
+    request: defaultRequest = request,
+  } = settings
   const directory = await mkdtemp(join(tmpdir(), 'evaluation-guard-'))
   const budgetFile = join(directory, 'budget.json')
   const calls = []
@@ -98,7 +105,7 @@ async function scenario(body, cap = 2400) {
     })
     const upstreamOrigin = await listen(upstream)
     const qualifiedPolicy = {
-      ...policy,
+      ...basePolicy,
       upstreamOrigin: upstreamOrigin + '/v1',
     }
     await initializeBudget(budgetFile, fingerprint(qualifiedPolicy), {
@@ -113,8 +120,8 @@ async function scenario(body, cap = 2400) {
     })
     const origin = await listen(guard)
     release = await acquireBudgetLock(budgetFile, '.run')
-    const send = (payload = request, headers = {}) =>
-      fetch(origin + '/v1/responses', {
+    const send = (payload = defaultRequest, headers = {}, target = path) =>
+      fetch(origin + target, {
         method: 'POST',
         headers: {
           Authorization: 'Bearer synthetic-guard-key',
@@ -157,28 +164,31 @@ async function scenario(body, cap = 2400) {
 }
 
 test('guard reserves each step and retry durably before forwarding and never refunds failures', async () => {
-  await scenario(async ({ budgetFile, send, calls }) => {
-    const token = await beginBudgetTurn(budgetFile)
-    const first = await send({ ...request, instructions: 'fail' })
-    assert.equal(first.status, 502)
-    assert.equal((await first.json()).error, 'provider_request_failed')
-    const second = await send(request, { 'x-private': 'must not forward' })
-    assert.equal(second.status, 200)
-    assert.ok((await second.text()).includes('synthetic'))
-    const third = await send()
-    assert.equal(third.status, 429)
-    assert.equal(calls.length, 2)
-    assert.equal(calls[1].headers['x-private'], undefined)
-    assert.equal(
-      calls[1].headers.authorization,
-      'Bearer synthetic-upstream-key'
-    )
-    const ledger = await finishBudgetTurn(budgetFile, token, 0.2)
-    assert.equal(ledger.reservedProviderMicroUsd, 2400)
-    assert.equal(ledger.submittedTurns, 1)
-    assert.equal(ledger.creditsUsed, 0.2)
-    assert.equal(ledger.uncertain, false)
-  })
+  await scenario(
+    async ({ budgetFile, send, calls }) => {
+      const token = await beginBudgetTurn(budgetFile)
+      const first = await send({ ...request, instructions: 'fail' })
+      assert.equal(first.status, 502)
+      assert.equal((await first.json()).error, 'provider_request_failed')
+      const second = await send(request, { 'x-private': 'must not forward' })
+      assert.equal(second.status, 200)
+      assert.ok((await second.text()).includes('synthetic'))
+      const third = await send()
+      assert.equal(third.status, 429)
+      assert.equal(calls.length, 2)
+      assert.equal(calls[1].headers['x-private'], undefined)
+      assert.equal(
+        calls[1].headers.authorization,
+        'Bearer synthetic-upstream-key'
+      )
+      const ledger = await finishBudgetTurn(budgetFile, token, 0.2)
+      assert.equal(ledger.reservedProviderMicroUsd, 2400)
+      assert.equal(ledger.submittedTurns, 1)
+      assert.equal(ledger.creditsUsed, 0.2)
+      assert.equal(ledger.uncertain, false)
+    },
+    { basePolicy: openRouterPolicy() }
+  )
 })
 
 test('concurrent provider requests cannot dispatch beyond shared cap', async () => {
@@ -225,22 +235,59 @@ test('unpriced, unbounded, multiple-completion and paid-tool requests never reac
       { ...request, prompt_cache_key: '   ' },
       { ...request, prompt_cache_key: 'x'.repeat(65) },
       { ...request, prompt_cache_key: 7 },
+      { ...request, store: true },
+      {
+        ...request,
+        input: [
+          {
+            type: 'message',
+            content: [
+              {
+                type: 'input_text',
+                text: 'synthetic input',
+                cache_control: { type: 'ephemeral' },
+              },
+            ],
+          },
+        ],
+      },
     ]) {
       const response = await send(invalid)
       assert.equal(response.status, 502)
       await response.text()
     }
-    const response = await fetch(origin + '/v1/chat/completions', {
-      method: 'POST',
-      headers: { Authorization: 'Bearer synthetic-guard-key' },
-      body: JSON.stringify({
+    for (const body of [
+      {
         model: 'synthetic-model',
         messages: [],
         max_completion_tokens: 100,
         n: 2,
-      }),
-    })
-    assert.equal(response.status, 502)
+      },
+      {
+        model: 'synthetic-model',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: 'synthetic input',
+                cache_control: { type: 'ephemeral' },
+              },
+            ],
+          },
+        ],
+        max_completion_tokens: 100,
+      },
+    ]) {
+      const response = await fetch(origin + '/v1/chat/completions', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer synthetic-guard-key' },
+        body: JSON.stringify(body),
+      })
+      assert.equal(response.status, 502)
+      await response.text()
+    }
     assert.equal(calls.length, 0)
     assert.equal(
       (await readBudgetLedger(budgetFile)).reservedProviderMicroUsd,
@@ -508,5 +555,129 @@ test('guard startup rejects a bind failure with EADDRINUSE and registers no shut
   } finally {
     await close(occupied)
     await rm(directory, { recursive: true, force: true })
+  }
+})
+
+const chatRequest = {
+  model: 'synthetic-model',
+  messages: [{ role: 'user', content: 'synthetic input' }],
+  max_completion_tokens: 100,
+  stream: true,
+}
+
+// A fresh policy per scenario so the mutation test cannot corrupt the shared fixture.
+function openRouterPolicy(upstreamOrigin = 'https://openrouter.ai/api/v1') {
+  return {
+    ...policy,
+    upstreamOrigin,
+    models: { 'synthetic-model': { ...policy.models['synthetic-model'] } },
+    fixedRoute: { type: 'openrouter', provider: 'openai' },
+  }
+}
+
+const injectedProvider = {
+  only: ['openai'],
+  order: ['openai'],
+  allow_fallbacks: false,
+  require_parameters: true,
+  max_price: { prompt: '1', completion: '2', request: '0' },
+}
+
+test('an OpenRouter origin requires the exact closed fixed route and unrelated direct providers keep their shape', () => {
+  for (const upstreamOrigin of [
+    'https://openrouter.ai/api/v1',
+    'https://openrouter.ai./api/v1',
+    'https://api.openrouter.ai/api/v1',
+  ]) {
+    assert.throws(() => validatePricingPolicy({ ...policy, upstreamOrigin }), {
+      code: 'pricing_policy_invalid',
+    })
+  }
+  assert.equal(
+    validatePricingPolicy(openRouterPolicy()).fixedRoute.provider,
+    'openai'
+  )
+  for (const upstreamOrigin of [
+    'https://api.openai.com/v1',
+    'https://openrouter.ai.evil.com/v1',
+  ]) {
+    assert.equal(
+      validatePricingPolicy({ ...policy, upstreamOrigin }).upstreamOrigin,
+      upstreamOrigin
+    )
+  }
+  for (const fixedRoute of [
+    null,
+    {},
+    { type: 'openrouter' },
+    { type: 'openrouter', provider: 'anthropic' },
+    { type: 'generic', provider: 'openai' },
+    { type: 'openrouter', provider: 'openai', only: ['openai'] },
+  ]) {
+    assert.throws(
+      () => validatePricingPolicy({ ...openRouterPolicy(), fixedRoute }),
+      { code: 'pricing_policy_invalid' }
+    )
+  }
+})
+
+test('guard injects the closed OpenRouter route, refuses client routing controls and snapshots the policy on both API paths', async () => {
+  for (const [path, payload] of [
+    ['/v1/responses', request],
+    ['/v1/chat/completions', chatRequest],
+  ]) {
+    await scenario(
+      async ({ budgetFile, qualifiedPolicy, origin, send, calls }) => {
+        const originalUpstream = qualifiedPolicy.upstreamOrigin
+        const originalHash = fingerprint(qualifiedPolicy)
+        await beginBudgetTurn(budgetFile)
+        const first = await send(payload)
+        assert.equal(first.status, 200)
+        await first.text()
+        assert.equal(calls.length, 1)
+        assert.equal(calls[0].body.service_tier, 'default')
+        assert.deepEqual(calls[0].body.provider, injectedProvider)
+        for (const control of [
+          { provider: { allow_fallbacks: true } },
+          { models: ['synthetic-model'] },
+        ]) {
+          const denied = await send({ ...payload, ...control })
+          assert.equal(denied.status, 502)
+          assert.equal(
+            (await denied.json()).error,
+            'provider_request_field_unqualified'
+          )
+        }
+        assert.equal(calls.length, 1)
+        qualifiedPolicy.models['synthetic-model'].outputMicroUsdPerMillion =
+          999_000_000
+        qualifiedPolicy.fixedRoute.provider = 'anthropic'
+        qualifiedPolicy.upstreamOrigin = 'https://mutated.example/v1'
+        const second = await send({
+          ...payload,
+          tools: [
+            {
+              type: 'function',
+              name: 'lookup',
+              parameters: { type: 'object' },
+            },
+          ],
+        })
+        assert.equal(second.status, 200)
+        await second.text()
+        assert.equal(calls.length, 2)
+        assert.equal(calls[1].body.tools[0].type, 'function')
+        assert.deepEqual(calls[1].body.provider, injectedProvider)
+        const status = await fetch(`${origin}/status`, {
+          headers: { Authorization: 'Bearer synthetic-guard-key' },
+          redirect: 'error',
+        })
+        assert.equal((await status.json()).upstreamOrigin, originalUpstream)
+        const ledger = await readBudgetLedger(budgetFile)
+        assert.equal(ledger.reservedProviderMicroUsd, 2400)
+        assert.equal(ledger.policyHash, originalHash)
+      },
+      { basePolicy: openRouterPolicy(), path, request: payload }
+    )
   }
 })
