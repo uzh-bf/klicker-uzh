@@ -780,6 +780,11 @@ test('an invalid launch or query token cannot create a session or retain an iden
   baseURL,
 }, info) => {
   skipWithoutCookieSessions(info.project.name)
+  await signInAs(page, baseURL!, loginUsername)
+  const observer = await context.newPage()
+  await observer.goto(`${baseURL}/editProfile`)
+  await expectIdentity(observer, { email: loginEmail, username: loginUsername })
+  const revision = await sessionRevision(observer)
   const frame = await launch(
     page,
     `${baseURL}/editProfile?jwt=${encodeURIComponent('not-a-valid-jwt')}`
@@ -794,14 +799,18 @@ test('an invalid launch or query token cannot create a session or retain an iden
   ).toBeVisible()
   await expect(frame.getByTestId('update-account-email')).toHaveCount(0)
 
-  // The retired URL credential parameter is ignored: it neither signs in as
-  // that participant nor blocks the anonymous sign-in surface.
-  const other = await signed({ sub: loginId, role: 'PARTICIPANT' }, '14d')
+  // Anyone can trigger a forged launch, so it leaves the shared login intact.
+  await observer.reload()
+  await expectIdentity(observer, { email: loginEmail, username: loginUsername })
+  expect(await sessionRevision(observer)).toBe(revision)
+
+  // The retired URL credential parameter is ignored: it never replaces the
+  // current participant.
+  const other = await signed({ sub: ltiId, role: 'PARTICIPANT' }, '14d')
   await page.goto(
     `${baseURL}/editProfile?participantToken=${encodeURIComponent(other)}`
   )
-  await expect(page.getByTestId('participant-session-recovery')).toBeVisible()
-  await expect(page.getByTestId('update-account-email')).toHaveCount(0)
+  await expectIdentity(page, { email: loginEmail, username: loginUsername })
 })
 
 test('a full LTI 1.3 launch through the tool signs in a new account without retaining a URL credential', async ({

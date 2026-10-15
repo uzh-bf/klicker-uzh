@@ -131,7 +131,11 @@ export default async function getParticipantToken({
   const { query } = ctx
   const cookies = nookies.get(ctx)
   const ambient = cookies.participant_token
-  const hasLtiHandoff = Object.hasOwn(query, 'jwt')
+  // Only a page navigation can be a launch. A subresource request from
+  // another site must not run an exchange or touch the session cookies.
+  const fetchMode = ctx.req.headers['sec-fetch-mode']
+  const navigation = fetchMode === undefined || fetchMode === 'navigate'
+  const hasLtiHandoff = navigation && Object.hasOwn(query, 'jwt')
   const base = {
     participantToken: null,
     cookiesAvailable: !!ambient,
@@ -146,8 +150,13 @@ export default async function getParticipantToken({
     })
     expirePartitionedParticipantCookie(ctx)
   }
+  // Any page can make a browser load a forged launch, even in a hidden frame,
+  // so a failed launch leaves the existing session untouched.
   const reject = (): ParticipantSessionResult => {
-    expireRetainedSession()
+    nookies.destroy(ctx, 'lti-token', {
+      domain: process.env.COOKIE_DOMAIN,
+      path: '/',
+    })
     return { ...base, sessionState: 'rejected' }
   }
   const verifyParticipant = async (token: string) => {
@@ -168,7 +177,11 @@ export default async function getParticipantToken({
     )
   }
 
-  const ltiToken = hasLtiHandoff ? query.jwt : cookies['lti-token']
+  const ltiToken = hasLtiHandoff
+    ? query.jwt
+    : navigation
+      ? cookies['lti-token']
+      : undefined
   if (!ltiToken && !hasLtiHandoff) {
     const token = ambient
     if (!token) return { ...base, sessionState: 'no_launch' }
@@ -241,8 +254,7 @@ export default async function getParticipantToken({
       ...(framed ? { frameToken: token } : {}),
     }
   } catch {
-    base.sessionRevision = clearParticipantCookie(ctx)
-    expirePartitionedParticipantCookie(ctx)
+    // A transient backend failure keeps the existing session usable.
     return { ...base, sessionState: 'exchange_unavailable' }
   }
 }

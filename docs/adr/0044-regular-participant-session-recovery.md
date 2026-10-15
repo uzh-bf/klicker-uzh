@@ -58,8 +58,10 @@ replacement cookies are accepted, the landing URL drops the consumed handoff
 without another exchange; refresh then uses the shared cookie session. The Chat link
 opens normally; its bridge
 checks course membership and confirms any newly exchanged session before
-navigation. Invalid launches block their protected view and clear the regular
-session. Rejected logout/deletion retain the current session and offer feedback.
+navigation. Invalid launches and unavailable exchanges block their protected
+view but leave the existing session untouched, because any site can make a
+browser load a forged launch. Only page navigations count as launches.
+Rejected logout/deletion retain the current session and offer feedback.
 
 The last completed cookie-changing response determines the browser session.
 Already-dispatched server work and Set-Cookie responses cannot be undone by

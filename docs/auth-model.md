@@ -72,8 +72,9 @@ A fresh verified LTI handoff overrides an existing regular participant login.
 PWA and Chat use one shared HttpOnly cookie identity per browser cookie context.
 Only an LMS frame without cookie access keeps its own token in sessionStorage.
 The LTI helper verifies the signed launch before exchanging it; malformed,
-expired or wrong-purpose launches block the protected page and clear the
-regular session instead of falling back to another account. A participant JWT
+expired or wrong-purpose launches block the protected page instead of falling
+back to another account, and leave the existing session untouched: any site can
+make a browser load a forged launch. Only page navigations count as launches. A participant JWT
 in a URL cannot create a session. Registration retains the verified LTI handoff,
 not an ambient older launch.
 

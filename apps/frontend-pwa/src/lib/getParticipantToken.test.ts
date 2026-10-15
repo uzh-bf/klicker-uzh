@@ -186,6 +186,12 @@ it('rejects malformed launches and unusable participant cookies instead of using
     assert.equal(result.participantToken, null)
     assert.equal(result.sessionEstablished, false)
     const cookies = responseCookies(headers)
+    if (Object.hasOwn(query, 'jwt')) {
+      // A rejected launch leaves the existing session untouched.
+      assert.equal(writtenCookie(cookies, 'participant_session'), undefined)
+      assert.equal(writtenCookie(cookies, 'participant_token'), undefined)
+      continue
+    }
     // The unusable retained session expires and the revision rotates to the
     // anonymous state the page can bind.
     assert.ok(result.sessionRevision)
@@ -262,10 +268,50 @@ it('returns one verified registration context and classifies exchange failure wi
       throw new Error('Synthetic network failure')
     },
   } as unknown as ApolloClient<NormalizedCacheObject>
-  const result = await getParticipantToken({ apolloClient: unavailable, ctx })
+  const retained = context(
+    { jwt: fresh },
+    'participant_session=retained-revision'
+  )
+  const result = await getParticipantToken({
+    apolloClient: unavailable,
+    ctx: retained.ctx,
+  })
   assert.equal(result.sessionState, 'exchange_unavailable')
   assert.equal(result.participantToken, null)
   assert.equal(result.sessionEstablished, false)
+  // A transient failure keeps the existing session usable.
+  assert.deepEqual(responseCookies(retained.headers), [])
+  assert.equal(result.sessionRevision, 'retained-revision')
+})
+
+it('ignores launch credentials on requests that are not page navigations', async () => {
+  const ambient = await signJWT(
+    { sub: 'participant-a', role: 'PARTICIPANT' },
+    secret,
+    { expiresIn: '14d' }
+  )
+  const launch = await signJWT(
+    { sub: 'student-b', scope: 'LTI1.3' },
+    secret,
+    { expiresIn: '5m' }
+  )
+  const client = {
+    mutate: async () => {
+      throw new Error('Must not exchange a subresource launch')
+    },
+  } as unknown as ApolloClient<NormalizedCacheObject>
+  for (const jwt of [launch, 'forged']) {
+    const { ctx, headers } = context(
+      { jwt },
+      `participant_token=${ambient}; lti-token=${launch}; participant_session=kept`,
+      { 'sec-fetch-mode': 'no-cors' }
+    )
+    const result = await getParticipantToken({ apolloClient: client, ctx })
+    assert.equal(result.sessionState, 'authenticated')
+    assert.equal(result.participantToken, ambient)
+    assert.equal(result.sessionRevision, 'kept')
+    assert.deepEqual(responseCookies(headers), [])
+  }
 })
 
 it('authenticates a linked LTI subject without email but refuses registration without email', async () => {
