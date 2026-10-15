@@ -29,7 +29,8 @@ continues through its supported watcher.
 ### Working context and authority
 
 Branch: `fix/evaluation-fixed-route`. Target: `v3`, starting at
-`29f7d68e3c56b29bf4d4baeeb1aac3a9c747d843`. PR: none yet.
+`29f7d68e3c56b29bf4d4baeeb1aac3a9c747d843`.
+PR: [6542](https://github.com/uzh-bf/klicker-uzh/pull/6542), draft.
 Execution mode: standard. Ceremony: full path. Boundary owner: self.
 The preceding [evaluator plan](2026-10-12-chatbot-evaluator-plan.md) is history.
 The isolated baseline's application inputs remain frozen. Private qualification
@@ -138,6 +139,10 @@ Substantive implementation size: 241 added and 34 removed lines; plan and
 documentation excluded. Test delta: two new contract tests, existing retry and
 denial cases extended, duplicate draft tests consolidated before commit.
 
-Required delivery remains draft PR, mandatory fake-only proof, slice reviews,
-integrated final review and CI disposition. Next: commit the implementation and
-run the configured immutable-range reviews while qualification proceeds.
+Draft PR created. The simplifier's unused test-helper options were removed;
+the affected guard suite passed again. Slice review and integrated final review
+remain pending. The standalone synthetic admission check passed; full
+application qualification remains an incomplete mandatory gate. No paid
+acceptance or answer-quality claim follows from this package's source checks.
+Next: finish source review and exact-head CI disposition; retain the draft until
+the mandatory application proof can be completed.
