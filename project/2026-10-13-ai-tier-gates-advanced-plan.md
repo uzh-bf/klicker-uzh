@@ -53,11 +53,10 @@ session implements it in two slices.
    are set through the GraphQL mutation, so this server rule covers every
    path.
 4. Backfill as a data-only Prisma migration (no schema change): set tier
-   `ADVANCED` for every user whose cost center is non-blank. On production this
-   is exactly the one owner with a cost center, so their Sol-only bot keeps
-   working with no manual step. On staging it lifts the test owners, who all
-   have cost centers. Create it with `prisma migrate dev --create-only` in the
-   container; it holds one `UPDATE`.
+   `ADVANCED` for every user whose cost center is non-blank, so existing
+   accounts with a cost center retain advanced access without a manual step.
+   Deployment impact was checked privately. Create it with
+   `prisma migrate dev --create-only` in the container; it holds one `UPDATE`.
 5. Saving a chatbot revision rejects a newly added `ADVANCED` model when the
    bot's owner is not entitled to it (`normalizeRevisionModelPolicy` /
    `saveChatbotRevision` in `packages/graphql/src/services/chatbots.ts`).
@@ -114,6 +113,19 @@ staging deploy, rerun the earlier model-choice check: Sol admitted for an
 staging data change, asked for separately.
 
 ## Progress
+
+### Current release preparation — 15 October 2026
+
+The tier gates merged in [#6491](https://github.com/uzh-bf/klicker-uzh/pull/6491).
+The release-source follow-up aligns the pending backfill's trim predicate with
+JavaScript and exposes `advancedModelConfigurationEntitled` for draft selection.
+That projection uses the same tier/cost-center predicate as saving a new model;
+AI runtime approval and existing saved-model exceptions keep their own checks.
+The authoring regression covers disabled new selections, selecting and saving
+with a cost center, and retaining a saved model after the cost center is removed.
+The [production promotion plan](2026-10-15-kb-binding-production-promotion-plan.md)
+keeps merge, tag publication and deployment gated. Earlier entries below are
+historical; their old pending-check statements are not current release evidence.
 
 - 2026-10-13: plan drafted. Revised the same day: the picker and the
   cost-center implication were added at the user's request, and a migration

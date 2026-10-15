@@ -243,6 +243,7 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     await expect(getChatAccountUsage({ now: NOW }, ownerCtx)).resolves.toEqual({
       authorized: true,
       subscriptionTier: 'BASE',
+      advancedModelConfigurationEntitled: false,
       baseModelUsage: {
         usageClass: 'BASE',
         entitled: true,
@@ -298,6 +299,7 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     expect(overview).toMatchObject({
       authorized: true,
       subscriptionTier: 'ADVANCED',
+      advancedModelConfigurationEntitled: true,
       baseModelUsage: { entitled: true },
       advancedModelUsage: { entitled: true },
     })
@@ -311,6 +313,7 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     const baseTier = await getChatAccountUsage({ now: NOW }, ownerCtx)
     expect(baseTier).toMatchObject({
       subscriptionTier: 'BASE',
+      advancedModelConfigurationEntitled: false,
       baseModelUsage: { entitled: true },
       advancedModelUsage: { entitled: false },
     })
@@ -328,6 +331,7 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     const withoutCostCenter = await getChatAccountUsage({ now: NOW }, ownerCtx)
     expect(withoutCostCenter).toMatchObject({
       subscriptionTier: 'ADVANCED',
+      advancedModelConfigurationEntitled: false,
       baseModelUsage: { entitled: true },
       advancedModelUsage: { entitled: false },
     })
@@ -337,6 +341,7 @@ describe('ChatAccountUsage service and GraphQL API', () => {
       where: { id: otherOwnerId },
       data: {
         aiFeaturesEnabled: false,
+        aiSubscriptionTier: 'ADVANCED',
         aiChatbotCostCenter: 'KST-5678',
       },
     })
@@ -348,7 +353,22 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     const withdrawn = await getChatAccountUsage({ now: NOW }, otherCtx)
     expect(withdrawn).toMatchObject({
       authorized: false,
+      advancedModelConfigurationEntitled: true,
       baseModelUsage: { entitled: false },
+      advancedModelUsage: { entitled: false },
+    })
+
+    await prisma.user.update({
+      where: { id: otherOwnerId },
+      data: { aiChatbotCostCenter: ' \t\n' },
+    })
+    const withdrawnWithoutCostCenter = await getChatAccountUsage(
+      { now: NOW },
+      otherCtx
+    )
+    expect(withdrawnWithoutCostCenter).toMatchObject({
+      authorized: false,
+      advancedModelConfigurationEntitled: false,
       advancedModelUsage: { entitled: false },
     })
   })

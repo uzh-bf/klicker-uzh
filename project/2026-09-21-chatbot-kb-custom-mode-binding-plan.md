@@ -48,10 +48,9 @@ withheld.
 
 ### Problem and evidence
 
-Problem: bot `1c6dec49-066b-4599-aa10-a18a89d1fe0f` ("Ethik-Rollenspiel",
-custom mode `ethik-rollenspiel`, standard modes disabled, `standardModeConfig`
-NULL, PUBLISHED) lost every available mode for participants as soon as a KB was
-attached.
+Problem: a published chatbot with only an approved custom mode, standard modes
+disabled and no `standardModeConfig` lost every available mode for participants
+as soon as a KB was attached. The incident was checked privately.
 
 Evidence: `attachKbToChatbot` (`packages/graphql/src/services/knowledge.ts:1181`)
 loops `KB_MCP_CHAT_MODES = ['tutor', 'explainer']` (`:76`) and creates required
@@ -387,6 +386,16 @@ captures; `$rs-mr-description-writer` writes the pull-request body with the
 screenshot table.
 
 ## Progress
+
+### Current release preparation — 15 October 2026
+
+The original binding change merged in [#6247](https://github.com/uzh-bf/klicker-uzh/pull/6247).
+This follow-up carries only the two reviewed staging integration corrections
+into the release source: JavaScript-compatible cost-center whitespace handling
+and draft-model configuration eligibility consistent with the save policy.
+See the [production promotion plan](2026-10-15-kb-binding-production-promotion-plan.md)
+for the bounded draft-PR authority and the remaining release gates. The earlier
+progress entries below are historical evidence, not current forge status.
 
 ### October 13 review and simplification
 
