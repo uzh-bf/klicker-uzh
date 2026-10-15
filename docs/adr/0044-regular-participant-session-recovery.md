@@ -20,8 +20,9 @@ frame session instead (see below). The boundary covers every
 regular PWA page, including anonymous entry points: its shared layout and queries
 can discover a participant cookie. In Chat, it wraps authenticated chatbot content
 after the server access checks. Public login and error pages contain no participant
-data and render outside the boundary, preserving their HTTP status. Until
-hydration establishes the browser context, guarded page content is withheld.
+data and render outside the boundary, preserving their HTTP status. Server HTML
+renders normally, because it reflects the cookies of the request that produced
+it; the boundary applies its browser-side checks once the page has mounted.
 Server-fetched data remains available for hydration only when its session
 revision still matches and the document has no frame session.
 

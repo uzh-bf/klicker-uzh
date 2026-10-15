@@ -53,6 +53,10 @@ export default function ParticipantSessionBoundary({
   onSessionEstablished?: () => void
 }) {
   const [sharedCookies, setSharedCookies] = useState<boolean>()
+  // Server HTML reflects the cookies of the request that produced it, so it
+  // is safe to show. The browser-side guards apply once the page has mounted,
+  // which also keeps hydration identical to the server render.
+  const [mounted, setMounted] = useState(false)
   const [confirmedRevision, setConfirmedRevision] = useState<string>()
   if (typeof window !== 'undefined') bindParticipantSession(expectedRevision)
   const stale = useSyncExternalStore(
@@ -62,13 +66,13 @@ export default function ParticipantSessionBoundary({
   )
   // A frame session authenticates with its own token, so the shared cookie
   // revision neither confirms nor invalidates it.
-  const frame = typeof window !== 'undefined' && !!frameSessionToken()
+  const frame = mounted && !!frameSessionToken()
   const mismatch =
-    typeof window !== 'undefined' &&
+    mounted &&
     !frame &&
     bindParticipantSession() !== readParticipantSession()
   const refused =
-    typeof window !== 'undefined' &&
+    mounted &&
     !frame &&
     requireCookie &&
     (expectedRevision === undefined ||
@@ -82,6 +86,7 @@ export default function ParticipantSessionBoundary({
   }, [confirmedRevision, expectedRevision, requireCookie])
 
   useEffect(() => {
+    setMounted(true)
     let active = true
     void hasSharedParticipantCookies().then((available) => {
       if (!active) return
@@ -162,5 +167,5 @@ export default function ParticipantSessionBoundary({
       />
     )
   }
-  return sharedCookies === undefined || stale || mismatch ? null : children
+  return stale || mismatch ? null : children
 }

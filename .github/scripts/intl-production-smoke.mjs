@@ -60,21 +60,6 @@ copyFileSync(
   join(fixtures, 'context.tsx'),
   join(context, `apps/${app}/src/pages/intl-context-probe.tsx`)
 )
-if (app === 'frontend-pwa') {
-  // The participant boundary intentionally withholds page content until the
-  // browser confirms shared cookies. Exercise the production intl provider
-  // outside that boundary in this disposable probe build only.
-  const appPath = join(context, `apps/${app}/src/pages/_app.tsx`)
-  const source = readFileSync(appPath, 'utf8')
-  assert.equal(source.split('</NextIntlClientProvider>').length, 2)
-  writeFileSync(
-    appPath,
-    `import TranslationContextProbe from './intl-context-probe'\n${source.replace(
-      '</NextIntlClientProvider>',
-      '<TranslationContextProbe /></NextIntlClientProvider>'
-    )}`
-  )
-}
 copyFileSync(
   join(root, 'util/test-intl-resolution.mjs'),
   join(context, 'intl-resolution.mjs')
