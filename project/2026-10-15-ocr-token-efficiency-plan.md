@@ -119,14 +119,16 @@ when the hook reports that this isolated checkout has no dependency install.
 Do not start an application/container solely for CI scripts. Inspect every hunk,
 staged secrets/personal data and production-derived facts before each commit.
 Keep a single cohesive draft PR with the repository's description skill, report
-offline results and limitations, and do not request reviewers or start OCR.
+offline results and limitations, and do not request reviewers or start a manual
+OCR rerun. The existing automatic draft review is authorized.
 
 ## Progress
 
 - Planning check: native read-only planner approved the revised scope. Accepted
   findings cover automatic paid draft reviews, measurable concurrency acceptance,
   direct-canary template omission and exact verification limitations.
-- Status: both source slices implemented and verified; publication in progress.
+- Status: both source slices complete and verified; draft publication is the
+  remaining delivery step.
 - Completed: cache config, validated forwarding, safe cache counters, explicit
   manual concurrency two, existing test extensions and guide update. Test delta:
   three regression tests added; existing configuration/command checks extended.
@@ -142,16 +144,20 @@ offline results and limitations, and do not request reviewers or start OCR.
   pre-existing `useIterableCallbackReturn` errors in unchanged code. Opengrep
   reports zero findings across the two executable files, with a partial parse of
   an unchanged regular expression in `final-ai-review.js`; this is limited evidence.
-  Whole-application checks and hosted CI have not run.
+  The repository's pre-commit script passes Gitleaks and identity checks, while
+  its dependency guard explicitly skips whole-application checks in this isolated
+  checkout. Hosted CI has not supplied an outcome yet.
 - Final simplification and integrated working-tree self-review: done; no further
   abstraction or unrelated cleanup warranted. The review covered cache accounting,
   fixed-provider forwarding, redaction, canary separation, all manual command
-  forms, coverage and budget refusal. This is not independent committed-range or
-  hosted-CI evidence. Target `v3` readback remains the baseline above.
+  forms, coverage and budget refusal. The same source is carried into the
+  committed package; this is self-review and not independent or hosted-CI
+  evidence. Target `v3` readback remains the baseline above.
 - Required delivery: committed task branch and draft PR. Achieved: verified local
-  implementation and prepared PR text. Git permissions have been restored and
-  the user explicitly requested publication. Source and target remain unchanged,
-  so the passing verification above is reused. No upstream binary patch or
-  application runtime was used.
-- Next: commit the plan and two coherent source slices, push normally and open
-  the authorized draft against `v3`. No PR exists yet.
+  implementation, reviewed commits and prepared PR text. Git permissions have
+  been restored and the user explicitly requested publication. Source, target,
+  toolchain and acceptance remain unchanged, so passing verification is reused.
+  No upstream binary patch or application runtime was used.
+- Delivery: push normally and open the authorized draft against `v3`. The PR
+  containing this plan carries the publication outcome; hosted checks and live
+  provider qualification remain separate from these local results.

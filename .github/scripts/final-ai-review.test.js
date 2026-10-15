@@ -139,6 +139,8 @@ function expectedOCRArgs({ from, to, timeout, budget, sessionId }) {
     'agent',
     '--effort',
     'low',
+    '--concurrency',
+    '2',
     '--timeout',
     String(timeout),
     '--max-tokens',

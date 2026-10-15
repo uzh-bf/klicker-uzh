@@ -470,6 +470,7 @@ jobs:
               --to "${HEAD_SHA}" \
               --audience agent \
               --effort low \
+              --concurrency 2 \
               --timeout 45 \
               --max-tokens "${prompt_limit}" \
               --max-tokens-budget "${token_budget}" \
@@ -1073,6 +1074,7 @@ jobs:
               --to "${review_to}" \
               --audience agent \
               --effort low \
+              --concurrency 2 \
               --timeout 30 \
               --max-tokens "${prompt_limit}" \
               --max-tokens-budget "${token_budget}" \
