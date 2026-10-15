@@ -114,5 +114,10 @@ approved execution and delivery, so no second generic approval is needed.
 - Completed: live target and branch resolution; isolated worktree created.
 - Baseline: all 184 existing tests pass. Planner approved after accepting the
   shutdown/write-order finding and defining the bounded drain receipt.
-- Active: adapter implementation and delegated draft wiring. No source changes yet.
+- Slice 1: adapter guard, bounded opaque attribution and ordered diagnostics
+  persistence implemented. All 52 adapter tests pass, including incomplete-drain,
+  signal, lifetime, single-write, redaction and attribution cases.
+- Slice 2: delegated draft wiring implemented; one simplification correction is
+  active with the same executor. Main owns integration and all external actions.
+- Next: commit and review slice 1; integrate and verify the draft slice.
 - Delivery target: new draft PR; none exists yet.
