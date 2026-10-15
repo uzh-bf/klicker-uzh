@@ -709,8 +709,8 @@ test('truncated completion is refused without retaining replay history or hiding
       },
     ],
   }
-  const fetchImpl = upstream((_record, index) =>
-    jsonResponse(200, completion(message, index === 1 ? 'length' : 'stop'))
+  const fetchImpl = upstream((_record, callNumber) =>
+    jsonResponse(200, completion(message, callNumber === 1 ? 'length' : 'stop'))
   )
   const adapter = await startAdapter({ apiKey: 'private-key', fetchImpl })
   const body = {
@@ -733,6 +733,7 @@ test('truncated completion is refused without retaining replay history or hiding
       ],
     })
     assert.equal(replay.status, 409)
+    assert.equal(replay.json.error.code, 'history_missing')
     assert.equal(fetchImpl.calls.length, 1)
     const accepted = await postJson(adapter, body)
     assert.equal(accepted.status, 200)
@@ -1891,7 +1892,7 @@ test('detached server persists once on SIGTERM and safely handles an unwritable 
           'serve must become ready'
         )
         child.kill('SIGTERM')
-        assert.equal(await exited, 0)
+        assert.equal(await exited, 0, stderr)
         assert.equal(fs.existsSync(statePath), false)
         if (writable) {
           const lines = fs
