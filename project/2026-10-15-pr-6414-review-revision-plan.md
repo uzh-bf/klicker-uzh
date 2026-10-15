@@ -198,6 +198,33 @@ Touched runtimes are stopped at the end under the runtime lifecycle rules.
 
 ## Progress
 
-- Status: plan drafted 2026-10-15, awaiting approval. Head `e3d00e19`, 4 behind `v3`.
-- Substantive size at start: +4,984 / −553 across 67 files (excluding docs and project files).
-- Next action after approval: slice 1 inventory.
+- Status: approved 2026-10-15 as an executable batch. Slices 1–8 implemented in the
+  worktree; commits, browser checks, `v3` integration, push and PR description pending.
+- Slice notes:
+  - 1: frame sessions restored. A self-review found that `_app` re-adopted an ended
+    launch token on every re-render; adoption is now idempotent per launch token, with a
+    regression assertion that fails on the earlier code.
+  - 5: `/createAccount` now has one navigation owner; not yet reproduced in a browser.
+  - 7: the account selector opens only without a signed-in participant, so the temporary
+    login needs no change beyond a comment. The 13-day cookie lifetime goes into the PR
+    description.
+  - 8: base import order restored in 16 files, one resolver write path, one Apollo
+    session link, boundary events reduced to focus, pageshow and visibility, redundant
+    Chat assertions removed. The response API keeps `Authorization` in its CORS list
+    because frame-mode `participantFetch` sends it.
+- Size (substantive, excluding docs and project files): PR head +4,984 / −553 across 63
+  files; now +5,091 / −539 across 61 files. Non-test code shrank from +1,683 to +1,654.
+  Tests grew with the new frame, launch-safety and retry cases, so the "smaller diff"
+  acceptance is not met yet. Folding PA spec cases needs the browser stack.
+- Verification (check container, Node 24.21.0): backend 25, PWA 37, Chat 769 (21 skipped)
+  and util 66 unit tests pass; type checks for frontend-pwa, backend-docker, chat,
+  response-api and graphql pass; PWA and Chat lint have no errors.
+- Blockers:
+  - Commits: the pre-commit hook runs `check:all` on the host. The checkout holds a
+    partial host install from `pnpm playwright:host`, so `util/run-hook-pnpm.sh`
+    does not skip as it does for devcontainer checkouts, and host type checks fail on
+    untouched packages. Container checks and gitleaks pass; skipping the host hook
+    needs approval.
+  - Browser checks: `devrouter ensure .` reports a changed managed Compose configuration
+    and asks to delete and recreate the exact runtime, which needs approval.
+- Next action: commit slices in order once the hook question is settled.
