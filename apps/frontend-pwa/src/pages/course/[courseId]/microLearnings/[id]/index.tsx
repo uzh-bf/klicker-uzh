@@ -13,7 +13,9 @@ import {
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import getParticipantToken from '@lib/getParticipantToken'
+import getParticipantToken, {
+  participantSessionProps,
+} from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import { Button, H3, Prose, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -225,27 +227,17 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     const apolloClient = initializeApollo()
 
-    const {
-      participantToken,
-      cookiesAvailable,
-      sessionState,
-      sessionRevision,
-      sessionEstablished,
-    } = await getParticipantToken({
+    const session = await getParticipantToken({
       apolloClient,
       courseId: ctx.params.courseId,
       ctx,
     })
+    const { participantToken } = session
 
     if (participantToken) {
       return {
         props: {
-          sessionState,
-          sessionRevision,
-          sessionEstablished,
-          participantToken:
-            process.env.ASSESSMENT_MODE === 'true' ? participantToken : null,
-          cookiesAvailable,
+          ...participantSessionProps(session),
           id: ctx.params.id,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
@@ -255,9 +247,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     return addApolloState(apolloClient, {
       props: {
-        sessionState,
-        sessionRevision,
-        sessionEstablished,
+        ...participantSessionProps(session),
         id: ctx.params.id,
         courseId: ctx.params.courseId,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))

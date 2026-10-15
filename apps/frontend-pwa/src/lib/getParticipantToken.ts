@@ -23,7 +23,23 @@ export interface ParticipantSessionResult {
     | 'exchange_unavailable'
   sessionRevision: string
   sessionEstablished: boolean
+  // Only for a frame request, which may lack shared cookies and then keeps
+  // this token as its own session.
+  frameToken?: string
   signedLtiData?: { token: string; ssoId: string; email: string }
+}
+
+/** Session props every page that resolves a participant hands to `_app`. */
+export function participantSessionProps(result: ParticipantSessionResult) {
+  return {
+    sessionState: result.sessionState,
+    sessionRevision: result.sessionRevision,
+    sessionEstablished: result.sessionEstablished,
+    cookiesAvailable: result.cookiesAvailable,
+    participantToken:
+      process.env.ASSESSMENT_MODE === 'true' ? result.participantToken : null,
+    ...(result.frameToken ? { frameToken: result.frameToken } : {}),
+  }
 }
 
 function participantCookieOptions() {
@@ -210,12 +226,19 @@ export default async function getParticipantToken({
     }
     const maxAge = await verifyParticipant(token)
     const sessionRevision = setParticipantCookie(ctx, token, maxAge)
+    // Browsers without Sec-Fetch-Dest are treated as possibly framed.
+    const destination = ctx.req.headers['sec-fetch-dest']
+    const framed =
+      destination === undefined ||
+      destination === 'iframe' ||
+      destination === 'frame'
     return {
       participantToken: token,
       cookiesAvailable: !!cookies['lti-token'],
       sessionRevision,
       sessionEstablished: true,
       sessionState: 'authenticated',
+      ...(framed ? { frameToken: token } : {}),
     }
   } catch {
     base.sessionRevision = clearParticipantCookie(ctx)

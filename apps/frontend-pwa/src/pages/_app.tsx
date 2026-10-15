@@ -12,7 +12,10 @@ import '@fortawesome/fontawesome-svg-core/styles.css'
 import { getMessageFallback, onError, routing } from '@klicker-uzh/i18n'
 import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { participantReloadUrl } from '@klicker-uzh/shared-components/src/utils/participantSession'
+import {
+  adoptFrameSession,
+  participantReloadUrl,
+} from '@klicker-uzh/shared-components/src/utils/participantSession'
 import { useApollo } from '@lib/apollo'
 import { init } from '@socialgouv/matomo-next'
 import { Toaster } from '@uzh-bf/design-system'
@@ -40,6 +43,13 @@ function App({ Component, pageProps }: AppProps) {
     }
   }, [router])
 
+  // Before the client exists: a frame session must authenticate its first
+  // requests and must not hydrate data fetched without its credential.
+  if (
+    typeof window !== 'undefined' &&
+    process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true'
+  )
+    adoptFrameSession(pageProps.frameToken)
   const apolloClient = useApollo(pageProps)
   const recovering =
     process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&

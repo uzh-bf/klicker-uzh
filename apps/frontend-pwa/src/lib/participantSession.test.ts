@@ -2,8 +2,11 @@ import assert from 'node:assert/strict'
 import { it } from 'node:test'
 import {
   acceptParticipantSession,
+  adoptFrameSession,
   checkParticipantSession,
   completeParticipantSessionCommand,
+  endFrameSession,
+  frameSessionToken,
   hasLocalParticipantSessionChange,
   hasSharedParticipantCookies,
   isParticipantSessionStale,
@@ -65,6 +68,46 @@ it('requires unpartitioned cookie access before an embedded login is usable', as
     },
   })
   assert.equal(await hasSharedParticipantCookies(), false)
+  removeDocument()
+  removeWindow()
+})
+
+it('authenticates a cookie-less frame with its own token and ignores the shared revision', () => {
+  const storage = new Map<string, string>()
+  Object.defineProperty(globalThis, 'sessionStorage', {
+    configurable: true,
+    value: {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value),
+      removeItem: (key: string) => storage.delete(key),
+    },
+  })
+  const frame = {}
+  installWindow({ self: frame, top: frame })
+  installDocument('participant_session=shared')
+  acceptParticipantSession()
+  adoptFrameSession('ignored-top-level')
+  assert.equal(frameSessionToken(), undefined)
+  assert.equal(storage.size, 0)
+
+  installWindow({ self: frame, top: {} })
+  adoptFrameSession('frame-token')
+  installDocument('participant_session=replaced')
+  assert.deepEqual(participantSessionHeaders(), {
+    authorization: 'Bearer frame-token',
+  })
+  assert.equal(checkParticipantSession(), true)
+
+  // A later document in the same tab resumes the stored session.
+  endFrameSession()
+  storage.set('participant_token', 'frame-token')
+  adoptFrameSession()
+  assert.equal(frameSessionToken(), 'frame-token')
+  endFrameSession()
+  assert.equal(storage.size, 0)
+  assert.equal(checkParticipantSession(), false)
+
+  delete (globalThis as { sessionStorage?: unknown }).sessionStorage
   removeDocument()
   removeWindow()
 })

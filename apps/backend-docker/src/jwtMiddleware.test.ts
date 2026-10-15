@@ -190,21 +190,32 @@ describe('jwtMiddleware', () => {
       }
     })
 
-    it('ignores a valid bearer when the participant cookie is absent', async () => {
-      const bearerToken = await signParticipantToken({
-        sub: 'bearer-user',
+    it('accepts only a plain participant bearer when no cookie is present', async () => {
+      const participant = await signParticipantToken({
+        sub: 'frame-user',
         exp: futureExpiry(),
       })
-
       const { user, nextCalled } = await runMiddleware({
-        headers: {
-          origin: PWA_ORIGIN,
-          authorization: `Bearer ${bearerToken}`,
-        },
+        headers: { origin: PWA_ORIGIN, authorization: `Bearer ${participant}` },
       })
-
       assert.equal(nextCalled, true)
-      assert.equal(user, null)
+      assert.equal(user?.sub, 'frame-user')
+
+      for (const claims of [
+        { role: 'USER' },
+        { role: 'TEMPORARY_PARTICIPANT' },
+        { scope: 'EDUID' },
+      ]) {
+        const other = await signParticipantToken({
+          sub: 'other-user',
+          exp: futureExpiry(),
+          ...claims,
+        })
+        const result = await runMiddleware({
+          headers: { origin: PWA_ORIGIN, authorization: `Bearer ${other}` },
+        })
+        assert.equal(result.user, null)
+      }
     })
 
     it('does not fall back to a bearer when the participant cookie is unusable', async () => {

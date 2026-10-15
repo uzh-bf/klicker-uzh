@@ -15,9 +15,13 @@ import { RetryLink } from '@apollo/client/link/retry'
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions'
 import hashes from '@klicker-uzh/graphql/dist/client.json'
 import {
+  adoptFrameSession,
   assertParticipantSession,
   bindParticipantSession,
   completeParticipantSessionCommand,
+  endFrameSession,
+  frameSessionToken,
+  isParticipantFrameContext,
   participantSessionHeaders,
   readParticipantSession,
 } from '@klicker-uzh/shared-components/src/utils/participantSession'
@@ -85,8 +89,8 @@ function createIsomorphLink(
         return {
           headers: {
             ...headers,
-            ...participantSessionHeaders(),
             authorization: '',
+            ...participantSessionHeaders(),
           },
         }
       let token: string | null = null
@@ -116,7 +120,17 @@ function createIsomorphLink(
         !binding.retired &&
         isSuccessfulParticipantSessionResult(result)
       ) {
-        if (binding.revision === readParticipantSession()) {
+        const data = result.data ?? {}
+        const created = data.createParticipantAccount?.participantToken
+        if (isParticipantFrameContext() && typeof created === 'string') {
+          // Account creation hands a cookie-less frame its own session.
+          adoptFrameSession(created)
+        } else if (
+          frameSessionToken() &&
+          (data.logoutParticipant || data.deleteParticipantAccount)
+        ) {
+          endFrameSession()
+        } else if (binding.revision === readParticipantSession()) {
           void Router.replace('/serverError?cookiesRequired=true')
           throw new Error('Shared participant cookie was not accepted')
         }
@@ -387,7 +401,9 @@ export function useApollo(pageProps: PageProps) {
   return useMemo(
     () =>
       initializeApollo(
-        !regular || pageProps.sessionRevision === readParticipantSession()
+        !regular ||
+          (!frameSessionToken() &&
+            pageProps.sessionRevision === readParticipantSession())
           ? pageProps[APOLLO_STATE_PROP_NAME]
           : undefined,
         undefined,

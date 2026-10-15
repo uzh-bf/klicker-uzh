@@ -19,8 +19,9 @@ tags:
 | pwa                                 | `participant_token` → `temporary_participant_token` → `next-auth.session-token` |
 | assessment (`ASSESSMENT_MODE=true`) | `next-auth.participant-session-token`                                           |
 
-Regular PWA browser requests use the shared cookie identity and ignore bearer
-headers. A supplied `x-participant-session` must match the non-secret
+Regular PWA browser requests use the shared cookie identity. A bearer applies
+only when no participant cookie is present, and only as a plain participant
+token from an LMS frame session. A supplied `x-participant-session` must match the non-secret
 `participant_session` cookie (`none` represents no revision); mismatches return
 HTTP 409 before executing work. Missing headers preserve non-browser callers.
 The PWA branch also requires the origin host to lie
@@ -69,7 +70,7 @@ Note the account-duplication trap: participant emails are only unique per auth m
 
 A fresh verified LTI handoff overrides an existing regular participant login.
 PWA and Chat use one shared HttpOnly cookie identity per browser cookie context.
-They never retain a regular participant bearer in memory or sessionStorage.
+Only an LMS frame without cookie access keeps its own token in sessionStorage.
 The LTI helper verifies the signed launch before exchanging it; malformed,
 expired or wrong-purpose launches block the protected page and clear the
 regular session instead of falling back to another account. A participant JWT
@@ -94,13 +95,13 @@ responses are ordered by completion; already dispatched work and Set-Cookie
 responses cannot be revoked locally. Logout does not globally revoke JWTs.
 Assessment and lecturer authentication keep their existing separate contracts.
 
-LTI and registration confirm cookie acceptance before using protected pages.
-Embedded PWA and Chat pages also check unpartitioned cookie access before
-mounting authenticated consumers. A cookie confined to an LMS partition cannot
-establish a separate usable login. Recovery opens the original LTI activity in
-a normal tab so it can replace the shared login.
-If cookies are refused, recovery opens ordinary login outside the LMS frame.
-There is no tab-token fallback. The normal Chat link opens in a new tab without
+Embedded PWA pages check unpartitioned cookie access. With access, they join
+the shared login. Without it, an LTI launch or LTI account creation gives the
+frame its own session: the token reaches server props only for framed
+requests, the tab keeps it in sessionStorage, requests send it as a bearer, and
+the shared revision does not apply. Outside such frames, LTI and registration
+confirm cookie acceptance, and a refused cookie leads to recovery that opens
+the activity or ordinary login in a normal tab. The normal Chat link opens in a new tab without
 a recovery gate. Its bridge checks membership without creating enrollment and
 confirms a newly exchanged cookie before redirecting; Chat verifies the expected
 revision on arrival. Regular SSR props omit participant JWTs; the HttpOnly

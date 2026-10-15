@@ -7,6 +7,7 @@ import {
 async function jwtMiddleware(req: any, res: any, next: any) {
   let token = null
   let regularCookieRequest = false
+  let frameBearer = false
 
   // Assessment mode: only check for student NextAuth cookie
   if (process.env.ASSESSMENT_MODE === 'true') {
@@ -59,6 +60,17 @@ async function jwtMiddleware(req: any, res: any, next: any) {
         req.cookies?.['participant_token'] ??
         req.cookies?.['temporary_participant_token'] ??
         req.cookies?.['next-auth.session-token']
+
+      // An LMS frame without cookie access sends its own participant token.
+      // A present cookie always wins, so a bearer never replaces it.
+      if (!token) {
+        const authorization = req.headers['authorization']
+        token =
+          typeof authorization === 'string'
+            ? (/^Bearer (\S+)$/.exec(authorization)?.[1] ?? null)
+            : null
+        frameBearer = !!token
+      }
     }
   }
 
@@ -71,6 +83,11 @@ async function jwtMiddleware(req: any, res: any, next: any) {
   if (token) {
     try {
       user = await verifyJWT(token, process.env.APP_SECRET as string)
+      if (
+        frameBearer &&
+        (user.role !== 'PARTICIPANT' || user.scope !== undefined)
+      )
+        user = null
     } catch (error) {
       // JWT verification failed, continue with user = null
       console.log('JWT verification failed:', error)

@@ -5,7 +5,9 @@ import { CreateParticipantAccountWithDataUseDocument } from '@klicker-uzh/graphq
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import getParticipantToken from '@lib/getParticipantToken'
+import getParticipantToken, {
+  participantSessionProps,
+} from '@lib/getParticipantToken'
 import { navigateParticipantSession } from '@lib/participantSession'
 import { toast } from '@uzh-bf/design-system'
 import generatePassword from 'generate-password'
@@ -116,23 +118,16 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   try {
     const { query } = ctx
     const apolloClient = initializeApollo()
-    const {
-      participantToken,
-      sessionState,
-      signedLtiData,
-      sessionRevision,
-      sessionEstablished,
-    } = await getParticipantToken({
+    const session = await getParticipantToken({
       apolloClient,
       ctx,
     })
+    const { participantToken, sessionState, signedLtiData } = session
 
-    if (participantToken && sessionEstablished) {
+    if (participantToken && session.sessionEstablished) {
       return {
         props: {
-          sessionState,
-          sessionRevision,
-          sessionEstablished,
+          ...participantSessionProps(session),
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
         },

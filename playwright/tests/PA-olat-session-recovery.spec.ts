@@ -473,19 +473,11 @@ async function openChat(page: Page, baseURL: string) {
   return chat
 }
 
-// The frame owns both the successful profile and refused-cookie recovery.
-async function settleLaunch(frame: Frame, profile: () => Promise<void>) {
-  await expect(
-    frame
-      .getByTestId('update-account-username')
-      .or(frame.getByTestId('cookies-required-recovery'))
-  ).toBeVisible({ timeout: 30_000 })
-  if (await frame.getByTestId('cookies-required-recovery').isVisible()) {
-    await expect(frame.getByTestId('update-account-email')).toHaveCount(0)
-    return 'cookies-refused'
-  }
-  await profile()
-  return 'accepted'
+// A frame with storage access joins the shared login and must accept its
+// cookies; a frame without it keeps its own session from the launch.
+async function frameHasSharedCookies(frame: Frame) {
+  await frame.waitForLoadState()
+  return frame.evaluate(() => document.hasStorageAccess())
 }
 
 test('existing PWA and Chat tabs adopt ordinary login and clear on logout', async ({
@@ -667,9 +659,10 @@ test('refused launch cookies show recovery in the standalone page and LMS frame'
   await page.goto(
     `${baseURL}/editProfile?jwt=${encodeURIComponent(await signed({ sub: ssoId, scope: 'LTI1.3' }))}`
   )
-  expect(await settleLaunch(page.mainFrame(), async () => {})).toBe(
-    'cookies-refused'
-  )
+  await expect(page.getByTestId('cookies-required-recovery')).toBeVisible({
+    timeout: 30_000,
+  })
+  await expect(page.getByTestId('update-account-email')).toHaveCount(0)
   expect(await sessionRevision(page)).toBeUndefined()
 
   await page.unroute('**/editProfile*', refuseCookies)
@@ -680,9 +673,13 @@ test('refused launch cookies show recovery in the standalone page and LMS frame'
     page,
     `${baseURL}/editProfile?jwt=${encodeURIComponent(await signed({ sub: ssoId, scope: 'LTI1.3' }))}`
   )
-  expect(await settleLaunch(frame, async () => {})).toBe('cookies-refused')
-  await expect(frame.getByTestId('cookies-required-recovery')).toBeVisible()
-  await expect(frame.getByTestId('update-account-email')).toHaveCount(0)
+  if (await frameHasSharedCookies(frame)) {
+    await expect(frame.getByTestId('cookies-required-recovery')).toBeVisible()
+    await expect(frame.getByTestId('update-account-email')).toHaveCount(0)
+  } else {
+    // Refused shared cookies do not matter to a frame session.
+    await expectIdentity(frame, { email: ltiEmail, username: ltiUsername })
+  }
 })
 
 test('refresh after an accepted handoff expires preserves B in both tabs', async ({
@@ -941,24 +938,9 @@ test('a full LTI 1.3 launch through the tool signs in a new account without reta
         page.frames().find((item) => item.url().includes('/createAccount'))
       )
       .not.toBeUndefined()
-    let frame = page
+    const frame = page
       .frames()
       .find((item) => item.url().includes('/createAccount'))!
-    await expect(
-      frame
-        .getByTestId('email-field')
-        .or(frame.getByTestId('cookies-required-recovery'))
-    ).toBeVisible()
-    let recoveryPage: Page | undefined
-    if (await frame.getByTestId('cookies-required-recovery').isVisible()) {
-      const opened = context.waitForEvent('page')
-      await frame
-        .getByTestId('cookies-required-recovery')
-        .getByRole('link')
-        .click()
-      recoveryPage = await opened
-      frame = recoveryPage.mainFrame()
-    }
     await expect(frame.getByTestId('email-field')).toHaveValue(createEmail)
     await frame
       .getByTestId('username-field-account-creation')
@@ -972,18 +954,15 @@ test('a full LTI 1.3 launch through the tool signs in a new account without reta
     await frame.getByTestId('learning-analytics-consent-no').click()
     await frame.getByTestId('tos-checkbox').click()
     await frame.getByTestId('create-profile-button').click()
-    const outcome = await settleLaunch(frame, () =>
-      expectIdentity(frame, { email: createEmail, username: createUsername })
-    )
-    if (!recoveryPage && info.project.name.endsWith('-blocked'))
-      expect(outcome).toBe('cookies-refused')
-    if (outcome === 'accepted') {
+    await expectIdentity(frame, {
+      email: createEmail,
+      username: createUsername,
+    })
+    if (await frameHasSharedCookies(frame))
       expect(await sessionRevision(frame)).toBeTruthy()
-      expect(new URL(frame.url()).searchParams.has('participantToken')).toBe(
-        false
-      )
-    }
-    await recoveryPage?.close()
+    expect(new URL(frame.url()).searchParams.has('participantToken')).toBe(
+      false
+    )
 
     // A token the platform did not sign never reaches the PWA.
     await context.clearCookies()
@@ -1021,16 +1000,13 @@ test('LTI B replaces A in an existing PWA profile and existing Chat tab', async 
 
   const destination = `${baseURL}/editProfile?jwt=${encodeURIComponent(await signed({ sub: ssoId, scope: 'LTI1.3' }))}`
   const frame = await launch(first, destination)
-  const outcome = await settleLaunch(frame, () =>
-    expectIdentity(frame, { email: ltiEmail, username: ltiUsername })
-  )
-  if (info.project.name.endsWith('-blocked'))
-    expect(outcome).toBe('cookies-refused')
-  if (outcome === 'cookies-refused') {
-    await expect(frame.getByTestId('cookies-required-recovery')).toBeVisible()
-    await expect(frame.getByTestId('update-account-email')).toHaveCount(0)
-    // Restricted projects then exercise a permitted top-level launch with
-    // the original PWA observer and Chat tab still open.
+  await expectIdentity(frame, { email: ltiEmail, username: ltiUsername })
+  if (!(await frameHasSharedCookies(frame))) {
+    // A cookie-less frame keeps its own session and leaves the shared login
+    // alone; a top-level launch then replaces it in the other tabs.
+    await second.bringToFront()
+    await second.reload()
+    await expectIdentity(second, { email: loginEmail, username: loginUsername })
     await first.goto(
       `${baseURL}/editProfile?jwt=${encodeURIComponent(await signed({ sub: ssoId, scope: 'LTI1.3' }))}`
     )
@@ -1462,26 +1438,11 @@ test('a live quiz answer and a practice submission are recorded for the shared c
     page,
     `${baseURL}/editProfile?jwt=${encodeURIComponent(await signed({ sub: ssoId, scope: 'LTI1.3' }))}`
   )
-  const outcome = await settleLaunch(frame, () =>
-    expectIdentity(frame, { email: ltiEmail, username: ltiUsername })
-  )
-  if (
-    info.project.name.endsWith('-blocked') ||
-    info.project.name.startsWith('webkit-')
-  )
-    expect(outcome).toBe('cookies-refused')
-  const cookieSessions = outcome === 'accepted'
-  if (!cookieSessions) {
-    info.annotations.push({
-      type: 'skipped-step',
-      description:
-        'Browser refused the shared cookie, so the frame fails closed before quiz access',
-    })
-    return
-  }
-  expect(await sessionRevision(frame)).toBeTruthy()
+  await expectIdentity(frame, { email: ltiEmail, username: ltiUsername })
+  const sharedCookies = await frameHasSharedCookies(frame)
+  if (sharedCookies) expect(await sessionRevision(frame)).toBeTruthy()
 
-  // The practice quiz is answered in the frame under the shared cookie.
+  // The practice quiz is answered in the frame under its session.
   await navigate(frame, `/course/${courseId}/practiceQuizzes/${quizId}`)
   await expect(frame.getByTestId('start-practice-quiz')).toBeVisible()
   await expect(
@@ -1504,6 +1465,14 @@ test('a live quiz answer and a practice submission are recorded for the shared c
       where: { practiceQuizId: quizId, participantId: loginId },
     })
   ).toBe(0)
+  if (!sharedCookies) {
+    info.annotations.push({
+      type: 'skipped-step',
+      description:
+        'Live-quiz answers from a cookie-less frame stay anonymous, as before',
+    })
+    return
+  }
 
   // The live quiz answer is attributed to the same shared cookie participant;
   // a request carrying a mismatched revision is refused instead.

@@ -9,12 +9,16 @@ const secret = 'synthetic-participant-session-test-secret'
 process.env.APP_SECRET = secret
 process.env.COOKIE_DOMAIN = '127.0.0.1'
 
-function context(query: GetServerSidePropsContext['query'], cookie = '') {
+function context(
+  query: GetServerSidePropsContext['query'],
+  cookie = '',
+  requestHeaders: Record<string, string> = {}
+) {
   const headers = new Map<string, string | string[] | number>()
   return {
     ctx: {
       query,
-      req: { headers: { cookie } },
+      req: { headers: { cookie, ...requestHeaders } },
       res: {
         getHeader: (name: string) => headers.get(name),
         setHeader: (name: string, value: string | string[]) =>
@@ -91,6 +95,36 @@ it('exchanges a fresh launch, rotates the retained revision and writes the sessi
   assert.ok(participantCookie)
   assert.match(participantCookie, /Max-Age=1123200(?:;|$)/)
   assert.ok(cookies.some((value) => value.startsWith('lti-token=;')))
+})
+
+it('hands the exchanged token only to a request that may be framed', async () => {
+  const launch = await signJWT(
+    { sub: 'synthetic-student', scope: 'LTI1.3' },
+    secret,
+    { expiresIn: '5m' }
+  )
+  const participantToken = await signJWT(
+    { sub: 'participant-frame', role: 'PARTICIPANT' },
+    secret,
+    { expiresIn: '14d' }
+  )
+  const client = {
+    mutate: async () => ({
+      data: { loginParticipantWithLti: { participantToken } },
+    }),
+  } as unknown as ApolloClient<NormalizedCacheObject>
+  for (const [destination, expected] of [
+    ['iframe', participantToken],
+    ['document', undefined],
+    ['empty', undefined],
+  ] as const) {
+    const { ctx } = context({ jwt: launch }, '', {
+      'sec-fetch-dest': destination,
+    })
+    const result = await getParticipantToken({ apolloClient: client, ctx })
+    assert.equal(result.sessionState, 'authenticated')
+    assert.equal(result.frameToken, expected)
+  }
 })
 
 it('rejects malformed launches and unusable participant cookies instead of using an ambient account', async () => {

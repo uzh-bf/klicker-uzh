@@ -14,19 +14,16 @@ tags:
 A successful LTI launch replaces the regular participant login for the browser
 cookie context. Ordinary login follows the same rule. PWA and Chat tabs use the
 shared HttpOnly credential rather than keeping independent participant tokens.
-Separate browser profiles remain separate contexts. Embedded pages must confirm
-unpartitioned cookie access before mounting authenticated UI; a partitioned
-LMS login cannot coexist as another usable identity. The boundary covers every
+Separate browser profiles remain separate contexts. An embedded LMS frame
+without unpartitioned cookie access cannot join that login, so it keeps a
+frame session instead (see below). The boundary covers every
 regular PWA page, including anonymous entry points: its shared layout and queries
 can discover a participant cookie. In Chat, it wraps authenticated chatbot content
 after the server access checks. Public login and error pages contain no participant
 data and render outside the boundary, preserving their HTTP status. Until
 hydration establishes the browser context, guarded page content is withheld.
-Top-level pages proceed immediately
-after that check; embedded pages without shared access offer top-level recovery.
-This deliberately trades server-rendered first paint and anonymous embedded use
-for one consistent browser identity. Server-fetched data remains available for
-hydration only when its session revision still matches.
+Server-fetched data remains available for hydration only when its session
+revision still matches and the document has no frame session.
 
 The `participant_session` cookie contains a random, non-secret revision with the
 credential's domain, path, security policy and lifetime. Login, logout and
@@ -38,10 +35,25 @@ reject mismatches with HTTP 409 before executing work under another identity.
 The revision is not an authentication credential. Existing sessions without a
 revision use an empty binding until their next session transition.
 
-LTI exchange and account creation must confirm cookie acceptance. A refused
-cookie or partition-only access leads to recovery outside the LMS frame, never a memory-only login or
-silent use of the former participant. Recovery preserves an LTI launch URL for
-opening in a top-level tab, where it replaces the shared login. Once the
+## Frame sessions
+
+KlickerUZH has always worked inside LMS frames whose browser blocks
+third-party cookies, such as Safari and Firefox by default. Such a frame keeps
+its own participant session: the LTI exchange or LTI account creation hands the
+token to that frame only, the tab stores it in sessionStorage, and requests send
+it as a bearer. The identity stays fixed for the tab until the next launch, so
+the shared revision neither confirms nor invalidates it, and logout or deletion
+ends it. The backend accepts such a bearer only when no participant cookie is
+present and only for a plain participant token, so it can never replace a
+shared login. The token reaches server props only for requests that may be
+framed, never for a top-level document, and never travels in a URL. A frame
+with storage access joins the shared login instead.
+
+LTI exchange and account creation outside such a frame must confirm cookie
+acceptance. A refused cookie leads to recovery outside the LMS frame, never a
+memory-only login or silent use of the former participant. Recovery preserves
+an LTI launch URL for opening in a top-level tab, where it replaces the shared
+login. Once the
 replacement cookies are accepted, the landing URL drops the consumed handoff
 without another exchange; refresh then uses the shared cookie session. The Chat link
 opens normally; its bridge
@@ -55,7 +67,8 @@ ignoring a late JavaScript result. Logout is cookie cleanup and client-state
 invalidation, not global JWT revocation. Lost responses can leave an uncertain
 server outcome; clients observe the resulting revision when it is available.
 
-Regular PWA browser requests authenticate only from cookies. Server-side and
+Regular PWA browser requests authenticate from cookies, or from a frame
+session when no participant cookie is present. Server-side and
 non-browser bearer callers and the separate assessment/lecturer contracts
 remain supported. Assessment fallback is not a retained regular-session mode.
 Participant cookies and Chat API origin checks require a configured COOKIE_DOMAIN;

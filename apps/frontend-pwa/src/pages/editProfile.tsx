@@ -2,7 +2,9 @@ import { useQuery } from '@apollo/client'
 import { SelfDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import getParticipantToken from '@lib/getParticipantToken'
+import getParticipantToken, {
+  participantSessionProps,
+} from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import { Button, toast } from '@uzh-bf/design-system'
 import type { GetServerSidePropsContext } from 'next'
@@ -169,17 +171,11 @@ function EditProfile({
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   try {
     const apolloClient = initializeApollo()
-    const {
-      participantToken,
-      cookiesAvailable,
-      sessionState,
-      sessionRevision,
-      sessionEstablished,
-      signedLtiData,
-    } = await getParticipantToken({
+    const session = await getParticipantToken({
       apolloClient,
       ctx,
     })
+    const { participantToken, sessionState, signedLtiData } = session
 
     if (
       sessionState === 'registration_required' ||
@@ -199,12 +195,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     return addApolloState(apolloClient, {
       props: {
-        participantToken:
-          process.env.ASSESSMENT_MODE === 'true' ? participantToken : null,
-        cookiesAvailable,
-        sessionState,
-        sessionRevision,
-        sessionEstablished,
+        ...participantSessionProps(session),
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },

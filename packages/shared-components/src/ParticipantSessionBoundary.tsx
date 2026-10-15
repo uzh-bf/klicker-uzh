@@ -10,6 +10,8 @@ import {
 import {
   bindParticipantSession,
   checkParticipantSession,
+  endFrameSession,
+  frameSessionToken,
   hasLocalParticipantSessionChange,
   hasSharedParticipantCookies,
   isParticipantSessionStale,
@@ -58,11 +60,16 @@ export default function ParticipantSessionBoundary({
     isParticipantSessionStale,
     () => false
   )
+  // A frame session authenticates with its own token, so the shared cookie
+  // revision neither confirms nor invalidates it.
+  const frame = typeof window !== 'undefined' && !!frameSessionToken()
   const mismatch =
     typeof window !== 'undefined' &&
+    !frame &&
     bindParticipantSession() !== readParticipantSession()
   const refused =
     typeof window !== 'undefined' &&
+    !frame &&
     requireCookie &&
     (expectedRevision === undefined ||
       confirmedRevision !== expectedRevision) &&
@@ -77,12 +84,21 @@ export default function ParticipantSessionBoundary({
   useEffect(() => {
     let active = true
     void hasSharedParticipantCookies().then((available) => {
-      if (active) setSharedCookies(available)
+      if (!active) return
+      // Shared cookies work here, so the frame can join the shared login.
+      if (available) endFrameSession()
+      setSharedCookies(available)
     })
     return () => {
       active = false
     }
   }, [])
+
+  useEffect(() => {
+    // The launch is consumed once the frame holds its own session.
+    if (frame && requireCookie && sharedCookies === false)
+      onSessionEstablished?.()
+  }, [frame, requireCookie, sharedCookies, onSessionEstablished])
 
   useEffect(() => {
     if (refused || !sharedCookies) return
@@ -133,7 +149,7 @@ export default function ParticipantSessionBoundary({
     onSessionEstablished,
   ])
 
-  if (refused || sharedCookies === false) {
+  if (refused) {
     const current =
       typeof window === 'undefined' ? undefined : new URL(window.location.href)
     return (
@@ -146,5 +162,5 @@ export default function ParticipantSessionBoundary({
       />
     )
   }
-  return !sharedCookies || stale || mismatch ? null : children
+  return sharedCookies === undefined || stale || mismatch ? null : children
 }

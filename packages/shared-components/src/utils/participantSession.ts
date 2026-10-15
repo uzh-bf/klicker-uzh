@@ -3,16 +3,57 @@
 export const PARTICIPANT_SESSION_COOKIE = 'participant_session'
 export const PARTICIPANT_SESSION_HEADER = 'x-participant-session'
 
+// An LMS frame without unpartitioned cookie access cannot use the shared
+// login. It keeps its own participant token in this tab's sessionStorage and
+// sends it as a bearer. That identity is fixed for the tab until the next
+// launch, so the shared revision does not apply to it.
+const FRAME_TOKEN_KEY = 'participant_token'
+
 let revision: string | undefined
 let stale = false
 let localSessionChange = false
+let frameToken: string | undefined
+let sharedAccess: boolean | undefined
 const listeners = new Set<() => void>()
 
+function isEmbedded() {
+  return typeof window !== 'undefined' && window.self !== window.top
+}
+
 export async function hasSharedParticipantCookies() {
-  if (window.self === window.top) return true
+  if (window.self === window.top) return (sharedAccess = true)
   // A cookie readable in an LMS frame may belong to a separate partition.
   // Only unpartitioned access can share the top-level participant login.
-  return document.hasStorageAccess?.().catch(() => false) ?? false
+  sharedAccess =
+    (await document.hasStorageAccess?.().catch(() => false)) ?? false
+  return sharedAccess
+}
+
+/** Whether this document is a frame known to lack shared cookies. */
+export function isParticipantFrameContext() {
+  return isEmbedded() && sharedAccess === false
+}
+
+/** Keep a launched token for this frame, or resume one stored earlier. */
+export function adoptFrameSession(token?: string) {
+  if (!isEmbedded()) return
+  try {
+    if (token) sessionStorage.setItem(FRAME_TOKEN_KEY, token)
+    frameToken = sessionStorage.getItem(FRAME_TOKEN_KEY) ?? undefined
+  } catch {
+    frameToken = token
+  }
+}
+
+export function frameSessionToken() {
+  return frameToken
+}
+
+export function endFrameSession() {
+  frameToken = undefined
+  try {
+    sessionStorage.removeItem(FRAME_TOKEN_KEY)
+  } catch {}
 }
 
 export function readParticipantSession() {
@@ -41,7 +82,7 @@ export function subscribeParticipantSession(listener: () => void) {
 }
 
 export function checkParticipantSession() {
-  if (readParticipantSession() !== bindParticipantSession()) {
+  if (!frameToken && readParticipantSession() !== bindParticipantSession()) {
     stale = true
     listeners.forEach((listener) => listener())
   }
@@ -49,7 +90,7 @@ export function checkParticipantSession() {
 }
 
 export function assertParticipantSession(expected = bindParticipantSession()) {
-  if (!checkParticipantSession() || expected !== revision)
+  if (!checkParticipantSession() || (!frameToken && expected !== revision))
     throw new Error('Participant session changed')
 }
 
@@ -73,8 +114,9 @@ export function completeParticipantSessionCommand() {
   listeners.forEach((listener) => listener())
 }
 
-export function participantSessionHeaders() {
+export function participantSessionHeaders(): Record<string, string> {
   assertParticipantSession()
+  if (frameToken) return { authorization: `Bearer ${frameToken}` }
   return { [PARTICIPANT_SESSION_HEADER]: bindParticipantSession() || 'none' }
 }
 
