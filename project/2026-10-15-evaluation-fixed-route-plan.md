@@ -135,13 +135,14 @@ by a passing integrated run: 47 tests across guard, target and trajectory suites
 in an offline container. Biome and Prettier checks passed; pre-existing Biome
 advisories remain. Focused Opengrep reported no findings in the changed
 executable files. No new dependency, module, schema or framework pin change.
-Substantive implementation size: 241 added and 34 removed lines; plan and
+Substantive implementation size: 239 added and 33 removed lines; plan and
 documentation excluded. Test delta: two new contract tests, existing retry and
 denial cases extended, duplicate draft tests consolidated before commit.
 
 Draft PR created. The simplifier's unused test-helper options were removed;
 the affected guard suite passed again. Slice review and integrated final review
-remain pending. The standalone synthetic admission check passed; full
+passed with no findings at the reporting threshold. This metadata-only progress
+update reuses the reviewed source range. The standalone synthetic admission check passed; full
 application qualification remains an incomplete mandatory gate. No paid
 acceptance or answer-quality claim follows from this package's source checks.
 Next: finish source review and exact-head CI disposition; retain the draft until
