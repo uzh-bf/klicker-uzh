@@ -69,10 +69,11 @@ Postgres and Hatchet as the boot-critical base.
 3. **Logs:** The dev servers auto-start inside the container. View logs via `devrouter exec . -- tail -f /tmp/dev.log`.
 
 Choose an application profile such as `manage`, `pwa`, `chat`, or
-`live-quiz`. Add the orthogonal `ai`, `mcp`, `email`, or `eduid` capability
-only when needed; for example, `devrouter ensure . --profile chat,ai,mcp`, or
+`live-quiz`. Add the orthogonal `ai`, `mcp`, `email`, `eduid`, or `db` capability
+only when needed; for example, `devrouter ensure . --profile chat,ai,mcp`,
 `devrouter ensure . --profile manage,eduid` for Edu-ID login through the
-local OIDC mock. Capability-only profiles run no Turbo app process. Omitting
+local OIDC mock, or `manage,db` to route Postgres at
+`db.klicker.<workspace>.localhost:5432` for host tools. Capability-only profiles run no Turbo app process. Omitting
 `--profile` keeps the compatibility default `full`. Profile unions are additive
 and order-insensitive, and a warm transition does not recreate the app
 container or reset persistent data.

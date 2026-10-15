@@ -113,6 +113,7 @@ It does not apply changed mounts to retained containers.
 | --------------------------------------- | ----------------------------------------------------------------------------- |
 | `manage` / `pwa` / `chat` / `live-quiz` | That app set + API/Auth (+ PWA for chat; workers for live-quiz), the 3x Redis |
 | `eduid`                                 | The local Edu-ID OIDC mock only - combine it with an application profile      |
+| `db`                                    | The routed Postgres endpoint only - combine it with an application profile    |
 | `ai`                                    | LiteLLM only - no routes, no app process                                      |
 | `mcp`                                   | The local MCP fixture (Benibot) only                                          |
 | `email`                                 | MailHog only                                                                  |
@@ -221,7 +222,10 @@ Hatchet event queue (responses pushed by `response-api`).
 
 Infra (the 3× Redis, MailHog, Hatchet) is **not** routed — the apps reach it by
 compose DNS (`redis_exec`, `redis_cache`, `redis_assessment`, `mailhog`,
-`hatchet:7077`). Connect to the DB from the host with direct-SSL:
+`hatchet:7077`). Connect to the DB from the host with direct-SSL. A selective
+profile publishes this route only when it includes `db` (for example
+`--profile manage,db`); `full` always does. Otherwise use the loopback port
+from `devrouter env . --json`:
 
 ```bash
 psql "host=db.klicker.<workspace>.localhost port=5432 user=klicker_test \
