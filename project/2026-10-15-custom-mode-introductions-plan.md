@@ -16,8 +16,8 @@ Approval authorizes the finite implementation, local verification, review correc
 
 - Approval mode: executable batch; implementation authorized by the user’s direct request to fix both features; routine local choices resolved in this reviewed contract.
 - Execution owner and boundary owner: main session (`self`), execution mode `standard` because model identity is not exposed.
-- Repository: `/Users/rschlae/Git/klicker/klicker-uzh`.
-- Worktree: `/Users/rschlae/Git/klicker/klicker-uzh/trees/chat-custom-mode-introductions`.
+- Repository: `klicker-uzh`; resolve its absolute root through host Git.
+- Worktree: `trees/chat-custom-mode-introductions` beneath the repository root.
 - Branch: `enhance/chat-custom-mode-introductions`; ordinary cohesive PR target `v3-ai`, following the repository's chat-development convention.
 - Source baseline: `e2ac86f836c3fe78986f9ac51316d1e76bdd2556`; fetched on 15 October 2026. Main/default is `v3`; the task baseline differs deliberately.
 - Canonical plan: `project/2026-10-15-custom-mode-introductions-plan.md` in this worktree. First branch commit before implementation.
@@ -99,10 +99,11 @@ The terminal condition is the integrated implementation, local browser proof, co
 
 ### Progress
 
-- Completed: fetched source, mapped existing authoring and chat seams, selected additive JSON metadata and created the isolated task worktree.
-- Current: frozen implementation plan for planner challenge; required planning review APPROVED; direct implementation authority is recorded above.
-- Remaining: first plan commit, three slices, reviews, browser evidence and draft PR.
-- Required delivery layer: reviewed source and local browser acceptance. Achieved layer: investigation only; no implementation or runtime started.
+- Implemented both presentation fields, lecturer controls, owner preview, participant rendering and administrator review in [draft PR #6534](https://github.com/uzh-bf/klicker-uzh/pull/6534). Source acceptance revision: `c4752e5b6bca4629d0f1b851365772ae2b17d1bf`.
+- Verification: 97 focused tests and five real-browser tests pass. Model streams were mocked. Shared builds/code generation and affected app, util, type and GraphQL checks pass. Staged secret scans, formatting and diff checks pass. The broad monorepo Git hooks were replaced by these scoped container checks; full `check:all` was not run. Unchanged lint findings in the thread component remain outside this package.
+- Both feature slices received separate simplification and cross-system review. No simplification was justified; the slice reviews passed after correcting the first browser fixture and exposing custom-mode content in the actual administrator panel. The revision suite now uses its existing guarded cleanup before its first fixture initialization too.
+- Eleven inspected synthetic captures cover desktop/mobile, German/English, embedded chat, draft preview and administrator review. The new forms and student layouts fit at 390px. The unchanged Manage navigation still overflows at that width. Chromium viewport emulation does not qualify Firefox or physical phones.
+- Delivery boundary: implementation and local UI acceptance are complete. The PR records the integrated final review, current CI/feedback dispositions and screenshot attachments. Keep it draft until separately authorized; merge, deployment and live chatbot configuration remain outside this package. No further feature slice is planned.
 
 ### Planning review
 
