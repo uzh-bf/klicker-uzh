@@ -135,6 +135,9 @@ export const ChatAccountUsageOverviewType =
   ChatAccountUsageOverviewRef.implement({
     fields: (t) => ({
       authorized: t.exposeBoolean('authorized'),
+      advancedModelConfigurationEntitled: t.exposeBoolean(
+        'advancedModelConfigurationEntitled'
+      ),
       subscriptionTier: t.expose('subscriptionTier', {
         type: AiSubscriptionTier,
       }),
@@ -425,6 +428,7 @@ export interface IChatModelCapability {
   fallback: boolean
   supportsReasoning: boolean
   supportedReasoningEfforts: string[]
+  usageClass: DB.ChatUsageClass
 }
 
 export const ChatModelCapabilityRef = builder.objectRef<IChatModelCapability>(
@@ -438,6 +442,7 @@ export const ChatModelCapability = ChatModelCapabilityRef.implement({
     fallback: t.exposeBoolean('fallback'),
     supportsReasoning: t.exposeBoolean('supportsReasoning'),
     supportedReasoningEfforts: t.exposeStringList('supportedReasoningEfforts'),
+    usageClass: t.expose('usageClass', { type: ChatUsageClass }),
   }),
 })
 
@@ -650,6 +655,8 @@ export const Chatbot = ChatbotRef.implement({
     }),
     mcpConfigurations: t.field({
       type: [ChatbotMcpConfigurationSummaryRef],
+      deprecationReason:
+        'Retrieval bindings are internal plumbing and are no longer projected; this field always resolves to an empty list.',
       resolve: (chatbot) => chatbot.mcpConfigurations ?? [],
     }),
     enabledKnowledgeBase: t.field({

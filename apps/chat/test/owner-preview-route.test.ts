@@ -155,7 +155,11 @@ function createChatbot(
       },
     ],
     modelSelection: false,
-    owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: 'KST-1' },
+    owner: {
+      aiFeaturesEnabled: true,
+      aiSubscriptionTier: 'ADVANCED',
+      aiChatbotCostCenter: 'KST-1',
+    },
     ownerId: 'owner-id',
     standardModeConfig: defaultStandardModeConfig,
     customModeConfig: null,
@@ -294,11 +298,18 @@ describe('POST owner preview chat', () => {
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
-  it('refuses an advanced model for an account without a cost center', async () => {
+  it.each([
+    ['without a cost center', 'ADVANCED', null],
+    ['on the base tier', 'BASE', 'KST-1'],
+  ] as const)('refuses an advanced model for an account %s', async (_case, aiSubscriptionTier, aiChatbotCostCenter) => {
     mocks.findChatbot.mockResolvedValue(
       createChatbot({
         modelSelection: true,
-        owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: null },
+        owner: {
+          aiFeaturesEnabled: true,
+          aiSubscriptionTier,
+          aiChatbotCostCenter,
+        },
       })
     )
     setRequestOptions({
@@ -322,7 +333,11 @@ describe('POST owner preview chat', () => {
   it('still previews a base model without a cost center', async () => {
     mocks.findChatbot.mockResolvedValue(
       createChatbot({
-        owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: null },
+        owner: {
+          aiFeaturesEnabled: true,
+          aiSubscriptionTier: 'BASE',
+          aiChatbotCostCenter: null,
+        },
       })
     )
 
@@ -337,7 +352,11 @@ describe('POST owner preview chat', () => {
   it('refuses a base model for an account without AI approval', async () => {
     mocks.findChatbot.mockResolvedValue(
       createChatbot({
-        owner: { aiFeaturesEnabled: false, aiChatbotCostCenter: 'KST-1' },
+        owner: {
+          aiFeaturesEnabled: false,
+          aiSubscriptionTier: 'ADVANCED',
+          aiChatbotCostCenter: 'KST-1',
+        },
       })
     )
 

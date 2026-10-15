@@ -386,10 +386,15 @@ base-budget backfill and cohort evidence exist for it.
 Enforcement does not control class admission. Whether or not the switch is on,
 the participant and preview routes admit a candidate only when its usage class
 is entitled: the account-level AI approval opens the cost-free base class, and a
-cost-carrying advanced class additionally needs a non-blank cost center. Both
-deployed automatic primaries (GPT-6 Luna) are `BASE`, so an approved account
-without a cost center keeps its automatic default; only directly selected Sol
-models need the cost center.
+cost-carrying advanced class additionally needs the advanced subscription tier
+and a non-blank cost center. Setting a cost center grants the advanced tier
+([ADR 0020](./adr/0020-two-tier-chatbot-approval.md)). Both deployed automatic
+primaries (GPT-6 Luna) and `auto` are `BASE`, so an approved base-tier account
+keeps its automatic default; only directly selected Sol models need the
+advanced tier. Saving a chatbot revision rejects a newly added advanced model
+unless the owner has the advanced tier and a cost center, and the Manage model
+picker disables such models. AI access is checked at publication, so drafts can
+still be prepared without it.
 
 An account with no configured base budget receives the default
 `DEFAULT_BASE_CHAT_BUDGET_CREDITS` (`packages/util/src/chatUsage.ts`) for the
@@ -638,8 +643,9 @@ policy. The deployed LiteLLM configuration is external; a local summary proves
 the development path only, and staging still needs a Responses + tool-loop
 smoke test before a production compatibility claim.
 
-One account-level AI usage authorization, backed by an approved cost center,
-covers both model classes: the Phase 0 lifecycle foundations now store an
+One account-level AI usage authorization covers the base class; the advanced
+class additionally needs the advanced subscription tier and an approved cost
+center: the Phase 0 lifecycle foundations now store an
 account-scoped monthly budget and used-credit counter per `BASE` and
 `ADVANCED` class in `ChatAccountUsage`. Operations manages account-wide
 monthly budgets through the `ADMIN`-only mutation, while account owners see
@@ -745,15 +751,20 @@ use their platform-owned localized purpose descriptions in `src/components/mode-
 custom modes use their configured description.
 
 `src/lib/server/effectiveChatModes.ts` is the server-authoritative mode seam. It composes platform
-defaults with the nullable typed `Chatbot.standardModeConfig`, stored per-mode overrides, and
-custom modes. A valid typed value owns all three standard-mode flags and must keep Tutor or
+defaults with the nullable typed `Chatbot.standardModeConfig`, stored per-mode overrides, and the
+approved custom-mode configuration. Participant paths offer only the custom-mode keys the chatbot
+carries as approved configuration; the owner preview may additionally offer saved but unapproved
+modes. A valid typed value owns all three standard-mode flags and must keep Tutor or
 Explainer enabled; Quizzer is independent of that invariant. Tutor and Explainer do not require a
 knowledge base. A missing or malformed value derives all three flags from legacy `enabled: false`
 opt-outs and otherwise enables them, while a valid legacy value with only Tutor and Explainer flags
-derives Quizzer from its legacy opt-out/default. Custom-mode flags remain legacy-controlled. The
-resolver excludes modes that cannot satisfy
-the chatbot's required-MCP policy, and exposes Quizzer only with a provably restricted course
-`doc_query` binding. Exact Quizzer configuration shadows Tutor inheritance per MCP server,
+derives Quizzer from its legacy opt-out/default. Custom-mode flags remain
+legacy-controlled. The resolver never suppresses a mode chatbot-wide: a mode with
+no retrieval binding of its own stays offered, and a mode whose declared
+required binding is unavailable fails closed at request time instead of
+disappearing. Quizzer remains the capability-gated exception and appears only
+with a provably restricted course `doc_query` binding. Exact Quizzer
+configuration shadows Tutor inheritance per MCP server,
 including disabled exact rows; inherited optional bindings are narrowed to `doc_query`, while
 required single-tool aliases preserve their raw tool restriction and remain fail-closed. The
 layout, participant settings endpoint, chat request validation, and request-time MCP selection all
@@ -1366,7 +1377,14 @@ the chatbot MCP configuration: `{ "required": true, "toolAlias": "doc_query",
 configurations must contain at most one binding per stored mode, with one server
 ID and one normalized UUID across the chatbot. The selected effective mode must
 resolve exactly one matching binding; Quizzer may safely inherit Tutor's
-restricted `doc_query` binding under ADR 0021.
+restricted `doc_query` binding under ADR 0021. An approved custom mode inherits
+the required `doc_query` binding of Tutor or Explainer for the same server,
+retagged to the selected mode key, while an enabled exact binding for the custom
+mode itself takes precedence. A selected mode with no enabled `KB`
+configuration is not a scope violation: it resolves no retrieval scope, no
+scope token, and no KB server target, and serves without grounding. Scope
+isolation still requires one server ID and one normalized UUID across the
+chatbot's enabled `KB` configurations.
 Any malformed, missing, duplicate, conflicting, or misplaced `kb_id` fails as
 `503 REQUIRED_MCP_UNAVAILABLE` before provider or message work. A valid binding
 keeps the opaque bearer transport credential in `Authorization` and adds a
@@ -1376,6 +1394,21 @@ audience, key ID, and private key come from `DOC_QUERY_SCOPE_ISSUER`,
 `DOC_QUERY_SCOPE_AUDIENCE`, `DOC_QUERY_SCOPE_KID`, and
 `DOC_QUERY_SCOPE_PRIVATE_KEY`. Chatbots without an enabled `KB` binding and
 non-KB MCP servers retain their existing behavior.
+
+`attachKbToChatbot` keeps the stored retrieval rows aligned with the mode keys
+the chatbot has approved. It upserts the required `doc_query` row for Tutor and
+Explainer only, and derives the eligible custom-mode keys from the normalized
+approved `Chatbot.customModeConfig` — never from the legacy `systemPrompts` map
+or a pending revision. Enabled `KB` rows whose mode is outside Tutor, Explainer,
+an approved custom mode, and Quizzer are disabled as stale, so a removed mode
+cannot keep a binding. When the chatbot already has an enabled exact custom or
+Quizzer row, re-attaching repoints it to the new knowledge base; a disabled
+exact override is left untouched and is never re-enabled. No custom or Quizzer
+row is created: approved custom modes inherit the standard required binding at
+request time, including a mode approved after the attachment, so a new mode
+needs no re-attachment. The shared standard-mode key list lives in
+`packages/util/src/chatbotStandardModeConfig.ts` and is asserted against the
+runtime prompt registry by a chat test, so the two cannot drift silently.
 
 - `resolveCitationSource` resolves each expanded `[n]` only for `1 <= n <= N`. Anything outside
   that range stays literal text in the answer — which is the intended failure mode, not a bug.

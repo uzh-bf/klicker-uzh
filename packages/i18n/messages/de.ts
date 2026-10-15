@@ -2715,7 +2715,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatAccountUsageClassUnavailable:
         'Diese Nutzungsklasse ist für Ihr Konto nicht freigeschaltet.',
       chatAccountUsageAdvancedCostCenter:
-        'Fortgeschrittene Modelle erfordern eine Kostenstelle, auf die die AI-Nutzung verrechnet werden kann.',
+        'Fortgeschrittene Modelle erfordern das fortgeschrittene AI-Abonnement und eine Kostenstelle, auf die die AI-Nutzung verrechnet werden kann.',
       chatAccountUsageRefreshing: 'Nutzung wird aktualisiert ...',
       chatAccountUsageStale:
         'Die aktuelle Nutzung konnte nicht geladen werden. Die unten angezeigten Werte sind möglicherweise veraltet.',
@@ -5076,9 +5076,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotTechnicalDetails: 'Technische Details',
       chatbotTechnicalId: 'ID',
       chatbotTechnicalAvatar: 'Avatar',
-      chatbotUsageTechnicalIntegrations: 'Technische Integrationen',
-      chatbotUsageTechnicalIntegrationsDescription:
-        'Prüfen Sie konfigurierte MCP-Integrationen und deren aktuellen Status.',
       chatbotSetupTitle: 'Chatbot einrichten',
       chatbotSetupDescription:
         'Bearbeiten und speichern Sie die folgenden Bereiche, bevor Sie die Veröffentlichung beantragen.',
@@ -5353,6 +5350,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Teilnehmende können zwischen diesen Modellen wählen. Wählen Sie mindestens eines.',
       selectedModel: 'Ausgewähltes Modell',
       allowedModels: 'Erlaubte Modelle',
+      modelUnavailableHint:
+        'Fortgeschrittene Modelle erfordern das fortgeschrittene AI-Abonnement mit einer Kostenstelle.',
+      modelUnavailableSelected:
+        'Ihr Konto kann dieses fortgeschrittene Modell nicht verwenden, daher können Teilnehmende damit nicht chatten. Wählen Sie ein anderes Modell.',
       allowedModelsAll: 'Alle',
       chatbotModelSettings: 'Modell- und Reasoning-Einstellungen',
       reasoningEffortsByModel: 'Reasoning-Level pro Modell',
@@ -5384,7 +5385,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       disclaimerAccepted: 'Akzeptiert',
       disclaimerDeclined: 'Abgelehnt',
       disclaimerPending: 'Ausstehend',
-      mcpConfigurations: 'MCP-Konfigurationen',
       knowledgeBase: 'Wissensdatenbank',
       knowledgeGraphPolicy: 'Wissensgraph',
       knowledgeGraphPolicyDescription:
@@ -5402,15 +5402,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       knowledgeGraphSaveSuccess: 'Wissensgraph-Einstellungen gespeichert.',
       noEnabledKnowledgeBase:
         'Es ist keine Wissensdatenbank verknüpft. Dieser Chatbot kann Kursmaterial nicht durchsuchen.',
-      noMcpConfigurations: 'Keine MCP-Konfigurationen.',
-      mcpServerActive: 'Server aktiv',
-      mcpServerInactive: 'Server inaktiv',
-      mcpChatMode: 'Chat-Modus',
-      mcpStatus: 'Status',
-      mcpStatusEnabled: 'Aktiviert',
-      mcpStatusDisabled: 'Deaktiviert',
-      mcpPriority: 'Priorität',
-      mcpAllowedTools: 'Erlaubte Tools',
       openChatbot: 'Chatbot öffnen',
       openOwnerPreview: 'Eigentümer-Vorschau öffnen',
       chatbotOwnerPreviewLive: 'Live-Konfiguration',
