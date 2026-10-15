@@ -28,6 +28,7 @@ export interface ChatModeOption {
   description: string
   name?: string
   welcomeMessage?: string
+  starterPrompts?: string[]
 }
 
 export type ChatModeOptions = Record<string, ChatModeOption>
@@ -60,6 +61,12 @@ export function parseModeOptions(value: unknown): ChatModeOptions | null {
     }
 
     const option = entry as Record<string, unknown>
+    const starterPrompts = Array.isArray(option.starterPrompts)
+      ? option.starterPrompts.filter(
+          (prompt): prompt is string =>
+            typeof prompt === 'string' && prompt.trim().length > 0
+        )
+      : []
     entries.push([
       mode,
       {
@@ -69,6 +76,7 @@ export function parseModeOptions(value: unknown): ChatModeOptions | null {
         option.welcomeMessage.trim()
           ? { welcomeMessage: option.welcomeMessage }
           : {}),
+        ...(starterPrompts.length > 0 ? { starterPrompts } : {}),
       },
     ])
   }

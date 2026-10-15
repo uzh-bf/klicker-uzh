@@ -19,6 +19,9 @@ describe('chatbot authoring revision transitions', () => {
 
   beforeAll(async () => {
     dependencies = await initializePrisma()
+    // Own the initial state: leftovers from a previous local run or browser
+    // seed would otherwise break the first test's fixture setup.
+    await testCleanup(dependencies.prisma)
   })
   beforeEach(async () => {
     const contexts = await testInitialization(
@@ -976,13 +979,27 @@ describe('chatbot authoring revision transitions', () => {
     })
   })
 
-  it('keeps draft welcome changes away from the live configuration', async () => {
+  it('keeps draft presentation changes away from the live configuration', async () => {
     const bot = await seed()
     const approvedWelcome = 'First synthetic welcome.'
     const draftWelcome = 'Draft synthetic welcome.'
-    const readWelcome = (config: unknown) =>
-      (config as { modes: { welcomeMessage?: string | null }[] } | null)
-        ?.modes[0]?.welcomeMessage ?? null
+    const approvedStarters = ['Approved starter one.', 'Approved starter two.']
+    const draftStarters = ['Draft starter one.']
+    const readMode = (config: unknown) =>
+      (
+        config as {
+          modes: {
+            welcomeMessage?: string | null
+            starterPrompts?: string[] | null
+          }[]
+        } | null
+      )?.modes[0] ?? null
+    // The draft column holds a full revision snapshot, so its configuration is
+    // nested one level deeper than the live column.
+    const readDraftMode = (chatbot: { draftConfig: unknown }) =>
+      readMode(
+        (chatbot.draftConfig as { customModeConfig: unknown }).customModeConfig
+      )
 
     const saved = await service.saveChatbotRevision(
       {
@@ -995,6 +1012,7 @@ describe('chatbot authoring revision transitions', () => {
                 name: 'Interview coach',
                 personaText: 'You are an interview coach.',
                 welcomeMessage: approvedWelcome,
+                starterPrompts: approvedStarters,
               },
             ],
           },
@@ -1009,9 +1027,10 @@ describe('chatbot authoring revision transitions', () => {
       { id: bot.id, expectedRevisionVersion: 2 },
       admin
     )
-    expect(readWelcome((await read(bot.id)).customModeConfig)).toBe(
-      approvedWelcome
-    )
+    expect(readMode((await read(bot.id)).customModeConfig)).toMatchObject({
+      welcomeMessage: approvedWelcome,
+      starterPrompts: approvedStarters,
+    })
 
     await service.saveChatbotRevision(
       {
@@ -1025,6 +1044,7 @@ describe('chatbot authoring revision transitions', () => {
                 name: 'Interview coach',
                 personaText: 'You are an interview coach.',
                 welcomeMessage: draftWelcome,
+                starterPrompts: draftStarters,
               },
             ],
           },
@@ -1033,16 +1053,16 @@ describe('chatbot authoring revision transitions', () => {
       owner
     )
     const staged = await read(bot.id)
-    // The draft column holds a full revision snapshot, so the configuration is
-    // nested one level deeper than in the live column.
-    expect(
-      readWelcome(
-        (staged.draftConfig as { customModeConfig: unknown }).customModeConfig
-      )
-    ).toBe(draftWelcome)
-    expect(readWelcome(staged.customModeConfig)).toBe(approvedWelcome)
+    expect(readDraftMode(staged)).toMatchObject({
+      welcomeMessage: draftWelcome,
+      starterPrompts: draftStarters,
+    })
+    expect(readMode(staged.customModeConfig)).toMatchObject({
+      welcomeMessage: approvedWelcome,
+      starterPrompts: approvedStarters,
+    })
 
-    // A save that omits the presentation field keeps the staged welcome.
+    // A save that omits the presentation fields keeps the staged values.
     await service.saveChatbotRevision(
       {
         chatbotId: bot.id,
@@ -1065,8 +1085,19 @@ describe('chatbot authoring revision transitions', () => {
     expect(
       (afterOmitted.draftConfig as { customModeConfig: unknown })
         .customModeConfig
-    ).toMatchObject({ modes: [{ key, welcomeMessage: draftWelcome }] })
-    expect(readWelcome(afterOmitted.customModeConfig)).toBe(approvedWelcome)
+    ).toMatchObject({
+      modes: [
+        {
+          key,
+          welcomeMessage: draftWelcome,
+          starterPrompts: draftStarters,
+        },
+      ],
+    })
+    expect(readMode(afterOmitted.customModeConfig)).toMatchObject({
+      welcomeMessage: approvedWelcome,
+      starterPrompts: approvedStarters,
+    })
   })
 
   it('keeps a rejected custom mode out of the live column', async () => {

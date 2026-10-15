@@ -468,7 +468,7 @@ test.describe('Chatbot Messaging Interface', () => {
     await expect(page.getByTestId('chat-welcome-suggestion')).toHaveCount(2)
   })
 
-  test('Custom-mode welcome follows the selected mode and empty-thread state', async ({
+  test('Custom-mode introduction and starters follow the selected mode and empty-thread state', async ({
     page,
   }) => {
     const prisma = await getPrisma()
@@ -478,6 +478,10 @@ test.describe('Chatbot Messaging Interface', () => {
     })
     const welcomeMessage =
       'A synthetic introduction.\n<img src=x onerror=alert(1)>'
+    const starterPrompts = [
+      'Start synthetic practice',
+      'Explain synthetic flow',
+    ]
     const modes = [
       {
         key: 'cm_intro_fixture',
@@ -485,6 +489,7 @@ test.describe('Chatbot Messaging Interface', () => {
         description: null,
         personaText: null,
         welcomeMessage,
+        starterPrompts,
       },
       {
         key: 'cm_legacy_fixture',
@@ -518,21 +523,32 @@ test.describe('Chatbot Messaging Interface', () => {
       await visitChat(page)
       await selectChatMode(page, modes[0].key, modes[0].name)
       const welcome = page.getByTestId('chat-custom-mode-welcome')
+      const starters = page.getByTestId('chat-welcome-suggestion')
+      const input = page.getByTestId('chat-composer-input')
       await expect(welcome).toHaveText(welcomeMessage)
       await expect(welcome.locator('img')).toHaveCount(0)
-      await expect(page.getByTestId('chat-welcome-suggestions')).toHaveCount(0)
+      await expect(starters).toHaveText(starterPrompts)
+      await page.reload()
+      await expect(welcome).toHaveText(welcomeMessage)
+      await expect(starters).toHaveText(starterPrompts)
+      await starters.first().click()
+      await expect(input).toHaveValue(starterPrompts[0])
       expect(chatRequests).toHaveLength(0)
+      await expect(page.getByTestId('chat-user-message')).toHaveCount(0)
       await page.getByTestId('chat-welcome-mode-switcher').click()
       await page
         .getByTestId('chat-welcome-mode-option-cm_legacy_fixture')
         .click()
       await expect(welcome).toHaveCount(0)
+      await expect(starters).toHaveCount(0)
       await page.getByTestId('chat-welcome-mode-switcher').click()
       await page
         .getByTestId('chat-welcome-mode-option-cm_intro_fixture')
         .click()
       await expect(welcome).toHaveText(welcomeMessage)
-      await sendMessage(page, 'Synthetic student reply')
+      await expect(starters).toHaveText(starterPrompts)
+      await input.fill('Synthetic student reply')
+      await page.getByTestId('chat-send-button').click()
       await expect(page.getByTestId('chat-assistant-message')).toBeVisible()
       await expect(welcome).toHaveCount(0)
       expect(chatRequests).toHaveLength(1)
@@ -541,6 +557,7 @@ test.describe('Chatbot Messaging Interface', () => {
       )
       await page.getByTestId('chat-new-thread-button').click()
       await expect(welcome).toHaveText(welcomeMessage)
+      await expect(starters).toHaveText(starterPrompts)
     } finally {
       await prisma.chatbot.update({
         where: { id: CHATBOT_ID },

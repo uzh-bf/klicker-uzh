@@ -13,6 +13,11 @@ export type ChatbotCustomMode = {
    * runtime falls back to its generic greeting; it is never sent to the model.
    */
   welcomeMessage?: string | null
+  /**
+   * Ordered suggestions offered in an empty chat. Absent, null or empty means
+   * the mode offers none; the text is copied into the composer, never sent.
+   */
+  starterPrompts?: string[] | null
 }
 
 /** Persisted, platform-constrained set of custom chat modes for one chatbot. */
@@ -35,6 +40,11 @@ export type ChatbotCustomModeInput = {
    * clears it.
    */
   welcomeMessage?: string | null
+  /**
+   * Omission keeps the stored starters of an existing mode; null or an empty
+   * list clears them.
+   */
+  starterPrompts?: string[] | null
 }
 
 /** Full replacement input accepted by the section-patch save mutation. */

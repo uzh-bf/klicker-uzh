@@ -186,6 +186,18 @@ function ChatbotPublicationDetails({
                   <p>{mode.welcomeMessage}</p>
                 </div>
               )}
+              {mode.starterPrompts?.length ? (
+                <div data-cy={`chatbot-admin-review-starters-${mode.key}`}>
+                  <p className="font-medium">
+                    {t('chat.suggestions.sectionLabel')}
+                  </p>
+                  <p>
+                    {mode.starterPrompts
+                      .map((prompt, index) => `${index + 1}. ${prompt}`)
+                      .join('\n')}
+                  </p>
+                </div>
+              ) : null}
               {mode.personaText && <p>{mode.personaText}</p>}
             </ReviewField>
           ))}

@@ -295,6 +295,9 @@ function getCustomModeOption(mode: ChatbotCustomMode): ChatModeOption {
     description: getCustomModeDescription(mode),
     name: mode.name,
     ...(mode.welcomeMessage ? { welcomeMessage: mode.welcomeMessage } : {}),
+    ...(mode.starterPrompts?.length
+      ? { starterPrompts: mode.starterPrompts }
+      : {}),
   }
 }
 

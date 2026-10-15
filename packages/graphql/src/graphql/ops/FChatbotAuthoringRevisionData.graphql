@@ -21,6 +21,7 @@ fragment ChatbotAuthoringRevisionData on ChatbotAuthoringRevision {
       description
       personaText
       welcomeMessage
+      starterPrompts
     }
   }
   modelSelection

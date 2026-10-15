@@ -71,4 +71,24 @@ describe('thread suggestions', () => {
       parseModeOptions({ custom: { description: '', welcomeMessage: {} } })
     ).toEqual({ custom: { description: '' } })
   })
+
+  test('preserves valid authored starter order and ignores malformed optional entries', () => {
+    const starterPrompts = ['Synthetic start', 'Synthetic explanation']
+    expect(
+      parseModeOptions({ custom: { description: '', starterPrompts } })
+    ).toEqual({ custom: { description: '', starterPrompts } })
+    expect(
+      parseModeOptions({
+        custom: {
+          description: '',
+          starterPrompts: [null, '', 'Synthetic start', {}],
+        },
+      })
+    ).toEqual({
+      custom: { description: '', starterPrompts: ['Synthetic start'] },
+    })
+    expect(
+      parseModeOptions({ custom: { description: '', starterPrompts: {} } })
+    ).toEqual({ custom: { description: '' } })
+  })
 })

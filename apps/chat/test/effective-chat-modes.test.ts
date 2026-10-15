@@ -35,7 +35,7 @@ function config({
 }
 
 describe('effective chatbot modes', () => {
-  test('projects authored welcome text without exposing the mode persona', () => {
+  test('projects authored introduction and starters without exposing the mode persona', () => {
     const welcomeMessage = 'Synthetic welcome\nIntroduction'
     const mode = {
       key: 'cm_presentation_fixture',
@@ -43,6 +43,7 @@ describe('effective chatbot modes', () => {
       description: null,
       personaText: 'Private fixture instructions',
       welcomeMessage,
+      starterPrompts: ['Synthetic starter'],
     }
     const options = resolveEffectiveChatModeOptions(null, [], null, {
       customModeConfig: { modes: [mode] },
@@ -51,6 +52,7 @@ describe('effective chatbot modes', () => {
       name: mode.name,
       description: mode.name,
       welcomeMessage,
+      starterPrompts: mode.starterPrompts,
     })
   })
 

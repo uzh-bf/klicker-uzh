@@ -27,6 +27,7 @@ query QGetChatbotsInfoWithKnowledgeBases {
         description
         personaText
         welcomeMessage
+        starterPrompts
       }
     }
     authoringRevision {

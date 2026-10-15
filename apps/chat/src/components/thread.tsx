@@ -774,17 +774,24 @@ const ThreadWelcomeSuggestions: FC<{
   if (!customSuggestions && Object.keys(modeOptions).length === 0) return null
 
   const activeMode = resolveSelectedMode(modeOptions, selectedMode)
+  const modeSuggestions = !isKnownMode(activeMode)
+    ? modeOptions[activeMode]?.starterPrompts?.map((prompt, index) => ({
+        id: `${activeMode}-starter-${index}`,
+        text: prompt,
+        prompt,
+      }))
+    : undefined
   const items: ThreadSuggestion[] =
     customSuggestions ??
+    modeSuggestions ??
     getThreadSuggestions(activeMode).map((suggestion) => ({
       id: suggestion.id,
       text: t(`chat.suggestions.${suggestion.id}`),
       prompt: t(`chat.suggestions.${suggestion.id}Prompt`),
     }))
 
-  // Modes without starters (every chatbot-defined mode key) render no
-  // section at all: a heading and editing hint above an empty grid would
-  // promise cards that are not there.
+  // Modes without starters render no section: a heading and editing hint
+  // above an empty grid would promise cards that are not there.
   if (items.length === 0) return null
 
   return (
@@ -805,7 +812,7 @@ const ThreadWelcomeSuggestions: FC<{
             key={suggestion.id}
             data-cy="chat-welcome-suggestion"
             className={twMerge(
-              'border-foreground/15 bg-background hover:border-primary/30 hover:bg-accent animate-in fade-in slide-in-from-bottom-2 min-h-11 rounded-lg border p-3 text-left text-sm shadow-sm transition-colors duration-300 motion-reduce:animate-none',
+              'border-foreground/15 bg-background hover:border-primary/30 hover:bg-accent animate-in fade-in slide-in-from-bottom-2 min-h-11 whitespace-pre-wrap break-words rounded-lg border p-3 text-left text-sm shadow-sm transition-colors duration-300 motion-reduce:animate-none',
               SUGGESTION_DELAY_CLASSNAMES[index] ?? 'delay-200'
             )}
             prompt={suggestion.prompt}
