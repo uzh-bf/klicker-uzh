@@ -127,10 +127,13 @@ approved execution and delivery, so no second generic approval is needed.
   and existing context/lifecycle coverage extended; no new suite or dependency.
 - Slice 2: committed as `af63f983ef`. Simplifier and risk reviewer passed with no
   actionable findings; local reports are under `project/_local/reviews/`.
-- Package: 729 substantive added/deleted lines, excluding this plan; one cohesive
+- Package: 728 substantive added/deleted lines, excluding this plan; one cohesive
   OCR completion/context/diagnostics package, with no generated or dependency delta.
 - Delivery: ordinary branch push and draft PR #6549 against `v3` completed.
   The draft starts hosted checks before final review; it remains draft.
-- Integrated final review starts after this progress commit. Its receipt belongs
-  under `project/_local/reviews/`; hosted checks remain separate from synthetic
-  source verification and post-merge live provider/artifact acceptance.
+- Integrated final review passed at `57f2abf59c` with no actionable findings.
+  Automated PR feedback then identified skipped diagnostics after failed startup.
+  The upload now always attempts the same fixed file, warning when absent.
+  A focused final-review correction pass verifies that availability change.
+- Review receipts remain under `project/_local/reviews/`; hosted checks remain
+  separate from synthetic source verification and post-merge live acceptance.

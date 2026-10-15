@@ -1274,7 +1274,7 @@ test('draft context preserves the complete multiline workflow output', () => {
   }
 })
 
-test('uploads draft adapter diagnostics from the fixed path after cleanup', () => {
+test('attempts draft diagnostics upload even after startup failure', () => {
   const workflow = fs.readFileSync(
     path.join(__dirname, '../workflows/check-ocr-review.yml'),
     'utf8'
@@ -1309,9 +1309,7 @@ test('uploads draft adapter diagnostics from the fixed path after cleanup', () =
 
   const uploadStep = lines.slice(uploadIndex).join('\n')
   assert.ok(uploadStep.includes('          path: ' + diagnosticsPath))
-  assert.ok(
-    uploadStep.includes("if: always() && steps.adapter.outcome == 'success'")
-  )
+  assert.ok(uploadStep.includes('        if: always()\n'))
   assert.ok(
     uploadStep.includes(
       'uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4'

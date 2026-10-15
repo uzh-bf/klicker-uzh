@@ -87,7 +87,7 @@ jobs:
         run: node "${ADAPTER_PATH}" stop "${ADAPTER_STATE}"
 
       - name: Upload sanitized draft adapter diagnostics
-        if: always() && steps.adapter.outcome == 'success'
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: draft-ai-review-adapter-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}

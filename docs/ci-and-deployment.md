@@ -355,8 +355,9 @@ Shutdown refuses new work and aborts active requests before attempting its singl
 diagnostics write. The listener closes after that attempt, so the stop receipt
 precedes artifact upload. A bounded drain records `unfinished_requests` when
 accounting could not settle; such a snapshot is incomplete. Write failures emit
-a fixed warning and preserve cleanup. Draft jobs upload only the fixed diagnostics
-JSONL file, with one-day retention and a warning when absent.
+a fixed warning and preserve cleanup. Draft jobs attempt to upload only the fixed
+diagnostics JSONL file even after startup failure, with one-day retention and a
+warning when absent.
 
 A main review response with `finish_reason: length` and a `task_done` call is
 refused with HTTP 422 and is never retained as replayable native history. Its
