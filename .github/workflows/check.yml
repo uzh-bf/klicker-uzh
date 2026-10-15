@@ -140,7 +140,7 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11.5.0
+          version: 12.11.2
 
       - name: Set up Node.js with pnpm cache
         uses: ./.github/actions/setup-node-pnpm
@@ -159,8 +159,12 @@ jobs:
       - name: Install Devrouter profile planner
         run: bash .github/scripts/install-devrouter.sh
 
-      - name: Check hosted pnpm cache policy
-        run: node --test ./.github/scripts/hosted-pnpm-cache.test.cjs
+      - name: Check pnpm toolchain and hosted cache policy
+        run: |
+          node --test --test-concurrency=1 \
+            ./.github/scripts/pnpm-toolchain-pins.test.cjs \
+            ./.github/scripts/hosted-pnpm-cache.test.cjs \
+            ./.agents/skills/klicker-dependency-overrides/scripts/lockfile-readers.test.mjs
 
       - name: Check staging release contracts
         run: node --test .github/scripts/stg-release-ref-promotion.test.cjs

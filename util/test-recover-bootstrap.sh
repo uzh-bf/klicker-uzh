@@ -73,9 +73,10 @@ cp "$REPO_ROOT/.github/scripts/provision-disposable-postgres.sh" \
   "$RUNTIME_ROOT/.github/scripts/provision-disposable-postgres.sh"
 cp "$REPO_ROOT/util/dev-runtime.sh" "$RUNTIME_ROOT/util/dev-runtime.sh"
 
-write_file "$ROOT/package.json" '{"packageManager":"pnpm@11.5.0"}'
+write_file "$ROOT/package.json" '{"packageManager":"pnpm@12.11.2"}'
 write_file "$ROOT/pnpm-lock.yaml" 'lockfileVersion: 9'
-write_file "$ROOT/pnpm-workspace.yaml" 'packages: [apps/*, packages/*]'
+write_file "$ROOT/pnpm-workspace.yaml" 'packages: [apps/*, packages/*]
+verifyDepsBeforeRun: error'
 write_file "$ROOT/apps/response-api/package.json" '{"name":"response-api"}'
 write_file "$ROOT/apps/hatchet-worker-general/package.json" '{"name":"hatchet-worker-general"}'
 write_file "$ROOT/apps/hatchet-worker-response-processor/package.json" '{"name":"hatchet-worker-response-processor"}'
@@ -92,6 +93,9 @@ write_file "$TOKEN_FILE" 'synthetic-hatchet-token'
 cat >"$FAKE_BIN/pnpm" <<'FAKE_PNPM'
 #!/usr/bin/env bash
 set -euo pipefail
+
+[ "${npm_config_verify_deps_before_run:-error}" = error ] || exit 71
+[ "${pnpm_config_verify_deps_before_run:-error}" = error ] || exit 72
 
 case "${1:-}" in
   --filter)

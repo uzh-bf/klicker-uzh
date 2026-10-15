@@ -329,7 +329,7 @@ boot because its `HatchetClient.init` runs at module load (not lazy).
 
 | Service                             | Image                                            | Purpose                                                                              |
 | ----------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| `app`                               | local `Dockerfile` (Node 24 + pnpm 11.5.0)       | runs every routed app plus the two Hatchet workers and both MCP servers              |
+| `app`                               | local `Dockerfile` (Node 24 + pnpm 12.11.2)      | runs every routed app plus the two Hatchet workers and both MCP servers              |
 | `postgres`                          | `postgres:15`                                    | Marked `klicker_test` + `klicker_test_shadow`; separate legacy/LTI/Hatchet databases |
 | `redis_exec`/`_assessment`/`_cache` | `redis:7`                                        | live-quiz exec / assessment / cache + pub/sub                                        |
 | `mailhog`                           | `mailhog/mailhog`                                | dev SMTP sink                                                                        |
@@ -491,12 +491,11 @@ disabled and the rest of the DevPod still starts normally.
   volume `klicker-uzh-pnpm-store-v1` is created idempotently before Compose and
   survives individual DevPod deletion. `node_modules`, `.next`, and PostgreSQL
   data remain worktree-scoped.
-- The same store volume is also mounted at `<workspace>/.pnpm-store`. The
-  workspace bind and the store volume are different devices inside the
-  container, so pnpm can fall back from the configured store to a workspace
-  store during installs; the second mount makes that fallback land in the
-  shared volume instead of writing a per-worktree store onto the host bind
-  mount.
+- The same store volume remains mounted at `<workspace>/.pnpm-store` for the
+  legacy fallback location. The image explicitly configures
+  `/pnpm/.pnpm-store`; keep that setting when upgrading the toolchain. Without
+  an explicit store directory, pnpm 12's sandbox fallback is instead
+  `<project>/node_modules/.pnpm-store`, inside the worktree's dependency volume.
 - Removing `klicker-uzh-pnpm-store-v1` is destructive cache cleanup. Stop every
   Klicker DevPod that uses it first, then remove that exact volume manually with
   `docker volume rm klicker-uzh-pnpm-store-v1`; never use broad Docker pruning.

@@ -2,7 +2,7 @@
 
 ## Quick Reference
 
-- **Monorepo**: pnpm 11.x + Turborepo, Node.js 24 (Volta-pinned; see `volta` in root `package.json` for exact versions)
+- **Monorepo**: pnpm 12.x + Turborepo, Node.js 24 (Volta-pinned; see `volta` in root `package.json` for exact versions)
 - **Main branch**: `v3` (active development)
 - **Legacy branches**: `dev` and `master` belong to the older Klicker variant and are not actively developed.
 - **Package names**: `@klicker-uzh/<name>` (e.g., `@klicker-uzh/graphql`)
