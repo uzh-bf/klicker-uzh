@@ -90,7 +90,7 @@ the `clean:cache` / `clean:generated` / `clean:worktree` / `disk:usage`
 commands.
 
 Playwright is the deliberate toolchain exception. Run
-`pnpm playwright:host -- <args>` from the host; the launcher calls
+`node util/run-playwright-host.mjs <args>` from the host; the launcher calls
 `devrouter ensure`, resolves the exact worktree routes, and connects the host
 Prisma setup to that workspace's random loopback PostgreSQL port. The browser
 and Playwright process never enter the devcontainer. Direct local Playwright
@@ -182,7 +182,7 @@ pnpm run check        # typecheck — only passes AFTER build (generated artifac
 
 Order matters: on a fresh clone, `pnpm run check` fails in ~19 packages until `pnpm run build` has produced the Prisma client, GraphQL codegen output, and package dists. The root build script forces `NODE_ENV=production`, even when the devcontainer exports `NODE_ENV=development` for live apps. Direct checks for the five Next apps are self-contained with respect to Next-generated route types: each app runs `next typegen` before `tsc --noEmit`, so those ignored types do not require a prior app build. Workspace dependency builds are still required; CI builds changed packages before checking them. Git hooks depend on the same broader workspace state: pre-commit runs `check:all`, pre-push runs `build`. Both fail hard when the host has a dependency install but lacks the required workspace-generated artifacts.
 
-Devcontainer checkouts keep `node_modules` in container volumes, so the host copy has no install. Host `pnpm` would then fail its `verifyDepsBeforeRun` check, and a host `pnpm install` would build a second, platform-specific dependency tree. `util/run-hook-pnpm.sh` therefore skips the `pnpm` step with a notice when `node_modules/.modules.yaml` is absent. The Gitleaks scan and Git identity guards still run, and required CI runs the same checks and build. To run them before pushing, use `devrouter exec . -- pnpm run check:all` or `devrouter exec . -- pnpm run build`. Run `check:all` with the dev servers stopped: its `next typegen` step rewrites `.next/` output that running Next dev servers own (see [Chat Platform](chat-platform.md)).
+Devcontainer checkouts keep `node_modules` in container volumes, so the host copy has no install. Host `pnpm` would then fail its `verifyDepsBeforeRun` check, and a host `pnpm install` would build a second, platform-specific dependency tree. `util/run-hook-pnpm.sh` therefore skips the `pnpm` step with a notice when `node_modules/.modules.yaml` is absent. It also skips it when the only host install is the Playwright launcher's filtered install, which the launcher marks with `node_modules/.playwright-host-filtered-install`; a later full install supersedes that marker. The Gitleaks scan and Git identity guards still run, and required CI runs the same checks and build. To run them before pushing, use `devrouter exec . -- pnpm run check:all` or `devrouter exec . -- pnpm run build`. Run `check:all` with the dev servers stopped: its `next typegen` step rewrites `.next/` output that running Next dev servers own (see [Chat Platform](chat-platform.md)).
 
 ## Failure signatures (fresh clone / wrong state)
 
