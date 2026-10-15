@@ -682,6 +682,18 @@ test('refused launch cookies show recovery in the standalone page and LMS frame'
   }
 })
 
+test('a linked launch on the registration page continues to the profile', async ({
+  page,
+  baseURL,
+}, info) => {
+  skipWithoutCookieSessions(info.project.name)
+  await page.goto(
+    `${baseURL}/createAccount?jwt=${encodeURIComponent(await signed({ sub: ssoId, scope: 'LTI1.3' }))}`
+  )
+  await expect(page).toHaveURL((url) => url.pathname.endsWith('/editProfile'))
+  await expectIdentity(page, { email: ltiEmail, username: ltiUsername })
+})
+
 test('refresh after an accepted handoff expires preserves B in both tabs', async ({
   page,
   context,

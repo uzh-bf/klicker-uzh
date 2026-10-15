@@ -36,12 +36,19 @@ function App({ Component, pageProps }: AppProps) {
   const router = useRouter()
   const { locale } = router
 
+  // The only navigation after an accepted launch: a page may name where the
+  // participant continues; otherwise the consumed handoff leaves the URL.
+  const sessionDestination: string | undefined = pageProps.sessionDestination
   const discardAcceptedHandoff = useCallback(() => {
+    if (sessionDestination) {
+      void router.replace(sessionDestination)
+      return
+    }
     const destination = participantReloadUrl()
     if (destination !== window.location.href) {
       void router.replace(destination, undefined, { shallow: true })
     }
-  }, [router])
+  }, [router, sessionDestination])
 
   // Before the client exists: a frame session must authenticate its first
   // requests and must not hydrate data fetched without its credential.

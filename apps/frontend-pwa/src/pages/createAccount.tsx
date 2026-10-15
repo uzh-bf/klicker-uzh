@@ -15,7 +15,6 @@ import type { GetServerSidePropsContext } from 'next'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
-import { useEffect } from 'react'
 
 interface Props {
   sessionEstablished?: boolean
@@ -38,11 +37,6 @@ function CreateAccount({
   const [createParticipantAccount] = useMutation(
     CreateParticipantAccountWithDataUseDocument
   )
-
-  useEffect(() => {
-    if (!sessionEstablished) return
-    void router.replace('/editProfile')
-  }, [sessionEstablished, router])
 
   if (sessionEstablished) return <Loader />
 
@@ -128,6 +122,9 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       return {
         props: {
           ...participantSessionProps(session),
+          // An already linked account continues to its profile once the
+          // session is confirmed.
+          sessionDestination: '/editProfile',
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
         },
