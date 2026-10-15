@@ -527,6 +527,7 @@ test('adds bounded description data without hidden comments or image embeds', ()
     'Required behavior.',
     '',
     '<!--\nhidden metadata\n-->',
+    '- List boundary.\n    <!-- hidden list metadata -->\n    <img src="https://example.test/list.png">',
     '![gallery](https://example.test/image_(1).png)',
     '![reference][gallery]',
     '<IMG src="https://example.test/image.png" alt="x > y">',
