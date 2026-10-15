@@ -114,9 +114,15 @@ options pass-through. The guard injects `service_tier: "default"`, matching
 `max_price.prompt` and `max_price.completion` from the qualified model rates,
 converted to USD per million tokens, and `max_price.request: "0"`. Application
 requests cannot supply or override those routing fields. Policies for unrelated
-direct upstreams retain their existing shape. Changing a policy requires a new
-qualified experiment; mutating the caller's policy after startup cannot alter
-the running guard's snapshot or ledger identity.
+direct upstreams retain their existing shape without `fixedRoute`. Supplying
+the adapter on any other host is rejected at startup, before ledger access or
+upstream requests. The sole exception is an explicit loopback fake upstream
+using exactly `localhost`, `127.0.0.1` or `[::1]`; the adapter remains optional
+there. Subdomains, wildcard listeners and other IP addresses are not covered
+by this exception. Existing URL and scheme restrictions still apply.
+Changing a policy requires a new qualified experiment; mutating the caller's
+policy after startup cannot alter the running guard's snapshot or ledger
+identity.
 
 Qualify every endpoint matched by the `openai` base slug. Explicit default-tier
 selection excludes priority and flex tiers; base slugs can otherwise include

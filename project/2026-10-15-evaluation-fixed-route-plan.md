@@ -55,7 +55,11 @@ These are request-shape contracts, not evidence that a paid request was accepted
 Add optional `fixedRoute: { type: 'openrouter', provider: 'openai' }` to version 1
 pricing policies. This deliberately supports one closed adapter. Require it
 for the apex `openrouter.ai` and its subdomains, normalizing a terminal DNS dot
-for detection. Unrelated direct-provider policies retain their existing shape.
+for detection. Reject the adapter on unrelated upstream hosts. Preserve the
+explicit fake-upstream exception for the exact existing loopback hostnames
+`localhost`, `127.0.0.1` and `[::1]`, without normalizing a trailing dot for that
+exception. The adapter remains optional on loopback. Unrelated direct-provider
+policies without the adapter retain their existing shape and URL restrictions.
 
 For this adapter, the guard injects `service_tier: 'default'` and provider
 preferences selecting only and ordering `openai`, disabling fallbacks and
@@ -73,7 +77,7 @@ boundary, using that snapshot for hashing, reservation, status and forwarding.
 
 | Product primitive | Disposition | Contract delta | Consumers and evidence |
 | --- | --- | --- | --- |
-| Evaluation pricing policy | Extend | Explicit guard-owned closed route required for OpenRouter | Existing guard and pricing-policy validator |
+| Evaluation pricing policy | Extend | Explicit guard-owned route required for OpenRouter; reject unrelated hosts while retaining exact loopback qualification | Existing guard and pricing-policy validator |
 | Experiment budget | Reuse | Existing monotonic $5 ceiling and per-attempt reservations | Existing ledger and runner; no new algorithm |
 
 No ADR: this is a small, reversible extension of the existing evaluation-only
@@ -86,6 +90,7 @@ excluded because neither is needed for the closed route.
 | Risk | Obligation | Primary seam and failure detected |
 | --- | --- | --- |
 | Provider or tier escapes the priced route | Extend existing | Fake HTTP guard scenario: both API paths, apex/subdomain detection and exact injected controls |
+| Adapter configured for an incompatible upstream | Extend existing | Startup-validator host matrix: OpenRouter and exact loopback accepted; unrelated hosts and lookalikes rejected before ledger access |
 | Client introduces an unpriced modifier | Extend existing | Existing denial scenario: no upstream arrival or reservation |
 | Caller changes a policy after startup | Extend existing | HTTP scenario: nested mutation cannot change prices, routing or policy identity |
 | Retries exceed the shared ceiling | Extend existing | Existing durable retry scenario with fixed-route policy |
@@ -150,6 +155,20 @@ the duplicate branch implementation while retaining upstream caching and
 concurrency changes. Reuse unchanged guard reviews and fake-only application
 evidence; rerun focused tests and exact-head CI. Keep the draft and $5 ceiling.
 
+The user subsequently approved resolving the hostname-policy review comment
+while preserving loopback qualification, replying to and resolving that thread,
+and verifying CI again. Main owns this small coupled continuation because
+dispatch overhead exceeds the implementation work. Change only the four
+existing guard, test, README and plan files. Retain the existing loopback
+whitelist as the sole authority for both HTTP admission and the adapter
+exception. Extend the existing validator scenario, retain the actual fake HTTP
+two-API scenario, and run focused offline tests. No new dependency, abstraction
+or application startup is required. Prior application qualification is historical;
+new startup-admission and fake-HTTP tests qualify this changed predicate while
+forwarding and budget behavior remain unchanged. Complete the bounded source
+reviews, ordinary push, review-thread resolution, draft-body update, exact-head
+CI disposition and checkpoint sync. Draft state and the $5 ceiling remain.
+
 ### Planning review
 
 Planner round 1 requested explicit apex/trailing-dot detection, deep snapshot
@@ -197,5 +216,16 @@ so the source reviews and fake-only application receipts remain applicable.
 Fresh offline container verification passes all 47 evaluator tests and all 108
 review-workflow/adapter tests. Main-session integration inspection found no
 additional behavior or boundary change requiring another specialist pass.
-Next: verify exact-head hosted CI and synchronize the sanitized checkpoint.
-Keep the PR draft; merging, deployment and paid evaluation remain withheld.
+The refresh subsequently passed all eight required hosted checks and the
+automatic review executed successfully. The manual final-review gate remained
+withheld while draft.
+
+The approved hostname-policy continuation narrows adapter eligibility at
+startup while preserving exact loopback qualification. The bounded planner
+approved preserving raw loopback host matching and testing HTTPS denials.
+The extended validator scenario reproduced the old acceptance bug before the
+fix. Test delta: existing validator scenario extended; no new test module or
+test case. Local verification and committed-source reviews cover this predicate;
+latest hosted CI/review disposition is maintained in the PR body and private
+checkpoint rather than a second metadata-only source push. Keep the PR draft;
+merging, deployment and paid evaluation remain withheld.

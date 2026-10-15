@@ -587,18 +587,48 @@ test('an OpenRouter origin requires the exact closed fixed route and unrelated d
     assert.throws(() => validatePricingPolicy({ ...policy, upstreamOrigin }), {
       code: 'pricing_policy_invalid',
     })
+    assert.equal(
+      validatePricingPolicy(openRouterPolicy(upstreamOrigin)).fixedRoute
+        .provider,
+      'openai'
+    )
   }
-  assert.equal(
-    validatePricingPolicy(openRouterPolicy()).fixedRoute.provider,
-    'openai'
-  )
   for (const upstreamOrigin of [
-    'https://api.openai.com/v1',
-    'https://openrouter.ai.evil.com/v1',
+    'http://localhost:4321/v1',
+    'http://127.0.0.1:4321/v1',
+    'http://[::1]:4321/v1',
+    'https://localhost:4321/v1',
+    'https://127.0.0.1:4321/v1',
+    'https://[::1]:4321/v1',
   ]) {
     assert.equal(
       validatePricingPolicy({ ...policy, upstreamOrigin }).upstreamOrigin,
       upstreamOrigin
+    )
+    assert.equal(
+      validatePricingPolicy(openRouterPolicy(upstreamOrigin)).fixedRoute
+        .provider,
+      'openai'
+    )
+  }
+  for (const upstreamOrigin of [
+    'https://api.openai.com/v1',
+    'https://openrouter.ai.evil.com/v1',
+    'https://evilopenrouter.ai/v1',
+    'https://localhost.evil.com/v1',
+    'https://foo.localhost/v1',
+    'https://localhost.:4321/v1',
+    'https://0.0.0.0:4321/v1',
+    'https://127.0.0.2:4321/v1',
+    'https://192.0.2.1/v1',
+  ]) {
+    assert.equal(
+      validatePricingPolicy({ ...policy, upstreamOrigin }).upstreamOrigin,
+      upstreamOrigin
+    )
+    assert.throws(
+      () => validatePricingPolicy(openRouterPolicy(upstreamOrigin)),
+      { code: 'pricing_policy_invalid' }
     )
   }
   for (const fixedRoute of [

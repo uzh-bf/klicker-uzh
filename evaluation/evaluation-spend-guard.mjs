@@ -78,6 +78,9 @@ export function validatePricingPolicy(policy) {
     throw budgetError('pricing_policy_invalid')
   try {
     const upstream = new URL(policy.upstreamOrigin)
+    const isLoopback = ['localhost', '127.0.0.1', '[::1]'].includes(
+      upstream.hostname
+    )
     if (
       upstream.href.replace(/\/$/, '') !== policy.upstreamOrigin ||
       upstream.username ||
@@ -85,17 +88,18 @@ export function validatePricingPolicy(policy) {
       upstream.search ||
       upstream.hash ||
       !['http:', 'https:'].includes(upstream.protocol) ||
-      (upstream.protocol === 'http:' &&
-        !['localhost', '127.0.0.1', '[::1]'].includes(upstream.hostname))
+      (upstream.protocol === 'http:' && !isLoopback)
     ) {
       throw new Error('invalid')
     }
     const hostname = upstream.hostname.replace(/\.$/, '')
-    if (
-      (hostname === 'openrouter.ai' || hostname.endsWith('.openrouter.ai')) &&
-      policy.fixedRoute === undefined
-    ) {
+    const isOpenRouter =
+      hostname === 'openrouter.ai' || hostname.endsWith('.openrouter.ai')
+    if (isOpenRouter && policy.fixedRoute === undefined) {
       throw new Error('missing fixed route')
+    }
+    if (!isOpenRouter && !isLoopback && policy.fixedRoute !== undefined) {
+      throw new Error('unexpected fixed route')
     }
   } catch {
     throw budgetError('pricing_policy_invalid')
