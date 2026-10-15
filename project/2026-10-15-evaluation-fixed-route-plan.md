@@ -90,6 +90,8 @@ excluded because neither is needed for the closed route.
 | Caller changes a policy after startup | Extend existing | HTTP scenario: nested mutation cannot change prices, routing or policy identity |
 | Retries exceed the shared ceiling | Extend existing | Existing durable retry scenario with fixed-route policy |
 | Ledger algorithm or documentation wording | None | Reuse ledger tests; no prose assertions |
+| Multiline review context corrupts workflow outputs | Extend existing | Execute the workflow serializer; round-trip multiline values and delimiter collisions without injected output keys |
+| Dependency preparation never exits | None | Bounded real generation/build and repository preparation must exit successfully; emitted artifacts alone are insufficient |
 
 ### Delegation map and slice
 
@@ -116,6 +118,29 @@ and a synthetic-only ledger. Require two Explainer turns, forced retrieval on
 each, exact route capture, persisted answers/tools, durable retry accounting,
 and refusal beyond the ceiling. No provider credentials or paid egress.
 Record the reviewed guard source and unchanged application baseline separately.
+
+### Approved continuation
+
+The user additionally approved local startup repair, the review-workflow output
+repair, Explainer-first qualification and checkpoint synchronization. Executor
+owns `.github/workflows/check-ocr-review.yml` and the existing
+`.github/scripts/final-ai-review.test.js` protocol coverage. Main owns runtime
+diagnosis, integration, publication and the sanitized checkpoint sync.
+Conditional build-only repairs may touch `packages/prisma/rollup.config.js` or
+`util/dev-runtime.sh` after reproducing the cause. Preserve the full frozen
+application SHA and record any such patch separately from the guard revision.
+
+Keep the trusted-base checkout in the `pull_request_target` review workflow.
+The draft's repaired workflow cannot activate before separate base-branch
+integration authority. Accept focused protocol verification and exact-head CI
+disposition; report that check as blocked if the trusted base still has the bug.
+Do not weaken the policy boundary to make the draft check pass.
+
+Only Tutor coverage is optional. SDK retry accounting and admission refusal
+remain mandatory, either through unchanged qualifying evidence or the repeated
+application proof. Stop the exact runtime and verify zero routes after success
+or failure. Synchronize the sanitized checkpoint through the existing approved
+private sync job and verify the receiving revision even if qualification blocks.
 
 ### Planning review
 
