@@ -2,8 +2,8 @@ import {
   GraduationCap,
   Lightbulb,
   ListChecks,
-  Sparkles,
   type LucideIcon,
+  Sparkles,
 } from 'lucide-react'
 import type { useTranslations } from 'next-intl'
 
@@ -27,6 +27,8 @@ export function isKnownMode(mode: string): mode is KnownMode {
 export interface ChatModeOption {
   description: string
   name?: string
+  welcomeMessage?: string
+  starterPrompts?: string[]
 }
 
 export type ChatModeOptions = Record<string, ChatModeOption>
@@ -58,7 +60,25 @@ export function parseModeOptions(value: unknown): ChatModeOptions | null {
       return null
     }
 
-    entries.push([mode, entry as unknown as ChatModeOption])
+    const option = entry as Record<string, unknown>
+    const starterPrompts = Array.isArray(option.starterPrompts)
+      ? option.starterPrompts.filter(
+          (prompt): prompt is string =>
+            typeof prompt === 'string' && prompt.trim().length > 0
+        )
+      : []
+    entries.push([
+      mode,
+      {
+        description: option.description as string,
+        ...(typeof option.name === 'string' ? { name: option.name } : {}),
+        ...(typeof option.welcomeMessage === 'string' &&
+        option.welcomeMessage.trim()
+          ? { welcomeMessage: option.welcomeMessage }
+          : {}),
+        ...(starterPrompts.length > 0 ? { starterPrompts } : {}),
+      },
+    ])
   }
 
   return Object.fromEntries(entries)

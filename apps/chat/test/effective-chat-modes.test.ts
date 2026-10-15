@@ -35,6 +35,27 @@ function config({
 }
 
 describe('effective chatbot modes', () => {
+  test('projects authored introduction and starters without exposing the mode persona', () => {
+    const welcomeMessage = 'Synthetic welcome\nIntroduction'
+    const mode = {
+      key: 'cm_presentation_fixture',
+      name: 'Conversation fixture',
+      description: null,
+      personaText: 'Private fixture instructions',
+      welcomeMessage,
+      starterPrompts: ['Synthetic starter'],
+    }
+    const options = resolveEffectiveChatModeOptions(null, [], null, {
+      customModeConfig: { modes: [mode] },
+    })
+    expect(options[mode.key]).toEqual({
+      name: mode.name,
+      description: mode.name,
+      welcomeMessage,
+      starterPrompts: mode.starterPrompts,
+    })
+  })
+
   // The shared key list decides which modes carry a standard-mode flag, so it
   // has to name exactly the modes the runtime offers.
   test('matches the shared standard-mode keys to the prompt registry', () => {
