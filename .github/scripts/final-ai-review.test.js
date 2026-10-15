@@ -1211,6 +1211,45 @@ test('uses one qualified canary and OCR release in both manual jobs', () => {
   }
 })
 
+test('draft context preserves the complete multiline workflow output', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-review.yml'),
+    'utf8'
+  )
+  const script = extractWorkflowStepScript(
+    workflow,
+    'Prepare bounded review context'
+  )
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-context-output-')
+  )
+  const outputPath = path.join(directory, 'github-output')
+  const title = 'Synthetic context with "quotes", EOF and $(exit 1)'
+  try {
+    const result = spawnSync('bash', ['-e', '-c', script], {
+      cwd: path.join(__dirname, '../..'),
+      env: {
+        PATH: process.env.PATH,
+        PR_TITLE: title,
+        GITHUB_OUTPUT: outputPath,
+      },
+      encoding: 'utf8',
+    })
+    assert.equal(result.status, 0, result.stderr)
+    const lines = fs.readFileSync(outputPath, 'utf8').split('\n')
+    const header = /^background<<(.+)$/.exec(lines[0])
+    assert.ok(header, 'background must use multiline output framing')
+    const endIndex = lines.indexOf(header[1], 1)
+    assert.equal(endIndex, lines.length - 2, 'exactly one complete output')
+    assert.equal(lines.at(-1), '')
+    const background = lines.slice(1, endIndex).join('\n')
+    assert.ok(background.includes('\n'), 'exercise a multiline value')
+    assert.equal(background, buildReviewBackground(title))
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('routes automatic drafts through the same pinned Mistral adapter', () => {
   const source = fs.readFileSync(
     path.join(__dirname, '../workflows/check-ocr-review.yml'),

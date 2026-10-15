@@ -34,7 +34,8 @@ with a draft PR against `v3`. Main owns integration and acceptance.
   `17ab59640b19efd85e8d3a503de4e2ee0a74c5a5` after fetch and live branch readback.
   The primary `v3-ai` checkout is clean, 18 behind its own upstream and
   517 ahead / 13 behind `origin/v3`; it is not the implementation target.
-- Artifacts root: existing `project/`. No PR yet.
+- Artifacts root: existing `project/`.
+  [Draft PR #6548](https://github.com/uzh-bf/klicker-uzh/pull/6548) targets `v3`.
 - Baseline: 159 adapter, individual and stack tests pass with host Node 24.17.0.
   They use built-in modules and synthetic providers, with no application runtime.
 - [Mistral prompt caching](https://docs.mistral.ai/studio/conversations/advanced/prompt-caching)
@@ -109,6 +110,7 @@ complete independent authorized work first.
 | Cache metadata cannot reduce review budgets or leak arbitrary fields | Response normalization and aggregate diagnostics tests | Extend existing: positive/zero/missing/invalid cache data, unchanged totals, redaction and serialized diagnostics |
 | OCR expands per-conversation keys; concurrent work stays bounded | Released binary qualification and executed workflow-command tests | Extend existing command assertions; add new gitignored binary experiment |
 | Complete coverage and clean gating survive scheduling changes | Individual/stack parser, budget and resume tests | None: run existing suites and validator against synthetic budget outputs |
+| Multiline context reaches the workflow output unchanged | Existing workflow-step execution helper | Extend existing: execute context preparation and round-trip its complete output value |
 
 Run the three baseline Node suites and offline qualification evaluator. Use the
 primary checkout's installed formatters against explicit worktree paths, syntax checks and
@@ -127,12 +129,16 @@ OCR rerun. The existing automatic draft review is authorized.
 - Planning check: native read-only planner approved the revised scope. Accepted
   findings cover automatic paid draft reviews, measurable concurrency acceptance,
   direct-canary template omission and exact verification limitations.
-- Status: both source slices complete and verified; draft publication is the
-  remaining delivery step.
+- Status: both source slices delivered in the draft PR; the user-requested
+  multiline-output follow-up is verified and ready to push.
 - Completed: cache config, validated forwarding, safe cache counters, explicit
   manual concurrency two, existing test extensions and guide update. Test delta:
-  three regression tests added; existing configuration/command checks extended.
-- Verification: 183 Node tests pass, including the adapter, individual/stack,
+  four regression tests added; existing configuration/command checks extended.
+- Follow-up: context preparation writes multiline `GITHUB_OUTPUT` framing with
+  a random delimiter. Its executed regression test reproduced the prior failure
+  and now verifies the exact helper value survives transport. This bounded fix
+  uses one additional commit on the same branch, as requested by the user.
+- Verification: 184 Node tests pass, including the adapter, individual/stack,
   update guard and qualification suites; the evaluator accepts all eight synthetic
   fixtures. Six released-binary experiments pass. Complete runs select and finish
   identical paths at peaks 8/2/1 and equal total usage. Exhausted runs are rejected;
@@ -155,9 +161,11 @@ OCR rerun. The existing automatic draft review is authorized.
   evidence. Target `v3` readback remains the baseline above.
 - Required delivery: committed task branch and draft PR. Achieved: verified local
   implementation, reviewed commits and prepared PR text. Git permissions have
-  been restored and the user explicitly requested publication. Source, target,
-  toolchain and acceptance remain unchanged, so passing verification is reused.
+  been restored and the user explicitly requested publication. Cache/concurrency
+  source and binary qualification are unchanged, so those results are reused;
+  the output fix has fresh workflow execution and regression-suite evidence.
   No upstream binary patch or application runtime was used.
-- Delivery: push normally and open the authorized draft against `v3`. The PR
-  containing this plan carries the publication outcome; hosted checks and live
-  provider qualification remain separate from these local results.
+- Delivery: push the output fix to the existing draft. Trusted default-branch
+  workflow execution still uses the previous output writer until this change
+  merges into `v3`; hosted checks and live provider qualification remain separate
+  from these local results. No merge is authorized by this follow-up.
