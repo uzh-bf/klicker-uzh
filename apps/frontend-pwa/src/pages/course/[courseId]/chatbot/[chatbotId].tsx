@@ -120,8 +120,6 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       chatDestination.searchParams.set(key, value)
     }
 
-    if (sessionRevision)
-      chatDestination.searchParams.set('session', sessionRevision)
     if (sessionEstablished)
       return {
         props: {

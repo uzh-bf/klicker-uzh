@@ -135,7 +135,7 @@ export async function participantFetch(
 
 export function participantReloadUrl() {
   const url = new URL(window.location.href)
-  for (const key of ['jwt', 'participantToken', 'token', 'session'])
+  for (const key of ['jwt', 'participantToken', 'token'])
     url.searchParams.delete(key)
   return url.href
 }

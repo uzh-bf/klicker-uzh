@@ -32,16 +32,6 @@ export async function proxy(request: NextRequest) {
     return applyFrameAncestorsCSP(NextResponse.next())
   }
 
-  const expectedSession = request.nextUrl.searchParams.get('session')
-  if (
-    expectedSession &&
-    expectedSession !== request.cookies.get('participant_session')?.value
-  ) {
-    const recovery = request.nextUrl.clone()
-    recovery.pathname = '/noLogin'
-    recovery.search = ''
-    return applyFrameAncestorsCSP(NextResponse.redirect(recovery))
-  }
   const participantToken = request.cookies.get('participant_token')?.value
 
   if (!participantToken) {

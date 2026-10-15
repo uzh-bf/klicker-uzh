@@ -104,8 +104,8 @@ the shared revision does not apply. Outside such frames, LTI and registration
 confirm cookie acceptance, and a refused cookie leads to recovery that opens
 the activity or ordinary login in a normal tab. The normal Chat link opens in a new tab without
 a recovery gate. Its bridge checks membership without creating enrollment and
-confirms a newly exchanged cookie before redirecting; Chat verifies the expected
-revision on arrival. Regular SSR props omit participant JWTs; the HttpOnly
+confirms a newly exchanged cookie before redirecting; Chat then binds the
+revision its own server read. Regular SSR props omit participant JWTs; the HttpOnly
 cookie remains the browser credential.
 
 See [ADR 0044](adr/0044-regular-participant-session-recovery.md) for the shared

@@ -196,14 +196,13 @@ it('rejects an in-flight request and its response once the revision is replaced'
 it('drops launch parameters when a replaced document reloads', () => {
   installWindow({
     location: {
-      href: 'https://pwa.klicker.localhost/course/1?jwt=launch&participantToken=old&token=legacy&session=stale&keep=1',
+      href: 'https://pwa.klicker.localhost/course/1?jwt=launch&participantToken=old&token=legacy&keep=1',
     },
   })
   const url = new URL(participantReloadUrl())
   assert.equal(url.searchParams.has('jwt'), false)
   assert.equal(url.searchParams.has('participantToken'), false)
   assert.equal(url.searchParams.has('token'), false)
-  assert.equal(url.searchParams.has('session'), false)
   assert.equal(url.searchParams.get('keep'), '1')
   assert.equal(url.pathname, '/course/1')
   removeWindow()
