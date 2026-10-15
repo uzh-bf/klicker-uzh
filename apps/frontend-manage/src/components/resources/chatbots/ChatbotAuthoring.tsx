@@ -699,6 +699,10 @@ function CustomModesEditor({
                           )}
                           maxLength={personaMaxLength}
                           maxLengthUnit={t('shared.generic.characters')}
+                          rows="16"
+                          className={{
+                            input: 'field-sizing-fixed min-h-80 resize-y',
+                          }}
                           data={{
                             cy: `chatbot-custom-mode-persona-${index}`,
                           }}

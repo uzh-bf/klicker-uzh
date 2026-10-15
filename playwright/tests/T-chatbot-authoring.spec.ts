@@ -891,6 +891,11 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
   test('authors a custom mode that survives save and review', async ({
     page,
   }) => {
+    const personaText = [
+      'Challenge the participant with counter-arguments.',
+      'Ask one question at a time.\nWait for the participant to respond.',
+      'After the conversation, give feedback on the arguments presented.',
+    ].join('\n\n')
     const welcomeMessage =
       'Welcome to the synthetic debate.\nChoose a position to begin.'
     const starterPrompts = [
@@ -919,9 +924,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await page
       .getByTestId('chatbot-custom-mode-description-0')
       .fill('Argues both sides of a course question.')
-    await page
-      .getByTestId('chatbot-custom-mode-persona-0')
-      .fill('Challenge the participant with counter-arguments.')
+    await page.getByTestId('chatbot-custom-mode-persona-0').fill(personaText)
     await page.getByTestId('chatbot-custom-mode-welcome-0').fill(welcomeMessage)
     for (let index = 0; index < 4; index += 1) {
       await page.getByTestId('add-chatbot-custom-mode-starter-0').click()
@@ -948,7 +951,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
             key: null,
             name: 'Debate coach',
             description: 'Argues both sides of a course question.',
-            personaText: 'Challenge the participant with counter-arguments.',
+            personaText,
             welcomeMessage,
             starterPrompts,
           },
@@ -965,7 +968,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       page.getByTestId('chatbot-custom-mode-description-0')
     ).toHaveValue('Argues both sides of a course question.')
     await expect(page.getByTestId('chatbot-custom-mode-persona-0')).toHaveValue(
-      'Challenge the participant with counter-arguments.'
+      personaText
     )
     await expect(page.getByTestId('chatbot-custom-mode-welcome-0')).toHaveValue(
       welcomeMessage
@@ -989,7 +992,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     ).toContainText('Argues both sides of a course question.')
     await expect(
       page.getByTestId('chatbot-review-custom-mode-0')
-    ).toContainText('Challenge the participant with counter-arguments.')
+    ).toContainText(personaText)
     await expect(
       page.getByTestId('chatbot-review-custom-mode-0')
     ).toContainText(welcomeMessage)
