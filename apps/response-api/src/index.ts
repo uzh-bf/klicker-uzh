@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto'
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
 import {
@@ -10,6 +9,7 @@ import {
 import { randomUUID } from 'crypto'
 import { createServer, IncomingMessage, ServerResponse } from 'http'
 import { Redis } from 'ioredis'
+import { createHash } from 'node:crypto'
 
 const redis = new Redis({
   family: 4,

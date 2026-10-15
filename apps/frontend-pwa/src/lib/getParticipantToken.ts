@@ -9,7 +9,7 @@ import {
   type LoginParticipantWithLtiMutation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { verifyJWT } from '@klicker-uzh/util'
-import type { GetServerSidePropsContext } from 'next'
+import { GetServerSidePropsContext } from 'next'
 import nookies from 'nookies'
 
 export interface ParticipantSessionResult {
@@ -55,8 +55,33 @@ function participantCookieOptions() {
   }
 }
 
-function expirePartitionedParticipantCookie(ctx: GetServerSidePropsContext) {
+// Replace the shared session: expire every participant cookie, rotate the
+// revision and, given a token, set the new participant cookie. A launch that
+// still needs registration keeps its LTI cookie.
+function replaceParticipantSession(
+  ctx: GetServerSidePropsContext,
+  {
+    token,
+    maxAge = 60 * 60 * 24 * 13,
+    keepLaunch = false,
+  }: { token?: string; maxAge?: number; keepLaunch?: boolean } = {}
+) {
   const options = participantCookieOptions()
+  nookies.destroy(ctx, 'temporary_participant_token', options)
+  nookies.destroy(ctx, 'participant_token', options)
+  if (!keepLaunch)
+    nookies.destroy(ctx, 'lti-token', {
+      domain: process.env.COOKIE_DOMAIN,
+      path: '/',
+    })
+  const revision = randomUUID()
+  nookies.set(ctx, 'participant_session', revision, {
+    ...options,
+    httpOnly: false,
+    maxAge,
+  })
+  if (token)
+    nookies.set(ctx, 'participant_token', token, { ...options, maxAge })
   // Append after nookies serialization, which drops the Partitioned attribute.
   // Send the expiration first so older browsers cannot erase the new cookie.
   const domain = options.domain ? `; Domain=${options.domain}` : ''
@@ -65,44 +90,6 @@ function expirePartitionedParticipantCookie(ctx: GetServerSidePropsContext) {
     `participant_token=; Max-Age=0; Path=/${domain}; HttpOnly; Secure; SameSite=None; Partitioned`,
     ...(Array.isArray(existing) ? existing : [String(existing)]),
   ])
-}
-
-function clearParticipantCookie(
-  ctx: GetServerSidePropsContext,
-  maxAge = 60 * 60 * 24 * 13
-) {
-  nookies.destroy(
-    ctx,
-    'temporary_participant_token',
-    participantCookieOptions()
-  )
-  nookies.destroy(ctx, 'participant_token', participantCookieOptions())
-  const revision = randomUUID()
-  nookies.set(ctx, 'participant_session', revision, {
-    ...participantCookieOptions(),
-    httpOnly: false,
-    maxAge,
-  })
-  return revision
-}
-
-function setParticipantCookie(
-  ctx: GetServerSidePropsContext,
-  token: string,
-  maxAge: number
-) {
-  const revision = clearParticipantCookie(ctx, maxAge)
-  // set a proper participant_token
-  nookies.set(ctx, 'participant_token', token, {
-    ...participantCookieOptions(),
-    maxAge,
-  })
-  // remove the lti-token cookie since we now have a proper participant_token
-  nookies.destroy(ctx, 'lti-token', {
-    domain: process.env.COOKIE_DOMAIN,
-    path: '/',
-  })
-  expirePartitionedParticipantCookie(ctx)
   return revision
 }
 
@@ -141,14 +128,6 @@ export default async function getParticipantToken({
     cookiesAvailable: !!ambient,
     sessionRevision: cookies.participant_session ?? '',
     sessionEstablished: false,
-  }
-  const expireRetainedSession = () => {
-    base.sessionRevision = clearParticipantCookie(ctx)
-    nookies.destroy(ctx, 'lti-token', {
-      domain: process.env.COOKIE_DOMAIN,
-      path: '/',
-    })
-    expirePartitionedParticipantCookie(ctx)
   }
   // Any page can make a browser load a forged launch, even in a hidden frame,
   // so a failed launch leaves the existing session untouched.
@@ -197,7 +176,7 @@ export default async function getParticipantToken({
       }
     } catch {
       // An unusable cookie is not a launch: expire it and continue signed out.
-      expireRetainedSession()
+      base.sessionRevision = replaceParticipantSession(ctx)
       return { ...base, sessionState: 'no_launch' }
     }
   }
@@ -233,12 +212,13 @@ export default async function getParticipantToken({
     const token = result.data?.loginParticipantWithLti?.participantToken
     if (!token) {
       if (!signedLtiData.email.trim()) return reject()
-      base.sessionRevision = clearParticipantCookie(ctx)
-      expirePartitionedParticipantCookie(ctx)
+      base.sessionRevision = replaceParticipantSession(ctx, {
+        keepLaunch: true,
+      })
       return { ...base, sessionState: 'registration_required', signedLtiData }
     }
     const maxAge = await verifyParticipant(token)
-    const sessionRevision = setParticipantCookie(ctx, token, maxAge)
+    const sessionRevision = replaceParticipantSession(ctx, { token, maxAge })
     // Browsers without Sec-Fetch-Dest are treated as possibly framed.
     const destination = ctx.req.headers['sec-fetch-dest']
     const framed =

@@ -7,15 +7,15 @@ import getParticipantToken, {
 } from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import { Button, toast } from '@uzh-bf/design-system'
-import type { GetServerSidePropsContext } from 'next'
+import { GetServerSidePropsContext } from 'next'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
 import { useEffect, useState } from 'react'
+import Layout from '../components/Layout'
 import AccountDeletionForm from '../components/forms/AccountDeletionForm'
 import AvatarUpdateForm from '../components/forms/AvatarUpdateForm'
 import UpdateAccountInfoForm from '../components/forms/UpdateAccountInfoForm'
-import Layout from '../components/Layout'
 import DataUseSettings from '../components/participant/DataUseSettings'
 
 function EditProfile({

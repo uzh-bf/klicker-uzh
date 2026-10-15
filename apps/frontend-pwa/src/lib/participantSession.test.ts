@@ -404,7 +404,9 @@ it('sends a login once when the browser refuses its replacement cookie', {
       { headers: { 'content-type': 'application/json' } }
     )
   })
-  const client = initializeApollo(undefined, undefined, { revision: 'rev-login' })
+  const client = initializeApollo(undefined, undefined, {
+    revision: 'rev-login',
+  })
   const pending = assert.rejects(
     client.mutate({
       mutation: gql`mutation MLoginParticipant { loginParticipant }`,

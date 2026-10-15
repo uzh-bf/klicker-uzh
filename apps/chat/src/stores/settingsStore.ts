@@ -1,9 +1,6 @@
 'use client'
 
-import {
-  assertParticipantSession,
-  participantFetch,
-} from '@klicker-uzh/shared-components/src/utils/participantSession'
+import { participantFetch } from '@klicker-uzh/shared-components/src/utils/participantSession'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { DEFAULT_MODE_DESCRIPTIONS } from '../lib/config/mode-descriptions'
@@ -168,7 +165,6 @@ export const useSettingsStore = create<SettingsState>()(
         try {
           const response = await participantFetch(`/api/chatbots/${chatbotId}`)
           const responseData = await response.json()
-          assertParticipantSession()
           if (requestGeneration !== modeOptionsRequestGeneration) return
 
           if (!response.ok) {
@@ -232,7 +228,6 @@ export const useSettingsStore = create<SettingsState>()(
           }
 
           const data = await response.json()
-          assertParticipantSession()
 
           const creditsData = {
             current: data.current ?? 0,

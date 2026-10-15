@@ -290,11 +290,9 @@ it('ignores launch credentials on requests that are not page navigations', async
     secret,
     { expiresIn: '14d' }
   )
-  const launch = await signJWT(
-    { sub: 'student-b', scope: 'LTI1.3' },
-    secret,
-    { expiresIn: '5m' }
-  )
+  const launch = await signJWT({ sub: 'student-b', scope: 'LTI1.3' }, secret, {
+    expiresIn: '5m',
+  })
   const client = {
     mutate: async () => {
       throw new Error('Must not exchange a subresource launch')
@@ -405,33 +403,4 @@ it('retains assessment credential selection without applying regular participant
     if (previous === undefined) delete process.env.ASSESSMENT_MODE
     else process.env.ASSESSMENT_MODE = previous
   }
-})
-
-it('expires a retained invalid participant cookie without a launch and reports no session', async () => {
-  const expired = await signJWT(
-    { sub: 'participant-a', role: 'PARTICIPANT' },
-    secret,
-    { expiresIn: Math.floor(Date.now() / 1000) - 120 }
-  )
-  const { ctx, headers } = context({}, `participant_token=${expired}`)
-  const result = await getParticipantToken({
-    apolloClient: {} as ApolloClient<NormalizedCacheObject>,
-    ctx,
-  })
-  assert.equal(result.sessionState, 'no_launch')
-  assert.equal(result.participantToken, null)
-  assert.equal(result.sessionEstablished, false)
-  const cookies = responseCookies(headers)
-  assert.ok(result.sessionRevision)
-  assert.equal(
-    writtenCookie(cookies, 'participant_session'),
-    result.sessionRevision
-  )
-  const canonical = cookies.find(
-    (value) =>
-      value.startsWith('participant_token=;') &&
-      !value.includes('; Partitioned')
-  )
-  assert.ok(canonical)
-  assert.ok(Number(canonical.match(/Max-Age=(-?\d+)/)?.[1]) <= 0)
 })

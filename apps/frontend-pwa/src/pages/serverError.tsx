@@ -8,9 +8,9 @@ import { ParticipantCookieRecovery } from '@klicker-uzh/shared-components/src/Pa
 import { participantDataUseReturn } from '@lib/participantDataUseReturn'
 import { Button, H1 } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
-import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
 import Layout from '../components/Layout'
 
 function Index() {

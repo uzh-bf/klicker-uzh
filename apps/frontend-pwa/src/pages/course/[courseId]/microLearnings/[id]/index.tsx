@@ -10,8 +10,8 @@ import {
   SelfDocument,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
-import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken, {
   participantSessionProps,
@@ -20,12 +20,12 @@ import useParticipantToken from '@lib/useParticipantToken'
 import { Button, H3, Prose, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
+import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
-import PreviewMessage from '../../../../../components/common/PreviewMessage'
 import Layout from '../../../../../components/Layout'
+import PreviewMessage from '../../../../../components/common/PreviewMessage'
 import MicroLearningSubscriber from '../../../../../components/microLearning/MicroLearningSubscriber'
 
 function MicrolearningIntroduction({

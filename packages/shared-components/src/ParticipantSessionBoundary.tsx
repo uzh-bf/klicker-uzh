@@ -68,9 +68,7 @@ export default function ParticipantSessionBoundary({
   // revision neither confirms nor invalidates it.
   const frame = mounted && !!frameSessionToken()
   const mismatch =
-    mounted &&
-    !frame &&
-    bindParticipantSession() !== readParticipantSession()
+    mounted && !frame && bindParticipantSession() !== readParticipantSession()
   const refused =
     mounted &&
     !frame &&
@@ -130,15 +128,8 @@ export default function ParticipantSessionBoundary({
       onSessionEstablished?.()
     }
     const timer = window.setInterval(check, 1000)
-    const events = [
-      'focus',
-      'pageshow',
-      'visibilitychange',
-      'pointerdown',
-      'click',
-      'keydown',
-      'submit',
-    ]
+    // Every request also checks the revision before it leaves.
+    const events = ['focus', 'pageshow', 'visibilitychange']
     window.addEventListener('beforeunload', onBeforeUnload)
     events.forEach((name) => window.addEventListener(name, check, true))
     return () => {

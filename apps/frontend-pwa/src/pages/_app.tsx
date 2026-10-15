@@ -19,9 +19,9 @@ import {
 import { useApollo } from '@lib/apollo'
 import { init } from '@socialgouv/matomo-next'
 import { Toaster } from '@uzh-bf/design-system'
+import { Locale, NextIntlClientProvider } from 'next-intl'
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
-import { Locale, NextIntlClientProvider } from 'next-intl'
 import { useCallback, useEffect } from 'react'
 
 import 'katex/dist/katex.min.css'

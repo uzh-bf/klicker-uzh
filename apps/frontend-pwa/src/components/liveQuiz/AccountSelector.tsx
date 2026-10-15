@@ -27,9 +27,9 @@ import {
   toast,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
+import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'

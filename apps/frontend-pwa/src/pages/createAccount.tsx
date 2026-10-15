@@ -1,20 +1,21 @@
+import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util'
+import { toast } from '@uzh-bf/design-system'
+import generatePassword from 'generate-password'
+import { GetServerSidePropsContext } from 'next'
+import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
+import nookies from 'nookies'
+
 import { useMutation } from '@apollo/client'
-import CreateAccountForm from '@components/forms/CreateAccountForm'
 import Layout from '@components/Layout'
+import CreateAccountForm from '@components/forms/CreateAccountForm'
 import { CreateParticipantAccountWithDataUseDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken, {
   participantSessionProps,
 } from '@lib/getParticipantToken'
 import { navigateParticipantSession } from '@lib/participantSession'
-import { toast } from '@uzh-bf/design-system'
-import generatePassword from 'generate-password'
-import type { GetServerSidePropsContext } from 'next'
-import { useRouter } from 'next/router'
-import { useTranslations } from 'next-intl'
-import nookies from 'nookies'
 
 interface Props {
   sessionEstablished?: boolean

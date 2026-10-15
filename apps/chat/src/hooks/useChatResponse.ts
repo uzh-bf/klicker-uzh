@@ -2,8 +2,8 @@ import {
   assertParticipantSession,
   participantFetch,
 } from '@klicker-uzh/shared-components/src/utils/participantSession'
-import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { useParams } from 'next/navigation'
 import { useCallback, useRef } from 'react'
 import { hasAllImageAttachmentsHydrated } from '../lib/attachments/attachmentState'
 import { type ReasoningEffort } from '../lib/config/reasoning'

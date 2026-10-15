@@ -11,8 +11,8 @@ import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
 import { useState } from 'react'
-import Footer from '../../../components/common/Footer'
 import Layout from '../../../components/Layout'
+import Footer from '../../../components/common/Footer'
 import PracticeQuiz, {
   resetPracticeQuizLocalStorage,
 } from '../../../components/practiceQuiz/PracticeQuiz'

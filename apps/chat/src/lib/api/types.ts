@@ -1,7 +1,4 @@
-import {
-  assertParticipantSession,
-  participantFetch,
-} from '@klicker-uzh/shared-components/src/utils/participantSession'
+import { participantFetch } from '@klicker-uzh/shared-components/src/utils/participantSession'
 import {
   ExtendedThreadMessageLike,
   MessageRating,
@@ -149,9 +146,7 @@ export const apiCall = async <T = unknown>(
     throw error
   }
 
-  const result = await response.json()
-  assertParticipantSession()
-  return result
+  return await response.json()
 }
 
 /**

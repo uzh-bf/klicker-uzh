@@ -1,9 +1,6 @@
 'use client'
 
-import {
-  assertParticipantSession,
-  participantFetch,
-} from '@klicker-uzh/shared-components/src/utils/participantSession'
+import { participantFetch } from '@klicker-uzh/shared-components/src/utils/participantSession'
 
 import {
   SidebarInset,
@@ -164,7 +161,6 @@ function useDisclaimerGate(chatbotId: string, participationRequired: boolean) {
         )
         if (response.ok) {
           const data = await response.json()
-          assertParticipantSession()
           setDisclaimer(data.disclaimer)
           setDisclaimerStatus(data.status)
 

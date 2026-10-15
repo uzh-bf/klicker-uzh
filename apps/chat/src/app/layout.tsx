@@ -1,14 +1,14 @@
+import { messagesByLocale } from '@/src/types/i18n'
 import { routing } from '@klicker-uzh/i18n'
 import {
   monoSpaceFont,
   sourceSansPro,
 } from '@klicker-uzh/shared-components/src/font'
-import { messagesByLocale } from '@/src/types/i18n'
 import 'katex/dist/katex.min.css'
 import type { Metadata, Viewport } from 'next'
-import { cookies } from 'next/headers'
 import { hasLocale } from 'next-intl'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
+import { cookies } from 'next/headers'
 import { RootIntlProvider } from './RootIntlProvider'
 import './globals.css'
 
