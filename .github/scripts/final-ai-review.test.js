@@ -1070,6 +1070,7 @@ test('writes secretless max-reasoning OCR config with mode 0600', () => {
   assert.equal(Object.hasOwn(config.llm, 'url'), false)
   assert.deepEqual(config.llm.extra_body, {
     reasoning_effort: 'max',
+    prompt_cache_key: '{ocr_session_key}',
   })
   assert.equal(config.llm.auth_token_cmd, 'printf "%s" "$OCR_LLM_TOKEN"')
   assert.equal(JSON.stringify(config).includes(token), false)
@@ -1125,6 +1126,7 @@ test('verifies the exact public Mistral tool contract', async () => {
   assert.equal(request.model, FINAL_REVIEW_MODEL)
   assert.equal(request.max_tokens, 16_384)
   assert.equal(request.reasoning_effort, 'max')
+  assert.equal(Object.hasOwn(request, 'prompt_cache_key'), false)
   assert.equal(Object.hasOwn(request, 'provider'), false)
   assert.deepEqual(result, { provider: 'Mistral' })
 })
@@ -1218,7 +1220,10 @@ test('routes automatic drafts through the same pinned Mistral adapter', () => {
   )
   assert.match(source, /llm_model: zai-glm-5-3/)
   assert.match(source, /ocr_version: '1.13.0'/)
-  assert.match(source, /llm_extra_body: '\{"reasoning_effort":"high"\}'/)
+  assert.match(
+    source,
+    /llm_extra_body: '\{"reasoning_effort":"high","prompt_cache_key":"\{ocr_session_key\}"\}'/
+  )
   assert.match(
     source,
     /llm_auth_token: \$\{\{ steps.adapter.outputs.token \}\}/

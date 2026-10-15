@@ -64,7 +64,7 @@ jobs:
           llm_url: ${{ steps.adapter.outputs.url }}/v1/chat/completions
           llm_auth_token: ${{ steps.adapter.outputs.token }}
           llm_model: zai-glm-5-3
-          llm_extra_body: '{"reasoning_effort":"high"}'
+          llm_extra_body: '{"reasoning_effort":"high","prompt_cache_key":"{ocr_session_key}"}'
           background: ${{ steps.context.outputs.background }}
           llm_use_anthropic: 'false'
           llm_timeout: '480'
