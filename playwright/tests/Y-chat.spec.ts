@@ -507,7 +507,7 @@ test.describe('Chatbot Messaging Interface', () => {
         where: { id: CHATBOT_ID },
         data: {
           standardModeConfig: {
-            tutorEnabled: false,
+            tutorEnabled: true,
             explainerEnabled: false,
             quizzerEnabled: false,
             scopeNote: null,
@@ -516,6 +516,7 @@ test.describe('Chatbot Messaging Interface', () => {
         },
       })
       await visitChat(page)
+      await selectChatMode(page, modes[0].key, modes[0].name)
       const welcome = page.getByTestId('chat-custom-mode-welcome')
       await expect(welcome).toHaveText(welcomeMessage)
       await expect(welcome.locator('img')).toHaveCount(0)
@@ -535,7 +536,9 @@ test.describe('Chatbot Messaging Interface', () => {
       await expect(page.getByTestId('chat-assistant-message')).toBeVisible()
       await expect(welcome).toHaveCount(0)
       expect(chatRequests).toHaveLength(1)
-      expect(chatRequests[0]).not.toContain(welcomeMessage)
+      expect(chatRequests[0]).not.toContain(
+        JSON.stringify(welcomeMessage).slice(1, -1)
+      )
       await page.getByTestId('chat-new-thread-button').click()
       await expect(welcome).toHaveText(welcomeMessage)
     } finally {

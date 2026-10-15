@@ -891,7 +891,8 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
   test('authors a custom mode that survives save and review', async ({
     page,
   }) => {
-    const welcomeMessage = 'Welcome to the synthetic debate.\nChoose a position to begin.'
+    const welcomeMessage =
+      'Welcome to the synthetic debate.\nChoose a position to begin.'
     let customModeConfigVariables: Record<string, unknown> | undefined
     await page.route('**/api/graphql', async (route) => {
       const request = route.request()
@@ -946,7 +947,9 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(page.getByTestId('chatbot-custom-mode-persona-0')).toHaveValue(
       'Challenge the participant with counter-arguments.'
     )
-    await expect(page.getByTestId('chatbot-custom-mode-welcome-0')).toHaveValue(welcomeMessage)
+    await expect(page.getByTestId('chatbot-custom-mode-welcome-0')).toHaveValue(
+      welcomeMessage
+    )
 
     await page.reload()
     await navigateToSetupStep(page, 'review')
@@ -959,7 +962,9 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(
       page.getByTestId('chatbot-review-custom-mode-0')
     ).toContainText('Challenge the participant with counter-arguments.')
-    await expect(page.getByTestId('chatbot-review-custom-mode-0')).toContainText(welcomeMessage)
+    await expect(
+      page.getByTestId('chatbot-review-custom-mode-0')
+    ).toContainText(welcomeMessage)
 
     // Approval only applies to a revision that was submitted for review, so the
     // draft has to pass the publication gate before it can be approved.
