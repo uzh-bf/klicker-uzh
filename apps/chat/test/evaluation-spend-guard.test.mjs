@@ -66,7 +66,6 @@ async function scenario(body, options = {}) {
     cap = 2400,
     basePolicy = policy,
     path = '/v1/responses',
-    request: defaultRequest = request,
   } = settings
   const directory = await mkdtemp(join(tmpdir(), 'evaluation-guard-'))
   const budgetFile = join(directory, 'budget.json')
@@ -120,8 +119,8 @@ async function scenario(body, options = {}) {
     })
     const origin = await listen(guard)
     release = await acquireBudgetLock(budgetFile, '.run')
-    const send = (payload = defaultRequest, headers = {}, target = path) =>
-      fetch(origin + target, {
+    const send = (payload = request, headers = {}) =>
+      fetch(origin + path, {
         method: 'POST',
         headers: {
           Authorization: 'Bearer synthetic-guard-key',
@@ -677,7 +676,7 @@ test('guard injects the closed OpenRouter route, refuses client routing controls
         assert.equal(ledger.reservedProviderMicroUsd, 2400)
         assert.equal(ledger.policyHash, originalHash)
       },
-      { basePolicy: openRouterPolicy(), path, request: payload }
+      { basePolicy: openRouterPolicy(), path }
     )
   }
 })
