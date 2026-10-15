@@ -13,6 +13,7 @@ let revision: string | undefined
 let stale = false
 let localSessionChange = false
 let frameToken: string | undefined
+let frameLaunch: string | undefined
 let sharedAccess: boolean | undefined
 const listeners = new Set<() => void>()
 
@@ -21,11 +22,11 @@ function isEmbedded() {
 }
 
 export async function hasSharedParticipantCookies() {
-  if (window.self === window.top) return (sharedAccess = true)
   // A cookie readable in an LMS frame may belong to a separate partition.
   // Only unpartitioned access can share the top-level participant login.
   sharedAccess =
-    (await document.hasStorageAccess?.().catch(() => false)) ?? false
+    window.self === window.top ||
+    ((await document.hasStorageAccess?.().catch(() => false)) ?? false)
   return sharedAccess
 }
 
@@ -36,12 +37,16 @@ export function isParticipantFrameContext() {
 
 /** Keep a launched token for this frame, or resume one stored earlier. */
 export function adoptFrameSession(token?: string) {
-  if (!isEmbedded()) return
+  if (!isEmbedded() || sharedAccess) return
+  // Pages re-render with the same launch props, which must not revive a
+  // session that has since ended.
+  const launch = token && token !== frameLaunch ? token : undefined
+  if (launch) frameLaunch = launch
   try {
-    if (token) sessionStorage.setItem(FRAME_TOKEN_KEY, token)
+    if (launch) sessionStorage.setItem(FRAME_TOKEN_KEY, launch)
     frameToken = sessionStorage.getItem(FRAME_TOKEN_KEY) ?? undefined
   } catch {
-    frameToken = token
+    frameToken = launch ?? frameToken
   }
 }
 
