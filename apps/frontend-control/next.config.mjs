@@ -42,6 +42,21 @@ let nextConfig = {
       },
     ]
   },
+  // Opt-in same-origin GraphQL proxy (local dev): WebKit treats each
+  // *.klicker.localhost host as its own site and withholds the SameSite=Lax
+  // session cookie on cross-host API calls, which breaks iOS (Capacitor) login.
+  async rewrites() {
+    const { NEXT_PUBLIC_CONTROL_API_URL, CONTROL_API_PROXY_URL } = process.env
+    if (!NEXT_PUBLIC_CONTROL_API_URL || !CONTROL_API_PROXY_URL) {
+      return []
+    }
+    return [
+      {
+        source: new URL(NEXT_PUBLIC_CONTROL_API_URL).pathname,
+        destination: CONTROL_API_PROXY_URL,
+      },
+    ]
+  },
 }
 
 nextConfig.transpilePackages = Array.from(
