@@ -167,8 +167,19 @@ denial cases extended, duplicate draft tests consolidated before commit.
 Draft PR created. The simplifier's unused test-helper options were removed;
 the affected guard suite passed again. Slice review and integrated final review
 passed with no findings at the reporting threshold. This metadata-only progress
-update reuses the reviewed source range. The standalone synthetic admission check passed; full
-application qualification remains an incomplete mandatory gate. No paid
-acceptance or answer-quality claim follows from this package's source checks.
-Next: finish source review and exact-head CI disposition; retain the draft until
-the mandatory application proof can be completed.
+update reuses the reviewed source range.
+
+The approved continuation fixes multiline workflow-output serialization and adds
+one protocol regression test in the existing suite. All 63 workflow tests pass
+in an offline container; formatting and lint checks pass with existing advisories.
+The continuation planner approved its explicit trusted-base CI activation limit.
+
+Mandatory fake-only application qualification now passes: two Explainer turns,
+optional Tutor, fresh retrieval and persistence, an SDK retry and refusal before
+forwarding beyond the unchanged cap. Receipts remain private and ignored. Local
+startup recovered without a build-source or dependency change; no durable root
+cause is claimed from a successful repeat. No paid acceptance, billing or answer
+quality claim follows from canned fake responses. Next: disposition the CI repair
+reviews and exact-head CI, then synchronize the final sanitized checkpoint.
+Keep the PR draft; the trusted-base review check may remain blocked until its
+workflow repair is integrated under separate authority.
