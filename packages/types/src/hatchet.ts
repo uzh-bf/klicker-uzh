@@ -141,6 +141,11 @@ export type CourseDeletionEvent = {
 }
 
 export interface HatchetHandlers {
+  handleSealAssessmentAudit: (
+    _input: Record<string, never>,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
   handleDispatchAssessmentAuditOutbox: (
     _input: Record<string, never>,
     globalCtx: HatchetHandlerGlobalContext,

@@ -66,6 +66,7 @@ import { handleAdaptiveEmpiricalValidation } from '@klicker-uzh/adaptive-server/
 import {
   handleDispatchAssessmentAuditOutbox,
   handleMonitorAssessmentAudit,
+  handleSealAssessmentAudit,
 } from './services/assessmentAudit.js'
 import { handleProcessCourseDeletion } from './services/courseDeletion.js'
 import {
@@ -107,6 +108,7 @@ export const handlers: HatchetHandlers = {
   handleAdaptiveCalibrationExportCleanup,
   handleDispatchAssessmentAuditOutbox,
   handleMonitorAssessmentAudit,
+  handleSealAssessmentAudit,
   handleFinalRandomGroupAssignments,
   handleRunningRandomGroupAssignments,
   handleUpdateGroupAverageScores,

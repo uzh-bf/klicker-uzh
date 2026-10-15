@@ -20,3 +20,7 @@ export * from './outbox/claim.js'
 export * from './outbox/emit.js'
 export * from './ports/append-sink.js'
 export * from './producers/assessment.js'
+
+export * from './sealing/manifest.js'
+export * from './sealing/repository.js'
+export * from './sealing/seal.js'
