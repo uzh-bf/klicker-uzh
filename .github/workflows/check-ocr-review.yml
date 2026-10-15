@@ -43,8 +43,22 @@ jobs:
           node - <<'NODE'
           const fs = require('node:fs')
           const { buildReviewBackground } = require('./.github/scripts/final-ai-review.js')
-          const background = buildReviewBackground(process.env.PR_TITLE)
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `background=${background}\n`)
+          const value = buildReviewBackground(process.env.PR_TITLE).replace(
+            /\r\n?/g,
+            '\n'
+          )
+          // GitHub reads a multiline GITHUB_OUTPUT value from a heredoc whose
+          // delimiter must not appear on a line of its own in the value. The
+          // value carries the untrusted PR title, so normalize line endings to
+          // LF and grow the delimiter until no value line matches it.
+          let delimiter = 'EOF'
+          while (value.split('\n').includes(delimiter)) {
+            delimiter = `${delimiter}_`
+          }
+          fs.appendFileSync(
+            process.env.GITHUB_OUTPUT,
+            `background<<${delimiter}\n${value}\n${delimiter}\n`
+          )
           NODE
 
       - name: Start Mistral adapter

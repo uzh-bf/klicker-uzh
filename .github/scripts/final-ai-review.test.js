@@ -1232,6 +1232,64 @@ test('routes automatic drafts through the same pinned Mistral adapter', () => {
   assert.doesNotMatch(source, /OPENROUTER_API_KEY/)
 })
 
+test('publishes the bounded review context as a multiline output block', () => {
+  const script = extractWorkflowStepScript(
+    fs.readFileSync(
+      path.join(__dirname, '../workflows/check-ocr-review.yml'),
+      'utf8'
+    ),
+    'Prepare bounded review context'
+  )
+  // A single-line `background=<value>` write truncates at the first newline and
+  // makes GitHub reject the following line as an invalid format, so the value
+  // has to use the heredoc form instead.
+  const titles = [
+    ['Bounded change', 'background<<EOF', 'EOF', 'background<<EOF_'].join('\n'),
+    'Bounded change\r\nEOF\r\nbackground<<EOF',
+    'Carriage\rreturn boundaries',
+  ]
+
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'final-review-context-')
+  )
+  const outputPath = path.join(directory, 'github-output')
+  try {
+    for (const title of titles) {
+      const run = spawnSync('bash', ['-c', script], {
+        cwd: path.join(__dirname, '../..'),
+        encoding: 'utf8',
+        env: {
+          PATH: process.env.PATH ?? '/usr/bin:/bin',
+          PR_TITLE: title,
+          GITHUB_OUTPUT: outputPath,
+        },
+      })
+      assert.equal(run.error, undefined)
+      assert.equal(run.status, 0, run.stderr)
+
+      // GitHub normalizes CRLF while reading the block, so the step must emit
+      // LF endings; a stray carriage return could hide a line that collides
+      // with the delimiter.
+      const raw = fs.readFileSync(outputPath, 'utf8')
+      assert.equal(raw.includes('\r'), false)
+      const lines = raw.replace(/\r\n?/g, '\n').split('\n')
+      const header = /^background<<(.+)$/.exec(lines[0])
+      assert.ok(header, `missing multiline header: ${lines[0]}`)
+      const terminator = lines.indexOf(header[1], 1)
+      assert.ok(terminator > 0, 'unterminated multiline output')
+      assert.equal(
+        lines.slice(1, terminator).join('\n'),
+        buildReviewBackground(title)
+      )
+      // The block ends at the delimiter line; nothing else may follow it.
+      assert.deepEqual(lines.slice(terminator + 1), [''])
+      fs.rmSync(outputPath, { force: true })
+    }
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('uses the OCR runtime config path for both preflight and review', () => {
   const workflow = fs.readFileSync(
     path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
