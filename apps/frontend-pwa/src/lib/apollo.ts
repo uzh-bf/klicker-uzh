@@ -58,6 +58,34 @@ interface ParticipantBinding {
 let apolloClient: ApolloClient<NormalizedCacheObject> | undefined
 let apolloBinding: ParticipantBinding | undefined
 
+function completeSessionCommand(
+  binding: ParticipantBinding,
+  result: { data?: Record<string, any> | null }
+) {
+  const data = result.data ?? {}
+  const created = data.createParticipantAccount?.participantToken
+  if (isParticipantFrameContext() && typeof created === 'string') {
+    // Account creation hands a cookie-less frame its own session.
+    adoptFrameSession(created)
+  } else if (
+    frameSessionToken() &&
+    (data.logoutParticipant || data.deleteParticipantAccount)
+  ) {
+    endFrameSession()
+  } else if (binding.revision === readParticipantSession()) {
+    void Router.replace('/serverError?cookiesRequired=true')
+    throw new Error('Shared participant cookie was not accepted')
+  }
+  binding.retired = true
+  completeParticipantSessionCommand()
+  const retiredClient = apolloClient
+  // Let the successful mutation reach its caller before disposal.
+  setTimeout(() => {
+    retiredClient?.stop()
+    retiredClient?.cache.restore({})
+  }, 0)
+}
+
 function createIsomorphLink(
   ctx?: GetServerSidePropsContext,
   binding?: ParticipantBinding
@@ -111,40 +139,45 @@ function createIsomorphLink(
     }
   })
 
-  // A successful login, logout or account deletion changes the cookie
-  // identity, so the old document must retire before its caller navigates.
-  const sessionResultLink = new ApolloLink((operation, forward) =>
-    forward(operation).map((result) => {
-      if (
-        binding &&
-        !binding.retired &&
-        isSuccessfulParticipantSessionResult(result)
-      ) {
-        const data = result.data ?? {}
-        const created = data.createParticipantAccount?.participantToken
-        if (isParticipantFrameContext() && typeof created === 'string') {
-          // Account creation hands a cookie-less frame its own session.
-          adoptFrameSession(created)
-        } else if (
-          frameSessionToken() &&
-          (data.logoutParticipant || data.deleteParticipantAccount)
-        ) {
-          endFrameSession()
-        } else if (binding.revision === readParticipantSession()) {
-          void Router.replace('/serverError?cookiesRequired=true')
-          throw new Error('Shared participant cookie was not accepted')
+  // One guard binds every operation to this client's participant session. It
+  // sits above the retry link, so neither a replaced session nor a refused
+  // cookie is ever retried. A successful login, logout or account deletion
+  // changes the identity, so the document retires before its caller navigates.
+  const sessionLink = new ApolloLink(
+    (operation, forward) =>
+      new Observable((observer) => {
+        try {
+          if (binding?.retired) throw new Error('Participant session changed')
+          if (binding) assertParticipantSession(binding.revision)
+        } catch (error) {
+          observer.error(error)
+          return
         }
-        binding.retired = true
-        completeParticipantSessionCommand()
-        const retiredClient = apolloClient
-        // Let the successful mutation reach its caller before disposal.
-        setTimeout(() => {
-          retiredClient?.stop()
-          retiredClient?.cache.restore({})
-        }, 0)
-      }
-      return result
-    })
+        const subscription = forward(operation).subscribe({
+          next: (result) => {
+            try {
+              if (
+                binding &&
+                !binding.retired &&
+                isSuccessfulParticipantSessionResult(result)
+              ) {
+                completeSessionCommand(binding, result)
+              } else if (binding) {
+                if (binding.retired)
+                  throw new Error('Participant session changed')
+                assertParticipantSession(binding.revision)
+              }
+            } catch (error) {
+              observer.error(error)
+              return
+            }
+            observer.next(result)
+          },
+          error: (error) => observer.error(error),
+          complete: () => observer.complete(),
+        })
+        return () => subscription.unsubscribe()
+      })
   )
 
   const errorLink = onError(({ graphQLErrors, networkError }) => {
@@ -264,49 +297,12 @@ function createIsomorphLink(
       link
     )
 
-    // Check after asynchronous context and persisted-query work, including
-    // retries. A stopped client can still be held by an event handler.
-    const sessionGuardLink = new ApolloLink(
-      (operation, forward) =>
-        new Observable((observer) => {
-          try {
-            if (binding) assertParticipantSession(binding.revision)
-          } catch (error) {
-            observer.error(error)
-            return
-          }
-          if (binding?.retired) {
-            observer.error(new Error('Participant session changed'))
-            return
-          }
-          const subscription = forward(operation).subscribe({
-            next: (result) => {
-              if (!isSuccessfulParticipantSessionResult(result)) {
-                try {
-                  if (binding) assertParticipantSession(binding.revision)
-                } catch (error) {
-                  observer.error(error)
-                  return
-                }
-              }
-              if (binding?.retired)
-                observer.error(new Error('Participant session changed'))
-              else observer.next(result)
-            },
-            error: (error) => observer.error(error),
-            complete: () => observer.complete(),
-          })
-          return () => subscription.unsubscribe()
-        })
-    )
-
     return from([
+      ...(binding ? [sessionLink] : []),
       retryLink,
       errorLink,
-      ...(binding ? [sessionResultLink] : []),
       authLink,
       ...persistedLink,
-      ...(binding ? [sessionGuardLink] : []),
       link,
     ])
   }

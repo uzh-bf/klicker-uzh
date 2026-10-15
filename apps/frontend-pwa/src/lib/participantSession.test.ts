@@ -379,6 +379,45 @@ it('does not retry a failed request once the shared revision is replaced', {
   client.stop()
 })
 
+it('sends a login once when the browser refuses its replacement cookie', {
+  timeout: 5000,
+}, async (t) => {
+  process.env.NEXT_PUBLIC_API_URL = 'https://api.example.invalid/api/graphql'
+  const previousEnvironment = process.env.NODE_ENV
+  Object.assign(process.env, { NODE_ENV: 'development' })
+  const { gql } = await import('@apollo/client')
+  const { initializeApollo } = await import('./apollo')
+  installDocument('participant_session=rev-login')
+  installWindow()
+  t.after(() => {
+    removeDocument()
+    removeWindow()
+    restoreEnvironment(previousEnvironment)
+  })
+  acceptParticipantSession()
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  let attempts = 0
+  t.mock.method(globalThis, 'fetch', async () => {
+    attempts += 1
+    // The response succeeds, but the browser kept the old revision cookie.
+    return new Response(
+      JSON.stringify({ data: { loginParticipant: 'participant-b' } }),
+      { headers: { 'content-type': 'application/json' } }
+    )
+  })
+  const client = initializeApollo(undefined, undefined, { revision: 'rev-login' })
+  const pending = assert.rejects(
+    client.mutate({
+      mutation: gql`mutation MLoginParticipant { loginParticipant }`,
+    })
+  )
+  await new Promise<void>((resolve) => setImmediate(resolve))
+  t.mock.timers.tick(10_000)
+  await pending
+  assert.equal(attempts, 1)
+  client.stop()
+})
+
 it('gives a replacement revision its own client and cache', async (t) => {
   process.env.NEXT_PUBLIC_API_URL = 'https://api.example.invalid/api/graphql'
   const previousEnvironment = process.env.NODE_ENV
