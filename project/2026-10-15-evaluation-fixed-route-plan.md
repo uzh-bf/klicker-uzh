@@ -90,7 +90,7 @@ excluded because neither is needed for the closed route.
 | Caller changes a policy after startup | Extend existing | HTTP scenario: nested mutation cannot change prices, routing or policy identity |
 | Retries exceed the shared ceiling | Extend existing | Existing durable retry scenario with fixed-route policy |
 | Ledger algorithm or documentation wording | None | Reuse ledger tests; no prose assertions |
-| Multiline review context corrupts workflow outputs | Extend existing | Execute the workflow serializer; round-trip the multiline helper result and escaped metadata without injected output keys; raw delimiter defense reviewed structurally |
+| Multiline review context corrupts workflow outputs | Reuse upstream | Execute the merged workflow serializer and retain its complete multiline-output regression test |
 | Dependency preparation never exits | None | Bounded real generation/build and repository preparation must exit successfully; emitted artifacts alone are insufficient |
 
 ### Delegation map and slice
@@ -142,6 +142,14 @@ application proof. Stop the exact runtime and verify zero routes after success
 or failure. Synchronize the sanitized checkpoint through the existing approved
 private sync job and verify the receiving revision even if qualification blocks.
 
+The user approved refreshing this branch from `v3` after the CI repair landed in
+[PR 6548](https://github.com/uzh-bf/klicker-uzh/pull/6548). Main owns integration
+and verification because the conflict resolution and source-equivalence checks
+share one critical path. Adopt the upstream workflow and test exactly, removing
+the duplicate branch implementation while retaining upstream caching and
+concurrency changes. Reuse unchanged guard reviews and fake-only application
+evidence; rerun focused tests and exact-head CI. Keep the draft and $5 ceiling.
+
 ### Planning review
 
 Planner round 1 requested explicit apex/trailing-dot detection, deep snapshot
@@ -179,7 +187,15 @@ optional Tutor, fresh retrieval and persistence, an SDK retry and refusal before
 forwarding beyond the unchanged cap. Receipts remain private and ignored. Local
 startup recovered without a build-source or dependency change; no durable root
 cause is claimed from a successful repeat. No paid acceptance, billing or answer
-quality claim follows from canned fake responses. Next: disposition the CI repair
-reviews and exact-head CI, then synchronize the final sanitized checkpoint.
-Keep the PR draft; the trusted-base review check may remain blocked until its
-workflow repair is integrated under separate authority.
+quality claim follows from canned fake responses.
+
+Refreshed from `v3` at `8757713aaf8d93b4c67a64909a2074e965202f33` to activate
+the merged trusted-base CI repair. The overlapping workflow and test now match
+upstream exactly; neither remains in the PR's net delta. Guard, tests and
+evaluation documentation are byte-identical to the previously reviewed head,
+so the source reviews and fake-only application receipts remain applicable.
+Fresh offline container verification passes all 47 evaluator tests and all 108
+review-workflow/adapter tests. Main-session integration inspection found no
+additional behavior or boundary change requiring another specialist pass.
+Next: verify exact-head hosted CI and synchronize the sanitized checkpoint.
+Keep the PR draft; merging, deployment and paid evaluation remain withheld.

@@ -21,7 +21,7 @@
 # maps a selection to exact turbo roots, readiness apps, and process markers.
 version: 1
 devrouter:
-  version: 0.3.0
+  version: 0.4.0
 project:
   name: klicker-uzh
 # Reproducible ignored state for `workspace cleanup`, `reclaim` and `trim`.
@@ -90,6 +90,14 @@ profiles:
   eduid:
     apps: [oidc]
     devcontainerServices: [oidc]
+  # routed Postgres endpoint for host tools: add `,db` to a selective
+  # selection to publish db.klicker[.<workspace>].localhost:5432. Postgres
+  # itself runs for every profile; without this route, host tools use the
+  # loopback port that `devrouter env` reports. Kept out of the application
+  # profiles because the Playwright runtime contract has no binding for it.
+  db:
+    apps: [db]
+    devcontainerServices: []
   # pure capabilities: no routes, no app process
   ai:
     apps: []

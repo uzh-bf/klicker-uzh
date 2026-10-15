@@ -1,7 +1,13 @@
 #!/usr/bin/env node
 
 import { spawnSync } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs'
+import {
+  existsSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import {
@@ -29,6 +35,12 @@ const {
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 export const PNPM_VERIFY_DEPS_ENV = 'pnpm_config_verify_deps_before_run'
 export const PLAYWRIGHT_PROFILE_FALLBACK = 'playwright'
+// Marks the root install as the launcher's Playwright-only filtered install so
+// util/run-hook-pnpm.sh does not mistake it for a full host install.
+export const FILTERED_INSTALL_MARKER = join(
+  'node_modules',
+  '.playwright-host-filtered-install'
+)
 
 const PLAYWRIGHT_OPTIONS_WITH_VALUES = new Set([
   '--browser',
@@ -268,6 +280,7 @@ function createRuntime({
   commandExistsFn = (command) => commandExists(command),
   pathExists = existsSync,
   readFile = readFileSync,
+  writeFile = writeFileSync,
   readDirectory = readdirSync,
   parseProfileManifestFn = parseProfileManifest,
   clock = defaultClock,
@@ -285,6 +298,7 @@ function createRuntime({
     log,
     pathExists,
     readFile,
+    writeFile,
     readDirectory,
     parseProfileManifestFn,
     clock,
@@ -386,13 +400,40 @@ export function readCommittedEnvironment(contents) {
   return values
 }
 
-export function parsePublishedPort(output) {
-  for (const line of output.split(/\r?\n/)) {
-    const match = line.trim().match(/:(\d+)$/)
-    if (match) return Number(match[1])
+// `devrouter env --json` (report version 1) attributes the loopback port to
+// this checkout's own devcontainer and names the reason when it cannot.
+export function parseHostEnvironment(output) {
+  let report
+  try {
+    report = JSON.parse(output)
+  } catch {
+    fail('devrouter env did not return a JSON report')
   }
-
-  fail('the workspace Postgres container has no loopback host port')
+  if (report?.version !== 1) {
+    fail(`unsupported devrouter env report version ${report?.version}`)
+  }
+  const databases = (report.apps ?? []).filter(
+    (app) => app.protocol === 'tcp' && app.tcpProtocol === 'postgres'
+  )
+  if (databases.length !== 1) {
+    fail(
+      `expected one Postgres app in devrouter env, found ${databases.length}`
+    )
+  }
+  const [{ loopback, loopbackReason }] = databases
+  if (!loopback) {
+    fail(`the workspace Postgres has no loopback host port (${loopbackReason})`)
+  }
+  if (typeof loopback.host !== 'string' || !Number.isInteger(loopback.port)) {
+    fail('the workspace Postgres loopback endpoint lacks a host or port')
+  }
+  return {
+    workspace: report.workspace ?? '',
+    databaseHost: loopback.host.includes(':')
+      ? `[${loopback.host}]`
+      : loopback.host,
+    databasePort: loopback.port,
+  }
 }
 
 export function parseLocalOptions(argv) {
@@ -450,6 +491,7 @@ export function parseLocalOptions(argv) {
 export function resolvePlaywrightEnvironment({
   appSecret,
   databaseTemplate,
+  databaseHost = '127.0.0.1',
   databasePort,
   postgresContainer,
   workspace,
@@ -458,7 +500,7 @@ export function resolvePlaywrightEnvironment({
   const appUrl = (app) => `https://${app}.klicker${namespace}.localhost`
   const databaseUrl = new URL(databaseTemplate)
 
-  databaseUrl.hostname = '127.0.0.1'
+  databaseUrl.hostname = databaseHost
   databaseUrl.port = String(databasePort)
 
   const studentUrl = appUrl('pwa')
@@ -482,7 +524,7 @@ export function resolvePlaywrightEnvironment({
   }
 }
 
-function resolveWorkspace(runtime) {
+function resolveGitDirectories(runtime) {
   const gitDir = runtime.commandRunner(
     'git',
     [
@@ -505,15 +547,17 @@ function resolveWorkspace(runtime) {
     ],
     { capture: true }
   )
+  return { gitDir, commonDir }
+}
 
-  if (gitDir === commonDir) return ''
-
-  const workspaceFile = join(gitDir, 'devrouter-workspace')
-  if (!runtime.pathExists(workspaceFile)) {
-    fail('devrouter did not persist a workspace token for this worktree')
-  }
-
-  return runtime.readFile(workspaceFile, 'utf8').trim()
+// A linked worktree gets its devrouter workspace identity on its first ensure.
+// Before that no devcontainer can exist, so there is nothing to stop.
+function hasLinkedWorkspaceIdentity(runtime) {
+  const { gitDir, commonDir } = resolveGitDirectories(runtime)
+  return (
+    gitDir === commonDir ||
+    runtime.pathExists(join(gitDir, 'devrouter-workspace'))
+  )
 }
 
 export function resolvePostgresContainer(runtime) {
@@ -543,16 +587,14 @@ export function resolvePostgresContainer(runtime) {
   return containerIds[0]
 }
 
-export function resolveDatabasePort(runtime, containerId) {
-  if (!containerId) fail('a Postgres container id is required')
-
-  const publishedPort = runtime.commandRunner(
-    'docker',
-    ['port', containerId, '5432/tcp'],
-    { capture: true }
+function resolveHostEnvironment(runtime) {
+  return parseHostEnvironment(
+    runtime.commandRunner(
+      runtime.devrouter(),
+      ['env', runtime.repoRoot, '--json'],
+      { capture: true }
+    )
   )
-
-  return parsePublishedPort(publishedPort)
 }
 
 function ensureHostDependencies(runtime, playwrightArgs) {
@@ -566,8 +608,10 @@ function ensureHostDependencies(runtime, playwrightArgs) {
   )
 
   if (!runtime.pathExists(playwrightCli)) {
-    runtime.log('[playwright:host] Stopping the devcontainer before install')
-    runtime.commandRunner(runtime.devrouter(), ['stop', runtime.repoRoot])
+    if (hasLinkedWorkspaceIdentity(runtime)) {
+      runtime.log('[playwright:host] Stopping the devcontainer before install')
+      runtime.commandRunner(runtime.devrouter(), ['stop', runtime.repoRoot])
+    }
     runtime.log('[playwright:host] Installing host Playwright dependencies')
     runtime.runPnpm([
       'install',
@@ -575,6 +619,7 @@ function ensureHostDependencies(runtime, playwrightArgs) {
       '@klicker-uzh/playwright...',
       '--frozen-lockfile',
     ])
+    runtime.writeFile(join(runtime.repoRoot, FILTERED_INSTALL_MARKER), '')
   }
 
   if (
@@ -675,9 +720,9 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
     ])
     queueWaitSeconds = queueWaitSecondsFrom(runtime.readFile, ensureTelemetry)
 
-    const workspace = resolveWorkspace(runtime)
+    const { workspace, databaseHost, databasePort } =
+      resolveHostEnvironment(runtime)
     const postgresContainer = resolvePostgresContainer(runtime)
-    const databasePort = resolveDatabasePort(runtime, postgresContainer)
     const committedEnvironment = readCommittedEnvironment(
       runtime.readFile(
         join(runtime.repoRoot, '.devcontainer', 'devcontainer.env'),
@@ -694,6 +739,7 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
     const resolvedEnvironment = resolvePlaywrightEnvironment({
       appSecret,
       databaseTemplate,
+      databaseHost,
       databasePort,
       postgresContainer,
       workspace,
@@ -703,7 +749,7 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
       runtime.log(
         JSON.stringify(
           {
-            databaseHost: `127.0.0.1:${databasePort}`,
+            databaseHost: `${databaseHost}:${databasePort}`,
             postgresContainer,
             manageUrl: resolvedEnvironment.URL_MANAGE,
             studentUrl: resolvedEnvironment.URL_STUDENT,
@@ -719,6 +765,9 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
     timer.begin('browser')
     runtime.log(
       `[playwright:host] Running on the host against ${resolvedEnvironment.URL_MANAGE}`
+    )
+    runtime.log(
+      `[playwright:host] Stack: Next dev servers (CI tests production builds), profile=${runtimeProfile}, database=${databaseHost}:${databasePort}`
     )
     runtime.runPnpm(
       [
