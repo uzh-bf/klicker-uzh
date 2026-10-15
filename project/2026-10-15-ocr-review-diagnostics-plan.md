@@ -117,7 +117,13 @@ approved execution and delivery, so no second generic approval is needed.
 - Slice 1: adapter guard, bounded opaque attribution and ordered diagnostics
   persistence implemented. All 52 adapter tests pass, including incomplete-drain,
   signal, lifetime, single-write, redaction and attribution cases.
-- Slice 2: delegated draft wiring implemented; one simplification correction is
-  active with the same executor. Main owns integration and all external actions.
-- Next: commit and review slice 1; integrate and verify the draft slice.
+- Slice 1: committed as `902a49ecf3`. Simplifier and risk reviewer passed with no
+  actionable findings; local reports are under `project/_local/reviews/`.
+- Slice 2: delegated draft context and artifact wiring integrated after one
+  simplification correction. The diagnostics path uses step-level `runner.temp`.
+  Existing documentation now describes attribution, shutdown and truncation.
+- Verification: all 192 tests across the five OCR suites pass; formatting,
+  whitespace and focused Opengrep pass. Test delta: eight added behavior tests
+  and existing context/lifecycle coverage extended; no new suite or dependency.
+- Next: commit and review slice 2, then review the integrated package and deliver.
 - Delivery target: new draft PR; none exists yet.
