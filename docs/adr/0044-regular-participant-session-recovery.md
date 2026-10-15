@@ -42,7 +42,8 @@ KlickerUZH has always worked inside LMS frames whose browser blocks
 third-party cookies, such as Safari and Firefox by default. Such a frame keeps
 its own participant session: the LTI exchange or LTI account creation hands the
 token to that frame only, the tab stores it in sessionStorage, and requests send
-it as a bearer. The identity stays fixed for the tab until the next launch, so
+it as a bearer without cookies, so a shared cookie the browser still sends
+cannot take precedence. The identity stays fixed for the tab until the next launch, so
 the shared revision neither confirms nor invalidates it, and logout or deletion
 ends it. The backend accepts such a bearer only when no participant cookie is
 present and only for a plain participant token, so it can never replace a

@@ -110,6 +110,12 @@ export function completeParticipantSessionCommand() {
   listeners.forEach((listener) => listener())
 }
 
+// A frame session must be the only credential: a shared cookie the browser
+// still sends would otherwise take precedence on the server.
+export function participantSessionCredentials(): { credentials?: 'omit' } {
+  return frameToken ? { credentials: 'omit' } : {}
+}
+
 export function participantSessionHeaders(): Record<string, string> {
   assertParticipantSession()
   if (frameToken) return { authorization: `Bearer ${frameToken}` }
@@ -124,7 +130,11 @@ export async function participantFetch(
   const headers = new Headers(init?.headers)
   for (const [name, value] of Object.entries(participantSessionHeaders()))
     headers.set(name, value)
-  const response = await fetch(input, { ...init, headers })
+  const response = await fetch(input, {
+    ...init,
+    headers,
+    ...participantSessionCredentials(),
+  })
   assertParticipantSession(expected)
   return response
 }

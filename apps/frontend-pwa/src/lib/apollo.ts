@@ -22,6 +22,7 @@ import {
   endFrameSession,
   frameSessionToken,
   isParticipantFrame,
+  participantSessionCredentials,
   participantSessionHeaders,
   readParticipantSession,
 } from '@klicker-uzh/shared-components/src/utils/participantSession'
@@ -122,6 +123,7 @@ function createIsomorphLink(
             authorization: '',
             ...participantSessionHeaders(),
           },
+          ...participantSessionCredentials(),
         }
       let token: string | null = null
       try {

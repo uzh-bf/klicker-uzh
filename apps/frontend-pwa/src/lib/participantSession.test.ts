@@ -72,7 +72,7 @@ it('requires unpartitioned cookie access before an embedded login is usable', as
   removeWindow()
 })
 
-it('authenticates a cookie-less frame with its own token and ignores the shared revision', () => {
+it('authenticates a cookie-less frame with its own token and ignores the shared revision', async (t) => {
   const storage = new Map<string, string>()
   Object.defineProperty(globalThis, 'sessionStorage', {
     configurable: true,
@@ -97,6 +97,18 @@ it('authenticates a cookie-less frame with its own token and ignores the shared 
     authorization: 'Bearer frame-token',
   })
   assert.equal(checkParticipantSession(), true)
+  // A shared cookie the browser still sends must not compete with the token.
+  const sent: RequestInit[] = []
+  t.mock.method(globalThis, 'fetch', async (_: unknown, init: RequestInit) => {
+    sent.push(init)
+    return new Response('{}')
+  })
+  await participantFetch('/api', { credentials: 'include' })
+  assert.equal(sent[0]?.credentials, 'omit')
+  assert.equal(
+    new Headers(sent[0]?.headers).get('authorization'),
+    'Bearer frame-token'
+  )
 
   // A later document in the same tab resumes the stored session.
   endFrameSession()
