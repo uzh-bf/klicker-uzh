@@ -1,12 +1,12 @@
+import { randomUUID } from 'node:crypto'
 import { type AppLogger, toSafeError } from '@klicker-uzh/logging/node'
+import { prisma } from '@klicker-uzh/prisma'
+import type { Prisma } from '@klicker-uzh/prisma/client'
+import { HANDOFF_SOURCES } from '@klicker-uzh/shared-components/src/utils/handoff'
 import type {
   ELearningSnapshotContent,
   KlickerChatContext,
 } from '@klicker-uzh/types'
-import { randomUUID } from 'node:crypto'
-import { prisma } from '@klicker-uzh/prisma'
-import type { Prisma } from '@klicker-uzh/prisma/client'
-import { HANDOFF_SOURCES } from '@klicker-uzh/shared-components/src/utils/handoff'
 import { isChatUsageClassEntitled } from '@klicker-uzh/util'
 import {
   type LangfuseSpan,
@@ -84,9 +84,9 @@ import {
 } from '@/src/lib/server/toolDiagnostics'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import {
-  chatModelUnavailableResponse,
   CHAT_TURN_ALREADY_COMPLETED_CODE,
   ChatTurnConflictError,
+  chatModelUnavailableResponse,
   claimChatTurn,
   failChatTurn,
   finalizeChatTurn,
@@ -100,6 +100,14 @@ import {
 } from '@/src/services/chatContext'
 import { CreditsService } from '@/src/services/credits'
 import { DisclaimersService } from '@/src/services/disclaimers'
+import {
+  formatElearningEvidencePolicy,
+  formatElearningSnapshotContext,
+  matchesPersistedLearningHistory,
+  normalizePersistedLearningContext,
+  resolveElearningThreadOrigin,
+  verifyAndNormalizeElearningChatContext,
+} from '@/src/services/elearningContext'
 import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
@@ -117,14 +125,6 @@ import {
   STUDENT_PRACTICE_QUIZ_TOOL_NAME,
   toPracticeCandidateId,
 } from '@/src/services/studentPracticeMcp'
-import {
-  formatElearningEvidencePolicy,
-  formatElearningSnapshotContext,
-  normalizePersistedLearningContext,
-  resolveElearningThreadOrigin,
-  verifyAndNormalizeElearningChatContext,
-  matchesPersistedLearningHistory,
-} from '@/src/services/elearningContext'
 import { ThreadService } from '@/src/services/threads'
 
 export const runtime = 'nodejs'

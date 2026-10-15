@@ -120,6 +120,27 @@ export function prepareHatchetTasks({
     },
   })
 
+  const sealAssessmentAudit = hatchet.task({
+    name: 'seal-assessment-audit',
+    retries: 0,
+    onCrons: ['*/5 * * * *'],
+    executionTimeout: '30m',
+    // A run can outlast the cron interval; overlapping runs would race on the
+    // same manifest chains, so a tick that finds a run active is skipped.
+    concurrency: {
+      expression: '"seal-assessment-audit"',
+      maxRuns: 1,
+      limitStrategy: ConcurrencyLimitStrategy.CANCEL_NEWEST,
+    },
+    fn: async (_, executionContext) => ({
+      success: await handlers.handleSealAssessmentAudit(
+        {},
+        globalContext,
+        executionContext
+      ),
+    }),
+  })
+
   const monitorAssessmentAudit = hatchet.task({
     name: 'monitor-assessment-audit',
     retries: 0,
@@ -661,6 +682,7 @@ export function prepareHatchetTasks({
   const tasks = {
     dispatchAssessmentAuditOutbox,
     monitorAssessmentAudit,
+    sealAssessmentAudit,
     adaptiveEmpiricalValidation,
     adaptiveCalibrationExport,
     adaptiveCalibrationExportCleanup,

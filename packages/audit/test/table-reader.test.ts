@@ -137,6 +137,28 @@ function readerFixture() {
 }
 
 describe('Azure Table audit reader', () => {
+  it('rejects root discovery outside the requested assessment scope', async () => {
+    const { reader } = readerFixture()
+    const result = await reader.exportQuizWithFailures({
+      liveQuizId: OTHER_PARTICIPANT_ID,
+    })
+    expect(result.verified).toEqual([])
+    expect(result.failures[0]?.detail).toContain('requested scope')
+  })
+
+  it('exposes an orphaned root when both inventories are lost', async () => {
+    const { reader, locator, retentionIndex, auditRecord } = readerFixture()
+    locator.rows.clear()
+    retentionIndex.rows.clear()
+    const result = await reader.exportQuizWithFailures({
+      liveQuizId: LIVE_QUIZ_ID,
+    })
+    expect(result.verified).toEqual([])
+    expect(result.failures).toMatchObject([
+      { eventId: auditRecord.envelope.eventId, reason: 'LOCATOR_MISSING' },
+    ])
+  })
+
   it('reconstructs and verifies exact canonical event bytes through the locator', async () => {
     const { auditRecord, reader } = readerFixture()
 
