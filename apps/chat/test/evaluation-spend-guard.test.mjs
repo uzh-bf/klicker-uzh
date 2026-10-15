@@ -62,11 +62,7 @@ async function close(server) {
 
 async function scenario(body, options = {}) {
   const settings = typeof options === 'number' ? { cap: options } : options
-  const {
-    cap = 2400,
-    basePolicy = policy,
-    path = '/v1/responses',
-  } = settings
+  const { cap = 2400, basePolicy = policy, path = '/v1/responses' } = settings
   const directory = await mkdtemp(join(tmpdir(), 'evaluation-guard-'))
   const budgetFile = join(directory, 'budget.json')
   const calls = []

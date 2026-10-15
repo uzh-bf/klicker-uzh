@@ -135,7 +135,7 @@ by a passing integrated run: 47 tests across guard, target and trajectory suites
 in an offline container. Biome and Prettier checks passed; pre-existing Biome
 advisories remain. Focused Opengrep reported no findings in the changed
 executable files. No new dependency, module, schema or framework pin change.
-Substantive implementation size: 239 added and 33 removed lines; plan and
+Substantive implementation size: 235 added and 33 removed lines; plan and
 documentation excluded. Test delta: two new contract tests, existing retry and
 denial cases extended, duplicate draft tests consolidated before commit.
 
