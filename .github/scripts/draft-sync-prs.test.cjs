@@ -140,7 +140,7 @@ function fixture({
   }
 }
 
-test('creates only the two forward pairs as drafts and preserves ready PRs on rerun', async () => {
+test('creates only the three forward pairs as drafts and preserves ready PRs on rerun', async () => {
   const state = fixture()
   const first = await maintainDraftSyncPrs({ ...state, context, dryRun: false })
   assert.deepEqual(
@@ -148,13 +148,18 @@ test('creates only the two forward pairs as drafts and preserves ready PRs on re
     [
       ['v3', 'v3-ai'],
       ['v3-ai', 'v3-audit'],
+      ['v3-ai', 'v3-adaptive-learning'],
     ]
   )
   assert.ok(state.creates.every((pr) => pr.draft === true))
   // Every PR head is a bot-owned sync branch, never the long-lived source.
   assert.deepEqual(
     state.creates.map(({ head }) => head),
-    ['sync/v3-into-v3-ai-v3-tip', 'sync/v3-ai-into-v3-audit-v3-ai-tip']
+    [
+      'sync/v3-into-v3-ai-v3-tip',
+      'sync/v3-ai-into-v3-audit-v3-ai-tip',
+      'sync/v3-ai-into-v3-adaptive-learning-v3-ai-tip',
+    ]
   )
   assert.equal(state.refs.get('sync/v3-into-v3-ai-v3-tip'), 'v3-tip')
   state.prs[0].draft = false
@@ -164,8 +169,8 @@ test('creates only the two forward pairs as drafts and preserves ready PRs on re
     dryRun: false,
   })
   assert.ok(second.every(({ action }) => action === 'existing'))
-  assert.equal(state.creates.length, 2)
-  assert.equal(state.comparisons.length, 2)
+  assert.equal(state.creates.length, 3)
+  assert.equal(state.comparisons.length, 3)
   assert.equal(state.prs[0].draft, false)
 })
 
@@ -176,7 +181,11 @@ test('default preview reads live comparisons without writing', async () => {
   assert.equal(state.creates.length, 0)
   assert.deepEqual(
     state.comparisons.map(({ basehead }) => basehead),
-    ['v3-ai...v3-tip', 'v3-audit...v3-ai-tip']
+    [
+      'v3-ai...v3-tip',
+      'v3-audit...v3-ai-tip',
+      'v3-adaptive-learning...v3-ai-tip',
+    ]
   )
   assert.equal(state.refWrites.length, 0)
 })
@@ -264,7 +273,10 @@ test('leaves pull requests headed by the source branch itself untouched', async 
   })
   assert.deepEqual(
     state.creates.map(({ head }) => head),
-    [syncBranch({ head: 'v3', base: 'v3-ai' }, 'v3-tip')]
+    [
+      syncBranch({ head: 'v3', base: 'v3-ai' }, 'v3-tip'),
+      syncBranch({ head: 'v3-ai', base: 'v3-adaptive-learning' }, 'v3-ai-tip'),
+    ]
   )
 })
 
@@ -280,7 +292,10 @@ test('never overwrites a leftover sync branch at another commit', async () => {
   assert.equal(state.refs.get('sync/v3-into-v3-ai-v3-tip'), 'someone-else')
   assert.deepEqual(
     state.creates.map(({ head }) => head),
-    ['sync/v3-ai-into-v3-audit-v3-ai-tip']
+    [
+      'sync/v3-ai-into-v3-audit-v3-ai-tip',
+      'sync/v3-ai-into-v3-adaptive-learning-v3-ai-tip',
+    ]
   )
 })
 
@@ -329,7 +344,7 @@ test('ignores same-named fork PRs', async () => {
     base: { ref: 'v3-ai', repo: { full_name: repository } },
   })
   await maintainDraftSyncPrs({ ...state, context, dryRun: false })
-  assert.equal(state.creates.length, 2)
+  assert.equal(state.creates.length, 3)
 })
 
 test('only trusted manual and allowlisted source push completions can write', async () => {
@@ -419,9 +434,9 @@ test('workflow entrypoint creates drafts on automatic runs and previews manual d
     `return (${step.env.DRY_RUN.slice(3, -2)})`
   )
   for (const [eventName, input, expectedCreates] of [
-    ['workflow_run', undefined, 2],
+    ['workflow_run', undefined, 3],
     ['workflow_dispatch', true, 0],
-    ['workflow_dispatch', false, 2],
+    ['workflow_dispatch', false, 3],
   ]) {
     const state = fixture()
     await entrypoint(

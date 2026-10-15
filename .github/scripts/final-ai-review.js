@@ -24,7 +24,12 @@ const {
 
 const FINAL_REVIEW_COMMAND = '/final-review'
 const FINAL_REVIEW_CONTEXT = 'final-ai-review'
-const FINAL_REVIEW_MODEL = 'z-ai/glm-5.3-flash'
+const {
+  MISTRAL_MODEL,
+  MISTRAL_URL,
+  callMistral,
+} = require('./ocr-mistral-adapter.cjs')
+const FINAL_REVIEW_MODEL = MISTRAL_MODEL
 const FINAL_REVIEW_BOT = 'github-actions[bot]'
 const FINAL_REVIEW_SCHEMA = 'final-ai-review/v4'
 const FINAL_REVIEW_POLICY_SCHEMA = 'final-ai-policy/v1'
@@ -54,12 +59,12 @@ const FINAL_REVIEW_POLICY_PATHS = Object.freeze(
     '.github/scripts/final-ai-review.js',
     '.github/scripts/final-ai-stack-review.js',
     '.github/scripts/native-stack.js',
+    '.github/scripts/ocr-mistral-adapter.cjs',
   ].sort()
 )
-const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
-const OPENROUTER_TOOL_CANARY_MARKER = 'KLICKER_FINAL_REVIEW_TOOL_CANARY'
-const OPENROUTER_TOOL_CANARY_NAME = 'final_review_probe'
-const OPENROUTER_TOOL_CANARY_TIMEOUT_MS = 30_000
+const MISTRAL_TOOL_CANARY_MARKER = 'KLICKER_FINAL_REVIEW_TOOL_CANARY'
+const MISTRAL_TOOL_CANARY_NAME = 'final_review_probe'
+const MISTRAL_TOOL_CANARY_TIMEOUT_MS = 30_000
 const OCR_MAX_COMPLETION_TOKENS = 16_384
 const REPORT_LIMIT = 55_000
 const MAX_INCREMENTAL_PATHS = 20
@@ -465,23 +470,21 @@ function buildOCRPolicy() {
   return {
     language: 'English',
     llm: {
-      url: OPENROUTER_URL,
+      url: MISTRAL_URL,
       model: FINAL_REVIEW_MODEL,
       protocol: 'openai',
       extra_body: {
-        reasoning: {
-          effort: 'high',
-        },
+        reasoning_effort: 'max',
       },
     },
   }
 }
 
-function buildOpenRouterToolCanaryRequest() {
+function buildMistralToolCanaryRequest() {
   const policy = buildOCRPolicy()
   return {
     model: policy.llm.model,
-    max_completion_tokens: OCR_MAX_COMPLETION_TOKENS,
+    max_tokens: OCR_MAX_COMPLETION_TOKENS,
     messages: [
       {
         role: 'system',
@@ -490,7 +493,7 @@ function buildOpenRouterToolCanaryRequest() {
       },
       {
         role: 'user',
-        content: `Call ${OPENROUTER_TOOL_CANARY_NAME} with marker ${OPENROUTER_TOOL_CANARY_MARKER}.`,
+        content: `Call ${MISTRAL_TOOL_CANARY_NAME} with marker ${MISTRAL_TOOL_CANARY_MARKER}.`,
       },
     ],
     ...policy.llm.extra_body,
@@ -498,14 +501,14 @@ function buildOpenRouterToolCanaryRequest() {
       {
         type: 'function',
         function: {
-          name: OPENROUTER_TOOL_CANARY_NAME,
+          name: MISTRAL_TOOL_CANARY_NAME,
           description: 'Confirm that the selected route supports tool calls.',
           parameters: {
             type: 'object',
             properties: {
               marker: {
                 type: 'string',
-                const: OPENROUTER_TOOL_CANARY_MARKER,
+                const: MISTRAL_TOOL_CANARY_MARKER,
               },
             },
             required: ['marker'],
@@ -516,116 +519,67 @@ function buildOpenRouterToolCanaryRequest() {
     ],
     tool_choice: {
       type: 'function',
-      function: { name: OPENROUTER_TOOL_CANARY_NAME },
+      function: { name: MISTRAL_TOOL_CANARY_NAME },
     },
   }
 }
 
-function sanitizeOpenRouterDiagnostic(value, token, limit = 160) {
-  if (!['number', 'string'].includes(typeof value)) return ''
-  const redacted = String(value).split(token).join('[redacted]')
-  return normalizeTitle(redacted, limit)
-}
-
-function openRouterCanaryFailure(status, payload, token) {
-  const error = payload?.error
-  const provider =
-    payload?.provider ??
-    error?.metadata?.provider_name ??
-    error?.metadata?.provider
-  const fields = [`HTTP ${status}`]
-  for (const [label, value] of [
-    ['code', error?.code],
-    ['provider', provider],
-    ['message', error?.message],
-  ]) {
-    const sanitized = sanitizeOpenRouterDiagnostic(value, token)
-    if (sanitized) fields.push(`${label}=${sanitized}`)
-  }
-  return new Error(`OpenRouter tool canary failed (${fields.join('; ')})`)
-}
-
-function validateOpenRouterToolCanaryResponse(payload, token) {
+function validateMistralToolCanaryResponse(payload) {
   const toolCalls = payload?.choices?.[0]?.message?.tool_calls
   if (
     payload?.model !== FINAL_REVIEW_MODEL ||
     !Array.isArray(toolCalls) ||
     toolCalls.length !== 1 ||
     toolCalls[0]?.type !== 'function' ||
-    toolCalls[0]?.function?.name !== OPENROUTER_TOOL_CANARY_NAME
+    toolCalls[0]?.function?.name !== MISTRAL_TOOL_CANARY_NAME
   ) {
-    throw new Error(
-      'OpenRouter tool canary did not return the expected tool call'
-    )
+    throw new Error('Mistral tool canary did not return the expected tool call')
   }
   let args
   try {
     args = JSON.parse(toolCalls[0].function.arguments)
   } catch {
-    throw new Error(
-      'OpenRouter tool canary did not return the expected tool call'
-    )
+    throw new Error('Mistral tool canary did not return the expected tool call')
   }
   if (
     !args ||
     typeof args !== 'object' ||
     Array.isArray(args) ||
     Object.keys(args).length !== 1 ||
-    args.marker !== OPENROUTER_TOOL_CANARY_MARKER
+    args.marker !== MISTRAL_TOOL_CANARY_MARKER
   ) {
-    throw new Error(
-      'OpenRouter tool canary did not return the expected tool call'
-    )
+    throw new Error('Mistral tool canary did not return the expected tool call')
   }
   return {
-    provider: sanitizeOpenRouterDiagnostic(payload.provider, token),
+    provider: 'Mistral',
   }
 }
 
-async function verifyOpenRouterToolAccess({
+async function verifyMistralToolAccess({
   token,
   fetchImpl = globalThis.fetch,
 }) {
-  if (!token) throw new Error('OPENROUTER_API_KEY is required')
+  if (!token) throw new Error('MISTRAL_API_KEY is required')
   if (typeof fetchImpl !== 'function') throw new Error('fetch is unavailable')
-  let response
-  try {
-    response = await fetchImpl(OPENROUTER_URL, {
-      body: JSON.stringify(buildOpenRouterToolCanaryRequest()),
-      headers: {
-        authorization: `Bearer ${token}`,
-        'content-type': 'application/json',
-      },
-      method: 'POST',
-      signal: AbortSignal.timeout(OPENROUTER_TOOL_CANARY_TIMEOUT_MS),
-    })
-  } catch {
-    throw new Error('OpenRouter tool canary request failed')
-  }
-  let payload
-  try {
-    payload = await response.json()
-  } catch {
-    payload = null
-  }
-  if (!response.ok) {
-    throw openRouterCanaryFailure(response.status, payload, token)
-  }
-  if (!payload) throw new Error('OpenRouter tool canary returned invalid JSON')
-  return validateOpenRouterToolCanaryResponse(payload, token)
+  const payload = await callMistral({
+    apiKey: token,
+    body: buildMistralToolCanaryRequest(),
+    fetchImpl,
+    timeoutMs: MISTRAL_TOOL_CANARY_TIMEOUT_MS,
+  })
+  return validateMistralToolCanaryResponse(payload)
 }
 
-function buildOCRConfig({ token }) {
-  if (!token) {
-    throw new Error('OPENROUTER_API_KEY is required')
-  }
-
+function buildOCRConfig() {
   const policy = buildOCRPolicy()
   return {
     ...policy,
     llm: {
-      ...policy.llm,
-      auth_token: token,
+      // OCR's saved URL overrides the per-attempt loopback environment URL.
+      model: policy.llm.model,
+      protocol: policy.llm.protocol,
+      extra_body: policy.llm.extra_body,
+      auth_token_cmd: 'printf "%s" "$OCR_LLM_TOKEN"',
     },
   }
 }
@@ -634,11 +588,11 @@ function defaultOCRConfigPath() {
   return path.join(os.homedir(), '.opencodereview', 'config.json')
 }
 
-function writeOCRConfig({ token, configPath = defaultOCRConfigPath() }) {
+function writeOCRConfig({ configPath = defaultOCRConfigPath() } = {}) {
   fs.mkdirSync(path.dirname(configPath), { recursive: true, mode: 0o700 })
   const descriptor = fs.openSync(configPath, 'wx', 0o600)
   try {
-    fs.writeFileSync(descriptor, JSON.stringify(buildOCRConfig({ token })))
+    fs.writeFileSync(descriptor, JSON.stringify(buildOCRConfig()))
   } finally {
     fs.closeSync(descriptor)
   }
@@ -985,7 +939,7 @@ function reviewPolicySettings() {
     },
     model: FINAL_REVIEW_MODEL,
     ocr: buildOCRPolicy(),
-    openrouter_url: OPENROUTER_URL,
+    mistral_url: MISTRAL_URL,
     report_limit: REPORT_LIMIT,
     review_schemas: {
       individual: FINAL_REVIEW_SCHEMA,
@@ -2209,6 +2163,43 @@ function validateOCRTokenCounters(summary, label) {
   }
 }
 
+function validateOCRPreview(baseline, bounded) {
+  const selection = (preview) => {
+    if (
+      !Array.isArray(preview?.files) ||
+      preview.files.length !== preview.total_files
+    ) {
+      throw new Error('Invalid OCR preview')
+    }
+    const paths = new Set()
+    return preview.files
+      .map((file) => {
+        if (
+          typeof file?.path !== 'string' ||
+          !file.path ||
+          paths.has(file.path) ||
+          typeof file.will_review !== 'boolean' ||
+          (file.exclude_reason != null &&
+            typeof file.exclude_reason !== 'string')
+        ) {
+          throw new Error('Invalid OCR preview file')
+        }
+        paths.add(file.path)
+        return [file.path, file.will_review, file.exclude_reason ?? '']
+      })
+      .sort((a, b) => {
+        if (a[0] < b[0]) return -1
+        if (a[0] > b[0]) return 1
+        return 0
+      })
+  }
+  if (
+    JSON.stringify(selection(baseline)) !== JSON.stringify(selection(bounded))
+  ) {
+    throw new Error('Bounded OCR context changes file coverage; review refused')
+  }
+}
+
 function validateOCRCoverage(manifest, label) {
   const coverage = manifest?.coverage
   const keys = ['selected', 'completed', 'reused', 'failed', 'waived']
@@ -2599,7 +2590,7 @@ function renderFinalReviewChunks(result, headSha, reviewMetadata = {}) {
   const header = [
     marker,
     metadataMarker,
-    `## Final AI review · ${FINAL_REVIEW_MODEL} (high reasoning)`,
+    `## Final AI review · ${FINAL_REVIEW_MODEL} (max reasoning)`,
     '',
     `Reviewed commit \`${headSha.slice(0, 12)}\`. This is a single diff-led operational review, not a full production-readiness audit.`,
     '',
@@ -3184,9 +3175,7 @@ async function verifyCurrentIndividualFinalReview({ repository, prNumber }) {
 function runCli() {
   const command = process.argv[2]
   if (command === 'configure-ocr') {
-    writeOCRConfig({
-      token: fs.readFileSync(0, 'utf8'),
-    })
+    writeOCRConfig()
     console.log('Ephemeral OCR configuration created')
     return
   }
@@ -3195,16 +3184,26 @@ function runCli() {
     console.log('Ephemeral OCR configuration removed')
     return
   }
-  if (command === 'verify-openrouter-tools') {
-    return verifyOpenRouterToolAccess({
-      token: fs.readFileSync(0, 'utf8'),
+  if (command === 'verify-mistral-tools') {
+    return verifyMistralToolAccess({
+      token: process.env.MISTRAL_API_KEY,
     }).then(({ provider }) => {
-      console.log(
-        provider
-          ? `OpenRouter tool canary passed via ${provider}`
-          : 'OpenRouter tool canary passed via automatic routing'
-      )
+      console.log(`Mistral tool canary passed via ${provider}`)
     })
+  }
+  if (command === 'validate-ocr-preview') {
+    const baselinePath = process.argv[3]
+    const boundedPath = process.argv[4]
+    if (!baselinePath || !boundedPath)
+      throw new Error(
+        'Usage: final-ai-review.js validate-ocr-preview <baseline> <bounded>'
+      )
+    validateOCRPreview(
+      JSON.parse(fs.readFileSync(baselinePath, 'utf8')),
+      JSON.parse(fs.readFileSync(boundedPath, 'utf8'))
+    )
+    console.log('Bounded OCR context preserves file coverage')
+    return
   }
   if (command === 'validate-ocr-result') {
     const resultPath = process.argv[3]
@@ -3302,7 +3301,7 @@ module.exports = {
   buildIndividualCleanEvidenceMetadata,
   buildOCRPolicy,
   buildOCRConfig,
-  buildOpenRouterToolCanaryRequest,
+  buildMistralToolCanaryRequest,
   buildReviewPlan,
   buildReviewBackground,
   createGhGithub,
@@ -3336,7 +3335,8 @@ module.exports = {
   startFinalReview,
   validateDispositionRecord,
   validateOCRResult,
+  validateOCRPreview,
   validateFinding,
-  verifyOpenRouterToolAccess,
+  verifyMistralToolAccess,
   writeOCRConfig,
 }

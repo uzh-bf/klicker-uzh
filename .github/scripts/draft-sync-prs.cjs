@@ -2,6 +2,7 @@ const REPOSITORY = 'uzh-bf/klicker-uzh'
 const PAIRS = [
   { head: 'v3', base: 'v3-ai' },
   { head: 'v3-ai', base: 'v3-audit' },
+  { head: 'v3-ai', base: 'v3-adaptive-learning' },
 ]
 
 // Sync pull requests never use the long-lived source branch as their head.
