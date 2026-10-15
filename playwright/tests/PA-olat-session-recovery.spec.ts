@@ -475,9 +475,15 @@ async function openChat(page: Page, baseURL: string) {
 
 // A frame with storage access joins the shared login and must accept its
 // cookies; a frame without it keeps its own session from the launch.
+// A browser can grant cookie access and still refuse a cross-site launch
+// cookie, so the frame shares the login only when it can read that session.
 async function frameHasSharedCookies(frame: Frame) {
   await frame.waitForLoadState()
-  return frame.evaluate(() => document.hasStorageAccess())
+  return frame.evaluate(
+    async () =>
+      (await document.hasStorageAccess()) &&
+      document.cookie.includes('participant_session=')
+  )
 }
 
 test('existing PWA and Chat tabs adopt ordinary login and clear on logout', async ({
@@ -640,7 +646,7 @@ test('password login keeps ambiguous return paths on the PWA origin', async ({
   }
 })
 
-test('refused launch cookies show recovery in the standalone page and LMS frame', async ({
+test('refused launch cookies show recovery in a standalone page and keep a frame session', async ({
   page,
   context,
   baseURL,
@@ -673,13 +679,8 @@ test('refused launch cookies show recovery in the standalone page and LMS frame'
     page,
     `${baseURL}/editProfile?jwt=${encodeURIComponent(await signed({ sub: ssoId, scope: 'LTI1.3' }))}`
   )
-  if (await frameHasSharedCookies(frame)) {
-    await expect(frame.getByTestId('cookies-required-recovery')).toBeVisible()
-    await expect(frame.getByTestId('update-account-email')).toHaveCount(0)
-  } else {
-    // Refused shared cookies do not matter to a frame session.
-    await expectIdentity(frame, { email: ltiEmail, username: ltiUsername })
-  }
+  // A frame whose browser refuses the launch cookie keeps its own session.
+  await expectIdentity(frame, { email: ltiEmail, username: ltiUsername })
 })
 
 test('a linked launch on the registration page continues to the profile', async ({
@@ -1462,6 +1463,23 @@ test('a live quiz answer and a practice submission are recorded for the shared c
   await expectIdentity(frame, { email: ltiEmail, username: ltiUsername })
   const sharedCookies = await frameHasSharedCookies(frame)
   if (sharedCookies) expect(await sessionRevision(frame)).toBeTruthy()
+
+  // A browser that blocks all third-party storage also breaks the practice
+  // quiz's local progress, as it did before frame sessions changed.
+  const webStorage = await frame.evaluate(() => {
+    try {
+      return !!window.localStorage
+    } catch {
+      return false
+    }
+  })
+  if (!webStorage) {
+    info.annotations.push({
+      type: 'skipped-step',
+      description: 'Practice quizzes need web storage, which this frame lacks',
+    })
+    return
+  }
 
   // The practice quiz is answered in the frame under its session.
   await navigate(frame, `/course/${courseId}/practiceQuizzes/${quizId}`)

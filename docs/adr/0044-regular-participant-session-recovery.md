@@ -15,7 +15,7 @@ A successful LTI launch replaces the regular participant login for the browser
 cookie context. Ordinary login follows the same rule. PWA and Chat tabs use the
 shared HttpOnly credential rather than keeping independent participant tokens.
 Separate browser profiles remain separate contexts. An embedded LMS frame
-without unpartitioned cookie access cannot join that login, so it keeps a
+whose browser refuses the shared cookie cannot join that login, so it keeps a
 frame session instead (see below). The boundary covers every
 regular PWA page, including anonymous entry points: its shared layout and queries
 can discover a participant cookie. In Chat, it wraps authenticated chatbot content
@@ -48,9 +48,11 @@ ends it. The backend accepts such a bearer only when no participant cookie is
 present and only for a plain participant token, so it can never replace a
 shared login. The token reaches server props only for requests that may be
 framed, never for a top-level document, and never travels in a URL. A frame
-with storage access joins the shared login instead.
+joins the shared login instead once it has unpartitioned cookie access and the
+shared cookie holds the session its launch created. Cookie access alone is not
+enough, because a browser can grant it and still refuse a cross-site cookie.
 
-LTI exchange and account creation outside such a frame must confirm cookie
+LTI exchange and account creation outside an LMS frame must confirm cookie
 acceptance. A refused cookie leads to recovery outside the LMS frame, never a
 memory-only login or silent use of the former participant. Recovery preserves
 an LTI launch URL for opening in a top-level tab, where it replaces the shared

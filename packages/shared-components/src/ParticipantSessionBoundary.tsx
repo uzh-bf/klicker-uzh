@@ -88,14 +88,20 @@ export default function ParticipantSessionBoundary({
     let active = true
     void hasSharedParticipantCookies().then((available) => {
       if (!active) return
-      // Shared cookies work here, so the frame can join the shared login.
-      if (available) endFrameSession()
+      // A browser can grant cookie access and still refuse the launch cookie,
+      // so the frame joins the shared login only once that holds this session.
+      if (
+        available &&
+        expectedRevision &&
+        readParticipantSession() === expectedRevision
+      )
+        endFrameSession()
       setSharedCookies(available)
     })
     return () => {
       active = false
     }
-  }, [])
+  }, [expectedRevision])
 
   useEffect(() => {
     // The launch is consumed once the frame holds its own session.

@@ -72,7 +72,7 @@ it('requires unpartitioned cookie access before an embedded login is usable', as
   removeWindow()
 })
 
-it('authenticates a cookie-less frame with its own token and ignores the shared revision', async () => {
+it('authenticates a cookie-less frame with its own token and ignores the shared revision', () => {
   const storage = new Map<string, string>()
   Object.defineProperty(globalThis, 'sessionStorage', {
     configurable: true,
@@ -83,9 +83,6 @@ it('authenticates a cookie-less frame with its own token and ignores the shared 
     },
   })
   const frame = {}
-  installWindow({ self: frame, top: {} })
-  installDocument('')
-  assert.equal(await hasSharedParticipantCookies(), false)
   installWindow({ self: frame, top: frame })
   installDocument('participant_session=shared')
   acceptParticipantSession()

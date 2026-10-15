@@ -3,9 +3,8 @@
 export const PARTICIPANT_SESSION_COOKIE = 'participant_session'
 export const PARTICIPANT_SESSION_HEADER = 'x-participant-session'
 
-// An LMS frame without unpartitioned cookie access cannot use the shared
-// login. It keeps its own participant token in this tab's sessionStorage and
-// sends it as a bearer. That identity is fixed for the tab until the next
+// An LMS frame whose browser refuses the shared login cookie keeps its own
+// participant token in this tab's sessionStorage and sends it as a bearer. That identity is fixed for the tab until the next
 // launch, so the shared revision does not apply to it.
 const FRAME_TOKEN_KEY = 'participant_token'
 
@@ -14,30 +13,22 @@ let stale = false
 let localSessionChange = false
 let frameToken: string | undefined
 let frameLaunch: string | undefined
-let sharedAccess: boolean | undefined
 const listeners = new Set<() => void>()
 
-function isEmbedded() {
+export function isParticipantFrame() {
   return typeof window !== 'undefined' && window.self !== window.top
 }
 
 export async function hasSharedParticipantCookies() {
+  if (window.self === window.top) return true
   // A cookie readable in an LMS frame may belong to a separate partition.
   // Only unpartitioned access can share the top-level participant login.
-  sharedAccess =
-    window.self === window.top ||
-    ((await document.hasStorageAccess?.().catch(() => false)) ?? false)
-  return sharedAccess
-}
-
-/** Whether this document is a frame known to lack shared cookies. */
-export function isParticipantFrameContext() {
-  return isEmbedded() && sharedAccess === false
+  return document.hasStorageAccess?.().catch(() => false) ?? false
 }
 
 /** Keep a launched token for this frame, or resume one stored earlier. */
 export function adoptFrameSession(token?: string) {
-  if (!isEmbedded() || sharedAccess) return
+  if (!isParticipantFrame()) return
   // Pages re-render with the same launch props, which must not revive a
   // session that has since ended.
   const launch = token && token !== frameLaunch ? token : undefined

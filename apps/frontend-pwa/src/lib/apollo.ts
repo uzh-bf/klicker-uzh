@@ -21,7 +21,7 @@ import {
   completeParticipantSessionCommand,
   endFrameSession,
   frameSessionToken,
-  isParticipantFrameContext,
+  isParticipantFrame,
   participantSessionHeaders,
   readParticipantSession,
 } from '@klicker-uzh/shared-components/src/utils/participantSession'
@@ -64,15 +64,17 @@ function completeSessionCommand(
 ) {
   const data = result.data ?? {}
   const created = data.createParticipantAccount?.participantToken
-  if (isParticipantFrameContext() && typeof created === 'string') {
-    // Account creation hands a cookie-less frame its own session.
+  const refused = binding.revision === readParticipantSession()
+  if (refused && isParticipantFrame() && typeof created === 'string') {
+    // A frame whose browser refused the new cookie keeps the account as its
+    // own session.
     adoptFrameSession(created)
   } else if (
     frameSessionToken() &&
     (data.logoutParticipant || data.deleteParticipantAccount)
   ) {
     endFrameSession()
-  } else if (binding.revision === readParticipantSession()) {
+  } else if (refused) {
     void Router.replace('/serverError?cookiesRequired=true')
     throw new Error('Shared participant cookie was not accepted')
   }

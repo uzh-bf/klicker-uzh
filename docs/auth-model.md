@@ -96,11 +96,11 @@ responses are ordered by completion; already dispatched work and Set-Cookie
 responses cannot be revoked locally. Logout does not globally revoke JWTs.
 Assessment and lecturer authentication keep their existing separate contracts.
 
-Embedded PWA pages check unpartitioned cookie access. With access, they join
-the shared login. Without it, an LTI launch or LTI account creation gives the
-frame its own session: the token reaches server props only for framed
+Embedded PWA pages join the shared login when they have unpartitioned cookie
+access and the shared cookie holds their launch's session. Otherwise an LTI
+launch or LTI account creation gives the frame its own session: the token reaches server props only for framed
 requests, the tab keeps it in sessionStorage, requests send it as a bearer, and
-the shared revision does not apply. Outside such frames, LTI and registration
+the shared revision does not apply. Outside LMS frames, LTI and registration
 confirm cookie acceptance, and a refused cookie leads to recovery that opens
 the activity or ordinary login in a normal tab. The normal Chat link opens in a new tab without
 a recovery gate. Its bridge checks membership without creating enrollment and
