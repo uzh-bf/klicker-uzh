@@ -1267,9 +1267,9 @@ test('publishes the bounded review context as a multiline output block', () => {
       assert.equal(run.error, undefined)
       assert.equal(run.status, 0, run.stderr)
 
-      // GitHub normalizes CRLF while reading the block, so the step must emit
-      // LF endings; a stray carriage return could hide a line that collides
-      // with the delimiter.
+      // The helper JSON-escapes title line endings. This roundtrip exercises
+      // its actual output; raw delimiter collisions and CR normalization
+      // remain structural defenses rather than branches covered by this test.
       const raw = fs.readFileSync(outputPath, 'utf8')
       assert.equal(raw.includes('\r'), false)
       const lines = raw.replace(/\r\n?/g, '\n').split('\n')

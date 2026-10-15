@@ -90,7 +90,7 @@ excluded because neither is needed for the closed route.
 | Caller changes a policy after startup | Extend existing | HTTP scenario: nested mutation cannot change prices, routing or policy identity |
 | Retries exceed the shared ceiling | Extend existing | Existing durable retry scenario with fixed-route policy |
 | Ledger algorithm or documentation wording | None | Reuse ledger tests; no prose assertions |
-| Multiline review context corrupts workflow outputs | Extend existing | Execute the workflow serializer; round-trip multiline values and delimiter collisions without injected output keys |
+| Multiline review context corrupts workflow outputs | Extend existing | Execute the workflow serializer; round-trip the multiline helper result and escaped metadata without injected output keys; raw delimiter defense reviewed structurally |
 | Dependency preparation never exits | None | Bounded real generation/build and repository preparation must exit successfully; emitted artifacts alone are insufficient |
 
 ### Delegation map and slice
