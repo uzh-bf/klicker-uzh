@@ -258,6 +258,8 @@ export async function loginTemporaryParticipant(
 
   // create and return a new valid token for the temporary participant
   const jwt = await createTemporaryParticipantToken(temporaryParticipant.id)
+  // The PWA offers this login only without a signed-in participant. A leftover
+  // regular cookie would otherwise win over the temporary one, so it expires.
   if (process.env.ASSESSMENT_MODE !== 'true') expireParticipantCookie(ctx)
   ctx.res.cookie('temporary_participant_token', jwt, COOKIE_SETTINGS)
   return jwt
