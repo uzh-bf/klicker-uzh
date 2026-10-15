@@ -126,6 +126,7 @@ function projectOverview({
     isChatUsageClassEntitled({
       usageClass,
       aiFeaturesEnabled: authorized,
+      aiSubscriptionTier: subscriptionTier,
       aiChatbotCostCenter,
     })
 

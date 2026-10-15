@@ -24,6 +24,7 @@ import {
 } from 'ai'
 import { after, type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { withCalculatorTool } from '@/src/lib/server/calculatorTool'
@@ -679,7 +680,11 @@ async function handlePOST(
       where: { id: chatbotId },
       include: {
         owner: {
-          select: { aiFeaturesEnabled: true, aiChatbotCostCenter: true },
+          select: {
+            aiFeaturesEnabled: true,
+            aiSubscriptionTier: true,
+            aiChatbotCostCenter: true,
+          },
         },
         course: {
           select: { displayName: true },
@@ -845,13 +850,14 @@ async function handlePOST(
 
   // Class admission does not depend on the usage-enforcement switch. The
   // account-level approval opens the cost-free class; a cost-carrying class
-  // also needs an address to bill, so the turn stays closed without a cost
-  // center even while enforcement is off. The budget check below is the part
+  // also needs the advanced tier and an address to bill, so the turn stays
+  // closed without both even while enforcement is off. The budget check below is the part
   // that the switch controls.
   const classAdmittedForSelectedModel = () =>
     isChatUsageClassEntitled({
       usageClass: selectedModelConfig.usageClass,
       aiFeaturesEnabled: chatbot.owner.aiFeaturesEnabled,
+      aiSubscriptionTier: chatbot.owner.aiSubscriptionTier,
       aiChatbotCostCenter: chatbot.owner.aiChatbotCostCenter,
     })
 
@@ -2070,7 +2076,13 @@ async function handlePOST(
           initialMessages,
           responseMessages,
         }) => ({
-          ...(docQueryToolName && stepNumber === 0
+          // Standard platform modes retrieve first, so the answer is grounded
+          // before it is written. Custom modes keep the retrieval tool offered
+          // but choose for themselves, so attaching a knowledge base never
+          // forces a retrieval call ahead of the persona's own answer.
+          ...(docQueryToolName &&
+          Object.hasOwn(DEFAULT_PROMPT, selectedMode) &&
+          stepNumber === 0
             ? {
                 toolChoice: {
                   type: 'tool' as const,

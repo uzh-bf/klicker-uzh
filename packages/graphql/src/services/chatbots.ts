@@ -12,6 +12,7 @@ import {
   CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH,
   getChatModelAutoPolicyIssues,
   getChatModelBasePolicyIssues,
+  isChatUsageClassEntitled,
   normalizeChatbotCustomModeConfig,
   normalizeChatbotStandardModeConfig,
   parseChatbotCustomModeConfigInput,
@@ -1258,6 +1259,50 @@ async function assertGraphRetrievalTransition(
     throw chatbotError('Graph retrieval is not available', 'FORBIDDEN')
 }
 
+// Rejects a model policy that adds a model the owner's account cannot use, so
+// an owner cannot configure a chatbot whose turns are refused. Models the
+// current policy already allows stay saveable: an owner whose entitlement was
+// withdrawn must still be able to edit the chatbot and remove them.
+async function assertModelPolicyEntitled(
+  tx: Prisma.TransactionClient,
+  ownerId: string,
+  currentModelIds: readonly string[],
+  nextModelIds: readonly string[]
+): Promise<void> {
+  const addedModelIds = nextModelIds.filter(
+    (modelId) => !currentModelIds.includes(modelId)
+  )
+  if (addedModelIds.length === 0) return
+
+  const owner = await tx.user.findUnique({
+    where: { id: ownerId },
+    select: { aiSubscriptionTier: true, aiChatbotCostCenter: true },
+  })
+  const modelById = new Map(
+    getChatModelRegistry().map((model) => [model.id, model])
+  )
+  const unavailableModelIds = addedModelIds.filter((modelId) => {
+    const model = modelById.get(modelId)
+    return (
+      !owner ||
+      !model ||
+      // Owners without AI access may still prepare drafts; publication
+      // checks that access, so only the subscription is checked here.
+      !isChatUsageClassEntitled({
+        usageClass: model.usageClass,
+        aiFeaturesEnabled: true,
+        ...owner,
+      })
+    )
+  })
+  if (unavailableModelIds.length > 0) {
+    throw chatbotError(
+      `Model(s) not available for this account: ${unavailableModelIds.join(', ')}`,
+      'BAD_USER_INPUT'
+    )
+  }
+}
+
 export async function saveChatbotRevision(
   args: {
     chatbotId: string
@@ -1360,6 +1405,12 @@ export async function saveChatbotRevision(
       chatbot.ownerId,
       current.knowledgeGraphRetrievalEnabled,
       next.knowledgeGraphRetrievalEnabled
+    )
+    await assertModelPolicyEntitled(
+      tx,
+      chatbot.ownerId,
+      current.allowedModelIds,
+      next.allowedModelIds
     )
     if (disclaimer) {
       const title = normalizeDisclaimerText(disclaimer.title)
@@ -1886,22 +1937,6 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
       disclaimer: {
         select: { id: true, name: true, title: true, introText: true },
       },
-      mcpConfigurations: {
-        select: {
-          chatMode: true,
-          isEnabled: true,
-          priority: true,
-          allowedTools: true,
-          mcpServer: {
-            select: {
-              id: true,
-              name: true,
-              description: true,
-              isActive: true,
-            },
-          },
-        },
-      },
       knowledgeBases: {
         where: { isEnabled: true, kb: { deletedAt: null } },
         select: {
@@ -2020,26 +2055,10 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
         }
       : null
 
-    const mcpConfigurations = chatbot.mcpConfigurations.map((config) => ({
-      serverId: config.mcpServer.id,
-      serverName: config.mcpServer.name,
-      serverDescription: config.mcpServer.description,
-      serverIsActive: config.mcpServer.isActive,
-      chatMode: config.chatMode,
-      isEnabled: config.isEnabled,
-      priority: config.priority,
-      allowedToolsCount: Array.isArray(config.allowedTools)
-        ? config.allowedTools.length
-        : config.allowedTools
-          ? 1
-          : 0,
-    }))
-
     return {
       ...shapeChatbotResponse(chatbot),
       usageSummary,
       disclaimerSummary,
-      mcpConfigurations,
       enabledKnowledgeBases: chatbot.knowledgeBases.map(({ kb }) => kb),
       enabledKnowledgeBase:
         chatbot.knowledgeBases.length === 1
