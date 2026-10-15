@@ -526,7 +526,7 @@ test('adds bounded description data without hidden comments or image embeds', ()
   const description = [
     'Required behavior.',
     '',
-    '<!-- hidden\nmetadata -->',
+    '<!--\nhidden metadata\n-->',
     '![gallery](https://example.test/image_(1).png)',
     '![reference][gallery]',
     '<IMG src="https://example.test/image.png" alt="x > y">',
@@ -550,7 +550,13 @@ test('adds bounded description data without hidden comments or image embeds', ()
     false
   )
 
-  for (const empty of [undefined, null, '', ' \n\t ']) {
+  for (const empty of [
+    undefined,
+    null,
+    '',
+    ' \n\t ',
+    '<!--\nhidden metadata',
+  ]) {
     const fallback = JSON.parse(
       buildReviewBackground('Synthetic change', empty).split('\n').at(-1)
     )
