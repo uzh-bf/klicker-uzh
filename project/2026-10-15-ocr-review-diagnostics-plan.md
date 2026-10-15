@@ -125,5 +125,12 @@ approved execution and delivery, so no second generic approval is needed.
 - Verification: all 192 tests across the five OCR suites pass; formatting,
   whitespace and focused Opengrep pass. Test delta: eight added behavior tests
   and existing context/lifecycle coverage extended; no new suite or dependency.
-- Next: commit and review slice 2, then review the integrated package and deliver.
-- Delivery target: new draft PR; none exists yet.
+- Slice 2: committed as `af63f983ef`. Simplifier and risk reviewer passed with no
+  actionable findings; local reports are under `project/_local/reviews/`.
+- Package: 729 substantive added/deleted lines, excluding this plan; one cohesive
+  OCR completion/context/diagnostics package, with no generated or dependency delta.
+- Delivery: ordinary branch push and draft PR #6549 against `v3` completed.
+  The draft starts hosted checks before final review; it remains draft.
+- Integrated final review starts after this progress commit. Its receipt belongs
+  under `project/_local/reviews/`; hosted checks remain separate from synthetic
+  source verification and post-merge live provider/artifact acceptance.
