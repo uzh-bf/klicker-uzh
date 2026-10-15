@@ -187,9 +187,8 @@ it('rejects malformed launches and unusable participant cookies instead of using
     assert.equal(result.sessionEstablished, false)
     const cookies = responseCookies(headers)
     if (Object.hasOwn(query, 'jwt')) {
-      // A rejected launch leaves the existing session untouched.
-      assert.equal(writtenCookie(cookies, 'participant_session'), undefined)
-      assert.equal(writtenCookie(cookies, 'participant_token'), undefined)
+      // A rejected launch writes no cookies at all.
+      assert.deepEqual(cookies, [])
       continue
     }
     // The unusable retained session expires and the revision rotates to the

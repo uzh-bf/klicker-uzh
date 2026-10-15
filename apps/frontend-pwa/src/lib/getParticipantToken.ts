@@ -130,12 +130,14 @@ export default async function getParticipantToken({
     sessionEstablished: false,
   }
   // Any page can make a browser load a forged launch, even in a hidden frame,
-  // so a failed launch leaves the existing session untouched.
+  // so a failed launch writes no cookies. Only an unusable retained launch
+  // cookie is expired, so it cannot be retried on every request.
   const reject = (): ParticipantSessionResult => {
-    nookies.destroy(ctx, 'lti-token', {
-      domain: process.env.COOKIE_DOMAIN,
-      path: '/',
-    })
+    if (!hasLtiHandoff)
+      nookies.destroy(ctx, 'lti-token', {
+        domain: process.env.COOKIE_DOMAIN,
+        path: '/',
+      })
     return { ...base, sessionState: 'rejected' }
   }
   const verifyParticipant = async (token: string) => {
