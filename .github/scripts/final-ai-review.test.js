@@ -139,6 +139,8 @@ function expectedOCRArgs({ from, to, timeout, budget, sessionId }) {
     'agent',
     '--effort',
     'low',
+    '--concurrency',
+    '2',
     '--timeout',
     String(timeout),
     '--max-tokens',
@@ -1070,6 +1072,7 @@ test('writes secretless max-reasoning OCR config with mode 0600', () => {
   assert.equal(Object.hasOwn(config.llm, 'url'), false)
   assert.deepEqual(config.llm.extra_body, {
     reasoning_effort: 'max',
+    prompt_cache_key: '{ocr_session_key}',
   })
   assert.equal(config.llm.auth_token_cmd, 'printf "%s" "$OCR_LLM_TOKEN"')
   assert.equal(JSON.stringify(config).includes(token), false)
@@ -1125,6 +1128,7 @@ test('verifies the exact public Mistral tool contract', async () => {
   assert.equal(request.model, FINAL_REVIEW_MODEL)
   assert.equal(request.max_tokens, 16_384)
   assert.equal(request.reasoning_effort, 'max')
+  assert.equal(Object.hasOwn(request, 'prompt_cache_key'), false)
   assert.equal(Object.hasOwn(request, 'provider'), false)
   assert.deepEqual(result, { provider: 'Mistral' })
 })
@@ -1207,6 +1211,45 @@ test('uses one qualified canary and OCR release in both manual jobs', () => {
   }
 })
 
+test('draft context preserves the complete multiline workflow output', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-review.yml'),
+    'utf8'
+  )
+  const script = extractWorkflowStepScript(
+    workflow,
+    'Prepare bounded review context'
+  )
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-context-output-')
+  )
+  const outputPath = path.join(directory, 'github-output')
+  const title = 'Synthetic context with "quotes", EOF and $(exit 1)'
+  try {
+    const result = spawnSync('bash', ['-e', '-c', script], {
+      cwd: path.join(__dirname, '../..'),
+      env: {
+        PATH: process.env.PATH,
+        PR_TITLE: title,
+        GITHUB_OUTPUT: outputPath,
+      },
+      encoding: 'utf8',
+    })
+    assert.equal(result.status, 0, result.stderr)
+    const lines = fs.readFileSync(outputPath, 'utf8').split('\n')
+    const header = /^background<<(.+)$/.exec(lines[0])
+    assert.ok(header, 'background must use multiline output framing')
+    const endIndex = lines.indexOf(header[1], 1)
+    assert.equal(endIndex, lines.length - 2, 'exactly one complete output')
+    assert.equal(lines.at(-1), '')
+    const background = lines.slice(1, endIndex).join('\n')
+    assert.ok(background.includes('\n'), 'exercise a multiline value')
+    assert.equal(background, buildReviewBackground(title))
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('routes automatic drafts through the same pinned Mistral adapter', () => {
   const source = fs.readFileSync(
     path.join(__dirname, '../workflows/check-ocr-review.yml'),
@@ -1218,7 +1261,10 @@ test('routes automatic drafts through the same pinned Mistral adapter', () => {
   )
   assert.match(source, /llm_model: zai-glm-5-3/)
   assert.match(source, /ocr_version: '1.13.0'/)
-  assert.match(source, /llm_extra_body: '\{"reasoning_effort":"high"\}'/)
+  assert.match(
+    source,
+    /llm_extra_body: '\{"reasoning_effort":"high","prompt_cache_key":"\{ocr_session_key\}"\}'/
+  )
   assert.match(
     source,
     /llm_auth_token: \$\{\{ steps.adapter.outputs.token \}\}/

@@ -183,6 +183,38 @@ test('normalizeMistralResponse keeps plain text and drops no data', () => {
   })
 })
 
+test('cache usage preserves total input and rejects invalid cache counters', () => {
+  for (const cached of [0, 64, 128, -1, 129, 1.5, '64', null, NaN]) {
+    const payload = completion({ role: 'assistant', content: 'answer' })
+    payload.usage = {
+      prompt_tokens: 128,
+      completion_tokens: 4,
+      total_tokens: 132,
+      prompt_tokens_details: {
+        cached_tokens: cached,
+        private_field: 'private',
+      },
+    }
+    const usage = normalizeMistralResponse(payload).usage
+    const valid = Number.isSafeInteger(cached) && cached >= 0 && cached <= 128
+    assert.deepEqual(usage, {
+      prompt_tokens: 128,
+      completion_tokens: 4,
+      total_tokens: 132,
+      ...(valid ? { prompt_tokens_details: { cached_tokens: cached } } : {}),
+    })
+  }
+  for (const prompt of [undefined, -1, 1.5, Number.MAX_SAFE_INTEGER + 1]) {
+    const payload = completion({ role: 'assistant', content: 'answer' })
+    payload.usage.prompt_tokens = prompt
+    payload.usage.prompt_tokens_details = { cached_tokens: 0 }
+    assert.equal(
+      normalizeMistralResponse(payload).usage.prompt_tokens_details,
+      undefined
+    )
+  }
+})
+
 test('normalizeMistralResponse flattens text chunks and concatenates thinking', () => {
   const normalized = normalizeMistralResponse(
     completion({
@@ -506,6 +538,94 @@ test('loopback enforces high or max reasoning before calling upstream', async ()
         effort ?? 'max'
       )
     }
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('cache affinity is forwarded while malformed keys never reach upstream', async () => {
+  const fetchImpl = upstream(() =>
+    jsonResponse(200, completion({ role: 'assistant', content: 'answer' }))
+  )
+  const adapter = await startAdapter({ apiKey: 'synthetic-key', fetchImpl })
+  try {
+    for (const key of ['session-main-abc123', 'k'.repeat(64)]) {
+      const response = await postJson(adapter, {
+        messages: [{ role: 'user', content: 'synthetic' }],
+        prompt_cache_key: key,
+      })
+      assert.equal(response.status, 200)
+      assert.equal(fetchImpl.calls.at(-1).body.prompt_cache_key, key)
+    }
+    for (const key of [
+      '',
+      'k'.repeat(65),
+      '{ocr_session_key}',
+      'key\n',
+      'path/file',
+      {},
+      null,
+      42,
+    ]) {
+      const response = await postJson(adapter, {
+        messages: [{ role: 'user', content: 'synthetic' }],
+        prompt_cache_key: key,
+      })
+      assert.equal(response.status, 400)
+      assert.equal(response.json.error.code, 'invalid_request')
+    }
+    assert.equal(fetchImpl.calls.length, 2)
+    assert.doesNotMatch(
+      JSON.stringify(adapter.diagnostics()),
+      /session-main-abc123|synthetic-key/
+    )
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('cache diagnostics distinguish reported zero, unavailable and invalid usage', async () => {
+  const reports = [64, 0, undefined, -1, 129, null]
+  const fetchImpl = upstream((_record, index) => {
+    const payload = completion({ role: 'assistant', content: 'private-answer' })
+    payload.usage = {
+      prompt_tokens: 128,
+      completion_tokens: 4,
+      total_tokens: 132,
+    }
+    if (reports[index - 1] !== undefined) {
+      payload.usage.prompt_tokens_details = {
+        cached_tokens: reports[index - 1],
+        private_field: 'private-provider-data',
+      }
+    }
+    return jsonResponse(200, payload)
+  })
+  const adapter = await startAdapter({ apiKey: 'private-key', fetchImpl })
+  try {
+    for (const cached of reports) {
+      const response = await postJson(adapter, {
+        messages: [{ role: 'user', content: 'private-prompt' }],
+        prompt_cache_key: 'private-cache-key',
+      })
+      assert.equal(response.status, 200)
+      assert.equal(response.json.usage.prompt_tokens, 128)
+      assert.equal(response.json.usage.total_tokens, 132)
+      assert.equal(
+        response.json.usage.prompt_tokens_details?.cached_tokens,
+        cached === 64 || cached === 0 ? cached : undefined
+      )
+      assert.doesNotMatch(response.text, /private-provider-data/)
+    }
+    const receipt = adapter.diagnostics()
+    assert.equal(receipt.cache_usage_responses, 2)
+    assert.equal(receipt.missing_cache_usage, 1)
+    assert.equal(receipt.invalid_cache_usage, 3)
+    assert.equal(receipt.cached_prompt_tokens, 64)
+    assert.equal(receipt.uncached_prompt_tokens, 192)
+    assert.equal(receipt.prompt_tokens, 768)
+    assert.equal(receipt.completion_tokens, 24)
+    assert.doesNotMatch(JSON.stringify(receipt), /private-/)
   } finally {
     await adapter.close()
   }

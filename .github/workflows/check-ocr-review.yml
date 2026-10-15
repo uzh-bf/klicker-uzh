@@ -41,10 +41,12 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           node - <<'NODE'
+          const { randomUUID } = require('node:crypto')
           const fs = require('node:fs')
           const { buildReviewBackground } = require('./.github/scripts/final-ai-review.js')
           const background = buildReviewBackground(process.env.PR_TITLE)
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `background=${background}\n`)
+          const delimiter = randomUUID()
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `background<<${delimiter}\n${background}\n${delimiter}\n`)
           NODE
 
       - name: Start Mistral adapter
@@ -64,7 +66,7 @@ jobs:
           llm_url: ${{ steps.adapter.outputs.url }}/v1/chat/completions
           llm_auth_token: ${{ steps.adapter.outputs.token }}
           llm_model: zai-glm-5-3
-          llm_extra_body: '{"reasoning_effort":"high"}'
+          llm_extra_body: '{"reasoning_effort":"high","prompt_cache_key":"{ocr_session_key}"}'
           background: ${{ steps.context.outputs.background }}
           llm_use_anthropic: 'false'
           llm_timeout: '480'

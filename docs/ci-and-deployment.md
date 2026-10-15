@@ -326,6 +326,27 @@ closure before deleting capability state. Neither the upstream key nor native
 history is persisted. Live tool and structured-output proof remains pending
 secret provisioning and trusted default-branch activation.
 
+All three OCR modes configure `prompt_cache_key: "{ocr_session_key}"`. OCR expands
+that template per conversation; the adapter validates and forwards the bounded
+key. Direct tool canaries omit it. Provider cache hits remain opportunistic. The
+adapter preserves valid `usage.prompt_tokens_details.cached_tokens` without
+subtracting cached input from prompt totals or review budgets. Manual aggregate
+diagnostics distinguish reported zero, missing and invalid cache usage.
+`cached_prompt_tokens` and `uncached_prompt_tokens` cover only responses with a
+valid cache report; consult `cache_usage_responses`, `missing_cache_usage` and
+`invalid_cache_usage` before interpreting them. Cache keys and provider metadata
+are never copied into those diagnostics.
+
+Manual individual and stack reviews explicitly use `--concurrency 2`; automatic
+draft reviews retain concurrency four. Fewer in-flight groups limit simultaneous
+work and can reduce budget overrun, at the cost of longer elapsed time. OCR's
+aggregate budget is reactive and can still be exceeded by in-flight, queued and
+grace calls. The unmodified 1.13.0 binary completed identical synthetic coverage
+at concurrency eight, two and one; changing concurrency alone did not reduce
+total tokens for completed runs. Budget-exhausted synthetic results remained
+rejected by the existing validation and resume gates. This offline evidence does
+not establish live cache savings or completion within the configured allowance.
+
 The draft, individual and stack review jobs disable OCR's background updater
 with `OCR_NO_UPDATE=1`, including the installation version check. OCR 1.13.0
 otherwise starts a background global npm update even for `ocr version`, so a
