@@ -42,7 +42,12 @@ describe('chatbot authoring revision transitions', () => {
     }
     await dependencies.prisma.user.update({
       where: { id: owner.user.sub },
-      data: { aiFeaturesEnabled: true },
+      // The built-in model registry classifies Auto as advanced.
+      data: {
+        aiFeaturesEnabled: true,
+        aiSubscriptionTier: 'ADVANCED',
+        aiChatbotCostCenter: 'KST-1',
+      },
     })
   })
   afterEach(async () => {

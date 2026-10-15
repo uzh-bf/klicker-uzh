@@ -140,7 +140,11 @@ export async function POST(
     where: { id: chatbotId, ownerId: auth.userId },
     include: {
       owner: {
-        select: { aiFeaturesEnabled: true, aiChatbotCostCenter: true },
+        select: {
+          aiFeaturesEnabled: true,
+          aiSubscriptionTier: true,
+          aiChatbotCostCenter: true,
+        },
       },
       course: {
         select: { displayName: true },
@@ -241,12 +245,14 @@ export async function POST(
   const { model: selectedModel, reasoningEffort } = modelResolution
 
   // Preview is owner-funded and writes no usage row, so it skips the budget
-  // pre-check. Class admission still applies: an account without a cost center
-  // cannot start an advanced preview turn, exactly as in the participant route.
+  // pre-check. Class admission still applies: an account without the advanced
+  // tier and a cost center cannot start an advanced preview turn, exactly as in
+  // the participant route.
   if (
     !isChatUsageClassEntitled({
       usageClass: selectedModel.usageClass,
       aiFeaturesEnabled: chatbot.owner.aiFeaturesEnabled,
+      aiSubscriptionTier: chatbot.owner.aiSubscriptionTier,
       aiChatbotCostCenter: chatbot.owner.aiChatbotCostCenter,
     })
   ) {

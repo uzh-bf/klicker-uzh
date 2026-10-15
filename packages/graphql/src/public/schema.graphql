@@ -741,6 +741,7 @@ type ChatModelCapability {
   name: String!
   supportedReasoningEfforts: [String!]!
   supportsReasoning: Boolean!
+  usageClass: ChatUsageClass!
 }
 
 enum ChatUsageClass {

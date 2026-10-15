@@ -386,10 +386,15 @@ base-budget backfill and cohort evidence exist for it.
 Enforcement does not control class admission. Whether or not the switch is on,
 the participant and preview routes admit a candidate only when its usage class
 is entitled: the account-level AI approval opens the cost-free base class, and a
-cost-carrying advanced class additionally needs a non-blank cost center. Both
-deployed automatic primaries (GPT-6 Luna) are `BASE`, so an approved account
-without a cost center keeps its automatic default; only directly selected Sol
-models need the cost center.
+cost-carrying advanced class additionally needs the advanced subscription tier
+and a non-blank cost center. Setting a cost center grants the advanced tier
+([ADR 0020](./adr/0020-two-tier-chatbot-approval.md)). Both deployed automatic
+primaries (GPT-6 Luna) and `auto` are `BASE`, so an approved base-tier account
+keeps its automatic default; only directly selected Sol models need the
+advanced tier. Saving a chatbot revision rejects a newly added advanced model
+unless the owner has the advanced tier and a cost center, and the Manage model
+picker disables such models. AI access is checked at publication, so drafts can
+still be prepared without it.
 
 An account with no configured base budget receives the default
 `DEFAULT_BASE_CHAT_BUDGET_CREDITS` (`packages/util/src/chatUsage.ts`) for the
@@ -638,8 +643,9 @@ policy. The deployed LiteLLM configuration is external; a local summary proves
 the development path only, and staging still needs a Responses + tool-loop
 smoke test before a production compatibility claim.
 
-One account-level AI usage authorization, backed by an approved cost center,
-covers both model classes: the Phase 0 lifecycle foundations now store an
+One account-level AI usage authorization covers the base class; the advanced
+class additionally needs the advanced subscription tier and an approved cost
+center: the Phase 0 lifecycle foundations now store an
 account-scoped monthly budget and used-credit counter per `BASE` and
 `ADVANCED` class in `ChatAccountUsage`. Operations manages account-wide
 monthly budgets through the `ADMIN`-only mutation, while account owners see
