@@ -54,7 +54,6 @@ const OCR_RESULT_STATUSES = Object.freeze([
   'unknown',
 ])
 const OCR_RESUME_OUTCOMES = Object.freeze(['none', 'resumed', 'unknown'])
-const OCR_OBSERVED_STATUSES = Object.freeze(['complete', 'partial', 'unknown'])
 // Classification values of failed coverage items observed in this repository.
 // The closed list keeps provider-controlled text out of the diagnostic line.
 const OCR_FAILED_ITEM_CLASSES = Object.freeze(['budget', 'provider', 'timeout'])
@@ -74,6 +73,7 @@ const OCR_REJECTION_CODES = new Set([
   'invalid_resume_budget',
   'invalid_session_id',
   'malformed_input',
+  'ocr_resume_incomplete',
   'unexpected_terminal_status',
   'unreadable_input',
   'validation_failed',
@@ -2238,8 +2238,9 @@ function ocrFailedItemClasses(failed) {
   if (!Array.isArray(failed)) return null
   const counts = {}
   for (const item of failed) {
-    const className = item?.classification
-    if (!OCR_FAILED_ITEM_CLASSES.includes(className)) continue
+    const className = OCR_FAILED_ITEM_CLASSES.includes(item?.classification)
+      ? item.classification
+      : 'other'
     counts[className] = Math.min(
       (counts[className] ?? 0) + 1,
       OCR_DIAGNOSTIC_MAX_COUNT
@@ -2275,21 +2276,20 @@ function ocrObservedStatus(result) {
 function buildOCRResultDiagnostic(
   command,
   {
-    observedStatus = 'unknown',
     rejection = null,
     result = null,
-    resume = 'unknown',
+    resume = ocrResumeOutcome(result),
     status = 'unknown',
   } = {}
 ) {
   const coverage = result?.manifest?.coverage
+  const rejectionCode =
+    rejection === null ? null : ocrRejectionCode({ code: rejection })
   return {
     schema: OCR_RESULT_DIAGNOSTIC_SCHEMA,
     command,
     status: OCR_RESULT_STATUSES.includes(status) ? status : 'unknown',
-    observed_status: OCR_OBSERVED_STATUSES.includes(observedStatus)
-      ? observedStatus
-      : 'unknown',
+    observed_status: ocrObservedStatus(result),
     selected: boundedOCRCount(coverage?.selected),
     completed: boundedOCRCount(coverage?.completed),
     reused: boundedOCRCount(coverage?.reused),
@@ -2297,12 +2297,7 @@ function buildOCRResultDiagnostic(
     waived: boundedOCRCount(coverage?.waived),
     failure_classes: ocrFailedItemClasses(coverage?.failed),
     resume: OCR_RESUME_OUTCOMES.includes(resume) ? resume : 'unknown',
-    rejection:
-      rejection === null
-        ? null
-        : OCR_REJECTION_CODES.has(rejection)
-          ? rejection
-          : 'validation_failed',
+    rejection: rejectionCode,
   }
 }
 
@@ -2705,12 +2700,26 @@ function planOCRResume(result, maxTokensBudget) {
 }
 
 function mergeOCRResumeResults(initialResult, resumedResult, maxTokensBudget) {
-  const resumePlan = planOCRResume(initialResult, maxTokensBudget)
-  if (!resumePlan) {
-    throw ocrRejection(
-      'unexpected_terminal_status',
-      'OCR resume merge requires a partial parent result'
+  let resumePlan
+  try {
+    resumePlan = planOCRResume(initialResult, maxTokensBudget)
+    if (!resumePlan) {
+      throw ocrRejection(
+        'unexpected_terminal_status',
+        'OCR resume merge requires a partial parent result'
+      )
+    }
+  } catch (error) {
+    error.ocrResultSubject = 'initial'
+    throw error
+  }
+  if (resumedResult?.status === 'partial') {
+    validateOCRSessionEnvelope(resumedResult, 'partial', 'Resumed OCR result')
+    const error = new Error(
+      'Resumed OCR review remains incomplete after the allowed resume'
     )
+    error.code = 'ocr_resume_incomplete'
+    throw error
   }
   const resumed = validateOCRSessionEnvelope(
     resumedResult,
@@ -3589,7 +3598,6 @@ function runCli() {
       validateOCRResult(result)
     } catch (error) {
       writeOCRResultDiagnostic('validate-ocr-result', {
-        observedStatus: ocrObservedStatus(result),
         rejection: ocrRejectionCode(error),
         result,
         status: 'rejected',
@@ -3597,7 +3605,6 @@ function runCli() {
       throw error
     }
     writeOCRResultDiagnostic('validate-ocr-result', {
-      observedStatus: ocrObservedStatus(result),
       result,
       resume: ocrResumeOutcome(result),
       status: 'complete',
@@ -3631,7 +3638,6 @@ function runCli() {
       plan = planOCRResume(result, Number(budgetText))
     } catch (error) {
       writeOCRResultDiagnostic('plan-ocr-resume', {
-        observedStatus: ocrObservedStatus(result),
         rejection: ocrRejectionCode(error),
         result,
         status: 'rejected',
@@ -3640,7 +3646,6 @@ function runCli() {
     }
     if (plan) {
       writeOCRResultDiagnostic('plan-ocr-resume', {
-        observedStatus: ocrObservedStatus(result),
         result,
         resume: 'none',
         status: 'partial',
@@ -3649,7 +3654,6 @@ function runCli() {
       console.log(plan.remainingTokens)
     } else {
       writeOCRResultDiagnostic('plan-ocr-resume', {
-        observedStatus: ocrObservedStatus(result),
         result,
         resume: ocrResumeOutcome(result),
         status: ocrObservedStatus(result),
@@ -3687,15 +3691,14 @@ function runCli() {
       )
     } catch (error) {
       writeOCRResultDiagnostic('merge-ocr-resume', {
-        observedStatus: ocrObservedStatus(resumedResult),
         rejection: ocrRejectionCode(error),
-        result: resumedResult,
+        result:
+          error.ocrResultSubject === 'initial' ? initialResult : resumedResult,
         status: 'rejected',
       })
       throw error
     }
     writeOCRResultDiagnostic('merge-ocr-resume', {
-      observedStatus: ocrObservedStatus(resumedResult),
       result: merged,
       resume: 'resumed',
       status: 'complete',

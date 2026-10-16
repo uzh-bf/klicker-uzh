@@ -1166,7 +1166,7 @@ test('OCR completion conversations require tools; auxiliary requests retain thei
   )
 })
 
-test('a provider ignoring required tool use fails without entering OCR prose retries', async () => {
+test('a finished response ignoring required tool use fails without entering OCR prose retries', async () => {
   const fetchImpl = upstream(() =>
     jsonResponse(
       200,
@@ -1176,7 +1176,7 @@ test('a provider ignoring required tool use fails without entering OCR prose ret
           content: 'private synthetic response',
           reasoning_content: 'private synthetic reasoning',
         },
-        'length'
+        'stop'
       )
     )
   )
@@ -1195,8 +1195,8 @@ test('a provider ignoring required tool use fails without entering OCR prose ret
     const receipt = adapter.diagnostics()
     assert.equal(receipt.upstream_attempts, 1)
     assert.equal(receipt.main_no_tool_responses, 1)
-    assert.equal(receipt.length_finishes, 1)
-    assert.equal(receipt.failures.length_no_tool, 1)
+    assert.equal(receipt.length_finishes, 0)
+    assert.equal(receipt.failures.required_tool_call_missing, 1)
     assert.equal(receipt.prompt_tokens, 3)
     assert.equal(receipt.completion_tokens, 4)
     assert.ok(receipt.max_request_bytes > 0)
@@ -1204,6 +1204,82 @@ test('a provider ignoring required tool use fails without entering OCR prose ret
     assert.doesNotMatch(result.text, /private synthetic/)
   } finally {
     await adapter.close()
+  }
+})
+
+test('one length-limited tool-free turn can continue natively; a repeated failure stops', async () => {
+  for (const recover of [true, false]) {
+    const native = {
+      role: 'assistant',
+      content: 'private unfinished answer',
+      reasoning_content: 'private unfinished reasoning',
+    }
+    const fetchImpl = upstream(({ body: { messages } }) =>
+      jsonResponse(
+        200,
+        recover && messages.some((message) => message.role === 'assistant')
+          ? completion(
+              {
+                role: 'assistant',
+                content: '',
+                tool_calls: [
+                  {
+                    id: 'done',
+                    type: 'function',
+                    function: {
+                      name: 'task_done',
+                      arguments: '{"state":"DONE"}',
+                    },
+                  },
+                ],
+              },
+              'tool_calls'
+            )
+          : completion(native, 'length')
+      )
+    )
+    const adapter = await startAdapter({ apiKey: 'synthetic-key', fetchImpl })
+    const request = {
+      messages: [{ role: 'user', content: 'synthetic input' }],
+      tools: [{ type: 'function', function: { name: 'task_done' } }],
+      max_completion_tokens: 55,
+    }
+    try {
+      const first = await postJson(adapter, request)
+      assert.equal(first.status, 200)
+      assert.equal(first.json.choices[0].finish_reason, 'length')
+      assert.equal(first.json.usage.completion_tokens, 4)
+      const echoed = { ...first.json.choices[0].message }
+      delete echoed.reasoning_content
+      const next = await postJson(adapter, {
+        ...request,
+        messages: [
+          ...request.messages,
+          echoed,
+          { role: 'user', content: 'continue' },
+        ],
+      })
+      assert.equal(next.status, recover ? 200 : 422)
+      if (recover) {
+        assert.equal(
+          next.json.choices[0].message.tool_calls[0].function.name,
+          'task_done'
+        )
+      } else {
+        assert.equal(next.json.error.code, 'required_tool_call_missing')
+      }
+      assert.equal(fetchImpl.calls.length, 2)
+      assert.deepEqual(fetchImpl.calls[1].body.messages[1], native)
+      assert.ok(fetchImpl.calls.every((call) => call.body.max_tokens === 55))
+      const receipt = adapter.diagnostics()
+      assert.equal(receipt.completion_tokens, 8)
+      assert.equal(receipt.history.misses, 0)
+      assert.equal(receipt.failures.length_no_tool, recover ? 0 : 1)
+      assert.equal(receipt.failures.required_tool_call_missing, 0)
+      assert.doesNotMatch(JSON.stringify(receipt), /private unfinished/)
+    } finally {
+      await adapter.close()
+    }
   }
 })
 

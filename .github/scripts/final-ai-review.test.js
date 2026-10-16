@@ -2288,7 +2288,7 @@ test('rejects incorrect resume lineage, identity, and incomplete coverage', () =
         },
         750_000
       ),
-    (error) => error.code === 'unexpected_terminal_status'
+    { code: 'ocr_resume_incomplete' }
   )
   assert.throws(
     () => mergeOCRResumeResults(parent, resumed, 400),
@@ -2857,7 +2857,8 @@ test('records still-partial rejections with observed status and a source code', 
     assert.equal(mergeLine.command, 'merge-ocr-resume')
     assert.equal(mergeLine.status, 'rejected')
     assert.equal(mergeLine.observed_status, 'partial')
-    assert.equal(mergeLine.rejection, 'unexpected_terminal_status')
+    assert.equal(mergeLine.rejection, 'ocr_resume_incomplete')
+    assert.equal(mergeLine.resume, 'resumed')
 
     const goodResumedPath = path.join(directory, 'resumed.json')
     fs.writeFileSync(goodResumedPath, JSON.stringify(resumed))
@@ -2874,6 +2875,26 @@ test('records still-partial rejections with observed status and a source code', 
     assert.equal(mergedLine.observed_status, 'complete')
     assert.equal(mergedLine.resume, 'resumed')
     assert.equal(mergedLine.rejection, null)
+
+    const invalidParent = {
+      ...parent,
+      summary: { ...parent.summary, budget_exceeded: true },
+    }
+    fs.writeFileSync(parentPath, JSON.stringify(invalidParent))
+    const rejectedParentRun = run([
+      'merge-ocr-resume',
+      parentPath,
+      goodResumedPath,
+      '750000',
+    ])
+    assert.equal(rejectedParentRun.status, 1)
+    assert.equal(rejectedParentRun.stdout, '')
+    const rejectedParentLine = diagnostic(rejectedParentRun)
+    assert.equal(rejectedParentLine.rejection, 'budget_exhausted')
+    assert.equal(rejectedParentLine.observed_status, 'partial')
+    assert.equal(rejectedParentLine.completed, 1)
+    assert.equal(rejectedParentLine.failed, 1)
+    assert.equal(rejectedParentLine.resume, 'none')
   } finally {
     fs.rmSync(directory, { recursive: true, force: true })
   }
@@ -2931,8 +2952,8 @@ test('bounds diagnostic counters to allowlisted classes and safe counts', () => 
   }
   const providerFailure = { ...failed, classification: 'provider' }
   const line = buildOCRResultDiagnostic('plan-ocr-resume', {
-    observedStatus: 'partial',
     result: {
+      status: 'partial',
       manifest: {
         coverage: {
           selected: new Array(1_000_001),
@@ -2945,12 +2966,12 @@ test('bounds diagnostic counters to allowlisted classes and safe counts', () => 
   })
   assert.equal(line.selected, 1_000_000)
   assert.equal(line.completed, null)
-  assert.deepEqual(line.failure_classes, { provider: 1 })
+  assert.deepEqual(line.failure_classes, { other: 1, provider: 1 })
   assert.equal(line.rejection, null)
   assert.doesNotMatch(JSON.stringify(line), /provider_error|src\/timed-out/)
 
   const unknownLine = buildOCRResultDiagnostic('validate-ocr-result', {
-    observedStatus: 'paused',
+    result: { status: 'paused' },
     rejection: 'not_a_real_code',
     status: 'paused',
   })

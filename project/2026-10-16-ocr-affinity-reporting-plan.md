@@ -33,7 +33,7 @@ with a draft PR and settled automatic CI/actionable feedback.
 - Repository/worktree: `trees/ocr-affinity-reporting`.
 - Branch: `rs/ocr-affinity-reporting`; target: `v3`.
 - Starting target: `2b24fbca8b45d8c695fbcd8a98dbc75eebcf1917`.
-- PR: none yet.
+- PR: [OCR affinity and outcomes](https://github.com/uzh-bf/klicker-uzh/pull/6573).
 - Execution mode: standard; main model identity is not independently exposed.
 - Ceremony: full path, one cohesive workflow-reliability package.
 - Boundary owner: main session. Authority: approved implementation and draft
@@ -151,14 +151,12 @@ request no human reviewers. Use the standard draft description and PR monitor.
 
 ## Progress
 
-- Approved scope: user executable batch; plan hardening approved after one correction round.
-- Active work: both implementation slices complete; slice 2 and integrated reviews pending.
-- Completed: remote refresh, target resolution and clean worktree creation.
-- Tests: slice 1 passes 193 focused checks on pinned Node 24 (+1 config lifecycle contract); format and released-binary partial/resume qualification pass. Affinity and max reasoning, distinct adapter ports/tokens, lineage, coverage, and config restoration were verified.
-- Planning review: APPROVED; accepted explicit config lifecycle, actual resume proof, safe diagnostic protocols and exact ownership requirements.
-- Required delivery: task push and draft PR; achieved: local worktree only.
-- Timing: existing workflow/job timestamps analyzed read-only; no new instrumentation or job restructuring. Pending-time causes remain unresolved by timestamp metadata alone.
-- Tests: integrated 219 checks pass, including 20 offline qualification checks. Four result diagnostics tests and two adapter failure/summary tests extend existing seams; existing prose assertions in touched tests were replaced with structured rejection checks.
-- Slice 1 review: clear; native simplifier and scoped slice reviewer accepted the committed configuration lifecycle.
-- Remaining: slice 2 and integrated reviews,
-  draft delivery and automatic CI/feedback.
+- Approved scope: all four improvements; planner hardening approved after one correction round.
+- Completed: both implementation slices, read-only GitHub timing analysis, released-binary qualification, push and [draft PR](https://github.com/uzh-bf/klicker-uzh/pull/6573).
+- Integration: merged target `8e9b39c2b6386992466ab936f79e09db04a4dd01` into the task branch to resolve confirmed merge conflicts. Retained its interrupted-response continuation and `ocr_resume_incomplete` behavior; failure diagnostics count only rejected requests.
+- Verification: 220 focused Node checks and formatting pass after integration; released unmodified OCR 1.13.0 passes full and partial-to-resume mock qualification. Affinity, max reasoning, fresh ports/tokens, lineage, coverage and private configuration restoration are verified. No paid manual canary.
+- Reviews: slice 1 clear; slice 2 simplifier's redundant status option removed. Scoped slice 2 and integrated final reviews remain pending.
+- Feedback: corrected merge-rejection attribution to the failing result, derive resume state on rejected results, count unknown failure classes in a fixed `other` bucket, and reuse the same receipt text for cost and failure summaries.
+- Accounting and provider-call arithmetic, configured reasoning/budgets and current target retry policy remain unchanged. No new timing instrumentation or job restructuring.
+- Local checks: dependency-free workflow tests run on pinned Node 24. Full check/build hooks use the repository's no-install skip; hosted CI is pending. The existing helper lint errors and static parser warning remain baseline limitations.
+- Active work: commit/push integration, final review, then settle automatic CI and actionable feedback. Manual live proof requires a later trusted-default-branch run.
