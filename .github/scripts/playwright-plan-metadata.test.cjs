@@ -185,3 +185,20 @@ test('duplicate shard indices and unsafe reason codes fail closed', () => {
     /reason codes/
   )
 })
+
+test('deferred execution attests only the skip plan', () => {
+  const deferred = buildPlanMetadata(plan('skip'), {
+    route: 'hosted',
+    selectorPrState: 'deferred',
+  })
+  assert.equal(deferred.shouldRun, false)
+  assert.equal(deferred.selectorPrState, 'deferred')
+  assert.throws(
+    () =>
+      buildPlanMetadata(plan('selected'), {
+        route: 'hosted',
+        selectorPrState: 'deferred',
+      }),
+    /deferred execution must use the skip/
+  )
+})

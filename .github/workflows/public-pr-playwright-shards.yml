@@ -76,6 +76,7 @@ jobs:
           HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           PR_DRAFT: ${{ github.event.pull_request.draft }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PUBLIC_ROLLOUT_ENABLED: ${{ vars.PUBLIC_PR_ARM64_PLAYWRIGHT_ENABLED }}
           PUBLIC_ROLLOUT_CANARY_PR: ${{ vars.PUBLIC_PR_ARM64_PLAYWRIGHT_CANARY_PR }}

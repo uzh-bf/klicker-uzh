@@ -201,3 +201,30 @@ test('empty route hints use the automatic route', () => {
     assert.equal(route.route, 'public-pr')
   }
 })
+
+test('draft sync pull requests defer Playwright to the ready transition', () => {
+  const syncDraft = pullRequest({
+    prDraft: 'true',
+    headRef: 'sync/v3-into-v3-ai-0123456789',
+    smartDraftEnabled: 'true',
+  })
+  assert.deepEqual(choosePlaywrightRoute(syncDraft), {
+    schemaVersion: 1,
+    route: 'hosted',
+    selectorPrState: 'deferred',
+    reasonCodes: ['draft-sync-deferred', 'smart-draft-enabled'],
+  })
+
+  // Readiness, a fork head, or a branch outside the maintained sync pairs
+  // keeps the ordinary route decision.
+  for (const overrides of [
+    { prDraft: 'false' },
+    { headRepository: 'someone/klicker-uzh' },
+    { headRef: 'sync/v3-into-feature-0123456789' },
+    { headRef: 'sync/v3-into-v3-ai-manual-fix' },
+  ]) {
+    const route = choosePlaywrightRoute({ ...syncDraft, ...overrides })
+    assert.notEqual(route.selectorPrState, 'deferred')
+    assert.ok(!route.reasonCodes.includes('draft-sync-deferred'))
+  }
+})
