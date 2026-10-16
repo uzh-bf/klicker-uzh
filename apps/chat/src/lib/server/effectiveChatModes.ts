@@ -5,6 +5,7 @@ import {
   normalizeChatbotStandardModeConfig,
 } from '@klicker-uzh/util'
 import { DEFAULT_MODE_DESCRIPTIONS } from '@/src/lib/config/mode-descriptions'
+import type { ChatModeOption, ChatModeOptions } from '@/src/lib/config/modes'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
 
 export interface EffectiveChatModeOptions {
@@ -289,13 +290,14 @@ function getCustomModeDescription(mode: ChatbotCustomMode): string {
   return mode.description ?? mode.name
 }
 
-function getCustomModeOption(mode: ChatbotCustomMode): {
-  description: string
-  name?: string
-} {
+function getCustomModeOption(mode: ChatbotCustomMode): ChatModeOption {
   return {
     description: getCustomModeDescription(mode),
     name: mode.name,
+    ...(mode.welcomeMessage ? { welcomeMessage: mode.welcomeMessage } : {}),
+    ...(mode.starterPrompts?.length
+      ? { starterPrompts: mode.starterPrompts }
+      : {}),
   }
 }
 
@@ -304,7 +306,7 @@ export function resolveEffectiveChatModeOptions(
   mcpConfigurations: readonly ChatModeMCPConfiguration[],
   standardModeConfig: unknown = null,
   options: EffectiveChatModeOptions = {}
-): Record<string, { description: string; name?: string }> {
+): ChatModeOptions {
   const storedPrompts = asRecord(systemPrompts)
   const standardModes = Object.keys(DEFAULT_PROMPT)
   const customModesByKey = getApprovedCustomModesByKey(options.customModeConfig)
@@ -315,7 +317,7 @@ export function resolveEffectiveChatModeOptions(
   const candidates = Array.from(
     new Set([...standardModes, ...customModesByKey.keys(), ...storedModes])
   )
-  const modeOptions: Record<string, { description: string; name?: string }> = {}
+  const modeOptions: ChatModeOptions = {}
 
   for (const mode of candidates) {
     if (mode.trim().length === 0) continue

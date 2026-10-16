@@ -5115,6 +5115,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotCustomModePersonaText: 'Persona und Anweisungen',
       chatbotCustomModePersonaPlaceholder:
         'Beschreiben Sie, wie dieser Modus auf Teilnehmende antworten soll.',
+      chatbotCustomModeWelcomeMessage: 'Begrüssungstext',
+      chatbotCustomModeWelcomePlaceholder:
+        'Wird in einem leeren Chat für diesen Modus angezeigt. Leer lassen für die Standardbegrüssung.',
+      chatbotCustomModeStarterPrompts: 'Startervorschläge',
+      chatbotCustomModeStarterPromptsDescription:
+        'Wird in einem leeren Chat für diesen Modus als Vorschläge angezeigt. Höchstens {count} Starter; Teilnehmende entscheiden, ob sie sie senden.',
+      chatbotCustomModeStarterPrompt: 'Starter {number}',
+      chatbotCustomModeStarterPromptAdd: 'Starter hinzufügen',
       chatbotCustomModeAdd: 'Eigenen Modus hinzufügen',
       chatbotCustomModeRemove: 'Entfernen',
       chatbotCustomModesLimit:

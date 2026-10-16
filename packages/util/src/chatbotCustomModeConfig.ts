@@ -11,6 +11,9 @@ import {
   CHATBOT_CUSTOM_MODE_NAME_MAX_LENGTH,
   CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH,
   CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH,
+  CHATBOT_CUSTOM_MODE_STARTER_PROMPT_MAX_COUNT,
+  CHATBOT_CUSTOM_MODE_STARTER_PROMPT_MAX_LENGTH,
+  CHATBOT_CUSTOM_MODE_WELCOME_MESSAGE_MAX_LENGTH,
 } from './chatbotCustomModeLimits.js'
 
 export * from './chatbotCustomModeLimits.js'
@@ -80,6 +83,57 @@ function normalizePersonaText(
   }
 
   return normalized.length > 0 ? normalized : null
+}
+
+function normalizeWelcomeMessage(value: unknown): string | null {
+  if (value === undefined || value === null) return null
+  if (typeof value !== 'string') {
+    throw new Error('welcomeMessage must be a string or null')
+  }
+
+  const normalized = value.replace(/\r\n?/g, '\n').trim()
+  if (normalized.length > CHATBOT_CUSTOM_MODE_WELCOME_MESSAGE_MAX_LENGTH) {
+    throw new Error(
+      `welcomeMessage must be at most ${CHATBOT_CUSTOM_MODE_WELCOME_MESSAGE_MAX_LENGTH} characters long`
+    )
+  }
+
+  return normalized.length > 0 ? normalized : null
+}
+
+function normalizeStarterPrompt(value: unknown, index: number): string {
+  if (typeof value !== 'string') {
+    throw new Error(`starterPrompts entry ${index + 1} must be a string`)
+  }
+
+  const normalized = value.replace(/\r\n?/g, '\n').trim()
+  if (normalized.length === 0) {
+    throw new Error(`starterPrompts entry ${index + 1} must not be empty`)
+  }
+  if (normalized.length > CHATBOT_CUSTOM_MODE_STARTER_PROMPT_MAX_LENGTH) {
+    throw new Error(
+      `starterPrompts entry ${index + 1} must be at most ${CHATBOT_CUSTOM_MODE_STARTER_PROMPT_MAX_LENGTH} characters long`
+    )
+  }
+
+  return normalized
+}
+
+function normalizeStarterPrompts(value: unknown): string[] | null {
+  if (value === undefined || value === null) return null
+  if (!Array.isArray(value)) {
+    throw new Error('starterPrompts must be an array')
+  }
+  if (value.length > CHATBOT_CUSTOM_MODE_STARTER_PROMPT_MAX_COUNT) {
+    throw new Error(
+      `starterPrompts must contain at most ${CHATBOT_CUSTOM_MODE_STARTER_PROMPT_MAX_COUNT} entries`
+    )
+  }
+
+  const prompts = value.map((entry, index) =>
+    normalizeStarterPrompt(entry, index)
+  )
+  return prompts.length > 0 ? prompts : null
 }
 
 /** Mints a stable, opaque mode key; this is what messages persist. */
@@ -159,16 +213,66 @@ export function parseChatbotCustomModeConfigInput(
       )
     }
 
+    // An omitted welcome keeps the stored one, so a client that does not know
+    // this field cannot silently drop authored text; null or blank clears it.
+    const welcomeMessage =
+      entry.welcomeMessage === undefined
+        ? normalizeStoredWelcomeMessage(existingModes.get(key)?.welcomeMessage)
+        : normalizeWelcomeMessage(entry.welcomeMessage)
+
+    // Omitted starters keep the stored list, mirroring the welcome; null or an
+    // empty list clears it.
+    const starterPrompts =
+      entry.starterPrompts === undefined
+        ? readStarterPrompts(existingModes.get(key)?.starterPrompts)
+        : normalizeStarterPrompts(entry.starterPrompts)
+
     return {
       key,
       name: normalizeName(entry.name),
       description: normalizeDescription(entry.description),
       personaText,
+      ...(welcomeMessage !== null ? { welcomeMessage } : {}),
+      ...(starterPrompts !== null ? { starterPrompts } : {}),
     }
   })
 
   assertUniqueNames(modes)
   return { modes }
+}
+
+function normalizeStoredWelcomeMessage(value: unknown): string | null {
+  try {
+    return normalizeWelcomeMessage(value)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Tolerant counterpart of the strict starter validation: unusable entries are
+ * dropped instead of rejecting the value, and the order of the remaining
+ * entries is kept.
+ */
+function readStarterPrompts(value: unknown): string[] | null {
+  if (!Array.isArray(value)) return null
+
+  const prompts: string[] = []
+  for (const entry of value) {
+    if (prompts.length >= CHATBOT_CUSTOM_MODE_STARTER_PROMPT_MAX_COUNT) break
+    if (typeof entry !== 'string') continue
+
+    const normalized = entry.replace(/\r\n?/g, '\n').trim()
+    if (
+      normalized.length === 0 ||
+      normalized.length > CHATBOT_CUSTOM_MODE_STARTER_PROMPT_MAX_LENGTH
+    ) {
+      continue
+    }
+    prompts.push(normalized)
+  }
+
+  return prompts.length > 0 ? prompts : null
 }
 
 function normalizeStoredMode(value: unknown): ChatbotCustomMode | null {
@@ -179,6 +283,11 @@ function normalizeStoredMode(value: unknown): ChatbotCustomMode | null {
   if (key.length === 0) return null
 
   try {
+    // The presentation fields are tolerated in isolation: a malformed welcome
+    // or starter list must not hide an otherwise valid mode.
+    const welcomeMessage = normalizeStoredWelcomeMessage(value.welcomeMessage)
+    const starterPrompts = readStarterPrompts(value.starterPrompts)
+
     return {
       key,
       name: normalizeName(value.name),
@@ -187,6 +296,8 @@ function normalizeStoredMode(value: unknown): ChatbotCustomMode | null {
         value.personaText,
         CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH
       ),
+      ...(welcomeMessage !== null ? { welcomeMessage } : {}),
+      ...(starterPrompts !== null ? { starterPrompts } : {}),
     }
   } catch {
     return null
