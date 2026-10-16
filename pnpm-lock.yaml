@@ -2844,6 +2844,9 @@ importers:
 
   playwright:
     devDependencies:
+      '@jridgewell/trace-mapping':
+        specifier: ~0.3.31
+        version: 0.3.31
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../packages/prisma
@@ -2862,9 +2865,18 @@ importers:
       '@types/node':
         specifier: ^24.10.1
         version: 24.12.4
+      acorn:
+        specifier: ~8.16.0
+        version: 8.16.0
+      ast-v8-to-istanbul:
+        specifier: ~0.3.12
+        version: 0.3.12
       bcryptjs:
         specifier: ~2.4.3
         version: 2.4.3
+      istanbul-lib-coverage:
+        specifier: ~3.2.2
+        version: 3.2.2
       jose:
         specifier: ~5.9.4
         version: 5.9.4

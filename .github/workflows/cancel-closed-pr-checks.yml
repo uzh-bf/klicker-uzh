@@ -46,6 +46,8 @@ jobs:
             group: Check codebase
           - workflow: CodeQL
             group: CodeQL
+          - workflow: Experimental auth browser coverage
+            group: auth-browser-coverage
           - workflow: Test lightweight unit suites
             group: Test lightweight unit suites
           - workflow: Test graphql package logic functionalities
