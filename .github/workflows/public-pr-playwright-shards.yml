@@ -8,6 +8,13 @@ on:
         required: false
         type: string
         default: auto
+      allow_push_reuse:
+        description: >-
+          Caller accepts a reused merged pull-request validation for an
+          integration-branch push. Older callers reject any push reuse.
+        required: false
+        type: boolean
+        default: false
     outputs:
       duplicate_run_id:
         description: Successful equivalent PR validation run, when reused
@@ -152,9 +159,11 @@ jobs:
       - name: Reuse proven equivalent PR validation
         id: equivalent
         # Push validation of a non-v3 branch may reuse its ready pull request's
-        # proof; a pull-request lifecycle event that kept the merge input
-        # unchanged may reuse the same head's completed full run. Every other
-        # event runs normal validation.
+        # proof, and a v3-* integration push other than the staging source may
+        # reuse the run that tested the merged pull request's exact tree when
+        # the caller accepts it; a pull-request lifecycle event that kept the
+        # merge input unchanged may reuse the same head's completed full run.
+        # Every other event runs normal validation.
         if: >-
           (github.event_name == 'push' && github.ref != 'refs/heads/v3') ||
           (github.event_name == 'pull_request' && contains(fromJSON('["ready_for_review","edited","reopened"]'), github.event.action))
@@ -162,12 +171,16 @@ jobs:
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           CONTROL_SHA: ${{ job.workflow_sha }}
+          ALLOW_PUSH_REUSE: ${{ inputs.allow_push_reuse }}
+          STG_SOURCE_BRANCH: ${{ vars.STG_SOURCE_BRANCH }}
         with:
           script: |
             const fs = require('node:fs')
             await require('./.ci-control/.github/scripts/ci-equivalent-run.cjs').reportEquivalentRun({
               github, context, core, kind: 'playwright',
               controlSha: process.env.CONTROL_SHA,
+              allowPushReuse: process.env.ALLOW_PUSH_REUSE === 'true',
+              stagingSourceBranch: process.env.STG_SOURCE_BRANCH,
               plan: JSON.parse(fs.readFileSync('playwright-execution-plan.json', 'utf8')),
               route: JSON.parse(fs.readFileSync('route.json', 'utf8')).route,
             })
