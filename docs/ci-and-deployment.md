@@ -10,6 +10,8 @@ tags:
 
 # CI & Deployment
 
+For operators running their own instance, start with the public [self-hosting guide](../apps/docs/docs/self-hosting/overview.md). It separates the disposable evaluation stack from source-derived production requirements and documents the first-account/reference-data bootstrap gaps.
+
 **The deploy driver is ArgoCD** (confirmed with maintainers; the ArgoCD `Application`/sync trigger itself lives outside this repo). What IS in-repo: the chart (`deploy/charts/klicker-uzh-v3/` — internally still named `klicker-uzh-v2`, chart version drifted behind the repo version), per-env values (`deploy/env-uzh-stg`, `deploy/env-uzh-prd`), Stakater **Reloader** annotations (`reloader.stakater.com/auto: "true"`) so config/secret changes restart pods, and an ArgoCD **PreSync migration hook** that runs `prisma migrate deploy` before each rollout — enabled on stg and prd (see [Deployment migrations](#deployment-migrations)).
 
 ## Draft sync PR maintenance

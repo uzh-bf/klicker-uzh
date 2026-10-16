@@ -10,6 +10,8 @@ tags:
 
 # Getting Started
 
+For operators running their own instance, start with the public [self-hosting guide](../apps/docs/docs/self-hosting/overview.md). It separates the disposable evaluation stack from source-derived production requirements and documents the first-account/reference-data bootstrap gaps.
+
 **The one thing to get right first: use pnpm 11.** A stale pnpm major (e.g. a Volta shim serving 9.x because `VOLTA_FEATURE_PNPM` is unset) will install successfully but **silently rewrite `pnpm-lock.yaml`** (~380-line churn). Run `pnpm --version` and confirm `11.x` before installing; if the lockfile got churned, `git checkout pnpm-lock.yaml` and reinstall with pnpm 11.
 
 ## Toolchain (verified 2026-09-14)

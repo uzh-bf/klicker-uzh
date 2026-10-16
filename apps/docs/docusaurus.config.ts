@@ -81,6 +81,13 @@ const config: Config = {
       {
         redirects: [
           {
+            from: [
+              '/deployment/deployment_docker',
+              '/v2/deployment/deployment_docker',
+            ],
+            to: '/self-hosting/overview',
+          },
+          {
             from: '/tos',
             to: '/terms_of_service',
           },
@@ -234,6 +241,10 @@ const config: Config = {
         {
           title: 'Technical',
           items: [
+            {
+              label: 'Self-hosting',
+              to: '/self-hosting/overview',
+            },
             {
               label: 'System Status',
               href: 'https://klicker-uzh.betteruptime.com/',

@@ -8,20 +8,18 @@
 
 ![Klicker Screenshot Timeline](apps/docs/static/img/readme/question_pool_mac.png)
 
-KlickerUZH v3.0 uses multiple different web applications and services, which communicate with each other:
+KlickerUZH uses several applications and services:
 
-- [Frontend PWA](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/frontend-pwa) is the student frontend of KlickerUZH, which contains the student views for live quizzes, microlearnings, practice quizzes, leaderboards and more.
-- [Frontend Manage](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/frontend-manage) is the lecturer frontend of KlickerUZH, which provides all the functionalities that lecturers need, including but not limited to question management, activity management, course management and analytics.
-- [Frontend Control](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/frontend-control) is a minimal controller frontend, which allows to control live quizzes from mobile devices in an optimized layout. Soon, this app will also be available as a [PowerPoint integration](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/office-addin) (work in progress) for catalyst users.
-- [Fontend Authentication](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/auth) is the authentication frontend of KlickerUZH, providing login functionalities through Edu-ID accounts and delegated logins to the manage frontend.
-- [Backend Docker](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/backend-docker) is the main backend service of KlickerUZH.
-- [Backend Responses](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/func-incoming-responses) is a service that handles incoming student responses during a live quizzes and puts them into an Azure queue for improved load handling.
-- [Backend Response Processor](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/func-response-processor) accesses queued elements from the aforementioned service and processes them by computing scores and experience points, updating the cache, etc.
+- [Frontend PWA](apps/frontend-pwa) is the student interface for live quizzes, practice, microlearnings and course activities
+- [Frontend Manage](apps/frontend-manage) provides lecturer content, course and activity management
+- [Frontend Control](apps/frontend-control) is the optional mobile live-quiz controller
+- [Authentication](apps/auth) provides lecturer delegated login and optional Edu-ID authentication
+- [Backend](apps/backend-docker) serves GraphQL, authorization and real-time subscriptions
+- [Response API](apps/response-api) accepts live-quiz responses for asynchronous processing
+- [Response worker](apps/hatchet-worker-response-processor) and [general worker](apps/hatchet-worker-general) execute Hatchet workflows
+- PostgreSQL, Redis, Hatchet, media storage and email provide the supporting infrastructure
 
-In addition to the key application components, this repository also includes the codebases for our landing page and documentation at [www.klicker.uzh.ch](https://www.klicker.uzh.ch/), as well as deployment scripts for Helm/Kubernetes. An updated deployment documentation for self-hosting KlickerUZH v3.0 will be added until the end of the year.
-
-- [Documentation and Website](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/docs) (subfolder)
-- [Deployment](https://github.com/uzh-bf/klicker-uzh/tree/v3/deploy) (subfolder)
+Start with the [self-hosting overview](apps/docs/docs/self-hosting/overview.md) for the architecture, required and optional components, and current deployment limitations. The [documentation website](apps/docs) and [deployment artifacts](deploy) are also part of this repository.
 
 To share code more easily between different services, we added new packages to the [Package Directory](https://github.com/uzh-bf/klicker-uzh/tree/v3/packages) with the following components:
 
@@ -44,6 +42,7 @@ The KlickerUZH project is publicly managed and documented in this repository. A 
 The following resources might be of special interest to you:
 
 - [User Documentation](https://www.klicker.uzh.ch/getting_started/welcome)
+- [Self-hosting Guide](apps/docs/docs/self-hosting/overview.md)
 - [Engineering Wiki](docs/) (agent-facing, for working on this codebase)
 - [Frequently Asked Questions](https://www.klicker.uzh.ch/faq)
 - [Community and Discussions](https://community.klicker.uzh.ch/)
@@ -51,7 +50,13 @@ The following resources might be of special interest to you:
 
 ## Deployment
 
-This section is still work in progress as our architecture continues to experience minor changes and will be updated as soon as possible. If you would like to deploy an instance of the legacy KlickerUZH v2.0, please refer to the corresponding [Deployment Section](https://www.klicker.uzh.ch/v2/deployment/deployment_docker/) of the legacy docs.
+See the [self-hosting guide](apps/docs/docs/self-hosting/overview.md):
+
+- [Local evaluation](apps/docs/docs/self-hosting/evaluation.md): a self-contained devcontainer with synthetic data, local mail and Blob emulation
+- [Production deployment](apps/docs/docs/self-hosting/production.md): infrastructure, domain-specific builds, configuration, migrations and bootstrap gaps
+- [Operations](apps/docs/docs/self-hosting/operations.md): acceptance checks, backups, upgrades, security and troubleshooting
+
+The evaluation stack is not a production installer. A retained deployment still requires operator-managed infrastructure and first-account/reference-data provisioning. `deploy/compose` and the v2 chart are legacy artifacts; their S3/MinIO settings do not configure current v3 media storage.
 
 ## Contributing
 
