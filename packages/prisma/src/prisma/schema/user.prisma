@@ -83,6 +83,45 @@ enum Locale {
   de
 }
 
+enum AsyncTaskKind {
+  COURSE_DUPLICATION
+  KNOWLEDGE_GRAPH_GENERATION
+  QUESTION_GENERATION
+}
+
+enum AsyncTaskStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+model AsyncTask {
+  id String @id @default(uuid()) @db.Uuid
+
+  kind   AsyncTaskKind
+  status AsyncTaskStatus @default(QUEUED)
+
+  subjectId   String?
+  subjectName String
+  targetName  String?
+  resultId    String?
+  errorCode   String?
+
+  startedAt  DateTime?
+  finishedAt DateTime?
+  readAt     DateTime?
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId, status, createdAt])
+  @@index([ownerId, finishedAt])
+}
+
 model User {
   id String @id @default(uuid()) @db.Uuid
 
@@ -135,6 +174,7 @@ model User {
   chatbots                   Chatbot[]
   chatAccountUsages          ChatAccountUsage[]
   chatbotDisclaimers         ChatbotDisclaimer[]
+  asyncTasks                 AsyncTask[]
   revokedVerificationRecords VerifiableCredential[] @relation("RevokedVerifiableCredentials")
 
   userGroups                UserGroup[]         @relation("UserGroupMembers")

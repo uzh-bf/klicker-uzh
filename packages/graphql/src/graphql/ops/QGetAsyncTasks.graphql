@@ -1,0 +1,18 @@
+query GetAsyncTasks($trackedIds: [String!]!) {
+  asyncTaskAttentionCount
+  asyncTasks(trackedIds: $trackedIds) {
+    id
+    kind
+    status
+    subjectId
+    subjectName
+    targetName
+    resultId
+    errorCode
+    startedAt
+    finishedAt
+    readAt
+    createdAt
+    updatedAt
+  }
+}
