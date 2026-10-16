@@ -443,14 +443,33 @@ export async function verifyGuardQualification({
 }
 
 export async function main(env = process.env, argv = process.argv.slice(2)) {
+  let limits
+  if (argv.length && argv[0] !== '--initialize-budget')
+    throw budgetError('provider_guard_arguments_invalid')
+  if (argv.length > 1) {
+    const options = new Map([
+      [argv[1], argv[2]],
+      [argv[3], argv[4]],
+    ])
+    if (
+      argv.length !== 5 ||
+      options.get('--max-provider-micro-usd') !== '55000000' ||
+      options.get('--max-submitted-turns') !== '48'
+    )
+      throw budgetError('provider_guard_arguments_invalid')
+    limits = { maxProviderMicroUsd: 55_000_000, maxSubmittedTurns: 48 }
+  }
   const policy = validatePricingPolicy(
     JSON.parse(await readFile(env.KLICKER_EVAL_PRICING_FILE, 'utf8'))
   )
-  if (argv.length === 1 && argv[0] === '--initialize-budget') {
-    await initializeBudget(env.KLICKER_EVAL_BUDGET_FILE, fingerprint(policy))
+  if (argv[0] === '--initialize-budget') {
+    await initializeBudget(
+      env.KLICKER_EVAL_BUDGET_FILE,
+      fingerprint(policy),
+      limits
+    )
     return
   }
-  if (argv.length) throw budgetError('provider_guard_arguments_invalid')
   const ledger = await readBudgetLedger(env.KLICKER_EVAL_BUDGET_FILE)
   if (ledger.policyHash !== fingerprint(policy))
     throw budgetError('budget_policy_mismatch')

@@ -88,7 +88,13 @@ No version-sensitive library or framework behavior is changed.
 
 ## Progress
 
-Planning complete; baseline guard, trajectory and target suites passed all 47
-tests. Implementation is next. Source, hosted CI and required reviews remain
-pending. No real ledger or paid request has been created. Required delivery is a
-verified draft pull request; no pull request exists yet.
+Implementation is complete. The guard, trajectory and target suites passed all
+53 tests in a network-disabled Node 24.21.0 container. The test delta is six
+added cases in the existing suite, covering the four portfolio rows. Node
+syntax, Biome checks, Prettier and the focused static scan passed; the latter
+reported zero findings. Baseline coverage was 47 passing tests.
+
+The native planner and opposing-provider plan challenge approved the contract.
+Post-commit simplification, cost/data-integrity slice review, integrated final
+review and hosted CI remain pending. Required delivery is a verified draft pull
+request; none exists yet. No real ledger or paid request has been created.
