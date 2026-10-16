@@ -96,7 +96,14 @@ reported zero findings. Baseline coverage was 47 passing tests.
 
 The native planner and opposing-provider plan challenge approved the contract.
 Post-commit simplification consolidated two duplicated identity fixtures while
-retaining separate cases and all admission checks. The affected suite passed
-all 18 tests again. Cost/data-integrity slice review, integrated final review
-and hosted CI remain pending. [Draft PR 6576](https://github.com/uzh-bf/klicker-uzh/pull/6576)
-targets `v3`; its CI is queued. No real ledger or paid request has been created.
+retaining separate cases and all admission checks. Cost/data-integrity and
+integrated final reviews passed with no findings. The automated draft review
+then requested one source of truth for the fixed limit pair; the existing
+modules now share a frozen constant. All 53 focused tests and affected static
+checks passed again after that behavior-preserving correction.
+
+[Draft PR 6576](https://github.com/uzh-bf/klicker-uzh/pull/6576) targets `v3`.
+At the preceding head, codebase and unit CI passed, as did all eight browser
+shards. The summary status remained queued when its watcher was stopped before
+pushing the correction. Final-head CI and review-thread disposition are next.
+No real ledger or paid request has been created.

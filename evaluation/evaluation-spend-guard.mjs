@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url'
 import {
   assertBudgetCanStart,
   budgetError,
+  EXTENDED_BUDGET_LIMITS,
   fingerprint,
   initializeBudget,
   readBudgetLedger,
@@ -453,11 +454,13 @@ export async function main(env = process.env, argv = process.argv.slice(2)) {
     ])
     if (
       argv.length !== 5 ||
-      options.get('--max-provider-micro-usd') !== '55000000' ||
-      options.get('--max-submitted-turns') !== '48'
+      options.get('--max-provider-micro-usd') !==
+        String(EXTENDED_BUDGET_LIMITS.maxProviderMicroUsd) ||
+      options.get('--max-submitted-turns') !==
+        String(EXTENDED_BUDGET_LIMITS.maxSubmittedTurns)
     )
       throw budgetError('provider_guard_arguments_invalid')
-    limits = { maxProviderMicroUsd: 55_000_000, maxSubmittedTurns: 48 }
+    limits = EXTENDED_BUDGET_LIMITS
   }
   const policy = validatePricingPolicy(
     JSON.parse(await readFile(env.KLICKER_EVAL_PRICING_FILE, 'utf8'))
