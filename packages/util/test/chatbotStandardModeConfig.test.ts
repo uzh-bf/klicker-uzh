@@ -1,6 +1,7 @@
 import { Locale } from '@klicker-uzh/prisma/client'
 import { describe, expect, it } from 'vitest'
 import {
+  isChatbotStandardModeKey,
   normalizeChatbotStandardModeConfig,
   parseChatbotStandardModeConfigInput,
 } from '../src/chatbotStandardModeConfig.js'
@@ -139,5 +140,11 @@ describe('chatbot standard mode configuration', () => {
       explainerEnabled: true,
       quizzerEnabled: false,
     })
+  })
+
+  it('recognizes the standard modes case-sensitively', () => {
+    expect(isChatbotStandardModeKey('quizzer')).toBe(true)
+    expect(isChatbotStandardModeKey('Quizzer')).toBe(false)
+    expect(isChatbotStandardModeKey('case-interview')).toBe(false)
   })
 })

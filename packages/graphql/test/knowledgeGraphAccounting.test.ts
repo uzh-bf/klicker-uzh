@@ -1,24 +1,48 @@
 import { randomUUID } from 'node:crypto'
+import {
+  markKBGraphBuildDispatchFailed,
+  monitorActiveKBGraphBuilds,
+} from '@klicker-uzh/hatchet'
 import { hashKBContentDigestEntries } from '@klicker-uzh/knowledge-graph'
-import { prisma as prismaClient } from '@klicker-uzh/prisma'
+import {
+  prisma as prismaClient,
+  requireDisposableDatabase,
+} from '@klicker-uzh/prisma'
 import {
   KBGraphBuildStatus,
   KBGraphCostStatus,
   KBGraphQualityTier,
+  KBIngestionOperation,
   KBResourceMaterialType,
   KBResourceStatus,
   KBResourceType,
 } from '@klicker-uzh/prisma/client'
-import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 import {
   releaseKBGraphCostReservation,
   reserveKBGraphCost,
   settleKBGraphBuildCost,
 } from '../src/services/knowledgeGraphAccounting.js'
 
+vi.mock('@hatchet-dev/typescript-sdk', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@hatchet-dev/typescript-sdk')>()),
+  HatchetClient: { init: vi.fn().mockReturnValue({}) },
+}))
+
 const NOW = new Date('2026-08-15T19:30:00.000Z')
-const SOURCE_CONTENT_DIGEST =
-  '9b74c9897bac770ffc029102a200c5de11ba9dbd0e0f28c991eb64b0fb54d96e'
+const DEFAULT_RESOURCE_ID = 'a3a0ff71-3cdd-4f87-bdba-5661229a9e9a'
+const DEFAULT_CONTENT_SHA256 = 'a'.repeat(64)
+const SOURCE_CONTENT_DIGEST = hashKBContentDigestEntries([
+  { resourceId: DEFAULT_RESOURCE_ID, contentSha256: DEFAULT_CONTENT_SHA256 },
+])
 const LATE_RESOURCE_ID = '17af8b84-58bf-4a92-8f8b-197556ed98f4'
 const LATE_CONTENT_SHA256 =
   '2c26b46b68ffc68ff99b453c1d30413413422f164490f3d7c1d7d7d6d4b1f6b3'
@@ -60,6 +84,23 @@ async function createBuild({
   cleanupStartedAt?: Date | null
   cleanedAt?: Date | null
 } = {}) {
+  if (sourceContentDigest === SOURCE_CONTENT_DIGEST) {
+    await prisma.kBResource.upsert({
+      where: { id: DEFAULT_RESOURCE_ID },
+      create: {
+        id: DEFAULT_RESOURCE_ID,
+        kbId,
+        type: KBResourceType.URL,
+        title: 'Source fixture',
+        sourceUrl: 'https://content.example.org/source.pdf',
+        materialType: KBResourceMaterialType.COURSE_CONTENT,
+        status: KBResourceStatus.READY,
+        activeResourceVersion: 1,
+        activeContentSha256: DEFAULT_CONTENT_SHA256,
+      },
+      update: {},
+    })
+  }
   const buildId = randomUUID()
   const runId = `run-${buildId}`
   const graphmlBlobName = `knowledge-graphs/${buildId}.graphml`
@@ -155,8 +196,39 @@ function successfulResult({
   }
 }
 
+async function createSource({
+  sourceSha256 = 'f'.repeat(64),
+  resourceVersion = 1,
+}: {
+  sourceSha256?: string
+  resourceVersion?: number
+} = {}) {
+  const resourceId = randomUUID()
+  await prisma.kBResource.create({
+    data: {
+      id: resourceId,
+      kbId,
+      type: KBResourceType.URL,
+      title: 'Source fixture',
+      sourceUrl: 'https://content.example.org/source.pdf',
+      materialType: KBResourceMaterialType.COURSE_CONTENT,
+      status: KBResourceStatus.READY,
+      activeResourceVersion: resourceVersion,
+      activeContentSha256: sourceSha256,
+    },
+  })
+  return {
+    resourceId,
+    resourceVersion,
+    sourceContentDigest: hashKBContentDigestEntries([
+      { resourceId, contentSha256: sourceSha256 },
+    ]),
+  }
+}
+
 describe('KB graph cost accounting', () => {
   beforeEach(async () => {
+    await requireDisposableDatabase(prisma)
     ownerId = randomUUID()
     kbId = randomUUID()
     await prisma.user.create({
@@ -176,6 +248,7 @@ describe('KB graph cost accounting', () => {
   })
 
   afterEach(async () => {
+    await requireDisposableDatabase(prisma)
     await prisma.user.delete({ where: { id: ownerId } })
   })
 
@@ -334,6 +407,7 @@ describe('KB graph cost accounting', () => {
     ).resolves.toMatchObject({
       status: KBGraphBuildStatus.SUCCEEDED,
       costStatus: KBGraphCostStatus.SETTLED,
+      errorCode: null,
       actualCostMinorUnits: 60,
       actualInputTokens: 11,
       actualOutputTokens: 13,
@@ -524,7 +598,7 @@ describe('KB graph cost accounting', () => {
     ).resolves.toMatchObject({ activeGraphBuildId: null })
   })
 
-  it('settles a late success without publishing when the KB digest is stale', async () => {
+  it('releases a late success rejected because the KB digest is stale', async () => {
     await prisma.$transaction((tx) =>
       reserveKBGraphCost(tx, {
         ownerId,
@@ -568,13 +642,14 @@ describe('KB graph cost accounting', () => {
           allowLateSuccess: true,
         })
       )
-    ).resolves.toBe('SETTLED')
+    ).resolves.toBe('RELEASED')
 
     await expect(
       prisma.kBGraphBuild.findUniqueOrThrow({ where: { id: build.id } })
     ).resolves.toMatchObject({
       status: KBGraphBuildStatus.FAILED,
-      costStatus: KBGraphCostStatus.SETTLED,
+      costStatus: KBGraphCostStatus.RELEASED,
+      actualCostMinorUnits: 0,
       errorCode: 'KB_GRAPH_LATE_SUCCESS_STALE',
     })
     await expect(
@@ -583,6 +658,11 @@ describe('KB graph cost accounting', () => {
       activeGraphBuildId: null,
       publishedGraphBuildId: null,
     })
+    await expect(
+      prisma.kBGraphQuota.findUniqueOrThrow({
+        where: { ownerId_semesterKey: { ownerId, semesterKey: '2026-H2' } },
+      })
+    ).resolves.toMatchObject({ reservedMinorUnits: 0, settledMinorUnits: 0 })
   })
 
   it('settles a late success without publishing when a newer build exists', async () => {
@@ -769,7 +849,7 @@ describe('KB graph cost accounting', () => {
     ).resolves.toMatchObject({ costStatus: KBGraphCostStatus.RELEASED })
   })
 
-  it('settles metered non-success results without publishing the build', async () => {
+  it('releases metered failures without charging or replacing the published graph', async () => {
     await prisma.$transaction((tx) =>
       reserveKBGraphCost(tx, {
         ownerId,
@@ -778,6 +858,23 @@ describe('KB graph cost accounting', () => {
         now: NOW,
       })
     )
+    const { build: published } = await createBuild({
+      active: false,
+      status: KBGraphBuildStatus.SUCCEEDED,
+      costStatus: KBGraphCostStatus.SETTLED,
+    })
+    await prisma.kBGraphBuild.update({
+      where: { id: published.id },
+      data: { actualCostMinorUnits: 40 },
+    })
+    await prisma.kBGraphQuota.update({
+      where: { id: published.quotaId! },
+      data: { settledMinorUnits: 40 },
+    })
+    await prisma.kB.update({
+      where: { id: kbId },
+      data: { publishedGraphBuildId: published.id },
+    })
     const { build, runId, graphmlBlobName } = await createBuild()
     const failedResult = {
       ...successfulResult({ buildId: build.id, runId, graphmlBlobName }),
@@ -794,25 +891,39 @@ describe('KB graph cost accounting', () => {
           finishedAt: NOW,
         })
       )
-    ).resolves.toBe('SETTLED')
+    ).resolves.toBe('RELEASED')
+    await expect(
+      prisma.$transaction((tx) =>
+        settleKBGraphBuildCost(tx, {
+          buildId: build.id,
+          result: failedResult,
+          finishedAt: NOW,
+        })
+      )
+    ).resolves.toBe('DUPLICATE')
     await expect(
       prisma.kBGraphBuild.findUniqueOrThrow({ where: { id: build.id } })
     ).resolves.toMatchObject({
       status: KBGraphBuildStatus.FAILED,
-      costStatus: KBGraphCostStatus.SETTLED,
+      costStatus: KBGraphCostStatus.RELEASED,
       errorCode: 'KB_GRAPH_PROVIDER_FAILED',
-      actualCostMinorUnits: 60,
+      actualCostMinorUnits: 0,
+      actualInputTokens: 11,
+      actualOutputTokens: 13,
+      actualEmbeddingTokens: 7,
+      actualRequestCount: 2,
+      meteredCost: failedResult.metered_cost,
     })
     await expect(
       prisma.kBGraphQuota.findUniqueOrThrow({
         where: { ownerId_semesterKey: { ownerId, semesterKey: '2026-H2' } },
       })
-    ).resolves.toMatchObject({ reservedMinorUnits: 0, settledMinorUnits: 60 })
+    ).resolves.toMatchObject({ reservedMinorUnits: 0, settledMinorUnits: 40 })
     await expect(
       prisma.kB.findUniqueOrThrow({ where: { id: kbId } })
     ).resolves.toMatchObject({
       activeGraphBuildId: null,
-      publishedGraphBuildId: null,
+      publishedGraphBuildId: published.id,
     })
   })
 
@@ -902,5 +1013,366 @@ describe('KB graph cost accounting', () => {
     await expect(
       prisma.kB.findUniqueOrThrow({ where: { id: kbId } })
     ).resolves.toMatchObject({ publishedGraphBuildId: null })
+  })
+
+  describe('source freshness and concurrent settlement', () => {
+    type SourceFixture = Awaited<ReturnType<typeof createSource>>
+
+    async function reserveSourceBuild() {
+      await prisma.$transaction((tx) =>
+        reserveKBGraphCost(tx, {
+          ownerId,
+          qualityTier: KBGraphQualityTier.STANDARD,
+          env: costEnv,
+          now: NOW,
+        })
+      )
+    }
+
+    async function settleStaleSource(
+      mutate: (source: SourceFixture) => Promise<void>
+    ) {
+      await reserveSourceBuild()
+      const source = await createSource()
+      const { build, runId, graphmlBlobName } = await createBuild({
+        sourceContentDigest: source.sourceContentDigest,
+      })
+      await mutate(source)
+
+      await expect(
+        prisma.$transaction((tx) =>
+          settleKBGraphBuildCost(tx, {
+            buildId: build.id,
+            result: successfulResult({
+              buildId: build.id,
+              runId,
+              graphmlBlobName,
+              sourceContentDigest: source.sourceContentDigest,
+            }),
+            finishedAt: NOW,
+          })
+        )
+      ).resolves.toBe('SETTLED')
+
+      await expect(
+        prisma.kBGraphBuild.findUniqueOrThrow({ where: { id: build.id } })
+      ).resolves.toMatchObject({
+        status: KBGraphBuildStatus.SUPERSEDED,
+        costStatus: KBGraphCostStatus.SETTLED,
+        errorCode: 'KB_GRAPH_SOURCE_STALE',
+        statusMessage: expect.any(String),
+        actualCostMinorUnits: 60,
+      })
+      await expect(
+        prisma.kBGraphQuota.findUniqueOrThrow({
+          where: { ownerId_semesterKey: { ownerId, semesterKey: '2026-H2' } },
+        })
+      ).resolves.toMatchObject({
+        reservedMinorUnits: 0,
+        settledMinorUnits: 60,
+      })
+      await expect(
+        prisma.kB.findUniqueOrThrow({ where: { id: kbId } })
+      ).resolves.toMatchObject({
+        activeGraphBuildId: null,
+        publishedGraphBuildId: null,
+      })
+    }
+
+    it.each([
+      'SUCCEEDED',
+      'FAILED',
+    ] as const)('settles %s while an overlapping monitor attempts to time out the same build', async (status) => {
+      await reserveSourceBuild()
+      const source = await createSource()
+      const { build, runId, graphmlBlobName } = await createBuild({
+        sourceContentDigest: source.sourceContentDigest,
+      })
+      await prisma.kBGraphBuild.update({
+        where: { id: build.id },
+        data: { externalStartedAt: new Date(NOW.getTime() - 7200_000) },
+      })
+
+      let completionLocked!: () => void
+      let timeoutStarted!: () => void
+      const completionLock = new Promise<void>((resolve) => {
+        completionLocked = resolve
+      })
+      const timeoutStart = new Promise<void>((resolve) => {
+        timeoutStarted = resolve
+      })
+      // Hold completion's first lock until timeout reaches its first write.
+      // This forces the conflicting interleaving without timing-based sleeps.
+      let firstLock = true
+      async function rendezvous() {
+        if (firstLock) {
+          firstLock = false
+          completionLocked()
+          await timeoutStart
+        }
+      }
+      const completion = prisma.$transaction(async (tx) =>
+        settleKBGraphBuildCost(
+          {
+            ...tx,
+            $queryRaw: async (...args: Parameters<typeof tx.$queryRaw>) => {
+              const value = await tx.$queryRaw(...args)
+              if (
+                (args[0] as TemplateStringsArray)
+                  .join('')
+                  .includes('"public"."KB"')
+              ) {
+                await rendezvous()
+              }
+              return value
+            },
+            kBGraphBuild: {
+              ...tx.kBGraphBuild,
+              updateMany: async (
+                args: Parameters<typeof tx.kBGraphBuild.updateMany>[0]
+              ) => {
+                const updated = await tx.kBGraphBuild.updateMany(args)
+                await rendezvous()
+                return updated
+              },
+            },
+          } as unknown as typeof tx,
+          {
+            buildId: build.id,
+            result: {
+              ...successfulResult({
+                buildId: build.id,
+                runId,
+                graphmlBlobName,
+                sourceContentDigest: source.sourceContentDigest,
+              }),
+              ...(status === 'FAILED'
+                ? {
+                    status,
+                    error_code: 'KB_GRAPH_PROVIDER_FAILED',
+                    metered_cost: null,
+                    graphml_artifact: null,
+                  }
+                : {}),
+            },
+            finishedAt: NOW,
+          }
+        )
+      )
+      await completionLock
+      const logger = { error: vi.fn() }
+      const timeout = monitorActiveKBGraphBuilds({
+        prisma: {
+          ...prisma,
+          $transaction: (callback: (tx: unknown) => Promise<unknown>) =>
+            prisma.$transaction((tx) =>
+              callback({
+                ...tx,
+                $queryRaw: (...args: Parameters<typeof tx.$queryRaw>) => {
+                  timeoutStarted()
+                  return tx.$queryRaw(...args)
+                },
+                kBGraphBuild: {
+                  ...tx.kBGraphBuild,
+                  updateMany: async (
+                    args: Parameters<typeof tx.kBGraphBuild.updateMany>[0]
+                  ) => {
+                    const updated = await tx.kBGraphBuild.updateMany(args)
+                    timeoutStarted()
+                    return updated
+                  },
+                },
+              })
+            ),
+        } as never,
+        client: {
+          runs: {
+            get_status: vi.fn().mockResolvedValue('RUNNING'),
+            cancel: vi.fn().mockResolvedValue(undefined),
+          },
+        } as never,
+        env: { KB_GRAPH_TIMEOUT_SECONDS: '3600' },
+        now: () => NOW,
+        logger,
+      })
+      await expect(Promise.all([completion, timeout])).resolves.toEqual([
+        status === 'SUCCEEDED' ? 'SETTLED' : 'RELEASED',
+        undefined,
+      ])
+      expect(logger.error).not.toHaveBeenCalled()
+      await expect(
+        prisma.kBGraphBuild.findUniqueOrThrow({ where: { id: build.id } })
+      ).resolves.toMatchObject({
+        status,
+        costStatus:
+          status === 'SUCCEEDED'
+            ? KBGraphCostStatus.SETTLED
+            : KBGraphCostStatus.RELEASED,
+        actualCostMinorUnits: status === 'SUCCEEDED' ? 60 : null,
+      })
+      await expect(
+        prisma.kBGraphQuota.findUniqueOrThrow({
+          where: { ownerId_semesterKey: { ownerId, semesterKey: '2026-H2' } },
+        })
+      ).resolves.toMatchObject({
+        reservedMinorUnits: 0,
+        settledMinorUnits: status === 'SUCCEEDED' ? 60 : 0,
+      })
+      await expect(
+        prisma.kB.findUniqueOrThrow({ where: { id: kbId } })
+      ).resolves.toMatchObject({
+        publishedGraphBuildId: status === 'SUCCEEDED' ? build.id : null,
+      })
+    })
+
+    it.each([
+      'SUCCEEDED',
+      'FAILED',
+    ] as const)('settles a late metered %s while a replacement build fails dispatch', async (status) => {
+      await reserveSourceBuild()
+      await reserveSourceBuild()
+      const { build: published } = await createBuild({
+        active: false,
+        status: KBGraphBuildStatus.SUCCEEDED,
+        costStatus: KBGraphCostStatus.SETTLED,
+      })
+      await prisma.kB.update({
+        where: { id: kbId },
+        data: { publishedGraphBuildId: published.id },
+      })
+      const { build, runId, graphmlBlobName } = await createBuild({
+        active: false,
+        status: KBGraphBuildStatus.FAILED,
+        errorCode: 'KB_GRAPH_TIMEOUT',
+        createdAt: new Date(NOW.getTime() - 7200_000),
+      })
+      const { build: replacement } = await createBuild({
+        status: KBGraphBuildStatus.QUEUED,
+        createdAt: NOW,
+      })
+      await prisma.kBGraphBuild.update({
+        where: { id: replacement.id },
+        data: { externalOperationId: null },
+      })
+
+      let completionLocked!: () => void
+      let compensationStarted!: () => void
+      const completionLock = new Promise<void>((resolve) => {
+        completionLocked = resolve
+      })
+      const compensationStart = new Promise<void>((resolve) => {
+        compensationStarted = resolve
+      })
+      let firstLock = true
+      const completion = prisma.$transaction((tx) =>
+        settleKBGraphBuildCost(
+          {
+            ...tx,
+            $queryRaw: async (...args: Parameters<typeof tx.$queryRaw>) => {
+              const value = await tx.$queryRaw(...args)
+              if (firstLock) {
+                firstLock = false
+                completionLocked()
+                await compensationStart
+              }
+              return value
+            },
+          } as typeof tx,
+          {
+            buildId: build.id,
+            result: {
+              ...successfulResult({
+                buildId: build.id,
+                runId,
+                graphmlBlobName,
+              }),
+              ...(status === 'FAILED'
+                ? {
+                    status,
+                    error_code: 'KB_GRAPH_PROVIDER_FAILED',
+                    graphml_artifact: null,
+                  }
+                : {}),
+            },
+            allowLateSuccess: true,
+            finishedAt: NOW,
+          }
+        )
+      )
+      await completionLock
+      const compensation = markKBGraphBuildDispatchFailed(
+        { buildId: replacement.id },
+        {
+          ...prisma,
+          $transaction: (callback: (tx: unknown) => Promise<unknown>) =>
+            prisma.$transaction((tx) =>
+              callback({
+                ...tx,
+                $queryRaw: async (...args: Parameters<typeof tx.$queryRaw>) => {
+                  // Signal before waiting for KB, or after acquiring quota in
+                  // the former inverse order, to force the shared-row cycle.
+                  const locksKb = (args[0] as TemplateStringsArray)
+                    .join('')
+                    .includes('"public"."KB"')
+                  if (locksKb) compensationStarted()
+                  const value = await tx.$queryRaw(...args)
+                  if (!locksKb) compensationStarted()
+                  return value
+                },
+              })
+            ),
+        } as never
+      )
+      await expect(Promise.all([completion, compensation])).resolves.toEqual([
+        status === 'SUCCEEDED' ? 'SETTLED' : 'RELEASED',
+        undefined,
+      ])
+      await expect(
+        prisma.kBGraphQuota.findUniqueOrThrow({
+          where: { id: build.quotaId! },
+        })
+      ).resolves.toMatchObject({
+        reservedMinorUnits: 0,
+        settledMinorUnits: status === 'SUCCEEDED' ? 60 : 0,
+      })
+      await expect(
+        prisma.kBGraphBuild.findUniqueOrThrow({
+          where: { id: replacement.id },
+        })
+      ).resolves.toMatchObject({
+        status: KBGraphBuildStatus.FAILED,
+        costStatus: KBGraphCostStatus.RELEASED,
+      })
+      await expect(
+        prisma.kB.findUniqueOrThrow({
+          where: { id: kbId },
+        })
+      ).resolves.toMatchObject({
+        activeGraphBuildId: null,
+        publishedGraphBuildId: published.id,
+      })
+    })
+
+    it('withholds publication but retains metering after the served version was replaced', async () => {
+      await settleStaleSource(async ({ resourceId, resourceVersion }) => {
+        const replacedSha256 = '9'.repeat(64)
+        await prisma.kBResource.update({
+          where: { id: resourceId },
+          data: {
+            activeResourceVersion: resourceVersion + 1,
+            activeContentSha256: replacedSha256,
+          },
+        })
+      })
+    })
+
+    it('withholds publication but retains metering when the source is admitted for deletion', async () => {
+      await settleStaleSource(async ({ resourceId }) => {
+        await prisma.kBResource.update({
+          where: { id: resourceId },
+          data: { ingestionOperation: KBIngestionOperation.DELETE },
+        })
+      })
+    })
   })
 })
