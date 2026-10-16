@@ -129,15 +129,24 @@ no custom base URL and therefore still reaches the shared gateway. That
 key-only path intentionally receives neither the default exact-response bypass
 nor the default prompt-cache identity.
 
-For default requests, `POST` passes the final `systemPrompt`, requested
-deployment identity, transport family, and request tools (the MCP tools plus
-the Tutor and Quizzer `calculate` tool) to
-`buildPromptCacheRequest`. The helper hashes only a versioned canonical
-provider-visible projection with SHA-256, then emits the provider-safe
-`klicker:pc:v1:<50-hex-character-digest>` key and
-passes it to the OpenAI provider. Tool execution functions, MCP clients,
-participant/user/chatbot/thread/message/request identifiers, and raw tool-call
-identifiers are not identity inputs. Tool input examples are excluded because
+For default requests, `POST` passes the requested deployment identity,
+transport family, cache scope (chatbot, mode and thread) and request tools (the
+MCP tools plus the Tutor and Quizzer `calculate` tool) to
+`buildPromptCacheRequest`. The stable instructions stay in the request's
+`instructions`, and per-turn context sits in a message before the new user
+message, so the prefix of instructions and tools is identical for every thread
+of a chatbot and mode. The helper hashes a versioned canonical projection of
+the deployment, transport, chatbot, mode, provider-visible tools and a thread
+bucket with SHA-256, then emits the provider-safe
+`klicker:pc:v3:<50-hex-character-digest>` key and passes it to the OpenAI
+provider. The bucket is one of four values derived from a seeded hash of the
+thread id: threads share the cached prefix, a thread keeps its key on every
+turn, and a busy chatbot spreads its traffic over a few keys instead of
+pushing one key past the provider's per-key rate of about 15 requests per
+minute. The owner preview uses the fixed `owner-preview` thread scope. Tool
+execution functions, MCP clients, participant, user, message and request
+identifiers, raw thread ids and raw tool-call identifiers are not identity
+inputs. Tool input examples are excluded because
 neither OpenAI transport serializes them. Tool provider options are excluded
 for Chat Completions and limited to the OpenAI Responses options that reach the
 request. The rebuilt tools retain runtime execution, and the route supplies
@@ -298,9 +307,9 @@ conservative, because a missing class must never imply base usage.
 
 New chatbots use a fixed GPT-6 Luna policy by default: the owner projection
 contains one effective `gpt-6-luna` model and no reasoning entries. A registry
-without that BASE model keeps a single `auto` model instead. Staging sets
-`auto` as the automatic primary so existing automatic-selection chatbots
-exercise `auto-router-v2`; production keeps GPT-6 Luna. The strict owner-only
+without that BASE model keeps a single `auto` model instead. Staging and
+production set `auto` as the automatic primary, so existing automatic-selection
+chatbots use `auto-router-v2`. The strict owner-only
 `saveChatbotRevision` mutation uses its `modelPolicy` section to require exactly
 one active model for fixed mode, one supported reasoning effort when that model
 supports reasoning, and at least one active model plus valid reasoning entries
@@ -377,10 +386,15 @@ base-budget backfill and cohort evidence exist for it.
 Enforcement does not control class admission. Whether or not the switch is on,
 the participant and preview routes admit a candidate only when its usage class
 is entitled: the account-level AI approval opens the cost-free base class, and a
-cost-carrying advanced class additionally needs a non-blank cost center. Both
-deployed automatic primaries (GPT-6 Luna) are `BASE`, so an approved account
-without a cost center keeps its automatic default; only directly selected Sol
-models need the cost center.
+cost-carrying advanced class additionally needs the advanced subscription tier
+and a non-blank cost center. Setting a cost center grants the advanced tier
+([ADR 0020](./adr/0020-two-tier-chatbot-approval.md)). Both deployed automatic
+primaries (GPT-6 Luna) and `auto` are `BASE`, so an approved base-tier account
+keeps its automatic default; only directly selected Sol models need the
+advanced tier. Saving a chatbot revision rejects a newly added advanced model
+unless the owner has the advanced tier and a cost center, and the Manage model
+picker disables such models. AI access is checked at publication, so drafts can
+still be prepared without it.
 
 An account with no configured base budget receives the default
 `DEFAULT_BASE_CHAT_BUDGET_CREDITS` (`packages/util/src/chatUsage.ts`) for the
@@ -464,10 +478,10 @@ planning target, while the reset date is exact; in-flight requests may exceed
 the target. It is read-only for account owners, and it does not expose
 internal funding or provider details.
 
-On staging, the deployed Klicker Auto option is the LiteLLM `auto-router-v2`
-endpoint; production Auto still uses `auto-router`.
+On staging and production, the deployed Klicker Auto option is the LiteLLM
+`auto-router-v2` endpoint.
 The only in-repo record of its tier map is the comment above `modelRegistry`
-in `deploy/env-uzh-stg/values.yaml`: SIMPLE = `gpt-6-luna-high`, MEDIUM
+in `deploy/env-uzh-stg/values.yaml` and `deploy/env-uzh-prd/values.yaml`: SIMPLE = `gpt-6-luna-high`, MEDIUM
 = `gpt-6.1-sol-low`, COMPLEX = `gpt-6.1-sol-medium`, REASONING =
 `gpt-6.1-sol-high` (match_threshold 0.55). The v1 `auto-router` stays
 deployed with the same classifier and corpus (MEDIUM = `gpt-6-luna-xhigh`,
@@ -487,6 +501,12 @@ router's effort targets remain internal. Before 2026-09-29 the base model id
 was `gpt-5.6-luna`; migration `20260929120000_chat_gpt6_base_model` rewrote
 stored chatbot allow-lists, while historical message `modelId` values keep the
 id that answered.
+Migration `20261008120000_chat_drop_retired_model_ids` later removed the
+retired `gpt-4.1` and `gpt-5.4` ids from live and draft chatbot policies, so
+edits to those chatbots still pass registry validation.
+Migration `20261009120000_chat_drop_unregistered_model_ids` does the same for
+`gpt-4.1-mini` and `gpt-5.5`, which published chatbots still named although
+neither registry lists them.
 Both staging and production now use `auto` as the global automatic-model
 primary, so chatbots using automatic model selection use Auto by default.
 Chatbots with an explicit model selection can continue using that selection.
@@ -553,7 +573,7 @@ the target process. The committed KB_doc_query canary proves synthetic
 transport and persistence only; it must not be reported as FineCo quality or
 replace an authorized EXPERT_df_fineco_expert binding.
 
-For assistance-attribution checks, `apps/chat/scripts/run-tutor-trajectories.mjs`
+For assistance-attribution checks, `evaluation/run-tutor-trajectories.mjs`
 uses the same local target directly, without extending its single-message HTTP
 API. The corpus schema, per-turn verification and trajectory driver live in
 `apps/chat/scripts/tutor-trajectory.mjs`; the target module keeps transport. It follows actual persisted replies and parent IDs across a trajectory,
@@ -571,7 +591,7 @@ obligations to case IDs and one-based assessment turns without changing the
 strict trajectory schema. Pass it with `--numeric` so the runner rejects an
 obligation without a matching assessment turn before login. Annotate claims from visible responses, convert their
 units, then call `compareTutorNumericClaim` from
-`apps/chat/scripts/tutor-numeric-reference.mjs` with the formula, explicit
+`evaluation/tutor-numeric-reference.mjs` with the formula, explicit
 inputs, numeric claim and the sidecar's absolute tolerance. Rates are decimal
 fractions and cash flows use annual periods. Missing claims remain unassessed;
 a numerical match alone does not establish correct assistance attribution.
@@ -589,11 +609,11 @@ Run the script on the host against the exact routed synthetic runtime. Supply
 `KLICKER_EVAL_PARTICIPANT_USERNAME`, and `KLICKER_EVAL_PARTICIPANT_PASSWORD` through
 the existing local evaluation environment. Trust the local CA through
 `NODE_EXTRA_CA_CERTS` when using HTTPS; do not disable certificate verification.
-The default model is the fixed `gpt-6-luna` selection. Test `auto` separately
-through `KLICKER_EVAL_MODEL_ID`; it is not a controlled fixed-model comparison.
+The default model is the fixed `gpt-6-luna` selection. Auto routing remains
+unqualified for paid evaluation; an `auto` arm label does not select that route.
 
 ```sh
-node apps/chat/scripts/run-tutor-trajectories.mjs \
+node evaluation/run-tutor-trajectories.mjs \
   --corpus evaluation/data/trajectories/tutor-attribution-v2.json \
   --numeric evaluation/data/trajectories/tutor-attribution-v2-numeric.json \
   --output project/_local/tutor-baseline.jsonl --arm baseline --repeats 2 \
@@ -623,8 +643,9 @@ policy. The deployed LiteLLM configuration is external; a local summary proves
 the development path only, and staging still needs a Responses + tool-loop
 smoke test before a production compatibility claim.
 
-One account-level AI usage authorization, backed by an approved cost center,
-covers both model classes: the Phase 0 lifecycle foundations now store an
+One account-level AI usage authorization covers the base class; the advanced
+class additionally needs the advanced subscription tier and an approved cost
+center: the Phase 0 lifecycle foundations now store an
 account-scoped monthly budget and used-credit counter per `BASE` and
 `ADVANCED` class in `ChatAccountUsage`. Operations manages account-wide
 monthly budgets through the `ADMIN`-only mutation, while account owners see
@@ -730,15 +751,20 @@ use their platform-owned localized purpose descriptions in `src/components/mode-
 custom modes use their configured description.
 
 `src/lib/server/effectiveChatModes.ts` is the server-authoritative mode seam. It composes platform
-defaults with the nullable typed `Chatbot.standardModeConfig`, stored per-mode overrides, and
-custom modes. A valid typed value owns all three standard-mode flags and must keep Tutor or
+defaults with the nullable typed `Chatbot.standardModeConfig`, stored per-mode overrides, and the
+approved custom-mode configuration. Participant paths offer only the custom-mode keys the chatbot
+carries as approved configuration; the owner preview may additionally offer saved but unapproved
+modes. A valid typed value owns all three standard-mode flags and must keep Tutor or
 Explainer enabled; Quizzer is independent of that invariant. Tutor and Explainer do not require a
 knowledge base. A missing or malformed value derives all three flags from legacy `enabled: false`
 opt-outs and otherwise enables them, while a valid legacy value with only Tutor and Explainer flags
-derives Quizzer from its legacy opt-out/default. Custom-mode flags remain legacy-controlled. The
-resolver excludes modes that cannot satisfy
-the chatbot's required-MCP policy, and exposes Quizzer only with a provably restricted course
-`doc_query` binding. Exact Quizzer configuration shadows Tutor inheritance per MCP server,
+derives Quizzer from its legacy opt-out/default. Custom-mode flags remain
+legacy-controlled. The resolver never suppresses a mode chatbot-wide: a mode with
+no retrieval binding of its own stays offered, and a mode whose declared
+required binding is unavailable fails closed at request time instead of
+disappearing. Quizzer remains the capability-gated exception and appears only
+with a provably restricted course `doc_query` binding. Exact Quizzer
+configuration shadows Tutor inheritance per MCP server,
 including disabled exact rows; inherited optional bindings are narrowed to `doc_query`, while
 required single-tool aliases preserve their raw tool restriction and remain fail-closed. The
 layout, participant settings endpoint, chat request validation, and request-time MCP selection all
@@ -820,6 +846,18 @@ Reasoning rows use a brain icon, while tool rows use their current status icon; 
 leading icon slot so their labels share one column.
 Reasoning auto-opens only while active until the participant manually chooses an open state; that
 manual choice then wins.
+Participants see reasoning only for standard modes and for custom modes whose
+lecturer enabled `showReasoning`; an absent flag hides it, because a summary can
+paraphrase a role-play persona or withheld scenario facts. The server enforces
+this, not the UI: `isParticipantReasoningVisible` in
+`src/lib/server/effectiveChatModes.ts` decides per turn from the live approved
+mode config, the participant chat route then omits reasoning stream parts and the
+finish-metadata `reasoningContent`, and the thread-history route strips stored
+reasoning parts and `reasoningContent`. A custom-mode key that is no longer
+approved stays hidden. The provider request keeps `reasoningSummary: 'auto'` and
+the server still persists the summary, so reasoning effort, model behaviour,
+telemetry and owner preview are unchanged. The participant still sees the
+pending-turn dots until the first answer text arrives.
 The source-card section is derived from completed `doc_query` tool results but
 stays hidden for the full time the same assistant message is actively running,
 including after answer text begins. This lets the viewport follow the growing
@@ -832,10 +870,14 @@ aborted, and tool-only turns still show valid completed sources instead of
 losing them on reload. The source component suppresses the section when
 normalization produces no sources.
 Within that section, sources with a valid rendered citation appear under
-“Cited in this answer”. Other eligible sources remain available behind a
-collapsed “Other retrieved material” disclosure. With no citations, including
-tool-only turns, all source cards start collapsed. Grouping preserves original
-source indices and does not claim to identify every source the model used.
+“Cited in this answer”, previewed as the first 12 cited cards. The remaining
+cited cards and the uncited sources stay available behind a collapsed “Other
+retrieved material” disclosure, whose count covers everything it holds. With no
+citations, including tool-only turns, all source cards start collapsed.
+Grouping preserves original source indices and does not claim to identify every
+source the model used. Every cited card keeps its DOM target: a citation chip
+whose card sits in the collapsed disclosure opens it before scrolling to and
+focusing the card.
 The runtime render boundary is deliberately narrow: `RuntimeProvider` selects only the active
 thread's messages/running state and the actions it calls, while `Thread` renders its message rows
 through the assistant-ui 0.15 children renderer and passes the chatbot avatar through context. Runtime
@@ -1127,8 +1169,11 @@ Graph-assisted document search uses the native FalkorDB reader in
 It applies only to the student chat's configured KB document tool. A current,
 single published graph supplies at most six neighboring concept names from
 fixed, parameterized, one-hop queries. The original document query remains
-intact; at most one additional document query runs per tool instance. The
-adapter combines compatible `mode: documents` passages within 12 passages and
+intact; at most one additional document query runs per tool instance. Raw executions of each discovered document tool are serialized within the request-local client, including expanded queries. A slot is released only when the underlying provider operation settles; an outer expansion timeout does not release it. Queued cancelled calls are rejected before dispatch. Calls retain separate executions and results, without caching or retries. Top-level null/undefined results become a content-free execution error; valid empty results and nested nulls are preserved. An absent optional expansion retains authorized baseline evidence.
+
+The wrapper emits `[chat.graph_retrieval]` diagnostics with an allowlisted outcome, whether expansion was attempted, hint count, passage counts, output character count and total wrapper duration. Counts describe passage occurrences; unrecognized/unmeasured results use null rather than zero. Events contain no queries, labels, passages, identifiers or raw errors. Diagnostic failure cannot change retrieval or authorization. A `fused` outcome confirms compatible fusion, not improved source support or answer quality.
+
+The adapter combines compatible `mode: documents` passages within 12 passages and
 16,000 content characters, retaining provider source groups and locators. It
 protects the first three admitted baseline passages, then uses equal-weight
 reciprocal rank fusion with constant 60 for the remaining candidates. Contiguous
@@ -1321,7 +1366,11 @@ the normalizer unwraps that compatibility layer before applying the same rules. 
 pipeline's literal `"N/A"` as absent; it dedupes by file/page/url and normalized video range
 (`startSec`/`endSec`), so citations for different video ranges remain separate, then numbers what
 survives **1..N in first-appearance order across every doc_query call in one message**, capped at
-`MAX_SOURCES`. Two rules follow from that numbering and are easy to break independently:
+`MAX_SOURCES` (99, the largest two-digit marker the chip parser and `parseCitationHref` accept).
+Sources beyond the cap are not dropped: they stay in the model-facing projection with a null
+`citation_index`, so the model still reads their text but cannot cite them, and the prompt contract
+tells the model not to infer absence from a null index. Two rules follow from that numbering and
+are easy to break independently:
 
 Chatbot MCP configs are optional unless their existing `parameters` JSON contains the reserved
 runtime policy `{ "required": true, "toolAlias": "<name>" }`. A strict config must allow exactly
@@ -1340,7 +1389,14 @@ the chatbot MCP configuration: `{ "required": true, "toolAlias": "doc_query",
 configurations must contain at most one binding per stored mode, with one server
 ID and one normalized UUID across the chatbot. The selected effective mode must
 resolve exactly one matching binding; Quizzer may safely inherit Tutor's
-restricted `doc_query` binding under ADR 0021.
+restricted `doc_query` binding under ADR 0021. An approved custom mode inherits
+the required `doc_query` binding of Tutor or Explainer for the same server,
+retagged to the selected mode key, while an enabled exact binding for the custom
+mode itself takes precedence. A selected mode with no enabled `KB`
+configuration is not a scope violation: it resolves no retrieval scope, no
+scope token, and no KB server target, and serves without grounding. Scope
+isolation still requires one server ID and one normalized UUID across the
+chatbot's enabled `KB` configurations.
 Any malformed, missing, duplicate, conflicting, or misplaced `kb_id` fails as
 `503 REQUIRED_MCP_UNAVAILABLE` before provider or message work. A valid binding
 keeps the opaque bearer transport credential in `Authorization` and adds a
@@ -1350,6 +1406,21 @@ audience, key ID, and private key come from `DOC_QUERY_SCOPE_ISSUER`,
 `DOC_QUERY_SCOPE_AUDIENCE`, `DOC_QUERY_SCOPE_KID`, and
 `DOC_QUERY_SCOPE_PRIVATE_KEY`. Chatbots without an enabled `KB` binding and
 non-KB MCP servers retain their existing behavior.
+
+`attachKbToChatbot` keeps the stored retrieval rows aligned with the mode keys
+the chatbot has approved. It upserts the required `doc_query` row for Tutor and
+Explainer only, and derives the eligible custom-mode keys from the normalized
+approved `Chatbot.customModeConfig` — never from the legacy `systemPrompts` map
+or a pending revision. Enabled `KB` rows whose mode is outside Tutor, Explainer,
+an approved custom mode, and Quizzer are disabled as stale, so a removed mode
+cannot keep a binding. When the chatbot already has an enabled exact custom or
+Quizzer row, re-attaching repoints it to the new knowledge base; a disabled
+exact override is left untouched and is never re-enabled. No custom or Quizzer
+row is created: approved custom modes inherit the standard required binding at
+request time, including a mode approved after the attachment, so a new mode
+needs no re-attachment. The shared standard-mode key list lives in
+`packages/util/src/chatbotStandardModeConfig.ts` and is asserted against the
+runtime prompt registry by a chat test, so the two cannot drift silently.
 
 - `resolveCitationSource` resolves each expanded `[n]` only for `1 <= n <= N`. Anything outside
   that range stays literal text in the answer — which is the intended failure mode, not a bug.
@@ -1617,3 +1688,21 @@ grading, and util once before the four suites because
 import ([Testing](./testing.md)).
 
 > **Do not run `pnpm --filter @klicker-uzh/chat check` while the devcontainer dev stack is up.** `check` is `next typegen && tsc --noEmit`, and typegen rewrites the same `.next/` the running dev server owns: from the next `✓ Compiled` line onward every chat route returns a bare Next 404 with nothing in `/tmp/dev.log`, including routes that just served 200. It is not a code bug — restart with `devrouter ensure .` from the host. Typecheck before the browser pass, not during it.
+
+## Independent graph inputs
+
+The knowledge base owns RAG and graph projections with independently operated
+workflows. Klicker submits source references and expected raw content hashes;
+the graph worker extracts those sources through the document-processing service.
+It requires no ingestion reader, operation lookup or shared admission flag.
+Successful graph completion checks source freshness and pending deletion before
+publication while retaining measured costs. See
+[independent input ownership](./adr/canonical-ingestion-input-ownership.md).
+
+A dynamic URL can change between downloads. The expected-hash check rejects that
+input before graph generation but cannot recover earlier bytes; parsing may
+already have incurred cost. Producer-owned immutable raw snapshots and automatic
+parser-only freshness remain deferred. Parser changes require an explicit rebuild.
+The existing `chatbot-graphrag` GrowthBook flag and lecturer controls govern
+student graph retrieval. Map interaction and retrieval quality remain separate
+acceptance checks.

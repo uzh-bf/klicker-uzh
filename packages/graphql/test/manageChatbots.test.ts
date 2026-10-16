@@ -56,7 +56,12 @@ describe('Integration tests for lecturer chatbot management', () => {
     userTwoCtx = ctx2
     await prisma.user.updateMany({
       where: { id: { in: [userOneCtx.user.sub, userTwoCtx.user.sub] } },
-      data: { aiFeaturesEnabled: true },
+      // The built-in model registry classifies Auto as advanced.
+      data: {
+        aiFeaturesEnabled: true,
+        aiSubscriptionTier: 'ADVANCED',
+        aiChatbotCostCenter: 'KST-1',
+      },
     })
   })
 
@@ -514,6 +519,60 @@ describe('Integration tests for lecturer chatbot management', () => {
         },
       })
     }
+
+    it('rejects adding an advanced model the owner cannot use but keeps a saved one', async () => {
+      await prisma.user.update({
+        where: { id: userOneCtx.user.sub },
+        // Drafts need only the subscription, not AI access.
+        data: {
+          aiFeaturesEnabled: false,
+          aiSubscriptionTier: 'BASE',
+          aiChatbotCostCenter: null,
+        },
+      })
+      const chatbot = await seedOwnedChatbot()
+      const save = (
+        allowedModelIds: string[],
+        expectedRevisionVersion: number
+      ) =>
+        saveChatbotRevision(
+          {
+            chatbotId: chatbot.id,
+            expectedRevisionVersion,
+            input: {
+              modelPolicy: {
+                modelSelection: true,
+                allowedModelIds,
+                allowedReasoningEffortsByModel: [
+                  { modelId: 'gpt-6-luna', efforts: ['low', 'medium'] },
+                ],
+              },
+            },
+          },
+          userOneCtx
+        )
+
+      // The seeded policy already allows the advanced model, so keeping it
+      // stays saveable for a base-tier owner.
+      const kept = await save(
+        ['gpt-6-luna', 'gpt-4.1'],
+        chatbot.revisionVersion
+      )
+      expect(kept).toMatchObject({ allowedModelIds: ['gpt-6-luna', 'gpt-4.1'] })
+
+      const removed = await save(['gpt-6-luna'], kept!.revisionVersion)
+      await expect(
+        save(['gpt-6-luna', 'gpt-4.1'], removed!.revisionVersion)
+      ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+
+      await prisma.user.update({
+        where: { id: userOneCtx.user.sub },
+        data: { aiSubscriptionTier: 'ADVANCED', aiChatbotCostCenter: 'KST-1' },
+      })
+      await expect(
+        save(['gpt-6-luna', 'gpt-4.1'], removed!.revisionVersion)
+      ).resolves.toMatchObject({ allowedModelIds: ['gpt-6-luna', 'gpt-4.1'] })
+    })
 
     it('saves a fixed non-reasoning Auto policy without reasoning entries', async () => {
       const chatbot = await seedOwnedChatbot()

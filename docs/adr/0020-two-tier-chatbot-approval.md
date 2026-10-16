@@ -87,6 +87,21 @@ GPT-5.6 Luna from the deployed registries. GPT-6 Luna is therefore both the
 automatic primary and the only fallback. GPT-6.1 Sol joins as an `ADVANCED`
 model, and staging `Auto` routes through `auto-router-v2`.
 
+Amendment, 2026-10-13: the `ADVANCED` class needs the account's advanced
+subscription tier (`User.aiSubscriptionTier`) in addition to AI approval and a
+non-blank cost center. The tier is the grant; the cost center stays required
+because advanced usage is billed to it. Setting a cost center through the
+`ADMIN`-only mutation grants the advanced tier and clearing it returns the
+account to base, unless the same call names a tier. Migration
+`20261013120000_ai_tier_from_cost_center` grants the tier to every account that
+already had a cost center. `Auto` deliberately stays `BASE`: it is the
+sanctioned way for base-tier accounts to reach some Sol through routing, while
+directly selected Sol models need the advanced tier. Saving a chatbot revision
+rejects a newly added advanced model unless the owner has the advanced tier and
+a cost center, and Manage disables such models in the model picker. Models a
+chatbot already allows stay saveable so an owner can remove them. AI access is
+checked at publication, so drafts can still be prepared without it.
+
 The original design assigned one account-wide monthly budget per class to the
 lecturer. ADR 0041 supersedes that write ownership for the trusted pilot:
 operations manages each configured limit, which persists until an authorized
