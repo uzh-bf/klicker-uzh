@@ -137,21 +137,28 @@ Live proof of trusted workflow changes follows merge and separate authorization.
 
 ## Progress
 
-- Status: stage-cost slice implemented; committed-range reviews next.
+- Status: stage-cost slice committed; progress lifecycle implemented and verified.
 - Planning review: APPROVED after two rounds; accepted independent invocation
   reconciliation, separation of answer validity from usage completeness, explicit
   workflow wiring, and ownership/test-portfolio clarification.
 - Completed: remote-state refresh, worktree creation, source-boundary inspection;
   stage-tagged usage, expected-invocation reconciliation, reason codes and docs.
 - Baseline: all 182 existing focused tests passed.
-- Verification: 189 focused tests passed on pinned Node 24.21.0; syntax and
-  formatting passed. Test delta: seven new cases extending existing suites and
+- Verification: 192 focused tests passed on pinned Node 24.21.0; syntax and
+  formatting passed. Test delta: ten new cases extending existing suites and
   affected caller/CLI fixture assertions. No live provider tests were run.
 - Substantive slice size: 819 changed lines excluding the plan; 27 lines are
   matching CI documentation. Opengrep reported no findings, with three files
-  only partially parsed; this scanner limitation remains to be classified.
-- Remaining: cost slice simplification/privacy-accounting review; progress slice;
-  final review;
-  push, draft PR, and automatic CI/feedback.
+  only partially parsed. A recorded-baseline scan has the same three parser
+  limitations and no findings.
+- Simplification: accepted removal of an unused diagnostics-path override; the
+  supported environment-based destination remains unchanged. Accounting/privacy
+  review is in progress on the immutable first slice while main implements the
+  independent lifecycle change.
+- Progress lifecycle: controlled-clock tests cover quiet periods, filtering,
+  terminal idempotence and timer cleanup; subprocess tests cover normal/failing
+  exits, spawn failure, signals, broken sinks and unchanged private/result streams.
+- Remaining: disposition cost review; commit and review progress lifecycle;
+  integrated final review, push, draft PR, and automatic CI/feedback.
 - Delivery: source work authorized; no PR created yet.
-- Next action: commit the verified stage-cost slice and review its exact range.
+- Next action: finish committed-range review and deliver the verified package.

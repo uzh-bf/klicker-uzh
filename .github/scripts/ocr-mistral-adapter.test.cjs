@@ -20,6 +20,7 @@ const {
   estimateCost,
   buildCostReport,
   createProgressFilter,
+  createProgressReporter,
 } = require('./ocr-mistral-adapter.cjs')
 
 const ADAPTER = path.join(__dirname, 'ocr-mistral-adapter.cjs')
@@ -83,6 +84,96 @@ test('progress drops whole overlong records, resumes at newline and safely flush
     failed.write('[ocr]   ✔ file_read (1ms)\n')
     failed.end()
   })
+})
+
+test('progress heartbeats reflect quiet time and finish clears the timer exactly once', () => {
+  const records = []
+  let time = 100
+  let tick
+  let unrefs = 0
+  let clears = 0
+  const timer = { unref: () => unrefs++ }
+  const progress = createProgressReporter((line) => records.push(line), {
+    now: () => time,
+    setInterval(callback, ms) {
+      assert.equal(ms, 60000)
+      tick = callback
+      return timer
+    },
+    clearInterval(value) {
+      assert.equal(value, timer)
+      clears++
+    },
+  })
+  assert.equal(unrefs, 1)
+  time += 59999
+  tick()
+  assert.deepEqual(records, [])
+  time++
+  tick()
+  tick()
+  assert.deepEqual(records, [
+    'OCR progress event=heartbeat elapsed_ms=60000 idle_ms=60000\n',
+  ])
+  time += 30000
+  progress.write('[ocr]   ▶ file_read "OCR_PRIVATE_SENTINEL"\n')
+  time += 30000
+  progress.write('::error::OCR_PRIVATE_SENTINEL\n')
+  tick()
+  assert.equal(records.length, 2)
+  time += 30000
+  tick()
+  assert.equal(
+    records[2],
+    'OCR progress event=heartbeat elapsed_ms=150000 idle_ms=60000\n'
+  )
+  progress.write('[ocr]   ✔ file_read (1ms)')
+  progress.finish({ code: 0 })
+  const finished = records.slice()
+  assert.match(
+    records.at(-1),
+    /event=process_exited exit_code=0 signaled=false spawn_failed=false elapsed_ms=150000\n$/
+  )
+  progress.finish({ code: 7 })
+  progress.end()
+  progress.write('[ocr]   ✔ code_search (1ms)\n')
+  time += 60000
+  tick()
+  assert.deepEqual(records, finished)
+  assert.equal(clears, 1)
+  assert.equal(
+    records.filter((line) => line.includes('tool_completed')).length,
+    1
+  )
+  assert.doesNotMatch(records.join(''), /SENTINEL|::/)
+})
+
+test('heartbeat and terminal sink failures preserve lifecycle cleanup', () => {
+  let time = 0
+  let tick
+  let cleared = false
+  const progress = createProgressReporter(
+    () => {
+      throw new Error('OCR_PRIVATE_SENTINEL')
+    },
+    {
+      now: () => time,
+      setInterval(callback) {
+        tick = callback
+        return { unref() {} }
+      },
+      clearInterval() {
+        cleared = true
+      },
+    }
+  )
+  assert.doesNotThrow(() => {
+    time = 60000
+    tick()
+    progress.write('[ocr]   ✔ file_read (1ms)\n')
+    progress.finish({ failed: true })
+  })
+  assert.equal(cleared, true)
 })
 
 function costReceipt(overrides = {}) {
@@ -451,14 +542,16 @@ async function waitForListenerClose(url) {
 // Runs the CLI in a child with a bounded lifetime. A wedged child is asked to
 // stop with SIGTERM and then SIGKILL, and the promise always settles so a hung
 // invocation surfaces as a normal assertion instead of a hung test run.
-function runCli(args, env, { closeStdout = false } = {}) {
+function runCli(args, env, { closeStdout = false, liveProgress = false } = {}) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [ADAPTER, ...args], {
       env: { ...process.env, ...env },
+      stdio: liveProgress ? ['pipe', 'pipe', 'pipe', 'pipe'] : 'pipe',
     })
     if (closeStdout) child.stdout.destroy()
     let stdout = ''
     let stderr = ''
+    let live = ''
     let settled = false
     let termTimer
     let killTimer
@@ -475,18 +568,21 @@ function runCli(args, env, { closeStdout = false } = {}) {
     child.stderr.on('data', (chunk) => {
       stderr += chunk
     })
+    child.stdio[3]?.on('data', (chunk) => {
+      live += chunk
+    })
     child.on('close', (code, signal) =>
-      finish({ code, signal, stdout, stderr })
+      finish({ code, signal, stdout, stderr, live })
     )
     child.on('error', (error) =>
-      finish({ code: null, signal: null, stdout, stderr, error })
+      finish({ code: null, signal: null, stdout, stderr, live, error })
     )
     termTimer = setTimeout(() => {
       child.kill('SIGTERM')
       killTimer = setTimeout(() => {
         child.kill('SIGKILL')
         killTimer = setTimeout(
-          () => finish({ code: null, signal: 'SIGKILL', stdout, stderr }),
+          () => finish({ code: null, signal: 'SIGKILL', stdout, stderr, live }),
           2000
         )
       }, 2000)
@@ -2223,13 +2319,50 @@ test('run streams filtered progress before completion while preserving raw stder
         Buffer.from(finalLine),
       ])
     )
-    assert.equal(
+    assert.match(
       live,
-      'OCR progress event=tool_started tool=file_read\nOCR progress event=tool_completed tool=file_read\n'
+      /^OCR progress event=tool_started tool=file_read\nOCR progress event=tool_completed tool=file_read\nOCR progress event=process_exited exit_code=7 signaled=false spawn_failed=false elapsed_ms=\d+\n$/
     )
     assert.doesNotMatch(live, /SENTINEL|::/)
   } finally {
     clearTimeout(timeout)
+  }
+})
+
+test('live progress reports a quiet successful process and spawn failure without reflecting arguments', async () => {
+  for (const [argv, code, failed] of [
+    [
+      [process.execPath, '-e', 'process.stdout.write(\'{"ok":true}\')'],
+      0,
+      false,
+    ],
+    [
+      ['/OCR_PRIVATE_SENTINEL/absent', '::error::OCR_PRIVATE_SENTINEL'],
+      1,
+      true,
+    ],
+  ]) {
+    const result = await runCli(
+      ['run', '--', ...argv],
+      {
+        MISTRAL_API_KEY: 'synthetic-key',
+        OCR_ADAPTER_PROGRESS_FD: '3',
+      },
+      { liveProgress: true }
+    )
+    assert.equal(result.code, code)
+    assert.equal(result.stdout, failed ? '' : '{"ok":true}')
+    assert.equal(
+      result.stderr,
+      failed ? 'ocr-mistral-adapter: child_spawn_failed\n' : ''
+    )
+    assert.match(
+      result.live,
+      new RegExp(
+        `^OCR progress event=process_exited exit_code=${code} signaled=false spawn_failed=${failed} elapsed_ms=\\d+\\n$`
+      )
+    )
+    assert.doesNotMatch(result.live, /SENTINEL|::/)
   }
 })
 
@@ -2511,14 +2644,20 @@ test('run with live progress terminates its listener on SIGTERM', async () => {
         OCR_ADAPTER_DIAGNOSTICS_PATH: diagnosticsPath,
         OCR_ADAPTER_PROGRESS_FD: '3',
       },
+      stdio: ['ignore', 'pipe', 'pipe', 'pipe'],
     }
   )
   let stdout = ''
+  let live = ''
   child.stdout.on('data', (chunk) => {
     stdout += chunk
   })
+  child.stderr.resume()
+  child.stdio[3].on('data', (chunk) => {
+    live += chunk
+  })
   const exited = new Promise((resolve) => {
-    child.on('exit', (code, signal) => resolve({ code, signal }))
+    child.on('close', (code, signal) => resolve({ code, signal }))
     child.on('error', () => resolve({ code: null, signal: null }))
   })
   let timer
@@ -2535,6 +2674,11 @@ test('run with live progress terminates its listener on SIGTERM', async () => {
       }),
     ])
     assert.ok(!result.timeout, 'run did not exit after SIGTERM')
+    assert.equal(result.code, 1)
+    assert.match(
+      live,
+      /^OCR progress event=process_exited exit_code=1 signaled=true spawn_failed=false elapsed_ms=\d+\n$/
+    )
     assert.equal(
       fs.readFileSync(diagnosticsPath, 'utf8').trim().split('\n').length,
       1

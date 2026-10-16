@@ -1194,17 +1194,14 @@ async function callMistral(options = {}) {
   } finally {
     clearTimeout(timer)
     if (['preflight', 'topology'].includes(options.diagnosticsStage)) {
-      writeDiagnostics(
-        {
-          schema_version: 1,
-          stage: options.diagnosticsStage,
-          requests: diagnostics.requests,
-          ...Object.fromEntries(
-            COST_USAGE_FIELDS.map((field) => [field, diagnostics[field]])
-          ),
-        },
-        options.diagnosticsPath
-      )
+      writeDiagnostics({
+        schema_version: 1,
+        stage: options.diagnosticsStage,
+        requests: diagnostics.requests,
+        ...Object.fromEntries(
+          COST_USAGE_FIELDS.map((field) => [field, diagnostics[field]])
+        ),
+      })
     }
   }
 }
@@ -1343,10 +1340,8 @@ async function waitForClosed(url, deadlineMs) {
   }
 }
 
-function writeDiagnostics(
-  snapshot,
-  diagnosticsPath = process.env.OCR_ADAPTER_DIAGNOSTICS_PATH
-) {
+function writeDiagnostics(snapshot) {
+  const diagnosticsPath = process.env.OCR_ADAPTER_DIAGNOSTICS_PATH
   if (!diagnosticsPath) return
   try {
     fs.appendFileSync(diagnosticsPath, `${JSON.stringify(snapshot)}\n`, {
@@ -1675,6 +1670,59 @@ function createProgressFilter(write) {
   }
 }
 
+function createProgressReporter(write, options = {}) {
+  const now = options.now ?? (() => performance.now())
+  const schedule = options.setInterval ?? setInterval
+  const cancel = options.clearInterval ?? clearInterval
+  const started = now()
+  let lastProgress = started
+  let lastOutput = started
+  let finished = false
+  function emit(line, time = now()) {
+    lastOutput = time
+    try {
+      write(line)
+    } catch {
+      // Progress reporting must not change process results or private streams.
+    }
+  }
+  const filter = createProgressFilter((line) => {
+    lastProgress = now()
+    emit(line, lastProgress)
+  })
+  const timer = schedule(() => {
+    const time = now()
+    if (!finished && time - lastOutput >= 60000) {
+      emit(
+        `OCR progress event=heartbeat elapsed_ms=${Math.floor(time - started)} idle_ms=${Math.floor(time - lastProgress)}\n`,
+        time
+      )
+    }
+  }, 60000)
+  timer.unref?.()
+  return {
+    write(chunk) {
+      if (!finished) filter.write(chunk)
+    },
+    end() {
+      if (!finished) filter.end()
+    },
+    finish(result) {
+      if (finished) return
+      finished = true
+      cancel(timer)
+      filter.end()
+      const code =
+        Number.isInteger(result.code) && result.code >= 0 && result.code <= 255
+          ? result.code
+          : 1
+      emit(
+        `OCR progress event=process_exited exit_code=${code} signaled=${Boolean(result.signal)} spawn_failed=${Boolean(result.failed)} elapsed_ms=${Math.floor(now() - started)}\n`
+      )
+    },
+  }
+}
+
 async function commandRun(args) {
   const argv = args[0] === '--' ? args.slice(1) : args
   if (argv.length === 0) {
@@ -1701,7 +1749,7 @@ async function commandRun(args) {
   if (liveProgress) {
     // The workflow binds fd 3 to its console before redirecting fd 2 privately.
     // OCR receives neither this descriptor nor the option selecting it.
-    progress = createProgressFilter((line) => fs.writeSync(3, line))
+    progress = createProgressReporter((line) => fs.writeSync(3, line))
     stderrClosed = new Promise((resolve) => child.stderr.once('close', resolve))
     child.stderr.on('data', (chunk) => {
       process.stderr.write(chunk)
@@ -1731,23 +1779,26 @@ async function commandRun(args) {
     child.on('error', () => resolve({ failed: true }))
     child.on('exit', (code, signal) => resolve({ code, signal }))
   })
-  await adapter.close()
-  if (liveProgress) {
-    // A descendant can retain stderr after the review process exits. Bound
-    // the drain so that writer cannot hold the wrapper open indefinitely.
-    let drainTimer
-    try {
-      await Promise.race([
-        stderrClosed,
-        new Promise((resolve) => {
-          drainTimer = setTimeout(resolve, SHUTDOWN_DRAIN_TIMEOUT_MS)
-        }),
-      ])
-    } finally {
-      clearTimeout(drainTimer)
-      child.stderr.destroy()
-      progress.end()
+  try {
+    await adapter.close()
+    if (liveProgress) {
+      // A descendant can retain stderr after the review process exits. Bound
+      // the drain so that writer cannot hold the wrapper open indefinitely.
+      let drainTimer
+      try {
+        await Promise.race([
+          stderrClosed,
+          new Promise((resolve) => {
+            drainTimer = setTimeout(resolve, SHUTDOWN_DRAIN_TIMEOUT_MS)
+          }),
+        ])
+      } finally {
+        clearTimeout(drainTimer)
+        child.stderr.destroy()
+      }
     }
+  } finally {
+    progress?.finish(result)
   }
   if (result.failed) {
     throw new AdapterError(
@@ -1860,6 +1911,7 @@ module.exports = {
   estimateCost,
   buildCostReport,
   createProgressFilter,
+  createProgressReporter,
 }
 
 if (require.main === module) {

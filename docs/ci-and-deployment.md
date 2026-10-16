@@ -412,6 +412,12 @@ The adapter reconstructs only known event/tool/phase identifiers and bounded
 numeric counts; it discards arguments, paths, group/session identities, raw
 errors, unknown lines, and overlong records. Logging failures are best-effort,
 and the child receives neither the descriptor nor the option selecting it.
+While quiet, the wrapper emits a heartbeat no more than once per minute with
+elapsed and idle milliseconds. After cleanup it emits one `process_exited`
+event with the exit code and boolean signal/spawn-failure flags. This records
+process termination; validation and publication still determine review success.
+Its timer is unreferenced and cleared on exit, and all lifecycle events use the
+same filtered descriptor.
 The adapter cleans up at direct child exit, then drains stderr for at most one
 second before closing its read end. A descendant retaining the writer
 cannot hold the job open. This preserves final output and the direct child's exit
