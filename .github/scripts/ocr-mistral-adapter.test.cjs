@@ -151,7 +151,7 @@ test('cost estimates refuse incomplete, inconsistent or unsupported receipts', (
   }
 })
 
-test('cost summary CLI appends estimates, reports missing receipts and preserves success', async () => {
+test('cost summary CLI logs and appends the same report, preserving success when either sink fails', async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-cost-summary-'))
   try {
     const receiptPath = path.join(directory, 'receipt.jsonl')
@@ -159,11 +159,14 @@ test('cost summary CLI appends estimates, reports missing receipts and preserves
     const env = { GITHUB_STEP_SUMMARY: summaryPath }
     fs.writeFileSync(
       receiptPath,
-      JSON.stringify(costReceipt({ private_field: 'private-source-marker' }))
+      JSON.stringify(
+        costReceipt({ private_field: '::error::private-source-marker' })
+      )
     )
     let result = await runCli(['summary', receiptPath], env)
     assert.equal(result.code, 0)
     const summary = fs.readFileSync(summaryPath, 'utf8')
+    assert.equal(result.stdout, summary)
     assert.match(summary, /\$0\.8950/)
     assert.match(summary, /\$1\.8400/)
     assert.match(summary, /\$0\.9450/)
@@ -174,8 +177,13 @@ test('cost summary CLI appends estimates, reports missing receipts and preserves
       JSON.stringify(costReceipt({ missing_usage: 1 })),
     ]) {
       fs.writeFileSync(receiptPath, contents)
+      const previous = fs.readFileSync(summaryPath, 'utf8')
       result = await runCli(['summary', receiptPath], env)
       assert.equal(result.code, 0)
+      assert.equal(
+        result.stdout,
+        fs.readFileSync(summaryPath, 'utf8').slice(previous.length)
+      )
       assert.equal(
         fs.readFileSync(summaryPath, 'utf8').split('$0.8950').length,
         2
@@ -183,19 +191,23 @@ test('cost summary CLI appends estimates, reports missing receipts and preserves
     }
     result = await runCli(['summary', path.join(directory, 'absent')], env)
     assert.equal(result.code, 0)
+    assert.ok(result.stdout.length > 0)
+    assert.ok(fs.readFileSync(summaryPath, 'utf8').endsWith(result.stdout))
     assert.ok(fs.readFileSync(summaryPath, 'utf8').startsWith(summary))
     assert.doesNotMatch(
       fs.readFileSync(summaryPath, 'utf8'),
       /private-source-marker/
     )
-    assert.equal(
-      (
-        await runCli(['summary', receiptPath], {
-          GITHUB_STEP_SUMMARY: directory,
-        })
-      ).code,
-      0
-    )
+    fs.writeFileSync(receiptPath, JSON.stringify(costReceipt()))
+    result = await runCli(['summary', receiptPath], {
+      GITHUB_STEP_SUMMARY: directory,
+    })
+    assert.equal(result.code, 0)
+    assert.equal(result.stdout, summary)
+    const previous = fs.readFileSync(summaryPath, 'utf8')
+    result = await runCli(['summary', receiptPath], env, { closeStdout: true })
+    assert.equal(result.code, 0)
+    assert.equal(fs.readFileSync(summaryPath, 'utf8'), previous + summary)
     const zero = costReceipt(
       Object.fromEntries(
         Object.keys(costReceipt())
@@ -297,11 +309,12 @@ async function waitForListenerClose(url) {
 // Runs the CLI in a child with a bounded lifetime. A wedged child is asked to
 // stop with SIGTERM and then SIGKILL, and the promise always settles so a hung
 // invocation surfaces as a normal assertion instead of a hung test run.
-function runCli(args, env) {
+function runCli(args, env, { closeStdout = false } = {}) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [ADAPTER, ...args], {
       env: { ...process.env, ...env },
     })
+    if (closeStdout) child.stdout.destroy()
     let stdout = ''
     let stderr = ''
     let settled = false
