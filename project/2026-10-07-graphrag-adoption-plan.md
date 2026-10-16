@@ -1,5 +1,93 @@
 # Graph-assisted retrieval reliability and staging qualification
 
+## October 16: freeze held-out cases and complete the DeepEval migration — approved
+
+**Approval summary.** The user approved reviewing and freezing 24 held-out cases,
+qualifying exact matched-input generation without paid runs, and migrating the
+legacy quality functions to DeepEval before removing their custom judges. This
+extends the existing draft [Klicker #6478](https://github.com/uzh-bf/klicker-uzh/pull/6478).
+It adds no evaluation engine, core-framework change, dependency, ingestion/KG
+coupling or application behavior. Standard execution mode; private teaching
+sources and reviews stay on native trusted routes. All earlier spend and holds
+remain: CHF 19.83223885 of CHF 20, with zero additional paid dispatch authorized.
+
+**Source and freeze contract.** Main verifies complete script and guide bytes
+against the version-1 hashes in the existing source snapshot. Private artifacts
+live in ignored `project/_local/evaluation-holdout-20261016/`. Curate six
+single-document, six multi-document, four calculation/assumption and eight
+unsupported cases using actual source facts. Exclude every previously exposed
+concept family, including WACC/DCF, payback/NPV and quantum-algorithm absence.
+Each case needs question, facts-only reference, case class, concept/evidence
+family, exact support pages and quotes, source hashes and absence-review scope.
+Use native DeepEval `Golden` and `EvaluationDataset` JSON. A separate native
+source reviewer checks the candidate references against complete documents.
+Freeze only after corrections, preserving a hash manifest and development/holdout
+separation. Missing bytes or insufficient unexposed families blocks the freeze;
+retrieved snippets and test fixtures cannot substitute for complete sources.
+
+**Ownership and sequence.** Main owns source recovery, private case curation,
+freeze and the matched-generation seam. A native executor independently owns
+`evaluation/routing/src/routing_eval/{bench,pairwise,analyze}.py`, its existing
+`tests/{test_pairwise,test_routing_eval}.py`, routing README and routing skill,
+and new `evaluation/data/metrics/klicker_routing_quality.yaml` and
+`klicker_routing_pairwise.yaml` if required. The source reviewer reads candidate
+private artifacts only after curation. Main integrates docs, checks and draft
+publication. Source review/freeze depends on complete hash-qualified bytes;
+quality migration and matched-input qualification can proceed independently.
+
+**DeepEval migration.** Preserve useful capture, latency, usage and historical
+analysis. Convert saved benchmark answers to native framework QA records; run
+quality through the existing launcher and configured GEval metrics. Replace the
+custom blind judge with native `ArenaGEval`, `ArenaTestCase` and `Contestant` using
+the pinned framework's model factory and explicit YAML evaluation steps. Native
+Arena chooses a winner; legacy ties and 1–10 scores are not equivalent outputs.
+Keep native per-case results and errors rather than translating them into old
+scores. Remove obsolete prompts, verdict parsing, injected custom judging and
+their tests after replacement fake-judge tests pass. Existing reports stay intact.
+
+Arena and its tests run in `evaluation/framework/.venv` with its `src` on the
+import path, not the routing environment. `--check` must remain offline and never
+construct a judge or read credentials. Any future execution requires explicit
+opt-in and conservative request admission. Use
+`create_eval_model(enforce_zero_retries=True)` and explicit steps; native winner
+selection and reason rewriting consume at most two requests per case. Verify
+that bound and stop on the first failure. No judge call runs in this package.
+
+**Matched-generation contract.** Extend the existing
+`evaluation/scripts/prepare-graph-comparison.py` and preparation tests; add
+`evaluation/tests/test_matched_generation.py` only for the distinct HTTP contract.
+Freeze model, common system prompt, reasoning effort and reasoning-inclusive
+output cap. Validate every prepared arm's canonical input, hashes, ordered
+contexts and recomputed token counts before the first dispatch. The sender
+accepts an injected caller-owned client; it creates no provider client or paid
+CLI route. Disable retries and preserve the exact saved rendered user input in
+the request with the common system prompt. Record input and contract evidence
+alongside standard QA. The QA `question` stays the original common question,
+`retrieval_context` holds the actual arm passages, and `source_metadata` holds
+rendered input and its contract. Join references by case ID only after generation;
+Arena then sees common question/reference across differing arm contexts.
+
+Offline verification uses an ephemeral literal-loopback fake HTTP provider and
+synthetic references, with non-loopback access denied. Prove exact wire input,
+common system/model/effort/cap, no golden leakage, hash/tamper rejection before
+calls, failure stop without retry, native QA consumption and Arena compatibility.
+This establishes the sender seam, not real provider billing or native chatbot
+acceptance. Future paid calls still require price, budget and provider gates.
+
+**Test portfolio and stops.** Extend existing preparation/metric/routing contracts;
+replace custom pairwise tests with native fake-judge and request-bound contracts.
+Add the named HTTP test only for its distinct wire/failure behavior. Case prose
+and teaching content receive source review, not exact-string unit tests. Stop
+dependent work on changed historical hashes, wrong source hashes, insufficient
+family separation, missing dependencies, provider access or failed contracts.
+Finish independent authorized work if source freeze is blocked. No secret
+permission expansion, new route, workflow/build/activation/deployment, ready or
+merge action is included. Existing source reads use existing authenticated routes.
+
+**Progress.** Native plan challenge approved after adding single-attempt judge
+admission, the exact framework environment, and the common-question QA/Arena
+mapping. Main source qualification and native executor migration are in progress.
+
 ## October 16: offline evaluation preparation — approved
 
 The six-answer development comparison is complete. It does not establish a
