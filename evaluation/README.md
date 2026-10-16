@@ -19,10 +19,9 @@ canonical source mapping and persisted-history verification in
 `apps/chat/scripts/`. Generic import, assessment and reporting belong to the
 private framework; these app checks remain covered by Chat's focused tests.
 
-The framework compatibility change is coordinated with
-[framework draft MR 54](https://gitlab.uzh.ch/ai-infrastructure/evaluation/-/merge_requests/54).
-Land that change first, then reconcile this repository's framework pin to the
-final merged revision before landing the Klicker change.
+The pinned framework includes the trajectory-capture importer and the synthetic
+[Explainer compression regression and control](framework/examples/klicker/explainer-compression/README.md).
+These authored development cases do not authorize model calls or judge execution.
 
 ### Offline capture import
 
@@ -416,7 +415,7 @@ UV_OFFLINE=true uv run --frozen --offline \
 ```
 
 The harness requires the framework gitlink at revision
-e545dfcfa9979eddeae22197fd7c0f0b053049df.
+d4ee03e51566c3d8a847ff0daf28ad47332c8373.
 
 The harness invokes the real launcher from outside the repository, uses one
 temporary synthetic ground-truth case and output directory (including paths
