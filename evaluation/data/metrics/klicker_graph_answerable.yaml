@@ -1,0 +1,28 @@
+# Select for reviewed answerable cases, including failed or empty retrieval.
+- name: semantic_similarity
+  modes: [ground-truth]
+  threshold: 0.5
+  criteria: 'Assess correctness against the factual reference. A refusal or abstention does not answer an answerable question.'
+  evaluation_steps:
+    - 'Identify the essential facts in the expected answer.'
+    - 'Score whether the actual answer explains those facts without contradictions.'
+    - 'Give no credit for abstention, citation instructions or unsupported attribution that replaces an essential fact.'
+    - 'Ignore wording and formatting differences. Evaluate additional claims separately with the grounded-answer profile.'
+  evaluation_params: [INPUT, ACTUAL_OUTPUT, EXPECTED_OUTPUT]
+
+# These diagnose retrieved evidence, and are skipped when it is absent.
+- name: contextual_precision
+  type: contextual_precision
+  modes: [ground-truth]
+  threshold: 0.7
+  diagnostic: true
+- name: contextual_recall
+  type: contextual_recall
+  modes: [ground-truth]
+  threshold: 0.7
+  diagnostic: true
+- name: faithfulness
+  type: faithfulness
+  modes: [ground-truth, self-assessment]
+  threshold: 0.7
+  diagnostic: true
