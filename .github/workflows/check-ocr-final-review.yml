@@ -498,6 +498,10 @@ jobs:
             printf 'OCR stage=review exit=%s stdout_bytes=%s stderr_total_bytes=%s\n' \
               "${exit_code}" "$(wc -c <"${output_path}")" "$(wc -c <"${STDERR_PATH}")" \
               >>"${GITHUB_STEP_SUMMARY}"
+            if (( exit_code != 0 )); then
+              node .github/scripts/final-ai-review.js diagnose-ocr-failure \
+                "${output_path}" >/dev/null || true
+            fi
             return "${exit_code}"
           }
 
@@ -1126,6 +1130,10 @@ jobs:
             printf 'OCR stage=review exit=%s stdout_bytes=%s stderr_total_bytes=%s\n' \
               "${exit_code}" "$(wc -c <"${output_path}")" "$(wc -c <"${STDERR_PATH}")" \
               >>"${GITHUB_STEP_SUMMARY}"
+            if (( exit_code != 0 )); then
+              node .github/scripts/final-ai-review.js diagnose-ocr-failure \
+                "${output_path}" >/dev/null || true
+            fi
             return "${exit_code}"
           }
 

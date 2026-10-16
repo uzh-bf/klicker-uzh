@@ -1746,6 +1746,7 @@ function createProgressFilter(write) {
   const decoder = new StringDecoder('utf8')
   let pending = ''
   let dropping = false
+  let fatalEmitted = false
   function flush() {
     const line = pending.replace(/\r$/, '')
     if (!dropping) {
@@ -1783,6 +1784,18 @@ function createProgressFilter(write) {
         /^\[ocr\] (?:token budget reached|Token budget exceeded) \(/.test(line)
       ) {
         event = 'event=budget_reached'
+      } else if (!fatalEmitted && /^Error: /.test(line)) {
+        // A root fatal line carries untrusted CLI text; reduce it to fixed
+        // tokens and keep the diagnostic informational for every consumer.
+        const reviewFailed = /^Error: review failed(?::| \()/.test(line)
+        const marker =
+          /^Error: review failed \((budget|provider|timeout)\)(?::|$)/.exec(
+            line
+          )
+        const code = reviewFailed ? 'review_failed' : 'cli_failed'
+        const classification = marker ? marker[1] : 'unknown'
+        fatalEmitted = true
+        event = `event=cli_error code=${code} classification=${classification}`
       }
       if (event) {
         try {

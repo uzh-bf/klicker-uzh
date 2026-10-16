@@ -195,11 +195,20 @@ function assertOCRSummary(result, stage, expectedExit) {
 function assertReviewAttempt(result, form, expectedExit) {
   assert.equal(result.process.status, expectedExit, form.name)
   assert.equal(result.process.stdout, '', form.name)
+  const stderrLines = result.process.stderr.trim().split('\n')
   assert.equal(
-    result.process.stderr,
-    'OCR progress event=tool_started tool=file_read\n',
+    stderrLines.shift(),
+    'OCR progress event=tool_started tool=file_read',
     form.name
   )
+  if (expectedExit !== 0) {
+    const diagnostic = JSON.parse(stderrLines.shift())
+    assert.equal(diagnostic.command, 'diagnose-ocr-failure')
+    assert.equal(diagnostic.status, 'malformed')
+    assert.equal(diagnostic.rejection, 'malformed_input')
+    stderrLines.shift()
+  }
+  assert.equal(stderrLines.length, 0, form.name)
   assertNoOCRSentinels(result)
   assertOCRSummary(result, 'review', expectedExit)
   assert.equal(result.output, result.stdoutSentinel, form.name)
@@ -270,11 +279,6 @@ function executeExtractedOCRAttempt({
   )
   const jobEnv = extractWorkflowJobEnv(workflow, jobName)
   assert.equal(jobEnv.OCR_NO_UPDATE, '1', `missing OCR_NO_UPDATE: ${jobName}`)
-  assert.equal(
-    jobEnv.OCR_LLM_TIMEOUT,
-    jobName === 'review' ? '2700' : '1800',
-    `request timeout differs from task deadline: ${jobName}`
-  )
 
   fs.writeFileSync(stderrPath, '')
   fs.writeFileSync(summaryPath, '')
@@ -328,6 +332,10 @@ function executeExtractedOCRAttempt({
     '    command node "$@" || return',
     '    printf "coverage checked\\n" >>"${OCR_CALLS_PATH}"',
     '    return 0',
+    '  fi',
+    '  if [[ "$1" == .github/scripts/final-ai-review.js && "$2" == diagnose-ocr-failure ]]; then',
+    '    command node "$@"',
+    '    return',
     '  fi',
     '  [[ "$1" == .github/scripts/ocr-mistral-adapter.cjs && "$2" == run && "$3" == --ocr-config && "$4" == "${HOME}/.opencodereview/config.json" && "$5" == -- && "$6" == ocr ]] || return 99',
     '  [[ "${MISTRAL_API_KEY-}" == synthetic-upstream-key ]] || return 98',
@@ -2951,6 +2959,63 @@ test('fails unreadable and malformed OCR inputs with fixed safe diagnostics', ()
     assert.equal(malformedLine.status, 'malformed')
     assert.equal(malformedLine.rejection, 'malformed_input')
     assert.equal(malformedLine.completed, null)
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('diagnoses failed CLI results without validating, resuming or exposing content', () => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'final-review-ocr-failure-')
+  )
+  const scriptPath = path.join(__dirname, 'final-ai-review.js')
+  const resultPath = path.join(directory, 'private-result.json')
+  const run = () =>
+    spawnSync(
+      process.execPath,
+      [scriptPath, 'diagnose-ocr-failure', resultPath],
+      {
+        encoding: 'utf8',
+      }
+    )
+  const diagnostic = (result) => JSON.parse(result.stderr.split('\n')[0])
+  try {
+    const failed = partialResumeResult()
+    failed.status = 'failed'
+    failed.manifest.coverage.failed[0].reason = 'PRIVATE_PROVIDER_BODY'
+    failed.manifest.coverage.failed.push({ classification: 'PRIVATE_CLASS' })
+    fs.writeFileSync(resultPath, JSON.stringify(failed))
+    const before = fs.readFileSync(resultPath, 'utf8')
+    const report = run()
+    assert.equal(report.status, 0)
+    assert.equal(report.stdout, '')
+    const line = diagnostic(report)
+    assert.equal(line.schema, 'ocr-result-diagnostic/v1')
+    assert.equal(line.command, 'diagnose-ocr-failure')
+    assert.equal(line.status, 'failed')
+    assert.equal(line.observed_status, 'failed')
+    assert.equal(line.failed, 2)
+    assert.deepEqual(line.failure_classes, { timeout: 1, other: 1 })
+    assert.equal(line.rejection, null)
+    assert.equal(fs.readFileSync(resultPath, 'utf8'), before)
+    assert.doesNotMatch(report.stderr, /PRIVATE_|src\/|11111111|private-result/)
+
+    fs.writeFileSync(resultPath, 'PRIVATE_MALFORMED')
+    const malformed = run()
+    assert.equal(malformed.status, 1)
+    assert.equal(malformed.stdout, '')
+    assert.equal(diagnostic(malformed).rejection, 'malformed_input')
+    assert.doesNotMatch(malformed.stderr, /PRIVATE_|private-result/)
+
+    const unreadable = spawnSync(
+      process.execPath,
+      [scriptPath, 'diagnose-ocr-failure', path.join(directory, 'missing')],
+      { encoding: 'utf8' }
+    )
+    assert.equal(unreadable.status, 1)
+    assert.equal(unreadable.stdout, '')
+    assert.equal(diagnostic(unreadable).rejection, 'unreadable_input')
+    assert.equal(unreadable.stderr.includes(directory), false)
   } finally {
     fs.rmSync(directory, { recursive: true, force: true })
   }

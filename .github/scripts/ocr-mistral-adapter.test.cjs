@@ -45,6 +45,12 @@ test('progress reconstructs known events without reflecting private fields or wo
       '[ocr] Review filter: failed to parse LLM response, raw: OCR_PRIVATE_SENTINEL',
       '::error::OCR_PRIVATE_SENTINEL',
       'reasoning: OCR_PRIVATE_SENTINEL',
+      'Error: review failed (timeout): OCR_PRIVATE_SENTINEL https://provider.invalid/v1 OCR_PRIVATE_TOKEN',
+      '[ocr]   Error: MCP transport failed: OCR_PRIVATE_SENTINEL',
+      '  Error: review failed (provider): OCR_PRIVATE_SENTINEL',
+      'continuation Error: review failed (budget): OCR_PRIVATE_SENTINEL',
+      'Error: review failed (provider): OCR_PRIVATE_SENTINEL',
+      'Error: OCR_PRIVATE_SENTINEL',
     ].join('\r\n') + '\n'
   for (const byte of Buffer.from(raw)) progress.write(Buffer.from([byte]))
   progress.end()
@@ -57,6 +63,7 @@ test('progress reconstructs known events without reflecting private fields or wo
     'OCR progress event=phase_completed phase=filtering\n',
     'OCR progress event=budget_reached\n',
     'OCR progress event=review_finished files=5 findings=2 tokens=1234\n',
+    'OCR progress event=cli_error code=review_failed classification=timeout\n',
   ])
   assert.doesNotMatch(records.join(''), /OCR_PRIVATE_SENTINEL|::/)
 })
@@ -77,6 +84,17 @@ test('progress drops whole overlong records, resumes at newline and safely flush
   assert.deepEqual(records, [
     'OCR progress event=tool_completed tool=file_find\n',
   ])
+  const bounded = createProgressFilter((line) => records.push(line))
+  bounded.write('Error: ' + 'x'.repeat(4096))
+  bounded.write('\n')
+  assert.deepEqual(records.slice(1), [])
+  bounded.write('Error: review fail')
+  bounded.write('ed (provider): OCR_PRIVATE_SENTINEL')
+  bounded.end()
+  assert.deepEqual(records.slice(1), [
+    'OCR progress event=cli_error code=review_failed classification=provider\n',
+  ])
+  assert.doesNotMatch(records.join(''), /SENTINEL/)
   const failed = createProgressFilter(() => {
     throw new Error('synthetic log sink unavailable')
   })
@@ -84,6 +102,40 @@ test('progress drops whole overlong records, resumes at newline and safely flush
     failed.write('[ocr]   ✔ file_read (1ms)\n')
     failed.end()
   })
+})
+
+test('progress classifies fatal CLI roots with fixed tokens and refuses non-root lookalikes', () => {
+  const cases = [
+    [
+      'Error: review failed (budget): OCR_PRIVATE_SENTINEL\n',
+      'OCR progress event=cli_error code=review_failed classification=budget\n',
+    ],
+    [
+      'Error: review failed (capacity): OCR_PRIVATE_SENTINEL\n',
+      'OCR progress event=cli_error code=review_failed classification=unknown\n',
+    ],
+    [
+      'Error: review failed without a marker: OCR_PRIVATE_SENTINEL\n',
+      'OCR progress event=cli_error code=cli_failed classification=unknown\n',
+    ],
+    [
+      'Error: review failed (timeout) trailing text: OCR_PRIVATE_SENTINEL\n',
+      'OCR progress event=cli_error code=review_failed classification=unknown\n',
+    ],
+    [
+      'Error: OCR_PRIVATE_SENTINEL\n',
+      'OCR progress event=cli_error code=cli_failed classification=unknown\n',
+    ],
+    ['[ocr]   Error: review failed (timeout): OCR_PRIVATE_SENTINEL\n', ''],
+  ]
+  for (const [line, expected] of cases) {
+    const records = []
+    const progress = createProgressFilter((record) => records.push(record))
+    progress.write(line)
+    progress.end()
+    assert.deepEqual(records, expected ? [expected] : [], line)
+    assert.doesNotMatch(records.join(''), /SENTINEL|::/)
+  }
 })
 
 test('progress heartbeats reflect quiet time and finish clears the timer exactly once', () => {
@@ -2542,6 +2594,8 @@ test('run strips the upstream key and injects the OCR environment', async () => 
 test('run streams filtered progress before completion while preserving raw stderr, JSON and exit status', async (t) => {
   const rawLine = '[ocr]   ▶ file_read "OCR_PRIVATE_SENTINEL"\n'
   const finalLine = '[ocr]   ✔ file_read (1ms)'
+  const fatalLine =
+    'Error: review failed (timeout): OCR_PRIVATE_SENTINEL https://provider.invalid/v1\n'
   const script = `
     const fs = require('node:fs')
     const first = Buffer.from(${JSON.stringify(rawLine)})
@@ -2552,6 +2606,7 @@ test('run streams filtered progress before completion while preserving raw stder
       let inherited = false
       try { fs.writeSync(3, 'OCR_CHILD_FD_SENTINEL'); inherited = true } catch {}
       fs.writeSync(2, Buffer.from([255, 254, 10]))
+      fs.writeSync(2, ${JSON.stringify(fatalLine)})
       fs.writeSync(2, ${JSON.stringify(finalLine)})
       fs.writeSync(1, JSON.stringify({
         ok: true, inherited,
@@ -2625,12 +2680,13 @@ test('run streams filtered progress before completion while preserving raw stder
       Buffer.concat([
         Buffer.from(rawLine),
         Buffer.from([255, 254, 10]),
+        Buffer.from(fatalLine),
         Buffer.from(finalLine),
       ])
     )
     assert.match(
       live,
-      /^OCR progress event=tool_started tool=file_read\nOCR progress event=tool_completed tool=file_read\nOCR progress event=process_exited exit_code=7 signaled=false spawn_failed=false elapsed_ms=\d+\n$/
+      /^OCR progress event=tool_started tool=file_read\nOCR progress event=cli_error code=review_failed classification=timeout\nOCR progress event=tool_completed tool=file_read\nOCR progress event=process_exited exit_code=7 signaled=false spawn_failed=false elapsed_ms=\d+\n$/
     )
     assert.doesNotMatch(live, /SENTINEL|::/)
   } finally {

@@ -450,6 +450,14 @@ event with the exit code and boolean signal/spawn-failure flags. This records
 process termination; validation and publication still determine review success.
 Its timer is unreferenced and cleared on exit, and all lifecycle events use the
 same filtered descriptor.
+Fatal CLI lines produce at most one fixed `cli_error` event per process with
+`review_failed` or `cli_failed` and an allowlisted classification
+(`budget`, `provider`, `timeout`, or `unknown`). Arbitrary error messages and
+continuation lines remain private. On nonzero CLI exit, the manual attempt
+functions also call `diagnose-ocr-failure` to emit content-free coverage counts
+and failure classes from any result JSON. Missing or malformed output produces
+fixed safe diagnostics. This reporting never validates or resumes the result,
+and a reporting failure preserves the original CLI exit status.
 The adapter cleans up at direct child exit, then drains stderr for at most one
 second before closing its read end. A descendant retaining the writer
 cannot hold the job open. This preserves final output and the direct child's exit
@@ -471,6 +479,14 @@ at concurrency eight, two and one; changing concurrency alone did not reduce
 total tokens for completed runs. Budget-exhausted synthetic results remained
 rejected by the existing validation and resume gates. This offline evidence does
 not establish live cache savings or completion within the configured allowance.
+
+OCR's HTTP request deadline is separate from its per-task `--timeout` in minutes.
+The manual jobs set `OCR_LLM_TIMEOUT` in seconds to match their existing task
+deadlines: 2700 for individual reviews and 1800 for stack code reviews, including
+resumed attempts. Without an explicit setting, OCR 1.13.0 defaults requests to
+five minutes. Task, adapter, cleanup and job ceilings still apply. Draft reviews
+retain their explicit 480-second HTTP deadline. These settings do not change
+reasoning, token limits, accounting or retry behavior.
 
 The draft, individual and stack review jobs disable OCR's background updater
 with `OCR_NO_UPDATE=1`, including the installation version check. OCR 1.13.0
