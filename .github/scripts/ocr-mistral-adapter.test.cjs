@@ -2498,6 +2498,15 @@ test('default upstream transport bounds stalled headers, bodies, size and redire
         )
       })
       const deadline = mode === 'headers' || mode === 'body'
+      let expectedErrorCode = 'internal_error'
+      let expectedFailureCategory = 'transport_error'
+      if (deadline) {
+        expectedErrorCode = 'upstream_timeout'
+        expectedFailureCategory = 'upstream_timeout'
+      } else if (mode === 'size') {
+        expectedErrorCode = 'response_too_large'
+        expectedFailureCategory = 'malformed_response'
+      }
       const options = {
         apiKey: 'synthetic-key',
         timeoutMs: deadline ? 100 : 1000,
@@ -2508,14 +2517,7 @@ test('default upstream transport bounds stalled headers, bodies, size and redire
       t.after(() => adapter.close())
       const result = await postJson(adapter, body)
       assert.equal(result.status, deadline ? 504 : 502)
-      assert.equal(
-        result.json.error.code,
-        deadline
-          ? 'upstream_timeout'
-          : mode === 'size'
-            ? 'response_too_large'
-            : 'internal_error'
-      )
+      assert.equal(result.json.error.code, expectedErrorCode)
       assert.doesNotMatch(result.text, /OCR_TRANSPORT_PRIVATE_SENTINEL/)
       await assert.rejects(
         transport.callMistral({ ...options, body }),
@@ -2535,16 +2537,7 @@ test('default upstream transport bounds stalled headers, bodies, size and redire
       const receipt = adapter.diagnostics()
       assert.equal(receipt.upstream_attempts, 1)
       assert.equal(receipt.responses, 0)
-      assert.equal(
-        receipt.failures[
-          deadline
-            ? 'upstream_timeout'
-            : mode === 'size'
-              ? 'malformed_response'
-              : 'transport_error'
-        ],
-        1
-      )
+      assert.equal(receipt.failures[expectedFailureCategory], 1)
     })
   }
 })
