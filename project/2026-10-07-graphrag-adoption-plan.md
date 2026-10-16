@@ -120,9 +120,9 @@ offline source checks; no application runtime was started.
 Integrated native source review passed at `33a55f611` with no blocking findings.
 The private curator delivered 24 candidate Goldens and exact support quotes,
 with the planned 6/6/4/8 allocation and native dataset validation. These remain
-unfrozen: both guide pages appeared in old development retrieval. A separate
-native source review is checking that exposure against the strict family
-exclusion. Main has withheld freeze admission: at least the six multi-document
+unfrozen: both guide pages appeared in old development retrieval. Independent
+native source review returned `REVISE` and verified the required facts for all six
+multi-document cases in the earlier merged guide chunk. Main has withheld freeze admission: at least the six multi-document
 cases reuse guide evidence/concept families that appeared in earlier retrieval.
 Source-correct references and new questions do not repair that separation.
 The user has a concrete choice between fresh teaching material, an explicitly
@@ -131,6 +131,17 @@ contract remains strict until that scope decision arrives. The six multi-documen
 explicitly compare a summary with its underlying script; they do not demonstrate
 reasoning across independent sources. Negative claims cover only those two
 teaching documents, excluding the administrative KB resources.
+
+No candidate is certified freezable yet. At most 18 could remain after removing
+the six failed cases; three additional exposure flags need adjudication. The
+independent review stopped at this failed prerequisite, so the remaining factual,
+absence and arithmetic acceptance checks are not claimed complete. The candidate
+packet, normalized native case IDs, exact source quotes and review remain private
+and preserved. Fresh, unexposed teaching material is required to complete the
+strict 6/6/4/8 composition; otherwise the user must explicitly change the dataset
+scope. Code delivery is complete in draft #6478. The native goal remains unfinished
+at this data decision. Every prior spend and hold remains retained, with zero
+new paid runs.
 
 ## October 16: offline evaluation preparation — approved
 
