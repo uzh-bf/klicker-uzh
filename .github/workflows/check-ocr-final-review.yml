@@ -379,6 +379,12 @@ jobs:
           git cat-file -e "${REVIEW_FROM}^{commit}"
           [[ "${REVIEW_FROM}" =~ ^[0-9a-f]{40}$ ]]
           echo "review_from=${REVIEW_FROM}" >>"${GITHUB_OUTPUT}"
+          # Plan context covers the whole pull request, also in incremental mode.
+          PLAN_FROM="${REVIEW_FROM}"
+          if git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+            PLAN_FROM="$(git merge-base "${BASE_SHA}" "${HEAD_SHA}")"
+          fi
+          echo "plan_from=${PLAN_FROM}" >>"${GITHUB_OUTPUT}"
 
       - name: Install pinned OpenCodeReview CLI
         if: needs.start.outputs.run_review == 'true'
@@ -410,6 +416,7 @@ jobs:
           BACKGROUND: ${{ needs.start.outputs.background }}
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
           REVIEW_FROM: ${{ steps.range.outputs.review_from }}
+          PLAN_FROM: ${{ steps.range.outputs.plan_from }}
           REVIEW_JOB_STARTED_AT: ${{ steps.job_start.outputs.epoch }}
           RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
           REJECTED_DIR: ${{ runner.temp }}/final-ai-individual-publisher-failure
@@ -489,11 +496,17 @@ jobs:
             return "${exit_code}"
           }
 
+          [[ "${PLAN_FROM}" =~ ^[0-9a-f]{40}$ ]]
+          PLAN_CONTEXT="$(node .github/scripts/final-ai-review.js plan-context \
+            "${PLAN_FROM}" "${HEAD_SHA}")"
+          if [[ -n "${PLAN_CONTEXT}" ]]; then
+            BACKGROUND+=$'\n'"${PLAN_CONTEXT}"
+          fi
           : >"${STDERR_PATH}"
-          run_ocr_attempt "${RESULT_PATH}" 6000000
+          run_ocr_attempt "${RESULT_PATH}" 10000000
           RESUME_PLAN_PATH="${RESULT_PATH}.resume-plan"
           if ! node .github/scripts/final-ai-review.js plan-ocr-resume \
-            "${RESULT_PATH}" 6000000 >"${RESUME_PLAN_PATH}"; then
+            "${RESULT_PATH}" 10000000 >"${RESUME_PLAN_PATH}"; then
             mkdir -p "${REJECTED_DIR}"
             cp -- "${RESULT_PATH}" "${REJECTED_DIR}/initial-result.json"
             echo 'validation_failure=true' >>"${GITHUB_OUTPUT}"
@@ -511,7 +524,7 @@ jobs:
             run_ocr_attempt \
               "${RESUMED_PATH}" "${REMAINING_TOKENS}" "${SESSION_ID}"
             if ! node .github/scripts/final-ai-review.js merge-ocr-resume \
-              "${RESULT_PATH}" "${RESUMED_PATH}" 6000000 >"${MERGED_PATH}"; then
+              "${RESULT_PATH}" "${RESUMED_PATH}" 10000000 >"${MERGED_PATH}"; then
               mkdir -p "${REJECTED_DIR}"
               cp -- "${RESULT_PATH}" "${REJECTED_DIR}/initial-result.json"
               cp -- "${RESUMED_PATH}" "${REJECTED_DIR}/resumed-result.json"

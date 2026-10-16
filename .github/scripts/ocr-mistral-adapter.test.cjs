@@ -584,7 +584,7 @@ test('cache affinity is forwarded while malformed keys never reach upstream', as
   }
 })
 
-test('cache diagnostics distinguish reported zero, unavailable and invalid usage', async () => {
+test('OCR receives billable usage while diagnostics keep raw cache usage', async () => {
   const reports = [64, 0, undefined, -1, 129, null]
   const fetchImpl = upstream((_record, index) => {
     const payload = completion({ role: 'assistant', content: 'private-answer' })
@@ -609,12 +609,12 @@ test('cache diagnostics distinguish reported zero, unavailable and invalid usage
         prompt_cache_key: 'private-cache-key',
       })
       assert.equal(response.status, 200)
-      assert.equal(response.json.usage.prompt_tokens, 128)
-      assert.equal(response.json.usage.total_tokens, 132)
-      assert.equal(
-        response.json.usage.prompt_tokens_details?.cached_tokens,
-        cached === 64 || cached === 0 ? cached : undefined
-      )
+      const billedCache = cached === 64 ? 64 : 0
+      assert.deepEqual(response.json.usage, {
+        prompt_tokens: 128 - billedCache,
+        completion_tokens: 4,
+        total_tokens: 132 - billedCache,
+      })
       assert.doesNotMatch(response.text, /private-provider-data/)
     }
     const receipt = adapter.diagnostics()

@@ -90,8 +90,19 @@ maintainer.
 
 ## Progress
 
-- [ ] Plan committed
-- [ ] Adapter billable usage and test
-- [ ] Ceiling, excludes, plan context and test
-- [ ] Docs
-- [ ] Final self-review and draft PR
+- [x] Plan committed
+- [x] Adapter billable usage and test; the test fails without the rewrite
+- [x] Ceiling, excludes, plan context and test
+- [x] Docs
+- [ ] Final review and draft PR
+
+Evidence on 2026-10-16, against the PR 6414 range used by the failed run:
+
+- OCR 1.13.0 offline preview: the new excludes reduce selected files from 48
+  to 43; only five `playwright/` support files are newly excluded.
+- Plan context: the main plan comes first, truncated to 16,000 code points
+  (about 17 KB); the later revision plan is omitted.
+- `final-ai-review.test.js` and `ocr-mistral-adapter.test.cjs`: 117 tests pass.
+- Biome format is clean; lint findings in the touched scripts all predate this
+  branch. Prettier is clean for the workflow and docs.
+- Substantive size: about 210 changed lines without the plan.

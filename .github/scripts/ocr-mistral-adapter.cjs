@@ -270,6 +270,23 @@ function normalizeUsage(usage) {
   return Object.keys(normalized).length > 0 ? normalized : undefined
 }
 
+// OCR budgets, reports and resumes on the usage it receives. Cache reads cost a
+// tenth of uncached input, so OCR sees billable usage: uncached prompt plus
+// completion tokens. Without a valid cache report the full prompt counts.
+// Adapter diagnostics keep the raw provider usage.
+function billableUsage(usage) {
+  const cached = usage?.prompt_tokens_details?.cached_tokens
+  if (cached === undefined || !Number.isSafeInteger(usage.completion_tokens)) {
+    return usage
+  }
+  const promptTokens = usage.prompt_tokens - cached
+  return {
+    prompt_tokens: promptTokens,
+    completion_tokens: usage.completion_tokens,
+    total_tokens: promptTokens + usage.completion_tokens,
+  }
+}
+
 // The OCR-facing content is the final text only so strict topology JSON still
 // parses and private thinking never reaches review content; the concatenated
 // thinking is kept separately in reasoning_content.
@@ -984,6 +1001,7 @@ async function startAdapter(options = {}) {
       }
       const message = payload.choices[0].message
       history.remember(body.messages, message)
+      if (normalized.usage) normalized.usage = billableUsage(normalized.usage)
       sendJson(res, 200, normalized)
     } catch (error) {
       sendAdapterError(res, error)
