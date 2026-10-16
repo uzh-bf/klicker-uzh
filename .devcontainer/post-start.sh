@@ -22,6 +22,16 @@ if [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" = 1 ]; then
   local_kb_capture_environment
 fi
 
+# Preserve explicit guarded evaluation settings across canonical development
+# defaults. A fresh nonsecret generation marks synthetic credential changes.
+evaluation_names=(KLICKER_EVAL_GUARD_ORIGIN OPENAI_BASE_URL OPENAI_API_KEY CHAT_MODEL_REGISTRY_JSON KLICKER_EVAL_GUARD_GENERATION)
+evaluation_values=()
+if [ "${KLICKER_EVAL_GUARD_ORIGIN+x}" = x ] || [ "${KLICKER_EVAL_GUARD_GENERATION+x}" = x ]; then
+  for evaluation_name in "${evaluation_names[@]}"; do
+    evaluation_values+=("${!evaluation_name:-}")
+  done
+fi
+
 # Re-source the canonical env (DevPod truncates env_file values at '='), then the
 # runtime Hatchet token written by post-create (if any). (GOTCHAS #1)
 set -a
@@ -52,6 +62,16 @@ if [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" != 1 ] && [ -n "${LOCAL_KB_SIGNER_ENV
   . "$LOCAL_KB_SIGNER_ENV_FILE"
 fi
 set +a
+
+if [ "${#evaluation_values[@]}" -gt 0 ]; then
+  for evaluation_index in "${!evaluation_names[@]}"; do
+    [ -n "${evaluation_values[$evaluation_index]}" ] || {
+      echo "[post-start] ERROR: guarded evaluation configuration is incomplete: ${evaluation_names[$evaluation_index]} is unset or empty. Supply all five guarded settings, or stop the evaluation and unset ${evaluation_names[*]} to return to ordinary development." >&2
+      exit 2
+    }
+    export "${evaluation_names[$evaluation_index]}=${evaluation_values[$evaluation_index]}"
+  done
+fi
 
 if [ "${LOCAL_MCP_BOOTSTRAPPED:-}" = 1 ]; then
   # The mock process group uses only the explicitly provisioned mock database.
@@ -218,6 +238,8 @@ fi
 
 export DEVROUTER_PROCESS_FINGERPRINT_ENV='APP_ORIGIN_API,APP_ORIGIN_AUTH,APP_ORIGIN_PWA,APP_ORIGIN_MANAGE,APP_ORIGIN_CONTROL,APP_ORIGIN_ASSESSMENT_API,APP_ORIGIN_ASSESSMENT_PWA,APP_ORIGIN_LTI,APP_ORIGIN_CHAT,APP_MANAGE_SUBDOMAIN,APP_STUDENT_SUBDOMAIN,APP_CONTROL_SUBDOMAIN,NEXTAUTH_URL,COOKIE_DOMAIN,NEXT_PUBLIC_API_URL,NEXT_PUBLIC_AUTH_URL,NEXT_PUBLIC_MANAGE_URL,NEXT_PUBLIC_PWA_URL,NEXT_PUBLIC_ASSESSMENT_URL,NEXT_PUBLIC_CONTROL_URL,NEXT_PUBLIC_ADD_RESPONSE_URL,NEXT_PUBLIC_CHAT_URL,NEXT_PUBLIC_GROWTHBOOK_API_HOST,NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY,CORS_ALLOWED_ORIGINS,AUTH_LECTURER_ALLOWED_HOSTS,AUTH_STUDENT_ALLOWED_HOSTS,BLOB_STORAGE_ACCOUNT_URL,BLOB_STORAGE_INTERNAL_ACCOUNT_URL,KB_GRAPH_BLOB_ACCOUNT_URL,KB_SOURCE_GATEWAY_URL,KB_INGESTION_API_URL,KB_INGESTION_PROJECT_ID,KB_GRAPH_HATCHET_CLIENT_HOST_PORT,KB_GRAPH_HATCHET_API_URL,KB_GRAPH_HATCHET_CLIENT_TLS_STRATEGY,KB_GRAPH_HATCHET_WORKFLOW_NAME,KB_FALKORDB_HOST,KB_FALKORDB_PORT,KB_FALKORDB_TLS,NODE_EXTRA_CA_CERTS,DEVROUTER_PROFILE,EDUID_WELL_KNOWN,EDUID_CLIENT_ID,NEXT_PUBLIC_EDUID_ID'
 export DEVROUTER_PROCESS_FINGERPRINT_ENV="${DEVROUTER_PROCESS_FINGERPRINT_ENV},DEV_TURBO_TASK"
+# Keep credentials out of fingerprints; rotate the generation with guard keys.
+export DEVROUTER_PROCESS_FINGERPRINT_ENV="${DEVROUTER_PROCESS_FINGERPRINT_ENV},KLICKER_EVAL_GUARD_ORIGIN,OPENAI_BASE_URL,CHAT_MODEL_REGISTRY_JSON,KLICKER_EVAL_GUARD_GENERATION"
 
 # Resolve the complete selection first through the pure table in
 # util/profile-resolver.sh: exact turbo roots, readiness apps, and process
