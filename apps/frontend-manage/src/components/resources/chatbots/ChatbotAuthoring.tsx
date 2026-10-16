@@ -24,7 +24,6 @@ import {
   AccordionItem,
   AccordionTrigger,
   Button,
-  FormikSwitchField,
   FormikTextareaField,
   FormikTextField,
   H4,
@@ -711,20 +710,37 @@ function CustomModesEditor({
                             cy: `chatbot-custom-mode-persona-${index}`,
                           }}
                         />
-                        <FormikSwitchField
-                          disabled={controlsDisabled}
-                          name={`modes[${index}].showReasoning`}
-                          labelLeft
-                          label={t(
-                            'manage.resources.chatbotCustomModeShowReasoning'
-                          )}
-                          tooltip={t(
-                            'manage.resources.chatbotCustomModeShowReasoningTooltip'
-                          )}
-                          data={{
-                            cy: `chatbot-custom-mode-show-reasoning-${index}`,
-                          }}
-                        />
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <label
+                              htmlFor={`chatbot-custom-mode-show-reasoning-${index}`}
+                              className="text-sm font-medium text-gray-900"
+                            >
+                              {t(
+                                'manage.resources.chatbotCustomModeShowReasoning'
+                              )}
+                            </label>
+                            <p className="text-sm text-gray-600">
+                              {t(
+                                'manage.resources.chatbotCustomModeShowReasoningDescription'
+                              )}
+                            </p>
+                          </div>
+                          <Switch
+                            id={`chatbot-custom-mode-show-reasoning-${index}`}
+                            checked={mode.showReasoning}
+                            disabled={controlsDisabled}
+                            onCheckedChange={(checked) =>
+                              void setFieldValue(
+                                `modes[${index}].showReasoning`,
+                                checked
+                              )
+                            }
+                            data={{
+                              cy: `chatbot-custom-mode-show-reasoning-${index}`,
+                            }}
+                          />
+                        </div>
                       </div>
                     ))}
                   </div>

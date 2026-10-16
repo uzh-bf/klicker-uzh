@@ -5016,7 +5016,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotCustomModeStarterPrompt: 'Starter prompt {number}',
       chatbotCustomModeStarterPromptAdd: 'Add starter prompt',
       chatbotCustomModeShowReasoning: 'Show model reasoning to participants',
-      chatbotCustomModeShowReasoningTooltip:
+      chatbotCustomModeShowReasoningDescription:
         'Off by default. The reasoning summary can paraphrase the persona and instructions of this mode, for example the hidden facts of a role-play. Owner preview always shows it.',
       chatbotCustomModeReasoningShown:
         'Model reasoning visible to participants',

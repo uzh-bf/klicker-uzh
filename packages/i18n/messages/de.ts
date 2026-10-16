@@ -5122,7 +5122,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotCustomModeStarterPromptAdd: 'Starter hinzufügen',
       chatbotCustomModeShowReasoning:
         'Denkprozess des Modells für Teilnehmende anzeigen',
-      chatbotCustomModeShowReasoningTooltip:
+      chatbotCustomModeShowReasoningDescription:
         'Standardmässig aus. Die Zusammenfassung des Denkprozesses kann Persona und Anweisungen dieses Modus wiedergeben, zum Beispiel die verborgenen Fakten eines Rollenspiels. In der Eigentümer-Vorschau ist sie immer sichtbar.',
       chatbotCustomModeReasoningShown:
         'Denkprozess des Modells für Teilnehmende sichtbar',
