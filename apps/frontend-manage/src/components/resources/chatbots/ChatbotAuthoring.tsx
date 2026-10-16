@@ -24,6 +24,7 @@ import {
   AccordionItem,
   AccordionTrigger,
   Button,
+  FormikSwitchField,
   FormikTextareaField,
   FormikTextField,
   H4,
@@ -112,6 +113,7 @@ type CustomModeFormValues = {
     welcomeMessage: string
     starterPrompts: string[]
     personaText: string
+    showReasoning: boolean
   }[]
 }
 
@@ -130,6 +132,7 @@ function getCustomModeFormValues(
       welcomeMessage: mode.welcomeMessage ?? '',
       starterPrompts: [...(mode.starterPrompts ?? [])],
       personaText: mode.personaText ?? '',
+      showReasoning: mode.showReasoning,
     })),
   }
 }
@@ -148,6 +151,7 @@ function getCustomModeInputs(
       .map((prompt) => prompt.trim())
       .filter((prompt) => prompt.length > 0),
     personaText: mode.personaText || null,
+    showReasoning: mode.showReasoning,
   }))
 }
 
@@ -707,6 +711,20 @@ function CustomModesEditor({
                             cy: `chatbot-custom-mode-persona-${index}`,
                           }}
                         />
+                        <FormikSwitchField
+                          disabled={controlsDisabled}
+                          name={`modes[${index}].showReasoning`}
+                          labelLeft
+                          label={t(
+                            'manage.resources.chatbotCustomModeShowReasoning'
+                          )}
+                          tooltip={t(
+                            'manage.resources.chatbotCustomModeShowReasoningTooltip'
+                          )}
+                          data={{
+                            cy: `chatbot-custom-mode-show-reasoning-${index}`,
+                          }}
+                        />
                       </div>
                     ))}
                   </div>
@@ -730,6 +748,7 @@ function CustomModesEditor({
                           welcomeMessage: '',
                           starterPrompts: [],
                           personaText: '',
+                          showReasoning: false,
                         },
                       ])
                     }}
@@ -1928,6 +1947,16 @@ function ChatbotAuthoring({
                               {mode.personaText}
                             </div>
                           ) : null}
+                          <div
+                            className="mt-1 text-gray-700"
+                            data-cy={`chatbot-review-custom-mode-reasoning-${index}`}
+                          >
+                            {t(
+                              mode.showReasoning
+                                ? 'manage.resources.chatbotCustomModeReasoningShown'
+                                : 'manage.resources.chatbotCustomModeReasoningHidden'
+                            )}
+                          </div>
                         </li>
                       ))}
                     </ul>

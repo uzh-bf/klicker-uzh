@@ -1,5 +1,7 @@
 import { buildHistoryAttachmentDto } from '@/src/lib/attachments/attachmentState'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
+import { isParticipantReasoningVisible } from '@/src/lib/server/effectiveChatModes'
+import { withoutReasoningParts } from '@/src/lib/server/persistedAssistantContent'
 import { prisma } from '@klicker-uzh/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -19,6 +21,12 @@ export async function GET(
   const { participantId } = authResult
 
   try {
+    // Reasoning visibility follows the live approved mode config, so a mode
+    // the lecturer switches to hidden also hides its earlier turns.
+    const chatbot = await prisma.chatbot.findUnique({
+      where: { id: chatbotId },
+      select: { customModeConfig: true },
+    })
     const messages = await prisma.chatMessage.findMany({
       where: {
         threadId,
@@ -37,32 +45,42 @@ export async function GET(
     })
 
     return NextResponse.json(
-      messages.map((msg) => ({
-        id: msg.id,
-        threadId: msg.threadId,
-        role: msg.role,
-        content: msg.content,
-        chatMode: msg.chatMode ?? null,
-        modelId: msg.modelId ?? null,
-        reasoningEffort: msg.reasoningEffort ?? null,
-        reasoningContent: msg.reasoningContent ?? null,
-        // Persisted verified learning-context snapshot; null for turns
-        // without eLearning provenance.
-        learningContext: msg.learningContext ?? null,
-        rating: msg.rating ?? null,
-        creditsUsed:
-          msg.creditsUsed != null
-            ? (
-                msg.creditsUsed as unknown as { toNumber: () => number }
-              ).toNumber()
+      messages.map((msg) => {
+        const showReasoning = isParticipantReasoningVisible(
+          chatbot?.customModeConfig,
+          msg.chatMode
+        )
+        return {
+          id: msg.id,
+          threadId: msg.threadId,
+          role: msg.role,
+          content: showReasoning
+            ? msg.content
+            : withoutReasoningParts(msg.content),
+          chatMode: msg.chatMode ?? null,
+          modelId: msg.modelId ?? null,
+          reasoningEffort: msg.reasoningEffort ?? null,
+          reasoningContent: showReasoning
+            ? (msg.reasoningContent ?? null)
             : null,
-        imageAttachments: msg.attachments.map((att) =>
-          buildHistoryAttachmentDto(att)
-        ),
-        parentId: (msg as { parentId?: string | null }).parentId || null,
-        createdAt: msg.createdAt.toISOString(),
-        updatedAt: msg.updatedAt.toISOString(),
-      }))
+          // Persisted verified learning-context snapshot; null for turns
+          // without eLearning provenance.
+          learningContext: msg.learningContext ?? null,
+          rating: msg.rating ?? null,
+          creditsUsed:
+            msg.creditsUsed != null
+              ? (
+                  msg.creditsUsed as unknown as { toNumber: () => number }
+                ).toNumber()
+              : null,
+          imageAttachments: msg.attachments.map((att) =>
+            buildHistoryAttachmentDto(att)
+          ),
+          parentId: (msg as { parentId?: string | null }).parentId || null,
+          createdAt: msg.createdAt.toISOString(),
+          updatedAt: msg.updatedAt.toISOString(),
+        }
+      })
     )
   } catch (error) {
     console.error('Failed to fetch messages:', error)
