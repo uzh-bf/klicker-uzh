@@ -46,6 +46,7 @@ const {
   requiresColdIncrementalReview,
   startFinalReview,
   validateOCRResult,
+  validateOCRPreview,
   verifyMistralToolAccess,
   writeOCRConfig,
 } = require('./final-ai-review.js')
@@ -123,6 +124,11 @@ function extractShellFunction(script, functionName) {
   assert.fail(`unterminated shell function: ${functionName}`)
 }
 
+const SYNTHETIC_BACKGROUND = buildReviewBackground(
+  'Synthetic change',
+  'Requirements with "quoted" $(true) ; echo injected *\n\nKeep the declared boundary.'
+)
+
 function expectedOCRArgs({ from, to, timeout, budget, sessionId }) {
   return [
     '--from',
@@ -133,14 +139,18 @@ function expectedOCRArgs({ from, to, timeout, budget, sessionId }) {
     'agent',
     '--effort',
     'low',
+    '--concurrency',
+    '2',
     '--timeout',
     String(timeout),
+    '--max-tokens',
+    '200000',
     '--max-tokens-budget',
     String(budget),
     '--format',
     'json',
     '--background',
-    'synthetic-background',
+    SYNTHETIC_BACKGROUND,
     '--rule',
     '.github/open-code-review/final-review-rules.json',
     ...(sessionId ? ['--resume', sessionId] : []),
@@ -190,10 +200,14 @@ function assertReviewAttempt(result, form, expectedExit) {
   assert.equal(result.ocrStderr, result.stderrSentinel, form.name)
 
   const lines = result.calls.trim().split('\n')
+  assert.equal(result.calls.match(/^preview /gm)?.length, 1, form.name)
   assert.equal(lines.shift(), 'version no_update=1', form.name)
+  assert.equal(lines.shift(), 'preview no_update=1 limit=200000', form.name)
+  assert.equal(lines.shift(), 'coverage checked', form.name)
   assert.equal(lines.shift(), 'review no_update=1', form.name)
+  assert.equal(lines.length, 0, form.name)
   assert.deepEqual(
-    lines.map((line) => line.replace(/^review_arg=/, '')),
+    result.args,
     expectedOCRArgs({
       from: form.reviewFrom,
       to: form.reviewTo,
@@ -224,6 +238,8 @@ function executeExtractedOCRAttempt({
   versionMode = 'ok',
   versionStatus = 0,
   reviewStatus = 0,
+  previewStatus = 0,
+  previewMode = 'ok',
 }) {
   const directory = fs.mkdtempSync(
     path.join(os.tmpdir(), 'final-review-ocr-shell-')
@@ -232,6 +248,7 @@ function executeExtractedOCRAttempt({
   const stderrPath = path.join(directory, 'ocr-stderr.log')
   const summaryPath = path.join(directory, 'step-summary.md')
   const callsPath = path.join(directory, 'ocr-calls.log')
+  const argsPath = path.join(directory, 'ocr-args')
   const stdoutSentinel = 'OCR_STDOUT_SENTINEL'
   const stderrSentinel = 'OCR_STDERR_SENTINEL'
   const versionSentinel = 'OCR_VERSION_SENTINEL'
@@ -253,7 +270,10 @@ function executeExtractedOCRAttempt({
     OCR_NO_UPDATE: jobEnv.OCR_NO_UPDATE,
     MISTRAL_API_KEY: 'synthetic-upstream-key',
     OCR_CALLS_PATH: callsPath,
+    OCR_ARGS_PATH: argsPath,
     OCR_REVIEW_STATUS: String(reviewStatus),
+    OCR_PREVIEW_STATUS: String(previewStatus),
+    OCR_PREVIEW_MODE: previewMode,
     OCR_STDERR_SENTINEL: stderrSentinel,
     OCR_STDOUT_SENTINEL: stdoutSentinel,
     OCR_VERSION_MODE: versionMode,
@@ -269,7 +289,7 @@ function executeExtractedOCRAttempt({
     GITHUB_OUTPUT: path.join(directory, 'github-output'),
     REVIEW_FROM: environment.reviewFrom,
     HEAD_SHA: environment.reviewTo,
-    BACKGROUND: 'synthetic-background',
+    BACKGROUND: SYNTHETIC_BACKGROUND,
     REVIEW_JOB_STARTED_AT: String(Math.floor(Date.now() / 1000)),
     SESSION_ID: environment.sessionId ?? '',
   }
@@ -278,7 +298,18 @@ function executeExtractedOCRAttempt({
     'set -euo pipefail',
     functionText,
     '',
+    'timeout() {',
+    '  [[ "$1" == --kill-after=10 && "$2" == 120 ]] || return 99',
+    '  (( OCR_PREVIEW_STATUS == 0 )) || return "$OCR_PREVIEW_STATUS"',
+    '  shift 2',
+    '  "$@"',
+    '}',
     'node() {',
+    '  if [[ "$1" == .github/scripts/final-ai-review.js && "$2" == validate-ocr-preview ]]; then',
+    '    command node "$@" || return',
+    '    printf "coverage checked\\n" >>"${OCR_CALLS_PATH}"',
+    '    return 0',
+    '  fi',
     '  [[ "$1" == .github/scripts/ocr-mistral-adapter.cjs && "$2" == run && "$3" == -- && "$4" == ocr ]] || return 99',
     '  [[ "${MISTRAL_API_KEY-}" == synthetic-upstream-key ]] || return 98',
     '  shift 4',
@@ -297,12 +328,24 @@ function executeExtractedOCRAttempt({
     '      printf \'%s\' "${OCR_VERSION_OUTPUT}"',
     '      ;;',
     '    review)',
+    '      if [[ " $* " == *" --preview "* ]]; then',
+    '        [[ -z "${MISTRAL_API_KEY+x}" ]] || return 97',
+    '        local prompt_limit',
+    '        while (($#)); do',
+    '          if [[ "$1" == --max-tokens ]]; then prompt_limit="$2"; fi',
+    '          shift',
+    '        done',
+    '        printf "preview no_update=%s limit=%s\\n" "${OCR_NO_UPDATE-}" "${prompt_limit}" >>"${OCR_CALLS_PATH}"',
+    '        case "$OCR_PREVIEW_MODE" in',
+    '          malformed) printf \'{"total_files":1,"files":[\' ;;',
+    '          too_large) printf \'{"total_files":2,"files":[{"path":"src/test.ts","will_review":true},{"path":"src/big.ts","will_review":false,"exclude_reason":"too_large"}]}\' ;;',
+    '          *) printf \'{"total_files":1,"files":[{"path":"src/test.ts","will_review":true}]}\' ;;',
+    '        esac',
+    '        return 0',
+    '      fi',
     '      printf \'review no_update=%s\\n\' "${OCR_NO_UPDATE-}" >>"${OCR_CALLS_PATH}"',
     '      shift',
-    '      while (($#)); do',
-    '        printf \'review_arg=%s\\n\' "$1" >>"${OCR_CALLS_PATH}"',
-    '        shift',
-    '      done',
+    '      printf \'%s\\0\' "$@" >"${OCR_ARGS_PATH}"',
     '      printf \'%s\' "${OCR_STDOUT_SENTINEL}"',
     '      printf \'%s\' "${OCR_STDERR_SENTINEL}" >&2',
     '      return "${OCR_REVIEW_STATUS}"',
@@ -330,6 +373,7 @@ function executeExtractedOCRAttempt({
     ocrStderr: fs.readFileSync(stderrPath, 'utf8'),
     summary: fs.readFileSync(summaryPath, 'utf8'),
     calls: fs.readFileSync(callsPath, 'utf8'),
+    args: (readIfPresent(argsPath) ?? '').split('\0').slice(0, -1),
     stdoutSentinel,
     stderrSentinel,
   }
@@ -424,6 +468,22 @@ test('executes both workflow OCR command boundaries with pinned version diagnost
   }
 
   for (const form of [forms[0], forms[2]]) {
+    const previewFailure = runCase(form, { previewStatus: 124 })
+    assert.equal(previewFailure.process.status, 1)
+    assert.match(previewFailure.process.stderr, /coverage preview failed/)
+    assert.equal(previewFailure.output, null)
+    assert.doesNotMatch(previewFailure.calls, /review no_update/)
+    assertNoOCRSentinels(previewFailure)
+    for (const previewMode of ['malformed', 'too_large']) {
+      const result = runCase(form, { previewMode })
+      const label = `${form.name} ${previewMode}`
+      assert.equal(result.process.status, 1, label)
+      assert.match(result.process.stderr, /preview validation failed/, label)
+      assert.equal(result.output, null, label)
+      assert.equal(result.calls.match(/^preview /gm)?.length, 1, label)
+      assert.doesNotMatch(result.calls, /^review no_update=/m, label)
+      assertNoOCRSentinels(result)
+    }
     for (const outcome of [
       { name: 'review 127', reviewStatus: 127, expectedStatus: 127 },
       { name: 'review 2', reviewStatus: 2, expectedStatus: 2 },
@@ -456,7 +516,94 @@ test('normalizes untrusted PR titles to 200 Unicode code points', () => {
   assert.equal(normalized.includes('\u202e'), false)
   assert.equal(normalized.includes('\u200b'), false)
   assert.equal(Array.from(normalized).length, 200)
-  assert.match(buildReviewBackground(title), /untrusted metadata/)
+  assert.equal(
+    JSON.parse(buildReviewBackground(title).split('\n').at(-1)).title,
+    normalized
+  )
+})
+
+test('adds bounded description data without hidden comments or image embeds', () => {
+  const code = '```html\n<!-- literal -->\n<img src="literal.png">\n```'
+  const inline = '`![literal](example.png)`'
+  const description = [
+    'Required behavior.',
+    '',
+    '<!--\nhidden metadata\n-->',
+    '- List boundary.\n    <!-- hidden list metadata -->\n    <img src="https://example.test/list.png">',
+    '![gallery](https://example.test/image_(1).png)',
+    '![reference][gallery]',
+    '<IMG src="https://example.test/image.png" alt="x > y">',
+    code,
+    inline,
+    '\u0000\u202eBoundaries.',
+  ].join('\n')
+  const data = JSON.parse(
+    buildReviewBackground('Synthetic change', description).split('\n').at(-1)
+  )
+  assert.equal(data.title, 'Synthetic change')
+  assert.equal(data.description_status, 'complete')
+  assert.ok(data.description.includes('Required behavior.\n\n'))
+  assert.ok(data.description.includes(code))
+  assert.ok(data.description.includes(inline))
+  assert.ok(data.description.includes('Boundaries.'))
+  assert.equal(data.description.includes('hidden'), false)
+  assert.equal(data.description.includes('example.test'), false)
+  assert.equal(
+    /[\p{Cc}\p{Cf}]/u.test(data.description.replace(/\n/g, '')),
+    false
+  )
+
+  for (const empty of [
+    undefined,
+    null,
+    '',
+    ' \n\t ',
+    '<!--\nhidden metadata',
+  ]) {
+    const fallback = JSON.parse(
+      buildReviewBackground('Synthetic change', empty).split('\n').at(-1)
+    )
+    assert.equal(fallback.description, null)
+    assert.equal(fallback.description_status, 'absent')
+  }
+  const visible = '🙂'.repeat(8_001)
+  const bounded = JSON.parse(
+    buildReviewBackground('Synthetic change', visible).split('\n').at(-1)
+  )
+  assert.equal(Array.from(bounded.description).length, 8_000)
+  assert.equal(bounded.description_status, 'truncated')
+  assert.equal(bounded.description, '🙂'.repeat(8_000))
+  assert.equal(
+    buildReviewBackground(
+      'Synthetic change',
+      `<!-- ${'x'.repeat(9_000)} -->Behavior.`
+    ),
+    buildReviewBackground('Synthetic change', 'Behavior.')
+  )
+})
+
+test('bounds normalization work for unmatched description delimiters', () => {
+  const result = spawnSync(
+    process.execPath,
+    [
+      '-e',
+      `
+    const assert = require('node:assert/strict')
+    const { buildReviewBackground } = require('./final-ai-review.js')
+    for (const description of [
+      String.fromCharCode(96).repeat(65_536),
+      '![image](' + 'x'.repeat(65_000),
+      '<!--' + 'x'.repeat(65_000),
+    ]) {
+      const data = JSON.parse(buildReviewBackground('Synthetic', description).split('\\n').at(-1))
+      assert.ok(Array.from(data.description ?? '').length <= 8_000)
+    }
+  `,
+    ],
+    { cwd: __dirname, timeout: 5_000, encoding: 'utf8' }
+  )
+  assert.equal(result.error, undefined)
+  assert.equal(result.status, 0, result.stderr)
 })
 
 test('bounds individual and stack review retries, tokens, and runtime', () => {
@@ -469,7 +616,7 @@ test('bounds individual and stack review retries, tokens, and runtime', () => {
   assert.equal(source.match(/--timeout 30/g)?.length, 1)
   assert.equal(source.match(/plan-ocr-resume/g)?.length, 2)
   assert.equal(source.match(/merge-ocr-resume/g)?.length, 2)
-  assert.match(source, /run_ocr_attempt "\$\{RESULT_PATH\}" 3000000/)
+  assert.match(source, /run_ocr_attempt "\$\{RESULT_PATH\}" 6000000/)
   assert.match(source, /"\$\{REVIEW_FROM\}" "\$\{HEAD_SHA\}" 20000000/)
   assert.match(source, /resume_partial_result[\s\S]*750000 "\$\{RANGE_PATH\}"/)
   assert.equal(
@@ -490,6 +637,81 @@ test('bounds individual and stack review retries, tokens, and runtime', () => {
     source,
     /Only one partial OCR result may be resumed per stack job/
   )
+})
+
+test('validates one OCR preview selection and refuses oversized exclusions', () => {
+  const preview = {
+    total_files: 2,
+    files: [
+      { path: 'src/a.ts', will_review: true },
+      {
+        path: 'src/a.test.ts',
+        will_review: false,
+        exclude_reason: 'default_path',
+      },
+    ],
+  }
+  validateOCRPreview(preview)
+  validateOCRPreview({
+    ...preview,
+    files: [
+      preview.files[0],
+      { ...preview.files[1], exclude_reason: 'unsupported_type' },
+    ],
+  })
+  assert.throws(
+    () =>
+      validateOCRPreview({
+        ...preview,
+        files: [
+          {
+            ...preview.files[0],
+            will_review: false,
+            exclude_reason: 'too_large',
+          },
+          preview.files[1],
+        ],
+      }),
+    /oversized file/
+  )
+  assert.throws(
+    () => validateOCRPreview({ ...preview, files: [preview.files[0]] }),
+    /Invalid OCR preview/
+  )
+  assert.throws(
+    () =>
+      validateOCRPreview({
+        ...preview,
+        files: [preview.files[0], preview.files[0]],
+      }),
+    /Invalid OCR preview file/
+  )
+  assert.throws(
+    () =>
+      validateOCRPreview({
+        ...preview,
+        files: [null, preview.files[1]],
+      }),
+    /Invalid OCR preview file/
+  )
+  for (const excludeReason of [12, [], {}]) {
+    const malformed = {
+      ...preview,
+      files: [
+        preview.files[0],
+        { ...preview.files[1], exclude_reason: excludeReason },
+      ],
+    }
+    assert.throws(() => validateOCRPreview(malformed))
+  }
+  const unicodePaths = {
+    total_files: 2,
+    files: [
+      { path: 'src/\u00e9.ts', will_review: true },
+      { path: 'src/e\u0301.ts', will_review: true },
+    ],
+  }
+  validateOCRPreview(unicodePaths)
 })
 
 test('accepts only the exact command and calculated write permissions', () => {
@@ -676,6 +898,7 @@ test('authorizes and starts only the immutable ready PR range', async () => {
     state: 'open',
     draft: false,
     title: 'Ready change',
+    body: 'Keep the synthetic behavior within its declared boundary.',
     base: {
       ref: 'v3',
       sha: baseSha,
@@ -757,6 +980,21 @@ test('authorizes and starts only the immutable ready PR range', async () => {
     dispositionDigest: outputs.get('disposition_digest'),
   }
 
+  const authorizedBody = pull.body
+  pull.body = 'A different synthetic requirement.'
+  await assert.rejects(
+    startFinalReview({
+      github,
+      context,
+      prNumber: 42,
+      baseSha,
+      headSha,
+      ...planInputs,
+    }),
+    /no longer eligible/
+  )
+  pull.body = authorizedBody
+
   assert.equal(
     await startFinalReview({
       github,
@@ -834,6 +1072,7 @@ test('writes secretless max-reasoning OCR config with mode 0600', () => {
   assert.equal(Object.hasOwn(config.llm, 'url'), false)
   assert.deepEqual(config.llm.extra_body, {
     reasoning_effort: 'max',
+    prompt_cache_key: '{ocr_session_key}',
   })
   assert.equal(config.llm.auth_token_cmd, 'printf "%s" "$OCR_LLM_TOKEN"')
   assert.equal(JSON.stringify(config).includes(token), false)
@@ -889,6 +1128,7 @@ test('verifies the exact public Mistral tool contract', async () => {
   assert.equal(request.model, FINAL_REVIEW_MODEL)
   assert.equal(request.max_tokens, 16_384)
   assert.equal(request.reasoning_effort, 'max')
+  assert.equal(Object.hasOwn(request, 'prompt_cache_key'), false)
   assert.equal(Object.hasOwn(request, 'provider'), false)
   assert.deepEqual(result, { provider: 'Mistral' })
 })
@@ -971,6 +1211,114 @@ test('uses one qualified canary and OCR release in both manual jobs', () => {
   }
 })
 
+test('draft context preserves the complete multiline workflow output', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-review.yml'),
+    'utf8'
+  )
+  const script = extractWorkflowStepScript(
+    workflow,
+    'Prepare bounded review context'
+  )
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-context-output-')
+  )
+  const markerPath = path.join(directory, 'shell-executed-marker')
+  const title = 'Synthetic context with "quotes", EOF and $(exit 1)'
+  const body = [
+    'Literal body with "double" and \'single\' quotes.',
+    'Backtick `touch ' + markerPath + '` and $(touch ' + markerPath + ')',
+    '; touch ' + markerPath,
+    '$(exit 1)',
+    'A trailing backslash \\ and $NOT_A_VARIABLE and * glob.',
+    `<!-- ${'x'.repeat(9_000)} -->`,
+    'Visible boundaries.',
+    '![gallery](https://example.test/image_(1).png)',
+    '\u202e',
+    '🙂'.repeat(8_001),
+  ].join('\n')
+
+  try {
+    assert.match(script, /randomUUID\(\)/)
+    for (const [index, caseBody] of [undefined, body].entries()) {
+      const outputPath = path.join(directory, `github-output-${index}`)
+      const env = {
+        PATH: process.env.PATH,
+        PR_TITLE: title,
+        GITHUB_OUTPUT: outputPath,
+      }
+      if (caseBody !== undefined) env.PR_BODY = caseBody
+      const result = spawnSync('bash', ['-e', '-c', script], {
+        cwd: path.join(__dirname, '../..'),
+        env,
+        encoding: 'utf8',
+      })
+      assert.equal(result.status, 0, result.stderr)
+      const lines = fs.readFileSync(outputPath, 'utf8').split('\n')
+      const header = /^background<<(.+)$/.exec(lines[0])
+      assert.ok(header, 'background must use multiline output framing')
+      const endIndex = lines.indexOf(header[1], 1)
+      assert.equal(endIndex, lines.length - 2, 'exactly one complete output')
+      assert.equal(lines.at(-1), '')
+      const background = lines.slice(1, endIndex).join('\n')
+      assert.ok(background.includes('\n'), 'exercise a multiline value')
+      assert.equal(background, buildReviewBackground(title, caseBody))
+      assert.equal(
+        fs.existsSync(markerPath),
+        false,
+        'the workflow must not execute PR metadata'
+      )
+    }
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('attempts draft diagnostics upload even after startup failure', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-review.yml'),
+    'utf8'
+  )
+  const lines = workflow.split('\n')
+  const startStep = workflow.match(
+    /      - name: Start Mistral adapter\n[\s\S]*?(?=\n      - name:)/
+  )?.[0]
+  const diagnosticsPath = startStep?.match(
+    /^          OCR_ADAPTER_DIAGNOSTICS_PATH: (.+)$/m
+  )?.[1]
+  const stopIndex = lines.findIndex(
+    (line) => line === '      - name: Stop Mistral adapter'
+  )
+  const uploadIndex = lines.findIndex(
+    (line) =>
+      line === '      - name: Upload sanitized draft adapter diagnostics'
+  )
+
+  assert.ok(diagnosticsPath, 'the draft job must set a diagnostics path')
+  assert.equal(diagnosticsPath.includes('runner.temp'), true)
+  assert.equal(
+    diagnosticsPath.endsWith('/draft-ai-review-adapter-diagnostics.jsonl'),
+    true
+  )
+  assert.ok(stopIndex >= 0, 'missing adapter stop step')
+  assert.ok(uploadIndex >= 0, 'missing draft diagnostics upload step')
+  assert.ok(
+    uploadIndex > stopIndex,
+    'diagnostics upload must follow the adapter stop step'
+  )
+
+  const uploadStep = lines.slice(uploadIndex).join('\n')
+  assert.ok(uploadStep.includes('          path: ' + diagnosticsPath))
+  assert.ok(uploadStep.includes('        if: always()\n'))
+  assert.ok(
+    uploadStep.includes(
+      'uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4'
+    )
+  )
+  assert.ok(uploadStep.includes('          retention-days: 1'))
+  assert.ok(uploadStep.includes('          if-no-files-found: warn'))
+})
+
 test('routes automatic drafts through the same pinned Mistral adapter', () => {
   const source = fs.readFileSync(
     path.join(__dirname, '../workflows/check-ocr-review.yml'),
@@ -982,7 +1330,10 @@ test('routes automatic drafts through the same pinned Mistral adapter', () => {
   )
   assert.match(source, /llm_model: zai-glm-5-3/)
   assert.match(source, /ocr_version: '1.13.0'/)
-  assert.match(source, /llm_extra_body: '\{"reasoning_effort":"high"\}'/)
+  assert.match(
+    source,
+    /llm_extra_body: '\{"reasoning_effort":"high","prompt_cache_key":"\{ocr_session_key\}"\}'/
+  )
   assert.match(
     source,
     /llm_auth_token: \$\{\{ steps.adapter.outputs.token \}\}/
@@ -2259,6 +2610,7 @@ test('skips the final pull-request comment when no findings are generated', asyn
     state: 'open',
     draft: false,
     title: 'Empty final review',
+    body: 'Synthetic requirements.',
     base: {
       ref: 'v3',
       sha: 'b'.repeat(40),
@@ -2285,7 +2637,7 @@ test('skips the final pull-request comment when no findings are generated', asyn
     return { data: { html_url: 'https://github.com/review' } }
   }
 
-  const result = await publishFinalReview({
+  const inputs = {
     github,
     context: reviewContext(),
     prNumber: pull.number,
@@ -2304,7 +2656,13 @@ test('skips the final pull-request comment when no findings are generated', asyn
     trustedSha: 'd'.repeat(40),
     workflowSha: 'd'.repeat(40),
     resultPath,
-  })
+  }
+  const reviewedBody = pull.body
+  pull.body = 'Different synthetic requirements.'
+  await assert.rejects(publishFinalReview(inputs), /range changed/)
+  assert.equal(createdReviews.length, 0)
+  pull.body = reviewedBody
+  const result = await publishFinalReview(inputs)
 
   assert.equal(result, null)
   assert.equal(createdReviews.length, 0)
@@ -2316,6 +2674,7 @@ test('accepts a trusted clean status without requiring a review body', async () 
     state: 'open',
     draft: false,
     title: 'Empty final review',
+    body: 'Synthetic requirements.',
     base: {
       ref: 'v3',
       sha: 'b'.repeat(40),
@@ -2401,6 +2760,33 @@ test('accepts a trusted clean status without requiring a review body', async () 
     await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }),
     true
   )
+  const reviewedBody = pull.body
+  pull.body += '\n<!-- hidden metadata -->'
+  const sameContext = await buildReviewPlan({ github, context, pull })
+  assert.equal(sameContext.backgroundDigest, plan.backgroundDigest)
+  assert.equal(
+    await hasCurrentSuccessfulFinalReview({
+      github,
+      context,
+      pull,
+      plan: sameContext,
+    }),
+    true
+  )
+  pull.body = 'Changed synthetic requirements.'
+  const changedContext = await buildReviewPlan({ github, context, pull })
+  assert.notEqual(changedContext.backgroundDigest, plan.backgroundDigest)
+  assert.equal(
+    await hasCurrentSuccessfulFinalReview({
+      github,
+      context,
+      pull,
+      plan: changedContext,
+    }),
+    false
+  )
+  pull.body = reviewedBody
+
   assert.equal(
     decideFinalStatus({
       reviewedHead: pull.head.sha,
@@ -2424,6 +2810,7 @@ test('publishes clean individual evidence as a check without a pull-request comm
     state: 'open',
     draft: false,
     title: 'Empty final review',
+    body: 'Synthetic requirements.',
     base: {
       ref: 'v3',
       sha: 'b'.repeat(40),
@@ -2445,7 +2832,7 @@ test('publishes clean individual evidence as a check without a pull-request comm
   const context = reviewContext()
   const plan = await buildReviewPlan({ github, context, pull })
 
-  await finalizeFinalReview({
+  const inputs = {
     github,
     context,
     prNumber: pull.number,
@@ -2467,7 +2854,30 @@ test('publishes clean individual evidence as a check without a pull-request comm
     cleanupOutcome: 'success',
     publishOutcome: 'success',
     cleanReview: 'true',
-  })
+  }
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'final-review-context-')
+  )
+  const resultPath = path.join(directory, 'result.json')
+  fs.writeFileSync(resultPath, JSON.stringify(completeReviewResult()))
+  assert.equal(
+    await publishFinalReview({
+      ...inputs,
+      workflowSha: 'd'.repeat(40),
+      resultPath,
+    }),
+    null
+  )
+
+  const publishedBody = pull.body
+  pull.body = 'Changed requirements after publication.'
+  for (const cleanReview of ['true', 'false']) {
+    await finalizeFinalReview({ ...inputs, cleanReview })
+    assert.equal(state.createdCheckRuns.length, 0)
+    assert.equal(state.createdStatuses.at(-1).state, 'error')
+  }
+  pull.body = publishedBody
+  await finalizeFinalReview(inputs)
 
   assert.equal(state.createdCheckRuns.length, 1)
   assert.equal(
@@ -2568,9 +2978,11 @@ test('fails finalization without publishing oversized individual clean evidence'
     },
   })
   const context = reviewContext()
+  const plan = await buildReviewPlan({ github, context, pull })
 
   await assert.rejects(
     finalizeFinalReview({
+      ...plan,
       github,
       context,
       prNumber: pull.number,
@@ -3173,6 +3585,7 @@ test('selects incremental attestation only for bounded repaired changes', async 
     state: 'open',
     draft: false,
     title: 'Incremental review',
+    body: 'Synthetic requirements.',
     base: {
       ref: 'v3',
       sha: baseSha,
@@ -3290,6 +3703,16 @@ test('selects incremental attestation only for bounded repaired changes', async 
   assert.equal(incremental.rootHead, rootHead)
   assert.equal(incremental.rootReviewId, rootMetadata.review_id)
   assert.deepEqual(incremental.dispositionIds, [rootMetadata.finding_ids[0]])
+  const reviewedBody = state.pull.body
+  state.pull.body = 'Changed synthetic requirements.'
+  const changedContext = await buildReviewPlan({
+    github,
+    context,
+    pull: state.pull,
+  })
+  assert.equal(changedContext.mode, 'full')
+  state.pull.body = reviewedBody
+
   const [incrementalBody] = renderFinalReviewChunks(rootResult, headSha, {
     backgroundDigest: incremental.backgroundDigest,
     baseRef: state.pull.base.ref,
@@ -3909,10 +4332,14 @@ test('terminalizes over a later passive manual-review status for the same head',
     payload: { repository: { default_branch: 'v3' } },
     repo: { owner: 'uzh-bf', repo: 'klicker-uzh' },
     runId: 702,
+    sha: 'f'.repeat(40),
     serverUrl: 'https://github.com',
   }
 
+  const plan = await buildReviewPlan({ github, context, pull })
   await finalizeFinalReview({
+    ...plan,
+    trustedSha: context.sha,
     github,
     context,
     prNumber: pull.number,

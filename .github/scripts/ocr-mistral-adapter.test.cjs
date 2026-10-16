@@ -183,6 +183,38 @@ test('normalizeMistralResponse keeps plain text and drops no data', () => {
   })
 })
 
+test('cache usage preserves total input and rejects invalid cache counters', () => {
+  for (const cached of [0, 64, 128, -1, 129, 1.5, '64', null, NaN]) {
+    const payload = completion({ role: 'assistant', content: 'answer' })
+    payload.usage = {
+      prompt_tokens: 128,
+      completion_tokens: 4,
+      total_tokens: 132,
+      prompt_tokens_details: {
+        cached_tokens: cached,
+        private_field: 'private',
+      },
+    }
+    const usage = normalizeMistralResponse(payload).usage
+    const valid = Number.isSafeInteger(cached) && cached >= 0 && cached <= 128
+    assert.deepEqual(usage, {
+      prompt_tokens: 128,
+      completion_tokens: 4,
+      total_tokens: 132,
+      ...(valid ? { prompt_tokens_details: { cached_tokens: cached } } : {}),
+    })
+  }
+  for (const prompt of [undefined, -1, 1.5, Number.MAX_SAFE_INTEGER + 1]) {
+    const payload = completion({ role: 'assistant', content: 'answer' })
+    payload.usage.prompt_tokens = prompt
+    payload.usage.prompt_tokens_details = { cached_tokens: 0 }
+    assert.equal(
+      normalizeMistralResponse(payload).usage.prompt_tokens_details,
+      undefined
+    )
+  }
+})
+
 test('normalizeMistralResponse flattens text chunks and concatenates thinking', () => {
   const normalized = normalizeMistralResponse(
     completion({
@@ -509,6 +541,498 @@ test('loopback enforces high or max reasoning before calling upstream', async ()
   } finally {
     await adapter.close()
   }
+})
+
+test('cache affinity is forwarded while malformed keys never reach upstream', async () => {
+  const fetchImpl = upstream(() =>
+    jsonResponse(200, completion({ role: 'assistant', content: 'answer' }))
+  )
+  const adapter = await startAdapter({ apiKey: 'synthetic-key', fetchImpl })
+  try {
+    for (const key of ['session-main-abc123', 'k'.repeat(64)]) {
+      const response = await postJson(adapter, {
+        messages: [{ role: 'user', content: 'synthetic' }],
+        prompt_cache_key: key,
+      })
+      assert.equal(response.status, 200)
+      assert.equal(fetchImpl.calls.at(-1).body.prompt_cache_key, key)
+    }
+    for (const key of [
+      '',
+      'k'.repeat(65),
+      '{ocr_session_key}',
+      'key\n',
+      'path/file',
+      {},
+      null,
+      42,
+    ]) {
+      const response = await postJson(adapter, {
+        messages: [{ role: 'user', content: 'synthetic' }],
+        prompt_cache_key: key,
+      })
+      assert.equal(response.status, 400)
+      assert.equal(response.json.error.code, 'invalid_request')
+    }
+    assert.equal(fetchImpl.calls.length, 2)
+    assert.doesNotMatch(
+      JSON.stringify(adapter.diagnostics()),
+      /session-main-abc123|synthetic-key/
+    )
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('cache diagnostics distinguish reported zero, unavailable and invalid usage', async () => {
+  const reports = [64, 0, undefined, -1, 129, null]
+  const fetchImpl = upstream((_record, index) => {
+    const payload = completion({ role: 'assistant', content: 'private-answer' })
+    payload.usage = {
+      prompt_tokens: 128,
+      completion_tokens: 4,
+      total_tokens: 132,
+    }
+    if (reports[index - 1] !== undefined) {
+      payload.usage.prompt_tokens_details = {
+        cached_tokens: reports[index - 1],
+        private_field: 'private-provider-data',
+      }
+    }
+    return jsonResponse(200, payload)
+  })
+  const adapter = await startAdapter({ apiKey: 'private-key', fetchImpl })
+  try {
+    for (const cached of reports) {
+      const response = await postJson(adapter, {
+        messages: [{ role: 'user', content: 'private-prompt' }],
+        prompt_cache_key: 'private-cache-key',
+      })
+      assert.equal(response.status, 200)
+      assert.equal(response.json.usage.prompt_tokens, 128)
+      assert.equal(response.json.usage.total_tokens, 132)
+      assert.equal(
+        response.json.usage.prompt_tokens_details?.cached_tokens,
+        cached === 64 || cached === 0 ? cached : undefined
+      )
+      assert.doesNotMatch(response.text, /private-provider-data/)
+    }
+    const receipt = adapter.diagnostics()
+    assert.equal(receipt.cache_usage_responses, 2)
+    assert.equal(receipt.missing_cache_usage, 1)
+    assert.equal(receipt.invalid_cache_usage, 3)
+    assert.equal(receipt.cached_prompt_tokens, 64)
+    assert.equal(receipt.uncached_prompt_tokens, 192)
+    assert.equal(receipt.prompt_tokens, 768)
+    assert.equal(receipt.completion_tokens, 24)
+    assert.doesNotMatch(JSON.stringify(receipt), /private-/)
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('OCR completion conversations require tools; auxiliary requests retain their choice', () => {
+  const tools = [{ type: 'function', function: { name: 'task_done' } }]
+  const request = { messages: [{ role: 'user', content: 'synthetic' }], tools }
+  for (const tool_choice of [undefined, 'auto', 'required', 'none']) {
+    assert.equal(
+      translateMistralRequest({ ...request, tool_choice }).tool_choice,
+      'any'
+    )
+  }
+  const explicit = { type: 'function', function: { name: 'task_done' } }
+  assert.deepEqual(
+    translateMistralRequest({ ...request, tool_choice: explicit }).tool_choice,
+    explicit
+  )
+  assert.equal(
+    translateMistralRequest({ ...request, tools: [] }).tool_choice,
+    undefined
+  )
+  assert.equal(
+    translateMistralRequest({ ...request, tools: [], tool_choice: 'none' })
+      .tool_choice,
+    'none'
+  )
+})
+
+test('a provider ignoring required tool use fails without entering OCR prose retries', async () => {
+  const fetchImpl = upstream(() =>
+    jsonResponse(
+      200,
+      completion(
+        {
+          role: 'assistant',
+          content: 'private synthetic response',
+          reasoning_content: 'private synthetic reasoning',
+        },
+        'length'
+      )
+    )
+  )
+  const adapter = await startAdapter({
+    apiKey: 'private synthetic key',
+    fetchImpl,
+  })
+  try {
+    const result = await postJson(adapter, {
+      messages: [{ role: 'user', content: 'private synthetic prompt' }],
+      tools: [{ type: 'function', function: { name: 'task_done' } }],
+    })
+    assert.equal(fetchImpl.calls[0].body.tool_choice, 'any')
+    assert.equal(result.status, 422)
+    assert.equal(result.json.error.code, 'required_tool_call_missing')
+    const receipt = adapter.diagnostics()
+    assert.equal(receipt.upstream_attempts, 1)
+    assert.equal(receipt.main_no_tool_responses, 1)
+    assert.equal(receipt.length_finishes, 1)
+    assert.equal(receipt.prompt_tokens, 3)
+    assert.equal(receipt.completion_tokens, 4)
+    assert.ok(receipt.max_request_bytes > 0)
+    assert.doesNotMatch(JSON.stringify(receipt), /private synthetic/)
+    assert.doesNotMatch(result.text, /private synthetic/)
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('truncated completion is refused without retaining replay history or hiding usage', async () => {
+  const message = {
+    role: 'assistant',
+    content: 'private-answer',
+    reasoning_content: 'private-thinking',
+    tool_calls: [
+      {
+        id: 'done',
+        type: 'function',
+        function: { name: 'task_done', arguments: '{"state":"DONE"}' },
+      },
+    ],
+  }
+  const fetchImpl = upstream((_record, callNumber) =>
+    jsonResponse(200, completion(message, callNumber === 1 ? 'length' : 'stop'))
+  )
+  const adapter = await startAdapter({ apiKey: 'private-key', fetchImpl })
+  const body = {
+    messages: [{ role: 'user', content: 'private-prompt' }],
+    prompt_cache_key: 'private-conversation',
+    tools: [{ type: 'function', function: { name: 'task_done' } }],
+  }
+  try {
+    const rejected = await postJson(adapter, body)
+    assert.equal(rejected.status, 422)
+    assert.equal(rejected.json.error.code, 'truncated_completion')
+    assert.doesNotMatch(rejected.text, /private-/)
+    const replay = await postJson(adapter, {
+      ...body,
+      messages: [
+        ...body.messages,
+        normalizeMistralResponse(completion(message, 'length')).choices[0]
+          .message,
+        { role: 'tool', tool_call_id: 'done', content: 'synthetic' },
+      ],
+    })
+    assert.equal(replay.status, 409)
+    assert.equal(replay.json.error.code, 'history_missing')
+    assert.equal(fetchImpl.calls.length, 1)
+    const accepted = await postJson(adapter, body)
+    assert.equal(accepted.status, 200)
+    const receipt = adapter.diagnostics()
+    assert.equal(receipt.prompt_tokens, 6)
+    assert.equal(receipt.completion_tokens, 8)
+    assert.equal(receipt.length_finishes, 1)
+    assert.equal(receipt.truncated_completions, 1)
+    assert.equal(receipt.request_types.main.truncated_completions, 1)
+    assert.equal(receipt.conversations[0].truncated_completions, 1)
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('diagnostics reconcile request types and opaque conversation counters', async () => {
+  const fetchImpl = upstream(({ body }) => {
+    const main = body.tools?.some((tool) => tool.function?.name === 'task_done')
+    const message = main
+      ? {
+          role: 'assistant',
+          content: '',
+          tool_calls: [
+            {
+              id: 'done',
+              type: 'function',
+              function: { name: 'task_done', arguments: '{"state":"DONE"}' },
+            },
+          ],
+        }
+      : { role: 'assistant', content: 'private-answer' }
+    const payload = completion(message)
+    payload.usage = {
+      prompt_tokens: 128,
+      completion_tokens: 4,
+      total_tokens: 132,
+      prompt_tokens_details: { cached_tokens: 64 },
+    }
+    return jsonResponse(200, payload)
+  })
+  const adapter = await startAdapter({ apiKey: 'private-key', fetchImpl })
+  try {
+    for (const [kind, key] of [
+      ['main', 'private-a'],
+      ['main', 'private-a'],
+      ['main', 'private-b'],
+      ['auxiliary', 'private-a'],
+      ['auxiliary', undefined],
+    ]) {
+      assert.equal(
+        (
+          await postJson(adapter, {
+            messages: [{ role: 'user', content: 'private-prompt' }],
+            ...(key ? { prompt_cache_key: key } : {}),
+            ...(kind === 'main'
+              ? {
+                  tools: [
+                    { type: 'function', function: { name: 'task_done' } },
+                  ],
+                }
+              : {}),
+          })
+        ).status,
+        200
+      )
+    }
+    const receipt = adapter.diagnostics()
+    assert.equal(receipt.conversations.length, 3)
+    assert.deepEqual(
+      receipt.conversations.map((entry) => entry.requests).sort(),
+      [1, 1, 2]
+    )
+    assert.equal(
+      new Set(receipt.conversations.map((entry) => entry.id)).size,
+      3
+    )
+    assert.equal(receipt.unattributed_requests, 1)
+    assert.equal(receipt.request_types.main.requests, 3)
+    assert.equal(receipt.request_types.auxiliary.requests, 2)
+    for (const metric of [
+      'requests',
+      'responses',
+      'prompt_tokens',
+      'completion_tokens',
+      'cached_prompt_tokens',
+      'uncached_prompt_tokens',
+      'cache_usage_responses',
+      'request_bytes',
+      'response_bytes',
+      'request_duration_ms',
+    ]) {
+      assert.equal(
+        receipt[metric],
+        receipt.request_types.main[metric] +
+          receipt.request_types.auxiliary[metric]
+      )
+    }
+    assert.equal(receipt.prompt_tokens, 640)
+    assert.equal(receipt.cached_prompt_tokens, 320)
+    assert.ok(receipt.response_bytes > 0)
+    assert.ok(receipt.request_duration_ms >= 0)
+    assert.doesNotMatch(JSON.stringify(receipt), /private-/)
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('conversation diagnostics have a fixed bound without losing aggregate usage', async () => {
+  const fetchImpl = upstream(() =>
+    jsonResponse(200, completion({ role: 'assistant', content: 'synthetic' }))
+  )
+  const adapter = await startAdapter({ apiKey: 'synthetic-key', fetchImpl })
+  try {
+    for (let index = 0; index < 257; index += 1) {
+      assert.equal(
+        (
+          await postJson(adapter, {
+            messages: [{ role: 'user', content: 'synthetic' }],
+            prompt_cache_key: `conversation-${index}`,
+          })
+        ).status,
+        200
+      )
+    }
+    const receipt = adapter.diagnostics()
+    assert.equal(receipt.conversations.length, 256)
+    assert.equal(receipt.omitted_conversation_requests, 1)
+    assert.equal(receipt.requests, 257)
+    assert.equal(receipt.request_types.auxiliary.requests, 257)
+    assert.equal(receipt.prompt_tokens, 257 * 3)
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('close drains accounting and attempts diagnostics once before its closure receipt', async () => {
+  let started
+  const upstreamStarted = new Promise((resolve) => {
+    started = resolve
+  })
+  const snapshots = []
+  const fetchImpl = async (_url, init) => {
+    started()
+    await new Promise((_resolve, reject) => {
+      init.signal.addEventListener('abort', () =>
+        setTimeout(() => reject(new Error('private-upstream-error')), 25)
+      )
+    })
+  }
+  const adapter = await startAdapter({
+    apiKey: 'private-key',
+    fetchImpl,
+    onClose: (snapshot) => snapshots.push(snapshot),
+  })
+  const request = postJson(adapter, {
+    messages: [{ role: 'user', content: 'private-prompt' }],
+  }).catch(() => undefined)
+  await upstreamStarted
+  const closing = adapter.close()
+  assert.equal(
+    (
+      await postJson(adapter, {
+        messages: [{ role: 'user', content: 'synthetic' }],
+      })
+    ).status,
+    503
+  )
+  await Promise.all([closing, adapter.close(), request])
+  assert.equal(snapshots.length, 1)
+  assert.equal(snapshots[0].unfinished_requests, 0)
+  assert.equal(snapshots[0].requests, 1)
+  assert.ok(snapshots[0].request_duration_ms >= 20)
+  assert.doesNotMatch(JSON.stringify(snapshots), /private-/)
+})
+
+test('lifetime expiry uses the same single diagnostics callback', async () => {
+  const snapshots = []
+  const adapter = await startAdapter({
+    apiKey: 'synthetic-key',
+    maxLifetimeMs: 20,
+    onClose: (snapshot) => snapshots.push(snapshot),
+  })
+  await adapter.closed
+  await adapter.close()
+  assert.equal(snapshots.length, 1)
+  assert.equal(snapshots[0].unfinished_requests, 0)
+})
+
+test('close bounds an uncooperative request and marks its accounting incomplete', async () => {
+  let started
+  let release
+  const upstreamStarted = new Promise((resolve) => {
+    started = resolve
+  })
+  const snapshots = []
+  const adapter = await startAdapter({
+    apiKey: 'synthetic-key',
+    fetchImpl: () =>
+      new Promise((resolve) => {
+        release = () =>
+          resolve(
+            jsonResponse(
+              200,
+              completion({ role: 'assistant', content: 'synthetic' })
+            )
+          )
+        started()
+      }),
+    onClose: (snapshot) => snapshots.push(snapshot),
+  })
+  const request = postJson(adapter, {
+    messages: [{ role: 'user', content: 'synthetic' }],
+  }).catch(() => undefined)
+  await upstreamStarted
+  try {
+    await adapter.close()
+    assert.equal(snapshots.length, 1)
+    assert.equal(snapshots[0].unfinished_requests, 1)
+    assert.equal(snapshots[0].upstream_attempts, 1)
+    assert.equal(snapshots[0].responses, 0)
+  } finally {
+    release()
+    await request
+  }
+})
+
+test('compression restores only exact reasoned turns, retaining native thinking and bounds', () => {
+  const history = createHistoryStore({ maxEntries: 3 })
+  const prefix = [
+    { role: 'system', content: 's' },
+    { role: 'user', content: 'original' },
+  ]
+  const native = {
+    role: 'assistant',
+    index: 0,
+    content: [
+      { type: 'thinking', thinking: [{ type: 'text', text: 'reasoning' }] },
+    ],
+    tool_calls: [
+      {
+        id: 'id1',
+        type: 'function',
+        function: { name: 'file_read', arguments: '{"file_path":"a.ts"}' },
+      },
+    ],
+  }
+  history.remember(prefix, native)
+  const turn = normalizeMistralResponse(completion(native, 'tool_calls'))
+    .choices[0].message
+  const compressed = [
+    prefix[0],
+    { role: 'user', content: 'compressed summary' },
+  ]
+  const expected = { ...native }
+  delete expected.index
+  assert.deepEqual(
+    history.restoreMessages([...compressed, turn]).at(-1),
+    expected
+  )
+  assert.equal(history.diagnostics().compressed_hits, 1)
+  assert.equal(history.entryCount(), 1)
+  for (const altered of [
+    { ...turn, reasoning_content: undefined },
+    { ...turn, reasoning_content: 'different' },
+    { ...turn, content: 'different' },
+    { ...turn, tool_calls: [{ ...turn.tool_calls[0], id: 'id2' }] },
+    {
+      ...turn,
+      tool_calls: [
+        {
+          ...turn.tool_calls[0],
+          function: { name: 'file_read', arguments: '{"file_path":"b.ts"}' },
+        },
+      ],
+    },
+  ])
+    assert.throws(
+      () => history.restoreMessages([...compressed, altered]),
+      /unavailable/
+    )
+  const secondPrefix = [prefix[0], { role: 'user', content: 'another group' }]
+  history.remember(secondPrefix, { ...native, index: 1 })
+  assert.deepEqual(
+    history.restoreMessages([...compressed, turn]).at(-1),
+    expected
+  )
+  history.remember([{ role: 'user', content: 'third group' }], {
+    ...native,
+    content: [{ ...native.content[0], signature: 'different native state' }],
+  })
+  assert.deepEqual(history.restoreMessages([...prefix, turn]).at(-1), expected)
+  assert.throws(
+    () => history.restoreMessages([...compressed, turn]),
+    /ambiguous/
+  )
+  assert.throws(
+    () => history.remember([{ role: 'user', content: 'fourth group' }], native),
+    /bound/
+  )
 })
 
 test('request conversion and native replay work over the loopback listener', async () => {
@@ -1237,22 +1761,51 @@ test('run strips the upstream key and injects the OCR environment', async () => 
 })
 
 test('run propagates the child exit code', async () => {
-  const result = await runCli(
-    ['run', '--', process.execPath, '-e', 'process.exit(7)'],
-    { MISTRAL_API_KEY: 'sk-synthetic-run' }
-  )
-  assert.equal(result.code, 7)
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-diagnostics-'))
+  try {
+    const diagnosticsPath = path.join(directory, 'diagnostics.jsonl')
+    const result = await runCli(
+      ['run', '--', process.execPath, '-e', 'process.exit(7)'],
+      {
+        MISTRAL_API_KEY: 'sk-synthetic-run',
+        OCR_ADAPTER_DIAGNOSTICS_PATH: diagnosticsPath,
+      }
+    )
+    assert.equal(result.code, 7)
+    const diagnostics = JSON.parse(fs.readFileSync(diagnosticsPath, 'utf8'))
+    assert.equal(diagnostics.schema_version, 1)
+    assert.equal(diagnostics.upstream_attempts, 0)
+    assert.doesNotMatch(JSON.stringify(diagnostics), /sk-synthetic-run/)
+    const missing = await runCli(
+      ['run', '--', process.execPath, '-e', 'process.exit(0)'],
+      {
+        MISTRAL_API_KEY: 'sk-synthetic-run',
+        OCR_ADAPTER_DIAGNOSTICS_PATH: path.join(
+          directory,
+          'absent',
+          'receipt.jsonl'
+        ),
+      }
+    )
+    assert.equal(missing.code, 0)
+    assert.match(missing.stderr, /execution counters unavailable/)
+    assert.doesNotMatch(missing.stderr, /ENOENT|absent|sk-synthetic-run/)
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
 })
 
 test('start/serve/stop own the listener lifecycle', async (t) => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-adapter-lifecycle-'))
   const statePath = path.join(tmp, 'state.json')
   const outputPath = path.join(tmp, 'github-output.txt')
+  const diagnosticsPath = path.join(tmp, 'diagnostics.jsonl')
   fs.writeFileSync(outputPath, '')
   const env = {
     MISTRAL_API_KEY: 'sk-synthetic-start',
     RUNNER_TEMP: tmp,
     GITHUB_OUTPUT: outputPath,
+    OCR_ADAPTER_DIAGNOSTICS_PATH: diagnosticsPath,
   }
 
   // The detached serve outlives an assertion failure, so stop it no matter how
@@ -1292,6 +1845,13 @@ test('start/serve/stop own the listener lifecycle', async (t) => {
   const stopped = await runCli(['stop', statePath], env)
   assert.equal(stopped.code, 0, stopped.stderr)
   assert.equal(fs.existsSync(statePath), false)
+  const diagnosticsText = fs.readFileSync(diagnosticsPath, 'utf8')
+  assert.equal(diagnosticsText.trim().split('\n').length, 1)
+  assert.equal(JSON.parse(diagnosticsText).unfinished_requests, 0)
+  assert.equal(fs.statSync(diagnosticsPath).mode & 0o777, 0o600)
+  assert.doesNotMatch(diagnosticsText, /sk-synthetic-start/)
+  assert.equal((await runCli(['stop', statePath], env)).code, 0)
+  assert.equal(fs.readFileSync(diagnosticsPath, 'utf8'), diagnosticsText)
 
   let refused = false
   try {
@@ -1300,6 +1860,57 @@ test('start/serve/stop own the listener lifecycle', async (t) => {
     refused = true
   }
   assert.equal(refused, true)
+})
+
+test('detached server persists once on SIGTERM and safely handles an unwritable report', async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-serve-signal-'))
+  try {
+    for (const writable of [true, false]) {
+      const statePath = path.join(directory, `state-${writable}.json`)
+      const diagnosticsPath = writable
+        ? path.join(directory, 'diagnostics.jsonl')
+        : path.join(directory, 'absent', 'diagnostics.jsonl')
+      const child = spawn(process.execPath, [ADAPTER, 'serve', statePath], {
+        env: {
+          ...process.env,
+          MISTRAL_API_KEY: 'sk-private-serve',
+          RUNNER_TEMP: directory,
+          OCR_ADAPTER_DIAGNOSTICS_PATH: diagnosticsPath,
+        },
+      })
+      let stderr = ''
+      child.stderr.on('data', (chunk) => {
+        stderr += chunk
+      })
+      const exited = new Promise((resolve) => {
+        child.on('exit', (code) => resolve(code))
+        child.on('error', () => resolve(null))
+      })
+      try {
+        assert.ok(
+          await waitFor(() => fs.existsSync(statePath)),
+          'serve must become ready'
+        )
+        child.kill('SIGTERM')
+        assert.equal(await exited, 0, stderr)
+        assert.equal(fs.existsSync(statePath), false)
+        if (writable) {
+          const lines = fs
+            .readFileSync(diagnosticsPath, 'utf8')
+            .trim()
+            .split('\n')
+          assert.equal(lines.length, 1)
+          assert.equal(JSON.parse(lines[0]).unfinished_requests, 0)
+        } else assert.match(stderr, /execution counters unavailable/)
+        assert.doesNotMatch(stderr, /sk-private-serve|ENOENT|absent/)
+      } finally {
+        child.kill('SIGKILL')
+        await exited
+      }
+    }
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
 })
 
 test('stop refuses a non-loopback state url', async () => {
@@ -1329,13 +1940,23 @@ test('state paths outside RUNNER_TEMP are refused', async () => {
 })
 
 test('run terminates its listener on SIGTERM', async () => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-signal-diagnostics-')
+  )
+  const diagnosticsPath = path.join(directory, 'diagnostics.jsonl')
   const script =
     'process.stdout.write(process.env.OCR_LLM_URL + "\\n");' +
     ' setInterval(() => {}, 1000)'
   const child = spawn(
     process.execPath,
     [ADAPTER, 'run', '--', process.execPath, '-e', script],
-    { env: { ...process.env, MISTRAL_API_KEY: 'sk-synthetic-signal' } }
+    {
+      env: {
+        ...process.env,
+        MISTRAL_API_KEY: 'sk-synthetic-signal',
+        OCR_ADAPTER_DIAGNOSTICS_PATH: diagnosticsPath,
+      },
+    }
   )
   let stdout = ''
   child.stdout.on('data', (chunk) => {
@@ -1359,6 +1980,10 @@ test('run terminates its listener on SIGTERM', async () => {
       }),
     ])
     assert.ok(!result.timeout, 'run did not exit after SIGTERM')
+    assert.equal(
+      fs.readFileSync(diagnosticsPath, 'utf8').trim().split('\n').length,
+      1
+    )
     let refused = false
     try {
       await fetch(url[1], { method: 'POST', body: '{}' })
@@ -1371,5 +1996,6 @@ test('run terminates its listener on SIGTERM', async () => {
     clearTimeout(timer)
     child.kill('SIGKILL')
     await exited
+    fs.rmSync(directory, { recursive: true, force: true })
   }
 })

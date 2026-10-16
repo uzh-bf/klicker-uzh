@@ -90,7 +90,7 @@ errors, which can contain credentials. For retained volumes, follow the
 | Auth adapter against shared Prisma client                                         | disposable local PostgreSQL through the guarded Auth round-trip                                         | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                                               |
 | Auth routing, cookies and API handlers                                            | Vitest unit and handler integration projects; no database or real identity provider                     | `pnpm --filter @klicker-uzh/auth test:run`                                                                          |
 | Compiled auth proxy and server-rendered recovery                                  | Vitest built-app integration project; requires an auth production build                                 | `pnpm --filter @klicker-uzh/auth test:built`                                                                        |
-| UI / user flows                                                                   | Playwright e2e                                                                                          | `pnpm playwright:host -- <args>` from the host; see routing below                                                   |
+| UI / user flows                                                                   | Playwright e2e                                                                                          | `node util/run-playwright-host.mjs <args>` from the host; see routing below                                         |
 | Office Add-in URL validation                                                      | Node's built-in test runner — safe without services                                                     | `pnpm --filter @klicker-uzh/office-addin test`                                                                      |
 
 For server-paginated manage lists, browser coverage must exercise finite page
@@ -189,10 +189,16 @@ The Office Add-in has a separate host boundary. Its pure URL contract runs under
 **Playwright is the sole e2e test suite.** All e2e specs live under `playwright/`.
 
 Local Playwright has a strict host/container boundary. The canonical command is
-`pnpm playwright:host -- <args>` from a host shell. It reconciles the exact
+`node util/run-playwright-host.mjs <args>` from a host shell. It reconciles the exact
 devrouter workspace, maps every browser origin, discovers the workspace's
 random loopback PostgreSQL port, and runs Playwright with host dependencies and
-browser binaries. Package scripts route to the same launcher, while
+browser binaries. The `pnpm playwright:host` package script calls the same
+launcher, but pnpm's `verifyDepsBeforeRun: error` check stops it before the
+launcher runs whenever the host install is missing or stale. That is the normal
+state of a devcontainer checkout. The launcher prints the stack mode before the
+browser phase: Next dev servers locally (CI tests production builds), the
+runtime profile, and the database port. `--print-env` prints the workspace,
+app URLs, and database host without running tests. Package scripts route to the same launcher, while
 `playwright.config.ts` rejects direct local commands and every local container
 before global setup can reset data. The devcontainer also sets a non-directory
 browser path so browser installation fails there. GitHub Actions is explicitly
@@ -219,7 +225,7 @@ Specs click `data-cy` attributes ([Frontend Conventions](./frontend-conventions.
 
 |               | Playwright (`playwright/`)                            |
 | ------------- | ----------------------------------------------------- |
-| Local command | `pnpm playwright:host -- <args>`                      |
+| Local command | `node util/run-playwright-host.mjs <args>`            |
 | Infisical env | `dev-playwright`                                      |
 | Seed          | own `seedDatabase()` in `global-setup.ts`             |
 | CI            | official Playwright container, 8-way shard, ready PRs |
@@ -331,7 +337,7 @@ trusted planner assigns candidate-only specs to `full`. The runtime adapter
 resolves a union containing `full` through the explicit `playwright` Devrouter
 profile, which includes every CI-supported application but excludes local-only
 MCP, LiteLLM, and MailHog resources.
-CI installs `@devrouter/cli` version `0.3.0` through
+CI installs `@devrouter/cli` version `0.4.0` through
 `.github/scripts/install-devrouter.sh` in a job-local tool prefix, with install
 scripts disabled. The shard action uses the trusted control checkout's installer
 and passes its absolute executable path to the runtime adapter, including for

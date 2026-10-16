@@ -27,13 +27,15 @@ const DEFAULT_MAX_HISTORY_ENTRIES = 2000
 const DEFAULT_MAX_HISTORY_BYTES = 128 * 1024 * 1024
 const STARTUP_TIMEOUT_MS = 5000
 const SHUTDOWN_TIMEOUT_MS = 5000
+const SHUTDOWN_DRAIN_TIMEOUT_MS = 1000
+const MAX_DIAGNOSTIC_CONVERSATIONS = 256
 
 const LOOPBACK_HOST = '127.0.0.1'
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1'])
 const CHAT_PATH = '/v1/chat/completions'
 const SHUTDOWN_PATH = '/shutdown'
 
-// Only OpenAI-compatible sampling and tool fields reach Mistral. Anything else
+// Only explicitly supported OpenAI-compatible fields reach Mistral. Anything else
 // in the incoming body (reasoning, provider, thinking, stream_options, ...) is
 // dropped by omission rather than copied and filtered.
 const PASSTHROUGH_FIELDS = [
@@ -256,6 +258,15 @@ function normalizeUsage(usage) {
   for (const key of ['prompt_tokens', 'completion_tokens', 'total_tokens']) {
     if (Number.isFinite(usage[key])) normalized[key] = usage[key]
   }
+  const cached = usage.prompt_tokens_details?.cached_tokens
+  if (
+    Number.isSafeInteger(cached) &&
+    cached >= 0 &&
+    Number.isSafeInteger(normalized.prompt_tokens) &&
+    cached <= normalized.prompt_tokens
+  ) {
+    normalized.prompt_tokens_details = { cached_tokens: cached }
+  }
   return Object.keys(normalized).length > 0 ? normalized : undefined
 }
 
@@ -384,6 +395,13 @@ function createHistoryStore(options = {}) {
   const maxEntries = options.maxEntries ?? DEFAULT_MAX_HISTORY_ENTRIES
   const maxBytes = options.maxBytes ?? DEFAULT_MAX_HISTORY_BYTES
   const native = new Map()
+  const reasonedTurns = new Map()
+  const diagnostics = {
+    prefix_hits: 0,
+    compressed_hits: 0,
+    misses: 0,
+    replay_bytes: 0,
+  }
   let entries = 0
   let bytes = 0
 
@@ -392,6 +410,12 @@ function createHistoryStore(options = {}) {
       prefix: prefixIdentities,
       assistant: assistantIdentity,
     })
+  }
+
+  function reasonedKey(message) {
+    const reasoning = extractReasoning(message.reasoning_content)
+    if (!reasoning) return undefined
+    return hashIdentity({ assistant: messageIdentity(message), reasoning })
   }
 
   function remember(prefixMessages, nativeMessage) {
@@ -417,7 +441,18 @@ function createHistoryStore(options = {}) {
         'native reasoning history bound exceeded'
       )
     }
-    native.set(key, { serialized, size })
+    const restorable = { ...nativeMessage }
+    delete restorable.index
+    const entry = { serialized, size, digest: hashIdentity(restorable) }
+    native.set(key, entry)
+    const turnKey = reasonedKey(normalized)
+    if (turnKey) {
+      // Compression rewrites the prefix. Only an exact reasoned turn with one
+      // distinct native payload can be restored independently of that prefix.
+      const prior = reasonedTurns.get(turnKey)
+      if (!reasonedTurns.has(turnKey)) reasonedTurns.set(turnKey, entry)
+      else if (prior?.digest !== entry.digest) reasonedTurns.set(turnKey, null)
+    }
     entries += 1
     bytes += size
   }
@@ -427,19 +462,31 @@ function createHistoryStore(options = {}) {
     const prefix = prefixMessages.map(messageIdentity)
     const identity = messageIdentity(normalized)
     const key = keyFor(prefix, identity)
-    const existing = native.get(key)
+    let existing = native.get(key)
+    if (existing) diagnostics.prefix_hits += 1
+    else {
+      const turnKey = reasonedKey(normalized)
+      existing = turnKey ? reasonedTurns.get(turnKey) : undefined
+      if (existing === null) {
+        diagnostics.misses += 1
+        throw new AdapterError('history_collision', 'ambiguous compressed turn')
+      }
+      if (existing) diagnostics.compressed_hits += 1
+    }
     if (!existing) {
       // Every replayed assistant turn must be one this adapter produced and
       // retained. A miss means flattening would silently lose the native
       // reasoning, so it fails closed even when the SDK omitted
       // reasoning_content, rather than falling back to the flattened turn. The
       // binary's first request carries no assistant messages.
+      diagnostics.misses += 1
       throw new AdapterError(
         'history_missing',
         'native assistant state is unavailable for a replayed turn'
       )
     }
     const nativeMessage = JSON.parse(existing.serialized)
+    diagnostics.replay_bytes += existing.size
     // Mistral returns a message index but rejects it in request messages.
     delete nativeMessage.index
     return nativeMessage
@@ -462,6 +509,7 @@ function createHistoryStore(options = {}) {
     restoreMessages,
     entryCount: () => entries,
     byteCount: () => bytes,
+    diagnostics: () => ({ ...diagnostics }),
   }
 }
 
@@ -501,6 +549,15 @@ function translateMistralRequest(body, history = createHistoryStore()) {
     messages: history.restoreMessages(body.messages),
     reasoning_effort: effort,
   }
+  if (body.prompt_cache_key !== undefined) {
+    if (
+      typeof body.prompt_cache_key !== 'string' ||
+      !/^[A-Za-z0-9_-]{1,64}$/.test(body.prompt_cache_key)
+    ) {
+      throw new AdapterError('invalid_request', 'invalid prompt cache key')
+    }
+    translated.prompt_cache_key = body.prompt_cache_key
+  }
   for (const field of PASSTHROUGH_FIELDS) {
     if (body[field] !== undefined && body[field] !== null) {
       translated[field] = body[field]
@@ -514,7 +571,21 @@ function translateMistralRequest(body, history = createHistoryStore()) {
   if (maxTokens !== undefined && maxTokens !== null) {
     translated.max_tokens = maxTokens
   }
+  if (hasCompletionTool(body) && typeof translated.tool_choice !== 'object') {
+    // OCR completes through task_done. Optional tool use lets a prose answer
+    // enter its zero-tool retry path, which replays the growing history.
+    translated.tool_choice = 'any'
+  }
   return translated
+}
+
+function hasCompletionTool(body) {
+  return (
+    Array.isArray(body.tools) &&
+    body.tools.some(
+      (tool) => tool?.type === 'function' && tool.function?.name === 'task_done'
+    )
+  )
 }
 
 function timingSafeEqual(left, right) {
@@ -547,6 +618,12 @@ function sendJson(res, status, payload) {
 }
 
 function statusForErrorCode(code) {
+  if (
+    code === 'required_tool_call_missing' ||
+    code === 'truncated_completion'
+  ) {
+    return 422
+  }
   if (code === 'request_too_large') return 413
   if (code === 'upstream_timeout') return 504
   if (code === 'history_missing') return 409
@@ -639,6 +716,29 @@ async function drain(response, limit) {
   }
 }
 
+function createExecutionCounters() {
+  return {
+    requests: 0,
+    upstream_attempts: 0,
+    responses: 0,
+    missing_usage: 0,
+    main_no_tool_responses: 0,
+    length_finishes: 0,
+    truncated_completions: 0,
+    prompt_tokens: 0,
+    completion_tokens: 0,
+    cached_prompt_tokens: 0,
+    uncached_prompt_tokens: 0,
+    cache_usage_responses: 0,
+    missing_cache_usage: 0,
+    invalid_cache_usage: 0,
+    max_request_bytes: 0,
+    request_bytes: 0,
+    response_bytes: 0,
+    request_duration_ms: 0,
+  }
+}
+
 async function startAdapter(options = {}) {
   const apiKey = options.apiKey
   const fetchImpl = options.fetchImpl ?? globalThis.fetch
@@ -662,6 +762,21 @@ async function startAdapter(options = {}) {
     maxEntries: options.maxHistoryEntries,
     maxBytes: options.maxHistoryBytes,
   })
+  const diagnostics = {
+    ...createExecutionCounters(),
+    main_requests: 0,
+    auxiliary_requests: 0,
+    unattributed_requests: 0,
+    omitted_conversation_requests: 0,
+    unfinished_requests: 0,
+  }
+  const requestTypes = {
+    main: createExecutionCounters(),
+    auxiliary: createExecutionCounters(),
+  }
+  const conversationSalt = crypto.randomBytes(32)
+  const conversations = new Map()
+  const pendingRequests = new Set()
   const active = new Set()
   const sockets = new Set()
   let closing = null
@@ -672,7 +787,7 @@ async function startAdapter(options = {}) {
 
   function close() {
     if (closing) return closing
-    closing = new Promise((resolve) => {
+    closing = (async () => {
       clearTimeout(lifetime)
       for (const controller of active) {
         try {
@@ -682,14 +797,34 @@ async function startAdapter(options = {}) {
         }
       }
       active.clear()
-      server.close(() => {
-        resolveClosed()
-        resolve()
-      })
       for (const socket of sockets) {
         socket.destroy()
       }
-    })
+      let drainTimer
+      try {
+        await Promise.race([
+          Promise.allSettled([...pendingRequests]),
+          new Promise((resolve) => {
+            drainTimer = setTimeout(resolve, SHUTDOWN_DRAIN_TIMEOUT_MS)
+          }),
+        ])
+      } finally {
+        clearTimeout(drainTimer)
+      }
+      diagnostics.unfinished_requests = pendingRequests.size
+      try {
+        options.onClose?.(snapshot())
+      } catch {
+        process.stderr.write('OCR adapter execution counters unavailable\n')
+      }
+      // Listener closure is the stop command's receipt. Persist diagnostics
+      // first, while new work is refused, so artifact upload cannot race it.
+      await new Promise((resolve) => {
+        server.close(resolve)
+        for (const socket of sockets) socket.destroy()
+      })
+      resolveClosed()
+    })()
     return closing
   }
 
@@ -728,6 +863,37 @@ async function startAdapter(options = {}) {
       return
     }
 
+    const main = hasCompletionTool(body)
+    const kind = main ? 'main' : 'auxiliary'
+    const counters = [diagnostics, requestTypes[kind]]
+    if (mistralBody.prompt_cache_key) {
+      const id = crypto
+        .createHmac('sha256', conversationSalt)
+        .update(`${kind}:${mistralBody.prompt_cache_key}`)
+        .digest('hex')
+        .slice(0, 32)
+      if (
+        !conversations.has(id) &&
+        conversations.size < MAX_DIAGNOSTIC_CONVERSATIONS
+      ) {
+        conversations.set(id, { id, kind, ...createExecutionCounters() })
+      }
+      if (conversations.has(id)) counters.push(conversations.get(id))
+      else diagnostics.omitted_conversation_requests += 1
+    } else diagnostics.unattributed_requests += 1
+    diagnostics[main ? 'main_requests' : 'auxiliary_requests'] += 1
+    const startedAt = performance.now()
+    const requestBody = JSON.stringify(mistralBody)
+    const requestBytes = Buffer.byteLength(requestBody)
+    for (const counter of counters) {
+      counter.requests += 1
+      counter.request_bytes += requestBytes
+      counter.max_request_bytes = Math.max(
+        counter.max_request_bytes,
+        requestBytes
+      )
+    }
+
     const controller = new AbortController()
     active.add(controller)
     const abort = () => {
@@ -747,13 +913,14 @@ async function startAdapter(options = {}) {
     }, timeoutMs)
 
     try {
+      for (const counter of counters) counter.upstream_attempts += 1
       const upstream = await fetchImpl(MISTRAL_URL, {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
           authorization: `Bearer ${apiKey}`,
         },
-        body: JSON.stringify(mistralBody),
+        body: requestBody,
         signal: controller.signal,
         redirect: 'error',
       })
@@ -773,12 +940,56 @@ async function startAdapter(options = {}) {
         throw new AdapterError('malformed_response', 'invalid upstream JSON')
       }
       const normalized = normalizeMistralResponse(payload)
+      const cached = normalized.usage?.prompt_tokens_details?.cached_tokens
+      const choice = normalized.choices[0]
+      const responseBytes = Buffer.byteLength(text)
+      for (const counter of counters) {
+        counter.responses += 1
+        counter.response_bytes += responseBytes
+        if (normalized.usage) {
+          counter.prompt_tokens += normalized.usage.prompt_tokens ?? 0
+          counter.completion_tokens += normalized.usage.completion_tokens ?? 0
+        } else counter.missing_usage += 1
+        if (cached !== undefined) {
+          counter.cache_usage_responses += 1
+          counter.cached_prompt_tokens += cached
+          counter.uncached_prompt_tokens +=
+            normalized.usage.prompt_tokens - cached
+        } else if (
+          payload.usage?.prompt_tokens_details?.cached_tokens !== undefined
+        ) {
+          counter.invalid_cache_usage += 1
+        } else counter.missing_cache_usage += 1
+        if (choice.finish_reason === 'length') counter.length_finishes += 1
+      }
+      if (
+        main &&
+        choice.finish_reason === 'length' &&
+        choice.message.tool_calls?.some(
+          (call) => call.function.name === 'task_done'
+        )
+      ) {
+        for (const counter of counters) counter.truncated_completions += 1
+        throw new AdapterError(
+          'truncated_completion',
+          'completion was truncated'
+        )
+      }
+      if (main && !choice.message.tool_calls?.length) {
+        for (const counter of counters) counter.main_no_tool_responses += 1
+        throw new AdapterError(
+          'required_tool_call_missing',
+          'review requires a tool call'
+        )
+      }
       const message = payload.choices[0].message
       history.remember(body.messages, message)
       sendJson(res, 200, normalized)
     } catch (error) {
       sendAdapterError(res, error)
     } finally {
+      const duration = Math.max(0, Math.round(performance.now() - startedAt))
+      for (const counter of counters) counter.request_duration_ms += duration
       clearTimeout(timer)
       active.delete(controller)
     }
@@ -812,9 +1023,17 @@ async function startAdapter(options = {}) {
   }
 
   const server = http.createServer((req, res) => {
-    handleRequest(req, res).catch(() => {
+    if (closing) {
+      sendJson(res, 503, {
+        error: { message: 'adapter request failed', code: 'adapter_closing' },
+      })
+      return
+    }
+    const request = handleRequest(req, res).catch(() => {
       sendAdapterError(res, new AdapterError('internal_error', 'internal'))
     })
+    pendingRequests.add(request)
+    request.then(() => pendingRequests.delete(request))
   })
   server.on('connection', (socket) => {
     sockets.add(socket)
@@ -833,7 +1052,28 @@ async function startAdapter(options = {}) {
   }, maxLifetimeMs)
   if (typeof lifetime.unref === 'function') lifetime.unref()
 
-  return { url: baseUrl, token, close, closed }
+  function snapshot() {
+    return {
+      schema_version: 1,
+      ...diagnostics,
+      request_types: {
+        main: { ...requestTypes.main },
+        auxiliary: { ...requestTypes.auxiliary },
+      },
+      conversations: [...conversations.values()].map((counter) => ({
+        ...counter,
+      })),
+      history: history.diagnostics(),
+    }
+  }
+
+  return {
+    url: baseUrl,
+    token,
+    close,
+    closed,
+    diagnostics: snapshot,
+  }
 }
 
 async function callMistral(options = {}) {
@@ -1033,13 +1273,25 @@ async function waitForClosed(url, deadlineMs) {
   }
 }
 
+function writeDiagnostics(snapshot) {
+  const diagnosticsPath = process.env.OCR_ADAPTER_DIAGNOSTICS_PATH
+  if (!diagnosticsPath) return
+  try {
+    fs.appendFileSync(diagnosticsPath, `${JSON.stringify(snapshot)}\n`, {
+      mode: 0o600,
+    })
+  } catch {
+    process.stderr.write('OCR adapter execution counters unavailable\n')
+  }
+}
+
 async function commandRun(args) {
   const argv = args[0] === '--' ? args.slice(1) : args
   if (argv.length === 0) {
     throw new AdapterError('missing_command', 'run requires an executable')
   }
   const apiKey = requireEnv('MISTRAL_API_KEY')
-  const adapter = await startAdapter({ apiKey })
+  const adapter = await startAdapter({ apiKey, onClose: writeDiagnostics })
   const childEnv = { ...process.env }
   delete childEnv.MISTRAL_API_KEY
   childEnv.OCR_LLM_URL = `${adapter.url}${CHAT_PATH}`
@@ -1118,12 +1370,10 @@ async function commandStart(args) {
 async function commandServe(args) {
   const statePath = resolveStatePath(args[0])
   const apiKey = requireEnv('MISTRAL_API_KEY')
-  const adapter = await startAdapter({ apiKey })
+  const adapter = await startAdapter({ apiKey, onClose: writeDiagnostics })
   writeState(statePath, { url: adapter.url, token: adapter.token })
-  const shutdown = async () => {
-    await adapter.close()
-    removeState(statePath)
-    process.exit(0)
+  const shutdown = () => {
+    adapter.close()
   }
   process.on('SIGTERM', shutdown)
   process.on('SIGINT', shutdown)
