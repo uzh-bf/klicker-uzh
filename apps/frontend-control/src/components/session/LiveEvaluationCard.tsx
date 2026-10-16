@@ -59,8 +59,18 @@ function NumericalHistogram({
 }: {
   values: { value: number; count: number }[]
 }) {
-  const min = Math.min(...values.map((v) => v.value))
-  const max = Math.max(...values.map((v) => v.value))
+  const t = useTranslations()
+  // non-numeric responses aggregate to NaN; skip them instead of crashing
+  const finite = values.filter((v) => Number.isFinite(v.value))
+  if (finite.length === 0) {
+    return (
+      <div className="text-ctrl-muted py-3 text-sm">
+        {t('control.liveQuiz.noAnswersYet')}
+      </div>
+    )
+  }
+  const min = Math.min(...finite.map((v) => v.value))
+  const max = Math.max(...finite.map((v) => v.value))
   const numBins = min === max ? 1 : 5
   const width = (max - min) / numBins || 1
   const bins = Array.from({ length: numBins }, (_, ix) => ({
@@ -68,7 +78,7 @@ function NumericalHistogram({
     to: min + (ix + 1) * width,
     count: 0,
   }))
-  for (const { value, count } of values) {
+  for (const { value, count } of finite) {
     const ix = Math.min(numBins - 1, Math.floor((value - min) / width))
     bins[ix]!.count += count
   }

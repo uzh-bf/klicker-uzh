@@ -12,6 +12,7 @@ import {
   EndLiveQuizDocument,
   GetControlCourseLiveQuizzesDocument,
   GetControlCourseOverviewDocument,
+  GetControlLiveQuizEvaluationDocument,
   GetControlLiveQuizFeedbacksDocument,
   GetControlLiveQuizSessionDocument,
   GetUnassignedControlLiveQuizzesDocument,
@@ -92,7 +93,11 @@ function RunningLiveQuiz() {
   )
   const [deactivateLiveQuizBlock, { loading: deactivatingBlock }] = useMutation(
     DeactivateLiveQuizBlockDocument,
-    { refetchQueries }
+    {
+      // polling of the evaluation stops once the block is closed, so fetch
+      // the final results once to include the last answers
+      refetchQueries: [...refetchQueries, GetControlLiveQuizEvaluationDocument],
+    }
   )
   const [endLiveQuiz, { loading: endingLiveQuiz }] = useMutation(
     EndLiveQuizDocument,
@@ -351,7 +356,12 @@ function RunningLiveQuiz() {
               loading={endingLiveQuiz}
               onClick={() =>
                 runAction(async () => {
-                  await endLiveQuiz({ variables: { id } })
+                  const result = await endLiveQuiz({ variables: { id } })
+                  // a null result means the quiz was not ended (e.g. changed
+                  // state meanwhile); keep the controls instead of "ended"
+                  if (!result.data?.endLiveQuiz) {
+                    throw new Error('live quiz not ended')
+                  }
                   setEndSheetOpen(false)
                   setEnded({ name, numOfBlocks: blocks.length, backHref })
                 })

@@ -6,7 +6,7 @@ import {
   GetSingleLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button } from '@uzh-bf/design-system'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
 import ResponsiveSheet from '../common/ResponsiveSheet'
@@ -92,7 +92,7 @@ function EmbeddingModal({
     variables: { quizId },
     skip: !quizId,
   })
-  const { data, loading } = useQuery(GetLiveQuizEmbeddingInfoDocument, {
+  const { data, loading, error } = useQuery(GetLiveQuizEmbeddingInfoDocument, {
     variables: { id: quizId },
     skip: !quizId,
   })
@@ -124,8 +124,13 @@ function EmbeddingModal({
       <p className="text-ctrl-muted mb-3.5 text-sm">
         {t('control.course.pptEmbeddingHint')}
       </p>
-      {loading || !hmac ? (
+      {loading ? (
         <Loader />
+      ) : error || !hmac ? (
+        <UserNotification
+          type="error"
+          message={t('control.liveQuiz.actionFailed')}
+        />
       ) : (
         <div className="flex flex-col gap-3.5">
           {questions.map((element, ix) =>

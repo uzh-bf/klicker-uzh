@@ -9,7 +9,6 @@ import {
   GetControlCourseOverviewDocument,
   GetControlLiveQuizSessionDocument,
   GetUnassignedControlLiveQuizzesDocument,
-  GetUnassignedLiveQuizzesDocument,
   GetUserRunningLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -46,7 +45,6 @@ function RunningQuizBanner({ quiz }: RunningQuizBannerProps) {
     refetchQueries: [
       GetUserRunningLiveQuizzesDocument,
       GetControlCourseOverviewDocument,
-      GetUnassignedLiveQuizzesDocument,
       GetControlCourseLiveQuizzesDocument,
       GetUnassignedControlLiveQuizzesDocument,
     ],
@@ -75,7 +73,8 @@ function RunningQuizBanner({ quiz }: RunningQuizBannerProps) {
           variables: { quizId: quiz.id, blockId: running.id },
         })
       }
-      await endLiveQuiz({ variables: { id: quiz.id } })
+      const result = await endLiveQuiz({ variables: { id: quiz.id } })
+      if (!result.data?.endLiveQuiz) throw new Error('live quiz not ended')
       setSheetOpen(false)
       toast({
         type: 'success',

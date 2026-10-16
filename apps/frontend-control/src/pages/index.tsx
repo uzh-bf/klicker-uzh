@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import {
   GetControlCourseOverviewDocument,
-  GetUnassignedLiveQuizzesDocument,
+  GetUnassignedControlLiveQuizzesDocument,
   GetUserRunningLiveQuizzesDocument,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -38,9 +38,12 @@ function Index() {
   const { data: runningData } = useQuery(GetUserRunningLiveQuizzesDocument, {
     fetchPolicy: 'cache-and-network',
   })
-  const { data: unassignedData } = useQuery(GetUnassignedLiveQuizzesDocument, {
-    fetchPolicy: 'cache-and-network',
-  })
+  const { data: unassignedData } = useQuery(
+    GetUnassignedControlLiveQuizzesDocument,
+    {
+      fetchPolicy: 'cache-and-network',
+    }
+  )
 
   const title = t('control.home.courseSelection')
   const header = <HomeHeader />
