@@ -20,7 +20,7 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 const PAGE_SIZE = 20
 
@@ -243,10 +243,16 @@ function ImportedSourceTable({
   )
 }
 
-function KnowledgeBaseImportedSourceList({ kbId }: { kbId: string }) {
+function KnowledgeBaseImportedSourceList({
+  kbId,
+  refreshKey,
+}: {
+  kbId: string
+  refreshKey: number
+}) {
   const t = useTranslations()
   const [loadMoreFailed, setLoadMoreFailed] = useState(false)
-  const { data, loading, error, fetchMore, networkStatus } = useQuery(
+  const { data, loading, error, fetchMore, networkStatus, refetch } = useQuery(
     GetKbImportedSourcesDocument,
     {
       variables: { kbId, first: PAGE_SIZE },
@@ -256,6 +262,13 @@ function KnowledgeBaseImportedSourceList({ kbId }: { kbId: string }) {
   const connection = data?.getKbImportedSources
   const sources = connection?.items ?? []
   const loadingMore = networkStatus === NetworkStatus.fetchMore
+
+  useEffect(() => {
+    if (refreshKey === 0) return
+    void refetch().catch((refreshError) => {
+      console.error('Failed to refresh indexed KB sources', refreshError)
+    })
+  }, [refetch, refreshKey])
 
   const loadMore = async () => {
     if (!connection?.pageInfo.hasNextPage || loadingMore) return

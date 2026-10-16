@@ -3,7 +3,7 @@ import { GetKbDocument } from '@klicker-uzh/graphql/dist/ops'
 import { H1, Skeleton, UserNotification } from '@uzh-bf/design-system'
 import Link from 'next/link'
 import { useFormatter, useTranslations } from 'next-intl'
-import React, { useRef, useState } from 'react'
+import React, { useCallback, useRef, useState } from 'react'
 import KnowledgeBaseAddResourceModal from './components/KnowledgeBaseAddResourceModal'
 import KnowledgeBaseChatbotBindings from './components/KnowledgeBaseChatbotBindings'
 import KnowledgeBaseImportedSourceList from './components/KnowledgeBaseImportedSourceList'
@@ -15,8 +15,13 @@ function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
   const t = useTranslations()
   const format = useFormatter()
   const [resourceRefreshKey, setResourceRefreshKey] = useState(0)
+  const [importedSourcesRefreshKey, setImportedSourcesRefreshKey] = useState(0)
   const [addResourceOpen, setAddResourceOpen] = useState(false)
   const addResourceTriggerRef = useRef<HTMLElement | null>(null)
+  const refreshImportedSources = useCallback(
+    () => setImportedSourcesRefreshKey((current) => current + 1),
+    []
+  )
   const { data, loading, error, refetch } = useQuery(GetKbDocument, {
     variables: { id: kbId },
   })
@@ -191,12 +196,16 @@ function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
         kbId={kbId}
         refreshKey={resourceRefreshKey}
         onMetricsChanged={refreshMetrics}
+        onIngestionSettled={refreshImportedSources}
         onAddResource={(trigger) => {
           addResourceTriggerRef.current = trigger
           setAddResourceOpen(true)
         }}
       />
-      <KnowledgeBaseImportedSourceList kbId={kbId} />
+      <KnowledgeBaseImportedSourceList
+        kbId={kbId}
+        refreshKey={importedSourcesRefreshKey}
+      />
       <KnowledgeBaseChatbotBindings kbId={kbId} onChanged={refreshMetrics} />
       <KnowledgeGraphPanel kbId={kbId} />
       {addResourceOpen ? (

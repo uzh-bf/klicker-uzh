@@ -29,6 +29,9 @@ data:
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
   # Deprecated - kept for backward compatibility during transition
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
+  {{- if .Values.hatchet.kbIngestion }}
+  KB_SOURCE_GATEWAY_URL: {{ .Values.hatchet.kbIngestion.sourceGatewayUrl | quote }}
+  {{- end }}
   {{- if $scopedMcpEnv }}
   {{- $scopedMcpEnv | nindent 2 }}
   {{- end }}
