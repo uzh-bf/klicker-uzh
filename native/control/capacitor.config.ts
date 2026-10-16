@@ -11,14 +11,24 @@ if (!process.env.CAP_SERVER_URL) {
   )
 }
 
-let hostname: string
+// only http(s) URLs with a host may be loaded as the controller; anything
+// else (file:, javascript:, malformed values) fails the native build
+let parsed: URL | undefined
 try {
-  ;({ hostname } = new URL(serverUrl))
+  parsed = new URL(serverUrl)
 } catch {
+  parsed = undefined
+}
+if (
+  !parsed ||
+  !['http:', 'https:'].includes(parsed.protocol) ||
+  !parsed.hostname
+) {
   throw new Error(
-    `Invalid CAP_SERVER_URL "${serverUrl}"; expected an absolute URL such as https://control.klicker.uzh.ch`
+    `Invalid CAP_SERVER_URL "${serverUrl}"; expected an http(s) URL such as https://control.klicker.uzh.ch`
   )
 }
+const { hostname } = parsed
 
 // auth.<base domain> hosts the login; it must stay inside the WebView so the
 // session cookie is shared with the controller. Other hosts (manage, pwa, …)
