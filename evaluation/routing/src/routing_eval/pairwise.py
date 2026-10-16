@@ -17,7 +17,6 @@ them offline.
 
 from __future__ import annotations
 
-import argparse
 import asyncio
 import json
 import random
@@ -26,7 +25,7 @@ import string
 from pathlib import Path
 from statistics import mean
 
-from common import DEFAULT_GT_DIR, Question, read_jsonl
+from common import Question, read_jsonl
 
 JUDGE_PROMPT = """You compare two tutor answers to the same question. The
 reference facts were written by the lecturer from the course material.
@@ -194,26 +193,7 @@ def run(args) -> None:
 
 
 def main():
-    ap = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
-    )
-    ap.add_argument("--answers-a", type=Path, required=True)
-    ap.add_argument("--answers-b", type=Path, required=True)
-    ap.add_argument(
-        "--gt-dir", type=Path, default=DEFAULT_GT_DIR, help="questions with reference facts"
-    )
-    ap.add_argument("--limit", type=int, help="compare at most this many questions")
-    ap.add_argument(
-        "--max-calls", type=int, default=200, help="refuse runs with more pairs than this"
-    )
-    ap.add_argument("--base-url", default="https://openrouter.ai/api/v1")
-    ap.add_argument("--api-key-env", default="OPENROUTER_API_KEY")
-    ap.add_argument("--concurrency", type=int, default=8)
-    ap.add_argument("--resamples", type=int, default=2000)
-    ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--out", type=Path)
-    args = ap.parse_args()
-    run(args)
+    run(None)
 
 
 if __name__ == "__main__":
