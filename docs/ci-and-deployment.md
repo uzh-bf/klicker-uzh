@@ -149,8 +149,8 @@ The `sync-ancestry` pull-request check fails for every non-sync pull request
 into a target with an unrepaired squashed sync. Any sync pull request, including
 the restore pull request, passes with a warning to use a merge commit, because
 merging it restores the ancestry. The block takes effect as a required check in
-a dedicated ruleset scoped to `v3-ai` and `v3-audit` only; on
-`v3-adaptive-learning` the guard reports without being required. The
+a dedicated ruleset scoped to `v3-ai`, `v3-audit` and `v3-adaptive-learning`
+only. The
 `v3 integration baseline CI` ruleset also matches other `v3-*` branches, where
 the guard never reports, so requiring it there would block every pull request
 into those branches. It evaluates when a pull request's
