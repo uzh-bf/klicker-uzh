@@ -110,7 +110,7 @@ routing environment passes 19 tests with two appropriate DeepEval skips. Its exa
 Ruff 0.15.18 lint and format checks pass. No dependency or lockfile changed.
 Native slice review approved the corrected migration through `95e2213b2` and
 reproduced the framework metric names and request bounds. Source curation and
-independent source review remain in progress. The package is one
+independent content review are complete; strict split admission remains open. The package is one
 coherent evaluation migration in draft #6478; 2,573 additions/389 removals outside
 project artifacts reflect the combined adapter, native contracts and replacement
 tests, with no separate runtime or reviewer audience. No paid call or earlier
@@ -132,16 +132,26 @@ explicitly compare a summary with its underlying script; they do not demonstrate
 reasoning across independent sources. Negative claims cover only those two
 teaching documents, excluding the administrative KB resources.
 
-No candidate is certified freezable yet. At most 18 could remain after removing
-the six failed cases; three additional exposure flags need adjudication. The
-independent review stopped at this failed prerequisite, so the remaining factual,
-absence and arithmetic acceptance checks are not claimed complete. The candidate
-packet, normalized native case IDs, exact source quotes and review remain private
-and preserved. Fresh, unexposed teaching material is required to complete the
-strict 6/6/4/8 composition; otherwise the user must explicitly change the dataset
-scope. Code delivery is complete in draft #6478. The native goal remains unfinished
-at this data decision. Every prior spend and hold remains retained, with zero
-new paid runs.
+The subsequent independent content pass qualified 19 cases and identified five
+reference/answerability corrections plus incorrect printed-page labels in 15
+cases. A private `candidate-v2/` copy resolves those findings. The last negative
+question now asks for an unavailable general rule, preserving the 16-answerable /
+eight-abstention allocation; negative subtypes are seven unsupported and one false
+attribution. All script locators use the actual page footer. Independent focused
+verification approves the content of all 24 corrected cases, including absence
+claims, arithmetic and source-relative interpretation. Native dataset loading,
+exact quotes/footers and all 72 synthetic reference joins pass. Originals and all
+269 historical artifacts remain unchanged.
+
+Strict separation still fails for eight cases: the six guide/script comparisons,
+the leverage calculation and the reinsurance concept. No 24-case holdout freeze
+is admitted. The reviewed content and evidence are hash-pinned privately without
+claiming holdout eligibility. Fresh, unexposed teaching material or an explicit
+user-approved scope change is still required; the question remains pending.
+Code delivery is complete in draft #6478. Exact-head codebase and lightweight
+unit workflows passed at `f357b069d2`; broader hosted Playwright checks are still
+running. The native goal remains unfinished at this data decision. Every prior
+spend and hold remains retained, with zero new paid runs.
 
 ## October 16: offline evaluation preparation — approved
 
