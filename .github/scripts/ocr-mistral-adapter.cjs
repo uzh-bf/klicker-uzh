@@ -272,7 +272,8 @@ function normalizeUsage(usage) {
 
 // OCR budgets, reports and resumes on the usage it receives. Cache reads cost a
 // tenth of uncached input, so OCR sees billable usage: uncached prompt plus
-// completion tokens. Without a valid cache report the full prompt counts.
+// completion tokens. Without a valid cache report or completion count the usage
+// passes through unchanged and the full prompt counts.
 // Adapter diagnostics keep the raw provider usage.
 function billableUsage(usage) {
   const cached = usage?.prompt_tokens_details?.cached_tokens

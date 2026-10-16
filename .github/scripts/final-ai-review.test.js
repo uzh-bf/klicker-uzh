@@ -615,6 +615,7 @@ test('plan context carries changed plans from the head commit within one budget'
     assert.equal(buildPlanContext({ from, to: from, cwd }), '')
 
     git('rm', '-q', 'project/2026-01-01-removed-plan.md')
+    write('project/2026-01-15-oversized-plan.md', 'x'.repeat(300 * 1024))
     write(
       'project/2026-02-01-main-plan.md',
       'Goal.<!-- hidden -->\n'.padEnd(30, 'x')
@@ -635,18 +636,38 @@ test('plan context carries changed plans from the head commit within one budget'
         content_status,
       ]),
       [
+        ['project/2026-01-15-oversized-plan.md', 'omitted'],
         ['project/2026-02-01-main-plan.md', 'complete'],
         ['project/2026-03-01-revision-plan.md', 'truncated'],
         ['project/2026-04-01-late-plan.md', 'omitted'],
       ]
     )
-    assert.equal(plans[0].content.includes('hidden'), false)
-    assert.equal(plans[0].content.startsWith('Goal.'), true)
+    assert.equal(plans[0].content, null)
+    assert.equal(plans[1].content.includes('hidden'), false)
+    assert.equal(plans[1].content.startsWith('Goal.'), true)
     assert.equal(
-      Array.from(plans[0].content).length + Array.from(plans[1].content).length,
+      Array.from(plans[1].content).length + Array.from(plans[2].content).length,
       16_000
     )
-    assert.equal(plans[2].content, null)
+    assert.equal(plans[3].content, null)
+
+    // Strictly shorter backtick runs make the normalizer superlinear; only a
+    // bounded prefix of a large plan may reach it.
+    const runs = []
+    for (let length = 700; length > 0; length -= 1) {
+      runs.push('`'.repeat(length))
+    }
+    write('project/2026-05-01-crafted-plan.md', runs.join(' '))
+    const crafted = commit()
+    const startedAt = Date.now()
+    const craftedContext = buildPlanContext({ from: to, to: crafted, cwd })
+    assert.ok(Date.now() - startedAt < 2_000)
+    assert.equal(
+      JSON.parse(craftedContext.split('\n')[2]).plans.find(
+        ({ path: filePath }) => filePath.endsWith('crafted-plan.md')
+      ).content_status,
+      'truncated'
+    )
   } finally {
     fs.rmSync(cwd, { recursive: true, force: true })
   }
