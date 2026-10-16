@@ -4,15 +4,16 @@ import { faListCheck } from '@fortawesome/free-solid-svg-icons'
 import { GetAssessmentResultsLiveQuizDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
-import { GetStaticPropsContext } from 'next'
-import { useTranslations } from 'next-intl'
+import type { GetStaticPropsContext } from 'next'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { Suspense, useEffect, useState } from 'react'
-import PreviousCorrectionsListModal from '../../../../../components/courses/pointCorrections/PreviousCorrectionsListModal'
+import AssessmentExportModal from '../../../../../components/courses/modals/AssessmentExportModal'
 import PointCorrectionsModal from '../../../../../components/courses/PointCorrectionsModal'
+import PreviousCorrectionsListModal from '../../../../../components/courses/pointCorrections/PreviousCorrectionsListModal'
 import Layout from '../../../../../components/Layout'
 import AssessmentStudentResultsTable, {
-  PageSizeOption,
+  type PageSizeOption,
 } from '../../../../../components/liveQuiz/results/AssessmentStudentResultsTable'
 import LiveQuizSingleStudentResults from '../../../../../components/liveQuiz/results/LiveQuizSingleStudentResults'
 
@@ -24,6 +25,7 @@ function AssessmentLiveQuiz() {
   const [correctionsModal, setCorrectionsModal] = useState(false)
   const [previousCorrectionsModal, setPreviousCorrectionsModal] =
     useState(false)
+  const [assessmentExportModal, setAssessmentExportModal] = useState(false)
   const [selectedParticipant, setSelectedParticipant] = useState<{
     id: string
     email: string
@@ -109,7 +111,7 @@ function AssessmentLiveQuiz() {
       <div className="flex w-full flex-row gap-2">
         <div className="w-1/2">
           <AssessmentStudentResultsTable
-            quizName={quiz.name}
+            onOpenExport={() => setAssessmentExportModal(true)}
             studentResults={studentResults}
             selectedParticipantId={selectedParticipant?.id ?? null}
             onSelect={setSelectedParticipant}
@@ -156,6 +158,15 @@ function AssessmentLiveQuiz() {
           liveQuizId={router.query.quizId as string}
           instanceId={undefined}
           onClose={() => setPreviousCorrectionsModal(false)}
+        />
+      ) : null}
+
+      {assessmentExportModal && router.query.id && router.query.quizId ? (
+        <AssessmentExportModal
+          activityName={quiz.name}
+          courseId={router.query.id as string}
+          liveQuizId={router.query.quizId as string}
+          onClose={() => setAssessmentExportModal(false)}
         />
       ) : null}
     </Layout>
