@@ -16,11 +16,13 @@ import {
   getAutomaticModelId,
   getModelsForChatbot,
 } from '@/src/lib/server/chatModelRegistry'
+import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
 import {
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
 } from '@/src/lib/server/effectiveChatModes'
+import { REPLY_LANGUAGE_REMINDER } from '@/src/lib/server/languageInstructions'
 import {
   MANAGE_CHAT_BODY_TIMEOUT_MS,
   MANAGE_CHAT_TOTAL_TIMEOUT_MS,
@@ -138,7 +140,11 @@ export async function POST(
     where: { id: chatbotId, ownerId: auth.userId },
     include: {
       owner: {
-        select: { aiFeaturesEnabled: true, aiChatbotCostCenter: true },
+        select: {
+          aiFeaturesEnabled: true,
+          aiSubscriptionTier: true,
+          aiChatbotCostCenter: true,
+        },
       },
       course: {
         select: { displayName: true },
@@ -239,12 +245,14 @@ export async function POST(
   const { model: selectedModel, reasoningEffort } = modelResolution
 
   // Preview is owner-funded and writes no usage row, so it skips the budget
-  // pre-check. Class admission still applies: an account without a cost center
-  // cannot start an advanced preview turn, exactly as in the participant route.
+  // pre-check. Class admission still applies: an account without the advanced
+  // tier and a cost center cannot start an advanced preview turn, exactly as in
+  // the participant route.
   if (
     !isChatUsageClassEntitled({
       usageClass: selectedModel.usageClass,
       aiFeaturesEnabled: chatbot.owner.aiFeaturesEnabled,
+      aiSubscriptionTier: chatbot.owner.aiSubscriptionTier,
       aiChatbotCostCenter: chatbot.owner.aiChatbotCostCenter,
     })
   ) {
@@ -310,10 +318,9 @@ export async function POST(
 
   try {
     const toolNames = Object.keys(tools)
+    const docQueryToolName = toolNames.find(isDocQueryToolName)
     const quizzerDocQueryToolName =
-      selectedMode === 'quizzer'
-        ? toolNames.find(isDocQueryToolName)
-        : undefined
+      selectedMode === 'quizzer' ? docQueryToolName : undefined
 
     if (selectedMode === 'quizzer' && !quizzerDocQueryToolName) {
       await closeMcpTools()
@@ -377,6 +384,9 @@ export async function POST(
           }),
           ...(reasoningEffort && reasoningEffort !== 'none'
             ? {
+                // See the participant chat route: deployment ids defeat the
+                // SDK's model-id based reasoning detection.
+                forceReasoning: true,
                 reasoningEffort,
                 reasoningSummary: 'auto' as const,
               }
@@ -385,17 +395,34 @@ export async function POST(
       },
       stopWhen: isStepCount(5),
       toolChoice: 'auto',
-      prepareStep: quizzerDocQueryToolName
-        ? ({ stepNumber }) =>
-            stepNumber === 0
-              ? {
-                  toolChoice: {
-                    type: 'tool' as const,
-                    toolName: quizzerDocQueryToolName,
-                  },
-                }
-              : {}
-        : undefined,
+      // The reply-language reminder ends every step, after tool output, so
+      // retrieved material in another language cannot set the reply language.
+      allowSystemInMessages: true,
+      // Step continuations carry the canonical citation indices, the same
+      // contract the participant chat applies. Without them the model has no
+      // index to cite and falls back to prose citations without chips.
+      prepareStep: ({
+        stepNumber,
+        steps,
+        initialMessages,
+        responseMessages,
+      }) => ({
+        ...(quizzerDocQueryToolName && stepNumber === 0
+          ? {
+              toolChoice: {
+                type: 'tool' as const,
+                toolName: quizzerDocQueryToolName,
+              },
+            }
+          : {}),
+        messages: [
+          ...initialMessages,
+          ...(docQueryToolName && stepNumber > 0
+            ? withModelCitationIndices(responseMessages, steps)
+            : responseMessages),
+          REPLY_LANGUAGE_REMINDER,
+        ],
+      }),
       tools: promptCacheRequest?.tools ?? tools,
       toolOrder: promptCacheRequest?.toolOrder,
       onEnd: closeMcpTools,

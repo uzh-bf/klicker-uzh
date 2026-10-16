@@ -5,6 +5,7 @@ import {
   resolveRequestedChatMode,
   type ChatModeMCPConfiguration,
 } from '@/src/lib/server/effectiveChatModes'
+import { REPLY_LANGUAGE_REMINDER } from '@/src/lib/server/languageInstructions'
 
 const mocks = vi.hoisted(() => ({
   buildPromptCacheRequest: vi.fn(),
@@ -154,7 +155,11 @@ function createChatbot(
       },
     ],
     modelSelection: false,
-    owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: 'KST-1' },
+    owner: {
+      aiFeaturesEnabled: true,
+      aiSubscriptionTier: 'ADVANCED',
+      aiChatbotCostCenter: 'KST-1',
+    },
     ownerId: 'owner-id',
     standardModeConfig: defaultStandardModeConfig,
     customModeConfig: null,
@@ -293,11 +298,18 @@ describe('POST owner preview chat', () => {
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
-  it('refuses an advanced model for an account without a cost center', async () => {
+  it.each([
+    ['without a cost center', 'ADVANCED', null],
+    ['on the base tier', 'BASE', 'KST-1'],
+  ] as const)('refuses an advanced model for an account %s', async (_case, aiSubscriptionTier, aiChatbotCostCenter) => {
     mocks.findChatbot.mockResolvedValue(
       createChatbot({
         modelSelection: true,
-        owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: null },
+        owner: {
+          aiFeaturesEnabled: true,
+          aiSubscriptionTier,
+          aiChatbotCostCenter,
+        },
       })
     )
     setRequestOptions({
@@ -321,7 +333,11 @@ describe('POST owner preview chat', () => {
   it('still previews a base model without a cost center', async () => {
     mocks.findChatbot.mockResolvedValue(
       createChatbot({
-        owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: null },
+        owner: {
+          aiFeaturesEnabled: true,
+          aiSubscriptionTier: 'BASE',
+          aiChatbotCostCenter: null,
+        },
       })
     )
 
@@ -336,7 +352,11 @@ describe('POST owner preview chat', () => {
   it('refuses a base model for an account without AI approval', async () => {
     mocks.findChatbot.mockResolvedValue(
       createChatbot({
-        owner: { aiFeaturesEnabled: false, aiChatbotCostCenter: 'KST-1' },
+        owner: {
+          aiFeaturesEnabled: false,
+          aiSubscriptionTier: 'ADVANCED',
+          aiChatbotCostCenter: 'KST-1',
+        },
       })
     )
 
@@ -761,6 +781,14 @@ describe('POST owner preview chat', () => {
         standardModeConfig: defaultStandardModeConfig,
       }
     )
+    // The owner keeps seeing reasoning for a custom mode that hides it from
+    // participants by default.
+    const stream = mocks.streamText.mock.results[0]?.value as {
+      toUIMessageStreamResponse: ReturnType<typeof vi.fn>
+    }
+    expect(stream.toUIMessageStreamResponse).toHaveBeenCalledWith(
+      expect.objectContaining({ sendReasoning: true })
+    )
   })
 
   it('previews a draft custom mode through the saved revision even when the live config is empty', async () => {
@@ -970,9 +998,91 @@ describe('POST owner preview chat', () => {
 
     expect(response.status).toBe(200)
     const streamOptions = mocks.streamText.mock.calls[0]![0]
-    expect(streamOptions.prepareStep({ stepNumber: 0 })).toEqual({
+    expect(
+      streamOptions.prepareStep({
+        initialMessages: [],
+        responseMessages: [],
+        stepNumber: 0,
+        steps: [],
+      })
+    ).toEqual({
       toolChoice: { type: 'tool', toolName: 'KB_doc_query' },
+      messages: [REPLY_LANGUAGE_REMINDER],
     })
-    expect(streamOptions.prepareStep({ stepNumber: 1 })).toEqual({})
+    expect(
+      streamOptions.prepareStep({
+        initialMessages: [],
+        responseMessages: [],
+        stepNumber: 1,
+        steps: [],
+      })
+    ).toEqual({ messages: [REPLY_LANGUAGE_REMINDER] })
+  })
+
+  it('projects canonical citation indices into the preview continuation', async () => {
+    const raw = {
+      mode: 'documents',
+      sources: [
+        {
+          chunks: [{ content: 'Passage', page_number: 1 }],
+          reference: 'urn:source:a',
+          title: 'Material',
+        },
+      ],
+    }
+    const steps = [
+      {
+        content: [
+          {
+            input: {},
+            toolCallId: 'call-1',
+            toolName: 'KB_doc_query',
+            type: 'tool-call',
+          },
+          {
+            output: raw,
+            toolCallId: 'call-1',
+            toolName: 'KB_doc_query',
+            type: 'tool-result',
+          },
+        ],
+      },
+    ]
+    const responseMessages = [
+      {
+        content: [
+          {
+            output: { type: 'text', value: JSON.stringify(raw) },
+            toolCallId: 'call-1',
+            toolName: 'KB_doc_query',
+            type: 'tool-result',
+          },
+        ],
+        role: 'tool',
+      },
+    ]
+
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+
+    expect(response.status).toBe(200)
+    const streamOptions = mocks.streamText.mock.calls[0]![0]
+    const prepared = streamOptions.prepareStep({
+      initialMessages: [{ role: 'user' }],
+      responseMessages,
+      stepNumber: 1,
+      steps,
+    })
+
+    expect(prepared.messages).toHaveLength(3)
+    expect(
+      JSON.parse(prepared.messages[1].content[0].output.value).sources[0]
+        .citation_index
+    ).toBe(1)
+    // Retrieved passages may be in another language than the question, so the
+    // reply-language reminder must follow them as the step's last message.
+    expect(prepared.messages[2]).toEqual(REPLY_LANGUAGE_REMINDER)
+    expect(streamOptions.allowSystemInMessages).toBe(true)
   })
 })
