@@ -1840,6 +1840,12 @@ function ChatbotDetails({
               advancedManagement={advancedManagement}
               step={step ?? 'basics'}
               sections={['basics', 'review']}
+              siblingDirty={
+                creditNavigationState.dirty ||
+                modelSettingsDirty ||
+                knowledgeGraphDirty
+              }
+              siblingPending={creditNavigationState.pending || isSaving}
               publishingAuthorized={publishingAuthorized}
               publishingAuthorizationLoading={publishingAuthorizationLoading}
               publishingAuthorizationError={publishingAuthorizationError}
