@@ -1,0 +1,10 @@
+mutation RequestMediaUpload($fileName: String!, $contentType: String!) {
+  requestMediaUpload(fileName: $fileName, contentType: $contentType) {
+    uploadUrl
+    uploadHref
+    uploadHeaders {
+      name
+      value
+    }
+  }
+}

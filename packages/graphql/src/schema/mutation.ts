@@ -148,6 +148,7 @@ import {
   BetaEnrollmentCapability,
   FileUploadSAS,
   LocaleType,
+  MediaFileUpload,
   User,
   UserInfo,
   UserLogin,
@@ -1965,6 +1966,17 @@ export const Mutation = builder.mutationType({
           }
           return null
         },
+      }),
+
+      requestMediaUpload: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: MediaFileUpload,
+        args: {
+          fileName: t.arg.string({ required: true }),
+          contentType: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) =>
+          ElementService.requestMediaUpload(args, ctx),
       }),
 
       getFileUploadSas: t.withAuth(asUserFullAccess).field({

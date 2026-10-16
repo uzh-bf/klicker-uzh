@@ -5,12 +5,19 @@ const monorepoRoot = fileURLToPath(new URL('../..', import.meta.url))
 /** @type {import('next').NextConfig} */
 function getNextBaseConfig({
   BLOB_STORAGE_ACCOUNT_URL,
+  MEDIA_STORAGE_PUBLIC_URL = process.env.MEDIA_STORAGE_PUBLIC_URL,
+  MEDIA_STORAGE_PROVIDER = process.env.MEDIA_STORAGE_PROVIDER,
   includeI18n = true,
   pagesRouterOnly = false,
   buildTsconfigPath = '',
   NODE_ENV,
   NEXT_PUBLIC_ENV,
 }) {
+  if (MEDIA_STORAGE_PROVIDER === 's3' && !MEDIA_STORAGE_PUBLIC_URL?.trim()) {
+    throw new Error(
+      'MEDIA_STORAGE_PUBLIC_URL is required when building S3 media frontends'
+    )
+  }
   const isStaging = NEXT_PUBLIC_ENV === 'staging'
   const allowLocalImageOptimization =
     NODE_ENV === 'development' ||
@@ -90,6 +97,10 @@ function getNextBaseConfig({
       qualities: [75],
       dangerouslyAllowLocalIP: allowLocalImageOptimization,
       remotePatterns: [
+        getMediaStorageRemotePattern(
+          MEDIA_STORAGE_PUBLIC_URL,
+          allowLocalImageOptimization
+        ),
         allowLocalImageOptimization
           ? {
               protocol: 'http',
@@ -125,6 +136,58 @@ function getNextBaseConfig({
           : null,
       ].filter(Boolean),
     },
+  }
+}
+
+// A build-time public URL allow-list, never a storage API endpoint or secret.
+function getMediaStorageRemotePattern(value, allowLocal) {
+  if (!value?.trim()) return null
+  let url
+  try {
+    url = new URL(value.trim())
+  } catch {
+    throw new Error('MEDIA_STORAGE_PUBLIC_URL is invalid')
+  }
+  let decodedPath
+  try {
+    decodedPath = decodeURIComponent(url.pathname)
+  } catch {
+    throw new Error('MEDIA_STORAGE_PUBLIC_URL is invalid')
+  }
+  const hasGlob = (value) =>
+    ['*', '?', '[', ']', '{', '}', '(', ')', '!', '+', '@'].some((character) =>
+      value.includes(character)
+    )
+  const literalIpv6 = url.hostname.startsWith('[') && url.hostname.endsWith(']')
+  const local =
+    url.hostname === 'localhost' ||
+    url.hostname.endsWith('.localhost') ||
+    url.hostname === '127.0.0.1' ||
+    url.hostname === '[::1]'
+  if (
+    (url.protocol !== 'https:' &&
+      !(allowLocal && local && url.protocol === 'http:')) ||
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash ||
+    (!literalIpv6 && hasGlob(url.hostname)) ||
+    hasGlob(decodedPath)
+  ) {
+    throw new Error(
+      'MEDIA_STORAGE_PUBLIC_URL must be an HTTPS public media base URL'
+    )
+  }
+  let path = url.pathname
+  while (path.endsWith('/')) path = path.slice(0, -1)
+  return {
+    protocol: url.protocol.slice(0, -1),
+    hostname: literalIpv6
+      ? url.hostname.replaceAll('[', '\\[').replaceAll(']', '\\]')
+      : url.hostname,
+    port: url.port,
+    pathname: `${path}/**`,
+    search: '',
   }
 }
 

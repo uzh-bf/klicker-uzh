@@ -7,6 +7,22 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
+  {{- $mediaStorage := .Values.mediaStorage | default dict }}
+  {{- $mediaProvider := $mediaStorage.provider | default "azure" }}
+  {{- if not (has $mediaProvider (list "azure" "s3")) }}
+  {{- fail "mediaStorage.provider must be azure or s3" }}
+  {{- end }}
+  MEDIA_STORAGE_PROVIDER: {{ $mediaProvider | quote }}
+  {{- if eq $mediaProvider "s3" }}
+  {{- $s3 := $mediaStorage.s3 | default dict }}
+  MEDIA_STORAGE_PUBLIC_URL: {{ required "mediaStorage.publicUrl is required for S3" $mediaStorage.publicUrl | quote }}
+  MEDIA_S3_BUCKET: {{ required "mediaStorage.s3.bucket is required for S3" $s3.bucket | quote }}
+  MEDIA_S3_REGION: {{ required "mediaStorage.s3.region is required for S3" $s3.region | quote }}
+  MEDIA_S3_FORCE_PATH_STYLE: {{ $s3.forcePathStyle | default false | quote }}
+  {{- if $s3.endpoint }}
+  MEDIA_S3_ENDPOINT: {{ $s3.endpoint | quote }}
+  {{- end }}
+  {{- end }}
   API_DOMAIN: {{ .Values.backendGraphql.apiDomain | quote }}
   APP_MANAGE_DOMAIN: {{ .Values.backendGraphql.appManageDomain | quote }}
   APP_STUDENT_DOMAIN: {{ .Values.backendGraphql.appStudentDomain | quote }}

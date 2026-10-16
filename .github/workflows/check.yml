@@ -211,6 +211,7 @@ jobs:
         run: |
           node --test deploy/scripts/verify-topology-spread.test.mjs
           node deploy/scripts/verify-topology-spread.mjs
+          node --test deploy/scripts/verify-media-storage.test.mjs
 
       # Production renders deploy/ from v3 while the release images are tagged
       # from v3-ai, so the two revisions must not drift apart. The gate names

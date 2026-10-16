@@ -1,16 +1,16 @@
 import { useApolloClient, useMutation, useSuspenseQuery } from '@apollo/client'
-import { BlobServiceClient } from '@azure/storage-blob'
 import {
-  GetFileUploadSasDocument,
   GetUserMediaFilesDocument,
+  RequestMediaUploadDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import Image from 'next/image'
+import { useTranslations } from 'next-intl'
 import { Suspense, useCallback, useState } from 'react'
 import Dropzone from 'react-dropzone'
+import { uploadMediaFile } from '../../lib/mediaUpload'
 
 interface Props {
   onImageClick: (href: string, name: string) => void
@@ -47,7 +47,8 @@ function MediaLibrary({ onImageClick }: Props) {
   const t = useTranslations()
   const client = useApolloClient()
   const [isUploading, setIsUploading] = useState(false)
-  const [getFileUploadSAS] = useMutation(GetFileUploadSasDocument)
+  const [uploadFailed, setUploadFailed] = useState(false)
+  const [requestMediaUpload] = useMutation(RequestMediaUploadDocument)
 
   const handleFileFieldChange = useCallback(
     async (files: File[]) => {
@@ -55,46 +56,36 @@ function MediaLibrary({ onImageClick }: Props) {
       if (!file) return
 
       setIsUploading(true)
-
-      const { data } = await getFileUploadSAS({
-        variables: {
-          fileName: file.name,
-          contentType: file.type,
-        },
-      })
-      if (!data?.getFileUploadSas) return
-
-      const blobServiceClient = new BlobServiceClient(
-        data.getFileUploadSas.uploadSasURL
-      )
-      const containerClient = blobServiceClient.getContainerClient(
-        data.getFileUploadSas.containerName
-      )
-      const blobClient = containerClient.getBlobClient(
-        data.getFileUploadSas.fileName
-      )
-      const blockBlobClient = blobClient.getBlockBlobClient()
-      const result = await blockBlobClient.uploadData(file, {
-        blockSize: 4 * 1024 * 1024, // 4MB block size
-      })
-
-      client.refetchQueries({
-        include: ['GetUserMediaFiles'],
-      })
-
-      onImageClick(data.getFileUploadSas.uploadHref, file.name)
-
-      setIsUploading(false)
+      setUploadFailed(false)
+      try {
+        const { data } = await requestMediaUpload({
+          variables: { fileName: file.name, contentType: file.type },
+        })
+        const href = await uploadMediaFile(file, data?.requestMediaUpload)
+        onImageClick(href, file.name)
+        // Refresh failure must not turn a successful upload into a retry that
+        // creates a second object. Reopening the library can retry the query.
+        void client
+          .refetchQueries({ include: ['GetUserMediaFiles'] })
+          .catch(() => undefined)
+      } catch {
+        setUploadFailed(true)
+      } finally {
+        setIsUploading(false)
+      }
     },
-    [client, getFileUploadSAS, onImageClick]
+    [client, requestMediaUpload, onImageClick]
   )
 
   return (
     <Dropzone
       onDrop={handleFileFieldChange}
       multiple={false}
+      disabled={isUploading}
       accept={{
-        'application/image': ['.png', '.jpg', '.jpeg', '.gif'],
+        'image/png': ['.png'],
+        'image/jpeg': ['.jpg', '.jpeg'],
+        'image/gif': ['.gif'],
       }}
     >
       {({ getRootProps, getInputProps }) => (
@@ -117,7 +108,20 @@ function MediaLibrary({ onImageClick }: Props) {
                 <p>{t('manage.elements.uploadImageDescription')}</p>
               )}
             </div>
-            <input type="file" {...getInputProps()} />
+            {uploadFailed && (
+              <p
+                role="alert"
+                data-cy="media-upload-error"
+                className="mt-2 text-red-600"
+              >
+                {t('manage.elements.uploadImageError')}
+              </p>
+            )}
+            <input
+              type="file"
+              {...getInputProps()}
+              data-cy="media-file-input"
+            />
           </div>
         </>
       )}
