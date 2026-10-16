@@ -28,6 +28,7 @@ function KnowledgeBaseDetail({
   const advancedManagementEnabled = useFeatureFlag('ai-advanced-management')
   const [resourceRefreshKey, setResourceRefreshKey] = useState(0)
   const [addResourceOpen, setAddResourceOpen] = useState(false)
+  const [graphOpen, setGraphOpen] = useState(false)
   const addResourceTriggerRef = useRef<HTMLElement | null>(null)
   const { data, loading, error, refetch } = useQuery(GetKbDocument, {
     variables: { id: kbId },
@@ -234,7 +235,34 @@ function KnowledgeBaseDetail({
       />
       <KnowledgeBaseImportedSourceList kbId={kbId} />
       <KnowledgeBaseChatbotBindings kbId={kbId} onChanged={refreshMetrics} />
-      {advancedManagementEnabled ? <KnowledgeGraphPanel kbId={kbId} /> : null}
+      {advancedManagementEnabled ? (
+        <KnowledgeGraphPanel kbId={kbId} />
+      ) : (
+        // Graph builds are optional for ordinary lecturers, so the panel and
+        // its queries load only once the section is opened.
+        <details
+          className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+          data-cy="knowledge-graph-advanced"
+          onToggle={(event) => setGraphOpen(event.currentTarget.open)}
+        >
+          <summary
+            className="cursor-pointer select-none"
+            data-cy="knowledge-graph-advanced-trigger"
+          >
+            <span className="font-medium text-gray-900">
+              {t('kb.graphAdvancedTitle')}
+            </span>
+            <span className="block text-sm text-gray-600">
+              {t('kb.graphAdvancedDescription')}
+            </span>
+          </summary>
+          {graphOpen ? (
+            <div className="mt-4">
+              <KnowledgeGraphPanel kbId={kbId} />
+            </div>
+          ) : null}
+        </details>
+      )}
       {addResourceOpen ? (
         <KnowledgeBaseAddResourceModal
           kbId={kbId}
