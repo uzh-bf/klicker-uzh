@@ -116,6 +116,11 @@ Check the HTTP request deadline separately from the per-task deadline. OCR
 1.13.0 defaults HTTP requests to five minutes even when `--timeout` permits a
 longer task. Align `OCR_LLM_TIMEOUT` (seconds) with the existing manual task
 deadline; increasing the job limit alone cannot fix that earlier timeout.
+The adapter's fetch transport also imposed an independent five-minute header
+and body limit. Its native HTTPS transport now leaves the existing
+AbortController deadline in charge. Qualify this layer through a real delayed
+upstream socket: a mock that replaces `fetch` proves OCR's timeout setting but
+bypasses the transport whose timeout must be checked.
 
 Shell-boundary tests must call the extracted function directly under
 `set -e`; calling it inside an `if` condition disables that error behavior and

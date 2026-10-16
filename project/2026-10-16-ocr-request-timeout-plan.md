@@ -24,6 +24,15 @@ same request without changing wire reasoning, completion limit or affinity.
 The full default-five-minute reproduction and a response delayed beyond five
 minutes with the aligned setting are required acceptance evidence.
 
+Integrated review found another five-minute limit in Node fetch's header/body
+transport. The initial synthetic provider replaced fetch and did not exercise
+that layer. Both upstream callers must use native HTTPS under their existing
+AbortControllers, retaining TLS validation, fixed destination, redirect refusal,
+bounded response reading and one request without a transport retry. Request
+identity encoding so the body reader continues to receive uncompressed JSON.
+Use real loopback TLS responses delayed beyond 300 seconds for both headers and
+body; a successful fetch mock is insufficient proof for this correction.
+
 Set `OCR_LLM_TIMEOUT` in the existing manual review job environments to 2700
 and 1800 seconds respectively. This follows the existing task deadlines; the
 task, adapter, cleanup and job ceilings remain binding. Draft OCR already has
@@ -66,6 +75,12 @@ CLI failure. Keep two-line resume-plan and JSON merge stdout protocols intact.
 3. **Deliver.** Run applicable focused checks, simplify/review, push the branch,
    open the draft and settle automatic CI/actionable feedback. New target drift
    alone does not require integration; resolve a concrete readiness blocker only.
+
+Final-review correction stays in this package: main owns the native HTTPS
+transport; the existing executor owns its default-transport socket tests. Reuse
+the prior reviews for unchanged code; run one focused slice and integrated
+correction pass after transport verification. No new dependency or production
+URL override, and no change to the configured deadlines or retry policy.
 
 ## Files and tests
 
@@ -137,10 +152,17 @@ unrecoverable capability blocker.
 - Review: timeout and diagnostics slice reviews have no findings; the diagnostics
   simplifier found no further reduction. Integrated final review and hosted CI
   results are maintained in the draft PR.
-- Package: one cohesive defect repair, 222 substantive changed lines across
-  eight files, excluding this project artifact. No application runtime used.
+- Package: one cohesive defect repair across eight files. No application runtime
+  used; transport correction adds only built-in Node modules.
 - Target drift: one unrelated CI-reuse commit is newer than the recorded base;
   no conflict or required freshness condition calls for integration.
 - Delivery: committed and pushed; [draft PR #6575](https://github.com/uzh-bf/klicker-uzh/pull/6575)
   targets `v3`. Marking ready, merge and a trusted post-merge live run remain
   outside this task's authority.
+- Integrated review: accepted and corrected the hidden fetch deadline finding.
+  Real TLS qualification completes delayed headers through the released OCR
+  binary and a delayed direct-call body after 305 seconds each, one request per
+  case with unchanged OCR wire policy. All 229 focused tests pass. Default
+  transport tests also verify cancellation, deadlines, redirects and response
+  size bounds; the focused adapter scan has no findings. The correction is sent
+  through the existing review roles before completed-delivery claims.

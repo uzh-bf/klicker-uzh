@@ -12,9 +12,11 @@
 const crypto = require('node:crypto')
 const fs = require('node:fs')
 const http = require('node:http')
+const https = require('node:https')
 const path = require('node:path')
 const { spawn } = require('node:child_process')
 const { StringDecoder } = require('node:string_decoder')
+const { Readable } = require('node:stream')
 
 const MISTRAL_URL = 'https://api.mistral.ai/v1/chat/completions'
 const MISTRAL_MODEL = 'zai-glm-5-3'
@@ -758,6 +760,41 @@ async function drain(response, limit) {
   }
 }
 
+// Fetch's implicit five-minute header/body deadlines would preempt the
+// adapter's AbortController. Native HTTPS leaves that existing deadline in
+// charge, makes one request, and never follows a redirect.
+function requestMistral(url, options) {
+  return new Promise((resolve, reject) => {
+    const request = https.request(
+      url,
+      {
+        method: options.method,
+        headers: { ...options.headers, 'accept-encoding': 'identity' },
+        signal: options.signal,
+        timeout: 0,
+      },
+      (response) => {
+        const status = response.statusCode
+        if (
+          [301, 302, 303, 307, 308].includes(status) &&
+          response.headers.location
+        ) {
+          response.destroy()
+          reject(new Error('upstream redirect refused'))
+          return
+        }
+        resolve({
+          status,
+          ok: status >= 200 && status < 300,
+          body: Readable.toWeb(response),
+        })
+      }
+    )
+    request.on('error', reject)
+    request.end(options.body)
+  })
+}
+
 const FAILURE_CATEGORIES = [
   'local_rejection',
   'history_missing',
@@ -845,7 +882,7 @@ function recordResponseUsage(counter, usage, rawUsage) {
 
 async function startAdapter(options = {}) {
   const apiKey = options.apiKey
-  const fetchImpl = options.fetchImpl ?? globalThis.fetch
+  const fetchImpl = options.fetchImpl ?? requestMistral
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const maxLifetimeMs = options.maxLifetimeMs ?? DEFAULT_MAX_LIFETIME_MS
   const maxRequestBytes = options.maxRequestBytes ?? MAX_REQUEST_BYTES
@@ -1223,7 +1260,7 @@ async function startAdapter(options = {}) {
 
 async function callMistral(options = {}) {
   const apiKey = options.apiKey
-  const fetchImpl = options.fetchImpl ?? globalThis.fetch
+  const fetchImpl = options.fetchImpl ?? requestMistral
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const maxResponseBytes = options.maxResponseBytes ?? MAX_RESPONSE_BYTES
 

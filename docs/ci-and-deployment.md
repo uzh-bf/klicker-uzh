@@ -488,6 +488,14 @@ five minutes. Task, adapter, cleanup and job ceilings still apply. Draft reviews
 retain their explicit 480-second HTTP deadline. These settings do not change
 reasoning, token limits, accounting or retry behavior.
 
+The adapter's fixed Mistral endpoint uses native HTTPS under the existing
+AbortControllers. Node's fetch transport has independent
+[300-second header and body deadlines](https://undici.nodejs.org/api/Client),
+which otherwise preempt the configured OCR and adapter deadlines. Both adapter
+forwarding and direct preflight/topology calls use one HTTPS request, retain TLS
+verification, refuse redirects and request uncompressed JSON for the existing
+bounded body reader. No transport retry or dependency is added.
+
 The draft, individual and stack review jobs disable OCR's background updater
 with `OCR_NO_UPDATE=1`, including the installation version check. OCR 1.13.0
 otherwise starts a background global npm update even for `ocr version`, so a

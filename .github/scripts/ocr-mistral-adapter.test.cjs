@@ -2,6 +2,7 @@
 
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
+const http = require('node:http')
 const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
@@ -700,6 +701,50 @@ function loadReadRequestBody() {
     context
   )
   return sandboxModule.exports.__readRequestBody
+}
+
+async function loadLoopbackTransport(t, handler) {
+  const server = http.createServer(handler)
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+  t.after(async () => {
+    server.closeAllConnections()
+    await new Promise((resolve) => server.close(resolve))
+  })
+  const url = `http://127.0.0.1:${server.address().port}${CHAT_PATH}`
+  const sandboxModule = { exports: {} }
+  let attempts = 0
+  let fetchCalls = 0
+  const context = vm.createContext({
+    require(name) {
+      if (name !== 'node:https') return require(name)
+      return {
+        request(upstreamUrl, options, callback) {
+          assert.equal(upstreamUrl, MISTRAL_URL)
+          attempts++
+          return http.request(url, options, callback)
+        },
+      }
+    },
+    module: sandboxModule,
+    exports: sandboxModule.exports,
+    process,
+    Buffer,
+    URL,
+    AbortController,
+    performance,
+    setTimeout,
+    clearTimeout,
+    fetch() {
+      fetchCalls++
+      return Promise.reject(new Error('OCR_TRANSPORT_PRIVATE_SENTINEL'))
+    },
+  })
+  vm.runInContext(fs.readFileSync(ADAPTER, 'utf8'), context)
+  return {
+    ...sandboxModule.exports,
+    attempts: () => attempts,
+    fetchCalls: () => fetchCalls,
+  }
 }
 
 test('normalizeMistralResponse keeps plain text and drops no data', () => {
@@ -2378,6 +2423,173 @@ test('shutdown acknowledges then stops the listener', async () => {
   } finally {
     await adapter.close()
   }
+})
+
+test('default upstream transport completes delayed headers and streamed bodies at both callers', {
+  timeout: 6000,
+}, async (t) => {
+  const requests = []
+  const payload = Buffer.from(
+    JSON.stringify(completion({ role: 'assistant', content: 'synthetic' }))
+  )
+  const transport = await loadLoopbackTransport(t, async (req, res) => {
+    let body = ''
+    for await (const chunk of req) body += chunk
+    requests.push({ method: req.method, body: JSON.parse(body) })
+    await delay(20)
+    res.writeHead(200, { 'content-type': 'application/json' })
+    res.write(payload.subarray(0, payload.length / 2))
+    await delay(20)
+    res.end(payload.subarray(payload.length / 2))
+  })
+  const options = { apiKey: 'synthetic-key', timeoutMs: 1000 }
+  const body = {
+    model: MISTRAL_MODEL,
+    messages: [{ role: 'user', content: 'synthetic' }],
+    max_completion_tokens: 9,
+    reasoning: { effort: 'high' },
+  }
+  const adapter = await transport.startAdapter(options)
+  t.after(() => adapter.close())
+  const adapted = await postJson(adapter, body)
+  assert.equal(adapted.status, 200)
+  const direct = await transport.callMistral({ ...options, body })
+  for (const response of [adapted.json, direct]) {
+    assert.equal(response.model, MISTRAL_MODEL)
+    assert.equal(response.choices[0].finish_reason, 'stop')
+    assert.equal(response.usage.total_tokens, 7)
+  }
+  assert.equal(transport.attempts(), 2)
+  assert.equal(transport.fetchCalls(), 0)
+  assert.equal(requests.length, 2)
+  for (const request of requests) {
+    assert.equal(request.method, 'POST')
+    assert.equal(request.body.max_tokens, 9)
+    assert.equal(request.body.reasoning_effort, 'max')
+    assert.notEqual(request.body.stream, true)
+  }
+  const receipt = adapter.diagnostics()
+  assert.equal(receipt.upstream_attempts, 1)
+  assert.equal(receipt.responses, 1)
+  assert.equal(receipt.prompt_tokens, 3)
+  assert.equal(receipt.completion_tokens, 4)
+})
+
+test('default upstream transport bounds stalled headers, bodies, size and redirects at both callers', {
+  timeout: 6000,
+}, async (t) => {
+  for (const mode of ['headers', 'body', 'size', 'redirect']) {
+    await t.test(mode, async (t) => {
+      const closed = []
+      const transport = await loadLoopbackTransport(t, (req, res) => {
+        req.resume()
+        closed.push(new Promise((resolve) => res.once('close', resolve)))
+        if (mode === 'headers') return
+        if (mode === 'redirect') {
+          res.writeHead(307, { location: '/OCR_TRANSPORT_PRIVATE_SENTINEL' })
+          res.flushHeaders()
+          return
+        }
+        res.writeHead(200, { 'content-type': 'application/json' })
+        res.write(
+          mode === 'size'
+            ? 'OCR_TRANSPORT_PRIVATE_SENTINEL'.repeat(16)
+            : '{"partial":'
+        )
+      })
+      const deadline = mode === 'headers' || mode === 'body'
+      const options = {
+        apiKey: 'synthetic-key',
+        timeoutMs: deadline ? 100 : 1000,
+        maxResponseBytes: 128,
+      }
+      const body = { messages: [{ role: 'user', content: 'synthetic' }] }
+      const adapter = await transport.startAdapter(options)
+      t.after(() => adapter.close())
+      const result = await postJson(adapter, body)
+      assert.equal(result.status, deadline ? 504 : 502)
+      assert.equal(
+        result.json.error.code,
+        deadline
+          ? 'upstream_timeout'
+          : mode === 'size'
+            ? 'response_too_large'
+            : 'internal_error'
+      )
+      assert.doesNotMatch(result.text, /OCR_TRANSPORT_PRIVATE_SENTINEL/)
+      await assert.rejects(
+        transport.callMistral({ ...options, body }),
+        (error) => {
+          assert.equal(
+            error.code,
+            mode === 'size' ? 'response_too_large' : 'upstream_error'
+          )
+          assert.doesNotMatch(error.message, /OCR_TRANSPORT_PRIVATE_SENTINEL/)
+          return true
+        }
+      )
+      await Promise.all(closed)
+      assert.equal(closed.length, 2)
+      assert.equal(transport.attempts(), 2)
+      assert.equal(transport.fetchCalls(), 0)
+      const receipt = adapter.diagnostics()
+      assert.equal(receipt.upstream_attempts, 1)
+      assert.equal(receipt.responses, 0)
+      assert.equal(
+        receipt.failures[
+          deadline
+            ? 'upstream_timeout'
+            : mode === 'size'
+              ? 'malformed_response'
+              : 'transport_error'
+        ],
+        1
+      )
+    })
+  }
+})
+
+test('default upstream transport cancels an open response when the adapter client disconnects', {
+  timeout: 6000,
+}, async (t) => {
+  const arrived = Promise.withResolvers()
+  const disconnected = Promise.withResolvers()
+  const transport = await loadLoopbackTransport(t, (req, res) => {
+    req.resume()
+    res.once('close', disconnected.resolve)
+    res.writeHead(200, { 'content-type': 'application/json' })
+    res.write('{"partial":')
+    arrived.resolve()
+  })
+  const adapter = await transport.startAdapter({
+    apiKey: 'synthetic-key',
+    timeoutMs: 1000,
+  })
+  t.after(() => adapter.close())
+  const controller = new AbortController()
+  const request = fetch(`${adapter.url}${CHAT_PATH}`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${adapter.token}` },
+    body: JSON.stringify({
+      messages: [{ role: 'user', content: 'synthetic' }],
+    }),
+    signal: controller.signal,
+  })
+  await Promise.race([
+    arrived.promise,
+    request.then(() => assert.fail('adapter settled before upstream arrival')),
+  ])
+  controller.abort()
+  await assert.rejects(request, (error) => error.name === 'AbortError')
+  await disconnected.promise
+  await adapter.close()
+  assert.equal(transport.attempts(), 1)
+  assert.equal(transport.fetchCalls(), 0)
+  const receipt = adapter.diagnostics()
+  assert.equal(receipt.upstream_attempts, 1)
+  assert.equal(receipt.responses, 0)
+  assert.equal(receipt.failures.cancelled, 1)
+  assert.equal(receipt.failures.upstream_timeout, 0)
 })
 
 test('callMistral normalizes a direct canary request', async () => {
