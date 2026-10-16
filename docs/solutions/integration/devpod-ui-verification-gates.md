@@ -117,7 +117,7 @@ browser evidence that already passed.
 ### Host dependency preparation
 
 Named dependency volumes isolate Linux package contents, but do not authorize
-replacing host mountpoint directories while the container runs. In pnpm 11,
+replacing host mountpoint directories while the container runs. Since pnpm 11,
 the outer `pnpm run` command can repair dependencies before the launcher starts.
 Guarding only commands inside the launcher therefore leaves an earlier write
 path unprotected.

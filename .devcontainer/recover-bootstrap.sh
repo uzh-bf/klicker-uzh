@@ -150,8 +150,9 @@ set -a
 . "$ROOT/.devcontainer/devcontainer.env"
 set +a
 
+# Install explicitly before build or verification; retain the workspace's
+# verifyDepsBeforeRun: error policy for every subsequent pnpm command.
 export CI=true
-export npm_config_verify_deps_before_run=false
 umask 077
 
 echo '[recover-bootstrap] Installing frozen dependencies.'
