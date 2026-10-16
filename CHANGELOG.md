@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file. See [standa
 ### Bug Fixes
 
 * **assessment:** show peer comparison in every report after course end ([#6510](https://github.com/uzh-bf/klicker-uzh/issues/6510)) ([cd90f8e](https://github.com/uzh-bf/klicker-uzh/commit/cd90f8edb3577a7512a224dc17951750377b4d18))
+* **chat:** align draft eligibility and cost-center backfill ([#6552](https://github.com/uzh-bf/klicker-uzh/issues/6552)) ([a12bd82](https://github.com/uzh-bf/klicker-uzh/commit/a12bd8260500d5b3d24b668564dab09d442afdc4))
 * **chat:** make custom-mode knowledge retrieval optional ([#6506](https://github.com/uzh-bf/klicker-uzh/issues/6506)) ([be6ae67](https://github.com/uzh-bf/klicker-uzh/commit/be6ae67368b3249dc01c2284bd6a8d66812a062d))
 * **chat:** preserve approved custom-mode KB retrieval ([#6247](https://github.com/uzh-bf/klicker-uzh/issues/6247)) ([e2ac86f](https://github.com/uzh-bf/klicker-uzh/commit/e2ac86f836c3fe78986f9ac51316d1e76bdd2556))
 * **chat:** provide shared cookie domain on release branch ([#6497](https://github.com/uzh-bf/klicker-uzh/issues/6497)) ([eb6e579](https://github.com/uzh-bf/klicker-uzh/commit/eb6e579ba3e9cb04e516a2012cc31f1714d6d257))
@@ -20,11 +21,6 @@ All notable changes to this project will be documented in this file. See [standa
 * raise the individual final review token budget ([#6508](https://github.com/uzh-bf/klicker-uzh/issues/6508)) ([fa920c8](https://github.com/uzh-bf/klicker-uzh/commit/fa920c84024cc251fd5f9f99e02982180c50ba77))
 
 
-### Documentation
-
-* **project:** add ethics production rollout plan ([2a80086](https://github.com/uzh-bf/klicker-uzh/commit/2a8008650d5fae30d4d25ba69e3d232665b3ecd9))
-
-
 ### Enhancements
 
 * **chat:** customize welcomes and starters for custom modes ([#6534](https://github.com/uzh-bf/klicker-uzh/issues/6534)) ([08598ba](https://github.com/uzh-bf/klicker-uzh/commit/08598ba92ec94dfd4fa2606e7bd4376af4bbb7bb))
@@ -32,6 +28,12 @@ All notable changes to this project will be documented in this file. See [standa
 * **ci:** maintain v3-ai -> v3-adaptive-learning sync PRs ([#6500](https://github.com/uzh-bf/klicker-uzh/issues/6500)) ([992ad53](https://github.com/uzh-bf/klicker-uzh/commit/992ad530d5ef13dfab18a1db19182668a7c24f84))
 * **ci:** use high reasoning for draft OCR reviews ([#6503](https://github.com/uzh-bf/klicker-uzh/issues/6503)) ([dcbec1e](https://github.com/uzh-bf/klicker-uzh/commit/dcbec1ede200f6f7482d32b82bf7aff172e97b60))
 * **ci:** use Mistral GLM 5.3 max for OCR 1.13 ([#6493](https://github.com/uzh-bf/klicker-uzh/issues/6493)) ([34e6e56](https://github.com/uzh-bf/klicker-uzh/commit/34e6e56a8cabfa73e4e609de6c26aaa201fe25f0))
+
+
+### Documentation
+
+* keep release plans independent of environment records ([ef863c1](https://github.com/uzh-bf/klicker-uzh/commit/ef863c10e94f6bf4a1f9e1b867d76d6e73027e0d))
+* **project:** add ethics production rollout plan ([2a80086](https://github.com/uzh-bf/klicker-uzh/commit/2a8008650d5fae30d4d25ba69e3d232665b3ecd9))
 
 ## [3.4.0-alpha.87](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.86...v3.4.0-alpha.87) (2026-10-13)
 
