@@ -1,0 +1,98 @@
+import { realpath, stat } from 'node:fs/promises'
+import path from 'node:path'
+import { getBlobStorageAccountUrl } from '@klicker-uzh/util'
+import { type VideoFrame, VIDEO_FORMATS } from '@/src/lib/sources/videoFrames'
+
+const DIGEST = /^[a-f0-9]{64}$/
+
+export type VideoByteRange = {
+  end: number
+  partial: boolean
+  start: number
+}
+
+/** Parse one HTTP byte range. Multiple and malformed ranges fail closed. */
+export function parseVideoByteRange(
+  header: string | null,
+  size: number
+): VideoByteRange | undefined {
+  if (!Number.isSafeInteger(size) || size <= 0) return undefined
+  if (!header) return { start: 0, end: size - 1, partial: false }
+
+  const explicit = /^bytes=(\d+)-(\d*)$/.exec(header)
+  if (explicit) {
+    const start = Number(explicit[1])
+    const requestedEnd = explicit[2] ? Number(explicit[2]) : size - 1
+    const end = Math.min(requestedEnd, size - 1)
+    if (
+      Number.isSafeInteger(start) &&
+      Number.isSafeInteger(end) &&
+      start >= 0 &&
+      end >= start &&
+      start < size
+    )
+      return { start, end, partial: true }
+    return undefined
+  }
+
+  const suffix = /^bytes=-(\d+)$/.exec(header)
+  if (!suffix) return undefined
+  const requestedLength = Number(suffix[1])
+  if (!Number.isSafeInteger(requestedLength) || requestedLength <= 0)
+    return undefined
+  const length = Math.min(requestedLength, size)
+  return { start: size - length, end: size - 1, partial: true }
+}
+
+export function videoObjectKey(frame: VideoFrame) {
+  if (!DIGEST.test(frame.video_sha256))
+    throw new Error('Invalid video reference')
+  if (!(frame.video_extension in VIDEO_FORMATS))
+    throw new Error('Invalid video extension')
+  return `e1/v1/videos/sha256/${frame.video_sha256.slice(0, 2)}/${frame.video_sha256.slice(2, 4)}/${frame.video_sha256}.${frame.video_extension}`
+}
+
+/** Return a short-lived direct Blob URL when production Blob storage is configured. */
+export async function signedVideoPlaybackUrl(frame: VideoFrame) {
+  const account = process.env.BLOB_STORAGE_ACCOUNT_NAME
+  const accessKey = process.env.BLOB_STORAGE_ACCESS_KEY
+  const container = process.env.CHAT_VIDEO_BLOB_CONTAINER
+  if (!account || !accessKey || !container) return undefined
+  const {
+    BlobSASPermissions,
+    generateBlobSASQueryParameters,
+    StorageSharedKeyCredential,
+  } = await import('@azure/storage-blob')
+  const credential = new StorageSharedKeyCredential(account, accessKey)
+  const accountUrl = getBlobStorageAccountUrl(
+    account,
+    process.env.BLOB_STORAGE_ACCOUNT_URL
+  )
+  const now = Date.now()
+  const blobName = videoObjectKey(frame)
+  const query = generateBlobSASQueryParameters(
+    {
+      containerName: container,
+      blobName,
+      permissions: BlobSASPermissions.parse('r'),
+      startsOn: new Date(now - 60_000),
+      expiresOn: new Date(now + 10 * 60_000),
+      contentType: frame.video_mime_type,
+      contentDisposition: 'inline',
+    },
+    credential
+  ).toString()
+  return `${accountUrl}/${encodeURIComponent(container)}/${blobName}?${query}`
+}
+
+/** Local fixture adapter used by the checked-in chatbot demo. */
+export async function readLocalVideo(frame: VideoFrame) {
+  const root = process.env.CHAT_VIDEO_FRAME_STORE_PATH
+  if (!root) throw new Error('Video storage unavailable')
+  const base = await realpath(root)
+  const filename = await realpath(path.join(base, videoObjectKey(frame)))
+  if (!filename.startsWith(base + path.sep))
+    throw new Error('Invalid video path')
+  const info = await stat(filename)
+  return { filename, size: info.size }
+}

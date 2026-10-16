@@ -6,6 +6,21 @@ export function resolveDisclosureOpen(
   return manualOpen ?? (autoOpen && active)
 }
 
+type GroupableMessagePart = {
+  type: string
+  toolName?: string
+}
+
+export function messagePartGroups(
+  part: GroupableMessagePart,
+  standaloneToolName: string
+): readonly ('group-reasoning' | 'group-tool')[] {
+  if (part.type === 'reasoning') return ['group-reasoning']
+  if (part.type === 'tool-call' && part.toolName !== standaloneToolName)
+    return ['group-tool']
+  return []
+}
+
 type MessagePartWithName = {
   type: string
   name?: string
