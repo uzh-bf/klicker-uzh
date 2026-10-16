@@ -479,7 +479,14 @@ function assertNegativeFixtures() {
 
 for (const environment of environments) {
   const resources = parseManifest(renderChart(environment), environment.name)
-  assertReplicaOwnership(resources, environment.name, 17)
+  assertReplicaOwnership(
+    resources,
+    environment.name,
+    // Enabling assessmentAudit adds the audit dispatcher Deployment alongside
+    // the 17 shared application ones; staging also enables the audit sealer.
+    // Retiring the media-policy worker left no further audit Deployment.
+    { base: 17, stg: 19, prd: 17 }[environment.name]
+  )
   assertStaticLti(
     resources,
     environment.name,

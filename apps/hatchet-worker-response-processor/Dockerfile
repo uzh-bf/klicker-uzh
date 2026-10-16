@@ -42,6 +42,7 @@ FROM base AS runtime
 WORKDIR /app
 
 ARG NODE_ENV="production"
+ENV NODE_ENV=${NODE_ENV}
 
 RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
 
@@ -57,12 +58,14 @@ RUN pnpm i --prod --ignore-scripts \
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
+COPY --from=builder --chown=nodejs:nodejs /app/packages/audit/dist/ /app/packages/audit/dist/
 COPY --from=builder --chown=nodejs:nodejs /app/packages/hatchet/dist/ /app/packages/hatchet/dist/
 COPY --from=builder --chown=nodejs:nodejs /app/packages/knowledge-graph/dist/ /app/packages/knowledge-graph/dist/
 COPY --from=builder --chown=nodejs:nodejs /app/packages/types/dist/ /app/packages/types/dist/
 COPY --from=builder --chown=nodejs:nodejs /app/packages/grading/dist/ /app/packages/grading/dist/
 COPY --from=builder --chown=nodejs:nodejs /app/packages/util/dist/ /app/packages/util/dist/
 COPY --from=builder --chown=nodejs:nodejs /app/packages/prisma/dist/ /app/packages/prisma/dist/
+COPY --from=builder --chown=nodejs:nodejs /app/packages/logging/dist/ /app/packages/logging/dist/
 COPY --from=builder --chown=nodejs:nodejs /app/apps/hatchet-worker-response-processor/dist/ /app/apps/hatchet-worker-response-processor/dist/
 
 USER nodejs

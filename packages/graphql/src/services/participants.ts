@@ -279,8 +279,6 @@ export async function getParticipantDataUse(
 //   { courseId, participantId, email }: RegisterParticipantFromLTIArgs,
 //   ctx: Context
 // ) {
-//   console.log('args', courseId, participantId)
-
 //   if (!courseId) return null
 
 //   if (!isEmail(email)) return null
@@ -370,7 +368,6 @@ export async function getParticipantDataUse(
 //         },
 //       })
 
-//       console.log('new participation', participation)
 //     }
 
 //     const jwt = await createParticipantToken(participant.participant.id)
@@ -383,7 +380,6 @@ export async function getParticipantDataUse(
 //       course: null,
 //     }
 //   } catch (e) {
-//     console.error(e)
 //     return null
 //   }
 // }
@@ -967,9 +963,9 @@ export const handleUpdateWeeklyTimelineEntries: HatchetHandlers['handleUpdateWee
         executionCtx
       )
 
-      executionCtx.logger.info(
-        `[INFO] [UpdateWeeklyTimelineEntries] Successfully updated weekly timeline entries for course ${course.name} (ID: ${course.id})`
-      )
+      executionCtx.logger.info('Weekly timeline entries updated', {
+        event: 'timeline.weekly.updated',
+      })
     }
 
     // remove all daily timeline entries older than 2 weeks
@@ -1105,9 +1101,12 @@ export async function updateWeeklyTimelineEntriesCourse(
       }
     })
 
-    executionCtx?.logger.info(
-      `[INFO] [UpdateWeeklyTimelineEntries] Successfully updated ${updates.length} weekly timeline entries for course ${courseTimelineLastWeek.name} (${numUpdatesLastWeek} for last week with start date ${startDateLastWeek} and ${lastWeekDailys.length} daily entries, ${numUpdatesCurrentWeek} for the current week with start date ${startDateCurrentWeek} and ${currentWeekDailys.length} daily entries).`
-    )
+    executionCtx?.logger.info('Weekly timeline entries updated', {
+      event: 'timeline.weekly_entries.updated',
+      count: updates.length,
+      previousWeekCount: numUpdatesLastWeek,
+      currentWeekCount: numUpdatesCurrentWeek,
+    })
   }
 
   return true
