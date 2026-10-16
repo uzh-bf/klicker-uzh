@@ -1,5 +1,78 @@
 # Graph-assisted retrieval reliability and staging qualification
 
+## October 16: offline evaluation preparation — approved
+
+The six-answer development comparison is complete. It does not establish a
+GraphRAG quality advantage: the references mixed facts with instructions, context
+sizes differed, and identical negative contexts received different recall scores.
+Earlier dated operational sections below are historical. The current request
+prepares a larger comparison without paid runs or live changes.
+
+**Goal and boundary.** Use the existing DeepEval framework for LLM quality.
+Retain original references, captures, reports, ledger history and every prior
+spend/hold. The combined reservation remains CHF 19.83223885 of CHF 20; this
+preparation authorizes zero additional spend. Ingestion remains independent of KG.
+No new evaluation engine, dependencies, secret reads, connectivity, graph build,
+activation, deployment, ready or merge action is included. Delivery updates draft
+[Klicker #6478](https://github.com/uzh-bf/klicker-uzh/pull/6478), targeting `v3-ai`.
+Execution mode: standard; native trusted reviews preserve the private boundary.
+
+**Owners and sequence.**
+
+1. Main owns prospective reference copies and the 24-case protocol in ignored
+   `project/_local/evaluation-preparation-20261016/`. References contain source
+   facts only. Original scored artifacts remain byte-for-byte unchanged. The
+   two old cases are development seeds; 16 answerable and eight unsupported
+   held-out cases still require source review and freeze before 72 new answers.
+2. Main owns `evaluation/data/metrics/klicker_graph_retrieval.yaml`, new
+   `klicker_graph_answerable.yaml` and `klicker_graph_abstention.yaml` beside it,
+   and the new `evaluation/scripts/prepare-graph-comparison.py`. Answerable
+   correctness runs even with empty retrieval; abstention scoring runs with empty
+   or irrelevant retrieval. Select the profile by reviewed case class and analysis
+   purpose, never by observed retrieval emptiness. DeepEval retains all scoring.
+3. A native trusted executor owns legacy quality-call guards in
+   `evaluation/routing/src/routing_eval/{bench,pairwise}.py`, their existing tests,
+   routing README and routing evaluation skill. Answer capture and historical
+   statistics remain usable; new custom judge calls stop before credentials or
+   provider access. This work runs independently of step 2.
+4. Main integrates the DeepEval-only policy in `evaluation/README.md` and its root
+   `AGENTS.md` pointer, runs the offline checks, then commits, reviews and updates
+   the existing draft PR. No paid quality result is claimed from fake judges.
+
+**Matched-input contract.** The helper accepts only question and three ordered
+retrieval arms before generation. It renders compact UTF-8 JSON with keys
+`question` and `retrieval_context`, including any source labels within passage
+text. `o200k_base` counts the complete rendered input, including JSON and question
+overhead. Common quota is the smaller of 4,096 and the three available input
+sizes. Each actual input must be between quota minus eight tokens and quota.
+Only literal Unicode prefixes are retained; no padding or passage reordering.
+All-empty contexts are valid; mixed empty/nonempty arms are unmatched and rejected.
+Reject oversized fixed overhead, missing offline tokenizer cache, post-generation
+QA/golden fields, overwrite attempts or unsatisfied matching. Future generation
+must consume the saved `rendered_input` unchanged with the same system prompt,
+model, effort and output cap. Token preparation does not prove provider billing
+or the complete native chatbot path. Captured generation evidence is never
+shortened after the answer has been produced.
+
+**Test portfolio.** Extend `evaluation/tests/test_graph_metric_contract.py` for
+native factory selection, false-abstention failure and unsupported-claim failure
+using fake judges with network blocked. Extend existing routing tests to prove
+legacy quality entry points fail before provider access. Add
+`evaluation/tests/test_prepare_graph_comparison.py` for Unicode prefix integrity,
+whole-input quota enforcement, empty/mixed contexts, leakage and overwrite guards.
+Reference wording and documentation need no tests. No runtime is needed.
+
+**Stops and terminal condition.** A changed historical hash, attempted provider
+access or missing offline dependency blocks dependent preparation. Unmatched
+inputs stop their comparison rather than being reported as matched. Finish with
+reviewed source, offline evidence, prospective private references and a concrete
+24-case protocol pending reviewed holdout freeze, future pricing and budget
+approval. All prior holds remain. No paid dispatch is available in this package.
+
+**Progress.** Planning challenge incorporated: context-free positive scoring,
+explicit full rendered-input contract, exact paths, owners and test obligations.
+Implementation and offline verification in progress.
+
 October 11 scope revision: the user approved keeping ingestion and KG
 independently operated, with no database changes. The configured Astra review
 identified runtime, parser and lifecycle coupling in the canonical-reader design.
