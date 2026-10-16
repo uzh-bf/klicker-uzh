@@ -1023,10 +1023,21 @@ async function startAdapter(options = {}) {
       }
       if (main && !choice.message.tool_calls?.length) {
         for (const counter of counters) counter.main_no_tool_responses += 1
-        throw new AdapterError(
-          'required_tool_call_missing',
-          'review requires a tool call'
-        )
+        // OCR can continue an interrupted native turn without treating it as
+        // complete. Permit this once per replayed chain; repeated tool-free
+        // answers still fail instead of entering an open-ended prose retry.
+        const canContinue =
+          choice.finish_reason === 'length' &&
+          !body.messages.some(
+            (message) =>
+              message.role === 'assistant' && !message.tool_calls?.length
+          )
+        if (!canContinue) {
+          throw new AdapterError(
+            'required_tool_call_missing',
+            'review requires a tool call'
+          )
+        }
       }
       const message = payload.choices[0].message
       history.remember(body.messages, message)

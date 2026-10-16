@@ -2467,6 +2467,14 @@ function mergeOCRResumeResults(initialResult, resumedResult, maxTokensBudget) {
   if (!resumePlan) {
     throw new Error('OCR resume merge requires a partial parent result')
   }
+  if (resumedResult?.status === 'partial') {
+    validateOCRSessionEnvelope(resumedResult, 'partial', 'Resumed OCR result')
+    const error = new Error(
+      'Resumed OCR review remains incomplete after the allowed resume'
+    )
+    error.code = 'ocr_resume_incomplete'
+    throw error
+  }
   const resumed = validateOCRSessionEnvelope(
     resumedResult,
     'complete',

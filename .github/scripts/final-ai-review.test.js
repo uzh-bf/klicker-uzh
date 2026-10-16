@@ -2287,7 +2287,7 @@ test('rejects incorrect resume lineage, identity, and incomplete coverage', () =
         },
         750_000
       ),
-    /session or manifest identity/
+    { code: 'ocr_resume_incomplete' }
   )
   assert.throws(
     () => mergeOCRResumeResults(parent, resumed, 400),
