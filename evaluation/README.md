@@ -132,6 +132,11 @@ provider or BYOK fees. Reserve at all-in upper rates; prompt caching can add a
 write charge even when the proxy-only bypass hint is stripped. The price filters
 do not bound cache charges or platform fees independently. Client-supplied
 `cache_control` at any depth and `store: true` are rejected before reservation.
+The scan includes function-tool and structured-output JSON Schemas. A schema
+property named `cache_control`, or a `type` string matching
+`image|audio|video|file|web_search|computer|code_interpreter`, is intentionally
+unsupported even when it describes data rather than provider behavior. Qualify
+the actual tool schemas unchanged; the guard does not special-case schemas.
 Tariff freshness is an operator readiness gate, not an automatically enforced
 expiry check. Retain this evidence privately and refresh it before authorizing
 paid capture. See the [Responses schema](https://openrouter.ai/openapi.json) and
