@@ -203,6 +203,9 @@ test.describe('Chatbot knowledge base setup', () => {
       aiBeta: true,
       aiAdvancedManagement: false,
     })
+    // GrowthBook keeps the beforeEach payload in localStorage for a minute,
+    // so the new payload only applies once that cache is gone.
+    await page.evaluate(() => localStorage.clear())
     await page.goto(`${manageUrl}/resources/chatbots`)
     await expect(page.getByTestId('create-chatbot')).toBeVisible()
 
