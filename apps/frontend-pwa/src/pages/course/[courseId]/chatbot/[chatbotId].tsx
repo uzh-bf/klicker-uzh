@@ -6,6 +6,7 @@ import { readParticipantSession } from '@klicker-uzh/shared-components/src/utils
 import { UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useEffect } from 'react'
 import Layout from '../../../../components/Layout'
@@ -156,14 +157,16 @@ const ChatbotPage = ({
   sessionRevision,
 }: ChatbotPageProps) => {
   const t = useTranslations()
+  const { locale, defaultLocale } = useRouter()
   useEffect(() => {
     if (!chatDestination) return
+    const prefix = locale && locale !== defaultLocale ? `/${locale}` : ''
     window.location.replace(
       readParticipantSession() === sessionRevision
         ? chatDestination
-        : '/serverError?cookiesRequired=true'
+        : `${prefix}/serverError?cookiesRequired=true`
     )
-  }, [chatDestination, sessionRevision])
+  }, [chatDestination, sessionRevision, locale, defaultLocale])
   if (chatDestination) return <Loader />
 
   if (participationError) {
