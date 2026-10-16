@@ -1000,6 +1000,319 @@ Your data will never be shared with other parties beside the above and will neve
         dataUseChoiceRequired: 'Please choose yes or no.',
       },
     },
+    studentGuide: {
+      viewsAriaLabel: 'Documentation views',
+      guideViewLabel: 'Student guide',
+      progressViewLabel: 'Progress & data',
+      heroGuideTitle: 'KlickerUZH in your course',
+      heroGuideIntro: 'Participate in class and practise course material.',
+      heroGuideIntroChatbot:
+        'Participate in class and practise course material, then work through questions with AI support.',
+      heroGuideAvailability:
+        'Available activities and tools depend on your course.',
+      heroProgressTitle: 'Understand progress and data',
+      heroProgressIntro: 'Learn about {topics}.',
+      inGuideAriaLabel: 'In this guide',
+      inProgressAriaLabel: 'In progress and data',
+      previewFooter:
+        'Student guide prototype · Examples are synthetic and illustrate concepts rather than exact current screens.',
+      progressSetup: {
+        description:
+          'Available sections reflect the enabled capabilities of this course and account.',
+        backToGuide: 'Back to student guide',
+      },
+      nav: {
+        getStarted: 'Get started',
+        liveQuizzes: 'In class',
+        practice: 'Practise',
+        aiTutor: 'AI tutor',
+        privacyHelp: 'Privacy & help',
+        faqs: 'FAQs',
+        gamification: 'Points & XP',
+        learningAnalytics: 'Learning analytics',
+      },
+      features: {
+        live: {
+          title: 'Participate in class',
+          description: 'Answer live questions and discuss the results.',
+          linkLabel: 'About live quizzes',
+        },
+        practice: {
+          title: 'Practise between sessions',
+          description: 'Use quizzes and flashcards to check what you know.',
+          linkLabel: 'About practice activities',
+        },
+        chat: {
+          title: 'Work through questions',
+          description: 'Ask the AI tutor for hints, explanations, or practice.',
+          linkLabel: 'About the AI tutor',
+        },
+      },
+      featureIllustration: {
+        hint: 'A hint?',
+        reply: 'What have you tried?',
+      },
+      setup: {
+        title: 'Set up access',
+        description:
+          'Open your course link, sign in, and install the app only if you want it on your phone.',
+        firstVisit: 'First visit? Account setup',
+        android: 'Android app',
+        iphone: 'iPhone setup',
+      },
+      getStarted: {
+        label: 'Get started',
+        title: 'Course access and accounts',
+        access:
+          'Open the course link shared by your teaching team or learning platform, then sign in or follow the registration steps. You may need a course PIN.',
+        account: 'An account is needed for personal bookmarks and repetition.',
+        accountChatbot:
+          'An account is needed for personal bookmarks and repetition, and for course chatbots.',
+        guestNote:
+          'Some activities allow guest participation. Use KlickerUZH in your browser; phone installation is optional.',
+        tutorialLink: 'Account and sign-in guide',
+        firstVisit: 'Your first visit',
+        stepOpenTitle: 'Open your course',
+        stepOpenBody:
+          'Use the course link or learning platform provided to you.',
+        stepSignInTitle: 'Sign in when prompted',
+        stepSignInBody:
+          'Use an existing account or follow the registration steps.',
+        stepChooseTitle: 'Choose an activity',
+        stepChooseBody: 'Open a live quiz or practice material when available.',
+        stepChooseBodyChatbot:
+          'Open a live quiz, practice material, or the AI tutor when available.',
+        firstVisitCaption:
+          'Your teaching team provides the course link and any required PIN.',
+      },
+      live: {
+        label: 'In class',
+        title: 'Live quizzes and feedback',
+        quizTitle: 'Live quizzes.',
+        quizBody:
+          'Open the session shared by your lecturer and submit your answer while the question is open. Anonymous answers may be available.',
+        feedbackTitle: 'Questions and feedback.',
+        feedbackBody:
+          'Use live Q&A or rate pace and difficulty when those features are enabled.',
+        rulesTitle: 'Follow the activity rules.',
+        rulesBody:
+          'Your teaching team decides the timing, attempts, and available feedback for each activity.',
+        tutorialLink: 'Live quiz guide',
+        illustrationLabel: 'Illustrative live quiz',
+        illustrationCaption:
+          'An example of answering a question and asking for clarification.',
+        mock: {
+          header: 'Live quiz',
+          status: 'Question open',
+          question: 'What is opportunity cost?',
+          optionSpent: 'The money already spent on a choice',
+          optionBest: 'The value of the next-best alternative forgone',
+          optionAll: 'The sum of all available alternatives',
+          unclear: 'Something unclear?',
+          askQa: 'Ask in Q&A: “Could you show another example?”',
+        },
+      },
+      practice: {
+        label: 'Independent practice',
+        title: 'Practice quizzes and repetition',
+        quizTitle: 'Practice quizzes.',
+        quizBody:
+          'Answer course questions, read the feedback, and repeat available quizzes. Points depend on the activity rules.',
+        flashcardsTitle: 'Flashcards.',
+        flashcardsBody:
+          'Recall an answer, reveal it, then assess how well you knew it.',
+        coursePoolTitle: 'Course pool.',
+        coursePoolBody:
+          'Questions you answered incorrectly can return in your course pool for spaced repetition.',
+        bookmarksTitle: 'Bookmarks.',
+        bookmarksBody:
+          'Logged-in participants can save questions for a private study pool.',
+        microlearningTitle: 'Microlearnings.',
+        microlearningBody:
+          'Complete short activities within their availability window. Each is intended for one attempt.',
+        groupTitle: 'Group activities.',
+        groupBody:
+          'Work through tasks with your group when your course offers them.',
+        flagTitle: 'Report faulty questions.',
+        flagBody:
+          'Use the flag control on a question to report a problem to your teaching team.',
+        tutorialPractice: 'Practice guide',
+        tutorialMicrolearning: 'Microlearnings',
+        tutorialGroups: 'Group activities',
+        illustrationLabel: 'Try the example',
+        flashcardLabel: 'Flashcard',
+        flashcardTag: 'Illustration',
+        flashcardHint: 'Think of an answer before revealing it.',
+        flashcardQuestion: 'What does opportunity cost mean?',
+        flashcardAnswer:
+          'The value of the next-best alternative you give up when making a choice.',
+        flashcardExample:
+          'For example, an hour spent studying cannot also be spent working.',
+        revealAnswer: 'Reveal answer',
+        hideAnswer: 'Hide answer',
+        illustrationCaption: 'Reveal the answer after making your own attempt.',
+      },
+      chatbot: {
+        label: 'AI study support',
+        title: 'AI tutor',
+        intro:
+          'Open the course chatbot when it is available. You need a KlickerUZH account and Participation in the course; joining a leaderboard is not required.',
+        tutorTitle: 'Tutor',
+        tutorBody: 'guides you with questions, hints, and feedback.',
+        explainerTitle: 'Explainer',
+        explainerBody: 'explains a concept directly with examples.',
+        quizzerTitle: 'Quizzer',
+        quizzerBody: 'asks practice questions to check your understanding.',
+        guidance:
+          'Modes vary by course. Include your own attempt when asking for help, and check answers against course material because AI can be wrong or incomplete.',
+        conditions:
+          'Your existing account, credits, and privacy arrangements apply. The balance shows allowance and refill information; cost depends on the configured model and conversation length. Avoid sensitive personal information.',
+        tutorialLink: 'Chatbot guide',
+        selectLabel: 'Course chatbot',
+        tryPrompt:
+          'Open the embedded course chatbot when you are ready to try it.',
+        tryButton: 'Try the course chatbot',
+        iframeTitle: '{name} course chatbot',
+        openInNewTab: 'Open {name} in a new tab',
+        illustrationLabel: 'Illustration — select a course to try its chatbot',
+        illustrationAriaLabel: 'Illustrative chatbot mode',
+        illustrationCaption:
+          'Synthetic illustration only; no chatbot is running here.',
+        examplePromptLabel: 'Example student prompt',
+        exampleResponseLabel: 'Illustrative response · {mode}',
+        modes: {
+          tutor: 'Tutor',
+          explainer: 'Explainer',
+          quizzer: 'Quizzer',
+        },
+        examples: {
+          tutor: {
+            prompt:
+              'I think opportunity cost is the price I pay. Can you give me a hint?',
+            response:
+              'Imagine you spend a free hour studying instead of working. What have you given up?',
+          },
+          explainer: {
+            prompt: 'Explain opportunity cost using an example with my time.',
+            response:
+              'Opportunity cost is the value of the next-best alternative you give up. An hour spent studying cannot also be spent working.',
+          },
+          quizzer: {
+            prompt:
+              'Ask me a question to check my understanding of opportunity cost.',
+            response:
+              'You spend an hour studying instead of earning CHF 25 at work. What is the opportunity cost of that hour?',
+          },
+        },
+      },
+      progress: {
+        label: 'Learning progress',
+        title: 'Course points, global XP, and milestones',
+        body: 'Course points show your progress in this course. When the course offers a leaderboard, joining it is optional. Leaving it resets the course points you collected and removes your leaderboard entries, but you keep your course access.',
+        xp: 'Global XP and levels are a separate account-wide track, and leaving a course leaderboard does not affect them. XP can accrue independently of course leaderboard opt-in, with award rules depending on the activities available to you.',
+        achievements:
+          'Achievements mark milestones such as completing a practice goal. These examples are synthetic and do not show your data.',
+        tutorialLink: 'Leaderboards and achievements',
+        illustrationLabel: 'Illustrative progress view',
+        thisCourse: 'This course',
+        pointsValue: '{points} points',
+        coursePointsSynthetic: 'Course points · synthetic',
+        acrossAccount: 'Across your account',
+        levelValue: 'Level {level}',
+        globalXpSynthetic: 'Global XP · synthetic',
+        practiceMilestone: 'Practice milestone',
+        practiceMilestoneBody: 'Complete 5 practice activities · illustrative',
+        leaderboardTitle: 'Optional course leaderboard',
+        exampleTag: 'Example',
+        leaderboardYou: 'You',
+        leaderboardRow: '{rank} · {name}',
+        illustrationCaption:
+          'Illustrative cards only; values and names are synthetic.',
+      },
+      analytics: {
+        label: 'Learning analytics',
+        title: 'Turn activity into useful next steps',
+        intro:
+          'Learning analytics can help you spot practice gaps, reflect on your study activity, and help the teaching team identify topics that may need support.',
+        accountChoice:
+          'Your course must offer analytics, and you choose whether to take part across your account.',
+        optOutNote:
+          'If you opt out, individual derived Learning Analytics data is removed and future aggregates exclude you. Existing aggregate results are not promised to be recomputed or removed.',
+        chartLabel: 'Illustrative weekly activity',
+        chartCaption:
+          'Illustrative pattern only — this is not real student data or a measurement of your activity.',
+        plannedBadge: 'Planned behavior · no preference is saved here',
+        plannedLegend: 'Planned choice controls — no preference is saved here',
+        plannedBody:
+          'This future choice will apply account-wide and remains separate from whether each course offers Learning Analytics. These controls are disabled in this prototype; no choice is recorded.',
+        optIn: 'Opt in',
+        optOut: 'Opt out',
+        dayMon: 'Mon',
+        dayTue: 'Tue',
+        dayWed: 'Wed',
+        dayThu: 'Thu',
+        dayFri: 'Fri',
+        daySat: 'Sat',
+        daySun: 'Sun',
+      },
+      privacyHelp: {
+        label: 'Progress & help',
+        title: 'Feedback, privacy, and support',
+        profileNote:
+          'Manage visibility in your profile privacy settings. Course notifications and feedback are available when supported by the activity.',
+        contactNote:
+          'Contact your teaching team about access, deadlines, and course rules.',
+        editProfileLink: 'Profile privacy settings',
+        dataUseLink: 'Manage your account data use',
+        privacyPolicyLink: 'Privacy policy',
+        illustrationLabel: 'Feedback and support',
+        feedbackTitle: 'Activity feedback',
+        feedbackBody: 'Feedback on your answers when provided.',
+        supportTitle: 'Course support',
+        supportBody: 'Ask your teaching team about course rules and access.',
+        illustrationCaption: 'Available support depends on the course.',
+      },
+      faq: {
+        title: 'Common questions',
+        signIn: {
+          question: 'I cannot sign in or find my course.',
+          answer:
+            'Use the original course link and your existing account. Ask your teaching team for a missing PIN or access instructions. Use the recovery option on the sign-in page when it is offered.',
+        },
+        missingActivity: {
+          question: 'An activity is missing from my course.',
+          answer:
+            'The activity may be unpublished, closed, or require sign-in. Open the course link from your teaching team and check your course instructions. Ask your teaching team if you still cannot find it.',
+        },
+        chatbot: {
+          question: 'The course chatbot is missing.',
+          answer:
+            'The chatbot appears when it is published for your course. Sign in and open the course chatbot from your course. If credits are exhausted, check the displayed refill information.',
+        },
+        install: {
+          question: 'How do I install KlickerUZH and enable notifications?',
+          answer:
+            'Look for “Install app” or “Add to Home Screen” in your browser menu or share menu. Enable notifications in your course when available, and allow them on your device. Support varies by device and browser.',
+          linkLabel: 'Installation and notifications guide',
+        },
+        points: {
+          question: 'Why did I receive different points this time?',
+          answer:
+            'Points can depend on correctness, response time, multipliers, and repetition rules. Check the activity instructions or ask your teaching team.',
+        },
+        leaderboard: {
+          question: 'Do I have to appear on the leaderboard?',
+          answer:
+            'No. Course leaderboards are opt-in. Leaving resets the course points you collected and removes your leaderboard entries for that course, but you keep your course access and your account-wide XP.',
+        },
+        progressTeaserTitle: 'Progress & data',
+      },
+      progressTopics: {
+        gamification: 'course points and global XP',
+        analytics: 'Learning Analytics',
+        privacyHelp: 'privacy and support',
+      },
+    },
     studentDocs: {
       assessmentInstanceWarning:
         'Please note that you are currently in the <b>assessment instance</b> of KlickerUZH. The following documentation refers to the regular student application, which may differ from the assessment instance.',
