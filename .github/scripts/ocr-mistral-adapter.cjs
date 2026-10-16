@@ -14,10 +14,20 @@ const fs = require('node:fs')
 const http = require('node:http')
 const path = require('node:path')
 const { spawn } = require('node:child_process')
+const { StringDecoder } = require('node:string_decoder')
 
 const MISTRAL_URL = 'https://api.mistral.ai/v1/chat/completions'
 const MISTRAL_MODEL = 'zai-glm-5-3'
 const MISTRAL_EFFORT = 'max'
+
+// USD per million tokens, checked 2026-10-16 against the provider's model page.
+const MISTRAL_PRICING = {
+  date: '2026-10-16',
+  source: 'https://docs.mistral.ai/models/zai-glm-5-3',
+  input: 1.4,
+  cachedInput: 0.14,
+  output: 4.4,
+}
 
 const MAX_REQUEST_BYTES = 2 * 1024 * 1024
 const MAX_RESPONSE_BYTES = 32 * 1024 * 1024
@@ -964,10 +974,13 @@ async function startAdapter(options = {}) {
       for (const counter of counters) {
         counter.responses += 1
         counter.response_bytes += responseBytes
-        if (normalized.usage) {
-          counter.prompt_tokens += normalized.usage.prompt_tokens ?? 0
-          counter.completion_tokens += normalized.usage.completion_tokens ?? 0
-        } else counter.missing_usage += 1
+        let incompleteUsage = false
+        for (const field of ['prompt_tokens', 'completion_tokens']) {
+          const value = normalized.usage?.[field]
+          if (Number.isSafeInteger(value) && value >= 0) counter[field] += value
+          else incompleteUsage = true
+        }
+        if (incompleteUsage) counter.missing_usage += 1
         if (cached !== undefined) {
           counter.cache_usage_responses += 1
           counter.cached_prompt_tokens += cached
@@ -1304,6 +1317,184 @@ function writeDiagnostics(snapshot) {
   }
 }
 
+function estimateCost(diagnosticsText) {
+  const lines = diagnosticsText.trim().split('\n').filter(Boolean)
+  if (lines.length === 0) return null
+  const totals = {
+    prompt_tokens: 0,
+    completion_tokens: 0,
+    cached_prompt_tokens: 0,
+    responses: 0,
+  }
+  for (const line of lines) {
+    const row = JSON.parse(line)
+    const fields = [
+      ...Object.keys(totals),
+      'uncached_prompt_tokens',
+      'upstream_attempts',
+      'missing_usage',
+      'cache_usage_responses',
+      'missing_cache_usage',
+      'invalid_cache_usage',
+      'unfinished_requests',
+    ]
+    if (
+      row?.schema_version !== 1 ||
+      fields.some(
+        (field) => !Number.isSafeInteger(row[field]) || row[field] < 0
+      ) ||
+      row.missing_usage ||
+      row.missing_cache_usage ||
+      row.invalid_cache_usage ||
+      row.unfinished_requests ||
+      row.responses !== row.upstream_attempts ||
+      row.cache_usage_responses !== row.responses ||
+      row.cached_prompt_tokens + row.uncached_prompt_tokens !==
+        row.prompt_tokens
+    )
+      return null
+    // Each line is one adapter lifetime. Nested type/conversation counters
+    // repeat the same usage and must never be added to these aggregate totals.
+    for (const field of Object.keys(totals)) totals[field] += row[field]
+  }
+  if (Object.values(totals).some((value) => !Number.isSafeInteger(value)))
+    return null
+  const output = (totals.completion_tokens * MISTRAL_PRICING.output) / 1e6
+  const withoutCache =
+    (totals.prompt_tokens * MISTRAL_PRICING.input) / 1e6 + output
+  const savings =
+    (totals.cached_prompt_tokens *
+      (MISTRAL_PRICING.input - MISTRAL_PRICING.cachedInput)) /
+    1e6
+  return {
+    ...totals,
+    withCache: withoutCache - savings,
+    withoutCache,
+    savings,
+    savingsPercent: withoutCache === 0 ? 0 : (savings / withoutCache) * 100,
+  }
+}
+
+function commandSummary(args) {
+  let estimate
+  try {
+    estimate = estimateCost(fs.readFileSync(args[0], 'utf8'))
+  } catch {
+    // Missing or malformed receipts cannot establish zero spend.
+  }
+  const pricing = MISTRAL_PRICING
+  const summary = [
+    '### OCR estimated cost and caching savings',
+    '',
+    `Mistral \`${MISTRAL_MODEL}\`; [list pricing](${pricing.source}) checked ${pricing.date}: ` +
+      `$${pricing.input.toFixed(2)} input / $${pricing.cachedInput.toFixed(2)} cached input / $${pricing.output.toFixed(2)} output per million tokens (USD).`,
+    '',
+  ]
+  if (estimate) {
+    summary.push(
+      '| Estimate | USD |',
+      '| --- | ---: |',
+      `| With reported caching | $${estimate.withCache.toFixed(4)} |`,
+      `| Same tokens without caching | $${estimate.withoutCache.toFixed(4)} |`,
+      `| Caching savings (${estimate.savingsPercent.toFixed(1)}%) | $${estimate.savings.toFixed(4)} |`,
+      '',
+      `${estimate.prompt_tokens} input tokens (${estimate.cached_prompt_tokens} cached), ${estimate.completion_tokens} output tokens; ${estimate.responses} provider responses.`
+    )
+  } else {
+    summary.push(
+      'Estimate unavailable: diagnostics are missing, invalid, or have incomplete usage/cache coverage. Unknown usage is not treated as zero.'
+    )
+  }
+  summary.push(
+    '',
+    'Estimate covers recorded adapter lifetimes only; missing receipts may omit spend. Excludes other review stages, taxes, account discounts and runner costs. Prices are pinned to the date above.',
+    ''
+  )
+  try {
+    fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary.join('\n'))
+  } catch {
+    process.stderr.write('OCR cost summary unavailable\n')
+  }
+  return 0
+}
+
+function createProgressFilter(write) {
+  const decoder = new StringDecoder('utf8')
+  let pending = ''
+  let dropping = false
+  function flush() {
+    const line = pending.replace(/\r$/, '')
+    if (!dropping) {
+      let event
+      const tool =
+        /^\[ocr\]   ([▶✔✘]) (task_done|code_comment|file_read_diff|file_read|file_find|code_search)(?: |$)/u.exec(
+          line
+        )
+      const started =
+        /^\[ocr\] (\d{1,12}) file\(s\) changed, reviewing (\d{1,12}) in /.exec(
+          line
+        )
+      const finished =
+        /^\[ocr\] Summary: (\d{1,12}) file\(s\) reviewed, (\d{1,12}) comment\(s\), ~(\d{1,12}) token\(s\) used(?:[ ,]|$)/.exec(
+          line
+        )
+      if (tool) {
+        const state = { '▶': 'started', '✔': 'completed', '✘': 'failed' }[
+          tool[1]
+        ]
+        event = `event=tool_${state} tool=${tool[2]}`
+      } else if (started) {
+        event = `event=review_started changed_files=${Number(started[1])} reviewing_files=${Number(started[2])}`
+      } else if (finished) {
+        event = `event=review_finished files=${Number(finished[1])} findings=${Number(finished[2])} tokens=${Number(finished[3])}`
+      } else if (line.startsWith('[ocr] Plan completed for group ')) {
+        event = 'event=phase_completed phase=planning'
+      } else if (
+        /^\[ocr\] Review filter removed \d{1,12} comment\(s\) for group /.test(
+          line
+        )
+      ) {
+        event = 'event=phase_completed phase=filtering'
+      } else if (
+        /^\[ocr\] (?:token budget reached|Token budget exceeded) \(/.test(line)
+      ) {
+        event = 'event=budget_reached'
+      }
+      if (event) {
+        try {
+          write(`OCR progress ${event}\n`)
+        } catch {
+          // A live-log failure must not change the review result or its streams.
+        }
+      }
+    }
+    pending = ''
+    dropping = false
+  }
+  function consume(text) {
+    for (const part of text.split(/(\n)/)) {
+      if (part === '\n') flush()
+      else if (!dropping && pending.length + part.length <= 4096)
+        pending += part
+      else {
+        pending = ''
+        dropping = true
+      }
+    }
+  }
+  return {
+    write(chunk) {
+      consume(
+        decoder.write(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+      )
+    },
+    end() {
+      consume(decoder.end())
+      flush()
+    },
+  }
+}
+
 async function commandRun(args) {
   const argv = args[0] === '--' ? args.slice(1) : args
   if (argv.length === 0) {
@@ -1313,6 +1504,8 @@ async function commandRun(args) {
   const adapter = await startAdapter({ apiKey, onClose: writeDiagnostics })
   const childEnv = { ...process.env }
   delete childEnv.MISTRAL_API_KEY
+  const liveProgress = childEnv.OCR_ADAPTER_PROGRESS_FD === '3'
+  delete childEnv.OCR_ADAPTER_PROGRESS_FD
   childEnv.OCR_LLM_URL = `${adapter.url}${CHAT_PATH}`
   childEnv.OCR_LLM_TOKEN = adapter.token
   childEnv.OCR_LLM_MODEL = MISTRAL_MODEL
@@ -1320,9 +1513,22 @@ async function commandRun(args) {
   childEnv.OCR_USE_ANTHROPIC = 'false'
 
   const child = spawn(argv[0], argv.slice(1), {
-    stdio: 'inherit',
+    stdio: liveProgress ? ['inherit', 'inherit', 'pipe'] : 'inherit',
     env: childEnv,
   })
+  let progress
+  let stderrClosed
+  if (liveProgress) {
+    // The workflow binds fd 3 to its console before redirecting fd 2 privately.
+    // OCR receives neither this descriptor nor the option selecting it.
+    progress = createProgressFilter((line) => fs.writeSync(3, line))
+    stderrClosed = new Promise((resolve) => child.stderr.once('close', resolve))
+    child.stderr.on('data', (chunk) => {
+      process.stderr.write(chunk)
+      progress.write(chunk)
+    })
+    child.stderr.on('end', progress.end)
+  }
   const forward = (signal) => {
     try {
       child.kill(signal)
@@ -1346,6 +1552,23 @@ async function commandRun(args) {
     child.on('exit', (code, signal) => resolve({ code, signal }))
   })
   await adapter.close()
+  if (liveProgress) {
+    // A descendant can retain stderr after the review process exits. Bound
+    // the drain so that writer cannot hold the wrapper open indefinitely.
+    let drainTimer
+    try {
+      await Promise.race([
+        stderrClosed,
+        new Promise((resolve) => {
+          drainTimer = setTimeout(resolve, SHUTDOWN_DRAIN_TIMEOUT_MS)
+        }),
+      ])
+    } finally {
+      clearTimeout(drainTimer)
+      child.stderr.destroy()
+      progress.end()
+    }
+  }
   if (result.failed) {
     throw new AdapterError(
       'child_spawn_failed',
@@ -1438,8 +1661,9 @@ async function main(argv) {
   if (command === 'start') return commandStart(rest)
   if (command === 'serve') return commandServe(rest)
   if (command === 'stop') return commandStop(rest)
+  if (command === 'summary') return commandSummary(rest)
   process.stderr.write(
-    'usage: ocr-mistral-adapter.cjs <run|start|serve|stop> [args]\n'
+    'usage: ocr-mistral-adapter.cjs <run|start|serve|stop|summary> [args]\n'
   )
   return 2
 }
@@ -1453,6 +1677,8 @@ module.exports = {
   createHistoryStore,
   startAdapter,
   callMistral,
+  estimateCost,
+  createProgressFilter,
 }
 
 if (require.main === module) {

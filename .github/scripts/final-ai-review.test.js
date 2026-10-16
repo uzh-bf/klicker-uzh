@@ -137,7 +137,7 @@ function expectedOCRArgs({ from, to, timeout, budget, sessionId }) {
     '--to',
     to,
     '--audience',
-    'agent',
+    'human',
     '--effort',
     'low',
     '--concurrency',
@@ -194,7 +194,11 @@ function assertOCRSummary(result, stage, expectedExit) {
 function assertReviewAttempt(result, form, expectedExit) {
   assert.equal(result.process.status, expectedExit, form.name)
   assert.equal(result.process.stdout, '', form.name)
-  assert.equal(result.process.stderr, '', form.name)
+  assert.equal(
+    result.process.stderr,
+    'OCR progress event=tool_started tool=file_read\n',
+    form.name
+  )
   assertNoOCRSentinels(result)
   assertOCRSummary(result, 'review', expectedExit)
   assert.equal(result.output, result.stdoutSentinel, form.name)
@@ -313,6 +317,8 @@ function executeExtractedOCRAttempt({
     '  fi',
     '  [[ "$1" == .github/scripts/ocr-mistral-adapter.cjs && "$2" == run && "$3" == -- && "$4" == ocr ]] || return 99',
     '  [[ "${MISTRAL_API_KEY-}" == synthetic-upstream-key ]] || return 98',
+    '  [[ "${OCR_ADAPTER_PROGRESS_FD-}" == 3 ]] || return 96',
+    "  printf 'OCR progress event=tool_started tool=file_read\\n' >&3",
     '  shift 4',
     '  ocr "$@"',
     '}',
@@ -331,11 +337,13 @@ function executeExtractedOCRAttempt({
     '    review)',
     '      if [[ " $* " == *" --preview "* ]]; then',
     '        [[ -z "${MISTRAL_API_KEY+x}" ]] || return 97',
-    '        local prompt_limit',
+    '        local prompt_limit audience',
     '        while (($#)); do',
     '          if [[ "$1" == --max-tokens ]]; then prompt_limit="$2"; fi',
+    '          if [[ "$1" == --audience ]]; then audience="$2"; fi',
     '          shift',
     '        done',
+    '        [[ "${audience}" == agent ]] || return 96',
     '        printf "preview no_update=%s limit=%s\\n" "${OCR_NO_UPDATE-}" "${prompt_limit}" >>"${OCR_CALLS_PATH}"',
     '        case "$OCR_PREVIEW_MODE" in',
     '          malformed) printf \'{"total_files":1,"files":[\' ;;',
