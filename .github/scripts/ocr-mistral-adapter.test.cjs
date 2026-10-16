@@ -696,6 +696,270 @@ test('a provider ignoring required tool use fails without entering OCR prose ret
   }
 })
 
+test('truncated completion is refused without retaining replay history or hiding usage', async () => {
+  const message = {
+    role: 'assistant',
+    content: 'private-answer',
+    reasoning_content: 'private-thinking',
+    tool_calls: [
+      {
+        id: 'done',
+        type: 'function',
+        function: { name: 'task_done', arguments: '{"state":"DONE"}' },
+      },
+    ],
+  }
+  const fetchImpl = upstream((_record, callNumber) =>
+    jsonResponse(200, completion(message, callNumber === 1 ? 'length' : 'stop'))
+  )
+  const adapter = await startAdapter({ apiKey: 'private-key', fetchImpl })
+  const body = {
+    messages: [{ role: 'user', content: 'private-prompt' }],
+    prompt_cache_key: 'private-conversation',
+    tools: [{ type: 'function', function: { name: 'task_done' } }],
+  }
+  try {
+    const rejected = await postJson(adapter, body)
+    assert.equal(rejected.status, 422)
+    assert.equal(rejected.json.error.code, 'truncated_completion')
+    assert.doesNotMatch(rejected.text, /private-/)
+    const replay = await postJson(adapter, {
+      ...body,
+      messages: [
+        ...body.messages,
+        normalizeMistralResponse(completion(message, 'length')).choices[0]
+          .message,
+        { role: 'tool', tool_call_id: 'done', content: 'synthetic' },
+      ],
+    })
+    assert.equal(replay.status, 409)
+    assert.equal(replay.json.error.code, 'history_missing')
+    assert.equal(fetchImpl.calls.length, 1)
+    const accepted = await postJson(adapter, body)
+    assert.equal(accepted.status, 200)
+    const receipt = adapter.diagnostics()
+    assert.equal(receipt.prompt_tokens, 6)
+    assert.equal(receipt.completion_tokens, 8)
+    assert.equal(receipt.length_finishes, 1)
+    assert.equal(receipt.truncated_completions, 1)
+    assert.equal(receipt.request_types.main.truncated_completions, 1)
+    assert.equal(receipt.conversations[0].truncated_completions, 1)
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('diagnostics reconcile request types and opaque conversation counters', async () => {
+  const fetchImpl = upstream(({ body }) => {
+    const main = body.tools?.some((tool) => tool.function?.name === 'task_done')
+    const message = main
+      ? {
+          role: 'assistant',
+          content: '',
+          tool_calls: [
+            {
+              id: 'done',
+              type: 'function',
+              function: { name: 'task_done', arguments: '{"state":"DONE"}' },
+            },
+          ],
+        }
+      : { role: 'assistant', content: 'private-answer' }
+    const payload = completion(message)
+    payload.usage = {
+      prompt_tokens: 128,
+      completion_tokens: 4,
+      total_tokens: 132,
+      prompt_tokens_details: { cached_tokens: 64 },
+    }
+    return jsonResponse(200, payload)
+  })
+  const adapter = await startAdapter({ apiKey: 'private-key', fetchImpl })
+  try {
+    for (const [kind, key] of [
+      ['main', 'private-a'],
+      ['main', 'private-a'],
+      ['main', 'private-b'],
+      ['auxiliary', 'private-a'],
+      ['auxiliary', undefined],
+    ]) {
+      assert.equal(
+        (
+          await postJson(adapter, {
+            messages: [{ role: 'user', content: 'private-prompt' }],
+            ...(key ? { prompt_cache_key: key } : {}),
+            ...(kind === 'main'
+              ? {
+                  tools: [
+                    { type: 'function', function: { name: 'task_done' } },
+                  ],
+                }
+              : {}),
+          })
+        ).status,
+        200
+      )
+    }
+    const receipt = adapter.diagnostics()
+    assert.equal(receipt.conversations.length, 3)
+    assert.deepEqual(
+      receipt.conversations.map((entry) => entry.requests).sort(),
+      [1, 1, 2]
+    )
+    assert.equal(
+      new Set(receipt.conversations.map((entry) => entry.id)).size,
+      3
+    )
+    assert.equal(receipt.unattributed_requests, 1)
+    assert.equal(receipt.request_types.main.requests, 3)
+    assert.equal(receipt.request_types.auxiliary.requests, 2)
+    for (const metric of [
+      'requests',
+      'responses',
+      'prompt_tokens',
+      'completion_tokens',
+      'cached_prompt_tokens',
+      'uncached_prompt_tokens',
+      'cache_usage_responses',
+      'request_bytes',
+      'response_bytes',
+      'request_duration_ms',
+    ]) {
+      assert.equal(
+        receipt[metric],
+        receipt.request_types.main[metric] +
+          receipt.request_types.auxiliary[metric]
+      )
+    }
+    assert.equal(receipt.prompt_tokens, 640)
+    assert.equal(receipt.cached_prompt_tokens, 320)
+    assert.ok(receipt.response_bytes > 0)
+    assert.ok(receipt.request_duration_ms >= 0)
+    assert.doesNotMatch(JSON.stringify(receipt), /private-/)
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('conversation diagnostics have a fixed bound without losing aggregate usage', async () => {
+  const fetchImpl = upstream(() =>
+    jsonResponse(200, completion({ role: 'assistant', content: 'synthetic' }))
+  )
+  const adapter = await startAdapter({ apiKey: 'synthetic-key', fetchImpl })
+  try {
+    for (let index = 0; index < 257; index += 1) {
+      assert.equal(
+        (
+          await postJson(adapter, {
+            messages: [{ role: 'user', content: 'synthetic' }],
+            prompt_cache_key: `conversation-${index}`,
+          })
+        ).status,
+        200
+      )
+    }
+    const receipt = adapter.diagnostics()
+    assert.equal(receipt.conversations.length, 256)
+    assert.equal(receipt.omitted_conversation_requests, 1)
+    assert.equal(receipt.requests, 257)
+    assert.equal(receipt.request_types.auxiliary.requests, 257)
+    assert.equal(receipt.prompt_tokens, 257 * 3)
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('close drains accounting and attempts diagnostics once before its closure receipt', async () => {
+  let started
+  const upstreamStarted = new Promise((resolve) => {
+    started = resolve
+  })
+  const snapshots = []
+  const fetchImpl = async (_url, init) => {
+    started()
+    await new Promise((_resolve, reject) => {
+      init.signal.addEventListener('abort', () =>
+        setTimeout(() => reject(new Error('private-upstream-error')), 25)
+      )
+    })
+  }
+  const adapter = await startAdapter({
+    apiKey: 'private-key',
+    fetchImpl,
+    onClose: (snapshot) => snapshots.push(snapshot),
+  })
+  const request = postJson(adapter, {
+    messages: [{ role: 'user', content: 'private-prompt' }],
+  }).catch(() => undefined)
+  await upstreamStarted
+  const closing = adapter.close()
+  assert.equal(
+    (
+      await postJson(adapter, {
+        messages: [{ role: 'user', content: 'synthetic' }],
+      })
+    ).status,
+    503
+  )
+  await Promise.all([closing, adapter.close(), request])
+  assert.equal(snapshots.length, 1)
+  assert.equal(snapshots[0].unfinished_requests, 0)
+  assert.equal(snapshots[0].requests, 1)
+  assert.ok(snapshots[0].request_duration_ms >= 20)
+  assert.doesNotMatch(JSON.stringify(snapshots), /private-/)
+})
+
+test('lifetime expiry uses the same single diagnostics callback', async () => {
+  const snapshots = []
+  const adapter = await startAdapter({
+    apiKey: 'synthetic-key',
+    maxLifetimeMs: 20,
+    onClose: (snapshot) => snapshots.push(snapshot),
+  })
+  await adapter.closed
+  await adapter.close()
+  assert.equal(snapshots.length, 1)
+  assert.equal(snapshots[0].unfinished_requests, 0)
+})
+
+test('close bounds an uncooperative request and marks its accounting incomplete', async () => {
+  let started
+  let release
+  const upstreamStarted = new Promise((resolve) => {
+    started = resolve
+  })
+  const snapshots = []
+  const adapter = await startAdapter({
+    apiKey: 'synthetic-key',
+    fetchImpl: () =>
+      new Promise((resolve) => {
+        release = () =>
+          resolve(
+            jsonResponse(
+              200,
+              completion({ role: 'assistant', content: 'synthetic' })
+            )
+          )
+        started()
+      }),
+    onClose: (snapshot) => snapshots.push(snapshot),
+  })
+  const request = postJson(adapter, {
+    messages: [{ role: 'user', content: 'synthetic' }],
+  }).catch(() => undefined)
+  await upstreamStarted
+  try {
+    await adapter.close()
+    assert.equal(snapshots.length, 1)
+    assert.equal(snapshots[0].unfinished_requests, 1)
+    assert.equal(snapshots[0].upstream_attempts, 1)
+    assert.equal(snapshots[0].responses, 0)
+  } finally {
+    release()
+    await request
+  }
+})
+
 test('compression restores only exact reasoned turns, retaining native thinking and bounds', () => {
   const history = createHistoryStore({ maxEntries: 3 })
   const prefix = [
@@ -1535,11 +1799,13 @@ test('start/serve/stop own the listener lifecycle', async (t) => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-adapter-lifecycle-'))
   const statePath = path.join(tmp, 'state.json')
   const outputPath = path.join(tmp, 'github-output.txt')
+  const diagnosticsPath = path.join(tmp, 'diagnostics.jsonl')
   fs.writeFileSync(outputPath, '')
   const env = {
     MISTRAL_API_KEY: 'sk-synthetic-start',
     RUNNER_TEMP: tmp,
     GITHUB_OUTPUT: outputPath,
+    OCR_ADAPTER_DIAGNOSTICS_PATH: diagnosticsPath,
   }
 
   // The detached serve outlives an assertion failure, so stop it no matter how
@@ -1579,6 +1845,13 @@ test('start/serve/stop own the listener lifecycle', async (t) => {
   const stopped = await runCli(['stop', statePath], env)
   assert.equal(stopped.code, 0, stopped.stderr)
   assert.equal(fs.existsSync(statePath), false)
+  const diagnosticsText = fs.readFileSync(diagnosticsPath, 'utf8')
+  assert.equal(diagnosticsText.trim().split('\n').length, 1)
+  assert.equal(JSON.parse(diagnosticsText).unfinished_requests, 0)
+  assert.equal(fs.statSync(diagnosticsPath).mode & 0o777, 0o600)
+  assert.doesNotMatch(diagnosticsText, /sk-synthetic-start/)
+  assert.equal((await runCli(['stop', statePath], env)).code, 0)
+  assert.equal(fs.readFileSync(diagnosticsPath, 'utf8'), diagnosticsText)
 
   let refused = false
   try {
@@ -1587,6 +1860,57 @@ test('start/serve/stop own the listener lifecycle', async (t) => {
     refused = true
   }
   assert.equal(refused, true)
+})
+
+test('detached server persists once on SIGTERM and safely handles an unwritable report', async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-serve-signal-'))
+  try {
+    for (const writable of [true, false]) {
+      const statePath = path.join(directory, `state-${writable}.json`)
+      const diagnosticsPath = writable
+        ? path.join(directory, 'diagnostics.jsonl')
+        : path.join(directory, 'absent', 'diagnostics.jsonl')
+      const child = spawn(process.execPath, [ADAPTER, 'serve', statePath], {
+        env: {
+          ...process.env,
+          MISTRAL_API_KEY: 'sk-private-serve',
+          RUNNER_TEMP: directory,
+          OCR_ADAPTER_DIAGNOSTICS_PATH: diagnosticsPath,
+        },
+      })
+      let stderr = ''
+      child.stderr.on('data', (chunk) => {
+        stderr += chunk
+      })
+      const exited = new Promise((resolve) => {
+        child.on('exit', (code) => resolve(code))
+        child.on('error', () => resolve(null))
+      })
+      try {
+        assert.ok(
+          await waitFor(() => fs.existsSync(statePath)),
+          'serve must become ready'
+        )
+        child.kill('SIGTERM')
+        assert.equal(await exited, 0, stderr)
+        assert.equal(fs.existsSync(statePath), false)
+        if (writable) {
+          const lines = fs
+            .readFileSync(diagnosticsPath, 'utf8')
+            .trim()
+            .split('\n')
+          assert.equal(lines.length, 1)
+          assert.equal(JSON.parse(lines[0]).unfinished_requests, 0)
+        } else assert.match(stderr, /execution counters unavailable/)
+        assert.doesNotMatch(stderr, /sk-private-serve|ENOENT|absent/)
+      } finally {
+        child.kill('SIGKILL')
+        await exited
+      }
+    }
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
 })
 
 test('stop refuses a non-loopback state url', async () => {
@@ -1616,13 +1940,23 @@ test('state paths outside RUNNER_TEMP are refused', async () => {
 })
 
 test('run terminates its listener on SIGTERM', async () => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-signal-diagnostics-')
+  )
+  const diagnosticsPath = path.join(directory, 'diagnostics.jsonl')
   const script =
     'process.stdout.write(process.env.OCR_LLM_URL + "\\n");' +
     ' setInterval(() => {}, 1000)'
   const child = spawn(
     process.execPath,
     [ADAPTER, 'run', '--', process.execPath, '-e', script],
-    { env: { ...process.env, MISTRAL_API_KEY: 'sk-synthetic-signal' } }
+    {
+      env: {
+        ...process.env,
+        MISTRAL_API_KEY: 'sk-synthetic-signal',
+        OCR_ADAPTER_DIAGNOSTICS_PATH: diagnosticsPath,
+      },
+    }
   )
   let stdout = ''
   child.stdout.on('data', (chunk) => {
@@ -1646,6 +1980,10 @@ test('run terminates its listener on SIGTERM', async () => {
       }),
     ])
     assert.ok(!result.timeout, 'run did not exit after SIGTERM')
+    assert.equal(
+      fs.readFileSync(diagnosticsPath, 'utf8').trim().split('\n').length,
+      1
+    )
     let refused = false
     try {
       await fetch(url[1], { method: 'POST', body: '{}' })
@@ -1658,5 +1996,6 @@ test('run terminates its listener on SIGTERM', async () => {
     clearTimeout(timer)
     child.kill('SIGKILL')
     await exited
+    fs.rmSync(directory, { recursive: true, force: true })
   }
 })

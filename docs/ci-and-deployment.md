@@ -330,12 +330,40 @@ All three OCR modes configure `prompt_cache_key: "{ocr_session_key}"`. OCR expan
 that template per conversation; the adapter validates and forwards the bounded
 key. Direct tool canaries omit it. Provider cache hits remain opportunistic. The
 adapter preserves valid `usage.prompt_tokens_details.cached_tokens` without
-subtracting cached input from prompt totals or review budgets. Manual aggregate
+subtracting cached input from prompt totals or review budgets. Aggregate
 diagnostics distinguish reported zero, missing and invalid cache usage.
 `cached_prompt_tokens` and `uncached_prompt_tokens` cover only responses with a
 valid cache report; consult `cache_usage_responses`, `missing_cache_usage` and
 `invalid_cache_usage` before interpreting them. Cache keys and provider metadata
 are never copied into those diagnostics.
+
+Draft reviews use the same bounded, sanitized PR-description context as manual
+reviews, with the existing absent-description fallback. The description remains
+untrusted data and cannot change review scope or policy.
+
+Draft and manual adapters retain one diagnostics snapshot per adapter lifetime.
+`request_types` splits counters into main review and auxiliary requests;
+`conversations` contains at most 256 buckets keyed by an opaque process-local
+digest. These IDs are not routing keys or file identities and cannot be compared
+across adapter lifetimes. `unattributed_requests` counts requests without affinity;
+`omitted_conversation_requests` counts requests beyond the bucket cap. Both remain
+in aggregate and request-type usage. `request_duration_ms` sums request durations,
+which overlap during concurrency; it is not review wall time or billed cost.
+No prompts, source, arguments, reasoning, paths or raw provider errors are kept.
+
+Shutdown refuses new work and aborts active requests before attempting its single
+diagnostics write. The listener closes after that attempt, so the stop receipt
+precedes artifact upload. A bounded drain records `unfinished_requests` when
+accounting could not settle; such a snapshot is incomplete. Write failures emit
+a fixed warning and preserve cleanup. Draft jobs attempt to upload only the fixed
+diagnostics JSONL file even after startup failure, with one-day retention and a
+warning when absent.
+
+A main review response with `finish_reason: length` and a `task_done` call is
+refused with HTTP 422 and is never retained as replayable native history. Its
+usage and `truncated_completions` counter remain visible in diagnostics. This
+does not make OCR's own aggregate budget strict or prove that the engine accounted
+for usage in rejected HTTP responses.
 
 Manual individual and stack reviews explicitly use `--concurrency 2`; automatic
 draft reviews retain concurrency four. Fewer in-flight groups limit simultaneous

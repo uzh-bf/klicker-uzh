@@ -27,6 +27,8 @@ const DEFAULT_MAX_HISTORY_ENTRIES = 2000
 const DEFAULT_MAX_HISTORY_BYTES = 128 * 1024 * 1024
 const STARTUP_TIMEOUT_MS = 5000
 const SHUTDOWN_TIMEOUT_MS = 5000
+const SHUTDOWN_DRAIN_TIMEOUT_MS = 1000
+const MAX_DIAGNOSTIC_CONVERSATIONS = 256
 
 const LOOPBACK_HOST = '127.0.0.1'
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1'])
@@ -616,7 +618,12 @@ function sendJson(res, status, payload) {
 }
 
 function statusForErrorCode(code) {
-  if (code === 'required_tool_call_missing') return 422
+  if (
+    code === 'required_tool_call_missing' ||
+    code === 'truncated_completion'
+  ) {
+    return 422
+  }
   if (code === 'request_too_large') return 413
   if (code === 'upstream_timeout') return 504
   if (code === 'history_missing') return 409
@@ -709,6 +716,29 @@ async function drain(response, limit) {
   }
 }
 
+function createExecutionCounters() {
+  return {
+    requests: 0,
+    upstream_attempts: 0,
+    responses: 0,
+    missing_usage: 0,
+    main_no_tool_responses: 0,
+    length_finishes: 0,
+    truncated_completions: 0,
+    prompt_tokens: 0,
+    completion_tokens: 0,
+    cached_prompt_tokens: 0,
+    uncached_prompt_tokens: 0,
+    cache_usage_responses: 0,
+    missing_cache_usage: 0,
+    invalid_cache_usage: 0,
+    max_request_bytes: 0,
+    request_bytes: 0,
+    response_bytes: 0,
+    request_duration_ms: 0,
+  }
+}
+
 async function startAdapter(options = {}) {
   const apiKey = options.apiKey
   const fetchImpl = options.fetchImpl ?? globalThis.fetch
@@ -733,24 +763,20 @@ async function startAdapter(options = {}) {
     maxBytes: options.maxHistoryBytes,
   })
   const diagnostics = {
-    requests: 0,
-    upstream_attempts: 0,
-    responses: 0,
-    missing_usage: 0,
+    ...createExecutionCounters(),
     main_requests: 0,
     auxiliary_requests: 0,
-    main_no_tool_responses: 0,
-    length_finishes: 0,
-    prompt_tokens: 0,
-    completion_tokens: 0,
-    cached_prompt_tokens: 0,
-    uncached_prompt_tokens: 0,
-    cache_usage_responses: 0,
-    missing_cache_usage: 0,
-    invalid_cache_usage: 0,
-    max_request_bytes: 0,
-    request_bytes: 0,
+    unattributed_requests: 0,
+    omitted_conversation_requests: 0,
+    unfinished_requests: 0,
   }
+  const requestTypes = {
+    main: createExecutionCounters(),
+    auxiliary: createExecutionCounters(),
+  }
+  const conversationSalt = crypto.randomBytes(32)
+  const conversations = new Map()
+  const pendingRequests = new Set()
   const active = new Set()
   const sockets = new Set()
   let closing = null
@@ -761,7 +787,7 @@ async function startAdapter(options = {}) {
 
   function close() {
     if (closing) return closing
-    closing = new Promise((resolve) => {
+    closing = (async () => {
       clearTimeout(lifetime)
       for (const controller of active) {
         try {
@@ -771,14 +797,34 @@ async function startAdapter(options = {}) {
         }
       }
       active.clear()
-      server.close(() => {
-        resolveClosed()
-        resolve()
-      })
       for (const socket of sockets) {
         socket.destroy()
       }
-    })
+      let drainTimer
+      try {
+        await Promise.race([
+          Promise.allSettled([...pendingRequests]),
+          new Promise((resolve) => {
+            drainTimer = setTimeout(resolve, SHUTDOWN_DRAIN_TIMEOUT_MS)
+          }),
+        ])
+      } finally {
+        clearTimeout(drainTimer)
+      }
+      diagnostics.unfinished_requests = pendingRequests.size
+      try {
+        options.onClose?.(snapshot())
+      } catch {
+        process.stderr.write('OCR adapter execution counters unavailable\n')
+      }
+      // Listener closure is the stop command's receipt. Persist diagnostics
+      // first, while new work is refused, so artifact upload cannot race it.
+      await new Promise((resolve) => {
+        server.close(resolve)
+        for (const socket of sockets) socket.destroy()
+      })
+      resolveClosed()
+    })()
     return closing
   }
 
@@ -818,15 +864,35 @@ async function startAdapter(options = {}) {
     }
 
     const main = hasCompletionTool(body)
-    diagnostics.requests += 1
+    const kind = main ? 'main' : 'auxiliary'
+    const counters = [diagnostics, requestTypes[kind]]
+    if (mistralBody.prompt_cache_key) {
+      const id = crypto
+        .createHmac('sha256', conversationSalt)
+        .update(`${kind}:${mistralBody.prompt_cache_key}`)
+        .digest('hex')
+        .slice(0, 32)
+      if (
+        !conversations.has(id) &&
+        conversations.size < MAX_DIAGNOSTIC_CONVERSATIONS
+      ) {
+        conversations.set(id, { id, kind, ...createExecutionCounters() })
+      }
+      if (conversations.has(id)) counters.push(conversations.get(id))
+      else diagnostics.omitted_conversation_requests += 1
+    } else diagnostics.unattributed_requests += 1
     diagnostics[main ? 'main_requests' : 'auxiliary_requests'] += 1
+    const startedAt = performance.now()
     const requestBody = JSON.stringify(mistralBody)
     const requestBytes = Buffer.byteLength(requestBody)
-    diagnostics.request_bytes += requestBytes
-    diagnostics.max_request_bytes = Math.max(
-      diagnostics.max_request_bytes,
-      requestBytes
-    )
+    for (const counter of counters) {
+      counter.requests += 1
+      counter.request_bytes += requestBytes
+      counter.max_request_bytes = Math.max(
+        counter.max_request_bytes,
+        requestBytes
+      )
+    }
 
     const controller = new AbortController()
     active.add(controller)
@@ -847,7 +913,7 @@ async function startAdapter(options = {}) {
     }, timeoutMs)
 
     try {
-      diagnostics.upstream_attempts += 1
+      for (const counter of counters) counter.upstream_attempts += 1
       const upstream = await fetchImpl(MISTRAL_URL, {
         method: 'POST',
         headers: {
@@ -874,26 +940,43 @@ async function startAdapter(options = {}) {
         throw new AdapterError('malformed_response', 'invalid upstream JSON')
       }
       const normalized = normalizeMistralResponse(payload)
-      diagnostics.responses += 1
-      if (normalized.usage) {
-        diagnostics.prompt_tokens += normalized.usage.prompt_tokens ?? 0
-        diagnostics.completion_tokens += normalized.usage.completion_tokens ?? 0
-      } else diagnostics.missing_usage += 1
       const cached = normalized.usage?.prompt_tokens_details?.cached_tokens
-      if (cached !== undefined) {
-        diagnostics.cache_usage_responses += 1
-        diagnostics.cached_prompt_tokens += cached
-        diagnostics.uncached_prompt_tokens +=
-          normalized.usage.prompt_tokens - cached
-      } else if (
-        payload.usage?.prompt_tokens_details?.cached_tokens !== undefined
-      ) {
-        diagnostics.invalid_cache_usage += 1
-      } else diagnostics.missing_cache_usage += 1
       const choice = normalized.choices[0]
-      if (choice.finish_reason === 'length') diagnostics.length_finishes += 1
+      const responseBytes = Buffer.byteLength(text)
+      for (const counter of counters) {
+        counter.responses += 1
+        counter.response_bytes += responseBytes
+        if (normalized.usage) {
+          counter.prompt_tokens += normalized.usage.prompt_tokens ?? 0
+          counter.completion_tokens += normalized.usage.completion_tokens ?? 0
+        } else counter.missing_usage += 1
+        if (cached !== undefined) {
+          counter.cache_usage_responses += 1
+          counter.cached_prompt_tokens += cached
+          counter.uncached_prompt_tokens +=
+            normalized.usage.prompt_tokens - cached
+        } else if (
+          payload.usage?.prompt_tokens_details?.cached_tokens !== undefined
+        ) {
+          counter.invalid_cache_usage += 1
+        } else counter.missing_cache_usage += 1
+        if (choice.finish_reason === 'length') counter.length_finishes += 1
+      }
+      if (
+        main &&
+        choice.finish_reason === 'length' &&
+        choice.message.tool_calls?.some(
+          (call) => call.function.name === 'task_done'
+        )
+      ) {
+        for (const counter of counters) counter.truncated_completions += 1
+        throw new AdapterError(
+          'truncated_completion',
+          'completion was truncated'
+        )
+      }
       if (main && !choice.message.tool_calls?.length) {
-        diagnostics.main_no_tool_responses += 1
+        for (const counter of counters) counter.main_no_tool_responses += 1
         throw new AdapterError(
           'required_tool_call_missing',
           'review requires a tool call'
@@ -905,6 +988,8 @@ async function startAdapter(options = {}) {
     } catch (error) {
       sendAdapterError(res, error)
     } finally {
+      const duration = Math.max(0, Math.round(performance.now() - startedAt))
+      for (const counter of counters) counter.request_duration_ms += duration
       clearTimeout(timer)
       active.delete(controller)
     }
@@ -938,9 +1023,17 @@ async function startAdapter(options = {}) {
   }
 
   const server = http.createServer((req, res) => {
-    handleRequest(req, res).catch(() => {
+    if (closing) {
+      sendJson(res, 503, {
+        error: { message: 'adapter request failed', code: 'adapter_closing' },
+      })
+      return
+    }
+    const request = handleRequest(req, res).catch(() => {
       sendAdapterError(res, new AdapterError('internal_error', 'internal'))
     })
+    pendingRequests.add(request)
+    request.then(() => pendingRequests.delete(request))
   })
   server.on('connection', (socket) => {
     sockets.add(socket)
@@ -959,16 +1052,27 @@ async function startAdapter(options = {}) {
   }, maxLifetimeMs)
   if (typeof lifetime.unref === 'function') lifetime.unref()
 
+  function snapshot() {
+    return {
+      schema_version: 1,
+      ...diagnostics,
+      request_types: {
+        main: { ...requestTypes.main },
+        auxiliary: { ...requestTypes.auxiliary },
+      },
+      conversations: [...conversations.values()].map((counter) => ({
+        ...counter,
+      })),
+      history: history.diagnostics(),
+    }
+  }
+
   return {
     url: baseUrl,
     token,
     close,
     closed,
-    diagnostics: () => ({
-      schema_version: 1,
-      ...diagnostics,
-      history: history.diagnostics(),
-    }),
+    diagnostics: snapshot,
   }
 }
 
@@ -1169,13 +1273,25 @@ async function waitForClosed(url, deadlineMs) {
   }
 }
 
+function writeDiagnostics(snapshot) {
+  const diagnosticsPath = process.env.OCR_ADAPTER_DIAGNOSTICS_PATH
+  if (!diagnosticsPath) return
+  try {
+    fs.appendFileSync(diagnosticsPath, `${JSON.stringify(snapshot)}\n`, {
+      mode: 0o600,
+    })
+  } catch {
+    process.stderr.write('OCR adapter execution counters unavailable\n')
+  }
+}
+
 async function commandRun(args) {
   const argv = args[0] === '--' ? args.slice(1) : args
   if (argv.length === 0) {
     throw new AdapterError('missing_command', 'run requires an executable')
   }
   const apiKey = requireEnv('MISTRAL_API_KEY')
-  const adapter = await startAdapter({ apiKey })
+  const adapter = await startAdapter({ apiKey, onClose: writeDiagnostics })
   const childEnv = { ...process.env }
   delete childEnv.MISTRAL_API_KEY
   childEnv.OCR_LLM_URL = `${adapter.url}${CHAT_PATH}`
@@ -1211,18 +1327,6 @@ async function commandRun(args) {
     child.on('exit', (code, signal) => resolve({ code, signal }))
   })
   await adapter.close()
-  const diagnosticsPath = process.env.OCR_ADAPTER_DIAGNOSTICS_PATH
-  if (diagnosticsPath) {
-    try {
-      fs.appendFileSync(
-        diagnosticsPath,
-        `${JSON.stringify(adapter.diagnostics())}\n`,
-        { mode: 0o600 }
-      )
-    } catch {
-      process.stderr.write('OCR adapter execution counters unavailable\n')
-    }
-  }
   if (result.failed) {
     throw new AdapterError(
       'child_spawn_failed',
@@ -1266,12 +1370,10 @@ async function commandStart(args) {
 async function commandServe(args) {
   const statePath = resolveStatePath(args[0])
   const apiKey = requireEnv('MISTRAL_API_KEY')
-  const adapter = await startAdapter({ apiKey })
+  const adapter = await startAdapter({ apiKey, onClose: writeDiagnostics })
   writeState(statePath, { url: adapter.url, token: adapter.token })
-  const shutdown = async () => {
-    await adapter.close()
-    removeState(statePath)
-    process.exit(0)
+  const shutdown = () => {
+    adapter.close()
   }
   process.on('SIGTERM', shutdown)
   process.on('SIGINT', shutdown)

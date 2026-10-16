@@ -1223,31 +1223,100 @@ test('draft context preserves the complete multiline workflow output', () => {
   const directory = fs.mkdtempSync(
     path.join(os.tmpdir(), 'ocr-context-output-')
   )
-  const outputPath = path.join(directory, 'github-output')
+  const markerPath = path.join(directory, 'shell-executed-marker')
   const title = 'Synthetic context with "quotes", EOF and $(exit 1)'
+  const body = [
+    'Literal body with "double" and \'single\' quotes.',
+    'Backtick `touch ' + markerPath + '` and $(touch ' + markerPath + ')',
+    '; touch ' + markerPath,
+    '$(exit 1)',
+    'A trailing backslash \\ and $NOT_A_VARIABLE and * glob.',
+    `<!-- ${'x'.repeat(9_000)} -->`,
+    'Visible boundaries.',
+    '![gallery](https://example.test/image_(1).png)',
+    '\u202e',
+    '🙂'.repeat(8_001),
+  ].join('\n')
+
   try {
-    const result = spawnSync('bash', ['-e', '-c', script], {
-      cwd: path.join(__dirname, '../..'),
-      env: {
+    assert.match(script, /randomUUID\(\)/)
+    for (const [index, caseBody] of [undefined, body].entries()) {
+      const outputPath = path.join(directory, `github-output-${index}`)
+      const env = {
         PATH: process.env.PATH,
         PR_TITLE: title,
         GITHUB_OUTPUT: outputPath,
-      },
-      encoding: 'utf8',
-    })
-    assert.equal(result.status, 0, result.stderr)
-    const lines = fs.readFileSync(outputPath, 'utf8').split('\n')
-    const header = /^background<<(.+)$/.exec(lines[0])
-    assert.ok(header, 'background must use multiline output framing')
-    const endIndex = lines.indexOf(header[1], 1)
-    assert.equal(endIndex, lines.length - 2, 'exactly one complete output')
-    assert.equal(lines.at(-1), '')
-    const background = lines.slice(1, endIndex).join('\n')
-    assert.ok(background.includes('\n'), 'exercise a multiline value')
-    assert.equal(background, buildReviewBackground(title))
+      }
+      if (caseBody !== undefined) env.PR_BODY = caseBody
+      const result = spawnSync('bash', ['-e', '-c', script], {
+        cwd: path.join(__dirname, '../..'),
+        env,
+        encoding: 'utf8',
+      })
+      assert.equal(result.status, 0, result.stderr)
+      const lines = fs.readFileSync(outputPath, 'utf8').split('\n')
+      const header = /^background<<(.+)$/.exec(lines[0])
+      assert.ok(header, 'background must use multiline output framing')
+      const endIndex = lines.indexOf(header[1], 1)
+      assert.equal(endIndex, lines.length - 2, 'exactly one complete output')
+      assert.equal(lines.at(-1), '')
+      const background = lines.slice(1, endIndex).join('\n')
+      assert.ok(background.includes('\n'), 'exercise a multiline value')
+      assert.equal(background, buildReviewBackground(title, caseBody))
+      assert.equal(
+        fs.existsSync(markerPath),
+        false,
+        'the workflow must not execute PR metadata'
+      )
+    }
   } finally {
     fs.rmSync(directory, { recursive: true, force: true })
   }
+})
+
+test('attempts draft diagnostics upload even after startup failure', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-review.yml'),
+    'utf8'
+  )
+  const lines = workflow.split('\n')
+  const startStep = workflow.match(
+    /      - name: Start Mistral adapter\n[\s\S]*?(?=\n      - name:)/
+  )?.[0]
+  const diagnosticsPath = startStep?.match(
+    /^          OCR_ADAPTER_DIAGNOSTICS_PATH: (.+)$/m
+  )?.[1]
+  const stopIndex = lines.findIndex(
+    (line) => line === '      - name: Stop Mistral adapter'
+  )
+  const uploadIndex = lines.findIndex(
+    (line) =>
+      line === '      - name: Upload sanitized draft adapter diagnostics'
+  )
+
+  assert.ok(diagnosticsPath, 'the draft job must set a diagnostics path')
+  assert.equal(diagnosticsPath.includes('runner.temp'), true)
+  assert.equal(
+    diagnosticsPath.endsWith('/draft-ai-review-adapter-diagnostics.jsonl'),
+    true
+  )
+  assert.ok(stopIndex >= 0, 'missing adapter stop step')
+  assert.ok(uploadIndex >= 0, 'missing draft diagnostics upload step')
+  assert.ok(
+    uploadIndex > stopIndex,
+    'diagnostics upload must follow the adapter stop step'
+  )
+
+  const uploadStep = lines.slice(uploadIndex).join('\n')
+  assert.ok(uploadStep.includes('          path: ' + diagnosticsPath))
+  assert.ok(uploadStep.includes('        if: always()\n'))
+  assert.ok(
+    uploadStep.includes(
+      'uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4'
+    )
+  )
+  assert.ok(uploadStep.includes('          retention-days: 1'))
+  assert.ok(uploadStep.includes('          if-no-files-found: warn'))
 })
 
 test('routes automatic drafts through the same pinned Mistral adapter', () => {
