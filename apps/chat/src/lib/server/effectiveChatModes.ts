@@ -1,9 +1,12 @@
 import type { ChatbotCustomMode } from '@klicker-uzh/types'
 import {
+  isChatbotCustomModeKey,
+  isChatbotStandardModeKey,
   normalizeChatbotCustomModeConfig,
   normalizeChatbotStandardModeConfig,
 } from '@klicker-uzh/util'
 import { DEFAULT_MODE_DESCRIPTIONS } from '@/src/lib/config/mode-descriptions'
+import type { ChatModeOption, ChatModeOptions } from '@/src/lib/config/modes'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
 
 export interface EffectiveChatModeOptions {
@@ -129,7 +132,7 @@ function sortByPriority<T extends ChatModeMCPConfiguration>(configs: T[]): T[] {
 export function resolveEffectiveMCPConfigurations<
   T extends ChatModeMCPConfiguration,
 >(configs: readonly T[], selectedMode: string): EffectiveMCPConfiguration<T>[] {
-  if (selectedMode !== 'quizzer' && isTypedStandardMode(selectedMode)) {
+  if (selectedMode !== 'quizzer' && isChatbotStandardModeKey(selectedMode)) {
     return sortByPriority(
       configs.filter(
         (config) => config.chatMode === selectedMode && isEnabled(config)
@@ -234,12 +237,6 @@ function isModeExplicitlyDisabled(
   return modeConfig?.enabled === false
 }
 
-function isTypedStandardMode(
-  mode: string
-): mode is 'tutor' | 'explainer' | 'quizzer' {
-  return mode === 'tutor' || mode === 'explainer' || mode === 'quizzer'
-}
-
 function isStandardModeEnabled(
   standardModeConfig: unknown,
   systemPrompts: unknown,
@@ -250,7 +247,7 @@ function isStandardModeEnabled(
     systemPrompts
   )
 
-  if (isTypedStandardMode(mode)) {
+  if (isChatbotStandardModeKey(mode)) {
     if (mode === 'tutor') return normalizedConfig.tutorEnabled
     if (mode === 'explainer') return normalizedConfig.explainerEnabled
     return normalizedConfig.quizzerEnabled
@@ -280,11 +277,30 @@ function getApprovedCustomModesByKey(
   for (const mode of modes) {
     // Standard-mode keys stay platform-owned, so a stored entry that reuses one
     // can never replace the platform label or the platform mode contract.
-    if (isTypedStandardMode(mode.key) || modesByKey.has(mode.key)) continue
+    if (isChatbotStandardModeKey(mode.key) || modesByKey.has(mode.key)) continue
     modesByKey.set(mode.key, mode)
   }
 
   return modesByKey
+}
+
+/**
+ * Whether a participant may receive the model's reasoning for a turn in
+ * `mode`, judged against the live approved config. Standard and legacy stored
+ * modes keep showing it. An approved custom mode shows it only after the
+ * lecturer opted in, and a custom key that is no longer approved stays
+ * hidden, because its stored reasoning can still echo the removed persona.
+ */
+export function isParticipantReasoningVisible(
+  customModeConfig: unknown,
+  mode: string | null | undefined
+): boolean {
+  if (!mode) return true
+
+  const customMode = getApprovedCustomModesByKey(customModeConfig).get(mode)
+  if (customMode) return customMode.showReasoning === true
+
+  return !isChatbotCustomModeKey(mode)
 }
 
 function getCustomModeDescription(mode: ChatbotCustomMode): string {
@@ -294,13 +310,14 @@ function getCustomModeDescription(mode: ChatbotCustomMode): string {
   return mode.description ?? mode.name
 }
 
-function getCustomModeOption(mode: ChatbotCustomMode): {
-  description: string
-  name?: string
-} {
+function getCustomModeOption(mode: ChatbotCustomMode): ChatModeOption {
   return {
     description: getCustomModeDescription(mode),
     name: mode.name,
+    ...(mode.welcomeMessage ? { welcomeMessage: mode.welcomeMessage } : {}),
+    ...(mode.starterPrompts?.length
+      ? { starterPrompts: mode.starterPrompts }
+      : {}),
   }
 }
 
@@ -309,7 +326,7 @@ export function resolveEffectiveChatModeOptions(
   mcpConfigurations: readonly ChatModeMCPConfiguration[],
   standardModeConfig: unknown = null,
   options: EffectiveChatModeOptions = {}
-): Record<string, { description: string; name?: string }> {
+): ChatModeOptions {
   const storedPrompts = asRecord(systemPrompts)
   const standardModes = Object.keys(DEFAULT_PROMPT)
   const customModesByKey = getApprovedCustomModesByKey(options.customModeConfig)
@@ -320,10 +337,7 @@ export function resolveEffectiveChatModeOptions(
   const candidates = Array.from(
     new Set([...standardModes, ...customModesByKey.keys(), ...storedModes])
   )
-  const hasRequiredMCP = mcpConfigurations.some(
-    (config) => isEnabled(config) && isRequired(config)
-  )
-  const modeOptions: Record<string, { description: string; name?: string }> = {}
+  const modeOptions: ChatModeOptions = {}
 
   for (const mode of candidates) {
     if (mode.trim().length === 0) continue
@@ -340,9 +354,6 @@ export function resolveEffectiveChatModeOptions(
       mode === 'quizzer' &&
       !effectiveConfigurations.some(isSafeDocQueryBinding)
     ) {
-      continue
-    }
-    if (hasRequiredMCP && !effectiveConfigurations.some(isRequired)) {
       continue
     }
 

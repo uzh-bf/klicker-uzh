@@ -60,6 +60,7 @@ export function statusForStudentPracticeMcpError(
     case 'QUESTION_REF_EXPIRED':
     case 'QUESTION_REF_STALE':
       return 410
+    case 'DATA_USE_REQUIRED':
     case 'FORBIDDEN':
       return 403
     case 'QUESTION_REF_INVALID':

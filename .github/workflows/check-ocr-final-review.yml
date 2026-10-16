@@ -383,33 +383,30 @@ jobs:
       - name: Install pinned OpenCodeReview CLI
         if: needs.start.outputs.run_review == 'true'
         run: |
-          npm install -g @alibaba-group/open-code-review@1.11.0
+          npm install -g @alibaba-group/open-code-review@1.13.0
           ocr version
 
-      - name: Configure ephemeral OpenRouter access
+      - name: Configure ephemeral Mistral access
         id: configure
         if: needs.start.outputs.run_review == 'true'
-        env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
           set -euo pipefail
-          printf '%s' "${OPENROUTER_API_KEY}" |
-            node .github/scripts/final-ai-review.js configure-ocr
+          node .github/scripts/final-ai-review.js configure-ocr
           test -s "${HOME}/.opencodereview/config.json"
 
-      - name: Verify OpenRouter tool access
+      - name: Verify Mistral tool access
         if: needs.start.outputs.run_review == 'true'
         env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
         run: |
           set -euo pipefail
-          printf '%s' "${OPENROUTER_API_KEY}" |
-            node .github/scripts/final-ai-review.js verify-openrouter-tools
+          node .github/scripts/final-ai-review.js verify-mistral-tools
 
       - name: Run final review
         id: run_review
         if: needs.start.outputs.run_review == 'true'
         env:
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           BACKGROUND: ${{ needs.start.outputs.background }}
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
           REVIEW_FROM: ${{ steps.range.outputs.review_from }}
@@ -417,6 +414,7 @@ jobs:
           RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
           REJECTED_DIR: ${{ runner.temp }}/final-ai-individual-publisher-failure
           STDERR_PATH: ${{ runner.temp }}/final-ai-review-stderr.log
+          OCR_ADAPTER_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-review-adapter-diagnostics.jsonl
         run: |
           set -euo pipefail
           run_ocr_attempt() {
@@ -427,8 +425,11 @@ jobs:
             local now
             local version
             local exit_code=0
-            if version=$(ocr version 2>/dev/null); then
-              if [[ "${version}" != 'open-code-review v1.11.0 '* ]]; then
+            if version=$(
+              unset MISTRAL_API_KEY
+              ocr version 2>/dev/null
+            ); then
+              if [[ "${version}" != 'open-code-review v1.13.0 '* ]]; then
                 exit_code=1
               fi
             else
@@ -439,6 +440,24 @@ jobs:
               echo 'Pinned OCR executable verification failed; raw output is suppressed.' >&2
               return "${exit_code}"
             fi
+            local baseline_limit=200000 bounded_limit=32768
+            for prompt_limit in "${baseline_limit}" "${bounded_limit}"; do
+              if ! (unset MISTRAL_API_KEY; timeout --kill-after=10 120 ocr review --preview \
+                --from "${REVIEW_FROM}" --to "${HEAD_SHA}" \
+                --max-tokens "${prompt_limit}" --format json --audience agent \
+                --rule .github/open-code-review/final-review-rules.json) \
+                >"${output_path}.preview-${prompt_limit}" 2>>"${STDERR_PATH}"; then
+                echo 'OCR coverage preview failed; raw output is suppressed.' >&2
+                return 1
+              fi
+            done
+            if ! node .github/scripts/final-ai-review.js validate-ocr-preview \
+              "${output_path}.preview-${baseline_limit}" "${output_path}.preview-${bounded_limit}" \
+              >/dev/null 2>>"${STDERR_PATH}"; then
+              printf 'OCR stage=preview-validation exit=1\n' >>"${GITHUB_STEP_SUMMARY}"
+              echo 'OCR preview validation failed: malformed preview or changed file coverage; review refused.' >&2
+              return 1
+            fi
             [[ "${REVIEW_JOB_STARTED_AT}" =~ ^[1-9][0-9]*$ ]]
             now="$(date +%s)"
             if (( now + 2760 > REVIEW_JOB_STARTED_AT + 4800 )); then
@@ -448,12 +467,13 @@ jobs:
             if [[ -n "${session_id}" ]]; then
               resume_args=(--resume "${session_id}")
             fi
-            if ocr review \
+            if node .github/scripts/ocr-mistral-adapter.cjs run -- ocr review \
               --from "${REVIEW_FROM}" \
               --to "${HEAD_SHA}" \
               --audience agent \
               --effort low \
               --timeout 45 \
+              --max-tokens "${bounded_limit}" \
               --max-tokens-budget "${token_budget}" \
               --format json \
               --background "${BACKGROUND}" \
@@ -471,10 +491,10 @@ jobs:
           }
 
           : >"${STDERR_PATH}"
-          run_ocr_attempt "${RESULT_PATH}" 1000000
+          run_ocr_attempt "${RESULT_PATH}" 3000000
           RESUME_PLAN_PATH="${RESULT_PATH}.resume-plan"
           if ! node .github/scripts/final-ai-review.js plan-ocr-resume \
-            "${RESULT_PATH}" 1000000 >"${RESUME_PLAN_PATH}"; then
+            "${RESULT_PATH}" 3000000 >"${RESUME_PLAN_PATH}"; then
             mkdir -p "${REJECTED_DIR}"
             cp -- "${RESULT_PATH}" "${REJECTED_DIR}/initial-result.json"
             echo 'validation_failure=true' >>"${GITHUB_OUTPUT}"
@@ -492,7 +512,7 @@ jobs:
             run_ocr_attempt \
               "${RESUMED_PATH}" "${REMAINING_TOKENS}" "${SESSION_ID}"
             if ! node .github/scripts/final-ai-review.js merge-ocr-resume \
-              "${RESULT_PATH}" "${RESUMED_PATH}" 1000000 >"${MERGED_PATH}"; then
+              "${RESULT_PATH}" "${RESUMED_PATH}" 3000000 >"${MERGED_PATH}"; then
               mkdir -p "${REJECTED_DIR}"
               cp -- "${RESULT_PATH}" "${REJECTED_DIR}/initial-result.json"
               cp -- "${RESUMED_PATH}" "${REJECTED_DIR}/resumed-result.json"
@@ -538,7 +558,7 @@ jobs:
             echo 'The rejected input is retained as a restricted one-day artifact.'
           } >>"${GITHUB_STEP_SUMMARY}"
 
-      - name: Remove ephemeral OpenRouter access
+      - name: Remove ephemeral Mistral access
         id: cleanup
         if: always() && needs.start.outputs.run_review == 'true'
         run: node .github/scripts/final-ai-review.js cleanup-ocr
@@ -625,6 +645,15 @@ jobs:
           name: final-ai-individual-publisher-failure-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/final-ai-individual-publisher-failure
           if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload sanitized individual execution counters
+        if: always() && needs.start.outputs.run_review == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: final-ai-individual-execution-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/final-ai-review-adapter-diagnostics.jsonl
+          if-no-files-found: warn
           retention-days: 1
 
   finalize:
@@ -952,33 +981,30 @@ jobs:
       - name: Install pinned OpenCodeReview CLI
         if: needs.start_stack.outputs.run_review == 'true'
         run: |
-          npm install -g @alibaba-group/open-code-review@1.11.0
+          npm install -g @alibaba-group/open-code-review@1.13.0
           ocr version
 
-      - name: Configure ephemeral OpenRouter access
+      - name: Configure ephemeral Mistral access
         id: configure
         if: needs.start_stack.outputs.run_review == 'true'
-        env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
           set -euo pipefail
-          printf '%s' "${OPENROUTER_API_KEY}" |
-            node .github/scripts/final-ai-review.js configure-ocr
+          node .github/scripts/final-ai-review.js configure-ocr
           test -s "${HOME}/.opencodereview/config.json"
 
-      - name: Verify OpenRouter tool access
+      - name: Verify Mistral tool access
         if: needs.start_stack.outputs.run_review == 'true'
         env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
         run: |
           set -euo pipefail
-          printf '%s' "${OPENROUTER_API_KEY}" |
-            node .github/scripts/final-ai-review.js verify-openrouter-tools
+          node .github/scripts/final-ai-review.js verify-mistral-tools
 
       - name: Run cumulative code review
         id: code_review
         if: needs.start_stack.outputs.run_review == 'true'
         env:
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           BACKGROUND: ${{ needs.start_stack.outputs.background }}
           HEAD_SHA: ${{ needs.authorize_stack.outputs.head_sha }}
           REVIEW_FROM: ${{ steps.range.outputs.review_from }}
@@ -989,6 +1015,7 @@ jobs:
           RANGE_DIR: ${{ runner.temp }}/final-ai-stack-code-ranges
           REJECTED_DIR: ${{ runner.temp }}/final-ai-stack-publisher-failure
           STDERR_PATH: ${{ runner.temp }}/final-ai-stack-code-stderr.log
+          OCR_ADAPTER_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
         run: |
           set -euo pipefail
           RESUME_USED=false
@@ -1003,8 +1030,11 @@ jobs:
             local now
             local version
             local exit_code=0
-            if version=$(ocr version 2>/dev/null); then
-              if [[ "${version}" != 'open-code-review v1.11.0 '* ]]; then
+            if version=$(
+              unset MISTRAL_API_KEY
+              ocr version 2>/dev/null
+            ); then
+              if [[ "${version}" != 'open-code-review v1.13.0 '* ]]; then
                 exit_code=1
               fi
             else
@@ -1015,6 +1045,24 @@ jobs:
               echo 'Pinned OCR executable verification failed; raw output is suppressed.' >&2
               return "${exit_code}"
             fi
+            local baseline_limit=200000 bounded_limit=32768
+            for prompt_limit in "${baseline_limit}" "${bounded_limit}"; do
+              if ! (unset MISTRAL_API_KEY; timeout --kill-after=10 120 ocr review --preview \
+                --from "${review_from}" --to "${review_to}" \
+                --max-tokens "${prompt_limit}" --format json --audience agent \
+                --rule .github/open-code-review/final-review-rules.json) \
+                >"${output_path}.preview-${prompt_limit}" 2>>"${STDERR_PATH}"; then
+                echo 'OCR coverage preview failed; raw output is suppressed.' >&2
+                return 1
+              fi
+            done
+            if ! node .github/scripts/final-ai-review.js validate-ocr-preview \
+              "${output_path}.preview-${baseline_limit}" "${output_path}.preview-${bounded_limit}" \
+              >/dev/null 2>>"${STDERR_PATH}"; then
+              printf 'OCR stage=preview-validation exit=1\n' >>"${GITHUB_STEP_SUMMARY}"
+              echo 'OCR preview validation failed: malformed preview or changed file coverage; review refused.' >&2
+              return 1
+            fi
             [[ "${REVIEW_JOB_STARTED_AT}" =~ ^[1-9][0-9]*$ ]]
             now="$(date +%s)"
             if (( now + 1860 > REVIEW_JOB_STARTED_AT + 4200 )); then
@@ -1024,12 +1072,13 @@ jobs:
             if [[ -n "${session_id}" ]]; then
               resume_args=(--resume "${session_id}")
             fi
-            if ocr review \
+            if node .github/scripts/ocr-mistral-adapter.cjs run -- ocr review \
               --from "${review_from}" \
               --to "${review_to}" \
               --audience agent \
               --effort low \
               --timeout 30 \
+              --max-tokens "${bounded_limit}" \
               --max-tokens-budget "${token_budget}" \
               --format json \
               --background "${BACKGROUND}" \
@@ -1127,7 +1176,7 @@ jobs:
             echo 'Raw provider and result output is suppressed.'
           } >>"${GITHUB_STEP_SUMMARY}"
 
-      - name: Remove ephemeral OpenRouter access after code review
+      - name: Remove ephemeral Mistral access after code review
         id: cleanup
         if: always() && needs.start_stack.outputs.run_review == 'true'
         run: node .github/scripts/final-ai-review.js cleanup-ocr
@@ -1136,7 +1185,7 @@ jobs:
         id: topology_review
         if: steps.code_review.outcome == 'success' && steps.cleanup.outcome == 'success'
         env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           MANIFEST_DIGEST: ${{ needs.start_stack.outputs.manifest_digest }}
           MANIFEST_PATH: ${{ runner.temp }}/final-ai-stack-manifest.json
           CODE_RESULT_PATH: ${{ runner.temp }}/final-ai-stack-code-result.json
@@ -1246,6 +1295,15 @@ jobs:
           name: final-ai-stack-publisher-failure-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/final-ai-stack-publisher-failure
           if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload sanitized stack execution counters
+        if: always() && needs.start_stack.outputs.run_review == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: final-ai-stack-execution-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
+          if-no-files-found: warn
           retention-days: 1
 
   finalize_stack:

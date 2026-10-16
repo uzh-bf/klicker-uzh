@@ -47,18 +47,37 @@ jobs:
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `background=${background}\n`)
           NODE
 
+      - name: Start Mistral adapter
+        id: adapter
+        env:
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          ADAPTER_PATH: ${{ runner.temp }}/ocr-mistral-adapter.cjs
+          ADAPTER_STATE: ${{ runner.temp }}/ocr-mistral-adapter.json
+        run: |
+          set -euo pipefail
+          cp .github/scripts/ocr-mistral-adapter.cjs "${ADAPTER_PATH}"
+          node "${ADAPTER_PATH}" start "${ADAPTER_STATE}"
+
       - name: Run OpenCodeReview
-        uses: alibaba/open-code-review@c7dd11e03eeeb84991d60e3f847be30f7de1c20d # v1.11.0
+        uses: alibaba/open-code-review@1672852136fc87748249d22bce0819f33419ea79 # v1.13.0
         with:
-          llm_url: https://openrouter.ai/api/v1/chat/completions
-          llm_auth_token: ${{ secrets.OPENROUTER_API_KEY }}
-          llm_model: deepseek/deepseek-v4.1-flash
+          llm_url: ${{ steps.adapter.outputs.url }}/v1/chat/completions
+          llm_auth_token: ${{ steps.adapter.outputs.token }}
+          llm_model: zai-glm-5-3
+          llm_extra_body: '{"reasoning_effort":"high"}'
           background: ${{ steps.context.outputs.background }}
           llm_use_anthropic: 'false'
           llm_timeout: '480'
-          ocr_version: '1.9.10'
+          ocr_version: '1.13.0'
           review_concurrency: '4'
           sticky_summary: 'true'
           incremental: 'true'
           route_severity_below: 'low'
           upload_artifacts: 'false'
+
+      - name: Stop Mistral adapter
+        if: always() && steps.adapter.outcome == 'success'
+        env:
+          ADAPTER_PATH: ${{ runner.temp }}/ocr-mistral-adapter.cjs
+          ADAPTER_STATE: ${{ runner.temp }}/ocr-mistral-adapter.json
+        run: node "${ADAPTER_PATH}" stop "${ADAPTER_STATE}"
