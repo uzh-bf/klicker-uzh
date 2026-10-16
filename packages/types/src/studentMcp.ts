@@ -166,6 +166,7 @@ export type StudentMcpSubmitPracticeStackAnswerOutput = {
 
 export type StudentMcpToolErrorCode =
   | 'BACKEND_UNAVAILABLE'
+  | 'DATA_USE_REQUIRED'
   | 'FORBIDDEN'
   | 'INVALID_INPUT'
   | 'NOT_FOUND'

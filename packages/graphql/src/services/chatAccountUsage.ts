@@ -23,6 +23,7 @@ export interface ChatAccountUsageLane {
 export interface ChatAccountUsageOverview {
   authorized: boolean
   subscriptionTier: DB.AiSubscriptionTier
+  advancedModelConfigurationEntitled: boolean
   baseModelUsage: ChatAccountUsageLane
   advancedModelUsage: ChatAccountUsageLane
 }
@@ -126,12 +127,20 @@ function projectOverview({
     isChatUsageClassEntitled({
       usageClass,
       aiFeaturesEnabled: authorized,
+      aiSubscriptionTier: subscriptionTier,
       aiChatbotCostCenter,
     })
 
   return {
     authorized,
     subscriptionTier,
+    // Draft model selection can precede AI approval.
+    advancedModelConfigurationEntitled: isChatUsageClassEntitled({
+      usageClass: DB.ChatUsageClass.ADVANCED,
+      aiFeaturesEnabled: true,
+      aiSubscriptionTier: subscriptionTier,
+      aiChatbotCostCenter,
+    }),
     baseModelUsage: projectLane(
       DB.ChatUsageClass.BASE,
       entitledFor(DB.ChatUsageClass.BASE),
