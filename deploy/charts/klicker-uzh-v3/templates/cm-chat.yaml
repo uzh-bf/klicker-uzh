@@ -16,6 +16,7 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
+  COOKIE_DOMAIN: {{ .Values.backendGraphql.cookieDomain | quote }}
   KB_FALKORDB_HOST: {{ .Values.backendGraphql.knowledgeGraph.host | quote }}
   KB_FALKORDB_PORT: {{ .Values.backendGraphql.knowledgeGraph.port | quote }}
   KB_FALKORDB_TLS: {{ .Values.backendGraphql.knowledgeGraph.tls | quote }}

@@ -714,6 +714,31 @@ if [ "${2:-}" = --help ]; then
 fi
 printf "%s\n" "$*" >>"$KLICKER_TEST_HELPER_LOG"
 [ "$1" = ensure ] || exit 0
+if [ -n "${KLICKER_TEST_EVALUATION_GENERATION:-}" ]; then
+  [ "${KLICKER_EVAL_GUARD_ORIGIN:-}" = "http://127.0.0.1:1418" ] || exit 31
+  [ "${OPENAI_BASE_URL:-}" = "http://127.0.0.1:1418/v1" ] || exit 32
+  [ "${OPENAI_API_KEY:-}" = "synthetic-evaluation-key" ] || exit 33
+  [ "${CHAT_MODEL_REGISTRY_JSON:-}" = "[]" ] || exit 34
+  [ "${KLICKER_EVAL_GUARD_GENERATION:-}" = "$KLICKER_TEST_EVALUATION_GENERATION" ] || exit 35
+  for name in KLICKER_EVAL_GUARD_ORIGIN OPENAI_BASE_URL CHAT_MODEL_REGISTRY_JSON KLICKER_EVAL_GUARD_GENERATION; do
+    case ",$DEVROUTER_PROCESS_FINGERPRINT_ENV," in
+      *",$name,"*) ;;
+      *) exit 36 ;;
+    esac
+  done
+  case ",$DEVROUTER_PROCESS_FINGERPRINT_ENV," in
+    *",OPENAI_API_KEY,"*) exit 37 ;;
+  esac
+  echo "evaluation-generation:$KLICKER_EVAL_GUARD_GENERATION" >>"$KLICKER_TEST_HELPER_LOG"
+fi
+if [ -n "${KLICKER_TEST_EXPECT_CANONICAL:-}" ]; then
+  [ "${OPENAI_BASE_URL:-}" = "http://litellm:4000" ] || exit 41
+  [ "${OPENAI_API_KEY:-}" = "synthetic-default-key" ] || exit 42
+  [ "${CHAT_MODEL_REGISTRY_JSON:-}" = "default-registry" ] || exit 43
+  [ "${KLICKER_EVAL_GUARD_ORIGIN+x}" != x ] || exit 44
+  [ "${KLICKER_EVAL_GUARD_GENERATION+x}" != x ] || exit 45
+  echo "canonical-openai-base-url:${OPENAI_BASE_URL}" >>"$KLICKER_TEST_HELPER_LOG"
+fi
 shift
 while [ "$#" -gt 0 ]; do
   if [ "$1" = --prepare-command ]; then
@@ -743,6 +768,52 @@ if grep -Fx launched "$HELPER_LOG" >/dev/null; then
 fi
 [ ! -s "$CURL_LOG" ] || fail 'failed preparation reached readiness'
 
+# Canonical development defaults cannot displace explicit guarded settings.
+write_file "$ROOT/.devcontainer/devcontainer.env" 'OPENAI_BASE_URL=http://litellm:4000'
+: >"$HELPER_LOG"
+KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+  KLICKER_EVAL_GUARD_ORIGIN=http://127.0.0.1:1418 \
+  OPENAI_BASE_URL=http://127.0.0.1:1418/v1 OPENAI_API_KEY=synthetic-evaluation-key \
+  CHAT_MODEL_REGISTRY_JSON='[]' KLICKER_EVAL_GUARD_GENERATION=synthetic-generation \
+  KLICKER_TEST_EVALUATION_GENERATION=synthetic-generation \
+  KLICKER_TEST_TURBO_FAIL=true \
+  bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1 && \
+  fail 'synthetic preparation failure unexpectedly succeeded'
+grep -Fx 'evaluation-generation:synthetic-generation' "$HELPER_LOG" >/dev/null || \
+  fail 'managed helper did not receive restored guarded configuration'
+
+# Complementary ordinary path: compose's canonical OPENAI_* values arrive via
+# env_file without the guard markers. Post-start must pass them through and
+# fail only on the simulated dependency preparation, never on the guarded gate.
+: >"$HELPER_LOG"
+canonical_status=0
+KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+  OPENAI_BASE_URL=http://litellm:4000 OPENAI_API_KEY=synthetic-default-key \
+  CHAT_MODEL_REGISTRY_JSON=default-registry \
+  KLICKER_TEST_EXPECT_CANONICAL=1 \
+  KLICKER_TEST_TURBO_FAIL=true \
+  bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1 || canonical_status=$?
+assert_equal "$canonical_status" 17
+grep -Fx 'canonical-openai-base-url:http://litellm:4000' "$HELPER_LOG" >/dev/null || \
+  fail 'helper did not receive canonical configuration without guard markers'
+: >"$HELPER_LOG"
+incomplete_status=0
+KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+  KLICKER_EVAL_GUARD_ORIGIN=http://127.0.0.1:1418 OPENAI_BASE_URL=http://127.0.0.1:1418/v1 \
+  OPENAI_API_KEY=synthetic-evaluation-key CHAT_MODEL_REGISTRY_JSON='[]' \
+  KLICKER_EVAL_GUARD_GENERATION='' \
+  bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1 || incomplete_status=$?
+[ "$incomplete_status" -eq 2 ] || fail 'incomplete guarded configuration did not use its failure status'
+[ ! -s "$HELPER_LOG" ] || fail 'incomplete guarded configuration reached the helper'
+
+incomplete_status=0
+KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+  KLICKER_EVAL_GUARD_ORIGIN='' OPENAI_BASE_URL=http://127.0.0.1:1418/v1 \
+  OPENAI_API_KEY=synthetic-evaluation-key CHAT_MODEL_REGISTRY_JSON='[]' \
+  KLICKER_EVAL_GUARD_GENERATION=synthetic-generation \
+  bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1 || incomplete_status=$?
+[ "$incomplete_status" -eq 2 ] || fail 'empty guarded origin did not fail closed'
+[ ! -s "$HELPER_LOG" ] || fail 'empty guarded origin reached the helper'
 # A managed process that is not live once ensure returns must fail the start in
 # seconds with its log instead of stalling the readiness pass.
 write_file "$FAKE_BIN/process-helper-accepted" '#!/usr/bin/env bash
