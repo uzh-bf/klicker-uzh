@@ -32,11 +32,13 @@ const { hostname } = parsed
 
 // auth.<base domain> hosts the login; it must stay inside the WebView so the
 // session cookie is shared with the controller. Other hosts (manage, pwa, …)
-// open in the system browser. A host without a base domain (e.g. localhost)
-// shares cookies across ports, so only the controller host is allowed.
+// open in the system browser. The auth host is only derived from a subdomain
+// host (control.<domain>, at least three labels): for a two-label host such as
+// klicker.ch the derived auth.ch would be a third-party site, and a single-label
+// host (localhost) shares cookies across ports.
 const labels = hostname.split('.')
 const allowNavigation =
-  labels.length > 1
+  labels.length > 2
     ? [hostname, `auth.${labels.slice(1).join('.')}`]
     : [hostname]
 
