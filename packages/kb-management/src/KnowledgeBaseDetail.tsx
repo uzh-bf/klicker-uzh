@@ -3,8 +3,9 @@ import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import { GetKbDocument } from '@klicker-uzh/graphql/dist/ops'
 import { H1, Skeleton, UserNotification } from '@uzh-bf/design-system'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useFormatter, useTranslations } from 'next-intl'
-import React, { useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import KnowledgeBaseAddResourceModal from './components/KnowledgeBaseAddResourceModal'
 import KnowledgeBaseChatbotBindings from './components/KnowledgeBaseChatbotBindings'
 import KnowledgeBaseDomainSettings from './components/KnowledgeBaseDomainSettings'
@@ -29,6 +30,15 @@ function KnowledgeBaseDetail({
   const [resourceRefreshKey, setResourceRefreshKey] = useState(0)
   const [addResourceOpen, setAddResourceOpen] = useState(false)
   const [graphOpen, setGraphOpen] = useState(false)
+  const router = useRouter()
+
+  // Links such as the graph generation status point at #knowledge-graph, so
+  // they open the collapsed section and let the panel take over from there.
+  useEffect(() => {
+    if (router.asPath.endsWith('#knowledge-graph')) {
+      setGraphOpen(true)
+    }
+  }, [router.asPath])
   const addResourceTriggerRef = useRef<HTMLElement | null>(null)
   const { data, loading, error, refetch } = useQuery(GetKbDocument, {
     variables: { id: kbId },
@@ -241,8 +251,9 @@ function KnowledgeBaseDetail({
         // Graph builds are optional for ordinary lecturers, so the panel and
         // its queries load only once the section is opened.
         <details
-          className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+          className="mt-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
           data-cy="knowledge-graph-advanced"
+          open={graphOpen}
           onToggle={(event) => setGraphOpen(event.currentTarget.open)}
         >
           <summary
@@ -256,11 +267,7 @@ function KnowledgeBaseDetail({
               {t('kb.graphAdvancedDescription')}
             </span>
           </summary>
-          {graphOpen ? (
-            <div className="mt-4">
-              <KnowledgeGraphPanel kbId={kbId} />
-            </div>
-          ) : null}
+          {graphOpen ? <KnowledgeGraphPanel kbId={kbId} /> : null}
         </details>
       )}
       {addResourceOpen ? (

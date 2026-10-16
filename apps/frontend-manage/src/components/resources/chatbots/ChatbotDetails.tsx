@@ -179,7 +179,9 @@ function sameStringSet(left: readonly string[], right: readonly string[]) {
 }
 
 // Ordinary lecturers rarely change these settings, so they open on demand;
-// advanced management shows them in place.
+// advanced management shows them in place. The content mounts on first open,
+// so its queries do not run for lecturers who never open the section, and
+// stays mounted afterwards so closing the section keeps unsaved edits.
 function ChatbotAdvancedSettings({
   advancedManagement,
   cy,
@@ -190,11 +192,15 @@ function ChatbotAdvancedSettings({
   children: ReactNode
 }) {
   const t = useTranslations()
+  const [opened, setOpened] = useState(false)
   if (advancedManagement) return <>{children}</>
   return (
     <details
       className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
       data-cy={cy}
+      onToggle={(event) => {
+        if (event.currentTarget.open) setOpened(true)
+      }}
     >
       <summary className="cursor-pointer select-none" data-cy={`${cy}-trigger`}>
         <span className="font-medium text-gray-900">
@@ -204,7 +210,7 @@ function ChatbotAdvancedSettings({
           {t('manage.resources.chatbotAdvancedSettingsDescription')}
         </span>
       </summary>
-      <div className="mt-4 space-y-6">{children}</div>
+      {opened ? <div className="mt-4 space-y-6">{children}</div> : null}
     </details>
   )
 }
@@ -1238,53 +1244,58 @@ function ChatbotDetails({
   )
   const usageSettings = (
     <div className="space-y-6" data-cy="chatbot-usage">
-      <div>
-        <div className="mb-2 text-sm font-medium text-gray-700">
-          {t('manage.resources.credits')}
+      {/* A draft has never been live, so only the editor below shows its credit policy. */}
+      {singlePageSetup ? null : (
+        <div>
+          <div className="mb-2 text-sm font-medium text-gray-700">
+            {t('manage.resources.credits')}
+          </div>
+          <UserNotification data={{ cy: 'chatbot-live-credit-policy' }}>
+            <span className="font-medium">
+              {t('manage.resources.chatbotOwnerPreviewLive')}
+            </span>{' '}
+            {t('manage.resources.chatbotOwnerPreviewLiveDescription')}
+          </UserNotification>
+          <div className="overflow-hidden rounded-lg border shadow-sm">
+            <table className="w-full text-sm">
+              <tbody className="divide-y divide-gray-200 bg-white">
+                <tr className="divide-x divide-gray-200">
+                  <td className="w-1/3 bg-gray-50 px-4 py-2 font-medium text-gray-500">
+                    {t('manage.resources.creditInitialCredits')}
+                  </td>
+                  <td className="px-4 py-2 text-gray-900">
+                    {chatbot.creditInitialCredits}
+                  </td>
+                </tr>
+                <tr className="divide-x divide-gray-200">
+                  <td className="bg-gray-50 px-4 py-2 font-medium text-gray-500">
+                    {t('manage.resources.creditResetPeriod')}
+                  </td>
+                  <td className="px-4 py-2 text-gray-900">
+                    {resetPeriodLabel}
+                  </td>
+                </tr>
+                <tr className="divide-x divide-gray-200">
+                  <td className="bg-gray-50 px-4 py-2 font-medium text-gray-500">
+                    {t('manage.resources.creditResetAmount')}
+                  </td>
+                  <td className="px-4 py-2 text-gray-900">
+                    {chatbot.creditResetAmount}
+                  </td>
+                </tr>
+                <tr className="divide-x divide-gray-200">
+                  <td className="bg-gray-50 px-4 py-2 font-medium text-gray-500">
+                    {t('manage.resources.creditMaxCredits')}
+                  </td>
+                  <td className="px-4 py-2 text-gray-900">
+                    {chatbot.creditMaxCredits}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-        <UserNotification data={{ cy: 'chatbot-live-credit-policy' }}>
-          <span className="font-medium">
-            {t('manage.resources.chatbotOwnerPreviewLive')}
-          </span>{' '}
-          {t('manage.resources.chatbotOwnerPreviewLiveDescription')}
-        </UserNotification>
-        <div className="overflow-hidden rounded-lg border shadow-sm">
-          <table className="w-full text-sm">
-            <tbody className="divide-y divide-gray-200 bg-white">
-              <tr className="divide-x divide-gray-200">
-                <td className="w-1/3 bg-gray-50 px-4 py-2 font-medium text-gray-500">
-                  {t('manage.resources.creditInitialCredits')}
-                </td>
-                <td className="px-4 py-2 text-gray-900">
-                  {chatbot.creditInitialCredits}
-                </td>
-              </tr>
-              <tr className="divide-x divide-gray-200">
-                <td className="bg-gray-50 px-4 py-2 font-medium text-gray-500">
-                  {t('manage.resources.creditResetPeriod')}
-                </td>
-                <td className="px-4 py-2 text-gray-900">{resetPeriodLabel}</td>
-              </tr>
-              <tr className="divide-x divide-gray-200">
-                <td className="bg-gray-50 px-4 py-2 font-medium text-gray-500">
-                  {t('manage.resources.creditResetAmount')}
-                </td>
-                <td className="px-4 py-2 text-gray-900">
-                  {chatbot.creditResetAmount}
-                </td>
-              </tr>
-              <tr className="divide-x divide-gray-200">
-                <td className="bg-gray-50 px-4 py-2 font-medium text-gray-500">
-                  {t('manage.resources.creditMaxCredits')}
-                </td>
-                <td className="px-4 py-2 text-gray-900">
-                  {chatbot.creditMaxCredits}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+      )}
 
       {/* The credit editor changes the live participant-facing quota, an operational lever an ordinary lecturer should not tune. */}
       <>
@@ -1704,12 +1715,17 @@ function ChatbotDetails({
                 siblingDirty={
                   basicsNavigationState.dirty ||
                   disclaimerNavigationState.dirty ||
-                  behaviorNavigationState.dirty
+                  behaviorNavigationState.dirty ||
+                  creditNavigationState.dirty ||
+                  modelSettingsDirty ||
+                  knowledgeGraphDirty
                 }
                 siblingPending={
                   basicsNavigationState.pending ||
                   disclaimerNavigationState.pending ||
-                  behaviorNavigationState.pending
+                  behaviorNavigationState.pending ||
+                  creditNavigationState.pending ||
+                  isSaving
                 }
                 publishingAuthorized={publishingAuthorized}
                 publishingAuthorizationLoading={publishingAuthorizationLoading}
@@ -1759,7 +1775,7 @@ function ChatbotDetails({
               </div>
             </section>
             <ChatbotAdvancedSettings
-              advancedManagement={false}
+              advancedManagement={advancedManagement}
               cy="chatbot-setup-advanced"
             >
               {modelSettings}
@@ -1838,7 +1854,7 @@ function ChatbotDetails({
             />
             {advancedManagement ? null : (
               <ChatbotAdvancedSettings
-                advancedManagement={false}
+                advancedManagement={advancedManagement}
                 cy="chatbot-overview-advanced"
               >
                 {usageSettings}
