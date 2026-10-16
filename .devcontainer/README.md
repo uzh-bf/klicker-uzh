@@ -43,7 +43,7 @@ The primary checkout keeps fixed localhost application ports, publishes the data
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.4.0 and set it up:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.5.1 and set it up:
    ```bash
    devrouter setup --yes   # Traefik + the shared `devnet` + mkcert CA
    ```
@@ -65,6 +65,13 @@ devrouter ensure . --profile chat,ai,mcp   # additive merged selection
 devrouter exec . -- <command...>
 devrouter stop .
 ```
+
+Machines that opted in with `devrouter setup --yes --idle-stop 30m` stop a
+checkout's stack once its routed apps, `devrouter exec` and lifecycle commands
+have been quiet for that long; `devrouter ensure .` resumes it. Database-only
+work, such as a `psql` session through `db.klicker.localhost`, does not count
+as activity, so pin the checkout first with `devrouter workspace pin .` and
+remove the pin with `devrouter workspace pin . --off` afterwards.
 
 Open the Manage URL printed by `ensure` and log in as **`lecturer` / `abcd`**
 (accept the terms checkbox). The dev servers run in the background; inspect
@@ -93,7 +100,7 @@ marker creation to work around a refusal.
 
 ## Profiles
 
-This repository pins devrouter 0.4.0. Managed profiles, introduced in 0.0.40,
+This repository pins devrouter 0.5.1. Managed profiles, introduced in 0.0.40,
 select three independent dimensions: routed
 apps, optional Compose services, and managed processes. Merged selections are
 additive and order-insensitive; omitting `--profile` keeps the all-on `full`
