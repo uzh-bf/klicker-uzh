@@ -135,6 +135,9 @@ export const ChatAccountUsageOverviewType =
   ChatAccountUsageOverviewRef.implement({
     fields: (t) => ({
       authorized: t.exposeBoolean('authorized'),
+      advancedModelConfigurationEntitled: t.exposeBoolean(
+        'advancedModelConfigurationEntitled'
+      ),
       subscriptionTier: t.expose('subscriptionTier', {
         type: AiSubscriptionTier,
       }),
