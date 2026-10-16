@@ -30,6 +30,7 @@ describe('citationHrefFor / parseCitationHref', () => {
   test('round-trips an index through the #cite-n href format', () => {
     expect(citationHrefFor(3)).toBe('#cite-3')
     expect(parseCitationHref(citationHrefFor(12))).toBe(12)
+    expect(parseCitationHref(citationHrefFor(99))).toBe(99)
   })
 
   test('rejects hrefs that are not the #cite-n shape', () => {
@@ -40,6 +41,8 @@ describe('citationHrefFor / parseCitationHref', () => {
     expect(parseCitationHref('#cite-abc')).toBeNull()
     expect(parseCitationHref('https://example.com')).toBeNull()
     expect(parseCitationHref('#section-1')).toBeNull()
+    // Three digits overrun the two-digit bound the registry cap matches.
+    expect(parseCitationHref('#cite-100')).toBeNull()
   })
 })
 
@@ -73,6 +76,7 @@ describe('splitCitationMarkers', () => {
 
   test('two-digit marker', () => {
     expect(splitCitationMarkers('[12]')).toEqual([citationLinkNode(12)])
+    expect(splitCitationMarkers('[99]')).toEqual([citationLinkNode(99)])
   })
 
   test('expands an en-dash citation range into adjacent linked source numbers', () => {
@@ -99,12 +103,12 @@ describe('splitCitationMarkers', () => {
     expect(splitCitationMarkers('[2 -\n4]')).toEqual([textNode('[2 -\n4]')])
   })
 
-  test('keeps over-wide ranges literal to bound citation chip expansion', () => {
-    expect(splitCitationMarkers('[1-12]')).toEqual(
-      Array.from({ length: 12 }, (_, index) => citationLinkNode(index + 1))
+  test('expands a range up to the 99-index cap and keeps wider bounds literal', () => {
+    expect(splitCitationMarkers('[1-99]')).toEqual(
+      Array.from({ length: 99 }, (_, index) => citationLinkNode(index + 1))
     )
-    expect(splitCitationMarkers('Wide [1-13], valid [2].')).toEqual([
-      textNode('Wide [1-13], valid'),
+    expect(splitCitationMarkers('Wide [1-100], valid [2].')).toEqual([
+      textNode('Wide [1-100], valid'),
       citationLinkNode(2),
       textNode('.'),
     ])
@@ -188,9 +192,12 @@ describe('splitCitationMarkers', () => {
     ])
   })
 
-  test('three-digit bracket is not treated as a marker', () => {
+  test('a three-digit bracket is not treated as a marker', () => {
     expect(splitCitationMarkers('See [123] here')).toEqual([
       textNode('See [123] here'),
+    ])
+    expect(splitCitationMarkers('See [100] here')).toEqual([
+      textNode('See [100] here'),
     ])
   })
 })
@@ -392,12 +399,25 @@ describe('resolveCitationSource', () => {
   test('a message with no sources resolves any marker to undefined', () => {
     expect(resolveCitationSource(1, [])).toBeUndefined()
   })
+
+  test('resolves the highest two-digit index 99 and rejects 100', () => {
+    const sources: ChatSource[] = Array.from({ length: 99 }, (_, i) => ({
+      id: `id-${i}`,
+      index: i + 1,
+      type: 'document',
+      title: `Source ${i + 1}`,
+    }))
+
+    expect(resolveCitationSource(99, sources)?.index).toBe(99)
+    expect(resolveCitationSource(100, sources)).toBeUndefined()
+  })
 })
 
 describe('citation protocol across streaming boundaries', () => {
   test.each([
     ['[1]', [1]],
     ['[12]', [12]],
+    ['[99]', [99]],
     ['[1][2]', [1, 2]],
     ['[1] [2]', [1, 2]],
     ['[2–4]', [2, 3, 4]],

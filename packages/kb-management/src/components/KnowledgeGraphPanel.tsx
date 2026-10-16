@@ -568,7 +568,7 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
               <div
                 className={`grid gap-3 sm:items-end ${
                   buildDomain != null
-                    ? 'sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]'
+                    ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]'
                     : 'sm:grid-cols-[minmax(0,1fr)_auto]'
                 }`}
               >
@@ -600,6 +600,10 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                     !config.costConfigurationReady
                   }
                   data={{ cy: 'kb-knowledge-graph-quality-tier' }}
+                  className={{
+                    root: 'w-full',
+                    select: { trigger: 'w-full' },
+                  }}
                 />
                 <Button
                   primary
