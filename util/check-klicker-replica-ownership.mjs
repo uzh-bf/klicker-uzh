@@ -511,11 +511,11 @@ for (const environment of environments) {
   assertReplicaOwnership(
     resources,
     environment.name,
-    // Enabling assessmentAudit adds the audit worker Deployment alongside the
-    // 17 shared application ones. Retiring the media-policy worker leaves a
-    // single audit Deployment in staging. Staging also runs the adaptive
-    // engine Deployment, which owns its replicas statically.
-    { base: 17, stg: 19, prd: 17 }[environment.name]
+    // Enabling assessmentAudit adds the audit dispatcher Deployment alongside
+    // the 17 shared application ones; retiring the media-policy worker left no
+    // further audit Deployment. Staging also enables the audit sealer and runs
+    // the adaptive engine Deployment, which owns its replicas statically.
+    { base: 17, stg: 20, prd: 17 }[environment.name]
   )
   assertStaticLti(
     resources,
