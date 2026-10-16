@@ -491,10 +491,13 @@ reasoning, token limits, accounting or retry behavior.
 The adapter's fixed Mistral endpoint uses native HTTPS under the existing
 AbortControllers. Node's fetch transport has independent
 [300-second header and body deadlines](https://undici.nodejs.org/api/Client),
-which otherwise preempt the configured OCR and adapter deadlines. Both adapter
-forwarding and direct preflight/topology calls use one HTTPS request, retain TLS
-verification, refuse redirects and request uncompressed JSON for the existing
-bounded body reader. No transport retry or dependency is added.
+which otherwise preempt the configured OCR and adapter deadlines. Adapter
+forwarding uses one HTTPS request, retains TLS verification, refuses redirects
+and requests uncompressed JSON for the existing bounded body reader. The direct
+request helper shares that default transport, while the workflow's preflight
+and topology wrappers still inject fetch with their existing 30-second and
+120-second deadlines. Those deadlines must stay below fetch's limit while that
+injection remains. No transport retry or dependency is added.
 
 The draft, individual and stack review jobs disable OCR's background updater
 with `OCR_NO_UPDATE=1`, including the installation version check. OCR 1.13.0

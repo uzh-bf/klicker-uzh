@@ -26,9 +26,11 @@ minutes with the aligned setting are required acceptance evidence.
 
 Integrated review found another five-minute limit in Node fetch's header/body
 transport. The initial synthetic provider replaced fetch and did not exercise
-that layer. Both upstream callers must use native HTTPS under their existing
-AbortControllers, retaining TLS validation, fixed destination, redirect refusal,
-bounded response reading and one request without a transport retry. Request
+that layer. OCR forwarding must use native HTTPS under its existing
+AbortController, retaining TLS validation, fixed destination, redirect refusal,
+bounded response reading and one request without a transport retry. The direct
+request helper shares that default; production preflight/topology wrappers keep
+their injected fetch with unchanged 30/120-second deadlines. Request
 identity encoding so the body reader continues to receive uncompressed JSON.
 Use real loopback TLS responses delayed beyond 300 seconds for both headers and
 body; a successful fetch mock is insufficient proof for this correction.
@@ -164,5 +166,7 @@ unrecoverable capability blocker.
   binary and a delayed direct-call body after 305 seconds each, one request per
   case with unchanged OCR wire policy. All 229 focused tests pass. Default
   transport tests also verify cancellation, deadlines, redirects and response
-  size bounds; the focused adapter scan has no findings. The correction is sent
-  through the existing review roles before completed-delivery claims.
+  size bounds; the focused adapter scan has no findings. Correction slice and
+  simplification reviews have no findings. Claude confirmed the forwarding fix;
+  its remaining documentation accuracy note is corrected by distinguishing the
+  workflow wrappers' injected fetch from the direct helper's default transport.
