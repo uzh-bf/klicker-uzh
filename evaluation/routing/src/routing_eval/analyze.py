@@ -103,12 +103,6 @@ def load_quality(manifest_path: Path, eval_paths: list[Path]) -> tuple[list[dict
             grade = dict(scores)
             major = metrics.get("major_error") or {}
             flag = major.get("success")
-            if (
-                flag is None
-                and isinstance(major.get("score"), (int, float))
-                and isinstance(major.get("threshold"), (int, float))
-            ):
-                flag = major["score"] >= major["threshold"]
             if flag is not None:
                 grade["major_error"] = not flag
             rows.append({"arm": artifacts[qa_file]["arm"], "q": question, "grade": grade})
