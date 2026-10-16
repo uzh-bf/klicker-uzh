@@ -741,6 +741,7 @@ type ChatModelCapability {
   name: String!
   supportedReasoningEfforts: [String!]!
   supportsReasoning: Boolean!
+  usageClass: ChatUsageClass!
 }
 
 enum ChatUsageClass {
@@ -768,7 +769,7 @@ type Chatbot {
   id: ID!
   knowledgeGraphRetrievalEnabled: Boolean!
   knowledgeGraphVisible: Boolean!
-  mcpConfigurations: [ChatbotMcpConfigurationSummary!]!
+  mcpConfigurations: [ChatbotMcpConfigurationSummary!]! @deprecated(reason: "Retrieval bindings are internal plumbing and are no longer projected; this field always resolves to an empty list.")
   modelSelection: Boolean!
   name: String!
   publicationUseCase: String
@@ -818,6 +819,8 @@ type ChatbotCustomMode {
   key: String!
   name: String!
   personaText: String
+  starterPrompts: [String!]
+  welcomeMessage: String
 }
 
 type ChatbotCustomModeConfig {
@@ -833,6 +836,8 @@ input ChatbotCustomModeInput {
   key: String
   name: String!
   personaText: String
+  starterPrompts: [String!]
+  welcomeMessage: String
 }
 
 type ChatbotDisclaimerSummary {

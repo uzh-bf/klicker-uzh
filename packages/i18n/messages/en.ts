@@ -2675,7 +2675,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatAccountUsageClassUnavailable:
         'This usage class is not enabled for your account.',
       chatAccountUsageAdvancedCostCenter:
-        'Advanced models require a cost center that AI usage can be billed to.',
+        'Advanced models require the advanced AI subscription and a cost center that AI usage can be billed to.',
       chatAccountUsageRefreshing: 'Refreshing usage…',
       chatAccountUsageStale:
         'The latest usage could not be loaded. The values below may be out of date.',
@@ -4968,9 +4968,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotTechnicalDetails: 'Technical details',
       chatbotTechnicalId: 'ID',
       chatbotTechnicalAvatar: 'Avatar',
-      chatbotUsageTechnicalIntegrations: 'Technical integrations',
-      chatbotUsageTechnicalIntegrationsDescription:
-        'Inspect configured MCP integrations and their current status.',
       chatbotSetupTitle: 'Set up your chatbot',
       chatbotSetupDescription:
         'Use the sections below to complete and save your chatbot setup before requesting publication.',
@@ -5010,6 +5007,14 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotCustomModePersonaText: 'Persona and instructions',
       chatbotCustomModePersonaPlaceholder:
         'Describe how this mode should respond to participants.',
+      chatbotCustomModeWelcomeMessage: 'Welcome message',
+      chatbotCustomModeWelcomePlaceholder:
+        'Shown in an empty chat for this mode. Leave empty to use the standard greeting.',
+      chatbotCustomModeStarterPrompts: 'Starter prompts',
+      chatbotCustomModeStarterPromptsDescription:
+        'Shown as suggestions in an empty chat for this mode. At most {count} starters; learners decide whether to send them.',
+      chatbotCustomModeStarterPrompt: 'Starter prompt {number}',
+      chatbotCustomModeStarterPromptAdd: 'Add starter prompt',
       chatbotCustomModeAdd: 'Add custom mode',
       chatbotCustomModeRemove: 'Remove',
       chatbotCustomModesLimit: 'At most {count} custom modes are supported.',
@@ -5230,6 +5235,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Participants can choose among these models. Select at least one.',
       selectedModel: 'Selected model',
       allowedModels: 'Allowed models',
+      modelUnavailableHint:
+        'Advanced models need the advanced AI subscription with a cost center.',
+      modelUnavailableSelected:
+        'Your account cannot use this advanced model, so participants cannot chat with it. Choose another model.',
       allowedModelsAll: 'All',
       chatbotModelSettings: 'Model & Reasoning Settings',
       reasoningEffortsByModel: 'Reasoning efforts by model',
@@ -5261,7 +5270,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       disclaimerAccepted: 'Accepted',
       disclaimerDeclined: 'Declined',
       disclaimerPending: 'Pending',
-      mcpConfigurations: 'MCP Configurations',
       knowledgeBase: 'Knowledge base',
       knowledgeGraphPolicy: 'Knowledge graph',
       knowledgeGraphPolicyDescription:
@@ -5278,15 +5286,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       knowledgeGraphSaveSuccess: 'Knowledge graph settings saved.',
       noEnabledKnowledgeBase:
         'No knowledge base is connected. This chatbot cannot search course material.',
-      noMcpConfigurations: 'No MCP configurations.',
-      mcpServerActive: 'Server active',
-      mcpServerInactive: 'Server inactive',
-      mcpChatMode: 'Chat mode',
-      mcpStatus: 'Status',
-      mcpStatusEnabled: 'Enabled',
-      mcpStatusDisabled: 'Disabled',
-      mcpPriority: 'Priority',
-      mcpAllowedTools: 'Allowed tools',
       openChatbot: 'Open Chatbot',
       openOwnerPreview: 'Open owner preview',
       chatbotOwnerPreviewLive: 'Live configuration',

@@ -573,9 +573,18 @@ export async function setAiFeatures(
 
   // An empty cost center is the explicit withdrawal of the billing address.
   // The tier column is never null, so an explicit null is treated as omitted.
-  const requestedTier = tier ?? undefined
   const requestedCostCenter =
     costCenter === undefined ? undefined : costCenter?.trim() || null
+  // Setting a cost center grants the advanced tier and withdrawing it returns
+  // the account to base, because advanced usage is billed to the cost center.
+  // A tier passed in the same call still takes precedence.
+  const requestedTier =
+    tier ??
+    (requestedCostCenter === undefined
+      ? undefined
+      : requestedCostCenter
+        ? DB.AiSubscriptionTier.ADVANCED
+        : DB.AiSubscriptionTier.BASE)
   const tierUnchanged =
     requestedTier === undefined ||
     targetUser.aiSubscriptionTier === requestedTier
