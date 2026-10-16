@@ -106,14 +106,25 @@ instead of covering its final content; only embedded mode keeps the compact
 overlay treatment.
 
 The OpenAI-compatible `provider.chat(...)` path uses an aligned AI SDK 7 patch
-train: `ai@7.0.52`, `@ai-sdk/openai@4.0.30`, and `@ai-sdk/mcp@2.0.25`, which
-resolve `@ai-sdk/provider-utils@5.0.21`. The earlier provider-utils `5.0.12`
+train: `ai@7.0.140`, `@ai-sdk/openai@4.0.93`, and `@ai-sdk/mcp@2.0.74`, which
+resolve `@ai-sdk/provider-utils@5.0.59`. The earlier provider-utils `5.0.12`
 tracker stored streamed tool calls in an index-addressed array; a first tool
 call at provider index `1` left a sparse entry that crashed during stream flush
 with `hasFinished` read from `undefined`. The deterministic public-provider
 fixture in `apps/chat/test/openai-chat-streaming.test.ts` covers this boundary
 with injected SSE. A green fixture proves the local provider conversion path;
 it does not replace a real-upstream first-turn staging smoke test.
+
+The assistant-ui stack uses `@assistant-ui/react@0.15.28`,
+`@assistant-ui/react-ai-sdk@1.4.17`, and
+`@assistant-ui/react-markdown@0.14.22`. The AI SDK adapter requires
+`ai >=7.0.101` within major 7 and keeps the existing `useChatRuntime` and
+`AssistantChatTransport` imports. Upgrade the adapter and SDK together.
+The OpenAI Responses provider now serializes `strict: false` when a function
+tool omits strictness; explicit `strict: true` remains effective. The provider
+serialization fixture covers both cases. This does not replace host-side tool
+input validation or authorization. New SDK concurrency controls, resumable
+threads, generative UI, and cloud persistence are not enabled by the upgrade.
 
 ## Provider request cache boundaries
 

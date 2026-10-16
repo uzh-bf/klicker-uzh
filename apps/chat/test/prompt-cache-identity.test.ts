@@ -480,6 +480,12 @@ describe('prompt cache identity', () => {
     const searchResponseTool = responseTools.find(
       (entry) => entry.name === 'search'
     )
+    expect(searchResponseTool?.strict).toBe(true)
+    // OpenAI Responses now explicitly defaults ordinary function tools to
+    // non-strict mode; tools that request strictness must retain it.
+    expect(responseTools.find((entry) => entry.name === 'read')?.strict).toBe(
+      false
+    )
     const responseParameters = (searchResponseTool?.parameters ?? {}) as Record<
       string,
       unknown

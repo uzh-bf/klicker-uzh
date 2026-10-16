@@ -2,7 +2,7 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { LangfuseSpanProcessor } from '@langfuse/otel'
 import { propagateAttributes } from '@langfuse/tracing'
 import { LangfuseVercelAiSdkIntegration } from '@langfuse/vercel-ai-sdk'
-import { NodeSDK } from '@opentelemetry/sdk-node'
+import { NodeSDK, tracing } from '@opentelemetry/sdk-node'
 import { generateText, isStepCount, tool } from 'ai'
 import { describe, expect, test, vi } from 'vitest'
 import { z } from 'zod'
@@ -37,7 +37,11 @@ describe('Langfuse SDK and OpenTelemetry compatibility', () => {
         mask: maskLangfuseData,
       })
     )
-    const sdk = new NodeSDK({ spanProcessors: [processor] })
+    const sdk = new NodeSDK({
+      // The in-memory privacy gate must not inherit a host's sampled-out traces.
+      sampler: new tracing.AlwaysOnSampler(),
+      spanProcessors: [processor],
+    })
     sdk.start()
 
     const forbiddenInput = 'FORBIDDEN_STUDENT_PROMPT'
