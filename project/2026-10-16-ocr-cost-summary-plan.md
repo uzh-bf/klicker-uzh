@@ -82,8 +82,9 @@ through `OCR_ADAPTER_PROGRESS_FD=3`, consumes child stderr without changing stdo
 and reconstructs only known event/tool/phase enums and bounded numeric counts.
 Paths, arguments, group/session identities, provider errors, reasoning, unknown
 lines, and workflow commands never pass through. Carry at most 4096 characters
-of an incomplete line; discard overlong records until the next newline. Wait for
-the child's streams to close, flush a bounded final fragment, and preserve its
+of an incomplete line; discard overlong records until the next newline. After
+direct child exit, bound stderr drainage to the existing one-second shutdown
+drain interval, flush a bounded final fragment, and preserve its
 exit code, signals, cleanup, and all existing review settings. A failed live-log
 write is best-effort and never falls back to a private stream or result stdout.
 
@@ -137,3 +138,13 @@ manual OCR reruns remain outside this authorization.
   Extension size: 290 added / 12 removed substantive lines, excluding docs.
   Next commit and run the configured committed-range reviews, then push to the
   existing draft and complete automatic CI/feedback handling.
+- Initial manual-progress CI passed at `cca1f5de58`. OCR review identified an
+  inherited-stderr termination risk; a synthetic descendant reproduced the hang.
+  The correction bounds drainage after direct exit and preserves the original
+  exit code and listener cleanup without terminating descendants.
+  All 181 focused tests pass after correction, including the regression that
+  failed before the fix; scoped static analysis reports no findings. The
+  simplifier found no initial reductions. Initial privacy review passed the
+  closed log vocabulary; its subprocess verdict receives focused correction
+  verification. Pinned v1.13.0 event/tool source was verified through host `gh`;
+  the reviewer's installed v1.11.1 binary is not qualification evidence.

@@ -1497,10 +1497,13 @@ async function commandRun(args) {
     stdio: liveProgress ? ['inherit', 'inherit', 'pipe'] : 'inherit',
     env: childEnv,
   })
+  let progress
+  let stderrClosed
   if (liveProgress) {
     // The workflow binds fd 3 to its console before redirecting fd 2 privately.
     // OCR receives neither this descriptor nor the option selecting it.
-    const progress = createProgressFilter((line) => fs.writeSync(3, line))
+    progress = createProgressFilter((line) => fs.writeSync(3, line))
+    stderrClosed = new Promise((resolve) => child.stderr.once('close', resolve))
     child.stderr.on('data', (chunk) => {
       process.stderr.write(chunk)
       progress.write(chunk)
@@ -1527,11 +1530,26 @@ async function commandRun(args) {
 
   const result = await new Promise((resolve) => {
     child.on('error', () => resolve({ failed: true }))
-    child.on(liveProgress ? 'close' : 'exit', (code, signal) =>
-      resolve({ code, signal })
-    )
+    child.on('exit', (code, signal) => resolve({ code, signal }))
   })
   await adapter.close()
+  if (liveProgress) {
+    // A descendant can retain stderr after the review process exits. Bound
+    // the drain so that writer cannot hold the wrapper open indefinitely.
+    let drainTimer
+    try {
+      await Promise.race([
+        stderrClosed,
+        new Promise((resolve) => {
+          drainTimer = setTimeout(resolve, SHUTDOWN_DRAIN_TIMEOUT_MS)
+        }),
+      ])
+    } finally {
+      clearTimeout(drainTimer)
+      child.stderr.destroy()
+      progress.end()
+    }
+  }
   if (result.failed) {
     throw new AdapterError(
       'child_spawn_failed',

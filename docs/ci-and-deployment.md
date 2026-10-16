@@ -387,8 +387,10 @@ The adapter reconstructs only known event/tool/phase identifiers and bounded
 numeric counts; it discards arguments, paths, group/session identities, raw
 errors, unknown lines, and overlong records. Logging failures are best-effort,
 and the child receives neither the descriptor nor the option selecting it.
-Waiting for stream closure preserves the final output and child exit code across
-full, range, and resumed reviews. Previews remain silent; final findings still
+The adapter cleans up at direct child exit, then drains stderr for at most one
+second before closing its read end. A descendant retaining the writer
+cannot hold the job open. This preserves final output and the direct child's exit
+code across full, range, and resumed reviews. Previews remain silent; findings still
 arrive as one validated JSON document.
 
 A main review response with `finish_reason: length` and a `task_done` call is

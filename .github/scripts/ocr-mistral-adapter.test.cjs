@@ -2093,6 +2093,70 @@ test('a missing live-log descriptor never falls back into result or private stde
   assert.equal(result.stderr, raw)
 })
 
+test('live progress cleanup is bounded when a descendant keeps stderr open', async (t) => {
+  const script = `
+    const { spawn } = require('node:child_process')
+    const fs = require('node:fs')
+    const descendant = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], {
+      detached: true, stdio: ['ignore', 'ignore', 'inherit']
+    })
+    descendant.unref()
+    fs.writeSync(1, JSON.stringify({ pid: descendant.pid, url: process.env.OCR_LLM_URL }))
+    process.exitCode = 7
+  `
+  const child = spawn(
+    process.execPath,
+    [ADAPTER, 'run', '--', process.execPath, '-e', script],
+    {
+      env: {
+        ...process.env,
+        MISTRAL_API_KEY: 'synthetic-upstream-key',
+        OCR_ADAPTER_PROGRESS_FD: '3',
+      },
+      stdio: ['ignore', 'pipe', 'pipe', 'pipe'],
+    }
+  )
+  let stdout = ''
+  child.stdout.on('data', (chunk) => {
+    stdout += chunk
+  })
+  child.stderr.resume()
+  child.stdio[3].resume()
+  const exited = new Promise((resolve) =>
+    child.once('exit', (code) => resolve(code))
+  )
+  t.after(() => {
+    if (stdout) {
+      try {
+        process.kill(JSON.parse(stdout).pid, 'SIGKILL')
+      } catch {}
+    }
+    if (child.exitCode === null) child.kill('SIGKILL')
+  })
+  await waitFor(() => {
+    try {
+      return JSON.parse(stdout)
+    } catch {
+      return false
+    }
+  })
+  let timer
+  try {
+    const code = await Promise.race([
+      exited,
+      new Promise((resolve) => {
+        timer = setTimeout(() => resolve('cleanup_timeout'), 6000)
+      }),
+    ])
+    assert.equal(code, 7)
+    const receipt = JSON.parse(stdout)
+    assert.doesNotThrow(() => process.kill(receipt.pid, 0))
+    await assert.rejects(fetch(receipt.url, { method: 'POST', body: '{}' }))
+  } finally {
+    clearTimeout(timer)
+  }
+})
+
 test('run propagates the child exit code', async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-diagnostics-'))
   try {
