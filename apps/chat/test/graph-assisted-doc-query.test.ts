@@ -29,6 +29,86 @@ const dependencies = () => ({
 })
 
 describe('graph-assisted document retrieval', () => {
+  it('reports actual expansion and evidence sizes without content', async () => {
+    const observe = vi.fn()
+    const execute = vi
+      .fn()
+      .mockResolvedValueOnce(documents('baseline-secret'))
+      .mockResolvedValueOnce(documents('expanded-secret'))
+    await graphAssistedDocumentQuery(execute, { ...dependencies(), observe })(
+      { query: 'query-secret' },
+      {}
+    )
+    const event = observe.mock.calls[0]![0]
+    expect(observe).toHaveBeenCalledTimes(1)
+    expect(event).toMatchObject({
+      outcome: 'fused',
+      expansionAttempted: true,
+      hintCount: 1,
+      baselinePassages: 1,
+      expandedPassages: 1,
+      resultPassages: 2,
+      resultCharacters: 'baseline-secret'.length + 'expanded-secret'.length,
+    })
+    expect(event.elapsedMs).toBeGreaterThanOrEqual(0)
+    expect(Object.keys(event).sort()).toEqual(
+      [
+        'outcome',
+        'expansionAttempted',
+        'hintCount',
+        'baselinePassages',
+        'expandedPassages',
+        'resultPassages',
+        'resultCharacters',
+        'elapsedMs',
+      ].sort()
+    )
+    expect(JSON.stringify(event)).not.toMatch(/secret|Covariance|synthetic/)
+  })
+
+  it('keeps unavailable counts distinct from empty results and ignores observer failures', async () => {
+    const observe = vi.fn().mockImplementation(() => {
+      throw new Error('observer failed')
+    })
+    const malformed = {
+      content: [{ type: 'text', text: 'not a document payload' }],
+    }
+    await expect(
+      graphAssistedDocumentQuery(vi.fn().mockResolvedValue(malformed), {
+        ...dependencies(),
+        observe,
+      })({ query: 'risk' }, {})
+    ).resolves.toBe(malformed)
+    expect(observe.mock.calls[0]![0]).toMatchObject({
+      outcome: 'invalid_baseline',
+      expansionAttempted: false,
+      baselinePassages: null,
+      resultPassages: null,
+      resultCharacters: null,
+    })
+    const empty = { mode: 'documents', sources: [] }
+    const observeEmpty = vi.fn()
+    await graphAssistedDocumentQuery(vi.fn().mockResolvedValue(empty), {
+      ...dependencies(),
+      hints: vi.fn().mockResolvedValue([]),
+      observe: observeEmpty,
+    })({ query: 'risk' }, {})
+    expect(observeEmpty.mock.calls[0]![0]).toMatchObject({
+      outcome: 'no_hints',
+      baselinePassages: 0,
+      resultPassages: 0,
+      resultCharacters: 0,
+    })
+    const error = new Error('scope revoked')
+    await expect(
+      graphAssistedDocumentQuery(vi.fn(), {
+        ...dependencies(),
+        validateScope: vi.fn().mockRejectedValue(error),
+        observe,
+      })({ query: 'risk' }, {})
+    ).rejects.toBe(error)
+  })
+
   it('allows at most one augmentation across concurrent tool calls', async () => {
     const execute = vi.fn().mockResolvedValue(documents('Evidence'))
     const wrapped = graphAssistedDocumentQuery(execute, dependencies())
@@ -46,10 +126,19 @@ describe('graph-assisted document retrieval', () => {
     })
     const original = documents('Evidence')
     const execute = vi.fn().mockResolvedValue(original)
+    const observe = vi.fn()
     expect(
-      await graphAssistedDocumentQuery(execute, deps)({ query: 'risk' }, {})
+      await graphAssistedDocumentQuery(execute, { ...deps, observe })(
+        { query: 'risk' },
+        {}
+      )
     ).toBe(original)
     expect(execute).toHaveBeenCalledTimes(1)
+    expect(observe.mock.calls[0]![0]).toMatchObject({
+      outcome: 'hints_unavailable',
+      expansionAttempted: false,
+      hintCount: null,
+    })
   })
 
   it('suppresses completed augmentation after access is revoked', async () => {
@@ -83,7 +172,33 @@ describe('graph-assisted document retrieval', () => {
     expect(execute).toHaveBeenCalledTimes(1)
   })
 
-  it('preserves the original query and uses a traversed concept for additional passage retrieval', async () => {
+  it.each([
+    undefined,
+    null,
+    '',
+    '  ',
+    1,
+  ])('expands a legacy query when question is unusable (%j)', async (question) => {
+    const execute = vi.fn().mockResolvedValue(documents('Synthetic passage.'))
+    const deps = dependencies()
+    const input = { query: 'risk', question }
+    await graphAssistedDocumentQuery(execute, deps)(input, {})
+    expect(deps.hints).toHaveBeenCalledWith('risk')
+    expect(execute).toHaveBeenCalledTimes(2)
+    expect(execute.mock.calls[0]?.[0]).toEqual(input)
+    expect(execute.mock.calls[1]?.[0]).toMatchObject({
+      query: expect.stringContaining('Covariance'),
+      question,
+    })
+    expect(Object.keys(execute.mock.calls[1]![0]).sort()).toEqual(
+      Object.keys(input).sort()
+    )
+  })
+
+  it.each([
+    'question',
+    'query',
+  ] as const)('preserves the original %s and expands the same field for additional passage retrieval', async (field) => {
     const original = documents('Diversification spreads investments.')
     const expanded = documents(
       'Covariance determines how holdings move together.',
@@ -95,18 +210,24 @@ describe('graph-assisted document retrieval', () => {
       .mockResolvedValueOnce(expanded)
     const deps = dependencies()
     const signal = new AbortController().signal
-    const result = (await graphAssistedDocumentQuery(execute, deps)(
-      { query: 'Why diversify?', limit: 6 },
-      { abortSignal: signal, toolCallId: 'call-1' }
-    )) as any
+    const input = { [field]: 'Why diversify?', expand: false, limit: 6 }
+    const result = (await graphAssistedDocumentQuery(execute, deps)(input, {
+      abortSignal: signal,
+      toolCallId: 'call-1',
+    })) as any
     expect(execute.mock.calls[0]).toEqual([
-      { query: 'Why diversify?', limit: 6 },
+      input,
       { abortSignal: signal, toolCallId: 'call-1' },
     ])
     expect(execute.mock.calls[1]?.[0]).toMatchObject({
-      query: expect.stringContaining('Covariance'),
+      [field]: expect.stringContaining('Covariance'),
+      expand: false,
       limit: 6,
     })
+    expect(Object.keys(execute.mock.calls[1]![0]).sort()).toEqual(
+      Object.keys(input).sort()
+    )
+    expect(deps.hints).toHaveBeenCalledWith(input[field])
     expect(execute.mock.calls[1]?.[1].toolCallId).toBe('call-1')
     expect(
       result.structuredContent.sources.flatMap((source: any) =>
