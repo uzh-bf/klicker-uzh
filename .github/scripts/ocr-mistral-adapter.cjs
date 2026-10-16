@@ -1410,8 +1410,20 @@ function commandSummary(args) {
     'Estimate covers recorded adapter lifetimes only; missing receipts may omit spend. Excludes other review stages, taxes, account discounts and runner costs. Prices are pinned to the date above.',
     ''
   )
+  const output = summary.join('\n')
   try {
-    fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary.join('\n'))
+    const buffer = Buffer.from(output)
+    let offset = 0
+    while (offset < buffer.length) {
+      const written = fs.writeSync(1, buffer, offset)
+      if (written === 0) break
+      offset += written
+    }
+  } catch {
+    // A closed log stream must not prevent the job summary or fail the review.
+  }
+  try {
+    fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, output)
   } catch {
     process.stderr.write('OCR cost summary unavailable\n')
   }
