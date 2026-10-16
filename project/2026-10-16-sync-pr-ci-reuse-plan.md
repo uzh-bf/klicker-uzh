@@ -65,8 +65,9 @@ with the maintainers.
    `playwright-selector.cjs` (`skip` plan), `playwright-plan-metadata.cjs`,
    and the envelope route step.
 2. Merged-PR push reuse: `ci-equivalent-run.cjs`, the envelope reuse step and
-   input, the `test-playwright.yml` caller and status job, and
-   `ci-duplicate-audit.cjs` eligibility.
+   input, the `test-playwright.yml` status job, and the
+   `ci-duplicate-audit.cjs` comment. The caller opt-in follows in a separate
+   PR once the envelope input is live on `v3`.
 3. `docs/ci-and-deployment.md` draft sync section.
 
 ### Verification
@@ -77,4 +78,17 @@ with the maintainers.
 ## Progress
 
 - Execution mode: solo.
-- Status: plan committed; slice 1 next.
+- Status: both slices and docs committed; draft PR
+  https://github.com/uzh-bf/klicker-uzh/pull/6572 open.
+- Verification: `node --test .github/scripts/*.test.cjs` passes; the Sonar
+  boundary CLI test needs to run outside the local sandbox.
+- Test delta: added route, selector, metadata, merged-PR reuse and status
+  reporter cases; changed none; removed none.
+- Final review: delegated `final-reviewer` pass on the committed range. It
+  found that the caller passed `allow_push_reuse` to the `@v3` envelope before
+  `v3` declares it, which fails this PR's Playwright workflow at startup.
+  Resolved by moving the caller opt-in to a follow-up PR after this one lands;
+  push reuse stays inert until then. A stale runner-section docs sentence was
+  corrected.
+- Next: after merge, a one-line PR adds `allow_push_reuse: true` to the
+  `test-playwright.yml` caller.
