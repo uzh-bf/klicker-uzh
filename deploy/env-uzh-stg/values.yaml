@@ -166,6 +166,13 @@ assessmentAudit:
         memory: 320Mi
       limits:
         memory: 512Mi
+  sealer:
+    # Seals delivered evidence into immutable manifests every five minutes.
+    # The identity is the df-cloud stg-audit-sealer workload identity in the
+    # Klicker release namespace (df-cloud-klickeruzh!698); apply that before
+    # this deploys. It must differ from the dispatcher's service account.
+    enabled: true
+    serviceAccountName: stg-audit-sealer
   monitoring:
     enabled: false
     deliveredUnsealedCapacityBytes: 0
