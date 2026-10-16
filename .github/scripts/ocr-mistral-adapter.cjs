@@ -758,8 +758,51 @@ async function drain(response, limit) {
   }
 }
 
+const FAILURE_CATEGORIES = [
+  'local_rejection',
+  'history_missing',
+  'upstream_throttled',
+  'upstream_rejected',
+  'upstream_server_error',
+  'upstream_timeout',
+  'transport_error',
+  'malformed_response',
+  'adapter_error',
+  'required_tool_call_missing',
+  'length_no_tool',
+  'truncated_completion',
+  'cancelled',
+]
+
+function recordFailure(counters, category) {
+  for (const counter of counters) counter.failures[category] += 1
+}
+
+function upstreamFailure(status) {
+  if (status === 429) return 'upstream_throttled'
+  if (status >= 500 && status < 600) return 'upstream_server_error'
+  return 'upstream_rejected'
+}
+
+function responseFailure(error) {
+  if (error instanceof AdapterError) {
+    if (
+      ['malformed_response', 'response_too_large', 'upstream_error'].includes(
+        error.code
+      )
+    )
+      return 'malformed_response'
+    if (error.code === 'history_missing') return 'history_missing'
+    return 'adapter_error'
+  }
+  return 'transport_error'
+}
+
 function createExecutionCounters() {
   return {
+    failures: Object.fromEntries(
+      FAILURE_CATEGORIES.map((category) => [category, 0])
+    ),
     requests: 0,
     upstream_attempts: 0,
     responses: 0,
@@ -903,6 +946,7 @@ async function startAdapter(options = {}) {
     try {
       raw = await readRequestBody(req, maxRequestBytes)
     } catch (error) {
+      recordFailure([diagnostics], 'local_rejection')
       sendAdapterError(res, error)
       return
     }
@@ -910,6 +954,7 @@ async function startAdapter(options = {}) {
     try {
       body = JSON.parse(raw)
     } catch {
+      recordFailure([diagnostics], 'local_rejection')
       sendJson(res, 400, {
         error: { message: 'adapter request failed', code: 'invalid_json' },
       })
@@ -920,6 +965,10 @@ async function startAdapter(options = {}) {
     try {
       mistralBody = translateMistralRequest(body, history)
     } catch (error) {
+      recordFailure(
+        [diagnostics],
+        error.code === 'history_missing' ? 'history_missing' : 'local_rejection'
+      )
       sendAdapterError(res, error)
       return
     }
@@ -955,6 +1004,12 @@ async function startAdapter(options = {}) {
       )
     }
 
+    let failureRecorded = false
+    const fail = (category) => {
+      if (failureRecorded) return
+      failureRecorded = true
+      recordFailure(counters, category)
+    }
     const controller = new AbortController()
     active.add(controller)
     const abort = () => {
@@ -964,11 +1019,18 @@ async function startAdapter(options = {}) {
         // Already aborted.
       }
     }
-    req.on('aborted', abort)
+    req.on('aborted', () => {
+      fail('cancelled')
+      abort()
+    })
     res.on('close', () => {
-      if (!res.writableEnded) abort()
+      if (!res.writableEnded) {
+        fail('cancelled')
+        abort()
+      }
     })
     const timer = setTimeout(() => {
+      fail('upstream_timeout')
       abort()
       sendAdapterError(res, new AdapterError('upstream_timeout', 'timeout'))
     }, timeoutMs)
@@ -989,6 +1051,7 @@ async function startAdapter(options = {}) {
         throw new AdapterError('upstream_error', 'invalid upstream response')
       }
       if (!upstream.ok) {
+        fail(upstreamFailure(upstream.status))
         await drain(upstream, maxResponseBytes)
         sendAdapterError(res, new AdapterError('upstream_error', 'status'))
         return
@@ -1016,6 +1079,7 @@ async function startAdapter(options = {}) {
         )
       ) {
         for (const counter of counters) counter.truncated_completions += 1
+        fail('truncated_completion')
         throw new AdapterError(
           'truncated_completion',
           'completion was truncated'
@@ -1023,6 +1087,11 @@ async function startAdapter(options = {}) {
       }
       if (main && !choice.message.tool_calls?.length) {
         for (const counter of counters) counter.main_no_tool_responses += 1
+        fail(
+          choice.finish_reason === 'length'
+            ? 'length_no_tool'
+            : 'required_tool_call_missing'
+        )
         throw new AdapterError(
           'required_tool_call_missing',
           'review requires a tool call'
@@ -1033,6 +1102,7 @@ async function startAdapter(options = {}) {
       if (normalized.usage) normalized.usage = billableUsage(normalized.usage)
       sendJson(res, 200, normalized)
     } catch (error) {
+      fail(controller.signal.aborted ? 'cancelled' : responseFailure(error))
       sendAdapterError(res, error)
     } finally {
       const duration = Math.max(0, Math.round(performance.now() - startedAt))
@@ -1103,12 +1173,20 @@ async function startAdapter(options = {}) {
     return {
       schema_version: 1,
       ...diagnostics,
+      failures: { ...diagnostics.failures },
       request_types: {
-        main: { ...requestTypes.main },
-        auxiliary: { ...requestTypes.auxiliary },
+        main: {
+          ...requestTypes.main,
+          failures: { ...requestTypes.main.failures },
+        },
+        auxiliary: {
+          ...requestTypes.auxiliary,
+          failures: { ...requestTypes.auxiliary.failures },
+        },
       },
       conversations: [...conversations.values()].map((counter) => ({
         ...counter,
+        failures: { ...counter.failures },
       })),
       history: history.diagnostics(),
     }
@@ -1519,6 +1597,47 @@ function commandSummary(args) {
   }
   const estimate = report.estimate
   const pricing = MISTRAL_PRICING
+  const failures = Object.fromEntries(
+    FAILURE_CATEGORIES.map((category) => [category, 0])
+  )
+  let failureStatus =
+    report.stages.some((stage) => stage.stage === 'adapter') &&
+    report.stages
+      .filter((stage) => stage.stage === 'adapter')
+      .every((stage) => stage.expected === stage.observed) &&
+    !report.reasons.some((reason) =>
+      ['malformed_receipt', 'invalid_stage', 'unexpected_stage'].includes(
+        reason
+      )
+    )
+      ? 'complete'
+      : 'unavailable'
+  try {
+    for (const row of fs
+      .readFileSync(args[0], 'utf8')
+      .trim()
+      .split('\n')
+      .filter(Boolean)
+      .map(JSON.parse)) {
+      if (row?.stage !== undefined && row.stage !== 'adapter') continue
+      if (row?.schema_version !== 1 || !row?.failures) {
+        failureStatus = 'unavailable'
+        continue
+      }
+      for (const category of FAILURE_CATEGORIES) {
+        const value = row.failures[category]
+        if (
+          !Number.isSafeInteger(value) ||
+          value < 0 ||
+          !Number.isSafeInteger(failures[category] + value)
+        )
+          failureStatus = 'unavailable'
+        else failures[category] += value
+      }
+    }
+  } catch {
+    failureStatus = 'unavailable'
+  }
   const summary = [
     '### OCR estimated cost and caching savings',
     '',
@@ -1569,6 +1688,14 @@ function commandSummary(args) {
     `OCR cost status=${estimate ? 'complete' : 'unavailable'} reasons=${report.reasons.join(',') || 'none'}`
   )
   summary.push(
+    '',
+    failureStatus === 'complete'
+      ? `OCR failures status=complete stage=adapter ${Object.entries(failures)
+          .map(([category, value]) => `${category}=${value}`)
+          .join(' ')}`
+      : 'OCR failures status=unavailable',
+    '',
+    'OCR budget counters use uncached input plus output as reported to OCR. Provider usage includes cached input; estimated USD charges it at the pinned cached-input rate. Failed calls can have provider usage without appearing in the OCR result counters.',
     '',
     'Estimate covers recorded invocations in the expected stages only. Missing receipts prevent a complete total. Excludes taxes, account discounts and runner costs. Prices are pinned to the date above.',
     ''

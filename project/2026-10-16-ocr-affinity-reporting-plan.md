@@ -152,10 +152,13 @@ request no human reviewers. Use the standard draft description and PR monitor.
 ## Progress
 
 - Approved scope: user executable batch; plan hardening approved after one correction round.
-- Active work: slice 1 complete; independent review pending; slice 2 in progress.
+- Active work: both implementation slices complete; slice 2 and integrated reviews pending.
 - Completed: remote refresh, target resolution and clean worktree creation.
 - Tests: slice 1 passes 193 focused checks on pinned Node 24 (+1 config lifecycle contract); format and released-binary partial/resume qualification pass. Affinity and max reasoning, distinct adapter ports/tokens, lineage, coverage, and config restoration were verified.
 - Planning review: APPROVED; accepted explicit config lifecycle, actual resume proof, safe diagnostic protocols and exact ownership requirements.
 - Required delivery: task push and draft PR; achieved: local worktree only.
-- Remaining: outcome/counter/retention work, independent reviews,
+- Timing: existing workflow/job timestamps analyzed read-only; no new instrumentation or job restructuring. Pending-time causes remain unresolved by timestamp metadata alone.
+- Tests: integrated 219 checks pass, including 20 offline qualification checks. Four result diagnostics tests and two adapter failure/summary tests extend existing seams; existing prose assertions in touched tests were replaced with structured rejection checks.
+- Slice 1 review: clear; native simplifier and scoped slice reviewer accepted the committed configuration lifecycle.
+- Remaining: slice 2 and integrated reviews,
   draft delivery and automatic CI/feedback.

@@ -357,6 +357,46 @@ test('manual workflows reconcile shared stage receipts against independent step 
   }
 })
 
+test('failure summary emits only complete allowlisted counters without changing cost availability', async () => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-failure-summary-')
+  )
+  const receiptPath = path.join(directory, 'receipt.jsonl')
+  const adapter = await startAdapter({
+    apiKey: 'synthetic',
+    fetchImpl: () => new Response('private-provider-error', { status: 429 }),
+  })
+  try {
+    await postJson(adapter, {
+      messages: [{ role: 'user', content: 'private-prompt' }],
+    })
+    await adapter.close()
+    const receipt = adapter.diagnostics()
+    receipt.failures['::error::private-key'] = 99
+    for (const [value, status] of [
+      [receipt, 'complete'],
+      [{ ...receipt, failures: { upstream_throttled: 1 } }, 'unavailable'],
+    ]) {
+      fs.writeFileSync(receiptPath, JSON.stringify(value))
+      const result = await runCli(['summary', receiptPath], {
+        GITHUB_STEP_SUMMARY: path.join(directory, 'summary.md'),
+      })
+      assert.equal(result.code, 0)
+      const line = result.stdout
+        .split('\n')
+        .find((line) => line.startsWith('OCR failures '))
+      assert.match(line, new RegExp(`^OCR failures status=${status}`))
+      if (status === 'complete') assert.match(line, /upstream_throttled=1/)
+      else assert.equal(line, 'OCR failures status=unavailable')
+      assert.doesNotMatch(result.stdout, /private-/)
+      assert.match(result.stdout, /OCR cost status=unavailable/)
+    }
+  } finally {
+    await adapter.close()
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('cost summary CLI logs and appends the same report, preserving success when either sink fails', async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-cost-summary-'))
   try {
@@ -1156,6 +1196,7 @@ test('a provider ignoring required tool use fails without entering OCR prose ret
     assert.equal(receipt.upstream_attempts, 1)
     assert.equal(receipt.main_no_tool_responses, 1)
     assert.equal(receipt.length_finishes, 1)
+    assert.equal(receipt.failures.length_no_tool, 1)
     assert.equal(receipt.prompt_tokens, 3)
     assert.equal(receipt.completion_tokens, 4)
     assert.ok(receipt.max_request_bytes > 0)
@@ -1952,6 +1993,84 @@ test('upstream failures are redacted to a fixed safe error', async () => {
     assert.doesNotMatch(result.text, /boom/)
   } finally {
     await adapter.close()
+  }
+})
+
+test('adapter classifies failures once without changing responses or accounting', async () => {
+  const cases = [
+    [
+      'upstream_throttled',
+      () => new Response('private-error', { status: 429 }),
+      502,
+      'upstream_error',
+    ],
+    [
+      'upstream_rejected',
+      () => new Response('private-error', { status: 403 }),
+      502,
+      'upstream_error',
+    ],
+    [
+      'upstream_server_error',
+      () => new Response('private-error', { status: 503 }),
+      502,
+      'upstream_error',
+    ],
+    [
+      'transport_error',
+      () => {
+        throw new Error('private-error')
+      },
+      502,
+      'internal_error',
+    ],
+    [
+      'malformed_response',
+      () => new Response('private-error', { status: 200 }),
+      502,
+      'malformed_response',
+    ],
+    [
+      'upstream_timeout',
+      (_url, init) =>
+        new Promise((_resolve, reject) =>
+          init.signal.addEventListener('abort', () =>
+            setTimeout(() => reject(new Error('private-error')), 5)
+          )
+        ),
+      504,
+      'upstream_timeout',
+    ],
+  ]
+  for (const [category, fetchImpl, status, code] of cases) {
+    const adapter = await startAdapter({
+      apiKey: 'synthetic',
+      fetchImpl,
+      timeoutMs: category === 'upstream_timeout' ? 10 : 1000,
+    })
+    try {
+      const response = await postJson(adapter, {
+        messages: [{ role: 'user', content: 'private-prompt' }],
+      })
+      assert.equal(response.status, status, category)
+      assert.equal(response.json.error.code, code, category)
+      await adapter.close()
+      const receipt = adapter.diagnostics()
+      assert.equal(receipt.failures[category], 1, category)
+      assert.equal(
+        Object.values(receipt.failures).reduce((sum, n) => sum + n, 0),
+        1,
+        category
+      )
+      assert.equal(receipt.requests, 1)
+      assert.equal(receipt.upstream_attempts, 1)
+      assert.equal(receipt.responses, 0)
+      assert.equal(receipt.request_types.auxiliary.failures[category], 1)
+      assert.equal(estimateCost(JSON.stringify(receipt)), null)
+      assert.doesNotMatch(JSON.stringify(receipt), /private-/)
+    } finally {
+      await adapter.close()
+    }
   }
 })
 

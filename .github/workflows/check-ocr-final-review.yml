@@ -671,7 +671,7 @@ jobs:
           name: final-ai-individual-execution-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/final-ai-review-adapter-diagnostics.jsonl
           if-no-files-found: warn
-          retention-days: 1
+          retention-days: 7
 
       - name: Summarize OCR estimated cost and caching savings
         if: always() && needs.start.outputs.run_review == 'true'
@@ -1337,7 +1337,7 @@ jobs:
           name: final-ai-stack-execution-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
           if-no-files-found: warn
-          retention-days: 1
+          retention-days: 7
 
       - name: Summarize OCR estimated cost and caching savings
         if: always() && needs.start_stack.outputs.run_review == 'true'

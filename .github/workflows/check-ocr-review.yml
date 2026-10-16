@@ -94,7 +94,7 @@ jobs:
           name: draft-ai-review-adapter-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/draft-ai-review-adapter-diagnostics.jsonl
           if-no-files-found: warn
-          retention-days: 1
+          retention-days: 7
 
       - name: Summarize OCR estimated cost and caching savings
         if: always()
