@@ -15,14 +15,14 @@
   type: contextual_precision
   modes: [ground-truth]
   threshold: 0.7
-  diagnostic: true
+  flaky: true
 - name: contextual_recall
   type: contextual_recall
   modes: [ground-truth]
   threshold: 0.7
-  diagnostic: true
+  flaky: true
 - name: faithfulness
   type: faithfulness
   modes: [ground-truth, self-assessment]
   threshold: 0.7
-  diagnostic: true
+  flaky: true

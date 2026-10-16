@@ -503,9 +503,11 @@ and judge instructions in metric criteria. A source-backed numerical example is
 not a missing fact merely because the reference omits it. Version prospective
 reference copies; retain original scored references and results unchanged.
 
-This framework pin's aggregate primary gate also requires tool correctness. Use
-individual metric outcomes and denominators with these profiles. Missing-context metrics are skipped, not
-passed. Count them explicitly alongside target failures and judge errors.
+The current framework keeps native DeepEval case `success` as its aggregate
+verdict. Retrieval diagnostics use `flaky: true` so DeepEval reports them without
+letting them decide answer quality. Report individual outcomes and denominators.
+Missing-context diagnostics are skipped, not passed; count them alongside target
+failures and judge errors.
 
 The local Chat Completions transport omits tool results. Capture actual persisted
 KB document passages during **query** mode, enrich the resulting QA file, then

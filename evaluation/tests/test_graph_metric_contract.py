@@ -224,8 +224,9 @@ for (const row of qa.results.filter(row => row.success)) {
         self.assertEqual(counts["skipped"], 1)
         self.assertEqual(counts["judge_errors"], 0)
         self.assertEqual(len(result["results"]), 3)
-        # This pin's primary gate requires tool correctness too; do not report it as passed.
-        self.assertEqual(counts["primary_evaluated"], 0)
+        # The current pin keeps DeepEval case success as its only aggregate verdict.
+        self.assertEqual(counts["success"], 3)
+        self.assertEqual(counts["failed"], 0)
         self.assertEqual(
             result["results"][0]["metrics"]["Semantic Similarity [GEval]"]["threshold"],
             0.5,
@@ -309,6 +310,9 @@ for (const row of qa.results.filter(row => row.success)) {
                 model=OfflineJudge(),
             )
             self.assertEqual(len(metrics), expected_count)
+            if present:
+                self.assertFalse(metrics[0].flaky)
+                self.assertTrue(all(metric.flaky for metric in metrics[1:]))
 
 
 if __name__ == "__main__":
