@@ -11,7 +11,7 @@ import type { useTranslations } from 'next-intl'
 // and `customModeConfig`.
 // Modes are configured per chatbot, so only the well-known keys get a dedicated
 // icon and localized label; any other key falls back to a neutral icon and its
-// raw name.
+// authored name, a generic label for a custom-mode key, or its raw name.
 const MODE_ICONS = {
   tutor: GraduationCap,
   explainer: Lightbulb,
