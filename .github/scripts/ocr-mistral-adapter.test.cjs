@@ -17,11 +17,140 @@ const {
   createHistoryStore,
   startAdapter,
   callMistral,
+  estimateCost,
 } = require('./ocr-mistral-adapter.cjs')
 
 const ADAPTER = path.join(__dirname, 'ocr-mistral-adapter.cjs')
 const CHAT_PATH = '/v1/chat/completions'
 const SHUTDOWN_PATH = '/shutdown'
+
+function costReceipt(overrides = {}) {
+  return {
+    schema_version: 1,
+    responses: 1,
+    upstream_attempts: 1,
+    missing_usage: 0,
+    cache_usage_responses: 1,
+    missing_cache_usage: 0,
+    invalid_cache_usage: 0,
+    unfinished_requests: 0,
+    prompt_tokens: 1000000,
+    completion_tokens: 100000,
+    cached_prompt_tokens: 750000,
+    uncached_prompt_tokens: 250000,
+    ...overrides,
+  }
+}
+
+test('cost estimates aggregate lifetimes once and keep output cost in the no-cache baseline', () => {
+  const row = costReceipt({
+    request_types: { main: costReceipt() },
+    conversations: [costReceipt()],
+  })
+  const estimate = estimateCost(
+    `${JSON.stringify(row)}\n${JSON.stringify(row)}\n`
+  )
+  assert.equal(estimate.prompt_tokens, 2000000)
+  assert.equal(estimate.cached_prompt_tokens, 1500000)
+  assert.equal(estimate.responses, 2)
+  assert.ok(Math.abs(estimate.withCache - 1.79) < 1e-12)
+  assert.ok(Math.abs(estimate.withoutCache - 3.68) < 1e-12)
+  assert.ok(Math.abs(estimate.savings - 1.89) < 1e-12)
+  assert.ok(Math.abs(estimate.savingsPercent - (100 * 1.89) / 3.68) < 1e-12)
+  const uncached = estimateCost(
+    JSON.stringify(
+      costReceipt({ cached_prompt_tokens: 0, uncached_prompt_tokens: 1000000 })
+    )
+  )
+  assert.equal(uncached.withCache, uncached.withoutCache)
+  assert.equal(uncached.savings, 0)
+})
+
+test('cost estimates refuse incomplete, inconsistent or unsupported receipts', () => {
+  assert.equal(estimateCost(''), null)
+  for (const overrides of [
+    { schema_version: 2 },
+    { missing_usage: 1 },
+    { missing_cache_usage: 1 },
+    { invalid_cache_usage: 1 },
+    { unfinished_requests: 1 },
+    { upstream_attempts: 2 },
+    { cache_usage_responses: 0 },
+    { cached_prompt_tokens: 1000001 },
+    { completion_tokens: -1 },
+    { completion_tokens: 0.5 },
+    { completion_tokens: undefined },
+    { prompt_tokens: Number.MAX_SAFE_INTEGER + 1 },
+  ]) {
+    const row = costReceipt(overrides)
+    assert.equal(estimateCost(JSON.stringify(row)), null)
+    assert.equal(
+      estimateCost(`${JSON.stringify(costReceipt())}\n${JSON.stringify(row)}`),
+      null
+    )
+  }
+})
+
+test('cost summary CLI appends estimates, reports missing receipts and preserves success', async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-cost-summary-'))
+  try {
+    const receiptPath = path.join(directory, 'receipt.jsonl')
+    const summaryPath = path.join(directory, 'summary.md')
+    const env = { GITHUB_STEP_SUMMARY: summaryPath }
+    fs.writeFileSync(
+      receiptPath,
+      JSON.stringify(costReceipt({ private_field: 'private-source-marker' }))
+    )
+    let result = await runCli(['summary', receiptPath], env)
+    assert.equal(result.code, 0)
+    const summary = fs.readFileSync(summaryPath, 'utf8')
+    assert.match(summary, /\$0\.8950/)
+    assert.match(summary, /\$1\.8400/)
+    assert.match(summary, /\$0\.9450/)
+    assert.doesNotMatch(summary, /private-source-marker/)
+    for (const contents of [
+      '',
+      '{private-source-marker',
+      JSON.stringify(costReceipt({ missing_usage: 1 })),
+    ]) {
+      fs.writeFileSync(receiptPath, contents)
+      result = await runCli(['summary', receiptPath], env)
+      assert.equal(result.code, 0)
+      assert.equal(
+        fs.readFileSync(summaryPath, 'utf8').split('$0.8950').length,
+        2
+      )
+    }
+    result = await runCli(['summary', path.join(directory, 'absent')], env)
+    assert.equal(result.code, 0)
+    assert.ok(fs.readFileSync(summaryPath, 'utf8').startsWith(summary))
+    assert.doesNotMatch(
+      fs.readFileSync(summaryPath, 'utf8'),
+      /private-source-marker/
+    )
+    assert.equal(
+      (
+        await runCli(['summary', receiptPath], {
+          GITHUB_STEP_SUMMARY: directory,
+        })
+      ).code,
+      0
+    )
+    const zero = costReceipt(
+      Object.fromEntries(
+        Object.keys(costReceipt())
+          .filter((key) => key !== 'schema_version')
+          .map((key) => [key, 0])
+      )
+    )
+    const estimate = estimateCost(JSON.stringify(zero))
+    assert.equal(estimate.withCache, 0)
+    assert.equal(estimate.withoutCache, 0)
+    assert.equal(estimate.savingsPercent, 0)
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
 
 function completion(message, finishReason = 'stop') {
   return {
@@ -581,6 +710,35 @@ test('cache affinity is forwarded while malformed keys never reach upstream', as
     )
   } finally {
     await adapter.close()
+  }
+})
+
+test('partial usage cannot produce an apparently complete cost estimate', async () => {
+  for (const completionTokens of [undefined, -1, 0.5]) {
+    const fetchImpl = upstream(() => {
+      const payload = completion({ role: 'assistant', content: 'synthetic' })
+      payload.usage = {
+        prompt_tokens: 128,
+        completion_tokens: completionTokens,
+        prompt_tokens_details: { cached_tokens: 64 },
+      }
+      return jsonResponse(200, payload)
+    })
+    const adapter = await startAdapter({ apiKey: 'synthetic-key', fetchImpl })
+    try {
+      assert.equal(
+        (
+          await postJson(adapter, {
+            messages: [{ role: 'user', content: 'synthetic' }],
+          })
+        ).status,
+        200
+      )
+      assert.equal(adapter.diagnostics().missing_usage, 1)
+      assert.equal(estimateCost(JSON.stringify(adapter.diagnostics())), null)
+    } finally {
+      await adapter.close()
+    }
   }
 })
 

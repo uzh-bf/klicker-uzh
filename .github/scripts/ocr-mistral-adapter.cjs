@@ -19,6 +19,15 @@ const MISTRAL_URL = 'https://api.mistral.ai/v1/chat/completions'
 const MISTRAL_MODEL = 'zai-glm-5-3'
 const MISTRAL_EFFORT = 'max'
 
+// USD per million tokens, checked 2026-10-16 against the provider's model page.
+const MISTRAL_PRICING = {
+  date: '2026-10-16',
+  source: 'https://docs.mistral.ai/models/zai-glm-5-3',
+  input: 1.4,
+  cachedInput: 0.14,
+  output: 4.4,
+}
+
 const MAX_REQUEST_BYTES = 2 * 1024 * 1024
 const MAX_RESPONSE_BYTES = 32 * 1024 * 1024
 const DEFAULT_TIMEOUT_MS = 45 * 60 * 1000
@@ -949,7 +958,14 @@ async function startAdapter(options = {}) {
         if (normalized.usage) {
           counter.prompt_tokens += normalized.usage.prompt_tokens ?? 0
           counter.completion_tokens += normalized.usage.completion_tokens ?? 0
-        } else counter.missing_usage += 1
+        }
+        if (
+          !Number.isSafeInteger(normalized.usage?.prompt_tokens) ||
+          normalized.usage.prompt_tokens < 0 ||
+          !Number.isSafeInteger(normalized.usage?.completion_tokens) ||
+          normalized.usage.completion_tokens < 0
+        )
+          counter.missing_usage += 1
         if (cached !== undefined) {
           counter.cache_usage_responses += 1
           counter.cached_prompt_tokens += cached
@@ -1285,6 +1301,107 @@ function writeDiagnostics(snapshot) {
   }
 }
 
+function estimateCost(diagnosticsText) {
+  const lines = diagnosticsText.trim().split('\n').filter(Boolean)
+  if (lines.length === 0) return null
+  const totals = {
+    prompt_tokens: 0,
+    completion_tokens: 0,
+    cached_prompt_tokens: 0,
+    responses: 0,
+  }
+  for (const line of lines) {
+    const row = JSON.parse(line)
+    const fields = [
+      ...Object.keys(totals),
+      'uncached_prompt_tokens',
+      'upstream_attempts',
+      'missing_usage',
+      'cache_usage_responses',
+      'missing_cache_usage',
+      'invalid_cache_usage',
+      'unfinished_requests',
+    ]
+    if (
+      row?.schema_version !== 1 ||
+      fields.some(
+        (field) => !Number.isSafeInteger(row[field]) || row[field] < 0
+      ) ||
+      row.missing_usage ||
+      row.missing_cache_usage ||
+      row.invalid_cache_usage ||
+      row.unfinished_requests ||
+      row.responses !== row.upstream_attempts ||
+      row.cache_usage_responses !== row.responses ||
+      row.cached_prompt_tokens + row.uncached_prompt_tokens !==
+        row.prompt_tokens
+    )
+      return null
+    // Each line is one adapter lifetime. Nested type/conversation counters
+    // repeat the same usage and must never be added to these aggregate totals.
+    for (const field of Object.keys(totals)) totals[field] += row[field]
+  }
+  if (Object.values(totals).some((value) => !Number.isSafeInteger(value)))
+    return null
+  const output = (totals.completion_tokens * MISTRAL_PRICING.output) / 1e6
+  const withoutCache =
+    (totals.prompt_tokens * MISTRAL_PRICING.input) / 1e6 + output
+  const savings =
+    (totals.cached_prompt_tokens *
+      (MISTRAL_PRICING.input - MISTRAL_PRICING.cachedInput)) /
+    1e6
+  return {
+    ...totals,
+    withCache: withoutCache - savings,
+    withoutCache,
+    savings,
+    savingsPercent: withoutCache === 0 ? 0 : (savings / withoutCache) * 100,
+  }
+}
+
+function commandSummary(args) {
+  let estimate
+  try {
+    estimate = estimateCost(fs.readFileSync(args[0], 'utf8'))
+  } catch {
+    // Missing or malformed receipts cannot establish zero spend.
+  }
+  const pricing = MISTRAL_PRICING
+  const summary = [
+    '### OCR estimated cost and caching savings',
+    '',
+    `Mistral \`${MISTRAL_MODEL}\`; [list pricing](${pricing.source}) checked ${pricing.date}: ` +
+      `$${pricing.input.toFixed(2)} input / $${pricing.cachedInput.toFixed(2)} cached input / $${pricing.output.toFixed(2)} output per million tokens (USD).`,
+    '',
+  ]
+  if (estimate) {
+    summary.push(
+      '| Estimate | USD |',
+      '| --- | ---: |',
+      `| With reported caching | $${estimate.withCache.toFixed(4)} |`,
+      `| Same tokens without caching | $${estimate.withoutCache.toFixed(4)} |`,
+      `| Caching savings (${estimate.savingsPercent.toFixed(1)}%) | $${estimate.savings.toFixed(4)} |`,
+      '',
+      `${estimate.prompt_tokens} input tokens (${estimate.cached_prompt_tokens} cached), ${estimate.completion_tokens} output tokens; ${estimate.responses} provider responses.`
+    )
+  } else {
+    summary.push(
+      'Estimate unavailable: diagnostics are missing, invalid, or have incomplete usage/cache coverage. Unknown usage is not treated as zero.'
+    )
+  }
+  summary.push(
+    '',
+    'Estimate covers recorded adapter lifetimes only; missing receipts may omit spend. Excludes other review stages, taxes, account discounts and runner costs. Prices are pinned to the date above.',
+    ''
+  )
+  try {
+    fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary.join('\n'))
+  } catch {
+    process.stderr.write('OCR cost summary unavailable\n')
+  }
+  return 0
+}
+
 async function commandRun(args) {
   const argv = args[0] === '--' ? args.slice(1) : args
   if (argv.length === 0) {
@@ -1419,8 +1536,9 @@ async function main(argv) {
   if (command === 'start') return commandStart(rest)
   if (command === 'serve') return commandServe(rest)
   if (command === 'stop') return commandStop(rest)
+  if (command === 'summary') return commandSummary(rest)
   process.stderr.write(
-    'usage: ocr-mistral-adapter.cjs <run|start|serve|stop> [args]\n'
+    'usage: ocr-mistral-adapter.cjs <run|start|serve|stop|summary> [args]\n'
   )
   return 2
 }
@@ -1434,6 +1552,7 @@ module.exports = {
   createHistoryStore,
   startAdapter,
   callMistral,
+  estimateCost,
 }
 
 if (require.main === module) {

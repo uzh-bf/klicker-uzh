@@ -359,6 +359,30 @@ a fixed warning and preserve cleanup. Draft jobs attempt to upload only the fixe
 diagnostics JSONL file even after startup failure, with one-day retention and a
 warning when absent.
 
+Draft, individual final, and stack code-review jobs also summarize estimated
+adapter cost and caching savings after cleanup. They sum the aggregate counters
+once per adapter lifetime, including retries and resumes. The comparison prices
+the same input/output tokens with and without reported caching; cached input
+remains part of the full prompt token total. Missing or malformed diagnostics,
+unfinished requests, unaccounted upstream attempts, and incomplete usage/cache
+reports make the estimate unavailable instead of assuming zero spend. An adapter
+with no requests reports zero. Other review stages, such as the direct topology
+review, are outside this adapter estimate. Totals cover recorded lifetimes only;
+a missing receipt can omit spend. Summary steps are non-blocking.
+
+USD list rates are pinned in `ocr-mistral-adapter.cjs` to
+[Mistral's model pricing](https://docs.mistral.ai/models/zai-glm-5-3), checked
+2026-10-16: $1.40 per million uncached input tokens, $0.14 cached input, and $4.40
+output. Refresh the rates and date together when provider pricing changes.
+Summaries label the pricing date and exclude account discounts, taxes, and runner
+costs; these are estimates, not billing receipts.
+
+Draft reviews enable the pinned action's `stream_progress` option so phase and
+tool progress reaches the Actions log on stderr while stdout remains the final
+JSON result. It changes display only, preserving reasoning and budget settings.
+Manual final-review jobs still capture stderr without exposing raw provider
+errors in live logs; streaming those jobs needs a filtered progress channel.
+
 A main review response with `finish_reason: length` and a `task_done` call is
 refused with HTTP 422 and is never retained as replayable native history. Its
 usage and `truncated_completions` counter remain visible in diagnostics. This

@@ -655,6 +655,13 @@ jobs:
           if-no-files-found: warn
           retention-days: 1
 
+      - name: Summarize OCR estimated cost and caching savings
+        if: always() && needs.start.outputs.run_review == 'true'
+        continue-on-error: true
+        env:
+          DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-review-adapter-diagnostics.jsonl
+        run: node .github/scripts/ocr-mistral-adapter.cjs summary "${DIAGNOSTICS_PATH}"
+
   finalize:
     needs: [authorize, start, review]
     if: >-
@@ -1303,6 +1310,13 @@ jobs:
           path: ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
           if-no-files-found: warn
           retention-days: 1
+
+      - name: Summarize OCR estimated cost and caching savings
+        if: always() && needs.start_stack.outputs.run_review == 'true'
+        continue-on-error: true
+        env:
+          DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
+        run: node .github/scripts/ocr-mistral-adapter.cjs summary "${DIAGNOSTICS_PATH}"
 
   finalize_stack:
     needs: [authorize_stack, start_stack, review_stack]

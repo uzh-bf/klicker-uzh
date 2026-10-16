@@ -70,12 +70,13 @@ model tests are needed. CI supplies the repository's broader required checks.
 
 ### Progress
 
-- Draft implementation and synthetic checks are complete; no commits yet.
+- Implementation and synthetic checks are complete. The approved plan is committed.
 - Planner approved after one focused correction covering recorded-lifetime
   labels, non-blocking steps, and matching verification.
 - Verification: 56 adapter, 119 review-policy, and one self-update test pass;
   scoped Opengrep reports zero findings. Parsed workflows preserve every existing
   execution setting and place all three non-blocking summaries after cleanup.
 - Substantive size before reviews: 304 added / 2 removed lines, excluding docs.
-- Next: commit the plan, then implementation and
-  configured committed-range reviews before draft delivery.
+- Test delta: four added adapter tests; existing tests preserved.
+- Next: commit implementation, then simplify and review the committed range
+  before completed draft delivery.
