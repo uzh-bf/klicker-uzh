@@ -137,7 +137,8 @@ Live proof of trusted workflow changes follows merge and separate authorization.
 
 ## Progress
 
-- Status: stage-cost slice committed; progress lifecycle implemented and verified.
+- Status: both implementation slices committed and published as
+  [draft PR #6569](https://github.com/uzh-bf/klicker-uzh/pull/6569) against `v3`.
 - Planning review: APPROVED after two rounds; accepted independent invocation
   reconciliation, separation of answer validity from usage completeness, explicit
   workflow wiring, and ownership/test-portfolio clarification.
@@ -147,18 +148,23 @@ Live proof of trusted workflow changes follows merge and separate authorization.
 - Verification: 192 focused tests passed on pinned Node 24.21.0; syntax and
   formatting passed. Test delta: ten new cases extending existing suites and
   affected caller/CLI fixture assertions. No live provider tests were run.
-- Substantive slice size: 819 changed lines excluding the plan; 27 lines are
-  matching CI documentation. Opengrep reported no findings, with three files
-  only partially parsed. A recorded-baseline scan has the same three parser
-  limitations and no findings.
+- Package size: 1,032 changed lines in scripts, tests and workflow, excluding
+  the plan and guide. One coherent observability package. Opengrep reported no
+  findings; a recorded-baseline scan has the same three cost-scope parser
+  limitations. Both changed progress files parse completely.
 - Simplification: accepted removal of an unused diagnostics-path override; the
-  supported environment-based destination remains unchanged. Accounting/privacy
-  review is in progress on the immutable first slice while main implements the
-  independent lifecycle change.
+  supported environment-based destination remains unchanged. Both slice reviews
+  found no qualifying accounting, privacy or process-lifecycle issues. The
+  progress simplifier recommended no further changes. A corrected accounting
+  test receipt matches the immutable first slice; runner source confirms final
+  cumulative output assignment.
 - Progress lifecycle: controlled-clock tests cover quiet periods, filtering,
   terminal idempotence and timer cleanup; subprocess tests cover normal/failing
   exits, spawn failure, signals, broken sinks and unchanged private/result streams.
-- Remaining: disposition cost review; commit and review progress lifecycle;
-  integrated final review, push, draft PR, and automatic CI/feedback.
-- Delivery: source work authorized; no PR created yet.
-- Next action: finish committed-range review and deliver the verified package.
+- Local full check/build hooks report no worktree dependency install; automatic
+  CI supplies those checks. No application runtime or browser was started.
+- Delivery: ordinary push and draft base/head/draft-state readback verified.
+  Unrelated target drift affects evaluation files and requires no integration.
+- Acceptance evidence: the linked draft's description and exact-head checks
+  carry the integrated review and automatic CI/feedback state. Merge, readiness,
+  deployment and post-merge trusted-workflow proof remain separate gates.
