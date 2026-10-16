@@ -137,6 +137,10 @@ export function formatModeLabel(
 ): string {
   const authoredName = modeOptions?.[mode]?.name?.trim()
   if (authoredName) return authoredName
+  // A custom-mode key (`cm_` + random id) is meaningless to participants. It
+  // has no authored name here once its mode is no longer approved, e.g. on an
+  // older answer or thread, so it gets a generic label instead.
+  if (mode.startsWith('cm_')) return t('chat.modes.custom')
   return isKnownMode(mode)
     ? t(`chat.modes.${mode}`)
     : mode.charAt(0).toUpperCase() + mode.slice(1)
