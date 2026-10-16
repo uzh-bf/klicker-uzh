@@ -744,7 +744,7 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                   {t('kb.graphCostUnavailable')}
                 </p>
               ) : null}
-              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
+              <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
                 {domainCapabilityEnabled ? (
                   <>
                     <SelectField
@@ -840,6 +840,10 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                     !config.costConfigurationReady
                   }
                   data={{ cy: 'kb-knowledge-graph-quality-tier' }}
+                  className={{
+                    root: 'w-full',
+                    select: { trigger: 'w-full' },
+                  }}
                 />
                 <Button
                   primary
