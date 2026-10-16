@@ -1723,7 +1723,71 @@ function createProgressReporter(write, options = {}) {
   }
 }
 
+function configureAttempt(configPath, url) {
+  let original
+  let config
+  try {
+    const info = fs.lstatSync(configPath)
+    if (
+      !info.isFile() ||
+      (info.mode & 0o777) !== 0o600 ||
+      info.size > 1024 * 1024
+    ) {
+      throw new Error('invalid file')
+    }
+    original = fs.readFileSync(configPath)
+    config = JSON.parse(original.toString('utf8'))
+    if (!isPlainObject(config) || !isPlainObject(config.llm)) {
+      throw new Error('invalid config')
+    }
+  } catch {
+    throw new AdapterError(
+      'invalid_ocr_config',
+      'OCR configuration is unavailable or unsafe'
+    )
+  }
+  function replace(contents) {
+    const temporary = `${configPath}.${crypto.randomUUID()}.tmp`
+    try {
+      fs.writeFileSync(temporary, contents, { mode: 0o600, flag: 'wx' })
+      fs.renameSync(temporary, configPath)
+    } finally {
+      fs.rmSync(temporary, { force: true })
+    }
+  }
+  config.llm.url = url
+  try {
+    replace(JSON.stringify(config))
+  } catch {
+    throw new AdapterError(
+      'ocr_config_write_failed',
+      'OCR configuration update failed'
+    )
+  }
+  return () => {
+    try {
+      replace(original)
+    } catch {
+      throw new AdapterError(
+        'ocr_config_restore_failed',
+        'OCR configuration restoration failed'
+      )
+    }
+  }
+}
+
 async function commandRun(args) {
+  let configPath
+  if (args[0] === '--ocr-config') {
+    if (!args[1] || args[2] !== '--') {
+      throw new AdapterError(
+        'invalid_ocr_config',
+        'OCR configuration option is invalid'
+      )
+    }
+    configPath = args[1]
+    args = args.slice(2)
+  }
   const argv = args[0] === '--' ? args.slice(1) : args
   if (argv.length === 0) {
     throw new AdapterError('missing_command', 'run requires an executable')
@@ -1740,74 +1804,87 @@ async function commandRun(args) {
   childEnv.OCR_LLM_PROTOCOL = 'openai'
   childEnv.OCR_USE_ANTHROPIC = 'false'
 
-  const child = spawn(argv[0], argv.slice(1), {
-    stdio: liveProgress ? ['inherit', 'inherit', 'pipe'] : 'inherit',
-    env: childEnv,
-  })
-  let progress
-  let stderrClosed
-  if (liveProgress) {
-    // The workflow binds fd 3 to its console before redirecting fd 2 privately.
-    // OCR receives neither this descriptor nor the option selecting it.
-    progress = createProgressReporter((line) => fs.writeSync(3, line))
-    stderrClosed = new Promise((resolve) => child.stderr.once('close', resolve))
-    child.stderr.on('data', (chunk) => {
-      process.stderr.write(chunk)
-      progress.write(chunk)
+  let restoreConfig
+  try {
+    if (configPath)
+      restoreConfig = configureAttempt(configPath, childEnv.OCR_LLM_URL)
+    const child = spawn(argv[0], argv.slice(1), {
+      stdio: liveProgress ? ['inherit', 'inherit', 'pipe'] : 'inherit',
+      env: childEnv,
     })
-    child.stderr.on('end', progress.end)
-  }
-  const forward = (signal) => {
-    try {
-      child.kill(signal)
-    } catch {
-      // The child already exited.
+    let progress
+    let stderrClosed
+    if (liveProgress) {
+      // The workflow binds fd 3 to its console before redirecting fd 2 privately.
+      // OCR receives neither this descriptor nor the option selecting it.
+      progress = createProgressReporter((line) => fs.writeSync(3, line))
+      stderrClosed = new Promise((resolve) =>
+        child.stderr.once('close', resolve)
+      )
+      child.stderr.on('data', (chunk) => {
+        process.stderr.write(chunk)
+        progress.write(chunk)
+      })
+      child.stderr.on('end', progress.end)
     }
-    const escalate = setTimeout(() => {
+    const forward = (signal) => {
       try {
-        child.kill('SIGKILL')
+        child.kill(signal)
       } catch {
         // The child already exited.
       }
-    }, 10000)
-    if (typeof escalate.unref === 'function') escalate.unref()
-  }
-  process.on('SIGTERM', () => forward('SIGTERM'))
-  process.on('SIGINT', () => forward('SIGINT'))
-
-  const result = await new Promise((resolve) => {
-    child.on('error', () => resolve({ failed: true }))
-    child.on('exit', (code, signal) => resolve({ code, signal }))
-  })
-  try {
-    await adapter.close()
-    if (liveProgress) {
-      // A descendant can retain stderr after the review process exits. Bound
-      // the drain so that writer cannot hold the wrapper open indefinitely.
-      let drainTimer
-      try {
-        await Promise.race([
-          stderrClosed,
-          new Promise((resolve) => {
-            drainTimer = setTimeout(resolve, SHUTDOWN_DRAIN_TIMEOUT_MS)
-          }),
-        ])
-      } finally {
-        clearTimeout(drainTimer)
-        child.stderr.destroy()
-      }
+      const escalate = setTimeout(() => {
+        try {
+          child.kill('SIGKILL')
+        } catch {
+          // The child already exited.
+        }
+      }, 10000)
+      if (typeof escalate.unref === 'function') escalate.unref()
     }
+    process.on('SIGTERM', () => forward('SIGTERM'))
+    process.on('SIGINT', () => forward('SIGINT'))
+
+    const result = await new Promise((resolve) => {
+      child.on('error', () => resolve({ failed: true }))
+      child.on('exit', (code, signal) => resolve({ code, signal }))
+    })
+    try {
+      await adapter.close()
+      if (liveProgress) {
+        // A descendant can retain stderr after the review process exits. Bound
+        // the drain so that writer cannot hold the wrapper open indefinitely.
+        let drainTimer
+        try {
+          await Promise.race([
+            stderrClosed,
+            new Promise((resolve) => {
+              drainTimer = setTimeout(resolve, SHUTDOWN_DRAIN_TIMEOUT_MS)
+            }),
+          ])
+        } finally {
+          clearTimeout(drainTimer)
+          child.stderr.destroy()
+        }
+      }
+    } finally {
+      progress?.finish(result)
+    }
+    if (result.failed) {
+      throw new AdapterError(
+        'child_spawn_failed',
+        'child process failed to start'
+      )
+    }
+    if (result.signal) return 1
+    return typeof result.code === 'number' ? result.code : 1
   } finally {
-    progress?.finish(result)
+    try {
+      await adapter.close()
+    } finally {
+      restoreConfig?.()
+    }
   }
-  if (result.failed) {
-    throw new AdapterError(
-      'child_spawn_failed',
-      'child process failed to start'
-    )
-  }
-  if (result.signal) return 1
-  return typeof result.code === 'number' ? result.code : 1
 }
 
 async function commandStart(args) {

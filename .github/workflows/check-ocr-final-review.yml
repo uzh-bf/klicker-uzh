@@ -476,7 +476,7 @@ jobs:
             fi
             OCR_ADAPTER_LIFETIMES=$((OCR_ADAPTER_LIFETIMES + 1))
             printf 'adapter_lifetimes=%s\n' "${OCR_ADAPTER_LIFETIMES}" >>"${GITHUB_OUTPUT}"
-            if OCR_ADAPTER_PROGRESS_FD=3 node .github/scripts/ocr-mistral-adapter.cjs run -- ocr review \
+            if OCR_ADAPTER_PROGRESS_FD=3 node .github/scripts/ocr-mistral-adapter.cjs run --ocr-config "${HOME}/.opencodereview/config.json" -- ocr review \
               --from "${REVIEW_FROM}" \
               --to "${HEAD_SHA}" \
               --audience human \
@@ -1103,7 +1103,7 @@ jobs:
             fi
             OCR_ADAPTER_LIFETIMES=$((OCR_ADAPTER_LIFETIMES + 1))
             printf 'adapter_lifetimes=%s\n' "${OCR_ADAPTER_LIFETIMES}" >>"${GITHUB_OUTPUT}"
-            if OCR_ADAPTER_PROGRESS_FD=3 node .github/scripts/ocr-mistral-adapter.cjs run -- ocr review \
+            if OCR_ADAPTER_PROGRESS_FD=3 node .github/scripts/ocr-mistral-adapter.cjs run --ocr-config "${HOME}/.opencodereview/config.json" -- ocr review \
               --from "${review_from}" \
               --to "${review_to}" \
               --audience human \

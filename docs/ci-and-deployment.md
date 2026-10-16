@@ -326,6 +326,16 @@ closure before deleting capability state. Neither the upstream key nor native
 history is persisted. Live tool and structured-output proof remains pending
 secret provisioning and trusted default-branch activation.
 
+Manual jobs pass the private configuration to the adapter's
+`run --ocr-config <path> -- <command>` option. Each attempt atomically fills in
+its own loopback endpoint before starting OCR and restores the original bytes
+with mode 0600 after cleanup, including failed or signaled children. OCR 1.13.0
+ignores an incomplete saved endpoint rather than merging its extra fields into
+environment settings, so the per-attempt URL is required for cache affinity.
+The child keeps its original home/session directory and receives only the
+loopback token; the upstream key stays in the adapter. A configuration update
+or restoration failure stops the attempt before publication or another resume.
+
 All three OCR modes configure `prompt_cache_key: "{ocr_session_key}"`. OCR expands
 that template per conversation; the adapter validates and forwards the bounded
 key. Direct tool canaries omit it. Provider cache hits remain opportunistic.

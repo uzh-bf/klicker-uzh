@@ -2214,6 +2214,120 @@ const RUN_SCRIPT =
   ' anthropic: process.env.OCR_USE_ANTHROPIC ?? null,' +
   ' home: process.env.HOME ?? null }))'
 
+test('run completes the existing OCR config per attempt and restores it on every child outcome', async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-run-config-'))
+  const configPath = path.join(directory, 'config.json')
+  const original = `${JSON.stringify(
+    {
+      language: 'English',
+      llm: {
+        model: MISTRAL_MODEL,
+        protocol: 'openai',
+        extra_body: {
+          reasoning_effort: 'max',
+          prompt_cache_key: '{ocr_session_key}',
+        },
+        auth_token_cmd: 'printf "%s" "$OCR_LLM_TOKEN"',
+      },
+    },
+    null,
+    2
+  )}\n`
+  fs.writeFileSync(configPath, original, { mode: 0o600 })
+  const urls = new Set()
+  try {
+    for (const code of [0, 7]) {
+      const result = await runCli(
+        [
+          'run',
+          '--ocr-config',
+          configPath,
+          '--',
+          process.execPath,
+          '-e',
+          `
+          const fs = require('node:fs')
+          const config = JSON.parse(fs.readFileSync(process.argv[1], 'utf8'))
+          process.stdout.write(JSON.stringify({config, url: process.env.OCR_LLM_URL,
+            upstreamKey: process.env.MISTRAL_API_KEY ?? null,
+            mode: fs.statSync(process.argv[1]).mode & 0o777}))
+          process.exitCode = ${code}
+        `,
+          configPath,
+        ],
+        { MISTRAL_API_KEY: 'synthetic-config-key' }
+      )
+      assert.equal(result.code, code, result.stderr)
+      const seen = JSON.parse(result.stdout)
+      assert.equal(seen.config.llm.url, seen.url)
+      urls.add(seen.url)
+      delete seen.config.llm.url
+      assert.deepEqual(seen.config, JSON.parse(original))
+      assert.equal(seen.upstreamKey, null)
+      assert.equal(seen.mode, 0o600)
+      assert.equal(fs.readFileSync(configPath, 'utf8'), original)
+      assert.equal(fs.statSync(configPath).mode & 0o777, 0o600)
+    }
+    assert.equal(urls.size, 2)
+    const missing = await runCli(
+      [
+        'run',
+        '--ocr-config',
+        configPath,
+        '--',
+        'ocr-synthetic-executable-absent',
+      ],
+      { MISTRAL_API_KEY: 'synthetic-config-key' }
+    )
+    assert.equal(missing.code, 1)
+    assert.equal(fs.readFileSync(configPath, 'utf8'), original)
+    fs.chmodSync(configPath, 0o644)
+    const unsafe = await runCli(
+      [
+        'run',
+        '--ocr-config',
+        configPath,
+        '--',
+        process.execPath,
+        '-e',
+        'process.exit(99)',
+      ],
+      { MISTRAL_API_KEY: 'synthetic-config-key' }
+    )
+    assert.equal(unsafe.code, 1)
+    assert.equal(fs.readFileSync(configPath, 'utf8'), original)
+    fs.chmodSync(configPath, 0o600)
+    const restoration = await runCli(
+      [
+        'run',
+        '--ocr-config',
+        configPath,
+        '--',
+        process.execPath,
+        '-e',
+        `
+        const fs = require('node:fs')
+        fs.unlinkSync(process.argv[1])
+        fs.mkdirSync(process.argv[1])
+        process.stdout.write(process.env.OCR_LLM_URL)
+      `,
+        configPath,
+      ],
+      { MISTRAL_API_KEY: 'synthetic-config-key' }
+    )
+    assert.equal(restoration.code, 1)
+    assert.equal(
+      restoration.stderr,
+      'ocr-mistral-adapter: ocr_config_restore_failed\n'
+    )
+    await assert.rejects(
+      fetch(restoration.stdout, { method: 'POST', body: '{}' })
+    )
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('run strips the upstream key and injects the OCR environment', async () => {
   const result = await runCli(
     ['run', '--', process.execPath, '-e', RUN_SCRIPT],
@@ -2631,12 +2745,24 @@ test('run with live progress terminates its listener on SIGTERM', async () => {
     path.join(os.tmpdir(), 'ocr-signal-diagnostics-')
   )
   const diagnosticsPath = path.join(directory, 'diagnostics.jsonl')
+  const configPath = path.join(directory, 'config.json')
+  const original = JSON.stringify({ llm: { model: MISTRAL_MODEL } })
+  fs.writeFileSync(configPath, original, { mode: 0o600 })
   const script =
     'process.stdout.write(process.env.OCR_LLM_URL + "\\n");' +
     ' setInterval(() => {}, 1000)'
   const child = spawn(
     process.execPath,
-    [ADAPTER, 'run', '--', process.execPath, '-e', script],
+    [
+      ADAPTER,
+      'run',
+      '--ocr-config',
+      configPath,
+      '--',
+      process.execPath,
+      '-e',
+      script,
+    ],
     {
       env: {
         ...process.env,
@@ -2675,6 +2801,8 @@ test('run with live progress terminates its listener on SIGTERM', async () => {
     ])
     assert.ok(!result.timeout, 'run did not exit after SIGTERM')
     assert.equal(result.code, 1)
+    assert.equal(fs.readFileSync(configPath, 'utf8'), original)
+    assert.equal(fs.statSync(configPath).mode & 0o777, 0o600)
     assert.match(
       live,
       /^OCR progress event=process_exited exit_code=1 signaled=true spawn_failed=false elapsed_ms=\d+\n$/
