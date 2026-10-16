@@ -1023,9 +1023,9 @@ async function startAdapter(options = {}) {
       }
       if (main && !choice.message.tool_calls?.length) {
         for (const counter of counters) counter.main_no_tool_responses += 1
-        // OCR can continue an interrupted native turn without treating it as
-        // complete. Permit this once per replayed chain; repeated tool-free
-        // answers still fail instead of entering an open-ended prose retry.
+        // OCR 1.13.0 echoes a tool-free assistant turn before requesting its
+        // continuation. Permit one interrupted turn in that replayed chain;
+        // another tool-free answer still fails instead of retrying prose.
         const canContinue =
           choice.finish_reason === 'length' &&
           !body.messages.some(
