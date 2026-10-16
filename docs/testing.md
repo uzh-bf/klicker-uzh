@@ -2,13 +2,15 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
-timestamp: '2026-09-20'
+timestamp: '2026-10-14'
 tags:
   - testing
   - ci
 ---
 
 # Testing
+
+For periodic value/reliability reviews and safe cleanup, see [Test hygiene](./test-hygiene.md). It preserves behavior and regression detection rather than test counts.
 
 **There is no React component-test layer** (no @testing-library/react).
 Vitest covers pure logic and server-side integrations; Playwright covers
@@ -321,16 +323,15 @@ therefore required before changing the action, followed by a non-skipped
 postmerge shard run. The action logs its provisioner checksum so that run can
 be matched to the reviewed source.
 
-The path-filtered `test-unit` workflow runs the chat, grading, markdown, and util
-suites with one frozen install. It builds Prisma, types, grading, and util once,
-then keeps each suite as a separately visible step. The chat suite runs against
-a PostgreSQL 15 service; the workflow resets that disposable test database
-before the suite and enables the account-usage integration cases. Later suites
-still run after an earlier test failure, but not after setup or
-dependency-build failure. Draft
-PR updates skip this job; use its manual dispatch for exact-head proof without
-marking a draft ready. This single-job workflow is not a required branch
-protection context and needs no companion status gate.
+The path-filtered `test-unit` workflow runs Chat, frontend PWA, Auth (unit,
+handler integration and built HTTP policy tests), grading, Markdown and util,
+plus the Prisma disposable guard. It builds shared dependencies once and keeps
+suites as separate steps. Chat account-usage integration cases use a freshly
+provisioned PostgreSQL 15 service; later independent suites still run after an
+earlier test failure, but not after their setup/dependency-build failure.
+The always-reporting `test-unit-status` gate checks the selected suite outcome.
+Draft state alone does not skip this workflow. Inspect its exact-head selection
+and evidence receipt; an irrelevant-path skip is not an executed suite.
 
 `test-graphql` spins Postgres ×2, hatchet-lite, and Redis and retains a
 path-filter job plus the required always-reporting `test-graphql-status` gate.
@@ -343,17 +344,20 @@ the `public-pr-arm64` runner group through the reusable
 `public-pr-playwright-shards.yml` workflow, which runs eight concurrent shards
 across the two-host public pool; pushes, fork PRs, bots, private
 repositories, and disabled rollouts keep all eight shards on GitHub-hosted
-runners. Draft PRs never enter either route: the caller skips the reusable
-execution workflow and `test-playwright-status` reports an explicit successful
-skip, so no Playwright worker is allocated until the PR is marked ready. Both paths
+runners. Draft PRs also enter the execution envelope on the hosted route.
+The trusted route selects the full suite by default, or the change-based plan when the smart-draft control is
+explicitly enabled and eligibility checks pass. Ready PRs select the full suite
+for relevant changes. Inspect the canonical plan, exact source receipt and
+actual job outcomes to distinguish execution, irrelevant-path skips and verified
+equivalent-evidence reuse. Both paths
 preserve the same artifact names and feed the route-aware
 `test-playwright-status` gate, which requires exactly one of the hosted or
 public-PR routes to be selected. The workflow tars the five `.next` trees before
 artifact upload and extracts them in each shard so Turbopack's runtime
 dependency symlinks survive the cross-job handoff. Each shard also restores the
 generated GraphQL client map from the built package because Turbo cache hits do
-not restore generated source files. Dedicated `-status` fail-open gates remain
-for the required multi-job workflows (`test-graphql`, `test-playwright`).
+not restore generated source files. Dedicated always-reporting `-status` gates
+validate selected execution for the required multi-job workflows (`test-unit`, `test-graphql`, `test-playwright`).
 Playwright cancellation is job-scoped: hosted stages cancel only their matching
 predecessors, while the public reusable-workflow call cancels the complete older
 public route. The required status gate deliberately has no concurrency group,
