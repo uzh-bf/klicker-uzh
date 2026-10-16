@@ -111,11 +111,21 @@ Ruff 0.15.18 lint and format checks pass. No dependency or lockfile changed.
 Native slice review approved the corrected migration through `95e2213b2` and
 reproduced the framework metric names and request bounds. Source curation and
 independent source review remain in progress. The package is one
-coherent evaluation migration in draft #6478; 2,551 additions/389 removals outside
+coherent evaluation migration in draft #6478; 2,573 additions/389 removals outside
 project artifacts reflect the combined adapter, native contracts and replacement
 tests, with no separate runtime or reviewer audience. No paid call or earlier
 hold release occurred. Full application hooks were replaced with the applicable
 offline source checks; no application runtime was started.
+
+Integrated native source review passed at `33a55f611` with no blocking findings.
+The private curator delivered 24 candidate Goldens and exact support quotes,
+with the planned 6/6/4/8 allocation and native dataset validation. These remain
+unfrozen: both guide pages appeared in old development retrieval. A separate
+native source reviewer must resolve that exposure against the strict family
+exclusion before accepting any held-out claim. The six multi-document cases
+explicitly compare a summary with its underlying script; they do not demonstrate
+reasoning across independent sources. Negative claims cover only those two
+teaching documents, excluding the administrative KB resources.
 
 ## October 16: offline evaluation preparation — approved
 
