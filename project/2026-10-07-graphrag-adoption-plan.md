@@ -25,8 +25,10 @@ Freeze only after corrections, preserving a hash manifest and development/holdou
 separation. Missing bytes or insufficient unexposed families blocks the freeze;
 retrieved snippets and test fixtures cannot substitute for complete sources.
 
-**Ownership and sequence.** Main owns source recovery, private case curation,
-freeze and the matched-generation seam. A native executor independently owns
+**Ownership and sequence.** Main owns source recovery, freeze and the
+matched-generation seam. A native trusted curator independently prepares the
+private case candidates; a separate source reviewer checks them before freeze.
+A native executor independently owns
 `evaluation/routing/src/routing_eval/{bench,pairwise,analyze}.py`, its existing
 `tests/{test_pairwise,test_routing_eval}.py`, routing README and routing skill,
 and new `evaluation/data/metrics/klicker_routing_quality.yaml` and
@@ -86,7 +88,34 @@ merge action is included. Existing source reads use existing authenticated route
 
 **Progress.** Native plan challenge approved after adding single-attempt judge
 admission, the exact framework environment, and the common-question QA/Arena
-mapping. Main source qualification and native executor migration are in progress.
+mapping. Both complete teaching PDFs match their frozen version-1 hashes. All 269
+historical artifact hashes remain unchanged. Generation settings are privately
+frozen to the earlier target route, common source-only system prompt, low effort
+and 4,096 reasoning-inclusive completion tokens; route/pricing qualification is
+still required before any paid run. The matched sender and native-Golden join are
+committed at `2e8c425b19`. Three loopback wire contracts pass, including whole-batch
+tamper rejection and failure without retry. The six saved development inputs pass
+preflight without dispatch. Framework launcher/integration checks pass. Matched
+generation slice review approved; its simplifier found no useful reduction.
+
+Routing migration is committed at `5d55fcc9f9`; obsolete custom judging helpers
+and tests are removed. Standard QA import feeds the existing four-metric GEval
+profile. Pairwise uses native Arena and the framework's single-attempt factory,
+with an explicit case bound and a hard two-request guard per case. Native scores
+remain separate from historical 1–10 grades. The simplifier's only accepted
+change, `95e2213b2`, removes an unreachable fallback and uses the framework verdict.
+Thirty-six routing tests and all three metric contracts pass in the framework
+environment. The combined suite passes 48 tests and 19 subtests; the frozen
+routing environment passes 19 tests with two appropriate DeepEval skips. Its exact
+Ruff 0.15.18 lint and format checks pass. No dependency or lockfile changed.
+Native slice review approved the corrected migration through `95e2213b2` and
+reproduced the framework metric names and request bounds. Source curation and
+independent source review remain in progress. The package is one
+coherent evaluation migration in draft #6478; 2,551 additions/389 removals outside
+project artifacts reflect the combined adapter, native contracts and replacement
+tests, with no separate runtime or reviewer audience. No paid call or earlier
+hold release occurred. Full application hooks were replaced with the applicable
+offline source checks; no application runtime was started.
 
 ## October 16: offline evaluation preparation — approved
 

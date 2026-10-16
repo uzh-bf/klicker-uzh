@@ -21,9 +21,14 @@ Product adapters may capture evidence and normalize QA records. Deterministic
 contract tests, token preparation, latency statistics and budget/accounting
 controls support evaluation without replacing DeepEval quality metrics.
 
-Routing benchmarks capture answers with explicit `--no-judge`; their old paid
-judge paths are disabled. Historical judge files remain readable for analysis.
-Manage-assistant quality checks already use DeepEval and retain their own suite.
+Routing benchmarks capture answers with explicit `--no-judge` and import saved
+answers into standard framework QA. The routing quality YAML supplies GEval
+correctness, completeness, clarity and major-error checks through the existing
+launcher. Pairwise comparisons use native DeepEval Arena with the framework's
+judge factory. The replaced custom prompts, verdict parsers and scoring helpers
+are removed; historical reports remain readable for analysis. See the
+[routing workflow](routing/README.md). Manage-assistant quality checks already
+use DeepEval and retain their own suite.
 
 ## Trajectories and provider admission
 
@@ -579,8 +584,8 @@ Successful fusion applies 12 passages/16,000 content characters, while baseline 
 
 ### Prepare matched inputs before generation
 
-`evaluation/scripts/prepare-graph-comparison.py` is an offline data preparation
-helper, not a generation target or evaluator. Use the framework Python environment
+`evaluation/scripts/prepare-graph-comparison.py` provides offline data preparation
+and an importable generation seam. Use the framework Python environment
 with its existing `tiktoken` dependency and cached `o200k_base` encoding. A missing
 or invalid tokenizer cache stops preparation without downloading anything.
 
@@ -612,6 +617,29 @@ framing and provider-billed token counts require separate verification. This
 preparation does not prove a matched native chatbot run. The existing capture
 adapter records what the chatbot actually saw; it must never clip persisted
 context after generation to manufacture budget matching.
+
+The importable `generate_matched(prepared, contract, client, encoding)` validates
+every saved arm before dispatch. The contract contains `model`, `system_prompt`,
+`reasoning_effort` and reasoning-inclusive `max_completion_tokens`. It uses the
+caller's already-admitted OpenAI-compatible client, disables SDK retries and
+yields standard QA records one at a time. Persist each before advancing. A failed
+or incomplete response stops the sequence. This helper creates no provider client
+and exposes no paid CLI. The caller still owns cost admission, gateway retries,
+fallbacks, pricing and durable failure receipts. There is no live-provider
+qualification in the offline contract tests.
+
+QA keeps the original common question and the actual arm passages in
+`retrieval_context`; `source_metadata` records exact rendered input, hashes,
+request settings and response usage. Only after generation, `attach_references`
+joins native DeepEval `Golden` objects by `additional_metadata.case_id`, checking
+the common question. These records enter the existing framework loader and
+DeepEval metrics. The loopback fake-provider contract is runnable without
+credentials or any external model request:
+
+```bash
+DEEPEVAL_TELEMETRY_OPT_OUT=YES evaluation/framework/.venv/bin/python \
+  -m unittest discover -s evaluation/tests -p 'test_matched_generation.py' -v
+```
 
 A larger comparison should freeze source versions and concept/evidence families
 before tuning, keeping paraphrases in one split. The proposed next pilot contains
