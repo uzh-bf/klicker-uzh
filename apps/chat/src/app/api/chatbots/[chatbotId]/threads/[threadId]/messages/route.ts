@@ -44,12 +44,21 @@ export async function GET(
       orderBy: { createdAt: 'asc' },
     })
 
+    // A thread uses few modes, so decide each mode once instead of
+    // re-normalizing the whole mode config for every message.
+    const reasoningVisibleByMode = new Map<string | null, boolean>()
+    const isReasoningVisible = (mode: string | null) => {
+      let visible = reasoningVisibleByMode.get(mode)
+      if (visible === undefined) {
+        visible = isParticipantReasoningVisible(chatbot?.customModeConfig, mode)
+        reasoningVisibleByMode.set(mode, visible)
+      }
+      return visible
+    }
+
     return NextResponse.json(
       messages.map((msg) => {
-        const showReasoning = isParticipantReasoningVisible(
-          chatbot?.customModeConfig,
-          msg.chatMode
-        )
+        const showReasoning = isReasoningVisible(msg.chatMode)
         return {
           id: msg.id,
           threadId: msg.threadId,

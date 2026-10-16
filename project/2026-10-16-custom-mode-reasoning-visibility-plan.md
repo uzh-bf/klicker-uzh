@@ -53,4 +53,4 @@ Package tests for util and chat, repository `check:all`, then browser screenshot
 
 ## Progress
 
-- Status: implementation in progress on the task branch.
+- Status: implemented and verified on the task branch; final review found no blocking issue. Draft PR pending.
