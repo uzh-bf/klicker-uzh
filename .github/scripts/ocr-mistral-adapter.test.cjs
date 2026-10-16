@@ -357,6 +357,46 @@ test('manual workflows reconcile shared stage receipts against independent step 
   }
 })
 
+test('failure summary emits only complete allowlisted counters without changing cost availability', async () => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-failure-summary-')
+  )
+  const receiptPath = path.join(directory, 'receipt.jsonl')
+  const adapter = await startAdapter({
+    apiKey: 'synthetic',
+    fetchImpl: () => new Response('private-provider-error', { status: 429 }),
+  })
+  try {
+    await postJson(adapter, {
+      messages: [{ role: 'user', content: 'private-prompt' }],
+    })
+    await adapter.close()
+    const receipt = adapter.diagnostics()
+    receipt.failures['::error::private-key'] = 99
+    for (const [value, status] of [
+      [receipt, 'complete'],
+      [{ ...receipt, failures: { upstream_throttled: 1 } }, 'unavailable'],
+    ]) {
+      fs.writeFileSync(receiptPath, JSON.stringify(value))
+      const result = await runCli(['summary', receiptPath], {
+        GITHUB_STEP_SUMMARY: path.join(directory, 'summary.md'),
+      })
+      assert.equal(result.code, 0)
+      const line = result.stdout
+        .split('\n')
+        .find((line) => line.startsWith('OCR failures '))
+      assert.match(line, new RegExp(`^OCR failures status=${status}`))
+      if (status === 'complete') assert.match(line, /upstream_throttled=1/)
+      else assert.equal(line, 'OCR failures status=unavailable')
+      assert.doesNotMatch(result.stdout, /private-/)
+      assert.match(result.stdout, /OCR cost status=unavailable/)
+    }
+  } finally {
+    await adapter.close()
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('cost summary CLI logs and appends the same report, preserving success when either sink fails', async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-cost-summary-'))
   try {
@@ -1156,6 +1196,7 @@ test('a finished response ignoring required tool use fails without entering OCR 
     assert.equal(receipt.upstream_attempts, 1)
     assert.equal(receipt.main_no_tool_responses, 1)
     assert.equal(receipt.length_finishes, 0)
+    assert.equal(receipt.failures.required_tool_call_missing, 1)
     assert.equal(receipt.prompt_tokens, 3)
     assert.equal(receipt.completion_tokens, 4)
     assert.ok(receipt.max_request_bytes > 0)
@@ -1233,6 +1274,8 @@ test('one length-limited tool-free turn can continue natively; a repeated failur
       const receipt = adapter.diagnostics()
       assert.equal(receipt.completion_tokens, 8)
       assert.equal(receipt.history.misses, 0)
+      assert.equal(receipt.failures.length_no_tool, recover ? 0 : 1)
+      assert.equal(receipt.failures.required_tool_call_missing, 0)
       assert.doesNotMatch(JSON.stringify(receipt), /private unfinished/)
     } finally {
       await adapter.close()
@@ -2029,6 +2072,84 @@ test('upstream failures are redacted to a fixed safe error', async () => {
   }
 })
 
+test('adapter classifies failures once without changing responses or accounting', async () => {
+  const cases = [
+    [
+      'upstream_throttled',
+      () => new Response('private-error', { status: 429 }),
+      502,
+      'upstream_error',
+    ],
+    [
+      'upstream_rejected',
+      () => new Response('private-error', { status: 403 }),
+      502,
+      'upstream_error',
+    ],
+    [
+      'upstream_server_error',
+      () => new Response('private-error', { status: 503 }),
+      502,
+      'upstream_error',
+    ],
+    [
+      'transport_error',
+      () => {
+        throw new Error('private-error')
+      },
+      502,
+      'internal_error',
+    ],
+    [
+      'malformed_response',
+      () => new Response('private-error', { status: 200 }),
+      502,
+      'malformed_response',
+    ],
+    [
+      'upstream_timeout',
+      (_url, init) =>
+        new Promise((_resolve, reject) =>
+          init.signal.addEventListener('abort', () =>
+            setTimeout(() => reject(new Error('private-error')), 5)
+          )
+        ),
+      504,
+      'upstream_timeout',
+    ],
+  ]
+  for (const [category, fetchImpl, status, code] of cases) {
+    const adapter = await startAdapter({
+      apiKey: 'synthetic',
+      fetchImpl,
+      timeoutMs: category === 'upstream_timeout' ? 10 : 1000,
+    })
+    try {
+      const response = await postJson(adapter, {
+        messages: [{ role: 'user', content: 'private-prompt' }],
+      })
+      assert.equal(response.status, status, category)
+      assert.equal(response.json.error.code, code, category)
+      await adapter.close()
+      const receipt = adapter.diagnostics()
+      assert.equal(receipt.failures[category], 1, category)
+      assert.equal(
+        Object.values(receipt.failures).reduce((sum, n) => sum + n, 0),
+        1,
+        category
+      )
+      assert.equal(receipt.requests, 1)
+      assert.equal(receipt.upstream_attempts, 1)
+      assert.equal(receipt.responses, 0)
+      assert.equal(receipt.request_types.auxiliary.failures[category], 1)
+      assert.equal(estimateCost(JSON.stringify(receipt)), null)
+      assert.doesNotMatch(JSON.stringify(receipt), /private-/)
+    } finally {
+      await adapter.close()
+    }
+  }
+})
+
 test('malformed upstream content fails closed as 502, malformed requests as 400', async () => {
   const badMessages = [
     { role: 'assistant', content: [{ type: 'image', url: 'x' }] },
@@ -2287,6 +2408,120 @@ const RUN_SCRIPT =
   ' protocol: process.env.OCR_LLM_PROTOCOL ?? null,' +
   ' anthropic: process.env.OCR_USE_ANTHROPIC ?? null,' +
   ' home: process.env.HOME ?? null }))'
+
+test('run completes the existing OCR config per attempt and restores it on every child outcome', async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-run-config-'))
+  const configPath = path.join(directory, 'config.json')
+  const original = `${JSON.stringify(
+    {
+      language: 'English',
+      llm: {
+        model: MISTRAL_MODEL,
+        protocol: 'openai',
+        extra_body: {
+          reasoning_effort: 'max',
+          prompt_cache_key: '{ocr_session_key}',
+        },
+        auth_token_cmd: 'printf "%s" "$OCR_LLM_TOKEN"',
+      },
+    },
+    null,
+    2
+  )}\n`
+  fs.writeFileSync(configPath, original, { mode: 0o600 })
+  const urls = new Set()
+  try {
+    for (const code of [0, 7]) {
+      const result = await runCli(
+        [
+          'run',
+          '--ocr-config',
+          configPath,
+          '--',
+          process.execPath,
+          '-e',
+          `
+          const fs = require('node:fs')
+          const config = JSON.parse(fs.readFileSync(process.argv[1], 'utf8'))
+          process.stdout.write(JSON.stringify({config, url: process.env.OCR_LLM_URL,
+            upstreamKey: process.env.MISTRAL_API_KEY ?? null,
+            mode: fs.statSync(process.argv[1]).mode & 0o777}))
+          process.exitCode = ${code}
+        `,
+          configPath,
+        ],
+        { MISTRAL_API_KEY: 'synthetic-config-key' }
+      )
+      assert.equal(result.code, code, result.stderr)
+      const seen = JSON.parse(result.stdout)
+      assert.equal(seen.config.llm.url, seen.url)
+      urls.add(seen.url)
+      delete seen.config.llm.url
+      assert.deepEqual(seen.config, JSON.parse(original))
+      assert.equal(seen.upstreamKey, null)
+      assert.equal(seen.mode, 0o600)
+      assert.equal(fs.readFileSync(configPath, 'utf8'), original)
+      assert.equal(fs.statSync(configPath).mode & 0o777, 0o600)
+    }
+    assert.equal(urls.size, 2)
+    const missing = await runCli(
+      [
+        'run',
+        '--ocr-config',
+        configPath,
+        '--',
+        'ocr-synthetic-executable-absent',
+      ],
+      { MISTRAL_API_KEY: 'synthetic-config-key' }
+    )
+    assert.equal(missing.code, 1)
+    assert.equal(fs.readFileSync(configPath, 'utf8'), original)
+    fs.chmodSync(configPath, 0o644)
+    const unsafe = await runCli(
+      [
+        'run',
+        '--ocr-config',
+        configPath,
+        '--',
+        process.execPath,
+        '-e',
+        'process.exit(99)',
+      ],
+      { MISTRAL_API_KEY: 'synthetic-config-key' }
+    )
+    assert.equal(unsafe.code, 1)
+    assert.equal(fs.readFileSync(configPath, 'utf8'), original)
+    fs.chmodSync(configPath, 0o600)
+    const restoration = await runCli(
+      [
+        'run',
+        '--ocr-config',
+        configPath,
+        '--',
+        process.execPath,
+        '-e',
+        `
+        const fs = require('node:fs')
+        fs.unlinkSync(process.argv[1])
+        fs.mkdirSync(process.argv[1])
+        process.stdout.write(process.env.OCR_LLM_URL)
+      `,
+        configPath,
+      ],
+      { MISTRAL_API_KEY: 'synthetic-config-key' }
+    )
+    assert.equal(restoration.code, 1)
+    assert.equal(
+      restoration.stderr,
+      'ocr-mistral-adapter: ocr_config_restore_failed\n'
+    )
+    await assert.rejects(
+      fetch(restoration.stdout, { method: 'POST', body: '{}' })
+    )
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
 
 test('run strips the upstream key and injects the OCR environment', async () => {
   const result = await runCli(
@@ -2609,6 +2844,7 @@ test('start/serve/stop own the listener lifecycle', async (t) => {
   const diagnosticsText = fs.readFileSync(diagnosticsPath, 'utf8')
   assert.equal(diagnosticsText.trim().split('\n').length, 1)
   assert.equal(JSON.parse(diagnosticsText).unfinished_requests, 0)
+  assert.equal(JSON.parse(diagnosticsText).failures.local_rejection, 1)
   assert.equal(fs.statSync(diagnosticsPath).mode & 0o777, 0o600)
   assert.doesNotMatch(diagnosticsText, /sk-synthetic-start/)
   assert.equal((await runCli(['stop', statePath], env)).code, 0)
@@ -2705,12 +2941,24 @@ test('run with live progress terminates its listener on SIGTERM', async () => {
     path.join(os.tmpdir(), 'ocr-signal-diagnostics-')
   )
   const diagnosticsPath = path.join(directory, 'diagnostics.jsonl')
+  const configPath = path.join(directory, 'config.json')
+  const original = JSON.stringify({ llm: { model: MISTRAL_MODEL } })
+  fs.writeFileSync(configPath, original, { mode: 0o600 })
   const script =
     'process.stdout.write(process.env.OCR_LLM_URL + "\\n");' +
     ' setInterval(() => {}, 1000)'
   const child = spawn(
     process.execPath,
-    [ADAPTER, 'run', '--', process.execPath, '-e', script],
+    [
+      ADAPTER,
+      'run',
+      '--ocr-config',
+      configPath,
+      '--',
+      process.execPath,
+      '-e',
+      script,
+    ],
     {
       env: {
         ...process.env,
@@ -2749,6 +2997,8 @@ test('run with live progress terminates its listener on SIGTERM', async () => {
     ])
     assert.ok(!result.timeout, 'run did not exit after SIGTERM')
     assert.equal(result.code, 1)
+    assert.equal(fs.readFileSync(configPath, 'utf8'), original)
+    assert.equal(fs.statSync(configPath).mode & 0o777, 0o600)
     assert.match(
       live,
       /^OCR progress event=process_exited exit_code=1 signaled=true spawn_failed=false elapsed_ms=\d+\n$/
