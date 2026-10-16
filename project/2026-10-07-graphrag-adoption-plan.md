@@ -121,8 +121,13 @@ Integrated native source review passed at `33a55f611` with no blocking findings.
 The private curator delivered 24 candidate Goldens and exact support quotes,
 with the planned 6/6/4/8 allocation and native dataset validation. These remain
 unfrozen: both guide pages appeared in old development retrieval. A separate
-native source reviewer must resolve that exposure against the strict family
-exclusion before accepting any held-out claim. The six multi-document cases
+native source review is checking that exposure against the strict family
+exclusion. Main has withheld freeze admission: at least the six multi-document
+cases reuse guide evidence/concept families that appeared in earlier retrieval.
+Source-correct references and new questions do not repair that separation.
+The user has a concrete choice between fresh teaching material, an explicitly
+disclosed validation set, or leaving strict holdout freeze pending. The current
+contract remains strict until that scope decision arrives. The six multi-document cases
 explicitly compare a summary with its underlying script; they do not demonstrate
 reasoning across independent sources. Negative claims cover only those two
 teaching documents, excluding the administrative KB resources.
