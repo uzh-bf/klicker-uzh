@@ -965,10 +965,19 @@ async function startAdapter(options = {}) {
     try {
       mistralBody = translateMistralRequest(body, history)
     } catch (error) {
-      recordFailure(
-        [diagnostics],
-        error.code === 'history_missing' ? 'history_missing' : 'local_rejection'
-      )
+      // The authenticated startup probe checks validation without OCR traffic.
+      const readinessProbe =
+        req.headers['x-ocr-adapter-readiness'] === '1' &&
+        raw === '{}' &&
+        error.code === 'invalid_request'
+      if (!readinessProbe) {
+        recordFailure(
+          [diagnostics],
+          error.code === 'history_missing'
+            ? 'history_missing'
+            : 'local_rejection'
+        )
+      }
       sendAdapterError(res, error)
       return
     }
@@ -1391,6 +1400,7 @@ async function probeReadiness(state, deadlineMs) {
         headers: {
           'content-type': 'application/json',
           authorization: `Bearer ${state.token}`,
+          'x-ocr-adapter-readiness': '1',
         },
         body: '{}',
       })

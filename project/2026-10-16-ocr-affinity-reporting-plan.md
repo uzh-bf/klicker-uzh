@@ -155,8 +155,20 @@ request no human reviewers. Use the standard draft description and PR monitor.
 - Completed: both implementation slices, read-only GitHub timing analysis, released-binary qualification, push and [draft PR](https://github.com/uzh-bf/klicker-uzh/pull/6573).
 - Integration: merged target `8e9b39c2b6386992466ab936f79e09db04a4dd01` into the task branch to resolve confirmed merge conflicts. Retained its interrupted-response continuation and `ocr_resume_incomplete` behavior; failure diagnostics count only rejected requests.
 - Verification: 220 focused Node checks and formatting pass after integration; released unmodified OCR 1.13.0 passes full and partial-to-resume mock qualification. Affinity, max reasoning, fresh ports/tokens, lineage, coverage and private configuration restoration are verified. No paid manual canary.
-- Reviews: slice 1 clear; slice 2 simplifier's redundant status option removed. Scoped slice 2 and integrated final reviews remain pending.
+- Reviews: both scoped slice reviews clear; simplification removed redundant status wiring. Integrated review found one false startup-probe failure count; corrected with the existing CLI lifecycle regression test.
 - Feedback: corrected merge-rejection attribution to the failing result, derive resume state on rejected results, count unknown failure classes in a fixed `other` bucket, and reuse the same receipt text for cost and failure summaries.
 - Accounting and provider-call arithmetic, configured reasoning/budgets and current target retry policy remain unchanged. No new timing instrumentation or job restructuring.
-- Local checks: dependency-free workflow tests run on pinned Node 24. Full check/build hooks use the repository's no-install skip; hosted CI is pending. The existing helper lint errors and static parser warning remain baseline limitations.
-- Active work: commit/push integration, final review, then settle automatic CI and actionable feedback. Manual live proof requires a later trusted-default-branch run.
+- Local checks: dependency-free workflow tests run on pinned Node 24. Full check/build hooks use the repository's no-install skip; automatic CI passed for the integrated implementation before the focused readiness-counter correction. The existing helper lint errors and static parser warning remain baseline limitations.
+- Source work: complete on the draft PR. Its checks and description carry final CI/review receipts. Manual live proof requires a later trusted-default-branch run.
+
+The final-review correction marks the existing authenticated readiness probe and
+excludes only that empty validation probe from rejection counters. Its HTTP
+response, request count, upstream traffic and startup retry behavior are unchanged.
+The lifecycle test reproduced two local rejections before the fix and verifies
+one afterward, attributable to the deliberate invalid request.
+
+Current-head OCR suggestions about further code extraction, exhaustive generic
+error taxonomy, additional diagnostic fields and hard-kill configuration backups
+were assessed as optional extensions. The current closed enums, generic fallback,
+private ephemeral configuration and fail-closed summaries meet the approved
+contract; these suggestions do not justify widening this package.

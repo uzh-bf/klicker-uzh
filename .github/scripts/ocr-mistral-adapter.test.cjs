@@ -2844,6 +2844,7 @@ test('start/serve/stop own the listener lifecycle', async (t) => {
   const diagnosticsText = fs.readFileSync(diagnosticsPath, 'utf8')
   assert.equal(diagnosticsText.trim().split('\n').length, 1)
   assert.equal(JSON.parse(diagnosticsText).unfinished_requests, 0)
+  assert.equal(JSON.parse(diagnosticsText).failures.local_rejection, 1)
   assert.equal(fs.statSync(diagnosticsPath).mode & 0o777, 0o600)
   assert.doesNotMatch(diagnosticsText, /sk-synthetic-start/)
   assert.equal((await runCli(['stop', statePath], env)).code, 0)
