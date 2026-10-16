@@ -86,7 +86,8 @@ maintainer.
 
 - Execution mode: solo. Branch `ci/final-review-billable-budget` from `v3`
   `f38700446e`.
-- Draft PR #6555 edits the same adapter counters; expect a merge conflict there.
+- PR #6555 (OCR cost summary) merged first; its cost estimate prices the raw
+  adapter diagnostics, which this package leaves unchanged.
 
 ## Progress
 
@@ -94,7 +95,8 @@ maintainer.
 - [x] Adapter billable usage and test; the test fails without the rewrite
 - [x] Ceiling, excludes, plan context and test
 - [x] Docs
-- [ ] Final review and draft PR
+- [x] Final review and draft PR (#6558); the review's plan-size and docs
+  findings are fixed
 
 Evidence on 2026-10-16, against the PR 6414 range used by the failed run:
 
@@ -102,7 +104,8 @@ Evidence on 2026-10-16, against the PR 6414 range used by the failed run:
   to 43; only five `playwright/` support files are newly excluded.
 - Plan context: the main plan comes first, truncated to 16,000 code points
   (about 17 KB); the later revision plan is omitted.
-- `final-ai-review.test.js` and `ocr-mistral-adapter.test.cjs`: 117 tests pass.
+- `final-ai-review.test.js` and `ocr-mistral-adapter.test.cjs`: 126 tests pass
+  after merging `v3` with the OCR cost summary (#6555).
 - Biome format is clean; lint findings in the touched scripts all predate this
   branch. Prettier is clean for the workflow and docs.
 - Substantive size: about 210 changed lines without the plan.
