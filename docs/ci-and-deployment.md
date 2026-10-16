@@ -380,8 +380,16 @@ costs; these are estimates, not billing receipts.
 Draft reviews enable the pinned action's `stream_progress` option so phase and
 tool progress reaches the Actions log on stderr while stdout remains the final
 JSON result. It changes display only, preserving reasoning and budget settings.
-Manual final-review jobs still capture stderr without exposing raw provider
-errors in live logs; streaming those jobs needs a filtered progress channel.
+Manual individual and stack code reviews use human-audience progress through the
+adapter's `OCR_ADAPTER_PROGRESS_FD=3` opt-in. Their shell functions bind descriptor
+3 to the live log before redirecting raw stderr to its existing private file.
+The adapter reconstructs only known event/tool/phase identifiers and bounded
+numeric counts; it discards arguments, paths, group/session identities, raw
+errors, unknown lines, and overlong records. Logging failures are best-effort,
+and the child receives neither the descriptor nor the option selecting it.
+Waiting for stream closure preserves the final output and child exit code across
+full, range, and resumed reviews. Previews remain silent; final findings still
+arrive as one validated JSON document.
 
 A main review response with `finish_reason: length` and a `task_done` call is
 refused with HTTP 422 and is never retained as replayable native history. Its

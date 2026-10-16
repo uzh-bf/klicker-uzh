@@ -14,6 +14,7 @@ const fs = require('node:fs')
 const http = require('node:http')
 const path = require('node:path')
 const { spawn } = require('node:child_process')
+const { StringDecoder } = require('node:string_decoder')
 
 const MISTRAL_URL = 'https://api.mistral.ai/v1/chat/completions'
 const MISTRAL_MODEL = 'zai-glm-5-3'
@@ -1398,6 +1399,83 @@ function commandSummary(args) {
   return 0
 }
 
+function createProgressFilter(write) {
+  const decoder = new StringDecoder('utf8')
+  let pending = ''
+  let dropping = false
+  function flush() {
+    const line = pending.replace(/\r$/, '')
+    if (!dropping) {
+      let event
+      const tool =
+        /^\[ocr\]   ([▶✔✘]) (task_done|code_comment|file_read_diff|file_read|file_find|code_search)(?: |$)/u.exec(
+          line
+        )
+      const started =
+        /^\[ocr\] (\d{1,12}) file\(s\) changed, reviewing (\d{1,12}) in /.exec(
+          line
+        )
+      const finished =
+        /^\[ocr\] Summary: (\d{1,12}) file\(s\) reviewed, (\d{1,12}) comment\(s\), ~(\d{1,12}) token\(s\) used(?:[ ,]|$)/.exec(
+          line
+        )
+      if (tool) {
+        const state = { '▶': 'started', '✔': 'completed', '✘': 'failed' }[
+          tool[1]
+        ]
+        event = `event=tool_${state} tool=${tool[2]}`
+      } else if (started) {
+        event = `event=review_started changed_files=${Number(started[1])} reviewing_files=${Number(started[2])}`
+      } else if (finished) {
+        event = `event=review_finished files=${Number(finished[1])} findings=${Number(finished[2])} tokens=${Number(finished[3])}`
+      } else if (line.startsWith('[ocr] Plan completed for group ')) {
+        event = 'event=phase_completed phase=planning'
+      } else if (
+        /^\[ocr\] Review filter removed \d{1,12} comment\(s\) for group /.test(
+          line
+        )
+      ) {
+        event = 'event=phase_completed phase=filtering'
+      } else if (
+        /^\[ocr\] (?:token budget reached|Token budget exceeded) \(/.test(line)
+      ) {
+        event = 'event=budget_reached'
+      }
+      if (event) {
+        try {
+          write(`OCR progress ${event}\n`)
+        } catch {
+          // A live-log failure must not change the review result or its streams.
+        }
+      }
+    }
+    pending = ''
+    dropping = false
+  }
+  function consume(text) {
+    for (const part of text.split(/(\n)/)) {
+      if (part === '\n') flush()
+      else if (!dropping && pending.length + part.length <= 4096)
+        pending += part
+      else {
+        pending = ''
+        dropping = true
+      }
+    }
+  }
+  return {
+    write(chunk) {
+      consume(
+        decoder.write(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+      )
+    },
+    end() {
+      consume(decoder.end())
+      flush()
+    },
+  }
+}
+
 async function commandRun(args) {
   const argv = args[0] === '--' ? args.slice(1) : args
   if (argv.length === 0) {
@@ -1407,6 +1485,8 @@ async function commandRun(args) {
   const adapter = await startAdapter({ apiKey, onClose: writeDiagnostics })
   const childEnv = { ...process.env }
   delete childEnv.MISTRAL_API_KEY
+  const liveProgress = childEnv.OCR_ADAPTER_PROGRESS_FD === '3'
+  delete childEnv.OCR_ADAPTER_PROGRESS_FD
   childEnv.OCR_LLM_URL = `${adapter.url}${CHAT_PATH}`
   childEnv.OCR_LLM_TOKEN = adapter.token
   childEnv.OCR_LLM_MODEL = MISTRAL_MODEL
@@ -1414,9 +1494,19 @@ async function commandRun(args) {
   childEnv.OCR_USE_ANTHROPIC = 'false'
 
   const child = spawn(argv[0], argv.slice(1), {
-    stdio: 'inherit',
+    stdio: liveProgress ? ['inherit', 'inherit', 'pipe'] : 'inherit',
     env: childEnv,
   })
+  if (liveProgress) {
+    // The workflow binds fd 3 to its console before redirecting fd 2 privately.
+    // OCR receives neither this descriptor nor the option selecting it.
+    const progress = createProgressFilter((line) => fs.writeSync(3, line))
+    child.stderr.on('data', (chunk) => {
+      process.stderr.write(chunk)
+      progress.write(chunk)
+    })
+    child.stderr.on('end', progress.end)
+  }
   const forward = (signal) => {
     try {
       child.kill(signal)
@@ -1437,7 +1527,9 @@ async function commandRun(args) {
 
   const result = await new Promise((resolve) => {
     child.on('error', () => resolve({ failed: true }))
-    child.on('exit', (code, signal) => resolve({ code, signal }))
+    child.on(liveProgress ? 'close' : 'exit', (code, signal) =>
+      resolve({ code, signal })
+    )
   })
   await adapter.close()
   if (result.failed) {
@@ -1549,6 +1641,7 @@ module.exports = {
   startAdapter,
   callMistral,
   estimateCost,
+  createProgressFilter,
 }
 
 if (require.main === module) {

@@ -18,11 +18,71 @@ const {
   startAdapter,
   callMistral,
   estimateCost,
+  createProgressFilter,
 } = require('./ocr-mistral-adapter.cjs')
 
 const ADAPTER = path.join(__dirname, 'ocr-mistral-adapter.cjs')
 const CHAT_PATH = '/v1/chat/completions'
 const SHUTDOWN_PATH = '/shutdown'
+
+test('progress reconstructs known events without reflecting private fields or workflow commands', () => {
+  const records = []
+  const progress = createProgressFilter((line) => records.push(line))
+  const raw =
+    [
+      '[ocr] 8 file(s) changed, reviewing 5 in /OCR_PRIVATE_SENTINEL',
+      '[ocr]   ▶ file_read "OCR_PRIVATE_SENTINEL"',
+      '[ocr]   ✔ file_read (3ms)',
+      '[ocr]   ✘ code_search failed: OCR_PRIVATE_SENTINEL',
+      '[ocr] Plan completed for group "OCR_PRIVATE_SENTINEL"',
+      '[ocr] Review filter removed 2 comment(s) for group "OCR_PRIVATE_SENTINEL"',
+      '[ocr] token budget reached (used 3M + group est 2M) OCR_PRIVATE_SENTINEL',
+      '[ocr] Summary: 5 file(s) reviewed, 2 comment(s), ~1234 token(s) used, 1s elapsed',
+      '[ocr] Session: OCR_PRIVATE_SENTINEL',
+      '[ocr]   ▶ OCR_PRIVATE_SENTINEL "unknown-tool"',
+      '[ocr] Review filter: failed to parse LLM response, raw: OCR_PRIVATE_SENTINEL',
+      '::error::OCR_PRIVATE_SENTINEL',
+      'reasoning: OCR_PRIVATE_SENTINEL',
+    ].join('\r\n') + '\n'
+  for (const byte of Buffer.from(raw)) progress.write(Buffer.from([byte]))
+  progress.end()
+  assert.deepEqual(records, [
+    'OCR progress event=review_started changed_files=8 reviewing_files=5\n',
+    'OCR progress event=tool_started tool=file_read\n',
+    'OCR progress event=tool_completed tool=file_read\n',
+    'OCR progress event=tool_failed tool=code_search\n',
+    'OCR progress event=phase_completed phase=planning\n',
+    'OCR progress event=phase_completed phase=filtering\n',
+    'OCR progress event=budget_reached\n',
+    'OCR progress event=review_finished files=5 findings=2 tokens=1234\n',
+  ])
+  assert.doesNotMatch(records.join(''), /OCR_PRIVATE_SENTINEL|::/)
+})
+
+test('progress drops whole overlong records, resumes at newline and safely flushes a final fragment', () => {
+  const records = []
+  const progress = createProgressFilter((line) => records.push(line))
+  progress.write('[ocr]   ▶ file_read ' + 'x'.repeat(4096))
+  progress.write('[ocr]   ✔ file_find (1ms)')
+  assert.equal(records.length, 0)
+  progress.write(
+    '\n[ocr] 9999999999999999 file(s) changed, reviewing 1 in private\n'
+  )
+  progress.write('[ocr]   ✔ file_find (1ms)')
+  assert.equal(records.length, 0)
+  progress.end()
+  progress.end()
+  assert.deepEqual(records, [
+    'OCR progress event=tool_completed tool=file_find\n',
+  ])
+  const failed = createProgressFilter(() => {
+    throw new Error('synthetic log sink unavailable')
+  })
+  assert.doesNotThrow(() => {
+    failed.write('[ocr]   ✔ file_read (1ms)\n')
+    failed.end()
+  })
+})
 
 function costReceipt(overrides = {}) {
   return {
@@ -1917,6 +1977,122 @@ test('run strips the upstream key and injects the OCR environment', async () => 
   assert.equal(seen.home, process.env.HOME)
 })
 
+test('run streams filtered progress before completion while preserving raw stderr, JSON and exit status', async (t) => {
+  const rawLine = '[ocr]   ▶ file_read "OCR_PRIVATE_SENTINEL"\n'
+  const finalLine = '[ocr]   ✔ file_read (1ms)'
+  const script = `
+    const fs = require('node:fs')
+    const first = Buffer.from(${JSON.stringify(rawLine)})
+    const split = first.indexOf(Buffer.from('▶')) + 1
+    process.stderr.write(first.subarray(0, split))
+    setImmediate(() => process.stderr.write(first.subarray(split)))
+    process.stdin.once('data', () => {
+      let inherited = false
+      try { fs.writeSync(3, 'OCR_CHILD_FD_SENTINEL'); inherited = true } catch {}
+      fs.writeSync(2, Buffer.from([255, 254, 10]))
+      fs.writeSync(2, ${JSON.stringify(finalLine)})
+      fs.writeSync(1, JSON.stringify({
+        ok: true, inherited,
+        key: process.env.MISTRAL_API_KEY ?? null,
+        progress: process.env.OCR_ADAPTER_PROGRESS_FD ?? null
+      }))
+      process.stdin.destroy()
+      process.exitCode = 7
+    })
+  `
+  const child = spawn(
+    process.execPath,
+    [ADAPTER, 'run', '--', process.execPath, '-e', script],
+    {
+      env: {
+        ...process.env,
+        MISTRAL_API_KEY: 'synthetic-upstream-key',
+        OCR_ADAPTER_PROGRESS_FD: '3',
+      },
+      stdio: ['pipe', 'pipe', 'pipe', 'pipe'],
+    }
+  )
+  t.after(() => {
+    if (child.exitCode === null) child.kill('SIGKILL')
+  })
+  let stdout = ''
+  const stderr = []
+  let live = ''
+  let observed
+  const progressStarted = new Promise((resolve) => {
+    observed = resolve
+  })
+  child.stdout.on('data', (chunk) => {
+    stdout += chunk
+  })
+  child.stderr.on('data', (chunk) => stderr.push(chunk))
+  child.stdio[3].on('data', (chunk) => {
+    live += chunk
+    if (live.includes('event=tool_started')) observed()
+  })
+  const closed = new Promise((resolve) =>
+    child.once('close', (code, signal) => resolve({ code, signal }))
+  )
+  let timeout
+  try {
+    await Promise.race([
+      progressStarted,
+      closed.then(() => {
+        throw new Error('child exited before live progress')
+      }),
+      new Promise((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error('live progress not received')),
+          6000
+        )
+      }),
+    ])
+    assert.equal(child.exitCode, null)
+    assert.equal(stdout, '')
+    child.stdin.end('finish\n')
+    const result = await closed
+    assert.equal(result.code, 7)
+    assert.deepEqual(JSON.parse(stdout), {
+      ok: true,
+      inherited: false,
+      key: null,
+      progress: null,
+    })
+    assert.deepEqual(
+      Buffer.concat(stderr),
+      Buffer.concat([
+        Buffer.from(rawLine),
+        Buffer.from([255, 254, 10]),
+        Buffer.from(finalLine),
+      ])
+    )
+    assert.equal(
+      live,
+      'OCR progress event=tool_started tool=file_read\nOCR progress event=tool_completed tool=file_read\n'
+    )
+    assert.doesNotMatch(live, /SENTINEL|::/)
+  } finally {
+    clearTimeout(timeout)
+  }
+})
+
+test('a missing live-log descriptor never falls back into result or private stderr', async () => {
+  const raw = '[ocr]   ✔ file_read (1ms)\n'
+  const result = await runCli(
+    [
+      'run',
+      '--',
+      process.execPath,
+      '-e',
+      `process.stderr.write(${JSON.stringify(raw)}); process.stdout.write('{"ok":true}')`,
+    ],
+    { MISTRAL_API_KEY: 'synthetic-upstream-key', OCR_ADAPTER_PROGRESS_FD: '3' }
+  )
+  assert.equal(result.code, 0)
+  assert.deepEqual(JSON.parse(result.stdout), { ok: true })
+  assert.equal(result.stderr, raw)
+})
+
 test('run propagates the child exit code', async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-diagnostics-'))
   try {
@@ -2096,7 +2272,7 @@ test('state paths outside RUNNER_TEMP are refused', async () => {
   assert.equal(fs.existsSync(outside), false)
 })
 
-test('run terminates its listener on SIGTERM', async () => {
+test('run with live progress terminates its listener on SIGTERM', async () => {
   const directory = fs.mkdtempSync(
     path.join(os.tmpdir(), 'ocr-signal-diagnostics-')
   )
@@ -2112,6 +2288,7 @@ test('run terminates its listener on SIGTERM', async () => {
         ...process.env,
         MISTRAL_API_KEY: 'sk-synthetic-signal',
         OCR_ADAPTER_DIAGNOSTICS_PATH: diagnosticsPath,
+        OCR_ADAPTER_PROGRESS_FD: '3',
       },
     }
   )
