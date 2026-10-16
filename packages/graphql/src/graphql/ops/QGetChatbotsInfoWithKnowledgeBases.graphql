@@ -26,6 +26,9 @@ query QGetChatbotsInfoWithKnowledgeBases {
         name
         description
         personaText
+        welcomeMessage
+        starterPrompts
+        showReasoning
       }
     }
     authoringRevision {
@@ -65,16 +68,6 @@ query QGetChatbotsInfoWithKnowledgeBases {
       acceptedCount
       declinedCount
       pendingCount
-    }
-    mcpConfigurations {
-      serverId
-      serverName
-      serverDescription
-      serverIsActive
-      chatMode
-      isEnabled
-      priority
-      allowedToolsCount
     }
     enabledKnowledgeBases {
       id

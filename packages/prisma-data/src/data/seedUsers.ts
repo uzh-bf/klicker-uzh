@@ -21,8 +21,12 @@ export async function seedUsers(prisma: Prisma.PrismaClient) {
       publicPreview: true,
       privatePreview: true,
       // The one seeded account enabled for the AI features, so local work can
-      // exercise both sides of that gate without editing the database.
+      // exercise both sides of that gate without editing the database. The
+      // advanced tier and a synthetic cost center open the advanced models
+      // too, so every registry model can be configured and tested locally.
       aiFeaturesEnabled: true,
+      aiSubscriptionTier: 'ADVANCED',
+      aiChatbotCostCenter: 'LOCAL-SEED',
       role: 'ADMIN',
     })
   )

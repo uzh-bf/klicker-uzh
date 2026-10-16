@@ -18,6 +18,38 @@ minimumReleaseAgeExclude:
   # section offsets plus a CSP-safe sort fallback, same sole maintainer, no
   # install scripts. Drop once it ages past the 14-day window.
   - 'source-map-js@1.2.2'
+  # Reviewed security fixes for the 2026-10-06 backend image scan: sharp
+  # 0.35.5 (GHSA-wq5f-xc86-pv6w) and the MCP SDK 1.31.0 (CVE-2026-104850,
+  # GHSA-6qxp-vccf-f47h). Drop once both age past the 14-day window.
+  - 'sharp@0.35.5'
+  # Platform binaries published with that sharp release.
+  - '@img/sharp-darwin-arm64@0.35.5'
+  - '@img/sharp-darwin-x64@0.35.5'
+  - '@img/sharp-freebsd-wasm32@0.35.5'
+  - '@img/sharp-libvips-darwin-arm64@1.3.4'
+  - '@img/sharp-libvips-darwin-x64@1.3.4'
+  - '@img/sharp-libvips-linux-arm64@1.3.4'
+  - '@img/sharp-libvips-linux-arm@1.3.4'
+  - '@img/sharp-libvips-linux-ppc64@1.3.4'
+  - '@img/sharp-libvips-linux-riscv64@1.3.4'
+  - '@img/sharp-libvips-linux-s390x@1.3.4'
+  - '@img/sharp-libvips-linux-x64@1.3.4'
+  - '@img/sharp-libvips-linuxmusl-arm64@1.3.4'
+  - '@img/sharp-libvips-linuxmusl-x64@1.3.4'
+  - '@img/sharp-linux-arm64@0.35.5'
+  - '@img/sharp-linux-arm@0.35.5'
+  - '@img/sharp-linux-ppc64@0.35.5'
+  - '@img/sharp-linux-riscv64@0.35.5'
+  - '@img/sharp-linux-s390x@0.35.5'
+  - '@img/sharp-linux-x64@0.35.5'
+  - '@img/sharp-linuxmusl-arm64@0.35.5'
+  - '@img/sharp-linuxmusl-x64@0.35.5'
+  - '@img/sharp-wasm32@0.35.5'
+  - '@img/sharp-webcontainers-wasm32@0.35.5'
+  - '@img/sharp-win32-arm64@0.35.5'
+  - '@img/sharp-win32-ia32@0.35.5'
+  - '@img/sharp-win32-x64@0.35.5'
+  - '@modelcontextprotocol/sdk@1.31.0'
   # Reviewed Next.js 16.3.4 release train; keep the 14-day policy for other releases.
   - 'next@16.3.4'
   - 'eslint-config-next@16.3.4'
@@ -111,6 +143,11 @@ overrides:
   # only in 12.0.1. Older utility major lines are still requested by Yoga,
   # the executors, envelop and the codegen loaders.
   '@graphql-tools/utils@<12.0.1': 12.0.1
+  # sharp 0.35.5 fixes GHSA-wq5f-xc86-pv6w and the MCP SDK 1.31.0 fixes
+  # CVE-2026-104850. Next.js and fastmcp keep resolving the vulnerable releases
+  # through ranges that already allow the fixes, so lift those lines here.
+  'sharp@>=0.35.0 <0.35.5': 0.35.5
+  '@modelcontextprotocol/sdk@>=1.12.0 <1.31.0': 1.31.0
 
 packageExtensions:
   # The published stylesheet imports this plugin, but 4.1.8 lists it only as a devDependency.
