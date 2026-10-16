@@ -27,7 +27,7 @@ that boundary separately from command-line parsing.
 Owner and boundary owner: main session, execution mode `standard`.
 Branch: `enhance/evaluation-budget-limits`; target: `v3`.
 Baseline: `733b6e7c9456fb11cb75001dbe111820d9c3b009`.
-Pull request: none created yet.
+Pull request: [draft PR 6576](https://github.com/uzh-bf/klicker-uzh/pull/6576).
 Ceremony: full path because this changes spend policy and ledger validation.
 Pause only for a material authority, policy or data-boundary change, or an
 unavailable required verification capability.
@@ -95,6 +95,8 @@ syntax, Biome checks, Prettier and the focused static scan passed; the latter
 reported zero findings. Baseline coverage was 47 passing tests.
 
 The native planner and opposing-provider plan challenge approved the contract.
-Post-commit simplification, cost/data-integrity slice review, integrated final
-review and hosted CI remain pending. Required delivery is a verified draft pull
-request; none exists yet. No real ledger or paid request has been created.
+Post-commit simplification consolidated two duplicated identity fixtures while
+retaining separate cases and all admission checks. The affected suite passed
+all 18 tests again. Cost/data-integrity slice review, integrated final review
+and hosted CI remain pending. [Draft PR 6576](https://github.com/uzh-bf/klicker-uzh/pull/6576)
+targets `v3`; its CI is queued. No real ledger or paid request has been created.

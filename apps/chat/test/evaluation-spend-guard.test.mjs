@@ -771,91 +771,70 @@ test('invalid initializer arguments are rejected before any budget file is creat
   }
 })
 
-test('a legacy identity cannot be reinitialized or raised to the new limits and keeps its original bytes', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'evaluation-guard-'))
-  try {
-    const policyFile = join(directory, 'pricing.json')
-    await writeFile(policyFile, JSON.stringify(policy))
-    const budgetFile = join(directory, 'budget.json')
-    const env = {
-      KLICKER_EVAL_PRICING_FILE: policyFile,
-      KLICKER_EVAL_BUDGET_FILE: budgetFile,
+const extendedBudgetArguments = [
+  '--initialize-budget',
+  '--max-provider-micro-usd',
+  '55000000',
+  '--max-submitted-turns',
+  '48',
+]
+for (const [
+  name,
+  initialArguments,
+  replacementArguments,
+  replacementLimits,
+] of [
+  [
+    'legacy limits cannot be raised',
+    ['--initialize-budget'],
+    extendedBudgetArguments,
+    { maxProviderMicroUsd: 55_000_000, maxSubmittedTurns: 48 },
+  ],
+  [
+    'extended limits cannot be lowered',
+    extendedBudgetArguments,
+    ['--initialize-budget'],
+    { maxProviderMicroUsd: 5_000_000, maxSubmittedTurns: 120 },
+  ],
+]) {
+  test(name + ' through reinitialization or identity mutation', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'evaluation-guard-'))
+    try {
+      const policyFile = join(directory, 'pricing.json')
+      await writeFile(policyFile, JSON.stringify(policy))
+      const budgetFile = join(directory, 'budget.json')
+      const env = {
+        KLICKER_EVAL_PRICING_FILE: policyFile,
+        KLICKER_EVAL_BUDGET_FILE: budgetFile,
+      }
+      await main(env, initialArguments)
+      const before = await readBudgetLedger(budgetFile)
+      const ledgerBytes = await readFile(budgetFile, 'utf8')
+      const receiptBytes = await readFile(budgetFile + '.identity', 'utf8')
+      await assert.rejects(main(env, replacementArguments), {
+        code: 'budget_exists',
+      })
+      await assert.rejects(
+        initializeBudget(budgetFile, before.policyHash, replacementLimits),
+        { code: 'budget_exists' }
+      )
+      await assert.rejects(
+        mutateBudget(budgetFile, (ledger) => {
+          Object.assign(ledger, replacementLimits)
+        }),
+        { code: 'budget_identity_mismatch' }
+      )
+      assert.equal(await readFile(budgetFile, 'utf8'), ledgerBytes)
+      assert.equal(
+        await readFile(budgetFile + '.identity', 'utf8'),
+        receiptBytes
+      )
+      assert.deepEqual(await readBudgetLedger(budgetFile), before)
+    } finally {
+      await rm(directory, { recursive: true, force: true })
     }
-    await main(env, ['--initialize-budget'])
-    const before = await readBudgetLedger(budgetFile)
-    const ledgerBytes = await readFile(budgetFile, 'utf8')
-    const receiptBytes = await readFile(budgetFile + '.identity', 'utf8')
-    await assert.rejects(
-      main(env, [
-        '--initialize-budget',
-        '--max-provider-micro-usd',
-        '55000000',
-        '--max-submitted-turns',
-        '48',
-      ]),
-      { code: 'budget_exists' }
-    )
-    await assert.rejects(
-      initializeBudget(budgetFile, before.policyHash, {
-        maxProviderMicroUsd: 55_000_000,
-        maxSubmittedTurns: 48,
-      }),
-      { code: 'budget_exists' }
-    )
-    await assert.rejects(
-      mutateBudget(budgetFile, (ledger) => {
-        ledger.maxProviderMicroUsd = 55_000_000
-        ledger.maxSubmittedTurns = 48
-      }),
-      { code: 'budget_identity_mismatch' }
-    )
-    assert.equal(await readFile(budgetFile, 'utf8'), ledgerBytes)
-    assert.equal(await readFile(budgetFile + '.identity', 'utf8'), receiptBytes)
-    assert.deepEqual(await readBudgetLedger(budgetFile), before)
-  } finally {
-    await rm(directory, { recursive: true, force: true })
-  }
-})
-
-test('the exact US$55/48 identity cannot be mutated back to legacy limits and keeps its original bytes', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'evaluation-guard-'))
-  try {
-    const policyFile = join(directory, 'pricing.json')
-    await writeFile(policyFile, JSON.stringify(policy))
-    const budgetFile = join(directory, 'budget.json')
-    const env = {
-      KLICKER_EVAL_PRICING_FILE: policyFile,
-      KLICKER_EVAL_BUDGET_FILE: budgetFile,
-    }
-    await main(env, [
-      '--initialize-budget',
-      '--max-submitted-turns',
-      '48',
-      '--max-provider-micro-usd',
-      '55000000',
-    ])
-    const before = await readBudgetLedger(budgetFile)
-    const ledgerBytes = await readFile(budgetFile, 'utf8')
-    const receiptBytes = await readFile(budgetFile + '.identity', 'utf8')
-    assert.equal(before.maxProviderMicroUsd, 55_000_000)
-    assert.equal(before.maxSubmittedTurns, 48)
-    await assert.rejects(
-      mutateBudget(budgetFile, (ledger) => {
-        ledger.maxProviderMicroUsd = 5_000_000
-        ledger.maxSubmittedTurns = 120
-      }),
-      { code: 'budget_identity_mismatch' }
-    )
-    await assert.rejects(main(env, ['--initialize-budget']), {
-      code: 'budget_exists',
-    })
-    assert.equal(await readFile(budgetFile, 'utf8'), ledgerBytes)
-    assert.equal(await readFile(budgetFile + '.identity', 'utf8'), receiptBytes)
-    assert.deepEqual(await readBudgetLedger(budgetFile), before)
-  } finally {
-    await rm(directory, { recursive: true, force: true })
-  }
-})
+  })
+}
 
 test('guard admits the final submitted turn and last reservation, then refuses the next turn and reservation', async () => {
   await scenario(
