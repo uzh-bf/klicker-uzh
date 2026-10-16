@@ -22,6 +22,7 @@ const {
   buildOCRConfig,
   buildMistralToolCanaryRequest,
   buildReviewPlan,
+  buildPlanContext,
   buildReviewBackground,
   createGhGithub,
   decodeMetadata,
@@ -590,6 +591,96 @@ test('adds bounded description data without hidden comments or image embeds', ()
   )
 })
 
+test('plan context carries changed plans from the head commit within one budget', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'final-review-plan-'))
+  const git = (...args) => {
+    const result = spawnSync('git', args, { cwd, encoding: 'utf8' })
+    assert.equal(result.status, 0, result.stderr)
+    return result.stdout.trim()
+  }
+  const write = (filePath, content) => {
+    fs.mkdirSync(path.dirname(path.join(cwd, filePath)), { recursive: true })
+    fs.writeFileSync(path.join(cwd, filePath), content)
+  }
+  const commit = () => {
+    git('add', '-A')
+    git(
+      '-c',
+      'user.name=Synthetic',
+      '-c',
+      'user.email=synthetic@example.test',
+      'commit',
+      '-qm',
+      'synthetic'
+    )
+    return git('rev-parse', 'HEAD')
+  }
+  try {
+    git('init', '-q')
+    write('project/2026-01-01-removed-plan.md', 'Removed plan.')
+    write('project/2026-01-02-untouched-plan.md', 'Untouched plan.')
+    const from = commit()
+    assert.equal(buildPlanContext({ from, to: from, cwd }), '')
+
+    git('rm', '-q', 'project/2026-01-01-removed-plan.md')
+    write('project/2026-01-15-oversized-plan.md', 'x'.repeat(300 * 1024))
+    write(
+      'project/2026-02-01-main-plan.md',
+      'Goal.<!-- hidden -->\n'.padEnd(30, 'x')
+    )
+    write('project/2026-03-01-revision-plan.md', '🙂'.repeat(16_000))
+    write('project/2026-04-01-late-plan.md', 'Late plan.')
+    write('project/2026-02-01-notes.md', 'Not a plan.')
+    write('docs/2026-02-01-other-plan.md', 'Outside the plan root.')
+    const to = commit()
+    write('project/2026-02-01-main-plan.md', 'Uncommitted edit.')
+
+    const lines = buildPlanContext({ from, to, cwd }).split('\n')
+    assert.equal(lines.length, 3)
+    const { plans } = JSON.parse(lines[2])
+    assert.deepEqual(
+      plans.map(({ path: filePath, content_status }) => [
+        filePath,
+        content_status,
+      ]),
+      [
+        ['project/2026-01-15-oversized-plan.md', 'omitted'],
+        ['project/2026-02-01-main-plan.md', 'complete'],
+        ['project/2026-03-01-revision-plan.md', 'truncated'],
+        ['project/2026-04-01-late-plan.md', 'omitted'],
+      ]
+    )
+    assert.equal(plans[0].content, null)
+    assert.equal(plans[1].content.includes('hidden'), false)
+    assert.equal(plans[1].content.startsWith('Goal.'), true)
+    assert.equal(
+      Array.from(plans[1].content).length + Array.from(plans[2].content).length,
+      16_000
+    )
+    assert.equal(plans[3].content, null)
+
+    // Strictly shorter backtick runs make the normalizer superlinear; only a
+    // bounded prefix of a large plan may reach it.
+    const runs = []
+    for (let length = 700; length > 0; length -= 1) {
+      runs.push('`'.repeat(length))
+    }
+    write('project/2026-05-01-crafted-plan.md', runs.join(' '))
+    const crafted = commit()
+    const startedAt = Date.now()
+    const craftedContext = buildPlanContext({ from: to, to: crafted, cwd })
+    assert.ok(Date.now() - startedAt < 2_000)
+    assert.equal(
+      JSON.parse(craftedContext.split('\n')[2]).plans.find(
+        ({ path: filePath }) => filePath.endsWith('crafted-plan.md')
+      ).content_status,
+      'truncated'
+    )
+  } finally {
+    fs.rmSync(cwd, { recursive: true, force: true })
+  }
+})
+
 test('bounds normalization work for unmatched description delimiters', () => {
   const result = spawnSync(
     process.execPath,
@@ -624,7 +715,7 @@ test('bounds individual and stack review retries, tokens, and runtime', () => {
   assert.equal(source.match(/--timeout 30/g)?.length, 1)
   assert.equal(source.match(/plan-ocr-resume/g)?.length, 2)
   assert.equal(source.match(/merge-ocr-resume/g)?.length, 2)
-  assert.match(source, /run_ocr_attempt "\$\{RESULT_PATH\}" 6000000/)
+  assert.match(source, /run_ocr_attempt "\$\{RESULT_PATH\}" 10000000/)
   assert.match(source, /"\$\{REVIEW_FROM\}" "\$\{HEAD_SHA\}" 20000000/)
   assert.match(source, /resume_partial_result[\s\S]*750000 "\$\{RANGE_PATH\}"/)
   assert.equal(
