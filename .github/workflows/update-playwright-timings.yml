@@ -48,7 +48,19 @@ jobs:
 
           should_run="$(sed -n 's/^should_run=//p' "${METADATA_PATH}")"
           if [ "${should_run}" = 'true' ]; then
+            # Shard durations are architecture-specific, so the recorded route
+            # decides which calibration family this feedback may update.
+            route="$(sed -n 's/^route=//p' "${METADATA_PATH}")"
+            case "${route}" in
+              hosted) architecture='x64' ;;
+              public-pr) architecture='arm64' ;;
+              *)
+                echo "::error::Playwright run metadata reported the unsupported route '${route}'"
+                exit 1
+                ;;
+            esac
             echo 'should_run=true' >> "${GITHUB_OUTPUT}"
+            echo "architecture=${architecture}" >> "${GITHUB_OUTPUT}"
           else
             echo '::notice::Playwright tests were skipped by the path filter.'
             echo 'should_run=false' >> "${GITHUB_OUTPUT}"
@@ -113,6 +125,7 @@ jobs:
           python3 .github/scripts/update-playwright-timings.py
           "${RUNNER_TEMP}/playwright-timing-artifacts"
           playwright/timings.json
+          --architecture "${{ steps.run-gate.outputs.architecture }}"
 
       - name: Open or update the timing pull request
         if: steps.run-gate.outputs.should_run == 'true' && steps.source-gate.outputs.should_update == 'true'

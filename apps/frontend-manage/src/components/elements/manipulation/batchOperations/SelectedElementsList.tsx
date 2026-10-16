@@ -34,40 +34,32 @@ function SelectedElementsList({
       <ShadcnTable className="mt-2">
         <ShadcnTableHeader>
           <ShadcnTableRow>
-            <ShadcnTableHead>
-              <span className="sr-only">
-                {t('manage.questionPool.batchElementName')}
-              </span>
+            <ShadcnTableHead
+              className="px-2 text-left"
+              data-cy="batch-element-name-heading"
+            >
+              {t('manage.questionPool.batchElementName')}
             </ShadcnTableHead>
             {!allAdminPermissions ? (
-              <ShadcnTableHead className="w-5.5 px-0">
-                <span className="sr-only">
-                  {t('manage.questionPool.batchElementPermission')}
-                </span>
+              <ShadcnTableHead
+                className="w-28 px-2 text-left"
+                data-cy="batch-element-permission-heading"
+              >
+                {t('manage.questionPool.batchElementPermission')}
               </ShadcnTableHead>
             ) : null}
             <ShadcnTableHead
-              className="w-5.5 px-0 text-center"
-              aria-disabled={!updatesConfigured}
+              className="w-28 px-2 text-center"
+              data-cy="batch-element-update-heading"
             >
-              <span className="sr-only">
-                {updatesConfigured
-                  ? t('manage.questionPool.batchUpdateStatus')
-                  : t('manage.questionPool.batchUpdateStatusInactive')}
-              </span>
-              {!updatesConfigured ? (
-                <FontAwesomeIcon
-                  aria-hidden
-                  icon={faMinus}
-                  className="text-gray-400"
-                />
-              ) : null}
+              {t('manage.questionPool.batchUpdateStatus')}
             </ShadcnTableHead>
             {sharingEnabled ? (
-              <ShadcnTableHead className="w-5.5 px-0 text-center">
-                <span className="sr-only">
-                  {t('manage.questionPool.batchSharingStatus')}
-                </span>
+              <ShadcnTableHead
+                className="w-28 px-2 text-center"
+                data-cy="batch-element-sharing-heading"
+              >
+                {t('manage.questionPool.batchSharingStatus')}
               </ShadcnTableHead>
             ) : null}
           </ShadcnTableRow>
@@ -90,7 +82,7 @@ function SelectedElementsList({
               </ShadcnTableCell>
               {!allAdminPermissions ? (
                 !element.isOwner ? (
-                  <ShadcnTableCell className="w-5.5 px-0 text-center">
+                  <ShadcnTableCell className="w-28 px-2 text-center">
                     <ObjectPermissionLevel
                       iconOnly
                       objectName={element.name}
@@ -98,10 +90,10 @@ function SelectedElementsList({
                     />
                   </ShadcnTableCell>
                 ) : (
-                  <ShadcnTableCell className="w-5.5" />
+                  <ShadcnTableCell className="w-28 px-2" />
                 )
               ) : null}
-              <ShadcnTableCell className="w-5.5 px-0 text-center">
+              <ShadcnTableCell className="w-28 px-2 text-center">
                 {!updatesConfigured ? (
                   <span
                     role="img"
@@ -163,7 +155,7 @@ function SelectedElementsList({
                 )}
               </ShadcnTableCell>
               {sharingEnabled ? (
-                <ShadcnTableCell className="w-5.5 px-0 text-center">
+                <ShadcnTableCell className="w-28 px-2 text-center">
                   {element.sharingApplied ? (
                     <span
                       role="img"

@@ -3,13 +3,29 @@
 ## Quick Reference
 
 - **Monorepo**: pnpm 11.x + Turborepo, Node.js 24 (Volta-pinned; see `volta` in root `package.json` for exact versions)
-- **Main branch**: `v3`
+- **Main branch**: `v3` (active development)
+- **Legacy branches**: `dev` and `master` belong to the older Klicker variant and are not actively developed.
 - **Package names**: `@klicker-uzh/<name>` (e.g., `@klicker-uzh/graphql`)
 
 ## Stacked PRs
 
+- Use the maintained draft sync PRs for `v3` -> `v3-ai`, `v3-ai` -> `v3-audit`, and `v3-ai` -> `v3-adaptive-learning`. Merge these integrations with normal merge commits to preserve ancestry; a squashed sync fails the `sync-ancestry` check until the restore PR the guard opens is merged with a merge commit (see [Squashed sync guard](docs/ci-and-deployment.md#squashed-sync-guard)). Retain the applicable verification and merge/deployment authorization gates. Other feature-branch synchronization remains manual.
+- **Branch promotion chain**: `v3` -> `v3-ai`, which feeds both `v3-audit` and `v3-adaptive-learning`. Never merge `v3` into a branch below `v3-ai` directly, and do not cherry-pick around a hop. The `STG_SOURCE_BRANCH` repository variable selects the branch staging builds from (read it with `gh variable get STG_SOURCE_BRANCH`), so every `v3-ai` commit it is meant to release has to arrive through a `v3-ai` -> source merge. When an approved change adds, renames, reorders, or retires an integration branch, agents must maintain the explicit sync pairs and their workflow triggers, tests, and documentation together; follow [Changing the sync chain](docs/ci-and-deployment.md#changing-the-sync-chain).
+- **Integration mechanics**: the `v3` and `v3-*` rulesets block deletion and force-push, and their required checks evaluate both pull requests and direct pushes. `v3-ai` and `v3-audit` change only through pull requests; admins may bypass required checks on pull requests. A non-fast-forward push is rejected when the branch has moved, so duplicate syncs cannot land.
+- **Sync routing**: automation creates drafts for those three pairs only, headed by bot-owned `sync/<source>-into-<target>-<sha10>` branches that follow the source. Never open a PR whose head is `v3`, `v3-ai`, `v3-audit`, or `v3-adaptive-learning`: "Update branch" on it merges the target back into the source. Maintainers control readiness, conflict resolution (on the sync branch), and merging. The `sync-ancestry` check fails every change to `v3-ai` while its head contains `v3-audit` or `v3-adaptive-learning` history; `v3-ai` history in `v3` is not checked. The staging promoter independently re-validates the exact head of the selected staging source before moving `stg-release`. See [Draft sync PR maintenance](docs/ci-and-deployment.md#draft-sync-pr-maintenance) for triggers and CI behavior.
 - GitHub stacked PRs are enabled for this repository. Always use `$stacked-change` and `$gh-stack` for larger features: substantial cross-layer or multi-concern work, changes with distinct reviewer audiences or runtime models, and existing large branches that need decomposition. Keep an ordinary single PR for small, cohesive changes only.
 - This is a KlickerUZH repository capability, not a GitHub-wide assumption. Verify native stack support before using the workflow in another repository.
+- Final AI review is standing-authorized for all KlickerUZH PRs. Once exact-head CI and ordinary feedback are settled, agents may post `/final-review` for an unstacked PR or ordinary stack layer, and `/final-review-stack` only on the top PR of a verified native stack, without asking again. This approval covers sending the public PR diff to the workflow's configured Mistral model and the resulting usage cost; it does not authorize merging, approving, force-pushing, or exposing uncommitted or private data.
+
+## Release preparation
+
+Use the release scripts in the root `package.json` to generate versions and
+`CHANGELOG.md`; never hand-edit package versions or assemble release notes as a
+substitute. For an alpha release, run `pnpm run release:alpha` (preview with
+`pnpm run release:alpha:dry`). The script uses `.versionrc.js` as the authoritative
+version-target list. During PR preparation, pass `--skip.tag` and create the tag
+only at the approved merged release commit. Tag publication and production
+activation remain separately authorized actions.
 
 ## Commands
 
@@ -47,7 +63,15 @@ pnpm run prisma:studio        # open Prisma Studio
 pnpm run prisma:sync          # sync schema to apps/analytics
 ```
 
-The commands above are the legacy host/Infisical path. In the self-contained DevPod, the environment is already injected: use `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`, then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then `pnpm --filter @klicker-uzh/prisma-data run seed:raw` for a full destructive reset and reseed.
+The commands above are legacy host/Infisical wrappers, not permission to mutate
+retained development, staging or production databases. Guarded reset, push,
+development migration and test seeds require the restricted `klicker_test`
+login and marked databases. Inside the provisioned self-contained container,
+use `pnpm --filter @klicker-uzh/prisma run prisma:migrate:raw` for development
+migration (also requires marked `klicker_test_shadow`). For a full destructive
+reset and reseed, use `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`,
+then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then
+`pnpm --filter @klicker-uzh/prisma-data run seed:raw`.
 
 ### GraphQL codegen
 
@@ -123,7 +147,7 @@ Code-first with **Pothos** in `packages/graphql/src/`. After changing types/reso
 
 ## Database Workflow
 
-Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a `.prisma` file: `pnpm run prisma:migrate` (creates/applies the migration and explicitly regenerates the TypeScript client), then `pnpm run prisma:sync` (mirrors model files into `apps/analytics` while preserving its Python generator and datasource), then rebuild dependents. Update GraphQL types/resolvers if the change affects the API. Prisma 7 reset and migration commands do not seed automatically; use the explicit setup or seed command for local fixtures.
+Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a `.prisma` file, run `pnpm --filter @klicker-uzh/prisma run prisma:migrate:raw` inside the provisioned disposable container (creates/applies the migration and explicitly regenerates the TypeScript client), then `pnpm run prisma:sync` (mirrors model files into `apps/analytics` while preserving its Python generator and datasource), then rebuild dependents. Update GraphQL types/resolvers if the change affects the API. Prisma 7 reset and migration commands do not seed automatically; use the explicit raw seed command for local fixtures. See [Data & Migrations](docs/data-and-migrations.md) for the guarded shadow requirement and schema-drift checks.
 
 ## Auth Model
 
@@ -143,7 +167,7 @@ See [Domain Model](docs/domain-model.md) for the canonical explanation.
 
 ### Self-contained devcontainer (recommended)
 
-Clone-and-run via a self-contained devcontainer — no Infisical/Doppler, no EduID, no `/etc/hosts` edits. The container owns the whole stack (Node 24 + pnpm toolchain, Postgres, 3× Redis, MailHog, Hatchet) and runs **all core apps in ONE container** via `turbo dev`. Run pnpm/prisma/tests **inside the container**, never on the host.
+Clone-and-run via a self-contained devcontainer — no Infisical/Doppler, no EduID, no `/etc/hosts` edits. The container owns the whole stack (Node 24 + pnpm toolchain, Postgres, 3× Redis, MailHog, Hatchet) and runs **all core apps in ONE container** via `turbo dev`. Run pnpm, Prisma, and unit tests **inside the container**. Playwright is the exception: always run `node util/run-playwright-host.mjs <args>` from the host against the routed container stack. Never invoke Playwright or install its browsers through `devrouter exec`, a DevPod shell, or another local container; CI keeps its existing official Playwright container path.
 
 ```bash
 devrouter ensure .
@@ -151,10 +175,12 @@ devrouter ensure .
 
 The same command starts and proves primary and linked checkouts. Use `devrouter exec . -- <command...>` for one-shot commands or the exact DevPod ID printed by `ensure` for an interactive shell.
 
-The dev servers auto-start in the background (`devrouter exec . -- tail -f /tmp/dev.log`; first compile takes ~1min). Host-side `devrouter ensure` owns lifecycle reconciliation and delivers its matching process helper to the exact validated container. The stack runs every routed app plus the two Hatchet workers (no worker route); analytics, Office add-in, and docs remain outside it. See `.devcontainer/README.md`.
+The dev servers auto-start in the background (`devrouter exec . -- tail -f /tmp/dev.log`; first compile takes ~1min). Host-side `devrouter ensure` owns lifecycle reconciliation and delivers its matching process helper to the exact validated container. The default `full` profile runs every routed app plus the two Hatchet workers (no worker route); `devrouter ensure . --profile <name>[,<name>]` selects exact app/service/process unions (e.g. `chat`, `ai`, `mcp`, `chat,ai,mcp` - see `.devcontainer/README.md`). Analytics, Office add-in, and docs remain outside this stack.
 
-**OpenRouter-backed local chat:** Infisical authentication and secret injection
-must run from a host shell outside the Codex sandbox. Do not run Infisical
+#### OpenRouter-backed local chat
+
+Infisical authentication and secret injection must run from a host shell
+outside the Codex sandbox. Do not run Infisical
 inside `devrouter exec`, the DevPod, or a container. Use the restricted
 `rs-infisical-operator` as the only repository-supported injection path. Inject
 the upstream key only at runtime, never into a file or the shell history:
@@ -165,7 +191,7 @@ rs-infisical-operator --profile <profile> permissions
 rs-infisical-operator --profile <profile> run \
   --map OPENROUTER_API_KEY=UPSTREAM_OPENAI_API_KEY -- \
   env UPSTREAM_OPENAI_BASE_URL=https://openrouter.ai/api/v1 \
-  devrouter ensure <checkout-path> --json
+  devrouter ensure <checkout-path> --profile chat,ai,mcp --json
 ```
 
 If the host-side operator profile or login is missing, stop and complete the
@@ -175,12 +201,12 @@ copy the key into a file, or pass it through chat, arguments, or logs.
 If LiteLLM is already running without those variables, stop the exact linked
 checkout with `devrouter stop <checkout-path>` and rerun the injection command;
 `ensure` does not replace environment variables inside an existing service
-container. Verify only that the destination exists with
-`devrouter exec <checkout-path> -- sh -c 'test -n "$UPSTREAM_OPENAI_API_KEY"'`.
+container. Verify key presence only in the exact LiteLLM service with the
+values-free host-side check in
+[the OpenRouter local Chat solution](docs/solutions/integration/openrouter-local-chat-runtime.md).
 Use only seeded or synthetic test content because OpenRouter is an external
 upstream and the Azure-specific chatbot disclaimer does not describe this
-local path. The repeatable smoke and troubleshooting details live in
-[the OpenRouter local Chat solution](docs/solutions/integration/openrouter-local-chat-runtime.md).
+local path.
 
 Local Auto Mode is selected by `CHAT_PRIMARY_MODEL_ID=auto`. Chat sends the
 `auto-router` deployment to LiteLLM at `http://litellm:4000`; LiteLLM classifies
@@ -193,8 +219,10 @@ OpenRouter supplies the selected models but does not make the routing decision.
 This adds one classifier request and, for semantic matching, one embedding
 request to the same external OpenRouter data boundary. It therefore adds local
 latency and usage cost. LiteLLM falls back from Sol medium to `gpt-5.1` on an
-upstream failure. Separately, when Chat credits reach zero, Chat selects
-`gpt-4.1-mini` before calling LiteLLM and bypasses Auto Mode.
+upstream failure. Separately, zero-credit fallback remains within the selected
+usage class. Chat can select allow-listed Luna for a BASE selection before
+calling LiteLLM; current ADVANCED selections such as Auto are denied while no
+ADVANCED fallback is allow-listed.
 
 The seeded Benibot exposes a deterministic local `doc_query` MCP tool in Tutor
 and Explainer modes. `post-start.sh` runs it at `http://localhost:1417/mcp`;
@@ -205,10 +233,10 @@ Search for `portfolio diversification` and tell me the exact marker it
 returns.” A successful turn calls `KB_doc_query` and shows
 `KLICKER_LOCAL_MCP_OK` in a non-empty final answer plus the synthetic source
 card. Reload the thread and require the tool result, answer, and source to
-remain visible. Use the direct `GPT-5.6 Luna` option only when isolating the
+remain visible. Use the direct `GPT-6 Luna` option only when isolating the
 router from the model/tool integration.
 
-**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.38 fronts the stack over the shared `devnet` network. One-time host setup must happen **before** the container starts:
+**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.4.0 fronts the stack over the shared `devnet` network. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery, 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime, 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct retained-runtime configuration and mount comparison, 0.2.0 reads the `worktrees` cleanup declarations in `.devrouter.yml`, 0.3.0 removes Docker leftovers of deleted worktrees (see devrouter's [worktree cleanup guide](https://github.com/rschlaefli/devrouter/blob/main/docs/WORKTREE_CLEANUP.md)), and 0.4.0 adds `devrouter env`, which the host Playwright launcher uses to find the workspace and its loopback database port. One-time host setup must happen **before** the container starts:
 
 ```bash
 devrouter setup --yes # Traefik + devnet + mkcert CA
@@ -221,7 +249,7 @@ devrouter ensure .                    # existing primary or linked checkout
 devrouter workspace up <branch-name>  # create and start a new worktree
 ```
 
-Primary-checkout apps use `https://{app}.klicker.localhost`; linked-worktree apps use `https://{app}.klicker.<workspace>.localhost`. Postgres for host tooling is at `db.klicker[.<workspace>].localhost:5432` (`sslmode=require sslnegotiation=direct`). The primary checkout also keeps the fixed localhost ports in [Repo Layout](#repo-layout). Login as `lecturer`/`abcd` (see test credentials below). Env in `.devcontainer/devcontainer.env` (committed, dev-only — no real secrets).
+Primary-checkout apps use `https://{app}.klicker.localhost`; linked-worktree apps use `https://{app}.klicker.<workspace>.localhost`. Postgres for host tooling is at `db.klicker[.<workspace>].localhost:5432` (`sslmode=require sslnegotiation=direct`); a selective `--profile` publishes that route only when it includes `db`, otherwise use the loopback port from `devrouter env . --json`. The primary checkout also keeps the fixed localhost ports in [Repo Layout](#repo-layout). Login as `lecturer`/`abcd` (see test credentials below). Env in `.devcontainer/devcontainer.env` (committed, dev-only — no real secrets).
 
 **Media uploads and Blob CORS:** the manage media library uploads directly from the browser to Azure Blob Storage with a SAS URL. The storage account's Blob service CORS must allow the actual local origin (`https://manage.klicker.localhost` or `https://manage.klicker.<workspace>.localhost`), not only production origins such as `https://manage.klicker.com`. For a dedicated dev storage account, use dev-only localhost rules; keep production storage accounts exact.
 
@@ -280,6 +308,7 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 
 - **pre-commit** (husky): a staged `gitleaks` secret scan (skipped with a notice when the binary isn't installed; CI enforces it), then `pnpm run check:all` (typecheck + format:check via lint-staged + lint + syncpack)
 - **pre-push**: runs `pnpm run build`
+- Both `pnpm` steps go through `util/run-hook-pnpm.sh`. Devcontainer checkouts have no host dependency install, so they skip the step with a notice and rely on required CI. Never run a host `pnpm install` to satisfy a hook; see [Getting Started](docs/getting-started.md).
 - lint-staged: Biome on staged code files, Prettier on staged Markdown/YAML and `playwright/` specs
 
 ## Important Notes
@@ -335,10 +364,14 @@ Full reference (config schema, docker requirements, env injection, commands):
 Quick validation sequence:
 
 - Managed devcontainer consumer images contain no devrouter package or helper; `devrouter ensure` delivers the matching helper at runtime.
+- Devsy runtime: run `devrouter setup --yes --workspace-runtime devsy` once; `doctor` then reports verified agent readiness without network access.
 - `devrouter up`
 - `devrouter tls install` (required when repo defines tcp/postgres apps)
 - `devrouter app ls --repo .`
 - Primary or linked devcontainer checkout: `devrouter ensure . --json`
+- Managed selective profile: `devrouter ensure . --profile <name> --json`
+- Side-effect-free automation: `devrouter profile resolve --repo . --profile <name> --json`; add `profile plan --contract <repo-relative-yaml>` when the repository needs literal bindings.
 - Host/docker runtime app only: `devrouter app run <host-app> --repo . --yes`
 - `devrouter ls`
+- Managed devcontainer source configs with `postCreateCommand` and a managed post-start adapter must set `waitFor` exactly to `postCreateCommand` or `postStartCommand`; generated managed configs preserve lifecycle fields and change only `runServices`.
 <!-- /devrouter -->

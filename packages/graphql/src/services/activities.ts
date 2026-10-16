@@ -9,6 +9,12 @@ import generatePassword from 'generate-password'
 import { POINTS_PER_GROUP_ACTIVITY_ELEMENT } from './groups.js'
 import { POINTS_PER_INSTANCE } from './stacks.js'
 
+// live quizzes of a course with a pending deletion request are hidden until the
+// permanent deletion has detached or removed them
+export const liveQuizCourseVisibilityFilter = {
+  OR: [{ courseId: null }, { course: { deletionRequestedAt: null } }],
+} satisfies DB.Prisma.LiveQuizWhereInput
+
 export const UNPUBLISHED_ACTIVITY_STATUSES: DB.PublicationStatus[] = [
   DB.PublicationStatus.DRAFT,
   DB.PublicationStatus.SCHEDULED,
@@ -41,7 +47,10 @@ export async function getUserActivitiesCourses(ctx: ContextWithUser) {
     where: { id: ctx.user.sub },
     include: {
       objects: {
-        where: { courseId: { not: null } },
+        where: {
+          courseId: { not: null },
+          course: { deletionRequestedAt: null },
+        },
         include: {
           course: {
             select: {
@@ -203,7 +212,17 @@ export async function getUserActivities(
   },
   ctx: ContextWithUser
 ) {
+  // the activities view has no course relation, so courses with a pending
+  // deletion request are excluded by id (there are rarely more than a few)
+  const coursesPendingDeletion = await ctx.prisma.course.findMany({
+    where: { deletionRequestedAt: { not: null } },
+    select: { id: true },
+  })
+  const courseIdsPendingDeletion = coursesPendingDeletion.map(({ id }) => id)
+
   const whereClause = {
+    // filter out deleted activities where the user only has derived access
+    NOT: { derived: true, isDeleted: true },
     userId: ctx.user.sub,
     // depending on the shared access flags, determine the required access levels
     permissionLevel:
@@ -245,9 +264,22 @@ export async function getUserActivities(
     pinCode: isPinProtected ? { not: null } : undefined,
     // course filter
     courseId: courseId
-      ? { equals: courseId }
+      ? { equals: courseId, notIn: courseIdsPendingDeletion }
       : withoutCourse
         ? null
+        : undefined,
+    // without a course filter, exclude activities of courses pending deletion;
+    // `notIn` alone would also drop unassigned activities (NULL NOT IN ...)
+    AND:
+      !courseId && !withoutCourse && courseIdsPendingDeletion.length > 0
+        ? [
+            {
+              OR: [
+                { courseId: null },
+                { courseId: { notIn: courseIdsPendingDeletion } },
+              ],
+            },
+          ]
         : undefined,
     // search string
     OR: searchString
@@ -392,7 +424,6 @@ export async function getUserActivities(
   //   ),
   // }
 
-  // TODO: correctly get number of activities instead of using length here!!!
   return { numOfActivities: totalCount, activities }
 }
 
@@ -1097,7 +1128,10 @@ export async function getLiveQuizDetails(
   ctx: ContextWithUser
 ) {
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id },
+    where: {
+      id,
+      ...liveQuizCourseVisibilityFilter,
+    },
     include: {
       owner: true,
       _count: {
@@ -1383,7 +1417,7 @@ export async function getPracticeQuizDetails(
   ctx: ContextWithUser
 ) {
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: { id },
+    where: { id, course: { deletionRequestedAt: null } },
     include: {
       owner: true,
       _count: {
@@ -1481,7 +1515,7 @@ export async function getMicroLearningDetails(
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({
-    where: { id },
+    where: { id, course: { deletionRequestedAt: null } },
     include: {
       owner: true,
       _count: {
@@ -1580,7 +1614,7 @@ export async function getGroupActivityDetails(
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id },
+    where: { id, course: { deletionRequestedAt: null } },
     include: {
       owner: true,
       _count: {
@@ -1802,15 +1836,45 @@ export async function getCourseActivityIds(
       objects: {
         where: {
           OR: [
-            { liveQuiz: { isDeleted: false, courseId: courseId ?? null } },
+            {
+              liveQuiz: {
+                isDeleted: false,
+                courseId: courseId ?? null,
+                ...(courseId ? { course: { deletionRequestedAt: null } } : {}),
+              },
+            },
             ...(courseId
-              ? [{ practiceQuiz: { isDeleted: false, courseId } }]
+              ? [
+                  {
+                    practiceQuiz: {
+                      isDeleted: false,
+                      courseId,
+                      course: { deletionRequestedAt: null },
+                    },
+                  },
+                ]
               : []),
             ...(courseId
-              ? [{ microLearning: { isDeleted: false, courseId } }]
+              ? [
+                  {
+                    microLearning: {
+                      isDeleted: false,
+                      courseId,
+                      course: { deletionRequestedAt: null },
+                    },
+                  },
+                ]
               : []),
             ...(courseId
-              ? [{ groupActivity: { isDeleted: false, courseId } }]
+              ? [
+                  {
+                    groupActivity: {
+                      isDeleted: false,
+                      courseId,
+                      course: { deletionRequestedAt: null },
+                    },
+                  },
+                ]
               : []),
           ],
         },

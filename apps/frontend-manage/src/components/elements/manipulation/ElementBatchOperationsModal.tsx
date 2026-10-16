@@ -293,7 +293,10 @@ function ElementBatchOperationsModal({
           ) : (
             <div className="flex h-auto min-h-0 flex-col gap-6 md:flex-row md:gap-6 lg:h-full lg:max-h-full">
               <div className="flex h-max max-h-full min-h-0 w-full flex-col gap-4 overflow-auto md:w-1/2 lg:max-h-[calc(100vh-6rem)] lg:w-2/5">
-                <div className="text-sm">
+                <div
+                  className="text-sm"
+                  data-cy="batch-selected-elements-description"
+                >
                   {t('manage.questionPool.selectedElementsDescription')}
                 </div>
                 <div className="min-h-0 flex-1 overflow-auto">

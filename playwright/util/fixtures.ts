@@ -1,5 +1,9 @@
 import { test as base, BrowserContext, Page } from '@playwright/test'
-import { disableAnimations, setSessionCookieForUrl } from './authSession.js'
+import {
+  disableAnimations,
+  setSessionCookieForUrl,
+  waitForClientHydration,
+} from './authSession.js'
 import {
   LECTURER_EMAIL,
   LECTURER_IND_EMAIL,
@@ -293,6 +297,9 @@ export const test = base.extend<KlickerUZHFixtures>({
       })
       await disableAnimations(page)
 
+      // The form arrives in the server-rendered HTML; filling it before the
+      // client bundle runs loses the values at hydration.
+      await waitForClientHydration(page)
       await page.getByTestId('username-field').fill(username)
       await page
         .getByTestId('password-field')

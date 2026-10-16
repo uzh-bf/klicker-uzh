@@ -1,4 +1,7 @@
 {{- if .Values.frontendPWA.autoscaling.enabled }}
+{{- if le (int .Values.frontendPWA.autoscaling.targetCPUUtilizationPercentage) 0 }}
+{{- fail "frontendPWA.autoscaling.targetCPUUtilizationPercentage must be greater than zero when autoscaling is enabled" }}
+{{- end }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -13,21 +16,18 @@ spec:
   minReplicas: {{ .Values.frontendPWA.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.frontendPWA.autoscaling.maxReplicas }}
   metrics:
-    {{- if .Values.frontendPWA.autoscaling.targetCPUUtilizationPercentage }}
     - type: Resource
       resource:
         name: cpu
-        targetAverageUtilization: {{ .Values.frontendPWA.autoscaling.targetCPUUtilizationPercentage }}
-    {{- end }}
-    {{- if .Values.frontendPWA.autoscaling.targetMemoryUtilizationPercentage }}
-    - type: Resource
-      resource:
-        name: memory
-        targetAverageUtilization: {{ .Values.frontendPWA.autoscaling.targetMemoryUtilizationPercentage }}
-    {{- end }}
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.frontendPWA.autoscaling.targetCPUUtilizationPercentage }}
 {{- end }}
 ---
 {{- if .Values.frontendManage.autoscaling.enabled }}
+{{- if le (int .Values.frontendManage.autoscaling.targetCPUUtilizationPercentage) 0 }}
+{{- fail "frontendManage.autoscaling.targetCPUUtilizationPercentage must be greater than zero when autoscaling is enabled" }}
+{{- end }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -42,21 +42,18 @@ spec:
   minReplicas: {{ .Values.frontendManage.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.frontendManage.autoscaling.maxReplicas }}
   metrics:
-    {{- if .Values.frontendManage.autoscaling.targetCPUUtilizationPercentage }}
     - type: Resource
       resource:
         name: cpu
-        targetAverageUtilization: {{ .Values.frontendManage.autoscaling.targetCPUUtilizationPercentage }}
-    {{- end }}
-    {{- if .Values.frontendManage.autoscaling.targetMemoryUtilizationPercentage }}
-    - type: Resource
-      resource:
-        name: memory
-        targetAverageUtilization: {{ .Values.frontendManage.autoscaling.targetMemoryUtilizationPercentage }}
-    {{- end }}
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.frontendManage.autoscaling.targetCPUUtilizationPercentage }}
 {{- end }}
 ---
 {{- if .Values.backendGraphql.autoscaling.enabled }}
+{{- if le (int .Values.backendGraphql.autoscaling.targetCPUUtilizationPercentage) 0 }}
+{{- fail "backendGraphql.autoscaling.targetCPUUtilizationPercentage must be greater than zero when autoscaling is enabled" }}
+{{- end }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -71,16 +68,10 @@ spec:
   minReplicas: {{ .Values.backendGraphql.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.backendGraphql.autoscaling.maxReplicas }}
   metrics:
-    {{- if .Values.backendGraphql.autoscaling.targetCPUUtilizationPercentage }}
     - type: Resource
       resource:
         name: cpu
-        targetAverageUtilization: {{ .Values.backendGraphql.autoscaling.targetCPUUtilizationPercentage }}
-    {{- end }}
-    {{- if .Values.backendGraphql.autoscaling.targetMemoryUtilizationPercentage }}
-    - type: Resource
-      resource:
-        name: memory
-        targetAverageUtilization: {{ .Values.backendGraphql.autoscaling.targetMemoryUtilizationPercentage }}
-    {{- end }}
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.backendGraphql.autoscaling.targetCPUUtilizationPercentage }}
 {{- end }}

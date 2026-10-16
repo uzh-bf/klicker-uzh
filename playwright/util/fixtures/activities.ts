@@ -140,6 +140,8 @@ export async function setDatetime(
   const hour = String(datetime.hour).padStart(2, '0')
   const minute = String(datetime.minute).padStart(2, '0')
   const targetDataDay = getCalendarDataDay(datetime.validation)
+  const calendar = page.getByTestId(`${cyString}-calendar`)
+  await expect(calendar).toBeVisible()
 
   const direction =
     datetime.monthDelta > 0
@@ -147,16 +149,17 @@ export async function setDatetime(
       : `${cyString}-previous-month`
   for (let i = 0; i < Math.abs(datetime.monthDelta); i++) {
     const button = page.getByTestId(direction).locator('..')
+    const firstDay = calendar.locator('[data-day]').first()
+    const previousDay = await firstDay.getAttribute('data-day')
     await expect(button).toBeEnabled()
     await button.click()
-    await page.waitForTimeout(100)
+    await expect(firstDay).not.toHaveAttribute('data-day', previousDay!)
   }
 
-  await page
-    .getByTestId(`${cyString}-calendar`)
-    .locator(`[data-day="${targetDataDay}"]`)
-    .click()
-  await page.waitForTimeout(100)
+  await calendar.locator(`[data-day="${targetDataDay}"]`).click()
+  await expect(page.getByTestId(cyString)).toContainText(
+    datetime.validation.match(/\d{1,2}\.\d{1,2}\.\d{4}/)![0]
+  )
 
   for (const [testId, value] of [
     [`${cyString}-hours`, hour],

@@ -1,17 +1,14 @@
-const isAiTelemetryEnabled = () =>
-  process.env.CHAT_ENABLE_AI_TELEMETRY !== 'false'
-
 export async function register() {
-  if (process.env.NEXT_RUNTIME !== 'nodejs' || !isAiTelemetryEnabled()) {
+  if (process.env.NEXT_RUNTIME !== 'nodejs') {
     return
   }
 
-  const { LangfuseSpanProcessor } = await import('@langfuse/otel')
-  const { NodeTracerProvider } = await import('@opentelemetry/sdk-trace-node')
+  const [{ getChatModelRegistry }, { registerLangfuseTelemetry }] =
+    await Promise.all([
+      import('./lib/server/chatModelRegistry'),
+      import('./lib/server/langfuseTracing'),
+    ])
 
-  const langfuseSpanProcessor = new LangfuseSpanProcessor()
-
-  const tracerProvider = new NodeTracerProvider()
-  tracerProvider.addSpanProcessor(langfuseSpanProcessor)
-  tracerProvider.register()
+  getChatModelRegistry()
+  await registerLangfuseTelemetry()
 }

@@ -19,14 +19,49 @@ tags:
 
 ## Context
 
-The linked Chat workspace uses LiteLLM as its local model boundary. LiteLLM
+The linked Chat workspace uses the optional `ai` profile to run LiteLLM as its
+local model boundary. The `chat` app profile does not start LiteLLM or the local
+MCP fixture; use `chat,ai,mcp` for the complete synthetic path. LiteLLM
 reads the OpenAI-compatible base URL and API key from its container
 environment, so the key must be present when the workspace is created. A
-plain `devrouter ensure` can leave an already-running LiteLLM container with
+repeat `devrouter ensure` can leave an already-running LiteLLM container with
 its previous environment. The upstream boundary is external; local checks
 must use seeded or synthetic content only.
 
 ## Guidance
+
+### Zero-spend evaluator wiring
+
+When qualifying evaluator wiring without paid generation, select `chat,mcp`
+and replace the model upstream with a fake loopback Responses server behind
+the spend guard. Keep this synthetic transport proof separate from provider
+capability and tariff qualification. Do not use Auto for this diagnostic.
+
+Keep the application selection ID and provider deployment ID distinct. An
+evaluation-only registry can map `gpt-6-luna` to `openai/gpt-6-luna`, while the
+guard prices the latter. A registry still needs its required Auto and fallback
+entries even when the diagnostic never selects Auto. A minimal single-model
+registry fails startup before any provider request.
+The SDK also infers reasoning support from the deployment ID. Prefixed aliases
+need its supported `forceReasoning` override to retain the requested effort;
+guarded evaluation takes that capability from the application registry.
+
+The actual application emits a proxy-only exact-response cache bypass and a
+native prompt cache key. Direct provider forwarding must validate and consume
+only the exact bypass shape, preserving the bounded native key. An upstream
+HTTP failure after reservation is still charged conservatively, including each
+automatic SDK retry. Read the producing ledger and upstream arrival counters;
+a failed fixture assertion can otherwise resemble a routing failure.
+
+Managed startup re-sources canonical development settings. Explicit guarded
+settings must survive that sourcing, and configuration changes must replace
+the owned process. Use a nonsecret generation for credential changes rather
+than hashing keys into a process fingerprint. The application must reject
+per-chatbot routing overrides before decryption or provider construction.
+See [evaluation routing setup](../../../evaluation/README.md#trajectories-and-provider-admission)
+and [the evaluator correction PR](https://github.com/uzh-bf/klicker-uzh/pull/6489).
+
+### Paid upstream smoke
 
 1. Run Infisical authentication and injection from a host shell outside the
    Codex sandbox. Do not run Infisical inside `devrouter exec`, the DevPod, or
@@ -35,7 +70,8 @@ must use seeded or synthetic content only.
    reading values, then map
    `OPENROUTER_API_KEY` to `UPSTREAM_OPENAI_API_KEY` while setting the fixed
    `UPSTREAM_OPENAI_BASE_URL` value for the child `devrouter ensure` command
-   ([AGENTS.md:143](../../../AGENTS.md#L143)).
+   and selecting `--profile chat,ai,mcp`
+   ([OpenRouter-backed local chat](../../../AGENTS.md#openrouter-backed-local-chat)).
 2. If the host-side operator profile or login is missing, stop and complete
    the operator setup outside the sandbox. Do not substitute raw
    `infisical run`, and do not put credentials in chat, files, arguments, or
@@ -48,24 +84,67 @@ must use seeded or synthetic content only.
    devrouter stop <checkout-path>
    ```
 
-4. Verify only key presence, with no stdout or derived fingerprint:
+4. Start the injected workspace and keep its values-free runtime result. Use
+   the capability-only `ai` profile only for a LiteLLM health check:
 
    ```bash
-   devrouter exec <checkout-path> -- sh -c 'test -n "$UPSTREAM_OPENAI_API_KEY"'
+   runtime_json="$(devrouter ensure <checkout-path> --profile chat,ai,mcp --json)"
+   printf '%s\n' "$runtime_json"
    ```
 
-5. Keep Auto Mode selected and run the seeded Benibot smoke from
-   [AGENTS.md:191](../../../AGENTS.md#L191). The successful synthetic path
+5. On the host, resolve the exact LiteLLM container from the reported Compose
+   project and verify only key presence. These commands produce no key value or
+   derived fingerprint:
+
+   ```bash
+   compose_project="$(printf '%s\n' "$runtime_json" | jq -er '.managedRuntime.composeProject')"
+   litellm_container="$(docker ps \
+     --filter "label=com.docker.compose.project=$compose_project" \
+     --filter 'label=com.docker.compose.service=litellm' \
+     --format '{{.ID}}')"
+   test -n "$litellm_container"
+   docker exec "$litellm_container" sh -c 'test -n "$UPSTREAM_OPENAI_API_KEY"'
+   ```
+
+6. Keep Auto Mode selected and run the seeded Benibot smoke from
+   [OpenRouter-backed local chat](../../../AGENTS.md#openrouter-backed-local-chat).
+   The successful synthetic path
    calls the local `KB_doc_query` tool, returns `KLICKER_LOCAL_MCP_OK`, and
    keeps the synthetic source card visible after reload. The deterministic
-   marker is defined at
-   [local-mcp-server.mjs:36](../../../apps/chat/scripts/local-mcp-server.mjs#L36).
+   marker is defined in
+   [local-mcp-server.mjs](../../../apps/chat/scripts/local-mcp-server.mjs).
 
 ## Why This Matters
 
+A healthy local MCP endpoint does not prove that Chat can use it. The legacy
+seed had no transport authentication or required knowledge-base scope, while
+Chat's Doc Query client expects bearer authentication and an ES256 scope token.
+Keep that production client unchanged when diagnosing the local fixture.
+
+The managed MCP startup now uses
+[local-mcp-bootstrap.mjs](../../../apps/chat/scripts/local-mcp-bootstrap.mjs)
+to rotate ephemeral credentials and restart both Chat and the fixture together.
+Its seed repair accepts only the exact synthetic owner, course and two mode
+bindings. An ownership conflict stops startup instead of replacing another
+configuration. Plaintext credentials remain in the local process environment;
+the database stores only the encrypted transport token. The local shared
+process environment is not an isolation boundary between apps.
+
+After Playwright cleanup, startup can recreate the fixture's synthetic course,
+draft chatbot and two mode bindings when all are absent. The exact local server
+and seeded lecturer must still match. Partial parent state is rejected; repair
+never overwrites an existing course or chatbot. Restoration and credential
+rotation share one transaction, so a failure leaves the previous data intact.
+
+Use the completed tool call, final answer, source card and reload persistence
+as integration evidence. The deterministic fixture has no public origin URL,
+so its source card cannot prove that a linked website or PDF is accessible.
+That requires a separate linked-source canary; source-normalizer tests alone
+prove URL preservation, not reachability or staging retrieval quality.
+
 The LiteLLM configuration resolves every OpenAI-compatible model and embedding
 route through `UPSTREAM_OPENAI_BASE_URL` and `UPSTREAM_OPENAI_API_KEY`
-([config.yaml:80](../../../util/litellm/config.yaml#L80)). A route-level 200 or
+([config.yaml](../../../util/litellm/config.yaml)). A route-level 200 or
 an authenticated empty thread proves only the local application boundary. The
 synthetic model/tool smoke is the evidence that the local Chat request reaches
 LiteLLM and the configured upstream path.
@@ -85,17 +164,34 @@ production, real participant data, or a deployment change; this is a local
 verification path only.
 
 If nested Chat API routes serve an HTML 404 while the direct chatbot lookup
-returns JSON, treat that as a stale generated Chat build first. Stop the exact
-workspace, move only the worktree's ignored `apps/chat/.next` directory to a
-recoverable temporary path, restart with the key injection, and verify the
-route again before diagnosing the upstream.
+returns JSON, treat that as stale generated route state first. Rerun the exact
+injected `devrouter ensure ... --profile chat,ai,mcp`; the repository confirms
+that signature and performs one bounded repair for the affected `.next` cache.
+If the route remains unhealthy, inspect `/tmp/dev.log` before diagnosing the
+upstream.
+
+When a production build follows live verification in the same checkout, the
+PWA can include both `.next/dev/types/validator.ts` and
+`.next/types/validator.ts`. If TypeScript reports duplicate `PagesPageConfig`
+identifiers in those generated files, stop the exact owned development process
+through the delivered managed process helper before building again. Preserve
+the affected generated dev-type directory outside the application's compiler
+inputs, then rerun the build. The collision does not require changing application
+source or disabling type checking. Finalize the exact runtime through
+`devrouter stop <checkout-path>` after the last check.
+
+Prompt-template comparisons also need a real process restart: the server caches
+loaded template text. Record the request context's compiled prompt fingerprint
+for each arm rather than assuming an edited `.hbs` file is already serving.
+See [the bounded attribution experiment](../../../project/2026-09-28-tutor-attribution-evaluation.md)
+for the observed failure, acceptance limits and verified recovery.
 
 ## Examples
 
 - The repository startup contract and synthetic prompt are kept together in
-  [AGENTS.md:143](../../../AGENTS.md#L143).
+  [OpenRouter-backed local chat](../../../AGENTS.md#openrouter-backed-local-chat).
 - LiteLLM's upstream environment contract is explicit in
-  [config.yaml:80](../../../util/litellm/config.yaml#L80) and the embedding
-  route at [config.yaml:144](../../../util/litellm/config.yaml#L144).
+  [config.yaml](../../../util/litellm/config.yaml), including the embedding
+  route.
 - The local MCP fixture is deterministic and read-only at
-  [local-mcp-server.mjs:16](../../../apps/chat/scripts/local-mcp-server.mjs#L16).
+  [local-mcp-server.mjs](../../../apps/chat/scripts/local-mcp-server.mjs).

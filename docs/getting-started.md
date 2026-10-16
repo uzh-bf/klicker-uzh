@@ -2,7 +2,7 @@
 type: Guide
 title: Getting Started
 description: Toolchain, first-time setup, infrastructure bring-up, dev-server paths, and the exact failure signatures a fresh clone produces.
-timestamp: '2026-08-25'
+timestamp: '2026-08-31'
 tags:
   - environment
   - onboarding
@@ -12,9 +12,9 @@ tags:
 
 **The one thing to get right first: use pnpm 11.** A stale pnpm major (e.g. a Volta shim serving 9.x because `VOLTA_FEATURE_PNPM` is unset) will install successfully but **silently rewrite `pnpm-lock.yaml`** (~380-line churn). Run `pnpm --version` and confirm `11.x` before installing; if the lockfile got churned, `git checkout pnpm-lock.yaml` and reinstall with pnpm 11.
 
-## Toolchain (verified 2026-07-07)
+## Toolchain (verified 2026-09-14)
 
-Aligned to Node `24.16.0` and pnpm `11.5.0` across the entire workspace, including the self-contained devcontainer. Pinned in root `package.json`: `volta.node = 24.16.0`, `volta.pnpm = 11.5.0`, `packageManager = pnpm@11.5.0`.
+Aligned to Node `24.21.0` and pnpm `11.5.0` across the entire workspace, including the self-contained devcontainer. Pinned in root `package.json`: `volta.node = 24.21.0`, `volta.pnpm = 11.5.0`, `packageManager = pnpm@11.5.0`. The pnpm pin stays on the 11.5.0 line because the shared Playwright composite actions declare their own pnpm version, so `pnpm/action-setup` rejects a pull request that moves the pin; the production Dockerfiles drop `pnpm` and `turbo` after installing production dependencies instead, which keeps their vendored advisories out of the scanned runtime images.
 
 The workspace TypeScript baseline is `~6.0.3` across all packages, including `apps/office-addin`. The Office Add-in uses the browser/bundler contract (`target: ES2022`, `module: ESNext`, `moduleResolution: Bundler`, `noEmit`) and explicitly loads the `office-js` global types required by TypeScript 6. No syncpack exception is needed.
 
@@ -38,7 +38,18 @@ You can set up the environment in two ways:
 
 ### Path A: Self-contained Devcontainer (Recommended)
 
-Clone-and-run via a self-contained devcontainer — no Infisical, no external EduID, no `/etc/hosts` edits needed. The container runs every routed app plus the two Hatchet workers through one `turbo dev` task set and houses all dependencies (Postgres, Redis, MailHog, Hatchet).
+Fresh volumes provision the restricted `klicker_test` login, the application
+test database of the same name and `klicker_test_shadow`. Both databases carry
+the disposable marker required by reset, seed and development migration.
+Existing volumes are not adopted or marked automatically. If bootstrap refuses
+an old database, preserve it and use an explicitly approved fresh disposable
+environment; do not bypass the guard. See [Testing](./testing.md#disposable-database-boundary).
+
+Clone-and-run via a self-contained devcontainer — no Infisical, no external
+EduID, no `/etc/hosts` edits needed. The default `full` profile runs every
+routed app plus the two Hatchet workers. Dependency-aware profiles select only
+the needed app roots, optional services, and managed processes while keeping
+Postgres and Hatchet as the boot-critical base.
 
 1. **Start and prove the checkout:**
    ```bash
@@ -46,9 +57,9 @@ Clone-and-run via a self-contained devcontainer — no Infisical, no external Ed
    ```
    The same command owns primary and linked checkout startup. It prints the exact DevPod ID when an interactive shell is needed.
 2. **Accessing the apps:**
-   - **Mode 1 (Primary checkout):** Stable routes such as `https://manage.klicker.localhost` plus the fixed localhost ports. Lecturer login is `lecturer`/`abcd`.
+   - **Mode 1 (Primary checkout):** Stable routes such as `https://manage.klicker.localhost` plus the fixed localhost application ports; the database listens on an ephemeral loopback port or `db.klicker.localhost:5432` through the router. Lecturer login is `lecturer`/`abcd`.
    - **Mode 2 (linked checkout):** Routes linked-worktree traffic over HTTPS at `https://manage.klicker.<workspace>.localhost`. Requires:
-     1. Install devrouter ≥ 0.0.38 and run `devrouter setup --yes` once.
+     1. Install devrouter ≥ 0.0.55 and run `devrouter setup --yes` once. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery, 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime, and 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct retained-runtime configuration and mount comparison.
      2. From an existing linked worktree, start and prove the environment with:
         ```bash
         devrouter ensure .
@@ -57,15 +68,74 @@ Clone-and-run via a self-contained devcontainer — no Infisical, no external Ed
      3. Those namespaced hosts only work because `allowedDevOrigins` in `packages/next-config/index.js` is `['**.localhost']` in development (and `undefined` in production) — Next's implicit `*.localhost` matches a single label only. If that glob ever stops covering a worktree host, the symptom is an app that serves HTML but never hydrates, with no obvious error.
 3. **Logs:** The dev servers auto-start inside the container. View logs via `devrouter exec . -- tail -f /tmp/dev.log`.
 
+Choose an application profile such as `manage`, `pwa`, `chat`, or
+`live-quiz`. Add the orthogonal `ai`, `mcp`, `email`, `eduid`, or `db` capability
+only when needed; for example, `devrouter ensure . --profile chat,ai,mcp`,
+`devrouter ensure . --profile manage,eduid` for Edu-ID login through the
+local OIDC mock, or `manage,db` to route Postgres at
+`db.klicker.<workspace>.localhost:5432` for host tools. Capability-only profiles run no Turbo app process. Omitting
+`--profile` keeps the compatibility default `full`. Profile unions are additive
+and order-insensitive, and a warm transition does not recreate the app
+container or reset persistent data.
+
+Parallel task work should use one linked worktree per task and the smallest
+matching profile. A Manage-only task uses `manage`; Chat AI uses `chat,ai`;
+tool-calling work adds `mcp`; email work adds `email`; Edu-ID login work adds
+`eduid`. Independent worktrees keep separate app caches, database state,
+routes, and processes while sharing only the package-download cache. Do not
+default every parallel worktree to `full`, because that starts LiteLLM, MCP,
+MailHog, every routed app, and both workers in each environment. The Turbo
+local cache is shared across all worktrees and bounded in size/age; see
+[Local Disk and Caches](./local-disk-and-caches.md) for the cache layout and
+the `clean:cache` / `clean:generated` / `clean:worktree` / `disk:usage`
+commands.
+
+Playwright is the deliberate toolchain exception. Run
+`node util/run-playwright-host.mjs <args>` from the host; the launcher calls
+`devrouter ensure`, resolves the exact worktree routes, and connects the host
+Prisma setup to that workspace's random loopback PostgreSQL port. The browser
+and Playwright process never enter the devcontainer. Direct local Playwright
+commands fail before database cleanup, and the devcontainer blocks browser
+downloads. GitHub Actions keeps its existing official Playwright container.
+
 For OpenRouter-backed Chat, follow the host-side `rs-infisical-operator`
 workflow in [AGENTS.md](../AGENTS.md). Use only seeded or synthetic content;
 do not copy credentials into the repository or use raw Infisical injection.
 
-`post-start.sh` keeps Klicker's environment and origin setup local. Host-side `devrouter ensure` delivers its matching process helper to the exact validated container, then invokes the adapter. Released devrouter `0.0.35` records its owned process group and fingerprints the workspace, command, adapter bytes, and declared non-secret origin environment in `/tmp/devrouter-process-klicker-dev.state`; an exact repeat is idempotent, stale owned groups are replaced boundedly, and unknown processes are never killed.
+`post-start.sh` keeps Klicker's environment and origin setup local. Host-side
+`devrouter ensure` delivers its matching process helper to the exact validated
+container, then invokes the adapter. Devrouter records its owned process
+group and fingerprints the workspace, command, adapter bytes, selected profile,
+and declared non-secret origin environment in
+`/tmp/devrouter-process-klicker-dev.state`. An exact repeat is idempotent,
+stale owned groups are replaced boundedly, unknown processes are never killed,
+and a failed profile transition restores the last usable generated config.
 
-Devrouter owns generic process lifecycle and HTTP readiness. `ensure` verifies all ten routes and can spend one container recreate when an exact workspace is alive but an application remains unhealthy, including after a production build replaces live Next.js output. Each managed dev-process start clears Manage's generated development route manifest and the container startup adapter briefly primes the course list plus a synthetic course-detail URL within one bounded deadline; this closes the cold Turbopack dynamic-route race before a browser can request a real course without replacing devrouter's readiness ownership.
+The Dev Container waits for `postCreateCommand` before managed post-start.
+Post-create publishes a fixed container-local completion marker only after the
+destructive bootstrap and generated runtime inputs succeed; post-start checks
+that marker before it reads those inputs or starts a process. If the marker is
+missing or malformed, treat the workspace as incompletely bootstrapped and use
+the [guarded recovery procedure](../.devcontainer/README.md#guarded-retained-runtime-recovery). A warm profile switch never manufactures the
+marker or reruns database bootstrap. The `ROOT` contract in
+[post-create](../.devcontainer/post-create.sh) and
+[post-start](../.devcontainer/post-start.sh) canonicalizes
+`KLICKER_DEVCONTAINER_ROOT` once and uses that same checkout for every
+repository-local path. Post-create invalidates any earlier completion marker
+before it validates the configured root, so an invalid override cannot expose a
+stale successful bootstrap.
 
-The consumer contract is pinned once in `.devrouter.yml` at devrouter `0.0.35`. The devcontainer image contains no devrouter package or helper, and `devcontainer.json` does not run the managed adapter independently.
+Devrouter owns generic process lifecycle and route readiness. `ensure` verifies
+the selected routes and can spend one container recreate when an exact
+workspace is alive but an application remains unhealthy. The repository-owned
+semantic checks perform one bounded `.next` repair only after a known route
+repeatedly returns the stale-route signature. The adapter also primes Manage's
+course list and a synthetic course-detail URL within one bounded deadline.
+
+The consumer version is pinned in `.devrouter.yml`; this pin covers normal
+managed startup, not the separately reviewed retained-recovery callback.
+The devcontainer image contains no devrouter package or helper, and
+`devcontainer.json` does not run the managed adapter independently.
 
 The image does include the repository's development toolchain: pnpm `11.5.0`, uv `0.11.12`, and the Python 3.12 selection used by analytics CI. This keeps `pnpm run check:all` reproducible inside the container.
 
@@ -79,14 +149,17 @@ pruning for this cache.
 
 `devrouter doctor --repo .` is the static check. `devrouter ensure .` is the runtime authority: it resolves the checkout-specific overlay and fails unless the actual container aliases, Git mount, managed process, and routes agree.
 
-Klicker's runtime guard adds semantic readiness for every Next app. It
+Klicker's runtime guard adds profile-scoped semantic readiness. It
 fingerprints the dependency graph, checked-out commit, Next.js route structure,
 and app configuration. A true managed start preserves each worktree's
 `.next/dev` output, while a changed dependency fingerprint refreshes the
 persistent `node_modules` volume with a frozen, local-first install.
-Unauthenticated Chat must answer `401 application/json` on a
-nested API route; the shell pages of auth, PWA, manage, and control must answer
-`2xx` HTML or a redirect. Repeated `404 text/html` responses on such known-existing
+Auth must answer `200 application/json` at `/api/auth/providers` so its
+catch-all sign-in route is checked, not only its homepage. Unauthenticated Chat
+must answer `401 application/json` on a nested API route; the shell pages of PWA, manage, and control must answer
+`2xx` HTML or a redirect. Response API must answer `200` JSON at `/healthz`,
+and `live-quiz` requires live general and response-processor worker descendants
+of the exact managed Turbo process. Repeated `404 text/html` responses on such known-existing
 routes identify stale route-table state and trigger one full `.next` cleanup
 for the affected apps plus one managed restart. Any other stable response fails
 without deleting caches, so data-driven 404s stay application failures.
@@ -108,13 +181,15 @@ pnpm run build        # 21 production-mode turbo tasks, ~1.5min; needs NO secret
 pnpm run check        # typecheck — only passes AFTER build (generated artifacts)
 ```
 
-Order matters: on a fresh clone, `pnpm run check` fails in ~19 packages until `pnpm run build` has produced the Prisma client, GraphQL codegen output, and package dists. The root build script forces `NODE_ENV=production`, even when the devcontainer exports `NODE_ENV=development` for live apps. Direct checks for the five Next apps are self-contained with respect to Next-generated route types: each app runs `next typegen` before `tsc --noEmit`, so those ignored types do not require a prior app build. Workspace dependency builds are still required; CI builds changed packages before checking them. Git hooks depend on the same broader workspace state: pre-commit runs `check:all`, pre-push runs `build` — both fail hard without `node_modules` and the required workspace-generated artifacts.
+Order matters: on a fresh clone, `pnpm run check` fails in ~19 packages until `pnpm run build` has produced the Prisma client, GraphQL codegen output, and package dists. The root build script forces `NODE_ENV=production`, even when the devcontainer exports `NODE_ENV=development` for live apps. Direct checks for the five Next apps are self-contained with respect to Next-generated route types: each app runs `next typegen` before `tsc --noEmit`, so those ignored types do not require a prior app build. Workspace dependency builds are still required; CI builds changed packages before checking them. Git hooks depend on the same broader workspace state: pre-commit runs `check:all`, pre-push runs `build`. Both fail hard when the host has a dependency install but lacks the required workspace-generated artifacts.
+
+Devcontainer checkouts keep `node_modules` in container volumes, so the host copy has no install. Host `pnpm` would then fail its `verifyDepsBeforeRun` check, and a host `pnpm install` would build a second, platform-specific dependency tree. `util/run-hook-pnpm.sh` therefore skips the `pnpm` step with a notice when `node_modules/.modules.yaml` is absent. It also skips it when the only host install is the Playwright launcher's filtered install, which the launcher marks with `node_modules/.playwright-host-filtered-install`; a later full install supersedes that marker. The Gitleaks scan and Git identity guards still run, and required CI runs the same checks and build. To run them before pushing, use `devrouter exec . -- pnpm run check:all` or `devrouter exec . -- pnpm run build`. Run `check:all` with the dev servers stopped: its `next typegen` step rewrites `.next/` output that running Next dev servers own (see [Chat Platform](chat-platform.md)).
 
 ## Failure signatures (fresh clone / wrong state)
 
 | Exact error                                                                                                                   | Cause                                                                                    | Fix                                                               |
 | ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `sh: run-p: command not found` + `husky - pre-commit script failed`                                                           | `node_modules` missing                                                                   | `pnpm install` (pnpm 11)                                          |
+| `sh: run-p: command not found` + `husky - pre-commit script failed`                                                           | `node_modules` missing on a legacy host checkout                                         | `pnpm install` (pnpm 11)                                          |
 | `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`                                                                                  | pnpm 11 found `node_modules` from another pnpm major; headless shell can't confirm purge | `pnpm install --config.confirmModulesPurge=false`                 |
 | `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` … `"overrides" configuration doesn't match`                                               | `CI=true` forces frozen install after a wrong-major pnpm rewrote the lockfile            | `git checkout pnpm-lock.yaml`, non-frozen install with pnpm 11    |
 | `Bind for :::5432 failed: port is already allocated`                                                                          | another stack holds the host port (also seen on 6379, 7077/8888, 80/443)                 | `lsof -nP -iTCP:5432 -sTCP:LISTEN`, stop the other stack          |
@@ -148,7 +223,15 @@ Two paths, depending on whether you have Infisical access:
 1. **Full path**: `pnpm run dev` — injects secrets via `util/_run_with_infisical.sh` (requires an authenticated Infisical CLI; validates env names `dev`, `dev-assessment`, `dev-playwright`, `dev-cleverreach`, `stg`, `prd`) and serves via Traefik on `*.klicker.com` (needs `/etc/hosts` entries + mkcert certs; mirrors production cookie/domain behavior).
 2. **Localhost path (no secrets)**: `pnpm run dev:raw` — hit apps directly: backend 3000, pwa 3001, manage 3002, control 3003, chat 3004, auth 3010, response-api 7078.
 
-Compose infra needs no secrets; the app dev servers are the secret consumers. Database seeding: `pnpm run prisma:setup` (reset + push + seed — destructive, only on test-seeded state). Seeded test credentials are documented in the [AGENTS.md test-credentials section](../AGENTS.md) — never copy the values into other documents.
+Compose infra needs no secrets; the app dev servers are the secret consumers.
+The legacy Compose database is not a supported target for guarded reset, push,
+development migration or test seeds. Use the provisioned self-contained
+container and the [raw migration and seed sequence](./data-and-migrations.md)
+instead (config-derived). Retained volumes are not adopted automatically; see
+[retained PostgreSQL volumes](../.devcontainer/README.md#retained-postgresql-volumes)
+before rebuilding an old checkout. Seeded test credentials are documented in
+the [AGENTS.md test-credentials section](../AGENTS.md) — never copy the values
+into other documents.
 
 ## Agent addendum
 
@@ -162,11 +245,11 @@ Compose infra needs no secrets; the app dev servers are the secret consumers. Da
 Run the external evaluation framework from the main repository with:
 
 ```bash
-pnpm run eval:klicker -- --mode eval --limit 20
+git submodule update --init --checkout evaluation/framework
+pnpm run eval:klicker -- --mode eval --qa-file /path/to/synthetic-qa.json --limit 1
 ```
 
-The root-owned wrapper (`util/_run_klicker_eval.sh`) injects the `dev` Infisical environment without
-watch mode, selects the local `gpt-5.6-luna` judge with high reasoning effort, and passes
-`evaluation/framework/data/input/metrics/klicker_chatbot.yaml` through the framework's `--metrics`
-option. Additional arguments are forwarded unchanged. It does not start LiteLLM; recreate that
-container through Infisical if its upstream credentials are absent.
+The wrapper's restricted secret mapping, model defaults, runtime requirements,
+and proof boundaries are documented in the
+[evaluation README](../evaluation/README.md). Eval mode judges an existing QA
+artifact; it does not test Klicker's authenticated chat target.

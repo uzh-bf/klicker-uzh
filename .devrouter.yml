@@ -14,35 +14,106 @@
 # The container runs every routed app plus the two Hatchet workers. Workers have
 # no route; analytics, Office add-in, and docs remain outside this stack.
 #
-# Profiles (devrouter >= 0.0.36) scope `devrouter ensure --profile <name>` to the
-# apps a task needs; the default profile `full` preserves the everything-stack
-# behavior. Profile selection also reaches the container as DEVROUTER_PROFILE so
-# post-start.sh can start only the matching turbo dev tasks.
+# Profiles (devrouter >= 0.0.40) scope `devrouter ensure --profile <name>[,<name>]`
+# across three independent dimensions: routed apps, optional Compose services,
+# and managed processes. The default `full` preserves the everything-stack.
+# Merged selections are additive and order-insensitive. `util/profile-resolver.sh`
+# maps a selection to exact turbo roots, readiness apps, and process markers.
 version: 1
 devrouter:
-  version: 0.0.36
+  version: 0.4.0
 project:
   name: klicker-uzh
+# Reproducible ignored state for `workspace cleanup`, `reclaim` and `trim`.
+# `disposable` adds build outputs beyond devrouter's built-in cache patterns so
+# they do not keep a merged worktree; `trim` lists what `workspace trim` may
+# remove from kept worktrees. Never list `project/_local`: it holds local notes.
+worktrees:
+  disposable: ['**/.docusaurus', '**/.nyc_output']
+  trim: ['**/node_modules', '**/.next', '**/.turbo']
+managedRuntime:
+  devcontainer:
+    prepareCommand: [node, util/generate-dependency-mounts.mjs]
+    # Managed base: the DevPod primary `app` is implicit; postgres serves
+    # post-create reset/push/seed; hatchet is boot-critical for the backend.
+    baseServices: [postgres, hatchet]
+    # Optional capabilities selected per profile. The three Redis clients are
+    # selected by every application profile because backend startup eagerly
+    # creates all three. LiteLLM, MailHog and the local Edu-ID OIDC mock are
+    # opt-in capabilities: an application profile never selects them, `full`
+    # (the default) selects everything registered, and `eduid` selects the
+    # mock alone for a selective selection.
+    #
+    # The mock stays out of the application profiles deliberately. CI plans
+    # those profile unions against playwright/runtime-contract.yml, whose
+    # closed schema demands a literal binding for every selected app and
+    # managed service; the mock is a Compose-only proxy app that the hosted
+    # Playwright runtime cannot provision. `eduid` keeps the devcontainer-only
+    # capability out of that planning surface without weakening the contract.
+    profileServices:
+      [redis_exec, redis_assessment, redis_cache, litellm, mailhog, oidc]
+  processes: [klicker-dev, klicker-local-mcp]
 profiles:
   # lecturer UI work: manage + its API and auth dependencies
   manage:
     apps: [manage, api, auth]
     readiness: [manage, api]
+    devcontainerServices: [redis_exec, redis_assessment, redis_cache]
+    processes: [klicker-dev]
   # student PWA work: pwa + API and auth
   pwa:
     apps: [pwa, api, auth]
     readiness: [pwa, api]
-  # chat work: chat + API and auth (litellm stays compose-side, always up)
+    devcontainerServices: [redis_exec, redis_assessment, redis_cache]
+    processes: [klicker-dev]
+  # chat work: chat + API and auth; includes pwa for the no-login path
   chat:
-    apps: [chat, api, auth]
-    readiness: [chat, api]
+    apps: [chat, pwa, api, auth]
+    readiness: [chat, pwa, api]
+    devcontainerServices: [redis_exec, redis_assessment, redis_cache]
+    processes: [klicker-dev]
   # live-quiz work: student PWA, controller, response ingestion, workers
   live-quiz:
     apps: [pwa, control, api, auth, response-api]
-    readiness: [pwa, api]
+    readiness: [pwa, api, response-api]
+    devcontainerServices: [redis_exec, redis_assessment, redis_cache]
+    processes: [klicker-dev]
+  # maximal application runtime for trusted Playwright fallback selection
+  playwright:
+    apps: [chat, pwa, control, manage, api, auth, response-api]
+    readiness: [chat, pwa, manage, api, response-api]
+    devcontainerServices: [redis_exec, redis_assessment, redis_cache]
+    processes: [klicker-dev]
+  # local Edu-ID replacement, devcontainer-only: add `,eduid` to a selective
+  # selection to route the OIDC mock. The default `full` selection already
+  # includes it. See .devcontainer/README.md.
+  eduid:
+    apps: [oidc]
+    devcontainerServices: [oidc]
+  # routed Postgres endpoint for host tools: add `,db` to a selective
+  # selection to publish db.klicker[.<workspace>].localhost:5432. Postgres
+  # itself runs for every profile; without this route, host tools use the
+  # loopback port that `devrouter env` reports. Kept out of the application
+  # profiles because the Playwright runtime contract has no binding for it.
+  db:
+    apps: [db]
+    devcontainerServices: []
+  # pure capabilities: no routes, no app process
+  ai:
+    apps: []
+    devcontainerServices: [litellm]
+  mcp:
+    apps: []
+    devcontainerServices: []
+    processes: [klicker-local-mcp]
+  email:
+    apps: []
+    devcontainerServices: [mailhog]
   # everything (current behavior); also the default when --profile is omitted
   full:
     apps: ['*']
+    devcontainerServices: ['*']
+    processes: ['*']
     default: true
 apps:
   # backend GraphQL API
@@ -118,3 +189,14 @@ apps:
     protocol: http
     runtime: proxy
     upstream: ${WORKSPACE}-app:3004
+
+  # local Edu-ID replacement: the OIDC mock shares the app container's network
+  # namespace, so devrouter reaches it on devnet as ${WORKSPACE}-app:8090. The
+  # auth app uses this host as its OIDC issuer, which makes the SWITCH redirect
+  # URI allow-list irrelevant in dev. Linked worktrees get the namespaced host
+  # (oidc.klicker.<workspace>.localhost) like every other app.
+  - name: oidc
+    host: oidc.klicker.localhost
+    protocol: http
+    runtime: proxy
+    upstream: ${WORKSPACE}-app:8090

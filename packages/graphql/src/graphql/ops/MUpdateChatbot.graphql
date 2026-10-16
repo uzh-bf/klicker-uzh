@@ -1,0 +1,5 @@
+mutation UpdateChatbot($id: String!, $name: String, $description: String) {
+  updateChatbot(id: $id, name: $name, description: $description) {
+    id
+  }
+}

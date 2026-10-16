@@ -9,8 +9,21 @@ let nextConfig = {
   ...getNextBaseConfig({
     BLOB_STORAGE_ACCOUNT_URL: process.env.BLOB_STORAGE_ACCOUNT_URL,
     NODE_ENV: process.env.NODE_ENV,
+    pagesRouterOnly: true,
     NEXT_PUBLIC_ENV: process.env.NEXT_PUBLIC_ENV,
   }),
+  async rewrites() {
+    return process.env.NODE_ENV === 'test' ||
+      process.env.KLICKER_PLAYWRIGHT_FIXTURES === '1'
+      ? [
+          {
+            source: '/__growthbook__/api/features/sdk-test',
+            destination:
+              'http://127.0.0.1:3000/__growthbook__/api/features/sdk-test',
+          },
+        ]
+      : []
+  },
   async redirects() {
     return [
       {
@@ -25,6 +38,13 @@ let nextConfig = {
 nextConfig.transpilePackages = Array.from(
   new Set([...(nextConfig.transpilePackages ?? []), 'formik'])
 )
+
+if (process.env.NODE_ENV === 'development') {
+  nextConfig.experimental = {
+    ...nextConfig.experimental,
+    turbopackFileSystemCacheForDev: false,
+  }
+}
 
 if (process.env.NODE_ENV !== 'test') {
   const withPWA = withPWAInit(

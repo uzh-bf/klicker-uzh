@@ -41,6 +41,8 @@ export type CourseDuplicationSummary = {
   isGamificationEnabled: boolean
   isAssessmentEnabled: boolean
   pinCode: number | null
+  startDate: Date
+  endDate: Date
   groupDeadlineDate: Date
   competencyTreeId: number | null
   competencyTreeName: string | null
@@ -1231,6 +1233,8 @@ export async function getCourseDuplicationSummary({
       isGamificationEnabled: true,
       isAssessmentEnabled: true,
       pinCode: true,
+      startDate: true,
+      endDate: true,
       groupDeadlineDate: true,
       competencyTree: {
         select: {
@@ -1544,6 +1548,8 @@ export async function getCourseDuplicationSummary({
     isGamificationEnabled: course.isGamificationEnabled,
     isAssessmentEnabled: course.isAssessmentEnabled,
     pinCode: course.pinCode,
+    startDate: course.startDate,
+    endDate: course.endDate,
     groupDeadlineDate: course.groupDeadlineDate,
     competencyTreeId: course.competencyTree?.id ?? null,
     competencyTreeName: course.competencyTree?.name ?? null,

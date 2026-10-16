@@ -4,7 +4,10 @@ import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
+import * as BetaEnrollmentService from '../services/betaEnrollment.js'
+import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
+import * as CourseDeletionService from '../services/courseDeletion.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
@@ -13,6 +16,10 @@ import * as GroupService from '../services/groups.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as NotificationService from '../services/notifications.js'
+import {
+  completeParticipantDataUse,
+  updateParticipantDataUseChoice,
+} from '../services/participantAccountDataUse.js'
 import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
@@ -24,7 +31,12 @@ import * as TemplateService from '../services/templates.js'
 import { ActivityInfo } from './activities.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { PointCorrection, PointCorrectionType } from './assessment.js'
-import { Course, CourseDuplicationStatus } from './course.js'
+import { asChatbotAuthor } from './authScopes.js'
+import {
+  Course,
+  CourseDeletionRequestPayload,
+  CourseDuplicationStatus,
+} from './course.js'
 import {
   Element,
   ElementInstance,
@@ -57,7 +69,10 @@ import {
   GroupMessage,
   LeaveCourseParticipation,
   Participant,
+  ParticipantAccountDataUse,
+  ParticipantDataUse,
   ParticipantGroup,
+  ParticipantInitialDataUseInput,
   ParticipantLearningData,
   ParticipantTokenData,
   Participation,
@@ -80,8 +95,10 @@ import {
 import {
   AnswerCollection,
   AnswerCollectionEntry,
+  ChatAccountUsageOverviewRef,
   Chatbot,
   ChatbotReasoningConfigInput,
+  ChatbotStandardModeConfigInput,
 } from './resource.js'
 import {
   ActivityLogEntry,
@@ -96,6 +113,7 @@ import {
   UserGroupMembersInput,
 } from './sharing.js'
 import {
+  BetaEnrollmentCapability,
   FileUploadSAS,
   LocaleType,
   User,
@@ -322,6 +340,10 @@ export const Mutation = builder.mutationType({
           isProfilePublic: t.arg.boolean({ required: true }),
           courseId: t.arg.string({ required: false }),
           signedLtiData: t.arg.string({ required: false }),
+          dataUse: t.arg({
+            type: ParticipantInitialDataUseInput,
+            required: true,
+          }),
         },
         resolve: async (_, args, ctx) => {
           return await AccountService.createParticipantAccount(args, ctx)
@@ -451,6 +473,44 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await ParticipantService.updateParticipantAvatar(args, ctx)
+        },
+      }),
+
+      completeParticipantDataUse: t.withAuth(asParticipant).field({
+        type: ParticipantAccountDataUse,
+        args: {
+          expectedRevision: t.arg.int({ required: true }),
+          disclosureVersion: t.arg.string({ required: true }),
+          researchConsent: t.arg.boolean({ required: true }),
+          learningAnalyticsConsent: t.arg.boolean({ required: true }),
+          acknowledged: t.arg.boolean({ required: true }),
+        },
+        resolve: (_, args, ctx) => completeParticipantDataUse(args, ctx),
+      }),
+
+      setResearchConsent: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: ParticipantDataUse,
+        args: {
+          consent: t.arg.boolean({ required: true }),
+          expectedRevision: t.arg.int({ required: true }),
+          disclosureVersion: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await updateParticipantDataUseChoice('research', args, ctx)
+        },
+      }),
+
+      setLearningAnalyticsConsent: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: ParticipantDataUse,
+        args: {
+          consent: t.arg.boolean({ required: true }),
+          expectedRevision: t.arg.int({ required: true }),
+          disclosureVersion: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await updateParticipantDataUseChoice('analytics', args, ctx)
         },
       }),
 
@@ -667,9 +727,9 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      deleteCourse: t.withAuth(asUser).field({
+      requestCourseDeletion: t.withAuth(asUser).field({
         nullable: true,
-        type: Course,
+        type: CourseDeletionRequestPayload,
         args: {
           id: t.arg.string({ required: true }),
           deleteDraftActivities: t.arg.boolean(),
@@ -678,7 +738,11 @@ export const Mutation = builder.mutationType({
           (args) => ({ courseId: args.id }),
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
-            return await CourseService.deleteCourse(args, ctx)
+            const request = await CourseDeletionService.requestCourseDeletion(
+              args,
+              ctx
+            )
+            return { courseId: request.courseId }
           }
         ),
       }),
@@ -1380,9 +1444,23 @@ export const Mutation = builder.mutationType({
         resolve: async (_, args, ctx) => {
           if (!args.sourceCourseId) {
             return await CourseService.createCourse(args, ctx)
-          } else {
-            return await CourseDuplicationService.duplicateCourse(args, ctx)
           }
+
+          return await withPermission<
+            unknown,
+            typeof args,
+            Awaited<ReturnType<typeof CourseDuplicationService.duplicateCourse>>
+          >(
+            (duplicationArgs) => ({
+              courseId: duplicationArgs.sourceCourseId!,
+            }),
+            DB.PermissionLevel.ADMIN,
+            async (_root, duplicationArgs, duplicationCtx) =>
+              CourseDuplicationService.duplicateCourse(
+                duplicationArgs,
+                duplicationCtx
+              )
+          )(_, args, ctx)
         },
       }),
 
@@ -1439,7 +1517,7 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      updateChatbotModelSettings: t.withAuth(asUser).field({
+      updateChatbotModelSettings: t.withAuth(asChatbotAuthor).field({
         nullable: true,
         type: Chatbot,
         args: {
@@ -1453,6 +1531,153 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await ChatbotsService.updateChatbotModelSettings(args, ctx)
+        },
+      }),
+
+      updateChatbotModelPolicy: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          modelSelection: t.arg.boolean({ required: true }),
+          allowedModelIds: t.arg.stringList({ required: true }),
+          allowedReasoningEffortsByModel: t.arg({
+            type: [ChatbotReasoningConfigInput],
+            required: false,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.updateChatbotModelPolicy(args, ctx)
+        },
+      }),
+
+      updateChatbotStandardModeConfig: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          config: t.arg({
+            type: ChatbotStandardModeConfigInput,
+            required: true,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.updateChatbotStandardModeConfig(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      setChatAccountUsageBudgets: t.withAuth(asAdmin).field({
+        nullable: true,
+        type: ChatAccountUsageOverviewRef,
+        args: {
+          ownerId: t.arg.string({ required: true }),
+          baseBudgetCredits: t.arg.float({ required: true }),
+          advancedBudgetCredits: t.arg.float({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatAccountUsageService.setChatAccountUsageBudgets(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      createChatbot: t.withAuth(asChatbotAuthor).field({
+        type: Chatbot,
+        args: {
+          name: t.arg.string({
+            required: true,
+            validate: { minLength: 1 },
+          }),
+          description: t.arg.string({ required: false }),
+          avatar: t.arg.string({ required: false }),
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.createChatbot(args, ctx)
+        },
+      }),
+
+      updateChatbot: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          id: t.arg.string({ required: true }),
+          name: t.arg.string({
+            required: false,
+            validate: { minLength: 1 },
+          }),
+          description: t.arg.string({ required: false }),
+          avatar: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.updateChatbot(args, ctx)
+        },
+      }),
+
+      saveChatbotDisclaimer: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          expectedDisclaimerId: t.arg.string({ required: false }),
+          title: t.arg.string({ required: true }),
+          introText: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.saveChatbotDisclaimer(args, ctx)
+        },
+      }),
+
+      requestChatbotPublication: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          id: t.arg.string({ required: true }),
+          useCase: t.arg.string({
+            required: true,
+            validate: { minLength: 1, maxLength: 2000 },
+          }),
+          expectedStudentCount: t.arg.int({
+            required: true,
+            validate: { min: 1 },
+          }),
+          proposedCredits: t.arg.int({
+            required: true,
+            validate: { min: 1 },
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.requestChatbotPublication(args, ctx)
+        },
+      }),
+
+      approveChatbotPublication: t.withAuth(asAdmin).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.approveChatbotPublication(args, ctx)
+        },
+      }),
+
+      rejectChatbotPublication: t.withAuth(asAdmin).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          id: t.arg.string({ required: true }),
+          comment: t.arg.string({
+            required: true,
+            validate: { minLength: 1, regex: /\S/ },
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.rejectChatbotPublication(args, ctx)
         },
       }),
 
@@ -1734,6 +1959,14 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await AccountService.changeInitialSettings(args, ctx)
+        },
+      }),
+
+      setBetaEnrollment: t.withAuth(asUserFullAccess).field({
+        type: BetaEnrollmentCapability,
+        args: { enabled: t.arg.boolean({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await BetaEnrollmentService.setBetaEnrollment(args, ctx)
         },
       }),
 

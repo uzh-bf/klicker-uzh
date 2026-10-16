@@ -2,7 +2,7 @@ name: AI code review (OpenCodeReview)
 
 on:
   pull_request_target:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -16,9 +16,17 @@ permissions:
 
 jobs:
   ocr-review:
-    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    # The CLI spawns a detached `npm i -g` self-update on its first invocation
+    # unless this is set. That global reinstall removes and re-extracts the
+    # package while the review is starting, so the job dies on a
+    # module-resolution error instead of reviewing the pull request.
+    env:
+      OCR_NO_UPDATE: '1'
+    if: >-
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
+      github.event.pull_request.draft == true
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout trusted review policy
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -31,26 +39,58 @@ jobs:
         id: context
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           node - <<'NODE'
+          const { randomUUID } = require('node:crypto')
           const fs = require('node:fs')
           const { buildReviewBackground } = require('./.github/scripts/final-ai-review.js')
-          const background = buildReviewBackground(process.env.PR_TITLE)
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `background=${background}\n`)
+          const background = buildReviewBackground(process.env.PR_TITLE, process.env.PR_BODY)
+          const delimiter = randomUUID()
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `background<<${delimiter}\n${background}\n${delimiter}\n`)
           NODE
 
+      - name: Start Mistral adapter
+        id: adapter
+        env:
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          ADAPTER_PATH: ${{ runner.temp }}/ocr-mistral-adapter.cjs
+          ADAPTER_STATE: ${{ runner.temp }}/ocr-mistral-adapter.json
+          OCR_ADAPTER_DIAGNOSTICS_PATH: ${{ runner.temp }}/draft-ai-review-adapter-diagnostics.jsonl
+        run: |
+          set -euo pipefail
+          cp .github/scripts/ocr-mistral-adapter.cjs "${ADAPTER_PATH}"
+          node "${ADAPTER_PATH}" start "${ADAPTER_STATE}"
+
       - name: Run OpenCodeReview
-        uses: alibaba/open-code-review@66120291271b2e605e420e9f11fbd6448f06163f # v1.9.10
+        uses: alibaba/open-code-review@1672852136fc87748249d22bce0819f33419ea79 # v1.13.0
         with:
-          llm_url: https://openrouter.ai/api/v1/chat/completions
-          llm_auth_token: ${{ secrets.OPENROUTER_API_KEY }}
-          llm_model: deepseek/deepseek-v4-flash-0731
+          llm_url: ${{ steps.adapter.outputs.url }}/v1/chat/completions
+          llm_auth_token: ${{ steps.adapter.outputs.token }}
+          llm_model: zai-glm-5-3
+          llm_extra_body: '{"reasoning_effort":"high","prompt_cache_key":"{ocr_session_key}"}'
           background: ${{ steps.context.outputs.background }}
           llm_use_anthropic: 'false'
-          llm_timeout: '540'
-          ocr_version: '1.9.10'
-          review_concurrency: '2'
+          llm_timeout: '480'
+          ocr_version: '1.13.0'
+          review_concurrency: '4'
           sticky_summary: 'true'
           incremental: 'true'
           route_severity_below: 'low'
           upload_artifacts: 'false'
+
+      - name: Stop Mistral adapter
+        if: always() && steps.adapter.outcome == 'success'
+        env:
+          ADAPTER_PATH: ${{ runner.temp }}/ocr-mistral-adapter.cjs
+          ADAPTER_STATE: ${{ runner.temp }}/ocr-mistral-adapter.json
+        run: node "${ADAPTER_PATH}" stop "${ADAPTER_STATE}"
+
+      - name: Upload sanitized draft adapter diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: draft-ai-review-adapter-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/draft-ai-review-adapter-diagnostics.jsonl
+          if-no-files-found: warn
+          retention-days: 1

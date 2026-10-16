@@ -1,0 +1,8 @@
+mutation RequestCourseDeletion($id: String!, $deleteDraftActivities: Boolean!) {
+  requestCourseDeletion(
+    id: $id
+    deleteDraftActivities: $deleteDraftActivities
+  ) {
+    courseId
+  }
+}
