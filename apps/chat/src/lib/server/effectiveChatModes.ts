@@ -1,5 +1,6 @@
 import type { ChatbotCustomMode } from '@klicker-uzh/types'
 import {
+  isChatbotCustomModeKey,
   isChatbotStandardModeKey,
   normalizeChatbotCustomModeConfig,
   normalizeChatbotStandardModeConfig,
@@ -281,6 +282,25 @@ function getApprovedCustomModesByKey(
   }
 
   return modesByKey
+}
+
+/**
+ * Whether a participant may receive the model's reasoning for a turn in
+ * `mode`, judged against the live approved config. Standard and legacy stored
+ * modes keep showing it. An approved custom mode shows it only after the
+ * lecturer opted in, and a custom key that is no longer approved stays
+ * hidden, because its stored reasoning can still echo the removed persona.
+ */
+export function isParticipantReasoningVisible(
+  customModeConfig: unknown,
+  mode: string | null | undefined
+): boolean {
+  if (!mode) return true
+
+  const customMode = getApprovedCustomModesByKey(customModeConfig).get(mode)
+  if (customMode) return customMode.showReasoning === true
+
+  return !isChatbotCustomModeKey(mode)
 }
 
 function getCustomModeDescription(mode: ChatbotCustomMode): string {

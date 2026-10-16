@@ -199,6 +199,13 @@ function ChatbotPublicationDetails({
                 </div>
               ) : null}
               {mode.personaText && <p>{mode.personaText}</p>}
+              <p data-cy={`chatbot-admin-review-reasoning-${mode.key}`}>
+                {t(
+                  mode.showReasoning
+                    ? 'manage.resources.chatbotCustomModeReasoningShown'
+                    : 'manage.resources.chatbotCustomModeReasoningHidden'
+                )}
+              </p>
             </ReviewField>
           ))}
         </dl>

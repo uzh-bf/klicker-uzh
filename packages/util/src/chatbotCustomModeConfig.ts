@@ -136,9 +136,25 @@ function normalizeStarterPrompts(value: unknown): string[] | null {
   return prompts.length > 0 ? prompts : null
 }
 
+function normalizeShowReasoning(value: unknown): boolean {
+  if (value === null) return false
+  if (typeof value !== 'boolean') {
+    throw new Error('showReasoning must be a boolean or null')
+  }
+  return value
+}
+
 /** Mints a stable, opaque mode key; this is what messages persist. */
 export function generateChatbotCustomModeKey(): string {
   return `${MODE_KEY_PREFIX}${randomUUID()}`
+}
+
+/**
+ * Whether a mode key has the shape the server mints for custom modes. A
+ * message can keep such a key after its mode was deleted from the config.
+ */
+export function isChatbotCustomModeKey(mode: string): boolean {
+  return mode.startsWith(MODE_KEY_PREFIX)
 }
 
 function assertUniqueNames(modes: ChatbotCustomMode[]): void {
@@ -227,6 +243,13 @@ export function parseChatbotCustomModeConfigInput(
         ? readStarterPrompts(existingModes.get(key)?.starterPrompts)
         : normalizeStarterPrompts(entry.starterPrompts)
 
+    // An omitted choice keeps the stored one, so a client that does not know
+    // this field cannot silently change the lecturer's choice; null hides.
+    const showReasoning =
+      entry.showReasoning === undefined
+        ? existingModes.get(key)?.showReasoning === true
+        : normalizeShowReasoning(entry.showReasoning)
+
     return {
       key,
       name: normalizeName(entry.name),
@@ -234,6 +257,7 @@ export function parseChatbotCustomModeConfigInput(
       personaText,
       ...(welcomeMessage !== null ? { welcomeMessage } : {}),
       ...(starterPrompts !== null ? { starterPrompts } : {}),
+      ...(showReasoning ? { showReasoning: true } : {}),
     }
   })
 
@@ -298,6 +322,8 @@ function normalizeStoredMode(value: unknown): ChatbotCustomMode | null {
       ),
       ...(welcomeMessage !== null ? { welcomeMessage } : {}),
       ...(starterPrompts !== null ? { starterPrompts } : {}),
+      // Anything but an explicit true keeps reasoning hidden.
+      ...(value.showReasoning === true ? { showReasoning: true } : {}),
     }
   } catch {
     return null
