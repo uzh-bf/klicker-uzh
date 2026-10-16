@@ -85,3 +85,10 @@ model tests are needed. CI supplies the repository's broader required checks.
 - Next: integrated final review and automatic CI/feedback handling. Their latest
   receipts belong in the PR description and local review reports. Do not infer
   live trusted-default workflow acceptance from these source checks.
+- Integrated review and automatic CI passed at `547d0ba418`. OCR feedback prompted
+  a focused correction filtering invalid token values before diagnostics
+  accumulation; the existing partial-usage test also protects OCR-facing usage.
+  Optional suggestions to reject missing CLI arguments, change the internal parse
+  boundary, or skip unavailable startup summaries were declined: reporting stays
+  best-effort, parsing errors are caught by its sole CLI caller, and startup
+  failures should still explain unavailable estimates.

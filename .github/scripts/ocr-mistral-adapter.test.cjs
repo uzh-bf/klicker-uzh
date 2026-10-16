@@ -726,15 +726,14 @@ test('partial usage cannot produce an apparently complete cost estimate', async 
     })
     const adapter = await startAdapter({ apiKey: 'synthetic-key', fetchImpl })
     try {
-      assert.equal(
-        (
-          await postJson(adapter, {
-            messages: [{ role: 'user', content: 'synthetic' }],
-          })
-        ).status,
-        200
-      )
+      const response = await postJson(adapter, {
+        messages: [{ role: 'user', content: 'synthetic' }],
+      })
+      assert.equal(response.status, 200)
+      assert.equal(response.json.usage.completion_tokens, completionTokens)
       assert.equal(adapter.diagnostics().missing_usage, 1)
+      assert.equal(adapter.diagnostics().prompt_tokens, 128)
+      assert.equal(adapter.diagnostics().completion_tokens, 0)
       assert.equal(estimateCost(JSON.stringify(adapter.diagnostics())), null)
     } finally {
       await adapter.close()

@@ -955,17 +955,13 @@ async function startAdapter(options = {}) {
       for (const counter of counters) {
         counter.responses += 1
         counter.response_bytes += responseBytes
-        if (normalized.usage) {
-          counter.prompt_tokens += normalized.usage.prompt_tokens ?? 0
-          counter.completion_tokens += normalized.usage.completion_tokens ?? 0
+        let incompleteUsage = false
+        for (const field of ['prompt_tokens', 'completion_tokens']) {
+          const value = normalized.usage?.[field]
+          if (Number.isSafeInteger(value) && value >= 0) counter[field] += value
+          else incompleteUsage = true
         }
-        if (
-          !Number.isSafeInteger(normalized.usage?.prompt_tokens) ||
-          normalized.usage.prompt_tokens < 0 ||
-          !Number.isSafeInteger(normalized.usage?.completion_tokens) ||
-          normalized.usage.completion_tokens < 0
-        )
-          counter.missing_usage += 1
+        if (incompleteUsage) counter.missing_usage += 1
         if (cached !== undefined) {
           counter.cache_usage_responses += 1
           counter.cached_prompt_tokens += cached
