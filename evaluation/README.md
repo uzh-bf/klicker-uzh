@@ -105,6 +105,46 @@ application, then removes this proxy-only field before forwarding. A nonblank
 native `prompt_cache_key` of at most 64 characters is preserved. Other cache
 objects and unknown request fields remain unqualified.
 
+OpenRouter policies must additionally declare
+`"fixedRoute": { "type": "openrouter", "provider": "openai" }`. This is a
+closed adapter for OpenAI's default service tier, not an arbitrary provider
+options pass-through. The guard injects `service_tier: "default"`, matching
+`provider.only` and `provider.order`, `allow_fallbacks: false`, and
+`require_parameters: true` on both supported API paths. It also injects
+`max_price.prompt` and `max_price.completion` from the qualified model rates,
+converted to USD per million tokens, and `max_price.request: "0"`. Application
+requests cannot supply or override those routing fields. Policies for unrelated
+direct upstreams retain their existing shape without `fixedRoute`. Supplying
+the adapter on any other host is rejected at startup, before ledger access or
+upstream requests. The sole exception is an explicit loopback fake upstream
+using exactly `localhost`, `127.0.0.1` or `[::1]`; the adapter remains optional
+there. Subdomains, wildcard listeners and other IP addresses are not covered
+by this exception. Existing URL and scheme restrictions still apply.
+Changing a policy requires a new qualified experiment; mutating the caller's
+policy after startup cannot alter the running guard's snapshot or ledger
+identity.
+
+Qualify every endpoint matched by the `openai` base slug. Explicit default-tier
+selection excludes priority and flex tiers; base slugs can otherwise include
+provider variants. Record dated evidence for context limits, long-context price
+overrides, cache reads and writes, reasoning-inclusive output and applicable
+provider or BYOK fees. Reserve at all-in upper rates; prompt caching can add a
+write charge even when the proxy-only bypass hint is stripped. The price filters
+do not bound cache charges or platform fees independently. Client-supplied
+`cache_control` at any depth and `store: true` are rejected before reservation.
+Tariff freshness is an operator readiness gate, not an automatically enforced
+expiry check. Retain this evidence privately and refresh it before authorizing
+paid capture. See the [Responses schema](https://openrouter.ai/openapi.json) and
+[provider-routing contract](https://openrouter.ai/docs/guides/routing/provider-selection).
+
+Size captures by upstream attempts, not submitted turns. A forced retrieval
+step and its answer continuation require at least two attempts per turn; retries
+consume further reservations. A two-turn revision therefore needs at least four
+attempts. Prefer a smaller complete case when the conservative ceiling cannot
+cover a larger set; a budget denial is an incomplete capture, never a quality
+score. Fake-upstream routing proof does not establish provider acceptance or
+answer quality.
+
 Choose a new private `KLICKER_EVAL_BUDGET_FILE`, then initialize it offline once:
 
 ```bash
