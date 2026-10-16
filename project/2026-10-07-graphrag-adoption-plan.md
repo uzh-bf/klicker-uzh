@@ -63,15 +63,37 @@ whole-input quota enforcement, empty/mixed contexts, leakage and overwrite guard
 Reference wording and documentation need no tests. No runtime is needed.
 
 **Stops and terminal condition.** A changed historical hash, attempted provider
-access or missing offline dependency blocks dependent preparation. Unmatched
+access or missing dependency blocks dependent preparation until resolved. Existing
+locked packages may be materialized locally; dependency definitions stay unchanged. Unmatched
 inputs stop their comparison rather than being reported as matched. Finish with
 reviewed source, offline evidence, prospective private references and a concrete
 24-case protocol pending reviewed holdout freeze, future pricing and budget
 approval. All prior holds remain. No paid dispatch is available in this package.
 
-**Progress.** Planning challenge incorporated: context-free positive scoring,
-explicit full rendered-input contract, exact paths, owners and test obligations.
-Implementation and offline verification in progress.
+**Progress.** Source preparation is implemented. Target `v3-ai` at `618e94fb12`
+was merged once for its current spending/capture contracts and framework pin;
+both login-test and documentation conflict intents were preserved. The pinned
+DeepEval 4.2.5 and tiktoken 0.14.0 pass three metric contracts and six input
+preparation tests. Twelve routing and 31 participant-adapter tests, nine evidence
+enrichment checks, launcher contracts, source formatting and staged secret scans
+pass. Full application builds and live browser/provider checks are outside this
+offline preparation; no application runtime was started. Generic Git hooks that
+require that runtime were replaced by the applicable focused checks. The data
+hygiene hook's documented false-positive override was used only for verified
+synthetic credentials in the integration tests; gitleaks remained clean.
+
+The two prospective references and development input preparations are private.
+All 269 original artifacts retain their hashes. Each development case matches
+all three arms exactly (2,733 and 3,843 rendered user-input tokens). This proves
+preparation only: no previous answer is rescored with shortened context. The
+24-case protocol covers six single-document, six multi-document, four calculation
+or assumption cases and eight unsupported cases, across three arms. Reviewed
+held-out goldens remain unfrozen. Native review reports stay in ignored
+`project/_local/reviews/`; the single delivery remains draft
+[Klicker #6478](https://github.com/uzh-bf/klicker-uzh/pull/6478). Next: review and
+freeze source-grounded holdout families, qualify exact future input consumption,
+and price the full comparison before requesting any paid dispatch. No new spend
+or release of an earlier hold is authorized.
 
 October 11 scope revision: the user approved keeping ingestion and KG
 independently operated, with no database changes. The configured Astra review
