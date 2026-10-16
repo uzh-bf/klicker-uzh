@@ -11,6 +11,11 @@
 `--mix` selects the tier mix for projections: `replay:<router>` uses a replay
 file, `observe:<path>[#router]` uses real traffic from observe.py, and
 `SIMPLE=0.13,MEDIUM=0.74,...` sets it explicitly.
+
+`--quality` adds native DeepEval GEval results: pass the manifest.json written
+by `bench.py --import-answers` first, then the framework eval_results files.
+Each result row joins its artifact by the recorded `qa_file` and keeps its
+native 0-1 scores.
 """
 
 from __future__ import annotations
@@ -32,6 +37,84 @@ def quality(grade: dict | None) -> float | None:
         return mean(float(grade[k]) for k in ("correctness", "completeness", "clarity"))
     except (KeyError, TypeError, ValueError):
         return None
+
+
+def quality_stats(rows: list[dict]) -> dict[str, dict]:
+    """Per-arm native GEval summary; major errors are counted separately."""
+    by_arm = defaultdict(list)
+    for r in rows:
+        by_arm[r["arm"]].append(r)
+    stats = {}
+    for arm, rs in sorted(by_arm.items()):
+
+        def metric_mean(name):
+            vals = [r["grade"][name] for r in rs if name in r["grade"]]
+            return mean(vals) if vals else None
+
+        qs = [q for r in rs if (q := quality(r["grade"])) is not None]
+        stats[arm] = {
+            "n": len(rs),
+            "correctness": metric_mean("correctness"),
+            "completeness": metric_mean("completeness"),
+            "clarity": metric_mean("clarity"),
+            "mean": mean(qs) if qs else None,
+            "major_errors": sum(r["grade"].get("major_error") is True for r in rs),
+        }
+    return stats
+
+
+GEVAL_CORE = ("correctness", "completeness", "clarity")
+
+
+def load_quality(manifest_path: Path, eval_paths: list[Path]) -> tuple[list[dict], int]:
+    """Framework eval results as grade rows, mapped explicitly and offline.
+
+    Each result row joins its import artifact by the `qa_file` it records; the
+    manifest then gives the arm. Metric payloads map by their `<Name> [GEval]`
+    runtime name, the question is the row `input`, and scores stay native 0-1
+    values. `major_error` follows the metric's own success flag. Skipped rows,
+    judge errors and rows with missing core scores are counted and excluded.
+    """
+    manifest = json.loads(Path(manifest_path).read_text())
+    artifacts = {Path(a["file"]).name: a for a in manifest["artifacts"]}
+    rows, unusable = [], 0
+    for path in eval_paths:
+        for row in json.loads(Path(path).read_text()).get("results", []):
+            qa_file = Path(str(row.get("qa_file") or "")).name
+            if qa_file not in artifacts:
+                raise SystemExit(f"{path}: qa_file {qa_file!r} is not in {manifest_path}")
+            metrics = {
+                key[: -len(" [GEval]")].strip().lower().replace(" ", "_"): payload
+                for key, payload in (row.get("metrics") or {}).items()
+                if key.endswith(" [GEval]") and isinstance(payload, dict)
+            }
+            scores = {}
+            for name in GEVAL_CORE:
+                payload = metrics.get(name) or {}
+                score = payload.get("score")
+                if payload.get("error") or not isinstance(score, (int, float)):
+                    scores = None
+                    break
+                scores[name] = float(score)
+            question = str(row.get("input") or "").strip()
+            if scores is None or not question or row.get("skipped") or row.get("evaluation_error"):
+                unusable += 1
+                continue
+            grade = dict(scores)
+            major = metrics.get("major_error") or {}
+            flag = major.get("success")
+            if (
+                flag is None
+                and isinstance(major.get("score"), (int, float))
+                and isinstance(major.get("threshold"), (int, float))
+            ):
+                flag = major["score"] >= major["threshold"]
+            if flag is not None:
+                grade["major_error"] = not flag
+            rows.append({"arm": artifacts[qa_file]["arm"], "q": question, "grade": grade})
+    if not rows:
+        raise SystemExit(f"no usable GEval results in {[str(p) for p in eval_paths]}")
+    return rows, unusable
 
 
 def arm_stats(rows: list[dict], prices: dict) -> dict[str, dict]:
@@ -173,10 +256,23 @@ def main():
     ap.add_argument("--tier-map", action="append", default=[], help="name=TIER:arm,...")
     ap.add_argument("--mix", help="replay:<router> | observe:<path>[#router] | SIMPLE=0.1,...")
     ap.add_argument("--monthly-requests", type=int, help="scale projected cost to a month")
+    ap.add_argument(
+        "--quality",
+        nargs="+",
+        type=Path,
+        help="bench import manifest.json plus framework eval_results files",
+    )
     args = ap.parse_args()
     prices = load_prices()
     replay_rows = read_jsonl(args.replay)
     bench_rows = read_jsonl(args.bench)
+    quality_rows, quality_unusable = [], 0
+    if args.quality:
+        if len(args.quality) < 2:
+            raise SystemExit(
+                "--quality needs the import manifest.json plus at least one eval results file"
+            )
+        quality_rows, quality_unusable = load_quality(args.quality[0], args.quality[1:])
     out = ["# Auto routing analysis", ""]
 
     if replay_rows:
@@ -213,7 +309,49 @@ def main():
             )
         out += [
             "",
-            "Quality is the judge's mean of correctness, completeness and clarity (1–10).",
+            "Quality is the judge's mean of correctness, completeness and clarity "
+            "(1–10; only earlier graded bench files carry grades).",
+            "",
+        ]
+
+    if quality_rows:
+        qstats = quality_stats(quality_rows)
+        out += [
+            "## Answer quality (DeepEval GEval)",
+            "",
+            "| Arm | Correctness | Completeness | Clarity | Mean | Major errors | Cases |",
+            "| --- | --- | --- | --- | --- | --- | --- |",
+        ]
+        for arm, s in qstats.items():
+            out.append(
+                f"| `{arm}` | {fmt(s['correctness'])} | {fmt(s['completeness'])} "
+                f"| {fmt(s['clarity'])} | {fmt(s['mean'])} | {s['major_errors']} | {s['n']} |"
+            )
+        out += [
+            "",
+            "Native GEval scores (0–1) from the framework eval results; "
+            f"{quality_unusable} unusable row(s) were skipped. Major errors counts "
+            "answers the major_error metric failed.",
+            "",
+        ]
+
+    if quality_rows and args.compare:
+        out += [
+            "## Paired quality difference (DeepEval GEval)",
+            "",
+            "| A − B | Questions | Diff | 95% CI |",
+            "| --- | --- | --- | --- |",
+        ]
+        for pair in args.compare:
+            a, b = pair.split("~")
+            p = paired(quality_rows, a, b)
+            out.append(
+                f"| `{a}` − `{b}` | {p['n']} | {fmt(p['diff'], 3)} "
+                f"| [{fmt(p['lo'], 3)}, {fmt(p['hi'], 3)}] |"
+            )
+        out += [
+            "",
+            "Per-question native GEval mean difference (0–1), averaged over repeats.",
             "",
         ]
 

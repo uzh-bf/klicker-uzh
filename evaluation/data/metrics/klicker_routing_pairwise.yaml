@@ -1,0 +1,12 @@
+# Native DeepEval Arena comparison for pairwise.py: two routing arms answer
+# the same question and the judge names the better answer. The native
+# ArenaGEval masks contestant names and randomises positions; the explicit
+# steps below replace step generation and both contestants share one
+# expected reference. The comparison has no tie option.
+- name: routing_pairwise
+  criteria: 'Compare two tutor answers to the same university finance question. The reference facts were written by the lecturer from the course material.'
+  evaluation_steps:
+    - 'Read the expected answer: its reference facts define what a correct answer must state.'
+    - 'Prefer the answer that states more reference facts correctly; weigh contradictions of reference facts and specific claims the reference does not support as negative evidence.'
+    - 'Do not prefer an answer for length, tone, formatting, language or LaTeX style.'
+    - 'If both answers are close, still name the better one: this comparison has no tie option.'
