@@ -78,5 +78,10 @@ model tests are needed. CI supplies the repository's broader required checks.
   execution setting and place all three non-blocking summaries after cleanup.
 - Substantive size before reviews: 304 added / 2 removed lines, excluding docs.
 - Test delta: four added adapter tests; existing tests preserved.
-- Next: commit implementation, then simplify and review the committed range
-  before completed draft delivery.
+- Implementation committed and pushed; draft PR
+  [#6555](https://github.com/uzh-bf/klicker-uzh/pull/6555) targets `v3`.
+- Simplifier completed; removed duplicated pricing values from documentation.
+  Its report is retained under the ignored `project/_local/reviews/` directory.
+- Next: integrated final review and automatic CI/feedback handling. Their latest
+  receipts belong in the PR description and local review reports. Do not infer
+  live trusted-default workflow acceptance from these source checks.

@@ -370,10 +370,10 @@ with no requests reports zero. Other review stages, such as the direct topology
 review, are outside this adapter estimate. Totals cover recorded lifetimes only;
 a missing receipt can omit spend. Summary steps are non-blocking.
 
-USD list rates are pinned in `ocr-mistral-adapter.cjs` to
-[Mistral's model pricing](https://docs.mistral.ai/models/zai-glm-5-3), checked
-2026-10-16: $1.40 per million uncached input tokens, $0.14 cached input, and $4.40
-output. Refresh the rates and date together when provider pricing changes.
+`MISTRAL_PRICING` in `ocr-mistral-adapter.cjs` is the authoritative USD rate table
+and verification date, sourced from
+[Mistral's model pricing](https://docs.mistral.ai/models/zai-glm-5-3).
+Refresh the rates and date together when provider pricing changes.
 Summaries label the pricing date and exclude account discounts, taxes, and runner
 costs; these are estimates, not billing receipts.
 
