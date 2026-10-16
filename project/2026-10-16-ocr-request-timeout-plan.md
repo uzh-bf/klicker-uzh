@@ -72,7 +72,11 @@ CLI failure. Keep two-line resume-plan and JSON merge stdout protocols intact.
 Allowed tracked writes: this plan; `.github/workflows/check-ocr-final-review.yml`;
 `.github/scripts/final-ai-review.js` and `.test.js`;
 `.github/scripts/ocr-mistral-adapter.cjs` and `.test.cjs`;
-`docs/ci-and-deployment.md`. No other new tracked files, dependencies or modules.
+`docs/ci-and-deployment.md` and its existing
+`docs/solutions/integration/opencodereview-publisher-rejection-payloads.md`
+process-failure guidance. The latter needs a small update because the old
+stage-and-size-only description becomes inaccurate. No other new tracked files,
+dependencies or modules.
 
 Existing workflow shell tests are the stable seam for initial/resume timeout
 propagation and unchanged argv, preview, budgets, status and output protocols.
@@ -120,5 +124,14 @@ unrecoverable capability blocker.
 - Documentation lookup: Context7 has no OpenCodeReview entry; pinned official
   v1.13.0 source is the authoritative configuration evidence.
 - Planning: configured planner APPROVED; proceed within the user-authorized batch.
-- Next: deadline wiring and diagnostic implementation.
+- Timeout slice committed; simplifier removed one redundant assertion. Its
+  command-boundary coverage remains intact.
+- Diagnostics: diagnostic-only helper preserves original nonzero exits and
+  reports failed coverage; focused suites pass 221 tests before adapter changes.
+- Local static evidence: YAML parses and all 25 shell steps pass `bash -n`.
+  Actionlint 1.7.12 reports the same six pre-existing `concurrency.queue` schema
+  limitations on baseline and branch. Scoped Opengrep reports no findings with
+  the existing helper partial-parse limitation.
+- Next: integrate the bounded adapter filter, inspect and review the committed
+  package, then push and open the draft for hosted CI.
 - PR: none yet.
