@@ -17,11 +17,485 @@ const {
   createHistoryStore,
   startAdapter,
   callMistral,
+  estimateCost,
+  buildCostReport,
+  createProgressFilter,
+  createProgressReporter,
 } = require('./ocr-mistral-adapter.cjs')
 
 const ADAPTER = path.join(__dirname, 'ocr-mistral-adapter.cjs')
 const CHAT_PATH = '/v1/chat/completions'
 const SHUTDOWN_PATH = '/shutdown'
+
+test('progress reconstructs known events without reflecting private fields or workflow commands', () => {
+  const records = []
+  const progress = createProgressFilter((line) => records.push(line))
+  const raw =
+    [
+      '[ocr] 8 file(s) changed, reviewing 5 in /OCR_PRIVATE_SENTINEL',
+      '[ocr]   ▶ file_read "OCR_PRIVATE_SENTINEL"',
+      '[ocr]   ✔ file_read (3ms)',
+      '[ocr]   ✘ code_search failed: OCR_PRIVATE_SENTINEL',
+      '[ocr] Plan completed for group "OCR_PRIVATE_SENTINEL"',
+      '[ocr] Review filter removed 2 comment(s) for group "OCR_PRIVATE_SENTINEL"',
+      '[ocr] token budget reached (used 3M + group est 2M) OCR_PRIVATE_SENTINEL',
+      '[ocr] Summary: 5 file(s) reviewed, 2 comment(s), ~1234 token(s) used, 1s elapsed',
+      '[ocr] Session: OCR_PRIVATE_SENTINEL',
+      '[ocr]   ▶ OCR_PRIVATE_SENTINEL "unknown-tool"',
+      '[ocr] Review filter: failed to parse LLM response, raw: OCR_PRIVATE_SENTINEL',
+      '::error::OCR_PRIVATE_SENTINEL',
+      'reasoning: OCR_PRIVATE_SENTINEL',
+    ].join('\r\n') + '\n'
+  for (const byte of Buffer.from(raw)) progress.write(Buffer.from([byte]))
+  progress.end()
+  assert.deepEqual(records, [
+    'OCR progress event=review_started changed_files=8 reviewing_files=5\n',
+    'OCR progress event=tool_started tool=file_read\n',
+    'OCR progress event=tool_completed tool=file_read\n',
+    'OCR progress event=tool_failed tool=code_search\n',
+    'OCR progress event=phase_completed phase=planning\n',
+    'OCR progress event=phase_completed phase=filtering\n',
+    'OCR progress event=budget_reached\n',
+    'OCR progress event=review_finished files=5 findings=2 tokens=1234\n',
+  ])
+  assert.doesNotMatch(records.join(''), /OCR_PRIVATE_SENTINEL|::/)
+})
+
+test('progress drops whole overlong records, resumes at newline and safely flushes a final fragment', () => {
+  const records = []
+  const progress = createProgressFilter((line) => records.push(line))
+  progress.write('[ocr]   ▶ file_read ' + 'x'.repeat(4096))
+  progress.write('[ocr]   ✔ file_find (1ms)')
+  assert.equal(records.length, 0)
+  progress.write(
+    '\n[ocr] 9999999999999999 file(s) changed, reviewing 1 in private\n'
+  )
+  progress.write('[ocr]   ✔ file_find (1ms)')
+  assert.equal(records.length, 0)
+  progress.end()
+  progress.end()
+  assert.deepEqual(records, [
+    'OCR progress event=tool_completed tool=file_find\n',
+  ])
+  const failed = createProgressFilter(() => {
+    throw new Error('synthetic log sink unavailable')
+  })
+  assert.doesNotThrow(() => {
+    failed.write('[ocr]   ✔ file_read (1ms)\n')
+    failed.end()
+  })
+})
+
+test('progress heartbeats reflect quiet time and finish clears the timer exactly once', () => {
+  const records = []
+  let time = 100
+  let tick
+  let unrefs = 0
+  let clears = 0
+  const timer = { unref: () => unrefs++ }
+  const progress = createProgressReporter((line) => records.push(line), {
+    now: () => time,
+    setInterval(callback, ms) {
+      assert.equal(ms, 60000)
+      tick = callback
+      return timer
+    },
+    clearInterval(value) {
+      assert.equal(value, timer)
+      clears++
+    },
+  })
+  assert.equal(unrefs, 1)
+  time += 59999
+  tick()
+  assert.deepEqual(records, [])
+  time++
+  tick()
+  tick()
+  assert.deepEqual(records, [
+    'OCR progress event=heartbeat elapsed_ms=60000 idle_ms=60000\n',
+  ])
+  time += 30000
+  progress.write('[ocr]   ▶ file_read "OCR_PRIVATE_SENTINEL"\n')
+  time += 30000
+  progress.write('::error::OCR_PRIVATE_SENTINEL\n')
+  tick()
+  assert.equal(records.length, 2)
+  time += 30000
+  tick()
+  assert.equal(
+    records[2],
+    'OCR progress event=heartbeat elapsed_ms=150000 idle_ms=60000\n'
+  )
+  progress.write('[ocr]   ✔ file_read (1ms)')
+  progress.finish({ code: 0 })
+  const finished = records.slice()
+  assert.match(
+    records.at(-1),
+    /event=process_exited exit_code=0 signaled=false spawn_failed=false elapsed_ms=150000\n$/
+  )
+  progress.finish({ code: 7 })
+  progress.end()
+  progress.write('[ocr]   ✔ code_search (1ms)\n')
+  time += 60000
+  tick()
+  assert.deepEqual(records, finished)
+  assert.equal(clears, 1)
+  assert.equal(
+    records.filter((line) => line.includes('tool_completed')).length,
+    1
+  )
+  assert.doesNotMatch(records.join(''), /SENTINEL|::/)
+})
+
+test('heartbeat and terminal sink failures preserve lifecycle cleanup', () => {
+  let time = 0
+  let tick
+  let cleared = false
+  const progress = createProgressReporter(
+    () => {
+      throw new Error('OCR_PRIVATE_SENTINEL')
+    },
+    {
+      now: () => time,
+      setInterval(callback) {
+        tick = callback
+        return { unref() {} }
+      },
+      clearInterval() {
+        cleared = true
+      },
+    }
+  )
+  assert.doesNotThrow(() => {
+    time = 60000
+    tick()
+    progress.write('[ocr]   ✔ file_read (1ms)\n')
+    progress.finish({ failed: true })
+  })
+  assert.equal(cleared, true)
+})
+
+function costReceipt(overrides = {}) {
+  return {
+    schema_version: 1,
+    responses: 1,
+    upstream_attempts: 1,
+    missing_usage: 0,
+    cache_usage_responses: 1,
+    missing_cache_usage: 0,
+    invalid_cache_usage: 0,
+    unfinished_requests: 0,
+    prompt_tokens: 1000000,
+    completion_tokens: 100000,
+    cached_prompt_tokens: 750000,
+    uncached_prompt_tokens: 250000,
+    ...overrides,
+  }
+}
+
+test('cost estimates aggregate lifetimes once and keep output cost in the no-cache baseline', () => {
+  const row = costReceipt({
+    request_types: { main: costReceipt() },
+    conversations: [costReceipt()],
+  })
+  const estimate = estimateCost(
+    `${JSON.stringify(row)}\n${JSON.stringify(row)}\n`
+  )
+  assert.equal(estimate.prompt_tokens, 2000000)
+  assert.equal(estimate.cached_prompt_tokens, 1500000)
+  assert.equal(estimate.responses, 2)
+  assert.ok(Math.abs(estimate.withCache - 1.79) < 1e-12)
+  assert.ok(Math.abs(estimate.withoutCache - 3.68) < 1e-12)
+  assert.ok(Math.abs(estimate.savings - 1.89) < 1e-12)
+  assert.ok(Math.abs(estimate.savingsPercent - (100 * 1.89) / 3.68) < 1e-12)
+  const uncached = estimateCost(
+    JSON.stringify(
+      costReceipt({ cached_prompt_tokens: 0, uncached_prompt_tokens: 1000000 })
+    )
+  )
+  assert.equal(uncached.withCache, uncached.withoutCache)
+  assert.equal(uncached.savings, 0)
+})
+
+test('cost estimates refuse incomplete, inconsistent or unsupported receipts', () => {
+  assert.equal(estimateCost(''), null)
+  for (const overrides of [
+    { schema_version: 2 },
+    { missing_usage: 1 },
+    { missing_cache_usage: 1 },
+    { invalid_cache_usage: 1 },
+    { unfinished_requests: 1 },
+    { upstream_attempts: 2 },
+    { cache_usage_responses: 0 },
+    { cached_prompt_tokens: 1000001 },
+    { completion_tokens: -1 },
+    { completion_tokens: 0.5 },
+    { completion_tokens: undefined },
+    { prompt_tokens: Number.MAX_SAFE_INTEGER + 1 },
+  ]) {
+    const row = costReceipt(overrides)
+    assert.equal(estimateCost(JSON.stringify(row)), null)
+    assert.equal(
+      estimateCost(`${JSON.stringify(costReceipt())}\n${JSON.stringify(row)}`),
+      null
+    )
+  }
+})
+
+test('stage cost totals reconcile every invocation and retain complete stages when another receipt is missing', () => {
+  const rows = [
+    costReceipt({ stage: 'preflight' }),
+    costReceipt(),
+    costReceipt(),
+    costReceipt({ stage: 'topology' }),
+  ]
+  const expected = { preflight: 1, adapter: 2, topology: 1 }
+  const report = buildCostReport(rows.map(JSON.stringify).join('\n'), expected)
+  assert.deepEqual(report.reasons, [])
+  assert.equal(report.estimate.prompt_tokens, 4000000)
+  assert.ok(Math.abs(report.estimate.withCache - 3.58) < 1e-12)
+  assert.ok(Math.abs(report.estimate.withoutCache - 7.36) < 1e-12)
+  assert.deepEqual(
+    report.stages.map((stage) => stage.observed),
+    [2, 1, 1]
+  )
+  rows.splice(1, 1)
+  const partial = buildCostReport(rows.map(JSON.stringify).join('\n'), expected)
+  assert.equal(partial.estimate, null)
+  assert.deepEqual(partial.reasons, ['receipt_count_mismatch'])
+  assert.equal(partial.stages[0].estimate, null)
+  assert.equal(partial.stages[1].estimate.responses, 1)
+  assert.equal(partial.stages[2].estimate.responses, 1)
+})
+
+test('cost reporting names incomplete coverage and distinguishes skipped stages from missing receipts', () => {
+  for (const [overrides, reason] of [
+    [{ schema_version: 2 }, 'unsupported_schema'],
+    [{ completion_tokens: -1 }, 'invalid_counters'],
+    [{ missing_usage: 1 }, 'missing_usage'],
+    [{ missing_cache_usage: 1 }, 'missing_cache_usage'],
+    [{ invalid_cache_usage: 1 }, 'invalid_cache_usage'],
+    [{ unfinished_requests: 1 }, 'unfinished_requests'],
+    [{ upstream_attempts: 2 }, 'unaccounted_attempts'],
+    [{ cache_usage_responses: 0 }, 'incomplete_cache_coverage'],
+    [{ cached_prompt_tokens: 1000001 }, 'inconsistent_counters'],
+  ]) {
+    const report = buildCostReport(JSON.stringify(costReceipt(overrides)))
+    assert.equal(report.estimate, null)
+    assert.ok(report.reasons.includes(reason))
+  }
+  const missing = buildCostReport(JSON.stringify(costReceipt()), {
+    adapter: 1,
+    preflight: 1,
+  })
+  assert.equal(missing.estimate, null)
+  assert.equal(missing.stages[1].observed, 0)
+  const failedPreflight = buildCostReport(
+    JSON.stringify(costReceipt({ stage: 'preflight', upstream_attempts: 2 })),
+    { preflight: 1, adapter: 0, topology: 0 }
+  )
+  assert.equal(failedPreflight.estimate, null)
+  assert.ok(failedPreflight.reasons.includes('unaccounted_attempts'))
+  assert.equal(failedPreflight.stages[0].estimate.responses, 0)
+  assert.equal(failedPreflight.stages[2].estimate.withCache, 0)
+  for (const [text, reason] of [
+    ['', 'empty_receipt'],
+    ['{::error::private-source-marker', 'malformed_receipt'],
+    [
+      JSON.stringify(costReceipt({ stage: '::error::private-source-marker' })),
+      'invalid_stage',
+    ],
+  ]) {
+    const report = buildCostReport(text)
+    assert.equal(report.estimate, null)
+    assert.ok(report.reasons.includes(reason))
+    assert.doesNotMatch(JSON.stringify(report), /private-source-marker/)
+  }
+  assert.deepEqual(buildCostReport('', { adapter: -1 }).reasons, [
+    'invalid_expectations',
+  ])
+})
+
+test('manual workflows reconcile shared stage receipts against independent step outputs', () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+  for (const [job, stepId, stageArgs] of [
+    ['review', 'run_review', ['preflight', 'adapter']],
+    ['review_stack', 'code_review', ['preflight', 'adapter', 'topology']],
+  ]) {
+    const block = source.match(
+      new RegExp(`\\n  ${job}:\\n([\\s\\S]*?)(?=\\n  [a-z][\\w-]*:\\n|$)`)
+    )[1]
+    const steps = block.split(/^      - name: /m).slice(1)
+    const preflight = steps.find((step) => step.includes('id: preflight'))
+    const execution = steps.find((step) => step.includes(`id: ${stepId}`))
+    const summary = steps.find((step) =>
+      step.includes('ocr-mistral-adapter.cjs summary')
+    )
+    const receiptPath = execution.match(/OCR_ADAPTER_DIAGNOSTICS_PATH: (.+)/)[1]
+    assert.equal(
+      preflight.match(/OCR_ADAPTER_DIAGNOSTICS_PATH: (.+)/)[1],
+      receiptPath
+    )
+    assert.equal(summary.match(/DIAGNOSTICS_PATH: (.+)/)[1], receiptPath)
+    assert.ok(summary.includes(`steps.${stepId}.outputs.adapter_lifetimes`))
+    assert.ok(summary.includes("steps.preflight.outcome == 'skipped'"))
+    for (const stage of stageArgs) assert.ok(summary.includes(`"${stage}=\${`))
+    if (job === 'review_stack') {
+      const topology = steps.find((step) =>
+        step.includes('id: topology_review')
+      )
+      assert.equal(
+        topology.match(/OCR_ADAPTER_DIAGNOSTICS_PATH: (.+)/)[1],
+        receiptPath
+      )
+      assert.ok(summary.includes("steps.topology_review.outcome == 'skipped'"))
+    }
+  }
+})
+
+test('failure summary emits only complete allowlisted counters without changing cost availability', async () => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-failure-summary-')
+  )
+  const receiptPath = path.join(directory, 'receipt.jsonl')
+  const adapter = await startAdapter({
+    apiKey: 'synthetic',
+    fetchImpl: () => new Response('private-provider-error', { status: 429 }),
+  })
+  try {
+    await postJson(adapter, {
+      messages: [{ role: 'user', content: 'private-prompt' }],
+    })
+    await adapter.close()
+    const receipt = adapter.diagnostics()
+    receipt.failures['::error::private-key'] = 99
+    for (const [value, status] of [
+      [receipt, 'complete'],
+      [{ ...receipt, failures: { upstream_throttled: 1 } }, 'unavailable'],
+    ]) {
+      fs.writeFileSync(receiptPath, JSON.stringify(value))
+      const result = await runCli(['summary', receiptPath], {
+        GITHUB_STEP_SUMMARY: path.join(directory, 'summary.md'),
+      })
+      assert.equal(result.code, 0)
+      const line = result.stdout
+        .split('\n')
+        .find((line) => line.startsWith('OCR failures '))
+      assert.match(line, new RegExp(`^OCR failures status=${status}`))
+      if (status === 'complete') assert.match(line, /upstream_throttled=1/)
+      else assert.equal(line, 'OCR failures status=unavailable')
+      assert.doesNotMatch(result.stdout, /private-/)
+      assert.match(result.stdout, /OCR cost status=unavailable/)
+    }
+  } finally {
+    await adapter.close()
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('cost summary CLI logs and appends the same report, preserving success when either sink fails', async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-cost-summary-'))
+  try {
+    const receiptPath = path.join(directory, 'receipt.jsonl')
+    const summaryPath = path.join(directory, 'summary.md')
+    const env = { GITHUB_STEP_SUMMARY: summaryPath }
+    fs.writeFileSync(
+      receiptPath,
+      JSON.stringify(
+        costReceipt({ private_field: '::error::private-source-marker' })
+      )
+    )
+    let result = await runCli(['summary', receiptPath], env)
+    assert.equal(result.code, 0)
+    const summary = fs.readFileSync(summaryPath, 'utf8')
+    assert.equal(result.stdout, summary)
+    assert.match(summary, /\$0\.8950/)
+    assert.match(summary, /\$1\.8400/)
+    assert.match(summary, /\$0\.9450/)
+    assert.doesNotMatch(summary, /private-source-marker/)
+    for (const contents of [
+      '',
+      '{private-source-marker',
+      JSON.stringify(costReceipt({ missing_usage: 1 })),
+    ]) {
+      fs.writeFileSync(receiptPath, contents)
+      const previous = fs.readFileSync(summaryPath, 'utf8')
+      result = await runCli(['summary', receiptPath], env)
+      assert.equal(result.code, 0)
+      assert.equal(
+        result.stdout,
+        fs.readFileSync(summaryPath, 'utf8').slice(previous.length)
+      )
+      assert.doesNotMatch(result.stdout, /\$0\.8950/)
+      assert.match(
+        result.stdout,
+        /OCR cost status=unavailable reasons=[a-z_,]+/
+      )
+    }
+    result = await runCli(['summary', path.join(directory, 'absent')], env)
+    assert.equal(result.code, 0)
+    assert.ok(result.stdout.length > 0)
+    assert.ok(fs.readFileSync(summaryPath, 'utf8').endsWith(result.stdout))
+    assert.ok(fs.readFileSync(summaryPath, 'utf8').startsWith(summary))
+    assert.doesNotMatch(
+      fs.readFileSync(summaryPath, 'utf8'),
+      /private-source-marker/
+    )
+    fs.writeFileSync(receiptPath, JSON.stringify(costReceipt()))
+    result = await runCli(['summary', receiptPath], {
+      GITHUB_STEP_SUMMARY: directory,
+    })
+    assert.equal(result.code, 0)
+    assert.equal(result.stdout, summary)
+    result = await runCli(
+      ['summary', receiptPath, '::error::private-source-marker'],
+      env
+    )
+    assert.equal(result.code, 0)
+    assert.match(result.stdout, /reasons=invalid_expectations/)
+    assert.doesNotMatch(result.stdout, /private-source-marker/)
+    const previous = fs.readFileSync(summaryPath, 'utf8')
+    result = await runCli(['summary', receiptPath], env, { closeStdout: true })
+    assert.equal(result.code, 0)
+    assert.equal(fs.readFileSync(summaryPath, 'utf8'), previous + summary)
+    const shortWritesPath = path.join(directory, 'short-writes.cjs')
+    fs.writeFileSync(
+      shortWritesPath,
+      `const fs = require('node:fs')
+const writeSync = fs.writeSync
+fs.writeSync = (...args) => {
+  if (args[0] !== 1) return writeSync(...args)
+  const buffer = Buffer.from(args[1])
+  const offset = args[2] ?? 0
+  return writeSync(1, buffer, offset, Math.min(32, buffer.length - offset))
+}
+`
+    )
+    result = await runCli(['summary', receiptPath], {
+      ...env,
+      NODE_OPTIONS: `--require=${JSON.stringify(shortWritesPath)}`,
+    })
+    assert.equal(result.code, 0)
+    assert.equal(result.stdout, summary)
+    const zero = costReceipt(
+      Object.fromEntries(
+        Object.keys(costReceipt())
+          .filter((key) => key !== 'schema_version')
+          .map((key) => [key, 0])
+      )
+    )
+    const estimate = estimateCost(JSON.stringify(zero))
+    assert.equal(estimate.withCache, 0)
+    assert.equal(estimate.withoutCache, 0)
+    assert.equal(estimate.savingsPercent, 0)
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
 
 function completion(message, finishReason = 'stop') {
   return {
@@ -108,13 +582,16 @@ async function waitForListenerClose(url) {
 // Runs the CLI in a child with a bounded lifetime. A wedged child is asked to
 // stop with SIGTERM and then SIGKILL, and the promise always settles so a hung
 // invocation surfaces as a normal assertion instead of a hung test run.
-function runCli(args, env) {
+function runCli(args, env, { closeStdout = false, liveProgress = false } = {}) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [ADAPTER, ...args], {
       env: { ...process.env, ...env },
+      stdio: liveProgress ? ['pipe', 'pipe', 'pipe', 'pipe'] : 'pipe',
     })
+    if (closeStdout) child.stdout.destroy()
     let stdout = ''
     let stderr = ''
+    let live = ''
     let settled = false
     let termTimer
     let killTimer
@@ -131,16 +608,21 @@ function runCli(args, env) {
     child.stderr.on('data', (chunk) => {
       stderr += chunk
     })
-    child.on('exit', (code, signal) => finish({ code, signal, stdout, stderr }))
+    child.stdio[3]?.on('data', (chunk) => {
+      live += chunk
+    })
+    child.on('close', (code, signal) =>
+      finish({ code, signal, stdout, stderr, live })
+    )
     child.on('error', (error) =>
-      finish({ code: null, signal: null, stdout, stderr, error })
+      finish({ code: null, signal: null, stdout, stderr, live, error })
     )
     termTimer = setTimeout(() => {
       child.kill('SIGTERM')
       killTimer = setTimeout(() => {
         child.kill('SIGKILL')
         killTimer = setTimeout(
-          () => finish({ code: null, signal: 'SIGKILL', stdout, stderr }),
+          () => finish({ code: null, signal: 'SIGKILL', stdout, stderr, live }),
           2000
         )
       }, 2000)
@@ -584,7 +1066,35 @@ test('cache affinity is forwarded while malformed keys never reach upstream', as
   }
 })
 
-test('cache diagnostics distinguish reported zero, unavailable and invalid usage', async () => {
+test('partial usage cannot produce an apparently complete cost estimate', async () => {
+  for (const completionTokens of [undefined, -1, 0.5]) {
+    const fetchImpl = upstream(() => {
+      const payload = completion({ role: 'assistant', content: 'synthetic' })
+      payload.usage = {
+        prompt_tokens: 128,
+        completion_tokens: completionTokens,
+        prompt_tokens_details: { cached_tokens: 64 },
+      }
+      return jsonResponse(200, payload)
+    })
+    const adapter = await startAdapter({ apiKey: 'synthetic-key', fetchImpl })
+    try {
+      const response = await postJson(adapter, {
+        messages: [{ role: 'user', content: 'synthetic' }],
+      })
+      assert.equal(response.status, 200)
+      assert.equal(response.json.usage.completion_tokens, completionTokens)
+      assert.equal(adapter.diagnostics().missing_usage, 1)
+      assert.equal(adapter.diagnostics().prompt_tokens, 128)
+      assert.equal(adapter.diagnostics().completion_tokens, 0)
+      assert.equal(estimateCost(JSON.stringify(adapter.diagnostics())), null)
+    } finally {
+      await adapter.close()
+    }
+  }
+})
+
+test('OCR receives billable usage while diagnostics keep raw cache usage', async () => {
   const reports = [64, 0, undefined, -1, 129, null]
   const fetchImpl = upstream((_record, index) => {
     const payload = completion({ role: 'assistant', content: 'private-answer' })
@@ -609,12 +1119,12 @@ test('cache diagnostics distinguish reported zero, unavailable and invalid usage
         prompt_cache_key: 'private-cache-key',
       })
       assert.equal(response.status, 200)
-      assert.equal(response.json.usage.prompt_tokens, 128)
-      assert.equal(response.json.usage.total_tokens, 132)
-      assert.equal(
-        response.json.usage.prompt_tokens_details?.cached_tokens,
-        cached === 64 || cached === 0 ? cached : undefined
-      )
+      const billedCache = cached === 64 ? 64 : 0
+      assert.deepEqual(response.json.usage, {
+        prompt_tokens: 128 - billedCache,
+        completion_tokens: 4,
+        total_tokens: 132 - billedCache,
+      })
       assert.doesNotMatch(response.text, /private-provider-data/)
     }
     const receipt = adapter.diagnostics()
@@ -656,7 +1166,7 @@ test('OCR completion conversations require tools; auxiliary requests retain thei
   )
 })
 
-test('a provider ignoring required tool use fails without entering OCR prose retries', async () => {
+test('a finished response ignoring required tool use fails without entering OCR prose retries', async () => {
   const fetchImpl = upstream(() =>
     jsonResponse(
       200,
@@ -666,7 +1176,7 @@ test('a provider ignoring required tool use fails without entering OCR prose ret
           content: 'private synthetic response',
           reasoning_content: 'private synthetic reasoning',
         },
-        'length'
+        'stop'
       )
     )
   )
@@ -685,7 +1195,8 @@ test('a provider ignoring required tool use fails without entering OCR prose ret
     const receipt = adapter.diagnostics()
     assert.equal(receipt.upstream_attempts, 1)
     assert.equal(receipt.main_no_tool_responses, 1)
-    assert.equal(receipt.length_finishes, 1)
+    assert.equal(receipt.length_finishes, 0)
+    assert.equal(receipt.failures.required_tool_call_missing, 1)
     assert.equal(receipt.prompt_tokens, 3)
     assert.equal(receipt.completion_tokens, 4)
     assert.ok(receipt.max_request_bytes > 0)
@@ -693,6 +1204,82 @@ test('a provider ignoring required tool use fails without entering OCR prose ret
     assert.doesNotMatch(result.text, /private synthetic/)
   } finally {
     await adapter.close()
+  }
+})
+
+test('one length-limited tool-free turn can continue natively; a repeated failure stops', async () => {
+  for (const recover of [true, false]) {
+    const native = {
+      role: 'assistant',
+      content: 'private unfinished answer',
+      reasoning_content: 'private unfinished reasoning',
+    }
+    const fetchImpl = upstream(({ body: { messages } }) =>
+      jsonResponse(
+        200,
+        recover && messages.some((message) => message.role === 'assistant')
+          ? completion(
+              {
+                role: 'assistant',
+                content: '',
+                tool_calls: [
+                  {
+                    id: 'done',
+                    type: 'function',
+                    function: {
+                      name: 'task_done',
+                      arguments: '{"state":"DONE"}',
+                    },
+                  },
+                ],
+              },
+              'tool_calls'
+            )
+          : completion(native, 'length')
+      )
+    )
+    const adapter = await startAdapter({ apiKey: 'synthetic-key', fetchImpl })
+    const request = {
+      messages: [{ role: 'user', content: 'synthetic input' }],
+      tools: [{ type: 'function', function: { name: 'task_done' } }],
+      max_completion_tokens: 55,
+    }
+    try {
+      const first = await postJson(adapter, request)
+      assert.equal(first.status, 200)
+      assert.equal(first.json.choices[0].finish_reason, 'length')
+      assert.equal(first.json.usage.completion_tokens, 4)
+      const echoed = { ...first.json.choices[0].message }
+      delete echoed.reasoning_content
+      const next = await postJson(adapter, {
+        ...request,
+        messages: [
+          ...request.messages,
+          echoed,
+          { role: 'user', content: 'continue' },
+        ],
+      })
+      assert.equal(next.status, recover ? 200 : 422)
+      if (recover) {
+        assert.equal(
+          next.json.choices[0].message.tool_calls[0].function.name,
+          'task_done'
+        )
+      } else {
+        assert.equal(next.json.error.code, 'required_tool_call_missing')
+      }
+      assert.equal(fetchImpl.calls.length, 2)
+      assert.deepEqual(fetchImpl.calls[1].body.messages[1], native)
+      assert.ok(fetchImpl.calls.every((call) => call.body.max_tokens === 55))
+      const receipt = adapter.diagnostics()
+      assert.equal(receipt.completion_tokens, 8)
+      assert.equal(receipt.history.misses, 0)
+      assert.equal(receipt.failures.length_no_tool, recover ? 0 : 1)
+      assert.equal(receipt.failures.required_tool_call_missing, 0)
+      assert.doesNotMatch(JSON.stringify(receipt), /private unfinished/)
+    } finally {
+      await adapter.close()
+    }
   }
 })
 
@@ -1485,6 +2072,84 @@ test('upstream failures are redacted to a fixed safe error', async () => {
   }
 })
 
+test('adapter classifies failures once without changing responses or accounting', async () => {
+  const cases = [
+    [
+      'upstream_throttled',
+      () => new Response('private-error', { status: 429 }),
+      502,
+      'upstream_error',
+    ],
+    [
+      'upstream_rejected',
+      () => new Response('private-error', { status: 403 }),
+      502,
+      'upstream_error',
+    ],
+    [
+      'upstream_server_error',
+      () => new Response('private-error', { status: 503 }),
+      502,
+      'upstream_error',
+    ],
+    [
+      'transport_error',
+      () => {
+        throw new Error('private-error')
+      },
+      502,
+      'internal_error',
+    ],
+    [
+      'malformed_response',
+      () => new Response('private-error', { status: 200 }),
+      502,
+      'malformed_response',
+    ],
+    [
+      'upstream_timeout',
+      (_url, init) =>
+        new Promise((_resolve, reject) =>
+          init.signal.addEventListener('abort', () =>
+            setTimeout(() => reject(new Error('private-error')), 5)
+          )
+        ),
+      504,
+      'upstream_timeout',
+    ],
+  ]
+  for (const [category, fetchImpl, status, code] of cases) {
+    const adapter = await startAdapter({
+      apiKey: 'synthetic',
+      fetchImpl,
+      timeoutMs: category === 'upstream_timeout' ? 10 : 1000,
+    })
+    try {
+      const response = await postJson(adapter, {
+        messages: [{ role: 'user', content: 'private-prompt' }],
+      })
+      assert.equal(response.status, status, category)
+      assert.equal(response.json.error.code, code, category)
+      await adapter.close()
+      const receipt = adapter.diagnostics()
+      assert.equal(receipt.failures[category], 1, category)
+      assert.equal(
+        Object.values(receipt.failures).reduce((sum, n) => sum + n, 0),
+        1,
+        category
+      )
+      assert.equal(receipt.requests, 1)
+      assert.equal(receipt.upstream_attempts, 1)
+      assert.equal(receipt.responses, 0)
+      assert.equal(receipt.request_types.auxiliary.failures[category], 1)
+      assert.equal(estimateCost(JSON.stringify(receipt)), null)
+      assert.doesNotMatch(JSON.stringify(receipt), /private-/)
+    } finally {
+      await adapter.close()
+    }
+  }
+})
+
 test('malformed upstream content fails closed as 502, malformed requests as 400', async () => {
   const badMessages = [
     { role: 'assistant', content: [{ type: 'image', url: 'x' }] },
@@ -1744,6 +2409,120 @@ const RUN_SCRIPT =
   ' anthropic: process.env.OCR_USE_ANTHROPIC ?? null,' +
   ' home: process.env.HOME ?? null }))'
 
+test('run completes the existing OCR config per attempt and restores it on every child outcome', async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-run-config-'))
+  const configPath = path.join(directory, 'config.json')
+  const original = `${JSON.stringify(
+    {
+      language: 'English',
+      llm: {
+        model: MISTRAL_MODEL,
+        protocol: 'openai',
+        extra_body: {
+          reasoning_effort: 'max',
+          prompt_cache_key: '{ocr_session_key}',
+        },
+        auth_token_cmd: 'printf "%s" "$OCR_LLM_TOKEN"',
+      },
+    },
+    null,
+    2
+  )}\n`
+  fs.writeFileSync(configPath, original, { mode: 0o600 })
+  const urls = new Set()
+  try {
+    for (const code of [0, 7]) {
+      const result = await runCli(
+        [
+          'run',
+          '--ocr-config',
+          configPath,
+          '--',
+          process.execPath,
+          '-e',
+          `
+          const fs = require('node:fs')
+          const config = JSON.parse(fs.readFileSync(process.argv[1], 'utf8'))
+          process.stdout.write(JSON.stringify({config, url: process.env.OCR_LLM_URL,
+            upstreamKey: process.env.MISTRAL_API_KEY ?? null,
+            mode: fs.statSync(process.argv[1]).mode & 0o777}))
+          process.exitCode = ${code}
+        `,
+          configPath,
+        ],
+        { MISTRAL_API_KEY: 'synthetic-config-key' }
+      )
+      assert.equal(result.code, code, result.stderr)
+      const seen = JSON.parse(result.stdout)
+      assert.equal(seen.config.llm.url, seen.url)
+      urls.add(seen.url)
+      delete seen.config.llm.url
+      assert.deepEqual(seen.config, JSON.parse(original))
+      assert.equal(seen.upstreamKey, null)
+      assert.equal(seen.mode, 0o600)
+      assert.equal(fs.readFileSync(configPath, 'utf8'), original)
+      assert.equal(fs.statSync(configPath).mode & 0o777, 0o600)
+    }
+    assert.equal(urls.size, 2)
+    const missing = await runCli(
+      [
+        'run',
+        '--ocr-config',
+        configPath,
+        '--',
+        'ocr-synthetic-executable-absent',
+      ],
+      { MISTRAL_API_KEY: 'synthetic-config-key' }
+    )
+    assert.equal(missing.code, 1)
+    assert.equal(fs.readFileSync(configPath, 'utf8'), original)
+    fs.chmodSync(configPath, 0o644)
+    const unsafe = await runCli(
+      [
+        'run',
+        '--ocr-config',
+        configPath,
+        '--',
+        process.execPath,
+        '-e',
+        'process.exit(99)',
+      ],
+      { MISTRAL_API_KEY: 'synthetic-config-key' }
+    )
+    assert.equal(unsafe.code, 1)
+    assert.equal(fs.readFileSync(configPath, 'utf8'), original)
+    fs.chmodSync(configPath, 0o600)
+    const restoration = await runCli(
+      [
+        'run',
+        '--ocr-config',
+        configPath,
+        '--',
+        process.execPath,
+        '-e',
+        `
+        const fs = require('node:fs')
+        fs.unlinkSync(process.argv[1])
+        fs.mkdirSync(process.argv[1])
+        process.stdout.write(process.env.OCR_LLM_URL)
+      `,
+        configPath,
+      ],
+      { MISTRAL_API_KEY: 'synthetic-config-key' }
+    )
+    assert.equal(restoration.code, 1)
+    assert.equal(
+      restoration.stderr,
+      'ocr-mistral-adapter: ocr_config_restore_failed\n'
+    )
+    await assert.rejects(
+      fetch(restoration.stdout, { method: 'POST', body: '{}' })
+    )
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('run strips the upstream key and injects the OCR environment', async () => {
   const result = await runCli(
     ['run', '--', process.execPath, '-e', RUN_SCRIPT],
@@ -1758,6 +2537,223 @@ test('run strips the upstream key and injects the OCR environment', async () => 
   assert.equal(seen.protocol, 'openai')
   assert.equal(seen.anthropic, 'false')
   assert.equal(seen.home, process.env.HOME)
+})
+
+test('run streams filtered progress before completion while preserving raw stderr, JSON and exit status', async (t) => {
+  const rawLine = '[ocr]   ▶ file_read "OCR_PRIVATE_SENTINEL"\n'
+  const finalLine = '[ocr]   ✔ file_read (1ms)'
+  const script = `
+    const fs = require('node:fs')
+    const first = Buffer.from(${JSON.stringify(rawLine)})
+    const split = first.indexOf(Buffer.from('▶')) + 1
+    process.stderr.write(first.subarray(0, split))
+    setImmediate(() => process.stderr.write(first.subarray(split)))
+    process.stdin.once('data', () => {
+      let inherited = false
+      try { fs.writeSync(3, 'OCR_CHILD_FD_SENTINEL'); inherited = true } catch {}
+      fs.writeSync(2, Buffer.from([255, 254, 10]))
+      fs.writeSync(2, ${JSON.stringify(finalLine)})
+      fs.writeSync(1, JSON.stringify({
+        ok: true, inherited,
+        key: process.env.MISTRAL_API_KEY ?? null,
+        progress: process.env.OCR_ADAPTER_PROGRESS_FD ?? null
+      }))
+      process.stdin.destroy()
+      process.exitCode = 7
+    })
+  `
+  const child = spawn(
+    process.execPath,
+    [ADAPTER, 'run', '--', process.execPath, '-e', script],
+    {
+      env: {
+        ...process.env,
+        MISTRAL_API_KEY: 'synthetic-upstream-key',
+        OCR_ADAPTER_PROGRESS_FD: '3',
+      },
+      stdio: ['pipe', 'pipe', 'pipe', 'pipe'],
+    }
+  )
+  t.after(() => {
+    if (child.exitCode === null) child.kill('SIGKILL')
+  })
+  let stdout = ''
+  const stderr = []
+  let live = ''
+  let observed
+  const progressStarted = new Promise((resolve) => {
+    observed = resolve
+  })
+  child.stdout.on('data', (chunk) => {
+    stdout += chunk
+  })
+  child.stderr.on('data', (chunk) => stderr.push(chunk))
+  child.stdio[3].on('data', (chunk) => {
+    live += chunk
+    if (live.includes('event=tool_started')) observed()
+  })
+  const closed = new Promise((resolve) =>
+    child.once('close', (code, signal) => resolve({ code, signal }))
+  )
+  let timeout
+  try {
+    await Promise.race([
+      progressStarted,
+      closed.then(() => {
+        throw new Error('child exited before live progress')
+      }),
+      new Promise((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error('live progress not received')),
+          6000
+        )
+      }),
+    ])
+    assert.equal(child.exitCode, null)
+    assert.equal(stdout, '')
+    child.stdin.end('finish\n')
+    const result = await closed
+    assert.equal(result.code, 7)
+    assert.deepEqual(JSON.parse(stdout), {
+      ok: true,
+      inherited: false,
+      key: null,
+      progress: null,
+    })
+    assert.deepEqual(
+      Buffer.concat(stderr),
+      Buffer.concat([
+        Buffer.from(rawLine),
+        Buffer.from([255, 254, 10]),
+        Buffer.from(finalLine),
+      ])
+    )
+    assert.match(
+      live,
+      /^OCR progress event=tool_started tool=file_read\nOCR progress event=tool_completed tool=file_read\nOCR progress event=process_exited exit_code=7 signaled=false spawn_failed=false elapsed_ms=\d+\n$/
+    )
+    assert.doesNotMatch(live, /SENTINEL|::/)
+  } finally {
+    clearTimeout(timeout)
+  }
+})
+
+test('live progress reports a quiet successful process and spawn failure without reflecting arguments', async () => {
+  for (const [argv, code, failed] of [
+    [
+      [process.execPath, '-e', 'process.stdout.write(\'{"ok":true}\')'],
+      0,
+      false,
+    ],
+    [
+      ['/OCR_PRIVATE_SENTINEL/absent', '::error::OCR_PRIVATE_SENTINEL'],
+      1,
+      true,
+    ],
+  ]) {
+    const result = await runCli(
+      ['run', '--', ...argv],
+      {
+        MISTRAL_API_KEY: 'synthetic-key',
+        OCR_ADAPTER_PROGRESS_FD: '3',
+      },
+      { liveProgress: true }
+    )
+    assert.equal(result.code, code)
+    assert.equal(result.stdout, failed ? '' : '{"ok":true}')
+    assert.equal(
+      result.stderr,
+      failed ? 'ocr-mistral-adapter: child_spawn_failed\n' : ''
+    )
+    assert.match(
+      result.live,
+      new RegExp(
+        `^OCR progress event=process_exited exit_code=${code} signaled=false spawn_failed=${failed} elapsed_ms=\\d+\\n$`
+      )
+    )
+    assert.doesNotMatch(result.live, /SENTINEL|::/)
+  }
+})
+
+test('a missing live-log descriptor never falls back into result or private stderr', async () => {
+  const raw = '[ocr]   ✔ file_read (1ms)\n'
+  const result = await runCli(
+    [
+      'run',
+      '--',
+      process.execPath,
+      '-e',
+      `process.stderr.write(${JSON.stringify(raw)}); process.stdout.write('{"ok":true}')`,
+    ],
+    { MISTRAL_API_KEY: 'synthetic-upstream-key', OCR_ADAPTER_PROGRESS_FD: '3' }
+  )
+  assert.equal(result.code, 0)
+  assert.deepEqual(JSON.parse(result.stdout), { ok: true })
+  assert.equal(result.stderr, raw)
+})
+
+test('live progress cleanup is bounded when a descendant keeps stderr open', async (t) => {
+  const script = `
+    const { spawn } = require('node:child_process')
+    const fs = require('node:fs')
+    const descendant = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], {
+      detached: true, stdio: ['ignore', 'ignore', 'inherit']
+    })
+    descendant.unref()
+    fs.writeSync(1, JSON.stringify({ pid: descendant.pid, url: process.env.OCR_LLM_URL }))
+    process.exitCode = 7
+  `
+  const child = spawn(
+    process.execPath,
+    [ADAPTER, 'run', '--', process.execPath, '-e', script],
+    {
+      env: {
+        ...process.env,
+        MISTRAL_API_KEY: 'synthetic-upstream-key',
+        OCR_ADAPTER_PROGRESS_FD: '3',
+      },
+      stdio: ['ignore', 'pipe', 'pipe', 'pipe'],
+    }
+  )
+  let stdout = ''
+  child.stdout.on('data', (chunk) => {
+    stdout += chunk
+  })
+  child.stderr.resume()
+  child.stdio[3].resume()
+  const exited = new Promise((resolve) =>
+    child.once('exit', (code) => resolve(code))
+  )
+  t.after(() => {
+    if (stdout) {
+      try {
+        process.kill(JSON.parse(stdout).pid, 'SIGKILL')
+      } catch {}
+    }
+    if (child.exitCode === null) child.kill('SIGKILL')
+  })
+  await waitFor(() => {
+    try {
+      return JSON.parse(stdout)
+    } catch {
+      return false
+    }
+  })
+  let timer
+  try {
+    const code = await Promise.race([
+      exited,
+      new Promise((resolve) => {
+        timer = setTimeout(() => resolve('cleanup_timeout'), 6000)
+      }),
+    ])
+    assert.equal(code, 7)
+    const receipt = JSON.parse(stdout)
+    assert.doesNotThrow(() => process.kill(receipt.pid, 0))
+    await assert.rejects(fetch(receipt.url, { method: 'POST', body: '{}' }))
+  } finally {
+    clearTimeout(timer)
+  }
 })
 
 test('run propagates the child exit code', async () => {
@@ -1848,6 +2844,7 @@ test('start/serve/stop own the listener lifecycle', async (t) => {
   const diagnosticsText = fs.readFileSync(diagnosticsPath, 'utf8')
   assert.equal(diagnosticsText.trim().split('\n').length, 1)
   assert.equal(JSON.parse(diagnosticsText).unfinished_requests, 0)
+  assert.equal(JSON.parse(diagnosticsText).failures.local_rejection, 1)
   assert.equal(fs.statSync(diagnosticsPath).mode & 0o777, 0o600)
   assert.doesNotMatch(diagnosticsText, /sk-synthetic-start/)
   assert.equal((await runCli(['stop', statePath], env)).code, 0)
@@ -1939,31 +2936,50 @@ test('state paths outside RUNNER_TEMP are refused', async () => {
   assert.equal(fs.existsSync(outside), false)
 })
 
-test('run terminates its listener on SIGTERM', async () => {
+test('run with live progress terminates its listener on SIGTERM', async () => {
   const directory = fs.mkdtempSync(
     path.join(os.tmpdir(), 'ocr-signal-diagnostics-')
   )
   const diagnosticsPath = path.join(directory, 'diagnostics.jsonl')
+  const configPath = path.join(directory, 'config.json')
+  const original = JSON.stringify({ llm: { model: MISTRAL_MODEL } })
+  fs.writeFileSync(configPath, original, { mode: 0o600 })
   const script =
     'process.stdout.write(process.env.OCR_LLM_URL + "\\n");' +
     ' setInterval(() => {}, 1000)'
   const child = spawn(
     process.execPath,
-    [ADAPTER, 'run', '--', process.execPath, '-e', script],
+    [
+      ADAPTER,
+      'run',
+      '--ocr-config',
+      configPath,
+      '--',
+      process.execPath,
+      '-e',
+      script,
+    ],
     {
       env: {
         ...process.env,
         MISTRAL_API_KEY: 'sk-synthetic-signal',
         OCR_ADAPTER_DIAGNOSTICS_PATH: diagnosticsPath,
+        OCR_ADAPTER_PROGRESS_FD: '3',
       },
+      stdio: ['ignore', 'pipe', 'pipe', 'pipe'],
     }
   )
   let stdout = ''
+  let live = ''
   child.stdout.on('data', (chunk) => {
     stdout += chunk
   })
+  child.stderr.resume()
+  child.stdio[3].on('data', (chunk) => {
+    live += chunk
+  })
   const exited = new Promise((resolve) => {
-    child.on('exit', (code, signal) => resolve({ code, signal }))
+    child.on('close', (code, signal) => resolve({ code, signal }))
     child.on('error', () => resolve({ code: null, signal: null }))
   })
   let timer
@@ -1980,6 +2996,13 @@ test('run terminates its listener on SIGTERM', async () => {
       }),
     ])
     assert.ok(!result.timeout, 'run did not exit after SIGTERM')
+    assert.equal(result.code, 1)
+    assert.equal(fs.readFileSync(configPath, 'utf8'), original)
+    assert.equal(fs.statSync(configPath).mode & 0o777, 0o600)
+    assert.match(
+      live,
+      /^OCR progress event=process_exited exit_code=1 signaled=true spawn_failed=false elapsed_ms=\d+\n$/
+    )
     assert.equal(
       fs.readFileSync(diagnosticsPath, 'utf8').trim().split('\n').length,
       1

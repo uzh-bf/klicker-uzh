@@ -76,6 +76,7 @@ jobs:
           review_concurrency: '4'
           sticky_summary: 'true'
           incremental: 'true'
+          stream_progress: 'true'
           route_severity_below: 'low'
           upload_artifacts: 'false'
 
@@ -93,4 +94,12 @@ jobs:
           name: draft-ai-review-adapter-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/draft-ai-review-adapter-diagnostics.jsonl
           if-no-files-found: warn
-          retention-days: 1
+          retention-days: 7
+
+      - name: Summarize OCR estimated cost and caching savings
+        if: always()
+        continue-on-error: true
+        env:
+          ADAPTER_PATH: ${{ runner.temp }}/ocr-mistral-adapter.cjs
+          DIAGNOSTICS_PATH: ${{ runner.temp }}/draft-ai-review-adapter-diagnostics.jsonl
+        run: node "${ADAPTER_PATH}" summary "${DIAGNOSTICS_PATH}"
