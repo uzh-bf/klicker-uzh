@@ -113,6 +113,20 @@ staging data change, asked for separately.
 
 ## Progress
 
+### Current release preparation — 15 October 2026
+
+The tier gates merged in [#6491](https://github.com/uzh-bf/klicker-uzh/pull/6491).
+The release-source follow-up aligns the pending backfill's trim predicate with
+JavaScript and exposes `advancedModelConfigurationEntitled` for draft selection.
+That projection uses the same tier/cost-center predicate as saving a new model;
+AI runtime approval and existing saved-model exceptions keep their own checks.
+The authoring regression covers disabled new selections, selecting and saving
+with a cost center, and retaining a saved model after the cost center is removed.
+The [production promotion plan](2026-10-15-kb-binding-production-promotion-plan.md)
+keeps merge, tag publication and deployment gated. Earlier entries below are
+historical; their old pending-check statements are not current release evidence.
+
+
 - 2026-10-13: plan drafted. Revised the same day: the picker and the
   cost-center implication were added at the user's request, and a migration
   replaced the manual production backfill. Approved and implemented in draft

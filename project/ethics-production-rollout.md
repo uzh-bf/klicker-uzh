@@ -10,10 +10,18 @@ Promote only the verified staging persona, welcome text and authored starter pro
 
 Completion requires ready production workloads, a successful migration hook, the intended image digests, prompt equality and a full real-browser synthetic flow with KB citations and all three videos. Pause on failed gates, missing access, material drift, mandatory human-review requirements or insufficient approved test credits. No review bypass or quota reset is authorized.
 
+Preserve the historical migration file bytes when preparing the release. Its whitespace predicate is documented here without changing that file:
+
+```sql
+-- Match JavaScript String.prototype.trim(): the U& literal lists its whitespace
+-- and line-terminator code points (including tabs and non-breaking spaces).
+-- PostgreSQL's default btrim removes only spaces; <> '' rejects a blank result.
+```
+
 ## Execution details
 
 1. Main owns release and deployment effects, secrets, prompt promotion and live acceptance. A read-only source explorer maps existing release mechanics; planner and final reviewer verify the settled sequence.
-2. Source baseline is v3-ai 08598ba92ec94dfd4fa2606e7bd4376af4bbb7bb. Run the repository alpha dry-run and verify its 22 configured version targets without mutation. Regenerate the same alpha.88 version and changelog through `pnpm run release --release-as 3.4.0-alpha.88 --skip.tag true --skip.commit true`; inspect staged metadata, run applicable checks and deliver a release PR to v3-ai.
+2. Source baseline is v3-ai a12bd8260500d5b3d24b668564dab09d442afdc4. Run the repository alpha dry-run and verify its 22 configured version targets without mutation. Regenerate the same alpha.88 version and changelog through `pnpm run release --release-as 3.4.0-alpha.88 --skip.tag true --skip.commit true`; inspect staged metadata, run applicable checks and deliver a release PR to v3-ai.
 3. After required CI and reviews, merge normally, verify successful required checks on the actual merged v3-ai commit and tag that exact release commit. Await every required production image and record digests. In a v3-based deployment PR, change the existing 17 image pins to alpha.88 and preserve the shared cookie-domain chart setting already present on the deployment base. Require strict deploy parity, rendered chart validation, exact-head CI and applicable reviews before merge.
 4. Verify strict deploy parity and required checks on the actual v3 merge commit before completion. Verify production Argo revision, health, ready replicas, image IDs and successful PreSync migration. Retain alpha.87 pins as the image rollback target; migration rollback remains forward-only. Do not change cluster resources directly.
 5. Bind the prompt operation to live production and staging snapshots. Copy persona text into published custom-mode and authored system-prompt fields, plus the matching draft persona field. Copy the welcome and starters only into the corresponding mode fields after snapshot validation. Preserve all other row and draft fields. Validate via the actual transaction with rollback before applying once. Prepare a guarded receipt-bound rollback; do not execute it without a concrete recovery decision.

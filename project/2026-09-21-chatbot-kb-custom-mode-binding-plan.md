@@ -387,6 +387,17 @@ screenshot table.
 
 ## Progress
 
+### Current release preparation — 15 October 2026
+
+The original binding change merged in [#6247](https://github.com/uzh-bf/klicker-uzh/pull/6247).
+This follow-up carries only the two reviewed staging integration corrections
+into the release source: JavaScript-compatible cost-center whitespace handling
+and draft-model configuration eligibility consistent with the save policy.
+See the [production promotion plan](2026-10-15-kb-binding-production-promotion-plan.md)
+for the bounded draft-PR authority and the remaining release gates. The earlier
+progress entries below are historical evidence, not current forge status.
+
+
 ### October 13 review and simplification
 
 The user requested review and simplification of the existing draft. Execution

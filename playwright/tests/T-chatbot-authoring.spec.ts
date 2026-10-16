@@ -297,6 +297,60 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     }
   })
 
+  test('requires a cost center for new advanced draft models and retains saved models', async ({
+    page,
+  }) => {
+    const prisma = await getPrisma()
+    const previous = await prisma.user.findUniqueOrThrow({
+      where: { id: USER_ID_TEST },
+      select: { aiSubscriptionTier: true, aiChatbotCostCenter: true },
+    })
+
+    try {
+      await prisma.user.update({
+        where: { id: USER_ID_TEST },
+        data: {
+          aiSubscriptionTier: 'ADVANCED',
+          aiChatbotCostCenter: ' \t\n',
+        },
+      })
+      await page.reload()
+      await createChatbot(page, FIRST_CHATBOT)
+      await navigateToSetupStep(page, 'modes')
+      await page.getByTestId('chatbot-model-selection-switch').click()
+      await expect(page.getByTestId('chatbot-model-auto')).toBeDisabled()
+
+      await prisma.user.update({
+        where: { id: USER_ID_TEST },
+        data: { aiChatbotCostCenter: 'SYNTHETIC-COST-CENTER' },
+      })
+      await page.reload()
+      await page.getByTestId('chatbot-model-selection-switch').click()
+      await expect(page.getByTestId('chatbot-model-auto')).toBeEnabled()
+      await page.getByTestId('chatbot-model-auto').click()
+      const saved = page.waitForResponse(async (response) => {
+        if (!response.url().includes('/api/graphql')) return false
+        const body = await response.json()
+        return Boolean(body.data?.saveChatbotRevision)
+      })
+      await page.getByTestId('chatbot-model-settings-save').click()
+      await saved
+
+      await prisma.user.update({
+        where: { id: USER_ID_TEST },
+        data: { aiChatbotCostCenter: null },
+      })
+      await page.reload()
+      await expect(page.getByTestId('chatbot-model-auto')).toBeChecked()
+      await expect(page.getByTestId('chatbot-model-auto')).toBeEnabled()
+    } finally {
+      await prisma.user.update({
+        where: { id: USER_ID_TEST },
+        data: previous,
+      })
+    }
+  })
+
   test('opens a draft owner preview with its effective modes', async ({
     page,
   }) => {
