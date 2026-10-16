@@ -53,8 +53,8 @@ session implements it in two slices.
    are set through the GraphQL mutation, so this server rule covers every
    path.
 4. Backfill as a data-only Prisma migration (no schema change): set tier
-   `ADVANCED` for every user whose cost center is non-blank. This preserves
-   advanced access for existing accounts with a cost center when the tier
+   `ADVANCED` for every `BASE`-tier user whose cost center is non-blank. This
+   preserves advanced access for existing accounts with a cost center when the tier
    check is introduced. Create it with `prisma migrate dev --create-only` in
    the container; it holds one `UPDATE`.
 5. Saving a chatbot revision rejects a newly added `ADVANCED` model when the

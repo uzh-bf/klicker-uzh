@@ -60,7 +60,9 @@ rows with `parameters { required: true, toolAlias: 'doc_query', kb_id }`.
 globally (`:222`) and drops every mode whose effective configurations contain no
 required binding (`:238`). With the two standard modes disabled, the only
 offered mode is the unbound custom mode, so the resolver returns zero modes.
-A deterministic fixture reproduces this behavior.
+The effective-mode regression fixture covers this trigger by asserting that the
+approved custom mode remains available through inherited binding. It does not
+itself reproduce the zero-mode result.
 
 Second seam: `resolveMcpScope` (`apps/chat/src/services/mcpScope.ts:216`)
 requires the selected mode's effective KB configuration to be exactly one and
@@ -347,7 +349,7 @@ populated projection, changes this decision and needs its own ADR update.
 | Product primitive | Disposition | Contract delta | Affected compositions and consumers | Evidence or open ruling |
 | --- | --- | --- | --- | --- |
 | Effective mode set | extend | A mode's availability no longer depends on another mode's required binding; an unbound mode is offered | Chat bootstrap API, participant layout, owner preview, request validation | Handoff incident reproduction; slice 1 tests |
-| Knowledge-base binding ("Wissensbasis") | extend | Attachment provisions only the Tutor and Explainer rows and derives eligible custom keys from the approved `customModeConfig`; approved custom modes inherit the standard binding, disabled exact overrides stay untouched, and "Wissensbasis" stays the only lecturer-visible retrieval concept | KB attach/detach mutations, KB management bindings page, chatbot knowledge view | Slice 2 regression tests; October 12 reconciliation |
+| Knowledge-base binding ("Wissensbasis") | extend | Attachment provisions only the Tutor and Explainer rows and derives eligible custom keys from the approved `customModeConfig`; approved custom modes inherit the standard binding, disabled exact overrides stay untouched, and "Wissensbasis" stays the only lecturer-visible retrieval concept | KB attach/detach mutations, KB management bindings page, chatbot knowledge view | Slice 2 row-provisioning and reconciliation tests; effective-mode inheritance test |
 | Standard-mode configuration | reuse | None | Unchanged | ADR 0021 invariant preserved |
 | MCP configuration (internal) | retire (lecturer projection and op selections only) | Runtime policy and stored rows keep working; the public read field is deprecated and resolves empty | Manage chat-usage view, four chatbot ops, public SDL | Slices 1-3 tests and codegen |
 
