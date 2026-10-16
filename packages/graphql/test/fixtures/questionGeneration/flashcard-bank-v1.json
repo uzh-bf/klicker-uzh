@@ -1,0 +1,74 @@
+{
+  "format": "flashcard-bank-v1",
+  "schema_version": 1,
+  "status": "complete",
+  "requested_flashcard_count": 3,
+  "accepted_flashcard_count": 3,
+  "unresolved_flashcard_count": 0,
+  "metadata": {
+    "language": "de",
+    "blueprint": {
+      "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "schema_version": 1,
+      "content": {},
+      "artifact": {
+        "container_name": "flashcard-artifacts",
+        "blob_name": "flashcards/blueprint.json",
+        "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    },
+    "graph": {
+      "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "version_id": "graph-version-1",
+      "manifest": {
+        "container_name": "graph-artifacts",
+        "blob_name": "graphs/version-1/manifest.json",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    "publication": {
+      "status": "complete",
+      "requested_flashcard_count": 3,
+      "accepted_flashcard_count": 3,
+      "unresolved_flashcard_count": 0,
+      "resumable": false
+    },
+    "final_bank_review": { "status": "accepted", "warnings": [] }
+  },
+  "flashcards": [
+    {
+      "id": "fc-M1-001",
+      "front": "Was bedeutet Liquidität?",
+      "back": "Die Fähigkeit, fällige Zahlungen fristgerecht zu leisten.",
+      "card_type": "definition",
+      "module": { "module_id": "M1", "module_name": "Finanzierung" },
+      "lernziel": {
+        "objective_id": "M1-LZ01",
+        "objective_text": "Liquidität erklären."
+      }
+    },
+    {
+      "id": "fc-M1-002",
+      "front": "Wie lautet die Current Ratio?",
+      "back": "$Current\\ Ratio = Umlaufvermögen / kurzfristige\\ Verbindlichkeiten$",
+      "card_type": "formula",
+      "module": { "module_id": "M1", "module_name": "Finanzierung" },
+      "lernziel": {
+        "objective_id": "M1-LZ02",
+        "objective_text": "Liquiditätskennzahlen anwenden."
+      }
+    },
+    {
+      "id": "fc-M1-003",
+      "front": "Das Umlaufvermögen beträgt 120 und die kurzfristigen Verbindlichkeiten 80. Wie hoch ist die Current Ratio?",
+      "back": "$120 / 80 = 1.5$",
+      "card_type": "calculation",
+      "module": { "module_id": "M1", "module_name": "Finanzierung" },
+      "lernziel": {
+        "objective_id": "M1-LZ02",
+        "objective_text": "Liquiditätskennzahlen anwenden."
+      }
+    }
+  ],
+  "unresolved_slots": []
+}

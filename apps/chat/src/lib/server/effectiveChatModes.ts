@@ -1,6 +1,26 @@
-import { normalizeChatbotStandardModeConfig } from '@klicker-uzh/util'
+import type { ChatbotCustomMode } from '@klicker-uzh/types'
+import {
+  isChatbotStandardModeKey,
+  normalizeChatbotCustomModeConfig,
+  normalizeChatbotStandardModeConfig,
+} from '@klicker-uzh/util'
 import { DEFAULT_MODE_DESCRIPTIONS } from '@/src/lib/config/mode-descriptions'
+import type { ChatModeOption, ChatModeOptions } from '@/src/lib/config/modes'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
+
+export interface EffectiveChatModeOptions {
+  /**
+   * The chatbot's live custom modes. Callers pass the live column, never the
+   * revision snapshot, which prefers a pending draft over the approved value.
+   */
+  customModeConfig?: unknown
+  /**
+   * Owner preview keeps offering legacy stored `systemPrompts` keys so an owner
+   * can try an unpublished mode. Participant paths accept only the modes the
+   * chatbot carries as approved configuration.
+   */
+  allowUnapprovedModes?: boolean
+}
 
 export interface ChatModeMCPConfiguration {
   allowedTools?: unknown
@@ -86,18 +106,19 @@ type EffectiveMCPConfiguration<T extends ChatModeMCPConfiguration> = Omit<
   Pick<ChatModeMCPConfiguration, 'allowedTools' | 'chatMode'>
 
 function narrowInheritedBinding<T extends ChatModeMCPConfiguration>(
-  config: T
+  config: T,
+  targetMode: string
 ): EffectiveMCPConfiguration<T> {
-  // Required alias bindings keep their sole raw tool name. Optional Tutor
-  // bindings expose only doc_query when inherited by Quizzer.
+  // Required alias bindings keep their sole raw tool name. Optional bindings
+  // expose only doc_query when inherited by another mode.
   if (hasRequiredDocQueryAlias(config)) {
-    return { ...config, chatMode: 'quizzer' }
+    return { ...config, chatMode: targetMode }
   }
 
   return {
     ...config,
     allowedTools: ['doc_query'],
-    chatMode: 'quizzer',
+    chatMode: targetMode,
   }
 }
 
@@ -110,12 +131,54 @@ function sortByPriority<T extends ChatModeMCPConfiguration>(configs: T[]): T[] {
 export function resolveEffectiveMCPConfigurations<
   T extends ChatModeMCPConfiguration,
 >(configs: readonly T[], selectedMode: string): EffectiveMCPConfiguration<T>[] {
-  if (selectedMode !== 'quizzer') {
+  if (selectedMode !== 'quizzer' && isChatbotStandardModeKey(selectedMode)) {
     return sortByPriority(
       configs.filter(
         (config) => config.chatMode === selectedMode && isEnabled(config)
       )
     )
+  }
+
+  if (selectedMode !== 'quizzer') {
+    // Custom modes inherit only a required doc-query binding, re-tagged to
+    // the custom mode key so the scope assertion sees one binding per mode.
+    const exactByServer = new Map<string, T>()
+    const exactWithoutServer: T[] = []
+
+    for (const config of configs) {
+      if (config.chatMode !== selectedMode || !isEnabled(config)) continue
+      const serverId = getServerId(config)
+      if (serverId) {
+        exactByServer.set(serverId, config)
+      } else {
+        exactWithoutServer.push(config)
+      }
+    }
+
+    const resolved: EffectiveMCPConfiguration<T>[] = [
+      ...exactWithoutServer,
+      ...Array.from(exactByServer.values()),
+    ].map((config) => ({ ...config, chatMode: selectedMode }))
+
+    for (const sourceMode of ['tutor', 'explainer'] as const) {
+      for (const config of configs) {
+        if (
+          config.chatMode !== sourceMode ||
+          !isEnabled(config) ||
+          !isRequired(config) ||
+          !hasRequiredDocQueryAlias(config)
+        ) {
+          continue
+        }
+
+        const serverId = getServerId(config)
+        if (!serverId || exactByServer.has(serverId)) continue
+        exactByServer.set(serverId, config)
+        resolved.push(narrowInheritedBinding(config, selectedMode))
+      }
+    }
+
+    return sortByPriority(resolved)
   }
 
   const exactByServer = new Map<string, T>()
@@ -146,14 +209,14 @@ export function resolveEffectiveMCPConfigurations<
 
     const serverId = getServerId(config)
     if (!serverId || exactByServer.has(serverId)) continue
-    resolved.push(narrowInheritedBinding(config))
+    resolved.push(narrowInheritedBinding(config, 'quizzer'))
   }
 
   return sortByPriority(resolved)
 }
 
 export function resolveRequestedChatMode(
-  modeOptions: Record<string, string>,
+  modeOptions: Record<string, unknown>,
   requestedMode: string
 ): string {
   if (Object.hasOwn(modeOptions, requestedMode)) return requestedMode
@@ -173,12 +236,6 @@ function isModeExplicitlyDisabled(
   return modeConfig?.enabled === false
 }
 
-function isTypedStandardMode(
-  mode: string
-): mode is 'tutor' | 'explainer' | 'quizzer' {
-  return mode === 'tutor' || mode === 'explainer' || mode === 'quizzer'
-}
-
 function isStandardModeEnabled(
   standardModeConfig: unknown,
   systemPrompts: unknown,
@@ -189,7 +246,7 @@ function isStandardModeEnabled(
     systemPrompts
   )
 
-  if (isTypedStandardMode(mode)) {
+  if (isChatbotStandardModeKey(mode)) {
     if (mode === 'tutor') return normalizedConfig.tutorEnabled
     if (mode === 'explainer') return normalizedConfig.explainerEnabled
     return normalizedConfig.quizzerEnabled
@@ -210,19 +267,57 @@ function getModeDescription(systemPrompts: unknown, mode: string): string {
     : ''
 }
 
+function getApprovedCustomModesByKey(
+  customModeConfig: unknown
+): Map<string, ChatbotCustomMode> {
+  const modes = normalizeChatbotCustomModeConfig(customModeConfig)?.modes ?? []
+  const modesByKey = new Map<string, ChatbotCustomMode>()
+
+  for (const mode of modes) {
+    // Standard-mode keys stay platform-owned, so a stored entry that reuses one
+    // can never replace the platform label or the platform mode contract.
+    if (isChatbotStandardModeKey(mode.key) || modesByKey.has(mode.key)) continue
+    modesByKey.set(mode.key, mode)
+  }
+
+  return modesByKey
+}
+
+function getCustomModeDescription(mode: ChatbotCustomMode): string {
+  // The switcher and the welcome card fall back to this string for a mode
+  // without an i18n entry, so a mode without a description still needs label
+  // text a participant can read.
+  return mode.description ?? mode.name
+}
+
+function getCustomModeOption(mode: ChatbotCustomMode): ChatModeOption {
+  return {
+    description: getCustomModeDescription(mode),
+    name: mode.name,
+    ...(mode.welcomeMessage ? { welcomeMessage: mode.welcomeMessage } : {}),
+    ...(mode.starterPrompts?.length
+      ? { starterPrompts: mode.starterPrompts }
+      : {}),
+  }
+}
+
 export function resolveEffectiveChatModeOptions(
   systemPrompts: unknown,
   mcpConfigurations: readonly ChatModeMCPConfiguration[],
-  standardModeConfig: unknown = null
-): Record<string, string> {
+  standardModeConfig: unknown = null,
+  options: EffectiveChatModeOptions = {}
+): ChatModeOptions {
   const storedPrompts = asRecord(systemPrompts)
   const standardModes = Object.keys(DEFAULT_PROMPT)
-  const storedModes = storedPrompts ? Object.keys(storedPrompts) : []
-  const candidates = Array.from(new Set([...standardModes, ...storedModes]))
-  const hasRequiredMCP = mcpConfigurations.some(
-    (config) => isEnabled(config) && isRequired(config)
+  const customModesByKey = getApprovedCustomModesByKey(options.customModeConfig)
+  const storedModes =
+    options.allowUnapprovedModes && storedPrompts
+      ? Object.keys(storedPrompts)
+      : []
+  const candidates = Array.from(
+    new Set([...standardModes, ...customModesByKey.keys(), ...storedModes])
   )
-  const modeOptions: Record<string, string> = {}
+  const modeOptions: ChatModeOptions = {}
 
   for (const mode of candidates) {
     if (mode.trim().length === 0) continue
@@ -230,6 +325,7 @@ export function resolveEffectiveChatModeOptions(
       continue
     }
 
+    const customMode = customModesByKey.get(mode)
     const effectiveConfigurations = resolveEffectiveMCPConfigurations(
       mcpConfigurations,
       mode
@@ -240,11 +336,10 @@ export function resolveEffectiveChatModeOptions(
     ) {
       continue
     }
-    if (hasRequiredMCP && !effectiveConfigurations.some(isRequired)) {
-      continue
-    }
 
-    modeOptions[mode] = getModeDescription(systemPrompts, mode)
+    modeOptions[mode] = customMode
+      ? getCustomModeOption(customMode)
+      : { description: getModeDescription(systemPrompts, mode) }
   }
 
   return modeOptions

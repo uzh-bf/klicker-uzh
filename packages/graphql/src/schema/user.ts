@@ -14,6 +14,10 @@ export const UserRole = builder.enumType('UserRole', {
   values: Object.values(DB.UserRole),
 })
 
+export const AiSubscriptionTier = builder.enumType('AiSubscriptionTier', {
+  values: Object.values(DB.AiSubscriptionTier),
+})
+
 export const BetaEnrollmentCapabilityRef =
   builder.objectRef<IBetaEnrollmentCapability>('BetaEnrollmentCapability')
 export const BetaEnrollmentCapability = BetaEnrollmentCapabilityRef.implement({
@@ -62,6 +66,13 @@ export const User = UserRef.implement({
           : false
       )
       .exposeBoolean('aiFeaturesEnabled'),
+    aiSubscriptionTier: t
+      .withAuth((user, _, ctx) =>
+        ctx.user?.sub === user.id
+          ? { authenticated: true, role: DB.UserRole.USER }
+          : false
+      )
+      .expose('aiSubscriptionTier', { type: AiSubscriptionTier }),
 
     numChatbots: t.int({
       resolve: async (user, _, ctx) => {

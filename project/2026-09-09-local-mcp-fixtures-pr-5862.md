@@ -8,6 +8,9 @@ repository and is not part of the current PR diff.
 
 ## Contract
 
+Originally delivered on `v3`; the `v3-ai` reconciliation at the end of this
+page describes what the current code implements.
+
 Without an optional fixture, the existing finance seed remains unchanged.
 `LOCAL_MCP_DOCUMENTS_FILE` overrides the default local document corpus.
 An additional identity uses `LOCAL_MCP_FIXTURE_FILE`, or the ignored default
@@ -38,3 +41,22 @@ Source is delivered as a draft against `v3`. Required CI, senior human review
 and explicit merge authority remain separate gates. No deployment or provider
 configuration is included. Earlier published commits still retain the removed
 artifacts; this ordinary follow-up does not rewrite Git history.
+
+## v3-ai reconciliation
+
+Merging `v3` into `v3-ai` (PR #5999) adopted this fixture on the isolated
+runtime instead of a shared development database. The optional identity is now
+the *second* identity next to the dedicated `v3-ai` fixture, so the file
+carries `chatbotId`, `kbId`, `chatMode`, and `documentsFile`; its owner and
+course are the synthetic local ones the seed already creates.
+
+The guarded Prisma seed creates that additional identity — a draft chatbot, its
+knowledge base, one knowledge-base binding, and one enabled `doc_query`
+configuration — inside the same serializable transaction as the dedicated
+domain, and validates the identical shape on every later startup. Its stored
+scope uses the multi-knowledge-base `kb_ids` form every other configuration in
+this seed uses, instead of the singleton `kb_id` key. A missing additional
+identity is completed additively, while a changed identity, an unexpected
+consumer, or any other row fails closed before the transport credential rotates.
+The dedicated identity, the accepted scope-token pairs, and the
+boolean-by-default authenticator result are unchanged.

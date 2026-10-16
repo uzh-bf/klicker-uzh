@@ -12,6 +12,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
+import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseEmbedParam'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
@@ -22,15 +23,22 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import nookies from 'nookies'
+import { useMemo } from 'react'
 import Layout from '../../../../../components/Layout'
+import { CourseChatDrawer } from '../../../../../components/chatbot/CourseChatDrawer'
 import PreviewMessage from '../../../../../components/common/PreviewMessage'
 import MicroLearningSubscriber from '../../../../../components/microLearning/MicroLearningSubscriber'
+import { buildMicroLearningChatContext } from '../../../../../lib/chatbot/chatContext'
 
 function MicrolearningIntroduction({
+  courseId,
+  embedded,
   id,
   participantToken,
   cookiesAvailable,
 }: {
+  courseId: string
+  embedded: boolean
   id: string
   participantToken?: string
   cookiesAvailable?: boolean
@@ -57,10 +65,20 @@ function MicrolearningIntroduction({
   const { data: selfData } = useQuery(SelfDocument, {
     skip: data?.microLearning?.isOwner ?? false,
   })
+  const chatContext = useMemo(
+    () =>
+      buildMicroLearningChatContext({
+        courseId,
+        locale: router.locale ?? 'en',
+        microLearning: data?.microLearning ?? null,
+        totalSteps: data?.microLearning?.stacks?.length ?? 0,
+      }),
+    [courseId, data?.microLearning, router.locale]
+  )
 
   if (loading) {
     return (
-      <Layout>
+      <Layout embedded={embedded}>
         <Loader />
       </Layout>
     )
@@ -68,7 +86,7 @@ function MicrolearningIntroduction({
 
   if (!data?.microLearning) {
     return (
-      <Layout>
+      <Layout embedded={embedded}>
         <UserNotification
           type="error"
           message={t('pwa.microLearning.notFound')}
@@ -78,16 +96,22 @@ function MicrolearningIntroduction({
   }
 
   if (error) {
-    return <Layout>{t('shared.generic.systemError')}</Layout>
+    return (
+      <Layout embedded={embedded}>{t('shared.generic.systemError')}</Layout>
+    )
   }
 
   const microLearning = data.microLearning
   const microLearningPast = dayjs(microLearning.scheduledEndAt).isBefore(
     dayjs()
   )
+  const startHref = `/course/${courseId}/microLearnings/${microLearning.id}/0${
+    embedded ? '?embed=true' : ''
+  }`
 
   return (
     <Layout
+      embedded={embedded}
       displayName={microLearning.displayName}
       course={microLearning.course ?? undefined}
     >
@@ -189,10 +213,7 @@ function MicrolearningIntroduction({
           </div>
         </div>
 
-        <Link
-          href={`/course/${microLearning.course?.id}/microLearnings/${microLearning.id}/0`}
-          legacyBehavior
-        >
+        <Link href={startHref} legacyBehavior>
           <Button
             primary
             disabled={!microLearning.isOwner && microLearningPast}
@@ -205,6 +226,12 @@ function MicrolearningIntroduction({
           </Button>
         </Link>
       </div>
+      <CourseChatDrawer
+        courseId={courseId}
+        context={chatContext}
+        embedded={embedded}
+        enabled={Boolean(participantToken)}
+      />
     </Layout>
   )
 }
@@ -224,6 +251,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
 
     const apolloClient = initializeApollo()
+    const embedded = parseEmbedParam(ctx.query.embed)
 
     const { participantToken, cookiesAvailable } = await getParticipantToken({
       apolloClient,
@@ -236,6 +264,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         props: {
           participantToken,
           cookiesAvailable,
+          courseId: ctx.params.courseId,
+          embedded,
           id: ctx.params.id,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
@@ -247,6 +277,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       props: {
         id: ctx.params.id,
         courseId: ctx.params.courseId,
+        embedded,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },
