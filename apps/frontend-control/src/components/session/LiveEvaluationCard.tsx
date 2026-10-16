@@ -165,6 +165,15 @@ function InstanceChart({ instance }: { instance: Instance }) {
   }
 }
 
+// people who took part in a block: numOfParticipants only counts those who
+// answered every question, so the most answered question is used when higher
+export function blockParticipants(
+  numOfParticipants: number | null | undefined,
+  instances: Instance[] | undefined
+) {
+  return Math.max(numOfParticipants ?? 0, ...(instances ?? []).map(answerCount))
+}
+
 export function answerCount(instance: Instance) {
   return 'results' in instance &&
     instance.results &&
@@ -194,8 +203,10 @@ function LiveEvaluationCard({
   const t = useTranslations()
   const { data } = useQuery(GetControlLiveQuizEvaluationDocument, {
     variables: { id: quizId },
-    // live counts while the block runs; closed results only change once
+    // live counts while the block runs; on every (re)mount fetch once more so
+    // answers submitted just before the block closed are included
     pollInterval: live ? 2000 : 0,
+    fetchPolicy: 'cache-and-network',
   })
 
   const stack = data?.liveQuizEvaluation?.results.find(

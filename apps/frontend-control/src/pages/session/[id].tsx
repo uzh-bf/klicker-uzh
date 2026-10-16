@@ -67,7 +67,7 @@ function RunningLiveQuiz() {
 
   const quizId = router.query.id as string
 
-  const { loading, error, data } = useQuery(GetControlLiveQuizSessionDocument, {
+  const { loading, data } = useQuery(GetControlLiveQuizSessionDocument, {
     variables: { id: quizId },
     pollInterval: 1000,
     skip: !quizId || !!ended,
@@ -148,7 +148,9 @@ function RunningLiveQuiz() {
     )
   }
 
-  if (!data?.controlLiveQuiz || error) {
+  // a single failed poll keeps the last state on screen; only show the
+  // error when there is nothing to control
+  if (!data?.controlLiveQuiz) {
     return (
       <Layout
         title={t('control.liveQuiz.liveQuizControl')}
