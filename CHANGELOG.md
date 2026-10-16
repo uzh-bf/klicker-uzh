@@ -9,9 +9,11 @@ All notable changes to this project will be documented in this file. See [standa
 
 * **assessment:** show peer comparison in every report after course end ([#6510](https://github.com/uzh-bf/klicker-uzh/issues/6510)) ([cd90f8e](https://github.com/uzh-bf/klicker-uzh/commit/cd90f8edb3577a7512a224dc17951750377b4d18))
 * **chat:** align draft eligibility and cost-center backfill ([#6552](https://github.com/uzh-bf/klicker-uzh/issues/6552)) ([a12bd82](https://github.com/uzh-bf/klicker-uzh/commit/a12bd8260500d5b3d24b668564dab09d442afdc4))
+* **chat:** hide model reasoning from participants in custom modes ([#6567](https://github.com/uzh-bf/klicker-uzh/issues/6567)) ([c2dbc14](https://github.com/uzh-bf/klicker-uzh/commit/c2dbc145c2d9d54e7e6c05f0cc168ebd3732eaf5))
 * **chat:** make custom-mode knowledge retrieval optional ([#6506](https://github.com/uzh-bf/klicker-uzh/issues/6506)) ([be6ae67](https://github.com/uzh-bf/klicker-uzh/commit/be6ae67368b3249dc01c2284bd6a8d66812a062d))
 * **chat:** preserve approved custom-mode KB retrieval ([#6247](https://github.com/uzh-bf/klicker-uzh/issues/6247)) ([e2ac86f](https://github.com/uzh-bf/klicker-uzh/commit/e2ac86f836c3fe78986f9ac51316d1e76bdd2556))
 * **chat:** provide shared cookie domain on release branch ([#6497](https://github.com/uzh-bf/klicker-uzh/issues/6497)) ([eb6e579](https://github.com/uzh-bf/klicker-uzh/commit/eb6e579ba3e9cb04e516a2012cc31f1714d6d257))
+* **chat:** show custom mode names in answer footers ([#6568](https://github.com/uzh-bf/klicker-uzh/issues/6568)) ([618e94f](https://github.com/uzh-bf/klicker-uzh/commit/618e94fb129403351b222482f39a78889655c9eb))
 * **ci:** bound OCR conversation replay and enforce tool completion ([#6518](https://github.com/uzh-bf/klicker-uzh/issues/6518)) ([b0816ed](https://github.com/uzh-bf/klicker-uzh/commit/b0816ed467609ce7d056a31e405a293aa7fabdbe))
 * **eval:** match chat citations and cap model spending ([#6489](https://github.com/uzh-bf/klicker-uzh/issues/6489)) ([14d2314](https://github.com/uzh-bf/klicker-uzh/commit/14d231418092b6313ae6b8aca571ac919b45c1bb))
 
@@ -32,6 +34,7 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Documentation
 
+* clarify mode regression coverage and backfill scope ([891daa5](https://github.com/uzh-bf/klicker-uzh/commit/891daa5e9c1cee34e43186349df8442b2e4d2906))
 * keep release plans independent of environment records ([ef863c1](https://github.com/uzh-bf/klicker-uzh/commit/ef863c10e94f6bf4a1f9e1b867d76d6e73027e0d))
 * **project:** add ethics production rollout plan ([2a80086](https://github.com/uzh-bf/klicker-uzh/commit/2a8008650d5fae30d4d25ba69e3d232665b3ecd9))
 
