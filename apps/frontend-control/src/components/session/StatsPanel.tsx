@@ -104,6 +104,14 @@ function StatsPanel({
   // bars compare the blocks with each other (no total audience is known)
   const maxParticipants = Math.max(1, ...started.map(participantsOf))
 
+  const statusLabel = (status: ElementBlockStatus) => {
+    if (status === ElementBlockStatus.Active)
+      return t('control.liveQuiz.statsRunning')
+    if (status === ElementBlockStatus.Scheduled)
+      return t('control.liveQuiz.statsScheduled')
+    return t('control.liveQuiz.statsClosed')
+  }
+
   return (
     <div className="flex flex-col gap-3" data-cy="stats-panel">
       <div className="grid grid-cols-2 gap-2 min-[720px]:grid-cols-4">
@@ -180,11 +188,7 @@ function StatsPanel({
                       scheduled && 'bg-ctrl-hair text-ctrl-muted'
                     )}
                   >
-                    {active
-                      ? t('control.liveQuiz.statsRunning')
-                      : scheduled
-                        ? t('control.liveQuiz.statsScheduled')
-                        : t('control.liveQuiz.statsClosed')}
+                    {statusLabel(block.status)}
                   </span>
                   <span className="text-ctrl-ink min-w-12 text-right text-[15px] font-bold tabular-nums">
                     {scheduled ? '—' : participants}

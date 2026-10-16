@@ -8,12 +8,19 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   ACTIVE_CHART_TYPES,
-  type ChartType,
+  ChartType,
 } from '@klicker-uzh/shared-components/src/constants'
 import { Switch, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import { cardClass } from '../common/styles'
+
+const PROJECTABLE_CHART_TYPES = [
+  ChartType.BAR_CHART,
+  ChartType.HISTOGRAM,
+  ChartType.WORD_CLOUD,
+  ChartType.TABLE,
+]
 
 interface LeinwandCardProps {
   quizId: string
@@ -75,7 +82,13 @@ function LeinwandCard({
   )
   const instance =
     stack?.instances[Math.min(selected, (stack?.instances.length ?? 1) - 1)]
-  const chartOptions = instance?.type ? ACTIVE_CHART_TYPES[instance.type] : []
+  // the projected evaluation only stores these chart types (scatter plots
+  // of case studies stay a choice in the manage app)
+  const chartOptions = instance?.type
+    ? ACTIVE_CHART_TYPES[instance.type].filter((option) =>
+        PROJECTABLE_CHART_TYPES.includes(option.value)
+      )
+    : []
   if (!instance || chartOptions.length === 0) return null
 
   const setting = displayData?.liveQuizEvaluationDisplay?.find(

@@ -65,7 +65,12 @@ function RunningQuizBanner({ quiz }: RunningQuizBannerProps) {
       const { data: current } = await loadSession({
         variables: { id: quiz.id },
       })
-      const running = current?.controlLiveQuiz?.blocks?.find(
+      // without the current state a running block could not be closed and
+      // its answers would be lost, so do not end the quiz
+      if (!current?.controlLiveQuiz) {
+        throw new Error('failed to load the current quiz state')
+      }
+      const running = current.controlLiveQuiz.blocks?.find(
         (block) => block.status === ElementBlockStatus.Active
       )
       if (running) {

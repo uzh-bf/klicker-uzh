@@ -39,6 +39,18 @@ function questionState(question: Question): Filter {
   return question.isPublished ? 'open' : 'pending'
 }
 
+// without moderation there is nothing to review; otherwise default to the
+// review list while it has entries
+function resolveFilter(
+  filter: Filter | null,
+  isModerationEnabled: boolean,
+  pendingCount: number
+): Filter {
+  if (filter && (filter !== 'pending' || isModerationEnabled)) return filter
+  if (isModerationEnabled && pendingCount > 0) return 'pending'
+  return 'open'
+}
+
 function useRunAction() {
   const t = useTranslations()
   return async (action: () => Promise<unknown>) => {
@@ -358,12 +370,11 @@ function QAPanel({ quizId, data }: QAPanelProps) {
 
   // without moderation there is nothing to review; otherwise default to the
   // review list while it has entries
-  const activeFilter: Filter =
-    filter && (filter !== 'pending' || isModerationEnabled)
-      ? filter
-      : isModerationEnabled && counts.pending > 0
-        ? 'pending'
-        : 'open'
+  const activeFilter = resolveFilter(
+    filter,
+    isModerationEnabled,
+    counts.pending
+  )
   const filters: Filter[] = isModerationEnabled
     ? ['pending', 'open', 'answered']
     : ['open', 'answered']
