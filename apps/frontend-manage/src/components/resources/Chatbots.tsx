@@ -6,7 +6,6 @@ import {
 } from '@klicker-uzh/feature-flags/react'
 import {
   AttachKbToChatbotDocument,
-  type Chatbot,
   type ChatModelCapability,
   GetChatbotPublishingCapabilityDocument,
   GetChatModelRegistryDocument,
@@ -246,7 +245,7 @@ function Chatbots() {
     }
   }
 
-  const handleSelect = (chatbot: Chatbot) => selectChatbot(chatbot.id)
+  const handleSelect = (chatbot: { id: string }) => selectChatbot(chatbot.id)
 
   // A new chatbot continues into Materials; the Materials view then points to
   // the student information that still has to be saved before publication.

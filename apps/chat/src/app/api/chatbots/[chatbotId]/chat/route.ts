@@ -23,6 +23,7 @@ import {
 } from 'ai'
 import { after, type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { withCalculatorTool } from '@/src/lib/server/calculatorTool'
@@ -38,6 +39,7 @@ import {
 import { buildChatTurnRequest } from '@/src/lib/server/chatTurnRequest'
 import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
 import {
+  isParticipantReasoningVisible,
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
@@ -686,7 +688,11 @@ export async function POST(
       where: { id: chatbotId },
       include: {
         owner: {
-          select: { aiFeaturesEnabled: true, aiChatbotCostCenter: true },
+          select: {
+            aiFeaturesEnabled: true,
+            aiSubscriptionTier: true,
+            aiChatbotCostCenter: true,
+          },
         },
         course: {
           select: { displayName: true },
@@ -735,6 +741,12 @@ export async function POST(
       { status: 400 }
     )
   }
+  // The provider still produces and the server still persists the reasoning
+  // summary; this only decides whether it leaves the server for this turn.
+  const showReasoning = isParticipantReasoningVisible(
+    chatbot.customModeConfig,
+    selectedMode
+  )
 
   const modelRegistry = getChatModelRegistry()
   const allowedIds =
@@ -841,13 +853,14 @@ export async function POST(
 
   // Class admission does not depend on the usage-enforcement switch. The
   // account-level approval opens the cost-free class; a cost-carrying class
-  // also needs an address to bill, so the turn stays closed without a cost
-  // center even while enforcement is off. The budget check below is the part
+  // also needs the advanced tier and an address to bill, so the turn stays
+  // closed without both even while enforcement is off. The budget check below is the part
   // that the switch controls.
   const classAdmittedForSelectedModel = () =>
     isChatUsageClassEntitled({
       usageClass: selectedModelConfig.usageClass,
       aiFeaturesEnabled: chatbot.owner.aiFeaturesEnabled,
+      aiSubscriptionTier: chatbot.owner.aiSubscriptionTier,
       aiChatbotCostCenter: chatbot.owner.aiChatbotCostCenter,
     })
 
@@ -2003,6 +2016,10 @@ export async function POST(
               store: getOpenAIResponsesStore(),
             }),
             ...(providerReasoningEffort && {
+              // Deployment ids like klickeruzh/azure/gpt-6-luna defeat the
+              // SDK's model-id based reasoning detection, which would drop
+              // the reasoning options.
+              forceReasoning: true,
               reasoningEffort: providerReasoningEffort,
               reasoningSummary: 'auto',
             }),
@@ -2021,7 +2038,13 @@ export async function POST(
           initialMessages,
           responseMessages,
         }) => ({
-          ...(docQueryToolName && stepNumber === 0
+          // Standard platform modes retrieve first, so the answer is grounded
+          // before it is written. Custom modes keep the retrieval tool offered
+          // but choose for themselves, so attaching a knowledge base never
+          // forces a retrieval call ahead of the persona's own answer.
+          ...(docQueryToolName &&
+          Object.hasOwn(DEFAULT_PROMPT, selectedMode) &&
+          stepNumber === 0
             ? {
                 toolChoice: {
                   type: 'tool' as const,
@@ -2361,7 +2384,7 @@ export async function POST(
     })
 
     return result.toUIMessageStreamResponse({
-      sendReasoning: true,
+      sendReasoning: showReasoning,
       consumeSseStream: consumeStream,
       onError: (error) => {
         void closeMcpTools()
@@ -2404,7 +2427,7 @@ export async function POST(
           chatMode: selectedMode,
           modelId: selectedModelConfig.id,
           reasoningEffort: appliedReasoningEffort,
-          reasoningContent: assistantReasoningContent,
+          reasoningContent: showReasoning ? assistantReasoningContent : null,
           creditsUsed,
         }
       },
