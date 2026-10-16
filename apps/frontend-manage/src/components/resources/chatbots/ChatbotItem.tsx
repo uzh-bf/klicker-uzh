@@ -7,7 +7,10 @@ import { getChatbotStatusTranslationKey } from './chatbotStatus'
 
 // The list only reads these fields, so its items do not have to carry the whole
 // chatbot entity.
-type ChatbotListItem = Pick<Chatbot, 'courses' | 'id' | 'name' | 'status'>
+type ChatbotListItem = Pick<
+  Chatbot,
+  'courses' | 'enabledKnowledgeBases' | 'id' | 'name' | 'status'
+>
 
 function ChatbotItem({
   chatbot,
