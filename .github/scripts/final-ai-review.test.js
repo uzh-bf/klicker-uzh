@@ -20,7 +20,7 @@ const {
   buildIndividualCleanReviewEvidenceDigest,
   buildIndividualCleanEvidenceMetadata,
   buildOCRConfig,
-  buildOpenRouterToolCanaryRequest,
+  buildMistralToolCanaryRequest,
   buildReviewPlan,
   buildReviewBackground,
   createGhGithub,
@@ -46,7 +46,8 @@ const {
   requiresColdIncrementalReview,
   startFinalReview,
   validateOCRResult,
-  verifyOpenRouterToolAccess,
+  validateOCRPreview,
+  verifyMistralToolAccess,
   writeOCRConfig,
 } = require('./final-ai-review.js')
 
@@ -135,6 +136,8 @@ function expectedOCRArgs({ from, to, timeout, budget, sessionId }) {
     'low',
     '--timeout',
     String(timeout),
+    '--max-tokens',
+    '32768',
     '--max-tokens-budget',
     String(budget),
     '--format',
@@ -191,6 +194,9 @@ function assertReviewAttempt(result, form, expectedExit) {
 
   const lines = result.calls.trim().split('\n')
   assert.equal(lines.shift(), 'version no_update=1', form.name)
+  assert.equal(lines.shift(), 'preview no_update=1 limit=200000', form.name)
+  assert.equal(lines.shift(), 'preview no_update=1 limit=32768', form.name)
+  assert.equal(lines.shift(), 'coverage checked', form.name)
   assert.equal(lines.shift(), 'review no_update=1', form.name)
   assert.deepEqual(
     lines.map((line) => line.replace(/^review_arg=/, '')),
@@ -224,6 +230,7 @@ function executeExtractedOCRAttempt({
   versionMode = 'ok',
   versionStatus = 0,
   reviewStatus = 0,
+  previewStatus = 0,
 }) {
   const directory = fs.mkdtempSync(
     path.join(os.tmpdir(), 'final-review-ocr-shell-')
@@ -251,15 +258,17 @@ function executeExtractedOCRAttempt({
     HOME: directory,
     LC_ALL: 'C',
     OCR_NO_UPDATE: jobEnv.OCR_NO_UPDATE,
+    MISTRAL_API_KEY: 'synthetic-upstream-key',
     OCR_CALLS_PATH: callsPath,
     OCR_REVIEW_STATUS: String(reviewStatus),
+    OCR_PREVIEW_STATUS: String(previewStatus),
     OCR_STDERR_SENTINEL: stderrSentinel,
     OCR_STDOUT_SENTINEL: stdoutSentinel,
     OCR_VERSION_MODE: versionMode,
     OCR_VERSION_OUTPUT:
       versionMode === 'drift'
         ? `open-code-review v1.10.0 ${versionSentinel}`
-        : 'open-code-review v1.11.0 synthetic',
+        : 'open-code-review v1.13.0 synthetic',
     OCR_VERSION_STATUS: String(versionStatus),
     OCR_VERSION_STDERR: 'OCR_VERSION_STDERR_SENTINEL',
     OUTPUT_PATH: outputPath,
@@ -277,10 +286,28 @@ function executeExtractedOCRAttempt({
     'set -euo pipefail',
     functionText,
     '',
+    'timeout() {',
+    '  [[ "$1" == --kill-after=10 && "$2" == 120 ]] || return 99',
+    '  (( OCR_PREVIEW_STATUS == 0 )) || return "$OCR_PREVIEW_STATUS"',
+    '  shift 2',
+    '  "$@"',
+    '}',
+    'node() {',
+    '  if [[ "$1" == .github/scripts/final-ai-review.js && "$2" == validate-ocr-preview ]]; then',
+    '    command node "$@" || return',
+    '    printf "coverage checked\\n" >>"${OCR_CALLS_PATH}"',
+    '    return 0',
+    '  fi',
+    '  [[ "$1" == .github/scripts/ocr-mistral-adapter.cjs && "$2" == run && "$3" == -- && "$4" == ocr ]] || return 99',
+    '  [[ "${MISTRAL_API_KEY-}" == synthetic-upstream-key ]] || return 98',
+    '  shift 4',
+    '  ocr "$@"',
+    '}',
     'ocr() {',
     '  local command="${1:-}"',
     '  case "${command}" in',
     '    version)',
+    '      [[ -z "${MISTRAL_API_KEY+x}" ]] || return 97',
     '      printf \'version no_update=%s\\n\' "${OCR_NO_UPDATE-}" >>"${OCR_CALLS_PATH}"',
     '      if [[ "${OCR_VERSION_MODE}" == \'fail\' ]]; then',
     '        printf \'%s\' "${OCR_VERSION_STDERR}" >&2',
@@ -289,6 +316,17 @@ function executeExtractedOCRAttempt({
     '      printf \'%s\' "${OCR_VERSION_OUTPUT}"',
     '      ;;',
     '    review)',
+    '      if [[ " $* " == *" --preview "* ]]; then',
+    '        [[ -z "${MISTRAL_API_KEY+x}" ]] || return 97',
+    '        local prompt_limit',
+    '        while (($#)); do',
+    '          if [[ "$1" == --max-tokens ]]; then prompt_limit="$2"; fi',
+    '          shift',
+    '        done',
+    '        printf "preview no_update=%s limit=%s\\n" "${OCR_NO_UPDATE-}" "${prompt_limit}" >>"${OCR_CALLS_PATH}"',
+    '        printf \'{"total_files":1,"files":[{"path":"src/test.ts","will_review":true}]}\'',
+    '        return 0',
+    '      fi',
     '      printf \'review no_update=%s\\n\' "${OCR_NO_UPDATE-}" >>"${OCR_CALLS_PATH}"',
     '      shift',
     '      while (($#)); do',
@@ -416,6 +454,12 @@ test('executes both workflow OCR command boundaries with pinned version diagnost
   }
 
   for (const form of [forms[0], forms[2]]) {
+    const previewFailure = runCase(form, { previewStatus: 124 })
+    assert.equal(previewFailure.process.status, 1)
+    assert.match(previewFailure.process.stderr, /coverage preview failed/)
+    assert.equal(previewFailure.output, null)
+    assert.doesNotMatch(previewFailure.calls, /review no_update/)
+    assertNoOCRSentinels(previewFailure)
     for (const outcome of [
       { name: 'review 127', reviewStatus: 127, expectedStatus: 127 },
       { name: 'review 2', reviewStatus: 2, expectedStatus: 2 },
@@ -459,9 +503,10 @@ test('bounds individual and stack review retries, tokens, and runtime', () => {
 
   assert.equal(source.match(/--timeout 45/g)?.length, 1)
   assert.equal(source.match(/--timeout 30/g)?.length, 1)
+  assert.equal(source.match(/--max-tokens "\$\{bounded_limit\}"/g)?.length, 2)
   assert.equal(source.match(/plan-ocr-resume/g)?.length, 2)
   assert.equal(source.match(/merge-ocr-resume/g)?.length, 2)
-  assert.match(source, /run_ocr_attempt "\$\{RESULT_PATH\}" 1000000/)
+  assert.match(source, /run_ocr_attempt "\$\{RESULT_PATH\}" 3000000/)
   assert.match(source, /"\$\{REVIEW_FROM\}" "\$\{HEAD_SHA\}" 20000000/)
   assert.match(source, /resume_partial_result[\s\S]*750000 "\$\{RANGE_PATH\}"/)
   assert.equal(
@@ -482,6 +527,81 @@ test('bounds individual and stack review retries, tokens, and runtime', () => {
     source,
     /Only one partial OCR result may be resumed per stack job/
   )
+})
+
+test('bounded context must preserve every preview path and exclusion reason', () => {
+  const baseline = {
+    total_files: 2,
+    files: [
+      { path: 'src/a.ts', will_review: true },
+      {
+        path: 'src/a.test.ts',
+        will_review: false,
+        exclude_reason: 'default_path',
+      },
+    ],
+  }
+  validateOCRPreview(baseline, {
+    ...baseline,
+    files: [...baseline.files].reverse(),
+  })
+  assert.throws(
+    () =>
+      validateOCRPreview(baseline, {
+        ...baseline,
+        files: [
+          {
+            ...baseline.files[0],
+            will_review: false,
+            exclude_reason: 'too_large',
+          },
+          baseline.files[1],
+        ],
+      }),
+    /changes file coverage/
+  )
+  assert.throws(
+    () =>
+      validateOCRPreview(baseline, { ...baseline, files: [baseline.files[0]] }),
+    /Invalid OCR preview/
+  )
+  assert.throws(
+    () =>
+      validateOCRPreview(baseline, {
+        ...baseline,
+        files: [baseline.files[0], baseline.files[0]],
+      }),
+    /Invalid OCR preview file/
+  )
+  assert.throws(
+    () =>
+      validateOCRPreview(baseline, {
+        ...baseline,
+        files: [null, baseline.files[1]],
+      }),
+    /Invalid OCR preview file/
+  )
+  for (const excludeReason of [12, [], {}]) {
+    const malformed = {
+      ...baseline,
+      files: [
+        baseline.files[0],
+        { ...baseline.files[1], exclude_reason: excludeReason },
+      ],
+    }
+    assert.throws(() => validateOCRPreview(malformed, malformed))
+  }
+  const unicodePaths = {
+    total_files: 2,
+    files: [
+      { path: 'src/\u00e9.ts', will_review: true },
+      { path: 'src/e\u0301.ts', will_review: true },
+    ],
+  }
+  validateOCRPreview(unicodePaths, {
+    ...unicodePaths,
+    files: [...unicodePaths.files].reverse(),
+  })
 })
 
 test('accepts only the exact command and calculated write permissions', () => {
@@ -812,20 +932,24 @@ test('authorizes and starts only the immutable ready PR range', async () => {
   assert.equal(statuses.length, 2)
 })
 
-test('writes an exact high-reasoning OCR config with mode 0600', () => {
+test('writes secretless max-reasoning OCR config with mode 0600', () => {
   const directory = fs.mkdtempSync(
     path.join(os.tmpdir(), 'final-review-config-')
   )
   const configPath = path.join(directory, 'config.json')
   const token = 'dummy-test-token'
 
-  writeOCRConfig({ token, configPath })
+  writeOCRConfig({ configPath })
   const config = JSON.parse(fs.readFileSync(configPath, 'utf8'))
-  assert.deepEqual(config, buildOCRConfig({ token }))
+  assert.deepEqual(config, buildOCRConfig())
   assert.equal(config.llm.model, FINAL_REVIEW_MODEL)
+  assert.equal(Object.hasOwn(config.llm, 'url'), false)
   assert.deepEqual(config.llm.extra_body, {
-    reasoning: { effort: 'high' },
+    reasoning_effort: 'max',
   })
+  assert.equal(config.llm.auth_token_cmd, 'printf "%s" "$OCR_LLM_TOKEN"')
+  assert.equal(JSON.stringify(config).includes(token), false)
+  assert.equal(Object.hasOwn(config.llm, 'auth_token'), false)
   assert.equal(fs.statSync(configPath).mode & 0o777, 0o600)
 
   removeOCRConfig(configPath)
@@ -835,7 +959,7 @@ test('writes an exact high-reasoning OCR config with mode 0600', () => {
 function toolCanaryResponse({
   args = { marker: 'KLICKER_FINAL_REVIEW_TOOL_CANARY' },
   model = FINAL_REVIEW_MODEL,
-  provider = 'Fireworks',
+  provider = 'Mistral',
   toolName = 'final_review_probe',
 } = {}) {
   return {
@@ -843,6 +967,7 @@ function toolCanaryResponse({
     provider,
     choices: [
       {
+        finish_reason: 'tool_calls',
         message: {
           tool_calls: [
             {
@@ -859,32 +984,28 @@ function toolCanaryResponse({
   }
 }
 
-test('verifies the exact public OpenRouter tool contract', async () => {
+test('verifies the exact public Mistral tool contract', async () => {
   const token = 'dummy-canary-token'
   let request
-  const result = await verifyOpenRouterToolAccess({
+  const result = await verifyMistralToolAccess({
     token,
     fetchImpl: async (url, options) => {
-      assert.equal(url, 'https://openrouter.ai/api/v1/chat/completions')
+      assert.equal(url, 'https://api.mistral.ai/v1/chat/completions')
       assert.equal(options.headers.authorization, `Bearer ${token}`)
       request = JSON.parse(options.body)
-      return {
-        ok: true,
-        status: 200,
-        json: async () => toolCanaryResponse(),
-      }
+      return new Response(JSON.stringify(toolCanaryResponse()))
     },
   })
 
-  assert.deepEqual(request, buildOpenRouterToolCanaryRequest())
+  assert.deepEqual(request, buildMistralToolCanaryRequest())
   assert.equal(request.model, FINAL_REVIEW_MODEL)
-  assert.equal(request.max_completion_tokens, 16_384)
-  assert.deepEqual(request.reasoning, { effort: 'high' })
+  assert.equal(request.max_tokens, 16_384)
+  assert.equal(request.reasoning_effort, 'max')
   assert.equal(Object.hasOwn(request, 'provider'), false)
-  assert.deepEqual(result, { provider: 'Fireworks' })
+  assert.deepEqual(result, { provider: 'Mistral' })
 })
 
-test('rejects malformed successful OpenRouter tool responses', async () => {
+test('rejects malformed successful Mistral tool responses', async () => {
   for (const payload of [
     { model: FINAL_REVIEW_MODEL, choices: [] },
     toolCanaryResponse({ args: { marker: 'wrong' } }),
@@ -895,47 +1016,32 @@ test('rejects malformed successful OpenRouter tool responses', async () => {
     toolCanaryResponse({ toolName: 'unexpected_tool' }),
   ]) {
     await assert.rejects(
-      verifyOpenRouterToolAccess({
+      verifyMistralToolAccess({
         token: 'dummy-canary-token',
-        fetchImpl: async () => ({
-          ok: true,
-          status: 200,
-          json: async () => payload,
-        }),
+        fetchImpl: async () => new Response(JSON.stringify(payload)),
       }),
-      /did not return the expected tool call/
+      /expected tool call|model|choices/
     )
   }
 })
 
-test('bounds and redacts OpenRouter tool-canary failure diagnostics', async () => {
+test('suppresses Mistral tool-canary error bodies and credentials', async () => {
   const token = 'dummy-secret-token'
   await assert.rejects(
-    verifyOpenRouterToolAccess({
+    verifyMistralToolAccess({
       token,
-      fetchImpl: async () => ({
-        ok: false,
-        status: 404,
-        json: async () => ({
-          error: {
-            code: 'provider_error\u0000',
-            message: `${token}\n${'x'.repeat(500)}`,
-            metadata: {
-              provider_name: 'Fireworks\u0000',
-              raw: 'must-not-reach-logs',
-            },
-          },
-          choices: ['must-not-reach-logs'],
-        }),
-      }),
+      fetchImpl: async () =>
+        new Response(
+          JSON.stringify({
+            error: { message: `${token} must-not-reach-logs` },
+          }),
+          { status: 404 }
+        ),
     }),
     (error) => {
-      assert.match(error.message, /HTTP 404/)
-      assert.match(error.message, /provider=Fireworks/)
-      assert.match(error.message, /\[redacted\]/)
+      assert.match(error.message, /404/)
       assert.equal(error.message.includes(token), false)
       assert.equal(error.message.includes('must-not-reach-logs'), false)
-      assert.equal(error.message.includes('\u0000'), false)
       assert.ok(error.message.length < 300)
       return true
     }
@@ -953,10 +1059,10 @@ test('uses one qualified canary and OCR release in both manual jobs', () => {
     )?.[1] ?? ''
 
   assert.equal(
-    source.match(/@alibaba-group\/open-code-review@1\.11\.0/g)?.length,
+    source.match(/@alibaba-group\/open-code-review@1\.13\.0/g)?.length,
     2
   )
-  assert.equal(source.match(/verify-openrouter-tools/g)?.length, 2)
+  assert.equal(source.match(/verify-mistral-tools/g)?.length, 2)
   assert.equal(source.match(/--effort low/g)?.length, 2)
   assert.doesNotMatch(source, /@alibaba-group\/open-code-review@1\.9\.10/)
   assert.doesNotMatch(source, /ocr llm test/)
@@ -967,9 +1073,8 @@ test('uses one qualified canary and OCR release in both manual jobs', () => {
     const block = job(name)
     assert.match(block, /runs-on: ubuntu-latest/)
     assert.ok(
-      block.indexOf('configure-ocr') <
-        block.indexOf('verify-openrouter-tools') &&
-        block.indexOf('verify-openrouter-tools') < block.indexOf('ocr review')
+      block.indexOf('configure-ocr') < block.indexOf('verify-mistral-tools') &&
+        block.indexOf('verify-mistral-tools') < block.indexOf('ocr review')
     )
     assert.match(
       block,
@@ -978,17 +1083,29 @@ test('uses one qualified canary and OCR release in both manual jobs', () => {
   }
 })
 
-test('keeps DeepSeek V4.1 Flash for automatic draft reviews', () => {
+test('routes automatic drafts through the same pinned Mistral adapter', () => {
   const source = fs.readFileSync(
     path.join(__dirname, '../workflows/check-ocr-review.yml'),
     'utf8'
   )
-
-  assert.equal(
-    source.match(/llm_model: deepseek\/deepseek-v4\.1-flash/g)?.length,
-    1
+  assert.match(
+    source,
+    /open-code-review@1672852136fc87748249d22bce0819f33419ea79/
   )
-  assert.doesNotMatch(source, /z-ai\/glm-5\.3-flash/)
+  assert.match(source, /llm_model: zai-glm-5-3/)
+  assert.match(source, /ocr_version: '1.13.0'/)
+  assert.match(source, /llm_extra_body: '\{"reasoning_effort":"high"\}'/)
+  assert.match(
+    source,
+    /llm_auth_token: \$\{\{ steps.adapter.outputs.token \}\}/
+  )
+  assert.ok(
+    source.indexOf('start "${ADAPTER_STATE}"') <
+      source.indexOf('uses: alibaba/open-code-review@')
+  )
+  assert.match(source, /if: always\(\) && steps.adapter.outcome == 'success'/)
+  assert.match(source, /stop "\$\{ADAPTER_STATE\}"/)
+  assert.doesNotMatch(source, /OPENROUTER_API_KEY/)
 })
 
 test('uses the OCR runtime config path for both preflight and review', () => {
@@ -2161,7 +2278,7 @@ test('runs OCR validation after resume and gates individual publication', () => 
     '      - name: Summarize rejected final review result'
   )
   const cleanupIndex = workflow.indexOf(
-    '      - name: Remove ephemeral OpenRouter access'
+    '      - name: Remove ephemeral Mistral access'
   )
   assert.ok(runIndex >= 0)
   assert.ok(validateIndex > runIndex)
@@ -2220,7 +2337,6 @@ test('renders findings without making finding count a failure', () => {
     'a'.repeat(40),
     metadataInput
   )
-  assert.match(report, /z-ai\/glm-5\.3-flash \(high reasoning\)/)
   assert.match(report, /src\/example\.ts:10-11/)
   assert.match(report, /Confidence: 75\/100/)
   assert.match(report, /```[\s\S]*\n## Injected heading\n```/)
