@@ -401,9 +401,11 @@ jobs:
           test -s "${HOME}/.opencodereview/config.json"
 
       - name: Verify Mistral tool access
+        id: preflight
         if: needs.start.outputs.run_review == 'true'
         env:
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          OCR_ADAPTER_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-review-adapter-diagnostics.jsonl
         run: |
           set -euo pipefail
           node .github/scripts/final-ai-review.js verify-mistral-tools
@@ -472,6 +474,8 @@ jobs:
             if [[ -n "${session_id}" ]]; then
               resume_args=(--resume "${session_id}")
             fi
+            OCR_ADAPTER_LIFETIMES=$((OCR_ADAPTER_LIFETIMES + 1))
+            printf 'adapter_lifetimes=%s\n' "${OCR_ADAPTER_LIFETIMES}" >>"${GITHUB_OUTPUT}"
             if OCR_ADAPTER_PROGRESS_FD=3 node .github/scripts/ocr-mistral-adapter.cjs run -- ocr review \
               --from "${REVIEW_FROM}" \
               --to "${HEAD_SHA}" \
@@ -503,6 +507,7 @@ jobs:
             BACKGROUND+=$'\n'"${PLAN_CONTEXT}"
           fi
           : >"${STDERR_PATH}"
+          OCR_ADAPTER_LIFETIMES=0
           run_ocr_attempt "${RESULT_PATH}" 10000000
           RESUME_PLAN_PATH="${RESULT_PATH}.resume-plan"
           if ! node .github/scripts/final-ai-review.js plan-ocr-resume \
@@ -673,7 +678,11 @@ jobs:
         continue-on-error: true
         env:
           DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-review-adapter-diagnostics.jsonl
-        run: node .github/scripts/ocr-mistral-adapter.cjs summary "${DIAGNOSTICS_PATH}"
+          PREFLIGHT_RECEIPTS: ${{ steps.preflight.outcome == 'skipped' && '0' || '1' }}
+          ADAPTER_RECEIPTS: ${{ steps.run_review.outputs.adapter_lifetimes || '0' }}
+        run: >-
+          node .github/scripts/ocr-mistral-adapter.cjs summary "${DIAGNOSTICS_PATH}"
+          "preflight=${PREFLIGHT_RECEIPTS}" "adapter=${ADAPTER_RECEIPTS}"
 
   finalize:
     needs: [authorize, start, review]
@@ -1012,9 +1021,11 @@ jobs:
           test -s "${HOME}/.opencodereview/config.json"
 
       - name: Verify Mistral tool access
+        id: preflight
         if: needs.start_stack.outputs.run_review == 'true'
         env:
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          OCR_ADAPTER_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
         run: |
           set -euo pipefail
           node .github/scripts/final-ai-review.js verify-mistral-tools
@@ -1038,6 +1049,7 @@ jobs:
         run: |
           set -euo pipefail
           RESUME_USED=false
+          OCR_ADAPTER_LIFETIMES=0
 
           run_ocr_attempt() {
             local review_from="$1"
@@ -1089,6 +1101,8 @@ jobs:
             if [[ -n "${session_id}" ]]; then
               resume_args=(--resume "${session_id}")
             fi
+            OCR_ADAPTER_LIFETIMES=$((OCR_ADAPTER_LIFETIMES + 1))
+            printf 'adapter_lifetimes=%s\n' "${OCR_ADAPTER_LIFETIMES}" >>"${GITHUB_OUTPUT}"
             if OCR_ADAPTER_PROGRESS_FD=3 node .github/scripts/ocr-mistral-adapter.cjs run -- ocr review \
               --from "${review_from}" \
               --to "${review_to}" \
@@ -1204,6 +1218,7 @@ jobs:
         if: steps.code_review.outcome == 'success' && steps.cleanup.outcome == 'success'
         env:
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          OCR_ADAPTER_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
           MANIFEST_DIGEST: ${{ needs.start_stack.outputs.manifest_digest }}
           MANIFEST_PATH: ${{ runner.temp }}/final-ai-stack-manifest.json
           CODE_RESULT_PATH: ${{ runner.temp }}/final-ai-stack-code-result.json
@@ -1329,7 +1344,13 @@ jobs:
         continue-on-error: true
         env:
           DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
-        run: node .github/scripts/ocr-mistral-adapter.cjs summary "${DIAGNOSTICS_PATH}"
+          PREFLIGHT_RECEIPTS: ${{ steps.preflight.outcome == 'skipped' && '0' || '1' }}
+          ADAPTER_RECEIPTS: ${{ steps.code_review.outputs.adapter_lifetimes || '0' }}
+          TOPOLOGY_RECEIPTS: ${{ steps.topology_review.outcome == 'skipped' && '0' || '1' }}
+        run: >-
+          node .github/scripts/ocr-mistral-adapter.cjs summary "${DIAGNOSTICS_PATH}"
+          "preflight=${PREFLIGHT_RECEIPTS}" "adapter=${ADAPTER_RECEIPTS}"
+          "topology=${TOPOLOGY_RECEIPTS}"
 
   finalize_stack:
     needs: [authorize_stack, start_stack, review_stack]

@@ -222,6 +222,7 @@ function assertReviewAttempt(result, form, expectedExit) {
     }),
     form.name
   )
+  assert.equal(result.githubOutput, 'adapter_lifetimes=1\n', form.name)
 }
 
 function assertVersionAttempt(result, expectedExit) {
@@ -254,6 +255,7 @@ function executeExtractedOCRAttempt({
   const summaryPath = path.join(directory, 'step-summary.md')
   const callsPath = path.join(directory, 'ocr-calls.log')
   const argsPath = path.join(directory, 'ocr-args')
+  const githubOutputPath = path.join(directory, 'github-output')
   const stdoutSentinel = 'OCR_STDOUT_SENTINEL'
   const stderrSentinel = 'OCR_STDERR_SENTINEL'
   const versionSentinel = 'OCR_VERSION_SENTINEL'
@@ -267,6 +269,7 @@ function executeExtractedOCRAttempt({
   fs.writeFileSync(stderrPath, '')
   fs.writeFileSync(summaryPath, '')
   fs.writeFileSync(callsPath, '')
+  fs.writeFileSync(githubOutputPath, '')
 
   const childEnv = {
     PATH: process.env.PATH ?? '/usr/bin:/bin',
@@ -291,7 +294,7 @@ function executeExtractedOCRAttempt({
     OUTPUT_PATH: outputPath,
     STDERR_PATH: stderrPath,
     GITHUB_STEP_SUMMARY: summaryPath,
-    GITHUB_OUTPUT: path.join(directory, 'github-output'),
+    GITHUB_OUTPUT: githubOutputPath,
     REVIEW_FROM: environment.reviewFrom,
     HEAD_SHA: environment.reviewTo,
     BACKGROUND: SYNTHETIC_BACKGROUND,
@@ -318,6 +321,7 @@ function executeExtractedOCRAttempt({
     '  [[ "$1" == .github/scripts/ocr-mistral-adapter.cjs && "$2" == run && "$3" == -- && "$4" == ocr ]] || return 99',
     '  [[ "${MISTRAL_API_KEY-}" == synthetic-upstream-key ]] || return 98',
     '  [[ "${OCR_ADAPTER_PROGRESS_FD-}" == 3 ]] || return 96',
+    '  [[ "$(tail -n 1 "$GITHUB_OUTPUT")" == "adapter_lifetimes=${OCR_ADAPTER_LIFETIMES}" ]] || return 95',
     "  printf 'OCR progress event=tool_started tool=file_read\\n' >&3",
     '  shift 4',
     '  ocr "$@"',
@@ -365,6 +369,7 @@ function executeExtractedOCRAttempt({
     '  esac',
     '}',
     '',
+    'OCR_ADAPTER_LIFETIMES=0',
     invocation,
   ].join('\n')
 
@@ -379,6 +384,7 @@ function executeExtractedOCRAttempt({
   const result = {
     process: run,
     output: readIfPresent(outputPath),
+    githubOutput: readIfPresent(githubOutputPath),
     ocrStderr: fs.readFileSync(stderrPath, 'utf8'),
     summary: fs.readFileSync(summaryPath, 'utf8'),
     calls: fs.readFileSync(callsPath, 'utf8'),
@@ -481,6 +487,7 @@ test('executes both workflow OCR command boundaries with pinned version diagnost
     assert.equal(previewFailure.process.status, 1)
     assert.match(previewFailure.process.stderr, /coverage preview failed/)
     assert.equal(previewFailure.output, null)
+    assert.equal(previewFailure.githubOutput, '')
     assert.doesNotMatch(previewFailure.calls, /review no_update/)
     assertNoOCRSentinels(previewFailure)
     for (const previewMode of ['malformed', 'too_large']) {
@@ -489,6 +496,7 @@ test('executes both workflow OCR command boundaries with pinned version diagnost
       assert.equal(result.process.status, 1, label)
       assert.match(result.process.stderr, /preview validation failed/, label)
       assert.equal(result.output, null, label)
+      assert.equal(result.githubOutput, '', label)
       assert.equal(result.calls.match(/^preview /gm)?.length, 1, label)
       assert.doesNotMatch(result.calls, /^review no_update=/m, label)
       assertNoOCRSentinels(result)
@@ -1187,6 +1195,7 @@ function toolCanaryResponse({
   model = FINAL_REVIEW_MODEL,
   provider = 'Mistral',
   toolName = 'final_review_probe',
+  usage,
 } = {}) {
   return {
     model,
@@ -1207,19 +1216,61 @@ function toolCanaryResponse({
         },
       },
     ],
+    ...(usage ? { usage } : {}),
   }
 }
 
-test('verifies the exact public Mistral tool contract', async () => {
+function prepareDiagnosticsReceipt(t) {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'final-review-diagnostics-')
+  )
+  const diagnosticsPath = path.join(directory, 'diagnostics.jsonl')
+  const previousPath = process.env.OCR_ADAPTER_DIAGNOSTICS_PATH
+  process.env.OCR_ADAPTER_DIAGNOSTICS_PATH = diagnosticsPath
+  t.after(() => {
+    if (previousPath === undefined) {
+      delete process.env.OCR_ADAPTER_DIAGNOSTICS_PATH
+    } else {
+      process.env.OCR_ADAPTER_DIAGNOSTICS_PATH = previousPath
+    }
+    fs.rmSync(directory, { recursive: true, force: true })
+  })
+  return diagnosticsPath
+}
+
+function readDiagnosticsReceipts(diagnosticsPath) {
+  return fs
+    .readFileSync(diagnosticsPath, 'utf8')
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => JSON.parse(line))
+}
+
+test('verifies the exact public Mistral tool contract', async (t) => {
+  const diagnosticsPath = prepareDiagnosticsReceipt(t)
   const token = 'dummy-canary-token'
+  let fetchCalls = 0
   let request
   const result = await verifyMistralToolAccess({
     token,
     fetchImpl: async (url, options) => {
+      fetchCalls += 1
       assert.equal(url, 'https://api.mistral.ai/v1/chat/completions')
       assert.equal(options.headers.authorization, `Bearer ${token}`)
       request = JSON.parse(options.body)
-      return new Response(JSON.stringify(toolCanaryResponse()))
+      return new Response(
+        JSON.stringify(
+          toolCanaryResponse({
+            usage: {
+              total_tokens: 1_025,
+              prompt_tokens: 1_000,
+              completion_tokens: 25,
+              prompt_tokens_details: { cached_tokens: 800 },
+            },
+          })
+        )
+      )
     },
   })
 
@@ -1230,6 +1281,27 @@ test('verifies the exact public Mistral tool contract', async () => {
   assert.equal(Object.hasOwn(request, 'prompt_cache_key'), false)
   assert.equal(Object.hasOwn(request, 'provider'), false)
   assert.deepEqual(result, { provider: 'Mistral' })
+  assert.equal(fetchCalls, 1)
+
+  const receipts = readDiagnosticsReceipts(diagnosticsPath)
+  assert.equal(receipts.length, 1)
+  assert.equal(JSON.stringify(receipts[0]).includes(token), false)
+  assert.deepEqual(receipts[0], {
+    schema_version: 1,
+    stage: 'preflight',
+    requests: 1,
+    upstream_attempts: 1,
+    responses: 1,
+    missing_usage: 0,
+    prompt_tokens: 1_000,
+    completion_tokens: 25,
+    cached_prompt_tokens: 800,
+    uncached_prompt_tokens: 200,
+    cache_usage_responses: 1,
+    missing_cache_usage: 0,
+    invalid_cache_usage: 0,
+    unfinished_requests: 0,
+  })
 })
 
 test('rejects malformed successful Mistral tool responses', async () => {
@@ -1250,6 +1322,79 @@ test('rejects malformed successful Mistral tool responses', async () => {
       /expected tool call|model|choices/
     )
   }
+})
+
+test('retains preflight usage when a successful canary answer is rejected', async (t) => {
+  const diagnosticsPath = prepareDiagnosticsReceipt(t)
+  const token = 'dummy-canary-token'
+  const usage = {
+    total_tokens: 1_025,
+    prompt_tokens: 1_000,
+    completion_tokens: 25,
+    prompt_tokens_details: { cached_tokens: 800 },
+  }
+  let fetchCalls = 0
+  for (const payload of [
+    toolCanaryResponse({ args: { marker: 'wrong' }, usage }),
+    toolCanaryResponse({ toolName: 'unexpected_tool', usage }),
+  ]) {
+    await assert.rejects(
+      verifyMistralToolAccess({
+        token,
+        fetchImpl: async () => {
+          fetchCalls += 1
+          return new Response(JSON.stringify(payload))
+        },
+      }),
+      /Mistral tool canary did not return the expected tool call/
+    )
+  }
+  assert.equal(fetchCalls, 2)
+  const receipts = readDiagnosticsReceipts(diagnosticsPath)
+  assert.equal(receipts.length, 2)
+  for (const receipt of receipts) {
+    assert.deepEqual(receipt, {
+      schema_version: 1,
+      stage: 'preflight',
+      requests: 1,
+      upstream_attempts: 1,
+      responses: 1,
+      missing_usage: 0,
+      prompt_tokens: 1_000,
+      completion_tokens: 25,
+      cached_prompt_tokens: 800,
+      uncached_prompt_tokens: 200,
+      cache_usage_responses: 1,
+      missing_cache_usage: 0,
+      invalid_cache_usage: 0,
+      unfinished_requests: 0,
+    })
+  }
+})
+
+test('keeps the canary deadline and records the aborted preflight attempt', async (t) => {
+  const diagnosticsPath = prepareDiagnosticsReceipt(t)
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  let fetchCalls = 0
+  const pending = verifyMistralToolAccess({
+    token: 'dummy-canary-token',
+    fetchImpl: (_url, options) => {
+      fetchCalls += 1
+      return new Promise((_resolve, reject) => {
+        options.signal.addEventListener('abort', () =>
+          reject(new Error('synthetic abort'))
+        )
+      })
+    },
+  })
+  assert.equal(fetchCalls, 1)
+  t.mock.timers.tick(30_000)
+  await assert.rejects(pending, /upstream request failed/)
+  const receipts = readDiagnosticsReceipts(diagnosticsPath)
+  assert.equal(receipts.length, 1)
+  assert.equal(receipts[0].stage, 'preflight')
+  assert.equal(receipts[0].upstream_attempts, 1)
+  assert.equal(receipts[0].responses, 0)
 })
 
 test('suppresses Mistral tool-canary error bodies and credentials', async () => {

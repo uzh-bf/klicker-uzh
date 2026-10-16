@@ -28,6 +28,20 @@ const MISTRAL_PRICING = {
   cachedInput: 0.14,
   output: 4.4,
 }
+const COST_STAGES = ['adapter', 'preflight', 'topology']
+const COST_USAGE_FIELDS = [
+  'prompt_tokens',
+  'completion_tokens',
+  'cached_prompt_tokens',
+  'uncached_prompt_tokens',
+  'responses',
+  'upstream_attempts',
+  'missing_usage',
+  'cache_usage_responses',
+  'missing_cache_usage',
+  'invalid_cache_usage',
+  'unfinished_requests',
+]
 
 const MAX_REQUEST_BYTES = 2 * 1024 * 1024
 const MAX_RESPONSE_BYTES = 32 * 1024 * 1024
@@ -767,6 +781,25 @@ function createExecutionCounters() {
   }
 }
 
+function recordResponseUsage(counter, usage, rawUsage) {
+  counter.responses += 1
+  let incompleteUsage = false
+  for (const field of ['prompt_tokens', 'completion_tokens']) {
+    const value = usage?.[field]
+    if (Number.isSafeInteger(value) && value >= 0) counter[field] += value
+    else incompleteUsage = true
+  }
+  if (incompleteUsage) counter.missing_usage += 1
+  const cached = usage?.prompt_tokens_details?.cached_tokens
+  if (cached !== undefined) {
+    counter.cache_usage_responses += 1
+    counter.cached_prompt_tokens += cached
+    counter.uncached_prompt_tokens += usage.prompt_tokens - cached
+  } else if (rawUsage?.prompt_tokens_details?.cached_tokens !== undefined) {
+    counter.invalid_cache_usage += 1
+  } else counter.missing_cache_usage += 1
+}
+
 async function startAdapter(options = {}) {
   const apiKey = options.apiKey
   const fetchImpl = options.fetchImpl ?? globalThis.fetch
@@ -968,29 +1001,11 @@ async function startAdapter(options = {}) {
         throw new AdapterError('malformed_response', 'invalid upstream JSON')
       }
       const normalized = normalizeMistralResponse(payload)
-      const cached = normalized.usage?.prompt_tokens_details?.cached_tokens
       const choice = normalized.choices[0]
       const responseBytes = Buffer.byteLength(text)
       for (const counter of counters) {
-        counter.responses += 1
+        recordResponseUsage(counter, normalized.usage, payload.usage)
         counter.response_bytes += responseBytes
-        let incompleteUsage = false
-        for (const field of ['prompt_tokens', 'completion_tokens']) {
-          const value = normalized.usage?.[field]
-          if (Number.isSafeInteger(value) && value >= 0) counter[field] += value
-          else incompleteUsage = true
-        }
-        if (incompleteUsage) counter.missing_usage += 1
-        if (cached !== undefined) {
-          counter.cache_usage_responses += 1
-          counter.cached_prompt_tokens += cached
-          counter.uncached_prompt_tokens +=
-            normalized.usage.prompt_tokens - cached
-        } else if (
-          payload.usage?.prompt_tokens_details?.cached_tokens !== undefined
-        ) {
-          counter.invalid_cache_usage += 1
-        } else counter.missing_cache_usage += 1
         if (choice.finish_reason === 'length') counter.length_finishes += 1
       }
       if (
@@ -1130,7 +1145,15 @@ async function callMistral(options = {}) {
   )
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
+  const diagnostics = {
+    schema_version: 1,
+    stage: options.diagnosticsStage,
+    ...createExecutionCounters(),
+    unfinished_requests: 0,
+  }
   try {
+    diagnostics.requests += 1
+    diagnostics.upstream_attempts += 1
     const response = await fetchImpl(MISTRAL_URL, {
       method: 'POST',
       headers: {
@@ -1161,13 +1184,25 @@ async function callMistral(options = {}) {
     } catch {
       throw new AdapterError('malformed_response', 'invalid upstream JSON')
     }
-    return normalizeMistralResponse(payload)
+    const normalized = normalizeMistralResponse(payload)
+    recordResponseUsage(diagnostics, normalized.usage, payload.usage)
+    return normalized
   } catch (error) {
     if (error instanceof AdapterError) throw error
     // A raw fetch error is never surfaced; a bounded status error is enough.
     throw new AdapterError('upstream_error', 'upstream request failed')
   } finally {
     clearTimeout(timer)
+    if (['preflight', 'topology'].includes(options.diagnosticsStage)) {
+      writeDiagnostics({
+        schema_version: 1,
+        stage: options.diagnosticsStage,
+        requests: diagnostics.requests,
+        ...Object.fromEntries(
+          COST_USAGE_FIELDS.map((field) => [field, diagnostics[field]])
+        ),
+      })
+    }
   }
 }
 
@@ -1313,52 +1348,15 @@ function writeDiagnostics(snapshot) {
       mode: 0o600,
     })
   } catch {
-    process.stderr.write('OCR adapter execution counters unavailable\n')
+    try {
+      fs.writeSync(2, 'OCR adapter execution counters unavailable\n')
+    } catch {
+      // Diagnostics must not change the provider call or cleanup outcome.
+    }
   }
 }
 
-function estimateCost(diagnosticsText) {
-  const lines = diagnosticsText.trim().split('\n').filter(Boolean)
-  if (lines.length === 0) return null
-  const totals = {
-    prompt_tokens: 0,
-    completion_tokens: 0,
-    cached_prompt_tokens: 0,
-    responses: 0,
-  }
-  for (const line of lines) {
-    const row = JSON.parse(line)
-    const fields = [
-      ...Object.keys(totals),
-      'uncached_prompt_tokens',
-      'upstream_attempts',
-      'missing_usage',
-      'cache_usage_responses',
-      'missing_cache_usage',
-      'invalid_cache_usage',
-      'unfinished_requests',
-    ]
-    if (
-      row?.schema_version !== 1 ||
-      fields.some(
-        (field) => !Number.isSafeInteger(row[field]) || row[field] < 0
-      ) ||
-      row.missing_usage ||
-      row.missing_cache_usage ||
-      row.invalid_cache_usage ||
-      row.unfinished_requests ||
-      row.responses !== row.upstream_attempts ||
-      row.cache_usage_responses !== row.responses ||
-      row.cached_prompt_tokens + row.uncached_prompt_tokens !==
-        row.prompt_tokens
-    )
-      return null
-    // Each line is one adapter lifetime. Nested type/conversation counters
-    // repeat the same usage and must never be added to these aggregate totals.
-    for (const field of Object.keys(totals)) totals[field] += row[field]
-  }
-  if (Object.values(totals).some((value) => !Number.isSafeInteger(value)))
-    return null
+function costFromTotals(totals) {
   const output = (totals.completion_tokens * MISTRAL_PRICING.output) / 1e6
   const withoutCache =
     (totals.prompt_tokens * MISTRAL_PRICING.input) / 1e6 + output
@@ -1375,13 +1373,151 @@ function estimateCost(diagnosticsText) {
   }
 }
 
-function commandSummary(args) {
-  let estimate
-  try {
-    estimate = estimateCost(fs.readFileSync(args[0], 'utf8'))
-  } catch {
-    // Missing or malformed receipts cannot establish zero spend.
+function assessCostRows(rows) {
+  const totals = Object.fromEntries(
+    COST_USAGE_FIELDS.map((field) => [field, 0])
+  )
+  const reasons = new Set()
+  for (const row of rows) {
+    if (row?.schema_version !== 1) {
+      reasons.add('unsupported_schema')
+      continue
+    }
+    if (
+      Object.keys(totals).some(
+        (field) => !Number.isSafeInteger(row[field]) || row[field] < 0
+      )
+    ) {
+      reasons.add('invalid_counters')
+      continue
+    }
+    for (const field of [
+      'missing_usage',
+      'missing_cache_usage',
+      'invalid_cache_usage',
+      'unfinished_requests',
+    ]) {
+      if (row[field]) reasons.add(field)
+    }
+    if (row.responses !== row.upstream_attempts)
+      reasons.add('unaccounted_attempts')
+    if (row.cache_usage_responses !== row.responses)
+      reasons.add('incomplete_cache_coverage')
+    if (
+      row.cached_prompt_tokens + row.uncached_prompt_tokens !==
+      row.prompt_tokens
+    )
+      reasons.add('inconsistent_counters')
+    // Each row is one invocation. Nested counters repeat the same usage.
+    for (const field of Object.keys(totals)) {
+      const sum = totals[field] + row[field]
+      if (Number.isSafeInteger(sum)) totals[field] = sum
+      else reasons.add('counter_overflow')
+    }
   }
+  return {
+    totals,
+    reasons: [...reasons],
+    estimate: reasons.size ? null : costFromTotals(totals),
+  }
+}
+
+function estimateCost(diagnosticsText) {
+  const rows = diagnosticsText
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .map(JSON.parse)
+  if (!rows.length) return null
+  return assessCostRows(rows).estimate
+}
+
+function buildCostReport(diagnosticsText, expected = { adapter: 1 }) {
+  if (
+    !expected ||
+    !Object.keys(expected).length ||
+    Object.entries(expected).some(
+      ([stage, count]) =>
+        !COST_STAGES.includes(stage) ||
+        !Number.isSafeInteger(count) ||
+        count < 0
+    )
+  )
+    return { estimate: null, stages: [], reasons: ['invalid_expectations'] }
+  const groups = Object.fromEntries(COST_STAGES.map((stage) => [stage, []]))
+  const reasons = new Set()
+  const lines = diagnosticsText.trim().split('\n').filter(Boolean)
+  if (!lines.length && Object.values(expected).some((count) => count > 0))
+    reasons.add('empty_receipt')
+  for (const line of lines) {
+    let row
+    try {
+      row = JSON.parse(line)
+    } catch {
+      reasons.add('malformed_receipt')
+      continue
+    }
+    const stage = row?.stage === undefined ? 'adapter' : row.stage
+    if (!COST_STAGES.includes(stage)) {
+      reasons.add('invalid_stage')
+      continue
+    }
+    groups[stage].push(row)
+    if (!Object.hasOwn(expected, stage)) reasons.add('unexpected_stage')
+  }
+  const stages = COST_STAGES.filter(
+    (stage) => Object.hasOwn(expected, stage) || groups[stage].length
+  ).map((stage) => {
+    const rows = groups[stage]
+    const report = assessCostRows(rows)
+    if (rows.length !== expected[stage]) {
+      report.reasons.push('receipt_count_mismatch')
+      report.estimate = null
+    }
+    for (const reason of report.reasons) reasons.add(reason)
+    return {
+      stage,
+      expected: expected[stage] ?? 0,
+      observed: rows.length,
+      ...report,
+    }
+  })
+  const combined = assessCostRows(Object.values(groups).flat())
+  for (const reason of combined.reasons) reasons.add(reason)
+  return {
+    stages,
+    reasons: [...reasons],
+    estimate: reasons.size ? null : combined.estimate,
+  }
+}
+
+function commandSummary(args) {
+  let expected = { adapter: 1 }
+  if (args.length > 1) {
+    expected = {}
+    for (const arg of args.slice(1)) {
+      const match = /^(adapter|preflight|topology)=(\d{1,16})$/.exec(arg)
+      if (!match || Object.hasOwn(expected, match[1])) {
+        expected = null
+        break
+      }
+      expected[match[1]] = Number(match[2])
+    }
+  }
+  let report
+  try {
+    report = buildCostReport(fs.readFileSync(args[0], 'utf8'), expected)
+  } catch (error) {
+    // Missing or malformed receipts cannot establish zero spend.
+    report = {
+      estimate: null,
+      stages: [],
+      reasons: [
+        error.code === 'ENOENT' ? 'missing_receipt' : 'unreadable_receipt',
+      ],
+    }
+  }
+  const estimate = report.estimate
   const pricing = MISTRAL_PRICING
   const summary = [
     '### OCR estimated cost and caching savings',
@@ -1407,7 +1543,34 @@ function commandSummary(args) {
   }
   summary.push(
     '',
-    'Estimate covers recorded adapter lifetimes only; missing receipts may omit spend. Excludes other review stages, taxes, account discounts and runner costs. Prices are pinned to the date above.',
+    '| Stage | With caching (USD) | Without caching (USD) |',
+    '| --- | ---: | ---: |'
+  )
+  for (const stage of report.stages) {
+    const cost = stage.estimate
+    summary.push(
+      cost
+        ? `| ${stage.stage} | $${cost.withCache.toFixed(4)} | $${cost.withoutCache.toFixed(4)} |`
+        : `| ${stage.stage} | unavailable | unavailable |`
+    )
+  }
+  for (const stage of report.stages) {
+    const cost = stage.estimate
+    const coverage = Object.entries(stage.totals)
+      .map(([field, count]) => `${field}=${count}`)
+      .join(' ')
+    summary.push(
+      '',
+      `OCR cost stage=${stage.stage} status=${cost ? (stage.expected ? 'complete' : 'not_run') : 'unavailable'} reasons=${stage.reasons.join(',') || 'none'} expected_receipts=${stage.expected} observed_receipts=${stage.observed} ${coverage}`,
+      ''
+    )
+  }
+  summary.push(
+    `OCR cost status=${estimate ? 'complete' : 'unavailable'} reasons=${report.reasons.join(',') || 'none'}`
+  )
+  summary.push(
+    '',
+    'Estimate covers recorded invocations in the expected stages only. Missing receipts prevent a complete total. Excludes taxes, account discounts and runner costs. Prices are pinned to the date above.',
     ''
   )
   const output = summary.join('\n')
@@ -1507,6 +1670,59 @@ function createProgressFilter(write) {
   }
 }
 
+function createProgressReporter(write, options = {}) {
+  const now = options.now ?? (() => performance.now())
+  const schedule = options.setInterval ?? setInterval
+  const cancel = options.clearInterval ?? clearInterval
+  const started = now()
+  let lastProgress = started
+  let lastOutput = started
+  let finished = false
+  function emit(line, time = now()) {
+    lastOutput = time
+    try {
+      write(line)
+    } catch {
+      // Progress reporting must not change process results or private streams.
+    }
+  }
+  const filter = createProgressFilter((line) => {
+    lastProgress = now()
+    emit(line, lastProgress)
+  })
+  const timer = schedule(() => {
+    const time = now()
+    if (!finished && time - lastOutput >= 60000) {
+      emit(
+        `OCR progress event=heartbeat elapsed_ms=${Math.floor(time - started)} idle_ms=${Math.floor(time - lastProgress)}\n`,
+        time
+      )
+    }
+  }, 60000)
+  timer.unref?.()
+  return {
+    write(chunk) {
+      if (!finished) filter.write(chunk)
+    },
+    end() {
+      if (!finished) filter.end()
+    },
+    finish(result) {
+      if (finished) return
+      finished = true
+      cancel(timer)
+      filter.end()
+      const code =
+        Number.isInteger(result.code) && result.code >= 0 && result.code <= 255
+          ? result.code
+          : 1
+      emit(
+        `OCR progress event=process_exited exit_code=${code} signaled=${Boolean(result.signal)} spawn_failed=${Boolean(result.failed)} elapsed_ms=${Math.floor(now() - started)}\n`
+      )
+    },
+  }
+}
+
 async function commandRun(args) {
   const argv = args[0] === '--' ? args.slice(1) : args
   if (argv.length === 0) {
@@ -1533,7 +1749,7 @@ async function commandRun(args) {
   if (liveProgress) {
     // The workflow binds fd 3 to its console before redirecting fd 2 privately.
     // OCR receives neither this descriptor nor the option selecting it.
-    progress = createProgressFilter((line) => fs.writeSync(3, line))
+    progress = createProgressReporter((line) => fs.writeSync(3, line))
     stderrClosed = new Promise((resolve) => child.stderr.once('close', resolve))
     child.stderr.on('data', (chunk) => {
       process.stderr.write(chunk)
@@ -1563,23 +1779,26 @@ async function commandRun(args) {
     child.on('error', () => resolve({ failed: true }))
     child.on('exit', (code, signal) => resolve({ code, signal }))
   })
-  await adapter.close()
-  if (liveProgress) {
-    // A descendant can retain stderr after the review process exits. Bound
-    // the drain so that writer cannot hold the wrapper open indefinitely.
-    let drainTimer
-    try {
-      await Promise.race([
-        stderrClosed,
-        new Promise((resolve) => {
-          drainTimer = setTimeout(resolve, SHUTDOWN_DRAIN_TIMEOUT_MS)
-        }),
-      ])
-    } finally {
-      clearTimeout(drainTimer)
-      child.stderr.destroy()
-      progress.end()
+  try {
+    await adapter.close()
+    if (liveProgress) {
+      // A descendant can retain stderr after the review process exits. Bound
+      // the drain so that writer cannot hold the wrapper open indefinitely.
+      let drainTimer
+      try {
+        await Promise.race([
+          stderrClosed,
+          new Promise((resolve) => {
+            drainTimer = setTimeout(resolve, SHUTDOWN_DRAIN_TIMEOUT_MS)
+          }),
+        ])
+      } finally {
+        clearTimeout(drainTimer)
+        child.stderr.destroy()
+      }
     }
+  } finally {
+    progress?.finish(result)
   }
   if (result.failed) {
     throw new AdapterError(
@@ -1690,7 +1909,9 @@ module.exports = {
   startAdapter,
   callMistral,
   estimateCost,
+  buildCostReport,
   createProgressFilter,
+  createProgressReporter,
 }
 
 if (require.main === module) {

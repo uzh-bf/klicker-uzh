@@ -370,15 +370,32 @@ Each cost summary is printed in the job log for `gh run view --log` as well as i
 the GitHub job summary.
 
 Draft, individual final, and stack code-review jobs also summarize estimated
-adapter cost and caching savings after cleanup. They sum the aggregate counters
-once per adapter lifetime, including retries and resumes. The comparison prices
+cost and caching savings after cleanup. Draft estimates cover the adapter.
+Manual estimates additionally cover the existing tool-access preflight and,
+for stacks, the topology request. Direct calls record content-free stage-tagged
+usage in the same job-specific diagnostics file, before caller validation;
+a rejected answer can still have complete, chargeable usage.
+They sum the aggregate counters once per invocation, including retries and
+resumes. The comparison prices
 the same input/output tokens with and without reported caching; cached input
 remains part of the full prompt token total. Missing or malformed diagnostics,
 unfinished requests, unaccounted upstream attempts, and incomplete usage/cache
 reports make the estimate unavailable instead of assuming zero spend. An adapter
-with no requests reports zero. Other review stages, such as the direct topology
-review, are outside this adapter estimate. Totals cover recorded lifetimes only;
-a missing receipt can omit spend. Summary steps are non-blocking.
+with no requests reports zero. Before each manual OCR launch, the workflow saves
+its expected invocation count separately in step outputs; this includes resumes
+and incremental stack layers. Summaries reconcile those counts and the direct
+step outcomes against observed receipts. Missing or extra receipts block the
+combined estimate while independently complete stage estimates remain visible.
+An explicitly skipped stage with zero expected invocations is labeled `not_run`.
+Summary steps are non-blocking.
+
+The log and job summary include fixed `OCR cost` records with stage, status,
+reason codes, expected/observed receipt counts and allowlisted usage/cache
+coverage counters. Missing files, malformed receipts, invalid counters,
+unaccounted attempts and unfinished requests have distinct reasons; raw errors,
+paths and unknown receipt fields never enter these records. The CLI form is
+`summary <receipt-path> adapter=N [preflight=N] [topology=N]`; draft reporting
+defaults to one adapter lifetime.
 
 `MISTRAL_PRICING` in `ocr-mistral-adapter.cjs` is the authoritative USD rate table
 and verification date, sourced from
@@ -397,6 +414,12 @@ The adapter reconstructs only known event/tool/phase identifiers and bounded
 numeric counts; it discards arguments, paths, group/session identities, raw
 errors, unknown lines, and overlong records. Logging failures are best-effort,
 and the child receives neither the descriptor nor the option selecting it.
+While quiet, the wrapper emits a heartbeat no more than once per minute with
+elapsed and idle milliseconds. After cleanup it emits one `process_exited`
+event with the exit code and boolean signal/spawn-failure flags. This records
+process termination; validation and publication still determine review success.
+Its timer is unreferenced and cleared on exit, and all lifecycle events use the
+same filtered descriptor.
 The adapter cleans up at direct child exit, then drains stderr for at most one
 second before closing its read end. A descendant retaining the writer
 cannot hold the job open. This preserves final output and the direct child's exit
