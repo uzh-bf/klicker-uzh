@@ -846,6 +846,18 @@ Reasoning rows use a brain icon, while tool rows use their current status icon; 
 leading icon slot so their labels share one column.
 Reasoning auto-opens only while active until the participant manually chooses an open state; that
 manual choice then wins.
+Participants see reasoning only for standard modes and for custom modes whose
+lecturer enabled `showReasoning`; an absent flag hides it, because a summary can
+paraphrase a role-play persona or withheld scenario facts. The server enforces
+this, not the UI: `isParticipantReasoningVisible` in
+`src/lib/server/effectiveChatModes.ts` decides per turn from the live approved
+mode config, the participant chat route then omits reasoning stream parts and the
+finish-metadata `reasoningContent`, and the thread-history route strips stored
+reasoning parts and `reasoningContent`. A custom-mode key that is no longer
+approved stays hidden. The provider request keeps `reasoningSummary: 'auto'` and
+the server still persists the summary, so reasoning effort, model behaviour,
+telemetry and owner preview are unchanged. The participant still sees the
+pending-turn dots until the first answer text arrives.
 The source-card section is derived from completed `doc_query` tool results but
 stays hidden for the full time the same assistant message is actively running,
 including after answer text begins. This lets the viewport follow the growing

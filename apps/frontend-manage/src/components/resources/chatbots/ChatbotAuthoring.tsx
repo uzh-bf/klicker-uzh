@@ -112,6 +112,7 @@ type CustomModeFormValues = {
     welcomeMessage: string
     starterPrompts: string[]
     personaText: string
+    showReasoning: boolean
   }[]
 }
 
@@ -130,6 +131,7 @@ function getCustomModeFormValues(
       welcomeMessage: mode.welcomeMessage ?? '',
       starterPrompts: [...(mode.starterPrompts ?? [])],
       personaText: mode.personaText ?? '',
+      showReasoning: mode.showReasoning,
     })),
   }
 }
@@ -148,6 +150,7 @@ function getCustomModeInputs(
       .map((prompt) => prompt.trim())
       .filter((prompt) => prompt.length > 0),
     personaText: mode.personaText || null,
+    showReasoning: mode.showReasoning,
   }))
 }
 
@@ -707,6 +710,37 @@ function CustomModesEditor({
                             cy: `chatbot-custom-mode-persona-${index}`,
                           }}
                         />
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <label
+                              htmlFor={`chatbot-custom-mode-show-reasoning-${index}`}
+                              className="text-sm font-medium text-gray-900"
+                            >
+                              {t(
+                                'manage.resources.chatbotCustomModeShowReasoning'
+                              )}
+                            </label>
+                            <p className="text-sm text-gray-600">
+                              {t(
+                                'manage.resources.chatbotCustomModeShowReasoningDescription'
+                              )}
+                            </p>
+                          </div>
+                          <Switch
+                            id={`chatbot-custom-mode-show-reasoning-${index}`}
+                            checked={mode.showReasoning}
+                            disabled={controlsDisabled}
+                            onCheckedChange={(checked) =>
+                              void setFieldValue(
+                                `modes[${index}].showReasoning`,
+                                checked
+                              )
+                            }
+                            data={{
+                              cy: `chatbot-custom-mode-show-reasoning-${index}`,
+                            }}
+                          />
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -730,6 +764,7 @@ function CustomModesEditor({
                           welcomeMessage: '',
                           starterPrompts: [],
                           personaText: '',
+                          showReasoning: false,
                         },
                       ])
                     }}
@@ -1928,6 +1963,16 @@ function ChatbotAuthoring({
                               {mode.personaText}
                             </div>
                           ) : null}
+                          <div
+                            className="mt-1 text-gray-700"
+                            data-cy={`chatbot-review-custom-mode-reasoning-${index}`}
+                          >
+                            {t(
+                              mode.showReasoning
+                                ? 'manage.resources.chatbotCustomModeReasoningShown'
+                                : 'manage.resources.chatbotCustomModeReasoningHidden'
+                            )}
+                          </div>
                         </li>
                       ))}
                     </ul>
