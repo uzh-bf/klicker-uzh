@@ -173,6 +173,18 @@ test('selects a directly changed spec and assigns its trusted profile', () => {
   assert.deepEqual(plan.shards[0].files, ['tests/A-login.spec.ts'])
 })
 
+test('a deferred draft skips whatever the diff touches', () => {
+  const deferred = selectFromChanges({
+    candidateSpecs: ['A-login.spec.ts', 'Y-chat.spec.ts'],
+    manifest: fixtureManifest(),
+    changes: [change('M', 'playwright/tests/A-login.spec.ts')],
+    prState: 'deferred',
+  })
+  assert.equal(deferred.mode, 'skip')
+  assert.deepEqual(deferred.selectedSpecs, [])
+  assert.deepEqual(deferred.reasonCodes, ['draft-sync-deferred'])
+})
+
 test('maps known feature paths, skips documentation, and fails unknown paths closed', () => {
   const manifest = fixtureManifest()
   const base = {
