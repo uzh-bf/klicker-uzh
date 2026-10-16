@@ -15,7 +15,7 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.18",
     "typescript": "~6.0.3",
-    "vitest": "3.2.4"
+    "vitest": "4.1.11"
   },
   "peerDependencies": {
     "react": "^19.2.8"
