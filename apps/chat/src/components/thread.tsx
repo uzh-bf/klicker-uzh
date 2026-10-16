@@ -136,13 +136,6 @@ const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []
 const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
 const ChatbotAvatarContext = createContext('')
 
-const formatTitleCase = (value: string) =>
-  value
-    .split(/[\s_-]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ')
-
 type ImageAttachment = {
   id?: string
   type: 'image'
@@ -197,6 +190,7 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
     createdAt: Date
   }
   const modelOptions = useSettingsStore((state) => state.modelOptions)
+  const modeOptions = useEffectiveModeOptions()
   const t = useTranslations()
   const format = useFormatter()
   // A ticking `now`, not `new Date()`: the caption is rendered once and its
@@ -227,13 +221,9 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
     typeof custom.creditsUsed === 'number' ? custom.creditsUsed : null
 
   // Same label the mode switcher shows, so the caption under an answer does not
-  // read "Explainer" in German while the live pill reads "Erklärer". Unknown
-  // per-chatbot keys have no translation and keep their raw name.
-  const modeLabel = !chatMode
-    ? null
-    : isKnownMode(chatMode)
-      ? t(`chat.modes.${chatMode}`)
-      : formatTitleCase(chatMode)
+  // read "Explainer" in German while the live pill reads "Erklärer", and a
+  // custom mode shows its lecturer-given name rather than its internal key.
+  const modeLabel = chatMode ? formatModeLabel(t, chatMode, modeOptions) : null
   const modelLabel = modelId
     ? modelOptions.find((option) => option.id === modelId)?.name || modelId
     : null
