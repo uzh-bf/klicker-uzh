@@ -366,6 +366,9 @@ a fixed warning and preserve cleanup. Draft jobs attempt to upload only the fixe
 diagnostics JSONL file even after startup failure, with one-day retention and a
 warning when absent.
 
+Each cost summary is printed in the job log for `gh run view --log` as well as in
+the GitHub job summary.
+
 Draft, individual final, and stack code-review jobs also summarize estimated
 adapter cost and caching savings after cleanup. They sum the aggregate counters
 once per adapter lifetime, including retries and resumes. The comparison prices
