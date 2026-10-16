@@ -102,8 +102,18 @@ then requested one source of truth for the fixed limit pair; the existing
 modules now share a frozen constant. All 53 focused tests and affected static
 checks passed again after that behavior-preserving correction.
 
-[Draft PR 6576](https://github.com/uzh-bf/klicker-uzh/pull/6576) targets `v3`.
-At the preceding head, codebase and unit CI passed, as did all eight browser
-shards. The summary status remained queued when its watcher was stopped before
-pushing the correction. Final-head CI and review-thread disposition are next.
-No real ledger or paid request has been created.
+Source preparation and review are complete in
+[draft PR 6576](https://github.com/uzh-bf/klicker-uzh/pull/6576), targeting `v3`.
+At code-bearing head `c7adb85db000528838d29b5c95c4809f34850f51`, all automatic
+CI checks passed, including codebase, unit, browser and draft-review workflows.
+Both published findings are fixed and resolved. The automated review's producing
+run completed successfully; its filtered low-priority suggestions were assessed
+and require no further changes. The source and tests stay unchanged by this
+progress-only update, so the existing verification and independent reviews apply.
+
+Package size is 377 substantive changed lines across four existing files,
+excluding this plan. Current branch checks are recorded on the linked pull
+request. It remains draft, with the separate ready-only final AI gate pending.
+No code work remains in this batch. Readiness, merge, deployment, real-ledger
+initialization and paid evaluation require their separate authority; none was
+performed here. No new executable script or dependency was added.
