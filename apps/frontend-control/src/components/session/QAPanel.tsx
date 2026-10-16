@@ -80,6 +80,11 @@ function QuestionCard({
     RespondToFeedbackDocument
   )
 
+  const questionAge = (minutes: number) => {
+    if (minutes === 0) return t('control.liveQuiz.qaJustNow')
+    if (minutes < 60) return t('control.liveQuiz.qaMinutesAgo', { minutes })
+    return t('control.liveQuiz.qaHoursAgo', { hours: Math.floor(minutes / 60) })
+  }
   const state = questionState(question)
   const minutes = Math.max(
     0,
@@ -120,15 +125,7 @@ function QuestionCard({
             {question.content}
           </div>
           <div className="text-ctrl-muted mt-1 flex flex-wrap gap-2 text-[13px]">
-            <span>
-              {minutes === 0
-                ? t('control.liveQuiz.qaJustNow')
-                : minutes < 60
-                  ? t('control.liveQuiz.qaMinutesAgo', { minutes })
-                  : t('control.liveQuiz.qaHoursAgo', {
-                      hours: Math.floor(minutes / 60),
-                    })}
-            </span>
+            <span>{questionAge(minutes)}</span>
             {question.isPinned && state === 'open' && (
               <span className="text-uzh-blue font-semibold">
                 · {t('control.liveQuiz.qaPinned')}
@@ -522,12 +519,13 @@ function QAPanel({ quizId, data }: QAPanelProps) {
               loading={deletingFeedback}
               onClick={async () => {
                 if (!deleting) return
-                await runAction(() =>
+                const ok = await runAction(() =>
                   deleteFeedback({
                     variables: { id: deleting.id, liveQuizId: quizId },
                   })
                 )
-                setDeleteOpen(false)
+                // keep the sheet open on failure so the user can retry
+                if (ok) setDeleteOpen(false)
               }}
               className={{ root: `${sheetButtonClass} ${dangerButtonClass}` }}
               data={{ cy: 'qa-delete-confirm' }}
@@ -564,8 +562,8 @@ function QAPanel({ quizId, data }: QAPanelProps) {
             <Button
               loading={changingSettings}
               onClick={async () => {
-                await setModeration(false)
-                setConfirmModerationOff(false)
+                const ok = await setModeration(false)
+                if (ok) setConfirmModerationOff(false)
               }}
               className={{ root: `${sheetButtonClass} ${primaryButtonClass}` }}
               data={{ cy: 'qa-moderation-off-confirm' }}

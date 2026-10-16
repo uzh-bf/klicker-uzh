@@ -6,7 +6,7 @@ import {
   GetSingleLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, UserNotification } from '@uzh-bf/design-system'
+import { Button, toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
 import ResponsiveSheet from '../common/ResponsiveSheet'
@@ -55,10 +55,18 @@ function EmbedRow({
         <Button
           onClick={async () => {
             try {
-              await navigator.clipboard?.writeText(link)
+              // the clipboard API is missing in insecure contexts; only show
+              // the check mark after an actual copy
+              if (!navigator.clipboard) throw new Error('clipboard unavailable')
+              await navigator.clipboard.writeText(link)
               setCopied(true)
             } catch {
               setCopied(false)
+              toast({
+                type: 'error',
+                message: t('control.liveQuiz.actionFailed'),
+                options: { duration: 5000 },
+              })
             }
           }}
           className={{ root: iconButtonClass }}
@@ -88,10 +96,13 @@ function EmbeddingModal({
   quizId: string
 }) {
   const t = useTranslations()
-  const { data: dataLiveQuiz } = useQuery(GetSingleLiveQuizDocument, {
-    variables: { quizId },
-    skip: !quizId,
-  })
+  const { data: dataLiveQuiz, loading: loadingQuiz } = useQuery(
+    GetSingleLiveQuizDocument,
+    {
+      variables: { quizId },
+      skip: !quizId,
+    }
+  )
   const { data, loading, error } = useQuery(GetLiveQuizEmbeddingInfoDocument, {
     variables: { id: quizId },
     skip: !quizId,
@@ -124,7 +135,7 @@ function EmbeddingModal({
       <p className="text-ctrl-muted mb-3.5 text-sm">
         {t('control.course.pptEmbeddingHint')}
       </p>
-      {loading ? (
+      {loading || loadingQuiz ? (
         <Loader />
       ) : error || !hmac ? (
         <UserNotification

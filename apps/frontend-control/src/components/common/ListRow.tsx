@@ -3,22 +3,40 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
 
-interface ListRowProps {
+interface BaseRowProps {
   title: string
   meta?: React.ReactNode
   dimmed?: boolean
-  // navigation row: the whole row is a link and shows a chevron
-  href?: string
-  // action row: the row is clickable, the actions keep their own handlers
-  onClick?: () => void
-  actions?: React.ReactNode
   dataCy?: string
 }
+
+type ListRowProps = BaseRowProps &
+  (
+    | {
+        // navigation row: the whole row is a link and shows a chevron
+        href: string
+        onClick?: never
+        actions?: never
+      }
+    | {
+        // static row with optional action buttons
+        href?: never
+        onClick?: never
+        actions?: React.ReactNode
+      }
+    | {
+        // clickable row: the click is a convenience, so the actions are
+        // required as the keyboard-accessible path
+        href?: never
+        onClick: () => void
+        actions: React.ReactNode
+      }
+  )
 
 const rowClass =
   'flex min-h-[64px] items-center gap-3 border-b border-ctrl-hair bg-white px-4 py-3.5 last:border-b-0'
 
-function RowText({ title, meta }: Pick<ListRowProps, 'title' | 'meta'>) {
+function RowText({ title, meta }: Pick<BaseRowProps, 'title' | 'meta'>) {
   return (
     <div className="min-w-0 flex-1">
       <div className="text-ctrl-ink truncate text-base font-semibold">
