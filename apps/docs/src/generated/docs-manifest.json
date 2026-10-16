@@ -1,0 +1,1538 @@
+{
+  "schemaVersion": 1,
+  "docsVersion": "current",
+  "pages": [
+    {
+      "route": "/about/project/",
+      "title": "About KlickerUZH",
+      "headings": [],
+      "summary": "",
+      "tags": [],
+      "media": [],
+      "sourcePath": "docs/about/project.mdx",
+      "sourceCategory": "about"
+    },
+    {
+      "route": "/about/roadmap/",
+      "title": "Roadmap",
+      "headings": [],
+      "summary": "",
+      "tags": [],
+      "media": [],
+      "sourcePath": "docs/about/roadmap.mdx",
+      "sourceCategory": "about"
+    },
+    {
+      "route": "/about/whats_new/",
+      "title": "What's New",
+      "headings": [],
+      "summary": "> COMING SOON",
+      "tags": [],
+      "media": [],
+      "sourcePath": "docs/about/whats_new.mdx",
+      "sourceCategory": "about"
+    },
+    {
+      "route": "/datenschutz/",
+      "title": "Datenschutzerklärung",
+      "headings": [
+        "1. Grundsätze",
+        "2. Umfang und Zweck der Bearbeitung von Personendaten",
+        "Erfasste Datenelemente",
+        "Umgang mit besonders schützenswerten Personendaten",
+        "3. Kontaktadressen",
+        "4. Begriffe und Rechtsgrundlagen",
+        "4.1 Begriffe",
+        "4.2 Rechtsgrundlagen",
+        "5. Art, Umfang und Zweck",
+        "6. Personendaten im Ausland",
+        "7. Rechte von betroffenen Personen",
+        "7.1 Datenschutzrechtliche Ansprüche",
+        "7.2 Recht auf Beschwerde",
+        "8. Datensicherheit",
+        "9. Nutzung der Website",
+        "9.1 Cookies",
+        "9.2 Server-Logdateien",
+        "10. Benachrichtigungen und Mitteilungen",
+        "10.1 Erfolgs- und Reichweitenmessung",
+        "10.2 Einwilligung und Widerspruch",
+        "10.3 Dienstleister für Benachrichtigungen und Mitteilungen",
+        "11. Social Media",
+        "12. Dienste von Dritten",
+        "10.1 Digitale Infrastruktur",
+        "10.2 Automatisierung und Integration von Apps und Diensten",
+        "10.3 Terminplanung",
+        "10.4 Audio- und Video-Konferenzen",
+        "10.6 Digitale Audio- und Video-Inhalte",
+        "11. Erfolgs- und Reichweitenmessung",
+        "12. Schlussbestimmungen"
+      ],
+      "summary": "Aktualisiert am 26. August 2023",
+      "tags": [],
+      "media": [],
+      "sourcePath": "docs/datenschutz.mdx",
+      "sourceCategory": "legal"
+    },
+    {
+      "route": "/faq/",
+      "title": "Frequently Asked Questions",
+      "headings": [],
+      "summary": "",
+      "tags": [],
+      "media": [],
+      "sourcePath": "docs/faq.mdx",
+      "sourceCategory": "general"
+    },
+    {
+      "route": "/gamification/achievements/",
+      "title": "Achievements",
+      "headings": [],
+      "summary": "> COMING SOON",
+      "tags": [],
+      "media": [],
+      "sourcePath": "docs/gamification/achievements.mdx",
+      "sourceCategory": "gamification"
+    },
+    {
+      "route": "/gamification/awards/",
+      "title": "Awards",
+      "headings": [],
+      "summary": "> COMING SOON",
+      "tags": [],
+      "media": [],
+      "sourcePath": "docs/gamification/awards.mdx",
+      "sourceCategory": "gamification"
+    },
+    {
+      "route": "/gamification/experience/",
+      "title": "XP and Levels",
+      "headings": [],
+      "summary": "While participants collect points for correct answers on a course level, experience points (XP) are collected across courses and allow students to level up. This represents an important part of our gamification concept, making sure that…",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/gamification/xp_vs_level.jpg"
+        }
+      ],
+      "sourcePath": "docs/gamification/experience.mdx",
+      "sourceCategory": "gamification"
+    },
+    {
+      "route": "/gamification/grading_logic/",
+      "title": "Grading Logic",
+      "headings": [
+        "Grading by Element Type",
+        "Multiplier",
+        "Grading Single Choice Questions",
+        "Grading Multiple Choice Questions",
+        "Grading KPRIM Questions",
+        "Grading Numerical Questions",
+        "Grading Free Text Questions",
+        "Grading Selection Questions",
+        "Grading Case Study Questions",
+        "Grading in Live Quizzes",
+        "Advanced: Customized Grading"
+      ],
+      "summary": "In order to distribute points, XP and achievements based on the performance of the participants in various activities, an automated grading logic has been implemented in KlickerUZH. This chapter provides a detailed explanation of the…",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/gamification/KPRIM_awarded_points.svg"
+        },
+        {
+          "type": "image",
+          "url": "/img/gamification/live_quiz_awarded_points.svg"
+        },
+        {
+          "type": "image",
+          "url": "/img/gamification/live_quiz_customized_grading.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/gamification/MC_awarded_points.svg"
+        }
+      ],
+      "sourcePath": "docs/gamification/grading_logic.mdx",
+      "sourceCategory": "gamification"
+    },
+    {
+      "route": "/gamification/overview/",
+      "title": "Overview",
+      "headings": [
+        "Goals of Gamification",
+        "Gamified Activities and Competition",
+        "Groups and Collaboration",
+        "Participant Experience"
+      ],
+      "summary": ":::info",
+      "tags": [],
+      "media": [],
+      "sourcePath": "docs/gamification/overview.mdx",
+      "sourceCategory": "gamification"
+    },
+    {
+      "route": "/getting_started/core_concepts/",
+      "title": "Core Concepts",
+      "headings": [
+        "Elements",
+        "Learning Activities",
+        "Live Quiz (and Live Q&A)",
+        "Microlearning",
+        "Practice Quiz",
+        "Group Activity",
+        "Courses",
+        "Gamification"
+      ],
+      "summary": "id=\"kmsembed-0ugtkafd3\"",
+      "tags": [],
+      "media": [],
+      "sourcePath": "docs/getting_started/core_concepts.mdx",
+      "sourceCategory": "getting_started"
+    },
+    {
+      "route": "/getting_started/welcome/",
+      "title": "Welcome",
+      "headings": [
+        "User Guide",
+        "Official KlickerUZH",
+        "Deployment",
+        "Contributing",
+        "Support & Community"
+      ],
+      "summary": "KlickerUZH is a web application that supports the interaction between lecturers and their audience in various ways. In a KlickerUZH live quiz (e.g., during a lecture), a speaker may pose questions to be answered by participants over their…",
+      "tags": [],
+      "media": [],
+      "sourcePath": "docs/getting_started/welcome.mdx",
+      "sourceCategory": "getting_started"
+    },
+    {
+      "route": "/nutzungsbedingungen/",
+      "title": "Nutzungsbedingungen",
+      "headings": [
+        "Lizenz",
+        "Laufzeit",
+        "Gebühren",
+        "Datenschutz",
+        "Kein Recht auf Gewährleistung / Entschädigung",
+        "Allgemeines"
+      ],
+      "summary": "Aktualisiert am 26. August 2023",
+      "tags": [],
+      "media": [],
+      "sourcePath": "docs/nutzungsbedingungen.mdx",
+      "sourceCategory": "legal"
+    },
+    {
+      "route": "/privacy_policy/",
+      "title": "Privacy policy",
+      "headings": [
+        "1. principles",
+        "2. scope and purpose of the processing of personal data",
+        "Data elements collected",
+        "Handling of particularly sensitive personal data",
+        "3. contact addresses",
+        "4. terms and legal basis",
+        "4.1 Terms",
+        "4.2 Legal basis",
+        "5. type, scope and purpose",
+        "6. personal data abroad",
+        "7. rights of data subjects",
+        "7.1 Data protection rights",
+        "7.2 Right of complaint",
+        "8. data security",
+        "9. use of the website",
+        "9.1 Cookies",
+        "9.2 Server log files",
+        "10. notifications and communications",
+        "10.1 Performance and Reach Measurement.",
+        "10.2 Consent and objection",
+        "10.3 Service providers for notifications and communications",
+        "11. social media",
+        "12. Services of third parties",
+        "10.1 Digital Infrastructure",
+        "10.2 Automation and integration of apps and services.",
+        "10.3 Scheduling",
+        "10.4 Audio and video conferencing",
+        "10.6 Digital audio and video content.",
+        "11. performance and reach measurement",
+        "12. final provisions"
+      ],
+      "summary": "Updated on August 26, 2023",
+      "tags": [],
+      "media": [],
+      "sourcePath": "docs/privacy_policy.mdx",
+      "sourceCategory": "legal"
+    },
+    {
+      "route": "/private-preview/",
+      "title": "Private Preview Features",
+      "headings": [
+        "What is Private Preview?",
+        "Current Private Preview Features"
+      ],
+      "summary": "Some features in KlickerUZH are initially released as \"Private Preview\" features. This means they are available for testing with selected users before being made generally available.",
+      "tags": [],
+      "media": [],
+      "sourcePath": "docs/private-preview.mdx",
+      "sourceCategory": "general"
+    },
+    {
+      "route": "/student_tutorials/chatbot/",
+      "title": "Course Chatbot",
+      "headings": [
+        "What is the course chatbot?",
+        "How do I get access?",
+        "How do I chat with the assistant?",
+        "How do I choose a model and reasoning effort?",
+        "How do credits work?",
+        "How do I rate an answer?",
+        "Does the chatbot show sources?",
+        "In which language does the chatbot answer?",
+        "What happens with my data?"
+      ],
+      "summary": "The course chatbot is an AI assistant for a specific course. You can ask it questions about the course content and receive answers in a chat interface. Depending on how your lecturer has set it up, the chatbot can guide you with questions,…",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/chatbot/chat_overview.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/chatbot/chat_settings.png"
+        }
+      ],
+      "sourcePath": "docs/student_tutorials/chatbot.mdx",
+      "sourceCategory": "student"
+    },
+    {
+      "route": "/student_tutorials/course_leaderboard/",
+      "title": "Courses and Leaderboards",
+      "headings": [],
+      "summary": "After a student has created a KlickerUZH account and joined a course as outlined in the account section, they can access all available course-related resources. To participate in the leaderboard and other course challenges and collect…",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/leaderboard/course_leaderboard.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/leaderboard/join_leaderboard.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/leaderboard/joined_leaderboard.png"
+        }
+      ],
+      "sourcePath": "docs/student_tutorials/course_leaderboard.mdx",
+      "sourceCategory": "student"
+    },
+    {
+      "route": "/student_tutorials/groups_activities/",
+      "title": "Groups and Group Activities",
+      "headings": [
+        "Creating / Joining Groups and Group Activities",
+        "Solve a Group Activity",
+        "View Group Activity Results"
+      ],
+      "summary": "While students compete on leaderboards against each other when collecting points from live quizzes, practice quizzes, and microlearnings, KlickerUZH also covers efforts to promote collaboration and teamwork. This section describes the…",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/group_activity/ga_graded_students.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/group_activity/ga_student_view.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/group/group_student_view.png"
+        }
+      ],
+      "sourcePath": "docs/student_tutorials/groups_activities.mdx",
+      "sourceCategory": "student"
+    },
+    {
+      "route": "/student_tutorials/klickeruzh_app/",
+      "title": "KlickerUZH App",
+      "headings": [
+        "Android",
+        "iOS"
+      ],
+      "summary": "To access KlickerUZH from anywhere, there's a KlickerUZH app. This app allows you to easily manage and access the learning content of your courses (using KlickerUZH), as well as add important elements to your private repetition library and…",
+      "tags": [],
+      "media": [],
+      "sourcePath": "docs/student_tutorials/klickeruzh_app.mdx",
+      "sourceCategory": "student"
+    },
+    {
+      "route": "/student_tutorials/live_quiz/",
+      "title": "Live Quiz",
+      "headings": [],
+      "summary": "Live quizzes are one of the core functionalities of KlickerUZH. In the following, you find an overview of the student view components of live quiz and live Q&A. For more information on how to use these components as a lecturer, check out…",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/live_quiz/lq_student_view.png"
+        }
+      ],
+      "sourcePath": "docs/student_tutorials/live_quiz.mdx",
+      "sourceCategory": "student"
+    },
+    {
+      "route": "/student_tutorials/microlearning/",
+      "title": "Microlearning",
+      "headings": [],
+      "summary": "src=\"/img/microlearning/mlstudentview.png\"",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/microlearning/ml_student_view.png"
+        }
+      ],
+      "sourcePath": "docs/student_tutorials/microlearning.mdx",
+      "sourceCategory": "student"
+    },
+    {
+      "route": "/student_tutorials/practice_quiz/",
+      "title": "Practice Quiz",
+      "headings": [],
+      "summary": "In addition to live quizzes, KlickerUZH also offers a variety of asynchronous learning activities. One of them is the practice quiz. Practice quizzes are a great way to repeat the course content and to prepare for an exam. This section…",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/practice_quiz/pq_olat_view.png"
+        }
+      ],
+      "sourcePath": "docs/student_tutorials/practice_quiz.mdx",
+      "sourceCategory": "student"
+    },
+    {
+      "route": "/student_tutorials/student_accounts/",
+      "title": "Participant Accounts",
+      "headings": [
+        "Courses with LMS integration (e.g., OLAT)",
+        "Courses without LMS integration",
+        "Anonymous participation",
+        "Updating the account"
+      ],
+      "summary": "If students are participating in KlickerUZH activities for the first time, they can register for a KlickerUZH participant account. A KlickerUZH participant account allows them to easily manage and access the learning content of courses…",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/account/create_account.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/account/edit_profile.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/account/join_course.png"
+        }
+      ],
+      "sourcePath": "docs/student_tutorials/student_accounts.mdx",
+      "sourceCategory": "student"
+    },
+    {
+      "route": "/terms_of_service/",
+      "title": "Terms of Service",
+      "headings": [
+        "License",
+        "Term",
+        "Fees",
+        "Data Protection",
+        "No Warranty / Indemnification",
+        "General"
+      ],
+      "summary": "Updated on August 26, 2023",
+      "tags": [],
+      "media": [],
+      "sourcePath": "docs/terms_of_service.mdx",
+      "sourceCategory": "legal"
+    },
+    {
+      "route": "/tutorials/activity_batch_operations/",
+      "title": "Batch Operations (Activities)",
+      "headings": [
+        "What are activity batch operations?",
+        "What changes can be applied as batch operations?"
+      ],
+      "summary": ":::info",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/review/activity_batch_operations.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/review/activity_list_batch_operations.png"
+        }
+      ],
+      "sourcePath": "docs/tutorials/activity_batch_operations.mdx",
+      "sourceCategory": "tutorials"
+    },
+    {
+      "route": "/tutorials/activity_templates/",
+      "title": "Activity Templates",
+      "headings": [],
+      "summary": "Activity Templates allow lecturers to save the structure and content of a Live Quiz or a collection of elements as a reusable template. This facilitates the quick creation of new activities or the sharing of standardized question sets.",
+      "tags": [],
+      "media": [],
+      "sourcePath": "docs/tutorials/activity_templates.mdx",
+      "sourceCategory": "tutorials"
+    },
+    {
+      "route": "/tutorials/ai_assistant/",
+      "title": "AI Assistant",
+      "headings": [
+        "What is the KlickerUZH Assistant?",
+        "What can the assistant help me with?",
+        "How are questions created — the proposal principle",
+        "How do I start a new conversation?",
+        "Can I attach images to my messages?",
+        "What should I keep in mind when using the assistant?"
+      ],
+      "summary": "The KlickerUZH Assistant is an AI chat companion built into the lecturer interface. You open it with the Assistant button in the bottom right corner of any page and it appears as a chat panel next to your work, so you do not have to leave…",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/ai_assistant/manage_assistant_drawer.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/ai_assistant/manage_assistant_response.png"
+        }
+      ],
+      "sourcePath": "docs/tutorials/ai_assistant.mdx",
+      "sourceCategory": "tutorials"
+    },
+    {
+      "route": "/tutorials/answer_collections/",
+      "title": "Answer Collections",
+      "headings": [
+        "Creating and Managing Answer Collections",
+        "Accessing Answer Collections",
+        "Creating a New Answer Collection",
+        "Editing and Extending Answer Collections",
+        "Deleting an Entire Collection",
+        "Using Answer Collections in Questions",
+        "For Selection (SE) Questions",
+        "For Case Study (CS) Questions",
+        "Sharing Answer Collections"
+      ],
+      "summary": "Answer Collections are reusable lists of predefined text items (e.g., diagnoses, symptoms, keywords, options). They serve as the source pool for answers in Selection (SE) questions and the evaluable items for Case Study (CS) questions,…",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/answer_collections/answer_collection_create.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/answer_collections/answer_collection_edit.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/answer_collections/answer_collection_edit2.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/answer_collections/answer_collection_edit3.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/answer_collections/answer_collection_overview.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/answer_collections/answer_collection_share.jpeg"
+        },
+        {
+          "type": "image",
+          "url": "/img/answer_collections/answer_collection_usage_cs.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/answer_collections/answer_collection_usage.png"
+        }
+      ],
+      "sourcePath": "docs/tutorials/answer_collections.mdx",
+      "sourceCategory": "tutorials"
+    },
+    {
+      "route": "/tutorials/catalog_sharing/",
+      "title": "Sharing via Catalog",
+      "headings": [],
+      "summary": ":::warning",
+      "tags": [],
+      "media": [],
+      "sourcePath": "docs/tutorials/catalog_sharing.mdx",
+      "sourceCategory": "tutorials"
+    },
+    {
+      "route": "/tutorials/chatbot/",
+      "title": "Course Chatbot",
+      "headings": [
+        "What is the Course Chatbot?",
+        "How do I get a chatbot for my course?",
+        "How do I manage my chatbot?",
+        "How do students access the chatbot?",
+        "What do students see?",
+        "How do credits work?",
+        "Can the chatbot cite course materials?",
+        "What about data protection and the disclaimer?"
+      ],
+      "summary": "The course chatbot is an AI assistant that you can offer to the students of a specific course. Students open it through a course-specific link, ask questions about the course content and receive answers in a familiar chat interface. Every…",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/chatbot/chat_overview.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/chatbot/chat_settings.png"
+        }
+      ],
+      "sourcePath": "docs/tutorials/chatbot.mdx",
+      "sourceCategory": "tutorials"
+    },
+    {
+      "route": "/tutorials/course_ai_tutor/",
+      "title": "Course AI Tutor",
+      "headings": [
+        "What is the course AI tutor?",
+        "How do I get a chatbot for my course?",
+        "What do students have to accept before using the tutor?",
+        "How is usage limited (credits)?",
+        "What should I tell my students?"
+      ],
+      "summary": "The course AI tutor is a course-specific chatbot that your students can use inside the KlickerUZH student app. Students open it with the AI tutor button on the course overview and while working on practice quizzes and microlearnings. The…",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/ai_assistant/course_ai_tutor_response.png"
+        }
+      ],
+      "sourcePath": "docs/tutorials/course_ai_tutor.mdx",
+      "sourceCategory": "tutorials"
+    },
+    {
+      "route": "/tutorials/course_management/",
+      "title": "Course Management",
+      "headings": [
+        "What are Courses?",
+        "How can I create a Course?",
+        "How can I duplicate a course?",
+        "How can I join a course as a participant?"
+      ],
+      "summary": "Courses serve as a framework within KlickerUZH, facilitating the integration of learning activities into a structured lecture format. They enable lecturers to effectively manage various activities and challenges over a specific period,…",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/courses/course_overview.png"
+        }
+      ],
+      "sourcePath": "docs/tutorials/course_management.mdx",
+      "sourceCategory": "tutorials"
+    },
+    {
+      "route": "/tutorials/delegated_access/",
+      "title": "Delegated Access",
+      "headings": [
+        "What is delegated access for?",
+        "How can I create a delegated access login for my account?",
+        "Access levels for delegated access"
+      ],
+      "summary": "The login to KlickerUZH v3.0 is only possible using Edu-ID credentials, which are personal and should not be passed on to other persons. The option to create a separate login with username and password from KlickerUZH v2.0 is not available…",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/account/delegated_access_settings.png"
+        }
+      ],
+      "sourcePath": "docs/tutorials/delegated_access.mdx",
+      "sourceCategory": "tutorials"
+    },
+    {
+      "route": "/tutorials/direct_sharing/",
+      "title": "Direct Sharing & Access Requests",
+      "headings": [],
+      "summary": ":::warning",
+      "tags": [],
+      "media": [],
+      "sourcePath": "docs/tutorials/direct_sharing.mdx",
+      "sourceCategory": "tutorials"
+    },
+    {
+      "route": "/tutorials/element_batch_operations/",
+      "title": "Batch Operations (Elements)",
+      "headings": [
+        "What are element batch operations?",
+        "What changes can be applied as batch operations?"
+      ],
+      "summary": ":::info",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/review/element_batch_operations.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/review/element_list_batch_operations.png"
+        }
+      ],
+      "sourcePath": "docs/tutorials/element_batch_operations.mdx",
+      "sourceCategory": "tutorials"
+    },
+    {
+      "route": "/tutorials/element_management/",
+      "title": "Element Management",
+      "headings": [
+        "What is an Element?",
+        "How can I create an Element?",
+        "How can I modify an Element?",
+        "Editing an Element",
+        "Duplicating an Element",
+        "Sharing an Element <PrivatePreviewTag />",
+        "Deleting an Element",
+        "How can I organize my Element Library?"
+      ],
+      "summary": "Elements serve as the fundamental building blocks of KlickerUZH. The element library builds the home screen of KlickerUZH, providing a central hub for creating and editing elements. To gain a basic understanding of the role of elements in…",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/elements/element_deletion.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/elements/element_duplication.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/elements/element_editing.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/elements/element_sharing.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/elements/MC_element_editor.png"
+        }
+      ],
+      "sourcePath": "docs/tutorials/element_management.mdx",
+      "sourceCategory": "tutorials"
+    },
+    {
+      "route": "/tutorials/element_stacks/",
+      "title": "Element Stacks",
+      "headings": [
+        "What are Element Stacks / Blocks?",
+        "How can I create an Element Stack?",
+        "How do Element Stacks look for Students?"
+      ],
+      "summary": "Most KlickerUZH activities group elements into stacks or blocks. The set of elements is then either shown all at once in practice quizzes and microlearnings or sequentially in live quizzes. To supplement the set of questions in a stack,…",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/stacks/stack_creation.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/stacks/stack_description_title.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/stacks/stack_student_view.png"
+        }
+      ],
+      "sourcePath": "docs/tutorials/element_stacks.mdx",
+      "sourceCategory": "tutorials"
+    },
+    {
+      "route": "/tutorials/element_updates_activities/",
+      "title": "Element Updates in Activities",
+      "headings": [
+        "How can elements become outdated in activities?",
+        "How can I make sure that changes to an element are reflected in activities?",
+        "How can I update elements in specific activities?"
+      ],
+      "summary": "As mentioned in our section on the core concepts, all activities in KlickerUZH are centered around re-usable elements. This functionality is designed to minimize the effort required for you as a lecturer to conduct similar quizzes in…",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/element_updates/activity_editor_updates.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/element_updates/element_edit_dialog_updates.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/element_updates/outdated_activity_notification.png"
+        }
+      ],
+      "sourcePath": "docs/tutorials/element_updates_activities.mdx",
+      "sourceCategory": "tutorials"
+    },
+    {
+      "route": "/tutorials/group_activity/",
+      "title": "Group Activity",
+      "headings": [
+        "What is a Group Activity?",
+        "How can I create a Group Activity?",
+        "How can I edit a Group Activity?",
+        "How can I publish a Group Activity and make it accessible to participants?",
+        "How can I grade the submissions to a Group Activity?"
+      ],
+      "summary": "Group activities are one of the collaborative learning activities in KlickerUZH. They are designed to promote teamwork and collaboration among students. Group activities consist of a set of questions, explanation texts, and hints that are…",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/group_activity/creation_settings.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/group_activity/creation_stack.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/group_activity/ga_grading_view.png"
+        }
+      ],
+      "sourcePath": "docs/tutorials/group_activity.mdx",
+      "sourceCategory": "tutorials"
+    },
+    {
+      "route": "/tutorials/live_qa/",
+      "title": "Live Q&A and Feedback",
+      "headings": [
+        "What is Live Q&A?",
+        "What is Live Feedback?",
+        "How can I activate and use Live Q&A and Live Feedback?"
+      ],
+      "summary": "Live Quizzes in KlickerUZH can be coupled with a Live Q&A that enables students to ask questions anonymously. Lecturers can answer either in writing or orally. This facilitates the immediate clarification of questions and fosters…",
+      "tags": [],
+      "media": [],
+      "sourcePath": "docs/tutorials/live_qa.mdx",
+      "sourceCategory": "tutorials"
+    },
+    {
+      "route": "/tutorials/live_quiz/",
+      "title": "Live Quiz",
+      "headings": [
+        "What is a Live Quiz?",
+        "How can I create a Live Quiz?",
+        "How can I edit a Live Quiz?",
+        "How can I execute a Live Quiz?",
+        "How can participants join a Live Quiz?",
+        "What functionalities become available through gamified Live Quizzes?"
+      ],
+      "summary": "Live Quizzes in KlickerUZH involve real-time interaction during lectures to foster engagement between the lecturer and students. Multiple question blocks are activated at different intervals, allowing students to provide answers in…",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/live_quiz/lq_evaluation.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/live_quiz/lq_gamification_choice.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/live_quiz/lq_gamification_gamified_course.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/live_quiz/lq_gamification_nongamified_course.png"
+        }
+      ],
+      "sourcePath": "docs/tutorials/live_quiz.mdx",
+      "sourceCategory": "tutorials"
+    },
+    {
+      "route": "/tutorials/lti_integration/",
+      "title": "Integration with LTI",
+      "headings": [
+        "How should I structure my KlickerUZH elements?",
+        "How can I set the language for KlickerUZH activities embedded in OLAT?",
+        "How can I configure Moodle with a system-wide LTI tool?",
+        "How can I integrate KlickerUZH pages into my OLAT course?",
+        "Course Overview and Student Documentation",
+        "Activity Lists (including Live Quiz and Live Q&A)",
+        "Leaderboard",
+        "Account Management",
+        "Individual Activity Links"
+      ],
+      "summary": ":::info",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/lti_olat/lti_link_account_management.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/lti_olat/lti_link_documentation.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/lti_olat/lti_link_leaderboard.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/lti_olat/lti_link_live_quizzes.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/lti_olat/olat_account_management.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/lti_olat/olat_dropdown.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/lti_olat/olat_pq_integration_link.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/lti_olat/olat_structure.png"
+        }
+      ],
+      "sourcePath": "docs/tutorials/lti_integration.mdx",
+      "sourceCategory": "tutorials"
+    },
+    {
+      "route": "/tutorials/microlearning/",
+      "title": "Microlearning",
+      "headings": [
+        "What is a Microlearning?",
+        "How can I create a Microlearning?",
+        "How can I edit a Microlearning?",
+        "How can I publish a Microlearning and access the results?",
+        "How can I inspect a Microlearning before it is available to participants (activity preview)?"
+      ],
+      "summary": "Microlearning offers short learning units with a limited number of questions, available to participants only during pre-defined intervals to counteract the forgetting curve. Students can test themselves, refresh their knowledge, and…",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/microlearning/ml_activity_preview.png"
+        }
+      ],
+      "sourcePath": "docs/tutorials/microlearning.mdx",
+      "sourceCategory": "tutorials"
+    },
+    {
+      "route": "/tutorials/participant_group_management/",
+      "title": "Participant Group Management",
+      "headings": [
+        "How do Students form Groups?",
+        "(Randomized) Student Groups"
+      ],
+      "summary": "Participant groups in KlickerUZH are a course-specific concept, where logged-in students can form groups with their peers when the functionality has been enabled by the lecturer in the course settings. In gamified courses, groups appear on…",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/group/random_groups_lecturer.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/group/random_groups_student.png"
+        }
+      ],
+      "sourcePath": "docs/tutorials/participant_group_management.mdx",
+      "sourceCategory": "tutorials"
+    },
+    {
+      "route": "/tutorials/permissions_groups/",
+      "title": "Permissions & User Groups",
+      "headings": [],
+      "summary": ":::warning",
+      "tags": [],
+      "media": [],
+      "sourcePath": "docs/tutorials/permissions_groups.mdx",
+      "sourceCategory": "tutorials"
+    },
+    {
+      "route": "/tutorials/ppt_integration/",
+      "title": "Integration with PowerPoint",
+      "headings": [
+        "Why should I integrate the live quiz evaluation into my PowerPoint presentation and what settings are available?",
+        "How can I integrate the evaluation view into my PowerPoint presentation?",
+        "How can I use the PowerPoint Add-In outside of UZH?"
+      ],
+      "summary": ":::info",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/ppt_integration/embedding_modal.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/ppt_integration/ppt_add_in.png"
+        }
+      ],
+      "sourcePath": "docs/tutorials/ppt_integration.mdx",
+      "sourceCategory": "tutorials"
+    },
+    {
+      "route": "/tutorials/practice_quiz/",
+      "title": "Practice Quiz",
+      "headings": [
+        "What is a Practice Quiz?",
+        "How can I create a Practice Quiz?",
+        "How can I edit a Practice Quiz?",
+        "How can I publish a Practice Quiz and access the results?",
+        "How can I see the results of a Practice Quiz?",
+        "How can I inspect a Practice Quiz before it is available to participants (activity preview)?"
+      ],
+      "summary": "Practice Quizzes are designed to contain longer question sets that specifically target modules or topics and that can be embedded within Learning Management Systems (LMS) like OpenOLAT or Moodle. These learning activities have no…",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/practice_quiz/activity_evaluation.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/practice_quiz/pq_activity_preview.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/practice_quiz/pq_olat_view.png"
+        }
+      ],
+      "sourcePath": "docs/tutorials/practice_quiz.mdx",
+      "sourceCategory": "tutorials"
+    },
+    {
+      "route": "/tutorials/review/",
+      "title": "Review Functionalities",
+      "headings": [
+        "How can I inspect an activity's content?",
+        "How can I mark an activity as reviewed to keep track?"
+      ],
+      "summary": "An activity's content can be inspected through the activity details view, accessible from the activity list or course overview. Simply select the corresponding \"Activity Information\" entry from the activity actions dropdown (three dots) or…",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/review/activity_review_status.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/review/live_quiz_details_modal.png"
+        }
+      ],
+      "sourcePath": "docs/tutorials/review.mdx",
+      "sourceCategory": "tutorials"
+    },
+    {
+      "route": "/tutorials/supported_element_types/",
+      "title": "Element Types",
+      "headings": [
+        "Single Choice (SC)",
+        "Multiple Choice (MC)",
+        "KPRIM (KP)",
+        "Numerical Response (NR)",
+        "Free Text (FT)",
+        "Selection (SE)",
+        "Case Study (CS)",
+        "Content Element (CT)",
+        "Flashcard (FC)"
+      ],
+      "summary": "Based on learning settings or learning goals, you can choose from nine different element types in KlickerUZH (i.e., seven types of questions, content elements, and flashcards). Questions support the definition of a sample solution, which is…",
+      "tags": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/CS_evaluation_histogram.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/CS_evaluation_scatter.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/CS_lecturer.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/CS_student.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/CT_evaluation.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/CT_lecturer.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/CT_student.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/FC_evaluation_barChart.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/FC_evaluation_table.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/FC_lecturer.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/FC_student_sol.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/FC_student.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/FT_evaluation.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/FT_lecturer.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/FT_student.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/KP_evaluation_barChart.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/KP_evaluation_table.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/KP_lecturer.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/KP_student_sol.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/KP_student.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/MC_evaluation_barChart.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/MC_evaluation_table.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/MC_lecturer.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/MC_student_sol.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/MC_student.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/NR_evaluation_histogram.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/NR_evaluation_table.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/NR_lecturer.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/NR_student_sol.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/NR_student.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/SC_evaluation_barChart.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/SC_evaluation_table.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/SC_lecturer.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/SC_student_sol.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/SC_student.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/SE_evaluation.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/SE_lecturer.png"
+        },
+        {
+          "type": "image",
+          "url": "/img/supported_element_types/SE_student.png"
+        }
+      ],
+      "sourcePath": "docs/tutorials/supported_element_types.mdx",
+      "sourceCategory": "tutorials"
+    }
+  ],
+  "useCases": [
+    {
+      "id": "ai_formative_feedback",
+      "route": "/use_cases/ai_formative_feedback/",
+      "title": "AI-assisted Formative Feedback",
+      "summary": "Provide personalized, AI-powered feedback on student work to support continuous improvement and understanding.",
+      "tags": [
+        "Formative feedback",
+        "AI-assisted grading",
+        "Personalized feedback"
+      ],
+      "goals": [
+        "Use AI to deliver detailed, personalized feedback on open-ended questions, tailored to individual student needs",
+        "Provide immediate AI-generated feedback around the clock to minimize learning process interruptions. ",
+        "Encourage self-regulated learning by offering iterative feedback that helps students refine responses and understand complex concepts",
+        "Reducing educator workload while ensuring consistent, high-quality feedback for large groups",
+        "Guide students toward deeper inquiry and understanding by using AI feedback to promote critical thinking and problem-solving skills"
+      ],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/use_cases/glenn-carstens-peters-RLw-UC03Gwc-unsplash.jpg"
+        }
+      ],
+      "sourceCategory": "use_case"
+    },
+    {
+      "id": "ai_practice_content",
+      "route": "/use_cases/ai_practice_content/",
+      "title": "AI-generated Practice Content",
+      "summary": "Leverage artificial intelligence to automatically generate diverse practice questions tailored to your course content and student needs.",
+      "tags": [
+        "Content generation",
+        "Bloom’s taxonomy",
+        "Constructive alignment"
+      ],
+      "goals": [
+        "Generate comprehensive and pedagogically sound practice materials by leveraging existing teaching resources, thereby significantly reducing the workload for lecturers in developing practice content",
+        "Ensure complete coverage of lecture content through systematic question generation that aligns with different cognitive levels of Bloom's taxonomy",
+        "Support diverse learning needs through varied question types and adaptation of content difficulty",
+        "Maintain high educational quality through AI-assisted validation while preserving lecturer control over final materials"
+      ],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/use_cases/simon-kadula-8gr6bObQLOI-unsplash.jpg"
+        }
+      ],
+      "sourceCategory": "use_case"
+    },
+    {
+      "id": "chatbot_tutoring",
+      "route": "/use_cases/chatbot_tutoring/",
+      "title": "Chatbots for Individual Tutoring",
+      "summary": "Provide students with personalized, AI-powered tutoring support that is available 24/7, offering immediate assistance and guidance tailored to individual learning needs.",
+      "tags": [
+        "Individual tutoring",
+        "Self-directed learning",
+        "Interactive engagement",
+        "Personalized feedback"
+      ],
+      "goals": [
+        "Enhance the educational experience by supporting on-demand learning and practice",
+        "Support personalized learning by tailoring responses to course-specific materials and individual student needs",
+        "Enhance student engagement by promoting active problem-solving and critical thinking",
+        "Reduce lecturers’ workload by automating responses to frequently asked questions while providing actionable insights through analytics",
+        "Ensure seamless integration into existing teaching workflows through compatibility with platforms like OLAT"
+      ],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/use_cases/possessed-photography-JjGXjESMxOY-unsplash.jpg"
+        }
+      ],
+      "sourceCategory": "use_case"
+    },
+    {
+      "id": "flipped_classroom",
+      "route": "/use_cases/flipped_classroom/",
+      "title": "Flipped Classroom",
+      "summary": "Implement the flipped classroom model by providing students with pre-class materials and focusing on interactive discussions during class time.",
+      "tags": [
+        "Interactive lecture",
+        "Self-paced learning",
+        "Application and practice",
+        "Timely feedback",
+        "Increased student engagement",
+        "Effective learning outcomes",
+        "Individual learning styles",
+        "Inclusive learning environment"
+      ],
+      "goals": [
+        "Gain time to explore content in greater depth.",
+        "Promote application and enable students to apply and practice the knowledge they have gained through their self-study, allowing for a more hands-on learning experience.",
+        "Promote individual learning styles.",
+        "Provide timely feedback and help students understand where they stand and address any concerns they may have.",
+        "Foster stronger interaction between the lecturer and students during the lecture and encourage active participation."
+      ],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/use_cases/icons8-team-yTwXpLO5HAA-unsplash.jpg"
+        }
+      ],
+      "sourceCategory": "use_case"
+    },
+    {
+      "id": "gamification",
+      "route": "/use_cases/gamification/",
+      "title": "Gamification",
+      "summary": "Boost student motivation and engagement through game-like elements including points, achievements, and competitive challenges in educational activities.",
+      "tags": [
+        "Engagement and motivation",
+        "Active participation",
+        "Playful learning",
+        "Challenge/reward system",
+        "Competition and prizes",
+        "Immediate feedback and recognition",
+        "Increased interest and achievement",
+        "Dynamic and enriching educational experience"
+      ],
+      "goals": [
+        "Enhance engagement and motivation by incorporating game elements into learning experience.",
+        "Encourage active participation and involvement of students in the lecture.",
+        "Increase motivation by incorporating a challenge/reward system throughout the lecture including points, groups and group activities, badges / achievements, levels, and prizes.",
+        "Enhance the learning experience by creating a dynamic and immersive learning environment where students can interact with the course material in a more engaging way.",
+        "Provide opportunities for healthy competition, encouraging students to strive for achievements, rewards, or higher scores, which can drive their learning progress.",
+        "Offer immediate feedback, rewards, and recognition for accomplishments, supporting students' progress and growth."
+      ],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/use_cases/brands-people-ZdqSuxl3Lak-unsplash.jpg"
+        }
+      ],
+      "sourceCategory": "use_case"
+    },
+    {
+      "id": "group_activity",
+      "route": "/use_cases/group_activity/",
+      "title": "Group Activities",
+      "summary": "Foster collaborative learning through structured group activities that encourage peer interaction and knowledge sharing.",
+      "tags": [
+        "Group collaborations",
+        "Teamwork skills",
+        "Cooperative learning",
+        "Real-world application",
+        "Practical insights",
+        "Interpersonal relationships",
+        "Problem-solving skills",
+        "Effective communication",
+        "Successful professional development"
+      ],
+      "goals": [
+        "Promote and strengthen group collaborations among students, encouraging them to work together as a team and profit from each other's skills and perspectives.",
+        "Offer practical insights and provide students with real-world scenarios where they can apply their knowledge, skills, and teamwork outside of the traditional lecture setting.",
+        "Enable students to develop (transversal) teamwork skills and learn to collaborate efficiently as a group.",
+        "Prepare students for future professional challenges requiring collaboration and teamwork."
+      ],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/use_cases/marvin-meyer-SYTO3xs06fU-unsplash.jpg"
+        }
+      ],
+      "sourceCategory": "use_case"
+    },
+    {
+      "id": "learning_analytics",
+      "route": "/use_cases/learning_analytics/",
+      "title": "Learning Analytics",
+      "summary": "Leverage data analytics to gain insights into student learning patterns, identify areas for improvement, and make informed decisions to enhance educational outcomes.",
+      "tags": [
+        "Educational engagement",
+        "Data-driven pedagogy",
+        "Student performance insights",
+        "Student progress",
+        "Self-regulated learning",
+        "Learning patterns"
+      ],
+      "goals": [],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/use_cases/dawid-zawila-OCMcTCu97EE-unsplash.jpg"
+        }
+      ],
+      "sourceCategory": "use_case"
+    },
+    {
+      "id": "live_qa",
+      "route": "/use_cases/live_qa/",
+      "title": "Live Q&A",
+      "summary": "Enable real-time student questions and interactions during lectures while maintaining focus and organization.",
+      "tags": [
+        "Large class",
+        "Interactive lecture",
+        "Anonymous Channel",
+        "Quick feedback",
+        "Continuous dialogue",
+        "Encourage student participation",
+        "Efficient Q&A workflow",
+        "Identfying common questions and problems"
+      ],
+      "goals": [
+        "Encourage students to ask questions by providing them with an anonymous channel.",
+        "Enable students to get answers to questions as soon as they come up instead of postponing them (e.g., to forum posts).",
+        "Make remote participants feel included by allowing them to ask questions during lectures.",
+        "Enable lecturers and their team to provide rapid feedback on incoming questions.",
+        "Improve the efficiency of the Q&A workflow by batching questions (in sessions, with upvotes, etc.)."
+      ],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/use_cases/volodymyr-hryshchenko-V5vqWC9gyEU-unsplash.jpg"
+        }
+      ],
+      "sourceCategory": "use_case"
+    },
+    {
+      "id": "live_quiz",
+      "route": "/use_cases/live_quiz/",
+      "title": "(Gamified) Live Quizzes",
+      "summary": "Enhance student engagement and participation in large courses through interactive polling and gamified elements, providing a safe and inclusive learning environment.",
+      "tags": [
+        "Interactive lecture",
+        "Student engagement",
+        "Interaction in teaching",
+        "Immediate feedback",
+        "Surveys and opinions",
+        "Estimation questions",
+        "Knowledge evaluation",
+        "Gamification"
+      ],
+      "goals": [
+        "Activate and encourage student engagement by incorporating interactive questions and surveys during the lecture.",
+        "Make courses more relaxed, interactive and adaptive.",
+        "Improve motivation by incorporating interactive gamification elements.",
+        "Evaluate feedback from your students (e.g., opinions or level of knowledge)."
+      ],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/use_cases/towfiqu-barbhuiya-oZuBNC-6E2s-unsplash.jpg"
+        }
+      ],
+      "sourceCategory": "use_case"
+    },
+    {
+      "id": "microlearning",
+      "route": "/use_cases/microlearning/",
+      "title": "Microlearning",
+      "summary": "Break down complex topics into bite-sized learning units that students can easily digest and review at their own pace.",
+      "tags": [
+        "Mobile learning",
+        "Repetition opportunity",
+        "Active learning",
+        "Long-term knowledge retention",
+        "Compact learning units",
+        "Accessible repetition",
+        "Efficient knowledge transfer",
+        "Flexible and informal learning"
+      ],
+      "goals": [
+        "Make studying more accessible for students by encouraging mobile learning.",
+        "Encourage active learning and student engagement beyond the classroom by integrating it into students’ everyday lives.",
+        "Improve accessibility and availability of learning content.",
+        "Promote long-term knowledge-retention.",
+        "Provide timely feedback and help students understand where they stand and address any concerns they may have."
+      ],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/use_cases/markus-winkler-afW1hht0NSs-unsplash.jpg"
+        }
+      ],
+      "sourceCategory": "use_case"
+    },
+    {
+      "id": "practice_quiz",
+      "route": "/use_cases/practice_quiz/",
+      "title": "Practice Quiz, Flashcards, and Spaced Repetition",
+      "summary": "Provide students with a comprehensive practice environment featuring quizzes, flashcards, and spaced repetition to reinforce learning.",
+      "tags": [
+        "Repeated learning",
+        "Sustained memoriation",
+        "Individual needs",
+        "Student engagement",
+        "Regular and spaced learning",
+        "Flashcards",
+        "Immediate feedback",
+        "Active learning"
+      ],
+      "goals": [
+        "Provide an opportunity for students to engage in asynchronous learning, allowing them to learn at their own pace.",
+        "Assess and monitor learning progress and helping students assess the understanding of the course material and monitor the progress in learning over time. By completing the practice quizzes, students can identify areas of strength and areas that require further study.",
+        "Provides a streamlined and familiar interface for students to access and complete the quizzes in the LMS."
+      ],
+      "media": [
+        {
+          "type": "image",
+          "url": "/img/use_cases/dan-freeman-WHPsxhB4mWQ-unsplash.jpg"
+        }
+      ],
+      "sourceCategory": "use_case"
+    }
+  ],
+  "contentDigest": "sha256:b3e4325e550318df6b7e803a6eb7785555884f0d20e0779523577915a0a4f709"
+}
