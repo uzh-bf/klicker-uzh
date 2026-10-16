@@ -131,7 +131,11 @@ function createChatbot(overrides: Record<string, unknown> = {}) {
   return {
     id: 'chatbot-1',
     ownerId: 'owner-1',
-    owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: 'cost-center-1' },
+    owner: {
+      aiFeaturesEnabled: true,
+      aiSubscriptionTier: 'ADVANCED',
+      aiChatbotCostCenter: 'cost-center-1',
+    },
     course: { displayName: 'Informatik und Wirtschaft' },
     allowedModelIds: ['gpt-4.1'],
     modelSelection: true,
@@ -309,7 +313,11 @@ describe('required MCP chat preflight', () => {
     mocks.findUnique.mockResolvedValueOnce({
       id: 'chatbot-1',
       ownerId: 'owner-1',
-      owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: 'cost-center-1' },
+      owner: {
+        aiFeaturesEnabled: true,
+        aiSubscriptionTier: 'ADVANCED',
+        aiChatbotCostCenter: 'cost-center-1',
+      },
       allowedModelIds: ['gpt-4.1'],
       modelSelection: true,
       systemPrompts: { tutor: { prompt: 'Use course material.' } },
@@ -407,7 +415,11 @@ describe('required MCP chat preflight', () => {
       where: { id: 'chatbot-1' },
       include: {
         owner: {
-          select: { aiFeaturesEnabled: true, aiChatbotCostCenter: true },
+          select: {
+            aiFeaturesEnabled: true,
+            aiSubscriptionTier: true,
+            aiChatbotCostCenter: true,
+          },
         },
         course: { select: { displayName: true } },
         mcpConfigurations: {
@@ -456,7 +468,7 @@ describe('required MCP chat preflight', () => {
     expect(mocks.createThread).not.toHaveBeenCalled()
   })
 
-  test('hides a mode without its required MCP binding', async () => {
+  test('serves an unbound mode without KB targets instead of hiding it', async () => {
     mocks.findUnique.mockResolvedValueOnce(
       createChatbot({
         systemPrompts: {
@@ -466,22 +478,34 @@ describe('required MCP chat preflight', () => {
         mcpConfigurations: [
           createMcpConfiguration({
             chatMode: 'explainer',
-            parameters: { required: true, toolAlias: 'doc_query' },
+            mcpServer: createMcpServer({ id: 'kb-server', name: 'KB' }),
+            parameters: {
+              required: true,
+              toolAlias: 'doc_query',
+              kb_id: KB_ID,
+            },
           }),
         ],
       })
     )
-
-    const response = await POST(createRequest(), {
-      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    mocks.getAggregatedMCPTools.mockResolvedValueOnce({
+      tools: {},
+      close: mocks.closeMCPTools,
+    })
+    mocks.compileSystemPrompt.mockImplementationOnce(() => {
+      throw new Error('stop after prompt compilation')
     })
 
-    expect(response.status).toBe(400)
-    await expect(response.json()).resolves.toEqual({
-      error: 'Unsupported chat mode: tutor',
-    })
-    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
-    expect(mocks.createThread).not.toHaveBeenCalled()
+    await expect(
+      POST(createRequest('tutor'), {
+        params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+      })
+    ).rejects.toThrow('stop after prompt compilation')
+
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledOnce()
+    const [servers, context] = mocks.getAggregatedMCPTools.mock.calls[0]
+    expect(servers).toEqual([])
+    expect(context.kbIds).toBeUndefined()
   })
 
   test('forwards an inherited required document-query binding for Quizzer', async () => {

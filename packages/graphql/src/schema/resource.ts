@@ -135,6 +135,9 @@ export const ChatAccountUsageOverviewType =
   ChatAccountUsageOverviewRef.implement({
     fields: (t) => ({
       authorized: t.exposeBoolean('authorized'),
+      advancedModelConfigurationEntitled: t.exposeBoolean(
+        'advancedModelConfigurationEntitled'
+      ),
       subscriptionTier: t.expose('subscriptionTier', {
         type: AiSubscriptionTier,
       }),
@@ -226,6 +229,9 @@ export const ChatbotCustomModeInput = ChatbotCustomModeInputRef.implement({
     name: t.string({ required: true }),
     description: t.string({ required: false }),
     personaText: t.string({ required: false }),
+    welcomeMessage: t.string({ required: false }),
+    starterPrompts: t.stringList({ required: false }),
+    showReasoning: t.boolean({ required: false }),
   }),
 })
 
@@ -250,6 +256,11 @@ export const ChatbotCustomMode = ChatbotCustomModeRef.implement({
     name: t.exposeString('name'),
     description: t.exposeString('description', { nullable: true }),
     personaText: t.exposeString('personaText', { nullable: true }),
+    welcomeMessage: t.exposeString('welcomeMessage', { nullable: true }),
+    starterPrompts: t.exposeStringList('starterPrompts', { nullable: true }),
+    showReasoning: t.boolean({
+      resolve: (mode) => mode.showReasoning === true,
+    }),
   }),
 })
 
@@ -425,6 +436,7 @@ export interface IChatModelCapability {
   fallback: boolean
   supportsReasoning: boolean
   supportedReasoningEfforts: string[]
+  usageClass: DB.ChatUsageClass
 }
 
 export const ChatModelCapabilityRef = builder.objectRef<IChatModelCapability>(
@@ -438,6 +450,7 @@ export const ChatModelCapability = ChatModelCapabilityRef.implement({
     fallback: t.exposeBoolean('fallback'),
     supportsReasoning: t.exposeBoolean('supportsReasoning'),
     supportedReasoningEfforts: t.exposeStringList('supportedReasoningEfforts'),
+    usageClass: t.expose('usageClass', { type: ChatUsageClass }),
   }),
 })
 
@@ -650,6 +663,8 @@ export const Chatbot = ChatbotRef.implement({
     }),
     mcpConfigurations: t.field({
       type: [ChatbotMcpConfigurationSummaryRef],
+      deprecationReason:
+        'Retrieval bindings are internal plumbing and are no longer projected; this field always resolves to an empty list.',
       resolve: (chatbot) => chatbot.mcpConfigurations ?? [],
     }),
     enabledKnowledgeBase: t.field({

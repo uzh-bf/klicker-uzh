@@ -9,6 +9,15 @@ function toolCallPart(toolName: string, result: unknown, isError = false) {
   return { type: 'tool-call', toolName, result, isError }
 }
 
+function answerSource(number: number) {
+  return {
+    expert: 'Prof. Muster',
+    source_url: `https://example.com/doc-${number}.pdf`,
+    file_name: `doc-${number}.pdf`,
+    page_number: number,
+  }
+}
+
 describe('resource citation provenance', () => {
   test('keeps distinct answer-mode uploads while deduplicating repeated sources', () => {
     const sources = normalizeSourcesFromParts([
@@ -538,20 +547,53 @@ describe('normalizeSourcesFromParts', () => {
     expect(result.map((source) => source.index)).toEqual([1, 2, 3])
   })
 
-  test('caps the total number of sources at 12', () => {
-    const sources = Array.from({ length: 20 }, (_, i) => ({
-      expert: 'Prof. Muster',
-      source_url: `https://example.com/doc-${i}.pdf`,
-      file_name: `doc-${i}.pdf`,
-      page_number: i,
-    }))
+  test('caps the total number of sources at 99', () => {
+    const sources = Array.from({ length: 120 }, (_, i) => answerSource(i))
 
     const result = normalizeSourcesFromParts([
       toolCallPart('KB_doc_query', { answer: 'text', sources }),
     ])
 
-    expect(result).toHaveLength(12)
-    expect(result[11]?.index).toBe(12)
+    expect(result).toHaveLength(99)
+    expect(result[98]?.index).toBe(99)
+  })
+
+  test('numbers a new source from a refined call 21 after twenty earlier sources', () => {
+    const firstBatch = Array.from({ length: 20 }, (_, i) => answerSource(i))
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', { answer: 'first', sources: firstBatch }),
+      toolCallPart('KB_doc_query', {
+        answer: 'refined',
+        // The refined call repeats the first two sources and adds one new.
+        sources: [answerSource(0), answerSource(1), answerSource(20)],
+      }),
+    ])
+
+    expect(result).toHaveLength(21)
+    expect(result.map((source) => source.index)).toEqual(
+      Array.from({ length: 21 }, (_, i) => i + 1)
+    )
+    expect(result[0]?.title).toBe('doc-0.pdf')
+    expect(result[20]?.title).toBe('doc-20.pdf')
+  })
+
+  test('dedupes a repeated source at the cap boundary without admitting past 99', () => {
+    const firstBatch = Array.from({ length: 98 }, (_, i) => answerSource(i))
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', { answer: 'first', sources: firstBatch }),
+      toolCallPart('KB_doc_query', {
+        answer: 'refined',
+        sources: [answerSource(0), answerSource(98), answerSource(99)],
+      }),
+    ])
+
+    expect(result).toHaveLength(99)
+    expect(result[98]?.index).toBe(99)
+    expect(result[98]?.title).toBe('doc-98.pdf')
+    expect(
+      result.filter((source) => source.title === 'doc-0.pdf')
+    ).toHaveLength(1)
+    expect(result.some((source) => source.title === 'doc-99.pdf')).toBe(false)
   })
 
   test('accepts page_number as a numeric string', () => {

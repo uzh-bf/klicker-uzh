@@ -25,8 +25,7 @@ const THREAD_SUGGESTIONS_BY_MODE: Record<KnownMode, ThreadSuggestion[]> = {
 }
 
 export function getThreadSuggestions(mode: string): ThreadSuggestion[] {
-  // Only the built-in modes have approved starter text. A chatbot-defined
-  // mode key gets none rather than another mode's starters, which would
-  // describe a task that mode does not offer.
+  // Platform starter IDs are translated by the caller. Custom-mode starters
+  // come from that mode's approved configuration instead of these defaults.
   return isKnownMode(mode) ? THREAD_SUGGESTIONS_BY_MODE[mode] : []
 }

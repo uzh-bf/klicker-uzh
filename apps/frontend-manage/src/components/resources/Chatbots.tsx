@@ -6,7 +6,6 @@ import {
 } from '@klicker-uzh/feature-flags/react'
 import {
   AttachKbToChatbotDocument,
-  type Chatbot,
   type ChatModelCapability,
   GetChatbotPublishingCapabilityDocument,
   GetChatModelRegistryDocument,
@@ -235,7 +234,7 @@ function Chatbots() {
     }
   }
 
-  const handleSelect = (chatbot: Chatbot) => selectChatbot(chatbot.id)
+  const handleSelect = (chatbot: { id: string }) => selectChatbot(chatbot.id)
 
   const selectCreatedChatbot = (
     chatbotId: string,
