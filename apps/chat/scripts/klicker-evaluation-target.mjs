@@ -5,6 +5,14 @@ import { readdir, readFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { basename, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import {
+  acquireBudgetLock,
+  assertBudgetCanStart,
+  beginBudgetTurn,
+  finishBudgetTurn,
+  readBudgetLedger,
+} from '../../../evaluation/evaluation-budget.mjs'
+import { verifyGuardQualification } from '../../../evaluation/evaluation-spend-guard.mjs'
 
 import {
   evaluatePersistedEvidence,
@@ -13,6 +21,7 @@ import {
 } from './klicker-evaluation-evidence.mjs'
 
 export const DEFAULT_CHATBOT_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
+// Keep the local launcher fallback in util/_run_klicker_eval.sh aligned.
 export const DEFAULT_MODEL_ID = 'gpt-6-luna'
 export const DEFAULT_MAX_STREAM_BYTES = 8 * 1024 * 1024
 export const DEFAULT_POLL_INTERVAL_MS = 250
@@ -599,6 +608,8 @@ export class KlickerEvaluationTarget {
     pollIntervalMs = DEFAULT_POLL_INTERVAL_MS,
     pollTimeoutMs = DEFAULT_POLL_TIMEOUT_MS,
     requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
+    budgetFile = null,
+    qualification = null,
     allowedOrigins = [],
   }) {
     if (!apiKey) throw evaluationError('target_key_missing')
@@ -633,6 +644,8 @@ export class KlickerEvaluationTarget {
     this.pollIntervalMs = pollIntervalMs
     this.pollTimeoutMs = pollTimeoutMs
     this.requestTimeoutMs = requestTimeoutMs
+    this.budgetFile = budgetFile
+    this.qualification = qualification
     this.elearningHandoffSecret = elearningHandoffSecret
     this.cookie = null
     this.elearningCookie = null
@@ -932,38 +945,64 @@ export class KlickerEvaluationTarget {
   async runQuestion(question) {
     const metadata = await this.resolveQuestion(question)
     const isElearning = metadata.source === 'elearning'
-    if (isElearning) {
-      await this.ensureElearningSession(metadata)
-    } else {
-      await this.ensureSession()
+    if (this.budgetFile) {
+      assertBudgetCanStart(await readBudgetLedger(this.budgetFile))
+      await verifyGuardQualification({
+        ...this.qualification,
+        budgetFile: this.budgetFile,
+        chatOrigin: this.chatOrigin,
+        chatbotId: this.chatbotId,
+        modelId: this.modelId,
+      })
     }
-    const cookie = isElearning ? this.elearningCookie : this.cookie
-    const threadId = await this.createThread(cookie, isElearning)
-    const userMessageId = randomUUID()
-    const assistantMessageId = randomUUID()
-    await this.submitTurn({
-      question: metadata.question,
-      mode: metadata.mode,
-      threadId,
-      userMessageId,
-      assistantMessageId,
-      maxStreamBytes: metadata.maxStreamBytes || this.maxStreamBytes,
-      cookie,
-    })
-    const message = await this.readCompletedMessage(
-      threadId,
-      assistantMessageId,
-      metadata.mode,
-      cookie
-    )
-    const result = extractAssistantMessage(message)
-    if (
-      metadata.source === 'canary' &&
-      !result.toolCalls.some((call) => call.name === metadata.expectedTool)
-    ) {
-      throw evaluationError('canary_tool_missing')
+    const release = this.budgetFile
+      ? await acquireBudgetLock(this.budgetFile, '.run')
+      : null
+    try {
+      if (isElearning) {
+        await this.ensureElearningSession(metadata)
+      } else {
+        await this.ensureSession()
+      }
+      const cookie = isElearning ? this.elearningCookie : this.cookie
+      const threadId = await this.createThread(cookie, isElearning)
+      const userMessageId = randomUUID()
+      const assistantMessageId = randomUUID()
+      const turnToken = this.budgetFile
+        ? await beginBudgetTurn(this.budgetFile)
+        : null
+      await this.submitTurn({
+        question: metadata.question,
+        mode: metadata.mode,
+        threadId,
+        userMessageId,
+        assistantMessageId,
+        maxStreamBytes: metadata.maxStreamBytes || this.maxStreamBytes,
+        cookie,
+      })
+      const message = await this.readCompletedMessage(
+        threadId,
+        assistantMessageId,
+        metadata.mode,
+        cookie
+      )
+      if (turnToken)
+        await finishBudgetTurn(
+          this.budgetFile,
+          turnToken,
+          finiteCredits(message.creditsUsed)
+        )
+      const result = extractAssistantMessage(message)
+      if (
+        metadata.source === 'canary' &&
+        !result.toolCalls.some((call) => call.name === metadata.expectedTool)
+      ) {
+        throw evaluationError('canary_tool_missing')
+      }
+      return { metadata, ...result, message }
+    } finally {
+      await release?.()
     }
-    return { metadata, ...result, message }
   }
 
   async complete(body) {
@@ -1095,6 +1134,12 @@ export async function createTargetFromEnvironment(env = process.env) {
     elearningHandoffSecret: env.KLICKER_EVAL_ELEARNING_HANDOFF_SECRET || null,
     groundTruthDirectory: env.KLICKER_EVAL_GT_DIR,
     canaryFixture: env.KLICKER_EVAL_CANARY_FILE,
+    budgetFile: env.KLICKER_EVAL_BUDGET_FILE,
+    qualification: {
+      filePath: env.KLICKER_EVAL_QUALIFICATION_FILE,
+      origin: env.KLICKER_EVAL_GUARD_ORIGIN,
+      key: env.KLICKER_EVAL_GUARD_KEY,
+    },
     evidenceDirectory: env.KLICKER_EVAL_EVIDENCE_DIR || null,
     evidenceRunId: env.KLICKER_EVAL_RUN_ID || null,
     maxStreamBytes:
@@ -1109,6 +1154,16 @@ export async function createTargetFromEnvironment(env = process.env) {
   if (!target.groundTruthDirectory || !target.canaryFixture) {
     throw evaluationError('target_fixture_paths_missing')
   }
+  if (!target.budgetFile) throw evaluationError('budget_missing')
+  if (target.modelId === 'auto')
+    throw evaluationError('provider_model_unqualified')
+  await verifyGuardQualification({
+    ...target.qualification,
+    budgetFile: target.budgetFile,
+    chatOrigin: target.chatOrigin,
+    chatbotId: target.chatbotId,
+    modelId: target.modelId,
+  })
   await target.initialize()
   return target
 }

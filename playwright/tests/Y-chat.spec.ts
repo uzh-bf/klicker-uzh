@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { Prisma } from '@klicker-uzh/prisma/client'
 import { getPrisma } from '../global-setup.js'
 import {
   CHATBOT_ID,
@@ -465,6 +466,122 @@ test.describe('Chatbot Messaging Interface', () => {
       'Get step-by-step guidance with focused questions, hints, and feedback.'
     )
     await expect(page.getByTestId('chat-welcome-suggestion')).toHaveCount(2)
+  })
+
+  test('Custom-mode introduction and starters follow the selected mode and empty-thread state', async ({
+    page,
+  }) => {
+    const prisma = await getPrisma()
+    const original = await prisma.chatbot.findUniqueOrThrow({
+      where: { id: CHATBOT_ID },
+      select: { customModeConfig: true, standardModeConfig: true },
+    })
+    const welcomeMessage =
+      'A synthetic introduction.\n<img src=x onerror=alert(1)>'
+    const starterPrompts = [
+      'Start synthetic practice',
+      'Explain synthetic flow',
+    ]
+    const modes = [
+      {
+        key: 'cm_intro_fixture',
+        name: 'Conversation practice',
+        description: null,
+        personaText: null,
+        welcomeMessage,
+        starterPrompts,
+      },
+      {
+        key: 'cm_legacy_fixture',
+        name: 'Independent practice',
+        description: null,
+        personaText: null,
+      },
+    ]
+    const chatRequests: string[] = []
+    page.on('request', (request) => {
+      if (
+        request.method() === 'POST' &&
+        request.url().endsWith(`/api/chatbots/${CHATBOT_ID}/chat`)
+      ) {
+        chatRequests.push(request.postData() ?? '')
+      }
+    })
+    try {
+      await prisma.chatbot.update({
+        where: { id: CHATBOT_ID },
+        data: {
+          standardModeConfig: {
+            tutorEnabled: true,
+            explainerEnabled: false,
+            quizzerEnabled: false,
+            scopeNote: null,
+          },
+          customModeConfig: { modes },
+        },
+      })
+      await visitChat(page)
+      await selectChatMode(page, modes[0].key, modes[0].name)
+      const welcome = page.getByTestId('chat-custom-mode-welcome')
+      const starters = page.getByTestId('chat-welcome-suggestion')
+      const input = page.getByTestId('chat-composer-input')
+      await expect(welcome).toHaveText(welcomeMessage)
+      await expect(welcome.locator('img')).toHaveCount(0)
+      await expect(starters).toHaveText(starterPrompts)
+      await page.reload()
+      await expect(welcome).toHaveText(welcomeMessage)
+      await expect(starters).toHaveText(starterPrompts)
+      await starters.first().click()
+      await expect(input).toHaveValue(starterPrompts[0])
+      expect(chatRequests).toHaveLength(0)
+      await expect(page.getByTestId('chat-user-message')).toHaveCount(0)
+      await page.getByTestId('chat-welcome-mode-switcher').click()
+      await page
+        .getByTestId('chat-welcome-mode-option-cm_legacy_fixture')
+        .click()
+      await expect(welcome).toHaveCount(0)
+      await expect(starters).toHaveCount(0)
+      await page.getByTestId('chat-welcome-mode-switcher').click()
+      await page
+        .getByTestId('chat-welcome-mode-option-cm_intro_fixture')
+        .click()
+      await expect(welcome).toHaveText(welcomeMessage)
+      await expect(starters).toHaveText(starterPrompts)
+      await input.fill('Synthetic student reply')
+      await page.getByTestId('chat-send-button').click()
+      await expect(page.getByTestId('chat-assistant-message')).toBeVisible()
+      await expect(welcome).toHaveCount(0)
+      expect(chatRequests).toHaveLength(1)
+      expect(chatRequests[0]).not.toContain(
+        JSON.stringify(welcomeMessage).slice(1, -1)
+      )
+      await page.getByTestId('chat-new-thread-button').click()
+      await expect(welcome).toHaveText(welcomeMessage)
+      await expect(starters).toHaveText(starterPrompts)
+      await page.goto(`${chatUrl()}/${CHATBOT_ID}?embed=true`, {
+        waitUntil: 'domcontentloaded',
+      })
+      const embeddedMode = page
+        .getByTestId('chat-embedded-toolbar')
+        .getByRole('combobox')
+      await embeddedMode.selectOption(modes[0].key)
+      await expect(welcome).toHaveText(welcomeMessage)
+      await expect(page.getByTestId('chat-welcome-mode')).toHaveCount(0)
+      await embeddedMode.selectOption(modes[1].key)
+      await expect(welcome).toHaveCount(0)
+      await expect(embeddedMode).toBeVisible()
+      await embeddedMode.selectOption(modes[0].key)
+      await expect(welcome).toHaveText(welcomeMessage)
+      await expect(page.getByTestId('chat-welcome-mode')).toHaveCount(0)
+    } finally {
+      await prisma.chatbot.update({
+        where: { id: CHATBOT_ID },
+        data: {
+          customModeConfig: original.customModeConfig ?? Prisma.DbNull,
+          standardModeConfig: original.standardModeConfig ?? Prisma.DbNull,
+        },
+      })
+    }
   })
 
   test('Starter prompt is editable and contains no raw placeholder', async ({
@@ -2627,9 +2744,9 @@ test.describe('Chatbot Source Citations', () => {
       await page.keyboard.press('Enter')
       await expect(groups).toHaveCount(14)
       await expect(moreSources).toHaveCount(0)
-      await expect(page.getByTestId('chat-doc-query-citation')).toHaveCount(12)
+      await expect(page.getByTestId('chat-doc-query-citation')).toHaveCount(14)
       await expect(page.getByTestId('chat-doc-query-citation')).toHaveText(
-        Array.from({ length: 12 }, (_, index) => String(index + 1))
+        Array.from({ length: 14 }, (_, index) => String(index + 1))
       )
       await expect(
         groups.nth(0).getByTestId('chat-doc-query-citation')
@@ -2642,11 +2759,8 @@ test.describe('Chatbot Source Citations', () => {
       ).toHaveText('12')
 
       const citations = page.getByTestId('chat-citation')
-      await expect(citations).toHaveCount(3)
-      await expect(citations).toHaveText(['1', '2', '12'])
-      await expect(
-        page.getByTestId('chat-assistant-message-content')
-      ).toContainText('[13]')
+      await expect(citations).toHaveCount(4)
+      await expect(citations).toHaveText(['1', '2', '12', '13'])
 
       const disclosureGroup = groups.nth(0)
       await expect(
@@ -2667,8 +2781,8 @@ test.describe('Chatbot Source Citations', () => {
       for (const groupIndex of [12, 13]) {
         const source = overflowSources[groupIndex - 1]
         const group = groups.nth(groupIndex)
-        await expect(group.getByTestId('chat-doc-query-citation')).toHaveCount(
-          0
+        await expect(group.getByTestId('chat-doc-query-citation')).toHaveText(
+          String(groupIndex + 1)
         )
         await expect(
           group.getByTestId('chat-doc-query-origin')
@@ -2677,6 +2791,106 @@ test.describe('Chatbot Source Citations', () => {
         await expect(group).toContainText(source.title)
         await expect(group).toContainText(source.chunks[0].content)
       }
+    }
+  })
+
+  test('Later search citations reveal compacted source cards through reload', async ({
+    page,
+  }, testInfo) => {
+    const messageId = '5a1b2c3d-0015-4a91-8f6c-2b7d1e5a9c40'
+    const sources = Array.from({ length: 100 }, (_, index) => ({
+      file_name: `Synthetic source ${index + 1}`,
+      source_url: `https://example.test/evidence/${index + 1}.pdf`,
+      source_type: 'document',
+      page_number: 1,
+    }))
+    const citedIndices = [
+      ...Array.from({ length: 13 }, (_, index) => index + 1),
+      16,
+      21,
+      99,
+    ]
+    await seedThread(participantId, {
+      title: 'Later search evidence',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Compare the retrieved evidence.' }],
+        },
+        {
+          id: messageId,
+          role: 'assistant',
+          content: [
+            docQueryPart({
+              toolCallId: 'initial-query',
+              sources: sources.slice(0, 20),
+            }),
+            docQueryPart({
+              toolCallId: 'refined-query',
+              sources: sources.slice(20),
+            }),
+            {
+              type: 'text',
+              text: `Evidence ${citedIndices.map((index) => `[${index}]`).join(', ')}. Overflow [100].`,
+            },
+          ],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+
+    for (const variant of ['desktop-en', 'reloaded-en', 'mobile-de']) {
+      if (variant === 'mobile-de') {
+        await page.setViewportSize({ width: 390, height: 844 })
+        await page.context().addCookies([
+          {
+            name: 'NEXT_LOCALE',
+            value: 'de',
+            url: new URL(chatUrl()).origin,
+          },
+        ])
+      }
+      if (variant !== 'desktop-en') await page.reload()
+
+      const citations = page.getByTestId('chat-citation')
+      await expect(citations).toHaveText(citedIndices.map(String))
+      await expect(page.getByTestId('chat-source-card')).toHaveCount(99)
+      await expect(
+        page.locator('[data-cy="chat-source-card"]:visible')
+      ).toHaveCount(12)
+      await expect(page.locator(`#src-${messageId}-100`)).toHaveCount(0)
+      await expect(
+        page.getByTestId('chat-assistant-message-content')
+      ).toContainText('[100]')
+      const disclosure = page.getByTestId('chat-other-sources')
+      await expect(disclosure).not.toHaveAttribute('open', '')
+      await citations.first().scrollIntoViewIfNeeded()
+      await page.screenshot({
+        path: testInfo.outputPath(`citation-preview-${variant}.png`),
+        animations: 'disabled',
+      })
+
+      for (const index of [13, 16, 21, 99]) {
+        const citation = page.locator(
+          `[data-cy="chat-citation"][href="#src-${messageId}-${index}"]`
+        )
+        await citation.focus()
+        await page.keyboard.press('Enter')
+        const target = page.locator(`#src-${messageId}-${index}`)
+        await expect(disclosure).toHaveAttribute('open', '')
+        await expect(target).toBeVisible()
+        await expect(target).toBeFocused()
+        await expect(target).toHaveAttribute(
+          'href',
+          `${sources[index - 1].source_url}#page=1`
+        )
+      }
+      await page.screenshot({
+        path: testInfo.outputPath(`citation-revealed-${variant}.png`),
+        animations: 'disabled',
+      })
     }
   })
 

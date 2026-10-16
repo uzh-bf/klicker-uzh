@@ -1,7 +1,10 @@
 import { createOpenAI } from '@ai-sdk/openai'
 import type { Chatbot } from '@klicker-uzh/prisma/client'
 import { safeDecrypt } from '@klicker-uzh/util'
-import { createOpenAIFetch } from '@/src/lib/server/openaiCachePolicy'
+import {
+  assertEvaluationRouting,
+  createOpenAIFetch,
+} from '@/src/lib/server/openaiCachePolicy'
 import type { ChatModelConfig } from './chatModelRegistry'
 
 export type ChatModelRouting = {
@@ -18,6 +21,7 @@ function getOpenAIModel(
 }
 
 export function getChatModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
+  assertEvaluationRouting(chatbot)
   const hasCustomKey =
     typeof chatbot.openaiApiKey === 'string' && chatbot.openaiApiKey.length > 0
   const hasCustomBaseUrl =
