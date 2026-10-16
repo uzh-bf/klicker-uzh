@@ -5,6 +5,7 @@ function useEvaluationSettingsInitialization({
   setShowSolution,
   setShowExplanation,
   paramsLoaded,
+  isStackActive,
   showSolution,
   showExplanation,
   activeInstance,
@@ -13,6 +14,7 @@ function useEvaluationSettingsInitialization({
   setShowSolution: Dispatch<SetStateAction<boolean>>
   setShowExplanation: Dispatch<SetStateAction<boolean>>
   paramsLoaded: boolean
+  isStackActive: boolean
   showSolution: boolean
   showExplanation: boolean
   activeInstance: number
@@ -20,7 +22,7 @@ function useEvaluationSettingsInitialization({
 }) {
   useEffect(() => {
     // if the question ix is not given as a query parameter, do not set the settings
-    if (!paramsLoaded) {
+    if (!paramsLoaded || isStackActive) {
       return
     }
 
@@ -29,7 +31,14 @@ function useEvaluationSettingsInitialization({
     setShowExplanation(showExplanation)
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paramsLoaded, activeStack, showSolution, showExplanation, activeInstance])
+  }, [
+    paramsLoaded,
+    isStackActive,
+    activeStack,
+    showSolution,
+    showExplanation,
+    activeInstance,
+  ])
 
   return null
 }
