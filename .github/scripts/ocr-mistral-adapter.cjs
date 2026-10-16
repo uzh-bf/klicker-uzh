@@ -1412,7 +1412,13 @@ function commandSummary(args) {
   )
   const output = summary.join('\n')
   try {
-    fs.writeSync(1, output)
+    const buffer = Buffer.from(output)
+    let offset = 0
+    while (offset < buffer.length) {
+      const written = fs.writeSync(1, buffer, offset)
+      if (written === 0) break
+      offset += written
+    }
   } catch {
     // A closed log stream must not prevent the job summary or fail the review.
   }

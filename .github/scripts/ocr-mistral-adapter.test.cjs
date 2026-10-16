@@ -208,6 +208,25 @@ test('cost summary CLI logs and appends the same report, preserving success when
     result = await runCli(['summary', receiptPath], env, { closeStdout: true })
     assert.equal(result.code, 0)
     assert.equal(fs.readFileSync(summaryPath, 'utf8'), previous + summary)
+    const shortWritesPath = path.join(directory, 'short-writes.cjs')
+    fs.writeFileSync(
+      shortWritesPath,
+      `const fs = require('node:fs')
+const writeSync = fs.writeSync
+fs.writeSync = (...args) => {
+  if (args[0] !== 1) return writeSync(...args)
+  const buffer = Buffer.from(args[1])
+  const offset = args[2] ?? 0
+  return writeSync(1, buffer, offset, Math.min(32, buffer.length - offset))
+}
+`
+    )
+    result = await runCli(['summary', receiptPath], {
+      ...env,
+      NODE_OPTIONS: `--require=${JSON.stringify(shortWritesPath)}`,
+    })
+    assert.equal(result.code, 0)
+    assert.equal(result.stdout, summary)
     const zero = costReceipt(
       Object.fromEntries(
         Object.keys(costReceipt())
@@ -333,7 +352,9 @@ function runCli(args, env, { closeStdout = false } = {}) {
     child.stderr.on('data', (chunk) => {
       stderr += chunk
     })
-    child.on('exit', (code, signal) => finish({ code, signal, stdout, stderr }))
+    child.on('close', (code, signal) =>
+      finish({ code, signal, stdout, stderr })
+    )
     child.on('error', (error) =>
       finish({ code: null, signal: null, stdout, stderr, error })
     )
