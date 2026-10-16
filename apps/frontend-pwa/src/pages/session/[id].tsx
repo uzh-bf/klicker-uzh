@@ -15,9 +15,10 @@ import {
   SelfDocument,
   SetLiveQuizPinDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
+import getAssessmentRedirect from '@lib/getAssessmentRedirect'
 import {
   Button,
   FormikAlphaNumericPinField,
@@ -28,10 +29,10 @@ import {
   toast,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
-import { GetServerSidePropsContext } from 'next'
-import { useTranslations } from 'next-intl'
+import type { GetServerSidePropsContext } from 'next'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
 import Layout from '../../components/Layout'
@@ -559,20 +560,17 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     })
   } catch (e: any) {
     // if the user is requesting an assessment quiz from the PWA domain, redirect them to the assessment domain
+    const assessmentRedirect = getAssessmentRedirect(ctx)
     if (
       e.graphQLErrors?.some(
-        (err: any) => err.message === 'LIVE_QUIZ_PIN_MISSING_ASSESSMENT'
+        (err: any) =>
+          err.message === 'LIVE_QUIZ_PIN_MISSING_ASSESSMENT' ||
+          err.message === 'UNAUTHORIZED_ASSESSMENT'
       ) &&
-      ctx.req.headers.host &&
-      !process.env.APP_ORIGIN_ASSESSMENT_PWA!.includes(ctx.req.headers.host)
+      assessmentRedirect
     ) {
       return {
-        redirect: {
-          destination: `${
-            process.env.APP_ORIGIN_ASSESSMENT_PWA ?? ''
-          }${ctx.locale ? `/${ctx.locale}` : ''}/session/${ctx.params?.id as string}`,
-          permanent: false,
-        },
+        redirect: assessmentRedirect,
       }
     }
 
@@ -636,18 +634,13 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   // if the fetch was successful, redirect based on the assessment boolean
   // -> if student entered valid PIN for an assessment quiz and then visits quiz through PWA domain (or vice-versa)
   if (liveQuiz?.data.studentLiveQuiz) {
+    const assessmentRedirect = getAssessmentRedirect(ctx)
     if (
       liveQuiz.data.studentLiveQuiz.isAssessmentEnabled &&
-      ctx.req.headers.host &&
-      !process.env.APP_ORIGIN_ASSESSMENT_PWA!.includes(ctx.req.headers.host)
+      assessmentRedirect
     ) {
       return {
-        redirect: {
-          destination: `${
-            process.env.APP_ORIGIN_ASSESSMENT_PWA ?? ''
-          }${ctx.locale ? `/${ctx.locale}` : ''}/session/${ctx.params?.id as string}`,
-          permanent: false,
-        },
+        redirect: assessmentRedirect,
       }
     }
 
