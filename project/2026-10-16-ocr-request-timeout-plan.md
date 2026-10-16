@@ -126,12 +126,21 @@ unrecoverable capability blocker.
 - Planning: configured planner APPROVED; proceed within the user-authorized batch.
 - Timeout slice committed; simplifier removed one redundant assertion. Its
   command-boundary coverage remains intact.
-- Diagnostics: diagnostic-only helper preserves original nonzero exits and
-  reports failed coverage; focused suites pass 221 tests before adapter changes.
+- Diagnostics: implementation complete; diagnostic-only helper preserves
+  original nonzero exits and reports failed coverage. The integrated focused
+  suites pass all 222 tests on pinned Node 24. Released-binary synthetic failure
+  also produces the filtered fatal event and original process-exit code.
 - Local static evidence: YAML parses and all 25 shell steps pass `bash -n`.
   Actionlint 1.7.12 reports the same six pre-existing `concurrency.queue` schema
   limitations on baseline and branch. Scoped Opengrep reports no findings with
   the existing helper partial-parse limitation.
-- Next: integrate the bounded adapter filter, inspect and review the committed
-  package, then push and open the draft for hosted CI.
-- PR: none yet.
+- Review: timeout and diagnostics slice reviews have no findings; the diagnostics
+  simplifier found no further reduction. Integrated final review and hosted CI
+  results are maintained in the draft PR.
+- Package: one cohesive defect repair, 222 substantive changed lines across
+  eight files, excluding this project artifact. No application runtime used.
+- Target drift: one unrelated CI-reuse commit is newer than the recorded base;
+  no conflict or required freshness condition calls for integration.
+- Delivery: committed and pushed; [draft PR #6575](https://github.com/uzh-bf/klicker-uzh/pull/6575)
+  targets `v3`. Marking ready, merge and a trusted post-merge live run remain
+  outside this task's authority.
