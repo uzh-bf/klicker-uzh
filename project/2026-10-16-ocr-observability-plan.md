@@ -137,13 +137,21 @@ Live proof of trusted workflow changes follows merge and separate authorization.
 
 ## Progress
 
-- Status: approved executable batch; implementation not started.
+- Status: stage-cost slice implemented; committed-range reviews next.
 - Planning review: APPROVED after two rounds; accepted independent invocation
   reconciliation, separation of answer validity from usage completeness, explicit
   workflow wiring, and ownership/test-portfolio clarification.
-- Completed: remote-state refresh, worktree creation, source-boundary inspection.
+- Completed: remote-state refresh, worktree creation, source-boundary inspection;
+  stage-tagged usage, expected-invocation reconciliation, reason codes and docs.
 - Baseline: all 182 existing focused tests passed.
-- Remaining: both slices and their checks/reviews; final review;
+- Verification: 189 focused tests passed on pinned Node 24.21.0; syntax and
+  formatting passed. Test delta: seven new cases extending existing suites and
+  affected caller/CLI fixture assertions. No live provider tests were run.
+- Substantive slice size: 819 changed lines excluding the plan; 27 lines are
+  matching CI documentation. Opengrep reported no findings, with three files
+  only partially parsed; this scanner limitation remains to be classified.
+- Remaining: cost slice simplification/privacy-accounting review; progress slice;
+  final review;
   push, draft PR, and automatic CI/feedback.
 - Delivery: source work authorized; no PR created yet.
-- Next action: commit the reviewed plan, then implement stage reporting.
+- Next action: commit the verified stage-cost slice and review its exact range.

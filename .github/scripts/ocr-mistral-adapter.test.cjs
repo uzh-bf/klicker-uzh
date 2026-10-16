@@ -18,6 +18,7 @@ const {
   startAdapter,
   callMistral,
   estimateCost,
+  buildCostReport,
   createProgressFilter,
 } = require('./ocr-mistral-adapter.cjs')
 
@@ -151,6 +152,120 @@ test('cost estimates refuse incomplete, inconsistent or unsupported receipts', (
   }
 })
 
+test('stage cost totals reconcile every invocation and retain complete stages when another receipt is missing', () => {
+  const rows = [
+    costReceipt({ stage: 'preflight' }),
+    costReceipt(),
+    costReceipt(),
+    costReceipt({ stage: 'topology' }),
+  ]
+  const expected = { preflight: 1, adapter: 2, topology: 1 }
+  const report = buildCostReport(rows.map(JSON.stringify).join('\n'), expected)
+  assert.deepEqual(report.reasons, [])
+  assert.equal(report.estimate.prompt_tokens, 4000000)
+  assert.ok(Math.abs(report.estimate.withCache - 3.58) < 1e-12)
+  assert.ok(Math.abs(report.estimate.withoutCache - 7.36) < 1e-12)
+  assert.deepEqual(
+    report.stages.map((stage) => stage.observed),
+    [2, 1, 1]
+  )
+  rows.splice(1, 1)
+  const partial = buildCostReport(rows.map(JSON.stringify).join('\n'), expected)
+  assert.equal(partial.estimate, null)
+  assert.deepEqual(partial.reasons, ['receipt_count_mismatch'])
+  assert.equal(partial.stages[0].estimate, null)
+  assert.equal(partial.stages[1].estimate.responses, 1)
+  assert.equal(partial.stages[2].estimate.responses, 1)
+})
+
+test('cost reporting names incomplete coverage and distinguishes skipped stages from missing receipts', () => {
+  for (const [overrides, reason] of [
+    [{ schema_version: 2 }, 'unsupported_schema'],
+    [{ completion_tokens: -1 }, 'invalid_counters'],
+    [{ missing_usage: 1 }, 'missing_usage'],
+    [{ missing_cache_usage: 1 }, 'missing_cache_usage'],
+    [{ invalid_cache_usage: 1 }, 'invalid_cache_usage'],
+    [{ unfinished_requests: 1 }, 'unfinished_requests'],
+    [{ upstream_attempts: 2 }, 'unaccounted_attempts'],
+    [{ cache_usage_responses: 0 }, 'incomplete_cache_coverage'],
+    [{ cached_prompt_tokens: 1000001 }, 'inconsistent_counters'],
+  ]) {
+    const report = buildCostReport(JSON.stringify(costReceipt(overrides)))
+    assert.equal(report.estimate, null)
+    assert.ok(report.reasons.includes(reason))
+  }
+  const missing = buildCostReport(JSON.stringify(costReceipt()), {
+    adapter: 1,
+    preflight: 1,
+  })
+  assert.equal(missing.estimate, null)
+  assert.equal(missing.stages[1].observed, 0)
+  const failedPreflight = buildCostReport(
+    JSON.stringify(costReceipt({ stage: 'preflight', upstream_attempts: 2 })),
+    { preflight: 1, adapter: 0, topology: 0 }
+  )
+  assert.equal(failedPreflight.estimate, null)
+  assert.ok(failedPreflight.reasons.includes('unaccounted_attempts'))
+  assert.equal(failedPreflight.stages[0].estimate.responses, 0)
+  assert.equal(failedPreflight.stages[2].estimate.withCache, 0)
+  for (const [text, reason] of [
+    ['', 'empty_receipt'],
+    ['{::error::private-source-marker', 'malformed_receipt'],
+    [
+      JSON.stringify(costReceipt({ stage: '::error::private-source-marker' })),
+      'invalid_stage',
+    ],
+  ]) {
+    const report = buildCostReport(text)
+    assert.equal(report.estimate, null)
+    assert.ok(report.reasons.includes(reason))
+    assert.doesNotMatch(JSON.stringify(report), /private-source-marker/)
+  }
+  assert.deepEqual(buildCostReport('', { adapter: -1 }).reasons, [
+    'invalid_expectations',
+  ])
+})
+
+test('manual workflows reconcile shared stage receipts against independent step outputs', () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+  for (const [job, stepId, stageArgs] of [
+    ['review', 'run_review', ['preflight', 'adapter']],
+    ['review_stack', 'code_review', ['preflight', 'adapter', 'topology']],
+  ]) {
+    const block = source.match(
+      new RegExp(`\\n  ${job}:\\n([\\s\\S]*?)(?=\\n  [a-z][\\w-]*:\\n|$)`)
+    )[1]
+    const steps = block.split(/^      - name: /m).slice(1)
+    const preflight = steps.find((step) => step.includes('id: preflight'))
+    const execution = steps.find((step) => step.includes(`id: ${stepId}`))
+    const summary = steps.find((step) =>
+      step.includes('ocr-mistral-adapter.cjs summary')
+    )
+    const receiptPath = execution.match(/OCR_ADAPTER_DIAGNOSTICS_PATH: (.+)/)[1]
+    assert.equal(
+      preflight.match(/OCR_ADAPTER_DIAGNOSTICS_PATH: (.+)/)[1],
+      receiptPath
+    )
+    assert.equal(summary.match(/DIAGNOSTICS_PATH: (.+)/)[1], receiptPath)
+    assert.ok(summary.includes(`steps.${stepId}.outputs.adapter_lifetimes`))
+    assert.ok(summary.includes("steps.preflight.outcome == 'skipped'"))
+    for (const stage of stageArgs) assert.ok(summary.includes(`"${stage}=\${`))
+    if (job === 'review_stack') {
+      const topology = steps.find((step) =>
+        step.includes('id: topology_review')
+      )
+      assert.equal(
+        topology.match(/OCR_ADAPTER_DIAGNOSTICS_PATH: (.+)/)[1],
+        receiptPath
+      )
+      assert.ok(summary.includes("steps.topology_review.outcome == 'skipped'"))
+    }
+  }
+})
+
 test('cost summary CLI logs and appends the same report, preserving success when either sink fails', async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-cost-summary-'))
   try {
@@ -184,9 +299,10 @@ test('cost summary CLI logs and appends the same report, preserving success when
         result.stdout,
         fs.readFileSync(summaryPath, 'utf8').slice(previous.length)
       )
-      assert.equal(
-        fs.readFileSync(summaryPath, 'utf8').split('$0.8950').length,
-        2
+      assert.doesNotMatch(result.stdout, /\$0\.8950/)
+      assert.match(
+        result.stdout,
+        /OCR cost status=unavailable reasons=[a-z_,]+/
       )
     }
     result = await runCli(['summary', path.join(directory, 'absent')], env)
@@ -204,6 +320,13 @@ test('cost summary CLI logs and appends the same report, preserving success when
     })
     assert.equal(result.code, 0)
     assert.equal(result.stdout, summary)
+    result = await runCli(
+      ['summary', receiptPath, '::error::private-source-marker'],
+      env
+    )
+    assert.equal(result.code, 0)
+    assert.match(result.stdout, /reasons=invalid_expectations/)
+    assert.doesNotMatch(result.stdout, /private-source-marker/)
     const previous = fs.readFileSync(summaryPath, 'utf8')
     result = await runCli(['summary', receiptPath], env, { closeStdout: true })
     assert.equal(result.code, 0)
