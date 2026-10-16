@@ -110,9 +110,13 @@ unrecoverable capability blocker.
 
 ## Progress
 
-- Investigation: fast released-binary reproduction confirms HTTP timeout path;
-  long default and aligned synthetic checks running.
-- Source: no implementation edits yet. Worktree clean except this approved plan.
+- Investigation: unmodified release fails at 300 seconds with the default HTTP
+  timeout; the aligned setting completes a 301-second synthetic response. Both
+  make exactly one request with unchanged wire reasoning, completion cap and
+  affinity. No live provider was used.
+- Source: individual/stack jobs set request timeouts to 2700/1800 seconds;
+  extracted-shell verification covers initial and resumed attempts. Helper and
+  stack suites pass 128 tests on pinned Node 24.
 - Documentation lookup: Context7 has no OpenCodeReview entry; pinned official
   v1.13.0 source is the authoritative configuration evidence.
 - Planning: configured planner APPROVED; proceed within the user-authorized batch.

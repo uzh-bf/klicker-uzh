@@ -314,6 +314,7 @@ jobs:
     needs: [authorize, start]
     env:
       OCR_NO_UPDATE: '1'
+      OCR_LLM_TIMEOUT: '2700'
     if: >-
       needs.authorize.outputs.authorized == 'true' &&
       needs.start.outputs.run_review == 'true'
@@ -919,6 +920,7 @@ jobs:
   review_stack:
     env:
       OCR_NO_UPDATE: '1'
+      OCR_LLM_TIMEOUT: '1800'
     needs: [authorize_stack, start_stack]
     if: >-
       needs.authorize_stack.outputs.authorized == 'true' &&

@@ -210,7 +210,11 @@ function assertReviewAttempt(result, form, expectedExit) {
   assert.equal(lines.shift(), 'version no_update=1', form.name)
   assert.equal(lines.shift(), 'preview no_update=1 limit=200000', form.name)
   assert.equal(lines.shift(), 'coverage checked', form.name)
-  assert.equal(lines.shift(), 'review no_update=1', form.name)
+  assert.equal(
+    lines.shift(),
+    `review no_update=1 request_timeout=${Number(form.timeout) * 60}`,
+    form.name
+  )
   assert.equal(lines.length, 0, form.name)
   assert.deepEqual(
     result.args,
@@ -266,6 +270,11 @@ function executeExtractedOCRAttempt({
   )
   const jobEnv = extractWorkflowJobEnv(workflow, jobName)
   assert.equal(jobEnv.OCR_NO_UPDATE, '1', `missing OCR_NO_UPDATE: ${jobName}`)
+  assert.equal(
+    jobEnv.OCR_LLM_TIMEOUT,
+    jobName === 'review' ? '2700' : '1800',
+    `request timeout differs from task deadline: ${jobName}`
+  )
 
   fs.writeFileSync(stderrPath, '')
   fs.writeFileSync(summaryPath, '')
@@ -277,6 +286,7 @@ function executeExtractedOCRAttempt({
     HOME: directory,
     LC_ALL: 'C',
     OCR_NO_UPDATE: jobEnv.OCR_NO_UPDATE,
+    OCR_LLM_TIMEOUT: jobEnv.OCR_LLM_TIMEOUT,
     MISTRAL_API_KEY: 'synthetic-upstream-key',
     OCR_CALLS_PATH: callsPath,
     OCR_ARGS_PATH: argsPath,
@@ -357,7 +367,7 @@ function executeExtractedOCRAttempt({
     '        esac',
     '        return 0',
     '      fi',
-    '      printf \'review no_update=%s\\n\' "${OCR_NO_UPDATE-}" >>"${OCR_CALLS_PATH}"',
+    '      printf \'review no_update=%s request_timeout=%s\\n\' "${OCR_NO_UPDATE-}" "${OCR_LLM_TIMEOUT-}" >>"${OCR_CALLS_PATH}"',
     '      shift',
     '      printf \'%s\\0\' "$@" >"${OCR_ARGS_PATH}"',
     '      printf \'%s\' "${OCR_STDOUT_SENTINEL}"',
@@ -1440,7 +1450,10 @@ test('uses one qualified canary and OCR release in both manual jobs', () => {
   assert.doesNotMatch(source, /@alibaba-group\/open-code-review@1\.9\.10/)
   assert.doesNotMatch(source, /ocr llm test/)
   assert.doesNotMatch(source, /OCR_CONFIG_PATH/)
-  assert.doesNotMatch(source, /OCR_LLM_/)
+  assert.deepEqual(
+    [...new Set(source.match(/OCR_LLM_\w+/g))],
+    ['OCR_LLM_TIMEOUT']
+  )
 
   for (const name of ['review', 'review_stack']) {
     const block = job(name)
