@@ -5,6 +5,9 @@
 -- this SQL is hand-written. It matches only base accounts with a non-blank
 -- cost center, so a re-run changes nothing.
 
+-- Match JavaScript String.prototype.trim(): the U& literal lists its whitespace
+-- and line-terminator code points (including tabs and non-breaking spaces).
+-- PostgreSQL's default btrim removes only spaces; <> '' rejects a blank result.
 UPDATE "User"
 SET "aiSubscriptionTier" = 'ADVANCED'
 WHERE "aiSubscriptionTier" = 'BASE'
