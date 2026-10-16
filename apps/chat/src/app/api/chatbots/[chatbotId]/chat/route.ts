@@ -41,6 +41,7 @@ import {
 import { buildChatTurnRequest } from '@/src/lib/server/chatTurnRequest'
 import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
 import {
+  isParticipantReasoningVisible,
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
@@ -741,6 +742,12 @@ async function handlePOST(
       { status: 400 }
     )
   }
+  // The provider still produces and the server still persists the reasoning
+  // summary; this only decides whether it leaves the server for this turn.
+  const showReasoning = isParticipantReasoningVisible(
+    chatbot.customModeConfig,
+    selectedMode
+  )
 
   const modelRegistry = getChatModelRegistry()
   const allowedIds =
@@ -2434,7 +2441,7 @@ async function handlePOST(
     })
 
     return result.toUIMessageStreamResponse({
-      sendReasoning: true,
+      sendReasoning: showReasoning,
       consumeSseStream: consumeStream,
       onError: (error) => {
         void closeMcpTools()
@@ -2481,7 +2488,7 @@ async function handlePOST(
           chatMode: selectedMode,
           modelId: selectedModelConfig.id,
           reasoningEffort: appliedReasoningEffort,
-          reasoningContent: assistantReasoningContent,
+          reasoningContent: showReasoning ? assistantReasoningContent : null,
           creditsUsed,
         }
       },

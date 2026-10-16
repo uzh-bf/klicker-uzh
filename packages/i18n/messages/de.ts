@@ -32,6 +32,7 @@ const baseMessages = {
       quizzer: 'Quiz',
       quizzerDescription:
         'Übe mit prüfungsnahen Fragen aus den Kursunterlagen, jeweils eine nach der anderen, mit Rückmeldung.',
+      custom: 'Eigener Modus',
     },
     settingsPanel: {
       title: 'Einstellungen',
@@ -5123,6 +5124,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wird in einem leeren Chat für diesen Modus als Vorschläge angezeigt. Höchstens {count} Starter; Teilnehmende entscheiden, ob sie sie senden.',
       chatbotCustomModeStarterPrompt: 'Starter {number}',
       chatbotCustomModeStarterPromptAdd: 'Starter hinzufügen',
+      chatbotCustomModeShowReasoning:
+        'Denkprozess des Modells für Teilnehmende anzeigen',
+      chatbotCustomModeShowReasoningDescription:
+        'Standardmässig aus. Die Zusammenfassung des Denkprozesses kann Persona und Anweisungen dieses Modus wiedergeben, zum Beispiel die verborgenen Fakten eines Rollenspiels. In der Eigentümer-Vorschau ist sie immer sichtbar.',
+      chatbotCustomModeReasoningShown:
+        'Denkprozess des Modells für Teilnehmende sichtbar',
+      chatbotCustomModeReasoningHidden:
+        'Denkprozess des Modells für Teilnehmende verborgen',
       chatbotCustomModeAdd: 'Eigenen Modus hinzufügen',
       chatbotCustomModeRemove: 'Entfernen',
       chatbotCustomModesLimit:

@@ -1675,6 +1675,7 @@ type ChatbotCustomMode {
   key: String!
   name: String!
   personaText: String
+  showReasoning: Boolean!
   starterPrompts: [String!]
   welcomeMessage: String
 }
@@ -1692,6 +1693,7 @@ input ChatbotCustomModeInput {
   key: String
   name: String!
   personaText: String
+  showReasoning: Boolean
   starterPrompts: [String!]
   welcomeMessage: String
 }

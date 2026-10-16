@@ -1335,6 +1335,64 @@ describe('account usage chat route', () => {
     })
   })
 
+  test.each([
+    { label: 'a standard mode', mode: 'tutor', showReasoning: undefined },
+    {
+      label: 'a custom mode by default',
+      mode: 'cm_case',
+      showReasoning: undefined,
+    },
+    { label: 'an opted-in custom mode', mode: 'cm_case', showReasoning: true },
+  ])('sends reasoning to the participant only for $label', async ({
+    mode,
+    showReasoning,
+  }) => {
+    mocks.chatbotFindUnique.mockResolvedValue(
+      chatbot({
+        customModeConfig: {
+          modes: [
+            {
+              key: 'cm_case',
+              name: 'Case interview',
+              description: null,
+              personaText: 'Keep the case facts private.',
+              ...(showReasoning ? { showReasoning } : {}),
+            },
+          ],
+        },
+      })
+    )
+    const visible = mode === 'tutor' || showReasoning === true
+
+    const response = await POST(createRequest({ selectedMode: mode }), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(response.status).toBe(200)
+    expect(mocks.responseOptions).toMatchObject({ sendReasoning: visible })
+
+    await streamCallbacks().onEnd({
+      usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+      steps: [
+        {
+          content: [
+            { type: 'reasoning', text: 'Private case fact.' },
+            { type: 'text', text: 'Answer.' },
+          ],
+        },
+      ],
+      reasoningText: 'Private case fact.',
+      providerMetadata: null,
+    })
+
+    expect(
+      responseOptions().messageMetadata({
+        part: { type: 'finish', finishReason: 'stop' },
+      })
+    ).toMatchObject({
+      reasoningContent: visible ? 'Private case fact.' : null,
+    })
+  })
+
   test('persists missing terminal usage without either credit decrement', async () => {
     const response = await POST(createRequest(), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
