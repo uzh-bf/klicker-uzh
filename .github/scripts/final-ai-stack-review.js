@@ -3025,6 +3025,7 @@ async function callTopologyModel({
   const payload = await callMistral({
     apiKey,
     body,
+    diagnosticsStage: 'topology',
     fetchImpl,
     timeoutMs: 120_000,
   })

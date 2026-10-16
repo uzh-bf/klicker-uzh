@@ -657,6 +657,7 @@ async function verifyMistralToolAccess({
   const payload = await callMistral({
     apiKey: token,
     body: buildMistralToolCanaryRequest(),
+    diagnosticsStage: 'preflight',
     fetchImpl,
     timeoutMs: MISTRAL_TOOL_CANARY_TIMEOUT_MS,
   })
