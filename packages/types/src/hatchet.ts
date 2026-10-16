@@ -92,6 +92,11 @@ export type CourseDeletionEvent = {
 }
 
 export interface HatchetHandlers {
+  handleParticipantAnalyticsWithdrawals: (
+    _args: Record<string, never>,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
   handleSendTeamsNotification: (
     { scope, text }: { scope: string; text: string },
     globalCtx: HatchetHandlerGlobalContext,
@@ -181,6 +186,10 @@ export interface HatchetHandlers {
 
 // Contract for the tasks that are passed into the GraphQL context.
 export interface PreparedHatchetTasks {
+  participantAnalyticsWithdrawals: TaskWorkflowDeclaration<
+    Record<string, never>,
+    { success: boolean }
+  >
   ingestKBResource: TaskWorkflowDeclaration<
     IngestKBResourceInput,
     { success: boolean }
