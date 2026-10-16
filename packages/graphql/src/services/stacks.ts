@@ -67,6 +67,7 @@ import type {
   ResponseInput,
 } from '../ops.js'
 import { upsertDailyTimelineEntry } from './participants.js'
+import { reconcileStudyStreak } from './studyStreak.js'
 
 type ExistingInstanceType = DB.ElementInstance & {
   elementStack?: {
@@ -769,7 +770,7 @@ async function respondToFlashcard(
     }
 
     // create question detail response
-    createFlashcardResponseDetail({
+    await createFlashcardResponseDetail({
       prisma,
       id,
       response,
@@ -3161,6 +3162,37 @@ export interface RespondToElementStackInput {
   isOwner?: boolean
 }
 
+async function shouldSkipElementStackResponse(
+  stackId: number,
+  isOwner: boolean | undefined,
+  ctx: Context
+): Promise<boolean> {
+  const participantId = ctx.user?.sub
+  if (!participantId || ctx.user?.role !== DB.UserRole.PARTICIPANT || isOwner) {
+    return false
+  }
+
+  const stack = await ctx.prisma.elementStack.findUnique({
+    where: { id: stackId },
+    include: {
+      microLearning: true,
+      elements: {
+        include: {
+          responses: {
+            where: { participantId },
+          },
+        },
+      },
+    },
+  })
+
+  return Boolean(
+    stack?.microLearning &&
+      (stack.elements.some((element) => element.responses.length > 0) ||
+        dayjs().isAfter(dayjs(stack.microLearning.scheduledEndAt)))
+  )
+}
+
 export async function respondToElementStack(
   {
     stackId,
@@ -3172,31 +3204,8 @@ export async function respondToElementStack(
   ctx: Context
 ) {
   // if the element stack is part of a microlearning and the student has already responses to it, ignore this submission
-  if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
-    const stack = await ctx.prisma.elementStack.findUnique({
-      where: { id: stackId },
-      include: {
-        microLearning: true,
-        elements: {
-          include: {
-            responses: {
-              where: {
-                participantId: ctx.user.sub,
-              },
-            },
-          },
-        },
-      },
-    })
-
-    if (
-      !isOwner &&
-      stack?.microLearning &&
-      (stack.elements.some((element) => element.responses.length > 0) ||
-        dayjs().isAfter(dayjs(stack.microLearning.scheduledEndAt)))
-    ) {
-      return null
-    }
+  if (await shouldSkipElementStackResponse(stackId, isOwner, ctx)) {
+    return null
   }
 
   let stackScore: number | undefined = undefined
@@ -3234,6 +3243,19 @@ export async function respondToElementStack(
     if (evaluation) {
       evaluationsArr.push(evaluation)
     }
+  }
+
+  // fail-open streak reconciliation after all response writes are committed;
+  const participantSub =
+    ctx.user?.role === DB.UserRole.PARTICIPANT ? ctx.user.sub : undefined
+  if (participantSub && !isOwner) {
+    await reconcileStudyStreak(
+      { prisma: ctx.prisma },
+      {
+        courseId,
+        participantId: participantSub,
+      }
+    )
   }
 
   return {
