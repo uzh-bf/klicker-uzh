@@ -4,11 +4,13 @@ import { useTranslations } from 'next-intl'
 interface LeaveLeaderboardModalProps {
   onClose: () => void
   onConfirm: () => void
+  loading?: boolean
 }
 
 function LeaveLeaderboardModal({
   onClose,
   onConfirm,
+  loading = false,
 }: LeaveLeaderboardModalProps) {
   const t = useTranslations()
 
@@ -16,15 +18,23 @@ function LeaveLeaderboardModal({
     <Modal
       open
       hideCloseButton
+      escapeDisabled={loading}
       title={t('pwa.courses.leaveLeaderboardTitle')}
       primaryLabel={t('shared.generic.confirm')}
       primaryButtonStyle="destructive"
-      onPrimaryAction={() => onConfirm()}
+      primaryLoading={loading}
+      onPrimaryAction={() => {
+        if (!loading) onConfirm()
+      }}
       dataPrimaryAction={{ cy: 'confirm-leave-course-leaderboard' }}
       secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={onClose}
+      onSecondaryAction={() => {
+        if (!loading) onClose()
+      }}
       dataSecondaryAction={{ cy: 'cancel-leave-course-leaderboard' }}
-      onClose={onClose}
+      onClose={() => {
+        if (!loading) onClose()
+      }}
       className={{ content: 'max-w-xl', title: 'self-start' }}
     >
       <div>{t('pwa.courses.leaveLeaderboardConfirmation')}</div>
