@@ -28,9 +28,14 @@ function render(flaky) {
 }
 
 if (require.main === module) {
-  const [reportPath, summaryPath] = process.argv.slice(2)
+  const [reportPath, summaryPath, outputPath] = process.argv.slice(2)
   if (!reportPath || !fs.existsSync(reportPath)) process.exit(0)
   const flaky = collectFlaky(JSON.parse(fs.readFileSync(reportPath, 'utf8')))
+  // Only a numeric count crosses into the workflow expression. Test names and
+  // report contents must never be interpreted as GitHub output commands.
+  if (outputPath) {
+    fs.appendFileSync(outputPath, `flaky-count=${flaky.length}\n`)
+  }
   for (const t of flaky) {
     console.log(
       `::warning file=playwright/tests/${t.file},line=${t.line}::Passed only on retry: ${t.title}`
