@@ -50,12 +50,16 @@ let nextConfig = {
     if (!NEXT_PUBLIC_CONTROL_API_URL || !CONTROL_API_PROXY_URL) {
       return []
     }
-    return [
-      {
-        source: new URL(NEXT_PUBLIC_CONTROL_API_URL).pathname,
-        destination: CONTROL_API_PROXY_URL,
-      },
-    ]
+    let source
+    try {
+      source = new URL(NEXT_PUBLIC_CONTROL_API_URL).pathname
+    } catch {
+      console.warn(
+        'NEXT_PUBLIC_CONTROL_API_URL is not an absolute URL; the same-origin API proxy is disabled'
+      )
+      return []
+    }
+    return [{ source, destination: CONTROL_API_PROXY_URL }]
   },
 }
 
