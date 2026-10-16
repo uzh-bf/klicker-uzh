@@ -29,6 +29,7 @@ export default {
       quizzer: 'Quizzer',
       quizzerDescription:
         'Practise with exam-style course questions, one at a time, with formative feedback.',
+      custom: 'Custom mode',
     },
     settingsPanel: {
       title: 'Settings',
@@ -1758,7 +1759,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The chart shows the aggregated distribution of total scores for active participants. Your score range is highlighted.',
       histogramUserRange: 'Your score range: {range}.',
       notEnoughDataForComparison:
-        'No peer comparison is available. It is only included for at least 10 active participants and a non-zero available score range.',
+        'This report contains no peer comparison. It is included in reports issued after the course has ended, for at least 10 active participants and a non-zero available score range. Reports issued during the course contain your points only.',
       exportReportButton: 'Export Performance Report',
       exportReportExplanation:
         'Issue a report from the current assessment record. Once it is ready, you can view it in your browser or use the browser print dialog to save a single-page A4 PDF. The report includes a link for checking its current status and claims.',
@@ -1784,7 +1785,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       exportReportPrintError:
         'The report could not be opened for printing. Allow pop-ups for this page and try again.',
       privacyAndTransparencyNotice:
-        'Peer comparison is released only for at least 10 active participants. Ten initial score ranges are merged until every displayed range represents at least 3 participants. The report contains no peer scores or identifiers.',
+        'Peer comparison is included only in reports issued after the course has ended, and only for at least 10 active participants. Ten initial score ranges are merged until every displayed range represents at least 3 participants. The report contains no peer scores or identifiers.',
       courseNameLabel: 'Course',
       studentNameLabel: 'Student name',
       studentEmailAddressLabel: 'Email address',
@@ -2682,7 +2683,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatAccountUsageClassUnavailable:
         'This usage class is not enabled for your account.',
       chatAccountUsageAdvancedCostCenter:
-        'Advanced models require a cost center that AI usage can be billed to.',
+        'Advanced models require the advanced AI subscription and a cost center that AI usage can be billed to.',
       chatAccountUsageRefreshing: 'Refreshing usage…',
       chatAccountUsageStale:
         'The latest usage could not be loaded. The values below may be out of date.',
@@ -4975,9 +4976,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotTechnicalDetails: 'Technical details',
       chatbotTechnicalId: 'ID',
       chatbotTechnicalAvatar: 'Avatar',
-      chatbotUsageTechnicalIntegrations: 'Technical integrations',
-      chatbotUsageTechnicalIntegrationsDescription:
-        'Inspect configured MCP integrations and their current status.',
       chatbotSetupTitle: 'Set up your chatbot',
       chatbotSetupDescription:
         'Use the sections below to complete and save your chatbot setup before requesting publication.',
@@ -5017,6 +5015,21 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotCustomModePersonaText: 'Persona and instructions',
       chatbotCustomModePersonaPlaceholder:
         'Describe how this mode should respond to participants.',
+      chatbotCustomModeWelcomeMessage: 'Welcome message',
+      chatbotCustomModeWelcomePlaceholder:
+        'Shown in an empty chat for this mode. Leave empty to use the standard greeting.',
+      chatbotCustomModeStarterPrompts: 'Starter prompts',
+      chatbotCustomModeStarterPromptsDescription:
+        'Shown as suggestions in an empty chat for this mode. At most {count} starters; learners decide whether to send them.',
+      chatbotCustomModeStarterPrompt: 'Starter prompt {number}',
+      chatbotCustomModeStarterPromptAdd: 'Add starter prompt',
+      chatbotCustomModeShowReasoning: 'Show model reasoning to participants',
+      chatbotCustomModeShowReasoningDescription:
+        'Off by default. The reasoning summary can paraphrase the persona and instructions of this mode, for example the hidden facts of a role-play. Owner preview always shows it.',
+      chatbotCustomModeReasoningShown:
+        'Model reasoning visible to participants',
+      chatbotCustomModeReasoningHidden:
+        'Model reasoning hidden from participants',
       chatbotCustomModeAdd: 'Add custom mode',
       chatbotCustomModeRemove: 'Remove',
       chatbotCustomModesLimit: 'At most {count} custom modes are supported.',
@@ -5232,6 +5245,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Participants can choose among these models. Select at least one.',
       selectedModel: 'Selected model',
       allowedModels: 'Allowed models',
+      modelUnavailableHint:
+        'Advanced models need the advanced AI subscription with a cost center.',
+      modelUnavailableSelected:
+        'Your account cannot use this advanced model, so participants cannot chat with it. Choose another model.',
       allowedModelsAll: 'All',
       chatbotModelSettings: 'Model & Reasoning Settings',
       reasoningEffortsByModel: 'Reasoning efforts by model',
@@ -5263,7 +5280,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       disclaimerAccepted: 'Accepted',
       disclaimerDeclined: 'Declined',
       disclaimerPending: 'Pending',
-      mcpConfigurations: 'MCP Configurations',
       knowledgeBase: 'Knowledge base',
       knowledgeGraphPolicy: 'Knowledge graph',
       knowledgeGraphPolicyDescription:
@@ -5280,15 +5296,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       knowledgeGraphSaveSuccess: 'Knowledge graph settings saved.',
       noEnabledKnowledgeBase:
         'No knowledge base is connected. This chatbot cannot search course material.',
-      noMcpConfigurations: 'No MCP configurations.',
-      mcpServerActive: 'Server active',
-      mcpServerInactive: 'Server inactive',
-      mcpChatMode: 'Chat mode',
-      mcpStatus: 'Status',
-      mcpStatusEnabled: 'Enabled',
-      mcpStatusDisabled: 'Disabled',
-      mcpPriority: 'Priority',
-      mcpAllowedTools: 'Allowed tools',
       openChatbot: 'Open Chatbot',
       openOwnerPreview: 'Open owner preview',
       chatbotOwnerPreviewLive: 'Live configuration',

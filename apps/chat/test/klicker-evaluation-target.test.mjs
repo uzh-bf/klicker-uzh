@@ -16,6 +16,14 @@ import { join } from 'node:path'
 import { test } from 'vitest'
 
 import {
+  assertBudgetCanStart,
+  fingerprint,
+  initializeBudget,
+  readBudgetLedger,
+  reserveProviderSpend,
+} from '../../../evaluation/evaluation-budget.mjs'
+import { requestReservation } from '../../../evaluation/evaluation-spend-guard.mjs'
+import {
   evaluatePersistedEvidence,
   sha256Hex,
   writeEvidenceCapture,
@@ -24,12 +32,48 @@ import {
 import {
   buildGroundTruthIndex,
   createEvaluationServer,
+  DEFAULT_CHATBOT_ID,
   extractAssistantMessage,
   KlickerEvaluationTarget,
   parseAllowedOrigins,
   parseGroundTruthFrontmatter,
   validateLocalOrigin,
 } from '../scripts/klicker-evaluation-target.mjs'
+
+// Pinned so the synthetic target and its mocks agree even as the application
+// default model changes; the target is constructed with this id explicitly.
+const TEST_MODEL = 'gpt-6-luna'
+
+// Synthetic operator pricing policy and private provider base for the guarded
+// target. Values are fixed test inputs, never a copied tariff.
+const SYNTHETIC_UPSTREAM = 'https://synthetic.example/v1'
+const SYNTHETIC_POLICY = {
+  version: 1,
+  provider: 'synthetic',
+  qualification: 'synthetic-guard',
+  upstreamOrigin: SYNTHETIC_UPSTREAM,
+  models: {
+    [TEST_MODEL]: {
+      contextTokens: 1_000,
+      maxOutputTokens: 100,
+      inputMicroUsdPerMillion: 1_000_000,
+      outputMicroUsdPerMillion: 2_000_000,
+      outputIncludesReasoning: true,
+    },
+  },
+}
+const SYNTHETIC_POLICY_HASH = fingerprint(SYNTHETIC_POLICY)
+const SYNTHETIC_RESERVATION = requestReservation(
+  SYNTHETIC_POLICY,
+  '/v1/chat/completions',
+  {
+    model: TEST_MODEL,
+    messages: [{ role: 'user', content: 'synthetic' }],
+    max_completion_tokens: 100,
+  }
+)
+const GUARD_ORIGIN = 'http://127.0.0.1:9'
+const GUARD_KEY = 'synthetic-guard-key'
 
 test('frontmatter projection contains only target-safe question metadata', () => {
   const metadata = parseGroundTruthFrontmatter(
@@ -217,7 +261,7 @@ test('target uses participant gates and reads back one persisted turn', async ()
     if (requestUrl.endsWith('/chat') && method === 'POST') {
       const payload = JSON.parse(body)
       assistantMessageId = payload.assistantMessageId
-      assert.equal(payload.selectedModel, 'gpt-6-luna')
+      assert.equal(payload.selectedModel, TEST_MODEL)
       assert.equal(payload.selectedMode, 'tutor')
       assert.equal(payload.messages[0].content, 'What is CAPM?')
       assert.equal(body.includes(expectedAnswer), false)
@@ -243,7 +287,7 @@ test('target uses participant gates and reads back one persisted turn', async ()
           id: assistantMessageId,
           role: 'assistant',
           chatMode: 'tutor',
-          modelId: 'gpt-6-luna',
+          modelId: TEST_MODEL,
           content: [
             { type: 'reasoning', text: 'not exposed' },
             {
@@ -270,13 +314,14 @@ test('target uses participant gates and reads back one persisted turn', async ()
       participantPassword: 'synthetic-password',
       groundTruthDirectory: directory,
       canaryFixture: canaryFile,
+      modelId: TEST_MODEL,
       pollTimeoutMs: 1000,
       pollIntervalMs: 1,
       requestTimeoutMs: 1000,
     })
     await target.initialize()
     const result = await target.complete({
-      model: 'gpt-6-luna',
+      model: TEST_MODEL,
       stream: false,
       messages: [{ role: 'user', content: 'What is CAPM?' }],
     })
@@ -478,7 +523,7 @@ test('canary requires its configured tool', async () => {
     id: 'assistant-1',
     role: 'assistant',
     chatMode: 'tutor',
-    modelId: 'gpt-6-luna',
+    modelId: TEST_MODEL,
     content: [
       { type: 'tool-call', toolName: 'KB_doc_query' },
       { type: 'text', text: 'KLICKER_LOCAL_MCP_OK' },
@@ -492,7 +537,7 @@ test('canary requires its configured tool', async () => {
     id: 'assistant-2',
     role: 'assistant',
     chatMode: 'tutor',
-    modelId: 'gpt-6-luna',
+    modelId: TEST_MODEL,
     content: [
       { type: 'tool-call', toolName: 'wrong_tool' },
       { type: 'text', text: 'KLICKER_LOCAL_MCP_OK' },
@@ -505,15 +550,15 @@ test('canary requires its configured tool', async () => {
 
 test('adapter requires bearer auth and exposes only the configured model', async () => {
   const target = {
-    modelId: 'gpt-6-luna',
+    modelId: TEST_MODEL,
     async complete(body) {
-      assert.equal(body.model, 'gpt-6-luna')
+      assert.equal(body.model, TEST_MODEL)
       return {
         source: 'canary',
         payload: {
           id: 'response-1',
           object: 'chat.completion',
-          model: 'gpt-6-luna',
+          model: TEST_MODEL,
           choices: [
             {
               index: 0,
@@ -541,7 +586,7 @@ test('adapter requires bearer auth and exposes only the configured model', async
       headers: { Authorization: 'Bearer test-key' },
     })
     assert.equal(models.status, 200)
-    assert.deepEqual((await models.json()).data[0].id, 'gpt-6-luna')
+    assert.deepEqual((await models.json()).data[0].id, TEST_MODEL)
 
     const completion = await fetch(`${baseUrl}/v1/chat/completions`, {
       method: 'POST',
@@ -550,7 +595,7 @@ test('adapter requires bearer auth and exposes only the configured model', async
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-6-luna',
+        model: TEST_MODEL,
         stream: false,
         messages: [{ role: 'user', content: 'synthetic' }],
       }),
@@ -565,6 +610,209 @@ test('adapter requires bearer auth and exposes only the configured model', async
     await new Promise((resolvePromise, rejectPromise) =>
       server.close((error) => (error ? rejectPromise(error) : resolvePromise()))
     )
+  }
+})
+
+// The guarded runQuestion again mirrors the production placement: an
+// authenticated status read reflects the durable ledger, and the application
+// reserves the full qualified cost before it can produce a chat result.
+test('guarded runQuestion accounts completed failures and refuses an over-budget call', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'klicker-evaluation-'))
+  const budgetFile = join(directory, 'budget.json')
+  const qualificationFile = join(directory, 'qualification.json')
+  const question = 'What is CAPM?'
+  const credits = 0.5
+
+  const originalFetch = globalThis.fetch
+  let statusReads = 0
+  let dispatched = 0
+  let threadCount = 0
+  let assistantMessageId = null
+
+  globalThis.fetch = async (url, options = {}) => {
+    const requestUrl = String(url)
+    const method = options.method || 'GET'
+    const body = typeof options.body === 'string' ? options.body : ''
+
+    if (requestUrl.startsWith(GUARD_ORIGIN)) {
+      assert.equal(options.headers?.Authorization, 'Bearer ' + GUARD_KEY)
+      statusReads += 1
+      const ledger = await readBudgetLedger(budgetFile)
+      return Response.json({
+        experimentId: ledger.experimentId,
+        policyHash: ledger.policyHash,
+        upstreamOrigin: SYNTHETIC_UPSTREAM,
+        maxSubmittedTurns: ledger.maxSubmittedTurns,
+        maxProviderMicroUsd: ledger.maxProviderMicroUsd,
+        reservedProviderMicroUsd: ledger.reservedProviderMicroUsd,
+      })
+    }
+    if (requestUrl.endsWith('/api/graphql')) {
+      return new Response(
+        JSON.stringify({ data: { loginParticipant: 'participant-jwt' } }),
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Set-Cookie': 'participant_token=participant-jwt; Path=/; HttpOnly',
+          },
+        }
+      )
+    }
+    if (requestUrl.endsWith('/disclaimer') && method === 'GET') {
+      return Response.json({ status: { required: false, accepted: true } })
+    }
+    if (requestUrl.endsWith('/threads') && method === 'POST') {
+      threadCount += 1
+      return Response.json({ id: 'thread-' + threadCount })
+    }
+    if (requestUrl.endsWith('/chat') && method === 'POST') {
+      try {
+        await reserveProviderSpend(
+          budgetFile,
+          SYNTHETIC_POLICY_HASH,
+          SYNTHETIC_RESERVATION
+        )
+      } catch (error) {
+        if (error?.code === 'budget_spend_exhausted') {
+          return new Response(JSON.stringify({ error: error.code }), {
+            status: 429,
+          })
+        }
+        throw error
+      }
+      dispatched += 1
+      assistantMessageId = JSON.parse(body).assistantMessageId
+      return new Response(
+        'data: {"type":"start"}\n\n' +
+          'data: {"type":"finish","messageMetadata":' +
+          '{"chatMode":"tutor","modelId":"' +
+          TEST_MODEL +
+          '","creditsUsed":' +
+          credits +
+          '}}\n\n' +
+          'data: [DONE]\n\n',
+        { headers: { 'Content-Type': 'text/event-stream' } }
+      )
+    }
+    if (requestUrl.endsWith('/messages') && method === 'GET') {
+      return Response.json([
+        {
+          id: assistantMessageId,
+          role: 'assistant',
+          chatMode: 'tutor',
+          modelId: TEST_MODEL,
+          creditsUsed: credits,
+          content: [{ type: 'text', text: 'guarded answer' }],
+        },
+      ])
+    }
+    throw new Error('Unexpected mock request: ' + method + ' ' + requestUrl)
+  }
+
+  try {
+    await initializeBudget(budgetFile, SYNTHETIC_POLICY_HASH, {
+      maxProviderMicroUsd: 2 * SYNTHETIC_RESERVATION + 100,
+    })
+    const ledger = await readBudgetLedger(budgetFile)
+    await writeFile(
+      qualificationFile,
+      JSON.stringify({
+        version: 1,
+        experimentId: ledger.experimentId,
+        policyHash: SYNTHETIC_POLICY_HASH,
+        guardOrigin: GUARD_ORIGIN,
+        chatOrigin: 'https://chat.klicker.localhost',
+        upstreamOrigin: SYNTHETIC_UPSTREAM,
+        chatbotId: DEFAULT_CHATBOT_ID,
+        modelId: TEST_MODEL,
+        allBillableEgressGuarded: true,
+        evidence: 'synthetic qualification evidence',
+      })
+    )
+
+    const target = new KlickerEvaluationTarget({
+      apiOrigin: 'https://api.klicker.localhost',
+      chatOrigin: 'https://chat.klicker.localhost',
+      apiKey: 'target-key',
+      participantUsername: 'synthetic-participant',
+      participantPassword: 'synthetic-password',
+      modelId: TEST_MODEL,
+      pollTimeoutMs: 1000,
+      pollIntervalMs: 1,
+      requestTimeoutMs: 1000,
+      budgetFile,
+      qualification: {
+        filePath: qualificationFile,
+        origin: GUARD_ORIGIN,
+        key: GUARD_KEY,
+      },
+    })
+    target.groundTruthIndex = new Map([
+      [
+        question,
+        { question, mode: 'tutor', source: 'fineco', filePath: 'fixture.md' },
+      ],
+    ])
+    target.canary = {
+      question: 'Synthetic canary',
+      mode: 'tutor',
+      source: 'canary',
+      expectedTool: 'KB_doc_query',
+      maxStreamBytes: 1000,
+    }
+
+    await target.runQuestion(question)
+
+    assert.ok(statusReads > 0)
+    const afterTurn = await readBudgetLedger(budgetFile)
+    assert.equal(afterTurn.submittedTurns, 1)
+    assert.equal(afterTurn.reservedProviderMicroUsd, SYNTHETIC_RESERVATION)
+    assert.equal(afterTurn.creditsUsed, credits)
+    assert.equal(afterTurn.uncertain, false)
+    assert.equal(afterTurn.activeTurn, null)
+    assert.equal(dispatched, 1)
+
+    await assert.rejects(target.runQuestion(target.canary.question), {
+      code: 'canary_tool_missing',
+    })
+    const afterCompletedFailure = await readBudgetLedger(budgetFile)
+    assert.equal(afterCompletedFailure.submittedTurns, 2)
+    assert.equal(
+      afterCompletedFailure.reservedProviderMicroUsd,
+      2 * SYNTHETIC_RESERVATION
+    )
+    assert.equal(afterCompletedFailure.creditsUsed, 2 * credits)
+    assert.equal(afterCompletedFailure.uncertain, false)
+    assert.equal(afterCompletedFailure.activeTurn, null)
+    assert.doesNotThrow(() => assertBudgetCanStart(afterCompletedFailure))
+    assert.equal(dispatched, 2)
+
+    // Over budget: the guard refuses the reservation, so no further provider
+    // call is dispatched and the interrupted turn stays uncertain.
+    await assert.rejects(target.runQuestion(question), {
+      code: 'chat_submit_http_429',
+    })
+    const afterRefusal = await readBudgetLedger(budgetFile)
+    assert.equal(dispatched, 2)
+    assert.equal(afterRefusal.submittedTurns, 3)
+    assert.equal(
+      afterRefusal.reservedProviderMicroUsd,
+      2 * SYNTHETIC_RESERVATION
+    )
+    assert.equal(afterRefusal.creditsUsed, 2 * credits)
+    assert.equal(afterRefusal.uncertain, true)
+    assert.notEqual(afterRefusal.activeTurn, null)
+
+    // A later run is refused before login by the preflight budget check.
+    const statusReadsBefore = statusReads
+    await assert.rejects(target.runQuestion(question), {
+      code: 'budget_uncertain',
+    })
+    assert.equal(statusReads, statusReadsBefore)
+    assert.equal(dispatched, 2)
+  } finally {
+    globalThis.fetch = originalFetch
+    await rm(directory, { recursive: true, force: true })
   }
 })
 
