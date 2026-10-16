@@ -29,6 +29,7 @@ export default {
       quizzer: 'Quizzer',
       quizzerDescription:
         'Practise with exam-style course questions, one at a time, with formative feedback.',
+      custom: 'Custom mode',
     },
     settingsPanel: {
       title: 'Settings',
