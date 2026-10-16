@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
+import { withRouteLogging } from '@/src/lib/server/requestLogging'
 
-export async function GET() {
+async function handleGET() {
   return NextResponse.json(
     {
       status: 'OK',
@@ -8,4 +9,8 @@ export async function GET() {
     },
     { status: 200 }
   )
+}
+
+export function GET(request: Request) {
+  return withRouteLogging(request, '/api/health', handleGET)
 }

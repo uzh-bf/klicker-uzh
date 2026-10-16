@@ -1,11 +1,12 @@
+import { randomUUID } from 'node:crypto'
+import { type AppLogger, toSafeError } from '@klicker-uzh/logging/node'
+import { prisma } from '@klicker-uzh/prisma'
+import type { Prisma } from '@klicker-uzh/prisma/client'
+import { HANDOFF_SOURCES } from '@klicker-uzh/shared-components/src/utils/handoff'
 import type {
   ELearningSnapshotContent,
   KlickerChatContext,
 } from '@klicker-uzh/types'
-import { randomUUID } from 'node:crypto'
-import { prisma } from '@klicker-uzh/prisma'
-import type { Prisma } from '@klicker-uzh/prisma/client'
-import { HANDOFF_SOURCES } from '@klicker-uzh/shared-components/src/utils/handoff'
 import { isChatUsageClassEntitled } from '@klicker-uzh/util'
 import {
   type LangfuseSpan,
@@ -27,6 +28,7 @@ import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { withCalculatorTool } from '@/src/lib/server/calculatorTool'
+import { sanitizeChatLogContext } from '@/src/lib/server/chatLogging'
 import { getChatModel } from '@/src/lib/server/chatModelProvider'
 import {
   type ChatModelConfig,
@@ -54,6 +56,7 @@ import {
   LANGFUSE_CHAT_TRACE_NAME,
   registerLangfuseTelemetry,
 } from '@/src/lib/server/langfuseTracing'
+import { logger } from '@/src/lib/server/logger'
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
@@ -67,6 +70,10 @@ import {
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
 import {
+  getRouteLogger,
+  withRouteLogging,
+} from '@/src/lib/server/requestLogging'
+import {
   createResponseExampleSearchTool,
   loadResponseExampleRuntimeSkill,
   RESPONSE_EXAMPLE_SEARCH_TOOL_NAME,
@@ -74,14 +81,13 @@ import {
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import {
   collectStepToolDiagnostics,
-  hashSnippet,
   summarizeToolDiagnostics,
 } from '@/src/lib/server/toolDiagnostics'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import {
-  chatModelUnavailableResponse,
   CHAT_TURN_ALREADY_COMPLETED_CODE,
   ChatTurnConflictError,
+  chatModelUnavailableResponse,
   claimChatTurn,
   failChatTurn,
   finalizeChatTurn,
@@ -95,6 +101,14 @@ import {
 } from '@/src/services/chatContext'
 import { CreditsService } from '@/src/services/credits'
 import { DisclaimersService } from '@/src/services/disclaimers'
+import {
+  formatElearningEvidencePolicy,
+  formatElearningSnapshotContext,
+  matchesPersistedLearningHistory,
+  normalizePersistedLearningContext,
+  resolveElearningThreadOrigin,
+  verifyAndNormalizeElearningChatContext,
+} from '@/src/services/elearningContext'
 import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
@@ -112,14 +126,6 @@ import {
   STUDENT_PRACTICE_QUIZ_TOOL_NAME,
   toPracticeCandidateId,
 } from '@/src/services/studentPracticeMcp'
-import {
-  formatElearningEvidencePolicy,
-  formatElearningSnapshotContext,
-  normalizePersistedLearningContext,
-  resolveElearningThreadOrigin,
-  verifyAndNormalizeElearningChatContext,
-  matchesPersistedLearningHistory,
-} from '@/src/services/elearningContext'
 import { ThreadService } from '@/src/services/threads'
 
 export const runtime = 'nodejs'
@@ -149,30 +155,29 @@ function completedTurnResponse() {
 }
 
 if (!process.env.OPENAI_BASE_URL) {
-  console.warn(
-    '[chat] OPENAI_BASE_URL is not set — model requests will use provider defaults'
+  logger.warn(
+    {
+      event: 'chat.configuration.failed',
+      configuration: 'openai_base_url',
+      outcome: 'using_provider_defaults',
+    },
+    'Chat provider configuration is incomplete'
   )
 }
 if (!process.env.OPENAI_API_KEY) {
-  console.warn(
-    '[chat] OPENAI_API_KEY is not set — model requests without per-chatbot keys will fail'
+  logger.warn(
+    {
+      event: 'chat.configuration.failed',
+      configuration: 'openai_api_key',
+      outcome: 'custom_key_required',
+    },
+    'Chat provider configuration is incomplete'
   )
 }
-const CHAT_LOG_PREFIX = '[chat:dev]'
-const isDevLogging = process.env.NODE_ENV === 'development'
-const MAX_LOG_STRING_LENGTH = 500
 
 function asObject(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== 'object') return null
   return value as Record<string, unknown>
-}
-
-function truncateString(
-  value: string,
-  maxLength = MAX_LOG_STRING_LENGTH
-): string {
-  if (value.length <= maxLength) return value
-  return `${value.slice(0, maxLength - 3)}...`
 }
 
 function toTokenCount(value: unknown): number | null {
@@ -231,14 +236,18 @@ function getDefaultReasoningEffort(
 function logChatDev(
   event: string,
   context: Record<string, unknown>,
-  level: 'info' | 'error' = 'info'
+  level: 'info' | 'error' = 'info',
+  log?: AppLogger
 ) {
-  if (!isDevLogging) return
-  const message = `${CHAT_LOG_PREFIX} ${event}`
+  const requestLog = getRouteLogger(log)
+  const fields = {
+    event: `chat.${event}`,
+    ...sanitizeChatLogContext(context),
+  }
   if (level === 'error') {
-    console.error(message, context)
+    requestLog.error(fields, 'Chat request event')
   } else {
-    console.info(message, context)
+    requestLog.info(fields, 'Chat request event')
   }
 }
 
@@ -279,9 +288,6 @@ type SerializedStreamError = {
   providerMessage: string | null
   providerParam: string | null
   safeHeaders: Record<string, unknown> | null
-  raw: string | null
-  messageHash: string | null
-  providerMessageHash: string | null
 }
 
 function serializeStreamError(error: unknown): SerializedStreamError {
@@ -305,17 +311,6 @@ function serializeStreamError(error: unknown): SerializedStreamError {
       nestedError.sequence_number) ||
     (typeof root?.sequence_number === 'number' && root.sequence_number) ||
     null
-
-  const raw =
-    typeof error === 'string'
-      ? truncateString(error)
-      : root
-        ? truncateString(
-            `error object keys: ${Object.keys(root).join(', ') || '(none)'}`
-          )
-        : error instanceof Error
-          ? truncateString(`${error.name}: ${error.message}`)
-          : null
 
   return {
     name:
@@ -345,12 +340,6 @@ function serializeStreamError(error: unknown): SerializedStreamError {
       extractSafeHeaders(providerError?.headers) ||
       extractSafeHeaders(nestedError?.headers) ||
       extractSafeHeaders(root?.headers),
-    raw,
-    messageHash: message ? hashSnippet(message) : null,
-    providerMessageHash:
-      typeof providerError?.message === 'string'
-        ? hashSnippet(providerError.message)
-        : null,
   }
 }
 
@@ -477,15 +466,16 @@ const joinReasoningFromSteps = (
  * Main chat endpoint that processes AI conversations with streaming responses.
  * Handles thread creation, message persistence, and AI model interactions with tools.
  */
-export async function POST(
+async function handlePOST(
   req: NextRequest,
-  { params }: { params: Promise<{ chatbotId: string }> }
+  { params }: { params: Promise<{ chatbotId: string }> },
+  log: AppLogger,
+  requestId: string
 ) {
   const { chatbotId } = await params
-  const requestId = randomUUID()
   const requestStartedAtMs = Date.now()
   await registerLangfuseTelemetry()
-  const authResult = await withChatbotAuth(req, chatbotId)
+  const authResult = await withChatbotAuth(req, chatbotId, log)
   if ('response' in authResult) {
     return authResult.response
   }
@@ -512,8 +502,14 @@ export async function POST(
         { status: 403 }
       )
     }
-  } catch (error) {
-    console.error('Error checking disclaimer status:', { requestId, error })
+  } catch {
+    log.error(
+      {
+        event: 'chat.disclaimer.check_failed',
+        err: toSafeError('Failed to check disclaimer status'),
+      },
+      'Failed to check disclaimer status'
+    )
     return NextResponse.json(
       { error: 'Error checking disclaimer status' },
       { status: 500 }
@@ -565,8 +561,11 @@ export async function POST(
   let parsed: z.infer<typeof bodySchema>
   try {
     parsed = bodySchema.parse(await req.json())
-  } catch (e) {
-    console.error('Invalid request body:', { requestId, error: e })
+  } catch {
+    log.info(
+      { event: 'chat.request.rejected', outcome: 'invalid_body' },
+      'Rejected chat request'
+    )
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
   const {
@@ -635,15 +634,10 @@ export async function POST(
     !chatContext &&
     !verifiedElearningContext
   ) {
-    console.warn('Ignoring chat context for unrelated course', {
-      requestId,
-      chatbotId,
-      contextCourseId:
-        sanitizedChatContext.source === 'pwa'
-          ? sanitizedChatContext.courseId
-          : null,
-      chatbotCourseId: authChatbot.courseId,
-    })
+    log.warn(
+      { event: 'chat.context.rejected', outcome: 'unrelated_course' },
+      'Ignoring chat context for unrelated course'
+    )
   }
 
   const normalizedImages: IncomingImageAttachment[] = images.map((image) =>
@@ -660,17 +654,16 @@ export async function POST(
     .map((message) => message.content)
     .join('\n')
 
-  logChatDev('request.received', {
-    requestId,
-    chatbotId,
-    participantId,
-    threadId,
-    assistantMessageId,
-    selectedModel: parsed.selectedModel,
-    selectedMode: requestedMode,
-    messageCount: messages.length,
-    hasChatContext: Boolean(chatContext),
-  })
+  logChatDev(
+    'request.received',
+    {
+      requestId,
+      selectedMode: requestedMode,
+      messageCount: messages.length,
+    },
+    'info',
+    log
+  )
 
   let selectedModel = parsed.selectedModel
 
@@ -705,11 +698,15 @@ export async function POST(
         },
       },
     })
-  } catch (error) {
-    console.error('Failed to fetch chatbot configuration:', {
-      requestId,
-      error,
-    })
+  } catch {
+    log.error(
+      {
+        event: 'chat.configuration.failed',
+        configuration: 'chatbot',
+        err: toSafeError('Failed to fetch chatbot configuration'),
+      },
+      'Failed to fetch chatbot configuration'
+    )
   }
 
   if (!chatbot) {
@@ -717,11 +714,15 @@ export async function POST(
   }
 
   if (!chatbot.owner.aiFeaturesEnabled) {
-    console.warn('Chat admission denied', {
-      requestId,
-      phase: 'admission.accountApproval',
-      code: 'AI_FEATURES_DISABLED',
-    })
+    log.warn(
+      {
+        event: 'chat.admission.denied',
+        requestId,
+        phase: 'admission.accountApproval',
+        code: 'AI_FEATURES_DISABLED',
+      },
+      'Chat admission denied'
+    )
     return NextResponse.json(
       { error: 'AI usage is not authorized', code: 'AI_FEATURES_DISABLED' },
       { status: 403 }
@@ -842,11 +843,14 @@ export async function POST(
         ownerId: chatbot.ownerId,
         usageClass: selectedModelConfig.usageClass,
       })
-    } catch (error) {
-      console.error('Failed to check account chat usage:', {
-        requestId,
-        error,
-      })
+    } catch {
+      log.error(
+        {
+          event: 'chat.account_usage.check_failed',
+          err: toSafeError('Failed to check account chat usage'),
+        },
+        'Failed to check account chat usage'
+      )
       return false
     }
   }
@@ -964,11 +968,14 @@ export async function POST(
         currentThreadId = newThread.id
         createdThreadId = newThread.id
       }
-    } catch (error) {
-      console.error('Failed to resolve or create thread:', {
-        requestId,
-        error,
-      })
+    } catch {
+      log.error(
+        {
+          event: 'chat.thread.resolve_failed',
+          err: toSafeError('Failed to resolve or create chat thread'),
+        },
+        'Failed to resolve or create chat thread'
+      )
     }
   }
   if (!currentThreadId) {
@@ -989,12 +996,15 @@ export async function POST(
         participantId,
         chatbotId
       )
-    } catch (error) {
-      console.error('Failed to discard a newly created chat thread:', {
-        requestId,
-        phase,
-        error,
-      })
+    } catch {
+      log.warn(
+        {
+          event: 'chat.thread.discard_failed',
+          phase,
+          err: toSafeError('Failed to discard newly created chat thread'),
+        },
+        'Failed to discard newly created chat thread'
+      )
       return false
     }
   }
@@ -1179,12 +1189,15 @@ export async function POST(
         threadId: owningThread.id,
         lifecycleAttemptId,
       })
-    } catch (error) {
-      console.error('Failed to mark assistant lifecycle attempt as failed:', {
-        requestId,
-        phase,
-        error,
-      })
+    } catch {
+      log.error(
+        {
+          event: 'chat.lifecycle.failure_mark_failed',
+          phase,
+          err: toSafeError('Failed to mark assistant lifecycle attempt failed'),
+        },
+        'Failed to mark assistant lifecycle attempt failed'
+      )
     }
   }
 
@@ -1224,19 +1237,27 @@ export async function POST(
           : {}),
       })
     } catch (error) {
-      console.error('[chat] Failed to update Langfuse trace:', {
-        requestId,
-        errorType: error instanceof Error ? error.name : typeof error,
-      })
+      log.error(
+        {
+          event: 'chat.telemetry.trace_update.failed',
+          requestId,
+          errorType: error instanceof Error ? error.name : typeof error,
+        },
+        'Failed to update Langfuse trace'
+      )
     }
 
     try {
       langfuseTrace.end()
     } catch (error) {
-      console.error('[chat] Failed to end Langfuse trace:', {
-        requestId,
-        errorType: error instanceof Error ? error.name : typeof error,
-      })
+      log.error(
+        {
+          event: 'chat.telemetry.trace_end.failed',
+          requestId,
+          errorType: error instanceof Error ? error.name : typeof error,
+        },
+        'Failed to end Langfuse trace'
+      )
     }
   }
 
@@ -1254,15 +1275,22 @@ export async function POST(
 
     let mcpTools: ToolSet = {}
     try {
-      mcpToolsHandle = await getAggregatedMCPTools(mcpServersWithConfigs, {
-        chatbotId,
-        participantId,
-        authMode,
-        kbIds: scopedKbIds,
-        sessionId: mcpScopeSessionId,
-        knowledgeGraphRetrievalEnabled: chatbot.knowledgeGraphRetrievalEnabled,
-        courseId: chatbot.courseId,
-      })
+      mcpToolsHandle = await getAggregatedMCPTools(
+        mcpServersWithConfigs,
+        {
+          chatbotId,
+          participantId,
+          authMode,
+          kbIds: scopedKbIds,
+          sessionId: mcpScopeSessionId,
+          knowledgeGraphRetrievalEnabled:
+            chatbot.knowledgeGraphRetrievalEnabled,
+          courseId: chatbot.courseId,
+        },
+        {},
+        'account',
+        log
+      )
       mcpTools = mcpToolsHandle.tools
     } catch (error) {
       if (!(error instanceof RequiredMCPUnavailableError)) throw error
@@ -1300,9 +1328,12 @@ export async function POST(
         role: 'included',
       })
       if (Object.hasOwn(mcpTools, RESPONSE_EXAMPLE_SEARCH_TOOL_NAME)) {
-        console.warn(
-          'Response-example skill name conflicts with an existing tool; continuing without response examples',
-          { requestId, chatbotId }
+        log.warn(
+          {
+            event: 'chat.response_examples.unavailable',
+            outcome: 'tool_name_conflict',
+          },
+          'Continuing without response examples'
         )
       } else {
         const responseExampleTool =
@@ -1314,9 +1345,9 @@ export async function POST(
         responseExampleProjectionDigest = responseExampleSkill.projectionDigest
       }
     } catch (error) {
-      console.warn(
-        'Response-example skill loading failed; continuing without response examples',
-        { requestId, chatbotId, error }
+      log.warn(
+        { event: 'chat.response_examples.unavailable', outcome: 'load_failed' },
+        'Continuing without response examples'
       )
     }
 
@@ -1350,13 +1381,12 @@ export async function POST(
           candidateCount: practiceCandidateCount,
         })
       } catch (error) {
-        console.warn(
-          'Student practice lookup failed; continuing without quiz candidates',
+        log.warn(
           {
-            requestId,
-            chatbotId,
-            error,
-          }
+            event: 'chat.student_practice.unavailable',
+            outcome: 'lookup_failed',
+          },
+          'Continuing without quiz candidates'
         )
       }
     }
@@ -1447,7 +1477,7 @@ export async function POST(
     // Compile the full system prompt only after course metadata and effective
     // tool names are known. The compiler owns the fixed authority order.
     // Assigning the finished value here (rather than a separate `instructions`
-    // variable) keeps the `systemPromptLength` / `systemPromptHash` telemetry
+    // variable) keeps the `systemPromptLength` telemetry
     // below truthful to what is actually sent to the model.
     const systemPrompt = compileSystemPrompt(
       chatbot.systemPrompts,
@@ -1591,10 +1621,14 @@ export async function POST(
             )
           }
         } else {
-          console.error('Failed to generate image description:', {
-            requestId,
-            error: result.reason,
-          })
+          log.warn(
+            {
+              event: 'chat.image.description_failed',
+              outcome: 'using_fallback',
+              err: toSafeError('Failed to generate image description'),
+            },
+            'Failed to generate image description'
+          )
           // find the corresponding image from the original array
           const idx = results.indexOf(result)
           imageAttachments.push({
@@ -1629,17 +1663,11 @@ export async function POST(
       event: string,
       context: Record<string, unknown>,
       level: 'info' | 'error' = 'info'
-    ) => logChatDev(event, { requestId, ...context }, level)
+    ) => logChatDev(event, { requestId, ...context }, level, log)
 
     logEvent('request.context', {
-      chatbotId,
-      participantId,
-      threadId: currentThreadId,
-      assistantMessageId,
-      selectedModel,
-      resolvedModelId: selectedModelConfig.id,
-      deploymentId: selectedModelConfig.deploymentId,
-      routing,
+      providerRoute: routing.source,
+      customProvider: routing.source === 'custom',
       selectedMode,
       reasoningEffort: appliedReasoningEffort,
       allowedReasoningEfforts,
@@ -1654,11 +1682,7 @@ export async function POST(
       responseExampleProjectionDigest,
       hasChatContext: Boolean(chatContextPrompt || elearningContextPrompt),
       systemPromptLength: effectiveSystemPrompt.length,
-      systemPromptHash: effectiveSystemPrompt
-        ? hashSnippet(effectiveSystemPrompt)
-        : null,
       userPromptLengthTotal: userPrompt.length,
-      userPromptHash: userPrompt ? hashSnippet(userPrompt) : null,
       imageAttachmentCount: images.length,
       imageAttachmentSizes: resolvedImages.map((image) =>
         Buffer.byteLength(image.imageBase64, 'utf8')
@@ -1717,11 +1741,15 @@ export async function POST(
             }
           }
         }
-      } catch (error) {
-        console.error('Failed to fetch prior image descriptions:', {
-          requestId,
-          error,
-        })
+      } catch {
+        log.warn(
+          {
+            event: 'chat.image.history_lookup_failed',
+            outcome: 'continuing_without_history',
+            err: toSafeError('Failed to fetch prior image descriptions'),
+          },
+          'Failed to fetch prior image descriptions'
+        )
       }
     }
 
@@ -1769,14 +1797,13 @@ export async function POST(
             select: { id: true },
           })
           if (existingMessage) {
-            console.warn(
-              'Skipping user message update: message exists outside current thread',
+            log.warn(
               {
-                requestId,
+                event: 'chat.message.persist_skipped',
+                outcome: 'message_thread_mismatch',
                 phase: 'persist.userMessage',
-                messageId: userMessageId,
-                threadId: currentThreadId,
-              }
+              },
+              'Skipped user message update'
             )
           } else {
             await prisma.chatMessage.create({
@@ -1806,12 +1833,15 @@ export async function POST(
           where: { id: currentThreadId },
           data: { updatedAt: new Date() },
         })
-      } catch (error) {
-        console.error('Failed to save user message:', {
-          requestId,
-          phase: 'persist.userMessage',
-          error,
-        })
+      } catch {
+        log.error(
+          {
+            event: 'chat.message.persist_failed',
+            phase: 'persist.userMessage',
+            err: toSafeError('Failed to save user message'),
+          },
+          'Failed to save user message'
+        )
         if (isElearningThread) {
           // Contextual generation requires durable question persistence; a
           // failed save returns a recoverable error without an answer. The
@@ -1831,12 +1861,14 @@ export async function POST(
         }
       }
     } else if (currentThreadId && !owningThread && userMessageId) {
-      console.warn('Skipping user message save: thread ownership mismatch', {
-        requestId,
-        phase: 'persist.userMessage',
-        messageId: userMessageId,
-        threadId: currentThreadId,
-      })
+      log.warn(
+        {
+          event: 'chat.message.persist_skipped',
+          outcome: 'thread_ownership_mismatch',
+          phase: 'persist.userMessage',
+        },
+        'Skipped user message persistence'
+      )
     }
 
     const normalizeCredits = (
@@ -1852,12 +1884,15 @@ export async function POST(
           rawCreditsUsed,
           creditsUsed: roundChatUsageCredits(rawCreditsUsed).toNumber(),
         }
-      } catch (error) {
-        console.error('Failed to normalize chat usage credits:', {
-          requestId,
-          phase,
-          errorType: error instanceof Error ? error.name : typeof error,
-        })
+      } catch {
+        log.warn(
+          {
+            event: 'chat.credits.normalize_failed',
+            phase,
+            err: toSafeError('Failed to normalize chat usage credits'),
+          },
+          'Failed to normalize chat usage credits'
+        )
         return { rawCreditsUsed: null, creditsUsed: null }
       }
     }
@@ -1897,14 +1932,16 @@ export async function POST(
           reasoningContent,
           rawCreditsUsed,
         })
-      } catch (error) {
-        console.error(
-          'Failed to finalize assistant message and account usage:',
+      } catch {
+        log.error(
           {
-            requestId,
+            event: 'chat.turn.finalize_failed',
             phase,
-            error,
-          }
+            err: toSafeError(
+              'Failed to finalize assistant message and account usage'
+            ),
+          },
+          'Failed to finalize assistant message and account usage'
         )
         await failAssistantClaim(`finalize.${phase}`)
       }
@@ -1948,10 +1985,14 @@ export async function POST(
         langfuseContext = context
         langfuseAiSdkIntegration = integration
       } catch (error) {
-        console.error('[chat] Failed to prepare Langfuse telemetry:', {
-          requestId,
-          errorType: error instanceof Error ? error.name : typeof error,
-        })
+        log.error(
+          {
+            event: 'chat.telemetry.prepare.failed',
+            requestId,
+            errorType: error instanceof Error ? error.name : typeof error,
+          },
+          'Failed to prepare Langfuse telemetry'
+        )
       }
     }
     const langfuseTelemetryEnabled = Boolean(
@@ -1964,10 +2005,14 @@ export async function POST(
       try {
         after(flushLangfuseTelemetry)
       } catch (error) {
-        console.error('[chat] Failed to schedule a Langfuse flush:', {
-          requestId,
-          errorType: error instanceof Error ? error.name : typeof error,
-        })
+        log.error(
+          {
+            event: 'chat.telemetry.flush_schedule.failed',
+            requestId,
+            errorType: error instanceof Error ? error.name : typeof error,
+          },
+          'Failed to schedule a Langfuse flush'
+        )
       }
     }
 
@@ -2262,8 +2307,9 @@ export async function POST(
         onStepEnd: async (step) => {
           currentStepContent = []
           const diagnostics = collectStepToolDiagnostics(step)
-          const { toolCallsCount, toolCallNames } =
-            summarizeToolDiagnostics(diagnostics)
+          // Names and content-derived digests stay out of log fields; only
+          // counts and byte sizes pass the sanitizers allowlist.
+          const { toolCallsCount } = summarizeToolDiagnostics(diagnostics)
           const providerReasoningTokens = extractReasoningTokens(
             asObject(step)?.providerMetadata
           )
@@ -2285,8 +2331,10 @@ export async function POST(
                 ? stepOutputTokens >= providerReasoningTokens
                 : null,
             toolCallsCount,
-            toolCallNames,
-            toolDiagnostics: diagnostics,
+            toolDiagnostics: diagnostics.map((diagnostic) => ({
+              inputBytes: diagnostic.input?.bytes ?? null,
+              outputBytes: diagnostic.output?.bytes ?? null,
+            })),
           })
         },
 
@@ -2300,7 +2348,6 @@ export async function POST(
             'stream.error',
             {
               elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-              ...serializedError,
               classification: classification.classification,
               retryable: classification.retryable,
               suggestedAction: classification.suggestedAction,
@@ -2308,10 +2355,16 @@ export async function POST(
             'error'
           )
 
-          console.error('Error during streaming response:', {
-            requestId,
-            error: serializedError,
-          })
+          log.error(
+            {
+              event: 'chat.stream.error',
+              outcome: 'failed',
+              classification: classification.classification,
+              retryable: classification.retryable,
+              err: toSafeError('Error during streaming response'),
+            },
+            'Error during streaming response'
+          )
 
           emitFinalOnce('error', {
             elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
@@ -2368,10 +2421,14 @@ export async function POST(
       } catch (error) {
         if (providerStreamStarted) throw error
         finishLangfuseTrace('error', { stage: 'telemetry-setup' })
-        console.error('[chat] Failed to start Langfuse trace:', {
-          requestId,
-          errorType: error instanceof Error ? error.name : typeof error,
-        })
+        log.error(
+          {
+            event: 'chat.telemetry.trace_start.failed',
+            requestId,
+            errorType: error instanceof Error ? error.name : typeof error,
+          },
+          'Failed to start Langfuse trace'
+        )
         result = startStream()
       }
     } else {
@@ -2391,13 +2448,17 @@ export async function POST(
         const serializedError = serializeStreamError(error)
         const classification = classifyStreamError(serializedError)
 
-        console.error('Error while streaming UI message response:', {
-          requestId,
-          error: serializedError,
-          classification: classification.classification,
-          retryable: classification.retryable,
-          suggestedAction: classification.suggestedAction,
-        })
+        log.error(
+          {
+            event: 'chat.response.stream_error',
+            outcome: 'failed',
+            classification: classification.classification,
+            retryable: classification.retryable,
+            suggestedAction: classification.suggestedAction,
+            err: toSafeError('Error while streaming chat response'),
+          },
+          'Error while streaming chat response'
+        )
         void failAssistantClaim('response.stream.error')
         finishLangfuseTrace('error', {
           errorClassification: classification.classification,
@@ -2439,6 +2500,18 @@ export async function POST(
     else await failOrDiscardUnstartedClaim('request')
     throw error
   }
+}
+
+export function POST(
+  req: NextRequest,
+  context: { params: Promise<{ chatbotId: string }> }
+) {
+  return withRouteLogging(
+    req,
+    '/api/chatbots/:chatbotId/chat',
+    (log, requestContext) =>
+      handlePOST(req, context, log, requestContext.requestId)
+  )
 }
 
 // Function to calculate cost based on token usage and model pricing

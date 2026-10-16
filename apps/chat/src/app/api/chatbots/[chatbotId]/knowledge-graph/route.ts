@@ -1,5 +1,5 @@
+import type { AppLogger } from '@klicker-uzh/logging/node'
 import { type NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
   type ChatbotKnowledgeGraphReadRequest,
@@ -8,7 +8,9 @@ import {
   KnowledgeGraphSelectionRequiredError,
   readPublishedChatbotKnowledgeGraph,
 } from '@/src/lib/server/knowledgeGraph'
+import { withRouteLogging } from '@/src/lib/server/requestLogging'
 import { createKnowledgeGraphAdmission } from '@/src/services/knowledgeGraphAdmission'
+import { z } from 'zod'
 
 export const runtime = 'nodejs'
 
@@ -72,12 +74,13 @@ function parseReadRequest(
   return { operation: 'overview' }
 }
 
-export async function GET(
+async function handleGET(
   req: NextRequest,
-  { params }: { params: Promise<{ chatbotId: string }> }
+  { params }: { params: Promise<{ chatbotId: string }> },
+  log: AppLogger
 ) {
   const { chatbotId } = await params
-  const authResult = await withChatbotAuth(req, chatbotId)
+  const authResult = await withChatbotAuth(req, chatbotId, log)
   if ('response' in authResult) {
     return authResult.response
   }
@@ -159,10 +162,10 @@ export async function GET(
       )
     }
 
-    console.error('Participant knowledge graph read failed', {
-      chatbotId,
-      operation: readRequest.operation,
-    })
+    log.error(
+      { event: 'chat.knowledge_graph.read.failed' },
+      'Participant knowledge graph read failed'
+    )
     return NextResponse.json(
       {
         code: 'KNOWLEDGE_GRAPH_TEMPORARILY_UNAVAILABLE',
@@ -173,4 +176,15 @@ export async function GET(
   } finally {
     slot.release()
   }
+}
+
+export function GET(
+  req: NextRequest,
+  context: { params: Promise<{ chatbotId: string }> }
+) {
+  return withRouteLogging(
+    req,
+    '/api/chatbots/:chatbotId/knowledge-graph',
+    (log) => handleGET(req, context, log)
+  )
 }

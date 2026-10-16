@@ -1,0 +1,56 @@
+mutation ManipulateChoicesQuestionWithTreeAssignments(
+  $id: Int
+  $status: ElementStatus
+  $type: ElementType!
+  $name: String
+  $content: String
+  $explanation: String
+  $options: OptionsChoicesInput
+  $basePoints: Boolean
+  $pointsMultiplier: Int
+  $tags: [String!]
+  $initialCompetenceTreeAssignments: [CompetenceTreeElementAssignmentCreateInput!]
+  $creationRequestId: String
+) {
+  manipulateChoicesQuestion(
+    id: $id
+    status: $status
+    type: $type
+    name: $name
+    content: $content
+    explanation: $explanation
+    options: $options
+    basePoints: $basePoints
+    pointsMultiplier: $pointsMultiplier
+    tags: $tags
+    initialCompetenceTreeAssignments: $initialCompetenceTreeAssignments
+    creationRequestId: $creationRequestId
+  ) {
+    __typename
+    ... on ChoicesElement {
+      id
+      name
+      status
+      type
+      content
+      explanation
+      basePoints
+      pointsMultiplier
+      options {
+        displayMode
+        hasSampleSolution
+        hasAnswerFeedbacks
+        choices {
+          ix
+          correct
+          feedback
+          value
+        }
+      }
+      tags {
+        id
+        name
+      }
+    }
+  }
+}

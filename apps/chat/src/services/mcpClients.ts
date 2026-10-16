@@ -2,6 +2,8 @@
 
 import { createHash, randomUUID } from 'node:crypto'
 import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
+import type { AppLogger } from '@klicker-uzh/logging/node'
+import { toSafeError } from '@klicker-uzh/logging/node'
 import { safeDecrypt } from '@klicker-uzh/util'
 import {
   MAX_TOOL_NAME_LENGTH,
@@ -14,6 +16,7 @@ import {
   parseMCPRuntimePolicy,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
+import { getRouteLogger } from '@/src/lib/server/requestLogging'
 import {
   sanitizeDocQueryResult,
   serializeDocQueryExecution,
@@ -389,7 +392,8 @@ export async function createMCPClient(
   server: MCPServerConfig,
   contextOrChatbotId: MCPRequestContext | string,
   participantIdOrOptions: string | MCPRequestOptions = '',
-  authMode: AuthMode = 'account'
+  authMode: AuthMode = 'account',
+  log: AppLogger = getRouteLogger()
 ) {
   if (!server.url) {
     throw new Error(`MCP server ${server.name} has no URL defined`)
@@ -420,13 +424,20 @@ export async function createMCPClient(
         : {}),
     })
 
-    console.log(`MCP Client for ${server.name} initialized successfully`)
+    log.info(
+      { event: 'chat.mcp.client.initialized', outcome: 'success' },
+      'Initialized MCP client'
+    )
     return client
   } catch (error) {
-    console.error('Failed to create MCP client', {
-      server: server.name,
-      errorType: error instanceof Error ? error.name : typeof error,
-    })
+    log.warn(
+      {
+        event: 'chat.mcp.connection.failed',
+        outcome: 'client_initialization_failed',
+        err: toSafeError('Failed to create MCP client'),
+      },
+      'Failed to create MCP client'
+    )
     throw error
   }
 }
@@ -458,7 +469,8 @@ function isToolAllowed(toolName: string, allowedTools: string[]): boolean {
 async function loadServerTools(
   serverWithConfig: MCPServerWithConfig,
   context: MCPRequestContext,
-  options: MCPRequestOptions
+  options: MCPRequestOptions,
+  log: AppLogger = getRouteLogger()
 ): Promise<MCPToolsHandle> {
   const { server, config } = serverWithConfig
   const runtimePolicy = parseMCPRuntimePolicy(config.parameters)
@@ -473,10 +485,13 @@ async function loadServerTools(
     try {
       await activeClient.close()
     } catch (error) {
-      console.warn('Failed to close MCP client', {
-        server: server.name,
-        errorType: error instanceof Error ? error.name : typeof error,
-      })
+      log.warn(
+        {
+          event: 'chat.mcp.close.failed',
+          err: toSafeError('MCP client close failed'),
+        },
+        'Failed to close MCP client'
+      )
     }
   }
 
@@ -505,7 +520,13 @@ async function loadServerTools(
     if (server.name === DOC_QUERY_MCP_SERVER_NAME) {
       assertDocQueryRequestScope(config.parameters, context.kbIds)
     }
-    client = await createMCPClient(server, context, options)
+    client = await createMCPClient(
+      server,
+      context,
+      options,
+      context.authMode,
+      log
+    )
     const rawTools = await client.tools()
     // Serialize the raw client calls, including graph-expanded searches. An
     // augmentation timeout must not release an unfinished provider operation.
@@ -539,7 +560,20 @@ async function loadServerTools(
         const execute = tool.execute.bind(tool)
         const dependencies = graphQueryDependencies(context)
         dependencies.observe = (diagnostic) => {
-          console.info('[chat.graph_retrieval]', diagnostic)
+          log.info(
+            {
+              event: 'chat.graph_retrieval',
+              outcome: diagnostic.outcome,
+              expansionAttempted: diagnostic.expansionAttempted,
+              hintCount: diagnostic.hintCount,
+              baselinePassages: diagnostic.baselinePassages,
+              expandedPassages: diagnostic.expandedPassages,
+              resultPassages: diagnostic.resultPassages,
+              resultCharacters: diagnostic.resultCharacters,
+              elapsedMs: diagnostic.elapsedMs,
+            },
+            'Graph-assisted document retrieval completed'
+          )
         }
         rawTools[rawName] = {
           ...tool,
@@ -600,20 +634,39 @@ async function loadServerTools(
       }
     })
 
-    console.log(
-      `Loaded ${Object.keys(filteredTools).length} tools from ${server.name}`
+    log.info(
+      {
+        event: 'chat.mcp.tools.loaded',
+        outcome: 'success',
+        toolCount: Object.keys(filteredTools).length,
+      },
+      'Loaded MCP tools'
     )
     return { tools: filteredTools, close }
   } catch (error) {
     await close()
     if (error instanceof RequiredMCPUnavailableError) {
-      console.error('Required MCP tools unavailable', { server: server.name })
+      log.error(
+        {
+          event: 'chat.mcp.tools.load_failed',
+          outcome: 'required_unavailable',
+          err: toSafeError('Required MCP tools unavailable'),
+        },
+        'Required MCP tools unavailable'
+      )
       // Preserve a scope violation raised while resolving the request so the
       // caller cannot degrade an isolation failure into an answer.
       throw error
     }
     if (runtimePolicy.required) {
-      console.error('Required MCP tools unavailable', { server: server.name })
+      log.error(
+        {
+          event: 'chat.mcp.tools.load_failed',
+          outcome: 'required_unavailable',
+          err: toSafeError('Required MCP tools unavailable'),
+        },
+        'Required MCP tools unavailable'
+      )
       // A credentials rejection from the endpoint is an identity or tenant
       // boundary, so it stays fail-closed like a scope violation; only a
       // genuine outage may fall through to a degraded answer.
@@ -622,7 +675,14 @@ async function loadServerTools(
       )
     }
 
-    console.error('Optional MCP tools unavailable', { server: server.name })
+    log.warn(
+      {
+        event: 'chat.mcp.tools.load_failed',
+        outcome: 'optional_unavailable',
+        err: toSafeError('Optional MCP tools unavailable'),
+      },
+      'Optional MCP tools unavailable'
+    )
     // Return empty object to allow other servers to continue loading
     return { tools: {}, close }
   }
@@ -635,9 +695,13 @@ export async function getAggregatedMCPTools(
   serversWithConfigs: MCPServerWithConfig[],
   contextOrChatbotId: MCPRequestContext | string,
   participantIdOrOptions: string | MCPRequestOptions = '',
-  authMode: AuthMode = 'account'
+  authMode: AuthMode = 'account',
+  log: AppLogger = getRouteLogger()
 ): Promise<MCPToolsHandle> {
-  console.log(`Loading MCP Tools from ${serversWithConfigs.length} servers...`)
+  log.info(
+    { event: 'chat.mcp.load.started', serverCount: serversWithConfigs.length },
+    'Loading MCP tools'
+  )
 
   const { context, options } = normalizeMCPRequest(
     contextOrChatbotId,
@@ -646,7 +710,10 @@ export async function getAggregatedMCPTools(
   )
 
   if (serversWithConfigs.length === 0) {
-    console.log('No MCP servers configured')
+    log.info(
+      { event: 'chat.mcp.load.completed', outcome: 'not_configured' },
+      'No MCP servers configured'
+    )
     return { tools: {}, close: async () => {} }
   }
 
@@ -673,7 +740,8 @@ export async function getAggregatedMCPTools(
       const serverHandle = await loadServerTools(
         serverWithConfig,
         context,
-        options
+        options,
+        log
       )
       serverHandles.push(serverHandle)
       const runtimePolicy = parseMCPRuntimePolicy(
@@ -693,14 +761,25 @@ export async function getAggregatedMCPTools(
         throw error
       }
 
-      console.error(
-        `Failed to load tools from ${serverWithConfig.server.name}, continuing with other servers`
+      log.warn(
+        {
+          event: 'chat.mcp.tools.load_failed',
+          outcome: 'continuing',
+          err: toSafeError('Failed to load MCP tools'),
+        },
+        'Failed to load MCP tools; continuing with other servers'
       )
     }
   }
 
-  console.log(`Total aggregated tools: ${Object.keys(aggregatedTools).length}`)
-  console.log('Available tools:', Object.keys(aggregatedTools))
+  log.info(
+    {
+      event: 'chat.mcp.load.completed',
+      outcome: 'success',
+      toolCount: Object.keys(aggregatedTools).length,
+    },
+    'Loaded MCP tools'
+  )
 
   return { tools: aggregatedTools, close }
 }
