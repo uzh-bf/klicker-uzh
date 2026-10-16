@@ -2,6 +2,7 @@ import asyncio
 import json
 import random
 
+import pytest
 from common import Question
 from pairwise import (
     aggregate,
@@ -12,6 +13,7 @@ from pairwise import (
     parse_verdict,
     plan_pairs,
     preference,
+    run,
 )
 
 Q = Question("gt_1", "What is X?", "X is 4.")
@@ -94,3 +96,18 @@ def test_pairing_requires_both_systems_and_honours_limit(tmp_path):
     questions = [Question(f"gt_{i}", "q", "ref") for i in (1, 2, 3)]
     assert [(q.id, rep) for q, rep in plan_pairs(a, b, questions, None)] == [("gt_1", 0)]
     assert plan_pairs(a, b, questions, 0) == []
+
+
+def test_live_runner_fails_on_entry_before_reading_inputs(monkeypatch):
+    """The removed live judge guard must fire before credentials, provider or file access."""
+    monkeypatch.delenv("PAIRWISE_REGRESSION_API_KEY", raising=False)
+    accessed = []
+
+    class RecordingArgs:
+        def __getattr__(self, name):
+            accessed.append(name)
+            raise AssertionError(f"args.{name} read before the guard")
+
+    with pytest.raises(SystemExit):
+        run(RecordingArgs())
+    assert accessed == []

@@ -20,7 +20,7 @@ This skill is the procedure and the decision rules.
   `ai-generic-prd` profile; use it only for GET requests.
 - Paid runs need a stated bound: `--limit`, `--repeats` and `--max-calls`
   for bench. The default bench (5 arms × 27 questions × 2) costs a few USD
-  including the judge.
+  for answers only; `bench.py` requires `--no-judge` and no longer grades.
 - The router config lives in `ai-infrastructure/deployment` (`litellm/*-generic/config.yaml`).
   This repository mirrors it in `util/litellm/config.yaml` and records the
   deployed tier map in the `modelRegistry` comment of `deploy/env-uzh-*/values.yaml`.
@@ -38,13 +38,15 @@ This skill is the procedure and the decision rules.
    unstable share above about 20% means tier choices for MEDIUM matter more
    than the others, because borderline questions land there.
 3. **Bench.** Benchmark each model and effort that any candidate map uses,
-   plus the current map's arms. Use a judge from another model family than
-   the arms (`--judge`, default Claude Opus).
+   plus the current map's arms. `bench.py` requires `--no-judge` and records
+   answers, latency and token usage only; answer quality comes from the
+   DeepEval comparison in step 5.
 4. **Analyze.** Run `analyze.py` with each candidate as `--tier-map`, the
    observed mix and token profile (`--mix observe:<file>#<router>`), monthly
    volume from the observed week, and `--compare` for every tier where
-   candidates differ. Never quote cost from a replay or explicit mix: benchmark
-   prompts lack the chatbot's system prompt and course context.
+   candidates differ; paired comparisons read judge grades, so they only work
+   on earlier graded bench files. Never quote cost from a replay or explicit
+   mix: benchmark prompts lack the chatbot's system prompt and course context.
 5. **DeepEval.** After both routers exist in staging, compare them on the
    deployed path (below).
 6. **Record** the report, the decision and the rollback in the MR/PR that
@@ -81,8 +83,8 @@ Without a direct route to the staging proxy, a `kubectl port-forward` to
 This sends only the question, without a chatbot system prompt or knowledge
 base, so it measures the routers and models. For the full chatbot path, use
 the launcher's `--local-target` mode against a stack whose registry points
-`auto` at each router in turn. The default judge is GPT-5.6 Luna; when it
-judges GPT-6 answers, confirm a close result with the bench's non-OpenAI judge.
+`auto` at each router in turn. The default judge is GPT-5.6 Luna; the routing
+scripts no longer run a judge, so DeepEval is the only quality path.
 
 ## Decision rules
 

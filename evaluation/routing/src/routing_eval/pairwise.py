@@ -1,23 +1,18 @@
-"""Blind pairwise judge for two sets of answers to the same questions.
+"""Offline helpers from the retired blind pairwise judge.
 
-Each answer pair is judged twice, once in each presentation order, with
-freshly randomised labels so neither the position nor a fixed label can
-decide the verdict. The judge sees the question and the reference facts, not
-which system wrote which answer. Output is a JSON report with a per-question
-preference, position consistency, the win rate of system A and a paired
-bootstrap 95% confidence interval over questions.
+The script no longer runs a live LLM judge: running it fails immediately with
+a pointer to the supported path. Grade answer quality with DeepEval through
+util/_run_klicker_eval.sh (setup: evaluation/README.md; decision rules:
+.agents/skills/klicker-model-routing-eval/SKILL.md).
 
-Answer files are JSON lines with `q` (question id), `text` and an optional
-`rep`, one file per system. Answers pair up on
-(`q`, `rep`) and each question is scored as the mean over its repeats.
-
-    uv run python src/routing_eval/pairwise.py \
-        --answers-a _local/answers-v1.jsonl --answers-b _local/answers-v2.jsonl \
-        --gt-dir <questions-with-reference-facts> --out _local/pairwise.json
-
-The judge defaults to the same non-OpenAI model, endpoint and key variable as
-`bench.py`. Reference facts can be real course material: keep the answer files
-and the report in the ignored `_local/` directory.
+The preserved helpers build the blind both-order prompts and parse verdicts
+(`build_prompt`, `parse_verdict`, `pick_labels`), run both presentation orders
+against an injected judge function (`judge_both_orders`), read and pair answer
+files (JSON lines with `q`, `text` and an optional `rep`, one file per system:
+`load_answers`, `plan_pairs`), and summarise per-question win rates, position
+consistency and a bootstrap 95% confidence interval (`aggregate`,
+`bootstrap_ci`, `preference`, `score`). Historical reports and the tests use
+them offline.
 """
 
 from __future__ import annotations
@@ -25,15 +20,13 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
-import os
 import random
 import re
 import string
-from collections import defaultdict
 from pathlib import Path
 from statistics import mean
 
-from common import DEFAULT_GT_DIR, Question, load_questions, read_jsonl
+from common import DEFAULT_GT_DIR, Question, read_jsonl
 
 JUDGE_PROMPT = """You compare two tutor answers to the same question. The
 reference facts were written by the lecturer from the course material.
@@ -190,42 +183,14 @@ def plan_pairs(a: dict, b: dict, questions: list[Question], limit: int | None):
     return [(by_id[qid], rep) for qid, rep in keys]
 
 
-async def run(args) -> dict:
-    from openai import AsyncOpenAI
-
-    questions = load_questions(args.gt_dir)
-    a, b = load_answers(args.answers_a), load_answers(args.answers_b)
-    pairs = plan_pairs(a, b, questions, args.limit)
-    if not pairs:
-        raise SystemExit("no (question, rep) pairs answered by both systems")
-    if 2 * len(pairs) > args.max_calls:
-        raise SystemExit(f"{2 * len(pairs)} judge calls exceed --max-calls {args.max_calls}")
-    client = AsyncOpenAI(base_url=args.base_url, api_key=os.environ[args.api_key_env])
-    rng = random.Random(args.seed)
-    sem = asyncio.Semaphore(args.concurrency)
-
-    async def ask(prompt: str, labels: tuple[str, str]) -> str | None:
-        async with sem:
-            try:
-                r = await client.chat.completions.create(
-                    model=args.judge,
-                    messages=[{"role": "user", "content": prompt}],
-                    max_tokens=300,
-                    temperature=0,
-                )
-            except Exception:  # noqa: BLE001 - an unusable verdict is dropped and counted
-                return None
-        return parse_verdict(r.choices[0].message.content, labels)
-
-    results = defaultdict(list)
-    verdicts = await asyncio.gather(
-        *(judge_both_orders(ask, q, a[(q.id, rep)], b[(q.id, rep)], rng) for q, rep in pairs)
+def run(args) -> None:
+    """Refuse the removed live judge before credentials, provider or file access."""
+    raise SystemExit(
+        "pairwise.py no longer runs a live LLM judge. Grade answer quality with "
+        "DeepEval through util/_run_klicker_eval.sh (see evaluation/README.md). "
+        "The offline helpers (build_prompt, judge_both_orders, aggregate, "
+        "bootstrap_ci) remain for historical reports."
     )
-    for (q, _), verdict in zip(pairs, verdicts, strict=True):
-        results[q.id].append(verdict)
-    report = aggregate(results, resamples=args.resamples, seed=args.seed)
-    report["judge"] = args.judge
-    return report
 
 
 def main():
@@ -237,21 +202,18 @@ def main():
     ap.add_argument(
         "--gt-dir", type=Path, default=DEFAULT_GT_DIR, help="questions with reference facts"
     )
-    ap.add_argument("--limit", type=int, help="judge at most this many questions")
-    ap.add_argument("--max-calls", type=int, default=200, help="refuse more judge calls than this")
+    ap.add_argument("--limit", type=int, help="compare at most this many questions")
+    ap.add_argument(
+        "--max-calls", type=int, default=200, help="refuse runs with more pairs than this"
+    )
     ap.add_argument("--base-url", default="https://openrouter.ai/api/v1")
     ap.add_argument("--api-key-env", default="OPENROUTER_API_KEY")
-    ap.add_argument("--judge", default="anthropic/claude-opus-5.5")
     ap.add_argument("--concurrency", type=int, default=8)
     ap.add_argument("--resamples", type=int, default=2000)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", type=Path)
     args = ap.parse_args()
-    report = asyncio.run(run(args))
-    text = json.dumps(report, indent=2)
-    if args.out:
-        args.out.write_text(text + "\n")
-    print(json.dumps({k: v for k, v in report.items() if k != "per_question"}, indent=2))
+    run(args)
 
 
 if __name__ == "__main__":

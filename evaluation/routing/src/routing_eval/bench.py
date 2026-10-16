@@ -2,12 +2,14 @@
 
 Each arm answers every question with streaming through an OpenAI-compatible
 endpoint (OpenRouter by default, or a LiteLLM proxy). The run records time to
-first answer token, total latency and token usage. A judge from a different
-model family then grades each answer against the lecturer's reference answer.
-Output is JSON lines; answer text is written only with --keep-text.
+first answer token, total latency and token usage. Runs require --no-judge:
+the live grading that used to run here was removed, and answer quality is
+graded with DeepEval through util/_run_klicker_eval.sh (see
+evaluation/README.md). Output is JSON lines; answer text is written only with
+--keep-text.
 
     uv run python src/routing_eval/bench.py \
-        --arms gpt-6-luna:xhigh,gpt-6.1-sol:low --repeats 2 \
+        --arms gpt-6-luna:xhigh,gpt-6.1-sol:low --repeats 2 --no-judge \
         --out _local/bench.jsonl
 """
 
@@ -18,7 +20,6 @@ import asyncio
 import json
 import os
 import random
-import re
 import sys
 import time
 from pathlib import Path
@@ -30,26 +31,6 @@ DEFAULT_SYSTEM = (
     "You are a course tutor for a university finance course. Answer the "
     "student's question accurately and clearly. Use LaTeX for formulas."
 )
-JUDGE_PROMPT = """You grade a tutor's answer to a university finance question
-against a reference answer written by the lecturer.
-
-Score from 1 to 10:
-- correctness: is the answer factually and mathematically right? Penalize
-  errors and claims that contradict the reference.
-- completeness: does it cover the key points of the reference?
-- clarity: is it well structured and appropriate for a student?
-
-Return only JSON: {"correctness": n, "completeness": n, "clarity": n,
-"major_error": true|false, "note": "<one short sentence>"}
-
-QUESTION:
-{q}
-
-REFERENCE ANSWER:
-{ref}
-
-TUTOR ANSWER:
-{ans}"""
 
 
 async def answer(client, args, model, effort, system, question):
@@ -85,25 +66,14 @@ async def answer(client, args, model, effort, system, question):
     }, "".join(parts)
 
 
-async def judge(client, model, q, ref, ans):
-    prompt = JUDGE_PROMPT.replace("{q}", q).replace("{ref}", ref).replace("{ans}", ans)
-    for _ in range(3):
-        r = await client.chat.completions.create(
-            model=model,
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=400,
-            temperature=0,
-        )
-        m = re.search(r"\{.*\}", r.choices[0].message.content or "", re.S)
-        if m:
-            try:
-                return json.loads(m.group(0))
-            except json.JSONDecodeError:
-                pass
-    return None
-
-
 async def run(args):
+    if not args.no_judge:
+        raise SystemExit(
+            "bench.py no longer grades answers with a live judge. Re-run with "
+            "--no-judge to record answers, TTFT and token usage; grade answer "
+            "quality with DeepEval through util/_run_klicker_eval.sh (see "
+            "evaluation/README.md)."
+        )
     client = AsyncOpenAI(base_url=args.base_url, api_key=os.environ[args.api_key_env])
     system = args.system_file.read_text() if args.system_file else DEFAULT_SYSTEM
     arms = [tuple((a.split(":") + [None])[:2]) for a in args.arms.split(",")]
@@ -121,15 +91,10 @@ async def run(args):
         async with sem:
             try:
                 res, text = await answer(client, args, model, effort, system, q.text)
-                grade = (
-                    None
-                    if args.no_judge
-                    else await judge(client, args.judge, q.text, q.reference, text)
-                )
             except Exception as e:  # noqa: BLE001 - recorded per row
-                res, text, grade = {"error": f"{type(e).__name__}: {str(e)[:200]}"}, None, None
+                res, text = {"error": f"{type(e).__name__}: {str(e)[:200]}"}, None
         label = f"{model}:{effort}" if effort else model
-        out.write(json.dumps({"arm": label, "q": q.id, "rep": rep, **res, "grade": grade}) + "\n")
+        out.write(json.dumps({"arm": label, "q": q.id, "rep": rep, **res}) + "\n")
         out.flush()
         if texts and text is not None:
             texts.write(json.dumps({"arm": label, "q": q.id, "rep": rep, "text": text}) + "\n")
@@ -154,8 +119,11 @@ def main():
         default="openrouter",
         help="openrouter: reasoning.effort; openai: reasoning_effort; none: the alias fixes it",
     )
-    ap.add_argument("--judge", default="anthropic/claude-opus-5.5")
-    ap.add_argument("--no-judge", action="store_true")
+    ap.add_argument(
+        "--no-judge",
+        action="store_true",
+        help="required: record answers, latency and usage; grade quality with DeepEval",
+    )
     ap.add_argument("--system-file", type=Path)
     ap.add_argument("--concurrency", type=int, default=8)
     ap.add_argument("--max-calls", type=int, default=500, help="refuse larger runs")

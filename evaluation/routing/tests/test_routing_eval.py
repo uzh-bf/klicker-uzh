@@ -1,5 +1,9 @@
+import argparse
+import asyncio
 import json
 
+import bench
+import pytest
 from analyze import paired, project
 from common import cost_usd
 from observe import aggregate
@@ -77,3 +81,44 @@ def test_projection_weights_each_tier_arm_by_the_mix():
     mix = {"SIMPLE": 0.5, "MEDIUM": 0.5, "COMPLEX": 0.0, "REASONING": 0.0}
     pr = project(tier_map, mix, stats)
     assert pr["usd"] == 3.0 and pr["quality"] == 8.0
+
+
+def test_bench_refuses_to_run_without_explicit_no_judge(monkeypatch, tmp_path):
+    """The removed live judge guard must fire before provider, dataset or output access."""
+    constructed = []
+    dataset_reads = []
+
+    class SpyClient:
+        def __init__(self, **kwargs):
+            constructed.append(kwargs)
+
+    def spy_load_questions(gt_dir):
+        dataset_reads.append(gt_dir)
+        raise AssertionError("dataset read before the guard")
+
+    monkeypatch.setattr(bench, "AsyncOpenAI", SpyClient)
+    monkeypatch.setattr(bench, "load_questions", spy_load_questions)
+    monkeypatch.setenv("BENCH_REGRESSION_API_KEY", "offline-placeholder")
+    out = tmp_path / "bench.jsonl"
+    args = argparse.Namespace(
+        arms="gpt-6-luna:high",
+        repeats=1,
+        gt_dir=tmp_path / "missing-gt",
+        limit=None,
+        base_url="https://unreachable.invalid/v1",
+        api_key_env="BENCH_REGRESSION_API_KEY",
+        model_prefix="openai/",
+        effort_style="openrouter",
+        no_judge=False,
+        system_file=None,
+        concurrency=1,
+        max_calls=10,
+        seed=0,
+        out=out,
+        keep_text=None,
+    )
+    with pytest.raises(SystemExit):
+        asyncio.run(bench.run(args))
+    assert constructed == []
+    assert dataset_reads == []
+    assert not out.exists()
