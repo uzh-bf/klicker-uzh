@@ -106,9 +106,18 @@ can replace the pinned global installation with registry latest. The workflow
 therefore sets `OCR_NO_UPDATE=1` at job scope and checks the expected version
 before every review attempt. A pinned install alone does not prevent this drift.
 
-Process failures record only the stage, original exit status and numeric output
-sizes. Raw stderr stays suppressed because it may contain provider or credential
-details. Shell-boundary tests must call the extracted function directly under
+Process failures record the stage, original exit status, numeric output sizes and
+fixed sanitized CLI error categories. Any existing result JSON supplies bounded
+coverage counts and failure classes through a diagnostic-only command before
+the shell returns the original nonzero status. Raw stderr stays suppressed
+because it may contain provider or credential details.
+
+Check the HTTP request deadline separately from the per-task deadline. OCR
+1.13.0 defaults HTTP requests to five minutes even when `--timeout` permits a
+longer task. Align `OCR_LLM_TIMEOUT` (seconds) with the existing manual task
+deadline; increasing the job limit alone cannot fix that earlier timeout.
+
+Shell-boundary tests must call the extracted function directly under
 `set -e`; calling it inside an `if` condition disables that error behavior and
 can conceal the regression the test intends to reproduce.
 
