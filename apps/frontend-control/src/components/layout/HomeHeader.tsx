@@ -2,7 +2,7 @@ import { useMutation } from '@apollo/client'
 import { faRightFromBracket } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { LogoutUserDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Select } from '@uzh-bf/design-system'
+import { Button, Select, toast } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { iconButtonClass } from '../common/styles'
@@ -42,9 +42,16 @@ function HomeHeader() {
         <Button
           disabled={loggingOut}
           onClick={async () => {
-            const result = await logoutUser()
-            if (result.data?.logoutUser) {
+            try {
+              const result = await logoutUser()
+              if (!result.data?.logoutUser) throw new Error('logout failed')
               router.push('https://www.klicker.uzh.ch')
+            } catch {
+              toast({
+                type: 'error',
+                message: t('control.liveQuiz.actionFailed'),
+                options: { duration: 5000 },
+              })
             }
           }}
           className={{ root: iconButtonClass }}

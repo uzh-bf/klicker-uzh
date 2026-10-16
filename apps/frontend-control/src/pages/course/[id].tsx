@@ -18,6 +18,8 @@ function Course() {
     GetControlCourseLiveQuizzesDocument,
     {
       variables: { courseId: router.query.id as string },
+      // quizzes are started and ended on other screens; revalidate on visit
+      fetchPolicy: 'cache-and-network',
       skip: !router.query.id,
     }
   )
@@ -30,7 +32,7 @@ function Course() {
 
   const fallbackTitle = t('control.course.courseOverview')
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <Layout
         title={fallbackTitle}

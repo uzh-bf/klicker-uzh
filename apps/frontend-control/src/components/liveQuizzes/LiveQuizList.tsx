@@ -30,9 +30,36 @@ interface LiveQuizListProps {
 
 const STARTABLE = [PublicationStatus.Draft, PublicationStatus.Scheduled]
 
+function QuizStatus({ quiz }: { quiz: ControlLiveQuiz }) {
+  const t = useTranslations()
+
+  if (quiz.status === PublicationStatus.Published) {
+    return (
+      <>
+        <LiveDot className="h-1.5 w-1.5" />
+        <span className="text-uzh-red font-semibold">
+          {t('control.course.statusRunning')}
+        </span>
+      </>
+    )
+  }
+  if (quiz.status !== PublicationStatus.Scheduled) {
+    return <span>{t('control.course.statusReady')}</span>
+  }
+  if (!quiz.availableFrom) {
+    return <span>{t('control.course.statusScheduled')}</span>
+  }
+  return (
+    <span>
+      {t('control.course.statusScheduledAt', {
+        date: dayjs(quiz.availableFrom).format('DD.MM.YYYY, HH:mm'),
+      })}
+    </span>
+  )
+}
+
 function QuizMeta({ quiz }: { quiz: ControlLiveQuiz }) {
   const t = useTranslations()
-  const running = quiz.status === PublicationStatus.Published
 
   return (
     <>
@@ -41,24 +68,7 @@ function QuizMeta({ quiz }: { quiz: ControlLiveQuiz }) {
           {t('control.course.assessmentBadge')}
         </span>
       )}
-      {running ? (
-        <>
-          <LiveDot className="h-1.5 w-1.5" />
-          <span className="text-uzh-red font-semibold">
-            {t('control.course.statusRunning')}
-          </span>
-        </>
-      ) : quiz.status === PublicationStatus.Scheduled ? (
-        <span>
-          {quiz.availableFrom
-            ? t('control.course.statusScheduledAt', {
-                date: dayjs(quiz.availableFrom).format('DD.MM.YYYY, HH:mm'),
-              })
-            : t('control.course.statusScheduled')}
-        </span>
-      ) : (
-        <span>{t('control.course.statusReady')}</span>
-      )}
+      <QuizStatus quiz={quiz} />
     </>
   )
 }

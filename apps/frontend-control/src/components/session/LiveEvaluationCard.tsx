@@ -59,8 +59,18 @@ function NumericalHistogram({
 }: {
   values: { value: number; count: number }[]
 }) {
-  const min = Math.min(...values.map((v) => v.value))
-  const max = Math.max(...values.map((v) => v.value))
+  const t = useTranslations()
+  // non-numeric responses aggregate to NaN; skip them instead of crashing
+  const finite = values.filter((v) => Number.isFinite(v.value))
+  if (finite.length === 0) {
+    return (
+      <div className="text-ctrl-muted py-3 text-sm">
+        {t('control.liveQuiz.noAnswersYet')}
+      </div>
+    )
+  }
+  const min = Math.min(...finite.map((v) => v.value))
+  const max = Math.max(...finite.map((v) => v.value))
   const numBins = min === max ? 1 : 5
   const width = (max - min) / numBins || 1
   const bins = Array.from({ length: numBins }, (_, ix) => ({
@@ -68,7 +78,7 @@ function NumericalHistogram({
     to: min + (ix + 1) * width,
     count: 0,
   }))
-  for (const { value, count } of values) {
+  for (const { value, count } of finite) {
     const ix = Math.min(numBins - 1, Math.floor((value - min) / width))
     bins[ix]!.count += count
   }
@@ -155,6 +165,15 @@ function InstanceChart({ instance }: { instance: Instance }) {
   }
 }
 
+// people who took part in a block: numOfParticipants only counts those who
+// answered every question, so the most answered question is used when higher
+export function blockParticipants(
+  numOfParticipants: number | null | undefined,
+  instances: Instance[] | undefined
+) {
+  return Math.max(numOfParticipants ?? 0, ...(instances ?? []).map(answerCount))
+}
+
 export function answerCount(instance: Instance) {
   return 'results' in instance &&
     instance.results &&
@@ -184,8 +203,10 @@ function LiveEvaluationCard({
   const t = useTranslations()
   const { data } = useQuery(GetControlLiveQuizEvaluationDocument, {
     variables: { id: quizId },
-    // live counts while the block runs; closed results only change once
+    // live counts while the block runs; on every (re)mount fetch once more so
+    // answers submitted just before the block closed are included
     pollInterval: live ? 2000 : 0,
+    fetchPolicy: 'cache-and-network',
   })
 
   const stack = data?.liveQuizEvaluation?.results.find(

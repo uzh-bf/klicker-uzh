@@ -9,7 +9,6 @@ import {
   GetControlCourseOverviewDocument,
   GetControlLiveQuizSessionDocument,
   GetUnassignedControlLiveQuizzesDocument,
-  GetUnassignedLiveQuizzesDocument,
   GetUserRunningLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -46,7 +45,6 @@ function RunningQuizBanner({ quiz }: RunningQuizBannerProps) {
     refetchQueries: [
       GetUserRunningLiveQuizzesDocument,
       GetControlCourseOverviewDocument,
-      GetUnassignedLiveQuizzesDocument,
       GetControlCourseLiveQuizzesDocument,
       GetUnassignedControlLiveQuizzesDocument,
     ],
@@ -67,7 +65,12 @@ function RunningQuizBanner({ quiz }: RunningQuizBannerProps) {
       const { data: current } = await loadSession({
         variables: { id: quiz.id },
       })
-      const running = current?.controlLiveQuiz?.blocks?.find(
+      // without the current state a running block could not be closed and
+      // its answers would be lost, so do not end the quiz
+      if (!current?.controlLiveQuiz) {
+        throw new Error('failed to load the current quiz state')
+      }
+      const running = current.controlLiveQuiz.blocks?.find(
         (block) => block.status === ElementBlockStatus.Active
       )
       if (running) {
@@ -75,7 +78,8 @@ function RunningQuizBanner({ quiz }: RunningQuizBannerProps) {
           variables: { quizId: quiz.id, blockId: running.id },
         })
       }
-      await endLiveQuiz({ variables: { id: quiz.id } })
+      const result = await endLiveQuiz({ variables: { id: quiz.id } })
+      if (!result.data?.endLiveQuiz) throw new Error('live quiz not ended')
       setSheetOpen(false)
       toast({
         type: 'success',

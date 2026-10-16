@@ -12,6 +12,7 @@ import {
   EndLiveQuizDocument,
   GetControlCourseLiveQuizzesDocument,
   GetControlCourseOverviewDocument,
+  GetControlLiveQuizEvaluationDocument,
   GetControlLiveQuizFeedbacksDocument,
   GetControlLiveQuizSessionDocument,
   GetUnassignedControlLiveQuizzesDocument,
@@ -66,7 +67,7 @@ function RunningLiveQuiz() {
 
   const quizId = router.query.id as string
 
-  const { loading, error, data } = useQuery(GetControlLiveQuizSessionDocument, {
+  const { loading, data } = useQuery(GetControlLiveQuizSessionDocument, {
     variables: { id: quizId },
     pollInterval: 1000,
     skip: !quizId || !!ended,
@@ -92,7 +93,11 @@ function RunningLiveQuiz() {
   )
   const [deactivateLiveQuizBlock, { loading: deactivatingBlock }] = useMutation(
     DeactivateLiveQuizBlockDocument,
-    { refetchQueries }
+    {
+      // polling of the evaluation stops once the block is closed, so fetch
+      // the final results once to include the last answers
+      refetchQueries: [...refetchQueries, GetControlLiveQuizEvaluationDocument],
+    }
   )
   const [endLiveQuiz, { loading: endingLiveQuiz }] = useMutation(
     EndLiveQuizDocument,
@@ -143,7 +148,9 @@ function RunningLiveQuiz() {
     )
   }
 
-  if (!data?.controlLiveQuiz || error) {
+  // a single failed poll keeps the last state on screen; only show the
+  // error when there is nothing to control
+  if (!data?.controlLiveQuiz) {
     return (
       <Layout
         title={t('control.liveQuiz.liveQuizControl')}
@@ -215,47 +222,58 @@ function RunningLiveQuiz() {
   const selectQuestion = (index: number) =>
     setSelectedQuestion({ blockId: evaluationBlock?.id ?? null, index })
 
-  const mainAction = activeBlock ? (
-    <Button
-      loading={deactivatingBlock}
-      onClick={() =>
-        runAction(() =>
-          deactivateLiveQuizBlock({
-            variables: { quizId: id, blockId: activeBlock.id },
-          })
-        )
-      }
-      className={{ root: `${largeButtonClass} ${primaryButtonClass}` }}
-      data={{ cy: 'deactivate-block' }}
-    >
-      <FontAwesomeIcon icon={faStop} className="h-3 w-3" />
-      {t('control.liveQuiz.closeBlockN', { number: activeBlock.order + 1 })}
-    </Button>
-  ) : nextBlock ? (
-    <Button
-      loading={activatingBlock}
-      onClick={() =>
-        runAction(() =>
-          activateLiveQuizBlock({
-            variables: { quizId: id, blockId: nextBlock.id },
-          })
-        )
-      }
-      className={{ root: `${largeButtonClass} ${primaryButtonClass}` }}
-      data={{ cy: 'activate-next-block' }}
-    >
-      <FontAwesomeIcon icon={faPlay} className="h-3 w-3" />
-      {t('control.liveQuiz.startBlockN', { number: nextBlock.order + 1 })}
-    </Button>
-  ) : (
-    <Button
-      onClick={() => setEndSheetOpen(true)}
-      className={{ root: `${largeButtonClass} ${dangerButtonClass}` }}
-      data={{ cy: 'end-live-quiz' }}
-    >
-      {t('control.liveQuiz.endQuiz')}
-    </Button>
-  )
+  // one main action per state: close the running block, start the next one,
+  // or end the quiz once all blocks are done
+  const renderMainAction = () => {
+    if (activeBlock) {
+      return (
+        <Button
+          loading={deactivatingBlock}
+          onClick={() =>
+            runAction(() =>
+              deactivateLiveQuizBlock({
+                variables: { quizId: id, blockId: activeBlock.id },
+              })
+            )
+          }
+          className={{ root: `${largeButtonClass} ${primaryButtonClass}` }}
+          data={{ cy: 'deactivate-block' }}
+        >
+          <FontAwesomeIcon icon={faStop} className="h-3 w-3" />
+          {t('control.liveQuiz.closeBlockN', { number: activeBlock.order + 1 })}
+        </Button>
+      )
+    }
+    if (nextBlock) {
+      return (
+        <Button
+          loading={activatingBlock}
+          onClick={() =>
+            runAction(() =>
+              activateLiveQuizBlock({
+                variables: { quizId: id, blockId: nextBlock.id },
+              })
+            )
+          }
+          className={{ root: `${largeButtonClass} ${primaryButtonClass}` }}
+          data={{ cy: 'activate-next-block' }}
+        >
+          <FontAwesomeIcon icon={faPlay} className="h-3 w-3" />
+          {t('control.liveQuiz.startBlockN', { number: nextBlock.order + 1 })}
+        </Button>
+      )
+    }
+    return (
+      <Button
+        onClick={() => setEndSheetOpen(true)}
+        className={{ root: `${largeButtonClass} ${dangerButtonClass}` }}
+        data={{ cy: 'end-live-quiz' }}
+      >
+        {t('control.liveQuiz.endQuiz')}
+      </Button>
+    )
+  }
+  const mainAction = renderMainAction()
 
   return (
     <Layout title={name} header={header}>
@@ -351,7 +369,12 @@ function RunningLiveQuiz() {
               loading={endingLiveQuiz}
               onClick={() =>
                 runAction(async () => {
-                  await endLiveQuiz({ variables: { id } })
+                  const result = await endLiveQuiz({ variables: { id } })
+                  // a null result means the quiz was not ended (e.g. changed
+                  // state meanwhile); keep the controls instead of "ended"
+                  if (!result.data?.endLiveQuiz) {
+                    throw new Error('live quiz not ended')
+                  }
                   setEndSheetOpen(false)
                   setEnded({ name, numOfBlocks: blocks.length, backHref })
                 })

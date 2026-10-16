@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import LiveDot from '../common/LiveDot'
 import { cardClass } from '../common/styles'
-import { answerCount } from './LiveEvaluationCard'
+import { blockParticipants } from './LiveEvaluationCard'
 import useRemainingSeconds, { formatSeconds } from './useRemainingSeconds'
 
 interface StatusBlock {
@@ -51,9 +51,7 @@ function ActiveBlockStatus({
   const t = useTranslations()
   const remaining = useRemainingSeconds(block.expiresAt)
 
-  // numOfParticipants only counts people who answered every question of the
-  // block; the most answered question (kept fresh by the live evaluation
-  // card) shows that answers are coming in from the first response on
+  // the live evaluation card keeps this query fresh
   const { data } = useQuery(GetControlLiveQuizEvaluationDocument, {
     variables: { id: quizId },
     fetchPolicy: 'cache-first',
@@ -61,10 +59,7 @@ function ActiveBlockStatus({
   const stack = data?.liveQuizEvaluation?.results.find(
     (entry) => entry.stackOrder === block.order
   )
-  const answers = Math.max(
-    block.numOfParticipants ?? 0,
-    ...(stack?.instances.map(answerCount) ?? [])
-  )
+  const answers = blockParticipants(block.numOfParticipants, stack?.instances)
 
   return (
     <div

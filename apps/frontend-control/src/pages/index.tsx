@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import {
   GetControlCourseOverviewDocument,
-  GetUnassignedLiveQuizzesDocument,
+  GetUnassignedControlLiveQuizzesDocument,
   GetUserRunningLiveQuizzesDocument,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -32,15 +32,18 @@ function Index() {
   const t = useTranslations()
   // quizzes are started and ended on other screens, so revalidate on every
   // visit instead of showing a stale running banner or stale counts
-  const { loading, error, data } = useQuery(GetControlCourseOverviewDocument, {
+  const { loading, data } = useQuery(GetControlCourseOverviewDocument, {
     fetchPolicy: 'cache-and-network',
   })
   const { data: runningData } = useQuery(GetUserRunningLiveQuizzesDocument, {
     fetchPolicy: 'cache-and-network',
   })
-  const { data: unassignedData } = useQuery(GetUnassignedLiveQuizzesDocument, {
-    fetchPolicy: 'cache-and-network',
-  })
+  const { data: unassignedData } = useQuery(
+    GetUnassignedControlLiveQuizzesDocument,
+    {
+      fetchPolicy: 'cache-and-network',
+    }
+  )
 
   const title = t('control.home.courseSelection')
   const header = <HomeHeader />
@@ -53,7 +56,8 @@ function Index() {
     )
   }
 
-  if (!data || error) {
+  // a failed background refetch keeps the cached overview visible
+  if (!data) {
     return (
       <Layout title={title} header={header}>
         <UserNotification

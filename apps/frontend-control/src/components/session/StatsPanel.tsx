@@ -7,7 +7,11 @@ import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import LiveDot from '../common/LiveDot'
 import { cardClass } from '../common/styles'
-import { answerCount } from './LiveEvaluationCard'
+import {
+  answerCount,
+  blockParticipants,
+  type Instance,
+} from './LiveEvaluationCard'
 
 interface StatsBlock {
   id: number
@@ -70,22 +74,20 @@ function StatsPanel({
 
   const votesByOrder = new Map<
     number,
-    { votes: number; questions: number; mostAnswered: number }
+    { votes: number; questions: number; instances: Instance[] }
   >()
   for (const stack of data?.liveQuizEvaluation?.results ?? []) {
     const counts = stack.instances.map(answerCount)
     votesByOrder.set(stack.stackOrder, {
       votes: counts.reduce((sum, count) => sum + count, 0),
       questions: stack.instances.length,
-      mostAnswered: Math.max(0, ...counts),
+      instances: stack.instances,
     })
   }
-  // numOfParticipants only counts people who answered every question of a
-  // block; the most answered question is a better measure of who took part
   const participantsOf = (block: StatsBlock) =>
-    Math.max(
-      block.numOfParticipants ?? 0,
-      votesByOrder.get(block.order)?.mostAnswered ?? 0
+    blockParticipants(
+      block.numOfParticipants,
+      votesByOrder.get(block.order)?.instances
     )
 
   const started = blocks.filter(
@@ -103,6 +105,14 @@ function StatsPanel({
     : 0
   // bars compare the blocks with each other (no total audience is known)
   const maxParticipants = Math.max(1, ...started.map(participantsOf))
+
+  const statusLabel = (status: ElementBlockStatus) => {
+    if (status === ElementBlockStatus.Active)
+      return t('control.liveQuiz.statsRunning')
+    if (status === ElementBlockStatus.Scheduled)
+      return t('control.liveQuiz.statsScheduled')
+    return t('control.liveQuiz.statsClosed')
+  }
 
   return (
     <div className="flex flex-col gap-3" data-cy="stats-panel">
@@ -180,11 +190,7 @@ function StatsPanel({
                       scheduled && 'bg-ctrl-hair text-ctrl-muted'
                     )}
                   >
-                    {active
-                      ? t('control.liveQuiz.statsRunning')
-                      : scheduled
-                        ? t('control.liveQuiz.statsScheduled')
-                        : t('control.liveQuiz.statsClosed')}
+                    {statusLabel(block.status)}
                   </span>
                   <span className="text-ctrl-ink min-w-12 text-right text-[15px] font-bold tabular-nums">
                     {scheduled ? '—' : participants}
