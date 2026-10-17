@@ -571,6 +571,15 @@ test('adds bounded description data without hidden comments or image embeds', ()
     false
   )
 
+  for (const prefix of ['<img', '<img src="unfinished"']) {
+    const description = `${prefix}\n${'visible'.repeat(3)}`
+    const parsed = JSON.parse(
+      buildReviewBackground('Synthetic change', description).split('\n').at(-1)
+    )
+    assert.equal(parsed.description, description)
+    assert.equal(parsed.description_status, 'complete')
+  }
+
   for (const empty of [
     undefined,
     null,
