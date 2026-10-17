@@ -1,5 +1,40 @@
 # Graph-assisted retrieval reliability and staging qualification
 
+## October 17: private source replacement and holdout freeze
+
+The user supplied fresh teaching material after the earlier candidates failed
+strict separation. Complete source bytes and per-page extractions are pinned in
+ignored `project/_local/evaluation-holdout-20261017/`. Source PDFs, excerpts,
+questions, references and review evidence stay private. Earlier source packets,
+candidates and historical artifacts remain intact.
+
+The new packet retains the approved six single-document, six multi-document,
+four calculation/assumption and eight unsupported cases. Native DeepEval dataset
+loading, exact source locators, arithmetic and post-generation reference joins
+are checked offline. Cross-file cases require complementary facts and disclose
+shared-script lineage. Original PDF formulas are checked where extraction loses
+symbols. Independent review must approve factual references, complete-corpus
+absence and development-family separation before main freezes the packet.
+
+Independent full-source review and focused correction verification approve the
+corrected packet and its semantic separation. Main repeated native dataset/reference-join
+checks, verified private custody and source hashes, and froze the packet in
+`freeze-manifest.json`. Earlier draft states and their review evidence remain
+byte-pinned; the freeze manifest records final admission. No live comparison or
+quality advantage is claimed.
+
+The generation contract has one subject-neutral system prompt across arms; the
+previous contract remains preserved. Existing loopback and matched-token checks
+pass on unchanged source code. This proves the sender seam only. The existing
+native integrated code review remains applicable; no new quality engine,
+dependency, database or ingestion/KG coupling is introduced.
+
+A future live comparison requires matching target source versions, a published
+graph and fresh retrieval captures for all three arms. Earlier captures from a
+different corpus cannot substitute. This offline preparation includes no live
+change or paid run. All previous spend and holds remain reserved, and future paid
+execution requires a separately admitted budget and explicit authority.
+
 ## October 16: freeze held-out cases and complete the DeepEval migration — approved
 
 **Approval summary.** The user approved reviewing and freezing 24 held-out cases,

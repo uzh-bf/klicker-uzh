@@ -644,12 +644,14 @@ DEEPEVAL_TELEMETRY_OPT_OUT=YES evaluation/framework/.venv/bin/python \
 A larger comparison should freeze source versions and concept/evidence families
 before tuning, keeping paraphrases in one split. The proposed next pilot contains
 16 answerable and eight unsupported held-out cases across all three arms (72
-answers). The old two cases remain development seeds. This is a protocol pending
-reviewed holdout freeze and separate spend approval, not a ready golden dataset.
-Generate candidates with DeepEval's existing synthesis path only after its source
-and cost approval, or curate existing source-grounded cases. Review factual
-references and absence claims before freeze. Keep teaching data and receipts in a
-private ignored directory; committed examples and tests use synthetic data only.
+answers). Keep development seeds separate. Before paid execution, require a
+reviewed private holdout freeze, matching target KB/graph source versions and
+separate spend approval. Local source custody alone does not qualify a live
+retrieval corpus. Generate candidates with DeepEval's existing synthesis path only
+after its source and cost approval, or curate existing source-grounded cases.
+Review factual references and absence claims before freeze. Keep teaching data and
+receipts in a private ignored directory; committed examples and tests use synthetic
+data only.
 
 Record actual context sizes, per-case
 metric outcomes and skips, errors, latency and spend. The existing quality
