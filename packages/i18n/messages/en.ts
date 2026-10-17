@@ -1866,9 +1866,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       WAITING_FOR_MATERIALS:
         'Question generation: waiting for materials to finish processing',
       QUEUED:
-        'Question generation: preparing automatically. Check back within 24 hours.',
+        'Question generation: prepared automatically overnight; usually ready the next morning.',
       PROCESSING:
-        'Question generation: preparing automatically. Check back within 24 hours.',
+        'Question generation: prepared automatically overnight; usually ready the next morning.',
       READY: 'Question generation: ready',
       DELAYED: 'Question generation: preparation is delayed.',
       NEEDS_ATTENTION: 'Question generation: preparation needs attention.',
@@ -2836,9 +2836,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
           WAITING_FOR_MATERIALS:
             'The uploaded materials are still being processed. Question preparation starts automatically afterwards.',
           QUEUED:
-            'Question generation is being prepared automatically. Check back within 24 hours.',
+            'Question generation is prepared automatically overnight; usually ready the next morning.',
           PROCESSING:
-            'Question generation is being prepared automatically. Check back within 24 hours.',
+            'Question generation is prepared automatically overnight; usually ready the next morning.',
           READY: 'Ready for question generation.',
           DELAYED:
             'Preparation is taking longer than expected. Contact us so we can look into it.',

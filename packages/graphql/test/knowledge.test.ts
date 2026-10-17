@@ -477,6 +477,25 @@ describe('Integration tests for knowledge base CRUD', () => {
     await testCleanup(prisma)
   })
 
+  it('opts a new knowledge base into the graph only for owners admitted to automatic preparation', async () => {
+    const evaluator = userOneCtx.featureFlags!
+    const admittedCtx: ContextWithUser = {
+      ...userOneCtx,
+      featureFlags: {
+        ...evaluator,
+        isEnabled: (key, attributes) =>
+          key === 'kb-auto-graph-preparation' ||
+          (evaluator.isEnabled(key, attributes) ?? false),
+      },
+    }
+
+    const optedIn = await createKb({ name: 'Auto graph' }, admittedCtx)
+    const manual = await createKb({ name: 'Manual graph' }, userOneCtx)
+
+    expect(optedIn.knowledgeGraphEnabled).toBe(true)
+    expect(manual.knowledgeGraphEnabled).toBe(false)
+  })
+
   it('requires graph opt-in and the rollout admission before dispatching a build', async () => {
     const kb = await createKb({ name: 'Graph controls' }, userOneCtx)
     const deniedCtx = withDeniedFeatureFlag(userOneCtx, 'kb-graph-builds')
