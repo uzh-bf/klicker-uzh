@@ -1833,3 +1833,266 @@ test('trajectory rejects disagreement in accounting or retrieval call identity',
     }
   }
 })
+
+const ROLEPLAY_MODE = 'Synthetic interview mode'
+const REMOTE_API_ORIGIN = 'https://api.remote.example'
+const REMOTE_CHAT_ORIGIN = 'https://chat.remote.example'
+
+function roleplayCase(overrides = {}) {
+  return trajectoryCase({
+    kind: 'roleplay',
+    mode: ROLEPLAY_MODE,
+    assessmentTurns: [1, 2],
+    turnOutcomes: { 1: 'Synthetic outcome one.', 2: 'Synthetic outcome two.' },
+    context: ['Synthetic persona page.'],
+    turns: [
+      { message: 'Synthetic opening question' },
+      { message: 'Synthetic follow-up question' },
+    ],
+    ...overrides,
+  })
+}
+
+// A role-play persona answers from its prompt: no tool call is persisted or
+// streamed.
+function roleplayTurn({ turn, payload }) {
+  const answerText = 'Synthetic persona answer ' + turn + '.'
+  return {
+    answerText,
+    omitTool: true,
+    stream: [
+      { type: 'start' },
+      { type: 'text-delta', delta: answerText },
+      {
+        type: 'finish',
+        messageMetadata: {
+          finishReason: 'stop',
+          chatMode: payload.selectedMode,
+          modelId: SYNTHETIC_MODEL,
+          creditsUsed: 0.25,
+        },
+      },
+    ],
+  }
+}
+
+test('role-play cases accept a custom mode and require exact turn outcomes', () => {
+  const corpus = validateTrajectoryCorpus({
+    version: 1,
+    cases: [roleplayCase()],
+  })
+  assert.equal(corpus.cases[0].kind, 'roleplay')
+  assert.equal(corpus.cases[0].mode, ROLEPLAY_MODE)
+  assert.deepEqual(corpus.cases[0].context, ['Synthetic persona page.'])
+
+  for (const [overrides, code] of [
+    [{ turnOutcomes: undefined }, 'trajectory_case_turn_outcomes_invalid'],
+    [
+      { turnOutcomes: { 1: 'Only one.' } },
+      'trajectory_case_turn_outcomes_invalid',
+    ],
+    [
+      { turnOutcomes: { 1: 'One.', 2: 'Two.', 3: 'Extra.' } },
+      'trajectory_case_turn_outcomes_invalid',
+    ],
+    [{ context: 'not a list' }, 'trajectory_case_context_invalid'],
+    [{ kind: 'interview' }, 'trajectory_case_kind_invalid'],
+    [{ mode: ' ' }, 'trajectory_case_mode_invalid'],
+  ]) {
+    assert.throws(
+      () =>
+        validateTrajectoryCorpus({
+          version: 1,
+          cases: [roleplayCase(overrides)],
+        }),
+      { code }
+    )
+  }
+  assert.throws(
+    () =>
+      validateTrajectoryCorpus({
+        version: 1,
+        cases: [trajectoryCase({ mode: ROLEPLAY_MODE })],
+      }),
+    { code: 'trajectory_case_mode_invalid' }
+  )
+})
+
+test('role-play trajectory needs no retrieval and sends the custom mode', async () => {
+  const app = syntheticChatFetch({ turnConfig: roleplayTurn })
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = app.fetchImpl
+  try {
+    const receipts = []
+    await runTrajectory(createTrajectoryTarget(), roleplayCase(), {
+      onTurn: (receipt) => receipts.push(receipt),
+    })
+    assert.equal(receipts.length, 2)
+    assert.deepEqual(Object.keys(receipts[0]).sort(), TURN_RECEIPT_FIELDS)
+    assert.equal(receipts[0].mode, ROLEPLAY_MODE)
+    assert.equal(receipts[0].toolName, null)
+    assert.equal(receipts[0].toolStatus, 'not_called')
+    const submitted = app.calls
+      .filter((call) => call.requestUrl.endsWith('/chat'))
+      .map((call) => JSON.parse(call.body))
+    assert.deepEqual(
+      submitted.map((body) => body.selectedMode),
+      [ROLEPLAY_MODE, ROLEPLAY_MODE]
+    )
+    assert.equal(submitted[0].reasoningEffort, 'low')
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('built-in trajectory still requires first-turn retrieval', async () => {
+  const app = syntheticChatFetch({ turnConfig: roleplayTurn })
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = app.fetchImpl
+  try {
+    await assert.rejects(
+      runTrajectory(createTrajectoryTarget(), trajectoryCase()),
+      {
+        code: 'trajectory_stream_tool_missing',
+      }
+    )
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+async function withRemoteScenario(
+  { cases, maxTurns, envOverrides = {} },
+  body
+) {
+  const directory = await mkdtemp(join(tmpdir(), 'klicker-remote-run-'))
+  const paths = {
+    corpus: join(directory, 'corpus.json'),
+    output: join(directory, 'output.jsonl'),
+  }
+  const app = syntheticChatFetch({ turnConfig: roleplayTurn })
+  const originalFetch = globalThis.fetch
+  try {
+    await writeFile(paths.corpus, JSON.stringify({ version: 1, cases }))
+    globalThis.fetch = app.fetchImpl
+    await body({
+      app,
+      paths,
+      argv: [
+        '--target',
+        'remote',
+        '--max-turns',
+        String(maxTurns),
+        '--corpus',
+        paths.corpus,
+        '--output',
+        paths.output,
+        '--arm',
+        'candidate',
+        '--repeats',
+        '2',
+      ],
+      env: trajectoryEnv({
+        KLICKER_EVAL_API_ORIGIN: REMOTE_API_ORIGIN,
+        KLICKER_EVAL_CHAT_ORIGIN: REMOTE_CHAT_ORIGIN,
+        KLICKER_EVAL_ALLOWED_ORIGINS: `${REMOTE_API_ORIGIN},${REMOTE_CHAT_ORIGIN}`,
+        KLICKER_EVAL_REASONING_EFFORT: 'high',
+        ...envOverrides,
+      }),
+    })
+  } finally {
+    globalThis.fetch = originalFetch
+    await rm(directory, { recursive: true, force: true })
+  }
+}
+
+test('remote runner replays role-play cases under a turn cap without a ledger', async () => {
+  await withRemoteScenario(
+    { cases: [roleplayCase()], maxTurns: 4 },
+    async ({ app, paths, argv, env }) => {
+      const summary = await runTutorTrajectories({ argv, env, log: () => {} })
+
+      assert.equal(summary.status, 'completed')
+      assert.equal(summary.completedTurns, 4)
+      assert.equal(summary.runSubmittedTurns, 4)
+      assert.equal(summary.submittedTurns, 4)
+      assert.equal(summary.creditsUsed, 1)
+      assert.equal(summary.reservedProviderMicroUsd, null)
+      const lines = (await readFile(paths.output, 'utf8')).trim().split('\n')
+      assert.equal(lines.length, 5)
+      const submitted = app.calls.filter((call) =>
+        call.requestUrl.endsWith('/chat')
+      )
+      assert.equal(submitted.length, 4)
+      assert.ok(
+        submitted.every((call) =>
+          call.requestUrl.startsWith(REMOTE_CHAT_ORIGIN)
+        )
+      )
+      assert.equal(JSON.parse(submitted[0].body).reasoningEffort, 'high')
+    }
+  )
+})
+
+test('remote runner refuses a plan larger than its turn cap before login', async () => {
+  await withRemoteScenario(
+    { cases: [roleplayCase()], maxTurns: 3 },
+    async ({ app, argv, env }) => {
+      await assert.rejects(runTutorTrajectories({ argv, env, log: () => {} }), {
+        code: 'turn_cap_exceeded',
+      })
+      assert.equal(app.calls.length, 0)
+    }
+  )
+})
+
+test('remote runner only targets allow-listed https origins', async () => {
+  await withRemoteScenario(
+    {
+      cases: [roleplayCase()],
+      maxTurns: 4,
+      envOverrides: { KLICKER_EVAL_ALLOWED_ORIGINS: REMOTE_API_ORIGIN },
+    },
+    async ({ app, argv, env }) => {
+      await assert.rejects(runTutorTrajectories({ argv, env, log: () => {} }), {
+        code: 'chat_origin_non_local',
+      })
+      assert.equal(app.calls.length, 0)
+    }
+  )
+})
+
+test('target flags stay exclusive to their target', () => {
+  const base = [
+    '--corpus',
+    'c.json',
+    '--output',
+    'o.jsonl',
+    '--arm',
+    'baseline',
+  ]
+  assert.throws(
+    () =>
+      parseArguments([
+        ...base,
+        '--target',
+        'remote',
+        '--max-turns',
+        '4',
+        '--budget-file',
+        'b.json',
+      ]),
+    { code: 'arguments_invalid' }
+  )
+  assert.throws(() => parseArguments([...base, '--target', 'remote']), {
+    code: 'max_turns_invalid',
+  })
+  assert.throws(
+    () =>
+      parseArguments([...base, '--budget-file', 'b.json', '--max-turns', '4']),
+    { code: 'arguments_invalid' }
+  )
+  assert.throws(() => parseArguments([...base, '--target', 'cloud']), {
+    code: 'target_invalid',
+  })
+})
