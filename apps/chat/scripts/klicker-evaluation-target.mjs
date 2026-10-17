@@ -601,6 +601,7 @@ export class KlickerEvaluationTarget {
     budgetFile = null,
     qualification = null,
     allowedOrigins = [],
+    reasoningEffort = 'low',
   }) {
     if (!apiKey) throw evaluationError('target_key_missing')
     if (!participantUsername || !participantPassword) {
@@ -636,6 +637,7 @@ export class KlickerEvaluationTarget {
     this.requestTimeoutMs = requestTimeoutMs
     this.budgetFile = budgetFile
     this.qualification = qualification
+    this.reasoningEffort = reasoningEffort
     this.elearningHandoffSecret = elearningHandoffSecret
     this.cookie = null
     this.elearningCookie = null
@@ -859,7 +861,7 @@ export class KlickerEvaluationTarget {
           threadId,
           selectedModel: this.modelId,
           selectedMode: mode,
-          reasoningEffort: 'low',
+          reasoningEffort: this.reasoningEffort,
           parentId,
           assistantMessageId,
           images: [],
