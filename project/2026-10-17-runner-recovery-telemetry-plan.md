@@ -175,7 +175,12 @@ approved restoration of the prior unit policy; preserve runner data.
   rendered-unit equivalence protects the bootstrap and SSH-payload boundary.
 - The controller pins that commit's verified payload digest; its existing
   checksum test and ShellCheck pass. Help text reflects held-state preservation.
-- Remaining: Telemetry, Finish, exact-head CI and feedback.
+- Telemetry passes eight tests in a network-isolated Node 24.21.0 container,
+  including synthetic namespace/subtree/escaped-mount fixtures, malformed data,
+  parent-counter refusal, command failure and signal propagation. Four existing
+  tests were retained (one extended), with four new consequential memory cases.
+  Biome passes on both sampler files.
+- Remaining: Finish, exact-head CI and feedback.
 - Active owner: main session; no subagents or additional live changes.
-- Next action: extend the sampler through synthetic cgroup fixtures and the
-  existing subprocess checks.
+- Next action: commit Telemetry, update the existing operations documentation,
+  and review the complete branch before draft publication.

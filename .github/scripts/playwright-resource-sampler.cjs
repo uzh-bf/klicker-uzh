@@ -1,5 +1,6 @@
 const fs = require('node:fs')
 const { spawn } = require('node:child_process')
+const path = require('node:path').posix
 
 function counters(text, prefix) {
   const line = text.split('\n').find((entry) => entry.startsWith(prefix))
@@ -15,6 +16,58 @@ function pressure(text) {
     result[kind] = match ? Number(match[1]) : null
   }
   return result
+}
+
+function cgroupDirectory(read) {
+  const group = read('/proc/self/cgroup').match(/^0::(\/.*)$/m)?.[1]
+  if (!group || group.split('/').includes('..')) return null
+  const decodeMountPath = (value) =>
+    value.replace(/\\(040|011|012|134)/g, (_, octal) =>
+      String.fromCharCode(Number.parseInt(octal, 8))
+    )
+  for (const line of read('/proc/self/mountinfo').split('\n')) {
+    const [mount, filesystem] = line.split(' - ')
+    if (filesystem?.split(' ')[0] !== 'cgroup2') continue
+    const fields = mount.split(' ')
+    if (!fields[3] || !fields[4]) continue
+    const root = decodeMountPath(fields[3])
+    const directory = decodeMountPath(fields[4])
+    if (!root.startsWith('/') || !directory.startsWith('/')) continue
+    // A private cgroup namespace reports its own root as "/".
+    if (group === '/' || group === root) return directory
+    const prefix = root === '/' ? '/' : `${root}/`
+    if (group.startsWith(prefix)) {
+      return path.join(directory, group.slice(prefix.length))
+    }
+  }
+  return null
+}
+
+function cgroupMemory(read) {
+  const directory = cgroupDirectory(read)
+  const file = (name) => (directory ? read(path.join(directory, name)) : '')
+  const numeric = (text) => {
+    const value = /^\d+$/.test(text.trim()) ? Number(text) : Number.NaN
+    return Number.isSafeInteger(value) ? value : null
+  }
+  const field = (text, key) =>
+    numeric(text.match(new RegExp(`^${key}[ \\t]+(.*)$`, 'm'))?.[1] ?? '')
+  const stat = file('memory.stat')
+  const events = file('memory.events')
+  return {
+    scope: 'current-cgroup-and-descendants',
+    currentBytes: numeric(file('memory.current')),
+    peakBytes: numeric(file('memory.peak')),
+    anonymousBytes: field(stat, 'anon'),
+    fileBytes: field(stat, 'file'),
+    kernelBytes: field(stat, 'kernel'),
+    events: {
+      high: field(events, 'high'),
+      max: field(events, 'max'),
+      oom: field(events, 'oom'),
+      oomKill: field(events, 'oom_kill'),
+    },
+  }
 }
 
 function snapshot(read = (path) => fs.readFileSync(path, 'utf8')) {
@@ -33,6 +86,7 @@ function snapshot(read = (path) => fs.readFileSync(path, 'utf8')) {
     // Exclude guest/guest_nice: Linux already includes them in user/nice.
     cpuTicks: cpu && cpu.length >= 8 ? cpu.slice(0, 8) : null,
     memoryAvailableKb: memory ? Number(memory[1]) : null,
+    cgroupMemory: cgroupMemory(safe),
     pressureMicroseconds: Object.fromEntries(
       ['cpu', 'memory', 'io'].map((kind) => [
         kind,
