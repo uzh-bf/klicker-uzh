@@ -162,51 +162,34 @@ approved restoration of the prior unit policy; preserve runner data.
 
 ## Progress
 
-- Plan committed before native-goal creation; the implementation goal is active.
-- Baseline source, historical plans, renderer, host payload, controller, sampler
-  and existing test seams inspected. Runtime findings remain private.
-- Recovery implementation passes shell syntax, ShellCheck and the existing
-  reconciliation suite extended with held-state, unsafe-state, idempotence,
-  renderer-equivalence and trusted-profile preservation cases.
-- Required delivery layer: verified draft PR. Achieved layer: source package
-  published as [draft PR](https://github.com/uzh-bf/klicker-uzh/pull/6581);
-  no host configuration has been applied.
-- Recovery committed as `3f7765cfb6238dd938658a53b30b8f4b46066adc`.
-  Main-session simplification and lifecycle/security self-review found no
-  unresolved finding. The standalone renderer remains duplicated intentionally;
-  rendered-unit equivalence protects the bootstrap and SSH-payload boundary.
-- The controller pins that commit's verified payload digest; its existing
-  checksum test and ShellCheck pass. Help text reflects held-state preservation.
-- Telemetry passes eight tests in a network-isolated Node 24.21.0 container,
-  including synthetic namespace/subtree/escaped-mount fixtures, malformed data,
-  parent-counter refusal, command failure and signal propagation. Four existing
-  tests were retained (one extended), with four new consequential memory cases.
-  Biome passes on both sampler files.
-- Finish implementation committed as `7ec3ff86712ed1f311f58ed6e75ff64829149671`.
-  Main-session integrated simplification and final self-review covered all eight
-  paths against `0f222786e86c625c7bfbff594a952de770d15ac5`; no unresolved source
-  finding. Correctness, plan compliance, maintainability and focused security
-  lenses apply; architecture and browser lenses do not. This is self-review.
-- Packaging: 487 added/deleted lines excluding the project plan, with no generated
-  files or lockfiles. One cohesive source package; no additional dependency or
-  configuration owner. Durable constraints are in the existing operations page.
-- Broad local Playwright contracts: 77 passed; three could not execute because
-  the isolated Node image lacks `yaml` and host Devrouter. The focused eight-test
-  sampler suite passes; dependency-equipped required CI remains authoritative.
-- The final AI review workflow requires a ready PR (`!pull.draft` in
-  `isEligibleDefaultPull` and `resolvePullEligibility`). It is deferred until
-  that separately authorized state; no ineffective review request is posted.
-- Draft review on `f30831a25bd770ae1ffaeacbe873c1d69c06d3c3` identified
-  renderer-coupling documentation, operator state visibility and volume-pattern
-  consistency. Added the cross-references, current systemd property output and
-  the provisioner's numeric volume suffix. Existing fixtures now check the
-  informational state readback without service mutation.
-- Rejected decoding `/proc/self/cgroup` as mountinfo: kernel `proc_cgroup_show`
-  emits the raw kernfs path. Synthetic space and literal-backslash cases protect
-  that distinction. The path import was renamed to avoid lexical shadowing.
-  Focused shell, sampler, Biome and documentation checks pass after correction.
-- Remaining: exact-head CI and actionable feedback, then a quiet settle.
-- Active owner: main session; no subagents or additional live changes.
-- Next action: publish this metadata update, then watch the resulting exact-head
-  CI and ordinary feedback under `rs-babysit-pr`. Merge, readiness and live
-  qualification remain separate gates.
+- Source slices are complete at `5e665907e279df92e14be2c1d473dccae1756413`.
+  The plan was committed first (`dd061ac149`), before the native goal and source
+  implementation. The package changes eight paths, with 516 added/deleted lines
+  excluding this plan; it adds no dependency, generated file or configuration owner.
+- Focused verification passes: both reconciliation shell suites, syntax,
+  ShellCheck, eight sampler tests in a network-isolated Node 24.21.0 container,
+  changed-file Biome, documentation formatting and staged secret scans. Four
+  sampler tests were retained (one extended), and four memory cases were added.
+  A broader contract attempt passed 77 cases; three lacked `yaml` or host
+  Devrouter in the minimal image. Dependency-equipped CI remains authoritative.
+- The controller pins payload `3fcfe6bc4ee2c4c228565545dd7b0eeda74773db`, with
+  SHA-256 `a444015151d0b128d219dd17297bc0926f4284774e57fc43bfe5594a35129282`.
+  Its existing checksum test and GitHub payload readback agree. Archive pinning
+  and integrity validation are unchanged.
+- Main-session simplification and final self-review cover all eight paths
+  against the recorded baseline, including the review corrections. Correctness,
+  plan compliance, maintainability and focused security apply; architecture and
+  browser lenses do not. The first draft review's two inline threads are resolved.
+  Operator state reporting, renderer cross-references and numeric volume paths
+  are covered. Decoding raw cgroup membership was rejected against kernel source;
+  synthetic space and literal-backslash fixtures protect that distinction.
+- Delivery evidence is maintained in the [draft PR](https://github.com/uzh-bf/klicker-uzh/pull/6581)
+  and its [verification note](https://github.com/uzh-bf/klicker-uzh/pull/6581#issuecomment-6235423117).
+  Read current-head CI and review state there rather than treating historical
+  results as current. Final AI review requires a ready PR and is deferred to
+  that separately authorized gate. No host configuration has been applied.
+
+The main session owns the published-head watch under `rs-babysit-pr`. Complete
+the native goal only after eligible CI, actionable feedback and a quiet settle
+prove the verified-draft terminal condition. Merge, readiness, live recovery and
+cold-build capacity qualification remain separate gates.
