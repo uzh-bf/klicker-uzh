@@ -28,6 +28,286 @@ const ADAPTER = path.join(__dirname, 'ocr-mistral-adapter.cjs')
 const CHAT_PATH = '/v1/chat/completions'
 const SHUTDOWN_PATH = '/shutdown'
 
+test('draft routing uses the exact OpenRouter snapshot and max reasoning without accepting route overrides', () => {
+  const body = {
+    model: 'deepseek/deepseek-v4.1-flash-1017',
+    messages: [{ role: 'user', content: 'synthetic' }],
+    reasoning_effort: 'max',
+    reasoning: { effort: 'none' },
+    provider: { only: ['untrusted'] },
+    prompt_cache_key: 'synthetic-session',
+    max_completion_tokens: 16384,
+    tools: [{ type: 'function', function: { name: 'task_done' } }],
+  }
+  const translated = translateMistralRequest(body, undefined, 'openrouter')
+  assert.equal(translated.model, body.model)
+  assert.deepEqual(translated.reasoning, { effort: 'max' })
+  assert.equal(translated.reasoning_effort, undefined)
+  assert.equal(translated.provider, undefined)
+  assert.equal(translated.max_tokens, 16384)
+  assert.equal(translated.prompt_cache_key, body.prompt_cache_key)
+  assert.equal(translated.tool_choice, 'required')
+  for (const change of [
+    { reasoning_effort: 'high' },
+    { model: MISTRAL_MODEL },
+    { stream: true },
+  ])
+    assert.throws(() =>
+      translateMistralRequest({ ...body, ...change }, undefined, 'openrouter')
+    )
+  assert.throws(() => translateMistralRequest(body, undefined, 'unknown'), {
+    code: 'invalid_provider',
+  })
+})
+
+test('OpenRouter native reasoning survives prefix and compressed replay with unchanged OCR token accounting', async () => {
+  const model = 'deepseek/deepseek-v4.1-flash-1017'
+  const native = {
+    role: 'assistant',
+    content: null,
+    reasoning: 'private-reasoning',
+    reasoning_details: [
+      { type: 'reasoning.text', text: 'private-reasoning', index: 0 },
+      { type: 'reasoning.encrypted', data: 'private-signature', index: 1 },
+    ],
+    tool_calls: [
+      {
+        id: 'call-read',
+        type: 'function',
+        function: { name: 'file_read', arguments: '{"path":"synthetic.cjs"}' },
+      },
+    ],
+  }
+  const payload = {
+    ...completion(native, 'tool_calls'),
+    model: 'deepseek/deepseek-v4.1-flash-20261017',
+    usage: {
+      prompt_tokens: 100,
+      completion_tokens: 8,
+      total_tokens: 108,
+      prompt_tokens_details: { cached_tokens: 40 },
+    },
+  }
+  const fetchImpl = upstream(() => jsonResponse(200, payload))
+  const adapter = await startAdapter({
+    provider: 'openrouter',
+    apiKey: 'synthetic-router-key',
+    fetchImpl,
+  })
+  try {
+    const prefix = [{ role: 'user', content: 'synthetic' }]
+    const tools = [{ type: 'function', function: { name: 'task_done' } }]
+    const first = await postJson(adapter, { model, messages: prefix, tools })
+    assert.equal(first.status, 200)
+    const normalized = first.json.choices[0].message
+    assert.equal(normalized.content, '')
+    assert.equal(normalized.reasoning_content, native.reasoning)
+    assert.equal(normalized.reasoning_details, undefined)
+    assert.deepEqual(first.json.usage, {
+      prompt_tokens: 60,
+      completion_tokens: 8,
+      total_tokens: 68,
+    })
+    for (const replayPrefix of [
+      prefix,
+      [{ role: 'user', content: 'compressed' }],
+    ]) {
+      const replay = await postJson(adapter, {
+        model,
+        tools,
+        messages: [
+          ...replayPrefix,
+          normalized,
+          {
+            role: 'tool',
+            tool_call_id: 'call-read',
+            content: 'synthetic result',
+          },
+        ],
+      })
+      assert.equal(replay.status, 200)
+      assert.deepEqual(fetchImpl.calls.at(-1).body.messages[1], native)
+    }
+    assert.equal(
+      fetchImpl.calls[0].url,
+      'https://openrouter.ai/api/v1/chat/completions'
+    )
+    assert.deepEqual(fetchImpl.calls[0].body.reasoning, { effort: 'max' })
+    assert.equal(adapter.diagnostics().history.prefix_hits, 1)
+    assert.equal(adapter.diagnostics().history.compressed_hits, 1)
+    assert.equal(adapter.diagnostics().provider, 'openrouter')
+    assert.doesNotMatch(
+      JSON.stringify(adapter.diagnostics()),
+      /private-|synthetic-router-key/
+    )
+    const detailsOnly = { ...native, reasoning: null }
+    assert.equal(
+      normalizeMistralResponse(
+        {
+          ...payload,
+          choices: [{ ...payload.choices[0], message: detailsOnly }],
+        },
+        'openrouter'
+      ).choices[0].message.reasoning_content,
+      native.reasoning
+    )
+    const history = createHistoryStore({ provider: 'openrouter' })
+    history.remember(prefix, detailsOnly)
+    assert.deepEqual(
+      history.restoreMessages([
+        { role: 'user', content: 'compressed' },
+        normalized,
+      ])[1],
+      detailsOnly
+    )
+    history.remember([{ role: 'user', content: 'other' }], {
+      ...detailsOnly,
+      reasoning_details: [
+        detailsOnly.reasoning_details[0],
+        { type: 'reasoning.encrypted', data: 'other-signature', index: 1 },
+      ],
+    })
+    assert.throws(
+      () =>
+        history.restoreMessages([
+          { role: 'user', content: 'compressed' },
+          normalized,
+        ]),
+      { code: 'history_collision' }
+    )
+    assert.deepEqual(
+      history.restoreMessages([...prefix, normalized])[1],
+      detailsOnly
+    )
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('OpenRouter retains truncated task completion rejection and refuses another snapshot', async () => {
+  const payload = {
+    ...completion(
+      {
+        role: 'assistant',
+        content: null,
+        tool_calls: [
+          {
+            id: 'done',
+            type: 'function',
+            function: { name: 'task_done', arguments: '{}' },
+          },
+        ],
+      },
+      'length'
+    ),
+    model: 'deepseek/deepseek-v4.1-flash-1017',
+  }
+  const adapter = await startAdapter({
+    provider: 'openrouter',
+    apiKey: 'synthetic',
+    fetchImpl: upstream(() => jsonResponse(200, payload)),
+  })
+  try {
+    const response = await postJson(adapter, {
+      model: payload.model,
+      messages: [{ role: 'user', content: 'synthetic' }],
+      tools: [{ type: 'function', function: { name: 'task_done' } }],
+    })
+    assert.equal(response.json.error.code, 'truncated_completion')
+    assert.equal(adapter.diagnostics().history.prefix_hits, 0)
+    assert.equal(adapter.diagnostics().truncated_completions, 1)
+    assert.equal(adapter.diagnostics().accepted_responses, 0)
+    assert.throws(
+      () =>
+        normalizeMistralResponse(
+          { ...payload, model: 'deepseek/deepseek-v4.1-flash' },
+          'openrouter'
+        ),
+      { code: 'response_model_mismatch' }
+    )
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('OpenRouter cost receipts use matching reference prices and preserve incomplete-attempt eligibility', async () => {
+  const row = costReceipt({
+    provider: 'openrouter',
+    model: 'deepseek/deepseek-v4.1-flash-1017',
+    prompt_tokens: 1000000,
+    cached_prompt_tokens: 750000,
+    uncached_prompt_tokens: 250000,
+    completion_tokens: 100000,
+  })
+  const estimate = estimateCost(JSON.stringify(row), 'openrouter')
+  assert.ok(Math.abs(estimate.withCache - 0.09975) < 1e-12)
+  assert.ok(Math.abs(estimate.withoutCache - 0.21) < 1e-12)
+  assert.ok(Math.abs(estimate.savings - 0.11025) < 1e-12)
+  const partial = buildCostReport(
+    JSON.stringify({ ...row, upstream_attempts: row.responses + 1 }),
+    { adapter: 1 },
+    'openrouter'
+  )
+  assert.equal(partial.estimate, null)
+  assert.equal(partial.reportedResponseEstimate.unpriced_attempts, 1)
+  assert.equal(partial.reportedResponseEstimate.withCache, estimate.withCache)
+  for (const [receipt, provider] of [
+    [row, 'mistral'],
+    [costReceipt(), 'openrouter'],
+  ]) {
+    const report = buildCostReport(
+      JSON.stringify(receipt),
+      { adapter: 1 },
+      provider
+    )
+    assert.equal(report.estimate, null)
+    assert.equal(report.reportedResponseEstimate, null)
+    assert.ok(report.reasons.includes('provider_mismatch'))
+  }
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-router-cost-'))
+  try {
+    const receipt = path.join(directory, 'receipt.jsonl')
+    const summary = path.join(directory, 'summary.md')
+    fs.writeFileSync(receipt, JSON.stringify(row))
+    const result = await runCli(['summary', receipt], {
+      OCR_ADAPTER_PROVIDER: 'openrouter',
+      GITHUB_STEP_SUMMARY: summary,
+    })
+    assert.equal(result.code, 0)
+    assert.equal(result.stdout, fs.readFileSync(summary, 'utf8'))
+    assert.match(result.stdout, /\$0\.003\b/)
+    assert.match(result.stdout, /OCR cost status=complete reasons=none/)
+    assert.ok(result.stdout.includes(`$${estimate.withCache.toFixed(4)}`))
+    assert.doesNotMatch(result.stdout, /zai-glm|\$1\.40/)
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('draft startup fails closed on an unknown profile or missing selected credential', async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-router-start-'))
+  try {
+    const state = path.join(directory, 'adapter.json')
+    for (const [provider, code] of [
+      ['unknown', 'invalid_provider'],
+      ['openrouter', 'missing_env'],
+    ]) {
+      const result = await runCli(['start', state], {
+        RUNNER_TEMP: directory,
+        OCR_ADAPTER_PROVIDER: provider,
+        OPENROUTER_API_KEY: '',
+        MISTRAL_API_KEY: 'synthetic-unselected-key',
+      })
+      assert.notEqual(result.code, 0)
+      assert.match(result.stderr, new RegExp(code))
+      assert.equal(fs.existsSync(state), false)
+      assert.doesNotMatch(result.stderr, /synthetic-unselected-key/)
+    }
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('progress reconstructs known events without reflecting private fields or workflow commands', () => {
   const records = []
   const progress = createProgressFilter((line) => records.push(line))
@@ -2960,6 +3240,7 @@ test('callMistral wraps raw fetch failures instead of leaking them', async () =>
 const RUN_SCRIPT =
   'process.stdout.write(JSON.stringify({' +
   ' key: process.env.MISTRAL_API_KEY ?? null,' +
+  ' routerKey: process.env.OPENROUTER_API_KEY ?? null,' +
   ' url: process.env.OCR_LLM_URL ?? null,' +
   ' token: process.env.OCR_LLM_TOKEN != null,' +
   ' model: process.env.OCR_LLM_MODEL ?? null,' +
@@ -3081,20 +3362,30 @@ test('run completes the existing OCR config per attempt and restores it on every
   }
 })
 
-test('run strips the upstream key and injects the OCR environment', async () => {
-  const result = await runCli(
-    ['run', '--', process.execPath, '-e', RUN_SCRIPT],
-    { MISTRAL_API_KEY: 'sk-synthetic-run' }
-  )
-  assert.equal(result.code, 0)
-  const seen = JSON.parse(result.stdout)
-  assert.equal(seen.key, null)
-  assert.match(seen.url, /^http:\/\/127\.0\.0\.1:\d+\/v1\/chat\/completions$/)
-  assert.equal(seen.token, true)
-  assert.equal(seen.model, 'zai-glm-5-3')
-  assert.equal(seen.protocol, 'openai')
-  assert.equal(seen.anthropic, 'false')
-  assert.equal(seen.home, process.env.HOME)
+test('run strips both upstream keys and injects only the selected loopback model', async () => {
+  for (const [provider, model] of [
+    [undefined, MISTRAL_MODEL],
+    ['openrouter', 'deepseek/deepseek-v4.1-flash-1017'],
+  ]) {
+    const result = await runCli(
+      ['run', '--', process.execPath, '-e', RUN_SCRIPT],
+      {
+        MISTRAL_API_KEY: 'sk-synthetic-run',
+        OPENROUTER_API_KEY: 'sk-synthetic-router',
+        OCR_ADAPTER_PROVIDER: provider,
+      }
+    )
+    assert.equal(result.code, 0)
+    const seen = JSON.parse(result.stdout)
+    assert.equal(seen.key, null)
+    assert.equal(seen.routerKey, null)
+    assert.match(seen.url, /^http:\/\/127\.0\.0\.1:\d+\/v1\/chat\/completions$/)
+    assert.equal(seen.token, true)
+    assert.equal(seen.model, model)
+    assert.equal(seen.protocol, 'openai')
+    assert.equal(seen.anthropic, 'false')
+    assert.equal(seen.home, process.env.HOME)
+  }
 })
 
 test('run streams filtered progress before completion while preserving raw stderr, JSON and exit status', async (t) => {

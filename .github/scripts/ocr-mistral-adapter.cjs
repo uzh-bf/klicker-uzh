@@ -2,9 +2,9 @@
 'use strict'
 
 // Runner-local loopback adapter that exposes an OpenAI-compatible chat
-// completions endpoint backed by one fixed Mistral upstream. OpenCodeReview
+// completions endpoint backed by a fixed, allowlisted upstream. OpenCodeReview
 // talks to this process over loopback with a short-lived capability token; the
-// real upstream key never leaves the adapter. Native Mistral assistant
+// real upstream key never leaves the adapter. Native provider assistant
 // messages are retained in bounded process memory and restored when OCR
 // replays a conversation, because the flattened OpenAI transcript loses the
 // reasoning chunks the reasoning model needs to continue.
@@ -29,6 +29,35 @@ const MISTRAL_PRICING = {
   input: 1.4,
   cachedInput: 0.14,
   output: 4.4,
+}
+const PROVIDERS = {
+  mistral: {
+    name: 'mistral',
+    label: 'Mistral',
+    url: MISTRAL_URL,
+    model: MISTRAL_MODEL,
+    responseModels: [MISTRAL_MODEL],
+    secret: 'MISTRAL_API_KEY',
+    pricing: MISTRAL_PRICING,
+  },
+  openrouter: {
+    name: 'openrouter',
+    label: 'OpenRouter',
+    url: 'https://openrouter.ai/api/v1/chat/completions',
+    model: 'deepseek/deepseek-v4.1-flash-1017',
+    responseModels: [
+      'deepseek/deepseek-v4.1-flash-1017',
+      'deepseek/deepseek-v4.1-flash-20261017',
+    ],
+    secret: 'OPENROUTER_API_KEY',
+    pricing: {
+      date: '2026-10-17',
+      source: 'https://openrouter.ai/deepseek/deepseek-v4.1-flash-1017',
+      input: 0.15,
+      cachedInput: 0.003,
+      output: 0.6,
+    },
+  },
 }
 const COST_STAGES = ['adapter', 'preflight', 'topology']
 const COST_USAGE_FIELDS = [
@@ -61,7 +90,7 @@ const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1'])
 const CHAT_PATH = '/v1/chat/completions'
 const SHUTDOWN_PATH = '/shutdown'
 
-// Only explicitly supported OpenAI-compatible fields reach Mistral. Anything else
+// Only explicitly supported OpenAI-compatible fields reach the provider. Anything else
 // in the incoming body (reasoning, provider, thinking, stream_options, ...) is
 // dropped by omission rather than copied and filtered.
 const PASSTHROUGH_FIELDS = [
@@ -99,6 +128,13 @@ class AdapterError extends Error {
     this.name = 'AdapterError'
     this.code = code
   }
+}
+
+function providerConfig(name = 'mistral') {
+  if (!Object.hasOwn(PROVIDERS, name)) {
+    throw new AdapterError('invalid_provider', 'unknown adapter provider')
+  }
+  return PROVIDERS[name]
 }
 
 function isPlainObject(value) {
@@ -251,13 +287,47 @@ function normalizeToolCalls(toolCalls) {
   })
 }
 
-function normalizeAssistantMessage(message) {
+function openRouterReasoning(message) {
+  if (message.reasoning != null && typeof message.reasoning !== 'string')
+    throw new AdapterError('malformed_chunk', 'invalid reasoning')
+  if (
+    message.reasoning_details != null &&
+    !Array.isArray(message.reasoning_details)
+  )
+    throw new AdapterError('malformed_chunk', 'invalid reasoning details')
+  if (message.reasoning) return message.reasoning
+  const text = (message.reasoning_details ?? [])
+    .map((detail) => {
+      if (!isPlainObject(detail))
+        throw new AdapterError('malformed_chunk', 'invalid reasoning detail')
+      const value =
+        detail.type === 'reasoning.text'
+          ? detail.text
+          : detail.type === 'reasoning.summary'
+            ? detail.summary
+            : ''
+      if (typeof value !== 'string')
+        throw new AdapterError(
+          'malformed_chunk',
+          'invalid reasoning detail text'
+        )
+      return value
+    })
+    .join('')
+  return text || extractReasoning(message.reasoning_content)
+}
+
+function normalizeAssistantMessage(message, provider = 'mistral') {
   if (!isPlainObject(message)) {
     throw new AdapterError('malformed_response', 'response message is missing')
   }
   try {
     const { text, thinking } = splitContent(message.content)
-    const reasoning = thinking + extractReasoning(message.reasoning_content)
+    const reasoning =
+      thinking +
+      (provider === 'openrouter'
+        ? openRouterReasoning(message)
+        : extractReasoning(message.reasoning_content))
     const toolCalls = normalizeToolCalls(message.tool_calls)
     // The OCR-facing content is the final text only: strict topology JSON must
     // parse and private thinking must never be mixed into review content. The
@@ -297,7 +367,7 @@ function normalizeUsage(usage) {
 }
 
 // OCR budgets, reports and resumes on the usage it receives. Cache reads cost a
-// tenth of uncached input, so OCR sees billable usage: uncached prompt plus
+// fraction of uncached input, so OCR sees billable usage: uncached prompt plus
 // completion tokens. Without a valid cache report or completion count the usage
 // passes through unchanged and the full prompt counts.
 // Adapter diagnostics keep the raw provider usage.
@@ -317,13 +387,14 @@ function billableUsage(usage) {
 // The OCR-facing content is the final text only so strict topology JSON still
 // parses and private thinking never reaches review content; the concatenated
 // thinking is kept separately in reasoning_content.
-function normalizeMistralResponse(payload) {
+function normalizeMistralResponse(payload, provider = 'mistral') {
+  const profile = providerConfig(provider)
   if (!isPlainObject(payload)) {
     throw new AdapterError('malformed_response', 'response must be an object')
   }
   // The fixed upstream must answer for the fixed model; a different model in
   // the payload means the request was routed somewhere unexpected.
-  if (payload.model !== MISTRAL_MODEL) {
+  if (!profile.responseModels.includes(payload.model)) {
     throw new AdapterError(
       'response_model_mismatch',
       'upstream model does not match the fixed adapter model'
@@ -337,7 +408,7 @@ function normalizeMistralResponse(payload) {
   if (!isPlainObject(choice)) {
     throw new AdapterError('malformed_response', 'response choice is malformed')
   }
-  const message = normalizeAssistantMessage(choice.message)
+  const message = normalizeAssistantMessage(choice.message, provider)
   if (typeof choice.finish_reason !== 'string') {
     throw new AdapterError('malformed_response', 'completion status is missing')
   }
@@ -351,7 +422,7 @@ function normalizeMistralResponse(payload) {
     created: Number.isInteger(payload.created)
       ? payload.created
       : Math.floor(Date.now() / 1000),
-    model: MISTRAL_MODEL,
+    model: profile.model,
     choices: [{ index: 0, message, finish_reason: finishReason }],
   }
   const usage = normalizeUsage(payload.usage)
@@ -436,6 +507,7 @@ function normalizeMessage(message) {
 // bound overflow, or a replay that cannot be matched fails closed instead of
 // silently forwarding the flattened transcript.
 function createHistoryStore(options = {}) {
+  const provider = providerConfig(options.provider).name
   const maxEntries = options.maxEntries ?? DEFAULT_MAX_HISTORY_ENTRIES
   const maxBytes = options.maxBytes ?? DEFAULT_MAX_HISTORY_BYTES
   const native = new Map()
@@ -466,7 +538,7 @@ function createHistoryStore(options = {}) {
   }
 
   function remember(prefixMessages, nativeMessage) {
-    const normalized = normalizeAssistantMessage(nativeMessage)
+    const normalized = normalizeAssistantMessage(nativeMessage, provider)
     const prefix = prefixMessages.map(messageIdentity)
     const identity = messageIdentity(normalized)
     const key = keyFor(prefix, identity)
@@ -564,7 +636,12 @@ function createHistoryStore(options = {}) {
   }
 }
 
-function translateMistralRequest(body, history = createHistoryStore()) {
+function translateMistralRequest(
+  body,
+  history = createHistoryStore(),
+  provider = 'mistral'
+) {
+  const profile = providerConfig(provider)
   if (!isPlainObject(body)) {
     throw new AdapterError('invalid_request', 'request body must be an object')
   }
@@ -577,7 +654,7 @@ function translateMistralRequest(body, history = createHistoryStore()) {
   if (
     body.model !== undefined &&
     body.model !== null &&
-    body.model !== MISTRAL_MODEL
+    body.model !== profile.model
   ) {
     throw new AdapterError(
       'model_mismatch',
@@ -594,11 +671,16 @@ function translateMistralRequest(body, history = createHistoryStore()) {
       'reasoning effort must be high or max'
     )
   }
+  if (provider === 'openrouter' && effort !== 'max') {
+    throw new AdapterError('invalid_request', 'draft reasoning must be max')
+  }
 
   const translated = {
-    model: MISTRAL_MODEL,
+    model: profile.model,
     messages: history.restoreMessages(body.messages),
-    reasoning_effort: effort,
+    ...(provider === 'openrouter'
+      ? { reasoning: { effort: 'max' } }
+      : { reasoning_effort: effort }),
   }
   if (body.prompt_cache_key !== undefined) {
     if (
@@ -625,7 +707,7 @@ function translateMistralRequest(body, history = createHistoryStore()) {
   if (hasCompletionTool(body) && typeof translated.tool_choice !== 'object') {
     // OCR completes through task_done. Optional tool use lets a prose answer
     // enter its zero-tool retry path, which replays the growing history.
-    translated.tool_choice = 'any'
+    translated.tool_choice = provider === 'openrouter' ? 'required' : 'any'
   }
   return translated
 }
@@ -892,6 +974,7 @@ function recordResponseUsage(counter, usage, rawUsage) {
 }
 
 async function startAdapter(options = {}) {
+  const profile = providerConfig(options.provider)
   const apiKey = options.apiKey
   const fetchImpl = options.fetchImpl ?? requestMistral
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
@@ -912,6 +995,7 @@ async function startAdapter(options = {}) {
 
   const token = crypto.randomBytes(32).toString('hex')
   const history = createHistoryStore({
+    provider: profile.name,
     maxEntries: options.maxHistoryEntries,
     maxBytes: options.maxHistoryBytes,
   })
@@ -1012,7 +1096,7 @@ async function startAdapter(options = {}) {
 
     let mistralBody
     try {
-      mistralBody = translateMistralRequest(body, history)
+      mistralBody = translateMistralRequest(body, history, profile.name)
     } catch (error) {
       // The authenticated startup probe checks validation without OCR traffic.
       const readinessProbe =
@@ -1096,7 +1180,7 @@ async function startAdapter(options = {}) {
 
     try {
       for (const counter of counters) counter.upstream_attempts += 1
-      const upstream = await fetchImpl(MISTRAL_URL, {
+      const upstream = await fetchImpl(profile.url, {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
@@ -1122,7 +1206,7 @@ async function startAdapter(options = {}) {
       } catch {
         throw new AdapterError('malformed_response', 'invalid upstream JSON')
       }
-      const normalized = normalizeMistralResponse(payload)
+      const normalized = normalizeMistralResponse(payload, profile.name)
       const choice = normalized.choices[0]
       const responseBytes = Buffer.byteLength(text)
       for (const counter of counters) {
@@ -1262,6 +1346,9 @@ async function startAdapter(options = {}) {
   function snapshot() {
     return {
       schema_version: 1,
+      ...(profile.name === 'openrouter'
+        ? { provider: profile.name, model: profile.model }
+        : {}),
       ...diagnostics,
       failures: { ...diagnostics.failures },
       request_types: {
@@ -1525,14 +1612,12 @@ function writeDiagnostics(snapshot) {
   }
 }
 
-function costFromTotals(totals) {
-  const output = (totals.completion_tokens * MISTRAL_PRICING.output) / 1e6
-  const withoutCache =
-    (totals.prompt_tokens * MISTRAL_PRICING.input) / 1e6 + output
+function costFromTotals(totals, provider = 'mistral') {
+  const pricing = providerConfig(provider).pricing
+  const output = (totals.completion_tokens * pricing.output) / 1e6
+  const withoutCache = (totals.prompt_tokens * pricing.input) / 1e6 + output
   const savings =
-    (totals.cached_prompt_tokens *
-      (MISTRAL_PRICING.input - MISTRAL_PRICING.cachedInput)) /
-    1e6
+    (totals.cached_prompt_tokens * (pricing.input - pricing.cachedInput)) / 1e6
   return {
     ...totals,
     withCache: withoutCache - savings,
@@ -1542,12 +1627,20 @@ function costFromTotals(totals) {
   }
 }
 
-function assessCostRows(rows) {
+function assessCostRows(rows, provider = 'mistral') {
   const totals = Object.fromEntries(
     COST_USAGE_FIELDS.map((field) => [field, 0])
   )
   const reasons = new Set()
   for (const row of rows) {
+    if (
+      (row?.provider ?? 'mistral') !== provider ||
+      (provider === 'openrouter' &&
+        row?.model !== providerConfig(provider).model)
+    ) {
+      reasons.add('provider_mismatch')
+      continue
+    }
     if (row?.schema_version !== 1) {
       reasons.add('unsupported_schema')
       continue
@@ -1587,21 +1680,25 @@ function assessCostRows(rows) {
   return {
     totals,
     reasons: [...reasons],
-    estimate: reasons.size ? null : costFromTotals(totals),
+    estimate: reasons.size ? null : costFromTotals(totals, provider),
   }
 }
 
-function estimateCost(diagnosticsText) {
+function estimateCost(diagnosticsText, provider = 'mistral') {
   const rows = diagnosticsText
     .trim()
     .split('\n')
     .filter(Boolean)
     .map(JSON.parse)
   if (!rows.length) return null
-  return assessCostRows(rows).estimate
+  return assessCostRows(rows, provider).estimate
 }
 
-function buildCostReport(diagnosticsText, expected = { adapter: 1 }) {
+function buildCostReport(
+  diagnosticsText,
+  expected = { adapter: 1 },
+  provider = 'mistral'
+) {
   if (
     !expected ||
     !Object.keys(expected).length ||
@@ -1643,7 +1740,7 @@ function buildCostReport(diagnosticsText, expected = { adapter: 1 }) {
     (stage) => Object.hasOwn(expected, stage) || groups[stage].length
   ).map((stage) => {
     const rows = groups[stage]
-    const report = assessCostRows(rows)
+    const report = assessCostRows(rows, provider)
     if (rows.length !== expected[stage]) {
       report.reasons.push('receipt_count_mismatch')
       report.estimate = null
@@ -1656,7 +1753,7 @@ function buildCostReport(diagnosticsText, expected = { adapter: 1 }) {
       ...report,
     }
   })
-  const combined = assessCostRows(Object.values(groups).flat())
+  const combined = assessCostRows(Object.values(groups).flat(), provider)
   for (const reason of combined.reasons) reasons.add(reason)
   const reportedResponseEstimate =
     reasons.size === 1 &&
@@ -1665,7 +1762,7 @@ function buildCostReport(diagnosticsText, expected = { adapter: 1 }) {
       .flat()
       .every((row) => row.upstream_attempts >= row.responses)
       ? {
-          ...costFromTotals(combined.totals),
+          ...costFromTotals(combined.totals, provider),
           unpriced_attempts:
             combined.totals.upstream_attempts - combined.totals.responses,
         }
@@ -1749,6 +1846,7 @@ function executionSummary(rows, complete) {
 }
 
 function commandSummary(args) {
+  const profile = providerConfig(process.env.OCR_ADAPTER_PROVIDER)
   let expected = { adapter: 1 }
   if (args.length > 1) {
     expected = {}
@@ -1765,7 +1863,7 @@ function commandSummary(args) {
   let diagnosticsText = ''
   try {
     diagnosticsText = fs.readFileSync(args[0], 'utf8')
-    report = buildCostReport(diagnosticsText, expected)
+    report = buildCostReport(diagnosticsText, expected, profile.name)
   } catch (error) {
     // Missing or malformed receipts cannot establish zero spend.
     report = {
@@ -1777,7 +1875,7 @@ function commandSummary(args) {
     }
   }
   const estimate = report.estimate
-  const pricing = MISTRAL_PRICING
+  const pricing = profile.pricing
   const failures = Object.fromEntries(
     FAILURE_CATEGORIES.map((category) => [category, 0])
   )
@@ -1823,10 +1921,15 @@ function commandSummary(args) {
   const summary = [
     '### OCR estimated cost and caching savings',
     '',
-    `Mistral \`${MISTRAL_MODEL}\`; [list pricing](${pricing.source}) checked ${pricing.date}: ` +
-      `$${pricing.input.toFixed(2)} input / $${pricing.cachedInput.toFixed(2)} cached input / $${pricing.output.toFixed(2)} output per million tokens (USD).`,
+    `${profile.label} \`${profile.model}\`; [list pricing](${pricing.source}) checked ${pricing.date}: ` +
+      `$${pricing.input.toFixed(profile.name === 'openrouter' ? 3 : 2)} input / $${pricing.cachedInput.toFixed(profile.name === 'openrouter' ? 3 : 2)} cached input / $${pricing.output.toFixed(profile.name === 'openrouter' ? 3 : 2)} output per million tokens (USD).`,
     '',
   ]
+  if (profile.name === 'openrouter')
+    summary.push(
+      'Reference-price estimates only: routed endpoint prices and time-based rates may differ from these catalog rates; this is not an invoice.',
+      ''
+    )
   if (estimate) {
     summary.push(
       '| Estimate | USD |',
@@ -2133,15 +2236,21 @@ async function commandRun(args) {
   if (argv.length === 0) {
     throw new AdapterError('missing_command', 'run requires an executable')
   }
-  const apiKey = requireEnv('MISTRAL_API_KEY')
-  const adapter = await startAdapter({ apiKey, onClose: writeDiagnostics })
+  const profile = providerConfig(process.env.OCR_ADAPTER_PROVIDER)
+  const apiKey = requireEnv(profile.secret)
+  const adapter = await startAdapter({
+    apiKey,
+    provider: profile.name,
+    onClose: writeDiagnostics,
+  })
   const childEnv = { ...process.env }
   delete childEnv.MISTRAL_API_KEY
+  delete childEnv.OPENROUTER_API_KEY
   const liveProgress = childEnv.OCR_ADAPTER_PROGRESS_FD === '3'
   delete childEnv.OCR_ADAPTER_PROGRESS_FD
   childEnv.OCR_LLM_URL = `${adapter.url}${CHAT_PATH}`
   childEnv.OCR_LLM_TOKEN = adapter.token
-  childEnv.OCR_LLM_MODEL = MISTRAL_MODEL
+  childEnv.OCR_LLM_MODEL = profile.model
   childEnv.OCR_LLM_PROTOCOL = 'openai'
   childEnv.OCR_USE_ANTHROPIC = 'false'
 
@@ -2230,7 +2339,7 @@ async function commandRun(args) {
 
 async function commandStart(args) {
   const statePath = resolveStatePath(args[0])
-  requireEnv('MISTRAL_API_KEY')
+  requireEnv(providerConfig(process.env.OCR_ADAPTER_PROVIDER).secret)
   const child = spawn(process.execPath, [__filename, 'serve', statePath], {
     detached: true,
     stdio: 'ignore',
@@ -2260,8 +2369,13 @@ async function commandStart(args) {
 
 async function commandServe(args) {
   const statePath = resolveStatePath(args[0])
-  const apiKey = requireEnv('MISTRAL_API_KEY')
-  const adapter = await startAdapter({ apiKey, onClose: writeDiagnostics })
+  const profile = providerConfig(process.env.OCR_ADAPTER_PROVIDER)
+  const apiKey = requireEnv(profile.secret)
+  const adapter = await startAdapter({
+    apiKey,
+    provider: profile.name,
+    onClose: writeDiagnostics,
+  })
   writeState(statePath, { url: adapter.url, token: adapter.token })
   const shutdown = () => {
     adapter.close()

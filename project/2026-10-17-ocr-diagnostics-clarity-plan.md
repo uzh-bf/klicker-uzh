@@ -1,5 +1,63 @@
 # OCR diagnostics clarity
 
+## Approved draft provider extension
+
+The user additionally requested automatic draft reviews through OpenRouter's
+`deepseek/deepseek-v4.1-flash-1017` snapshot with max reasoning. This executable
+extension changes the draft provider and reasoning selection; the original
+diagnostics batch below remains applicable otherwise. Deliver it in the same
+[draft PR #6579](https://github.com/uzh-bf/klicker-uzh/pull/6579) against `v3`.
+
+Extend the existing adapter with two fixed, allowlisted profiles. Manual final
+review and direct preflight/topology helpers retain Mistral defaults. Only the
+draft job selects OpenRouter, including its separate summary process, and uses
+the existing `OPENROUTER_API_KEY` secret. Unknown profiles and absent selected
+credentials fail closed. Keep upstream keys out of OCR child environments.
+Preserve budgets, token accounting, retry/resume decisions, deadlines, coverage,
+retention, bounded diagnostics and progress logging.
+
+OpenRouter receives `reasoning.effort: max`, the exact snapshot model and the
+existing validated cache-affinity key. Its native assistant reasoning details
+remain verbatim in bounded memory. Normalize reasoning once, preferring the
+nonempty `reasoning` string, then text/summary detail blocks, then legacy
+`reasoning_content`. Preserve exact-prefix and unambiguous compressed replay,
+collision rejection, and truncated-completion rejection.
+
+Use profile-specific reference pricing, checked against OpenRouter's public
+model catalog on 2026-10-17: $0.15 input, $0.003 cached input and $0.60 output per
+million tokens. Label estimates explicitly: endpoint prices and time-based
+overrides vary. Keep three-decimal rate precision and reject mismatched provider
+receipts instead of applying another provider's rates. Coverage eligibility and
+the reported-response-only partial estimate remain unchanged.
+
+Delegation Map extension: main owns the coupled adapter, workflow wiring, focused
+synthetic tests and documentation; acceptance is the existing five OCR suites
+plus new OpenRouter replay, routing, credential and cost-summary contracts.
+Retained locally because normalization, native history and accounting seams are
+coupled; workflow/documentation edits cost less than another executor handoff.
+The Astra planner reviews this extension before implementation. The committed
+extension receives simplification and transport/isolation, replay and cost risk
+review; the integrated package receives final review. Risks are **extend
+existing** for transport/isolation, replay and pricing. New files, dependencies
+and paid live tests: **none**.
+
+The user's direct request supplies implementation authority; ordinary commit,
+push, draft update and CI/feedback monitoring remain authorized. Merge, ready,
+manual paid runs, deployment and infrastructure changes remain separate gates.
+Branch CI cannot establish activation: `pull_request_target` executes trusted
+default-branch code. Live provider acceptance is a post-merge verification step.
+
+### Extension progress
+
+- Astra planner: approved after one correction clarifying credential isolation,
+  separate-process pricing, replay precedence and live-verification limits.
+- Implementation includes the existing final-review workflow policy tests;
+  obsolete name/prose matching is replaced with parsed YAML contracts.
+- Local baseline: 232 focused tests passed. Extended verification: 237 passed,
+  including profile-specific routing, replay/collision handling, truncation,
+  cost coverage, credential rejection and child isolation.
+- Commit, slice review, integrated review and hosted CI: pending.
+
 ## Approval summary
 
 Make existing OCR runs easier to assess without changing how they review code.

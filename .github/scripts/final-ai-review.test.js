@@ -4,6 +4,7 @@ const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
+const YAML = require('yaml')
 
 const {
   isConsolidationBaseBranch,
@@ -1541,76 +1542,84 @@ test('draft context preserves the complete multiline workflow output', () => {
 })
 
 test('attempts draft diagnostics upload even after startup failure', () => {
-  const workflow = fs.readFileSync(
-    path.join(__dirname, '../workflows/check-ocr-review.yml'),
-    'utf8'
-  )
-  const lines = workflow.split('\n')
-  const startStep = workflow.match(
-    /      - name: Start Mistral adapter\n[\s\S]*?(?=\n      - name:)/
-  )?.[0]
-  const diagnosticsPath = startStep?.match(
-    /^          OCR_ADAPTER_DIAGNOSTICS_PATH: (.+)$/m
-  )?.[1]
-  const stopIndex = lines.findIndex(
-    (line) => line === '      - name: Stop Mistral adapter'
-  )
-  const uploadIndex = lines.findIndex(
-    (line) =>
-      line === '      - name: Upload sanitized draft adapter diagnostics'
-  )
-
-  assert.ok(diagnosticsPath, 'the draft job must set a diagnostics path')
-  assert.equal(diagnosticsPath.includes('runner.temp'), true)
-  assert.equal(
-    diagnosticsPath.endsWith('/draft-ai-review-adapter-diagnostics.jsonl'),
-    true
-  )
-  assert.ok(stopIndex >= 0, 'missing adapter stop step')
-  assert.ok(uploadIndex >= 0, 'missing draft diagnostics upload step')
-  assert.ok(
-    uploadIndex > stopIndex,
-    'diagnostics upload must follow the adapter stop step'
-  )
-
-  const uploadStep = lines.slice(uploadIndex).join('\n')
-  assert.ok(uploadStep.includes('          path: ' + diagnosticsPath))
-  assert.ok(uploadStep.includes('        if: always()\n'))
-  assert.ok(
-    uploadStep.includes(
-      'uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4'
+  const job = YAML.parse(
+    fs.readFileSync(
+      path.join(__dirname, '../workflows/check-ocr-review.yml'),
+      'utf8'
     )
+  ).jobs['ocr-review']
+  const start = job.steps.find((step) => step.id === 'adapter')
+  const diagnosticsPath = start.env.OCR_ADAPTER_DIAGNOSTICS_PATH
+  const stopIndex = job.steps.findIndex((step) =>
+    step.run?.includes('stop "${ADAPTER_STATE}"')
   )
-  assert.ok(uploadStep.includes('          retention-days: 7'))
-  assert.ok(uploadStep.includes('          if-no-files-found: warn'))
+  const uploadIndex = job.steps.findIndex((step) =>
+    step.uses?.startsWith('actions/upload-artifact@')
+  )
+  assert.ok(diagnosticsPath.includes('runner.temp'))
+  assert.ok(
+    diagnosticsPath.endsWith('/draft-ai-review-adapter-diagnostics.jsonl')
+  )
+  assert.ok(stopIndex >= 0)
+  assert.ok(uploadIndex > stopIndex)
+  const upload = job.steps[uploadIndex]
+  assert.equal(upload.with.path, diagnosticsPath)
+  assert.equal(upload.if, 'always()')
+  assert.equal(
+    upload.uses,
+    'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02'
+  )
+  assert.equal(upload.with['retention-days'], 7)
+  assert.equal(upload.with['if-no-files-found'], 'warn')
 })
 
-test('routes automatic drafts through the same pinned Mistral adapter', () => {
-  const source = fs.readFileSync(
-    path.join(__dirname, '../workflows/check-ocr-review.yml'),
-    'utf8'
+test('routes automatic drafts through the pinned adapter with OpenRouter max reasoning', () => {
+  const job = YAML.parse(
+    fs.readFileSync(
+      path.join(__dirname, '../workflows/check-ocr-review.yml'),
+      'utf8'
+    )
+  ).jobs['ocr-review']
+  assert.equal(job.env.OCR_ADAPTER_PROVIDER, 'openrouter')
+  const startIndex = job.steps.findIndex((step) => step.id === 'adapter')
+  const actionIndex = job.steps.findIndex((step) =>
+    step.uses?.startsWith('alibaba/open-code-review@')
   )
-  assert.match(
-    source,
-    /open-code-review@1672852136fc87748249d22bce0819f33419ea79/
+  assert.ok(startIndex >= 0 && actionIndex > startIndex)
+  const action = job.steps[actionIndex]
+  assert.equal(
+    action.uses,
+    'alibaba/open-code-review@1672852136fc87748249d22bce0819f33419ea79'
   )
-  assert.match(source, /llm_model: zai-glm-5-3/)
-  assert.match(source, /ocr_version: '1.13.0'/)
-  assert.match(
-    source,
-    /llm_extra_body: '\{"reasoning_effort":"high","prompt_cache_key":"\{ocr_session_key\}"\}'/
+  assert.equal(action.with.llm_model, 'deepseek/deepseek-v4.1-flash-1017')
+  assert.equal(action.with.ocr_version, '1.13.0')
+  assert.deepEqual(JSON.parse(action.with.llm_extra_body), {
+    reasoning_effort: 'max',
+    prompt_cache_key: '{ocr_session_key}',
+  })
+  assert.equal(action.with.llm_auth_token, '${{ steps.adapter.outputs.token }}')
+  assert.equal(
+    job.steps[startIndex].env.OPENROUTER_API_KEY,
+    '${{ secrets.OPENROUTER_API_KEY }}'
   )
-  assert.match(
-    source,
-    /llm_auth_token: \$\{\{ steps.adapter.outputs.token \}\}/
+  assert.equal(job.steps[startIndex].env.MISTRAL_API_KEY, undefined)
+  const stop = job.steps.find((step) =>
+    step.run?.includes('stop "${ADAPTER_STATE}"')
   )
-  assert.ok(
-    source.indexOf('start "${ADAPTER_STATE}"') <
-      source.indexOf('uses: alibaba/open-code-review@')
+  assert.equal(stop.if, "always() && steps.adapter.outcome == 'success'")
+  const summary = job.steps.find((step) => step.run?.includes(' summary '))
+  assert.equal(summary.env.OCR_ADAPTER_PROVIDER, undefined)
+  const manual = YAML.parse(
+    fs.readFileSync(
+      path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+      'utf8'
+    )
   )
-  assert.match(source, /if: always\(\) && steps.adapter.outcome == 'success'/)
-  assert.match(source, /stop "\$\{ADAPTER_STATE\}"/)
-  assert.doesNotMatch(source, /OPENROUTER_API_KEY/)
+  for (const finalJob of Object.values(manual.jobs)) {
+    assert.equal(finalJob.env?.OCR_ADAPTER_PROVIDER, undefined)
+    for (const step of finalJob.steps ?? [])
+      assert.equal(step.env?.OCR_ADAPTER_PROVIDER, undefined)
+  }
 })
 
 test('uses the OCR runtime config path for both preflight and review', () => {
