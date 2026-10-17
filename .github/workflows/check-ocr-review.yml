@@ -39,12 +39,15 @@ jobs:
         id: context
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           node - <<'NODE'
+          const { randomUUID } = require('node:crypto')
           const fs = require('node:fs')
           const { buildReviewBackground } = require('./.github/scripts/final-ai-review.js')
-          const background = buildReviewBackground(process.env.PR_TITLE)
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `background=${background}\n`)
+          const background = buildReviewBackground(process.env.PR_TITLE, process.env.PR_BODY)
+          const delimiter = randomUUID()
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `background<<${delimiter}\n${background}\n${delimiter}\n`)
           NODE
 
       - name: Start Mistral adapter
@@ -53,6 +56,7 @@ jobs:
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           ADAPTER_PATH: ${{ runner.temp }}/ocr-mistral-adapter.cjs
           ADAPTER_STATE: ${{ runner.temp }}/ocr-mistral-adapter.json
+          OCR_ADAPTER_DIAGNOSTICS_PATH: ${{ runner.temp }}/draft-ai-review-adapter-diagnostics.jsonl
         run: |
           set -euo pipefail
           cp .github/scripts/ocr-mistral-adapter.cjs "${ADAPTER_PATH}"
@@ -64,7 +68,7 @@ jobs:
           llm_url: ${{ steps.adapter.outputs.url }}/v1/chat/completions
           llm_auth_token: ${{ steps.adapter.outputs.token }}
           llm_model: zai-glm-5-3
-          llm_extra_body: '{"reasoning_effort":"high"}'
+          llm_extra_body: '{"reasoning_effort":"high","prompt_cache_key":"{ocr_session_key}"}'
           background: ${{ steps.context.outputs.background }}
           llm_use_anthropic: 'false'
           llm_timeout: '480'
@@ -72,6 +76,7 @@ jobs:
           review_concurrency: '4'
           sticky_summary: 'true'
           incremental: 'true'
+          stream_progress: 'true'
           route_severity_below: 'low'
           upload_artifacts: 'false'
 
@@ -81,3 +86,20 @@ jobs:
           ADAPTER_PATH: ${{ runner.temp }}/ocr-mistral-adapter.cjs
           ADAPTER_STATE: ${{ runner.temp }}/ocr-mistral-adapter.json
         run: node "${ADAPTER_PATH}" stop "${ADAPTER_STATE}"
+
+      - name: Upload sanitized draft adapter diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: draft-ai-review-adapter-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/draft-ai-review-adapter-diagnostics.jsonl
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Summarize OCR estimated cost and caching savings
+        if: always()
+        continue-on-error: true
+        env:
+          ADAPTER_PATH: ${{ runner.temp }}/ocr-mistral-adapter.cjs
+          DIAGNOSTICS_PATH: ${{ runner.temp }}/draft-ai-review-adapter-diagnostics.jsonl
+        run: node "${ADAPTER_PATH}" summary "${DIAGNOSTICS_PATH}"

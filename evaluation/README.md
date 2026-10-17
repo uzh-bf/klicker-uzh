@@ -19,10 +19,9 @@ canonical source mapping and persisted-history verification in
 `apps/chat/scripts/`. Generic import, assessment and reporting belong to the
 private framework; these app checks remain covered by Chat's focused tests.
 
-The framework compatibility change is coordinated with
-[framework draft MR 54](https://gitlab.uzh.ch/ai-infrastructure/evaluation/-/merge_requests/54).
-Land that change first, then reconcile this repository's framework pin to the
-final merged revision before landing the Klicker change.
+The pinned framework includes the trajectory-capture importer and the synthetic
+[Explainer compression regression and control](framework/examples/klicker/explainer-compression/README.md).
+These authored development cases do not authorize model calls or judge execution.
 
 ### Offline capture import
 
@@ -65,8 +64,8 @@ even when they omit raw identifiers; operator corpora must remain synthetic.
 
 Both the trajectory CLI and the listening evaluation target require a shared
 version-2 budget for operator runs. Application credits remain observational;
-they are not provider dollars. The budget admits at most 120 submitted turns and
-US$5 of conservative provider reservations across all arms. Each upstream model
+they are not provider dollars. By default, the budget admits at most 120 submitted
+turns and US$5 of conservative provider reservations across all arms. Each upstream model
 step or retry reserves its qualified full input-context cost plus its bounded
 output cost before dispatch. Reservations are retained on success and failure.
 This may exhaust the dollar cap long before 120 turns.
@@ -105,15 +104,72 @@ application, then removes this proxy-only field before forwarding. A nonblank
 native `prompt_cache_key` of at most 64 characters is preserved. Other cache
 objects and unknown request fields remain unqualified.
 
+OpenRouter policies must additionally declare
+`"fixedRoute": { "type": "openrouter", "provider": "openai" }`. This is a
+closed adapter for OpenAI's default service tier, not an arbitrary provider
+options pass-through. The guard injects `service_tier: "default"`, matching
+`provider.only` and `provider.order`, `allow_fallbacks: false`, and
+`require_parameters: true` on both supported API paths. It also injects
+`max_price.prompt` and `max_price.completion` from the qualified model rates,
+converted to USD per million tokens, and `max_price.request: "0"`. Application
+requests cannot supply or override those routing fields. Policies for unrelated
+direct upstreams retain their existing shape without `fixedRoute`. Supplying
+the adapter on any other host is rejected at startup, before ledger access or
+upstream requests. The sole exception is an explicit loopback fake upstream
+using exactly `localhost`, `127.0.0.1` or `[::1]`; the adapter remains optional
+there. Subdomains, wildcard listeners and other IP addresses are not covered
+by this exception. Existing URL and scheme restrictions still apply.
+Changing a policy requires a new qualified experiment; mutating the caller's
+policy after startup cannot alter the running guard's snapshot or ledger
+identity.
+
+Qualify every endpoint matched by the `openai` base slug. Explicit default-tier
+selection excludes priority and flex tiers; base slugs can otherwise include
+provider variants. Record dated evidence for context limits, long-context price
+overrides, cache reads and writes, reasoning-inclusive output and applicable
+provider or BYOK fees. Reserve at all-in upper rates; prompt caching can add a
+write charge even when the proxy-only bypass hint is stripped. The price filters
+do not bound cache charges or platform fees independently. Request-level
+`cache_control` controls and defined `store` values other than `false` are rejected
+before reservation. Function-tool JSON Schema parameters are data and are not
+interpreted as provider controls.
+Tariff freshness is an operator readiness gate, not an automatically enforced
+expiry check. Retain this evidence privately and refresh it before authorizing
+paid capture. See the [Responses schema](https://openrouter.ai/openapi.json) and
+[provider-routing contract](https://openrouter.ai/docs/guides/routing/provider-selection).
+
+Size captures by upstream attempts, not submitted turns. A forced retrieval
+step and its answer continuation require at least two attempts per turn; retries
+consume further reservations. A two-turn revision therefore needs at least four
+attempts. Prefer a smaller complete case when the conservative ceiling cannot
+cover a larger set; a budget denial is an incomplete capture, never a quality
+score. Fake-upstream routing proof does not establish provider acceptance or
+answer quality.
+
 Choose a new private `KLICKER_EVAL_BUDGET_FILE`, then initialize it offline once:
 
 ```bash
 node evaluation/evaluation-spend-guard.mjs --initialize-budget
 ```
 
+For a separately approved new experiment, the same initializer supports exactly
+US$55 and 48 submitted turns through both explicit options:
+
+```bash
+node evaluation/evaluation-spend-guard.mjs --initialize-budget \
+  --max-provider-micro-usd 55000000 --max-submitted-turns 48
+```
+
+Omitting both options keeps the US$5/120-turn default. Either option order is
+accepted, but partial options, other higher limits and these options during
+guard startup are rejected. The limits apply across all experiment arms and
+provider attempts, not separately per invocation. Initializer support is not
+authorization to spend; retain the separate pricing, routing and paid-run gates.
+
 Initialization creates an immutable `.identity` receipt alongside the mutable
-ledger. Never replace an exhausted, interrupted or legacy ledger to resume the
-same experiment. Legacy application-credit budgets must be retained as historical
+ledger. Limits cannot be changed on an existing experiment. Never replace an
+exhausted, interrupted or legacy ledger to resume the same experiment. Legacy
+application-credit budgets must be retained as historical
 records; create a new explicitly authorized experiment instead. Mutation `.lock`
 and run `.run` leases fail closed if held or left by interruption. A responsive
 Unix socket `.lease` proves that the run owner is alive; runner and guard must
@@ -376,7 +432,7 @@ UV_OFFLINE=true uv run --frozen --offline \
 ```
 
 The harness requires the framework gitlink at revision
-e545dfcfa9979eddeae22197fd7c0f0b053049df.
+d4ee03e51566c3d8a847ff0daf28ad47332c8373.
 
 The harness invokes the real launcher from outside the repository, uses one
 temporary synthetic ground-truth case and output directory (including paths
