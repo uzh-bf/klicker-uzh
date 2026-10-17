@@ -15,9 +15,9 @@ import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import LiveQuizCountdown from '../liveQuiz/cockpit/LiveQuizCountdown'
 import { ActivityEvaluationType } from './ActivityEvaluation'
+import ChoicesEvaluation from './elements/ChoicesEvaluation'
 import CSEvaluation from './elements/CSEvaluation'
 import CTEvaluation from './elements/CTEvaluation'
-import ChoicesEvaluation from './elements/ChoicesEvaluation'
 import FCEvaluation from './elements/FCEvaluation'
 import FTEvaluation from './elements/FTEvaluation'
 import NREvaluation from './elements/NREvaluation'
@@ -35,6 +35,7 @@ interface ElementEvaluationProps {
   chartType: ChartType
   showSolution: boolean
   showExplanation: boolean
+  showPercentages?: boolean
   type: ActivityEvaluationType
   requireShowResultsConfirmation: boolean
   isStackActive?: boolean
@@ -53,6 +54,7 @@ function ElementEvaluation({
   chartType,
   showSolution,
   showExplanation,
+  showPercentages,
   type,
   requireShowResultsConfirmation,
   isStackActive,
@@ -151,6 +153,7 @@ function ElementEvaluation({
                   chartType={chartType}
                   showSolution={!isStackActive && showSolution}
                   showExplanation={!isStackActive && showExplanation}
+                  showPercentages={showPercentages}
                   isAssessmentEnabled={isAssessmentEnabled}
                   pinCode={pinCode}
                   type={type}
@@ -224,6 +227,7 @@ function ElementEvaluation({
             evaluation={currentInstance}
             textSize={textSize}
             chartType={chartType}
+            showPercentages={showPercentages}
           />
         )}
 
