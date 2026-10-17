@@ -195,11 +195,20 @@ function assertOCRSummary(result, stage, expectedExit) {
 function assertReviewAttempt(result, form, expectedExit) {
   assert.equal(result.process.status, expectedExit, form.name)
   assert.equal(result.process.stdout, '', form.name)
+  const stderrLines = result.process.stderr.trim().split('\n')
   assert.equal(
-    result.process.stderr,
-    'OCR progress event=tool_started tool=file_read\n',
+    stderrLines.shift(),
+    'OCR progress event=tool_started tool=file_read',
     form.name
   )
+  if (expectedExit !== 0) {
+    const diagnostic = JSON.parse(stderrLines.shift())
+    assert.equal(diagnostic.command, 'diagnose-ocr-failure')
+    assert.equal(diagnostic.status, 'malformed')
+    assert.equal(diagnostic.rejection, 'malformed_input')
+    stderrLines.shift()
+  }
+  assert.equal(stderrLines.length, 0, form.name)
   assertNoOCRSentinels(result)
   assertOCRSummary(result, 'review', expectedExit)
   assert.equal(result.output, result.stdoutSentinel, form.name)
@@ -210,7 +219,11 @@ function assertReviewAttempt(result, form, expectedExit) {
   assert.equal(lines.shift(), 'version no_update=1', form.name)
   assert.equal(lines.shift(), 'preview no_update=1 limit=200000', form.name)
   assert.equal(lines.shift(), 'coverage checked', form.name)
-  assert.equal(lines.shift(), 'review no_update=1', form.name)
+  assert.equal(
+    lines.shift(),
+    `review no_update=1 request_timeout=${Number(form.timeout) * 60}`,
+    form.name
+  )
   assert.equal(lines.length, 0, form.name)
   assert.deepEqual(
     result.args,
@@ -277,6 +290,7 @@ function executeExtractedOCRAttempt({
     HOME: directory,
     LC_ALL: 'C',
     OCR_NO_UPDATE: jobEnv.OCR_NO_UPDATE,
+    OCR_LLM_TIMEOUT: jobEnv.OCR_LLM_TIMEOUT,
     MISTRAL_API_KEY: 'synthetic-upstream-key',
     OCR_CALLS_PATH: callsPath,
     OCR_ARGS_PATH: argsPath,
@@ -319,6 +333,10 @@ function executeExtractedOCRAttempt({
     '    printf "coverage checked\\n" >>"${OCR_CALLS_PATH}"',
     '    return 0',
     '  fi',
+    '  if [[ "$1" == .github/scripts/final-ai-review.js && "$2" == diagnose-ocr-failure ]]; then',
+    '    command node "$@"',
+    '    return',
+    '  fi',
     '  [[ "$1" == .github/scripts/ocr-mistral-adapter.cjs && "$2" == run && "$3" == --ocr-config && "$4" == "${HOME}/.opencodereview/config.json" && "$5" == -- && "$6" == ocr ]] || return 99',
     '  [[ "${MISTRAL_API_KEY-}" == synthetic-upstream-key ]] || return 98',
     '  [[ "${OCR_ADAPTER_PROGRESS_FD-}" == 3 ]] || return 96',
@@ -357,7 +375,7 @@ function executeExtractedOCRAttempt({
     '        esac',
     '        return 0',
     '      fi',
-    '      printf \'review no_update=%s\\n\' "${OCR_NO_UPDATE-}" >>"${OCR_CALLS_PATH}"',
+    '      printf \'review no_update=%s request_timeout=%s\\n\' "${OCR_NO_UPDATE-}" "${OCR_LLM_TIMEOUT-}" >>"${OCR_CALLS_PATH}"',
     '      shift',
     '      printf \'%s\\0\' "$@" >"${OCR_ARGS_PATH}"',
     '      printf \'%s\' "${OCR_STDOUT_SENTINEL}"',
@@ -1449,7 +1467,10 @@ test('uses one qualified canary and OCR release in both manual jobs', () => {
   assert.doesNotMatch(source, /@alibaba-group\/open-code-review@1\.9\.10/)
   assert.doesNotMatch(source, /ocr llm test/)
   assert.doesNotMatch(source, /OCR_CONFIG_PATH/)
-  assert.doesNotMatch(source, /OCR_LLM_/)
+  assert.deepEqual(
+    [...new Set(source.match(/OCR_LLM_\w+/g))],
+    ['OCR_LLM_TIMEOUT']
+  )
 
   for (const name of ['review', 'review_stack']) {
     const block = job(name)
@@ -2947,6 +2968,63 @@ test('fails unreadable and malformed OCR inputs with fixed safe diagnostics', ()
     assert.equal(malformedLine.status, 'malformed')
     assert.equal(malformedLine.rejection, 'malformed_input')
     assert.equal(malformedLine.completed, null)
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('diagnoses failed CLI results without validating, resuming or exposing content', () => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'final-review-ocr-failure-')
+  )
+  const scriptPath = path.join(__dirname, 'final-ai-review.js')
+  const resultPath = path.join(directory, 'private-result.json')
+  const run = () =>
+    spawnSync(
+      process.execPath,
+      [scriptPath, 'diagnose-ocr-failure', resultPath],
+      {
+        encoding: 'utf8',
+      }
+    )
+  const diagnostic = (result) => JSON.parse(result.stderr.split('\n')[0])
+  try {
+    const failed = partialResumeResult()
+    failed.status = 'failed'
+    failed.manifest.coverage.failed[0].reason = 'PRIVATE_PROVIDER_BODY'
+    failed.manifest.coverage.failed.push({ classification: 'PRIVATE_CLASS' })
+    fs.writeFileSync(resultPath, JSON.stringify(failed))
+    const before = fs.readFileSync(resultPath, 'utf8')
+    const report = run()
+    assert.equal(report.status, 0)
+    assert.equal(report.stdout, '')
+    const line = diagnostic(report)
+    assert.equal(line.schema, 'ocr-result-diagnostic/v1')
+    assert.equal(line.command, 'diagnose-ocr-failure')
+    assert.equal(line.status, 'failed')
+    assert.equal(line.observed_status, 'failed')
+    assert.equal(line.failed, 2)
+    assert.deepEqual(line.failure_classes, { timeout: 1, other: 1 })
+    assert.equal(line.rejection, null)
+    assert.equal(fs.readFileSync(resultPath, 'utf8'), before)
+    assert.doesNotMatch(report.stderr, /PRIVATE_|src\/|11111111|private-result/)
+
+    fs.writeFileSync(resultPath, 'PRIVATE_MALFORMED')
+    const malformed = run()
+    assert.equal(malformed.status, 1)
+    assert.equal(malformed.stdout, '')
+    assert.equal(diagnostic(malformed).rejection, 'malformed_input')
+    assert.doesNotMatch(malformed.stderr, /PRIVATE_|private-result/)
+
+    const unreadable = spawnSync(
+      process.execPath,
+      [scriptPath, 'diagnose-ocr-failure', path.join(directory, 'missing')],
+      { encoding: 'utf8' }
+    )
+    assert.equal(unreadable.status, 1)
+    assert.equal(unreadable.stdout, '')
+    assert.equal(diagnostic(unreadable).rejection, 'unreadable_input')
+    assert.equal(unreadable.stderr.includes(directory), false)
   } finally {
     fs.rmSync(directory, { recursive: true, force: true })
   }
