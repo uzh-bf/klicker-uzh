@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-## [3.4.0-alpha.88](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.87...v3.4.0-alpha.88) (2026-10-16)
+## [3.4.0-alpha.88](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.87...v3.4.0-alpha.88) (2026-10-17)
 
 
 ### Bug Fixes
@@ -14,12 +14,32 @@ All notable changes to this project will be documented in this file. See [standa
 * **chat:** preserve approved custom-mode KB retrieval ([#6247](https://github.com/uzh-bf/klicker-uzh/issues/6247)) ([e2ac86f](https://github.com/uzh-bf/klicker-uzh/commit/e2ac86f836c3fe78986f9ac51316d1e76bdd2556))
 * **chat:** provide shared cookie domain on release branch ([#6497](https://github.com/uzh-bf/klicker-uzh/issues/6497)) ([eb6e579](https://github.com/uzh-bf/klicker-uzh/commit/eb6e579ba3e9cb04e516a2012cc31f1714d6d257))
 * **chat:** show custom mode names in answer footers ([#6568](https://github.com/uzh-bf/klicker-uzh/issues/6568)) ([618e94f](https://github.com/uzh-bf/klicker-uzh/commit/618e94fb129403351b222482f39a78889655c9eb))
+* **ci:** bind OCR config checks to the opened file ([30a5153](https://github.com/uzh-bf/klicker-uzh/commit/30a515347d6c774ea2276daec512122bdc1bdd80))
 * **ci:** bound OCR conversation replay and enforce tool completion ([#6518](https://github.com/uzh-bf/klicker-uzh/issues/6518)) ([b0816ed](https://github.com/uzh-bf/klicker-uzh/commit/b0816ed467609ce7d056a31e405a293aa7fabdbe))
+* **ci:** continue interrupted OCR tool conversations once ([#6571](https://github.com/uzh-bf/klicker-uzh/issues/6571)) ([8e9b39c](https://github.com/uzh-bf/klicker-uzh/commit/8e9b39c2b6386992466ab936f79e09db04a4dd01))
+* **ci:** honor OCR task deadlines and expose safe CLI failures ([0f22278](https://github.com/uzh-bf/klicker-uzh/commit/0f222786e86c625c7bfbff594a952de770d15ac5))
+* **ci:** let large final reviews finish on a billable token budget ([#6558](https://github.com/uzh-bf/klicker-uzh/issues/6558)) ([2c94cbb](https://github.com/uzh-bf/klicker-uzh/commit/2c94cbb8906eb647bb3bc821ab40edeed4c06533))
+* **ci:** observe completed test jobs within analysis hosts ([24f8e03](https://github.com/uzh-bf/klicker-uzh/commit/24f8e03275a301379d74118bc370e6c982365bbf))
+* **ci:** preserve deferred coverage and forced full validation ([0ebe20b](https://github.com/uzh-bf/klicker-uzh/commit/0ebe20b087cbaeafb48eddcb6e278f210d8f9e0d))
+* **ci:** preserve OCR prompt caching and bound concurrency ([#6548](https://github.com/uzh-bf/klicker-uzh/issues/6548)) ([8757713](https://github.com/uzh-bf/klicker-uzh/commit/8757713aaf8d93b4c67a64909a2074e965202f33))
+* **ci:** reject blocking config inputs and keep route ordering stable ([f884c93](https://github.com/uzh-bf/klicker-uzh/commit/f884c9303f95f83ddc9fc6f420d4a832d2fa28a8))
+* **ci:** reject truncated OCR completion and retain review diagnostics ([#6549](https://github.com/uzh-bf/klicker-uzh/issues/6549)) ([8e55d00](https://github.com/uzh-bf/klicker-uzh/commit/8e55d0003709c1e3a46b72232a5123d6c06b406d))
+* **ci:** require current and explicit validation reuse evidence ([c12ea3e](https://github.com/uzh-bf/klicker-uzh/commit/c12ea3e854a5a32e783115a81070406313c2ce07))
+* **ci:** restore OCR affinity and clarify review outcomes ([#6573](https://github.com/uzh-bf/klicker-uzh/issues/6573)) ([7f2722d](https://github.com/uzh-bf/klicker-uzh/commit/7f2722ddec45e7510ec8782b81361379f5c304c6))
+* **ci:** restore OCR prompt capacity and include PR requirements ([#6535](https://github.com/uzh-bf/klicker-uzh/issues/6535)) ([b552ac4](https://github.com/uzh-bf/klicker-uzh/commit/b552ac4b752a15bd18dae53f3be1b5c143562789))
+* **devcontainer:** add a db profile that routes Postgres for host tools ([#6547](https://github.com/uzh-bf/klicker-uzh/issues/6547)) ([eede339](https://github.com/uzh-bf/klicker-uzh/commit/eede33916acd1ae62ab86467fb9c699ee4c8e255))
 * **eval:** match chat citations and cap model spending ([#6489](https://github.com/uzh-bf/klicker-uzh/issues/6489)) ([14d2314](https://github.com/uzh-bf/klicker-uzh/commit/14d231418092b6313ae6b8aca571ac919b45c1bb))
+* **evaluation:** close OpenRouter provider routing in spend guard ([#6542](https://github.com/uzh-bf/klicker-uzh/issues/6542)) ([83dc8a8](https://github.com/uzh-bf/klicker-uzh/commit/83dc8a82cf3c3f7ceb6ef8857b642a58eb2f4912))
+* **manage:** keep live quiz interaction switches from shrinking ([#6559](https://github.com/uzh-bf/klicker-uzh/issues/6559)) ([cf2a610](https://github.com/uzh-bf/klicker-uzh/commit/cf2a61063ff99d0dd5c3754ebd37f32d094ffcd6))
+* **tooling:** preserve review context and validate guarded requests ([15e5669](https://github.com/uzh-bf/klicker-uzh/commit/15e5669e6d693ec588b348f5a6c39031a89697bf))
+* **tooling:** reject missing worktree namespaces and partial installs ([bf2c7b6](https://github.com/uzh-bf/klicker-uzh/commit/bf2c7b6405351cdc550df000b9a031a208009bf8))
 
 
 ### Build and CI
 
+* **devrouter:** install devrouter 0.4.0 in CI ([#6529](https://github.com/uzh-bf/klicker-uzh/issues/6529)) ([29f7d68](https://github.com/uzh-bf/klicker-uzh/commit/29f7d68e3c56b29bf4d4baeeb1aac3a9c747d843))
+* **devrouter:** install devrouter 0.5.1 in CI ([#6566](https://github.com/uzh-bf/klicker-uzh/issues/6566)) ([2b24fbc](https://github.com/uzh-bf/klicker-uzh/commit/2b24fbca8b45d8c695fbcd8a98dbc75eebcf1917))
+* raise the individual final review ceiling to 6M ([#6520](https://github.com/uzh-bf/klicker-uzh/issues/6520)) ([f308246](https://github.com/uzh-bf/klicker-uzh/commit/f308246a3479e8d0abbd571c23620122eda2912f))
 * raise the individual final review token budget ([#6508](https://github.com/uzh-bf/klicker-uzh/issues/6508)) ([fa920c8](https://github.com/uzh-bf/klicker-uzh/commit/fa920c84024cc251fd5f9f99e02982180c50ba77))
 
 
@@ -27,16 +47,33 @@ All notable changes to this project will be documented in this file. See [standa
 
 * **chat:** customize welcomes and starters for custom modes ([#6534](https://github.com/uzh-bf/klicker-uzh/issues/6534)) ([08598ba](https://github.com/uzh-bf/klicker-uzh/commit/08598ba92ec94dfd4fa2606e7bd4376af4bbb7bb))
 * **chat:** gate advanced models on the AI subscription tier ([#6491](https://github.com/uzh-bf/klicker-uzh/issues/6491)) ([6229c03](https://github.com/uzh-bf/klicker-uzh/commit/6229c0379e1c86128e0a8ce402d67a5ca5d5bda7))
+* **ci:** improve OCR progress and cost reporting ([#6569](https://github.com/uzh-bf/klicker-uzh/issues/6569)) ([34fcadc](https://github.com/uzh-bf/klicker-uzh/commit/34fcadc0328a768f68f14aa9f09842afc06e3dab))
 * **ci:** maintain v3-ai -> v3-adaptive-learning sync PRs ([#6500](https://github.com/uzh-bf/klicker-uzh/issues/6500)) ([992ad53](https://github.com/uzh-bf/klicker-uzh/commit/992ad530d5ef13dfab18a1db19182668a7c24f84))
+* **ci:** opt the Playwright caller into merged pull request push reuse ([#6574](https://github.com/uzh-bf/klicker-uzh/issues/6574)) ([733b6e7](https://github.com/uzh-bf/klicker-uzh/commit/733b6e7c9456fb11cb75001dbe111820d9c3b009))
+* **ci:** print OCR cost estimates in job logs ([#6564](https://github.com/uzh-bf/klicker-uzh/issues/6564)) ([47755d1](https://github.com/uzh-bf/klicker-uzh/commit/47755d1faa66324ad37f277d379f6da144ba8df7))
+* **ci:** report OCR cost and stream review progress ([#6555](https://github.com/uzh-bf/klicker-uzh/issues/6555)) ([7ddd789](https://github.com/uzh-bf/klicker-uzh/commit/7ddd789fe461d2a9c6f8747ef8ff73ea621a9bdd))
+* **ci:** review Playwright tests in final reviews ([#6565](https://github.com/uzh-bf/klicker-uzh/issues/6565)) ([64f02c4](https://github.com/uzh-bf/klicker-uzh/commit/64f02c4e85d62e39d42a023836e1829fb528cd0f))
+* **ci:** skip redundant Playwright runs for sync PRs and their merges ([#6572](https://github.com/uzh-bf/klicker-uzh/issues/6572)) ([6828cb3](https://github.com/uzh-bf/klicker-uzh/commit/6828cb321ba70266927ec2c9aa8bc233cfd49a4a))
 * **ci:** use high reasoning for draft OCR reviews ([#6503](https://github.com/uzh-bf/klicker-uzh/issues/6503)) ([dcbec1e](https://github.com/uzh-bf/klicker-uzh/commit/dcbec1ede200f6f7482d32b82bf7aff172e97b60))
 * **ci:** use Mistral GLM 5.3 max for OCR 1.13 ([#6493](https://github.com/uzh-bf/klicker-uzh/issues/6493)) ([34e6e56](https://github.com/uzh-bf/klicker-uzh/commit/34e6e56a8cabfa73e4e609de6c26aaa201fe25f0))
+* **evaluation:** add bounded budget initializer opt-in ([#6576](https://github.com/uzh-bf/klicker-uzh/issues/6576)) ([d2b8d57](https://github.com/uzh-bf/klicker-uzh/commit/d2b8d5797fb54e744a5adc6b4325b2194f4a58c5))
+* **playwright:** keep host launcher runs from breaking Git hooks ([#6521](https://github.com/uzh-bf/klicker-uzh/issues/6521)) ([17ab596](https://github.com/uzh-bf/klicker-uzh/commit/17ab59640b19efd85e8d3a503de4e2ee0a74c5a5))
 
 
 ### Documentation
 
+* align setup and CI plans with current contracts ([a2b3977](https://github.com/uzh-bf/klicker-uzh/commit/a2b3977e805db86b9f91cf84de9114a08453de6e))
 * clarify mode regression coverage and backfill scope ([891daa5](https://github.com/uzh-bf/klicker-uzh/commit/891daa5e9c1cee34e43186349df8442b2e4d2906))
+* **evaluation:** clarify guarded tool schemas and persistence ([d88cda1](https://github.com/uzh-bf/klicker-uzh/commit/d88cda120d7ab462739e53ab1ee1f03deeff3e46))
 * keep release plans independent of environment records ([ef863c1](https://github.com/uzh-bf/klicker-uzh/commit/ef863c10e94f6bf4a1f9e1b867d76d6e73027e0d))
+* point to STG_SOURCE_BRANCH for the staging source ([#6554](https://github.com/uzh-bf/klicker-uzh/issues/6554)) ([f387004](https://github.com/uzh-bf/klicker-uzh/commit/f38700446e361d04ae96af2613c0ac4ecc60253f))
 * **project:** add ethics production rollout plan ([2a80086](https://github.com/uzh-bf/klicker-uzh/commit/2a8008650d5fae30d4d25ba69e3d232665b3ecd9))
+* **tooling:** retain the container hook contract during sync ([e0bf16f](https://github.com/uzh-bf/klicker-uzh/commit/e0bf16f2f40459ddb5084ea6726ffa2cc4b539ba))
+
+
+### Other
+
+* **ci:** clarify analysis receipt failure coverage ([20d6ae5](https://github.com/uzh-bf/klicker-uzh/commit/20d6ae55ced9d7e5dfc06c1f523faa4f80f50eb4))
 
 ## [3.4.0-alpha.87](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.86...v3.4.0-alpha.87) (2026-10-13)
 
