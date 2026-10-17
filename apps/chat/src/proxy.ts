@@ -5,6 +5,10 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { hasLocale } from 'next-intl'
 import {
+  CODE_RUNTIME_PATH_PREFIX,
+  codeRuntimeProxyResponse,
+} from '@/src/lib/code-runner/runtime'
+import {
   CHAT_SCOPED_TOKEN_HEADER,
   PWA_CHAT_EMBED_QUERY_KEY,
   PWA_CHAT_EMBED_SESSION_COOKIE,
@@ -136,6 +140,12 @@ function passThroughWithScopedToken(
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // Browser code runtime files are public and carry their own headers; they
+  // must not reach the participant gate or the frame-ancestors policy.
+  if (pathname.startsWith(CODE_RUNTIME_PATH_PREFIX)) {
+    return codeRuntimeProxyResponse()
+  }
 
   // The embedded Manage assistant and the eLearning handoff receive their locale
   // as a query parameter, but Chat's root layout resolves the active locale from
