@@ -18,6 +18,16 @@ function syncBranch(pair, sourceSha) {
   return `${syncBranchPrefix(pair)}${sourceSha.slice(0, 10)}`
 }
 
+// Whether a branch name is a controller-owned sync branch of a maintained pair.
+function isSyncBranch(ref) {
+  return (
+    typeof ref === 'string' &&
+    PAIRS.some((pair) =>
+      new RegExp(`^${syncBranchPrefix(pair)}[0-9a-f]{10}$`).test(ref)
+    )
+  )
+}
+
 function acceptsEvent(context) {
   if (`${context.repo.owner}/${context.repo.repo}` !== REPOSITORY) return false
   if (context.ref !== 'refs/heads/v3') return false
@@ -291,6 +301,7 @@ async function maintainDraftSyncPrs({ github, context, dryRun = true }) {
 module.exports = {
   PAIRS,
   acceptsEvent,
+  isSyncBranch,
   maintainDraftSyncPrs,
   syncBranch,
   syncBranchPrefix,
