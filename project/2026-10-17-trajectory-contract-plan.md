@@ -179,14 +179,30 @@ Biome passes with existing warnings. Staged secret scan passed; the data hook's
 existing synthetic-credential false positive was inspected and bypassed with its
 documented override. No credentials or real data entered the diff.
 
-Slice 2 is owned by the trusted executor. Slice 3 produced actual JS runner
+Slice 2 committed as framework `0f41dfc`: 49 importer tests pass after nine new
+variants failed against the old reader. A 19-variant cross-language matrix agrees
+on valid/invalid inputs, including integral numeric JSON spellings. Receipt checks
+are unchanged. Slice 3 produced actual JS runner
 receipts offline: complete Tutor/Explainer/Quizzer and budget-stopped partial/
 unstarted rows across all three groups. Temporary test instrumentation was
 removed; permanent app tests passed again. The prior pinned reader imports the
-untouched completed receipt file; repaired-reader normalization proof is pending.
+untouched completed receipt file. The repaired reader's API and exclusive-output
+CLI import both complete and stopped files, preserving exact text, IDs, ancestry,
+source metadata, ascending selections and all planned rows.
 No model/provider call, app runtime or real budget initialization occurred.
 
 Current substantive app delta: 49 lines, excluding project artifacts and README;
 this complete isolated compatibility repair extends the existing draft.
-Required delivery: coordinated drafts, integrated review and exact-head CI.
-Framework repair, cross-language assertions, reviews and hosted CI remain.
+Source and offline verification are complete. App simplification and slice review
+found no issues; scoped static analysis found none. Framework slice reviews and
+integrated final review are recorded under the private review directory. The
+draft descriptions carry current exact-head CI and final-review receipts, which
+remain distinct from merge, runtime and paid-run acceptance.
+
+Next delivery gate: land the coordinated reader repair, then reconcile the app
+pin to its merged SHA with fresh CI. These actions need named merge/pin authority.
+The zero-spend assessment preparation uses the existing saved-conversation
+`ConversationalTestCase` and YAML `conversational_geval` path. Current
+`outcome_achievement` parameters exclude METADATA, but an actual judge-request
+serialization check, frozen manual disagreement criteria and a distinct capped
+judge route/budget remain prerequisites. No scorer or judge guard was added.

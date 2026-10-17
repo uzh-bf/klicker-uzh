@@ -1,7 +1,7 @@
 # Tutor prompt quality roadmap
 
 Status: historical Tutor candidate results retained; evaluation consolidation
-direction updated on 2026-10-17. Contract alignment is in progress under the
+direction updated on 2026-10-17. Contract source and offline proof are prepared under the
 approved [implementation plan](2026-10-17-trajectory-contract-plan.md).
 
 ## Current evaluation direction
@@ -17,7 +17,7 @@ those responsibilities to the framework.
 
 | Next outcome                           | Acceptance and gate                                                                                                            | State                                                      |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
-| Compatible corpus and receipt contract | Minimal synthetic producer/consumer checks agree; incomplete coverage survives import                                          | Approved; source and offline compatibility verification in progress |
+| Compatible corpus and receipt contract | Minimal synthetic producer/consumer checks agree; incomplete coverage survives import                                          | Source and offline proof prepared in coordinated drafts; landing/pin gated |
 | Calibrated DeepEval assessment         | Existing conversational metrics assess saved captures under separately qualified judge admission; compare with manual evidence | Proposed after contract alignment and named judge approval |
 | Framework-driven unattended capture    | A demonstrated need justifies a stateful adapter without copying application semantics                                         | Deferred                                                   |
 

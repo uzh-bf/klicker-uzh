@@ -642,7 +642,8 @@ consumer needs it; no generic finance module or orchestration platform is planne
 ### Progress
 
 Direction reconciled after source inspection and the Astra/Claude discussion.
-Phase 1 is executing under the linked implementation plan; phase 2's zero-spend
+Phase 1 source and offline proof are prepared in coordinated drafts under the
+linked implementation plan; landing and pin reconciliation remain gated. Phase 2's zero-spend
 prerequisites are documented there. Phases 2 and 3 retain the gates above.
 No metric, framework pin or runtime changes accompany this contract repair;
 offline compatibility evidence is not an application-quality evaluation result.
