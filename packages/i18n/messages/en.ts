@@ -2094,6 +2094,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     previewAccessError:
       'The knowledge base workspace is not available for your account yet.',
     graphTitle: 'Knowledge graph',
+    graphAdvancedTitle: 'Knowledge graph (advanced)',
+    graphAdvancedDescription:
+      'Build and inspect the knowledge graph yourself. Most courses do not need this.',
     graphDescription:
       'Build a graph from the knowledge base resources and inspect the published result.',
     graphQualityTierLabel: 'Build quality',
@@ -5028,6 +5031,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotDraftBehaviorTitle: 'Teaching modes and framing (optional)',
       chatbotDraftBehaviorDescription:
         'The defaults suit most courses. Adjust them only if you need to.',
+      chatbotAdvancedSettingsTitle: 'Advanced settings (optional)',
+      chatbotAdvancedSettingsDescription:
+        'Settings for experienced users. Most courses work well with the defaults.',
       chatbotWorkspaceBehavior: 'Behavior',
       chatbotWorkspaceDisclaimer: 'Disclaimer',
       chatbotWorkspaceSetup: 'Setup',

@@ -62,7 +62,6 @@ function Chatbots() {
     GetChatModelRegistryDocument,
     {
       fetchPolicy: 'cache-first',
-      skip: !advancedManagement,
     }
   )
   const { data: courseData } = useQuery(GetUserCoursesDocument, {
