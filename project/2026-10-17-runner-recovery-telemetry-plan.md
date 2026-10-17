@@ -162,9 +162,9 @@ approved restoration of the prior unit policy; preserve runner data.
 
 ## Progress
 
-- Source slices are complete at `5e665907e279df92e14be2c1d473dccae1756413`.
+- Recovery, Telemetry and Finish source slices are implemented.
   The plan was the first commit (`dd061ac149`), before source implementation.
-  The package changes eight paths, with 516 added/deleted lines
+  The package changes eight paths, with 517 added/deleted lines
   excluding this plan; it adds no dependency, generated file or configuration owner.
 - Focused verification passes: both reconciliation shell suites, syntax,
   ShellCheck, eight sampler tests in a network-isolated Node 24.21.0 container,
@@ -172,10 +172,10 @@ approved restoration of the prior unit policy; preserve runner data.
   sampler tests were retained (one extended), and four memory cases were added.
   A broader contract attempt passed 77 cases; three lacked `yaml` or host
   Devrouter in the minimal image. Dependency-equipped CI remains authoritative.
-- The controller pins payload `3fcfe6bc4ee2c4c228565545dd7b0eeda74773db`, with
-  SHA-256 `a444015151d0b128d219dd17297bc0926f4284774e57fc43bfe5594a35129282`.
-  Its existing checksum test and GitHub payload readback agree. Archive pinning
-  and integrity validation are unchanged.
+- The controller pins payload `0b7ccd398c6ae45e7ee5613bc9692874e6421e07`, with
+  SHA-256 `ae6dbbd3c1eae60f20a801be24c259efec4d52069a79a76fc612078afda6072d`.
+  Its existing checksum test checks the committed payload; confirm the same
+  digest from GitHub after publishing. Archive integrity validation is unchanged.
 - Main-session simplification and final self-review cover all eight paths
   against the recorded baseline, including the review corrections. Correctness,
   plan compliance, maintainability and focused security apply; architecture and
@@ -183,6 +183,11 @@ approved restoration of the prior unit policy; preserve runner data.
   Operator state reporting, renderer cross-references and numeric volume paths
   are covered. Decoding raw cgroup membership was rejected against kernel source;
   synthetic space and literal-backslash fixtures protect that distinction.
+- The next draft review's sole finding was reproduced at the drift-check seam:
+  a failed mount read was masked inside process substitution. The existing
+  explicit error guard now applies there too; focused shell checks and a
+  synthetic before/after probe pass. No new permanent test is needed for this
+  direct propagation guard.
 - Delivery evidence is maintained in the [draft PR](https://github.com/uzh-bf/klicker-uzh/pull/6581)
   and its [verification note](https://github.com/uzh-bf/klicker-uzh/pull/6581#issuecomment-6235423117).
   Read current-head CI and review state there rather than treating historical
