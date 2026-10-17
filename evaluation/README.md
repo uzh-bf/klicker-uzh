@@ -59,7 +59,7 @@ submodule is required for import or its contract suite:
 
 ```bash
 uv run --no-project --python 3.12 --with pytest==9.1.1 \
-  python -m pytest -q evaluation/tests/test_klicker_trajectories.py
+  python -m pytest -q -p no:cacheprovider evaluation/tests/test_klicker_trajectories.py
 ```
 
 Import is offline. Later judge execution requires separate approval and an

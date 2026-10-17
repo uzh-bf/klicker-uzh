@@ -154,7 +154,7 @@ jobs:
           node --test util/read-klicker-eval-config.test.mjs
           bash util/test-klicker-eval-wrapper.sh
           uv run --no-project --python 3.12 python -m unittest util/test-klicker-eval-judge.py
-          uv run --no-project --python 3.12 --with pytest==9.1.1 python -m pytest -q evaluation/tests/test_klicker_trajectories.py
+          uv run --no-project --python 3.12 --with pytest==9.1.1 python -m pytest -q -p no:cacheprovider evaluation/tests/test_klicker_trajectories.py
 
       - name: Install Devrouter profile planner
         run: bash .github/scripts/install-devrouter.sh
