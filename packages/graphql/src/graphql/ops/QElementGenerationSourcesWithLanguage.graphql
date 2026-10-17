@@ -1,17 +1,22 @@
 query ElementGenerationSourcesWithLanguage {
   elementGenerationSources {
-    language
-    graphBuildId
     kbId
     kbName
-    indexedAt
-    isStale
-    sourceCount
-    sources {
-      resourceId
-      title
-      sourceFile
-      pageCount
+    preparationState
+    preparationPendingReason
+    basis {
+      graphBuildId
+      fingerprint
+      language
+      indexedAt
+      recentChangesExcluded
+      sourceCount
+      sources {
+        resourceId
+        title
+        sourceFile
+        pageCount
+      }
     }
   }
 }
