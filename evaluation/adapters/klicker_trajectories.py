@@ -208,7 +208,7 @@ def import_trajectories(
         and all(record.get("type") != "summary" for record in records[:-1]),
         "Exactly one final summary is required",
     )
-    _require(summary.get("status") in {"completed", "stopped"}, "Invalid summary status")
+    _require(summary.get("status") in ("completed", "stopped"), "Invalid summary status")
     _require(_text(summary.get("arm")) and _text(summary.get("model")), "Missing arm or model")
     repeats = summary.get("repeats")
     _require(
@@ -270,7 +270,10 @@ def import_trajectories(
             "Unsupported turn receipt",
         )
         key = (receipt["caseId"], receipt["repeat"])
-        _require(_integer(receipt["repeat"]) and key in by_key, "Unknown trajectory")
+        _require(
+            _text(receipt["caseId"]) and _integer(receipt["repeat"]) and key in by_key,
+            "Unknown trajectory",
+        )
         index = order[key]
         _require(index >= previous_order, "Trajectory order mismatch")
         previous_order = index
@@ -320,7 +323,7 @@ def import_trajectories(
         )
         _require(
             (receipt["toolName"], receipt["toolStatus"])
-            in {("KB_doc_query", "completed"), (None, "not_called")},
+            in (("KB_doc_query", "completed"), (None, "not_called")),
             "Invalid retrieval status",
         )
         _require(

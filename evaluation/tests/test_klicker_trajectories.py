@@ -725,7 +725,13 @@ def test_stale_error_turn_retained(tmp_path, stale_turn):
     [
         ("mapping", {"version": True}, None),
         ("summary", {"cases": True}, None),
+        ("summary", {"status": []}, None),
+        ("summary", {"status": {}}, None),
         ("turn", {"turn": True}, None),
+        ("turn", {"caseId": []}, None),
+        ("turn", {"caseId": {}}, None),
+        ("turn", {"toolName": []}, None),
+        ("turn", {"toolStatus": {}}, None),
         ("error", {"repeat": False}, None),
         ("error", {"caseId": []}, None),
         ("error", {"unexpected": True}, None),
