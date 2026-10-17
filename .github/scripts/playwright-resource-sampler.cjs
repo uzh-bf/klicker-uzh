@@ -36,7 +36,7 @@ function cgroupDirectory(read) {
     if (!root.startsWith('/') || !directory.startsWith('/')) continue
     if (root.split('/').includes('..')) continue
     // A private cgroup namespace reports its own root as "/".
-    if (group === '/' || group === root) return directory
+    if (group === root) return directory
     const prefix = root === '/' ? '/' : `${root}/`
     if (group.startsWith(prefix)) {
       return posixPath.join(directory, group.slice(prefix.length))

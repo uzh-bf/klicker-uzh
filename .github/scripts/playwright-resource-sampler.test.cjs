@@ -65,7 +65,7 @@ test('attributes memory to the current unified cgroup rather than its parent', (
 
 test('resolves namespace roots, subtree mounts and escaped mount points', () => {
   for (const [group, root, mount, directory] of [
-    ['/', '/containers/job-a', '/sys/fs/cgroup', '/sys/fs/cgroup'],
+    ['/', '/', '/sys/fs/cgroup', '/sys/fs/cgroup'],
     ['/jobs/job-a', '/jobs', '/sys/fs/cgroup', '/sys/fs/cgroup/job-a'],
     ['/jobs/job-a', '/jobs/job-a', '/sys/fs/cgroup', '/sys/fs/cgroup'],
     ['/jobs/a b', '/', '/sys/fs/cgroup', '/sys/fs/cgroup/jobs/a b'],
@@ -79,7 +79,10 @@ test('resolves namespace roots, subtree mounts and escaped mount points', () => 
   ]) {
     const files = {
       '/proc/self/cgroup': `0::${group}\n`,
-      '/proc/self/mountinfo': `31 25 0:28 ${root} ${mount} rw - cgroup2 cgroup rw\n`,
+      '/proc/self/mountinfo':
+        '30 25 0:28 /containers/job-a /sys/descendant-cgroup rw - cgroup2 cgroup rw\n' +
+        `31 25 0:28 ${root} ${mount} rw - cgroup2 cgroup rw\n`,
+      '/sys/descendant-cgroup/memory.current': '99999\n',
       [`${directory}/memory.current`]: '17\n',
     }
     assert.equal(
@@ -96,6 +99,7 @@ test('does not fall back to parent counters for unsupported or unsafe membership
     ['0::/elsewhere', '/jobs'],
     ['0::/', '/..'],
     ['0::/', '/../..'],
+    ['0::/', '/containers/job-a'],
   ]) {
     const files = {
       '/proc/self/cgroup': `${membership}\n`,
