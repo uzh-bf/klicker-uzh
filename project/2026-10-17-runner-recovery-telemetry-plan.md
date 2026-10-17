@@ -196,6 +196,15 @@ approved restoration of the prior unit policy; preserve runner data.
 - The final AI review workflow requires a ready PR (`!pull.draft` in
   `isEligibleDefaultPull` and `resolvePullEligibility`). It is deferred until
   that separately authorized state; no ineffective review request is posted.
+- Draft review on `f30831a25bd770ae1ffaeacbe873c1d69c06d3c3` identified
+  renderer-coupling documentation, operator state visibility and volume-pattern
+  consistency. Added the cross-references, current systemd property output and
+  the provisioner's numeric volume suffix. Existing fixtures now check the
+  informational state readback without service mutation.
+- Rejected decoding `/proc/self/cgroup` as mountinfo: kernel `proc_cgroup_show`
+  emits the raw kernfs path. Synthetic space and literal-backslash cases protect
+  that distinction. The path import was renamed to avoid lexical shadowing.
+  Focused shell, sampler, Biome and documentation checks pass after correction.
 - Remaining: exact-head CI and actionable feedback, then a quiet settle.
 - Active owner: main session; no subagents or additional live changes.
 - Next action: publish this metadata update, then watch the resulting exact-head

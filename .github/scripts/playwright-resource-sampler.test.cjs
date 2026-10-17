@@ -68,6 +68,8 @@ test('resolves namespace roots, subtree mounts and escaped mount points', () => 
     ['/', '/containers/job-a', '/sys/fs/cgroup', '/sys/fs/cgroup'],
     ['/jobs/job-a', '/jobs', '/sys/fs/cgroup', '/sys/fs/cgroup/job-a'],
     ['/jobs/job-a', '/jobs/job-a', '/sys/fs/cgroup', '/sys/fs/cgroup'],
+    ['/jobs/a b', '/', '/sys/fs/cgroup', '/sys/fs/cgroup/jobs/a b'],
+    ['/jobs/a\\040b', '/', '/sys/fs/cgroup', '/sys/fs/cgroup/jobs/a\\040b'],
     [
       '/jobs/job-a',
       '/',

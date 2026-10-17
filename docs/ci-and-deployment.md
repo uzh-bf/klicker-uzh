@@ -598,6 +598,9 @@ systemd without starting held services. Hook changes restart only already-active
 idle services whose own hook settings changed. Use this reconciliation path for
 registered runners; reprovisioning retains its archive-integrity checks and is
 not an update mechanism for runner binaries that have self-updated.
+Both modes print each service's `ActiveState` and `UnitFileState`; matching
+configuration does not imply that every runner is online. Held services load
+updated hook settings when an operator next starts them.
 
 Applying the policy, activating runners and planning a reboot are separate
 operator decisions. Disabled services remain disabled, but enabled services

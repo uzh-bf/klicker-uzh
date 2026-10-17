@@ -1033,6 +1033,8 @@ install_runner_archive() {
   fi
 }
 
+# Keep the public-PR layout aligned with reconcile-hetzner-arm64-runner-host.sh;
+# its host test compares complete units from both renderers.
 render_runner_service() {
   local mount_requirement=$1
   local runner_service=$2

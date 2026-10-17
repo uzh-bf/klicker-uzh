@@ -1,6 +1,6 @@
 const fs = require('node:fs')
 const { spawn } = require('node:child_process')
-const path = require('node:path').posix
+const posixPath = require('node:path').posix
 
 function counters(text, prefix) {
   const line = text.split('\n').find((entry) => entry.startsWith(prefix))
@@ -19,6 +19,7 @@ function pressure(text) {
 }
 
 function cgroupDirectory(read) {
+  // Membership paths are raw; only the mountinfo fields use octal escaping.
   const group = read('/proc/self/cgroup').match(/^0::(\/.*)$/m)?.[1]
   if (!group || group.split('/').includes('..')) return null
   const decodeMountPath = (value) =>
@@ -37,7 +38,7 @@ function cgroupDirectory(read) {
     if (group === '/' || group === root) return directory
     const prefix = root === '/' ? '/' : `${root}/`
     if (group.startsWith(prefix)) {
-      return path.join(directory, group.slice(prefix.length))
+      return posixPath.join(directory, group.slice(prefix.length))
     }
   }
   return null
@@ -45,7 +46,8 @@ function cgroupDirectory(read) {
 
 function cgroupMemory(read) {
   const directory = cgroupDirectory(read)
-  const file = (name) => (directory ? read(path.join(directory, name)) : '')
+  const file = (name) =>
+    directory ? read(posixPath.join(directory, name)) : ''
   const numeric = (text) => {
     const value = /^\d+$/.test(text.trim()) ? Number(text) : Number.NaN
     return Number.isSafeInteger(value) ? value : null

@@ -231,6 +231,8 @@ runner_unit_path() {
 }
 
 # The SSH payload is standalone and accepts only the provisioner's known units.
+# Keep this layout aligned with provision-hetzner-arm64-runner.sh; the host test
+# compares complete public-PR units from both renderers.
 render_runner_service() {
   local name=$1 mount=$2 policy=${3:-current} mount_requirement=''
   [[ -z "$mount" ]] || mount_requirement="RequiresMountsFor=${mount}"
@@ -255,7 +257,7 @@ render_runner_service() {
 runner_service_mount() {
   local mount
   mount=$(state_file_value "${STATE_DIR}/$1.env" VOLUME_MOUNT) || return 1
-  [[ -z "$mount" || "$mount" =~ ^/mnt/HC_Volume_[A-Za-z0-9_-]+$ ]] ||
+  [[ -z "$mount" || "$mount" =~ ^/mnt/HC_Volume_[0-9]+$ ]] ||
     die 'managed runner volume path is invalid'
   printf '%s' "$mount"
 }
@@ -543,8 +545,13 @@ restart_runners() {
 }
 
 print_summary() {
+  local name state
   info "Host slot: ${HOST_SLOT}"
   info "Runners: ${EXPECTED_NAMES[*]}"
+  for name in "${EXPECTED_NAMES[@]}"; do
+    state=$(runner_service_state "$name") || return 1
+    info "${name} ActiveState=${state%:*} UnitFileState=${state#*:}"
+  done
   info "Docker root: $(docker info --format '{{.DockerRootDir}}')"
   info "Disk: $(df -h /var/lib/docker | awk 'NR == 2 {print $3 " used, " $4 " available (" $5 ")"}')"
   info "Telemetry: journalctl -t actions-runner-telemetry"

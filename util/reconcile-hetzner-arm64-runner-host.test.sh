@@ -63,7 +63,7 @@ main() {
     render_runner_service "" actions.runner.uzh-bf.public-pr-arm64-05.service
   ' bash "${SCRIPT_DIR}/provision-hetzner-arm64-runner.sh")
   [[ "$bootstrap_unit" == "$(cat "$unit")" ]] || fail 'provisioning and reconciliation unit policies differ'
-  for mount in '' /mnt/HC_Volume_fixture; do
+  for mount in '' /mnt/HC_Volume_123456; do
     for profile in public-pr trusted; do
       bootstrap_unit=$(bash -c '
         source "$1"
@@ -118,6 +118,14 @@ main() {
     }
     pgrep() { [[ "${fixture_busy:-0}" == '1' ]]; }
     write_file_from_stdin() { cat >"$4"; }
+    docker() {
+      [[ "$1" == info && "$2" == --format ]] || return 2
+      printf '/synthetic/docker\n'
+    }
+    df() {
+      [[ "$1" == -h && "$2" == /var/lib/docker ]] || return 2
+      printf 'Filesystem Size Used Available Use%% Mounted\nfixture 1G 0G 1G 0%% /synthetic\n'
+    }
     for name in "${EXPECTED_NAMES[@]}"; do
       render_runner_service "$name" '' legacy >"$(runner_unit_path "$name")"
     done
@@ -132,6 +140,11 @@ main() {
     : >"${fixture_dir}/commands"
     configure_runner_services
     [[ ! -s "${fixture_dir}/commands" ]] || fail 'service-policy reconciliation is not idempotent'
+    local state_lines
+    state_lines=$(print_summary | awk '$2 ~ /^ActiveState=/ && $3 ~ /^UnitFileState=/ {print $1, $2, $3}')
+    [[ "$state_lines" == $'public-pr-arm64-05 ActiveState=active UnitFileState=enabled\npublic-pr-arm64-06 ActiveState=inactive UnitFileState=disabled\npublic-pr-arm64-07 ActiveState=failed UnitFileState=enabled' ]] ||
+      fail 'configuration summary omitted current activation or enablement'
+    [[ ! -s "${fixture_dir}/commands" ]] || fail 'configuration summary mutated a service'
 
     RUNNER_ENV_CHANGED_NAMES=("${EXPECTED_NAMES[@]}")
     restart_runners
