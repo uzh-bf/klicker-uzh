@@ -2801,6 +2801,31 @@ test('run completes the existing OCR config per attempt and restores it on every
   }
 })
 
+test('run rejects a named pipe configuration before spawning OCR', async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-config-fifo-'))
+  const configPath = path.join(directory, 'config.json')
+  try {
+    const created = spawnSync('mkfifo', [configPath], { encoding: 'utf8' })
+    assert.equal(created.status, 0, created.stderr)
+    const result = await runCli(
+      [
+        'run',
+        '--ocr-config',
+        configPath,
+        '--',
+        process.execPath,
+        '-e',
+        'process.exit(99)',
+      ],
+      { MISTRAL_API_KEY: 'dummy' }
+    )
+    assert.equal(result.code, 1)
+    assert.equal(result.stderr, 'ocr-mistral-adapter: invalid_ocr_config\n')
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('run binds config validation to the opened file across pathname replacement', () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-config-race-'))
   const configPath = path.join(directory, 'config.json')
@@ -3198,10 +3223,10 @@ test('start/serve/stop own the listener lifecycle', async (t) => {
   assert.equal(diagnosticsText.trim().split('\n').length, 1)
   assert.equal(JSON.parse(diagnosticsText).unfinished_requests, 0)
   assert.equal(JSON.parse(diagnosticsText).failures.local_rejection, 1)
-  assert.equal(fs.statSync(diagnosticsPath).mode & 0o777, 0o600)
   assert.doesNotMatch(diagnosticsText, /sk-dummy-synthetic-start/)
   assert.equal((await runCli(['stop', statePath], env)).code, 0)
   assert.equal(fs.readFileSync(diagnosticsPath, 'utf8'), diagnosticsText)
+  assert.equal(fs.statSync(diagnosticsPath).mode & 0o777, 0o600)
 
   let refused = false
   try {

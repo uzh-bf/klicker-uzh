@@ -1929,7 +1929,7 @@ function configureAttempt(configPath, url) {
   try {
     const descriptor = fs.openSync(
       configPath,
-      fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW
+      fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW | fs.constants.O_NONBLOCK
     )
     try {
       const info = fs.fstatSync(descriptor)
