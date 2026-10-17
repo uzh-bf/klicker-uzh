@@ -11,8 +11,15 @@ if (!process.env.CAP_SERVER_URL) {
   )
 }
 
-// only http(s) URLs with a host may be loaded as the controller; anything
-// else (file:, javascript:, malformed values) fails the native build
+// local development hosts, the only ones that may be loaded over plain http
+const isLocalDevHost = (host: string) =>
+  ['localhost', '127.0.0.1', '[::1]'].includes(host) ||
+  host.endsWith('.localhost') ||
+  host.endsWith('.test')
+
+// only https URLs (or http for local development hosts) may be loaded as
+// the controller; anything else (file:, javascript:, plain http to a real
+// host, malformed values) fails the native build
 let parsed: URL | undefined
 try {
   parsed = new URL(serverUrl)
@@ -21,11 +28,14 @@ try {
 }
 if (
   !parsed ||
-  !['http:', 'https:'].includes(parsed.protocol) ||
-  !parsed.hostname
+  !parsed.hostname ||
+  !(
+    parsed.protocol === 'https:' ||
+    (parsed.protocol === 'http:' && isLocalDevHost(parsed.hostname))
+  )
 ) {
   throw new Error(
-    `Invalid CAP_SERVER_URL "${serverUrl}"; expected an http(s) URL such as https://control.klicker.uzh.ch`
+    `Invalid CAP_SERVER_URL "${serverUrl}"; expected an https URL such as https://control.klicker.uzh.ch (http only for local development hosts)`
   )
 }
 const { hostname } = parsed
