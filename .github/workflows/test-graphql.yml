@@ -446,7 +446,7 @@ jobs:
   # v3_sonarcloud.yml keeps the named fail-closed result for both.
   sonarcloud:
     name: SonarCloud
-    needs: [filter, test-graphql]
+    needs: [filter, test-graphql, test-graphql-status]
     if: >-
       always() && !cancelled() &&
       github.event_name == 'pull_request' &&

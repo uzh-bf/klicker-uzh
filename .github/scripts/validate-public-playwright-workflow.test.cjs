@@ -93,6 +93,58 @@ test('the reusable envelope owns lifecycle routing and selector shadow planning'
   assert.match(workflow, /test-playwright-status:/)
 })
 
+test('the selector shadow records the coverage deferred until readiness', (t) => {
+  const workflow = YAML.parse(
+    fs.readFileSync(
+      path.join(__dirname, '../workflows/public-pr-playwright-shards.yml'),
+      'utf8'
+    )
+  )
+  const step = workflow.jobs.prepare.steps.find(
+    (entry) => entry.name === 'Build opposite-state selector shadow plan'
+  )
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'selector-shadow-'))
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  const bin = path.join(root, 'bin')
+  fs.mkdirSync(bin)
+  fs.writeFileSync(
+    path.join(bin, 'node'),
+    `#!${process.execPath}
+const fs = require('node:fs')
+if (process.argv[2] === '-e') {
+  process.stdout.write(JSON.parse(fs.readFileSync('route.json', 'utf8')).selectorPrState)
+} else {
+  fs.writeFileSync('selector-args.json', JSON.stringify(process.argv.slice(2)))
+}
+`,
+    { mode: 0o755 }
+  )
+  for (const [ran, expected] of [
+    ['ready', 'draft'],
+    ['draft', 'ready'],
+    ['deferred', 'ready'],
+  ]) {
+    fs.writeFileSync(
+      path.join(root, 'route.json'),
+      JSON.stringify({ selectorPrState: ran })
+    )
+    const result = spawnSync('bash', ['-euo', 'pipefail', '-c', step.run], {
+      cwd: root,
+      env: {
+        PATH: `${bin}${path.delimiter}${process.env.PATH}`,
+        BASE_SHA: 'base',
+        HEAD_SHA: 'head',
+      },
+      encoding: 'utf8',
+    })
+    assert.equal(result.status, 0, result.stderr)
+    const args = JSON.parse(
+      fs.readFileSync(path.join(root, 'selector-args.json'), 'utf8')
+    )
+    assert.equal(args[args.indexOf('--pr-state') + 1], expected)
+  }
+})
+
 test('lifecycle policy rejects cancellation outside the exact closed-PR boundary and any draft gate', () => {
   const source = fs.readFileSync(
     path.join(__dirname, '../workflows/test-playwright.yml'),
@@ -530,19 +582,32 @@ test('status reporter accepts the trusted plan for drafts and a full plan for re
 })
 
 test('status reporter reuses only validated pull-request runs', (t) => {
-  // Push validation must always execute: a duplicate offered on a push is
+  // v3 and the staging source must validate their pushes independently: a
+  // duplicate offered there, or while the staging source is unknown, is
   // rejected whatever it contains.
+  const push = {
+    IS_PULL_REQUEST: 'false',
+    ROUTE: 'hosted',
+    DUPLICATE_RUN_ID: '123',
+    STG_SOURCE_BRANCH: 'v3-adaptive-learning',
+  }
   const rejected = {
-    'numeric push run id': {
-      IS_PULL_REQUEST: 'false',
-      ROUTE: 'hosted',
-      DUPLICATE_RUN_ID: '123',
-    },
+    'numeric push run id': { ...push, PUSH_REF: 'refs/heads/v3' },
     'non-numeric push run id': {
-      IS_PULL_REQUEST: 'false',
-      ROUTE: 'hosted',
+      ...push,
+      PUSH_REF: 'refs/heads/v3',
       DUPLICATE_RUN_ID: '123abc',
     },
+    'staging source push': {
+      ...push,
+      PUSH_REF: 'refs/heads/v3-adaptive-learning',
+    },
+    'unknown staging source': {
+      ...push,
+      PUSH_REF: 'refs/heads/v3-ai',
+      STG_SOURCE_BRANCH: '',
+    },
+    'missing push ref': push,
   }
   for (const [name, overrides] of Object.entries(rejected)) {
     const result = runStatusReporter(t, overrides)
@@ -560,6 +625,13 @@ test('status reporter reuses only validated pull-request runs', (t) => {
   assert.equal(reused.status, 0, reused.output)
   assert.equal(reused.metadata.duplicate_run_id, '123')
   assert.match(reused.summary, /Reused validated run: `123`/)
+
+  // Another integration branch accepts the merged pull request's validation.
+  const integration = runStatusReporter(t, {
+    ...push,
+    PUSH_REF: 'refs/heads/v3-ai',
+  })
+  assert.equal(integration.status, 0, integration.output)
 
   // Reuse cannot launder a cancelled or failed execution into a green gate.
   for (const [name, overrides] of [
