@@ -301,7 +301,7 @@ this derived execution plan; migration risk and final review cover both repos.
 2. Generic label handling. Route: trusted executor. Owned framework paths:
    `src/utils/utils.py`, `src/customization/custom_metrics.py`,
    `tests/test_gt_loader.py`, `tests/test_chat_export.py`,
-   `tests/test_metric_definitions.py`, and the existing
+   `tests/test_metric_definitions.py`, `src/evaluators/run_evaluation.py`, and the existing
    coverage test in `tests/test_run_evaluation.py` if needed. Remove the fixed
    Tutor/Explainer allowlist. Retain trimming/lowercasing, nonblank string
    validation, selector uniqueness and matching. Use arbitrary synthetic labels
@@ -310,6 +310,9 @@ this derived execution plan; migration risk and final review cover both repos.
    caller-defined label acceptance. Acceptance: focused existing suites pass
    without provider calls; existing
    metric configs retain their meaning. No new config or dependency.
+   Update product-specific mode errors in the runner. Unmatched configured labels
+   remain explicitly skipped with `no_metrics` and null success, preserving the
+   existing metric-exclusion contract rather than introducing another allowlist.
 3. Retire legacy ownership and deliver. Route: main; integration boundary.
    After slice 1 passes, delete the framework importer, its relocated tests and
    example files. Remove the new product-specific framework plan from this
@@ -342,6 +345,11 @@ network-disabled containers and existing dependencies. Reuse the preserved
 complete/stopped synthetic producer receipts for exact before/after artifact
 comparison, plus exclusive-output CLI invocation. Keep proofs under ignored
 `project/_local/`; do not touch real receipts, ledgers or the isolated baseline.
+Additionally consume the new app output through the pinned `d4ee03e` generic
+conversation loader and preserved-capture evaluation path with model construction
+and `evaluate` stubbed. Use a temporary extracted source snapshot, not a private
+submodule initialization. A disposable ignored Linux verification environment
+may install the existing frozen framework lock; test execution stays network-disabled.
 Run focused app capture/guard tests, framework pytest/ruff, workflow syntax and
 diff checks. Hosted app CI must execute the migrated suite without the private
 submodule. No browser-only contract changes; no browser/runtime is justified.
@@ -358,7 +366,18 @@ do not delete historical evidence or rewrite published Git history.
 ### Migration progress
 
 User approval recorded. Fresh remote reads show both task branches ahead of their
-targets without target drift. App pin remains `d4ee03e`; no pin change is needed
-for replacement verification. Planner and source execution pending. Advisory
+targets without target drift. Planner APPROVED after adding both CSV export seams.
+App replacement committed as `755a58783c`: importer byte-identical to the previous
+framework draft, suite import-path-only adjustment, corpus unchanged. All 49 tests
+pass offline with both existing pytest 9.0.3 and frozen pytest 9.1.1. Actual
+complete/stopped producer artifacts match through API/CLI; exclusive output holds.
+The pinned `d4ee03e` conversation loader and preserved-capture reporting path accept
+the new app output with `evaluate` and model construction stubbed, network disabled.
+All planned rows survive and only eligible rows reach the stub. The pin stays.
+Framework generic-label edits pass all 124 focused tests offline; integrated review
+and final-head CI remain pending. App simplification found no useful reductions.
+Scoped static analysis ran 290 rules on two migrated Python files with no findings.
+An ignored Linux verification environment installs the existing frozen lock only;
+no runtime/dependency manifest, budget or actual model call changed. Advisory
 external routing comparison skipped: private source/architecture scope and held
 paid evaluation provide no eligible outbound task input.
