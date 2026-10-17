@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 
-import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto'
+import {
+  createHash,
+  createHmac,
+  randomUUID,
+  timingSafeEqual,
+} from 'node:crypto'
 import { readdir, readFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { basename, resolve } from 'node:path'
@@ -29,14 +34,16 @@ export const DEFAULT_POLL_TIMEOUT_MS = 60_000
 export const DEFAULT_REQUEST_TIMEOUT_MS = 75_000
 export const ELEARNING_GRANT_TTL_SECONDS = 120
 
-const LOGIN_MUTATION = `
-  mutation LoginParticipant($usernameOrEmail: String!, $password: String!) {
-    loginParticipant(
-      usernameOrEmail: $usernameOrEmail
-      password: $password
-    )
-  }
-`
+// Deployed APIs accept only persisted operations, identified by the SHA-256 of
+// the printed operation document. This text must stay identical to graphql's
+// print() of packages/graphql/src/graphql/ops/MLoginParticipant.graphql.
+const LOGIN_MUTATION =
+  'mutation LoginParticipant($usernameOrEmail: String!, $password: String!) {\n' +
+  '  loginParticipant(usernameOrEmail: $usernameOrEmail, password: $password)\n' +
+  '}'
+const LOGIN_MUTATION_HASH = createHash('sha256')
+  .update(LOGIN_MUTATION)
+  .digest('hex')
 
 const RESPONSE_TIMEOUT_CLEANUP = Symbol('responseTimeoutCleanup')
 
@@ -698,7 +705,9 @@ export class KlickerEvaluationTarget {
         },
         body: JSON.stringify({
           operationName: 'LoginParticipant',
-          query: LOGIN_MUTATION,
+          extensions: {
+            persistedQuery: { version: 1, sha256Hash: LOGIN_MUTATION_HASH },
+          },
           variables: {
             usernameOrEmail: this.participantUsername,
             password: this.participantPassword,

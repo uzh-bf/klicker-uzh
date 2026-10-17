@@ -1,5 +1,6 @@
 import { strict as assert } from 'node:assert'
-import { createHmac } from 'node:crypto'
+import { createHash, createHmac } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import {
   chmod,
   mkdir,
@@ -43,6 +44,10 @@ import {
 // Pinned so the synthetic target and its mocks agree even as the application
 // default model changes; the target is constructed with this id explicitly.
 const TEST_MODEL = 'gpt-6-luna'
+const LOGIN_OPERATION_FILE = new URL(
+  '../../../packages/graphql/src/graphql/ops/MLoginParticipant.graphql',
+  import.meta.url
+)
 
 // Synthetic operator pricing policy and private provider base for the guarded
 // target. Values are fixed test inputs, never a copied tariff.
@@ -227,6 +232,16 @@ test('target uses participant gates and reads back one persisted turn', async ()
     requests.push({ requestUrl, method, body, headers: options.headers || {} })
 
     if (requestUrl.endsWith('/api/graphql')) {
+      // Deployed APIs reject query text and accept only the persisted hash of
+      // the shared operation document.
+      const login = JSON.parse(body)
+      assert.equal(login.query, undefined)
+      assert.equal(
+        login.extensions.persistedQuery.sha256Hash,
+        createHash('sha256')
+          .update(readFileSync(LOGIN_OPERATION_FILE, 'utf8').trim())
+          .digest('hex')
+      )
       return new Response(
         JSON.stringify({ data: { loginParticipant: 'participant-jwt' } }),
         {
