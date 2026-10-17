@@ -506,7 +506,7 @@ test('execution summary validates new timing and history independently of legacy
       /^OCR history status=complete stage=adapter misses=6 miss_no_reasoning=2 miss_unknown_turn=2 miss_ambiguous_turn=2$/m
     )
     assert.doesNotMatch(result.stdout, /PRIVATE_SENTINEL/)
-    for (const variant of ['legacy', 'invalid', 'unfinished']) {
+    for (const variant of ['legacy', 'invalid', 'unfinished', 'usage']) {
       const row = structuredClone(receipt)
       if (variant === 'legacy') {
         delete row.max_request_duration_ms
@@ -514,14 +514,18 @@ test('execution summary validates new timing and history independently of legacy
       } else if (variant === 'invalid') {
         row.accepted_responses_over_300s = 2
         row.history.miss_no_reasoning = '::error::PRIVATE_SENTINEL'
-      } else row.unfinished_requests = 1
+      } else if (variant === 'usage') row.missing_usage = 1
+      else row.unfinished_requests = 1
       fs.writeFileSync(receiptPath, JSON.stringify(row))
       result = await runCli(['summary', receiptPath], {
         GITHUB_STEP_SUMMARY: summaryPath,
       })
       assert.equal(result.code, 0)
-      assert.match(result.stdout, /^OCR timing status=unavailable$/m)
-      if (variant !== 'unfinished') {
+      if (variant === 'usage') {
+        assert.match(result.stdout, /^OCR timing status=complete /m)
+        assert.match(result.stdout, /^OCR cost status=unavailable /m)
+      } else assert.match(result.stdout, /^OCR timing status=unavailable$/m)
+      if (variant === 'legacy' || variant === 'invalid') {
         assert.match(result.stdout, /^OCR history status=unavailable$/m)
         assert.match(result.stdout, /^OCR cost status=complete reasons=none$/m)
       }

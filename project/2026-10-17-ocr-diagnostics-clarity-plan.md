@@ -136,16 +136,19 @@ Reassess the package if implementation requires another production file.
 
 | Workstream and slice | Execution owner | Dependency and acceptance |
 | --- | --- | --- |
-| Request timing and history explanations, slice 1 | Bounded executor; main owns contracts and integration | First; timing and replay tests preserve provider behavior and explain counters |
-| Reported-response estimate and summary, slice 2 | Same bounded executor; main owns accounting boundary | Follows the first writer; complete totals and budget arithmetic remain unchanged |
+| Request timing and history explanations, slice 1 | Main after bounded executor failed convergence | First; timing and replay tests preserve provider behavior and explain counters |
+| Reported-response estimate and summary, slice 2 | Main owns the coupled adapter and accounting boundary | Serialized; complete totals and budget arithmetic remain unchanged |
 | Integration, review, documentation, and delivery, slice 3 | Main | Focused checks, exact diff/privacy review, draft PR and settled CI/feedback |
 
-1. **Explain timing and replay misses.** Route: executor. Extend only the adapter
+1. **Explain timing and replay misses.** Route: main after executor convergence
+   failure; no replacement attempt. Extend only the adapter
    and its test suite. Consume portfolio rows 1, 2, and 4. Main verifies that
    all existing HTTP/replay outcomes and timing deadlines are unchanged. Commit:
    `enhance(ci): explain OCR request timing and replay misses`.
-2. **Retain useful reported-response estimates.** Route: executor, serialized
+2. **Retain useful reported-response estimates.** Route: main, serialized
    after slice 1 because the files overlap. Consume portfolio rows 3 and 4.
+   Execution-tier skip reason: critical-path coupling after the failed executor;
+   another dispatch has more overhead than this remaining bounded change.
    Main checks exact preservation of the complete-cost and budget contracts.
    Update the existing documentation for the final combined behavior. Commit:
    `enhance(ci): report OCR costs for known responses`.
@@ -209,17 +212,22 @@ retry behavior is authorized by the diagnostics proposal.
 
 ## Planning review and progress
 
-- Status: approved for execution; active slice 1, implementation not started.
+- Status: slice 1 complete; active slice 2.
 - Planner: native `planner`, GPT-6 Astra medium; approved in round 1 with no
   blocking findings. The local review transcript records the source checks.
 - Accepted clarifications: distinguish accepted-response timing from usage;
   include rejected responses with valid usage in cost; preserve prefix priority;
   make slice ownership explicit. These clarify the reviewed scope without
   changing its behavior, authority, or test portfolio.
-- Current change: approved plan only; branch baseline is unchanged.
+- Slice 1: committed at `a3c8c730d1`; 81 adapter tests pass on pinned Node 24.
+  Astra simplification found no justified reduction. Independent risk review
+  verified implementation/privacy and requested one usage-incomplete timing test;
+  the existing test is extended with that assertion-only case.
+- Ownership: the executor produced no patch after one narrowing instruction and
+  was stopped. Main owns remaining coupled source work; no replacement worker.
 - Proposed package: adapter, adapter tests, existing OCR documentation, and plan.
   Substantive size is not yet measured; calculate it from the implementation
   diff before delivery, excluding project artifacts.
 - Runtime and CI: none started for this planning task. No PR exists.
-- Next action: commit the plan, then execute slice 1. A native goal tracks the
+- Next action: execute slice 2. A native goal tracks the
   approved terminal condition; no explicit token budget was requested.
