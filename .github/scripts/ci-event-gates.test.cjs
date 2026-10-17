@@ -428,7 +428,9 @@ test('the producer-hosted analysis runs for a same-repository pull request only'
     const job = workflow.jobs.sonarcloud
     assert.ok(job, name + ' must analyze the coverage it just produced')
     assert.equal(job.uses, './.github/workflows/sonar-analysis.yml', name)
-    assert.deepEqual(job.needs, ['filter', suite], name)
+    const reporter = suite + '-status'
+    assert.deepEqual(job.needs, ['filter', suite, reporter], name)
+    assert.ok(!workflow.jobs[reporter].needs.includes('sonarcloud'))
 
     // A draft is admitted here and deferred inside the analysis, because the
     // job is evaluated minutes after its event, when the pull request may
