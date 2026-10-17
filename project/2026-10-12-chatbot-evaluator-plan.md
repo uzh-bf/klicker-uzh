@@ -561,10 +561,11 @@ merged bounded initializer support; see the
 [budget plan](2026-10-16-evaluation-budget-limits-plan.md).
 These are source-delivery facts, not deployment, runtime or paid-run acceptance.
 
-The current request authorizes roadmap/plan reconciliation and draft documentation
-delivery only. The phases below are direction-only follow-ups requiring their
-own implementation or spending approval. Preserve earlier ledgers and the frozen
-local baseline. The proposed US$55/48-turn capture allowance is not judge authority;
+The user subsequently authorized source execution through the roadmap with a
+native goal. The approved [contract implementation plan](2026-10-17-trajectory-contract-plan.md)
+owns phase 1 and coordinated draft delivery. Later paid execution and new
+assessment policy retain their separate gates. Preserve earlier ledgers and the
+frozen local baseline. The proposed US$55/48-turn capture allowance is not judge authority;
 new initialization, pricing/routing qualification and runtime readback remain
 separate. The US$5/120-turn default stays intact.
 
@@ -587,7 +588,7 @@ scorer, LLM conversation simulator or Python copy of the TS mapper is proposed.
 
 ### Phase 1 — Align the existing corpus and receipt contract
 
-Proposed next implementation package: use the current producer in
+The active implementation package uses the current producer in
 `apps/chat/scripts/tutor-trajectory.mjs`, the framework's optional
 `src/adapters/klicker_trajectories.py`, and their existing test suites. Both
 boundaries keep independent validation of one documented contract.
@@ -641,7 +642,7 @@ consumer needs it; no generic finance module or orchestration platform is planne
 ### Progress
 
 Direction reconciled after source inspection and the Astra/Claude discussion.
-Phase 1 implementation is pending; phases 2 and 3 retain the gates above. This
-documentation batch changes no executable contract, corpus, metric, framework pin
-or runtime. Focused Markdown/link checks and source/status inspection verify the
-update; code tests and earlier capture evidence are not new evaluation results.
+Phase 1 is executing under the linked implementation plan; phase 2's zero-spend
+prerequisites are documented there. Phases 2 and 3 retain the gates above.
+No metric, framework pin or runtime changes accompany this contract repair;
+offline compatibility evidence is not an application-quality evaluation result.

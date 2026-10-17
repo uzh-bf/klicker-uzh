@@ -44,6 +44,21 @@ without shrinking planned coverage. Rubrics supply expected outcomes, while
 hashed source mappings remain diagnostics without retrieval context. The corpus
 hash records import provenance; capture-time corpus identity is caller-attested.
 
+The corpus version-1 contract permits only `version` and `cases` at the root.
+Each case requires `id`, `group`, `language`, `mode`, `support`, `rubric`,
+`assessmentTurns` and `turns`; unknown fields fail validation at every level.
+Assessment turns are a nonempty selection of unique one-based integers within
+the trajectory, normalized to ascending order. Literal turns contain only a
+nonblank `message`. A later repeated turn contains only `repeatPrevious: true`
+and a string `suffix`, which may be empty. Authored text and IDs stay exact.
+
+The contract repair rejects previously tolerated malformed inputs without
+changing receipt version 2. The repaired framework importer additionally sorts
+unordered assessment selections; the currently pinned importer still returns
+their authored order. Valid receipts remain readable with that pin, but full
+validation/normalization parity requires landing the repaired reader and a later
+pin update. No private submodule is required for the app's own contract tests.
+
 Import is offline. Later judge execution requires separate approval and an
 explicit profile. The target spend guard bounds application requests only;
 the framework's post-completion judge-cost reporting is not a shared hard cap.

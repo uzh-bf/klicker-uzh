@@ -71,7 +71,8 @@ A literal turn has only `message`, a nonblank string. A repeated turn has only
 `repeatPrevious: true` and a string `suffix`, appears after turn one, and uses
 the entire preceding visible assistant answer plus that exact suffix. Empty
 suffix is valid. Null/boolean version values and booleans in assessment indices
-are invalid. Assessment selections may be authored out of order; both boundaries
+are invalid. JSON numeric spelling does not change meaning: `1` and `1.0` both
+denote version 1 or assessment turn 1. Assessment selections may be authored out of order; both boundaries
 normalize them to ascending order without changing the caller's corpus object.
 Other malformed types fail validation before capture/login or import output.
 
@@ -89,11 +90,11 @@ support or anonymization evidence. No captured source passages enter Git.
 
 ### Test portfolio and work slices
 
-| Consequential failure | Obligation and stable seam | Existing protection / missing evidence |
-| --- | --- | --- |
-| A capture is admitted but cannot be imported, or assessment silently vanishes | Test obligation: extend existing; app validator and public framework importer | Existing suites cover ordinary shapes; missing empty/duplicate/unknown/ambiguous variants |
-| Valid selection or repeat text changes between boundaries | Test obligation: extend existing; synthetic multi-turn import/capture | Existing parent/source checks remain; add unordered assessment and empty-suffix preservation |
-| Compatible-looking handwritten receipts hide producer drift | Test obligation: none for new maintained tests; one-time network-disabled round trip | Existing suites independently test each side; actual JS output supplies the missing proof |
+| Consequential failure                                                         | Obligation and stable seam                                                           | Existing protection / missing evidence                                                       |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| A capture is admitted but cannot be imported, or assessment silently vanishes | Test obligation: extend existing; app validator and public framework importer        | Existing suites cover ordinary shapes; missing empty/duplicate/unknown/ambiguous variants    |
+| Valid selection or repeat text changes between boundaries                     | Test obligation: extend existing; synthetic multi-turn import/capture                | Existing parent/source checks remain; add unordered assessment and empty-suffix preservation |
+| Compatible-looking handwritten receipts hide producer drift                   | Test obligation: none for new maintained tests; one-time network-disabled round trip | Existing suites independently test each side; actual JS output supplies the missing proof    |
 
 1. Producer repair. Route: main; tightly coupled public contract and proof
    design remain parent-owned. Paths:
@@ -171,7 +172,21 @@ exhausted required review/capability route, while finishing independent work.
 
 Planner: APPROVED after two rounds; accepted executable round-trip mechanics,
 explicit ordering compatibility, single-owner slices and exact test/doc scope.
-Baseline: 24 app trajectory tests and 30 framework importer tests pass offline.
-Slices 1 and 2 are next; slice 3 depends on both. Existing draft CI is green on
-earlier heads. Required delivery: drafts plus exact-head CI, not runtime
-acceptance. No source edits or paid evaluation have run in this package.
+Optional opposing-provider plan challenge also approved. Slice 1 committed as
+`90b132fee9`: the invalid-input regression failed before repair; all 25 trajectory
+tests pass afterward, and 54 focused trajectory/guard/target tests pass offline.
+Biome passes with existing warnings. Staged secret scan passed; the data hook's
+existing synthetic-credential false positive was inspected and bypassed with its
+documented override. No credentials or real data entered the diff.
+
+Slice 2 is owned by the trusted executor. Slice 3 produced actual JS runner
+receipts offline: complete Tutor/Explainer/Quizzer and budget-stopped partial/
+unstarted rows across all three groups. Temporary test instrumentation was
+removed; permanent app tests passed again. The prior pinned reader imports the
+untouched completed receipt file; repaired-reader normalization proof is pending.
+No model/provider call, app runtime or real budget initialization occurred.
+
+Current substantive app delta: 49 lines, excluding project artifacts and README;
+this complete isolated compatibility repair extends the existing draft.
+Required delivery: coordinated drafts, integrated review and exact-head CI.
+Framework repair, cross-language assertions, reviews and hosted CI remain.

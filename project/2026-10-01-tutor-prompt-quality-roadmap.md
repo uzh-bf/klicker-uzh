@@ -1,7 +1,8 @@
 # Tutor prompt quality roadmap
 
 Status: historical Tutor candidate results retained; evaluation consolidation
-direction updated on 2026-10-17. Implementation of that follow-up is pending.
+direction updated on 2026-10-17. Contract alignment is in progress under the
+approved [implementation plan](2026-10-17-trajectory-contract-plan.md).
 
 ## Current evaluation direction
 
@@ -16,7 +17,7 @@ those responsibilities to the framework.
 
 | Next outcome                           | Acceptance and gate                                                                                                            | State                                                      |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
-| Compatible corpus and receipt contract | Minimal synthetic producer/consumer checks agree; incomplete coverage survives import                                          | Next proposed implementation package                       |
+| Compatible corpus and receipt contract | Minimal synthetic producer/consumer checks agree; incomplete coverage survives import                                          | Approved; source and offline compatibility verification in progress |
 | Calibrated DeepEval assessment         | Existing conversational metrics assess saved captures under separately qualified judge admission; compare with manual evidence | Proposed after contract alignment and named judge approval |
 | Framework-driven unattended capture    | A demonstrated need justifies a stateful adapter without copying application semantics                                         | Deferred                                                   |
 
@@ -29,8 +30,8 @@ historical evidence and do not qualify a new judge or capture route.
 [PR 6576](https://github.com/uzh-bf/klicker-uzh/pull/6576) merged the exact
 US$55/48-turn initializer option while preserving the US$5/120-turn default.
 Source availability does not authorize spending or establish local runtime
-readback. This roadmap update authorizes documentation only; capture, judge
-calls, deployment and implementation retain their separate gates.
+readback. The subsequent roadmap execution approval covers the linked source
+package; capture, judge calls, merge and deployment retain their separate gates.
 
 ## Historical Tutor iteration
 
