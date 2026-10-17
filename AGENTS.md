@@ -337,6 +337,8 @@ Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and 
 - **`web-design-guidelines`** — UI/UX/accessibility review ([SKILL.md](.agents/skills/web-design-guidelines/SKILL.md)).
 - **`vercel-react-best-practices`** — React/Next performance guidance ([SKILL.md](.agents/skills/vercel-react-best-practices/SKILL.md)).
 
+For setup of a published chatbot by teaching staff in an existing OLAT course, use [.agents/skills/klicker-olat-integration/SKILL.md](.agents/skills/klicker-olat-integration/SKILL.md). It covers authorised browser configuration, LTI launch URLs, credits and publication boundaries; privileged provisioning remains a separate workflow.
+
 <!-- devrouter -->
 
 ## Agent skills
