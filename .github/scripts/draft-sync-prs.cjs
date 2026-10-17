@@ -182,6 +182,7 @@ function matchesSyncPr(pr, pair, branch) {
   return (
     pr.state === 'open' &&
     pr.head.ref === branch &&
+    isSyncBranch(branch) &&
     branch.startsWith(syncBranchPrefix(pair)) &&
     pr.base.ref === pair.base &&
     pr.head.repo?.full_name === REPOSITORY &&
@@ -287,7 +288,7 @@ async function maintainDraftSyncPrs({
         github,
         repo,
         base,
-        matches: (ref) => ref.startsWith(prefix),
+        matches: (ref) => isSyncBranch(ref) && ref.startsWith(prefix),
       })
       if (existing) {
         const branch = existing.head.ref
@@ -386,7 +387,7 @@ async function maintainDraftSyncPrs({
           github,
           repo,
           base,
-          matches: (ref) => ref.startsWith(prefix),
+          matches: (ref) => isSyncBranch(ref) && ref.startsWith(prefix),
         })
         if (!concurrent) throw error
         report(

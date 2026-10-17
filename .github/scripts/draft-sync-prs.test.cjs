@@ -4,12 +4,19 @@ const path = require('node:path')
 const test = require('node:test')
 const YAML = require('yaml')
 const {
+  PAIRS,
   acceptsEvent,
   maintainDraftSyncPrs,
   syncBranch,
+  syncBranchPrefix,
 } = require('./draft-sync-prs.cjs')
 
 const repository = 'uzh-bf/klicker-uzh'
+const sourceTip = 'a'.repeat(40)
+const integrationTip = 'b'.repeat(40)
+const nextSource = 'c'.repeat(40)
+const nextIntegration = 'd'.repeat(40)
+const laterSource = 'e'.repeat(40)
 const context = {
   repo: { owner: 'uzh-bf', repo: 'klicker-uzh' },
   ref: 'refs/heads/v3',
@@ -41,8 +48,8 @@ function fixture({
   const refWrites = []
   const merges = []
   const sources = {
-    v3: 'v3-tip',
-    'v3-ai': 'v3-ai-tip',
+    v3: sourceTip,
+    'v3-ai': integrationTip,
     'v3-audit': 'audit-tip',
     'v3-adaptive-learning': 'adaptive-tip',
   }
@@ -213,12 +220,12 @@ test('creates only the three forward pairs as drafts and preserves ready PRs on 
   assert.deepEqual(
     state.creates.map(({ head }) => head),
     [
-      'sync/v3-into-v3-ai-v3-tip',
-      'sync/v3-ai-into-v3-audit-v3-ai-tip',
-      'sync/v3-ai-into-v3-adaptive-learning-v3-ai-tip',
+      'sync/v3-into-v3-ai-aaaaaaaaaa',
+      'sync/v3-ai-into-v3-audit-bbbbbbbbbb',
+      'sync/v3-ai-into-v3-adaptive-learning-bbbbbbbbbb',
     ]
   )
-  assert.equal(state.refs.get('sync/v3-into-v3-ai-v3-tip'), 'v3-tip')
+  assert.equal(state.refs.get('sync/v3-into-v3-ai-aaaaaaaaaa'), sourceTip)
   state.prs[0].draft = false
   const second = await maintainDraftSyncPrs({
     ...state,
@@ -241,9 +248,9 @@ test('default preview reads live comparisons without writing', async () => {
   assert.deepEqual(
     state.comparisons.map(({ basehead }) => basehead),
     [
-      'v3-ai...v3-tip',
-      'v3-audit...v3-ai-tip',
-      'v3-adaptive-learning...v3-ai-tip',
+      `v3-ai...${sourceTip}`,
+      `v3-audit...${integrationTip}`,
+      `v3-adaptive-learning...${integrationTip}`,
     ]
   )
   assert.equal(state.refWrites.length, 0)
@@ -257,8 +264,8 @@ test('advances an open sync head without ever writing the source branch', async 
   ]) {
     const state = fixture({ status })
     await maintainDraftSyncPrs({ ...state, context, dryRun: false })
-    state.sources.v3 = 'v3-next'
-    state.sources['v3-ai'] = 'v3-ai-next'
+    state.sources.v3 = nextSource
+    state.sources['v3-ai'] = nextIntegration
     state.refWrites.length = 0
     const results = await maintainDraftSyncPrs({
       ...state,
@@ -286,7 +293,7 @@ test('reports a conflicting source merge for maintainers to resolve', async () =
     mergeError: Object.assign(new Error('conflict'), { status: 409 }),
   })
   await maintainDraftSyncPrs({ ...state, context, dryRun: false })
-  state.sources.v3 = 'v3-next'
+  state.sources.v3 = nextSource
   const results = await maintainDraftSyncPrs({
     ...state,
     context,
@@ -302,10 +309,10 @@ test('reports a conflicting source merge for maintainers to resolve', async () =
     body: '<!-- sync-pr-source-conflict --> forged',
     user: { login: 'someone' },
   })
-  state.sources.v3 = 'v3-later'
+  state.sources.v3 = laterSource
   await maintainDraftSyncPrs({ ...state, context, dryRun: false })
   assert.equal(notices().length, 2)
-  assert.match(notices()[0].body, /v3-later/)
+  assert.ok(notices()[0].body.includes(laterSource))
   // Once the source merges again, only the bot's notice is removed.
   state.control.mergeError = undefined
   await maintainDraftSyncPrs({ ...state, context, dryRun: false })
@@ -320,9 +327,9 @@ test('regenerates controller-owned bodies and the synchronize bounce makes no fu
   await maintainDraftSyncPrs({ ...state, context, dryRun: false })
   state.prs[0].body = JSON.stringify({ manual: true })
   state.prs[0].draft = false
-  state.sources.v3 = 'v3-next'
+  state.sources.v3 = nextSource
   await maintainDraftSyncPrs({ ...state, context, dryRun: false })
-  assert.equal(JSON.parse(state.prs[0].body).headSha, 'v3-next')
+  assert.equal(JSON.parse(state.prs[0].body).headSha, nextSource)
   assert.equal(state.prs[0].draft, false)
   assert.deepEqual(Object.keys(state.updates[0]).sort(), [
     'body',
@@ -426,8 +433,8 @@ test('description failures preserve branch reconciliation and other pairs withou
     })
     await maintainDraftSyncPrs({ ...state, context, dryRun: false })
     const original = state.prs[0].body
-    state.sources.v3 = 'v3-next'
-    state.control.analysisFailure = ({ sourceSha }) => sourceSha === 'v3-next'
+    state.sources.v3 = nextSource
+    state.control.analysisFailure = ({ sourceSha }) => sourceSha === nextSource
     const results = await maintainDraftSyncPrs({
       ...state,
       context,
@@ -443,7 +450,7 @@ test('description failures preserve branch reconciliation and other pairs withou
     assert.equal(state.closes, 2)
   }
   const fresh = fixture()
-  fresh.control.analysisFailure = ({ sourceSha }) => sourceSha === 'v3-tip'
+  fresh.control.analysisFailure = ({ sourceSha }) => sourceSha === sourceTip
   const results = await maintainDraftSyncPrs({
     ...fresh,
     context,
@@ -457,11 +464,11 @@ test('description failures preserve branch reconciliation and other pairs withou
 test('existing-PR previews describe the actual head and perform no writes', async () => {
   const state = fixture()
   await maintainDraftSyncPrs({ ...state, context, dryRun: false })
-  state.sources.v3 = 'v3-next'
+  state.sources.v3 = nextSource
   state.refWrites.length = 0
   const results = await maintainDraftSyncPrs({ ...state, context })
-  assert.equal(JSON.parse(results[0].body).headSha, 'v3-tip')
-  assert.equal(JSON.parse(results[0].body).sourceSha, 'v3-next')
+  assert.equal(JSON.parse(results[0].body).headSha, sourceTip)
+  assert.equal(JSON.parse(results[0].body).sourceSha, nextSource)
   assert.equal(state.refWrites.length, 0)
   assert.equal(state.updates.length, 0)
   assert.equal(state.comments.length, 0)
@@ -490,27 +497,30 @@ test('leaves pull requests headed by the source branch itself untouched', async 
   assert.deepEqual(
     state.creates.map(({ head }) => head),
     [
-      syncBranch({ head: 'v3', base: 'v3-ai' }, 'v3-tip'),
-      syncBranch({ head: 'v3-ai', base: 'v3-adaptive-learning' }, 'v3-ai-tip'),
+      syncBranch({ head: 'v3', base: 'v3-ai' }, sourceTip),
+      syncBranch(
+        { head: 'v3-ai', base: 'v3-adaptive-learning' },
+        integrationTip
+      ),
     ]
   )
 })
 
 test('never overwrites a leftover sync branch at another commit', async () => {
   const state = fixture()
-  state.refs.set('sync/v3-into-v3-ai-v3-tip', 'someone-else')
+  state.refs.set('sync/v3-into-v3-ai-aaaaaaaaaa', 'someone-else')
   const results = await maintainDraftSyncPrs({
     ...state,
     context,
     dryRun: false,
   })
   assert.equal(results[0].action, 'stale-branch')
-  assert.equal(state.refs.get('sync/v3-into-v3-ai-v3-tip'), 'someone-else')
+  assert.equal(state.refs.get('sync/v3-into-v3-ai-aaaaaaaaaa'), 'someone-else')
   assert.deepEqual(
     state.creates.map(({ head }) => head),
     [
-      'sync/v3-ai-into-v3-audit-v3-ai-tip',
-      'sync/v3-ai-into-v3-adaptive-learning-v3-ai-tip',
+      'sync/v3-ai-into-v3-audit-bbbbbbbbbb',
+      'sync/v3-ai-into-v3-adaptive-learning-bbbbbbbbbb',
     ]
   )
 })
@@ -550,17 +560,35 @@ test('recovers a creation race but propagates permission and validation errors',
   }
 })
 
-test('ignores same-named fork PRs', async () => {
+test('ignores same-named fork PRs and lookalike human branches', async () => {
   const state = fixture()
   state.prs.push({
     head: {
-      ref: 'sync/v3-into-v3-ai-v3-tip',
+      ref: 'sync/v3-into-v3-ai-aaaaaaaaaa',
       repo: { full_name: 'someone/klicker-uzh' },
     },
     base: { ref: 'v3-ai', repo: { full_name: repository } },
   })
+  const human = {
+    number: 99,
+    state: 'open',
+    body: JSON.stringify({ manual: true }),
+    head: {
+      ref: 'sync/v3-into-v3-ai-hotfix',
+      sha: sourceTip,
+      repo: { full_name: repository },
+    },
+    base: { ref: 'v3-ai', repo: { full_name: repository } },
+  }
+  state.prs.push(human)
   await maintainDraftSyncPrs({ ...state, context, dryRun: false })
   assert.equal(state.creates.length, 3)
+  assert.deepEqual(JSON.parse(human.body), { manual: true })
+  assert.ok(state.refWrites.every(({ name }) => name !== human.head.ref))
+  assert.ok(state.merges.every(({ base }) => base !== human.head.ref))
+  assert.ok(
+    state.updates.every(({ pull_number }) => pull_number !== human.number)
+  )
 })
 
 test('only trusted branch push and maintained sync PR completions can write', async () => {
@@ -638,15 +666,11 @@ test('workflow keeps write access on trusted controller code with read-only chec
       'utf8'
     )
   )
-  assert.deepEqual(workflow.on.workflow_run.branches, [
-    'v3',
-    'v3-ai',
-    'v3-audit',
-    'v3-adaptive-learning',
-    'sync/v3-into-v3-ai-*',
-    'sync/v3-ai-into-v3-audit-*',
-    'sync/v3-ai-into-v3-adaptive-learning-*',
-  ])
+  const expectedBranches = [
+    ...new Set(PAIRS.flatMap(({ head, base }) => [head, base])),
+    ...PAIRS.map((pair) => `${syncBranchPrefix(pair)}*`),
+  ]
+  assert.deepEqual(workflow.on.workflow_run.branches, expectedBranches)
   assert.deepEqual(workflow.on.workflow_run.types, ['completed'])
   assert.equal(workflow.on.workflow_dispatch.inputs.dry_run.default, true)
   assert.equal(workflow.concurrency['cancel-in-progress'], false)
@@ -691,7 +715,7 @@ test('workflow entrypoint creates drafts on automatic runs and previews manual d
     const state = fixture()
     const failures = []
     if (analysisFailure) {
-      state.control.analysisFailure = ({ sourceSha }) => sourceSha === 'v3-tip'
+      state.control.analysisFailure = ({ sourceSha }) => sourceSha === sourceTip
     }
     await entrypoint(
       state.github,

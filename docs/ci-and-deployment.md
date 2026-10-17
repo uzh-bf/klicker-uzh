@@ -19,7 +19,8 @@ tags:
 sync PR's head is a bot-owned branch,
 `sync/<source>-into-<target>-<sha10>`, never the long-lived source branch. The
 suffix is the source SHA the PR started from, so every new sync PR gets a fresh
-branch. GitHub's
+branch. Branches that merely resemble this prefix without the hexadecimal SHA
+suffix are outside controller ownership and are ignored. GitHub's
 "Update branch" button and web conflict edits write to a PR's head. With the
 source branch as head, one click merged `v3-audit` back into the production
 branch `v3-ai`. With a sync branch as head, the same click only changes the
