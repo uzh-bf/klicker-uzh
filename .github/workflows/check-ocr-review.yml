@@ -22,6 +22,7 @@ jobs:
     # module-resolution error instead of reviewing the pull request.
     env:
       OCR_NO_UPDATE: '1'
+      OCR_ADAPTER_PROVIDER: openrouter
     if: >-
       github.event.pull_request.user.login != 'dependabot[bot]' &&
       github.event.pull_request.draft == true
@@ -50,10 +51,10 @@ jobs:
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `background<<${delimiter}\n${background}\n${delimiter}\n`)
           NODE
 
-      - name: Start Mistral adapter
+      - name: Start draft review adapter
         id: adapter
         env:
-          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           ADAPTER_PATH: ${{ runner.temp }}/ocr-mistral-adapter.cjs
           ADAPTER_STATE: ${{ runner.temp }}/ocr-mistral-adapter.json
           OCR_ADAPTER_DIAGNOSTICS_PATH: ${{ runner.temp }}/draft-ai-review-adapter-diagnostics.jsonl
@@ -67,8 +68,8 @@ jobs:
         with:
           llm_url: ${{ steps.adapter.outputs.url }}/v1/chat/completions
           llm_auth_token: ${{ steps.adapter.outputs.token }}
-          llm_model: zai-glm-5-3
-          llm_extra_body: '{"reasoning_effort":"high","prompt_cache_key":"{ocr_session_key}"}'
+          llm_model: deepseek/deepseek-v4.1-flash-1017
+          llm_extra_body: '{"reasoning_effort":"max","prompt_cache_key":"{ocr_session_key}"}'
           background: ${{ steps.context.outputs.background }}
           llm_use_anthropic: 'false'
           llm_timeout: '480'
@@ -80,7 +81,7 @@ jobs:
           route_severity_below: 'low'
           upload_artifacts: 'false'
 
-      - name: Stop Mistral adapter
+      - name: Stop draft review adapter
         if: always() && steps.adapter.outcome == 'success'
         env:
           ADAPTER_PATH: ${{ runner.temp }}/ocr-mistral-adapter.cjs

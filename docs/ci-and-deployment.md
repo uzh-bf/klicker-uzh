@@ -306,7 +306,7 @@ see **Bounded codebase check** below. Pushes always run the full suite.
 
 Shard durations differ by architecture, so `playwright/timings.json` names the architecture its weights were measured on. The timing workflow maps the run's recorded route to `x64` for hosted runs and `arm64` for the public pool, passes it to the updater as `--architecture`, and the updater leaves the table untouched when it is calibrated for a different architecture, reporting why instead of writing. An untagged table is adopted by the producing architecture on its first tagged write. Replacing a calibration with another architecture's measurements is therefore a human decision rather than an automatic side effect of a successful run.
 
-- **AI review**: While a PR is a draft, OpenCodeReview runs Mistral-hosted GLM 5.3 (`zai-glm-5-3`) at high reasoning through a runner-local adapter against the exact PR head and its immediate base. A ready transition cancels an in-flight draft run, and ready PRs do not start new automatic reviews. Mistral is an external model provider, so review diffs cross that provider boundary and incur usage cost.
+- **AI review**: While a PR is a draft, OpenCodeReview runs DeepSeek V4.1 Flash 1017 (`deepseek/deepseek-v4.1-flash-1017`) through OpenRouter at max reasoning through a runner-local adapter against the exact PR head and its immediate base. A ready transition cancels an in-flight draft run, and ready PRs do not start new automatic reviews. OpenRouter routes to external model providers, so draft review diffs cross that provider boundary and incur usage cost.
 - **Manual final review**: After CI and the draft feedback are settled, a collaborator with calculated `write` or `admin` permission posts `/final-review` on an unstacked PR or on one verified native stack layer. The workflow uses `zai-glm-5-3` with max reasoning, applies the repository's diff-led operational lenses, and publishes one consolidated review attached to an immutable head. Before review fan-out, one fixed public-safe request must return the expected function call; failure stops the run with bounded provider diagnostics. The manual jobs pin OpenCodeReview 1.13.0 and use its low review-effort preset for one review round; this does not lower the model's max reasoning setting. Both manual command paths use OCR's 200,000-token prompt ceiling, with estimated compression thresholds at 120,000 and 160,000 tokens. The separate completion cap remains 16,384 tokens. Before paid execution, one offline preview runs at the same prompt limit; malformed selection data or any `too_large` size exclusion stops the review. Other intentional rule and path exclusions remain valid: `final-review-rules.json` excludes unit tests and their support code (`*.test.*`, `__tests__`, `__mocks__`, `test/` directories and `tests/` directories under `apps/` and `packages/`) and documentation, in addition to OCR's default filters. Its `include` entry `playwright/**/*.ts` bypasses OCR's built-in test filter, so Playwright specs, helpers and configuration are reviewed. User excludes take precedence over `include`, so no exclude pattern may match `playwright/`. A successful selection preview does not prove that rendered group prompts fit or that the review completed. Each individual OCR task has a 45-minute deadline, and an individual range has a 10,000,000-token aggregate ceiling on billable tokens (uncached input plus output; see the cache accounting below). When the first attempt returns structurally valid partial coverage for a non-budget failure, the same job may resume that exact session once with only the unused token allowance. Strict lineage and identity checks protect checkpoint reuse, and combined usage cannot exceed the original range ceiling. Budget exhaustion, an invalid session, or a still-partial resume fails immediately. The job has a 90-minute ceiling and reserves time after OCR for cleanup and finalization. No incomplete result reaches publication. The result CLI commands also emit a bounded JSON diagnostic to stderr
   with status, coverage counts, allowlisted failure classifications, resume outcome
   and a fixed rejection code. A still-partial resume has a terminal-status rejection
@@ -317,20 +317,32 @@ Shard durations differ by architecture, so `playwright/timings.json` names the a
 - **Publisher rejection diagnostics**: A failed validation or publisher step keeps its exact rejected JSON input as a one-day workflow artifact. The individual job retains its initial, resumed, or final result JSON as applicable. An allowed resume that remains partial is reported as an incomplete review instead of an identity mismatch. The stack job normally retains the combined code result and optional topology result. An incremental validation or resume failure may instead retain the exact affected range result JSONs, while a combine failure retains every range result passed to the failed combine step. The workflow never adds stderr, Mistral configuration, stack manifests, review-range directories as directories, unrelated wildcard inputs, or runner workspaces to these artifacts. Treat the payloads as public because this repository is public: use them only for offline parser diagnosis, never as authorization to replay or publish a review. The upload runs only after the corresponding validation or publisher step fails and does not change the failed job or final status. Live artifact proof remains a post-merge check because `pull_request_target` uses workflow code from the default branch. See [OpenCodeReview publisher rejection payloads](./solutions/integration/opencodereview-publisher-rejection-payloads.md) for the failure pattern and safe diagnostic boundary.
 - **Offline qualification**: Public-safe synthetic receipts and a dependency-free evaluator live under `.github/open-code-review/qualification/`. The evaluator's strict synthetic contract covers explicit blocker and false-blocker dispositions, prompt-injection text treated as untrusted data, valid and invalid stack topology, exact path ownership, incomplete coverage, and token-counter consistency. It is intentionally separate from the runtime OCR parser and does not claim to validate live provider receipts. Run `node --test .github/open-code-review/qualification/final-review-qualification.test.js` and `node .github/open-code-review/qualification/final-review-qualification.js`; this checks deterministic local contracts and reports offline-only metrics. OCR 1.13.0 synthetic qualification exercises the released binary against the same adapter without a live key. Source tests cover token translation, native thinking-history restoration, bounded requests and cache, capability authentication, child isolation, and shutdown. The adapter digest participates in final-review policy identity, so earlier route evidence cannot silently qualify the new route. Neither offline path qualifies live model behavior, proves first-trigger success, or makes a merge-readiness decision. Real `/final-review` and `/final-review-stack` proof remains a post-merge gate because `pull_request_target` executes trusted default-branch workflow code.
 
-Both workflows require the repository's `MISTRAL_API_KEY` secret. The adapter
-fixes the endpoint to `https://api.mistral.ai/v1/chat/completions`, model to
-`zai-glm-5-3`, and accepts only `high` or `max` for `reasoning_effort`.
-Omitted effort defaults to `max`; draft reviews request `high`, while final
-individual and stack reviews request `max`. It converts OCR's
-`max_completion_tokens` to Mistral's `max_tokens` and exposes only final text
-plus separate reasoning metadata. Complete native assistant chunks stay in
+Manual workflows run `final-ai-review.test.js` and
+`final-ai-stack-review.test.js` without installing dependencies. Keep those
+trusted helper suites dependency-free. YAML-based workflow assertions belong in
+`ocr-self-update-guard.test.cjs`, which runs after dependency installation in
+the codebase check.
+
+The draft workflow selects `OCR_ADAPTER_PROVIDER=openrouter` for both startup
+and the separate summary process. It requires `OPENROUTER_API_KEY`, fixes the
+endpoint to `https://openrouter.ai/api/v1/chat/completions` and model to
+`deepseek/deepseek-v4.1-flash-1017`, and sends `reasoning.effort: max`.
+Manual final reviews retain the default Mistral profile and `MISTRAL_API_KEY`:
+`https://api.mistral.ai/v1/chat/completions`, `zai-glm-5-3`, with `high` or `max`
+reasoning effort accepted and omitted effort defaulting to `max`. Unknown
+profiles and missing selected credentials fail closed without a provider switch.
+The adapter converts OCR's `max_completion_tokens` to `max_tokens` and exposes
+only final text plus separate reasoning metadata. OpenRouter's native
+`reasoning_details` stay intact in memory; OCR-facing reasoning prefers its
+nonempty `reasoning` string, then text/summary details, then legacy
+`reasoning_content`, avoiding duplicate reasoning. Complete native turns stay in
 bounded process memory and are restored on conversation replay; missing or
-ambiguous history fails closed. OCR compression rewrites the conversation prefix; a retained turn may then be restored only by its exact assistant identity and reasoning hash when these identify one native payload. Main review requests offering `task_done` force Mistral tool use with `tool_choice: any`; a length-limited response without a tool call may enter OCR's existing continuation loop once per replayed chain, retaining its native history and billable usage. A finished tool-free response or another tool-free turn in that chain still fails closed. Auxiliary grouping, planning, filtering and compression requests remain unchanged. Manual jobs retain seven-day aggregate execution counters for request counts, input/output usage, missing tools, length finishes and history restoration. These receipts contain no prompts, code, reasoning traces, credentials or raw provider errors. Draft startup copies the trusted adapter to
+ambiguous history fails closed. OCR compression rewrites the conversation prefix; a retained turn may then be restored only by its exact assistant identity and reasoning hash when these identify one native payload. Main review requests offering `task_done` force tool use with `tool_choice: any` for Mistral and `required` for OpenRouter; a length-limited response without a tool call may enter OCR's existing continuation loop once per replayed chain, retaining its native history and billable usage. A finished tool-free response or another tool-free turn in that chain still fails closed. Auxiliary grouping, planning, filtering and compression requests remain unchanged. Manual jobs retain seven-day aggregate execution counters for request counts, input/output usage, missing tools, length finishes and history restoration. These receipts contain no prompts, code, reasoning traces, credentials or raw provider errors. Draft startup copies the trusted adapter to
 `runner.temp` before the composite action's checkout and masks its random
 loopback capability. Always-run stop authenticates shutdown and proves listener
 closure before deleting capability state. Neither the upstream key nor native
-history is persisted. Live tool and structured-output proof remains pending
-secret provisioning and trusted default-branch activation.
+history is persisted. Live qualification of a changed draft route requires trusted default-branch
+activation; branch CI runs the current default-branch policy.
 
 Manual jobs pass the private configuration to the adapter's
 `run --ocr-config <path> -- <command>` option. Each attempt atomically fills in
@@ -345,7 +357,7 @@ or restoration failure stops the attempt before publication or another resume.
 All three OCR modes configure `prompt_cache_key: "{ocr_session_key}"`. OCR expands
 that template per conversation; the adapter validates and forwards the bounded
 key. Direct tool canaries omit it. Provider cache hits remain opportunistic.
-Cache reads cost a tenth of uncached input, so the adapter reports billable usage
+Cache reads are discounted, so the adapter reports billable usage
 to OCR: a valid `usage.prompt_tokens_details.cached_tokens` is subtracted from
 `prompt_tokens` and `total_tokens`, and the cache detail is dropped. OCR's token
 budgets, summaries, resume allowances and the draft summary therefore count
@@ -355,8 +367,11 @@ prompt count. The adapter's own diagnostics keep the raw provider usage
 and distinguish reported zero, missing and invalid cache usage.
 `cached_prompt_tokens` and `uncached_prompt_tokens` cover only responses with a
 valid cache report; consult `cache_usage_responses`, `missing_cache_usage` and
-`invalid_cache_usage` before interpreting them. Cache keys and provider metadata
-are never copied into those diagnostics.
+`invalid_cache_usage` before interpreting them. Cache keys and raw provider metadata
+are never copied into those diagnostics. OpenRouter receipts include only the
+fixed profile and model identifiers so cost reporting can reject mismatched
+receipts. OpenRouter uses the forwarded key for provider sticky routing; cache
+hits remain opportunistic across endpoints.
 
 Draft reviews use the same bounded, sanitized PR-description context as manual
 reviews, with the existing absent-description fallback. The description remains
@@ -370,6 +385,14 @@ across adapter lifetimes. `unattributed_requests` counts requests without affini
 `omitted_conversation_requests` counts requests beyond the bucket cap. Both remain
 in aggregate and request-type usage. `request_duration_ms` sums request durations,
 which overlap during concurrency; it is not review wall time or billed cost.
+Timing diagnostics separately report the maximum forwarded-request duration and
+the maximum duration of a completed response accepted by the adapter. The
+accepted-response count exceeding 300,000 ms provides direct evidence of a
+response beyond five minutes. Rejected completions, malformed responses,
+cancellations and timeouts do not establish that evidence. A response may have
+recorded usage before a later acceptance check rejects it, so usage-response and
+accepted-response counts measure different events. Missing timing fields in
+older receipts and unfinished shutdown accounting are reported as unavailable.
 The `failures` counters use fixed categories for local/history rejection,
 upstream throttling/rejection/server failure, timeout, transport, malformed
 response, adapter failure, missing tools (including length/no-tool), truncated completion and
@@ -377,6 +400,14 @@ cancellation. A request records its first failure once; the categories do not
 change provider-facing errors or retry decisions. Summary records use the same
 allowlist. No prompts, source, arguments, reasoning, paths or raw provider errors
 are kept.
+
+History diagnostics retain the existing total misses and add one reason for
+each miss: the fallback lacked usable reasoning, no exact reasoned turn matched,
+or the reasoned turn was ambiguous. A valid exact-prefix hit remains preferred.
+These reasons describe lookup conditions; they do not identify the caller
+transformation that caused one. They expose no message-derived identifiers or
+reasoning and do not change replay recovery or rejection behavior. Older
+receipts without the reason fields report the breakdown as unavailable.
 
 Shutdown refuses new work and aborts active requests before attempting its single
 diagnostics write. The listener closes after that attempt, so the stop receipt
@@ -409,6 +440,14 @@ its expected invocation count separately in step outputs; this includes resumes
 and incremental stack layers. Summaries reconcile those counts and the direct
 step outcomes against observed receipts. Missing or extra receipts block the
 combined estimate while independently complete stage estimates remain visible.
+When every expected receipt is present and unaccounted attempts are the only
+obstacle, the summary additionally estimates cost and caching savings for
+reported responses only. It includes valid recorded usage even when a later
+acceptance check rejected the response. The full invocation estimate remains
+unavailable, and the partial report names the number of responses priced and
+attempts without usage. It never assigns zero cost to those attempts or presents
+the subtotal as a complete bill or guaranteed lower bound. Other invalidity,
+missing usage/cache data or unfinished requests suppresses the combined subtotal.
 An explicitly skipped stage with zero expected invocations is labeled `not_run`.
 Summary steps are non-blocking. Logs distinguish OCR's uncached-input-plus-output
 budget basis from full provider usage and estimated USD. Failed task responses
@@ -423,9 +462,15 @@ paths and unknown receipt fields never enter these records. The CLI form is
 `summary <receipt-path> adapter=N [preflight=N] [topology=N]`; draft reporting
 defaults to one adapter lifetime.
 
-`MISTRAL_PRICING` in `ocr-mistral-adapter.cjs` is the authoritative USD rate table
-and verification date, sourced from
-[Mistral's model pricing](https://docs.mistral.ai/models/zai-glm-5-3).
+`MISTRAL_PRICING` and `PROVIDERS.openrouter.pricing` in
+`ocr-mistral-adapter.cjs` hold profile-specific USD reference rates and dates,
+sourced from [Mistral's model pricing](https://docs.mistral.ai/models/zai-glm-5-3)
+and [OpenRouter's snapshot catalog](https://openrouter.ai/deepseek/deepseek-v4.1-flash-1017).
+OpenRouter estimates use the catalog reference rates of $0.15 input, $0.003 cached
+input and $0.60 output per million tokens, checked 2026-10-17. Actual endpoint
+prices and time-based overrides vary, so these estimates are labelled as
+reference-price comparisons. Summaries retain three-decimal rate precision and
+refuse to apply a profile's rates to another profile's receipts.
 Refresh the rates and date together when provider pricing changes.
 Summaries label the pricing date and exclude account discounts, taxes, and runner
 costs; these are estimates, not billing receipts.
@@ -490,7 +535,7 @@ five minutes. Task, adapter, cleanup and job ceilings still apply. Draft reviews
 retain their explicit 480-second HTTP deadline. These settings do not change
 reasoning, token limits, accounting or retry behavior.
 
-The adapter's fixed Mistral endpoint uses native HTTPS under the existing
+The adapter's fixed upstream endpoints use native HTTPS under the existing
 AbortControllers. Node's fetch transport has independent
 [300-second header and body deadlines](https://undici.nodejs.org/api/Client),
 which otherwise preempt the configured OCR and adapter deadlines. Adapter
