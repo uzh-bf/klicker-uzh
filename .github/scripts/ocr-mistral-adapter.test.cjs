@@ -370,6 +370,119 @@ test('cost reporting names incomplete coverage and distinguishes skipped stages 
   ])
 })
 
+test('reported-response cost preserves strict totals and refuses every other coverage gap', async () => {
+  const row = costReceipt({
+    upstream_attempts: 2,
+    accepted_responses: 0,
+    request_types: { main: costReceipt() },
+    conversations: [costReceipt()],
+  })
+  const expected = { adapter: 2, preflight: 1 }
+  const rows = [row, row, costReceipt({ stage: 'preflight' })]
+  const text = rows.map(JSON.stringify).join('\n')
+  const report = buildCostReport(text, expected)
+  assert.equal(report.estimate, null)
+  assert.equal(estimateCost(text), null)
+  assert.deepEqual(report.reasons, ['unaccounted_attempts'])
+  const partial = report.reportedResponseEstimate
+  assert.equal(partial.responses, 3)
+  assert.equal(partial.unpriced_attempts, 2)
+  assert.equal(partial.prompt_tokens, 3000000)
+  assert.ok(Math.abs(partial.withCache - 2.685) < 1e-12)
+  assert.ok(Math.abs(partial.withoutCache - 5.52) < 1e-12)
+  assert.ok(Math.abs(partial.savings - 2.835) < 1e-12)
+  assert.equal(report.stages[0].estimate, null)
+  assert.ok(report.stages[1].estimate)
+  const unpriced = buildCostReport(
+    JSON.stringify(
+      costReceipt({
+        upstream_attempts: 1,
+        responses: 0,
+        cache_usage_responses: 0,
+        prompt_tokens: 0,
+        completion_tokens: 0,
+        cached_prompt_tokens: 0,
+        uncached_prompt_tokens: 0,
+      })
+    )
+  )
+  assert.equal(unpriced.estimate, null)
+  assert.equal(unpriced.reportedResponseEstimate.responses, 0)
+  assert.equal(unpriced.reportedResponseEstimate.unpriced_attempts, 1)
+  assert.equal(unpriced.reportedResponseEstimate.withCache, 0)
+  assert.equal(
+    buildCostReport(JSON.stringify(costReceipt())).reportedResponseEstimate,
+    null
+  )
+  for (const change of [
+    { schema_version: 2 },
+    { missing_usage: 1 },
+    { missing_cache_usage: 1 },
+    { invalid_cache_usage: 1 },
+    { unfinished_requests: 1 },
+    { cache_usage_responses: 0 },
+    { completion_tokens: -1 },
+    { prompt_tokens: Number.MAX_SAFE_INTEGER + 1 },
+    { cached_prompt_tokens: 1000001 },
+    { upstream_attempts: 0 },
+  ]) {
+    assert.equal(
+      buildCostReport(JSON.stringify({ ...row, ...change }))
+        .reportedResponseEstimate,
+      null
+    )
+  }
+  for (const [input, counts] of [
+    [text, { ...expected, adapter: 3 }],
+    [`${text}\nnull`, expected],
+    [`${text}\n{PRIVATE_SENTINEL`, expected],
+    [
+      `${text}\n${JSON.stringify(costReceipt({ stage: 'PRIVATE_SENTINEL' }))}`,
+      expected,
+    ],
+    [JSON.stringify(row), { adapter: -1 }],
+    [
+      [row, costReceipt({ upstream_attempts: 0 })]
+        .map(JSON.stringify)
+        .join('\n'),
+      { adapter: 2 },
+    ],
+    [
+      [{ ...row, upstream_attempts: Number.MAX_SAFE_INTEGER }, row]
+        .map(JSON.stringify)
+        .join('\n'),
+      { adapter: 2 },
+    ],
+  ]) {
+    const invalid = buildCostReport(input, counts)
+    assert.equal(invalid.estimate, null)
+    assert.equal(invalid.reportedResponseEstimate, null)
+    assert.doesNotMatch(JSON.stringify(invalid), /PRIVATE_SENTINEL/)
+  }
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-partial-cost-'))
+  try {
+    const receiptPath = path.join(directory, 'receipts.jsonl')
+    const summaryPath = path.join(directory, 'summary.md')
+    fs.writeFileSync(receiptPath, text)
+    const result = await runCli(
+      ['summary', receiptPath, 'adapter=2', 'preflight=1'],
+      { GITHUB_STEP_SUMMARY: summaryPath }
+    )
+    assert.equal(result.code, 0)
+    assert.equal(result.stdout, fs.readFileSync(summaryPath, 'utf8'))
+    assert.match(
+      result.stdout,
+      /^OCR cost status=unavailable reasons=unaccounted_attempts$/m
+    )
+    assert.match(
+      result.stdout,
+      /^OCR cost scope=reported_responses status=partial responses=3 unpriced_attempts=2 estimated_with_cache_usd=2\.6850 estimated_without_cache_usd=5\.5200 estimated_savings_usd=2\.8350 savings_percent=51\.4$/m
+    )
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('manual workflows reconcile shared stage receipts against independent step outputs', () => {
   const source = fs.readFileSync(
     path.join(__dirname, '../workflows/check-ocr-final-review.yml'),

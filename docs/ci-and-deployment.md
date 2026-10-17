@@ -370,6 +370,14 @@ across adapter lifetimes. `unattributed_requests` counts requests without affini
 `omitted_conversation_requests` counts requests beyond the bucket cap. Both remain
 in aggregate and request-type usage. `request_duration_ms` sums request durations,
 which overlap during concurrency; it is not review wall time or billed cost.
+Timing diagnostics separately report the maximum forwarded-request duration and
+the maximum duration of a completed response accepted by the adapter. The
+accepted-response count exceeding 300,000 ms provides direct evidence of a
+response beyond five minutes. Rejected completions, malformed responses,
+cancellations and timeouts do not establish that evidence. A response may have
+recorded usage before a later acceptance check rejects it, so usage-response and
+accepted-response counts measure different events. Missing timing fields in
+older receipts and unfinished shutdown accounting are reported as unavailable.
 The `failures` counters use fixed categories for local/history rejection,
 upstream throttling/rejection/server failure, timeout, transport, malformed
 response, adapter failure, missing tools (including length/no-tool), truncated completion and
@@ -377,6 +385,14 @@ cancellation. A request records its first failure once; the categories do not
 change provider-facing errors or retry decisions. Summary records use the same
 allowlist. No prompts, source, arguments, reasoning, paths or raw provider errors
 are kept.
+
+History diagnostics retain the existing total misses and add one reason for
+each miss: the fallback lacked usable reasoning, no exact reasoned turn matched,
+or the reasoned turn was ambiguous. A valid exact-prefix hit remains preferred.
+These reasons describe lookup conditions; they do not identify the caller
+transformation that caused one. They expose no message-derived identifiers or
+reasoning and do not change replay recovery or rejection behavior. Older
+receipts without the reason fields report the breakdown as unavailable.
 
 Shutdown refuses new work and aborts active requests before attempting its single
 diagnostics write. The listener closes after that attempt, so the stop receipt
@@ -409,6 +425,14 @@ its expected invocation count separately in step outputs; this includes resumes
 and incremental stack layers. Summaries reconcile those counts and the direct
 step outcomes against observed receipts. Missing or extra receipts block the
 combined estimate while independently complete stage estimates remain visible.
+When every expected receipt is present and unaccounted attempts are the only
+obstacle, the summary additionally estimates cost and caching savings for
+reported responses only. It includes valid recorded usage even when a later
+acceptance check rejected the response. The full invocation estimate remains
+unavailable, and the partial report names the number of responses priced and
+attempts without usage. It never assigns zero cost to those attempts or presents
+the subtotal as a complete bill or guaranteed lower bound. Other invalidity,
+missing usage/cache data or unfinished requests suppresses the combined subtotal.
 An explicitly skipped stage with zero expected invocations is labeled `not_run`.
 Summary steps are non-blocking. Logs distinguish OCR's uncached-input-plus-output
 budget basis from full provider usage and estimated USD. Failed task responses

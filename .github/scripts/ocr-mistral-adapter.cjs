@@ -1612,7 +1612,12 @@ function buildCostReport(diagnosticsText, expected = { adapter: 1 }) {
         count < 0
     )
   )
-    return { estimate: null, stages: [], reasons: ['invalid_expectations'] }
+    return {
+      estimate: null,
+      reportedResponseEstimate: null,
+      stages: [],
+      reasons: ['invalid_expectations'],
+    }
   const groups = Object.fromEntries(COST_STAGES.map((stage) => [stage, []]))
   const reasons = new Set()
   const lines = diagnosticsText.trim().split('\n').filter(Boolean)
@@ -1653,10 +1658,23 @@ function buildCostReport(diagnosticsText, expected = { adapter: 1 }) {
   })
   const combined = assessCostRows(Object.values(groups).flat())
   for (const reason of combined.reasons) reasons.add(reason)
+  const reportedResponseEstimate =
+    reasons.size === 1 &&
+    reasons.has('unaccounted_attempts') &&
+    Object.values(groups)
+      .flat()
+      .every((row) => row.upstream_attempts >= row.responses)
+      ? {
+          ...costFromTotals(combined.totals),
+          unpriced_attempts:
+            combined.totals.upstream_attempts - combined.totals.responses,
+        }
+      : null
   return {
     stages,
     reasons: [...reasons],
     estimate: reasons.size ? null : combined.estimate,
+    reportedResponseEstimate,
   }
 }
 
@@ -1823,6 +1841,23 @@ function commandSummary(args) {
     summary.push(
       'Estimate unavailable: diagnostics are missing, invalid, or have incomplete usage/cache coverage. Unknown usage is not treated as zero.'
     )
+    const partial = report.reportedResponseEstimate
+    if (partial) {
+      summary.push(
+        '',
+        '#### Estimated cost for reported responses only',
+        '',
+        '| Reported-response estimate | USD |',
+        '| --- | ---: |',
+        `| With reported caching | $${partial.withCache.toFixed(4)} |`,
+        `| Same reported tokens without caching | $${partial.withoutCache.toFixed(4)} |`,
+        `| Caching savings for reported responses (${partial.savingsPercent.toFixed(1)}%) | $${partial.savings.toFixed(4)} |`,
+        '',
+        `${partial.responses} responses priced; ${partial.unpriced_attempts} upstream attempts have no usage receipt. The full invocation estimate remains unavailable; this subtotal does not price those attempts or establish a complete bill or guaranteed lower bound.`,
+        '',
+        `OCR cost scope=reported_responses status=partial responses=${partial.responses} unpriced_attempts=${partial.unpriced_attempts} estimated_with_cache_usd=${partial.withCache.toFixed(4)} estimated_without_cache_usd=${partial.withoutCache.toFixed(4)} estimated_savings_usd=${partial.savings.toFixed(4)} savings_percent=${partial.savingsPercent.toFixed(1)}`
+      )
+    }
   }
   summary.push(
     '',
