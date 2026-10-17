@@ -4,7 +4,7 @@ Every fixture here is test-owned: a tiny generic version-1 corpus plus version-2
 turn receipts written to tmp_path. The tests never start a model, provider,
 network, or application runtime. They pin the normalized artifact returned by
 import_trajectories and the module CLI against the receipt contract emitted by
-apps/chat/scripts/run-tutor-trajectories.mjs.
+evaluation/run-tutor-trajectories.mjs.
 """
 
 import copy

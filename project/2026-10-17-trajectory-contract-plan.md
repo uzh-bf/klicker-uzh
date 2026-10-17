@@ -374,8 +374,23 @@ complete/stopped producer artifacts match through API/CLI; exclusive output hold
 The pinned `d4ee03e` conversation loader and preserved-capture reporting path accept
 the new app output with `evaluate` and model construction stubbed, network disabled.
 All planned rows survive and only eligible rows reach the stub. The pin stays.
-Framework generic-label edits pass all 124 focused tests offline; integrated review
-and final-head CI remain pending. App simplification found no useful reductions.
+Framework generic-label edits pass all 379 tests offline and hosted CI. App
+simplification found no useful reductions. Five automated review findings were
+verified: reject boolean numeric aliases and malformed error-record shapes while
+preserving integral JSON spellings and stale/null error-turn diagnostics. Nine
+regressions failed before repair; all 59 importer tests pass afterwards. Actual
+complete/stopped outputs still match the preserved normalized artifacts, so pinned
+reader evidence remains valid. This tightening changes malformed input acceptance,
+not corpus/receipt versions or valid capture output. The source risk review and
+simplification follow-up found no issues. The integrated review's two documentation
+findings are corrected: caller-owned experiment identity and the relocated runner
+pointer. Final review and exact-head CI receipts are maintained in
+[PR 6578](https://github.com/uzh-bf/klicker-uzh/pull/6578) and
+[MR 57](https://gitlab.uzh.ch/ai-infrastructure/evaluation/-/merge_requests/57).
+The subsequent sequence requires the app migration before framework retirement;
+both remain draft until explicitly authorized otherwise. No framework pin change
+is needed. No additional solution document is added: the durable ownership rule
+already lives in ADR 0001, agent guidance and the application evaluation README.
 Scoped static analysis ran 290 rules on two migrated Python files with no findings.
 An ignored Linux verification environment installs the existing frozen lock only;
 no runtime/dependency manifest, budget or actual model call changed. Advisory

@@ -630,7 +630,7 @@ scores and excerpts outside public artifacts; add no manual-score engine now.
 
 ### Phase 3 — Automate only a demonstrated recurring workflow
 
-Keep arm, block, repetition and corpus/config identity in framework-owned experiment
+Keep arm, block, repetition and corpus/config identity in caller-owned experiment
 data. If unattended capture-to-assessment becomes necessary, plan an optional
 stateful adapter invoking app-native execution through an explicit protocol.
 The existing stateless query entrypoint and single-message target cannot silently
