@@ -193,11 +193,14 @@ No model/provider call, app runtime or real budget initialization occurred.
 
 Current substantive app delta: 49 lines, excluding project artifacts and README;
 this complete isolated compatibility repair extends the existing draft.
-Source and offline verification are complete. App simplification and slice review
-found no issues; scoped static analysis found none. Framework slice reviews and
-integrated final review are recorded under the private review directory. The
-draft descriptions carry current exact-head CI and final-review receipts, which
-remain distinct from merge, runtime and paid-run acceptance.
+Initial source and offline verification are complete. App simplification and
+slice review found no issues; scoped static analysis found none. Framework
+pipeline 686449 passed formatting, lint and 414 tests. Framework slice review
+and app hosted CI remain pending. Integrated final review identified integral
+float indices in Python output and premature completion wording here. The existing
+test reproduced the output-type defect; normalize those indices to Python ints.
+Corrected-source verification and the same reviewer's focused follow-up remain
+pending. Draft descriptions will carry final receipts only after completion.
 
 Next delivery gate: land the coordinated reader repair, then reconcile the app
 pin to its merged SHA with fresh CI. These actions need named merge/pin authority.
