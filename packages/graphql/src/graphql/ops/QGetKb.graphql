@@ -6,6 +6,11 @@ query GetKb($id: ID!) {
     domainPolicyId
     domainPolicyVersion
     domainPolicyLanguage
+    questionPreparation {
+      state
+      pendingReason
+      hasBasis
+    }
     metrics {
       visibleResourceCount
       visibleSizeBytes
