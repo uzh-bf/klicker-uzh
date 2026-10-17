@@ -203,33 +203,41 @@ test.describe('Chatbot knowledge base setup', () => {
       aiBeta: true,
       aiAdvancedManagement: false,
     })
+    // GrowthBook keeps the beforeEach payload in localStorage for a minute,
+    // so the new payload only applies once that cache is gone.
+    await page.evaluate(() => localStorage.clear())
     await page.goto(`${manageUrl}/resources/chatbots`)
     await expect(page.getByTestId('create-chatbot')).toBeVisible()
 
     const chatbotId = await createDraftChatbot(page)
-    await expect(page.getByTestId('chatbot-knowledge')).toBeVisible()
-    await expect(
-      page.getByTestId('chatbot-knowledge-next-disclaimer')
-    ).toHaveCount(0)
-    await expect(page.getByTestId('chatbot-view-usage')).toHaveCount(0)
+    // A draft is prepared on one page in three steps, without tabs.
+    await expect(page.getByTestId('chatbot-draft-setup')).toBeVisible()
+    await expect(page.getByTestId('chatbot-workspace-navigation')).toHaveCount(
+      0
+    )
     await expect(page.getByTestId('chatbot-technical-details')).toHaveCount(0)
+    await expect(page.getByTestId('chatbot-setup-step-materials')).toBeVisible()
+    await expect(page.getByTestId('chatbot-setup-step-students')).toBeVisible()
+    await expect(
+      page.getByTestId('chatbot-setup-step-publication')
+    ).toBeVisible()
 
+    // Choosing material connects it without a Connect button.
     await selectOption(page, '[data-cy="chatbot-kb-select"]', KB_NAME)
-    await page.getByTestId('chatbot-kb-connect').click()
-    await expect(page.getByTestId('chatbot-enabled-knowledge-base')).toHaveText(
-      KB_NAME
-    )
+    await expect(page.getByTestId('chatbot-kb-disconnect')).toBeVisible()
+    await expect(page.getByTestId('chatbot-kb-connect')).toHaveCount(0)
 
-    // An old link to the Usage view falls back to the overview.
-    await page.goto(
-      `${manageUrl}/resources/chatbots?chatbotId=${chatbotId}&view=usage`
-    )
-    await expect(page.getByTestId('chatbot-overview')).toBeVisible()
-    await expect(page.getByTestId('chatbot-view-usage')).toHaveCount(0)
+    // Student information stays a summary until the lecturer edits it, and
+    // the optional behavior section stays closed.
+    await expect(
+      page.getByTestId('chatbot-setup-students-summary')
+    ).toBeVisible()
+    await expect(page.getByTestId('chatbot-setup-disclaimer')).toHaveCount(0)
+    await expect(
+      page.getByTestId('chatbot-setup-behavior-toggle')
+    ).toHaveAttribute('aria-expanded', 'false')
 
-    await page.goto(
-      `${manageUrl}/resources/chatbots?chatbotId=${chatbotId}&view=overview&step=review`
-    )
+    // The publication request is open and prefilled.
     await expect(page.getByTestId('chatbot-setup-review')).toBeVisible()
     await expect(page.getByTestId('chatbot-publication-use-case')).toHaveValue(
       `${CHATBOT_NAME} description`
@@ -250,5 +258,16 @@ test.describe('Chatbot knowledge base setup', () => {
         return chatbot.disclaimerId !== null && chatbot.status
       })
       .toBe('PENDING_APPROVAL')
+
+    // A pending chatbot keeps the tabs, without Usage, and an old link to the
+    // Usage view falls back to the overview.
+    await page.goto(
+      `${manageUrl}/resources/chatbots?chatbotId=${chatbotId}&view=usage`
+    )
+    await expect(page.getByTestId('chatbot-overview')).toBeVisible()
+    await expect(page.getByTestId('chatbot-view-overview')).toBeVisible()
+    await expect(page.getByTestId('chatbot-view-knowledge')).toBeVisible()
+    await expect(page.getByTestId('chatbot-view-usage')).toHaveCount(0)
+    await expect(page.getByTestId('chatbot-draft-setup')).toHaveCount(0)
   })
 })
