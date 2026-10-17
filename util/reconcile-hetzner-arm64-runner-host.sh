@@ -391,7 +391,7 @@ validate_runner_installation() {
 }
 
 check_reconciliation_state() {
-  local name runner_env image
+  local name runner_env image mount
   DRIFT_COUNT=0
 
   managed_file_matches "$TELEMETRY_SCRIPT" telemetry 755 || {
@@ -408,7 +408,8 @@ check_reconciliation_state() {
   }
 
   for name in "${EXPECTED_NAMES[@]}"; do
-    if ! cmp -s "$(runner_unit_path "$name")" <(render_runner_service "$name" "$(runner_service_mount "$name")"); then
+    mount=$(runner_service_mount "$name") || return 1
+    if ! cmp -s "$(runner_unit_path "$name")" <(render_runner_service "$name" "$mount"); then
       info "Drift: ${name} recovery policy"
       ((DRIFT_COUNT += 1))
     fi
