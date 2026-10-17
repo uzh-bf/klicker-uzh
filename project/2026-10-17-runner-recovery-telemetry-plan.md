@@ -114,8 +114,9 @@ the public plan, code, commit messages or pull-request body.
    Add a source guard to the provisioner only so its renderer can be exercised
    without invoking provisioning. Keep the standalone SSH payload self-contained.
    Verify syntax, ShellCheck, rendered service contracts and fixture behavior.
-   Commit the implementation, then update only the immutable payload revision
-   and SHA-256 in `util/reconcile-public-pr-arm64-pool.sh` in a dependent commit.
+   Commit the implementation, then update the immutable payload revision,
+   SHA-256 and matching help text in `util/reconcile-public-pr-arm64-pool.sh`
+   in a dependent commit.
 2. **Telemetry:** extend `.github/scripts/playwright-resource-sampler.cjs` and
    its existing `.test.cjs`; use synthetic test-owned procfs and cgroup data.
    Verify complete numeric/null contracts and existing subprocess behavior.
@@ -168,7 +169,13 @@ approved restoration of the prior unit policy; preserve runner data.
   renderer-equivalence and trusted-profile preservation cases.
 - Required delivery layer: verified draft PR. Achieved layer: local Recovery
   verification; no host configuration has been applied.
-- Remaining: immutable payload pin, Telemetry, Finish, exact-head CI and feedback.
+- Recovery committed as `3f7765cfb6238dd938658a53b30b8f4b46066adc`.
+  Main-session simplification and lifecycle/security self-review found no
+  unresolved finding. The standalone renderer remains duplicated intentionally;
+  rendered-unit equivalence protects the bootstrap and SSH-payload boundary.
+- The controller pins that commit's verified payload digest; its existing
+  checksum test and ShellCheck pass. Help text reflects held-state preservation.
+- Remaining: Telemetry, Finish, exact-head CI and feedback.
 - Active owner: main session; no subagents or additional live changes.
-- Next action: commit Recovery, pin its immutable payload, then extend the sampler
-  through synthetic cgroup fixtures and the existing subprocess checks.
+- Next action: extend the sampler through synthetic cgroup fixtures and the
+  existing subprocess checks.

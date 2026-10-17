@@ -3,8 +3,8 @@
 set -Eeuo pipefail
 umask 077
 
-readonly RECONCILER_REVISION='1f64e0525d2e1046661d1b618a157f56110c3764'
-readonly RECONCILER_SHA256='86762cf3816ba2ece055635c2142798f818a8485f9d4c1608f5f71133546be73'
+readonly RECONCILER_REVISION='3f7765cfb6238dd938658a53b30b8f4b46066adc'
+readonly RECONCILER_SHA256='9938b6fff7dac1e43c61ff7a3965db4ef5db8bd2b54d47ca4d65b88fb816db61'
 readonly RECONCILER_URL="https://raw.githubusercontent.com/uzh-bf/klicker-uzh/${RECONCILER_REVISION}/util/reconcile-hetzner-arm64-runner-host.sh"
 readonly REMOTE_RECONCILER='/root/reconcile-hetzner-arm64-runner-host.sh'
 readonly CONFIRMATION='RECONCILE PUBLIC PR RUNNER POOL'
@@ -32,8 +32,9 @@ usage() {
     '' \
     '--check streams a checksum-verified payload to both hosts and makes no' \
     'persistent remote change. --apply first checks both idle hosts, asks once,' \
-    'then installs bounded telemetry, pre-pulls CI images, updates hook settings,' \
-    'and restarts the existing runner services. No GitHub token is required.'
+    'then reconciles recovery policy, telemetry, CI images and hook settings.' \
+    'Only active idle runners with changed hooks restart; held services stay held.' \
+    'No GitHub token is required.'
 }
 
 die() {
