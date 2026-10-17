@@ -144,7 +144,7 @@ export async function proxy(request: NextRequest) {
   // Browser code runtime files are public and carry their own headers; they
   // must not reach the participant gate or the frame-ancestors policy.
   if (pathname.startsWith(CODE_RUNTIME_PATH_PREFIX)) {
-    return codeRuntimeProxyResponse()
+    return codeRuntimeProxyResponse(pathname)
   }
 
   // The embedded Manage assistant and the eLearning handoff receive their locale

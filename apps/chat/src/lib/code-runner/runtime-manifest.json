@@ -1,14 +1,18 @@
 {
-  "version": "d4d2fd1e7856188a",
+  "version": "573b78008cef856e",
+  "runnerScriptSha256": "OZBDMVTmhv97/JzJmWZivhcM99rX0zgsIIkLOwGg6L0=",
   "profiles": {
     "python-core": [
       "pyodide/pyodide-lock.json",
       "pyodide/pyodide.asm.mjs",
       "pyodide/pyodide.asm.wasm",
       "pyodide/pyodide.js",
-      "pyodide/python_stdlib.zip"
+      "pyodide/python_stdlib.zip",
+      "runner/py-worker.js",
+      "runner/shim.js"
     ],
     "r-base": [
+      "runner/shim.js",
       "webr/R.js",
       "webr/R.wasm",
       "webr/libRblas.so",
@@ -151,6 +155,16 @@
       "sha256": "fa1957e5777068fc4f7437f96d860ae2fbe9c19732ba06c84e004ec16dd7dd7a",
       "size": 2545637,
       "type": "application/octet-stream"
+    },
+    "runner/py-worker.js": {
+      "sha256": "f4421f8674c63a0065591e4992e4abcb39b4cbba10026f05a3d60fbd88dca6be",
+      "size": 1932,
+      "type": "text/javascript"
+    },
+    "runner/shim.js": {
+      "sha256": "c0434ffc04558ed8d78dd622eb4aadc97e18ce92fffdab5f6412e0da090aae27",
+      "size": 1692,
+      "type": "text/javascript"
     },
     "webr/R.js": {
       "sha256": "162adb529111d739b37ef1b9f889eb7afbe4fb3288f8a58166cd6d0b04fd7376",

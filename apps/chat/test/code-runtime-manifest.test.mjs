@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'vitest'
-import { buildManifest, compareManifest } from '../scripts/code-runtimes.mjs'
+import {
+  buildManifest,
+  compareManifest,
+  runnerDocument,
+  sha256,
+} from '../scripts/code-runtimes.mjs'
 
 // Synthetic two-profile source set; the reader maps fake paths to bytes.
 const bytes = {
@@ -40,5 +45,17 @@ describe('browser code runtime manifest', () => {
     )
 
     expect(compareManifest(reviewed, extra)).toContain('unexpected webr/c.js')
+  })
+
+  test('pins the runner bootstrap and rejects a stale hash', () => {
+    const script = 'console.log("runner")'
+    const reviewed = buildManifest(profiles, read, script)
+    const changed = buildManifest(profiles, read, 'console.log("changed")')
+
+    expect(reviewed.runnerScriptSha256).toBe(sha256(script, 'base64'))
+    expect(runnerDocument(script)).toContain(`<script>${script}</script>`)
+    expect(compareManifest(reviewed, changed)).toContain(
+      'runner bootstrap hash mismatch'
+    )
   })
 })

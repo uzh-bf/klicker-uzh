@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { CODE_RUNTIME_MANIFEST, RUNNER_DOCUMENTS } from './manifest'
 
 export const CODE_RUNTIME_PATH_PREFIX = '/code-runtimes/'
 
@@ -22,13 +23,43 @@ const RUNTIME_FILE_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
 }
 
-export function codeRuntimeProxyResponse(): NextResponse {
+// The runner documents run untrusted learner code. The CSP sandbox keeps the
+// document opaque even when its URL is opened directly, and no directive
+// allows a network scheme. Only webR evaluates JavaScript strings, so only
+// the R runner gets 'unsafe-eval'. There is no frame-ancestors directive:
+// it checks every ancestor, so it would block the runner whenever an LMS on
+// another origin embeds Chat, and the opaque runner has nothing to protect.
+function runnerPolicy(allowEval: boolean): string {
+  return [
+    "default-src 'none'",
+    `script-src 'sha256-${CODE_RUNTIME_MANIFEST.runnerScriptSha256}' blob: 'wasm-unsafe-eval'${allowEval ? " 'unsafe-eval'" : ''}`,
+    'worker-src blob:',
+    'connect-src blob:',
+    "base-uri 'none'",
+    "form-action 'none'",
+    "frame-src 'none'",
+    'sandbox allow-scripts',
+  ].join('; ')
+}
+
+const RUNNER_POLICIES = new Map([
+  [RUNNER_DOCUMENTS['python-core'], runnerPolicy(false)],
+  [RUNNER_DOCUMENTS['r-base'], runnerPolicy(true)],
+])
+
+export function codeRuntimeProxyResponse(pathname: string): NextResponse {
   if (!isCodeExecutionEnabled()) {
     return new NextResponse(null, { status: 404 })
   }
   const response = NextResponse.next()
   for (const [name, value] of Object.entries(RUNTIME_FILE_HEADERS)) {
     response.headers.set(name, value)
+  }
+  const runnerPolicyForPath = RUNNER_POLICIES.get(
+    pathname.slice(pathname.lastIndexOf('/') + 1)
+  )
+  if (runnerPolicyForPath) {
+    response.headers.set('Content-Security-Policy', runnerPolicyForPath)
   }
   return response
 }

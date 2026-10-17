@@ -31,6 +31,10 @@ export const MANIFEST_PATH = join(
   'src/lib/code-runner/runtime-manifest.json'
 )
 export const OUTPUT_ROOT = join(APP_DIR, 'public/code-runtimes')
+const RUNNER_SOURCES = join(APP_DIR, 'src/lib/code-runner/runner')
+// Both runner documents carry the same inline bootstrap; the proxy gives
+// each its own CSP, because only the R runtime needs 'unsafe-eval'.
+const RUNNER_DOCUMENTS = ['runner-python.html', 'runner-r.html']
 
 const CONTENT_TYPES = {
   '.js': 'text/javascript',
@@ -59,7 +63,10 @@ function walk(dir) {
 export function collectSources() {
   const pyodide = packageDir('pyodide')
   const webrDist = join(packageDir('webr'), 'dist')
-  const python = {}
+  const python = {
+    'runner/shim.js': join(RUNNER_SOURCES, 'shim.js'),
+    'runner/py-worker.js': join(RUNNER_SOURCES, 'py-worker.js'),
+  }
   for (const name of [
     'pyodide.js',
     'pyodide.asm.mjs',
@@ -69,7 +76,7 @@ export function collectSources() {
   ]) {
     python[`pyodide/${name}`] = join(pyodide, name)
   }
-  const r = {}
+  const r = { 'runner/shim.js': join(RUNNER_SOURCES, 'shim.js') }
   for (const name of [
     'webr.js',
     'webr-worker.js',
@@ -84,6 +91,7 @@ export function collectSources() {
     r[`webr/${relative(webrDist, path)}`] = path
   }
   return {
+    runnerScript: readFileSync(join(RUNNER_SOURCES, 'bootstrap.js'), 'utf8'),
     profiles: { 'python-core': python, 'r-base': r },
     notices: {
       'LICENSE-webR.md': join(packageDir('webr'), 'LICENSE.md'),
@@ -91,8 +99,12 @@ export function collectSources() {
   }
 }
 
-export function sha256(buffer) {
-  return createHash('sha256').update(buffer).digest('hex')
+export function sha256(buffer, encoding = 'hex') {
+  return createHash('sha256').update(buffer).digest(encoding)
+}
+
+export function runnerDocument(runnerScript) {
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Code runner</title></head><body><script>${runnerScript}</script></body></html>\n`
 }
 
 export function describeFiles(profiles, readFile = readFileSync) {
@@ -110,7 +122,11 @@ export function describeFiles(profiles, readFile = readFileSync) {
   return files
 }
 
-export function buildManifest(profiles, readFile = readFileSync) {
+export function buildManifest(
+  profiles,
+  readFile = readFileSync,
+  runnerScript = ''
+) {
   const files = describeFiles(profiles, readFile)
   const sortedFiles = Object.fromEntries(
     Object.keys(files)
@@ -123,10 +139,21 @@ export function buildManifest(profiles, readFile = readFileSync) {
       Object.keys(sources).sort(),
     ])
   )
+  // The proxy pins the inline bootstrap by this hash in the runner CSP.
+  const runnerScriptSha256 = sha256(runnerScript, 'base64')
   const version = sha256(
-    JSON.stringify({ files: sortedFiles, profiles: profileIds })
+    JSON.stringify({
+      files: sortedFiles,
+      profiles: profileIds,
+      runnerScriptSha256,
+    })
   ).slice(0, 16)
-  return { version, profiles: profileIds, files: sortedFiles }
+  return {
+    version,
+    runnerScriptSha256,
+    profiles: profileIds,
+    files: sortedFiles,
+  }
 }
 
 // Returns a list of human-readable differences; empty means the sources match
@@ -137,6 +164,9 @@ export function compareManifest(expected, actual) {
     problems.push(
       `version ${actual.version} does not match manifest ${expected.version}`
     )
+  }
+  if (expected.runnerScriptSha256 !== actual.runnerScriptSha256) {
+    problems.push('runner bootstrap hash mismatch')
   }
   for (const id of Object.keys(expected.files)) {
     const want = expected.files[id]
@@ -173,8 +203,8 @@ at https://mozilla.org/MPL/2.0/.
 }
 
 export function generate({ writeManifest = false } = {}) {
-  const { profiles, notices } = collectSources()
-  const actual = buildManifest(profiles)
+  const { profiles, notices, runnerScript } = collectSources()
+  const actual = buildManifest(profiles, readFileSync, runnerScript)
   if (writeManifest) {
     writeFileSync(MANIFEST_PATH, `${JSON.stringify(actual, null, 2)}\n`)
   }
@@ -196,6 +226,9 @@ export function generate({ writeManifest = false } = {}) {
   }
   for (const [name, path] of Object.entries(notices)) {
     copyFileSync(path, join(target, name))
+  }
+  for (const name of RUNNER_DOCUMENTS) {
+    writeFileSync(join(target, name), runnerDocument(runnerScript))
   }
   writeFileSync(join(target, 'NOTICE.md'), sourceNotice(actual.version))
   return actual

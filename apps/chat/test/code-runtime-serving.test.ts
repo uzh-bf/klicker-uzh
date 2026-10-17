@@ -1,5 +1,9 @@
 import { NextRequest } from 'next/server'
 import { afterEach, describe, expect, test, vi } from 'vitest'
+import {
+  CODE_RUNTIME_BASE_PATH,
+  CODE_RUNTIME_MANIFEST,
+} from '@/src/lib/code-runner/manifest'
 import { proxy } from '@/src/proxy'
 
 const RUNTIME_URL =
@@ -37,5 +41,30 @@ describe('browser code runtime serving', () => {
     )
 
     expect(response.headers.get('location')).toContain('/noLogin')
+  })
+
+  test('gives each runner document an opaque, network-less policy', async () => {
+    vi.stubEnv('CHAT_CODE_EXECUTION_ENABLED', 'true')
+    const policy = async (document: string) =>
+      (
+        await proxy(
+          new NextRequest(
+            `https://chat.test${CODE_RUNTIME_BASE_PATH}${document}`
+          )
+        )
+      ).headers.get('content-security-policy') ?? ''
+
+    const python = await policy('runner-python.html')
+    const r = await policy('runner-r.html')
+    for (const csp of [python, r]) {
+      expect(csp).toContain('sandbox allow-scripts')
+      expect(csp).toContain("default-src 'none'")
+      expect(csp).toContain('connect-src blob:')
+      expect(csp).toContain(
+        `'sha256-${CODE_RUNTIME_MANIFEST.runnerScriptSha256}'`
+      )
+    }
+    expect(python).not.toContain("'unsafe-eval'")
+    expect(r).toContain("'unsafe-eval'")
   })
 })
