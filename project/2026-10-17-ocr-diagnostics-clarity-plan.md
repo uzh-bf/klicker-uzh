@@ -213,7 +213,9 @@ retry behavior is authorized by the diagnostics proposal.
 
 ## Planning review and progress
 
-- Status: slices 1 and 2 implemented; active slice 3, reviews and draft delivery.
+- Status: implementation and required source reviews complete; draft delivered.
+  Hosted CI and forge feedback are tracked on the linked PR to the terminal
+  condition above, without changing review readiness or merge authority.
 - Planner: native `planner`, GPT-6 Astra medium; approved in round 1 with no
   blocking findings. The local review transcript records the source checks.
 - Accepted clarifications: distinguish accepted-response timing from usage;
@@ -234,8 +236,12 @@ retry behavior is authorized by the diagnostics proposal.
   Source and tests extend one adapter/reporting capability on one branch.
   The substantive diff is 475 changed lines excluding this plan; one independently
   functional, reviewable, tested, and reversible diagnostics package.
-- Runtime and CI: no application runtime or provider test started. Draft CI and
-  integrated review are pending. The branch is pushed and
-  [PR #6579](https://github.com/uzh-bf/klicker-uzh/pull/6579) remains draft.
-- Next action: integrated review plus hosted CI/actionable feedback. A native goal tracks the
-  approved terminal condition; no explicit token budget was requested.
+- Integrated review: passed the complete committed package with no findings;
+  subsequent progress-only edits preserve that result. Verification and review
+  receipts are summarized in the draft PR description.
+- Runtime and CI: no application runtime or provider test started. The branch is
+  pushed; authoritative hosted CI and actionable-feedback receipts remain on
+  [draft PR #6579](https://github.com/uzh-bf/klicker-uzh/pull/6579).
+- A native goal owns CI/feedback follow-through to the approved terminal;
+  no explicit token budget was requested. Post-merge live workflow proof requires
+  separate authority.
