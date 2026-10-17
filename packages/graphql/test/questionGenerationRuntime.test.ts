@@ -8,6 +8,7 @@ import {
   type QuestionGenerationRuntimeDependencies,
   type QuestionWorkflowReviewEvent,
   type QuestionWorkflowStartPayload,
+  type QuestionWorkflowStartPayloadV4,
 } from '../src/services/questionGenerationRuntime.js'
 
 const runtimeEnvironment = {
@@ -128,6 +129,20 @@ function startPayload(blueprintSha256: string): QuestionWorkflowStartPayload {
       blob_prefix: 'question-builds',
     },
     language: 'de',
+  }
+}
+
+function startPayloadV4(
+  blueprintSha256: string
+): QuestionWorkflowStartPayloadV4 {
+  return {
+    ...startPayload(blueprintSha256),
+    schema_version: 4,
+    question_library_snapshot: {
+      container_name: 'question-inputs',
+      blob_name: 'library-snapshots/input.json',
+      sha256: 'd'.repeat(64),
+    },
   }
 }
 
@@ -296,10 +311,20 @@ describe('question-generation runtime', () => {
   })
 
   it('rejects oversized artifacts before downloading their content', async () => {
-    const harness = createRuntimeHarness(
-      runtimeEnvironment,
-      Buffer.alloc(10 * 1024 * 1024 + 1)
-    )
+    const bytes = Buffer.alloc(10 * 1024 * 1024 + 1)
+    const harness = createRuntimeHarness(runtimeEnvironment, bytes)
+
+    await expect(
+      harness.runtime.uploadCreateOnly(
+        {
+          containerName: 'question-inputs',
+          blobName: 'blueprints/oversized.json',
+          sha256: createHash('sha256').update(bytes).digest('hex'),
+        },
+        bytes
+      )
+    ).rejects.toMatchObject({ code: 'ARTIFACT_INVALID', retryable: false })
+    expect(harness.uploadData).not.toHaveBeenCalled()
 
     await expect(
       harness.runtime.downloadImmutable(
@@ -506,6 +531,46 @@ describe('question-generation runtime', () => {
       limit: 10,
       since: new Date(recoveryAnchor.getTime() - 5 * 60 * 1000),
     })
+  })
+
+  it('accepts v4 starts with a valid library snapshot reference', async () => {
+    const harness = createRuntimeHarness()
+    const payload = startPayloadV4('a'.repeat(64))
+    const scope = `question-build:${payload.question_build_id}`
+    const beforeProviderDispatch = vi.fn(async () => undefined)
+
+    await expect(
+      harness.runtime.start(
+        payload,
+        scope,
+        '223e4567-e89b-42d3-a456-426614174000',
+        beforeProviderDispatch
+      )
+    ).resolves.toEqual({ eventId: 'event-1' })
+    expect(beforeProviderDispatch).toHaveBeenCalledOnce()
+    expect(harness.push).toHaveBeenCalledWith(
+      'course-question-blueprint-generation:requested',
+      payload,
+      expect.any(Object)
+    )
+  })
+
+  it('rejects v4 starts whose library snapshot is outside input storage', async () => {
+    const harness = createRuntimeHarness()
+    const payload = startPayloadV4('a'.repeat(64))
+    payload.question_library_snapshot.container_name = 'question-results'
+    const beforeProviderDispatch = vi.fn(async () => undefined)
+
+    await expect(
+      harness.runtime.start(
+        payload,
+        `question-build:${payload.question_build_id}`,
+        '223e4567-e89b-42d3-a456-426614174000',
+        beforeProviderDispatch
+      )
+    ).rejects.toMatchObject({ code: 'ARTIFACT_INVALID' })
+    expect(beforeProviderDispatch).not.toHaveBeenCalled()
+    expect(harness.push).not.toHaveBeenCalled()
   })
 
   it('rejects a graph manifest stored under the configured output prefix', async () => {

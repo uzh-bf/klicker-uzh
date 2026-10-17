@@ -385,6 +385,8 @@ model ElementGenerationBuild {
   /// [PrismaElementGenerationArtifactRef]
   blueprintArtifact Json?
   /// [PrismaElementGenerationArtifactRef]
+  librarySnapshotArtifact Json?
+  /// [PrismaElementGenerationArtifactRef]
   designArtifact Json?
   /// [PrismaElementGenerationArtifactRef]
   planArtifact Json?

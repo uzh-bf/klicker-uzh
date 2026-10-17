@@ -4,6 +4,68 @@ export type QuestionGenerationArtifactRef = {
   sha256: string
 }
 
+export type QuestionLibrarySnapshotChoice = {
+  text: string
+  correct: boolean
+}
+
+export type QuestionLibrarySnapshotQuestion = {
+  element_id: number
+  version: number
+  element_type: QuestionGenerationItemType
+  name: string
+  stem: string
+  choices: QuestionLibrarySnapshotChoice[]
+}
+
+export type QuestionLibrarySnapshot = {
+  // Frozen cross-repository wire contract consumed by kg-content-generation.
+  // Keep its version and snake_case field names stable.
+  schema_version: 1
+  reference_count: number
+  truncated: boolean
+  questions: QuestionLibrarySnapshotQuestion[]
+}
+
+export type QuestionPoolSnapshotQuestion = {
+  source: { namespace: string; item_id: string; revision: string }
+  module_id?: string
+  selection_rule?: 'pick_true' | 'pick_false' | ''
+  calibration?: {
+    difficulty_scale: 1 | 2 | 3 | 4 | 5
+    difficulty_scale_source?: 'labelled' | 'model' | 'observed'
+    observed_difficulty?: number | null
+    observed_discrimination?: number | null
+    observed_sample_size?: number | null
+    observed_setting?:
+      | 'exam'
+      | 'live_quiz'
+      | 'practice_quiz'
+      | 'microlearning'
+      | null
+    observed_scoring_basis?: 'correct' | 'full_credit' | 'partial_credit' | null
+    observed_option_shares?: Record<string, number>
+    observed_statistics_note?: string
+  } | null
+  item_format: QuestionGenerationItemType
+  name?: string
+  stem: string
+  context?: string
+  explanation?: string
+  choices: Array<{ text: string; correct: boolean | null; feedback?: string }>
+  allowed_uses: Array<
+    'comparison' | 'example' | 'calibration' | 'reuse' | 'update'
+  >
+}
+
+export type QuestionPoolSnapshot = {
+  schema_version: 2
+  scope: string
+  reference_count: number
+  truncated: boolean
+  questions: QuestionPoolSnapshotQuestion[]
+}
+
 export type KBGraphSourceSnapshotItem = {
   resourceId: string
   title: string
