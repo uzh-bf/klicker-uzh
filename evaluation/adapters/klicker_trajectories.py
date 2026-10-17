@@ -82,15 +82,18 @@ def _text(value: object) -> bool:
     return isinstance(value, str) and bool(value.strip())
 
 
-def _uuid(value: object) -> None:
+def _uuid(value: object) -> UUID:
+    _require(isinstance(value, str), "Invalid message or thread UUID")
     try:
-        UUID(value)
+        return UUID(value)
     except (ValueError, TypeError, AttributeError) as exc:
         raise ValueError("Invalid message or thread UUID") from exc
 
 
 def _number(value: object) -> bool:
-    return type(value) in (int, float) and math.isfinite(value) and value >= 0
+    return (
+        type(value) in (int, float) and (type(value) is int or math.isfinite(value)) and value >= 0
+    )
 
 
 def _hash(value: object) -> bool:
@@ -302,18 +305,20 @@ def import_trajectories(
             receipt["userText"] == learner_text and _text(receipt["assistantText"]),
             "Corpus learner text mismatch or empty answer",
         )
-        for field in ("threadId", "userMessageId", "assistantMessageId"):
-            _uuid(receipt[field])
+        identifiers = {
+            field: _uuid(receipt[field])
+            for field in ("threadId", "userMessageId", "assistantMessageId")
+        }
         for field in ("userMessageId", "assistantMessageId"):
-            _require(receipt[field] not in message_ids, "Duplicate message UUID")
-            message_ids.add(receipt[field])
-        thread = receipt["threadId"]
+            _require(identifiers[field] not in message_ids, "Duplicate message UUID")
+            message_ids.add(identifiers[field])
+        thread = identifiers["threadId"]
         _require(
             thread not in threads or threads[thread] == key, "Thread reused across trajectories"
         )
         threads[thread] = key
         if captured:
-            _require(thread == captured[0]["threadId"], "Trajectory thread changed")
+            _require(thread == _uuid(captured[0]["threadId"]), "Trajectory thread changed")
         parent = captured[-1]["assistantMessageId"] if captured else None
         _require(receipt["parentId"] == parent, "Parent ancestry mismatch")
         _require(

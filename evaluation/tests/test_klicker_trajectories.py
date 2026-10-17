@@ -661,6 +661,41 @@ def test_non_uuid_identifiers_rejected(tmp_path, field):
         import_trajectories(receipts_path, corpus_path)
 
 
+@pytest.mark.parametrize("field", ["userMessageId", "assistantMessageId", "threadId"])
+def test_uuid_alias_cannot_reuse_identity(tmp_path, field):
+    first = _case("case-first", turns=[{"message": "First question?"}])
+    second = _case("case-second", turns=[{"message": "Second question?"}])
+    _, first_receipts = _capture(first)
+    _, second_receipts = _capture(second, start=100)
+    second_receipts[0][field] = first_receipts[0][field].replace("-", "")
+    summary = _summary(cases=2, repeats=1, completed=2, submitted=2)
+    receipts_path = _write_jsonl(
+        tmp_path / "receipts.jsonl", [*first_receipts, *second_receipts, summary]
+    )
+    corpus_path = _write_corpus(tmp_path / "corpus.json", [first, second])
+
+    with pytest.raises(ValueError):
+        import_trajectories(receipts_path, corpus_path)
+
+
+def test_uuid_spelling_and_large_integer_accounting_preserved(tmp_path):
+    case = _case("case-values", turns=[{"message": "Question?"}])
+    _, receipts = _capture(case)
+    receipt = receipts[0]
+    for field in ("threadId", "userMessageId", "assistantMessageId"):
+        receipt[field] = receipt[field].replace("-", "")
+    receipt["latencyMs"] = 10**400
+    receipt["sources"][0]["page"] = 10**400
+    summary = _summary(cases=1, repeats=1, completed=1, submitted=1)
+    receipts_path = _write_jsonl(tmp_path / "receipts.jsonl", [receipt, summary])
+    corpus_path = _write_corpus(tmp_path / "corpus.json", [case])
+
+    result = import_trajectories(receipts_path, corpus_path)["results"][0]
+
+    assert result["thread_id"] == receipt["threadId"]
+    assert result["turns"][1]["metadata"] == receipt
+
+
 @pytest.mark.parametrize(
     ("index", "changes"),
     [
