@@ -1336,6 +1336,7 @@ export async function deactivateLiveQuizBlock(
       redisAssessmentExec: ctx.redisAssessmentExec,
       updateResults: true,
       updateLeaderboards: true, // always update the leaderboard when a block is closed
+      closeBlock: true,
     })
 
     // if the update was not successful, return false
@@ -3307,6 +3308,8 @@ export const handleStandardLiveQuizBlockClosureAggregation: HatchetHandlers['han
       // only update the leaderboard for the quiz, if this is the last block of the quiz
       // -> otherwise leaderboard updates at the block closures of other blocks might interfere with this update
       updateLeaderboards: isLastBlock,
+      // the block was closed already, only re-aggregate its results
+      closeBlock: false,
     })
 
     // remove all cache entries related to this block only (or the entire live quiz, if this was the last block)
@@ -3408,6 +3411,7 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
         redisAssessmentExec: globalCtx.redisAssessmentExec,
         updateResults: false,
         updateLeaderboards: true,
+        closeBlock: false,
       })
     }
 
