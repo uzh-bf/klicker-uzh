@@ -23,6 +23,15 @@ ordinary task-branch pushes, exact-head CI and actionable-feedback handling.
 Actual host configuration, further runner activation, upgrades, reboots,
 cleanup, settings changes, merge and readiness remain separately authorized.
 
+The subsequent user instruction, "review and simplify, then merge, deploy, and
+verify", authorizes readiness, squash merge after required checks and reviews,
+and application of this recovery policy to the existing runner pool. Pause new
+pool dispatch for the idle maintenance window and restore the prior routing
+value afterwards. Preserve held services and verify policy readback and later
+jobs; additional capacity, package upgrades and reboots remain outside this
+rollout. This extends delivery authority without reopening the completed
+source-only native goal.
+
 No container cap or higher concurrency is selected here. A shard sample cannot
 qualify a cold build, and a runner-service limit does not constrain separate
 Docker scopes. The bootstrap archive pin and integrity checks remain unchanged;
@@ -164,7 +173,7 @@ approved restoration of the prior unit policy; preserve runner data.
 
 - Recovery, Telemetry and Finish source slices are implemented.
   The plan was the first commit (`dd061ac149`), before source implementation.
-  The package changes eight paths, with 519 added/deleted lines
+  The package changes eight paths, with 522 added/deleted lines
   excluding this plan; it adds no dependency, generated file or configuration owner.
 - Focused verification passes: both reconciliation shell suites, syntax,
   ShellCheck, eight sampler tests in a network-isolated Node 24.21.0 container,
@@ -188,13 +197,20 @@ approved restoration of the prior unit policy; preserve runner data.
   explicit error guard now applies there too; focused shell checks and a
   synthetic before/after probe pass. No new permanent test is needed for this
   direct propagation guard.
-- Delivery evidence is maintained in the [draft PR](https://github.com/uzh-bf/klicker-uzh/pull/6581)
+- Delivery evidence is maintained in the [PR](https://github.com/uzh-bf/klicker-uzh/pull/6581)
   and its [verification note](https://github.com/uzh-bf/klicker-uzh/pull/6581#issuecomment-6235423117).
   Read current-head CI and review state there rather than treating historical
-  results as current. Final AI review requires a ready PR and is deferred to
-  that separately authorized gate. No host configuration has been applied.
+  results as current. The source-only goal reached its verified-draft terminal
+  condition before the later merge/deployment instruction. No host configuration
+  has been applied yet.
+- The PR is now ready under the later merge/deployment instruction. The first
+  final AI review passed. A later review identified inherited mounts rooted
+  above the cgroup namespace; the existing unavailable-counter fixture
+  reproduced ancestor-memory attribution. Rejecting parent components in the
+  mount root corrects it with one guard. Current-head CI and final review must
+  finish before merge and the idle, state-preserving rollout.
 
-The main session owns the published-head watch under `rs-babysit-pr`. Complete
-the native goal only after eligible CI, actionable feedback and a quiet settle
-prove the verified-draft terminal condition. Merge, readiness, live recovery and
-cold-build capacity qualification remain separate gates.
+The main session owns the published-head watch under `rs-babysit-pr`. Continue
+the authorized merge and rollout after current-head CI, actionable feedback and
+final review settle. Record private live readback outside repository artifacts.
+Cold-build capacity qualification remains a separate decision.

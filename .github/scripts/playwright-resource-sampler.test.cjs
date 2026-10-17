@@ -94,6 +94,8 @@ test('does not fall back to parent counters for unsupported or unsafe membership
     ['2:memory:/jobs/job-a', '/'],
     ['0::/../jobs/job-a', '/'],
     ['0::/elsewhere', '/jobs'],
+    ['0::/', '/..'],
+    ['0::/', '/../..'],
   ]) {
     const files = {
       '/proc/self/cgroup': `${membership}\n`,

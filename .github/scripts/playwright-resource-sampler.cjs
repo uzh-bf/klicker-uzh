@@ -34,6 +34,7 @@ function cgroupDirectory(read) {
     const root = decodeMountPath(fields[3])
     const directory = decodeMountPath(fields[4])
     if (!root.startsWith('/') || !directory.startsWith('/')) continue
+    if (root.split('/').includes('..')) continue
     // A private cgroup namespace reports its own root as "/".
     if (group === '/' || group === root) return directory
     const prefix = root === '/' ? '/' : `${root}/`
