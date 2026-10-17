@@ -1207,7 +1207,8 @@ async function startAdapter(options = {}) {
       sendAdapterError(res, new AdapterError('internal_error', 'internal'))
     })
     pendingRequests.add(request)
-    request.then(() => pendingRequests.delete(request))
+    const removeRequest = () => pendingRequests.delete(request)
+    request.then(removeRequest, removeRequest)
   })
   server.on('connection', (socket) => {
     sockets.add(socket)
@@ -1677,7 +1678,7 @@ function commandSummary(args) {
       .trim()
       .split('\n')
       .filter(Boolean)
-      .map(JSON.parse)) {
+      .map((line) => JSON.parse(line))) {
       if (row?.stage !== undefined && row.stage !== 'adapter') continue
       if (row?.schema_version !== 1 || !row?.failures) {
         failureStatus = 'unavailable'
@@ -1926,15 +1927,23 @@ function configureAttempt(configPath, url) {
   let original
   let config
   try {
-    const info = fs.lstatSync(configPath)
-    if (
-      !info.isFile() ||
-      (info.mode & 0o777) !== 0o600 ||
-      info.size > 1024 * 1024
-    ) {
-      throw new Error('invalid file')
+    const descriptor = fs.openSync(
+      configPath,
+      fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW
+    )
+    try {
+      const info = fs.fstatSync(descriptor)
+      if (
+        !info.isFile() ||
+        (info.mode & 0o777) !== 0o600 ||
+        info.size > 1024 * 1024
+      ) {
+        throw new Error('invalid file')
+      }
+      original = fs.readFileSync(descriptor)
+    } finally {
+      fs.closeSync(descriptor)
     }
-    original = fs.readFileSync(configPath)
     config = JSON.parse(original.toString('utf8'))
     if (!isPlainObject(config) || !isPlainObject(config.llm)) {
       throw new Error('invalid config')

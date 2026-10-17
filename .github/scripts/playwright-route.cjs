@@ -120,7 +120,7 @@ function choosePlaywrightRoute(input) {
       schemaVersion: ROUTE_SCHEMA_VERSION,
       route: 'hosted',
       selectorPrState: 'deferred',
-      reasonCodes: [...new Set(reasons)].sort(),
+      reasonCodes: [...new Set(reasons)].sort((a, b) => a.localeCompare(b)),
     }
   }
   const smartDraftApplies =

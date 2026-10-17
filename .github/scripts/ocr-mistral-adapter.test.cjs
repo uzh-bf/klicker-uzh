@@ -7,7 +7,7 @@ const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
 const vm = require('node:vm')
-const { spawn } = require('node:child_process')
+const { spawn, spawnSync } = require('node:child_process')
 const { EventEmitter } = require('node:events')
 
 const {
@@ -425,7 +425,7 @@ test('failure summary emits only complete allowlisted counters without changing 
     })
     await adapter.close()
     const receipt = adapter.diagnostics()
-    receipt.failures['::error::private-key'] = 99
+    receipt.failures['::error::dummy-private-key'] = 99
     for (const [value, status] of [
       [receipt, 'complete'],
       [{ ...receipt, failures: { upstream_throttled: 1 } }, 'unavailable'],
@@ -1091,7 +1091,10 @@ test('loopback enforces high or max reasoning before calling upstream', async ()
   const fetchImpl = upstream(() =>
     jsonResponse(200, completion({ role: 'assistant', content: 'done' }))
   )
-  const adapter = await startAdapter({ apiKey: 'sk-synthetic', fetchImpl })
+  const adapter = await startAdapter({
+    apiKey: 'sk-dummy-synthetic',
+    fetchImpl,
+  })
   const body = {
     model: MISTRAL_MODEL,
     messages: [{ role: 'user', content: 'synthetic review' }],
@@ -1126,7 +1129,10 @@ test('cache affinity is forwarded while malformed keys never reach upstream', as
   const fetchImpl = upstream(() =>
     jsonResponse(200, completion({ role: 'assistant', content: 'answer' }))
   )
-  const adapter = await startAdapter({ apiKey: 'synthetic-key', fetchImpl })
+  const adapter = await startAdapter({
+    apiKey: 'dummy-synthetic-key',
+    fetchImpl,
+  })
   try {
     for (const key of ['session-main-abc123', 'k'.repeat(64)]) {
       const response = await postJson(adapter, {
@@ -1156,7 +1162,7 @@ test('cache affinity is forwarded while malformed keys never reach upstream', as
     assert.equal(fetchImpl.calls.length, 2)
     assert.doesNotMatch(
       JSON.stringify(adapter.diagnostics()),
-      /session-main-abc123|synthetic-key/
+      /session-main-abc123|dummy-synthetic-key/
     )
   } finally {
     await adapter.close()
@@ -1174,7 +1180,10 @@ test('partial usage cannot produce an apparently complete cost estimate', async 
       }
       return jsonResponse(200, payload)
     })
-    const adapter = await startAdapter({ apiKey: 'synthetic-key', fetchImpl })
+    const adapter = await startAdapter({
+      apiKey: 'dummy-synthetic-key',
+      fetchImpl,
+    })
     try {
       const response = await postJson(adapter, {
         messages: [{ role: 'user', content: 'synthetic' }],
@@ -1208,7 +1217,7 @@ test('OCR receives billable usage while diagnostics keep raw cache usage', async
     }
     return jsonResponse(200, payload)
   })
-  const adapter = await startAdapter({ apiKey: 'private-key', fetchImpl })
+  const adapter = await startAdapter({ apiKey: 'dummy-private-key', fetchImpl })
   try {
     for (const cached of reports) {
       const response = await postJson(adapter, {
@@ -1335,7 +1344,10 @@ test('one length-limited tool-free turn can continue natively; a repeated failur
           : completion(native, 'length')
       )
     )
-    const adapter = await startAdapter({ apiKey: 'synthetic-key', fetchImpl })
+    const adapter = await startAdapter({
+      apiKey: 'dummy-synthetic-key',
+      fetchImpl,
+    })
     const request = {
       messages: [{ role: 'user', content: 'synthetic input' }],
       tools: [{ type: 'function', function: { name: 'task_done' } }],
@@ -1396,7 +1408,7 @@ test('truncated completion is refused without retaining replay history or hiding
   const fetchImpl = upstream((_record, callNumber) =>
     jsonResponse(200, completion(message, callNumber === 1 ? 'length' : 'stop'))
   )
-  const adapter = await startAdapter({ apiKey: 'private-key', fetchImpl })
+  const adapter = await startAdapter({ apiKey: 'dummy-private-key', fetchImpl })
   const body = {
     messages: [{ role: 'user', content: 'private-prompt' }],
     prompt_cache_key: 'private-conversation',
@@ -1458,7 +1470,7 @@ test('diagnostics reconcile request types and opaque conversation counters', asy
     }
     return jsonResponse(200, payload)
   })
-  const adapter = await startAdapter({ apiKey: 'private-key', fetchImpl })
+  const adapter = await startAdapter({ apiKey: 'dummy-private-key', fetchImpl })
   try {
     for (const [kind, key] of [
       ['main', 'private-a'],
@@ -1529,7 +1541,10 @@ test('conversation diagnostics have a fixed bound without losing aggregate usage
   const fetchImpl = upstream(() =>
     jsonResponse(200, completion({ role: 'assistant', content: 'synthetic' }))
   )
-  const adapter = await startAdapter({ apiKey: 'synthetic-key', fetchImpl })
+  const adapter = await startAdapter({
+    apiKey: 'dummy-synthetic-key',
+    fetchImpl,
+  })
   try {
     for (let index = 0; index < 257; index += 1) {
       assert.equal(
@@ -1568,7 +1583,7 @@ test('close drains accounting and attempts diagnostics once before its closure r
     })
   }
   const adapter = await startAdapter({
-    apiKey: 'private-key',
+    apiKey: 'dummy-private-key',
     fetchImpl,
     onClose: (snapshot) => snapshots.push(snapshot),
   })
@@ -1596,7 +1611,7 @@ test('close drains accounting and attempts diagnostics once before its closure r
 test('lifetime expiry uses the same single diagnostics callback', async () => {
   const snapshots = []
   const adapter = await startAdapter({
-    apiKey: 'synthetic-key',
+    apiKey: 'dummy-synthetic-key',
     maxLifetimeMs: 20,
     onClose: (snapshot) => snapshots.push(snapshot),
   })
@@ -1614,7 +1629,7 @@ test('close bounds an uncooperative request and marks its accounting incomplete'
   })
   const snapshots = []
   const adapter = await startAdapter({
-    apiKey: 'synthetic-key',
+    apiKey: 'dummy-synthetic-key',
     fetchImpl: () =>
       new Promise((resolve) => {
         release = () =>
@@ -1749,7 +1764,10 @@ test('request conversion and native replay work over the loopback listener', asy
         : completion({ role: 'assistant', content: 'done' })
     )
   })
-  const adapter = await startAdapter({ apiKey: 'sk-synthetic', fetchImpl })
+  const adapter = await startAdapter({
+    apiKey: 'sk-dummy-synthetic',
+    fetchImpl,
+  })
   try {
     const first = await postJson(adapter, {
       model: MISTRAL_MODEL,
@@ -1782,7 +1800,10 @@ test('request conversion and native replay work over the loopback listener', asy
     ]) {
       assert.equal(forwarded.body[dropped], undefined)
     }
-    assert.equal(forwarded.init.headers.authorization, 'Bearer sk-synthetic')
+    assert.equal(
+      forwarded.init.headers.authorization,
+      'Bearer sk-dummy-synthetic'
+    )
     assert.equal(forwarded.init.redirect, 'error')
     assert.notEqual(
       forwarded.init.headers.authorization,
@@ -2063,7 +2084,7 @@ test('caller headers are ignored and never forwarded upstream', async () => {
   const fetchImpl = upstream(() =>
     jsonResponse(200, completion({ role: 'assistant', content: 'ok' }))
   )
-  const adapter = await startAdapter({ apiKey: 'sk-upstream', fetchImpl })
+  const adapter = await startAdapter({ apiKey: 'sk-dummy-upstream', fetchImpl })
   try {
     const response = await fetch(`${adapter.url}${CHAT_PATH}`, {
       method: 'POST',
@@ -2082,7 +2103,7 @@ test('caller headers are ignored and never forwarded upstream', async () => {
     assert.equal(fetchImpl.calls[0].init.headers['x-forward-me'], undefined)
     assert.equal(
       fetchImpl.calls[0].init.headers.authorization,
-      'Bearer sk-upstream'
+      'Bearer sk-dummy-upstream'
     )
   } finally {
     await adapter.close()
@@ -2090,7 +2111,7 @@ test('caller headers are ignored and never forwarded upstream', async () => {
 })
 
 test('closing the adapter terminates a stalled request body', async () => {
-  const adapter = await startAdapter({ apiKey: 'synthetic-only' })
+  const adapter = await startAdapter({ apiKey: 'dummy-synthetic-only' })
   const url = new URL(adapter.url)
   const socket = require('node:net').connect(Number(url.port), url.hostname)
   socket.on('error', () => {})
@@ -2147,7 +2168,7 @@ test('a request body closed before completion rejects as invalid', async () => {
 })
 
 test('upstream failures are redacted to a fixed safe error', async () => {
-  const secret = 'sk-synthetic-upstream-secret'
+  const secret = 'sk-dummy-synthetic-upstream-secret'
   const fetchImpl = upstream(() =>
     jsonResponse(500, {
       error: { message: `boom ${secret}`, code: 'internal' },
@@ -2162,7 +2183,7 @@ test('upstream failures are redacted to a fixed safe error', async () => {
     })
     assert.equal(result.status, 502)
     assert.equal(result.json.error.code, 'upstream_error')
-    assert.doesNotMatch(result.text, /sk-synthetic-upstream-secret/)
+    assert.doesNotMatch(result.text, /sk-dummy-synthetic-upstream-secret/)
     assert.doesNotMatch(result.text, /boom/)
   } finally {
     await adapter.close()
@@ -2442,7 +2463,7 @@ test('default upstream transport completes delayed headers and streamed bodies a
     await delay(20)
     res.end(payload.subarray(payload.length / 2))
   })
-  const options = { apiKey: 'synthetic-key', timeoutMs: 1000 }
+  const options = { apiKey: 'dummy-synthetic-key', timeoutMs: 1000 }
   const body = {
     model: MISTRAL_MODEL,
     messages: [{ role: 'user', content: 'synthetic' }],
@@ -2508,7 +2529,7 @@ test('default upstream transport bounds stalled headers, bodies, size and redire
         expectedFailureCategory = 'malformed_response'
       }
       const options = {
-        apiKey: 'synthetic-key',
+        apiKey: 'dummy-synthetic-key',
         timeoutMs: deadline ? 100 : 1000,
         maxResponseBytes: 128,
       }
@@ -2555,7 +2576,7 @@ test('default upstream transport cancels an open response when the adapter clien
     arrived.resolve()
   })
   const adapter = await transport.startAdapter({
-    apiKey: 'synthetic-key',
+    apiKey: 'dummy-synthetic-key',
     timeoutMs: 1000,
   })
   t.after(() => adapter.close())
@@ -2590,7 +2611,7 @@ test('callMistral normalizes a direct canary request', async () => {
     jsonResponse(200, completion({ role: 'assistant', content: 'pong' }))
   )
   const result = await callMistral({
-    apiKey: 'sk-direct',
+    apiKey: 'sk-dummy-direct',
     fetchImpl,
     body: {
       model: MISTRAL_MODEL,
@@ -2607,7 +2628,7 @@ test('callMistral normalizes a direct canary request', async () => {
   assert.equal(fetchImpl.calls[0].body.reasoning, undefined)
   assert.equal(
     fetchImpl.calls[0].init.headers.authorization,
-    'Bearer sk-direct'
+    'Bearer sk-dummy-direct'
   )
 })
 
@@ -2617,7 +2638,7 @@ test('callMistral rejects a non-2xx upstream with a sanitized status', async () 
   await assert.rejects(
     () =>
       callMistral({
-        apiKey: 'sk-direct',
+        apiKey: 'sk-dummy-direct',
         fetchImpl,
         body: {
           model: MISTRAL_MODEL,
@@ -2641,7 +2662,7 @@ test('callMistral wraps raw fetch failures instead of leaking them', async () =>
   await assert.rejects(
     () =>
       callMistral({
-        apiKey: 'sk-direct',
+        apiKey: 'sk-dummy-direct',
         fetchImpl,
         body: {
           model: MISTRAL_MODEL,
@@ -2780,10 +2801,81 @@ test('run completes the existing OCR config per attempt and restores it on every
   }
 })
 
+test('run binds config validation to the opened file across pathname replacement', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-config-race-'))
+  const configPath = path.join(directory, 'config.json')
+  const preloadPath = path.join(directory, 'swap.cjs')
+  const original = JSON.stringify({ marker: 'original', llm: {} })
+  fs.writeFileSync(configPath, original, { mode: 0o600 })
+  fs.writeFileSync(
+    preloadPath,
+    `
+    const fs = require('node:fs')
+    const configPath = ${JSON.stringify(configPath)}
+    let descriptor
+    let swapped = false
+    const open = fs.openSync
+    fs.openSync = (file, ...args) => {
+      const opened = open(file, ...args)
+      if (file === configPath) descriptor = opened
+      return opened
+    }
+    const swap = () => {
+      if (swapped) return
+      swapped = true
+      fs.renameSync(configPath, configPath + '.checked')
+      fs.writeFileSync(configPath,
+        JSON.stringify({ marker: 'replacement', llm: {} }), { mode: 0o600 })
+    }
+    const lstat = fs.lstatSync
+    fs.lstatSync = (file, ...args) => {
+      const info = lstat(file, ...args)
+      if (file === configPath) swap()
+      return info
+    }
+    const fstat = fs.fstatSync
+    fs.fstatSync = (file, ...args) => {
+      const info = fstat(file, ...args)
+      if (file === descriptor) swap()
+      return info
+    }
+  `
+  )
+  try {
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--require',
+        preloadPath,
+        ADAPTER,
+        'run',
+        '--ocr-config',
+        configPath,
+        '--',
+        process.execPath,
+        '-e',
+        'process.stdout.write(JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")).marker)',
+        configPath,
+      ],
+      {
+        encoding: 'utf8',
+        env: { ...process.env, MISTRAL_API_KEY: 'dummy' },
+        timeout: 15000,
+      }
+    )
+    assert.equal(result.status, 0, result.stderr)
+    assert.equal(result.stdout, 'original')
+    assert.equal(fs.readFileSync(configPath, 'utf8'), original)
+    assert.equal(fs.readFileSync(configPath + '.checked', 'utf8'), original)
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('run strips the upstream key and injects the OCR environment', async () => {
   const result = await runCli(
     ['run', '--', process.execPath, '-e', RUN_SCRIPT],
-    { MISTRAL_API_KEY: 'sk-synthetic-run' }
+    { MISTRAL_API_KEY: 'sk-dummy-synthetic-run' }
   )
   assert.equal(result.code, 0)
   const seen = JSON.parse(result.stdout)
@@ -2915,7 +3007,7 @@ test('live progress reports a quiet successful process and spawn failure without
     const result = await runCli(
       ['run', '--', ...argv],
       {
-        MISTRAL_API_KEY: 'synthetic-key',
+        MISTRAL_API_KEY: 'dummy-synthetic-key',
         OCR_ADAPTER_PROGRESS_FD: '3',
       },
       { liveProgress: true }
@@ -3024,7 +3116,7 @@ test('run propagates the child exit code', async () => {
     const result = await runCli(
       ['run', '--', process.execPath, '-e', 'process.exit(7)'],
       {
-        MISTRAL_API_KEY: 'sk-synthetic-run',
+        MISTRAL_API_KEY: 'sk-dummy-synthetic-run',
         OCR_ADAPTER_DIAGNOSTICS_PATH: diagnosticsPath,
       }
     )
@@ -3032,11 +3124,11 @@ test('run propagates the child exit code', async () => {
     const diagnostics = JSON.parse(fs.readFileSync(diagnosticsPath, 'utf8'))
     assert.equal(diagnostics.schema_version, 1)
     assert.equal(diagnostics.upstream_attempts, 0)
-    assert.doesNotMatch(JSON.stringify(diagnostics), /sk-synthetic-run/)
+    assert.doesNotMatch(JSON.stringify(diagnostics), /sk-dummy-synthetic-run/)
     const missing = await runCli(
       ['run', '--', process.execPath, '-e', 'process.exit(0)'],
       {
-        MISTRAL_API_KEY: 'sk-synthetic-run',
+        MISTRAL_API_KEY: 'sk-dummy-synthetic-run',
         OCR_ADAPTER_DIAGNOSTICS_PATH: path.join(
           directory,
           'absent',
@@ -3046,7 +3138,7 @@ test('run propagates the child exit code', async () => {
     )
     assert.equal(missing.code, 0)
     assert.match(missing.stderr, /execution counters unavailable/)
-    assert.doesNotMatch(missing.stderr, /ENOENT|absent|sk-synthetic-run/)
+    assert.doesNotMatch(missing.stderr, /ENOENT|absent|sk-dummy-synthetic-run/)
   } finally {
     fs.rmSync(directory, { recursive: true, force: true })
   }
@@ -3059,7 +3151,7 @@ test('start/serve/stop own the listener lifecycle', async (t) => {
   const diagnosticsPath = path.join(tmp, 'diagnostics.jsonl')
   fs.writeFileSync(outputPath, '')
   const env = {
-    MISTRAL_API_KEY: 'sk-synthetic-start',
+    MISTRAL_API_KEY: 'sk-dummy-synthetic-start',
     RUNNER_TEMP: tmp,
     GITHUB_OUTPUT: outputPath,
     OCR_ADAPTER_DIAGNOSTICS_PATH: diagnosticsPath,
@@ -3073,7 +3165,7 @@ test('start/serve/stop own the listener lifecycle', async (t) => {
 
   const started = await runCli(['start', statePath], env)
   assert.equal(started.code, 0, started.stderr)
-  assert.doesNotMatch(started.stdout, /sk-synthetic-start/)
+  assert.doesNotMatch(started.stdout, /sk-dummy-synthetic-start/)
 
   const outputs = fs.readFileSync(outputPath, 'utf8')
   const urlMatch = /^url=(http:\/\/127\.0\.0\.1:\d+)$/m.exec(outputs)
@@ -3107,7 +3199,7 @@ test('start/serve/stop own the listener lifecycle', async (t) => {
   assert.equal(JSON.parse(diagnosticsText).unfinished_requests, 0)
   assert.equal(JSON.parse(diagnosticsText).failures.local_rejection, 1)
   assert.equal(fs.statSync(diagnosticsPath).mode & 0o777, 0o600)
-  assert.doesNotMatch(diagnosticsText, /sk-synthetic-start/)
+  assert.doesNotMatch(diagnosticsText, /sk-dummy-synthetic-start/)
   assert.equal((await runCli(['stop', statePath], env)).code, 0)
   assert.equal(fs.readFileSync(diagnosticsPath, 'utf8'), diagnosticsText)
 
@@ -3223,7 +3315,7 @@ test('run with live progress terminates its listener on SIGTERM', async () => {
     {
       env: {
         ...process.env,
-        MISTRAL_API_KEY: 'sk-synthetic-signal',
+        MISTRAL_API_KEY: 'sk-dummy-synthetic-signal',
         OCR_ADAPTER_DIAGNOSTICS_PATH: diagnosticsPath,
         OCR_ADAPTER_PROGRESS_FD: '3',
       },
