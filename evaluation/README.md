@@ -64,8 +64,8 @@ even when they omit raw identifiers; operator corpora must remain synthetic.
 
 Both the trajectory CLI and the listening evaluation target require a shared
 version-2 budget for operator runs. Application credits remain observational;
-they are not provider dollars. The budget admits at most 120 submitted turns and
-US$5 of conservative provider reservations across all arms. Each upstream model
+they are not provider dollars. By default, the budget admits at most 120 submitted
+turns and US$5 of conservative provider reservations across all arms. Each upstream model
 step or retry reserves its qualified full input-context cost plus its bounded
 output cost before dispatch. Reservations are retained on success and failure.
 This may exhaust the dollar cap long before 120 turns.
@@ -150,9 +150,24 @@ Choose a new private `KLICKER_EVAL_BUDGET_FILE`, then initialize it offline once
 node evaluation/evaluation-spend-guard.mjs --initialize-budget
 ```
 
+For a separately approved new experiment, the same initializer supports exactly
+US$55 and 48 submitted turns through both explicit options:
+
+```bash
+node evaluation/evaluation-spend-guard.mjs --initialize-budget \
+  --max-provider-micro-usd 55000000 --max-submitted-turns 48
+```
+
+Omitting both options keeps the US$5/120-turn default. Either option order is
+accepted, but partial options, other higher limits and these options during
+guard startup are rejected. The limits apply across all experiment arms and
+provider attempts, not separately per invocation. Initializer support is not
+authorization to spend; retain the separate pricing, routing and paid-run gates.
+
 Initialization creates an immutable `.identity` receipt alongside the mutable
-ledger. Never replace an exhausted, interrupted or legacy ledger to resume the
-same experiment. Legacy application-credit budgets must be retained as historical
+ledger. Limits cannot be changed on an existing experiment. Never replace an
+exhausted, interrupted or legacy ledger to resume the same experiment. Legacy
+application-credit budgets must be retained as historical
 records; create a new explicitly authorized experiment instead. Mutation `.lock`
 and run `.run` leases fail closed if held or left by interruption. A responsive
 Unix socket `.lease` proves that the run owner is alive; runner and guard must
