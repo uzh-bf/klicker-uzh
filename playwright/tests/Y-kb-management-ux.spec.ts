@@ -441,6 +441,7 @@ test.describe('Knowledge base management workspace', () => {
                 items: Array<Record<string, unknown> & { id: string }>
                 totalCount: number
                 failedIngestionCount: number
+                needsIngestionCount: number
                 inProgressCount: number
               }
             }
@@ -480,11 +481,34 @@ test.describe('Knowledge base management workspace', () => {
                 createdAt: new Date(0).toISOString(),
                 updatedAt: new Date(0).toISOString(),
               },
+              // Ordinary uploads and URLs are queued on creation, so a
+              // resource that still waits for ingestion comes from a seed or
+              // an import. It keeps the bulk-ingestion path reachable.
+              {
+                id: 'synthetic-imported-resource',
+                type: 'BLOB',
+                materialType: 'COURSE_CONTENT',
+                title: 'imported-notes.txt',
+                sourceUrl: null,
+                originalFilename: 'imported-notes.txt',
+                mimeType: 'text/plain',
+                sizeBytes: 14,
+                status: 'ADDED',
+                ingestedAt: null,
+                resourceVersion: 1,
+                activeResourceVersion: null,
+                latestIngestionRun: null,
+                createdAt: new Date(0).toISOString(),
+                updatedAt: new Date(0).toISOString(),
+              },
               ...connection.items.filter(
-                ({ id }) => id !== 'synthetic-resource'
+                ({ id }) =>
+                  id !== 'synthetic-resource' &&
+                  id !== 'synthetic-imported-resource'
               ),
             ]
-            connection.totalCount += 1
+            connection.totalCount += 2
+            connection.needsIngestionCount += 1
             if (syntheticFailureVisible) {
               connection.failedIngestionCount += 1
             } else if (syntheticFileReplaced) {
@@ -614,9 +638,11 @@ test.describe('Knowledge base management workspace', () => {
       })
       await expect(resourceRow).toBeVisible()
       await expect(resourceRow).toContainText(/Administrative/)
+      // Adding a URL starts its ingestion right away, so the row has left
+      // the added state; how far the worker got is not fixed at this point.
       await expect(
         resourceRow.locator('[data-cy^="kb-resource-status-"]')
-      ).toContainText(/Added|Hinzugefügt/)
+      ).not.toContainText(/Added|Hinzugefügt/)
       await expect(page.getByTestId('kb-ingestion-summary')).toContainText(
         /1 need ingestion/
       )
@@ -648,7 +674,7 @@ test.describe('Knowledge base management workspace', () => {
       ).toContainText('Administrative')
       await expect(
         page.getByTestId('ingest-kb-resource-inspector')
-      ).toContainText(/Ingest|Verarbeiten/)
+      ).toContainText(/Re-ingest|Retry|Neu verarbeiten|Erneut versuchen/)
       await page.getByTestId('done-kb-resource-inspector').click()
 
       await resourceRow.getByTestId(/kb-resource-actions-/).click()
