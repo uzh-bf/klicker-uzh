@@ -227,6 +227,7 @@ function ElementEvaluation({
             evaluation={currentInstance}
             textSize={textSize}
             chartType={chartType}
+            showPercentages={showPercentages}
           />
         )}
 
