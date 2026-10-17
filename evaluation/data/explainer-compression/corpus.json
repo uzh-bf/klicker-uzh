@@ -13,9 +13,7 @@
         "Uses at most three short bullet points in the revised answer and adds no new sections or follow-up lesson.",
         "Does not replace the requested revision with a promise or another permission question."
       ],
-      "assessmentTurns": [
-        2
-      ],
+      "assessmentTurns": [2],
       "turns": [
         {
           "message": "Erstelle mir kurze Lernnotizen zu Primärschlüssel, Fremdschlüssel und Datenqualität."
@@ -38,9 +36,7 @@
         "Preserves that NOT NULL rejects NULL but alone does not reject an empty string or zero in a suitable column type without other constraints.",
         "Makes the non-null requirement unambiguous rather than replacing it solely with vague nonempty wording; accepts any semantically correct paraphrase."
       ],
-      "assessmentTurns": [
-        2
-      ],
+      "assessmentTurns": [2],
       "turns": [
         {
           "message": "Erstelle mir kurze Lernnotizen zu diesem synthetischen PostgreSQL-Material: Ein Primärschlüssel identifiziert jede Zeile eindeutig und darf keinen NULL-Wert enthalten. NOT NULL verbietet NULL-Werte in einer Spalte. Eine leere Zeichenkette ('') und die Zahl 0 sind Werte und nicht NULL. Bei passenden Spaltentypen und ohne weitere Einschränkungen lässt NOT NULL sowohl '' als auch 0 zu."
@@ -61,9 +57,7 @@
         "Preserves that the combination of course number and room number identifies a reservation, without claiming either component must be unique on its own.",
         "Preserves that every component of the composite primary key is non-null, accepting any unambiguous paraphrase."
       ],
-      "assessmentTurns": [
-        2
-      ],
+      "assessmentTurns": [2],
       "turns": [
         {
           "message": "Erstelle mir kurze Lernnotizen zu diesem PostgreSQL-Beispiel: Eine erfundene Tabelle Reservierung hat den zusammengesetzten Primärschlüssel (Kursnummer, Raumnummer). Die Kombination identifiziert jede Zeile eindeutig. Eine Kursnummer kann in mehreren Zeilen vorkommen, ebenso eine Raumnummer; nur dasselbe Paar darf nicht zweimal vorkommen. Kein Bestandteil des Primärschlüssels darf NULL sein."
@@ -85,9 +79,7 @@
         "Distinguishes logarithmically many comparisons from a logarithmic total-time claim, retaining the constant-time comparison and random-access assumptions for that runtime claim.",
         "Preserves that inserting into a Python list can require linear time despite logarithmic search; does not imply the whole insertion is logarithmic."
       ],
-      "assessmentTurns": [
-        2
-      ],
+      "assessmentTurns": [2],
       "turns": [
         {
           "message": "Erstelle mir kurze Lernnotizen aus diesem Material: Binäre Suche halbiert den Suchbereich und benötigt O(log n) Vergleiche. Die Folge muss nach derselben Vergleichsregel sortiert sein, die bei der Suche verwendet wird. Eine Gesamtlaufzeit von O(log n) setzt zusätzlich konstant teure Vergleiche und direkten Zugriff auf die mittleren Elemente in konstanter Zeit voraus. Bei einer Python-Liste kann anschliessendes Einfügen trotzdem O(n) dauern, weil Elemente verschoben werden."
@@ -109,9 +101,7 @@
         "Preserves that lossless compression does not guarantee a smaller output for every input; accepts any semantically correct paraphrase.",
         "Preserves that later lossless encoding cannot recover information discarded before encoding, and does not promise restoration of an earlier original."
       ],
-      "assessmentTurns": [
-        2
-      ],
+      "assessmentTurns": [2],
       "turns": [
         {
           "message": "Erstelle mir kurze Lernnotizen zu diesem Material: Verlustfreie Kompression erlaubt die exakte Rekonstruktion der Daten, die dem Kompressionsschritt übergeben wurden. Sie garantiert nicht für jede Eingabe eine kleinere Datei. PNG komprimiert die kodierten Bilddaten verlustfrei. Wurde ein Bild vor dem PNG-Speichern bereits verkleinert und dabei Information verworfen, stellt das verlustfreie Speichern die früher verworfene Information nicht wieder her."
@@ -133,9 +123,7 @@
         "Preserves that an active hold blocks automatic expiry even after the period has elapsed.",
         "Keeps the scope to the fictional application's rule and does not invent a legal retention requirement or a universal organizational policy."
       ],
-      "assessmentTurns": [
-        2
-      ],
+      "assessmentTurns": [2],
       "turns": [
         {
           "message": "Erstelle mir kurze Lernnotizen zu dieser vollständig erfundenen Anwendungsregel: Ein Vorgang wird automatisch als abgelaufen markiert, wenn die konfigurierte Frist verstrichen ist und keine aktive Sperre vorliegt. Eine aktive Sperre verhindert das automatische Ablaufen auch nach Fristende. Dies ist nur die Regel dieses Beispiels und keine Aussage über gesetzliche Aufbewahrungsfristen oder die Regeln anderer Anwendungen."
