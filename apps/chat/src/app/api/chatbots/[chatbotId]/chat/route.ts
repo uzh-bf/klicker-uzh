@@ -38,6 +38,7 @@ import {
 } from '@/src/lib/server/chatModelRegistry'
 import { buildChatTurnRequest } from '@/src/lib/server/chatTurnRequest'
 import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
+import { withCodeCardTool } from '@/src/lib/server/codeCardTool'
 import {
   isParticipantReasoningVisible,
   resolveEffectiveChatModeOptions,
@@ -732,7 +733,10 @@ export async function POST(
     chatbot.systemPrompts,
     chatbot.mcpConfigurations,
     chatbot.standardModeConfig,
-    { customModeConfig: chatbot.customModeConfig }
+    {
+      codeExecutionConfig: chatbot.codeExecutionConfig,
+      customModeConfig: chatbot.customModeConfig,
+    }
   )
   const selectedMode = resolveRequestedChatMode(modeOptions, requestedMode)
   if (!Object.hasOwn(modeOptions, selectedMode)) {
@@ -1422,7 +1426,10 @@ export async function POST(
     const toolNames = Object.keys(chatTools)
     // The calculator is added after the system prompt inputs are fixed, so
     // course grounding and citation rules still see only course tools.
-    const modelTools = withCalculatorTool(selectedMode, chatTools)
+    const modelTools = withCodeCardTool(
+      withCalculatorTool(selectedMode, chatTools),
+      modeOptions[selectedMode]?.codeProfiles
+    )
     const docQueryToolName = toolNames.find(isDocQueryToolName)
     const quizzerDocQueryToolName =
       selectedMode === 'quizzer' ? docQueryToolName : undefined

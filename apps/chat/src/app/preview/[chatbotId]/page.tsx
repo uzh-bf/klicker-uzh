@@ -48,6 +48,7 @@ export default async function OwnerPreviewPage({
       systemPrompts: true,
       standardModeConfig: true,
       customModeConfig: true,
+      codeExecutionConfig: true,
       draftConfig: true,
       modelSelection: true,
       allowedModelIds: true,
@@ -72,6 +73,7 @@ export default async function OwnerPreviewPage({
     chatbot.standardModeConfig,
     {
       allowUnapprovedModes: true,
+      codeExecutionConfig: chatbot.codeExecutionConfig,
       customModeConfig: resolveOwnerPreviewModeConfiguration(chatbot),
     }
   )
