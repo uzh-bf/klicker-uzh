@@ -51,12 +51,24 @@ default-branch code. Live provider acceptance is a post-merge verification step.
 
 - Astra planner: approved after one correction clarifying credential isolation,
   separate-process pricing, replay precedence and live-verification limits.
-- Implementation includes the existing final-review workflow policy tests;
-  obsolete name/prose matching is replaced with parsed YAML contracts.
+- Implementation moves the existing draft workflow policy assertions into the
+  existing YAML-based CI guard suite. Manual trusted-helper suites stay
+  dependency-free; obsolete name/prose matching becomes parsed YAML contracts.
 - Local baseline: 232 focused tests passed. Extended verification: 237 passed,
   including profile-specific routing, replay/collision handling, truncation,
   cost coverage, credential rejection and child isolation.
-- Commit, slice review, integrated review and hosted CI: pending.
+- Source extension complete. Simplification and independent risk review passed
+  the committed extension. Integrated final review identified an installed-test
+  assumption: importing YAML into a trusted-helper suite would break its
+  install-free manual runner. Reproduced `MODULE_NOT_FOUND`, moved the workflow
+  assertions to the existing installed CI guard, and verified 127 helper tests
+  in an isolated source checkout without dependencies. All 237 focused tests
+  also pass after correction. Three bounded automatic-review suggestions improve
+  reasoning parsing, price formatting and exact rejection assertions; provider
+  selection remains deliberately fail-closed.
+- The existing draft PR carries current-head CI and integrated-review receipts;
+  private reports retain the correction proof. No application runtime, new
+  dependency, manual paid canary, merge or live activation is part of delivery.
 
 ## Approval summary
 

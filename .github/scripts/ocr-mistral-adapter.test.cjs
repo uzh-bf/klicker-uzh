@@ -47,13 +47,19 @@ test('draft routing uses the exact OpenRouter snapshot and max reasoning without
   assert.equal(translated.max_tokens, 16384)
   assert.equal(translated.prompt_cache_key, body.prompt_cache_key)
   assert.equal(translated.tool_choice, 'required')
-  for (const change of [
-    { reasoning_effort: 'high' },
-    { model: MISTRAL_MODEL },
-    { stream: true },
+  for (const [change, code] of [
+    [{ reasoning_effort: 'high' }, 'invalid_request'],
+    [{ model: MISTRAL_MODEL }, 'model_mismatch'],
+    [{ stream: true }, 'stream_unsupported'],
   ])
-    assert.throws(() =>
-      translateMistralRequest({ ...body, ...change }, undefined, 'openrouter')
+    assert.throws(
+      () =>
+        translateMistralRequest(
+          { ...body, ...change },
+          undefined,
+          'openrouter'
+        ),
+      { code }
     )
   assert.throws(() => translateMistralRequest(body, undefined, 'unknown'), {
     code: 'invalid_provider',

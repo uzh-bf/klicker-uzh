@@ -300,12 +300,9 @@ function openRouterReasoning(message) {
     .map((detail) => {
       if (!isPlainObject(detail))
         throw new AdapterError('malformed_chunk', 'invalid reasoning detail')
-      const value =
-        detail.type === 'reasoning.text'
-          ? detail.text
-          : detail.type === 'reasoning.summary'
-            ? detail.summary
-            : ''
+      let value = ''
+      if (detail.type === 'reasoning.text') value = detail.text
+      else if (detail.type === 'reasoning.summary') value = detail.summary
       if (typeof value !== 'string')
         throw new AdapterError(
           'malformed_chunk',
@@ -1876,6 +1873,7 @@ function commandSummary(args) {
   }
   const estimate = report.estimate
   const pricing = profile.pricing
+  const priceDigits = profile.name === 'openrouter' ? 3 : 2
   const failures = Object.fromEntries(
     FAILURE_CATEGORIES.map((category) => [category, 0])
   )
@@ -1922,7 +1920,7 @@ function commandSummary(args) {
     '### OCR estimated cost and caching savings',
     '',
     `${profile.label} \`${profile.model}\`; [list pricing](${pricing.source}) checked ${pricing.date}: ` +
-      `$${pricing.input.toFixed(profile.name === 'openrouter' ? 3 : 2)} input / $${pricing.cachedInput.toFixed(profile.name === 'openrouter' ? 3 : 2)} cached input / $${pricing.output.toFixed(profile.name === 'openrouter' ? 3 : 2)} output per million tokens (USD).`,
+      `$${pricing.input.toFixed(priceDigits)} input / $${pricing.cachedInput.toFixed(priceDigits)} cached input / $${pricing.output.toFixed(priceDigits)} output per million tokens (USD).`,
     '',
   ]
   if (profile.name === 'openrouter')
