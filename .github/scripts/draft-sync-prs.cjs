@@ -1,3 +1,5 @@
+const { createChangelog } = require('./sync-pr-changelog.cjs')
+
 const REPOSITORY = 'uzh-bf/klicker-uzh'
 const PAIRS = [
   { head: 'v3', base: 'v3-ai' },
@@ -33,13 +35,17 @@ function acceptsEvent(context) {
   if (context.ref !== 'refs/heads/v3') return false
   if (context.eventName === 'workflow_dispatch') return true
   const run = context.payload.workflow_run
-  return (
+  return Boolean(
     context.eventName === 'workflow_run' &&
-    context.payload.action === 'completed' &&
-    run?.event === 'push' &&
-    run.name === 'Check codebase' &&
-    run.head_repository?.full_name === REPOSITORY &&
-    PAIRS.some(({ head }) => head === run.head_branch)
+      context.payload.action === 'completed' &&
+      run &&
+      run.name === 'Check codebase' &&
+      run.head_repository?.full_name === REPOSITORY &&
+      ((run.event === 'push' &&
+        PAIRS.some(({ head, base }) =>
+          [head, base].includes(run.head_branch)
+        )) ||
+        (run.event === 'pull_request' && isSyncBranch(run.head_branch)))
   )
 }
 
@@ -172,128 +178,224 @@ async function updateConflictNotice({
   }
 }
 
-async function maintainDraftSyncPrs({ github, context, dryRun = true }) {
+function matchesSyncPr(pr, pair, branch) {
+  return (
+    pr.state === 'open' &&
+    pr.head.ref === branch &&
+    branch.startsWith(syncBranchPrefix(pair)) &&
+    pr.base.ref === pair.base &&
+    pr.head.repo?.full_name === REPOSITORY &&
+    pr.base.repo?.full_name === REPOSITORY
+  )
+}
+
+async function maintainDraftSyncPrs({
+  github,
+  context,
+  dryRun = true,
+  historyToken,
+  changelogFactory = createChangelog,
+}) {
   if (!acceptsEvent(context)) return []
   const repo = context.repo
   const results = []
+  let changelog
 
-  for (const pair of PAIRS) {
-    const { head, base } = pair
-    const prefix = syncBranchPrefix(pair)
-    const report = (action, number, branch) =>
-      results.push({
-        head,
-        base,
-        branch: branch ?? prefix,
-        action,
-        ...(number && { number }),
+  const branchSha = async (branch) => {
+    const { data } = await github.rest.repos.getBranch({ ...repo, branch })
+    return data.commit.sha
+  }
+  const describe = async (snapshots) => {
+    try {
+      changelog ??= changelogFactory({
+        repository: REPOSITORY,
+        token: historyToken,
       })
-
-    // A pull request opened before sync branches existed still has the source
-    // branch as its head. Leave it alone; closing it lets the next run migrate.
-    const legacy = await findOpenPr({
-      github,
-      repo,
-      base,
-      matches: (ref) => ref === head,
-    })
-    if (legacy) {
-      report('legacy', legacy.number, head)
-      continue
+      const { body } = await changelog.generate(snapshots)
+      if (typeof body !== 'string' || !body) throw new Error('empty changelog')
+      return { body }
+    } catch {
+      // Git diagnostics can include credential-bearing transport details.
+      return { description: 'error' }
     }
+  }
+  const describeExisting = async (pr, pair, sourceSha) => {
+    const branch = pr.head.ref
+    const readPr = async () =>
+      (await github.rest.pulls.get({ ...repo, pull_number: pr.number })).data
+    const current = await readPr()
+    if (!matchesSyncPr(current, pair, branch)) {
+      return { description: 'deferred' }
+    }
+    const headSha = current.head.sha
+    const targetSha = await branchSha(pair.base)
+    if (current.base.sha !== targetSha) return { description: 'deferred' }
+    const generated = await describe({ sourceSha, targetSha, headSha })
+    if (!generated.body) return generated
+    if (dryRun) return { ...generated, description: 'preview' }
 
-    // Read current branches rather than replaying the triggering run's old SHA.
-    const { data: source } = await github.rest.repos.getBranch({
+    const latest = await readPr()
+    if (
+      !matchesSyncPr(latest, pair, branch) ||
+      latest.head.sha !== headSha ||
+      latest.base.sha !== targetSha ||
+      (await branchSha(branch)) !== headSha ||
+      (await branchSha(pair.base)) !== targetSha
+    ) {
+      return { description: 'deferred' }
+    }
+    if (latest.body === generated.body) return { description: 'unchanged' }
+    await github.rest.pulls.update({
       ...repo,
-      branch: head,
+      pull_number: pr.number,
+      body: generated.body,
     })
-    const sourceSha = source.commit.sha
+    return { description: 'updated' }
+  }
 
-    const existing = await findOpenPr({
-      github,
-      repo,
-      base,
-      matches: (ref) => ref.startsWith(prefix),
-    })
-    if (existing) {
-      const branch = existing.head.ref
-      if (dryRun) {
-        report(
-          existing.head.sha === sourceSha ? 'existing' : 'would-advance',
-          existing.number,
-          branch
-        )
+  try {
+    for (const pair of PAIRS) {
+      const { head, base } = pair
+      const prefix = syncBranchPrefix(pair)
+      const report = (action, number, branch, description) =>
+        results.push({
+          head,
+          base,
+          branch: branch ?? prefix,
+          action,
+          ...(number && { number }),
+          ...description,
+        })
+
+      // A pull request opened before sync branches existed still has the source
+      // branch as its head. Leave it alone; closing it lets the next run migrate.
+      const legacy = await findOpenPr({
+        github,
+        repo,
+        base,
+        matches: (ref) => ref === head,
+      })
+      if (legacy) {
+        report('legacy', legacy.number, head)
         continue
       }
-      const action = await advanceSyncBranch({
-        github,
-        repo,
-        branch,
-        pr: existing,
-        sourceSha,
-      })
-      await updateConflictNotice({
-        github,
-        repo,
-        pr: existing,
-        head,
-        sourceSha,
-        conflict: action === 'conflict',
-      })
-      report(action, existing.number, branch)
-      continue
-    }
 
-    const { data: comparison } =
-      await github.rest.repos.compareCommitsWithBasehead({
-        ...repo,
-        basehead: `${base}...${sourceSha}`,
-        per_page: 1,
-      })
-    if (comparison.ahead_by === 0 || comparison.files?.length === 0) {
-      report('up-to-date')
-      continue
-    }
-    if (dryRun) {
-      report('would-create')
-      continue
-    }
+      // Read current branches rather than replaying the triggering run's old SHA.
+      const sourceSha = await branchSha(head)
 
-    const branch = syncBranch(pair, sourceSha)
-    if (!(await createSyncBranch({ github, repo, branch, sourceSha }))) {
-      report('stale-branch', undefined, branch)
-      continue
-    }
-    try {
-      const { data: pr } = await github.rest.pulls.create({
-        ...repo,
-        head: branch,
-        base,
-        draft: true,
-        title: `chore(sync): merge ${head} into ${base}`,
-        body: [
-          `Integrate \`${head}\` into \`${base}\`. The head \`${branch}\` is a bot-owned copy of \`${head}\` that follows it automatically, also after this pull request is marked ready.`,
-          '',
-          'Mark ready when the accumulated changes should be reviewed and validated for integration. Use a merge commit to preserve branch ancestry.',
-          '',
-          `Resolve conflicts on \`${branch}\` itself; that never touches \`${head}\`. Later \`${head}\` pushes are merged into your resolution rather than replacing it.`,
-          '',
-          'Creation is automated; readiness and merging remain manual.',
-        ].join('\n'),
-      })
-      report('created', pr.number, branch)
-    } catch (error) {
-      if (error.status !== 422) throw error
-      // A maintainer or another caller may have created the same PR meanwhile.
-      const concurrent = await findOpenPr({
+      const existing = await findOpenPr({
         github,
         repo,
         base,
         matches: (ref) => ref.startsWith(prefix),
       })
-      if (!concurrent) throw error
-      report('existing', concurrent.number, concurrent.head.ref)
+      if (existing) {
+        const branch = existing.head.ref
+        if (dryRun) {
+          report(
+            existing.head.sha === sourceSha ? 'existing' : 'would-advance',
+            existing.number,
+            branch,
+            await describeExisting(existing, pair, sourceSha)
+          )
+          continue
+        }
+        const action = await advanceSyncBranch({
+          github,
+          repo,
+          branch,
+          pr: existing,
+          sourceSha,
+        })
+        await updateConflictNotice({
+          github,
+          repo,
+          pr: existing,
+          head,
+          sourceSha,
+          conflict: action === 'conflict',
+        })
+        report(
+          action,
+          existing.number,
+          branch,
+          await describeExisting(existing, pair, sourceSha)
+        )
+        continue
+      }
+
+      const { data: comparison } =
+        await github.rest.repos.compareCommitsWithBasehead({
+          ...repo,
+          basehead: `${base}...${sourceSha}`,
+          per_page: 1,
+        })
+      if (comparison.ahead_by === 0 || comparison.files?.length === 0) {
+        report('up-to-date')
+        continue
+      }
+      const targetSha = await branchSha(base)
+      const generated = await describe({
+        sourceSha,
+        targetSha,
+        headSha: sourceSha,
+      })
+      if (!generated.body) {
+        report('description-error', undefined, undefined, generated)
+        continue
+      }
+      if (dryRun) {
+        report('would-create', undefined, undefined, {
+          ...generated,
+          description: 'preview',
+        })
+        continue
+      }
+
+      const branch = syncBranch(pair, sourceSha)
+      if (!(await createSyncBranch({ github, repo, branch, sourceSha }))) {
+        report('stale-branch', undefined, branch)
+        continue
+      }
+      if (
+        (await branchSha(branch)) !== sourceSha ||
+        (await branchSha(base)) !== targetSha
+      ) {
+        report('stale-description', undefined, branch, {
+          description: 'deferred',
+        })
+        continue
+      }
+      try {
+        const { data: pr } = await github.rest.pulls.create({
+          ...repo,
+          head: branch,
+          base,
+          draft: true,
+          title: `chore(sync): merge ${head} into ${base}`,
+          body: generated.body,
+        })
+        report('created', pr.number, branch)
+      } catch (error) {
+        if (error.status !== 422) throw error
+        // A maintainer or another caller may have created the same PR meanwhile.
+        const concurrent = await findOpenPr({
+          github,
+          repo,
+          base,
+          matches: (ref) => ref.startsWith(prefix),
+        })
+        if (!concurrent) throw error
+        report(
+          'existing',
+          concurrent.number,
+          concurrent.head.ref,
+          await describeExisting(concurrent, pair, sourceSha)
+        )
+      }
     }
+  } finally {
+    await changelog?.close()
   }
   return results
 }

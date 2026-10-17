@@ -2,7 +2,7 @@
 type: Operations
 title: CI & Deployment
 description: PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
-timestamp: '2026-10-16'
+timestamp: '2026-10-17'
 tags:
   - ci
   - deployment
@@ -42,7 +42,35 @@ On every run, for each pair, the controller:
    reports `stale-branch` and leaves it alone; delete it to let the next run
    proceed.
 
-Existing PR descriptions and draft/ready states are preserved. Ready sync PRs
+Draft/ready states are preserved. The controller replaces the complete description
+on creation and reconciliation with a deterministic changelog: exact revision
+links, imported commit subjects, merge-edit paths and additional sync-branch
+commits. It includes source commits only when the actual sync head contains them,
+and excludes target history. Subjects and paths use code spans so embedded
+mentions and issue references create no cross-reference notifications. There is
+no model-generated explanation or manually maintained section; agents leave these
+bodies to the controller and report in chat, existing checks or separately
+authorized comments. Existing prose and screenshot sections are replaced on the
+next maintenance run. Legacy source-headed and ancestry-restoration PRs retain
+their separate behavior.
+
+Merge edits come from Git's remerge diff against the recorded two-parent merge.
+They include conflict resolutions and any other changes from Git's automatic
+merge, without inferring intent. Separate sync-branch commits appear as additional
+changes; octopus merges explicitly report unsupported analysis. Bodies have a
+60,000-byte UTF-8 budget, with counted omissions and immutable comparison links.
+The generator reserves metadata, then prioritizes merge edits, additional changes
+and imported commits. A squashed sync can relist already-present changes until
+its ancestry-restoration PR merges.
+
+The controller rereads the PR and target before writing, deferring a moved,
+closed or retargeted candidate. GitHub provides no atomic body-update lease;
+movement after that read is reconciled on a later run. Analysis failures retain
+an existing body and report failure without blocking branch advancement or the
+conflict notice. A new PR requires successful analysis; other pairs continue.
+Manual previews include generated bodies and write no branches, PRs or comments.
+
+Ready sync PRs
 keep tracking the source; review and merge decisions apply to the latest
 synchronized head. The run summary lists each pair's result. The controller
 never force-updates a branch, never writes the source or target branches and
@@ -50,12 +78,18 @@ never merges. Maintainers
 choose when to mark ready and merge with a merge commit to preserve ancestry.
 Resolve conflicts directly on the sync branch.
 
-The controller runs from `v3` after Check codebase completes for a push to
-either source branch, regardless of the check result. Completion is a wakeup,
-not a merge-readiness signal. Both pairs are reconciled against current refs on
+The controller runs from `v3` after Check codebase completes for a push to any
+configured source or target branch, or for a same-repository PR on a maintained
+sync branch, regardless of the check result. Completion is a wakeup,
+not a merge-readiness signal. All three pairs are reconciled against current refs on
 every run; delayed or coalesced events do not replay old heads. The workflow
 checks out its own trusted workflow SHA, never the triggering branch or its
-artifacts. It becomes active when merged into `v3`, without waiting for the
+artifacts. History is fetched with the read-only job token into a shared isolated
+bare repository, with blob filtering and lazy reads for merge analysis. Fetched
+code is never checked out or executed. A controller source merge can cause one
+additional check completion; unchanged reconciliation performs no writes. Target
+wakeups can open the next draft immediately after a sync merge.
+It becomes active when merged into `v3`, without waiting for the
 workflow to reach the integration branches.
 
 For manual reconciliation, dispatch from `v3`. Preview is the default:
