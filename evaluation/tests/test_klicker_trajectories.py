@@ -388,6 +388,10 @@ def test_numeric_version_and_integral_assessment_selection_accepted(tmp_path):
     )
     _, receipts = _capture(case)
     summary = _summary(cases=1, repeats=1, completed=2, submitted=2)
+    summary["cases"] = 1.0
+    for receipt in receipts:
+        receipt["turn"] = float(receipt["turn"])
+        receipt["sourceMapping"]["version"] = 1.0
     receipts_path = _write_jsonl(tmp_path / "receipts.jsonl", [*receipts, summary])
     corpus_path = tmp_path / "corpus.json"
     # JSON numbers have no separate integral form: parsed 1.0 and 2.0 are the
@@ -702,11 +706,11 @@ def test_cumulative_counter_below_local_rejected(tmp_path):
         import_trajectories(receipts_path, corpus_path)
 
 
-@pytest.mark.parametrize("stale_turn", [1, None])
+@pytest.mark.parametrize("stale_turn", [1, 1.0, None])
 def test_stale_error_turn_retained(tmp_path, stale_turn):
     case = _case("case-stale", turns=[{"message": "Q1?"}, {"message": "Q2?"}, {"message": "Q3?"}])
     _, receipts = _capture(case, stop_after=2)
-    error = _error(case_id="case-stale", turn=stale_turn)
+    error = _error(case_id="case-stale", turn=stale_turn, repeat=0.0)
     summary = _summary(
         cases=1,
         repeats=1,
@@ -725,6 +729,48 @@ def test_stale_error_turn_retained(tmp_path, stale_turn):
     # The attribution is retained verbatim; no submission is inferred from it.
     assert result["capture"]["error"]["turn"] == stale_turn
     assert result["capture"]["error"]["code"] == "trajectory_failed"
+
+
+@pytest.mark.parametrize(
+    ("target", "updates", "removed"),
+    [
+        ("mapping", {"version": True}, None),
+        ("summary", {"cases": True}, None),
+        ("turn", {"turn": True}, None),
+        ("error", {"repeat": False}, None),
+        ("error", {"caseId": []}, None),
+        ("error", {"unexpected": True}, None),
+        ("error", {}, "recordedAt"),
+        ("error", {"turn": True}, None),
+        ("error", {"turn": 0}, None),
+    ],
+)
+def test_malformed_capture_fields_rejected(tmp_path, target, updates, removed):
+    case = _two_turn_case("case-malformed")
+    _, receipts = _capture(case, stop_after=1)
+    error = _error(case_id=case["id"], turn=2)
+    summary = _summary(
+        cases=1,
+        repeats=1,
+        completed=1,
+        submitted=1,
+        status="stopped",
+        stop_code="trajectory_failed",
+    )
+    record = {
+        "mapping": receipts[0]["sourceMapping"],
+        "turn": receipts[0],
+        "error": error,
+        "summary": summary,
+    }[target]
+    record.update(updates)
+    if removed:
+        del record[removed]
+    receipts_path = _write_jsonl(tmp_path / "receipts.jsonl", [*receipts, error, summary])
+    corpus_path = _write_corpus(tmp_path / "corpus.json", [case])
+
+    with pytest.raises(ValueError):
+        import_trajectories(receipts_path, corpus_path)
 
 
 def test_mixed_unsupported_quizzer(tmp_path):

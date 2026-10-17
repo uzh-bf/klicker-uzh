@@ -21,6 +21,7 @@ CASE_FIELDS = {
     "assessmentTurns",
     "turns",
 }
+ERROR_FIELDS = {"type", "arm", "caseId", "turn", "repeat", "code", "recordedAt"}
 TURN_FIELDS = {
     "type",
     "receiptVersion",
@@ -162,7 +163,8 @@ def _validate_sources(receipt: dict) -> None:
         "Invalid source mapping",
     )
     _require(
-        mapping["version"] == 1
+        _integral(mapping["version"])
+        and mapping["version"] == 1
         and _integer(mapping["maxSources"], 1)
         and _hash(mapping["fingerprint"]),
         "Invalid source mapping provenance",
@@ -209,7 +211,12 @@ def import_trajectories(
     _require(summary.get("status") in {"completed", "stopped"}, "Invalid summary status")
     _require(_text(summary.get("arm")) and _text(summary.get("model")), "Missing arm or model")
     repeats = summary.get("repeats")
-    _require(_integer(repeats, 1) and summary.get("cases") == len(cases), "Plan count mismatch")
+    _require(
+        _integer(repeats, 1)
+        and _integral(summary.get("cases"))
+        and summary.get("cases") == len(cases),
+        "Plan count mismatch",
+    )
     for field in ("completedTurns", "runSubmittedTurns", "submittedTurns"):
         _require(_integer(summary.get(field)), "Invalid summary counters")
     completed = summary["completedTurns"]
@@ -223,12 +230,17 @@ def import_trajectories(
     _require(len(errors) == int(stopped), "Stopped summary requires one error")
     error = errors[0] if errors else None
     if error:
+        _require(set(error) == ERROR_FIELDS, "Invalid error receipt fields")
         _require(
             records[-2] is error
             and _text(error.get("code"))
             and error.get("code") == summary.get("stopCode")
             and error.get("arm") == summary["arm"],
             "Invalid stopped error",
+        )
+        _require(
+            error["turn"] is None or (_integral(error["turn"]) and error["turn"] >= 1),
+            "Invalid error turn",
         )
     else:
         _require(summary.get("stopCode") is None, "Completed summary cannot have stop code")
@@ -238,7 +250,11 @@ def import_trajectories(
     order = {key: index for index, key in enumerate(by_key)}
     if error:
         error_key = (error.get("caseId"), error.get("repeat"))
-        _require(error_key == (None, None) or error_key in by_key, "Invalid error trajectory")
+        _require(
+            error_key == (None, None)
+            or (_text(error["caseId"]) and _integral(error["repeat"]) and error_key in by_key),
+            "Invalid error trajectory",
+        )
 
     message_ids = set()
     threads = {}
@@ -262,7 +278,9 @@ def import_trajectories(
         captured = by_key[key]
         turn_number = len(captured) + 1
         _require(
-            receipt["turn"] == turn_number and turn_number <= len(case["turns"]),
+            _integral(receipt["turn"])
+            and receipt["turn"] == turn_number
+            and turn_number <= len(case["turns"]),
             "Non-contiguous trajectory turns",
         )
         for field in ("group", "language", "mode", "support"):
