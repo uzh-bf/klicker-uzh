@@ -4,9 +4,9 @@
  */
 export function parseCookiesHeader(
   cookieHeader: string | undefined
-): Record<string, string> {
+): Map<string, string> {
   const header = cookieHeader || ''
-  const map: Record<string, string> = {}
+  const map = new Map<string, string>()
   header.split(';').forEach((part) => {
     const [rawKey, ...rawVal] = part.split('=')
     if (!rawKey) return
@@ -14,12 +14,40 @@ export function parseCookiesHeader(
     const value = rawVal.join('=').trim()
     if (!key) return
     try {
-      map[key] = decodeURIComponent(value)
+      map.set(key, decodeURIComponent(value))
     } catch {
-      map[key] = value
+      map.set(key, value)
     }
   })
   return map
+}
+
+/** Reject stale browser work before it executes under a replacement cookie. */
+export function participantSessionMatches(
+  expected: unknown,
+  cookies: Record<string, string | undefined>
+) {
+  return (
+    expected === undefined ||
+    expected === (cookies.participant_session || 'none')
+  )
+}
+
+/**
+ * Whether a request origin's host lies inside the configured cookie domain.
+ * A foreign host that merely contains a subdomain name does not qualify, and
+ * without a configured cookie domain no origin does.
+ */
+export function isCookieDomainOrigin(origin: unknown): boolean {
+  const cookieDomain = process.env.COOKIE_DOMAIN?.replace(/^\./, '')
+  if (!cookieDomain) return false
+  if (typeof origin !== 'string') return false
+  try {
+    const { hostname } = new URL(origin)
+    return hostname === cookieDomain || hostname.endsWith(`.${cookieDomain}`)
+  } catch {
+    return false
+  }
 }
 
 /**

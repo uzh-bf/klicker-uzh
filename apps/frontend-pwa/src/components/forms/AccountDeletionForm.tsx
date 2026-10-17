@@ -1,9 +1,7 @@
 import { useMutation } from '@apollo/client'
-import {
-  DeleteParticipantAccountDocument,
-  LogoutParticipantDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-import { Button, H3, Modal } from '@uzh-bf/design-system'
+import { DeleteParticipantAccountDocument } from '@klicker-uzh/graphql/dist/ops'
+import { participantReloadUrl } from '@klicker-uzh/shared-components/src/utils/participantSession'
+import { Button, H3, Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
@@ -13,9 +11,6 @@ function AccountDeletionForm() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [deleteParticipantAccount, { loading: deletingAccount }] = useMutation(
     DeleteParticipantAccountDocument
-  )
-  const [logoutParticipant, { loading: loggingOut }] = useMutation(
-    LogoutParticipantDocument
   )
 
   return (
@@ -46,13 +41,22 @@ function AccountDeletionForm() {
               onClose={(): void => setDeleteModalOpen(false)}
               primaryLabel={t('shared.generic.confirm')}
               primaryButtonStyle="destructive"
-              primaryLoading={deletingAccount || loggingOut}
+              primaryLoading={deletingAccount}
               onPrimaryAction={async () => {
-                await deleteParticipantAccount()
-                try {
-                  await logoutParticipant()
-                } catch (e) {}
-                window?.location.reload()
+                const result = await deleteParticipantAccount().catch(
+                  () => undefined
+                )
+                if (result?.data?.deleteParticipantAccount !== true) {
+                  // The session stays active, so the participant can retry.
+                  toast({
+                    type: 'error',
+                    message: t('shared.generic.systemError'),
+                    options: { duration: 6000 },
+                  })
+                  setDeleteModalOpen(false)
+                  return
+                }
+                window.location.replace(participantReloadUrl())
               }}
               dataPrimaryAction={{ cy: 'delete-account-command' }}
               secondaryLabel={t('shared.generic.cancel')}

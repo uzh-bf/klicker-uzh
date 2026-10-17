@@ -1,10 +1,247 @@
-import { ApolloClient, NormalizedCacheObject } from '@apollo/client'
-import { LoginParticipantWithLtiDocument } from '@klicker-uzh/graphql/dist/ops'
+import { randomUUID } from 'node:crypto'
+import type {
+  ApolloClient,
+  FetchResult,
+  NormalizedCacheObject,
+} from '@apollo/client'
+import {
+  LoginParticipantWithLtiDocument,
+  type LoginParticipantWithLtiMutation,
+} from '@klicker-uzh/graphql/dist/ops'
 import { verifyJWT } from '@klicker-uzh/util'
 import { GetServerSidePropsContext } from 'next'
 import nookies from 'nookies'
 
+export interface ParticipantSessionResult {
+  participantToken: string | null
+  cookiesAvailable: boolean
+  sessionState:
+    | 'no_launch'
+    | 'authenticated'
+    | 'registration_required'
+    | 'rejected'
+    | 'exchange_unavailable'
+  sessionRevision: string
+  sessionEstablished: boolean
+  // Only for a frame request, which may lack shared cookies and then keeps
+  // this token as its own session.
+  frameToken?: string
+  signedLtiData?: { token: string; ssoId: string; email: string }
+}
+
+/** Session props every page that resolves a participant hands to `_app`. */
+export function participantSessionProps(result: ParticipantSessionResult) {
+  return {
+    sessionState: result.sessionState,
+    sessionRevision: result.sessionRevision,
+    sessionEstablished: result.sessionEstablished,
+    cookiesAvailable: result.cookiesAvailable,
+    participantToken:
+      process.env.ASSESSMENT_MODE === 'true' ? result.participantToken : null,
+    ...(result.frameToken ? { frameToken: result.frameToken } : {}),
+  }
+}
+
+function participantCookieOptions() {
+  const secure =
+    process.env.NODE_ENV === 'production' &&
+    process.env.COOKIE_DOMAIN !== '127.0.0.1'
+  return {
+    domain: process.env.COOKIE_DOMAIN,
+    path: '/',
+    httpOnly: true,
+    secure,
+    sameSite: secure ? ('none' as const) : ('lax' as const),
+  }
+}
+
+// Replace the shared session: expire every participant cookie, rotate the
+// revision and, given a token, set the new participant cookie. A launch that
+// still needs registration keeps its LTI cookie.
+function replaceParticipantSession(
+  ctx: GetServerSidePropsContext,
+  {
+    token,
+    maxAge = 60 * 60 * 24 * 13,
+    keepLaunch = false,
+  }: { token?: string; maxAge?: number; keepLaunch?: boolean } = {}
+) {
+  const options = participantCookieOptions()
+  nookies.destroy(ctx, 'temporary_participant_token', options)
+  nookies.destroy(ctx, 'participant_token', options)
+  if (!keepLaunch)
+    nookies.destroy(ctx, 'lti-token', {
+      domain: process.env.COOKIE_DOMAIN,
+      path: '/',
+    })
+  const revision = randomUUID()
+  nookies.set(ctx, 'participant_session', revision, {
+    ...options,
+    httpOnly: false,
+    maxAge,
+  })
+  if (token)
+    nookies.set(ctx, 'participant_token', token, { ...options, maxAge })
+  // Append after nookies serialization, which drops the Partitioned attribute.
+  // Send the expiration first so older browsers cannot erase the new cookie.
+  const domain = options.domain ? `; Domain=${options.domain}` : ''
+  const existing = ctx.res.getHeader('Set-Cookie') ?? []
+  ctx.res.setHeader('Set-Cookie', [
+    `participant_token=; Max-Age=0; Path=/${domain}; HttpOnly; Secure; SameSite=None; Partitioned`,
+    ...(Array.isArray(existing) ? existing : [String(existing)]),
+  ])
+  return revision
+}
+
 export default async function getParticipantToken({
+  apolloClient,
+  courseId,
+  ctx,
+}: {
+  apolloClient: ApolloClient<NormalizedCacheObject>
+  courseId?: string
+  ctx: GetServerSidePropsContext
+}): Promise<ParticipantSessionResult> {
+  if (process.env.ASSESSMENT_MODE === 'true') {
+    const result = await getAssessmentParticipantToken({
+      apolloClient,
+      courseId,
+      ctx,
+    })
+    return {
+      ...result,
+      sessionRevision: '',
+      sessionEstablished: false,
+      sessionState: result.participantToken ? 'authenticated' : 'no_launch',
+    } as ParticipantSessionResult
+  }
+  const { query } = ctx
+  const cookies = nookies.get(ctx)
+  const ambient = cookies.participant_token
+  // Only a page navigation can be a launch. A subresource request from
+  // another site must not run an exchange or touch the session cookies.
+  const fetchMode = ctx.req.headers['sec-fetch-mode']
+  const navigation = fetchMode === undefined || fetchMode === 'navigate'
+  const hasLtiHandoff = navigation && Object.hasOwn(query, 'jwt')
+  const base = {
+    participantToken: null,
+    cookiesAvailable: !!ambient,
+    sessionRevision: cookies.participant_session ?? '',
+    sessionEstablished: false,
+  }
+  // Any page can make a browser load a forged launch, even in a hidden frame,
+  // so a failed launch writes no cookies. Only an unusable retained launch
+  // cookie is expired, so it cannot be retried on every request.
+  const reject = (): ParticipantSessionResult => {
+    if (!hasLtiHandoff)
+      nookies.destroy(ctx, 'lti-token', {
+        domain: process.env.COOKIE_DOMAIN,
+        path: '/',
+      })
+    return { ...base, sessionState: 'rejected' }
+  }
+  const verifyParticipant = async (token: string) => {
+    const claims = await verifyJWT(token, process.env.APP_SECRET as string)
+    if (
+      typeof claims.sub !== 'string' ||
+      !claims.sub.trim() ||
+      claims.role !== 'PARTICIPANT' ||
+      claims.scope !== undefined ||
+      !Number.isFinite(claims.exp) ||
+      claims.exp! <= Date.now() / 1000
+    ) {
+      throw new Error('Invalid participant session')
+    }
+    return Math.min(
+      60 * 60 * 24 * 13,
+      Math.floor(claims.exp! - Date.now() / 1000)
+    )
+  }
+
+  const ltiToken = hasLtiHandoff
+    ? query.jwt
+    : navigation
+      ? cookies['lti-token']
+      : undefined
+  if (!ltiToken && !hasLtiHandoff) {
+    const token = ambient
+    if (!token) return { ...base, sessionState: 'no_launch' }
+    try {
+      if (typeof token !== 'string') throw new Error('Invalid cookie')
+      await verifyParticipant(token)
+      return {
+        participantToken: token,
+        cookiesAvailable: !!ambient,
+        sessionRevision: cookies.participant_session ?? '',
+        sessionEstablished: false,
+        sessionState: 'authenticated',
+      }
+    } catch {
+      // An unusable cookie is not a launch: expire it and continue signed out.
+      base.sessionRevision = replaceParticipantSession(ctx)
+      return { ...base, sessionState: 'no_launch' }
+    }
+  }
+
+  let signedLtiData: NonNullable<ParticipantSessionResult['signedLtiData']>
+  try {
+    if (typeof ltiToken !== 'string' || !ltiToken) return reject()
+    const claims = await verifyJWT(ltiToken, process.env.APP_SECRET as string)
+    if (
+      claims.scope !== 'LTI1.3' ||
+      typeof claims.sub !== 'string' ||
+      !claims.sub.trim() ||
+      (claims.email !== undefined && typeof claims.email !== 'string') ||
+      !Number.isFinite(claims.exp) ||
+      claims.exp! <= Date.now() / 1000
+    )
+      return reject()
+    signedLtiData = {
+      token: ltiToken,
+      ssoId: claims.sub,
+      email: typeof claims.email === 'string' ? claims.email : '',
+    }
+  } catch {
+    return reject()
+  }
+
+  try {
+    const result = await apolloClient.mutate({
+      mutation: LoginParticipantWithLtiDocument,
+      variables: { signedLtiData: signedLtiData.token, courseId },
+    })
+    if (result.errors?.length) throw new Error('Participant exchange failed')
+    const token = result.data?.loginParticipantWithLti?.participantToken
+    if (!token) {
+      if (!signedLtiData.email.trim()) return reject()
+      base.sessionRevision = replaceParticipantSession(ctx, {
+        keepLaunch: true,
+      })
+      return { ...base, sessionState: 'registration_required', signedLtiData }
+    }
+    const maxAge = await verifyParticipant(token)
+    const sessionRevision = replaceParticipantSession(ctx, { token, maxAge })
+    // Browsers without Sec-Fetch-Dest are treated as possibly framed.
+    const destination = ctx.req.headers['sec-fetch-dest']
+    const framed =
+      destination === undefined ||
+      destination === 'iframe' ||
+      destination === 'frame'
+    return {
+      participantToken: token,
+      cookiesAvailable: !!cookies['lti-token'],
+      sessionRevision,
+      sessionEstablished: true,
+      sessionState: 'authenticated',
+      ...(framed ? { frameToken: token } : {}),
+    }
+  } catch {
+    // A transient backend failure keeps the existing session usable.
+    return { ...base, sessionState: 'exchange_unavailable' }
+  }
+}
+
+async function getAssessmentParticipantToken({
   apolloClient,
   courseId,
   ctx,
@@ -35,7 +272,7 @@ export default async function getParticipantToken({
   }
 
   try {
-    let result
+    let result: FetchResult<LoginParticipantWithLtiMutation> | undefined
 
     const cookiesAvailable = !!cookies['lti-token']
 

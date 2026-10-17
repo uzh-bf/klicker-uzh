@@ -3,6 +3,7 @@ import { DisplayMode } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
   getInitialInstanceStatistics,
+  isCookieDomainOrigin,
   normalizeEmail,
   processElementData,
   recomputeDerivedPermissions,
@@ -34,6 +35,52 @@ const COOKIE_SETTINGS: CookieOptions = {
     process.env.NODE_ENV === 'production' &&
     process.env.COOKIE_DOMAIN !== '127.0.0.1',
   sameSite: 'lax',
+}
+
+// Participant cookies are SameSite=None so a PWA embedded in an LMS frame can
+// keep its session. CORS reflects any origin, so only a request from inside
+// the cookie domain may receive such a cookie; any other origin gets a Lax
+// cookie, which a browser refuses to store from a cross-site response.
+function participantCookieSettings(ctx: Context): CookieOptions {
+  if (process.env.ASSESSMENT_MODE === 'true') return COOKIE_SETTINGS
+  return {
+    ...COOKIE_SETTINGS,
+    maxAge: 1000 * 60 * 60 * 24 * 13,
+    sameSite:
+      COOKIE_SETTINGS.secure && isCookieDomainOrigin(ctx.req?.headers?.origin)
+        ? 'none'
+        : 'lax',
+  }
+}
+
+function setParticipantSessionRevision(ctx: Context) {
+  if (process.env.ASSESSMENT_MODE === 'true') return
+  ctx.res.cookie('participant_session', uuidv4(), {
+    ...participantCookieSettings(ctx),
+    httpOnly: false,
+  })
+}
+
+function expireParticipantCookie(ctx: Context) {
+  setParticipantSessionRevision(ctx)
+  // Clear the current partition before issuing the canonical session cookie.
+  if (process.env.ASSESSMENT_MODE !== 'true') {
+    ctx.res.cookie('participant_token', '', {
+      ...participantCookieSettings(ctx),
+      maxAge: 0,
+      secure: true,
+      sameSite: 'none',
+      partitioned: true,
+    })
+  }
+  ctx.res.cookie('temporary_participant_token', '', {
+    ...COOKIE_SETTINGS,
+    maxAge: 0,
+  })
+  ctx.res.cookie('participant_token', 'logoutString', {
+    ...participantCookieSettings(ctx),
+    maxAge: 0,
+  })
 }
 
 export async function logoutUser(_: any, ctx: ContextWithUser) {
@@ -90,7 +137,8 @@ async function doParticipantLogin(
   })
 
   const jwt = await createParticipantToken(participantId)
-  ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
+  if (process.env.ASSESSMENT_MODE !== 'true') expireParticipantCookie(ctx)
+  ctx.res.cookie('participant_token', jwt, participantCookieSettings(ctx))
   ctx.res.cookie('lti-token', '', { ...COOKIE_SETTINGS, maxAge: 0 })
   ctx.res.cookie('NEXT_LOCALE', participantLocale, COOKIE_SETTINGS)
 
@@ -210,6 +258,9 @@ export async function loginTemporaryParticipant(
 
   // create and return a new valid token for the temporary participant
   const jwt = await createTemporaryParticipantToken(temporaryParticipant.id)
+  // The PWA offers this login only without a signed-in participant. A leftover
+  // regular cookie would otherwise win over the temporary one, so it expires.
+  if (process.env.ASSESSMENT_MODE !== 'true') expireParticipantCookie(ctx)
   ctx.res.cookie('temporary_participant_token', jwt, COOKIE_SETTINGS)
   return jwt
 }
@@ -390,10 +441,7 @@ export async function activateParticipantAccount(
 
 export async function logoutParticipant(ctx: ContextWithUser) {
   // invalidate regular participant token
-  ctx.res.cookie('participant_token', 'logoutString', {
-    ...COOKIE_SETTINGS,
-    maxAge: 0,
-  })
+  expireParticipantCookie(ctx)
 
   // invalidate assessment / Edu-ID participant token
   ctx.res.cookie('next-auth.participant-session-token', 'logoutString', {
@@ -428,6 +476,7 @@ export async function logoutTemporaryParticipant(
   })
 
   // delete the cookie
+  setParticipantSessionRevision(ctx)
   ctx.res.cookie('temporary_participant_token', 'logoutString', {
     ...COOKIE_SETTINGS,
     maxAge: 0,
@@ -546,11 +595,6 @@ export async function deleteParticipantAccount(ctx: ContextWithUser) {
 
   if (!participant) return false
 
-  ctx.res.cookie('participant_token', 'logoutString', {
-    ...COOKIE_SETTINGS,
-    maxAge: 0,
-  })
-
   // if a participant group is empty after the participant leaves it, delete the group as well
   let deletionPromises: any[] = []
   for (const group of participant.participantGroups) {
@@ -570,6 +614,7 @@ export async function deleteParticipantAccount(ctx: ContextWithUser) {
   )
 
   await ctx.prisma.$transaction(deletionPromises)
+  await logoutParticipant(ctx)
   return true
 }
 

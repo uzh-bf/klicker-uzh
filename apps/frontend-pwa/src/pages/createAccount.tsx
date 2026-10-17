@@ -1,7 +1,4 @@
-import {
-  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
-  verifyJWT,
-} from '@klicker-uzh/util'
+import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util'
 import { toast } from '@uzh-bf/design-system'
 import generatePassword from 'generate-password'
 import { GetServerSidePropsContext } from 'next'
@@ -13,26 +10,27 @@ import { useMutation } from '@apollo/client'
 import Layout from '@components/Layout'
 import CreateAccountForm from '@components/forms/CreateAccountForm'
 import { CreateParticipantAccountWithDataUseDocument } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import getParticipantToken from '@lib/getParticipantToken'
-import useParticipantToken from '@lib/useParticipantToken'
+import getParticipantToken, {
+  participantSessionProps,
+} from '@lib/getParticipantToken'
+import { navigateParticipantSession } from '@lib/participantSession'
 
 interface Props {
+  sessionEstablished?: boolean
   signedLtiData?: string
   ssoId?: string
   email?: string
   username: string
-  participantToken?: string
-  cookiesAvailable?: boolean
   dataUseDisclosureVersion: string
 }
 
 function CreateAccount({
+  sessionEstablished,
   signedLtiData,
   email,
   username,
-  participantToken,
-  cookiesAvailable,
   dataUseDisclosureVersion,
 }: Props) {
   const t = useTranslations()
@@ -41,11 +39,7 @@ function CreateAccount({
     CreateParticipantAccountWithDataUseDocument
   )
 
-  useParticipantToken({
-    participantToken,
-    cookiesAvailable,
-    redirectTo: '/editProfile',
-  })
+  if (sessionEstablished) return <Loader />
 
   return (
     <Layout displayName={t('pwa.createAccount.signup.submit')}>
@@ -75,20 +69,15 @@ function CreateAccount({
           const participantToken = createResult?.participantToken ?? null
 
           if (participantToken) {
-            await router.replace(
-              `/editProfile?newAccount=true&participantToken=${participantToken}`,
-              {
-                pathname: '/editProfile',
-                query: {
-                  newAccount: true,
-                  participantToken,
-                },
-              }
+            await navigateParticipantSession(
+              router,
+              '/editProfile?newAccount=true',
+              true
             )
             return
           }
 
-          // keep legacy non-LTI behavior for direct /createAccount usage
+          // Unlinked accounts use the ordinary login flow.
           if (!signedLtiData && createResult?.participant) {
             await router.push({
               pathname: '/login',
@@ -124,22 +113,26 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   try {
     const { query } = ctx
     const apolloClient = initializeApollo()
-    const { participantToken, cookiesAvailable } = await getParticipantToken({
+    const session = await getParticipantToken({
       apolloClient,
       ctx,
     })
+    const { participantToken, sessionState, signedLtiData } = session
+
+    if (participantToken && session.sessionEstablished) {
+      return {
+        props: {
+          ...participantSessionProps(session),
+          // An already linked account continues to its profile once the
+          // session is confirmed.
+          sessionDestination: '/editProfile',
+          messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+            .default,
+        },
+      }
+    }
 
     if (participantToken) {
-      if (!cookiesAvailable) {
-        return {
-          redirect: {
-            destination: `${ctx.locale ? `/${ctx.locale}` : ''}/editProfile?participantToken=${participantToken}`,
-            permanent: false,
-            query: { participantToken },
-          },
-        }
-      }
-
       return {
         redirect: {
           destination: `${ctx.locale ? `/${ctx.locale}` : ''}/editProfile`,
@@ -148,33 +141,23 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    const cookies = nookies.get(ctx)
-    const signedLtiData = { token: '', ssoId: '', email: '' }
-
-    // LTI 1.3 authentication flow
-    if (cookies['lti-token'] || query.jwt) {
-      const token = cookies['lti-token'] ?? query.jwt
-
-      const parsedToken = (await verifyJWT(
-        token,
-        process.env.APP_SECRET as string
-      )) as {
-        sub: string
-        email: string
-        scope: string
-      }
-
-      if (parsedToken.scope === 'LTI1.3') {
-        signedLtiData.token = token
-        signedLtiData.ssoId = parsedToken.sub
-        signedLtiData.email = parsedToken.email
+    if (
+      sessionState === 'rejected' ||
+      sessionState === 'exchange_unavailable'
+    ) {
+      return {
+        redirect: {
+          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/serverError?freshLaunch=true`,
+          permanent: false,
+        },
       }
     }
 
-    if (!query?.disableLti && signedLtiData.token !== '') {
+    if (!query?.disableLti && signedLtiData) {
       return addApolloState(apolloClient, {
         props: {
           signedLtiData: signedLtiData.token,
+          sessionState,
           ssoId: signedLtiData.ssoId,
           email: signedLtiData.email,
           dataUseDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
@@ -192,6 +175,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     return {
       props: {
+        sessionState,
         dataUseDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
         username: generatePassword.generate({
           length: 10,

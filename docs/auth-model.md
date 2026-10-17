@@ -2,7 +2,7 @@
 type: Auth Model
 title: Auth Model
 description: Login flows for lecturers and participants, origin-based cookie selection in the backend, JWT scopes, and LTI launch rules.
-timestamp: '2026-09-19'
+timestamp: '2026-10-06'
 tags:
   - backend
   - auth
@@ -11,7 +11,7 @@ tags:
 
 # Auth Model
 
-**The non-obvious core: the backend chooses which auth cookie to read based on the request's `Origin` header.** `jwtMiddleware` (`apps/backend-docker/src/app.ts`) inspects `req.headers.origin` against the `APP_MANAGE_SUBDOMAIN`/`APP_CONTROL_SUBDOMAIN`/`APP_STUDENT_SUBDOMAIN` env vars (defaults `manage`/`control`/`pwa`):
+**The non-obvious core: request `Origin` selects the credential audience.** `jwtMiddleware` (`apps/backend-docker/src/jwtMiddleware.ts`) inspects `req.headers.origin` against the `APP_MANAGE_SUBDOMAIN`/`APP_CONTROL_SUBDOMAIN`/`APP_STUDENT_SUBDOMAIN` env vars (defaults `manage`/`control`/`pwa`):
 
 | Request origin                      | Cookie(s) tried, in order                                                       |
 | ----------------------------------- | ------------------------------------------------------------------------------- |
@@ -19,7 +19,27 @@ tags:
 | pwa                                 | `participant_token` → `temporary_participant_token` → `next-auth.session-token` |
 | assessment (`ASSESSMENT_MODE=true`) | `next-auth.participant-session-token`                                           |
 
-A `Bearer` authorization header is always the final fallback (assessment live-quiz mode depends on it — marked `DO NOT TOUCH` in the source). Whatever token is found is verified with `verifyJWT(token, APP_SECRET)`; failure just yields an unauthenticated context, not an error. Consequence for local setups: apps and backend must share `APP_SECRET`, and cookie domains must match the origin the backend expects — this is why the Traefik `*.klicker.com` path mirrors production more faithfully than raw localhost.
+Regular PWA browser requests use the shared cookie identity. A bearer applies
+only when no participant cookie is present, and only as a plain participant
+token from an LMS frame session. A supplied `x-participant-session` must match the non-secret
+`participant_session` cookie (`none` represents no revision); mismatches return
+HTTP 409 before executing work. Missing headers preserve non-browser callers.
+The PWA branch also requires the origin host to lie
+inside `COOKIE_DOMAIN`. Chat uses the same origin restriction before authenticating
+API requests; its ConfigMap receives `backendGraphql.cookieDomain` as
+`COOKIE_DOMAIN`. The response API rejects origins outside its existing
+`CORS_ALLOWED_ORIGINS` before accepting regular answers. Participant cookies are SameSite=None and CORS reflects
+any origin, so a foreign host that merely contains `pwa` must not select them.
+For the same reason, participant login issues a SameSite=None cookie only to an
+origin inside `COOKIE_DOMAIN`. Any other origin receives a Lax cookie, which a
+browser does not store from a cross-site response, so a foreign page cannot
+place a visitor in another participant's session.
+Without `COOKIE_DOMAIN` no origin qualifies, so participant cookies are never
+selected and every deployment that relies on them must set it.
+Assessment, manager/controller and missing-Origin
+selection retain the final Bearer fallback (assessment live-quiz mode depends
+on it — marked `DO NOT TOUCH` in the source). Every selected token is verified
+with `verifyJWT(token, APP_SECRET)` before entering the context. Consequence for local setups: apps and backend must share `APP_SECRET`, and cookie domains must match the origin the backend expects — this is why the Traefik `*.klicker.com` path mirrors production more faithfully than raw localhost.
 
 ## Lecturer login (`apps/auth`)
 
@@ -34,7 +54,7 @@ The NextAuth cookie domain is derived by stripping the first subdomain label fro
 
 ## Participant login (`apps/frontend-pwa`)
 
-- **Username/password** — PWA `LoginForm` → login mutation → `participant_token` cookie; the PWA Apollo client additionally sends the token as `Bearer` from sessionStorage.
+- **Username/password** — PWA `LoginForm` → login mutation → `participant_token` cookie; successful login replaces the shared session and invalidates old PWA and Chat state.
 - **Magic link** — `services/accounts.ts:sendMagicLink` signs a 15-minute JWT and emails `${APP_ORIGIN_PWA}/magicLogin?token=…`; the `magicLogin` page exchanges it via `LoginParticipantMagicLinkDocument` (`loginParticipantMagicLink`).
 - **Edu-ID for participants** — separate NextAuth config in the same auth app (`EduIDParticipantProvider`), same `EDUID_CLIENT_SECRET` gating.
 - **Temporary (anonymous)** — `temporary_participant_token` cookie, role `TEMPORARY_PARTICIPANT`.
@@ -45,6 +65,52 @@ The NextAuth cookie domain is derived by stripping the first subdomain label fro
 Two related properties of that resolver are worth knowing before changing it: it resolves by `ssoId` and then falls back to matching `Participant.email`, and both happen **before** the `allowCreate` gate — so `allowCreate: false` constrains account creation only, never account resolution. Any new launch path must therefore be verified before it reaches this function, not inside it.
 
 Note the account-duplication trap: participant emails are only unique per auth mode (`@@unique([email, isSSOAccount])` — details in [Data & Migrations](./data-and-migrations.md)).
+
+## Regular participant session recovery
+
+A fresh verified LTI handoff overrides an existing regular participant login.
+PWA and Chat use one shared HttpOnly cookie identity per browser cookie context.
+Only an LMS frame without cookie access keeps its own token in sessionStorage.
+The LTI helper verifies the signed launch before exchanging it; malformed,
+expired or wrong-purpose launches block the protected page instead of falling
+back to another account, and leave the existing session untouched: any site can
+make a browser load a forged launch. Only page navigations count as launches. A participant JWT
+in a URL cannot create a session. Registration retains the verified LTI handoff,
+not an ambient older launch.
+
+A random, non-secret `participant_session` revision accompanies cookie changes.
+PWA and Chat bind state and requests to it; stale requests are rejected before
+execution and late results are discarded. Open tabs reload on interaction,
+focus or a periodic revision check. Full reload clears Apollo, Chat stores and
+stream state. The revision contains no participant ID or credential. Browser
+requests use `x-participant-session`; the GraphQL, Chat and response APIs reject
+mismatched revisions with HTTP 409. It is a consistency check, not authorization.
+
+Successful login, logout and account deletion replace the shared session.
+The initiating PWA document immediately hides its old identity state and retires
+its Apollo client. Its caller navigates to a fresh document, preserving the
+locale and intended destination. A cancelled navigation leaves the old document
+unusable until reload; it never rebinds old page state to the new identity.
+Rejected logout/deletion preserve it and provide retry feedback. Cookie-changing
+responses are ordered by completion; already dispatched work and Set-Cookie
+responses cannot be revoked locally. Logout does not globally revoke JWTs.
+Assessment and lecturer authentication keep their existing separate contracts.
+
+Embedded PWA pages join the shared login when they have unpartitioned cookie
+access and the shared cookie holds their launch's session. Otherwise an LTI
+launch or LTI account creation gives the frame its own session: the token reaches server props only for framed
+requests, the tab keeps it in sessionStorage, requests send it as a bearer
+without cookies, and the shared revision does not apply. Outside LMS frames, LTI and registration
+confirm cookie acceptance, and a refused cookie leads to recovery that opens
+the activity or ordinary login in a normal tab. The normal Chat link opens in a new tab without
+a recovery gate. Its bridge checks membership without creating enrollment and
+confirms a newly exchanged cookie before redirecting; Chat then binds the
+revision its own server read. Regular SSR props omit participant JWTs except
+the frame token of a framed launch; elsewhere the HttpOnly cookie remains the
+browser credential.
+
+See [ADR 0044](adr/0044-regular-participant-session-recovery.md) for the shared
+session contract and its browser-partition and concurrent-request limits.
 
 ## Participant account completion
 
@@ -93,7 +159,7 @@ does not implement expiry of retention periods or an operator deletion workflow.
 Manage and PWA login pages treat return targets as untrusted input:
 
 - Manage preserves the current path when an authenticated query fails (`apps/frontend-manage/src/components/Layout.tsx:Layout`). Its login page resolves `redirect_to` against `NEXT_PUBLIC_MANAGE_URL` and accepts only that exact origin. External or malformed targets fall back to the manage root before the page redirects to the auth app (`apps/frontend-manage/src/pages/login.tsx:getServerSideProps`).
-- PWA login accepts paths on the exact origin the build is served from and normalizes them to relative navigation. It also accepts the exact `NEXT_PUBLIC_CHAT_URL` origin because chat login must return to a different app. Every other origin and malformed value falls back to the app root (`apps/frontend-pwa/src/pages/login.tsx:getSafeRedirectPath`). Local PWA targets use the Next router; chat targets use a full browser navigation after password login (`apps/frontend-pwa/src/pages/login.tsx:Login`).
+- PWA login accepts paths on the exact origin the build is served from and normalizes them to relative navigation. It also accepts the exact `NEXT_PUBLIC_CHAT_URL` origin because chat login must return to a different app. Every other origin and malformed value falls back to the app root (`apps/frontend-pwa/src/pages/login.tsx:getSafeRedirectPath`). Regular PWA and chat targets use a full browser navigation after password login; assessment targets retain Next router navigation (`apps/frontend-pwa/src/pages/login.tsx:Login`).
 
 **The anchoring origin is build-specific.** The regular build anchors on `NEXT_PUBLIC_PWA_URL`, the assessment build on `NEXT_PUBLIC_ASSESSMENT_URL`, and either falls back to the request `Host` when its variable is unset (`apps/frontend-pwa/src/pages/login.tsx:getServerSideProps`). Anchoring assessment mode on `NEXT_PUBLIC_PWA_URL` is a regression, not a shortcut: the two builds run on separate origins with separate sessions, and the regular PWA offers no Edu-ID login, so students sent there after Edu-ID cannot sign in at all. The Next.js 16 upgrade (#5166) introduced exactly that regression on `v3`; production never shipped it, because prd stayed pinned to a pre-#5166 tag while staging floats `v3`.
 

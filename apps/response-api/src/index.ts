@@ -1,6 +1,11 @@
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
+import {
+  type JWTPayload,
+  parseCookiesHeader,
+  participantSessionMatches,
+  verifyJWT,
+} from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import { createServer, IncomingMessage, ServerResponse } from 'http'
 import { Redis } from 'ioredis'
@@ -37,7 +42,10 @@ function setCorsHeaders(req: IncomingMessage, res: ServerResponse) {
     res.setHeader('Access-Control-Allow-Credentials', 'true')
   }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Cookie')
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Cookie, Authorization, X-Participant-Session'
+  )
 }
 
 function sendJson(
@@ -91,6 +99,13 @@ async function readBody(req: IncomingMessage): Promise<any> {
 }
 
 async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
+  const origin = req.headers.origin
+  if (
+    (origin !== undefined && !CORS_ALLOWED_ORIGINS.includes(origin)) ||
+    req.headers['sec-fetch-site'] === 'cross-site'
+  ) {
+    return sendJson(req, res, 403, { error: 'untrusted_origin' })
+  }
   let payload: any
   try {
     payload = await readBody(req)
@@ -113,6 +128,15 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
 
   // Only forward participant-related cookies. If both exist, include both.
   let cookie: string | undefined
+  if (
+    !participantSessionMatches(req.headers['x-participant-session'], {
+      participant_session: parseCookiesHeader(req.headers.cookie).get(
+        'participant_session'
+      ),
+    })
+  ) {
+    return sendJson(req, res, 409, { error: 'participant_session_changed' })
+  }
   if (typeof req.headers['cookie'] === 'string') {
     const raw = req.headers['cookie']
     const parts = raw.split(';').map((s) => s.trim())

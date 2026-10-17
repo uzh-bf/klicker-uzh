@@ -4,12 +4,12 @@ import { useCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
 import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operations'
 // import { useResponseCache } from '@graphql-yoga/plugin-response-cache'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
-import { verifyJWT } from '@klicker-uzh/util'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import express from 'express'
 import { createYoga } from 'graphql-yoga'
 import { createRequire } from 'node:module'
+import jwtMiddleware from './jwtMiddleware.js'
 
 const require = createRequire(import.meta.url)
 const persistedOperations = require('@klicker-uzh/graphql/dist/server.json')
@@ -72,67 +72,9 @@ function prepareApp({
     })
   )
 
-  // Custom JWT middleware to replace passport-jwt
-  async function jwtMiddleware(req: any, res: any, next: any) {
-    let token = null
-
-    // Assessment mode: only check for student NextAuth cookie
-    if (process.env.ASSESSMENT_MODE === 'true') {
-      if (
-        req.headers.origin?.includes(
-          process.env.APP_MANAGE_SUBDOMAIN ?? 'manage'
-        ) ||
-        req.headers.origin?.includes(
-          process.env.APP_CONTROL_SUBDOMAIN ?? 'control'
-        )
-      ) {
-        token = req.cookies?.['next-auth.session-token']
-      } else if (
-        req.headers.origin?.includes(
-          process.env.APP_ASSESSMENT_SUBDOMAIN ?? 'assessment'
-        )
-      ) {
-        token = req.cookies?.['next-auth.participant-session-token']
-      }
-    } else {
-      if (
-        req.headers.origin?.includes(
-          process.env.APP_MANAGE_SUBDOMAIN ?? 'manage'
-        ) ||
-        req.headers.origin?.includes(
-          process.env.APP_CONTROL_SUBDOMAIN ?? 'control'
-        )
-      ) {
-        token = req.cookies?.['next-auth.session-token']
-      } else if (
-        req.headers.origin?.includes(process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa')
-      ) {
-        token =
-          req.cookies?.['participant_token'] ??
-          req.cookies?.['temporary_participant_token'] ??
-          req.cookies?.['next-auth.session-token']
-      }
-    }
-
-    // ! DO NOT TOUCH - assessment live quiz mode relies on it
-    token =
-      token ?? req.headers['authorization']?.replace('Bearer ', '') ?? null
-
-    let user = null
-    if (token) {
-      try {
-        user = await verifyJWT(token, process.env.APP_SECRET as string)
-      } catch (error) {
-        // JWT verification failed, continue with user = null
-        console.log('JWT verification failed:', error)
-      }
-    }
-
-    req.locals = { user }
-    next()
-  }
-
   app.use(cookieParser())
+
+  // Custom JWT middleware to replace passport-jwt
   app.use(jwtMiddleware)
 
   const yogaApp = createYoga({

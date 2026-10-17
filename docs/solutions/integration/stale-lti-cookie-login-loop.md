@@ -1,6 +1,6 @@
 ---
 module: participant-authentication
-date: 2026-09-07
+date: 2026-10-06
 problem_type: integration
 severity: medium
 symptoms:
@@ -33,9 +33,18 @@ five-minute lifetime and an explicit root path. The
 [password form](../../../apps/frontend-pwa/src/pages/login.tsx) awaits navigation
 and settles its submitting state even when navigation fails or is cancelled.
 
-Keep identity selection fail-closed: a valid pending LTI identity takes
-precedence, and invalid LTI state must not silently select another signed-in
-participant. Cookie cleanup belongs after successful authentication.
+Keep identity selection fail-closed: a fresh verified explicit handoff supersedes
+retained LTI state. Without a handoff, pending LTI state still precedes ambient
+participant state. Invalid explicit credentials must not silently select another
+signed-in participant. Cookie cleanup belongs after successful authentication.
+
+The same symptom can arise when cookies are refused in an embedded context.
+The shared-session contract requires a successful cookie replacement; there is
+no independent tab bearer fallback. Verify the first and subsequent Self
+results in both the launch tab and another open tab. Known cookie variants can
+be expired only in the current partition. See
+[regular session recovery](../../auth-model.md#regular-participant-session-recovery)
+for selection, synchronization and recovery behavior.
 
 ## Verification lessons
 
@@ -49,3 +58,7 @@ Focused authentication tests cover cookie effects for successful and rejected
 login paths. Local browser checks covered stale-cookie recovery, same-page
 return, and cancelled or rejected navigation. These checks do not establish
 production deployment or verify a chatbot answer.
+
+Local ltijs with a mocked LMS exercises launch behavior; it does not prove a
+real OLAT launch or production deployment. Browser policy and cookie-domain
+limitations must remain explicit in the verification record.

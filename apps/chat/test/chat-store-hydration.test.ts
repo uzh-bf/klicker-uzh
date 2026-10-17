@@ -179,12 +179,12 @@ describe('chatStore hydration', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1)
     expect(fetchSpy).toHaveBeenCalledWith(
       '/api/chatbots/chatbot-1/threads/thread-1/messages/message-1/attachments',
-      expect.objectContaining({
-        headers: expect.objectContaining({
-          'Content-Type': 'application/json',
-        }),
-      })
+      expect.objectContaining({ headers: expect.any(Headers) })
     )
+
+    const requestHeaders = new Headers(fetchSpy.mock.calls[0]?.[1]?.headers)
+    expect(requestHeaders.get('content-type')).toBe('application/json')
+    expect(requestHeaders.get('x-participant-session')).toBe('none')
 
     const thread = useChatStore.getState().threads[0]
     expect(thread?.messages[0]?.imageAttachments).toMatchObject([

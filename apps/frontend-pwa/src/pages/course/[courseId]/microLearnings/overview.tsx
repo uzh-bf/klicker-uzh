@@ -3,7 +3,9 @@ import { faBookOpenReader } from '@fortawesome/free-solid-svg-icons'
 import { GetCoursePublishedMicroLearningsDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import getParticipantToken from '@lib/getParticipantToken'
+import getParticipantToken, {
+  participantSessionProps,
+} from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -140,17 +142,17 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    const { participantToken, cookiesAvailable } = await getParticipantToken({
+    const session = await getParticipantToken({
       apolloClient,
       courseId: ctx.params.courseId,
       ctx,
     })
+    const { participantToken } = session
 
     if (participantToken) {
       return {
         props: {
-          participantToken,
-          cookiesAvailable,
+          ...participantSessionProps(session),
           courseId: ctx.params.courseId,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
@@ -160,6 +162,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     return addApolloState(apolloClient, {
       props: {
+        ...participantSessionProps(session),
         courseId: ctx.params.courseId,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
