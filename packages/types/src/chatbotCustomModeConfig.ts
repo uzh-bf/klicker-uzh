@@ -18,6 +18,13 @@ export type ChatbotCustomMode = {
    * the mode offers none; the text is copied into the composer, never sent.
    */
   starterPrompts?: string[] | null
+  /**
+   * Whether participants see the model's reasoning summary for turns in this
+   * mode. Absent or false hides it: a summary can paraphrase the persona or
+   * scenario facts the mode keeps from participants. Owner preview always
+   * shows it.
+   */
+  showReasoning?: boolean
 }
 
 /** Persisted, platform-constrained set of custom chat modes for one chatbot. */
@@ -45,6 +52,8 @@ export type ChatbotCustomModeInput = {
    * list clears them.
    */
   starterPrompts?: string[] | null
+  /** Omission keeps the stored choice of an existing mode; null hides. */
+  showReasoning?: boolean | null
 }
 
 /** Full replacement input accepted by the section-patch save mutation. */

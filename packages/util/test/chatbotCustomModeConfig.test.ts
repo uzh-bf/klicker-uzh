@@ -163,6 +163,51 @@ describe('chatbot custom mode configuration', () => {
     expect(resaved.modes[1]?.welcomeMessage ?? null).toBeNull()
   })
 
+  it('hides participant reasoning unless a save explicitly shows it', () => {
+    const created = parseModes(
+      [{ name: 'Hidden by default' }, { name: 'Shown', showReasoning: true }],
+      null
+    )
+    expect(created.modes.map((mode) => mode.showReasoning ?? false)).toEqual([
+      false,
+      true,
+    ])
+
+    const [hiddenKey, shownKey] = created.modes.map((mode) => mode.key)
+    // Omission keeps the stored choice; false or null hides again.
+    const resaved = parseModes(
+      [
+        { key: shownKey, name: 'Shown' },
+        { key: hiddenKey, name: 'Hidden by default', showReasoning: null },
+      ],
+      created
+    )
+    expect(resaved.modes.map((mode) => mode.showReasoning ?? false)).toEqual([
+      true,
+      false,
+    ])
+    expect(
+      parseModes(
+        [{ key: shownKey, name: 'Shown', showReasoning: false }],
+        created
+      ).modes[0]?.showReasoning ?? false
+    ).toBe(false)
+
+    expect(() =>
+      parseModes([{ name: 'Invalid', showReasoning: 'yes' }], null)
+    ).toThrow('showReasoning must be a boolean or null')
+
+    // A stored value other than an explicit true never reveals reasoning.
+    expect(
+      normalizeChatbotCustomModeConfig({
+        modes: [
+          { key: 'cm_truthy', name: 'Truthy', showReasoning: 'true' },
+          { key: 'cm_true', name: 'True', showReasoning: true },
+        ],
+      })?.modes.map((mode) => mode.showReasoning ?? false)
+    ).toEqual([false, true])
+  })
+
   it('discards only an invalid stored welcome and keeps the mode', () => {
     const config = normalizeChatbotCustomModeConfig({
       modes: [
