@@ -269,10 +269,10 @@ back to `APP_SECRET`; student tokens use `APP_SECRET`.
 
 Infra (the 3× Redis, MailHog, Hatchet) is **not** routed — the apps reach it by
 compose DNS (`redis_exec`, `redis_cache`, `redis_assessment`, `mailhog`,
-`hatchet:7077`). Connect to the DB from the host with direct-SSL. A selective
-profile publishes this route only when it includes `db` (for example
-`--profile manage,db`); `standard` and `full` always do. Otherwise use the loopback port
-from `devrouter env . --json`:
+`hatchet:7077`). A selective profile publishes the routed DB endpoint only
+when it includes `db` (for example `--profile manage,db`); `standard` and `full`
+always do. Otherwise use the loopback port from `devrouter env . --json`.
+Connect to the routed endpoint from the host with direct-SSL:
 
 ```bash
 psql "host=db.klicker.<workspace>.localhost port=5432 user=klicker_test \
