@@ -2,9 +2,11 @@ query GetLiveQuizEvaluation($id: String!, $hmac: String) {
   liveQuizEvaluation(id: $id, hmac: $hmac) {
     id
     name
+    status
     displayName
     description
     courseLanguage
+    courseName
 
     isAssessmentEnabled
     pinCode

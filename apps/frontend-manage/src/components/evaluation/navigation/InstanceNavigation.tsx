@@ -22,7 +22,7 @@ function InstanceNavigation({
   const t = useTranslations()
 
   return (
-    <div className="flex flex-row items-center">
+    <div className="flex min-w-0 flex-row items-center">
       <Button
         basic
         onClick={() => {
@@ -71,8 +71,9 @@ function InstanceNavigation({
           setActiveInstance(Number(newValue))
         }}
         className={{
-          root: 'z-20 h-[2.65rem]',
-          trigger: 'm-0 h-full w-max rounded-none border-none shadow-none',
+          root: 'z-20 h-[2.65rem] min-w-0 flex-1',
+          trigger:
+            'm-0 h-full w-full min-w-0 rounded-none border-none shadow-none lg:w-max',
         }}
         value={String(activeInstance)}
         contentPosition="popper"
