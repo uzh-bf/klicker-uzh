@@ -1,5 +1,9 @@
 # Trajectory producer and importer compatibility
 
+Current execution: the approved migration section below supersedes the earlier
+optional product-adapter ownership and merge/pin recommendation. Earlier
+verification receipts cover the prior implementation, not migration acceptance.
+
 ## Approval summary
 
 Align the existing application capture validator and the framework's optional
@@ -209,3 +213,152 @@ The zero-spend assessment preparation uses the existing saved-conversation
 `outcome_achievement` parameters exclude METADATA, but an actual judge-request
 serialization check, frozen manual disagreement criteria and a distinct capped
 judge route/budget remain prerequisites. No scorer or judge guard was added.
+
+## Generic-only framework ruling — 17 October 2026
+
+The user requires everything merged into the evaluation framework to be generic
+and potentially applicable to other use cases. An optional product-specific
+adapter inside that repository does not satisfy this requirement. Renaming one
+while retaining product policies would not satisfy it either. This supersedes
+the earlier ownership decision and recommendation to merge framework MR 57 and
+then update the application pin. Both drafts require ownership rework first.
+
+The framework owns reusable evaluation contracts, planned-record coverage,
+DeepEval metrics, judge execution and reporting. Domain choices must come from
+caller-supplied data or configuration. Tests must demonstrate generic behavior
+with synthetic inputs rather than assume named application tools or modes.
+
+The application owns its capture protocol and receipt translation, ancestry and
+source-mapping validation, tool requirements, supported modes, course corpora,
+prompts, routing and spend admission. It should export the framework's existing
+normalized saved-conversation format. This boundary does not require another
+runner, script family or evaluation engine.
+
+The active framework draft currently changes an application-named adapter,
+tests and example corpus. Its importer hardcodes `KB_doc_query` and eligibility
+for Tutor and Explainer. These are application policies. The adapter, tests,
+example and README entry already exist on framework main, so revising only new
+draft additions would leave the ownership problem in place.
+
+The next coordinated package must put this translation and its fixtures under
+application ownership, verify the replacement against the preserved synthetic
+round-trip evidence, and leave only demonstrably generic changes in MR 57.
+Identify callers and settle compatibility before removing the existing framework
+entrypoint. Preserve captured evidence, controls, incomplete/unstarted coverage
+and cost protections. Historical plans and Git history remain historical records.
+
+This section records the binding direction; it does not approve deletion of an
+existing framework entrypoint, merging, pin advancement, deployment, new paid
+capture or paid judging. The implementation package and compatibility handling
+must be resolved before that migration.
+
+## Approved caller-owned import migration
+
+### Approval summary
+
+The user approved relocating the existing importer, tests and corpus into the
+application, verifying the replacement, and then removing the framework's legacy
+entrypoint. Approval mode: executable batch. Keep the existing two drafts and
+their targets. Deliver reviewed source, offline compatibility evidence and CI;
+keep both drafts. Merge, ready, pin advancement, deployment, real-ledger
+initialization and paid target/judge calls are excluded.
+
+Move protocol interpretation rather than reproduce it. Preserve corpus version
+1, receipt version 2, exclusive output creation, exact learner text, ancestry,
+source diagnostics, application eligibility and every planned result. The
+framework consumes the same existing normalized conversation artifact. Its
+metric mode selectors must accept caller-defined nonblank labels instead of a
+built-in application mode allowlist. This extends accepted labels; existing
+normalization, configured metric filtering and missing-mode failures remain.
+No new evaluator, runner, package or application runtime is needed.
+
+### Contracts, owners and slices
+
+Execution mode: standard; model identity is unavailable. Full-path package for
+the cross-repository contract migration. Main owns the boundary and final proof.
+Primitive impact: reuse the existing conversation artifact and assessment
+contracts; retire the consumer-specific framework entrypoint after its app-side
+replacement works. No new product primitive. ADR 0001's transport/evidence
+separation is preserved, with consumer-specific translation owned by callers.
+
+Delegation Map: main owns slice 1 (app migration) and slice 3 (framework cleanup,
+documentation, integration and delivery). A trusted executor owns slice 2
+(generic framework label handling and its existing tests), independent of slice
+1. Slice 3 depends on successful replacement verification. One planner reviews
+this derived execution plan; migration risk and final review cover both repos.
+
+1. App-owned replacement. Route: main; cross-repository relocation and public
+   data inspection are coupled. Move the existing implementation to
+   `evaluation/adapters/klicker_trajectories.py`, its suite to
+   `evaluation/tests/test_klicker_trajectories.py`, and the authored example to
+   `evaluation/data/explainer-compression/{README.md,corpus.json}`. Only adjust
+   imports and execution paths; preserve semantic tests and all case objects.
+   Add the relocated suite to the existing uv-based check in
+   `.github/workflows/check.yml`, using pytest 9.1.1 (the existing framework lock
+   version), without private submodule access. The runtime importer stays
+   standard-library only. Acceptance: 49 migrated tests pass offline and actual
+   preserved synthetic JS runner output imports identically through API/CLI.
+2. Generic label handling. Route: trusted executor. Owned framework paths:
+   `src/utils/utils.py`, `src/customization/custom_metrics.py`,
+   `tests/test_gt_loader.py`, `tests/test_chat_export.py`,
+   `tests/test_metric_definitions.py`, and the existing
+   coverage test in `tests/test_run_evaluation.py` if needed. Remove the fixed
+   Tutor/Explainer allowlist. Retain trimming/lowercasing, nonblank string
+   validation, selector uniqueness and matching. Use arbitrary synthetic labels
+   to protect configured inclusion/exclusion and planned-record preservation.
+   Replace obsolete unknown-label rejection in both chat-export seams with
+   caller-defined label acceptance. Acceptance: focused existing suites pass
+   without provider calls; existing
+   metric configs retain their meaning. No new config or dependency.
+3. Retire legacy ownership and deliver. Route: main; integration boundary.
+   After slice 1 passes, delete the framework importer, its relocated tests and
+   example files. Remove the new product-specific framework plan from this
+   draft; retain its useful run/assessment protocol in the migrated example
+   README and app plans. Replace it with a short generic framework migration
+   plan at `project/2026-10-17-conversation-import-boundary-plan.md`. Update
+   framework `README.md`, `AGENTS.md` and ADR 0001 for caller-owned translation
+   and the existing normalized conversation contract. Preserve historical plans
+   already on main; do not clean unrelated product integrations.
+   Update app `evaluation/README.md`, the current ownership/phase sections of
+   `project/2026-10-12-chatbot-evaluator-plan.md` and
+   `project/2026-10-01-tutor-prompt-quality-roadmap.md`.
+   Acceptance: no active references to the removed importer remain; framework
+   additions contain generic behavior/data/docs only. App commands work without
+   the old module. Keep the current pin: the unchanged normalized output remains
+   readable by the pinned framework, independently of the pending migration.
+
+### Verification and recovery
+
+Test portfolio: relocate the existing protocol suite for lossless translation
+and invalid-input rejection; extend existing framework tests only for arbitrary
+configured labels and retained inclusion/exclusion; replace/consolidate the two
+chat-export unknown-label rejection tests with generic acceptance at those same
+seams; reuse the existing planned
+coverage test for failed/unstarted/unsupported/limited rows. No prose/corpus
+content assertions, duplicate test framework or paid evaluation.
+
+Run Python 3.12 and Node 24.21 checks in existing containers. Local checks use
+network-disabled containers and existing dependencies. Reuse the preserved
+complete/stopped synthetic producer receipts for exact before/after artifact
+comparison, plus exclusive-output CLI invocation. Keep proofs under ignored
+`project/_local/`; do not touch real receipts, ledgers or the isolated baseline.
+Run focused app capture/guard tests, framework pytest/ruff, workflow syntax and
+diff checks. Hosted app CI must execute the migrated suite without the private
+submodule. No browser-only contract changes; no browser/runtime is justified.
+
+Inspect source and staged data for secrets, personal and real-environment data
+before each commit and description update. Commit coherent slices, simplify and
+review substantive code, then obtain one trusted integrated final review over
+both full branch diffs. Push ordinary task branches, update both draft descriptions
+for the ownership correction and verify CI with one supported watcher per run.
+Address actionable feedback within this batch. Terminal: reviewed coordinated
+drafts, replacement proof and CI verified. Recovery is an ordinary source revert;
+do not delete historical evidence or rewrite published Git history.
+
+### Migration progress
+
+User approval recorded. Fresh remote reads show both task branches ahead of their
+targets without target drift. App pin remains `d4ee03e`; no pin change is needed
+for replacement verification. Planner and source execution pending. Advisory
+external routing comparison skipped: private source/architecture scope and held
+paid evaluation provide no eligible outbound task input.
