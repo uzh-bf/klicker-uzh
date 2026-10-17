@@ -3490,11 +3490,16 @@ export async function getControlCourses(ctx: ContextWithUser) {
       courses: {
         where: { deletionRequestedAt: null },
         orderBy: { createdAt: 'desc' },
+        include: {
+          // full quiz rows so the exposed LiveQuiz fields resolve; the
+          // overview itself only reads id and status
+          liveQuizzes: { where: { isDeleted: false } },
+        },
       },
     },
   })
 
-  return user?.courses ?? []
+  return (user?.courses ?? []) satisfies ICourse[]
 }
 
 function getPermissionBooleans({
@@ -4178,6 +4183,8 @@ export async function getControlCourse(
           id: quiz.id,
           name: quiz.name,
           status: quiz.status,
+          isAssessmentEnabled: quiz.isAssessmentEnabled,
+          availableFrom: quiz.availableFrom,
         })),
       } as ICourse)
     : null

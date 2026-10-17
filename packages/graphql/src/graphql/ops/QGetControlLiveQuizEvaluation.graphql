@@ -1,0 +1,7 @@
+query GetControlLiveQuizEvaluation($id: String!) {
+  liveQuizEvaluation(id: $id) {
+    id
+    isAssessmentEnabled
+    ...EvaluationResults
+  }
+}

@@ -1,0 +1,22 @@
+query GetControlLiveQuizFeedbacks($id: String!) {
+  controlLiveQuizFeedbacks(id: $id) {
+    id
+    isLiveQAEnabled
+    isModerationEnabled
+    feedbacks {
+      id
+      isPublished
+      isPinned
+      isResolved
+      content
+      votes
+      createdAt
+      resolvedAt
+      responses {
+        id
+        content
+        createdAt
+      }
+    }
+  }
+}

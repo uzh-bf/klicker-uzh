@@ -1,0 +1,30 @@
+query GetControlLiveQuizSession($id: String!) {
+  controlLiveQuiz(id: $id) {
+    id
+    name
+    displayName
+    isAssessmentEnabled
+    course {
+      id
+      displayName
+    }
+    blocks {
+      id
+      order
+      status
+      expiresAt
+      timeLimit
+      numOfParticipants
+      randomSelection
+      execution
+      elements {
+        id
+        ...ElementDataInfo
+      }
+    }
+    activeBlock {
+      id
+      order
+    }
+  }
+}
