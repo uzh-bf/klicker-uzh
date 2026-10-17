@@ -164,7 +164,7 @@ approved restoration of the prior unit policy; preserve runner data.
 
 - Recovery, Telemetry and Finish source slices are implemented.
   The plan was the first commit (`dd061ac149`), before source implementation.
-  The package changes eight paths, with 517 added/deleted lines
+  The package changes eight paths, with 519 added/deleted lines
   excluding this plan; it adds no dependency, generated file or configuration owner.
 - Focused verification passes: both reconciliation shell suites, syntax,
   ShellCheck, eight sampler tests in a network-isolated Node 24.21.0 container,
@@ -174,8 +174,8 @@ approved restoration of the prior unit policy; preserve runner data.
   Devrouter in the minimal image. Dependency-equipped CI remains authoritative.
 - The controller pins payload `0b7ccd398c6ae45e7ee5613bc9692874e6421e07`, with
   SHA-256 `ae6dbbd3c1eae60f20a801be24c259efec4d52069a79a76fc612078afda6072d`.
-  Its existing checksum test checks the committed payload; confirm the same
-  digest from GitHub after publishing. Archive integrity validation is unchanged.
+  Its existing checksum test and GitHub payload readback agree.
+  Archive integrity validation is unchanged.
 - Main-session simplification and final self-review cover all eight paths
   against the recorded baseline, including the review corrections. Correctness,
   plan compliance, maintainability and focused security apply; architecture and
