@@ -29,14 +29,24 @@ export const DEFAULT_POLL_TIMEOUT_MS = 60_000
 export const DEFAULT_REQUEST_TIMEOUT_MS = 75_000
 export const ELEARNING_GRANT_TTL_SECONDS = 120
 
-const LOGIN_MUTATION = `
-  mutation LoginParticipant($usernameOrEmail: String!, $password: String!) {
-    loginParticipant(
-      usernameOrEmail: $usernameOrEmail
-      password: $password
-    )
-  }
-`
+// Registered persisted-operation hash of MLoginParticipant.graphql. The API
+// refuses arbitrary operations outside development, so the login request
+// sends only this registered operation; echo the hash from the generated
+// packages/graphql/dist/client.json ("LoginParticipant") after editing
+// packages/graphql/src/graphql/ops/MLoginParticipant.graphql. A stale hash
+// fails as a persisted-operation rejection instead of a raw-query fallback.
+const LOGIN_OPERATION_HASH =
+  '8e3ea39b64b0408ac5e307fc0778e8ad583268eec5569d98873ddec90598c384'
+
+// Exact GraphQL error messages of @graphql-yoga/plugin-persisted-operations
+// when it refuses a request: "PersistedQueryOnly" for a raw query while
+// arbitrary operations are disabled, "PersistedQueryNotFound" for a hash the
+// server has not registered. Equality on these known messages attributes a
+// login rejection to the persisted operation contract.
+const PERSISTED_OPERATION_ERROR_MESSAGES = new Set([
+  'PersistedQueryOnly',
+  'PersistedQueryNotFound',
+])
 
 const RESPONSE_TIMEOUT_CLEANUP = Symbol('responseTimeoutCleanup')
 
@@ -696,10 +706,15 @@ export class KlickerEvaluationTarget {
         },
         body: JSON.stringify({
           operationName: 'LoginParticipant',
-          query: LOGIN_MUTATION,
           variables: {
             usernameOrEmail: this.participantUsername,
             password: this.participantPassword,
+          },
+          extensions: {
+            persistedQuery: {
+              version: 1,
+              sha256Hash: LOGIN_OPERATION_HASH,
+            },
           },
         }),
       },
@@ -707,7 +722,14 @@ export class KlickerEvaluationTarget {
     )
     const loginBody = await readJsonResponse(loginResponse, 'participant_login')
     if (Array.isArray(loginBody.errors) && loginBody.errors.length > 0) {
-      throw evaluationError('participant_login_rejected')
+      const persistedOperationRejected = loginBody.errors.some((error) =>
+        PERSISTED_OPERATION_ERROR_MESSAGES.has(error?.message)
+      )
+      throw evaluationError(
+        persistedOperationRejected
+          ? 'participant_login_persisted_operation_rejected'
+          : 'participant_login_rejected'
+      )
     }
     if (!loginBody?.data?.loginParticipant) {
       throw evaluationError('participant_login_rejected')

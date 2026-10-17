@@ -11,6 +11,25 @@ Klicker application stack.
   truth cases under `data/ground_truth/`. Do not add production or personal
   data.
 
+## Evaluation policy
+
+Use **DeepEval** through `evaluation/framework` for LLM answer quality, RAG,
+prompt and agent evaluations. Configure built-in metrics or GEval in YAML and
+use the existing launcher and reports. New bespoke LLM judges, parallel scoring
+engines and quality services are outside this repository's evaluation path.
+Product adapters may capture evidence and normalize QA records. Deterministic
+contract tests, token preparation, latency statistics and budget/accounting
+controls support evaluation without replacing DeepEval quality metrics.
+
+Routing benchmarks capture answers with explicit `--no-judge` and import saved
+answers into standard framework QA. The routing quality YAML supplies GEval
+correctness, completeness, clarity and major-error checks through the existing
+launcher. Pairwise comparisons use native DeepEval Arena with the framework's
+judge factory. The replaced custom prompts, verdict parsers and scoring helpers
+are removed; historical reports remain readable for analysis. See the
+[routing workflow](routing/README.md). Manage-assistant quality checks already
+use DeepEval and retain their own suite.
+
 ## Trajectories and provider admission
 
 Experiment orchestration, numeric references and the shared spend guard live in
@@ -470,12 +489,30 @@ the template directory itself: the placeholders are not a runnable case.
 
 ## Graph retrieval comparison
 
-The optional graph profile adds contextual precision, contextual recall and
-faithfulness to the existing semantic-similarity metric. These are diagnostic
-scores; the semantic threshold remains 0.5. This framework pin's aggregate
-primary gate also requires tool correctness, so use individual metric outcomes
-and denominators with this profile. Missing-context metrics are skipped, not
-passed. Count them explicitly alongside target failures and judge errors.
+Choose the profile from the reviewed case class before observing retrieval:
+
+- `data/metrics/klicker_graph_answerable.yaml` scores factual correctness at 0.5,
+  even with empty retrieval. Precision, recall and faithfulness diagnose evidence.
+- `data/metrics/klicker_graph_abstention.yaml` scores explicit source-limited
+  abstention at 0.8, including empty or irrelevant retrieval. It rejects invented
+  requested answers and fabricated attribution; citation wording is not required.
+  Do not calculate contextual recall against an absence-of-evidence reference.
+- `data/metrics/klicker_graph_retrieval.yaml` is the supplementary grounded-answer
+  profile for answerable cases. Its semantic metric can accept additional details
+  supported by the captured passages. It is skipped without context, so it must
+  accompany the answerable profile rather than replacing correctness scoring.
+
+Factual references contain only the essential supported answer, or the reviewed
+source limitation for unsupported cases. Keep citation requirements, safety rules
+and judge instructions in metric criteria. A source-backed numerical example is
+not a missing fact merely because the reference omits it. Version prospective
+reference copies; retain original scored references and results unchanged.
+
+The current framework keeps native DeepEval case `success` as its aggregate
+verdict. Retrieval diagnostics use `flaky: true` so DeepEval reports them without
+letting them decide answer quality. Report individual outcomes and denominators.
+Missing-context diagnostics are skipped, not passed; count them alongside target
+failures and judge errors.
 
 The local Chat Completions transport omits tool results. Capture actual persisted
 KB document passages during **query** mode, enrich the resulting QA file, then
@@ -514,7 +551,7 @@ node evaluation/scripts/enrich-chat-qa.mjs \
 
 pnpm run eval:klicker -- --mode eval \
   --qa-file /absolute/private/path/enriched-qa.json \
-  --metrics evaluation/data/metrics/klicker_graph_retrieval.yaml \
+  --metrics evaluation/data/metrics/klicker_graph_answerable.yaml \
   --eval-mode ground-truth
 ```
 
@@ -545,6 +582,77 @@ do not prove internal expansion counts. Use the server's content-free `[chat.gra
 
 Successful fusion applies 12 passages/16,000 content characters, while baseline and fallback preserve the provider payload. Verify actual context sizes for every arm; do not infer matched budgets from the wrapper. Keep budget enforcement in the provider or evaluation harness rather than changing production retrieval only for tests. A three-question off/on run proves mechanism only; quality qualification needs a fresh frozen family-separated set and predeclared acceptance criteria.
 
+### Prepare matched inputs before generation
+
+`evaluation/scripts/prepare-graph-comparison.py` provides offline data preparation
+and an importable generation seam. Use the framework Python environment
+with its existing `tiktoken` dependency and cached `o200k_base` encoding. A missing
+or invalid tokenizer cache stops preparation without downloading anything.
+
+```bash
+python evaluation/scripts/prepare-graph-comparison.py \
+  --input /absolute/private/path/retrieval-arms.json \
+  --output /absolute/private/path/prepared-inputs.json
+```
+
+The input has one `cases` list. Each case contains only `id`, `question` and `arms`.
+The three arm names are `ordinary-rag`, `document-second-search` and
+`falkordb-graphrag`; each maps to an ordered list of passage strings. Include
+source labels and locators inside those strings. QA files and expected answers
+are rejected, so preparation cannot quietly shorten evidence after generation.
+
+The canonical user input is compact JSON with `question` and `retrieval_context`.
+The 4,096-token cap includes that complete rendered user input, its delimiters and
+question overhead. Per case, the shortest available input sets the common quota
+(up to the cap). All three inputs must fall between quota minus eight and quota.
+Only literal Unicode prefixes are retained, with no padding or reordering.
+All-empty arms are valid; mixed empty/nonempty arms stop as unmatched retrieval
+failures. Report these failures separately rather than dropping them from quality
+denominators. Preparation records original and selected sizes, tokenizer version,
+source hash and exact input text, and refuses to overwrite an earlier file.
+
+Future generation must use each saved `rendered_input` unchanged, with the same
+system prompt, target model, effort and output cap across arms. Chat protocol
+framing and provider-billed token counts require separate verification. This
+preparation does not prove a matched native chatbot run. The existing capture
+adapter records what the chatbot actually saw; it must never clip persisted
+context after generation to manufacture budget matching.
+
+The importable `generate_matched(prepared, contract, client, encoding)` validates
+every saved arm before dispatch. The contract contains `model`, `system_prompt`,
+`reasoning_effort` and reasoning-inclusive `max_completion_tokens`. It uses the
+caller's already-admitted OpenAI-compatible client, disables SDK retries and
+yields standard QA records one at a time. Persist each before advancing. A failed
+or incomplete response stops the sequence. This helper creates no provider client
+and exposes no paid CLI. The caller still owns cost admission, gateway retries,
+fallbacks, pricing and durable failure receipts. There is no live-provider
+qualification in the offline contract tests.
+
+QA keeps the original common question and the actual arm passages in
+`retrieval_context`; `source_metadata` records exact rendered input, hashes,
+request settings and response usage. Only after generation, `attach_references`
+joins native DeepEval `Golden` objects by `additional_metadata.case_id`, checking
+the common question. These records enter the existing framework loader and
+DeepEval metrics. The loopback fake-provider contract is runnable without
+credentials or any external model request:
+
+```bash
+DEEPEVAL_TELEMETRY_OPT_OUT=YES evaluation/framework/.venv/bin/python \
+  -m unittest discover -s evaluation/tests -p 'test_matched_generation.py' -v
+```
+
+A larger comparison should freeze source versions and concept/evidence families
+before tuning, keeping paraphrases in one split. The proposed next pilot contains
+16 answerable and eight unsupported held-out cases across all three arms (72
+answers). Keep development seeds separate. Before paid execution, require a
+reviewed private holdout freeze, matching target KB/graph source versions and
+separate spend approval. Local source custody alone does not qualify a live
+retrieval corpus. Generate candidates with DeepEval's existing synthesis path only
+after its source and cost approval, or curate existing source-grounded cases.
+Review factual references and absence claims before freeze. Keep teaching data and
+receipts in a private ignored directory; committed examples and tests use synthetic
+data only.
+
 Record actual context sizes, per-case
 metric outcomes and skips, errors, latency and spend. The existing quality
 reports/dashboard consume evaluator output; `compare_runs` is for load metrics.
@@ -558,6 +666,7 @@ node --test evaluation/tests/enrich-chat-qa.test.mjs
 bash util/test-klicker-eval-wrapper.sh
 # Use the initialized framework's pinned Python environment:
 python evaluation/tests/test_graph_metric_contract.py
+python evaluation/tests/test_prepare_graph_comparison.py
 ```
 
 The Python check uses the real framework loader, metric factory and runner with
