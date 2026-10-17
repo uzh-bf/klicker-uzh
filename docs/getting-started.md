@@ -213,8 +213,6 @@ those files first. It does not stash, rewrite files or modify the index.
 Independent checks do not inherit Git's hook environment, preventing temporary
 Git fixtures from operating on the committing repository.
 
-Devcontainer checkouts keep `node_modules` in container volumes, so the host copy has no install. Host `pnpm` would then fail its `verifyDepsBeforeRun` check, and a host `pnpm install` would build a second, platform-specific dependency tree. `util/run-hook-pnpm.sh` therefore skips the `pnpm` step with a notice when `node_modules/.modules.yaml` is absent. It also skips it when the only host install is the Playwright launcher's filtered install, which the launcher marks with `node_modules/.playwright-host-filtered-install`; a later full install supersedes that marker. The Gitleaks scan and Git identity guards still run, and required CI runs the same checks and build. To run them before pushing, use `devrouter exec . -- pnpm run check:all` or `devrouter exec . -- pnpm run build`. Run `check:all` with the dev servers stopped: its `next typegen` step rewrites `.next/` output that running Next dev servers own (see [Chat Platform](chat-platform.md)).
-
 Manage, PWA and Control production builds opt into their existing strict
 `tsconfig.check.json`, excluding development-generated route validators.
 Development retains `tsconfig.json`; no type errors are ignored. This allows
