@@ -45,7 +45,8 @@ existing-host recovery uses reconciliation instead of reprovisioning.
   simplification and final review are self-review, not independent evidence.
 - Ceremony: full path because the package changes host administration code and
   a service-lifecycle contract. Delivery topology: one cohesive ordinary draft
-  pull request; no stack is needed. No pull request exists yet.
+  pull request; no stack is needed. Draft:
+  [bounded runner recovery and memory evidence](https://github.com/uzh-bf/klicker-uzh/pull/6581).
 - Approval mode: executable batch, already approved. No second generic approval
   is needed for implementation, verification or draft delivery.
 
@@ -167,8 +168,9 @@ approved restoration of the prior unit policy; preserve runner data.
 - Recovery implementation passes shell syntax, ShellCheck and the existing
   reconciliation suite extended with held-state, unsafe-state, idempotence,
   renderer-equivalence and trusted-profile preservation cases.
-- Required delivery layer: verified draft PR. Achieved layer: local Recovery
-  verification; no host configuration has been applied.
+- Required delivery layer: verified draft PR. Achieved layer: source package
+  published as [draft PR](https://github.com/uzh-bf/klicker-uzh/pull/6581);
+  no host configuration has been applied.
 - Recovery committed as `3f7765cfb6238dd938658a53b30b8f4b46066adc`.
   Main-session simplification and lifecycle/security self-review found no
   unresolved finding. The standalone renderer remains duplicated intentionally;
@@ -180,7 +182,22 @@ approved restoration of the prior unit policy; preserve runner data.
   parent-counter refusal, command failure and signal propagation. Four existing
   tests were retained (one extended), with four new consequential memory cases.
   Biome passes on both sampler files.
-- Remaining: Finish, exact-head CI and feedback.
+- Finish implementation committed as `7ec3ff86712ed1f311f58ed6e75ff64829149671`.
+  Main-session integrated simplification and final self-review covered all eight
+  paths against `0f222786e86c625c7bfbff594a952de770d15ac5`; no unresolved source
+  finding. Correctness, plan compliance, maintainability and focused security
+  lenses apply; architecture and browser lenses do not. This is self-review.
+- Packaging: 487 added/deleted lines excluding the project plan, with no generated
+  files or lockfiles. One cohesive source package; no additional dependency or
+  configuration owner. Durable constraints are in the existing operations page.
+- Broad local Playwright contracts: 77 passed; three could not execute because
+  the isolated Node image lacks `yaml` and host Devrouter. The focused eight-test
+  sampler suite passes; dependency-equipped required CI remains authoritative.
+- The final AI review workflow requires a ready PR (`!pull.draft` in
+  `isEligibleDefaultPull` and `resolvePullEligibility`). It is deferred until
+  that separately authorized state; no ineffective review request is posted.
+- Remaining: exact-head CI and actionable feedback, then a quiet settle.
 - Active owner: main session; no subagents or additional live changes.
-- Next action: commit Telemetry, update the existing operations documentation,
-  and review the complete branch before draft publication.
+- Next action: publish this metadata update, then watch the resulting exact-head
+  CI and ordinary feedback under `rs-babysit-pr`. Merge, readiness and live
+  qualification remain separate gates.
