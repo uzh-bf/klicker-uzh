@@ -112,6 +112,7 @@ function choosePlaywrightRoute(input) {
     prDraft === 'true' &&
     validRepository &&
     headRepository === repository &&
+    !forceHosted &&
     isSyncBranch(headRef)
   ) {
     reasons.push('draft-sync-deferred')
