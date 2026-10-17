@@ -444,6 +444,9 @@ function createHistoryStore(options = {}) {
     prefix_hits: 0,
     compressed_hits: 0,
     misses: 0,
+    miss_no_reasoning: 0,
+    miss_unknown_turn: 0,
+    miss_ambiguous_turn: 0,
     replay_bytes: 0,
   }
   let entries = 0
@@ -513,6 +516,7 @@ function createHistoryStore(options = {}) {
       existing = turnKey ? reasonedTurns.get(turnKey) : undefined
       if (existing === null) {
         diagnostics.misses += 1
+        diagnostics.miss_ambiguous_turn += 1
         throw new AdapterError('history_collision', 'ambiguous compressed turn')
       }
       if (existing) diagnostics.compressed_hits += 1
@@ -524,6 +528,9 @@ function createHistoryStore(options = {}) {
       // reasoning_content, rather than falling back to the flattened turn. The
       // binary's first request carries no assistant messages.
       diagnostics.misses += 1
+      diagnostics[
+        reasonedKey(normalized) ? 'miss_unknown_turn' : 'miss_no_reasoning'
+      ] += 1
       throw new AdapterError(
         'history_missing',
         'native assistant state is unavailable for a replayed turn'
@@ -858,6 +865,10 @@ function createExecutionCounters() {
     request_bytes: 0,
     response_bytes: 0,
     request_duration_ms: 0,
+    max_request_duration_ms: 0,
+    accepted_responses: 0,
+    max_accepted_response_duration_ms: 0,
+    accepted_responses_over_300s: 0,
   }
 }
 
@@ -885,6 +896,7 @@ async function startAdapter(options = {}) {
   const fetchImpl = options.fetchImpl ?? requestMistral
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const maxLifetimeMs = options.maxLifetimeMs ?? DEFAULT_MAX_LIFETIME_MS
+  const now = options.now ?? (() => performance.now())
   const maxRequestBytes = options.maxRequestBytes ?? MAX_REQUEST_BYTES
   const maxResponseBytes = options.maxResponseBytes ?? MAX_RESPONSE_BYTES
 
@@ -1038,7 +1050,7 @@ async function startAdapter(options = {}) {
       else diagnostics.omitted_conversation_requests += 1
     } else diagnostics.unattributed_requests += 1
     diagnostics[main ? 'main_requests' : 'auxiliary_requests'] += 1
-    const startedAt = performance.now()
+    const startedAt = now()
     const requestBody = JSON.stringify(mistralBody)
     const requestBytes = Buffer.byteLength(requestBody)
     for (const counter of counters) {
@@ -1051,6 +1063,7 @@ async function startAdapter(options = {}) {
     }
 
     let failureRecorded = false
+    let accepted = false
     const fail = (category) => {
       if (failureRecorded) return
       failureRecorded = true
@@ -1158,12 +1171,32 @@ async function startAdapter(options = {}) {
       history.remember(body.messages, message)
       if (normalized.usage) normalized.usage = billableUsage(normalized.usage)
       sendJson(res, 200, normalized)
+      accepted = true
     } catch (error) {
       fail(controller.signal.aborted ? 'cancelled' : responseFailure(error))
       sendAdapterError(res, error)
     } finally {
-      const duration = Math.max(0, Math.round(performance.now() - startedAt))
-      for (const counter of counters) counter.request_duration_ms += duration
+      const duration = Math.max(0, Math.round(now() - startedAt))
+      for (const counter of counters) {
+        counter.request_duration_ms += duration
+        counter.max_request_duration_ms = Math.max(
+          counter.max_request_duration_ms,
+          duration
+        )
+        if (
+          accepted &&
+          !failureRecorded &&
+          !controller.signal.aborted &&
+          !res.destroyed
+        ) {
+          counter.accepted_responses += 1
+          counter.max_accepted_response_duration_ms = Math.max(
+            counter.max_accepted_response_duration_ms,
+            duration
+          )
+          if (duration > 300000) counter.accepted_responses_over_300s += 1
+        }
+      }
       clearTimeout(timer)
       active.delete(controller)
     }
@@ -1627,6 +1660,76 @@ function buildCostReport(diagnosticsText, expected = { adapter: 1 }) {
   }
 }
 
+function executionSummary(rows, complete) {
+  if (!complete || !rows.length) {
+    return ['OCR timing status=unavailable', 'OCR history status=unavailable']
+  }
+  const timing = {
+    request_duration_ms: 0,
+    max_request_duration_ms: 0,
+    accepted_responses: 0,
+    max_accepted_response_duration_ms: 0,
+    accepted_responses_over_300s: 0,
+  }
+  const history = {
+    misses: 0,
+    miss_no_reasoning: 0,
+    miss_unknown_turn: 0,
+    miss_ambiguous_turn: 0,
+  }
+  const bounded = (value) => Number.isSafeInteger(value) && value >= 0
+  let timingComplete = true
+  let historyComplete = true
+  for (const row of rows) {
+    if (
+      Object.keys(timing).every((field) => bounded(row[field])) &&
+      bounded(row.requests) &&
+      bounded(row.responses) &&
+      row.unfinished_requests === 0 &&
+      row.accepted_responses <= row.responses &&
+      row.responses <= row.requests &&
+      (row.requests > 0 || row.request_duration_ms === 0) &&
+      row.max_request_duration_ms <= row.request_duration_ms &&
+      row.max_accepted_response_duration_ms <= row.max_request_duration_ms &&
+      row.accepted_responses_over_300s <= row.accepted_responses &&
+      (row.accepted_responses > 0 ||
+        row.max_accepted_response_duration_ms === 0) &&
+      row.max_accepted_response_duration_ms > 300000 ===
+        row.accepted_responses_over_300s > 0
+    ) {
+      for (const field of Object.keys(timing)) {
+        timing[field] = field.startsWith('max_')
+          ? Math.max(timing[field], row[field])
+          : timing[field] + row[field]
+      }
+    } else timingComplete = false
+    const reasons = row.history
+    if (
+      Object.keys(history).every((field) => bounded(reasons?.[field])) &&
+      reasons.misses ===
+        reasons.miss_no_reasoning +
+          reasons.miss_unknown_turn +
+          reasons.miss_ambiguous_turn
+    ) {
+      for (const field of Object.keys(history)) history[field] += reasons[field]
+    } else historyComplete = false
+  }
+  timingComplete &&= Object.values(timing).every(bounded)
+  historyComplete &&= Object.values(history).every(bounded)
+  return [
+    timingComplete
+      ? `OCR timing status=complete stage=adapter ${Object.entries(timing)
+          .map(([field, value]) => `${field}=${value}`)
+          .join(' ')}`
+      : 'OCR timing status=unavailable',
+    historyComplete
+      ? `OCR history status=complete stage=adapter ${Object.entries(history)
+          .map(([field, value]) => `${field}=${value}`)
+          .join(' ')}`
+      : 'OCR history status=unavailable',
+  ]
+}
+
 function commandSummary(args) {
   let expected = { adapter: 1 }
   if (args.length > 1) {
@@ -1672,6 +1775,7 @@ function commandSummary(args) {
     )
       ? 'complete'
       : 'unavailable'
+  const adapterRows = []
   try {
     for (const row of diagnosticsText
       .trim()
@@ -1679,6 +1783,7 @@ function commandSummary(args) {
       .filter(Boolean)
       .map(JSON.parse)) {
       if (row?.stage !== undefined && row.stage !== 'adapter') continue
+      adapterRows.push(row)
       if (row?.schema_version !== 1 || !row?.failures) {
         failureStatus = 'unavailable'
         continue
@@ -1753,6 +1858,8 @@ function commandSummary(args) {
           .map(([category, value]) => `${category}=${value}`)
           .join(' ')}`
       : 'OCR failures status=unavailable',
+    '',
+    ...executionSummary(adapterRows, failureStatus === 'complete'),
     '',
     'OCR budget counters use uncached input plus output as reported to OCR. Provider usage includes cached input; estimated USD charges it at the pinned cached-input rate. Failed calls can have provider usage without appearing in the OCR result counters.',
     '',

@@ -450,6 +450,89 @@ test('failure summary emits only complete allowlisted counters without changing 
   }
 })
 
+test('execution summary validates new timing and history independently of legacy cost coverage', async () => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-execution-summary-')
+  )
+  const adapter = await startAdapter({
+    apiKey: 'synthetic',
+    fetchImpl: upstream(() => {
+      const payload = completion({ role: 'assistant', content: 'synthetic' })
+      payload.usage.prompt_tokens_details = { cached_tokens: 1 }
+      return jsonResponse(200, payload)
+    }),
+  })
+  try {
+    assert.equal(
+      (
+        await postJson(adapter, {
+          messages: [{ role: 'user', content: 'synthetic' }],
+        })
+      ).status,
+      200
+    )
+    await adapter.close()
+    const receipt = adapter.diagnostics()
+    Object.assign(receipt, {
+      request_duration_ms: 300001,
+      max_request_duration_ms: 300001,
+      max_accepted_response_duration_ms: 300001,
+      accepted_responses_over_300s: 1,
+      private_field: '::error::PRIVATE_SENTINEL',
+    })
+    Object.assign(receipt.history, {
+      misses: 3,
+      miss_no_reasoning: 1,
+      miss_unknown_turn: 1,
+      miss_ambiguous_turn: 1,
+    })
+    const receiptPath = path.join(directory, 'receipt.jsonl')
+    const summaryPath = path.join(directory, 'summary.md')
+    fs.writeFileSync(
+      receiptPath,
+      [receipt, receipt].map(JSON.stringify).join('\n')
+    )
+    let result = await runCli(['summary', receiptPath, 'adapter=2'], {
+      GITHUB_STEP_SUMMARY: summaryPath,
+    })
+    assert.equal(result.code, 0)
+    assert.equal(result.stdout, fs.readFileSync(summaryPath, 'utf8'))
+    assert.match(
+      result.stdout,
+      /^OCR timing status=complete stage=adapter request_duration_ms=600002 max_request_duration_ms=300001 accepted_responses=2 max_accepted_response_duration_ms=300001 accepted_responses_over_300s=2$/m
+    )
+    assert.match(
+      result.stdout,
+      /^OCR history status=complete stage=adapter misses=6 miss_no_reasoning=2 miss_unknown_turn=2 miss_ambiguous_turn=2$/m
+    )
+    assert.doesNotMatch(result.stdout, /PRIVATE_SENTINEL/)
+    for (const variant of ['legacy', 'invalid', 'unfinished']) {
+      const row = structuredClone(receipt)
+      if (variant === 'legacy') {
+        delete row.max_request_duration_ms
+        delete row.history.miss_no_reasoning
+      } else if (variant === 'invalid') {
+        row.accepted_responses_over_300s = 2
+        row.history.miss_no_reasoning = '::error::PRIVATE_SENTINEL'
+      } else row.unfinished_requests = 1
+      fs.writeFileSync(receiptPath, JSON.stringify(row))
+      result = await runCli(['summary', receiptPath], {
+        GITHUB_STEP_SUMMARY: summaryPath,
+      })
+      assert.equal(result.code, 0)
+      assert.match(result.stdout, /^OCR timing status=unavailable$/m)
+      if (variant !== 'unfinished') {
+        assert.match(result.stdout, /^OCR history status=unavailable$/m)
+        assert.match(result.stdout, /^OCR cost status=complete reasons=none$/m)
+      }
+      assert.doesNotMatch(result.stdout, /PRIVATE_SENTINEL/)
+    }
+  } finally {
+    await adapter.close()
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('cost summary CLI logs and appends the same report, preserving success when either sink fails', async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-cost-summary-'))
   try {
@@ -472,6 +555,7 @@ test('cost summary CLI logs and appends the same report, preserving success when
     assert.doesNotMatch(summary, /private-source-marker/)
     for (const contents of [
       '',
+      'null',
       '{private-source-marker',
       JSON.stringify(costReceipt({ missing_usage: 1 })),
     ]) {
@@ -921,6 +1005,10 @@ test('an unmapped assistant replay fails closed with or without reasoning', asyn
       assert.equal(result.json.error.code, 'history_missing')
       assert.equal(fetchImpl.calls.length, 0)
     }
+    assert.equal(adapter.diagnostics().history.misses, 2)
+    assert.equal(adapter.diagnostics().history.miss_no_reasoning, 1)
+    assert.equal(adapter.diagnostics().history.miss_unknown_turn, 1)
+    assert.equal(adapter.diagnostics().history.miss_ambiguous_turn, 0)
   } finally {
     await adapter.close()
   }
@@ -1370,6 +1458,7 @@ test('one length-limited tool-free turn can continue natively; a repeated failur
       assert.ok(fetchImpl.calls.every((call) => call.body.max_tokens === 55))
       const receipt = adapter.diagnostics()
       assert.equal(receipt.completion_tokens, 8)
+      assert.equal(receipt.accepted_responses, recover ? 2 : 1)
       assert.equal(receipt.history.misses, 0)
       assert.equal(receipt.failures.length_no_tool, recover ? 0 : 1)
       assert.equal(receipt.failures.required_tool_call_missing, 0)
@@ -1520,6 +1609,94 @@ test('diagnostics reconcile request types and opaque conversation counters', asy
     assert.ok(receipt.response_bytes > 0)
     assert.ok(receipt.request_duration_ms >= 0)
     assert.doesNotMatch(JSON.stringify(receipt), /private-/)
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('timing separates concurrent maxima, accepted continuations and rejected usage', async () => {
+  let clock = 0
+  let ready
+  const entered = new Promise((resolve) => {
+    ready = resolve
+  })
+  const releases = []
+  const fetchImpl = upstream((_request, index) => {
+    if (index <= 3) {
+      return new Promise((resolve) => {
+        releases.push(() =>
+          resolve(
+            jsonResponse(
+              200,
+              completion({ role: 'assistant', content: 'synthetic' })
+            )
+          )
+        )
+        if (releases.length === 3) ready()
+      })
+    }
+    clock += 300002
+    return jsonResponse(
+      200,
+      completion(
+        {
+          role: 'assistant',
+          content: '',
+          tool_calls: [
+            {
+              id: 'done',
+              type: 'function',
+              function: { name: 'task_done', arguments: '{"state":"DONE"}' },
+            },
+          ],
+        },
+        'length'
+      )
+    )
+  })
+  const adapter = await startAdapter({
+    apiKey: 'synthetic',
+    fetchImpl,
+    now: () => clock,
+  })
+  try {
+    const request = {
+      messages: [{ role: 'user', content: 'synthetic' }],
+      prompt_cache_key: 'synthetic-affinity',
+    }
+    const pending = [
+      postJson(adapter, request),
+      postJson(adapter, request),
+      postJson(adapter, request),
+    ]
+    await entered
+    for (let index = 0; index < 3; index += 1) {
+      clock = 299999 + index
+      releases[index]()
+      assert.equal((await pending[index]).status, 200)
+    }
+    const rejected = await postJson(adapter, {
+      ...request,
+      tools: [{ type: 'function', function: { name: 'task_done' } }],
+    })
+    assert.equal(rejected.status, 422)
+    const receipt = adapter.diagnostics()
+    assert.equal(receipt.responses, 4)
+    assert.equal(receipt.request_duration_ms, 1200002)
+    assert.equal(receipt.max_request_duration_ms, 300002)
+    assert.equal(receipt.accepted_responses, 3)
+    assert.equal(receipt.max_accepted_response_duration_ms, 300001)
+    assert.equal(receipt.accepted_responses_over_300s, 1)
+    assert.equal(receipt.request_types.main.accepted_responses, 0)
+    assert.equal(receipt.request_types.auxiliary.accepted_responses, 3)
+    for (const row of receipt.conversations) {
+      assert.equal(row.accepted_responses, row.kind === 'main' ? 0 : 3)
+      assert.equal(
+        row.max_request_duration_ms,
+        row.kind === 'main' ? 300002 : 300001
+      )
+    }
+    assert.doesNotMatch(JSON.stringify(receipt), /synthetic-affinity/)
   } finally {
     await adapter.close()
   }
@@ -1717,6 +1894,11 @@ test('compression restores only exact reasoned turns, retaining native thinking 
     () => history.remember([{ role: 'user', content: 'fourth group' }], native),
     /bound/
   )
+  const misses = history.diagnostics()
+  assert.equal(misses.miss_no_reasoning, 1)
+  assert.equal(misses.miss_unknown_turn, 4)
+  assert.equal(misses.miss_ambiguous_turn, 1)
+  assert.equal(misses.misses, 6)
 })
 
 test('request conversion and native replay work over the loopback listener', async () => {
@@ -2238,6 +2420,7 @@ test('adapter classifies failures once without changing responses or accounting'
       assert.equal(receipt.requests, 1)
       assert.equal(receipt.upstream_attempts, 1)
       assert.equal(receipt.responses, 0)
+      assert.equal(receipt.accepted_responses, 0)
       assert.equal(receipt.request_types.auxiliary.failures[category], 1)
       assert.equal(estimateCost(JSON.stringify(receipt)), null)
       assert.doesNotMatch(JSON.stringify(receipt), /private-/)
@@ -2582,6 +2765,7 @@ test('default upstream transport cancels an open response when the adapter clien
   assert.equal(receipt.upstream_attempts, 1)
   assert.equal(receipt.responses, 0)
   assert.equal(receipt.failures.cancelled, 1)
+  assert.equal(receipt.accepted_responses, 0)
   assert.equal(receipt.failures.upstream_timeout, 0)
 })
 
