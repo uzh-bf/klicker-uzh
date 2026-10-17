@@ -8,6 +8,7 @@ import {
 import { useTranslations } from 'next-intl'
 import { type FC, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { CODE_CARD_TOOL_NAME } from '@/src/lib/code-runner/profiles'
 import { getDocQueryResult } from '@/src/lib/sources/docQueryResult'
 import {
   countDocQueryDocuments,
@@ -17,6 +18,7 @@ import {
 import type { Translate } from '@/src/lib/sources/sourceDisplay'
 import { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from '@/src/services/studentPracticeMcp'
 import { getManageProposalResult } from '../services/manageProposalResult'
+import { CodeCard } from './code-card'
 import { DocQueryResults } from './doc-query-results'
 import { ManageProposalCard } from './manage-proposal-card'
 import { StudentPracticeQuizCard } from './student-practice-quiz-card'
@@ -186,6 +188,10 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
   const isRunning = status.type === 'running'
   const isFailed = isError === true && !isRunning
   const tool = formatToolName(toolName)
+
+  if (toolName === CODE_CARD_TOOL_NAME) {
+    return <CodeCard result={result} status={status} />
+  }
 
   if (toolName === STUDENT_PRACTICE_QUIZ_TOOL_NAME) {
     return <StudentPracticeQuizCard result={result} status={status} />

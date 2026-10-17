@@ -53,6 +53,10 @@
       ]
     },
     {
+      "profile": "chat",
+      "specs": ["Y-chat-code-card.spec.ts"]
+    },
+    {
       "profile": "pwa,chat",
       "specs": ["Y-chat-lti-access.spec.ts", "Y-course-chat-drawer.spec.ts"]
     },
