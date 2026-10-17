@@ -1,4 +1,4 @@
-import { createHash, createHmac } from 'node:crypto'
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
@@ -1028,11 +1028,18 @@ async function getBlockParticipants({
         ][]
       | null
 
-    const activeBlockParticipants = cacheContent
-      ?.map(([_, result]) => parseInt(result?.participants, 10))
-      .reduce((acc, val) => min(acc, val), 100000)
-    blockParticipants[activeBlock.id] =
-      activeBlockParticipants ?? blockParticipants[activeBlock.id] ?? 0
+    // missing or expired cache entries parse to NaN; ignore them so the
+    // persisted counts apply instead of an invalid Int
+    const cachedCounts = (cacheContent ?? [])
+      .map(([_, result]) => parseInt(result?.participants, 10))
+      .filter((val) => Number.isFinite(val))
+    if (cachedCounts.length > 0) {
+      blockParticipants[activeBlock.id] = cachedCounts.reduce(
+        (acc, val) => min(acc, val),
+        100000
+      )
+    }
+    blockParticipants[activeBlock.id] ??= 0
   }
 
   return blockParticipants
@@ -1048,6 +1055,7 @@ export async function getControlLiveQuizFeedbacks(
     where: {
       id,
       status: DB.PublicationStatus.PUBLISHED,
+      isDeleted: false,
       ...liveQuizCourseVisibilityFilter,
     },
     include: {
@@ -2297,7 +2305,12 @@ function isValidLiveQuizHmac(
 ) {
   const hmacEncoder = createHmac('sha256', process.env.APP_SECRET as string)
   hmacEncoder.update(liveQuiz.namespace + liveQuiz.id)
-  return hmacEncoder.digest('hex') === hmac
+  // constant-time comparison: the hmac grants public read access
+  const expected = Buffer.from(hmacEncoder.digest('hex'), 'utf8')
+  const provided = Buffer.from(hmac, 'utf8')
+  return (
+    expected.length === provided.length && timingSafeEqual(expected, provided)
+  )
 }
 
 // --- evaluation display settings: the controller decides per question how the
@@ -2309,6 +2322,20 @@ const EVALUATION_DISPLAY_CHART_TYPES = [
   'table',
 ]
 const EVALUATION_DISPLAY_TTL_SECONDS = 60 * 60 * 24 * 7
+// KEYS[1] settings hash, ARGV[1] instance id, ARGV[2] JSON patch, ARGV[3] TTL
+const MERGE_EVALUATION_DISPLAY_SCRIPT = `
+local raw = redis.call('HGET', KEYS[1], ARGV[1])
+local current = {}
+if raw then
+  local ok, decoded = pcall(cjson.decode, raw)
+  if ok and type(decoded) == 'table' then current = decoded end
+end
+for field, value in pairs(cjson.decode(ARGV[2])) do current[field] = value end
+local merged = cjson.encode(current)
+redis.call('HSET', KEYS[1], ARGV[1], merged)
+redis.call('EXPIRE', KEYS[1], tonumber(ARGV[3]))
+return merged
+`
 
 function parseEvaluationDisplaySetting(
   instanceId: number,
@@ -2336,7 +2363,7 @@ export async function getLiveQuizEvaluationDisplay(
   { id, hmac }: { id: string; hmac?: string | null },
   ctx: Context
 ) {
-  if ((!ctx.user?.sub && typeof hmac !== 'string') || hmac == '') {
+  if ((!ctx.user?.sub && typeof hmac !== 'string') || hmac === '') {
     return null
   }
 
@@ -2385,7 +2412,9 @@ export async function updateEvaluationDisplay(
     typeof chartType === 'string' &&
     !EVALUATION_DISPLAY_CHART_TYPES.includes(chartType)
   ) {
-    return null
+    throw new GraphQLError('INVALID_EVALUATION_DISPLAY_CHART_TYPE', {
+      extensions: { code: 'BAD_USER_INPUT' },
+    })
   }
 
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
@@ -2408,33 +2437,24 @@ export async function updateEvaluationDisplay(
   )
   if (!belongsToQuiz) return null
 
-  const key = `lq:${quizId}:display`
-  const current = parseEvaluationDisplaySetting(
-    instanceId,
-    await ctx.redisExec.hget(key, String(instanceId))
-  )
-  const next: IEvaluationDisplaySetting = {
-    ...current,
+  const patch = {
     ...(typeof chartType === 'string' ? { chartType } : {}),
     ...(typeof showSolution === 'boolean' ? { showSolution } : {}),
     ...(typeof showPercentages === 'boolean' ? { showPercentages } : {}),
   }
 
-  await ctx.redisExec
-    .multi()
-    .hset(
-      key,
-      String(instanceId),
-      JSON.stringify({
-        chartType: next.chartType,
-        showSolution: next.showSolution,
-        showPercentages: next.showPercentages,
-      })
-    )
-    .expire(key, EVALUATION_DISPLAY_TTL_SECONDS)
-    .exec()
+  // merge inside Redis so concurrent partial updates (e.g. chart type and
+  // solution toggled at once) cannot overwrite each other
+  const merged = (await ctx.redisExec.eval(
+    MERGE_EVALUATION_DISPLAY_SCRIPT,
+    1,
+    `lq:${quizId}:display`,
+    String(instanceId),
+    JSON.stringify(patch),
+    String(EVALUATION_DISPLAY_TTL_SECONDS)
+  )) as string
 
-  return next
+  return parseEvaluationDisplaySetting(instanceId, merged)
 }
 
 export async function getLiveQuizEvaluation(
