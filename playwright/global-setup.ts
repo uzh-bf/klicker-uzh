@@ -237,7 +237,11 @@ export async function seedDatabase() {
         prisma.user.upsert({
           where: { id: userData.id },
           create: userData,
-          update: {},
+          update: {
+            aiFeaturesEnabled: userData.aiFeaturesEnabled,
+            aiSubscriptionTier: userData.aiSubscriptionTier,
+            aiChatbotCostCenter: userData.aiChatbotCostCenter,
+          },
         })
       )
     )

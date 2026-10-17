@@ -347,14 +347,226 @@ async function findEquivalentPullRequestRun({
   return { id: run.id, url: run.html_url, attempt: run.run_attempt }
 }
 
+// A push that merged a pull request into an integration branch may validate
+// the run that already tested that merge. The pushed commit must be the merged
+// pull request's two-parent merge commit, and the pull request's latest
+// validating run must have tested exactly the pushed tree under the same
+// trusted control revision, with complete coverage on the route it used and
+// the same full plan. v3 and the staging source branch always validate their
+// pushes independently: the staging promoter admits only their own hosted
+// shards. Any failed proof returns null and the push runs normal validation.
+async function findMergedPullRequestRun({
+  github,
+  context,
+  kind,
+  controlSha,
+  plan,
+  readPlan,
+  readReceipt,
+  readRoute,
+  stagingSourceBranch,
+}) {
+  const repository = `${context.repo.owner}/${context.repo.repo}`
+  const branch = /^refs\/heads\/(v3-[^/]+)$/.exec(context.ref ?? '')?.[1]
+  if (
+    repository !== REPOSITORY ||
+    context.eventName !== 'push' ||
+    kind !== 'playwright' ||
+    !branch ||
+    typeof stagingSourceBranch !== 'string' ||
+    !stagingSourceBranch.trim() ||
+    branch === stagingSourceBranch.trim()
+  )
+    return null
+
+  const repo = context.repo
+  const { data: pushed } = await github.rest.repos.getCommit({
+    ...repo,
+    ref: context.sha,
+  })
+  const [baseSha, headSha] = (pushed.parents ?? []).map((parent) => parent.sha)
+  const treeSha = pushed.commit?.tree?.sha
+  if (
+    pushed.sha !== context.sha ||
+    pushed.parents?.length !== 2 ||
+    !baseSha ||
+    !headSha ||
+    !treeSha
+  )
+    return null
+
+  const merged = (
+    await listAll((paging) =>
+      github.rest.repos.listPullRequestsAssociatedWithCommit({
+        ...repo,
+        ...paging,
+        commit_sha: context.sha,
+      })
+    )
+  ).filter(
+    (pull) =>
+      pull.merged_at &&
+      pull.merge_commit_sha === context.sha &&
+      pull.base?.ref === branch &&
+      pull.base?.repo?.full_name === repository &&
+      pull.head?.repo?.full_name === repository &&
+      pull.head.sha === headSha
+  )
+  if (merged.length !== 1) return null
+  const pull = merged[0]
+
+  // Lifecycle runs that validated nothing (a closed pull request, a deferred
+  // draft, an empty plan) are passed over; the newest run that executed the
+  // suite must be the one that succeeded.
+  const getRuns = async () =>
+    (
+      await listAll(
+        (paging) =>
+          github.rest.actions.listWorkflowRuns({
+            ...repo,
+            ...paging,
+            workflow_id: WORKFLOWS[kind],
+            event: 'pull_request',
+            branch: pull.head.ref,
+            head_sha: headSha,
+          }),
+        'workflow_runs'
+      )
+    )
+      .filter(
+        (run) =>
+          run.event === 'pull_request' &&
+          run.head_sha === headSha &&
+          run.head_branch === pull.head.ref &&
+          run.head_repository?.full_name === repository
+      )
+      .sort((a, b) => b.id - a.id)
+  const runs = await getRuns()
+  const listedAttempts = runs.map((run) => [run.id, run.run_attempt])
+  for (const candidate of runs) {
+    const { data: run } = await github.rest.actions.getWorkflowRun({
+      ...repo,
+      run_id: candidate.id,
+    })
+    if (run.id !== candidate.id) return null
+    const jobs = await listAll(
+      (paging) =>
+        github.rest.actions.listJobsForWorkflowRunAttempt({
+          ...repo,
+          ...paging,
+          run_id: run.id,
+          attempt_number: run.run_attempt,
+        }),
+      'jobs'
+    )
+    // The closed event starts only the cancellation job, possibly while the
+    // push is already being validated.
+    if (
+      jobs.some(
+        (job) => job.name === 'cancel-closed-pr' && job.conclusion !== 'skipped'
+      )
+    )
+      continue
+    if (run.status !== 'completed') return null
+    const executed = jobs.some(
+      (job) =>
+        /\/ build-and-compile-(hosted|public-pr)$/.test(job.name) &&
+        job.conclusion !== 'skipped'
+    )
+    if (!executed) continue
+    if (
+      !successful(run) ||
+      run.path?.split('@')[0] !== `.github/workflows/${WORKFLOWS[kind]}`
+    )
+      return null
+
+    const receipt = await (readReceipt
+      ? readReceipt(run)
+      : readArtifactJson(
+          github,
+          repo,
+          run,
+          'ci-validation-receipt',
+          'ci-validation-receipt.json'
+        ))
+    if (
+      receipt.schemaVersion !== 1 ||
+      receipt.event !== 'pull_request' ||
+      receipt.runId !== run.id ||
+      receipt.runAttempt !== run.run_attempt ||
+      receipt.headSha !== headSha ||
+      receipt.baseSha !== baseSha ||
+      receipt.treeSha !== treeSha ||
+      receipt.controlSha !== controlSha
+    )
+      return null
+
+    const controls = run.referenced_workflows?.filter(
+      (workflow) =>
+        workflow.path ===
+        `${repository}/.github/workflows/public-pr-playwright-shards.yml@v3`
+    )
+    if (controls?.length !== 1 || controls[0].sha !== controlSha) return null
+    const route = await (readRoute
+      ? readRoute(run)
+      : readArtifactJson(
+          github,
+          repo,
+          run,
+          'playwright-route-metadata',
+          'route.json'
+        ))
+    if (!['hosted', 'public-pr'].includes(route?.route)) return null
+    if (!coverageMatches(kind, jobs, plan, route?.route)) return null
+    const previous = await (readPlan
+      ? readPlan(run)
+      : readArtifactJson(
+          github,
+          repo,
+          run,
+          'playwright-execution-plan',
+          'playwright-execution-plan.json'
+        ))
+    if (
+      !planMatches(previous, plan) ||
+      previous.headSha !== headSha ||
+      previous.baseSha !== baseSha
+    )
+      return null
+
+    const [{ data: freshRun }, latestRuns] = await Promise.all([
+      github.rest.actions.getWorkflowRun({ ...repo, run_id: run.id }),
+      getRuns(),
+    ])
+    if (
+      !isDeepStrictEqual(
+        latestRuns.map((run) => [run.id, run.run_attempt]),
+        listedAttempts
+      ) ||
+      freshRun.id !== run.id ||
+      freshRun.path !== run.path ||
+      freshRun.run_attempt !== run.run_attempt ||
+      !successful(freshRun)
+    )
+      return null
+    return { id: run.id, url: run.html_url, attempt: run.run_attempt }
+  }
+  return null
+}
+
 async function findEquivalentRun(options) {
   if (options.context?.eventName === 'pull_request')
     return findEquivalentPullRequestRun(options)
+  if (options.context?.ref?.startsWith('refs/heads/v3-')) {
+    return options.allowPushReuse === true
+      ? findMergedPullRequestRun(options)
+      : null
+  }
   const { github, context, kind, controlSha, plan, readPlan, readReceipt } =
     options
   const repository = `${context.repo.owner}/${context.repo.repo}`
-  // Every v3 / v3-* push is a possible deployment source and must carry its own
-  // push validation, so no equivalent PR run may substitute for one.
+  // Every other v3* push is a possible deployment source and must carry its
+  // own push validation, so no open pull request's run may substitute for one.
   if (
     repository !== REPOSITORY ||
     context.eventName !== 'push' ||
@@ -543,6 +755,7 @@ module.exports = {
   coverageMatches,
   planMatches,
   findEquivalentPullRequestRun,
+  findMergedPullRequestRun,
   findEquivalentRun,
   reportEquivalentRun,
 }
