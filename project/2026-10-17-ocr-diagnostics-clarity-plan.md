@@ -37,7 +37,8 @@ No material design decisions remain open in this proposed scope.
 - Worktree: `trees/ocr-diagnostics-clarity`.
 - Branch: `rs/ocr-diagnostics-clarity`; target: `v3`.
 - Planning baseline: `0f222786e86c625c7bfbff594a952de770d15ac5`.
-- Artifact root: the existing `project/`; PR: none created.
+- Artifact root: the existing `project/`;
+  [draft PR #6579](https://github.com/uzh-bf/klicker-uzh/pull/6579).
 - Execution mode: standard; native planner route: GPT-6 Astra, medium.
 - Ceremony: full path; approval mode: executable batch.
 - Boundary owner: main session. Authority: the approved implementation and draft
@@ -227,11 +228,14 @@ retry behavior is authorized by the diagnostics proposal.
   was stopped. Main owns remaining coupled source work; no replacement worker.
 - Slice 2: committed at `45ed0c0e55`; full five-suite verification passes all
   232 tests. Formatter, syntax, and focused Opengrep pass; lint retains the
-  baseline warnings without errors. Slice simplification/risk reviews are active.
+  baseline warnings without errors. Slice simplification and independent risk
+  review found no further issues. All slice gates are settled.
 - Proposed package: adapter, adapter tests, existing OCR documentation, and plan.
   Source and tests extend one adapter/reporting capability on one branch.
+  The substantive diff is 475 changed lines excluding this plan; one independently
+  functional, reviewable, tested, and reversible diagnostics package.
 - Runtime and CI: no application runtime or provider test started. Draft CI and
-  integrated review are pending; no PR exists yet.
-- Next action: settle slice reviews, publish the draft, and complete integrated
-  review plus hosted CI/actionable feedback. A native goal tracks the
+  integrated review are pending. The branch is pushed and
+  [PR #6579](https://github.com/uzh-bf/klicker-uzh/pull/6579) remains draft.
+- Next action: integrated review plus hosted CI/actionable feedback. A native goal tracks the
   approved terminal condition; no explicit token budget was requested.
