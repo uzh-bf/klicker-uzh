@@ -5028,7 +5028,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotWorkspaceDisclaimerDescription:
         'Edit the participant-facing introduction and review the fixed institutional sections.',
       chatbotWorkspaceKnowledgeDescription:
-        'Review the active knowledge base and open its management page. Multiple knowledge-base attachments are not available in this editor yet.',
+        'Review the active knowledge base and open its management page.',
       chatbotKnowledgeSingleActive:
         'One active knowledge base is currently supported here.',
       chatbotKnowledgeEmptyDescription:
@@ -5184,6 +5184,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Please wait until the current chatbot change has finished saving.',
       chatbotPreviewUnsavedConfirmation:
         'This preview opens the last saved live chatbot configuration. Continue without saving your unsaved changes?',
+      chatbotRevisionDraftOnly:
+        'This chatbot is a draft and not yet visible to participants.',
       chatbotRevisionLiveOnly:
         'Live configuration is active for participants. Save a revision to prepare changes for review.',
       chatbotRevisionSaved: 'Saved revision {version} is ready for review.',
