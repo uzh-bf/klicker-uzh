@@ -24,12 +24,16 @@ interface OwnedCourse {
 
 interface ChatbotCreateModalProps {
   courses: OwnedCourse[]
+  // Set when the flow carries no course of its own, so a lecturer with several
+  // courses picks one deliberately instead of accepting the first in the list.
+  requireCourseChoice?: boolean
   onClose: () => void
   onCreated: (chatbotId: string) => void
 }
 
 function ChatbotCreateModal({
   courses,
+  requireCourseChoice = false,
   onClose,
   onCreated,
 }: ChatbotCreateModalProps) {
@@ -52,7 +56,10 @@ function ChatbotCreateModal({
         initialValues={{
           name: '',
           description: '',
-          courseId: courses[0]?.id ?? '',
+          courseId:
+            requireCourseChoice && courses.length > 1
+              ? ''
+              : (courses[0]?.id ?? ''),
         }}
         validationSchema={Yup.object({
           name: Yup.string()
