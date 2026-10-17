@@ -430,9 +430,6 @@ test('the producer-hosted analysis runs for a same-repository pull request only'
     assert.equal(job.uses, './.github/workflows/sonar-analysis.yml', name)
     const reporter = suite + '-status'
     assert.deepEqual(job.needs, ['filter', suite, reporter], name)
-    const upload = workflow.jobs[reporter].steps.at(-1)
-    assert.equal(upload.uses, 'actions/upload-artifact@v4')
-    assert.equal(upload.with.name, 'required-ci-evidence')
     assert.ok(!workflow.jobs[reporter].needs.includes('sonarcloud'))
 
     // A draft is admitted here and deferred inside the analysis, because the

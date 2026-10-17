@@ -712,13 +712,16 @@ describe('findPublishedAnalysis', () => {
     assert.equal(await findPublishedAnalysis(lookup(transport)), null)
   })
 
-  it('ignores a run that has not completed', async () => {
+  it('falls back to analysis when an unfinished run receipt is unreadable', async () => {
     const transport = {
       async listRuns() {
         return [{ id: 31, run_number: 2, status: 'in_progress' }]
       },
       async listArtifacts() {
         return [{ name: receiptName }]
+      },
+      async readJsonArtifact() {
+        throw new Error('unreadable synthetic receipt')
       },
     }
     assert.equal(await findPublishedAnalysis(lookup(transport)), null)
