@@ -353,14 +353,17 @@ async function maintainDraftSyncPrs({
       }
 
       const branch = syncBranch(pair, sourceSha)
+      if ((await branchSha(base)) !== targetSha) {
+        report('stale-description', undefined, branch, {
+          description: 'deferred',
+        })
+        continue
+      }
       if (!(await createSyncBranch({ github, repo, branch, sourceSha }))) {
         report('stale-branch', undefined, branch)
         continue
       }
-      if (
-        (await branchSha(branch)) !== sourceSha ||
-        (await branchSha(base)) !== targetSha
-      ) {
+      if ((await branchSha(branch)) !== sourceSha) {
         report('stale-description', undefined, branch, {
           description: 'deferred',
         })

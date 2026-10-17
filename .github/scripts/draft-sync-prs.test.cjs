@@ -392,6 +392,9 @@ test('revalidates new-PR snapshots and refreshes duplicate-create candidates', a
   })
   assert.equal(deferred[0].action, 'stale-description')
   assert.ok(moved.creates.every(({ base }) => base !== 'v3-ai'))
+  assert.ok(
+    moved.refWrites.every(({ name }) => !name.startsWith('sync/v3-into-v3-ai-'))
+  )
 
   const raced = fixture({
     createError: Object.assign(new Error('duplicate'), { status: 422 }),
