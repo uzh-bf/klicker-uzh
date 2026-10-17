@@ -36,9 +36,7 @@ import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as Yup from 'yup'
 import ContentInput from '../../common/ContentInput'
-import ChatbotCreditPolicy, {
-  ChatbotCreditPolicySummary,
-} from './ChatbotCreditPolicy'
+import { ChatbotCreditPolicySummary } from './ChatbotCreditPolicy'
 import ChatbotDisclaimerPreview from './ChatbotDisclaimerPreview'
 import ChatbotPublicationRequest from './ChatbotPublicationRequest'
 import {
@@ -810,6 +808,7 @@ function CustomModesEditor({
 
 function ChatbotAuthoring({
   chatbot,
+  advancedManagement,
   step,
   sections,
   publishingAuthorized,
@@ -819,6 +818,7 @@ function ChatbotAuthoring({
   onNavigationStateChange,
 }: {
   chatbot: RevisionChatbot
+  advancedManagement: boolean
   step: ChatbotSetupStep
   sections?: readonly ChatbotSetupStep[]
   publishingAuthorized: boolean
@@ -846,8 +846,6 @@ function ChatbotAuthoring({
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
   const [disclaimerNavigationState, setDisclaimerNavigationState] =
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
-  const [creditNavigationState, setCreditNavigationState] =
-    useState<ChatbotNavigationState>({ dirty: false, pending: false })
   const [publicationNavigationState, setPublicationNavigationState] =
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
   const visibleSections = sections ?? setupSteps
@@ -860,7 +858,6 @@ function ChatbotAuthoring({
   const metadataEditable = isChatbotRevisionEditable(chatbot)
   const modeEditable = metadataEditable
   const disclaimerEditable = metadataEditable
-  const creditEditable = metadataEditable
   const disclaimer = chatbot.disclaimerSummary
   const standardModeConfig = getStandardModeFormValues(chatbot)
   const customModeConfig = getCustomModeFormValues(chatbot)
@@ -898,14 +895,12 @@ function ChatbotAuthoring({
     metadataNavigationState.dirty ||
     modeNavigationState.dirty ||
     customModeNavigationState.dirty ||
-    disclaimerNavigationState.dirty ||
-    creditNavigationState.dirty
+    disclaimerNavigationState.dirty
   const setupPending =
     metadataNavigationState.pending ||
     modeNavigationState.pending ||
     customModeNavigationState.pending ||
-    disclaimerNavigationState.pending ||
-    creditNavigationState.pending
+    disclaimerNavigationState.pending
   const publicationPending = publicationNavigationState.pending
 
   const openSection = useCallback(
@@ -933,20 +928,17 @@ function ChatbotAuthoring({
         modeNavigationState.dirty ||
         customModeNavigationState.dirty ||
         disclaimerNavigationState.dirty ||
-        creditNavigationState.dirty ||
         publicationNavigationState.dirty,
       pending:
         metadataNavigationState.pending ||
         modeNavigationState.pending ||
         customModeNavigationState.pending ||
         disclaimerNavigationState.pending ||
-        creditNavigationState.pending ||
         publicationNavigationState.pending,
     })
   }, [
     customModeNavigationState,
     disclaimerNavigationState,
-    creditNavigationState,
     metadataNavigationState,
     modeNavigationState,
     onNavigationStateChange,
@@ -964,10 +956,7 @@ function ChatbotAuthoring({
     if (!disclaimerEditable) {
       setDisclaimerNavigationState({ dirty: false, pending: false })
     }
-    if (!creditEditable) {
-      setCreditNavigationState({ dirty: false, pending: false })
-    }
-  }, [creditEditable, disclaimerEditable, metadataEditable, modeEditable])
+  }, [disclaimerEditable, metadataEditable, modeEditable])
 
   const reloadAfterConflict = useCallback(async () => {
     await reloadRevision()
@@ -1750,55 +1739,6 @@ function ChatbotAuthoring({
           </AccordionItem>
         ) : null}
 
-        {visibleSections.includes('credits') ? (
-          <AccordionItem
-            value="credits"
-            className="rounded-lg border border-gray-200 bg-white px-4 shadow-sm"
-            data-cy="chatbot-setup-item-credits"
-          >
-            <AccordionTrigger
-              className="py-3 hover:no-underline"
-              data-cy="chatbot-setup-trigger-credits"
-            >
-              <span className="flex flex-col gap-1">
-                <span>{t('manage.resources.chatbotSetupCredits')}</span>
-                <span className="text-sm font-normal text-gray-600">
-                  {t('manage.resources.chatbotSetupCreditsDescription')}
-                </span>
-              </span>
-            </AccordionTrigger>
-            <AccordionContent forceMount>
-              <section
-                hidden={!openSections.includes('credits')}
-                className="space-y-4"
-                data-cy="chatbot-setup-credits"
-              >
-                <div>
-                  <H4>{t('manage.resources.chatbotSetupCreditsTitle')}</H4>
-                  <p className="mt-1 text-sm text-gray-600">
-                    {t('manage.resources.chatbotSetupCreditsDescriptionLong')}
-                  </p>
-                </div>
-                <ChatbotCreditPolicy
-                  chatbot={chatbot}
-                  publicationPending={publicationPending}
-                  onNavigationStateChange={setCreditNavigationState}
-                  onRevisionConflict={() => setRevisionConflict(true)}
-                  onSaved={() => openSection('review')}
-                />
-                {revisionConflict ? (
-                  <ChatbotRevisionConflictNotice
-                    message={t('manage.resources.chatbotRevisionConflict')}
-                    onReload={() => void reloadAfterConflict()}
-                    reloading={revisionReloading}
-                    testId="chatbot-revision-reload-credits"
-                  />
-                ) : null}
-              </section>
-            </AccordionContent>
-          </AccordionItem>
-        ) : null}
-
         {visibleSections.includes('review') ? (
           <AccordionItem
             value="review"
@@ -2066,23 +2006,27 @@ function ChatbotAuthoring({
                   </div>
                 </div>
 
-                <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <h5 className="font-semibold text-gray-900">
-                      {t('manage.resources.chatbotSetupCreditsTitle')}
-                    </h5>
-                    <Button
-                      type="button"
-                      onClick={() => openSection('credits')}
-                      data={{ cy: 'chatbot-setup-edit-credits' }}
-                    >
-                      <Button.Label>
-                        {t('manage.resources.chatbotSetupEdit')}
-                      </Button.Label>
-                    </Button>
+                {advancedManagement && (
+                  // The Edit button opens the credit editor in the Usage
+                  // view, which is itself operator-only tuning.
+                  <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <h5 className="font-semibold text-gray-900">
+                        {t('manage.resources.chatbotSetupCreditsTitle')}
+                      </h5>
+                      <Button
+                        type="button"
+                        onClick={() => openSection('credits')}
+                        data={{ cy: 'chatbot-setup-edit-credits' }}
+                      >
+                        <Button.Label>
+                          {t('manage.resources.chatbotSetupEdit')}
+                        </Button.Label>
+                      </Button>
+                    </div>
+                    <ChatbotCreditPolicySummary chatbot={chatbot} />
                   </div>
-                  <ChatbotCreditPolicySummary chatbot={chatbot} />
-                </div>
+                )}
 
                 <UserNotification>
                   {t('manage.resources.chatbotSetupPublicationNote')}

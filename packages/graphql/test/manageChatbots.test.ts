@@ -98,6 +98,10 @@ describe('Integration tests for lecturer chatbot management', () => {
           allowedReasoningEffortsByModel: true,
           knowledgeGraphVisible: true,
           knowledgeGraphRetrievalEnabled: true,
+          creditInitialCredits: true,
+          creditResetPeriod: true,
+          creditResetAmount: true,
+          creditMaxCredits: true,
         },
       })
       expect(row).toEqual({
@@ -110,6 +114,10 @@ describe('Integration tests for lecturer chatbot management', () => {
         allowedReasoningEffortsByModel: null,
         knowledgeGraphVisible: false,
         knowledgeGraphRetrievalEnabled: false,
+        creditInitialCredits: 3,
+        creditResetPeriod: CreditResetPeriod.DAILY,
+        creditResetAmount: 3,
+        creditMaxCredits: 3,
       })
     })
 
