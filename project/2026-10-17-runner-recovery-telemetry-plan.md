@@ -160,7 +160,7 @@ artifacts, an incompatible existing unit requiring a migration decision, or an
 unavailable required capability after safe alternatives are exhausted. A slow
 CI queue is running work, not a blocker or permission to skip evidence.
 
-After separate live authority, qualify recovery on exact named services while
+Under the deployment approval, qualify recovery on exact named services while
 preserving the selected activation states, observe successful queued jobs, and
 check for new OOM events. Collect a cold-build cohort before selecting memory
 limits or additional slots. A planned reboot must account for enabled services
