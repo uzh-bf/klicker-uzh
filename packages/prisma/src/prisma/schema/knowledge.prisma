@@ -46,6 +46,13 @@ enum KBGraphQualityTier {
   HIGH
 }
 
+// Who started a graph build: a lecturer request or the platform's scheduled
+// graph preparation acting for the knowledge-base owner.
+enum KBGraphBuildOrigin {
+  USER
+  SYSTEM
+}
+
 enum KBGraphCostStatus {
   RESERVED
   SETTLED
@@ -116,6 +123,11 @@ model KB {
   domainPolicyId       String?
   domainPolicyVersion  Int?
   domainPolicyLanguage String?
+  // Last change of the graph inputs a lecturer controls on the KB itself: the
+  // subject and language above, or turning the graph opt-in on. Scheduled
+  // graph preparation waits from here; `updatedAt` also moves for build-slot
+  // bookkeeping and cannot serve that purpose.
+  graphSettingsChangedAt DateTime @default(now())
 
   // graph generation is opt-in per KB; the lecturer-level preview flag is a separate gate
   knowledgeGraphEnabled Boolean @default(false)
@@ -213,6 +225,8 @@ model KBGraphBuild {
 
   status      KBGraphBuildStatus @default(QUEUED)
   qualityTier KBGraphQualityTier @default(STANDARD)
+  // Rows that predate scheduled preparation were all lecturer requests.
+  origin      KBGraphBuildOrigin @default(USER)
 
   // Frozen domain selection for this build: the provider catalog policy id and
   // version plus the requested language. All-null rows predate domain selection
