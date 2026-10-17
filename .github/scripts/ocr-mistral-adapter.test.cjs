@@ -2,6 +2,7 @@
 
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
+const http = require('node:http')
 const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
@@ -45,6 +46,12 @@ test('progress reconstructs known events without reflecting private fields or wo
       '[ocr] Review filter: failed to parse LLM response, raw: OCR_PRIVATE_SENTINEL',
       '::error::OCR_PRIVATE_SENTINEL',
       'reasoning: OCR_PRIVATE_SENTINEL',
+      'Error: review failed (timeout): OCR_PRIVATE_SENTINEL https://provider.invalid/v1 OCR_PRIVATE_TOKEN',
+      '[ocr]   Error: MCP transport failed: OCR_PRIVATE_SENTINEL',
+      '  Error: review failed (provider): OCR_PRIVATE_SENTINEL',
+      'continuation Error: review failed (budget): OCR_PRIVATE_SENTINEL',
+      'Error: review failed (provider): OCR_PRIVATE_SENTINEL',
+      'Error: OCR_PRIVATE_SENTINEL',
     ].join('\r\n') + '\n'
   for (const byte of Buffer.from(raw)) progress.write(Buffer.from([byte]))
   progress.end()
@@ -57,6 +64,7 @@ test('progress reconstructs known events without reflecting private fields or wo
     'OCR progress event=phase_completed phase=filtering\n',
     'OCR progress event=budget_reached\n',
     'OCR progress event=review_finished files=5 findings=2 tokens=1234\n',
+    'OCR progress event=cli_error code=review_failed classification=timeout\n',
   ])
   assert.doesNotMatch(records.join(''), /OCR_PRIVATE_SENTINEL|::/)
 })
@@ -77,6 +85,17 @@ test('progress drops whole overlong records, resumes at newline and safely flush
   assert.deepEqual(records, [
     'OCR progress event=tool_completed tool=file_find\n',
   ])
+  const bounded = createProgressFilter((line) => records.push(line))
+  bounded.write('Error: ' + 'x'.repeat(4096))
+  bounded.write('\n')
+  assert.deepEqual(records.slice(1), [])
+  bounded.write('Error: review fail')
+  bounded.write('ed (provider): OCR_PRIVATE_SENTINEL')
+  bounded.end()
+  assert.deepEqual(records.slice(1), [
+    'OCR progress event=cli_error code=review_failed classification=provider\n',
+  ])
+  assert.doesNotMatch(records.join(''), /SENTINEL/)
   const failed = createProgressFilter(() => {
     throw new Error('synthetic log sink unavailable')
   })
@@ -84,6 +103,40 @@ test('progress drops whole overlong records, resumes at newline and safely flush
     failed.write('[ocr]   ✔ file_read (1ms)\n')
     failed.end()
   })
+})
+
+test('progress classifies fatal CLI roots with fixed tokens and refuses non-root lookalikes', () => {
+  const cases = [
+    [
+      'Error: review failed (budget): OCR_PRIVATE_SENTINEL\n',
+      'OCR progress event=cli_error code=review_failed classification=budget\n',
+    ],
+    [
+      'Error: review failed (capacity): OCR_PRIVATE_SENTINEL\n',
+      'OCR progress event=cli_error code=review_failed classification=unknown\n',
+    ],
+    [
+      'Error: review failed without a marker: OCR_PRIVATE_SENTINEL\n',
+      'OCR progress event=cli_error code=cli_failed classification=unknown\n',
+    ],
+    [
+      'Error: review failed (timeout) trailing text: OCR_PRIVATE_SENTINEL\n',
+      'OCR progress event=cli_error code=review_failed classification=unknown\n',
+    ],
+    [
+      'Error: OCR_PRIVATE_SENTINEL\n',
+      'OCR progress event=cli_error code=cli_failed classification=unknown\n',
+    ],
+    ['[ocr]   Error: review failed (timeout): OCR_PRIVATE_SENTINEL\n', ''],
+  ]
+  for (const [line, expected] of cases) {
+    const records = []
+    const progress = createProgressFilter((record) => records.push(record))
+    progress.write(line)
+    progress.end()
+    assert.deepEqual(records, expected ? [expected] : [], line)
+    assert.doesNotMatch(records.join(''), /SENTINEL|::/)
+  }
 })
 
 test('progress heartbeats reflect quiet time and finish clears the timer exactly once', () => {
@@ -648,6 +701,50 @@ function loadReadRequestBody() {
     context
   )
   return sandboxModule.exports.__readRequestBody
+}
+
+async function loadLoopbackTransport(t, handler) {
+  const server = http.createServer(handler)
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+  t.after(async () => {
+    server.closeAllConnections()
+    await new Promise((resolve) => server.close(resolve))
+  })
+  const url = `http://127.0.0.1:${server.address().port}${CHAT_PATH}`
+  const sandboxModule = { exports: {} }
+  let attempts = 0
+  let fetchCalls = 0
+  const context = vm.createContext({
+    require(name) {
+      if (name !== 'node:https') return require(name)
+      return {
+        request(upstreamUrl, options, callback) {
+          assert.equal(upstreamUrl, MISTRAL_URL)
+          attempts++
+          return http.request(url, options, callback)
+        },
+      }
+    },
+    module: sandboxModule,
+    exports: sandboxModule.exports,
+    process,
+    Buffer,
+    URL,
+    AbortController,
+    performance,
+    setTimeout,
+    clearTimeout,
+    fetch() {
+      fetchCalls++
+      return Promise.reject(new Error('OCR_TRANSPORT_PRIVATE_SENTINEL'))
+    },
+  })
+  vm.runInContext(fs.readFileSync(ADAPTER, 'utf8'), context)
+  return {
+    ...sandboxModule.exports,
+    attempts: () => attempts,
+    fetchCalls: () => fetchCalls,
+  }
 }
 
 test('normalizeMistralResponse keeps plain text and drops no data', () => {
@@ -2328,6 +2425,166 @@ test('shutdown acknowledges then stops the listener', async () => {
   }
 })
 
+test('default upstream transport completes delayed headers and streamed bodies at both callers', {
+  timeout: 6000,
+}, async (t) => {
+  const requests = []
+  const payload = Buffer.from(
+    JSON.stringify(completion({ role: 'assistant', content: 'synthetic' }))
+  )
+  const transport = await loadLoopbackTransport(t, async (req, res) => {
+    let body = ''
+    for await (const chunk of req) body += chunk
+    requests.push({ method: req.method, body: JSON.parse(body) })
+    await delay(20)
+    res.writeHead(200, { 'content-type': 'application/json' })
+    res.write(payload.subarray(0, payload.length / 2))
+    await delay(20)
+    res.end(payload.subarray(payload.length / 2))
+  })
+  const options = { apiKey: 'synthetic-key', timeoutMs: 1000 }
+  const body = {
+    model: MISTRAL_MODEL,
+    messages: [{ role: 'user', content: 'synthetic' }],
+    max_completion_tokens: 9,
+    reasoning: { effort: 'high' },
+  }
+  const adapter = await transport.startAdapter(options)
+  t.after(() => adapter.close())
+  const adapted = await postJson(adapter, body)
+  assert.equal(adapted.status, 200)
+  const direct = await transport.callMistral({ ...options, body })
+  for (const response of [adapted.json, direct]) {
+    assert.equal(response.model, MISTRAL_MODEL)
+    assert.equal(response.choices[0].finish_reason, 'stop')
+    assert.equal(response.usage.total_tokens, 7)
+  }
+  assert.equal(transport.attempts(), 2)
+  assert.equal(transport.fetchCalls(), 0)
+  assert.equal(requests.length, 2)
+  for (const request of requests) {
+    assert.equal(request.method, 'POST')
+    assert.equal(request.body.max_tokens, 9)
+    assert.equal(request.body.reasoning_effort, 'max')
+    assert.notEqual(request.body.stream, true)
+  }
+  const receipt = adapter.diagnostics()
+  assert.equal(receipt.upstream_attempts, 1)
+  assert.equal(receipt.responses, 1)
+  assert.equal(receipt.prompt_tokens, 3)
+  assert.equal(receipt.completion_tokens, 4)
+})
+
+test('default upstream transport bounds stalled headers, bodies, size and redirects at both callers', {
+  timeout: 6000,
+}, async (t) => {
+  for (const mode of ['headers', 'body', 'size', 'redirect']) {
+    await t.test(mode, async (t) => {
+      const closed = []
+      const transport = await loadLoopbackTransport(t, (req, res) => {
+        req.resume()
+        closed.push(new Promise((resolve) => res.once('close', resolve)))
+        if (mode === 'headers') return
+        if (mode === 'redirect') {
+          res.writeHead(307, { location: '/OCR_TRANSPORT_PRIVATE_SENTINEL' })
+          res.flushHeaders()
+          return
+        }
+        res.writeHead(200, { 'content-type': 'application/json' })
+        res.write(
+          mode === 'size'
+            ? 'OCR_TRANSPORT_PRIVATE_SENTINEL'.repeat(16)
+            : '{"partial":'
+        )
+      })
+      const deadline = mode === 'headers' || mode === 'body'
+      let expectedErrorCode = 'internal_error'
+      let expectedFailureCategory = 'transport_error'
+      if (deadline) {
+        expectedErrorCode = 'upstream_timeout'
+        expectedFailureCategory = 'upstream_timeout'
+      } else if (mode === 'size') {
+        expectedErrorCode = 'response_too_large'
+        expectedFailureCategory = 'malformed_response'
+      }
+      const options = {
+        apiKey: 'synthetic-key',
+        timeoutMs: deadline ? 100 : 1000,
+        maxResponseBytes: 128,
+      }
+      const body = { messages: [{ role: 'user', content: 'synthetic' }] }
+      const adapter = await transport.startAdapter(options)
+      t.after(() => adapter.close())
+      const result = await postJson(adapter, body)
+      assert.equal(result.status, deadline ? 504 : 502)
+      assert.equal(result.json.error.code, expectedErrorCode)
+      assert.doesNotMatch(result.text, /OCR_TRANSPORT_PRIVATE_SENTINEL/)
+      await assert.rejects(
+        transport.callMistral({ ...options, body }),
+        (error) => {
+          assert.equal(
+            error.code,
+            mode === 'size' ? 'response_too_large' : 'upstream_error'
+          )
+          assert.doesNotMatch(error.message, /OCR_TRANSPORT_PRIVATE_SENTINEL/)
+          return true
+        }
+      )
+      await Promise.all(closed)
+      assert.equal(closed.length, 2)
+      assert.equal(transport.attempts(), 2)
+      assert.equal(transport.fetchCalls(), 0)
+      const receipt = adapter.diagnostics()
+      assert.equal(receipt.upstream_attempts, 1)
+      assert.equal(receipt.responses, 0)
+      assert.equal(receipt.failures[expectedFailureCategory], 1)
+    })
+  }
+})
+
+test('default upstream transport cancels an open response when the adapter client disconnects', {
+  timeout: 6000,
+}, async (t) => {
+  const arrived = Promise.withResolvers()
+  const disconnected = Promise.withResolvers()
+  const transport = await loadLoopbackTransport(t, (req, res) => {
+    req.resume()
+    res.once('close', disconnected.resolve)
+    res.writeHead(200, { 'content-type': 'application/json' })
+    res.write('{"partial":')
+    arrived.resolve()
+  })
+  const adapter = await transport.startAdapter({
+    apiKey: 'synthetic-key',
+    timeoutMs: 1000,
+  })
+  t.after(() => adapter.close())
+  const controller = new AbortController()
+  const request = fetch(`${adapter.url}${CHAT_PATH}`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${adapter.token}` },
+    body: JSON.stringify({
+      messages: [{ role: 'user', content: 'synthetic' }],
+    }),
+    signal: controller.signal,
+  })
+  await Promise.race([
+    arrived.promise,
+    request.then(() => assert.fail('adapter settled before upstream arrival')),
+  ])
+  controller.abort()
+  await assert.rejects(request, (error) => error.name === 'AbortError')
+  await disconnected.promise
+  await adapter.close()
+  assert.equal(transport.attempts(), 1)
+  assert.equal(transport.fetchCalls(), 0)
+  const receipt = adapter.diagnostics()
+  assert.equal(receipt.upstream_attempts, 1)
+  assert.equal(receipt.responses, 0)
+  assert.equal(receipt.failures.cancelled, 1)
+  assert.equal(receipt.failures.upstream_timeout, 0)
+})
+
 test('callMistral normalizes a direct canary request', async () => {
   const fetchImpl = upstream(() =>
     jsonResponse(200, completion({ role: 'assistant', content: 'pong' }))
@@ -2542,6 +2799,8 @@ test('run strips the upstream key and injects the OCR environment', async () => 
 test('run streams filtered progress before completion while preserving raw stderr, JSON and exit status', async (t) => {
   const rawLine = '[ocr]   ▶ file_read "OCR_PRIVATE_SENTINEL"\n'
   const finalLine = '[ocr]   ✔ file_read (1ms)'
+  const fatalLine =
+    'Error: review failed (timeout): OCR_PRIVATE_SENTINEL https://provider.invalid/v1\n'
   const script = `
     const fs = require('node:fs')
     const first = Buffer.from(${JSON.stringify(rawLine)})
@@ -2552,6 +2811,7 @@ test('run streams filtered progress before completion while preserving raw stder
       let inherited = false
       try { fs.writeSync(3, 'OCR_CHILD_FD_SENTINEL'); inherited = true } catch {}
       fs.writeSync(2, Buffer.from([255, 254, 10]))
+      fs.writeSync(2, ${JSON.stringify(fatalLine)})
       fs.writeSync(2, ${JSON.stringify(finalLine)})
       fs.writeSync(1, JSON.stringify({
         ok: true, inherited,
@@ -2625,12 +2885,13 @@ test('run streams filtered progress before completion while preserving raw stder
       Buffer.concat([
         Buffer.from(rawLine),
         Buffer.from([255, 254, 10]),
+        Buffer.from(fatalLine),
         Buffer.from(finalLine),
       ])
     )
     assert.match(
       live,
-      /^OCR progress event=tool_started tool=file_read\nOCR progress event=tool_completed tool=file_read\nOCR progress event=process_exited exit_code=7 signaled=false spawn_failed=false elapsed_ms=\d+\n$/
+      /^OCR progress event=tool_started tool=file_read\nOCR progress event=cli_error code=review_failed classification=timeout\nOCR progress event=tool_completed tool=file_read\nOCR progress event=process_exited exit_code=7 signaled=false spawn_failed=false elapsed_ms=\d+\n$/
     )
     assert.doesNotMatch(live, /SENTINEL|::/)
   } finally {

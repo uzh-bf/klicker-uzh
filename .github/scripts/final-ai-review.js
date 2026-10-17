@@ -48,6 +48,7 @@ const OCR_RESULT_DIAGNOSTIC_SCHEMA = 'ocr-result-diagnostic/v1'
 const OCR_RESULT_STATUSES = Object.freeze([
   'complete',
   'partial',
+  'failed',
   'rejected',
   'unreadable',
   'malformed',
@@ -2268,7 +2269,9 @@ function ocrResumeOutcome(result) {
 }
 
 function ocrObservedStatus(result) {
-  return result?.status === 'complete' || result?.status === 'partial'
+  return result?.status === 'complete' ||
+    result?.status === 'partial' ||
+    result?.status === 'failed'
     ? result.status
     : 'unknown'
 }
@@ -3610,6 +3613,23 @@ function runCli() {
       status: 'complete',
     })
     console.log('OCR result passed validation')
+    return
+  }
+  if (command === 'diagnose-ocr-failure') {
+    const resultPath = process.argv[3]
+    if (!resultPath) {
+      throw new Error(
+        'Usage: final-ai-review.js diagnose-ocr-failure <result-path>'
+      )
+    }
+    const result = readOCRResultWithDiagnostic(
+      resultPath,
+      'diagnose-ocr-failure'
+    )
+    writeOCRResultDiagnostic('diagnose-ocr-failure', {
+      result,
+      status: 'failed',
+    })
     return
   }
   if (command === 'plan-context') {
