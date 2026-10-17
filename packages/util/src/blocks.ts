@@ -348,8 +348,9 @@ export async function updateLiveQuizBlockResultsFromCache({
     where: { id: quizId },
     include: {
       course: true,
+      // only the target block is needed (its elements can be large)
       blocks: {
-        orderBy: { id: 'asc' },
+        where: { id: blockId },
         include: { elements: { orderBy: { order: 'asc' } } },
       },
     },
