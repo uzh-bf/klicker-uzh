@@ -163,8 +163,8 @@ approved restoration of the prior unit policy; preserve runner data.
 ## Progress
 
 - Source slices are complete at `5e665907e279df92e14be2c1d473dccae1756413`.
-  The plan was committed first (`dd061ac149`), before the native goal and source
-  implementation. The package changes eight paths, with 516 added/deleted lines
+  The plan was the first commit (`dd061ac149`), before source implementation.
+  The package changes eight paths, with 516 added/deleted lines
   excluding this plan; it adds no dependency, generated file or configuration owner.
 - Focused verification passes: both reconciliation shell suites, syntax,
   ShellCheck, eight sampler tests in a network-isolated Node 24.21.0 container,
