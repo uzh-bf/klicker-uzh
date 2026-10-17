@@ -1,6 +1,7 @@
 import {
   ConfusionTimestep,
   Feedback,
+  type GetLiveQuizEvaluationDisplayQuery,
   LocaleType,
   StackEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -19,7 +20,7 @@ import { useTranslations } from 'next-intl'
 import Rank1Img from 'public/img/rank1.svg'
 import Rank2Img from 'public/img/rank2.svg'
 import Rank3Img from 'public/img/rank3.svg'
-import { useEffect, useReducer, useState } from 'react'
+import { useEffect, useReducer, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import useEvaluationInitialization from '../../lib/hooks/useEvaluationInitialization'
 import useEvaluationSettingsInitialization from '../../lib/hooks/useEvaluationSettingsInitialization'
@@ -50,14 +51,7 @@ interface ActivityEvaluationProps {
   pinCode?: string | null
   type?: ActivityEvaluationType
   // per-question projection settings set from the controller app
-  displaySettings?:
-    | {
-        instanceId: number
-        chartType?: string | null
-        showSolution: boolean
-        showPercentages: boolean
-      }[]
-    | null
+  displaySettings?: GetLiveQuizEvaluationDisplayQuery['liveQuizEvaluationDisplay']
 }
 
 function ActivityEvaluation({
@@ -140,10 +134,25 @@ function ActivityEvaluation({
     (setting) => setting.instanceId === instanceResults[activeInstance]?.id
   )
   const displaySettingKey = JSON.stringify(displaySetting ?? null)
+  // question for which a controller setting is currently applied
+  const controlledInstance = useRef<number | null>(null)
   // biome-ignore lint/correctness/useExhaustiveDependencies: re-apply only when the setting or the question changes
   useEffect(() => {
     const elementType = instanceResults[activeInstance]?.type
-    if (!displaySetting || !elementType) return
+    if (!elementType) return
+
+    if (!displaySetting) {
+      // the controller setting of this question disappeared (expired or
+      // cleared): fall back to the page's own defaults instead of keeping
+      // the last controller values
+      if (controlledInstance.current === activeInstance) {
+        setChartType(ACTIVE_CHART_TYPES[elementType][0]!.value)
+        setShowSolution(router.query.showSolution === 'true')
+      }
+      controlledInstance.current = null
+      return
+    }
+    controlledInstance.current = activeInstance
 
     const allowedChartTypes = ACTIVE_CHART_TYPES[elementType].map(
       (option) => option.value
