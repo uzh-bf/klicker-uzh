@@ -1,5 +1,9 @@
 # Faithful chatbot evaluation with bounded provider spend
 
+Current direction is recorded in
+[Evaluation consolidation](#evaluation-consolidation--2026-10-17). Earlier
+approval and delivery entries retain their historical scope.
+
 ## Approval summary
 
 Extend the existing local trajectory evaluator so observed chatbot failures can be
@@ -144,7 +148,8 @@ anonymous and out of prompt-workflow transcripts. No skill rename or catalog cha
 
 Current Node 24 module documentation confirms supported TypeScript loading;
 reuse the already pinned tsx dependency for extensionless application imports.
-No new DeepEval setup: the existing JS evaluator is the approved seam. Pricing
+For that source package, the existing JS capture adapter was the approved seam;
+the separate framework remains the DeepEval assessment owner. Pricing
 is an explicit operator qualification rather than a stale hard-coded provider
 recommendation. No user-facing product primitive changes. No ADR needed for
 local evaluation tooling; widening to production provider routing re-arms that
@@ -544,3 +549,99 @@ and guarded startup contracts remain unchanged. The OR-trigger warning claim
 was refuted against the existing capture condition. Prior source reviews remain
 applicable to this non-behavioral correction; rerun the synthetic startup harness
 and formatting, then hold the corrected head through fresh hosted CI.
+
+## Evaluation consolidation — 2026-10-17
+
+### Current state and authority
+
+[PR 6489](https://github.com/uzh-bf/klicker-uzh/pull/6489) merged capture
+compatibility and script relocation. [PR 6563](https://github.com/uzh-bf/klicker-uzh/pull/6563)
+merged the framework regression pin. [PR 6576](https://github.com/uzh-bf/klicker-uzh/pull/6576)
+merged bounded initializer support; see the
+[budget plan](2026-10-16-evaluation-budget-limits-plan.md).
+These are source-delivery facts, not deployment, runtime or paid-run acceptance.
+
+The current request authorizes roadmap/plan reconciliation and draft documentation
+delivery only. The phases below are direction-only follow-ups requiring their
+own implementation or spending approval. Preserve earlier ledgers and the frozen
+local baseline. The proposed US$55/48-turn capture allowance is not judge authority;
+new initialization, pricing/routing qualification and runtime readback remain
+separate. The US$5/120-turn default stays intact.
+
+### Ownership
+
+| Responsibility                                                          | Owner and existing seam                                                                                            |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Login, thread/stream lifecycle, persisted ancestry and source numbering | Klicker's `apps/chat/scripts/` adapter and actual application mapper                                               |
+| Capture execution and pre-dispatch provider reservations                | Existing JS trajectory loop, ledger and spend guard; retain per-turn leases                                        |
+| Experiment definition, corpus/rubric and metric configuration           | Framework data and optional Klicker adapter; generic defaults stay product-neutral                                 |
+| Normalization, reusable scoring and reports                             | Existing Python importer and DeepEval evaluation path; deterministic numerical assessment belongs here when needed |
+
+The language boundary is intentional. Relocating files into Klicker's
+`evaluation/` directory organized the app-side tooling; it did not make that
+directory the separate evaluation framework. Retain the existing file handoff:
+verified JSONL receipts, optional framework import, then explicit assessment.
+Keep the physical capture loop with its leases until unattended orchestration
+demonstrates a need for a stateful framework adapter. No new wrapper, service,
+scorer, LLM conversation simulator or Python copy of the TS mapper is proposed.
+
+### Phase 1 — Align the existing corpus and receipt contract
+
+Proposed next implementation package: use the current producer in
+`apps/chat/scripts/tutor-trajectory.mjs`, the framework's optional
+`src/adapters/klicker_trajectories.py`, and their existing test suites. Both
+boundaries keep independent validation of one documented contract.
+
+Resolve the reproduced drift with nonempty, unique, in-range `assessmentTurns`
+and consistent unknown-field rejection. Preserve literal turns, `repeatPrevious`
+semantics, receipt version 2, mapping provenance and parent-chain checks. Keep
+minimal synthetic protocol fixtures available to public app CI without requiring
+the private submodule; framework reader fixtures exercise the same semantics.
+Do not pin corpus prose, whole-file hashes or incidental fixture ordering.
+
+Acceptance: both validators agree on valid/invalid synthetic inputs, actual
+synthetic producer output imports successfully, and stopped/unstarted captures
+remain in planned coverage. Use existing suites and an offline round trip; no
+provider or application startup is required. Record compatibility/version impact
+before implementing. Do not replace exposed cases or weaken their rubrics.
+
+### Phase 2 — Calibrate the existing DeepEval assessment path
+
+The framework's Explainer validation plan in
+`evaluation/framework/project/2026-10-16-explainer-validation-plan.md` owns the
+proposed corpus and capture protocol when that draft is available. Current manual
+2/1/0/U scores and passage checks are calibration evidence, not DeepEval results.
+`compareTutorNumericClaim` is documented for manual invocation; the runner only
+prevalidates its sidecar and produces no automatic numerical-quality verdict.
+
+Reuse the framework's existing conversational cases, configurable metrics and
+evaluation entrypoint on saved captures. Before paid judging, separately qualify
+judge routing, pricing, output/retry bounds and enforceable pre-dispatch admission.
+Its current post-completion cost reporting is not a hard cap; the application
+active-turn ledger does not automatically admit judge calls. Obtain a distinct
+judge budget rather than consuming or reinterpreting the capture allowance.
+
+Compare judge decisions with criterion-level manual evidence, retaining missing
+evidence and first-answer failures. Exclude arm labels from judge-visible evidence.
+Citation-support assessment requires actual model-visible passages; source hashes
+and successful retrieval cannot supply them. Define disagreement acceptance before
+judge execution, without changing thresholds to fit observed results. Keep private
+scores and excerpts outside public artifacts; add no manual-score engine now.
+
+### Phase 3 — Automate only a demonstrated recurring workflow
+
+Keep arm, block, repetition and corpus/config identity in framework-owned experiment
+data. If unattended capture-to-assessment becomes necessary, plan an optional
+stateful adapter invoking app-native execution through an explicit protocol.
+The existing stateless query entrypoint and single-message target cannot silently
+replace trajectory capture. Preserve request-boundary spending enforcement and
+application-owned semantics. Evaluate numerical assessment only when a concrete
+consumer needs it; no generic finance module or orchestration platform is planned.
+
+### Progress
+
+Direction reconciled after source inspection and the Astra/Claude discussion.
+Phase 1 implementation is pending; phases 2 and 3 retain the gates above. This
+documentation batch changes no executable contract, corpus, metric, framework pin
+or runtime. Focused Markdown/link checks and source/status inspection verify the
+update; code tests and earlier capture evidence are not new evaluation results.
