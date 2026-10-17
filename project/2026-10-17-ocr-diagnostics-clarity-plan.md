@@ -34,7 +34,7 @@ No material design decisions remain open in this proposed scope.
 
 ### Identity, evidence, and boundaries
 
-- Worktree: `/Users/rschlae/Git/klicker/klicker-uzh/trees/ocr-diagnostics-clarity`.
+- Worktree: `trees/ocr-diagnostics-clarity`.
 - Branch: `rs/ocr-diagnostics-clarity`; target: `v3`.
 - Planning baseline: `0f222786e86c625c7bfbff594a952de770d15ac5`.
 - Artifact root: the existing `project/`; PR: none created.
@@ -212,7 +212,7 @@ retry behavior is authorized by the diagnostics proposal.
 
 ## Planning review and progress
 
-- Status: slice 1 complete; active slice 2.
+- Status: slices 1 and 2 implemented; active slice 3, reviews and draft delivery.
 - Planner: native `planner`, GPT-6 Astra medium; approved in round 1 with no
   blocking findings. The local review transcript records the source checks.
 - Accepted clarifications: distinguish accepted-response timing from usage;
@@ -225,9 +225,13 @@ retry behavior is authorized by the diagnostics proposal.
   the existing test is extended with that assertion-only case.
 - Ownership: the executor produced no patch after one narrowing instruction and
   was stopped. Main owns remaining coupled source work; no replacement worker.
+- Slice 2: committed at `45ed0c0e55`; full five-suite verification passes all
+  232 tests. Formatter, syntax, and focused Opengrep pass; lint retains the
+  baseline warnings without errors. Slice simplification/risk reviews are active.
 - Proposed package: adapter, adapter tests, existing OCR documentation, and plan.
-  Substantive size is not yet measured; calculate it from the implementation
-  diff before delivery, excluding project artifacts.
-- Runtime and CI: none started for this planning task. No PR exists.
-- Next action: execute slice 2. A native goal tracks the
+  Source and tests extend one adapter/reporting capability on one branch.
+- Runtime and CI: no application runtime or provider test started. Draft CI and
+  integrated review are pending; no PR exists yet.
+- Next action: settle slice reviews, publish the draft, and complete integrated
+  review plus hosted CI/actionable feedback. A native goal tracks the
   approved terminal condition; no explicit token budget was requested.
