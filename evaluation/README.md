@@ -129,8 +129,10 @@ provider variants. Record dated evidence for context limits, long-context price
 overrides, cache reads and writes, reasoning-inclusive output and applicable
 provider or BYOK fees. Reserve at all-in upper rates; prompt caching can add a
 write charge even when the proxy-only bypass hint is stripped. The price filters
-do not bound cache charges or platform fees independently. Client-supplied
-`cache_control` at any depth and `store: true` are rejected before reservation.
+do not bound cache charges or platform fees independently. Request-level
+`cache_control` controls and defined `store` values other than `false` are rejected
+before reservation. Function-tool JSON Schema parameters are data and are not
+interpreted as provider controls.
 Tariff freshness is an operator readiness gate, not an automatically enforced
 expiry check. Retain this evidence privately and refresh it before authorizing
 paid capture. See the [Responses schema](https://openrouter.ai/openapi.json) and
