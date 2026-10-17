@@ -526,7 +526,13 @@ export function parseHostEnvironment(output) {
   if (!loopback) {
     fail(`the workspace Postgres has no loopback host port (${loopbackReason})`)
   }
-  if (typeof loopback.host !== 'string' || !Number.isInteger(loopback.port)) {
+  if (
+    typeof loopback.host !== 'string' ||
+    loopback.host === '' ||
+    !Number.isInteger(loopback.port) ||
+    loopback.port < 1 ||
+    loopback.port > 65535
+  ) {
     fail('the workspace Postgres loopback endpoint lacks a host or port')
   }
   return {
@@ -699,6 +705,20 @@ function resolveHostEnvironment(runtime) {
   )
 }
 
+// A linked worktree's devrouter env must report its own workspace name: that
+// name namespaces every host URL and the database the suite reads and seeds,
+// so a missing value would silently run the suite against the primary
+// checkout's namespace instead.
+function assertLinkedWorkspaceName(runtime, workspace) {
+  const { gitDir, commonDir } = resolveGitDirectories(runtime)
+  if (gitDir === commonDir) return
+  if (typeof workspace !== 'string' || workspace.length === 0) {
+    fail(
+      `devrouter env did not report a workspace name for linked worktree ${runtime.repoRoot}; refusing to run against the primary checkout's URLs and database`
+    )
+  }
+}
+
 function ensureHostDependencies(runtime, playwrightArgs) {
   const playwrightCli = join(
     runtime.repoRoot,
@@ -847,6 +867,7 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
 
     const { workspace, databaseHost, databasePort } =
       resolveHostEnvironment(runtime)
+    assertLinkedWorkspaceName(runtime, workspace)
     const postgresContainer = resolvePostgresContainer(runtime)
     const committedEnvironment = readCommittedEnvironment(
       runtime.readFile(
