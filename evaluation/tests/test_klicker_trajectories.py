@@ -261,17 +261,6 @@ def _mutated(receipts: list[dict], index: int, **fields) -> list[dict]:
     return mutated
 
 
-def _cli_status(argv: list[str]) -> int:
-    """Return 0 on success, non-zero otherwise, absorbing argparse exits."""
-    try:
-        code = klicker_trajectories.main(argv)
-    except SystemExit as exc:
-        return 0 if not exc.code else 1
-    except Exception:
-        return 1
-    return 0 if code is None else code
-
-
 def _valid_fixtures(tmp_path: Path) -> tuple[Path, Path]:
     case = _case("case-cli", turns=[{"message": "Hello?"}])
     _, receipts = _capture(case)
@@ -878,9 +867,14 @@ def test_cli_requires_receipts_corpus_and_output(tmp_path):
     receipts_path, corpus_path = _valid_fixtures(tmp_path)
     output_path = tmp_path / "out.json"
 
-    assert _cli_status([str(receipts_path)]) != 0
-    assert _cli_status([str(receipts_path), "--corpus", str(corpus_path)]) != 0
-    assert _cli_status(["--corpus", str(corpus_path), "--output", str(output_path)]) != 0
+    for args in (
+        [str(receipts_path)],
+        [str(receipts_path), "--corpus", str(corpus_path)],
+        ["--corpus", str(corpus_path), "--output", str(output_path)],
+    ):
+        with pytest.raises(SystemExit) as exc:
+            klicker_trajectories.main(args)
+        assert exc.value.code == 2
     assert not output_path.exists()
 
 
@@ -888,11 +882,10 @@ def test_cli_writes_normalized_output(tmp_path):
     receipts_path, corpus_path = _valid_fixtures(tmp_path)
     output_path = tmp_path / "out.json"
 
-    status = _cli_status(
+    klicker_trajectories.main(
         [str(receipts_path), "--corpus", str(corpus_path), "--output", str(output_path)]
     )
 
-    assert status == 0
     written = json.loads(output_path.read_text(encoding="utf-8"))
     assert written["metadata"]["format"] == "conversation_capture"
     assert [result["id"] for result in written["results"]] == ["case-cli:0"]
@@ -904,11 +897,10 @@ def test_cli_output_is_exclusive(tmp_path):
     output_path = tmp_path / "out.json"
     output_path.write_text("PRE-EXISTING", encoding="utf-8")
 
-    status = _cli_status(
-        [str(receipts_path), "--corpus", str(corpus_path), "--output", str(output_path)]
-    )
-
-    assert status != 0
+    with pytest.raises(FileExistsError):
+        klicker_trajectories.main(
+            [str(receipts_path), "--corpus", str(corpus_path), "--output", str(output_path)]
+        )
     assert output_path.read_text(encoding="utf-8") == "PRE-EXISTING"
 
 
@@ -919,9 +911,8 @@ def test_cli_fails_before_output_creation(tmp_path):
     corpus_path = _write_corpus(tmp_path / "corpus.json", [case])
     output_path = tmp_path / "out.json"
 
-    status = _cli_status(
-        [str(receipts_path), "--corpus", str(corpus_path), "--output", str(output_path)]
-    )
-
-    assert status != 0
+    with pytest.raises(ValueError):
+        klicker_trajectories.main(
+            [str(receipts_path), "--corpus", str(corpus_path), "--output", str(output_path)]
+        )
     assert not output_path.exists()
