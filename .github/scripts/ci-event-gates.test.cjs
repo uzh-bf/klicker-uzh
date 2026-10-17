@@ -229,9 +229,11 @@ test('playwright execution and reporting run only for open pull requests', () =>
 })
 
 // The envelope emits a duplicate run id only for a fully validated equivalent
-// pull-request run; push validation must always execute independently. The
-// reporter therefore has to tie reuse acceptance to the event family instead of
-// rejecting every duplicate.
+// pull-request run. A v3-* integration push other than the staging source may
+// reuse the run that validated the merged pull request; v3 and the staging
+// source must always validate their pushes independently. The reporter
+// therefore has to tie reuse acceptance to the event family and push ref
+// instead of rejecting every duplicate.
 test('the playwright reporter reuses only pull-request validation', () => {
   const playwright = readWorkflow('test-playwright.yml')
   const report = playwright.jobs['test-playwright-status'].steps.find(

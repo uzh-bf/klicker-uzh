@@ -530,19 +530,32 @@ test('status reporter accepts the trusted plan for drafts and a full plan for re
 })
 
 test('status reporter reuses only validated pull-request runs', (t) => {
-  // Push validation must always execute: a duplicate offered on a push is
+  // v3 and the staging source must validate their pushes independently: a
+  // duplicate offered there, or while the staging source is unknown, is
   // rejected whatever it contains.
+  const push = {
+    IS_PULL_REQUEST: 'false',
+    ROUTE: 'hosted',
+    DUPLICATE_RUN_ID: '123',
+    STG_SOURCE_BRANCH: 'v3-adaptive-learning',
+  }
   const rejected = {
-    'numeric push run id': {
-      IS_PULL_REQUEST: 'false',
-      ROUTE: 'hosted',
-      DUPLICATE_RUN_ID: '123',
-    },
+    'numeric push run id': { ...push, PUSH_REF: 'refs/heads/v3' },
     'non-numeric push run id': {
-      IS_PULL_REQUEST: 'false',
-      ROUTE: 'hosted',
+      ...push,
+      PUSH_REF: 'refs/heads/v3',
       DUPLICATE_RUN_ID: '123abc',
     },
+    'staging source push': {
+      ...push,
+      PUSH_REF: 'refs/heads/v3-adaptive-learning',
+    },
+    'unknown staging source': {
+      ...push,
+      PUSH_REF: 'refs/heads/v3-ai',
+      STG_SOURCE_BRANCH: '',
+    },
+    'missing push ref': push,
   }
   for (const [name, overrides] of Object.entries(rejected)) {
     const result = runStatusReporter(t, overrides)
@@ -560,6 +573,13 @@ test('status reporter reuses only validated pull-request runs', (t) => {
   assert.equal(reused.status, 0, reused.output)
   assert.equal(reused.metadata.duplicate_run_id, '123')
   assert.match(reused.summary, /Reused validated run: `123`/)
+
+  // Another integration branch accepts the merged pull request's validation.
+  const integration = runStatusReporter(t, {
+    ...push,
+    PUSH_REF: 'refs/heads/v3-ai',
+  })
+  assert.equal(integration.status, 0, integration.output)
 
   // Reuse cannot launder a cancelled or failed execution into a green gate.
   for (const [name, overrides] of [
