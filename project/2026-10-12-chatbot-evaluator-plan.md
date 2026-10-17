@@ -575,13 +575,13 @@ separate. The US$5/120-turn default stays intact.
 | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | Login, thread/stream lifecycle, persisted ancestry and source numbering | Klicker's `apps/chat/scripts/` adapter and actual application mapper                                               |
 | Capture execution and pre-dispatch provider reservations                | Existing JS trajectory loop, ledger and spend guard; retain per-turn leases                                        |
-| Experiment definition, corpus/rubric and metric configuration           | Framework data and optional Klicker adapter; generic defaults stay product-neutral                                 |
-| Normalization, reusable scoring and reports                             | Existing Python importer and DeepEval evaluation path; deterministic numerical assessment belongs here when needed |
+| Application experiment definition, corpus/rubric and receipt translation | App-owned `evaluation/data/` and `evaluation/adapters/`; private framework contains generic contracts only |
+| Normalized-artifact loading, reusable scoring and reports | Existing framework DeepEval evaluation path with caller-configured labels and metrics |
 
 The language boundary is intentional. Relocating files into Klicker's
 `evaluation/` directory organized the app-side tooling; it did not make that
 directory the separate evaluation framework. Retain the existing file handoff:
-verified JSONL receipts, optional framework import, then explicit assessment.
+verified JSONL receipts, app-owned offline import, then explicit framework assessment.
 Keep the physical capture loop with its leases until unattended orchestration
 demonstrates a need for a stateful framework adapter. No new wrapper, service,
 scorer, LLM conversation simulator or Python copy of the TS mapper is proposed.
@@ -589,15 +589,15 @@ scorer, LLM conversation simulator or Python copy of the TS mapper is proposed.
 ### Phase 1 — Align the existing corpus and receipt contract
 
 The active implementation package uses the current producer in
-`apps/chat/scripts/tutor-trajectory.mjs`, the framework's optional
-`src/adapters/klicker_trajectories.py`, and their existing test suites. Both
+`apps/chat/scripts/tutor-trajectory.mjs`, the app-owned
+`evaluation/adapters/klicker_trajectories.py`, and their existing test suites. Both
 boundaries keep independent validation of one documented contract.
 
 Resolve the reproduced drift with nonempty, unique, in-range `assessmentTurns`
 and consistent unknown-field rejection. Preserve literal turns, `repeatPrevious`
 semantics, receipt version 2, mapping provenance and parent-chain checks. Keep
 minimal synthetic protocol fixtures available to public app CI without requiring
-the private submodule; framework reader fixtures exercise the same semantics.
+the private submodule; the relocated Python reader suite exercises the same semantics.
 Do not pin corpus prose, whole-file hashes or incidental fixture ordering.
 
 Acceptance: both validators agree on valid/invalid synthetic inputs, actual
@@ -608,9 +608,8 @@ before implementing. Do not replace exposed cases or weaken their rubrics.
 
 ### Phase 2 — Calibrate the existing DeepEval assessment path
 
-The framework's Explainer validation plan in
-`evaluation/framework/project/2026-10-16-explainer-validation-plan.md` owns the
-proposed corpus and capture protocol when that draft is available. Current manual
+The app-owned [Explainer comparison protocol](../evaluation/data/explainer-compression/README.md)
+owns the proposed corpus and capture protocol. Current manual
 2/1/0/U scores and passage checks are calibration evidence, not DeepEval results.
 `compareTutorNumericClaim` is documented for manual invocation; the runner only
 prevalidates its sidecar and produces no automatic numerical-quality verdict.

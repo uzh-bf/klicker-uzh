@@ -10,18 +10,19 @@ The next work follows the
 [evaluator consolidation plan](2026-10-12-chatbot-evaluator-plan.md#evaluation-consolidation--2026-10-17)
 and the [course-quality plan](2026-10-12-chatbot-learning-quality-plan.md).
 Keep Klicker's native capture, persisted-history checks, citation mapper and
-provider guard stable. The separate Python framework owns experiment definitions,
-normalized import, metric configuration and reusable assessment/reporting.
+provider guard stable. The app owns domain experiment definitions, corpus and
+receipt translation. The separate Python framework owns normalized-artifact
+loading, configurable metrics and reusable assessment/reporting.
 Moving JavaScript into this repository's `evaluation/` folder did not transfer
 those responsibilities to the framework.
 
 | Next outcome                           | Acceptance and gate                                                                                                            | State                                                      |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
-| Compatible corpus and receipt contract | Minimal synthetic producer/consumer checks agree; incomplete coverage survives import                                          | Source and offline proof prepared in coordinated drafts; landing/pin gated |
+| Caller-owned corpus and receipt contract | App-owned importer preserves complete/incomplete coverage; framework accepts generic normalized artifacts | Replacement verified offline; coordinated source migration in progress |
 | Calibrated DeepEval assessment         | Existing conversational metrics assess saved captures under separately qualified judge admission; compare with manual evidence | Proposed after contract alignment and named judge approval |
 | Framework-driven unattended capture    | A demonstrated need justifies a stateful adapter without copying application semantics                                         | Deferred                                                   |
 
-Recent Explainer preparation uses authored trajectories, offline framework import
+Recent Explainer preparation uses authored trajectories, app-owned offline import
 and manual criterion review. It is calibration, not executed DeepEval regression
 coverage. Numerical claim comparison is also a manually invoked utility, not an
 automatic verdict from successful capture. The earlier Tutor rounds below are
