@@ -7,10 +7,10 @@ import {
   StackFeedbackStatus,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
+import { PracticeQuizCard } from '@klicker-uzh/shared-components/src/practiceQuiz/PracticeQuizOverviewParts'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
-import { twMerge } from 'tailwind-merge'
 import PreviewMessage from '../common/PreviewMessage'
 import StepProgressWithScoring from '../common/StepProgressWithScoring'
 import ElementStack from './ElementStack'
@@ -125,101 +125,92 @@ function PracticeQuiz({
   })
 
   return (
-    <div className="flex-1">
-      <div
-        className={twMerge(
-          focusedEmbed
-            ? 'w-full space-y-3 px-1 pt-2 pb-20 sm:px-2'
-            : 'w-full space-y-4 md:mx-auto md:mb-4 md:max-w-6xl md:rounded md:p-8 md:pt-6',
-          !embedded && 'md:border'
-        )}
-      >
-        <StepProgressWithScoring
-          items={
-            quiz.stacks?.map((stack) => {
-              return progressState?.[stack.id]
-                ? {
-                    status:
-                      FEEDBACK_STATUS_PROGRESS_MAP[
-                        progressState?.[stack.id].status ??
-                          StackFeedbackStatus.Unanswered
-                      ],
-                    score: progressState?.[stack.id].score ?? null,
-                  }
-                : {
-                    status: 'unanswered',
-                  }
-            }) || []
-          }
-          currentIx={currentIx}
-          setCurrentIx={setCurrentIx}
-          navigableUntilIx={navigableUntilIx}
-          readOnly={hostNavigation}
-          resetLocalStorage={
-            showResetLocalStorage && !hostNavigation
-              ? () => {
-                  resetPracticeQuizLocalStorage(quiz.id)
-                  window.location.reload()
+    <PracticeQuizCard embedded={embedded} focusedEmbed={focusedEmbed}>
+      <StepProgressWithScoring
+        items={
+          quiz.stacks?.map((stack) => {
+            return progressState?.[stack.id]
+              ? {
+                  status:
+                    FEEDBACK_STATUS_PROGRESS_MAP[
+                      progressState?.[stack.id].status ??
+                        StackFeedbackStatus.Unanswered
+                    ],
+                  score: progressState?.[stack.id].score ?? null,
                 }
-              : undefined
-          }
+              : {
+                  status: 'unanswered',
+                }
+          }) || []
+        }
+        currentIx={currentIx}
+        setCurrentIx={setCurrentIx}
+        navigableUntilIx={navigableUntilIx}
+        readOnly={hostNavigation}
+        resetLocalStorage={
+          showResetLocalStorage && !hostNavigation
+            ? () => {
+                resetPracticeQuizLocalStorage(quiz.id)
+                window.location.reload()
+              }
+            : undefined
+        }
+      />
+
+      {previewOnly && !focusedEmbed && (
+        <PreviewMessage
+          activityType={t('shared.generic.practiceQuiz')}
+          name={quiz.name}
+          displayName={quiz.displayName}
         />
+      )}
 
-        {previewOnly && !focusedEmbed && (
-          <PreviewMessage
-            activityType={t('shared.generic.practiceQuiz')}
-            name={quiz.name}
-            displayName={quiz.displayName}
-          />
-        )}
+      {currentIx === -1 && !focusedEmbed && (
+        <PracticeQuizOverview
+          displayName={quiz.displayName}
+          description={quiz.description ?? undefined}
+          numOfStacks={quiz.numOfStacks ?? undefined}
+          orderType={quiz.orderType}
+          resetTimeDays={quiz.resetTimeDays ?? undefined}
+          // previouslyAnswered={quiz.previouslyAnswered ?? undefined}
+          // stacksWithQuestions={quiz.stacksWithQuestions ?? undefined}
+          pointsMultiplier={quiz.pointsMultiplier}
+          setCurrentIx={setCurrentIx}
+          previewOnly={previewOnly}
+        />
+      )}
 
-        {currentIx === -1 && !focusedEmbed && (
-          <PracticeQuizOverview
-            displayName={quiz.displayName}
-            description={quiz.description ?? undefined}
-            numOfStacks={quiz.numOfStacks ?? undefined}
-            orderType={quiz.orderType}
-            resetTimeDays={quiz.resetTimeDays ?? undefined}
-            // previouslyAnswered={quiz.previouslyAnswered ?? undefined}
-            // stacksWithQuestions={quiz.stacksWithQuestions ?? undefined}
-            pointsMultiplier={quiz.pointsMultiplier}
-            setCurrentIx={setCurrentIx}
-            previewOnly={previewOnly}
-          />
-        )}
-
-        {currentStack && (
-          <ElementStack
-            key={currentStack.id}
-            parentId={quiz.id}
-            courseId={quiz.course!.id}
-            embedded={embedded}
-            stack={currentStack}
-            currentStep={currentIx + 1}
-            totalSteps={quiz.stacks?.length ?? 0}
-            setStepStatus={(value) => {
-              setProgressState((prev) => {
-                const next = { ...prev }
-                next[currentStack.id] = value
-                return next
-              })
-            }}
-            handleNextElement={handleNextElement}
-            withParticipant={
-              !!dataParticipant?.self &&
-              dataParticipant.self.role !== UserRole.TemporaryParticipant
-            }
-            onAllStacksCompletion={handleAllStacksCompletion}
-            bookmarks={bookmarksData?.getBookmarksPracticeQuiz}
-            previewOnly={previewOnly}
-            focusedPresentation={focusedEmbed}
-            hostNavigation={hostNavigation}
-            hostAdvanceRequest={hostAdvanceRequest}
-            onHostNavigationStateChange={onHostNavigationStateChange}
-          />
-        )}
-      </div>
-    </div>
+      {currentStack && (
+        <ElementStack
+          key={currentStack.id}
+          parentId={quiz.id}
+          courseId={quiz.course!.id}
+          embedded={embedded}
+          stack={currentStack}
+          currentStep={currentIx + 1}
+          totalSteps={quiz.stacks?.length ?? 0}
+          setStepStatus={(value) => {
+            setProgressState((prev) => {
+              const next = { ...prev }
+              next[currentStack.id] = value
+              return next
+            })
+          }}
+          handleNextElement={handleNextElement}
+          withParticipant={
+            !!dataParticipant?.self &&
+            dataParticipant.self.role !== UserRole.TemporaryParticipant
+          }
+          onAllStacksCompletion={handleAllStacksCompletion}
+          bookmarks={bookmarksData?.getBookmarksPracticeQuiz}
+          previewOnly={previewOnly}
+          focusedPresentation={focusedEmbed}
+          hostNavigation={hostNavigation}
+          hostAdvanceRequest={hostAdvanceRequest}
+          onHostNavigationStateChange={onHostNavigationStateChange}
+        />
+      )}
+    </PracticeQuizCard>
   )
 }
 

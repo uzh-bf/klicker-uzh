@@ -1,3 +1,4 @@
+import AdaptiveActivitySummary from '@klicker-uzh/adaptive-manage-ui/source/components/activities/overview/AdaptiveActivitySummary.tsx'
 import { useQuery } from '@apollo/client'
 import { faArrowUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -114,13 +115,21 @@ function ActivityDetailsModal({
               activityReviewStatus={details?.reviewStatus}
             />
 
-            <ActivityOverviewTable
-              details={details}
-              activityType={activityType}
-              outdatedInstances={outdatedInstances}
-              selectedInstanceId={selectedInstanceId}
-              setSelectedInstanceId={setSelectedInstanceId}
-            />
+            {details.isAdaptive ? (
+              <AdaptiveActivitySummary
+                treeName={details.adaptiveTreeName}
+                elementCount={details.adaptiveElementCount}
+                published={details.adaptivePoolPublished === true}
+              />
+            ) : (
+              <ActivityOverviewTable
+                details={details}
+                activityType={activityType}
+                outdatedInstances={outdatedInstances}
+                selectedInstanceId={selectedInstanceId}
+                setSelectedInstanceId={setSelectedInstanceId}
+              />
+            )}
           </div>
           <div className="flex h-max max-h-full min-h-0 w-full flex-col gap-8 overflow-auto pb-2 lg:max-h-[calc(100vh-6rem)] lg:w-1/3 lg:gap-2 lg:pl-1.5 xl:w-1/2 xl:pl-3">
             {selected ? (

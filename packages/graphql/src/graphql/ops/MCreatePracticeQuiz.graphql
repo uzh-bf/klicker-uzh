@@ -7,6 +7,8 @@ mutation CreatePracticeQuiz(
   $multiplier: Int!
   $order: ElementOrderType!
   $resetTimeDays: Int!
+  $mode: PracticeQuizMode
+  $adaptiveConfig: AdaptivePracticeQuizConfigInput
 ) {
   createPracticeQuiz(
     name: $name
@@ -17,6 +19,8 @@ mutation CreatePracticeQuiz(
     multiplier: $multiplier
     order: $order
     resetTimeDays: $resetTimeDays
+    mode: $mode
+    adaptiveConfig: $adaptiveConfig
   ) {
     ...ActivityInfoData
   }

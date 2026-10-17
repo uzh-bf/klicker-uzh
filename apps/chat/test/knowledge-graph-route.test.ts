@@ -4,6 +4,7 @@ import type {
 } from '@klicker-uzh/types'
 import { NextRequest, NextResponse } from 'next/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { logger } from '../src/lib/server/logger'
 
 const boundaries = vi.hoisted(() => ({
   getPublishedKnowledgeGraph: vi.fn(),
@@ -485,9 +486,17 @@ describe('participant knowledge graph route', () => {
         'redis://reader:secret@falkordb.internal/graph?source=https://private.example'
       )
     )
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
+    // The route logs through a request child logger; capture at the fork.
+    const loggerError = vi.fn()
+    vi.spyOn(logger, 'child').mockImplementation(
+      () =>
+        ({
+          error: loggerError,
+          info: vi.fn(),
+          warn: vi.fn(),
+          debug: vi.fn(),
+        }) as never
+    )
 
     try {
       const result = await callRoute('operation=overview')
@@ -497,15 +506,19 @@ describe('participant knowledge graph route', () => {
         code: 'KNOWLEDGE_GRAPH_TEMPORARILY_UNAVAILABLE',
         error: 'Knowledge graph is temporarily unavailable',
       })
-      expect(consoleError).toHaveBeenCalledWith(
-        'Participant knowledge graph read failed',
-        { chatbotId, operation: 'overview' }
-      )
-      expect(JSON.stringify(consoleError.mock.calls)).not.toMatch(
+      // The handler's record plus the route wrapper's 503 completion record.
+      expect(loggerError).toHaveBeenCalledTimes(2)
+      const readFailure = loggerError.mock.calls.find(
+        ([fields]) =>
+          (fields as Record<string, unknown>).event ===
+          'chat.knowledge_graph.read.failed'
+      ) as [Record<string, unknown>, string]
+      expect(readFailure?.[1]).toBe('Participant knowledge graph read failed')
+      expect(JSON.stringify(loggerError.mock.calls)).not.toMatch(
         /secret|private\.example|redis:\/\//
       )
     } finally {
-      consoleError.mockRestore()
+      loggerError.mockRestore()
     }
   })
 

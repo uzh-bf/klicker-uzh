@@ -12,6 +12,13 @@ import {
   testImageUpload,
 } from '../util/chat.js'
 
+// The chatbot fixture is created by whichever chat spec runs first in a shard,
+// so this file cannot rely on another spec having seeded it. The upsert is
+// idempotent, so seeding it here as well keeps the file self-sufficient.
+test.beforeAll(async () => {
+  await ensureChatbotSeeded()
+})
+
 // Opt in after publishing the synthetic native graph with seed-graph-e2e.mjs.
 // The host launcher must preserve that disposable database between setup and test.
 
@@ -473,7 +480,16 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
       })
     )
     await page.setViewportSize({ width: 390, height: 844 })
-    await page.goto(`${chatUrl()}/${CHATBOT_ID}/graph?embed=true`)
+    // The graph panel is only enabled outside embed mode (showSidebar is
+    // false when embedded), so the mobile flow runs on the regular route.
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}/graph`)
+    // A fresh context always meets the chatbot's disclaimer gate; accept it
+    // like openSuggestionGraph does, or the workspace never loads the graph.
+    const accept = page.getByTestId('chat-disclaimer-accept')
+    const search = page.getByTestId('knowledge-graph-search')
+    await expect(search.or(accept)).toBeVisible()
+    if (await accept.isVisible()) await accept.click()
+    await expect(search).toBeVisible()
     const input = page.getByTestId('chat-composer-input')
     await expect(input).toBeVisible()
     const sent: string[] = []
@@ -492,7 +508,7 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
     for (const node of nodes) expect(draft).toContain(node.displayLabel)
     expect(draft).toContain('connects')
     expect(sent).toEqual([])
-    expect(page.url()).toContain('?embed=true')
+    expect(page.url()).toContain('/graph')
   })
 
   test('closing the panel cancels its debounce and drops late suggestions', async ({

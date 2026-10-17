@@ -26,7 +26,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(apps/mcp-lecturer/|packages/prisma/|packages/prisma-data/|packages/types/|packages/grading/|packages/util/|util/mcpSmokeClient\.mts|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|tsconfig\.json|\.devcontainer/disposable-test-init\.sql$|\.github/workflows/test-mcp-lecturer\.yml|\.github/actions/changed-paths/|\.github/scripts/provision-disposable-postgres\.sh)'
+          pattern: '^(packages/adaptive-(client|contract|persistence)/|apps/mcp-lecturer/|packages/prisma/|packages/prisma-data/|packages/types/|packages/grading/|packages/util/|util/mcpSmokeClient\.mts|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|tsconfig\.json|\.devcontainer/disposable-test-init\.sql$|\.github/workflows/test-mcp-lecturer\.yml|\.github/actions/changed-paths/|\.github/scripts/provision-disposable-postgres\.sh)'
 
   test-mcp-lecturer:
     needs: filter
@@ -65,11 +65,14 @@ jobs:
           version: 11.5.0
           run_install: true
 
+      # Adaptive seed imports also require the public client and contract builds.
       # seed:test imports @klicker-uzh/types and @klicker-uzh/util, which
       # resolve via their gitignored dist/ only — build the whole chain
       # (util additionally depends on grading), mirroring test-graphql.yml.
       - name: Build dependency packages
         run: |
+          pnpm --filter @klicker-uzh/adaptive-client run build
+          pnpm --filter @klicker-uzh/adaptive-contract run build
           cd packages/prisma
           pnpm run build
           cd ../types
@@ -97,9 +100,9 @@ jobs:
           DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test
           SHADOW_DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test_shadow
 
-      - name: Seed test data
+      - name: Seed core test data (no adaptive engine dependency)
         id: seed_db
-        run: pnpm --filter @klicker-uzh/prisma-data run seed:test
+        run: pnpm --filter @klicker-uzh/prisma-data run seed:test:core
         env:
           DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test
 

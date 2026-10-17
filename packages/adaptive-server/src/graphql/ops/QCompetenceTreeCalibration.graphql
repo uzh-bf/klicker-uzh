@@ -1,0 +1,5 @@
+query CompetenceTreeCalibration($treeId: String!) {
+  competenceTreeCalibration(treeId: $treeId) {
+    ...CompetenceTreeCalibrationData
+  }
+}

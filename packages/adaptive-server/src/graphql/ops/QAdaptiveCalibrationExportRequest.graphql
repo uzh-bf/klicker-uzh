@@ -1,0 +1,18 @@
+query AdaptiveCalibrationExportRequest($requestId: String!) {
+  adaptiveCalibrationExportRequest(requestId: $requestId) {
+    id
+    treeId
+    scaleVersionId
+    datasetVersion
+    splitPolicyVersion
+    status
+    artifactChecksum
+    rowCount
+    failureCode
+    createdAt
+    startedAt
+    completedAt
+    expiresAt
+    downloadUrl
+  }
+}

@@ -22,6 +22,7 @@ import {
 } from '@klicker-uzh/util/response-example-runtime'
 import { tool } from 'ai'
 import { z } from 'zod'
+import { getRouteLogger } from '@/src/lib/server/requestLogging'
 
 export const RESPONSE_EXAMPLE_RUNTIME_MAX_EXAMPLES = 200
 
@@ -331,11 +332,10 @@ async function searchCurrentResponseExamples(args: {
       examples: boundResponseExampleSearchResults(rankedRows),
     }
   } catch (error) {
-    console.warn('Response-example search failed; returning no examples', {
-      chatbotId: args.chatbotId,
-      chatMode: args.chatMode,
-      error,
-    })
+    getRouteLogger().warn(
+      { event: 'chat.response_examples.search.failed' },
+      'Response-example search failed; returning no examples'
+    )
     return { degraded: true, examples: [] }
   }
 }
