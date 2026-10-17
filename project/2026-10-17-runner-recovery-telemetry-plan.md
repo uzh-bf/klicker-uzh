@@ -58,6 +58,8 @@ without weakening registration, filesystem-ownership or archive checks.
 Keep the bootstrap and reconciliation renderings equivalent and test them at
 the rendered-unit boundary. Do not introduce an external alerting service or a
 second configuration owner.
+Apply the new recovery policy only to the public-PR profile; preserve the
+trusted profile's existing rendered unit.
 
 Use `Restart=on-failure`, a 60-second delay, a three-start limit within ten
 minutes, and explicit `OOMPolicy=stop`. Intentional administrative stops retain
@@ -158,12 +160,15 @@ approved restoration of the prior unit policy; preserve runner data.
 
 ## Progress
 
-- Plan updated before native-goal creation; implementation not started.
+- Plan committed before native-goal creation; the implementation goal is active.
 - Baseline source, historical plans, renderer, host payload, controller, sampler
   and existing test seams inspected. Runtime findings remain private.
-- Latest verified source: baseline above; focused baseline checks are running.
-- Required delivery layer: verified draft PR. Achieved layer: approved plan.
-- Remaining: Recovery, Telemetry, Finish, exact-head CI and feedback.
+- Recovery implementation passes shell syntax, ShellCheck and the existing
+  reconciliation suite extended with held-state, unsafe-state, idempotence,
+  renderer-equivalence and trusted-profile preservation cases.
+- Required delivery layer: verified draft PR. Achieved layer: local Recovery
+  verification; no host configuration has been applied.
+- Remaining: immutable payload pin, Telemetry, Finish, exact-head CI and feedback.
 - Active owner: main session; no subagents or additional live changes.
-- Next action: create the requested native goal, commit this plan, then execute
-  Recovery and its focused regression checks.
+- Next action: commit Recovery, pin its immutable payload, then extend the sampler
+  through synthetic cgroup fixtures and the existing subprocess checks.

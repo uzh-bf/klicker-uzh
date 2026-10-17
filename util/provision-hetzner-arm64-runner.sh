@@ -1042,6 +1042,11 @@ render_runner_service() {
 Description=GitHub Actions Runner (${runner_service%.service})
 After=network-online.target docker.service
 Requires=docker.service
+EOF
+  if [[ "$PROFILE" == 'public-pr' ]]; then
+    printf '%s\n' 'StartLimitIntervalSec=600' 'StartLimitBurst=3'
+  fi
+  cat <<EOF
 ${mount_requirement}
 
 [Service]
@@ -1051,6 +1056,11 @@ WorkingDirectory=${RUNNER_DIR}
 KillMode=process
 KillSignal=SIGTERM
 TimeoutStopSec=5min
+EOF
+  if [[ "$PROFILE" == 'public-pr' ]]; then
+    printf '%s\n' 'Restart=on-failure' 'RestartSec=60' 'OOMPolicy=stop'
+  fi
+  cat <<EOF
 
 [Install]
 WantedBy=multi-user.target
@@ -1307,4 +1317,6 @@ main() {
   esac
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]:-$0}" == "$0" ]]; then
+  main "$@"
+fi
