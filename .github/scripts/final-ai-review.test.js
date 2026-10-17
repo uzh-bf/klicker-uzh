@@ -20,6 +20,7 @@ const {
   buildIndividualCleanReviewEvidenceDigest,
   buildIndividualCleanEvidenceMetadata,
   buildOCRConfig,
+  buildOCRResultDiagnostic,
   buildMistralToolCanaryRequest,
   buildReviewPlan,
   buildPlanContext,
@@ -318,12 +319,12 @@ function executeExtractedOCRAttempt({
     '    printf "coverage checked\\n" >>"${OCR_CALLS_PATH}"',
     '    return 0',
     '  fi',
-    '  [[ "$1" == .github/scripts/ocr-mistral-adapter.cjs && "$2" == run && "$3" == -- && "$4" == ocr ]] || return 99',
+    '  [[ "$1" == .github/scripts/ocr-mistral-adapter.cjs && "$2" == run && "$3" == --ocr-config && "$4" == "${HOME}/.opencodereview/config.json" && "$5" == -- && "$6" == ocr ]] || return 99',
     '  [[ "${MISTRAL_API_KEY-}" == synthetic-upstream-key ]] || return 98',
     '  [[ "${OCR_ADAPTER_PROGRESS_FD-}" == 3 ]] || return 96',
     '  [[ "$(tail -n 1 "$GITHUB_OUTPUT")" == "adapter_lifetimes=${OCR_ADAPTER_LIFETIMES}" ]] || return 95',
     "  printf 'OCR progress event=tool_started tool=file_read\\n' >&3",
-    '  shift 4',
+    '  shift 6',
     '  ocr "$@"',
     '}',
     'ocr() {',
@@ -1559,7 +1560,7 @@ test('attempts draft diagnostics upload even after startup failure', () => {
       'uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4'
     )
   )
-  assert.ok(uploadStep.includes('          retention-days: 1'))
+  assert.ok(uploadStep.includes('          retention-days: 7'))
   assert.ok(uploadStep.includes('          if-no-files-found: warn'))
 })
 
@@ -2287,7 +2288,7 @@ test('rejects incorrect resume lineage, identity, and incomplete coverage', () =
         },
         750_000
       ),
-    /session or manifest identity/
+    { code: 'ocr_resume_incomplete' }
   )
   assert.throws(
     () => mergeOCRResumeResults(parent, resumed, 400),
@@ -2743,6 +2744,241 @@ test('validates complete OCR results and retains malformed artifacts', () => {
     assert.ok(error)
     assert.doesNotMatch(error.message, /injected/)
   }
+})
+
+test('emits bounded OCR outcome diagnostics without changing CLI stdout', () => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'final-review-ocr-line-')
+  )
+  const scriptPath = path.join(__dirname, 'final-ai-review.js')
+  const run = (args) =>
+    spawnSync(process.execPath, [scriptPath, ...args], { encoding: 'utf8' })
+  const diagnostic = (result) =>
+    JSON.parse(
+      result.stderr
+        .split('\n')
+        .find((line) => line.startsWith('{"schema":"ocr-result-diagnostic'))
+    )
+
+  try {
+    const parentPath = path.join(directory, 'parent.json')
+    fs.writeFileSync(parentPath, JSON.stringify(partialResumeResult()))
+    const completePath = path.join(directory, 'complete.json')
+    fs.writeFileSync(completePath, JSON.stringify(completeReviewResult()))
+
+    const planRun = run(['plan-ocr-resume', parentPath, '750000'])
+    assert.equal(planRun.status, 0, planRun.stderr)
+    assert.deepEqual(planRun.stdout.split('\n'), [
+      '11111111-1111-4111-8111-111111111111',
+      '749700',
+      '',
+    ])
+    assert.deepEqual(diagnostic(planRun), {
+      schema: 'ocr-result-diagnostic/v1',
+      command: 'plan-ocr-resume',
+      status: 'partial',
+      observed_status: 'partial',
+      selected: 2,
+      completed: 1,
+      reused: 0,
+      failed: 1,
+      waived: 0,
+      failure_classes: { timeout: 1 },
+      resume: 'none',
+      rejection: null,
+    })
+    for (const secret of [
+      '11111111-1111-4111-8111-111111111111',
+      'src/complete.ts',
+      'src/timed-out.ts',
+      'concurrent task timeout',
+    ]) {
+      assert.equal(planRun.stderr.includes(secret), false, secret)
+    }
+
+    const validateRun = run(['validate-ocr-result', completePath])
+    assert.equal(validateRun.status, 0, validateRun.stderr)
+    const validateLine = diagnostic(validateRun)
+    assert.equal(validateLine.command, 'validate-ocr-result')
+    assert.equal(validateLine.status, 'complete')
+    assert.equal(validateLine.observed_status, 'complete')
+    assert.equal(validateLine.selected, 1)
+    assert.equal(validateLine.resume, 'none')
+    assert.equal(validateLine.rejection, null)
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('records still-partial rejections with observed status and a source code', () => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'final-review-ocr-partial-')
+  )
+  const scriptPath = path.join(__dirname, 'final-ai-review.js')
+  const run = (args) =>
+    spawnSync(process.execPath, [scriptPath, ...args], { encoding: 'utf8' })
+  const diagnostic = (result) =>
+    JSON.parse(
+      result.stderr
+        .split('\n')
+        .find((line) => line.startsWith('{"schema":"ocr-result-diagnostic'))
+    )
+
+  try {
+    const parent = partialResumeResult()
+    const parentPath = path.join(directory, 'parent.json')
+    fs.writeFileSync(parentPath, JSON.stringify(parent))
+
+    const validateRun = run(['validate-ocr-result', parentPath])
+    assert.equal(validateRun.status, 1)
+    assert.equal(validateRun.stdout, '')
+    const validateLine = diagnostic(validateRun)
+    assert.equal(validateLine.status, 'rejected')
+    assert.equal(validateLine.observed_status, 'partial')
+    assert.equal(validateLine.rejection, 'unexpected_terminal_status')
+
+    const resumed = completedResumeResult(parent)
+    const stillPartial = {
+      ...resumed,
+      status: 'partial',
+      manifest: { ...resumed.manifest, terminal_state: 'partial' },
+    }
+    const stillPartialPath = path.join(directory, 'still-partial.json')
+    fs.writeFileSync(stillPartialPath, JSON.stringify(stillPartial))
+    const mergeRun = run([
+      'merge-ocr-resume',
+      parentPath,
+      stillPartialPath,
+      '750000',
+    ])
+    assert.equal(mergeRun.status, 1)
+    assert.equal(mergeRun.stdout, '')
+    const mergeLine = diagnostic(mergeRun)
+    assert.equal(mergeLine.command, 'merge-ocr-resume')
+    assert.equal(mergeLine.status, 'rejected')
+    assert.equal(mergeLine.observed_status, 'partial')
+    assert.equal(mergeLine.rejection, 'ocr_resume_incomplete')
+    assert.equal(mergeLine.resume, 'resumed')
+
+    const goodResumedPath = path.join(directory, 'resumed.json')
+    fs.writeFileSync(goodResumedPath, JSON.stringify(resumed))
+    const mergedRun = run([
+      'merge-ocr-resume',
+      parentPath,
+      goodResumedPath,
+      '750000',
+    ])
+    assert.equal(mergedRun.status, 0, mergedRun.stderr)
+    assert.equal(JSON.parse(mergedRun.stdout).summary.total_tokens, 500)
+    const mergedLine = diagnostic(mergedRun)
+    assert.equal(mergedLine.status, 'complete')
+    assert.equal(mergedLine.observed_status, 'complete')
+    assert.equal(mergedLine.resume, 'resumed')
+    assert.equal(mergedLine.rejection, null)
+
+    const invalidParent = {
+      ...parent,
+      summary: { ...parent.summary, budget_exceeded: true },
+    }
+    fs.writeFileSync(parentPath, JSON.stringify(invalidParent))
+    const rejectedParentRun = run([
+      'merge-ocr-resume',
+      parentPath,
+      goodResumedPath,
+      '750000',
+    ])
+    assert.equal(rejectedParentRun.status, 1)
+    assert.equal(rejectedParentRun.stdout, '')
+    const rejectedParentLine = diagnostic(rejectedParentRun)
+    assert.equal(rejectedParentLine.rejection, 'budget_exhausted')
+    assert.equal(rejectedParentLine.observed_status, 'partial')
+    assert.equal(rejectedParentLine.completed, 1)
+    assert.equal(rejectedParentLine.failed, 1)
+    assert.equal(rejectedParentLine.resume, 'none')
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('fails unreadable and malformed OCR inputs with fixed safe diagnostics', () => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'final-review-ocr-bad-')
+  )
+  const scriptPath = path.join(__dirname, 'final-ai-review.js')
+  const run = (args) =>
+    spawnSync(process.execPath, [scriptPath, ...args], { encoding: 'utf8' })
+  const diagnostic = (result) =>
+    JSON.parse(
+      result.stderr
+        .split('\n')
+        .find((line) => line.startsWith('{"schema":"ocr-result-diagnostic'))
+    )
+
+  try {
+    const missingPath = path.join(directory, 'missing.json')
+    const missingRun = run(['validate-ocr-result', missingPath])
+    assert.equal(missingRun.status, 1)
+    assert.equal(missingRun.stdout, '')
+    assert.equal(missingRun.stderr.includes(missingPath), false)
+    const missingLine = diagnostic(missingRun)
+    assert.equal(missingLine.status, 'unreadable')
+    assert.equal(missingLine.observed_status, 'unknown')
+    assert.equal(missingLine.rejection, 'unreadable_input')
+    assert.equal(missingLine.selected, null)
+    assert.equal(missingLine.failure_classes, null)
+
+    const malformedPath = path.join(directory, 'malformed.json')
+    fs.writeFileSync(malformedPath, '{"status": "MALFORMED_SENTINEL"')
+    const malformedRun = run(['plan-ocr-resume', malformedPath, '750000'])
+    assert.equal(malformedRun.status, 1)
+    assert.equal(malformedRun.stdout, '')
+    assert.equal(malformedRun.stderr.includes('MALFORMED_SENTINEL'), false)
+    const malformedLine = diagnostic(malformedRun)
+    assert.equal(malformedLine.command, 'plan-ocr-resume')
+    assert.equal(malformedLine.status, 'malformed')
+    assert.equal(malformedLine.rejection, 'malformed_input')
+    assert.equal(malformedLine.completed, null)
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('bounds diagnostic counters to allowlisted classes and safe counts', () => {
+  const failed = {
+    item_id: 'b'.repeat(64),
+    path: 'src/timed-out.ts',
+    fingerprint: 'b'.repeat(64),
+    classification: 'provider_error',
+  }
+  const providerFailure = { ...failed, classification: 'provider' }
+  const line = buildOCRResultDiagnostic('plan-ocr-resume', {
+    result: {
+      status: 'partial',
+      manifest: {
+        coverage: {
+          selected: new Array(1_000_001),
+          completed: 'not-an-array',
+          failed: [failed, providerFailure],
+        },
+      },
+    },
+    status: 'partial',
+  })
+  assert.equal(line.selected, 1_000_000)
+  assert.equal(line.completed, null)
+  assert.deepEqual(line.failure_classes, { other: 1, provider: 1 })
+  assert.equal(line.rejection, null)
+  assert.doesNotMatch(JSON.stringify(line), /provider_error|src\/timed-out/)
+
+  const unknownLine = buildOCRResultDiagnostic('validate-ocr-result', {
+    result: { status: 'paused' },
+    rejection: 'not_a_real_code',
+    status: 'paused',
+  })
+  assert.equal(unknownLine.observed_status, 'unknown')
+  assert.equal(unknownLine.status, 'unknown')
+  assert.equal(unknownLine.rejection, 'validation_failed')
+  assert.equal(unknownLine.selected, null)
 })
 
 test('runs OCR validation after resume and gates individual publication', () => {

@@ -476,7 +476,7 @@ jobs:
             fi
             OCR_ADAPTER_LIFETIMES=$((OCR_ADAPTER_LIFETIMES + 1))
             printf 'adapter_lifetimes=%s\n' "${OCR_ADAPTER_LIFETIMES}" >>"${GITHUB_OUTPUT}"
-            if OCR_ADAPTER_PROGRESS_FD=3 node .github/scripts/ocr-mistral-adapter.cjs run -- ocr review \
+            if OCR_ADAPTER_PROGRESS_FD=3 node .github/scripts/ocr-mistral-adapter.cjs run --ocr-config "${HOME}/.opencodereview/config.json" -- ocr review \
               --from "${REVIEW_FROM}" \
               --to "${HEAD_SHA}" \
               --audience human \
@@ -671,7 +671,7 @@ jobs:
           name: final-ai-individual-execution-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/final-ai-review-adapter-diagnostics.jsonl
           if-no-files-found: warn
-          retention-days: 1
+          retention-days: 7
 
       - name: Summarize OCR estimated cost and caching savings
         if: always() && needs.start.outputs.run_review == 'true'
@@ -1103,7 +1103,7 @@ jobs:
             fi
             OCR_ADAPTER_LIFETIMES=$((OCR_ADAPTER_LIFETIMES + 1))
             printf 'adapter_lifetimes=%s\n' "${OCR_ADAPTER_LIFETIMES}" >>"${GITHUB_OUTPUT}"
-            if OCR_ADAPTER_PROGRESS_FD=3 node .github/scripts/ocr-mistral-adapter.cjs run -- ocr review \
+            if OCR_ADAPTER_PROGRESS_FD=3 node .github/scripts/ocr-mistral-adapter.cjs run --ocr-config "${HOME}/.opencodereview/config.json" -- ocr review \
               --from "${review_from}" \
               --to "${review_to}" \
               --audience human \
@@ -1337,7 +1337,7 @@ jobs:
           name: final-ai-stack-execution-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
           if-no-files-found: warn
-          retention-days: 1
+          retention-days: 7
 
       - name: Summarize OCR estimated cost and caching savings
         if: always() && needs.start_stack.outputs.run_review == 'true'

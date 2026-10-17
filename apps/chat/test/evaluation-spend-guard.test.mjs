@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert'
 import { unlinkSync } from 'node:fs'
-import { mkdtemp, rm, unlink, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, unlink, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -8,12 +8,14 @@ import { test } from 'vitest'
 import {
   acquireBudgetLock,
   beginBudgetTurn,
+  createBudgetLedger,
   fingerprint,
   finishBudgetTurn,
   initializeBudget,
   mutateBudget,
   readBudgetLedger,
   reserveProviderSpend,
+  validateBudgetLedger,
 } from '../../../evaluation/evaluation-budget.mjs'
 import {
   createSpendGuard,
@@ -62,7 +64,12 @@ async function close(server) {
 
 async function scenario(body, options = {}) {
   const settings = typeof options === 'number' ? { cap: options } : options
-  const { cap = 2400, basePolicy = policy, path = '/v1/responses' } = settings
+  const {
+    cap = 2400,
+    basePolicy = policy,
+    path = '/v1/responses',
+    maxSubmittedTurns,
+  } = settings
   const directory = await mkdtemp(join(tmpdir(), 'evaluation-guard-'))
   const budgetFile = join(directory, 'budget.json')
   const calls = []
@@ -105,6 +112,7 @@ async function scenario(body, options = {}) {
     }
     await initializeBudget(budgetFile, fingerprint(qualifiedPolicy), {
       maxProviderMicroUsd: cap,
+      maxSubmittedTurns,
     })
     guard = await createSpendGuard({
       policy: qualifiedPolicy,
@@ -551,6 +559,309 @@ test('guard startup rejects a bind failure with EADDRINUSE and registers no shut
     await close(occupied)
     await rm(directory, { recursive: true, force: true })
   }
+})
+
+test('central ledger limits accept legacy budgets and the exact US$55/48 pair and reject everything else directly', async () => {
+  const policyHash = 'f'.repeat(64)
+  for (const [maxProviderMicroUsd, maxSubmittedTurns] of [
+    [1, 1],
+    [4_999_999, 119],
+    [5_000_000, 120],
+    [55_000_000, 48],
+  ]) {
+    const ledger = createBudgetLedger(policyHash, {
+      maxProviderMicroUsd,
+      maxSubmittedTurns,
+    })
+    assert.equal(ledger.maxProviderMicroUsd, maxProviderMicroUsd)
+    assert.equal(ledger.maxSubmittedTurns, maxSubmittedTurns)
+  }
+  for (const [maxProviderMicroUsd, maxSubmittedTurns] of [
+    [5_000_001, 120],
+    [5_000_001, 48],
+    [54_000_000, 48],
+    [54_999_999, 48],
+    [55_000_001, 48],
+    [55_000_000, 1],
+    [55_000_000, 47],
+    [55_000_000, 49],
+    [55_000_000, 120],
+    [1, 121],
+    [0, 1],
+    [1, 0],
+    [-5_000_000, 48],
+    [5_500_000.5, 48],
+    [55_000_000, 48.5],
+    [Number.MAX_SAFE_INTEGER + 1, 48],
+    ['55000000', 48],
+  ]) {
+    assert.throws(
+      () =>
+        createBudgetLedger(policyHash, {
+          maxProviderMicroUsd,
+          maxSubmittedTurns,
+        }),
+      { code: 'budget_invalid' }
+    )
+  }
+  const exact = createBudgetLedger(policyHash, {
+    maxProviderMicroUsd: 55_000_000,
+    maxSubmittedTurns: 48,
+  })
+  assert.equal(validateBudgetLedger(exact), exact)
+  for (const invalid of [
+    { ...exact, maxProviderMicroUsd: 55_000_000.5 },
+    { ...exact, maxSubmittedTurns: '48' },
+    { ...exact, maxProviderMicroUsd: null },
+  ]) {
+    assert.throws(() => validateBudgetLedger(invalid), {
+      code: 'budget_invalid',
+    })
+  }
+  const directory = await mkdtemp(join(tmpdir(), 'evaluation-guard-'))
+  try {
+    const budgetFile = join(directory, 'budget.json')
+    await writeFile(budgetFile, JSON.stringify(exact) + '\n')
+    await writeFile(
+      budgetFile + '.identity',
+      JSON.stringify([
+        2,
+        exact.experimentId,
+        policyHash,
+        exact.maxSubmittedTurns,
+        exact.maxProviderMicroUsd,
+      ])
+    )
+    assert.deepEqual(await readBudgetLedger(budgetFile), exact)
+    const intermediate = { ...exact, maxProviderMicroUsd: 54_000_000 }
+    await writeFile(budgetFile, JSON.stringify(intermediate) + '\n')
+    await writeFile(
+      budgetFile + '.identity',
+      JSON.stringify([
+        2,
+        intermediate.experimentId,
+        policyHash,
+        intermediate.maxSubmittedTurns,
+        intermediate.maxProviderMicroUsd,
+      ])
+    )
+    await assert.rejects(readBudgetLedger(budgetFile), {
+      code: 'budget_invalid',
+    })
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test('the initializer CLI accepts the exact US$55/48 pair in either order and defaults to US$5/120', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'evaluation-guard-'))
+  try {
+    const policyFile = join(directory, 'pricing.json')
+    await writeFile(policyFile, JSON.stringify(policy))
+    const initialize = async (name, argv) => {
+      const budgetFile = join(directory, name)
+      await main(
+        {
+          KLICKER_EVAL_PRICING_FILE: policyFile,
+          KLICKER_EVAL_BUDGET_FILE: budgetFile,
+        },
+        argv
+      )
+      return { budgetFile, ledger: await readBudgetLedger(budgetFile) }
+    }
+    const orders = [
+      [
+        '--initialize-budget',
+        '--max-provider-micro-usd',
+        '55000000',
+        '--max-submitted-turns',
+        '48',
+      ],
+      [
+        '--initialize-budget',
+        '--max-submitted-turns',
+        '48',
+        '--max-provider-micro-usd',
+        '55000000',
+      ],
+    ]
+    for (const [index, argv] of orders.entries()) {
+      const { budgetFile, ledger } = await initialize(
+        'exact-' + index + '.json',
+        argv
+      )
+      assert.equal(ledger.maxProviderMicroUsd, 55_000_000)
+      assert.equal(ledger.maxSubmittedTurns, 48)
+      assert.deepEqual(
+        JSON.parse(await readFile(budgetFile + '.identity', 'utf8')),
+        [2, ledger.experimentId, ledger.policyHash, 48, 55_000_000]
+      )
+    }
+    const { ledger } = await initialize('default.json', ['--initialize-budget'])
+    assert.equal(ledger.maxProviderMicroUsd, 5_000_000)
+    assert.equal(ledger.maxSubmittedTurns, 120)
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test('invalid initializer arguments are rejected before any budget file is created', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'evaluation-guard-'))
+  try {
+    const policyFile = join(directory, 'pricing.json')
+    await writeFile(policyFile, JSON.stringify(policy))
+    const budgetFile = join(directory, 'budget.json')
+    const env = {
+      KLICKER_EVAL_PRICING_FILE: policyFile,
+      KLICKER_EVAL_BUDGET_FILE: budgetFile,
+    }
+    const exact = (spend, turns) => [
+      '--initialize-budget',
+      '--max-provider-micro-usd',
+      spend,
+      '--max-submitted-turns',
+      turns,
+    ]
+    for (const argv of [
+      ['--initialize-budget', '--max-provider-micro-usd', '55000000'],
+      ['--initialize-budget', '--max-submitted-turns', '48'],
+      ['--initialize-budget', '--max-provider-micro-usd'],
+      ['--initialize-budget', '--max-submitted-turns'],
+      [
+        '--initialize-budget',
+        '--max-provider-micro-usd',
+        '55000000',
+        '--max-provider-micro-usd',
+        '55000000',
+        '--max-submitted-turns',
+        '48',
+      ],
+      [
+        '--initialize-budget',
+        '--max-submitted-turns',
+        '48',
+        '--max-submitted-turns',
+        '48',
+        '--max-provider-micro-usd',
+        '55000000',
+      ],
+      [...exact('55000000', '48'), '--unknown'],
+      [...exact('55000000', '48'), 'extra'],
+      ['--max-provider-micro-usd', '55000000', '--max-submitted-turns', '48'],
+      exact('5.5e7', '48'),
+      exact('55000000.0', '48'),
+      exact('55000000.5', '48'),
+      exact('055000000', '48'),
+      exact('-1', '48'),
+      exact('55000001', '48'),
+      exact('54000000', '48'),
+      exact('55000000', '48.0'),
+      exact('55000000', '0'),
+      exact('55000000', '47'),
+      exact('55000000', '49'),
+    ]) {
+      await assert.rejects(main(env, argv), {
+        code: 'provider_guard_arguments_invalid',
+      })
+    }
+    await assert.rejects(readFile(budgetFile), { code: 'ENOENT' })
+    await assert.rejects(readFile(budgetFile + '.identity'), { code: 'ENOENT' })
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+const extendedBudgetArguments = [
+  '--initialize-budget',
+  '--max-provider-micro-usd',
+  '55000000',
+  '--max-submitted-turns',
+  '48',
+]
+for (const [
+  name,
+  initialArguments,
+  replacementArguments,
+  replacementLimits,
+] of [
+  [
+    'legacy limits cannot be raised',
+    ['--initialize-budget'],
+    extendedBudgetArguments,
+    { maxProviderMicroUsd: 55_000_000, maxSubmittedTurns: 48 },
+  ],
+  [
+    'extended limits cannot be lowered',
+    extendedBudgetArguments,
+    ['--initialize-budget'],
+    { maxProviderMicroUsd: 5_000_000, maxSubmittedTurns: 120 },
+  ],
+]) {
+  test(name + ' through reinitialization or identity mutation', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'evaluation-guard-'))
+    try {
+      const policyFile = join(directory, 'pricing.json')
+      await writeFile(policyFile, JSON.stringify(policy))
+      const budgetFile = join(directory, 'budget.json')
+      const env = {
+        KLICKER_EVAL_PRICING_FILE: policyFile,
+        KLICKER_EVAL_BUDGET_FILE: budgetFile,
+      }
+      await main(env, initialArguments)
+      const before = await readBudgetLedger(budgetFile)
+      const ledgerBytes = await readFile(budgetFile, 'utf8')
+      const receiptBytes = await readFile(budgetFile + '.identity', 'utf8')
+      await assert.rejects(main(env, replacementArguments), {
+        code: 'budget_exists',
+      })
+      await assert.rejects(
+        initializeBudget(budgetFile, before.policyHash, replacementLimits),
+        { code: 'budget_exists' }
+      )
+      await assert.rejects(
+        mutateBudget(budgetFile, (ledger) => {
+          Object.assign(ledger, replacementLimits)
+        }),
+        { code: 'budget_identity_mismatch' }
+      )
+      assert.equal(await readFile(budgetFile, 'utf8'), ledgerBytes)
+      assert.equal(
+        await readFile(budgetFile + '.identity', 'utf8'),
+        receiptBytes
+      )
+      assert.deepEqual(await readBudgetLedger(budgetFile), before)
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+}
+
+test('guard admits the final submitted turn and last reservation, then refuses the next turn and reservation', async () => {
+  await scenario(
+    async ({ budgetFile, send, calls }) => {
+      await mutateBudget(budgetFile, (ledger) => {
+        ledger.submittedTurns = 47
+        ledger.reservedProviderMicroUsd = 55_000_000 - 1200
+      })
+      const token = await beginBudgetTurn(budgetFile)
+      const admitted = await send()
+      assert.equal(admitted.status, 200)
+      await admitted.text()
+      assert.equal(calls.length, 1)
+      const denied = await send()
+      assert.equal(denied.status, 429)
+      assert.equal((await denied.json()).error, 'budget_spend_exhausted')
+      assert.equal(calls.length, 1)
+      const finished = await finishBudgetTurn(budgetFile, token, 0)
+      assert.equal(finished.submittedTurns, 48)
+      assert.equal(finished.reservedProviderMicroUsd, 55_000_000)
+      await assert.rejects(beginBudgetTurn(budgetFile), {
+        code: 'budget_turns_exhausted',
+      })
+      assert.deepEqual(await readBudgetLedger(budgetFile), finished)
+    },
+    { cap: 55_000_000, maxSubmittedTurns: 48 }
+  )
 })
 
 const chatRequest = {
