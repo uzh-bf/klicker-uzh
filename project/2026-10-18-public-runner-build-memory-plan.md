@@ -252,7 +252,7 @@ remain separate acceptance claims.
 
 ## Progress
 
-- Status: approved source batch; preparing the plan-first commit.
+- Status: source slice 1 implemented; documentation and draft delivery remain.
 - Fresh source baseline and task worktree agree; no task PR exists.
 - Completed: source mapping, private assessment recovery and official Turbo
   documentation lookup. Operational evidence is retained privately.
@@ -261,9 +261,15 @@ remain separate acceptance claims.
   Accepted corrections establish pre-merge controls, host-matched formulas,
   complete-wave workload accounting, sampler coverage and a full capacity budget.
   The local review transcript is retained in the ignored review directory.
-- Remaining source work: both proposed slices, checks, self-review and draft CI.
+- The plan-first commit is `369a372126`. Slice 1 changes only the shared build
+  action and its existing policy test file. The new behavioral checks reproduced
+  the old public limit and unknown-route acceptance before the change, then all
+  11 policy tests and the workflow validator passed in isolated Node 24.21.0.
+  The installed Turbo 2.10.11 help confirms task concurrency semantics.
+  Three tests were added; no existing test was removed. Changed-file Biome and
+  YAML formatting pass. No DevPod, devrouter or application runtime was touched.
+- Remaining source work: slice 2, broader focused checks, self-review and draft CI.
   Later merge, experiment and activation remain separately gated.
 - Required delivery layer on approval: verified draft source PR.
-  Achieved layer now: reviewed plan. Whitespace and public-data hygiene checks
-  pass; no implementation tests apply to this planning-only change.
-  Next action: commit the approved plan, then implement the lower build overlap.
+  Achieved layer now: locally verified implementation slice. Next action:
+  commit slice 1, inspect its exact diff, then document and finish the package.
