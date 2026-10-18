@@ -68,8 +68,14 @@ async function findOpenPr({ github, repo, base, matches }) {
 // Moves an open sync pull request's head to the current source tip. A head
 // that maintainers changed (conflict resolution, "Update branch") is never
 // reset; the source is merged into it instead, and a conflict is left to them.
-async function advanceSyncBranch({ github, repo, branch, pr, sourceSha }) {
-  const syncSha = pr.head.sha
+async function advanceSyncBranch({
+  github,
+  repo,
+  branch,
+  syncSha,
+  sourceSha,
+  dryRun,
+}) {
   if (syncSha === sourceSha) return 'existing'
   const { data: comparison } =
     await github.rest.repos.compareCommitsWithBasehead({
@@ -80,6 +86,7 @@ async function advanceSyncBranch({ github, repo, branch, pr, sourceSha }) {
   if (comparison.status === 'identical' || comparison.status === 'behind') {
     return 'existing'
   }
+  if (dryRun) return 'would-advance'
   if (comparison.status === 'ahead') {
     await github.rest.git.updateRef({
       ...repo,
@@ -203,8 +210,11 @@ async function maintainDraftSyncPrs({
   let changelog
 
   const branchSha = async (branch) => {
-    const { data } = await github.rest.repos.getBranch({ ...repo, branch })
-    return data.commit.sha
+    const { data } = await github.rest.git.getRef({
+      ...repo,
+      ref: `heads/${branch}`,
+    })
+    return data.object.sha
   }
   const describe = async (snapshots) => {
     try {
@@ -226,24 +236,24 @@ async function maintainDraftSyncPrs({
       (await github.rest.pulls.get({ ...repo, pull_number: pr.number })).data
     const current = await readPr()
     if (!matchesSyncPr(current, pair, branch)) {
-      return { description: 'deferred' }
+      return { description: 'deferred', reason: 'pr-identity-changed' }
     }
-    const headSha = current.head.sha
+    // PR revision metadata can lag a ref update; analyze the actual branch tips.
+    const headSha = await branchSha(branch)
     const targetSha = await branchSha(pair.base)
-    if (current.base.sha !== targetSha) return { description: 'deferred' }
     const generated = await describe({ sourceSha, targetSha, headSha })
     if (!generated.body) return generated
     if (dryRun) return { ...generated, description: 'preview' }
 
     const latest = await readPr()
-    if (
-      !matchesSyncPr(latest, pair, branch) ||
-      latest.head.sha !== headSha ||
-      latest.base.sha !== targetSha ||
-      (await branchSha(branch)) !== headSha ||
-      (await branchSha(pair.base)) !== targetSha
-    ) {
-      return { description: 'deferred' }
+    if (!matchesSyncPr(latest, pair, branch)) {
+      return { description: 'deferred', reason: 'pr-identity-changed' }
+    }
+    if ((await branchSha(branch)) !== headSha) {
+      return { description: 'deferred', reason: 'head-ref-moved' }
+    }
+    if ((await branchSha(pair.base)) !== targetSha) {
+      return { description: 'deferred', reason: 'target-ref-moved' }
     }
     if (latest.body === generated.body) return { description: 'unchanged' }
     await github.rest.pulls.update({
@@ -292,22 +302,24 @@ async function maintainDraftSyncPrs({
       })
       if (existing) {
         const branch = existing.head.ref
+        const syncSha = await branchSha(branch)
+        const action = await advanceSyncBranch({
+          github,
+          repo,
+          branch,
+          syncSha,
+          sourceSha,
+          dryRun,
+        })
         if (dryRun) {
           report(
-            existing.head.sha === sourceSha ? 'existing' : 'would-advance',
+            action,
             existing.number,
             branch,
             await describeExisting(existing, pair, sourceSha)
           )
           continue
         }
-        const action = await advanceSyncBranch({
-          github,
-          repo,
-          branch,
-          pr: existing,
-          sourceSha,
-        })
         await updateConflictNotice({
           github,
           repo,
@@ -357,6 +369,7 @@ async function maintainDraftSyncPrs({
       if ((await branchSha(base)) !== targetSha) {
         report('stale-description', undefined, branch, {
           description: 'deferred',
+          reason: 'target-ref-moved',
         })
         continue
       }
@@ -367,6 +380,7 @@ async function maintainDraftSyncPrs({
       if ((await branchSha(branch)) !== sourceSha) {
         report('stale-description', undefined, branch, {
           description: 'deferred',
+          reason: 'head-ref-moved',
         })
         continue
       }

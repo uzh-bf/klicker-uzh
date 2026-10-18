@@ -45,8 +45,12 @@ On every run, for each pair, the controller:
 
 Draft/ready states are preserved. The controller replaces the complete description
 on creation and reconciliation with a deterministic changelog: exact revision
-links, imported commit subjects, merge-edit paths and additional sync-branch
-commits. It includes source commits only when the actual sync head contains them,
+links, imported commit subjects grouped by conventional commit category,
+merge-edit paths and additional sync-branch commits. Category names and order come
+from `.versionrc.js`; headers support optional scopes and `!`, case-insensitively.
+Unrecognized or malformed subjects remain under Other. Empty sections and
+zero-omission footers are omitted, and revision metadata follows the changelog.
+It includes source commits only when the actual sync head contains them,
 and excludes target history. Subjects and paths use code spans so embedded
 mentions and issue references create no cross-reference notifications. There is
 no model-generated explanation or manually maintained section; agents leave these
@@ -64,16 +68,22 @@ The generator reserves metadata, then prioritizes merge edits, additional change
 and imported commits. A squashed sync can relist already-present changes until
 its ancestry-restoration PR merges.
 
-The controller rereads the PR and target before writing, deferring a moved,
-closed or retargeted candidate. GitHub provides no atomic body-update lease;
-movement after that read is reconciled on a later run. Analysis failures retain
+The controller reads head and target revisions directly from Git refs before
+analysis and rechecks those refs before writing. PR revision metadata can lag a
+branch update, so it is used for identity and lifecycle checks rather than the
+analyzed SHAs. A moved ref, closed PR, changed repository or retargeted candidate
+defers the body update. Branch advancement and preview labels also use the canonical head, so stale PR
+list metadata cannot cause a redundant or rejected non-fast-forward update.
+GitHub provides no atomic body-update lease; movement after that read is
+reconciled on a later run. Analysis failures retain
 an existing body and report failure without blocking branch advancement or the
 conflict notice. A new PR requires successful analysis; other pairs continue.
 Manual previews include generated bodies and write no branches, PRs or comments.
 
 Ready sync PRs
 keep tracking the source; review and merge decisions apply to the latest
-synchronized head. The run summary lists each pair's result. The controller
+synchronized head. The run summary and structured JSON logs list each pair's
+branch action, description status and deferral reason. The controller
 never force-updates a branch, never writes the source or target branches and
 never merges. Maintainers
 choose when to mark ready and merge with a merge commit to preserve ancestry.
@@ -84,8 +94,10 @@ configured source or target branch, or for a same-repository PR on a maintained
 sync branch, regardless of the check result. Completion is a wakeup,
 not a merge-readiness signal. All three pairs are reconciled against current refs on
 every run; delayed or coalesced events do not replay old heads. The workflow
-checks out its own trusted workflow SHA, never the triggering branch or its
-artifacts. History is fetched with the read-only job token into a shared isolated
+checks out its own trusted workflow SHA, including `.versionrc.js` for categories,
+never the triggering branch or its artifacts. Invalid or missing category config
+fails description analysis without publishing a placeholder.
+History is fetched with the read-only job token into a shared isolated
 bare repository, with blob filtering and lazy reads for merge analysis. Fetched
 code is never checked out or executed. A controller source merge can cause one
 additional check completion; unchanged reconciliation performs no writes. Target
