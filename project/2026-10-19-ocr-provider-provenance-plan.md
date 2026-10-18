@@ -128,7 +128,9 @@ application/browser runtime is justified for these non-rendered CI helpers.
 
 - Status: both fixes verified, pushed and published as
   [draft PR #6608](https://github.com/uzh-bf/klicker-uzh/pull/6608).
-  Simplifier and slice review passed; integrated final review next.
+  Simplifier, slice review and integrated final review passed with no open
+  findings. Required CI passed on implementation commit `839962d6b0`;
+  CI for the final progress-only push is tracked on the PR.
 - Ownership: main integrated both fixes after the adapter executor was stopped
   for discovery convergence, retaining its small partial patch. Planner APPROVED
   after one correction; reports in `project/_local/reviews/` (local only).
@@ -137,6 +139,11 @@ application/browser runtime is justified for these non-rendered CI helpers.
   before the fix. Formatter, diff and staged secret checks pass.
   Opengrep: 200 rules, four runtime scripts, zero findings; one partial parse
   limitation. Full Biome lint retains two unchanged baseline errors.
+  All eight required checks passed, including the selected hosted Playwright
+  shard. Automatic draft OCR
+  [run 39173879977](https://github.com/uzh-bf/klicker-uzh/actions/runs/39173879977)
+  failed with provider rejections and no responses. It used the trusted `v3`
+  adapter, so the new diagnostics still need post-merge live qualification.
 - Authority: source changes, reviews, commits, push and draft PR. No ready, merge,
   secret/account changes, provider substitution or extra live run.
 - Packaging: one OCR workflow repair package, 581 substantive added/deleted
