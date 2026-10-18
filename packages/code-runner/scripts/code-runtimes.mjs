@@ -23,7 +23,7 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs'
-import { dirname, extname, join, relative, resolve } from 'node:path'
+import { dirname, extname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const PACKAGE_DIR = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -31,7 +31,7 @@ const MANIFEST_PATH = join(PACKAGE_DIR, 'src/runtime-manifest.json')
 const RUNNER_SOURCES = join(PACKAGE_DIR, 'src/runner')
 // Both runner documents carry the same inline bootstrap; the proxy gives
 // each its own CSP, because only the R runtime needs 'unsafe-eval'.
-const RUNNER_DOCUMENTS = ['runner-python.html', 'runner-r.html']
+export const RUNNER_DOCUMENTS = ['runner-python.html', 'runner-r.html']
 
 const CONTENT_TYPES = {
   '.js': 'text/javascript',
@@ -85,7 +85,7 @@ export function collectSources() {
     r[`webr/${name}`] = join(webrDist, name)
   }
   for (const path of walk(join(webrDist, 'vfs'))) {
-    r[`webr/${relative(webrDist, path)}`] = path
+    r[`webr/${relative(webrDist, path).split(sep).join('/')}`] = path
   }
   return {
     runnerScript: readFileSync(join(RUNNER_SOURCES, 'bootstrap.js'), 'utf8'),
@@ -101,6 +101,9 @@ export function sha256(buffer, encoding = 'hex') {
 }
 
 export function runnerDocument(runnerScript) {
+  if (/<\/script|<!--/i.test(runnerScript)) {
+    throw new Error('Runner bootstrap contains an HTML-terminating sequence')
+  }
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Code runner</title></head><body><script>${runnerScript}</script></body></html>\n`
 }
 

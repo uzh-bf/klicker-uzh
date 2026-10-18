@@ -67,4 +67,19 @@ describe('browser code runtime serving', () => {
     expect(python).not.toContain("'unsafe-eval'")
     expect(r).toContain("'unsafe-eval'")
   })
+
+  test.each([
+    'NOTICE.md',
+    'LICENSE-webR.md',
+  ])('revalidates notices outside the runtime content hash: %s', async (name) => {
+    vi.stubEnv('CHAT_CODE_EXECUTION_ENABLED', 'true')
+    const response = await proxy(
+      new NextRequest(
+        `https://chat.test/code-runtimes/0123456789abcdef/${name}`
+      )
+    )
+    expect(response.headers.get('cache-control')).toBe(
+      'public, max-age=0, must-revalidate'
+    )
+  })
 })

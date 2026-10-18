@@ -121,6 +121,55 @@ test.describe('Chat code card', () => {
     await setCodeExecutionPolicy(null)
   })
 
+  test('shows a populated card among adjacent tools before the answer finishes', async ({
+    page,
+  }, testInfo) => {
+    const starterCode = 'print(6 * 7)'
+    await mockChatStream(page, {
+      chunkDelayMs: 50,
+      pauseAfterTextChunk: 1,
+      textChunks: ['Try the code.', 'Then inspect the result.'],
+      toolCalls: [
+        {
+          toolCallId: 'calculate-before',
+          toolName: 'calculate',
+          input: { expression: '6 * 7' },
+          output: { result: 42 },
+        },
+        {
+          toolCallId: 'streamed-code',
+          toolName: 'open_code_card',
+          input: { profile: 'python-core', starterCode },
+          output: cardOutput('python-core', starterCode),
+        },
+      ],
+    })
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}`)
+    await page.getByTestId('chat-composer-input').fill('Open a playground')
+    await page.getByTestId('chat-send-button').click()
+    const card = page.getByTestId('code-card')
+    await expect(card).toBeVisible()
+    await expect(card.getByRole('textbox')).toHaveValue(starterCode)
+    await expect(page.getByTestId('chat-cancel-button')).toHaveAttribute(
+      'aria-hidden',
+      'false'
+    )
+    await page.screenshot({
+      path: testInfo.outputPath('streamed-code-card.png'),
+    })
+    await card.getByRole('textbox').fill('print(43)')
+    await page.evaluate(() =>
+      (
+        window as typeof window & { __releaseMockChatStream?: () => void }
+      ).__releaseMockChatStream?.()
+    )
+    await expect(page.getByTestId('chat-cancel-button')).toHaveAttribute(
+      'aria-hidden',
+      'true'
+    )
+    await expect(card.getByRole('textbox')).toHaveValue('print(43)')
+  })
+
   test.describe('qualified engines', () => {
     test.skip(
       ({ browserName }) => browserName === 'firefox',

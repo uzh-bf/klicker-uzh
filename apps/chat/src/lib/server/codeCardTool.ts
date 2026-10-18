@@ -12,6 +12,11 @@ export interface CodeCardToolResult {
   starterCode: string
 }
 
+const PROFILE_DESCRIPTIONS: Record<CodeProfile, string> = {
+  'python-core': 'Python with its standard library',
+  'r-base': 'base R',
+}
+
 /**
  * Adds the code card tool when the selected mode admits at least one browser
  * code profile. The card runs code only in the learner's browser; the model
@@ -32,7 +37,9 @@ export function withCodeCardTool(
         profile: z
           .enum([first, ...rest])
           .describe(
-            'Runtime: python-core is Python with its standard library; r-base is base R'
+            profiles
+              .map((profile) => `${profile}: ${PROFILE_DESCRIPTIONS[profile]}`)
+              .join('; ')
           ),
         starterCode: z
           .string()

@@ -20,7 +20,7 @@ export function CodeCard({
   const t = useTranslations()
   const card = parseCodeCardResult(result)
 
-  if (status.type === 'running') {
+  if (status.type === 'running' && !card) {
     return (
       <div className="my-2 inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
         <LoaderCircleIcon aria-hidden className="size-4 animate-spin" />

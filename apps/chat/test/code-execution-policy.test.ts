@@ -1,3 +1,5 @@
+import { CODE_PROFILES } from '@klicker-uzh/code-runner'
+import { CODE_RUNTIME_MANIFEST as runtimeManifest } from '@klicker-uzh/code-runner/serving'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { normalizeCodeExecutionConfig } from '@/src/lib/code-runner/profiles'
 import { parseModeOptions } from '@/src/lib/config/modes'
@@ -9,6 +11,37 @@ const policy = { modes: { tutor: ['python-core', 'r-base'] } }
 describe('browser code execution policy', () => {
   afterEach(() => {
     vi.unstubAllEnvs()
+  })
+
+  test('admits only profiles present in the runtime manifest', () => {
+    expect(Object.keys(runtimeManifest.profiles).sort()).toEqual(
+      [...CODE_PROFILES].sort()
+    )
+  })
+
+  test('does not turn prototype properties into admitted profiles', () => {
+    const config = JSON.parse(
+      '{"modes":{"__proto__":["python-core"],"tutor":["r-base"]}}'
+    )
+    const normalized = normalizeCodeExecutionConfig(config)
+    expect(Object.getPrototypeOf(normalized)).toBe(Object.prototype)
+    expect(Object.hasOwn(normalized, '__proto__')).toBe(false)
+    expect(normalized.tutor).toEqual(['r-base'])
+
+    for (const enabled of ['true', '']) {
+      vi.stubEnv('CHAT_CODE_EXECUTION_ENABLED', enabled)
+      const modes = resolveEffectiveChatModeOptions(
+        { constructor: { description: 'Synthetic mode', prompt: 'Practice' } },
+        [],
+        null,
+        { allowUnapprovedModes: true, codeExecutionConfig: config }
+      )
+      expect(Object.hasOwn(modes, 'constructor')).toBe(true)
+      expect(
+        Object.entries(modes).find(([key]) => key === 'constructor')?.[1]
+          .codeProfiles
+      ).toBeUndefined()
+    }
   })
 
   test('fails closed on malformed configuration and unknown profiles', () => {

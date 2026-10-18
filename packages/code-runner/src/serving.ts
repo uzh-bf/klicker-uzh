@@ -1,8 +1,10 @@
 import { CODE_RUNTIME_MANIFEST, RUNNER_DOCUMENTS } from './manifest'
 
-export { CODE_RUNTIME_BASE_PATH, CODE_RUNTIME_MANIFEST } from './manifest'
-
-export const CODE_RUNTIME_PATH_PREFIX = '/code-runtimes/'
+export {
+  CODE_RUNTIME_BASE_PATH,
+  CODE_RUNTIME_MANIFEST,
+  CODE_RUNTIME_PATH_PREFIX,
+} from './manifest'
 
 // Headers for the runtime files and runner documents. The hosting app sets
 // them at request time, behind its own deployment switch: build-time headers
@@ -49,10 +51,18 @@ export function codeRuntimeResponseHeaders(
   const runnerPolicyForPath = RUNNER_POLICIES.get(
     pathname.slice(pathname.lastIndexOf('/') + 1)
   )
-  return runnerPolicyForPath
+  const headers = runnerPolicyForPath
     ? {
         ...RUNTIME_FILE_HEADERS,
         'Content-Security-Policy': runnerPolicyForPath,
       }
     : { ...RUNTIME_FILE_HEADERS }
+  // Notices are generated independently of the runtime manifest version.
+  if (
+    pathname.endsWith('/NOTICE.md') ||
+    pathname.endsWith('/LICENSE-webR.md')
+  ) {
+    headers['Cache-Control'] = 'public, max-age=0, must-revalidate'
+  }
+  return headers
 }

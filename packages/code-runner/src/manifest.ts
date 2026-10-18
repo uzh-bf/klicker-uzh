@@ -17,7 +17,8 @@ interface RuntimeManifest {
 // Generated and verified by scripts/code-runtimes.mjs; never edit by hand.
 export const CODE_RUNTIME_MANIFEST = runtimeManifest as RuntimeManifest
 
-export const CODE_RUNTIME_BASE_PATH = `/code-runtimes/${CODE_RUNTIME_MANIFEST.version}/`
+export const CODE_RUNTIME_PATH_PREFIX = '/code-runtimes/'
+export const CODE_RUNTIME_BASE_PATH = `${CODE_RUNTIME_PATH_PREFIX}${CODE_RUNTIME_MANIFEST.version}/`
 
 export const RUNNER_DOCUMENTS: Record<CodeProfile, string> = {
   'python-core': 'runner-python.html',

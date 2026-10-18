@@ -20,7 +20,7 @@ export function normalizeCodeExecutionConfig(
 
   const normalized: Record<string, CodeProfile[]> = {}
   for (const [mode, profiles] of Object.entries(modes)) {
-    if (!Array.isArray(profiles)) continue
+    if (mode === '__proto__' || !Array.isArray(profiles)) continue
     const admitted = CODE_PROFILES.filter((profile) =>
       profiles.includes(profile)
     )
