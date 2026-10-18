@@ -597,7 +597,12 @@ async function startReviewTools(options) {
         else if (error.code === 'response_too_large')
           kind = 'response_too_large'
         else if (error.code === 'docs_unavailable')
-          kind = httpStatus === null ? 'unavailable' : 'http_error'
+          kind =
+            httpStatus === null
+              ? 'unavailable'
+              : httpStatus >= 200 && httpStatus < 300
+                ? 'invalid_response'
+                : 'http_error'
         docs.last_failure = kind
         docs.last_failure_http_status = httpStatus
         if (controller.signal.aborted && !deadline) {

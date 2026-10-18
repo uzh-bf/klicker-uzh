@@ -344,6 +344,8 @@ test('docs quotas are shared across concurrent requests and do not consume advis
     true
   )
   assert.equal(absent.broker.diagnostics().docs.upstream_attempts, 0)
+  assert.equal(absent.broker.diagnostics().docs.last_failure, 'unavailable')
+  assert.equal(absent.broker.diagnostics().docs.last_failure_http_status, null)
   const empty = await client(t, fixture(t))
   assert.equal(
     (await empty.tool('lookup_library_docs', docsQuestion)).result.content[0]
@@ -367,6 +369,7 @@ test('docs failures, oversized bodies and caller cancellation remain bounded and
       401,
     ],
     [() => new Response('invalid PRIVATE_SENTINEL'), 'invalid_response', 200],
+    [() => new Response(null, { status: 204 }), 'invalid_response', 204],
     [() => new Response('x'.repeat(262145)), 'response_too_large', 200],
   ]) {
     const { tool, broker } = await client(t, {
