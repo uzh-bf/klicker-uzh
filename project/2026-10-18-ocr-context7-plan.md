@@ -175,8 +175,9 @@ pass without a skip. A missing binary leaves delivery verification pending.
 
 ## Progress
 
-- Status: implementation and integrated verification complete; committed-range
-  simplification, risk review and final review remain before draft delivery.
+- Status: source implementation, verification and independent reviews complete;
+  published as [draft PR #6596](https://github.com/uzh-bf/klicker-uzh/pull/6596)
+  against `v3`. The PR carries current hosted-CI evidence.
 - Terminal: reviewed source and draft PR against `v3`; merge/live activation later.
 - Baseline: 101 focused tests passed, including non-skipped pinned-CLI proof.
 - Verification: 251 integrated tests pass with no skips, including all three
@@ -186,6 +187,10 @@ pass without a skip. A missing binary leaves delivery verification pending.
 - Ownership: main completed the broker after the executor returned no artifact
   and was explicitly stopped. No replacement executor was launched.
 - Test delta: extended existing broker, runner and workflow seams; no new framework.
-- Next action: review the complete committed implementation, resolve findings,
-  then publish the draft PR. No PR exists yet.
+- Reviews: simplifier and slice reviewer found no changes needed. Integrated
+  final review passed across correctness, plan compliance, maintainability,
+  security and architecture on `25482cffa5c49add66e090f849d6110dbda52749`.
+  This final progress-only update preserves the verified implementation.
+- Remaining gate: merge and a live Context7 acceptance run require separate
+  authority. No live-key lookup or merged-workflow acceptance is claimed.
 - Packaging: one extension to the existing draft-review pipeline; no stack.
