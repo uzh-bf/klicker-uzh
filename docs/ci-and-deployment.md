@@ -392,11 +392,14 @@ only final text plus separate reasoning metadata. OpenRouter's native
 nonempty `reasoning` string, then text/summary details, then legacy
 `reasoning_content`, avoiding duplicate reasoning. Complete native turns stay in
 bounded process memory and are restored on conversation replay; missing or
-ambiguous history fails closed. OCR compression rewrites the conversation prefix; a retained turn may then be restored only by its exact assistant identity and reasoning hash when these identify one native payload. Main review requests offering `task_done` force tool use with `tool_choice: any` for Mistral and `required` for OpenRouter; a length-limited response without a tool call may enter OCR's existing continuation loop once per replayed chain, retaining its native history and billable usage. A finished tool-free response or another tool-free turn in that chain still fails closed. Auxiliary grouping, planning, filtering and compression requests remain unchanged. Manual jobs retain seven-day aggregate execution counters for request counts, input/output usage, missing tools, length finishes and history restoration. These receipts contain no prompts, code, reasoning traces, credentials or raw provider errors. Draft startup copies the trusted adapter to
-`runner.temp` before the composite action's checkout and masks its random
-loopback capability. Always-run stop authenticates shutdown and proves listener
-closure before deleting capability state. Neither the upstream key nor native
-history is persisted. Live qualification of a changed draft route requires trusted default-branch
+ambiguous history fails closed. OCR compression rewrites the conversation prefix;
+a retained turn may then match one native payload by exact assistant identity
+and reasoning hash. When the SDK omits reasoning, an exact tool turn may instead
+match within its validated conversation key; cross-task and ambiguous matches
+remain rejected. Main review requests offering `task_done` force tool use with `tool_choice: any` for Mistral and `required` for OpenRouter; a length-limited response without a tool call may enter OCR's existing continuation loop once per replayed chain, retaining its native history and billable usage. A finished tool-free response or another tool-free turn in that chain still fails closed. Auxiliary grouping, planning, filtering and compression requests remain unchanged. Manual jobs retain seven-day aggregate execution counters for request counts, input/output usage, missing tools, length finishes and history restoration. These receipts contain no prompts, code, reasoning traces, credentials or raw provider errors. The trusted draft runner starts its adapters and broker in the parent process,
+gives OCR an isolated temporary home and scoped loopback capabilities, and closes
+those listeners during bounded cleanup. Neither upstream keys nor native
+history are persisted. Live qualification of a changed draft route requires trusted default-branch
 activation; branch CI runs the current default-branch policy.
 
 Manual jobs pass the private configuration to the adapter's
