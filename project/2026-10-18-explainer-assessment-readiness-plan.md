@@ -1,5 +1,81 @@
 # Explainer quality decision and assessment qualification
 
+## Approved prompt preparation
+
+Approved on 19 October 2026: prepare a stronger revision check and tighter
+citation guidance without applying either or making model calls. This section
+is the current continuation; earlier execution authority below is consumed.
+Keep the existing corpus, rubrics, model, fixture, importer and framework stable.
+Main owns this settled, light-path documentation change and private evidence;
+no independent implementation work or new test, runner or scorer is needed.
+Finish with exact candidate text, source-contract inspection and a bounded next
+comparison proposal in the existing draft PR. Runtime and model behavior remain
+unverified for these candidates.
+
+### Qualification-preservation candidate
+
+Use this as the complete proposed Explainer lecturer-guidance value, replacing
+the earlier experimental guidance rather than appending another instruction.
+Derive any future full configuration from the restored baseline receipt and
+preserve every other mode and protected field. This is an authored proposal,
+not a platform-prompt edit or an applied configuration.
+
+```text
+Before returning a shortened or revised explanation, compare the draft with the earlier answer and the supplied material. Keep each condition, exception and assumption needed for a claim to remain accurate, next to the claim it qualifies; check that removing it has not made the claim broader or more absolute. Remove examples and repetition first, then return the requested revision within its requested format without showing this check.
+```
+
+The hypothesis is that an explicit comparison of the finished revision with its
+inputs preserves qualifications more reliably than a general retention rule.
+The guidance contains no case-specific answers and permits correction of an
+earlier error against the supplied material. The actual answer must demonstrate
+preservation; an instruction to check is not evidence that checking occurred.
+
+### Separate citation-attribution candidate
+
+Prepare this independently from the restored baseline, without the preservation
+candidate. Keep mandatory current-turn retrieval, application-provided indices,
+source limits and the platform's missing-evidence disclosure contract intact.
+
+```text
+Cite a claim only when the actual passage returned in the current turn supports that claim at its stated level of detail. Keep citations attached to the supported claim, separating learner-supplied facts and illustrative additions from retrieved evidence; leave those additions uncited unless a current passage supports them. A passage supporting a general principle does not, by itself, substantiate added syntax, numbers, formulas or examples.
+```
+
+The hypothesis is narrower attribution, not fewer tool calls or blanket refusal
+to explain supplied material. Supported principles may still be cited; separate
+their support from any added application or illustration. Do not combine the
+two candidates before their individual evidence is understood.
+
+### Next comparison proposal
+
+First propose only the preservation candidate on the existing development group:
+the unchanged concise-notes control and NULL/non-null regression, two arms,
+one repeat per arm and two turns per fresh thread: eight learner turns. The
+existing runner supports `--group development --repeats 1`; both arms generate
+their own initial answer. Use the existing importer and manual criterion table.
+No subset corpus, new evaluator, paid judge or reference-answer replay is needed.
+
+Retain every original criterion and assess both actual answers. All essential
+criteria must be satisfied, emitted citations must have actual passage support,
+and the control must not regress. Distinguish initial-answer omissions from
+shortening failures; incomplete coverage is inconclusive. A passing development
+comparison justifies a later transfer proposal, not promotion or a holdout claim.
+
+The separate attribution comparison should use the existing reserved group,
+including its composite-key and compression scenarios, with every emitted
+marker manually checked against its actual passage. Freeze its finite scope
+only after the first decision; it is not part of the eight-turn proposal.
+Transfer, combined-guidance, multipart-summary and representative course-source
+acceptance remain required before rollout.
+
+The existing US$55 ceiling is cumulative, not a renewed allowance. Any later
+capture must bind the same ledger and identity, refresh pricing, and prove that
+both remaining turn capacity and conservative reservations admit the named
+work. Never reset, split or refund the ledger to make it fit. Startup, guarded
+local apply/readback/rollback, capture and shutdown require a separately named
+execution approval. Custody must reconcile any uncertain apply outcome before
+replay; private captures need restrictive permissions from creation. No runtime,
+database write, ledger mutation or paid request is authorized by this preparation.
+
 ## Approved comparison execution
 
 The user approved the proposed local comparison on 18 October 2026: six frozen

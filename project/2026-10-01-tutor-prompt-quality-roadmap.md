@@ -1,8 +1,9 @@
 # Course-chatbot quality roadmap
 
 Status: outcome-focused continuation approved on 18 October 2026. The private
-zero-spend review and the approved finite local comparison are complete.
-Detailed judgments remain private. Further iteration and rollout remain separate.
+review and approved finite local comparison are complete. Zero-spend preparation
+of two separate Explainer guidance candidates was approved on 19 October 2026.
+Detailed judgments remain private; candidate execution and rollout remain separate.
 Historical Tutor experiments remain below for reference.
 
 ## Current evaluation direction
@@ -13,11 +14,13 @@ The next milestone is an Explainer revision that passes the frozen quality
 criteria, informed by the completed private comparison.
 Automated judging is optional support for a demonstrated recurring need.
 
-The completed comparison is indexed privately. Next preparation should target
-the revised answer's preservation check and source attribution, with the
-unchanged control retained. It does not authorize another candidate apply or
-paid run. Multipart summaries and representative course-source acceptance stay
-required before rollout.
+The completed comparison is indexed privately. The
+[current preparation](2026-10-18-explainer-assessment-readiness-plan.md#approved-prompt-preparation)
+specifies a revision self-check and separately scoped citation-attribution
+guidance. Its next proposal is an eight-turn preservation comparison on the
+existing development group, retaining the unchanged control and original
+criteria. Candidate apply and paid execution need separate approval. Multipart
+summaries and representative course-source acceptance stay required before rollout.
 
 The [active quality-decision batch](2026-10-18-explainer-assessment-readiness-plan.md#current-quality-decision-batch)
 owns execution, acceptance and the next spending proposal. It continues the
@@ -27,7 +30,7 @@ superseding the earlier judge-first sequence in the
 
 | Priority | Outcome | Acceptance and next boundary |
 | --- | --- | --- |
-| 1 | Decide whether the Explainer candidate preserves meaning during revision | Review saved answers and original criteria privately, then compare fresh baseline/candidate trajectories on the unchanged control, known regression and transfer cases; paid capture needs separate approval |
+| 1 | Establish qualification-preserving Explainer revision | Prepare the explicit self-check, then propose eight fresh development-group turns against baseline; transfer acceptance follows only after that decision |
 | 2 | Establish trustworthy source support and honest task completion | Inspect actual model-visible passages and citation mapping; separately cover multipart summaries, genuinely absent material and representative course-source retrieval before rollout |
 | 3 | Roll out only a supported change and inspect subsequent anonymous use | Preserve the baseline and rollback; obtain named application/deployment authority, verify effective behavior and assess later use before returning to Tutor |
 
