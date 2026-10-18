@@ -150,7 +150,8 @@ approved this executable source batch; its internal checks need no new approval.
 2. Update only public `runs-on.labels` in
    `.github/workflows/public-pr-playwright-shards.yml` and extend
    `.github/scripts/validate-public-playwright-workflow.cjs` plus its existing
-   tests. Preserve job names, dependencies, eligible routes, hosted fallback,
+   tests. Wire the existing shell-policy suite into `.github/workflows/check.yml`
+   so CI enforces the operator contract. Preserve job names, dependencies, eligible routes, hosted fallback,
    eight-shard full plans and reporting. Commit source routing with its tests.
 3. Update the runner section of `docs/ci-and-deployment.md` and this plan's
    Progress. No new host service, workflow, dependency or agent skill is needed.
@@ -160,7 +161,9 @@ approved this executable source batch; its internal checks need no new approval.
    and maintainability under main-session self-review. Publish one draft PR.
 
 Expected changed paths are the existing policy script, its test and fake `gh`,
-reusable workflow, validator, validator test, operations guide and this plan.
+reusable workflow, check workflow, validator, validator test, operations guide
+and this plan. The check-workflow command was added during execution because the
+existing CI did not invoke the shell-policy suite; it adds no new workflow.
 If those seams cannot support complete scoped label operations, report the
 specific gap before introducing a new operator module. No application runtime
 or browser capture is required for source verification.
@@ -225,8 +228,16 @@ partial failure. Recovery remains an explicit operator action, never an unsafe
 automatic rollback over concurrent edits. Shell syntax, ShellCheck and the
 extended policy fixture suite pass. Test delta: extended the existing CLI suite;
 no new test file. Main-session slice review and simplification inspect the
-committed slice before workflow selectors are changed.
-Next slice: public role selectors and structural workflow validation.
+committed slice before workflow selectors are changed. Slice 1 self-review
+confirmed the role path cannot fall through to group-policy writes, including
+an empty map path. No independent review is claimed. The retained label helpers
+serve preflight, per-write and final readback; no additional module was needed.
+Slice 2 implemented: public role selectors and structural workflow validation.
+All 93 `check:playwright-ci` tests and the workflow validator pass in isolated
+Node 24.21.0 with the existing dependency versions. Test delta: one table-driven
+role-policy test added at the existing validator seam. The shell-policy suite
+also passes after the empty-path regression check. Slice 2 review is pending on
+its committed scope. Next: operations documentation and integrated self-review.
 Source publication and all live mutations are unstarted. No implementation PR
 exists yet. Source baseline and fresh `origin/v3` are aligned at `92fabf9f6226`.
 The rollback merge/source tree is verified; exact-merge push CI and a normal
