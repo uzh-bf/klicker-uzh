@@ -221,13 +221,17 @@ runtime owner justify a retained environment rather than a disposable CI run.
 ## Progress
 
 - Status: draft PR [#6593](https://github.com/uzh-bf/klicker-uzh/pull/6593)
-  opened; independent final-review corrections verified locally.
+  opened; implementation, synthetic qualification and independent review complete.
+- Integrated qualification: 246 tests passed with no skips, including the pinned
+  OCR binary against synthetic providers. Formatting, staged secret scanning and
+  focused Opengrep passed. No application runtime or live provider request was
+  used for qualification.
 - Reliability verification: 238 focused tests passed. The scoped replay HTTP
   test and runner cleanup checks also pass after their final corrections. Native
   replay preserves existing bounds and rejects missing/cross-task identities.
 - The runner retains the pinned publisher, emits content-free coverage, and keeps
   private result/stderr off the job log. Child environments exclude upstream and
-  publication credentials. Main owns workflow integration; executor owns broker.
+  publication credentials. Main owns the integrated runner and broker.
 - Baseline: 214 focused adapter/individual/stack tests passed.
 - Planner round 1 requested concrete isolation, enforceable bounds, cancellation,
   runner/publisher parity, exact artifact ownership, replay provenance and explicit
@@ -261,7 +265,18 @@ runtime owner justify a retained environment rather than a disposable CI run.
   summary crashes were contradicted by the pinned one-client initialization and
   a successful missing-file experiment. Missing usage still reports unavailable.
 - GitHub's first CI watcher ended on an API timeout; this is not CI failure.
-  Exact-head CI and review read-back remain pending.
-- Required delivery: reviewed source and draft PR against `v3`; achieved: reviewed
-  plan, reliability commit and integrated source. Next: complete review and commit
-  the advisor, push, open the draft PR and inspect CI/feedback.
+  On the verified implementation head, the main check suite, hosted Playwright,
+  dependency review, Gitleaks and test status checks passed. Automatic draft OCR
+  was still running at the last inspection, with no open review threads.
+- Independent final review passed after the three accepted corrections. Claude
+  reviewed the full implementation; the configured continuity reviewer verified
+  the correction after Claude reached its session limit. Review details remain
+  in private local reports. The final documentation update was checked by main.
+- The existing OCR preflight solution now records the compressed-history lesson
+  and current provider routes; no separate solution document was needed.
+- Delivery: source commits pushed and draft PR opened against `v3`. Hosted checks
+  on the final documentation commit remain separate from the passing source
+  qualification. The manual final-review status remains pending while draft.
+  Trusted-policy activation and live-provider proof require a later merge and
+  authorized verification. Future application testing and previews remain the
+  planning-only options above.
