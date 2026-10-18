@@ -112,8 +112,9 @@ evidence, hashes and frozen manifests stay ignored under `project/_local/`.
    send. Unknown route identity or unsupported bounds block paid readiness;
    finish independent preparation and name the missing evidence.
 
-The current local judge gateway config uses `drop_params: true`; the output
-bound surviving forwarding is unresolved. Before any first paid call, require
+The local judge gateway config uses `drop_params: true`. At the initial
+checkpoint, output-bound forwarding was unresolved; the approved follow-up
+verified it offline and exposed retry amplification instead. Before any first paid call, require
 authoritative deployment/model identity, applicable tariffs and fees, enforced
 output bounds and retry/fallback contracts. Paid probes may observe schema
 handling and usage reporting only after those independent assumptions are
