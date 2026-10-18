@@ -86,6 +86,8 @@ test('combined cost estimates use both provider rates and withhold totals for mi
       cache_hits: 2,
       cancelled: 0,
       unknown_usage: 1,
+      last_failure: 'http_error',
+      last_failure_http_status: 401,
     }
     fs.writeFileSync(
       toolsPath,
@@ -97,6 +99,32 @@ test('combined cost estimates use both provider rates and withhold totals for mi
       result.stdout,
       /OCR docs status=used usage_status=partial .*unknown_usage=1 .*pro_overage_reference_usd=0.0200/
     )
+    assert.match(
+      result.stdout,
+      /last_failure=http_error last_failure_http_status=401/
+    )
+    for (const failure of [
+      {
+        last_failure: 'PRIVATE_SENTINEL',
+        last_failure_http_status: 'PRIVATE_SENTINEL',
+      },
+      { last_failure: undefined, last_failure_http_status: undefined },
+    ]) {
+      fs.writeFileSync(
+        toolsPath,
+        JSON.stringify({
+          schema: 'ocr-review-tools/v1',
+          docs: { ...docs, ...failure },
+        })
+      )
+      const unknown = run()
+      assert.equal(unknown.status, 0, unknown.stderr)
+      assert.match(
+        unknown.stdout,
+        /last_failure=unknown last_failure_http_status=unknown/
+      )
+      assert.doesNotMatch(unknown.stdout, /PRIVATE_SENTINEL/)
+    }
     for (const broken of [
       undefined,
       { ...docs, attempted: -1 },

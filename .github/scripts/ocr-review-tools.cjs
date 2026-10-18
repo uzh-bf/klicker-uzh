@@ -466,6 +466,8 @@ async function startReviewTools(options) {
       cache_hits: 0,
       cancelled: 0,
       unknown_usage: 0,
+      last_failure: null,
+      last_failure_http_status: null,
     },
   }
   const active = new Map()
@@ -543,6 +545,7 @@ async function startReviewTools(options) {
       }
       response.once('close', disconnect)
       let dispatched = false
+      let httpStatus = null
       try {
         if (!docsAvailable) throw failure('docs_unavailable')
         if (closing || controller.signal.aborted) throw failure('cancelled')
@@ -560,6 +563,12 @@ async function startReviewTools(options) {
           signal: controller.signal,
           redirect: 'error',
         })
+        if (
+          Number.isInteger(upstream.status) &&
+          upstream.status >= 100 &&
+          upstream.status <= 599
+        )
+          httpStatus = upstream.status
         if (!upstream.ok || !upstream.body) {
           await upstream.body?.cancel()
           throw failure('docs_unavailable')
@@ -579,6 +588,23 @@ async function startReviewTools(options) {
       } catch (error) {
         docs.failed += 1
         if (dispatched) docs.unknown_usage += 1
+        let kind = 'transport_error'
+        if (deadline) kind = 'timeout'
+        else if (controller.signal.aborted || error.code === 'cancelled')
+          kind = 'cancelled'
+        else if (error.code === 'invalid_docs_response')
+          kind = 'invalid_response'
+        else if (error.code === 'response_too_large')
+          kind = 'response_too_large'
+        else if (error.code === 'docs_unavailable')
+          kind =
+            httpStatus === null
+              ? 'unavailable'
+              : httpStatus >= 200 && httpStatus < 300
+                ? 'invalid_response'
+                : 'http_error'
+        docs.last_failure = kind
+        docs.last_failure_http_status = httpStatus
         if (controller.signal.aborted && !deadline) {
           docs.cancelled += 1
           throw failure('cancelled')
