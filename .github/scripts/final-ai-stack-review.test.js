@@ -3219,8 +3219,9 @@ test('sends strict max-reasoning topology requests and rejects invalid owners', 
     codeResult,
     manifestBundle,
     rulesText: 'test rules',
-    schema: { type: 'object' },
     fetchImpl: async (_url, options) => {
+      assert.equal(_url, 'https://api.mistral.ai/v1/chat/completions')
+      assert.equal(options.redirect, 'error')
       fetchCalls += 1
       request = JSON.parse(options.body)
       return new Response(
@@ -3245,8 +3246,16 @@ test('sends strict max-reasoning topology requests and rejects invalid owners', 
   assert.equal(response.status, 'complete')
   assert.equal(Object.hasOwn(request, 'provider'), false)
   assert.equal(request.reasoning_effort, 'max')
-  assert.equal(request.max_tokens, 4096)
+  assert.equal(request.max_tokens, 65536)
   assert.equal(request.response_format.json_schema.strict, true)
+  assert.equal(
+    Object.hasOwn(
+      request.response_format.json_schema.schema.properties.comments.items
+        .properties.layer_numbers,
+      'uniqueItems'
+    ),
+    false
+  )
   assert.equal(request.messages[0].content.includes('dummy-token'), false)
   assert.doesNotMatch(request.messages[1].content, /patch_hunks|operations/)
   assert.match(
@@ -3254,6 +3263,28 @@ test('sends strict max-reasoning topology requests and rejects invalid owners', 
     /The cumulative change can fail after merge\./
   )
   assert.match(request.messages[1].content, /"start_line":4/)
+  const finding = {
+    path: 'src/one.ts',
+    layer_numbers: [1, 3],
+    start_line: 1,
+    end_line: 1,
+    category: 'bug',
+    severity: 'high',
+    content: 'Synthetic cross-layer contract failure.',
+  }
+  assert.equal(
+    validateTopologyResult(topologyResult([finding]), manifestBundle.manifest)
+      .comments.length,
+    1
+  )
+  assert.throws(
+    () =>
+      validateTopologyResult(
+        topologyResult([{ ...finding, layer_numbers: [1, 3, 1] }]),
+        manifestBundle.manifest
+      ),
+    /invalid/
+  )
   assert.throws(
     () =>
       validateTopologyResult(
@@ -3332,6 +3363,14 @@ test('retains topology usage when caller validation rejects the answer', async (
     ['{not valid json', /Topology model returned invalid structured output/],
     [
       JSON.stringify({
+        summary: { coverage: 'complete', comments: 0 },
+        comments: [],
+      }),
+      /Topology model exhausted its completion token limit/,
+      'length',
+    ],
+    [
+      JSON.stringify({
         summary: { coverage: 'complete', comments: 1 },
         comments: [
           {
@@ -3349,7 +3388,7 @@ test('retains topology usage when caller validation rejects the answer', async (
     ],
   ]
   let fetchCalls = 0
-  for (const [content, errorPattern] of cases) {
+  for (const [content, errorPattern, finishReason = 'stop'] of cases) {
     await assert.rejects(
       callTopologyModel({
         apiKey: 'dummy-token',
@@ -3362,7 +3401,7 @@ test('retains topology usage when caller validation rejects the answer', async (
           return new Response(
             JSON.stringify({
               model: FINAL_STACK_REVIEW_MODEL,
-              choices: [{ finish_reason: 'stop', message: { content } }],
+              choices: [{ finish_reason: finishReason, message: { content } }],
               usage: {
                 total_tokens: 50,
                 prompt_tokens: 35,
@@ -3375,9 +3414,9 @@ test('retains topology usage when caller validation rejects the answer', async (
       errorPattern
     )
   }
-  assert.equal(fetchCalls, 2)
+  assert.equal(fetchCalls, cases.length)
   const receipts = readDiagnosticsReceipts(diagnosticsPath)
-  assert.equal(receipts.length, 2)
+  assert.equal(receipts.length, cases.length)
   for (const receipt of receipts) {
     assert.deepEqual(receipt, {
       schema_version: 1,
@@ -3430,7 +3469,7 @@ test('keeps the topology deadline and records the aborted request', async (t) =>
     },
   })
   assert.equal(fetchCalls, 1)
-  t.mock.timers.tick(120_000)
+  t.mock.timers.tick(600_000)
   await assert.rejects(pending, /upstream request failed/)
   const receipts = readDiagnosticsReceipts(diagnosticsPath)
   assert.equal(receipts.length, 1)

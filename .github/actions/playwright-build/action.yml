@@ -148,6 +148,11 @@ runs:
       id: build
       shell: bash
       run: |
+        case "$PLAYWRIGHT_ROUTE" in
+          public-pr) build_concurrency=4 ;;
+          hosted) build_concurrency=4 ;;
+          *) echo '::error::Unsupported Playwright execution route' >&2; exit 1 ;;
+        esac
         started=$(date +%s)
         set +e
         set -o pipefail
@@ -161,7 +166,7 @@ runs:
           mapfile -t BUILD_FILTERS < "$filters_path"
           PATH="$GITHUB_WORKSPACE/node_modules/.bin:$PATH" \
             node .ci-control/.github/scripts/playwright-resource-sampler.cjs playwright-resources-build.jsonl \
-            bash ./util/_with_local_test_origins.sh cross-env NODE_ENV=test turbo run build:test "${BUILD_FILTERS[@]}" --concurrency=4 2>&1 | tee turbo-build.log
+            bash ./util/_with_local_test_origins.sh cross-env NODE_ENV=test turbo run build:test "${BUILD_FILTERS[@]}" --concurrency="$build_concurrency" 2>&1 | tee turbo-build.log
           build_status=("${PIPESTATUS[@]}")
           if [ "${build_status[0]}" -ne 0 ] ||
             [ "${build_status[1]}" -ne 0 ]; then
@@ -173,7 +178,7 @@ runs:
           fi
           node .ci-control/.github/scripts/playwright-resource-sampler.cjs playwright-resources-prisma.jsonl pnpm run --filter @klicker-uzh/prisma build:test 2>&1 | tee turbo-build.log
           prisma_status=("${PIPESTATUS[@]}")
-          node .ci-control/.github/scripts/playwright-resource-sampler.cjs playwright-resources-build.jsonl pnpm run build:test --concurrency=4 2>&1 | tee -a turbo-build.log
+          node .ci-control/.github/scripts/playwright-resource-sampler.cjs playwright-resources-build.jsonl pnpm run build:test --concurrency="$build_concurrency" 2>&1 | tee -a turbo-build.log
           build_status=("${PIPESTATUS[@]}")
           if [ "${prisma_status[0]}" -ne 0 ] ||
             [ "${prisma_status[1]}" -ne 0 ] ||
@@ -186,6 +191,7 @@ runs:
         echo "PLAYWRIGHT_DURATION_SECONDS=$(( $(date +%s) - started ))" >> "$GITHUB_ENV"
         exit "$status"
       env:
+        PLAYWRIGHT_ROUTE: ${{ inputs.route }}
         PLAYWRIGHT_BUILD_GRAPH: ${{ steps.build-graph.outputs.mode }}
         APP_SECRET: abcd
         DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod

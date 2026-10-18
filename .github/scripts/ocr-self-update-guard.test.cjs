@@ -28,8 +28,9 @@ test('every OpenCodeReview job disables the CLI self-update', () => {
     for (const [jobName, job] of Object.entries(workflow.jobs ?? {})) {
       const ocrSteps = (job.steps ?? []).filter(
         (step) =>
-          typeof step.uses === 'string' &&
-          step.uses.startsWith('alibaba/open-code-review@')
+          (typeof step.uses === 'string' &&
+            step.uses.startsWith('alibaba/open-code-review@')) ||
+          /ocr-draft-review\.cjs run/.test(step.run ?? '')
       )
       if (ocrSteps.length === 0) continue
 
@@ -66,22 +67,20 @@ test('attempts draft diagnostics upload even after startup failure', () => {
       'utf8'
     )
   ).jobs['ocr-review']
-  const start = job.steps.find((step) => step.id === 'adapter')
-  const diagnosticsPath = start.env.OCR_ADAPTER_DIAGNOSTICS_PATH
-  const stopIndex = job.steps.findIndex((step) =>
-    step.run?.includes('stop "${ADAPTER_STATE}"')
-  )
+  const runIndex = job.steps.findIndex((step) => step.id === 'review')
   const uploadIndex = job.steps.findIndex((step) =>
     step.uses?.startsWith('actions/upload-artifact@')
   )
-  assert.ok(diagnosticsPath.includes('runner.temp'))
-  assert.ok(
-    diagnosticsPath.endsWith('/draft-ai-review-adapter-diagnostics.jsonl')
-  )
-  assert.ok(stopIndex >= 0)
-  assert.ok(uploadIndex > stopIndex)
+  assert.ok(runIndex >= 0 && uploadIndex > runIndex)
   const upload = job.steps[uploadIndex]
-  assert.equal(upload.with.path, diagnosticsPath)
+  const paths = upload.with.path.trim().split('\n')
+  assert.deepEqual(paths, [
+    '${{ runner.temp }}/draft-ai-review-adapter-diagnostics.jsonl',
+    '${{ runner.temp }}/draft-ai-review-outcome.json',
+    '${{ runner.temp }}/draft-ai-review-tools.json',
+    '${{ runner.temp }}/draft-ai-review-advisor-expectations.json',
+    '${{ runner.temp }}/draft-ai-review-advisor-diagnostics.jsonl',
+  ])
   assert.equal(upload.if, 'always()')
   assert.equal(
     upload.uses,
@@ -99,34 +98,25 @@ test('routes automatic drafts through the pinned adapter with OpenRouter max rea
     )
   ).jobs['ocr-review']
   assert.equal(job.env.OCR_ADAPTER_PROVIDER, 'openrouter')
-  const startIndex = job.steps.findIndex((step) => step.id === 'adapter')
-  const actionIndex = job.steps.findIndex((step) =>
-    step.uses?.startsWith('alibaba/open-code-review@')
+  const run = job.steps.find((step) => step.id === 'review')
+  assert.equal(run.env.OPENROUTER_API_KEY, '${{ secrets.OPENROUTER_API_KEY }}')
+  assert.equal(run.env.CONTEXT7_API_KEY, '${{ secrets.CONTEXT7_API_KEY }}')
+  const publisher = job.steps.find(
+    (step) => step.with?.repository === 'alibaba/open-code-review'
   )
-  assert.ok(startIndex >= 0 && actionIndex > startIndex)
-  const action = job.steps[actionIndex]
-  assert.equal(
-    action.uses,
-    'alibaba/open-code-review@1672852136fc87748249d22bce0819f33419ea79'
+  assert.equal(publisher.with.ref, '1672852136fc87748249d22bce0819f33419ea79')
+  assert.equal(publisher.with['persist-credentials'], false)
+  assert.ok(
+    job.steps.some((step) =>
+      step.run?.includes(
+        'npm install -g @alibaba-group/open-code-review@1.13.0'
+      )
+    )
   )
-  assert.equal(action.with.llm_model, 'deepseek/deepseek-v4.1-flash-1017')
-  assert.equal(action.with.ocr_version, '1.13.0')
-  assert.deepEqual(JSON.parse(action.with.llm_extra_body), {
-    reasoning_effort: 'max',
-    prompt_cache_key: '{ocr_session_key}',
-  })
-  assert.equal(action.with.llm_auth_token, '${{ steps.adapter.outputs.token }}')
-  assert.equal(
-    job.steps[startIndex].env.OPENROUTER_API_KEY,
-    '${{ secrets.OPENROUTER_API_KEY }}'
+  const summary = job.steps.find((step) =>
+    step.run?.endsWith('ocr-draft-review.cjs summary')
   )
-  assert.equal(job.steps[startIndex].env.MISTRAL_API_KEY, undefined)
-  const stop = job.steps.find((step) =>
-    step.run?.includes('stop "${ADAPTER_STATE}"')
-  )
-  assert.equal(stop.if, "always() && steps.adapter.outcome == 'success'")
-  const summary = job.steps.find((step) => step.run?.includes(' summary '))
-  assert.equal(summary.env.OCR_ADAPTER_PROVIDER, undefined)
+  assert.equal(summary.if, 'always()')
   const manual = YAML.parse(
     fs.readFileSync(
       path.join(__dirname, '../workflows/check-ocr-final-review.yml'),

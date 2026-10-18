@@ -64,7 +64,7 @@ function validateTrajectoryTurnInput(turn, index) {
       throw evaluationError('trajectory_turn_unknown_field')
     }
   }
-  if (typeof turn.message === 'string') {
+  if ('message' in turn) {
     if ('repeatPrevious' in turn || 'suffix' in turn) {
       throw evaluationError('trajectory_turn_invalid')
     }
@@ -117,7 +117,10 @@ export function validateTrajectoryCase(value) {
   const turns = value.turns.map((turn, index) =>
     validateTrajectoryTurnInput(turn, index)
   )
-  if (!Array.isArray(value.assessmentTurns)) {
+  if (
+    !Array.isArray(value.assessmentTurns) ||
+    value.assessmentTurns.length === 0
+  ) {
     throw evaluationError('trajectory_case_assessment_turns_invalid')
   }
   const assessmentTurns = []

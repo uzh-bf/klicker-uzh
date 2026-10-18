@@ -53,6 +53,15 @@ HTTP failure after reservation is still charged conservatively, including each
 automatic SDK retry. Read the producing ledger and upstream arrival counters;
 a failed fixture assertion can otherwise resemble a routing failure.
 
+The standalone evaluation judge has a separate retry boundary. LiteLLM's Router
+can inherit the OpenAI SDK retry default even when the evaluator admits one
+attempt. Set both `num_retries` and `max_fallbacks` to zero in
+[the judge configuration](../../../evaluation/litellm.yaml). Qualify the actual
+proxy config loader and HTTP completion endpoint, counting provider transport
+sends on synthetic success and failure. A Router-only probe misses config-loader
+behavior; [the existing judge tests](../../../util/test-klicker-eval-judge.py)
+exercise that seam inside the launcher's pinned image with networking disabled.
+
 Managed startup re-sources canonical development settings. Explicit guarded
 settings must survive that sourcing, and configuration changes must replace
 the owned process. Use a nonsecret generation for credential changes rather
