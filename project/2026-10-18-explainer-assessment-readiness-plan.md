@@ -133,6 +133,39 @@ change metrics or thresholds to compensate for a failed calibration.
 
 ## Calibration contract to freeze before judge execution
 
+### Approved zero-spend compatibility and route follow-up
+
+The user approved this follow-up after the preparation checkpoint. Main owns
+the preserved evidence, compatibility derivation, Azure metadata inspection and
+final proposal. A trusted read-only worker owns static gateway/dependency mapping.
+Use the same branch and plan; no framework or application contract changes are
+needed for a one-time private compatibility artifact.
+
+Preserve the original legacy receipt and version-one manifest byte-for-byte.
+Check its capture-time corpus hash, original selected case, completed status,
+planned/completed/submitted counters, unique arm/model and contiguous repeat-zero
+turn pair. Derive missing summary identity/count fields only from that evidence.
+Project turn records onto the existing strict importer fields, retaining excluded
+legacy diagnostics in the untouched original. Record every derivation, exclusion,
+input/output hash and provenance limit in a separate version-two manifest.
+The unchanged strict importer must accept the derived artifact. The merged
+framework loader must accept both references with exact original content/rubrics.
+Keep the original manual judgments separate from judge input and do not recapture.
+
+Inspect the existing Azure deployment through read-only management metadata,
+using the approved Infisical mapping without printing or persisting its values.
+Bind model/version, region and SKU to current official tariffs. Examine the exact
+pinned gateway's forwarding, retry/fallback and cache behavior with synthetic
+request-boundary fakes and networking disabled. Record capability gaps instead
+of replacing the route or changing gateway configuration. Temporary preparation
+code stays outside maintained source; all evidence remains ignored.
+
+Finish with a reviewed private protocol and a final conditional judge-budget
+proposal. Missing route access or unsafe forwarding blocks only paid readiness;
+finish reference verification and report the exact remaining gate. No provider
+inference call, real ledger, pin update, prompt apply, merge or deployment is
+authorized. This is evidence preparation, not a new evaluation implementation.
+
 Use existing saved development/control trajectories and their original rubrics.
 Freeze the exact input manifest, selected metric/profile, SDK/model/route,
 criteria, thresholds and requested repetitions before examining judge output.
@@ -224,24 +257,32 @@ zero retries, schema/usage checks and no extra send after exhaustion. Temporary
 synthetic ledgers and read-only frozen dependencies were used with networking
 disabled. No maintained proof script or application runtime was added.
 
-The private evidence index and input manifest preserve original answers, rubrics,
-manual judgments and hashes. The existing strict importer and merged loader were
-exercised; legacy reference compatibility remains a held gate rather than being
-silently repaired. Conditional sibling revisions and unrun authored examples
-are not promoted to independent complete trajectories or hard reference labels.
+The private evidence index and input manifests preserve original answers,
+rubrics, manual judgments and hashes. The approved follow-up resolved legacy
+compatibility through a provenance-bearing private projection. The unchanged
+strict importer and merged framework loader accept both references; exact
+content and rubric checks passed. Original receipts and the first manifest are
+unchanged. Conditional sibling revisions and unrun authored examples are not
+promoted to independent complete trajectories or hard reference labels.
 
 The private protocol proposes a separate US$8 judge-only cap, eight attempts at
 US$1 reserved per attempt, including provider qualification and calibration.
-This is a conditional ceiling from a documented public tariff example, not
-actual-route qualification or spend authority. Actual deployment/SKU/tariff
-binding, output-bound forwarding, retry/fallback and cache behavior remain
-unproven. Resolve those facts and reference compatibility before requesting any
-real ledger or paid dispatch. Detailed calculation, limitations and source
-receipts remain ignored under `project/_local/calibration-readiness/`.
+The existing deployment and tariff binding were checked privately. The exact
+pinned gateway's network-disabled wire replay preserves the output bound and
+strict response schema but reveals retry amplification on a synthetic server
+error. An in-memory zero-retry candidate removes it; the actual configuration
+was not changed. This failed gate prevents paid readiness. The next package is
+a narrow caller-owned gateway configuration repair with zero-spend entrypoint
+verification, subject to named approval. Framework implementation is unchanged.
+Detailed arithmetic, compatibility provenance, limitations and producer results
+remain ignored under `project/_local/calibration-readiness/`.
 
 Existing manual-verdict and citation-contract review remains applicable. The
 metric and threshold remain unchanged. No provider call, real ledger, pin
 advancement, prompt apply or deployment occurred. Any new legacy normalization,
 route, evidence, scope or cost departure returns to the user before dependent
-execution. Paid work remains a separately named approval after this preparation
-terminal; calibration and broad chatbot-quality acceptance are still outstanding.
+execution. The compatibility/route follow-up was approved and completed as
+qualification evidence, with the gateway defect explicitly held. Paid work
+remains a separately named approval after its source repair; calibration and
+broad chatbot-quality acceptance are still outstanding. No PR was opened for
+this preparation-only documentation package.
