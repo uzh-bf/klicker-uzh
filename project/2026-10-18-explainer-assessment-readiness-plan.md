@@ -1,5 +1,32 @@
 # Explainer quality decision and assessment qualification
 
+## Approved preservation execution
+
+Approved on 19 October 2026: correct the existing local custody guard's
+incomplete-apply recovery and qualify it without provider calls. Then refresh
+pricing and guarded startup. Only if those gates pass, run the proposed
+eight-turn preservation comparison below using the same cumulative US$55 ledger
+and identity. No new allowance, citation-candidate apply or transfer run.
+
+The exact isolated baseline checkout remains frozen. Main owns the local
+effects, secret boundary, spending admission and semantic assessment. Repair
+the existing private operational helpers rather than adding a maintained
+runner or framework capability. Exercise unchanged-baseline and committed
+candidate recovery before paid capture; an unrecognized state blocks writes.
+Capture files need restrictive permissions from creation. A trusted read-only
+source review checks the corrected recovery and finite-capture boundary;
+private answers and runtime records remain with main.
+
+Each arm generates its own first answer in a fresh thread. Keep the development
+control, regression and every original criterion unchanged. Assess every actual
+answer and emitted citation against the supplied material and returned passages.
+Preserve failures and incomplete coverage; no automatic retry or extra turn.
+Uncertain spending, configuration drift or failed custody qualification stops
+dependent execution. Baseline restoration/readback and exact runtime shutdown
+remain required on completion or failure. No shared prompt change, deployment,
+marking ready or merge. Finish with a private evidence-based candidate decision
+and sanitized execution status in this draft.
+
 ## Approved prompt preparation
 
 Approved on 19 October 2026: prepare a stronger revision check and tighter
