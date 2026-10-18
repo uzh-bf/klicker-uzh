@@ -30,7 +30,12 @@ fixed Mistral endpoint directly. OCR uses the runner-local
 [adapter](../../../.github/scripts/ocr-mistral-adapter.cjs), which translates
 `max_completion_tokens` to `max_tokens` and restores native thinking chunks
 from bounded memory when OCR replays an assistant turn. Answer text and thinking
-metadata remain separate so strict topology JSON stays parseable.
+metadata remain separate so strict topology JSON stays parseable. Mistral's
+structured-output grammar rejects `uniqueItems` on topology layer arrays with
+HTTP 400. The request schema omits that keyword; `validateTopologyResult`
+still rejects duplicate layer numbers before publication. The topology call
+allows up to 65,536 completion tokens and ten minutes for maximum reasoning;
+length-truncated answers fail closed.
 
 The upstream `MISTRAL_API_KEY` exists only in the adapter or direct request
 process. OCR receives a random loopback capability, and its mode-0600 config
