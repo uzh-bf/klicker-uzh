@@ -2046,6 +2046,87 @@ test('remote runner refuses a plan larger than its turn cap before login', async
   )
 })
 
+test('a resumed run skips every repeat the stopped run started', async () => {
+  const cases = [roleplayCase({ id: 'case-a' }), roleplayCase({ id: 'case-b' })]
+  // Without the skip, the plan would need 8 turns and exceed the cap of 6.
+  await withRemoteScenario(
+    { cases, maxTurns: 6 },
+    async ({ app, paths, argv, env }) => {
+      const earlier = paths.output + '.earlier'
+      const stamp = '2026-01-01T00:00:00.000Z'
+      await writeFile(
+        earlier,
+        [
+          {
+            type: 'turn',
+            arm: 'candidate',
+            caseId: 'case-a',
+            repeat: 0,
+            turn: 1,
+          },
+          {
+            type: 'error',
+            arm: 'candidate',
+            caseId: 'case-a',
+            turn: 2,
+            repeat: 0,
+            code: 'request_timeout',
+            recordedAt: stamp,
+          },
+          { type: 'summary', arm: 'candidate', status: 'stopped' },
+        ]
+          .map((record) => JSON.stringify(record))
+          .join('\n') + '\n'
+      )
+
+      const summary = await runTutorTrajectories({
+        argv: [...argv, '--resume', earlier],
+        env,
+        log: () => {},
+      })
+
+      assert.equal(summary.status, 'completed')
+      assert.equal(summary.skippedRepeats, 1)
+      assert.equal(summary.runSubmittedTurns, 6)
+      const receipts = (await readFile(paths.output, 'utf8'))
+        .trim()
+        .split('\n')
+        .map((line) => JSON.parse(line))
+        .filter((record) => record.type === 'turn')
+      assert.deepEqual(
+        [...new Set(receipts.map((r) => r.caseId + '#' + r.repeat))],
+        ['case-a#1', 'case-b#0', 'case-b#1']
+      )
+      assert.equal(
+        app.calls.filter((call) => call.requestUrl.endsWith('/chat')).length,
+        6
+      )
+    }
+  )
+})
+
+test('a resume file from another arm is refused before login', async () => {
+  await withRemoteScenario(
+    { cases: [roleplayCase()], maxTurns: 4 },
+    async ({ app, paths, argv, env }) => {
+      const earlier = paths.output + '.earlier'
+      await writeFile(
+        earlier,
+        JSON.stringify({ type: 'summary', arm: 'baseline' }) + '\n'
+      )
+      await assert.rejects(
+        runTutorTrajectories({
+          argv: [...argv, '--resume', earlier],
+          env,
+          log: () => {},
+        }),
+        { code: 'resume_arm_mismatch' }
+      )
+      assert.equal(app.calls.length, 0)
+    }
+  )
+})
+
 test('remote runner only targets allow-listed https origins', async () => {
   await withRemoteScenario(
     {

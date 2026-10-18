@@ -45,11 +45,12 @@ const VALUE_FLAGS = {
   '--numeric': 'numeric',
   '--target': 'target',
   '--max-turns': 'maxTurns',
+  '--resume': 'resume',
 }
 
 const USAGE = [
-  'Usage: node evaluation/run-tutor-trajectories.mjs --corpus <file> --output <file> --arm <baseline|candidate|auto> --budget-file <file> [--repeats <n>] [--group <development|reserved|control>] [--numeric <sidecar>]',
-  '       node evaluation/run-tutor-trajectories.mjs --target remote --max-turns <n> --corpus <file> --output <file> --arm <baseline|candidate|auto> [--repeats <n>] [--group <...>]',
+  'Usage: node evaluation/run-tutor-trajectories.mjs --corpus <file> --output <file> --arm <baseline|candidate|auto> --budget-file <file> [--repeats <n>] [--group <development|reserved|control>] [--numeric <sidecar>] [--resume <earlier output>]',
+  '       node evaluation/run-tutor-trajectories.mjs --target remote --max-turns <n> --corpus <file> --output <file> --arm <baseline|candidate|auto> [--repeats <n>] [--group <...>] [--resume <earlier output>]',
   '',
   'Runs a frozen trajectory corpus against the local evaluation target and',
   'writes one sanitized JSONL receipt per verified turn. The output file is',
@@ -69,6 +70,10 @@ const USAGE = [
   'origins are listed in KLICKER_EVAL_ALLOWED_ORIGINS. It has no provider guard',
   'or budget ledger: --max-turns caps submitted turns, the planned run must fit',
   'under it before login, and the participant credit quota bounds spend.',
+  '',
+  'After a stopped run, --resume reads its output and skips every case repeat',
+  'that output started, including the one whose turn was in flight, so no turn',
+  'is sent twice. The new output holds only the remaining repeats.',
 ].join('\n')
 
 export function parseArguments(argv) {
@@ -80,6 +85,7 @@ export function parseArguments(argv) {
     numeric: null,
     target: 'local',
     maxTurns: null,
+    resume: null,
     help: false,
   }
   const seen = new Set()
@@ -157,6 +163,46 @@ export async function loadNumericSidecar(filePath, corpus) {
   } catch {
     throw evaluationError('numeric_invalid')
   }
+}
+
+function repeatKey(caseId, repeat) {
+  return caseId + '#' + repeat
+}
+
+// A case repeat counts as started once any turn receipt or stop record names
+// it. Skipping started repeats keeps a resumed run from resending a turn whose
+// outcome the earlier run could not confirm.
+export async function loadStartedRepeats(filePath, { arm, corpus }) {
+  let raw
+  try {
+    raw = await readFile(filePath, 'utf8')
+  } catch {
+    throw evaluationError('resume_unreadable')
+  }
+  const caseIds = new Set(corpus.cases.map((entry) => entry.id))
+  const started = new Set()
+  for (const line of raw.split('\n')) {
+    if (!line.trim()) continue
+    let record
+    try {
+      record = JSON.parse(line)
+    } catch {
+      throw evaluationError('resume_invalid')
+    }
+    if (record?.arm !== arm) throw evaluationError('resume_arm_mismatch')
+    if (record.type === 'summary') continue
+    // A stop before any case started, such as a rejected login, sent nothing.
+    if (record.type === 'error' && record.caseId === null) continue
+    if (
+      (record.type !== 'turn' && record.type !== 'error') ||
+      !caseIds.has(record.caseId) ||
+      !Number.isInteger(record.repeat)
+    ) {
+      throw evaluationError('resume_invalid')
+    }
+    started.add(repeatKey(record.caseId, record.repeat))
+  }
+  return started
 }
 
 function createTrajectoryTarget(env, remote) {
@@ -248,15 +294,27 @@ export async function runTutorTrajectories({
   const remote = options.target === 'remote'
   const corpusPath = resolve(options.corpus)
   const outputPath = resolve(options.output)
+  const resumePath = options.resume === null ? null : resolve(options.resume)
+  if (resumePath === outputPath || resumePath === corpusPath) {
+    throw evaluationError('paths_must_differ')
+  }
   if (remote) {
     if (corpusPath === outputPath) throw evaluationError('paths_must_differ')
-    return runRemoteTrajectories({ options, env, log, corpusPath, outputPath })
+    return runRemoteTrajectories({
+      options,
+      env,
+      log,
+      corpusPath,
+      outputPath,
+      resumePath,
+    })
   }
   const budgetPath = resolve(options.budgetFile)
   if (
     corpusPath === outputPath ||
     corpusPath === budgetPath ||
-    outputPath === budgetPath
+    outputPath === budgetPath ||
+    resumePath === budgetPath
   ) {
     throw evaluationError('paths_must_differ')
   }
@@ -266,6 +324,10 @@ export async function runTutorTrajectories({
     await loadNumericSidecar(resolve(options.numeric), corpus)
   }
   const cases = selectCases(corpus.cases, options.group)
+  const started =
+    resumePath === null
+      ? new Set()
+      : await loadStartedRepeats(resumePath, { arm: options.arm, corpus })
   const target = createTrajectoryTarget(env, false)
   if (target.modelId === 'auto')
     throw evaluationError('provider_model_unqualified')
@@ -310,6 +372,7 @@ export async function runTutorTrajectories({
     stopCode: null,
     cases: cases.length,
     repeats: options.repeats,
+    skippedRepeats: started.size,
     runSubmittedTurns: 0,
     completedTurns: 0,
     submittedTurns: ledger.submittedTurns,
@@ -324,6 +387,7 @@ export async function runTutorTrajectories({
       await target.ensureSession()
       for (const caseDefinition of cases) {
         for (let repeat = 0; repeat < options.repeats; repeat += 1) {
+          if (started.has(repeatKey(caseDefinition.id, repeat))) continue
           currentCase = caseDefinition.id
           currentRepeat = repeat
           await runTrajectory(target, caseDefinition, {
@@ -397,15 +461,25 @@ async function runRemoteTrajectories({
   log,
   corpusPath,
   outputPath,
+  resumePath,
 }) {
   const corpus = await loadTrajectoryCorpus(corpusPath)
   if (options.numeric !== null) {
     await loadNumericSidecar(resolve(options.numeric), corpus)
   }
   const cases = selectCases(corpus.cases, options.group)
-  const plannedTurns =
-    cases.reduce((total, entry) => total + entry.turns.length, 0) *
-    options.repeats
+  const started =
+    resumePath === null
+      ? new Set()
+      : await loadStartedRepeats(resumePath, { arm: options.arm, corpus })
+  let plannedTurns = 0
+  for (const entry of cases) {
+    for (let repeat = 0; repeat < options.repeats; repeat += 1) {
+      if (!started.has(repeatKey(entry.id, repeat))) {
+        plannedTurns += entry.turns.length
+      }
+    }
+  }
   if (plannedTurns > options.maxTurns) {
     throw evaluationError('turn_cap_exceeded')
   }
@@ -427,6 +501,7 @@ async function runRemoteTrajectories({
     stopCode: null,
     cases: cases.length,
     repeats: options.repeats,
+    skippedRepeats: started.size,
     runSubmittedTurns: 0,
     completedTurns: 0,
     submittedTurns: 0,
@@ -441,6 +516,7 @@ async function runRemoteTrajectories({
       await target.ensureSession()
       for (const caseDefinition of cases) {
         for (let repeat = 0; repeat < options.repeats; repeat += 1) {
+          if (started.has(repeatKey(caseDefinition.id, repeat))) continue
           currentCase = caseDefinition.id
           currentRepeat = repeat
           await runTrajectory(target, caseDefinition, {
