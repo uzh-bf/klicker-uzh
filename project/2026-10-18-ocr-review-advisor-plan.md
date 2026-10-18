@@ -220,8 +220,13 @@ runtime owner justify a retained environment rather than a disposable CI run.
 
 ## Progress
 
-- Status: planning and bounded reproduction; user execution approval recorded.
-- Current branch is clean at the baseline before this plan; primary unchanged.
+- Status: reliability source implemented; advisor broker implementation active.
+- Reliability verification: 238 focused tests passed. The scoped replay HTTP
+  test and runner cleanup checks also pass after their final corrections. Native
+  replay preserves existing bounds and rejects missing/cross-task identities.
+- The runner retains the pinned publisher, emits content-free coverage, and keeps
+  private result/stderr off the job log. Child environments exclude upstream and
+  publication credentials. Main owns workflow integration; executor owns broker.
 - Baseline: 214 focused adapter/individual/stack tests passed.
 - Planner round 1 requested concrete isolation, enforceable bounds, cancellation,
   runner/publisher parity, exact artifact ownership, replay provenance and explicit
@@ -231,5 +236,5 @@ runtime owner justify a retained environment rather than a disposable CI run.
 - Astra planner round 2: APPROVED. Both rounds retained privately under
   `project/_local/reviews/`. No paid OCR run triggered.
 - Required delivery: reviewed source and draft PR against `v3`; achieved: worktree
-  and plan draft. Next: settle execution and replay seams, harden the plan, then
-  implement reliability before advisor wiring.
+  and reviewed plan. Next: commit/review reliability, then integrate advisor and
+  trusted review instructions before final verification and delivery.
