@@ -34,6 +34,35 @@ attempts belong inside the later proposed judge budget.
 
 ## Existing contracts and evidence
 
+### Approved gateway repair
+
+The user subsequently approved a narrow caller-owned gateway repair through a
+draft PR against `v3`. Set `router_settings.num_retries` and
+`router_settings.max_fallbacks` to zero in `evaluation/litellm.yaml`. Extend the
+existing launcher tests, rather than add an evaluator or proof runner. Use the
+exact pinned gateway image with synthetic provider responses and networking
+disabled to verify the real proxy configuration and HTTP completion entrypoint.
+Require one upstream send on success and server failure, with the model,
+reasoning setting, strict response schema and output bound preserved. The
+unmodified retry defaults must reproduce amplification as a negative control.
+
+This is one full-path repair slice because retry amplification crosses the
+approved cost boundary. Main owns configuration, synthetic integration and
+delivery; tightly coupled endpoint-test implementation stays with main. A
+read-only worker can verify CI wiring independently. The feature-wide test
+obligation is `extend existing`: protect one admitted request from hidden
+upstream retries at the actual gateway seam. Existing launcher tests protect
+credential transport but do not observe provider sends. No new dependencies,
+framework changes, pin update, model switch or product primitive are needed.
+
+Acceptance is focused container checks, the synthetic HTTP regression, scoped
+review and CI on the draft head. Ordinary task-branch commits and push are
+authorized. Merge, marking ready, deployment, real-ledger initialization and
+paid inference remain separate gates. The existing budgets stay unchanged.
+Finish this batch with the draft link and separate source, CI and zero-spend
+entrypoint results; failed external checks must be reported without disguising
+them as readiness.
+
 Application baseline: merged
 [PR 6578](https://github.com/uzh-bf/klicker-uzh/pull/6578), revision
 `df493c6b7ed4d9718ccf5fafde4be9fa70f16c19`. The app-owned importer and corpus
