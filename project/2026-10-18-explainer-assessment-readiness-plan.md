@@ -2,6 +2,11 @@
 
 ## Approval summary
 
+Current approved batch: repair automatic judge-gateway retries, verify the
+synthetic HTTP entrypoint and CI, and deliver a draft PR against `v3`. The
+gateway repair contract below extends the completed preparation authority;
+paid execution, marking ready, merge and deployment remain excluded.
+
 Use the framework's existing saved-conversation assessment to check whether an
 Explainer preserves technical qualifications when shortening an answer. Application
 capture, corpus interpretation and receipt translation remain application-owned;
@@ -300,10 +305,13 @@ US$1 reserved per attempt, including provider qualification and calibration.
 The existing deployment and tariff binding were checked privately. The exact
 pinned gateway's network-disabled wire replay preserves the output bound and
 strict response schema but reveals retry amplification on a synthetic server
-error. An in-memory zero-retry candidate removes it; the actual configuration
-was not changed. This failed gate prevents paid readiness. The next package is
-a narrow caller-owned gateway configuration repair with zero-spend entrypoint
-verification, subject to named approval. Framework implementation is unchanged.
+error. The approved repair now sets retries and fallbacks to zero in the actual
+configuration. Its pinned-image proxy test loads that configuration and calls
+the authenticated HTTP completion endpoint with synthetic provider responses.
+Success and HTTP 500 each produce one upstream send; removing the settings
+reproduces three sends on HTTP 500. Schema, reasoning and output bounds survive
+forwarding. The standalone launcher suite passes all ten tests with no skips
+inside that image and no networking. Framework implementation is unchanged.
 Detailed arithmetic, compatibility provenance, limitations and producer results
 remain ignored under `project/_local/calibration-readiness/`.
 
@@ -314,5 +322,17 @@ route, evidence, scope or cost departure returns to the user before dependent
 execution. The compatibility/route follow-up was approved and completed as
 qualification evidence, with the gateway defect explicitly held. Paid work
 remains a separately named approval after its source repair; calibration and
-broad chatbot-quality acceptance are still outstanding. No PR was opened for
-this preparation-only documentation package.
+broad chatbot-quality acceptance are still outstanding. The source repair's
+draft publication, scoped review and hosted CI are the remaining batch work.
+
+Gateway slice: committed as `7960b6edea`, 157 substantive added lines across
+configuration, the existing test module and its existing CI step. Test delta:
+one regression added; no tests removed. Forty-three focused CI-contract tests,
+Ruff lint/format and the focused Opengrep scan pass. Host-stdlib mode passes
+nine tests and intentionally skips the image-only regression; CI separately
+requires the complete image suite. Browser screenshots do not apply to this
+nonvisual gateway change. A deliberate `v3` integration at
+`00a1906405669a38c9caf683641d0f1e6e392b6c` brings the current CI contracts into
+the branch before draft verification; unrelated target changes are not part
+of this repair. The approved implementation plan passed one Astra planner
+round. Slice and final review results are retained privately when complete.
