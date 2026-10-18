@@ -193,3 +193,7 @@ restore the false barrier when the finite experiment ends. The source package
 remains draft. Account/policy evidence, reservations and runtime acceptance stay
 in private operator records; source checks alone do not qualify provider speed
 or billing.
+
+The trial forwards its configured cache setting to both shared-action inputs and
+the telemetry environment. Existing wiring contracts cover both build and shard
+roles so restore behavior and its reported configuration share one source.

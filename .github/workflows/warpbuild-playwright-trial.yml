@@ -15,7 +15,7 @@ permissions:
 # workflow-wide serialization would prevent the deliberate burst comparison.
 env:
   TRIAL_SOURCE_SHA: f50c46bcb16193876f2ba60da1651d4364947d8d
-  TRIAL_WAVE: '1'
+  TRIAL_WAVE: '2'
   TRIAL_PROVIDER: warpbuild
   TRIAL_BUILD_LABEL: warp-ubuntu-2404-arm64-8x
   TRIAL_SHARD_LABEL: warp-ubuntu-2404-arm64-4x
@@ -126,6 +126,8 @@ jobs:
           persist-credentials: false
       - name: Build shared Playwright artifact
         uses: uzh-bf/klicker-uzh/.github/actions/playwright-build@f50c46bcb16193876f2ba60da1651d4364947d8d
+        env:
+          PLAYWRIGHT_CACHE_ENABLED: ${{ env.TRIAL_CACHE_ENABLED }}
         with:
           route: public-pr
           mode: full
@@ -200,6 +202,8 @@ jobs:
           persist-credentials: false
       - name: Run shared Playwright shard
         uses: uzh-bf/klicker-uzh/.github/actions/playwright-shard@f50c46bcb16193876f2ba60da1651d4364947d8d
+        env:
+          PLAYWRIGHT_CACHE_ENABLED: ${{ env.TRIAL_CACHE_ENABLED }}
         with:
           route: public-pr
           mode: full

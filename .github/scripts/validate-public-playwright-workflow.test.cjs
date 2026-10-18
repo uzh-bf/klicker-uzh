@@ -993,6 +993,9 @@ test('runner qualification stays opt-in and preserves the public execution contr
       job.steps[1].with['cache-enabled'],
       githubExpression('env.TRIAL_CACHE_ENABLED')
     )
+    assert.deepEqual(job.steps[1].env, {
+      PLAYWRIGHT_CACHE_ENABLED: githubExpression('env.TRIAL_CACHE_ENABLED'),
+    })
   }
   assert.deepEqual(
     trial.jobs.shards.services,

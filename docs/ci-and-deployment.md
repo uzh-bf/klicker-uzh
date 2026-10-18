@@ -763,7 +763,9 @@ when the approved budget cannot cover the next wave and existing reservations.
 Keep the existing pool and required-check routing unchanged.
 
 Each wave freezes its candidate SHA, provider, runner sizes and cache setting in
-the workflow. Its actual workflow revision (`github.sha`) supplies the trusted
+the workflow. The same cache setting supplies shared-action restore inputs and
+the `PLAYWRIGHT_CACHE_ENABLED` telemetry environment value. Its actual workflow
+revision (`github.sha`) supplies the trusted
 selector; the shared public build and shard actions have separate literal commit
 pins. Record both identities for paired comparisons. It preserves the public
 service topology. Hetzner controls use their existing allowed workflow; the trial does
