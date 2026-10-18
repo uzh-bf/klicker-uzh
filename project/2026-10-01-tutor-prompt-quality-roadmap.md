@@ -1,6 +1,40 @@
 # Tutor prompt quality roadmap
 
-Status: candidate 4 passed the gate; its language drift is fixed (2026-10-02)
+Status: historical Tutor candidate results retained; evaluation consolidation
+direction updated on 2026-10-17. Contract source and offline proof are prepared under the
+approved [implementation plan](2026-10-17-trajectory-contract-plan.md).
+
+## Current evaluation direction
+
+The next work follows the
+[evaluator consolidation plan](2026-10-12-chatbot-evaluator-plan.md#evaluation-consolidation--2026-10-17)
+and the [course-quality plan](2026-10-12-chatbot-learning-quality-plan.md).
+Keep Klicker's native capture, persisted-history checks, citation mapper and
+provider guard stable. The app owns domain experiment definitions, corpus and
+receipt translation. The separate Python framework owns normalized-artifact
+loading, configurable metrics and reusable assessment/reporting.
+Moving JavaScript into this repository's `evaluation/` folder did not transfer
+those responsibilities to the framework.
+
+| Next outcome                           | Acceptance and gate                                                                                                            | State                                                      |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
+| Caller-owned corpus and receipt contract | App-owned importer preserves complete/incomplete coverage; framework accepts generic normalized artifacts | Replacement verified offline; coordinated source migration in progress |
+| Calibrated DeepEval assessment         | Existing conversational metrics assess saved captures under separately qualified judge admission; compare with manual evidence | Proposed after contract alignment and named judge approval |
+| Framework-driven unattended capture    | A demonstrated need justifies a stateful adapter without copying application semantics                                         | Deferred                                                   |
+
+Recent Explainer preparation uses authored trajectories, app-owned offline import
+and manual criterion review. It is calibration, not executed DeepEval regression
+coverage. Numerical claim comparison is also a manually invoked utility, not an
+automatic verdict from successful capture. The earlier Tutor rounds below are
+historical evidence and do not qualify a new judge or capture route.
+
+[PR 6576](https://github.com/uzh-bf/klicker-uzh/pull/6576) merged the exact
+US$55/48-turn initializer option while preserving the US$5/120-turn default.
+Source availability does not authorize spending or establish local runtime
+readback. The subsequent roadmap execution approval covers the linked source
+package; capture, judge calls, merge and deployment retain their separate gates.
+
+## Historical Tutor iteration
 
 This roadmap follows the rejected attribution candidate recorded in
 [the v2 evaluation](2026-09-28-tutor-attribution-evaluation-v2.md). It reuses
@@ -65,7 +99,7 @@ before the reply-language reminder, which stays last.
 - **Receipts:** raw transcripts and scores stay in the gitignored local
   receipts folder. Only aggregate outcomes are recorded here.
 
-## Next steps
+## Historical next steps before candidate 1
 
 1. Implement A, B and C with unit tests for the evidence detector.
 2. Freeze the candidate and record template hashes.
@@ -306,7 +340,7 @@ A rerun of the two affected English cases, with two repeats each, answered all
 correct: each reply names the restated help, declines to record mastery from
 a confidence statement, and sets a task. The rerun used 8 turns.
 
-## Next steps
+## Historical next steps after the language fix
 
 1. Review the stacked draft PR on top of the calculator PR #6364.
 2. Watch production transcripts for German replies after pasted help, since
