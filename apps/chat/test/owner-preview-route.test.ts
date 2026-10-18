@@ -781,6 +781,14 @@ describe('POST owner preview chat', () => {
         standardModeConfig: defaultStandardModeConfig,
       }
     )
+    // The owner keeps seeing reasoning for a custom mode that hides it from
+    // participants by default.
+    const stream = mocks.streamText.mock.results[0]?.value as {
+      toUIMessageStreamResponse: ReturnType<typeof vi.fn>
+    }
+    expect(stream.toUIMessageStreamResponse).toHaveBeenCalledWith(
+      expect.objectContaining({ sendReasoning: true })
+    )
   })
 
   it('previews a draft custom mode through the saved revision even when the live config is empty', async () => {

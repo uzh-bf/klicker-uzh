@@ -29,6 +29,7 @@ export default {
       quizzer: 'Quizzer',
       quizzerDescription:
         'Practise with exam-style course questions, one at a time, with formative feedback.',
+      custom: 'Custom mode',
     },
     settingsPanel: {
       title: 'Settings',
@@ -5007,6 +5008,21 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotCustomModePersonaText: 'Persona and instructions',
       chatbotCustomModePersonaPlaceholder:
         'Describe how this mode should respond to participants.',
+      chatbotCustomModeWelcomeMessage: 'Welcome message',
+      chatbotCustomModeWelcomePlaceholder:
+        'Shown in an empty chat for this mode. Leave empty to use the standard greeting.',
+      chatbotCustomModeStarterPrompts: 'Starter prompts',
+      chatbotCustomModeStarterPromptsDescription:
+        'Shown as suggestions in an empty chat for this mode. At most {count} starters; learners decide whether to send them.',
+      chatbotCustomModeStarterPrompt: 'Starter prompt {number}',
+      chatbotCustomModeStarterPromptAdd: 'Add starter prompt',
+      chatbotCustomModeShowReasoning: 'Show model reasoning to participants',
+      chatbotCustomModeShowReasoningDescription:
+        'Off by default. The reasoning summary can paraphrase the persona and instructions of this mode, for example the hidden facts of a role-play. Owner preview always shows it.',
+      chatbotCustomModeReasoningShown:
+        'Model reasoning visible to participants',
+      chatbotCustomModeReasoningHidden:
+        'Model reasoning hidden from participants',
       chatbotCustomModeAdd: 'Add custom mode',
       chatbotCustomModeRemove: 'Remove',
       chatbotCustomModesLimit: 'At most {count} custom modes are supported.',

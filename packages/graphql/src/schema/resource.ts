@@ -135,6 +135,9 @@ export const ChatAccountUsageOverviewType =
   ChatAccountUsageOverviewRef.implement({
     fields: (t) => ({
       authorized: t.exposeBoolean('authorized'),
+      advancedModelConfigurationEntitled: t.exposeBoolean(
+        'advancedModelConfigurationEntitled'
+      ),
       subscriptionTier: t.expose('subscriptionTier', {
         type: AiSubscriptionTier,
       }),
@@ -226,6 +229,9 @@ export const ChatbotCustomModeInput = ChatbotCustomModeInputRef.implement({
     name: t.string({ required: true }),
     description: t.string({ required: false }),
     personaText: t.string({ required: false }),
+    welcomeMessage: t.string({ required: false }),
+    starterPrompts: t.stringList({ required: false }),
+    showReasoning: t.boolean({ required: false }),
   }),
 })
 
@@ -250,6 +256,11 @@ export const ChatbotCustomMode = ChatbotCustomModeRef.implement({
     name: t.exposeString('name'),
     description: t.exposeString('description', { nullable: true }),
     personaText: t.exposeString('personaText', { nullable: true }),
+    welcomeMessage: t.exposeString('welcomeMessage', { nullable: true }),
+    starterPrompts: t.exposeStringList('starterPrompts', { nullable: true }),
+    showReasoning: t.boolean({
+      resolve: (mode) => mode.showReasoning === true,
+    }),
   }),
 })
 

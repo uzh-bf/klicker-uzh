@@ -728,6 +728,7 @@ type ChatAccountUsageLane {
 }
 
 type ChatAccountUsageOverview {
+  advancedModelConfigurationEntitled: Boolean!
   advancedModelUsage: ChatAccountUsageLane!
   authorized: Boolean!
   baseModelUsage: ChatAccountUsageLane!
@@ -819,6 +820,9 @@ type ChatbotCustomMode {
   key: String!
   name: String!
   personaText: String
+  showReasoning: Boolean!
+  starterPrompts: [String!]
+  welcomeMessage: String
 }
 
 type ChatbotCustomModeConfig {
@@ -834,6 +838,9 @@ input ChatbotCustomModeInput {
   key: String
   name: String!
   personaText: String
+  showReasoning: Boolean
+  starterPrompts: [String!]
+  welcomeMessage: String
 }
 
 type ChatbotDisclaimerSummary {

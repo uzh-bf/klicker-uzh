@@ -50,7 +50,7 @@ import { sendTeamsNotifications } from '@/lib/util'
 
 // Validate required environment variables
 if (!process.env.APP_ORIGIN_AUTH) {
-  console.error('APP_ORIGIN_AUTH is required but not defined')
+  logger.error('APP_ORIGIN_AUTH is required but not defined')
   process.exit(1)
 }
 
@@ -215,7 +215,7 @@ function getParticipantConfig({
           profile(profile) {
             // Ensure we have the required fields for NextAuth
             if (!profile.sub) {
-              console.error('Missing sub in EduID profile')
+              log.error('Missing sub in EduID profile')
               throw new Error('Missing sub in EduID profile')
             }
 
@@ -263,7 +263,7 @@ function getParticipantConfig({
         })
 
         if (!profile) {
-          console.error('No profile provided for participant sign-in')
+          log.error('No profile provided for participant sign-in')
           return false
         }
 
@@ -274,7 +274,7 @@ function getParticipantConfig({
           )
 
           if (!participant) {
-            console.error(
+            log.error(
               'Failed to create/link participant: no participant returned'
             )
             return false
@@ -286,8 +286,8 @@ function getParticipantConfig({
             outcome: 'linked',
           })
           return true
-        } catch (error) {
-          console.error('Failed to create/link participant:', error)
+        } catch {
+          log.error('Failed to create/link participant')
           return false
         }
       },
@@ -308,9 +308,7 @@ function getParticipantConfig({
 
           if (!participant) {
             // Participant doesn't exist in current database - invalidate token
-            console.warn(
-              `Participant ${token.sub} not found in database, invalidating token`
-            )
+            log.warn('Participant not found in database, invalidating token')
             // Return empty token to force re-authentication
             return { sub: '', role: '', scope: '', email: '', name: '' }
           }
@@ -592,11 +590,8 @@ function getLecturerConfig({
                 profileData.swissEduIDLinkedAffiliationUniqueID,
                 log
               )
-            } catch (error) {
-              console.error(
-                'Error creating user affiliations in JWT callback:',
-                error
-              )
+            } catch {
+              log.error('Error creating user affiliations in JWT callback')
             }
           }
         }
