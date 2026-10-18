@@ -1,8 +1,8 @@
 # Tutor prompt quality roadmap
 
-Status: historical Tutor candidate results retained; evaluation consolidation
-direction updated on 2026-10-17. Contract source and offline proof are prepared under the
-approved [implementation plan](2026-10-17-trajectory-contract-plan.md).
+Status: historical Tutor candidate results retained; source consolidation and
+generic judge admission are merged. A conditional readiness proposal is prepared under the
+[saved Explainer assessment plan](2026-10-18-explainer-assessment-readiness-plan.md).
 
 ## Current evaluation direction
 
@@ -16,17 +16,29 @@ loading, configurable metrics and reusable assessment/reporting.
 Moving JavaScript into this repository's `evaluation/` folder did not transfer
 those responsibilities to the framework.
 
-| Next outcome                           | Acceptance and gate                                                                                                            | State                                                      |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
-| Caller-owned corpus and receipt contract | App-owned importer preserves complete/incomplete coverage; framework accepts generic normalized artifacts | Replacement verified offline; coordinated source migration in progress |
-| Calibrated DeepEval assessment         | Existing conversational metrics assess saved captures under separately qualified judge admission; compare with manual evidence | Proposed after contract alignment and named judge approval |
-| Framework-driven unattended capture    | A demonstrated need justifies a stateful adapter without copying application semantics                                         | Deferred                                                   |
+| Next outcome                             | Acceptance and gate                                                                                       | State                                                                                              |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Caller-owned corpus and receipt contract | App-owned importer preserves complete/incomplete coverage; framework accepts generic normalized artifacts | Merged in app PR 6578 and framework MR 57                                                          |
+| Generic judge admission                  | Shared durable reservations precede every bounded judge request                                           | Merged in framework MR 61; post-merge CI passed                                                    |
+| Calibration readiness                    | Existing private references, merged-framework offline replay and separately costed judge proposal         | Conditional proposal prepared; reference compatibility and actual judge-route evidence remain held |
+| Calibrated DeepEval assessment           | Existing conversational metric decisions are compared with frozen manual judgments                        | Held for route qualification and named judge-budget approval                                       |
+| Framework-driven unattended capture      | A demonstrated need justifies a stateful adapter without copying application semantics                    | Deferred                                                                                           |
 
 Recent Explainer preparation uses authored trajectories, app-owned offline import
 and manual criterion review. It is calibration, not executed DeepEval regression
 coverage. Numerical claim comparison is also a manually invoked utility, not an
 automatic verdict from successful capture. The earlier Tutor rounds below are
 historical evidence and do not qualify a new judge or capture route.
+
+Source milestones: [app PR 6578](https://github.com/uzh-bf/klicker-uzh/pull/6578),
+[framework MR 57](https://gitlab.uzh.ch/ai-infrastructure/evaluation/-/merge_requests/57)
+and [framework MR 61](https://gitlab.uzh.ch/ai-infrastructure/evaluation/-/merge_requests/61).
+The merged judge-admission revision passed 469 tests, lint and formatting in
+[post-merge CI](https://gitlab.uzh.ch/ai-infrastructure/evaluation/-/pipelines/687299).
+This establishes source behavior, not judge accuracy or broad Explainer quality.
+Standalone qualification uses the merged framework first; the application pin
+update is a later integration task. No new capture or framework implementation
+is planned before checking existing evidence sufficiency.
 
 [PR 6576](https://github.com/uzh-bf/klicker-uzh/pull/6576) merged the exact
 US$55/48-turn initializer option while preserving the US$5/120-turn default.
