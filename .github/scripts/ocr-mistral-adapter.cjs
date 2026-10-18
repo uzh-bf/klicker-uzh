@@ -21,7 +21,6 @@ const { Readable } = require('node:stream')
 const MISTRAL_URL = 'https://api.mistral.ai/v1/chat/completions'
 const MISTRAL_MODEL = 'zai-glm-5-3'
 const MISTRAL_EFFORT = 'max'
-const OPENROUTER_GLM_MODEL = 'z-ai/glm-5.3'
 
 // USD per million tokens, checked 2026-10-16 against the provider's model page.
 const MISTRAL_PRICING = {
@@ -57,21 +56,6 @@ const PROVIDERS = {
       input: 0.15,
       cachedInput: 0.003,
       output: 0.6,
-    },
-  },
-  'openrouter-glm': {
-    name: 'openrouter-glm',
-    label: 'OpenRouter',
-    url: 'https://openrouter.ai/api/v1/chat/completions',
-    model: OPENROUTER_GLM_MODEL,
-    responseModels: [OPENROUTER_GLM_MODEL],
-    secret: 'OPENROUTER_API_KEY',
-    pricing: {
-      date: '2026-10-18',
-      source: 'https://openrouter.ai/z-ai/glm-5.3',
-      input: 0.079,
-      cachedInput: 0.078,
-      output: 1.4,
     },
   },
 }
@@ -338,7 +322,7 @@ function normalizeAssistantMessage(message, provider = 'mistral') {
     const { text, thinking } = splitContent(message.content)
     const reasoning =
       thinking +
-      (provider !== 'mistral'
+      (provider === 'openrouter'
         ? openRouterReasoning(message)
         : extractReasoning(message.reasoning_content))
     const toolCalls = normalizeToolCalls(message.tool_calls)
@@ -711,23 +695,15 @@ function translateMistralRequest(
       'reasoning effort must be high or max'
     )
   }
-  if (provider !== 'mistral' && effort !== 'max') {
-    throw new AdapterError(
-      'invalid_request',
-      'OpenRouter reasoning must be max'
-    )
+  if (provider === 'openrouter' && effort !== 'max') {
+    throw new AdapterError('invalid_request', 'draft reasoning must be max')
   }
 
   const translated = {
     model: profile.model,
     messages: history.restoreMessages(body.messages, body.prompt_cache_key),
-    ...(provider !== 'mistral'
-      ? {
-          reasoning: { effort: 'max' },
-          ...(provider === 'openrouter-glm'
-            ? { provider: { require_parameters: true } }
-            : {}),
-        }
+    ...(provider === 'openrouter'
+      ? { reasoning: { effort: 'max' } }
       : { reasoning_effort: effort }),
   }
   if (body.prompt_cache_key !== undefined) {
@@ -755,7 +731,7 @@ function translateMistralRequest(
   if (hasCompletionTool(body) && typeof translated.tool_choice !== 'object') {
     // OCR completes through task_done. Optional tool use lets a prose answer
     // enter its zero-tool retry path, which replays the growing history.
-    translated.tool_choice = provider !== 'mistral' ? 'required' : 'any'
+    translated.tool_choice = provider === 'openrouter' ? 'required' : 'any'
   }
   return translated
 }
@@ -1427,11 +1403,6 @@ async function startAdapter(options = {}) {
 }
 
 async function callMistral(options = {}) {
-  return callReviewModel({ ...options, provider: 'mistral' })
-}
-
-async function callReviewModel(options = {}) {
-  const profile = providerConfig(options.provider)
   const apiKey = options.apiKey
   const fetchImpl = options.fetchImpl ?? requestMistral
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
@@ -1449,8 +1420,7 @@ async function callReviewModel(options = {}) {
 
   const mistralBody = translateMistralRequest(
     options.body,
-    createHistoryStore({ provider: profile.name }),
-    profile.name
+    createHistoryStore()
   )
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
@@ -1463,7 +1433,7 @@ async function callReviewModel(options = {}) {
   try {
     diagnostics.requests += 1
     diagnostics.upstream_attempts += 1
-    const response = await fetchImpl(profile.url, {
+    const response = await fetchImpl(MISTRAL_URL, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -1493,7 +1463,7 @@ async function callReviewModel(options = {}) {
     } catch {
       throw new AdapterError('malformed_response', 'invalid upstream JSON')
     }
-    const normalized = normalizeMistralResponse(payload, profile.name)
+    const normalized = normalizeMistralResponse(payload)
     recordResponseUsage(diagnostics, normalized.usage, payload.usage)
     return normalized
   } catch (error) {
@@ -1506,9 +1476,6 @@ async function callReviewModel(options = {}) {
       writeDiagnostics({
         schema_version: 1,
         stage: options.diagnosticsStage,
-        ...(profile.name === 'mistral'
-          ? {}
-          : { provider: profile.name, model: profile.model }),
         requests: diagnostics.requests,
         ...Object.fromEntries(
           COST_USAGE_FIELDS.map((field) => [field, diagnostics[field]])
@@ -1692,7 +1659,8 @@ function assessCostRows(rows, provider = 'mistral') {
   for (const row of rows) {
     if (
       (row?.provider ?? 'mistral') !== provider ||
-      (provider !== 'mistral' && row?.model !== providerConfig(provider).model)
+      (provider === 'openrouter' &&
+        row?.model !== providerConfig(provider).model)
     ) {
       reasons.add('provider_mismatch')
       continue
@@ -1932,7 +1900,7 @@ function commandSummary(args) {
   }
   const estimate = report.estimate
   const pricing = profile.pricing
-  const priceDigits = profile.name !== 'mistral' ? 3 : 2
+  const priceDigits = profile.name === 'openrouter' ? 3 : 2
   const failures = Object.fromEntries(
     FAILURE_CATEGORIES.map((category) => [category, 0])
   )
@@ -1982,7 +1950,7 @@ function commandSummary(args) {
       `$${pricing.input.toFixed(priceDigits)} input / $${pricing.cachedInput.toFixed(priceDigits)} cached input / $${pricing.output.toFixed(priceDigits)} output per million tokens (USD).`,
     '',
   ]
-  if (profile.name !== 'mistral')
+  if (profile.name === 'openrouter')
     summary.push(
       'Reference-price estimates only: routed endpoint prices and time-based rates may differ from these catalog rates; this is not an invoice.',
       ''
@@ -2492,8 +2460,6 @@ module.exports = {
   MISTRAL_URL,
   MISTRAL_MODEL,
   MISTRAL_EFFORT,
-  OPENROUTER_GLM_MODEL,
-  callReviewModel,
   normalizeMistralResponse,
   translateMistralRequest,
   createHistoryStore,

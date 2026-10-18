@@ -25,16 +25,17 @@ tags:
 
 Draft reviews use DeepSeek V4.1 Flash 1017 through OpenRouter; manual reviews
 and the bounded draft advisor use Mistral-hosted `zai-glm-5-3`. Both models use
-maximum reasoning. The manual tool canary calls the fixed Mistral endpoint directly. Stack
-topology uses OpenRouter `z-ai/glm-5.3` with maximum reasoning, strict JSON
-schema and parameter-aware routing, through the existing `OPENROUTER_API_KEY`.
-Its response model and semantic evidence are validated before publication. OCR uses the runner-local
+maximum reasoning. The manual tool canary and stack topology request call the
+fixed Mistral endpoint directly. OCR uses the runner-local
 [adapter](../../../.github/scripts/ocr-mistral-adapter.cjs), which translates
 `max_completion_tokens` to `max_tokens` and restores native thinking chunks
 from bounded memory when OCR replays an assistant turn. Answer text and thinking
-metadata remain separate so strict topology JSON stays parseable. Topology
-usage receipts identify their OpenRouter model; mixed-provider totals remain
-unavailable rather than pricing OpenRouter tokens at Mistral rates.
+metadata remain separate so strict topology JSON stays parseable. Mistral's
+structured-output grammar rejects `uniqueItems` on topology layer arrays with
+HTTP 400. The request schema omits that keyword; `validateTopologyResult`
+still rejects duplicate layer numbers before publication. The topology call
+allows up to 65,536 completion tokens and ten minutes for maximum reasoning;
+length-truncated answers fail closed.
 
 The upstream `MISTRAL_API_KEY` exists only in the adapter or direct request
 process. OCR receives a random loopback capability, and its mode-0600 config

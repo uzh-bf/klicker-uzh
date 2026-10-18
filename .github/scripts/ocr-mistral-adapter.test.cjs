@@ -18,8 +18,6 @@ const {
   createHistoryStore,
   startAdapter,
   callMistral,
-  callReviewModel,
-  OPENROUTER_GLM_MODEL,
   estimateCost,
   buildCostReport,
   createProgressFilter,
@@ -3942,62 +3940,4 @@ test('run with live progress terminates its listener on SIGTERM', async () => {
     await exited
     fs.rmSync(directory, { recursive: true, force: true })
   }
-})
-
-test('topology routing pins OpenRouter GLM and rejects wrong models and upstream error content', async () => {
-  const body = {
-    model: OPENROUTER_GLM_MODEL,
-    messages: [{ role: 'user', content: 'Synthetic topology check' }],
-    reasoning_effort: 'max',
-    response_format: {
-      type: 'json_schema',
-      json_schema: { name: 'probe', strict: true, schema: { type: 'object' } },
-    },
-    provider: { only: ['untrusted'] },
-  }
-  const request = translateMistralRequest(
-    body,
-    createHistoryStore({ provider: 'openrouter-glm' }),
-    'openrouter-glm'
-  )
-  assert.deepEqual(request.provider, { require_parameters: true })
-  assert.deepEqual(request.reasoning, { effort: 'max' })
-  assert.equal(request.model, OPENROUTER_GLM_MODEL)
-  assert.throws(
-    () => normalizeMistralResponse({ model: MISTRAL_MODEL }, 'openrouter-glm'),
-    /model/
-  )
-  await assert.rejects(
-    callReviewModel({
-      provider: 'openrouter-glm',
-      apiKey: 'synthetic-secret',
-      body,
-      fetchImpl: async (url, options) => {
-        assert.equal(url, 'https://openrouter.ai/api/v1/chat/completions')
-        assert.equal(options.redirect, 'error')
-        return new Response('synthetic-secret and private upstream content', {
-          status: 400,
-        })
-      },
-    }),
-    (error) => error.message === 'upstream status 400'
-  )
-})
-
-test('mixed topology receipts cannot be billed as Mistral usage', () => {
-  const result = buildCostReport(
-    [
-      JSON.stringify(costReceipt({ stage: 'adapter' })),
-      JSON.stringify(
-        costReceipt({
-          stage: 'topology',
-          provider: 'openrouter-glm',
-          model: OPENROUTER_GLM_MODEL,
-        })
-      ),
-    ].join('\n'),
-    { adapter: 1, topology: 1 }
-  )
-  assert.equal(result.estimate, null)
-  assert.ok(result.reasons.includes('provider_mismatch'))
 })

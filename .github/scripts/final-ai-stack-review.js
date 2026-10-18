@@ -44,8 +44,7 @@ const STACK_REVIEW_COMMAND = '/final-review-stack'
 const {
   MISTRAL_MODEL,
   MISTRAL_URL,
-  callReviewModel,
-  OPENROUTER_GLM_MODEL,
+  callMistral,
 } = require('./ocr-mistral-adapter.cjs')
 const FINAL_STACK_REVIEW_MODEL = MISTRAL_MODEL
 const STACK_REVIEW_CONTEXT = 'final-ai-stack-review'
@@ -60,8 +59,7 @@ const STACK_RULES_PATH =
   '.github/open-code-review/final-stack-topology-rules.json'
 const STACK_SCHEMA_PATH =
   '.github/open-code-review/final-stack-topology-schema.json'
-const TOPOLOGY_MODEL = OPENROUTER_GLM_MODEL
-const TOPOLOGY_API_KEY_ENV = 'OPENROUTER_API_KEY'
+const MISTRAL_API_KEY_ENV = 'MISTRAL_API_KEY'
 const REPORT_LIMIT = 55_000
 const CLEAN_EVIDENCE_LIMIT = REPORT_LIMIT
 const MAX_MANIFEST_FILES = 2_000
@@ -2488,7 +2486,7 @@ function validateTopologyResult(
   if (
     result?.status !== 'complete' ||
     result.finish_reason !== 'stop' ||
-    result.model !== TOPOLOGY_MODEL ||
+    result.model !== FINAL_STACK_REVIEW_MODEL ||
     !Array.isArray(result.comments) ||
     result.summary?.comments !== result.comments.length ||
     result.summary?.coverage !== 'complete' ||
@@ -2516,6 +2514,7 @@ function validateTopologyResult(
       owners.length === 0 ||
       !Array.isArray(layers) ||
       layers.length === 0 ||
+      // Mistral's structured-output grammar does not support uniqueItems.
       new Set(layers).size !== layers.length ||
       layers.some(
         (layer) =>
@@ -2816,7 +2815,6 @@ function renderStackReview({
   const sections = [
     `<!-- ${STACK_REVIEW_SCHEMA} ${encodeMetadata(metadata)} -->`,
     `## Final AI stack review · ${FINAL_STACK_REVIEW_MODEL} (max reasoning)`,
-    `Topology: OpenRouter ${TOPOLOGY_MODEL} (max reasoning).`,
     '',
     effectiveReviewRanges.length <= 1
       ? `Reviewed verified stack ${manifest.stack_id} from \`${reviewStart.slice(0, 12)}\` to \`${headSha.slice(0, 12)}\`.`
@@ -2908,7 +2906,7 @@ function topologyPrompt({ manifest, codeSummary }) {
 
 function buildTopologyRequest({ manifest, codeSummary, rulesText, schema }) {
   return {
-    model: TOPOLOGY_MODEL,
+    model: FINAL_STACK_REVIEW_MODEL,
     max_tokens: MAX_TOPOLOGY_OUTPUT_TOKENS,
     messages: [
       {
@@ -3007,7 +3005,7 @@ async function callTopologyModel({
   schema = loadTopologySchema(),
 }) {
   if (!apiKey)
-    throw new Error('OPENROUTER_API_KEY is required for topology review')
+    throw new Error('MISTRAL_API_KEY is required for topology review')
   if (typeof fetchImpl !== 'function') throw new Error('fetch is unavailable')
   const body = buildTopologyRequest({
     codeSummary: topologyCodeSummary(
@@ -3025,8 +3023,7 @@ async function callTopologyModel({
   ) {
     throw new Error('Topology model request exceeds the bounded payload limit')
   }
-  const payload = await callReviewModel({
-    provider: 'openrouter-glm',
+  const payload = await callMistral({
     apiKey,
     body,
     diagnosticsStage: 'topology',
@@ -3037,7 +3034,7 @@ async function callTopologyModel({
   if (
     choice?.finish_reason !== 'stop' ||
     typeof choice.message?.content !== 'string' ||
-    payload.model !== TOPOLOGY_MODEL
+    payload.model !== FINAL_STACK_REVIEW_MODEL
   ) {
     throw new Error(
       choice?.finish_reason === 'length'
@@ -3491,7 +3488,7 @@ function runTopologyCli() {
   )
   const codeResult = JSON.parse(fs.readFileSync(codeResultPath, 'utf8'))
   callTopologyModel({
-    apiKey: process.env[TOPOLOGY_API_KEY_ENV],
+    apiKey: process.env[MISTRAL_API_KEY_ENV],
     codeResult,
     manifestBundle,
     mode,
@@ -3544,7 +3541,6 @@ module.exports = {
   decodeMetadata,
   encodeMetadata,
   FINAL_STACK_REVIEW_MODEL,
-  TOPOLOGY_MODEL,
   MAX_MANIFEST_FILES,
   MISTRAL_URL,
   STACK_CLEAN_EVIDENCE_CHECK_NAME,
