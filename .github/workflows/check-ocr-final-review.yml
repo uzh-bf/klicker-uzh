@@ -1227,7 +1227,7 @@ jobs:
         id: topology_review
         if: steps.code_review.outcome == 'success' && steps.cleanup.outcome == 'success'
         env:
-          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           OCR_ADAPTER_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
           MANIFEST_DIGEST: ${{ needs.start_stack.outputs.manifest_digest }}
           MANIFEST_PATH: ${{ runner.temp }}/final-ai-stack-manifest.json

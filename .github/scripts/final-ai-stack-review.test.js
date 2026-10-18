@@ -11,6 +11,7 @@ const {
 } = require('./final-ai-review.js')
 const {
   FINAL_STACK_REVIEW_MODEL,
+  TOPOLOGY_MODEL,
   STACK_CLEAN_EVIDENCE_CHECK_NAME,
   STACK_REVIEW_CLEAN_STATUS_PREFIX,
   STACK_REVIEW_SCHEMA,
@@ -370,7 +371,7 @@ function topologyResult(comments = []) {
   return {
     status: 'complete',
     finish_reason: 'stop',
-    model: FINAL_STACK_REVIEW_MODEL,
+    model: TOPOLOGY_MODEL,
     summary: { coverage: 'complete', comments: comments.length },
     comments,
     usage: { total_tokens: 50, prompt_tokens: 35, completion_tokens: 15 },
@@ -3221,11 +3222,13 @@ test('sends strict max-reasoning topology requests and rejects invalid owners', 
     rulesText: 'test rules',
     schema: { type: 'object' },
     fetchImpl: async (_url, options) => {
+      assert.equal(_url, 'https://openrouter.ai/api/v1/chat/completions')
+      assert.equal(options.redirect, 'error')
       fetchCalls += 1
       request = JSON.parse(options.body)
       return new Response(
         JSON.stringify({
-          model: FINAL_STACK_REVIEW_MODEL,
+          model: TOPOLOGY_MODEL,
           choices: [
             {
               finish_reason: 'stop',
@@ -3243,9 +3246,10 @@ test('sends strict max-reasoning topology requests and rejects invalid owners', 
     },
   })
   assert.equal(response.status, 'complete')
-  assert.equal(Object.hasOwn(request, 'provider'), false)
-  assert.equal(request.reasoning_effort, 'max')
-  assert.equal(request.max_tokens, 4096)
+  assert.deepEqual(request.provider, { require_parameters: true })
+  assert.deepEqual(request.reasoning, { effort: 'max' })
+  assert.equal(request.model, TOPOLOGY_MODEL)
+  assert.equal(request.max_tokens, 65536)
   assert.equal(request.response_format.json_schema.strict, true)
   assert.equal(request.messages[0].content.includes('dummy-token'), false)
   assert.doesNotMatch(request.messages[1].content, /patch_hunks|operations/)
@@ -3299,6 +3303,8 @@ test('sends strict max-reasoning topology requests and rejects invalid owners', 
   assert.deepEqual(receipts[0], {
     schema_version: 1,
     stage: 'topology',
+    provider: 'openrouter-glm',
+    model: TOPOLOGY_MODEL,
     requests: 1,
     upstream_attempts: 1,
     responses: 1,
@@ -3361,7 +3367,7 @@ test('retains topology usage when caller validation rejects the answer', async (
           fetchCalls += 1
           return new Response(
             JSON.stringify({
-              model: FINAL_STACK_REVIEW_MODEL,
+              model: TOPOLOGY_MODEL,
               choices: [{ finish_reason: 'stop', message: { content } }],
               usage: {
                 total_tokens: 50,
@@ -3382,6 +3388,8 @@ test('retains topology usage when caller validation rejects the answer', async (
     assert.deepEqual(receipt, {
       schema_version: 1,
       stage: 'topology',
+      provider: 'openrouter-glm',
+      model: TOPOLOGY_MODEL,
       requests: 1,
       upstream_attempts: 1,
       responses: 1,
@@ -3430,7 +3438,7 @@ test('keeps the topology deadline and records the aborted request', async (t) =>
     },
   })
   assert.equal(fetchCalls, 1)
-  t.mock.timers.tick(120_000)
+  t.mock.timers.tick(600_000)
   await assert.rejects(pending, /upstream request failed/)
   const receipts = readDiagnosticsReceipts(diagnosticsPath)
   assert.equal(receipts.length, 1)
