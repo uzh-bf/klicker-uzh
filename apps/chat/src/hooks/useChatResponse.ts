@@ -1,3 +1,7 @@
+import {
+  assertParticipantSession,
+  participantFetch,
+} from '@klicker-uzh/shared-components/src/utils/participantSession'
 import { useTranslations } from 'next-intl'
 import { useParams } from 'next/navigation'
 import { useCallback, useRef } from 'react'
@@ -7,9 +11,9 @@ import { readHandoffSource } from '../lib/handoff'
 import { normalizeLiveToolOutput } from '../lib/toolOutput'
 import { generateId } from '../lib/utils/chatUtils'
 import {
-  useChatStore,
   type ExtendedThreadMessageLike,
   type ThreadRunOutcome,
+  useChatStore,
 } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
 
@@ -193,46 +197,49 @@ export function useChatResponse(
 
         // send request to API with streaming enabled
         const handoffSource = readHandoffSource()
-        const response = await fetch(`/api/chatbots/${chatbotId}/chat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: abortController.signal,
-          body: JSON.stringify({
-            // Assistant turns that carry no text — stopped-before-output or
-            // error-only turns hold just a data marker part — would serialize
-            // to empty assistant messages, which some upstream models reject
-            // and none benefit from.
-            messages: resolvedMessagesToSend
-              .filter(
-                (m) =>
-                  m.role !== 'assistant' ||
-                  serializeMessageContent(m).trim() !== ''
-              )
-              .map((m) => ({
-                id: m.id,
-                role: m.role,
-                content: serializeMessageContent(m),
-              })),
-            threadId,
-            selectedModel,
-            selectedMode,
-            reasoningEffort: selectedReasoningEffort,
-            parentId: parentId || undefined,
-            assistantMessageId,
-            ...(options.allowRegeneration ? { allowRegeneration: true } : {}),
-            ...(handoffSource ? { handoffSource } : {}),
-            images: (resolvedTriggerMessage?.imageAttachments ?? [])
-              .filter(
-                (
-                  attachment
-                ): attachment is {
-                  type: 'image'
-                  imageBase64: string
-                } => typeof attachment.imageBase64 === 'string'
-              )
-              .map((attachment) => attachment.imageBase64),
-          }),
-        })
+        const response = await participantFetch(
+          `/api/chatbots/${chatbotId}/chat`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: abortController.signal,
+            body: JSON.stringify({
+              // Assistant turns that carry no text — stopped-before-output or
+              // error-only turns hold just a data marker part — would serialize
+              // to empty assistant messages, which some upstream models reject
+              // and none benefit from.
+              messages: resolvedMessagesToSend
+                .filter(
+                  (m) =>
+                    m.role !== 'assistant' ||
+                    serializeMessageContent(m).trim() !== ''
+                )
+                .map((m) => ({
+                  id: m.id,
+                  role: m.role,
+                  content: serializeMessageContent(m),
+                })),
+              threadId,
+              selectedModel,
+              selectedMode,
+              reasoningEffort: selectedReasoningEffort,
+              parentId: parentId || undefined,
+              assistantMessageId,
+              ...(options.allowRegeneration ? { allowRegeneration: true } : {}),
+              ...(handoffSource ? { handoffSource } : {}),
+              images: (resolvedTriggerMessage?.imageAttachments ?? [])
+                .filter(
+                  (
+                    attachment
+                  ): attachment is {
+                    type: 'image'
+                    imageBase64: string
+                  } => typeof attachment.imageBase64 === 'string'
+                )
+                .map((attachment) => attachment.imageBase64),
+            }),
+          }
+        )
 
         if (!response.ok) {
           // raw server-provided error detail is console-only; the student sees a
@@ -345,6 +352,7 @@ export function useChatResponse(
            */
           while (true) {
             const { done, value } = await reader.read()
+            assertParticipantSession()
             if (done) break
 
             // buffer management for incomplete chunks

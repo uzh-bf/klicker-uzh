@@ -7,7 +7,9 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetShortnameQuizzesDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import getParticipantToken from '@lib/getParticipantToken'
+import getParticipantToken, {
+  participantSessionProps,
+} from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
@@ -196,16 +198,16 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    const { participantToken, cookiesAvailable } = await getParticipantToken({
+    const session = await getParticipantToken({
       apolloClient,
       ctx,
     })
+    const { participantToken } = session
 
     if (participantToken) {
       return {
         props: {
-          participantToken,
-          cookiesAvailable,
+          ...participantSessionProps(session),
           shortname: ctx.params.shortname,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
@@ -215,6 +217,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     return addApolloState(apolloClient, {
       props: {
+        ...participantSessionProps(session),
         shortname: ctx.params.shortname,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,

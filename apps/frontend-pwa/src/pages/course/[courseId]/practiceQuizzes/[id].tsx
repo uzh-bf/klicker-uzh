@@ -11,7 +11,9 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseEmbedParam'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import getParticipantToken from '@lib/getParticipantToken'
+import getParticipantToken, {
+  participantSessionProps,
+} from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -440,17 +442,17 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     const embedded = parseEmbedParam(ctx.query.embed)
     const focusedEmbedRequested = embedded && ctx.query.embedMode === 'focused'
 
-    const { participantToken, cookiesAvailable } = await getParticipantToken({
+    const session = await getParticipantToken({
       apolloClient,
       courseId: ctx.params.courseId,
       ctx,
     })
+    const { participantToken } = session
 
     if (participantToken) {
       return {
         props: {
-          participantToken,
-          cookiesAvailable,
+          ...participantSessionProps(session),
           id: ctx.params.id,
           courseId: ctx.params.courseId,
           embedded,
@@ -463,6 +465,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     return addApolloState(apolloClient, {
       props: {
+        ...participantSessionProps(session),
         id: ctx.params.id,
         courseId: ctx.params.courseId,
         embedded,

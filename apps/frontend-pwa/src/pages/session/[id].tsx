@@ -16,6 +16,7 @@ import {
   SetLiveQuizPinDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { participantFetch } from '@klicker-uzh/shared-components/src/utils/participantSession'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import {
@@ -121,7 +122,9 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
   }
 
   try {
-    const response = await fetch(
+    const response = await (process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
+      ? fetch
+      : participantFetch)(
       process.env.NEXT_PUBLIC_ADD_RESPONSE_URL as string,
       requestOptions
     )
@@ -678,6 +681,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   return addApolloState(apolloClient, {
     props: {
       id: ctx.params.id,
+      sessionRevision: ctx.req.cookies.participant_session ?? '',
       messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
         .default,
     },

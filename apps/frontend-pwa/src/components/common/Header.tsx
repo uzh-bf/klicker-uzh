@@ -22,6 +22,8 @@ import {
   StudentCourse,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
+import { participantReloadUrl } from '@klicker-uzh/shared-components/src/utils/participantSession'
+import { navigateParticipantSession } from '@lib/participantSession'
 import { Button, Dropdown, H1, H2, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
@@ -371,8 +373,23 @@ function Header({
                       </div>
                     ),
                     onClick: async () => {
-                      await logoutParticipant()
-                      router.push('/login')
+                      if (process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true') {
+                        await logoutParticipant()
+                        router.push('/login')
+                        return
+                      }
+                      const result = await logoutParticipant().catch(
+                        () => undefined
+                      )
+                      if (!result?.data?.logoutParticipant) {
+                        toast({
+                          type: 'error',
+                          message: t('shared.generic.systemError'),
+                          options: { duration: 6000 },
+                        })
+                        return
+                      }
+                      await navigateParticipantSession(router, '/login')
                     },
                     data: { cy: 'logout' },
                   },
@@ -399,16 +416,24 @@ function Header({
                         // log out temporary participant for this live quiz
                         const { data } = await logoutTemporaryParticipant({
                           variables: { liveQuizId },
-                          refetchQueries: [
-                            { query: SelfDocument, variables: { liveQuizId } },
-                          ],
+                          refetchQueries:
+                            process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
+                              ? [
+                                  {
+                                    query: SelfDocument,
+                                    variables: { liveQuizId },
+                                  },
+                                ]
+                              : [],
                         })
 
                         if (data?.logoutTemporaryParticipant) {
                           // remove local storage entry for temporary participant
                           localStorage.removeItem(`login-state-${liveQuizId}`)
 
-                          router.reload()
+                          if (process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true')
+                            router.reload()
+                          else window.location.replace(participantReloadUrl())
                         } else {
                           toast({
                             type: 'error',

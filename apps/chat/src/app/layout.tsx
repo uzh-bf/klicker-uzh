@@ -35,7 +35,8 @@ export default async function RootLayout({
   // NEXT_LOCALE cookie (set by the backend on login / locale change) and fall
   // back to the default. Reading cookies() opts this layout into dynamic
   // rendering, which is acceptable — chat is auth-gated and already dynamic.
-  const requestedLocale = (await cookies()).get('NEXT_LOCALE')?.value
+  const cookieStore = await cookies()
+  const requestedLocale = cookieStore.get('NEXT_LOCALE')?.value
   const locale = hasLocale(routing.locales, requestedLocale)
     ? requestedLocale
     : routing.defaultLocale

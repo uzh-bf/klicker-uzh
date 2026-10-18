@@ -13,6 +13,7 @@ import {
   SelfDocument,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
+import { participantReloadUrl } from '@klicker-uzh/shared-components/src/utils/participantSession'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import {
   Button,
@@ -196,10 +197,17 @@ function AccountSelector({
                 avatar: values.avatar !== '' ? values.avatar : undefined,
               },
               // refetch is required here to ensure up-to-date data with temporary leaderboard entry
-              refetchQueries: [{ query: SelfDocument }],
+              refetchQueries:
+                process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
+                  ? [{ query: SelfDocument }]
+                  : [],
             })
 
             if (data?.loginTemporaryParticipant) {
+              if (process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true') {
+                window.location.replace(participantReloadUrl())
+                return
+              }
               setLoginState('temporary')
               setOpen(false)
 

@@ -4,6 +4,10 @@ import {
   SelfDocument,
   SendMagicLinkDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import {
+  getSafeRedirectPath,
+  navigateParticipantSession,
+} from '@lib/participantSession'
 import { toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { GetServerSidePropsContext } from 'next'
@@ -16,31 +20,6 @@ import LoginForm from '../components/forms/LoginForm'
 
 interface LoginProps {
   redirectPath: string
-}
-
-function getSafeRedirectPath(
-  value: string | string[] | undefined,
-  pwaUrl: string,
-  chatUrl: string | undefined
-) {
-  const redirectTo = Array.isArray(value) ? value[0] : value
-  if (!redirectTo) return '/'
-
-  try {
-    const pwaOrigin = new URL(pwaUrl)
-    const target = new URL(redirectTo, pwaOrigin)
-    if (target.origin === pwaOrigin.origin) {
-      return `${target.pathname}${target.search}${target.hash}`
-    }
-
-    if (chatUrl && target.origin === new URL(chatUrl).origin) {
-      return target.toString()
-    }
-
-    return '/'
-  } catch {
-    return '/'
-  }
 }
 
 function Login({ redirectPath }: Readonly<LoginProps>) {
@@ -91,14 +70,10 @@ function Login({ redirectPath }: Readonly<LoginProps>) {
         })
         resetForm()
       } else {
-        await fetchSelf()
+        if (process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true') await fetchSelf()
 
         // redirect to the specified redirect path (default: question pool)
-        if (redirectPath.startsWith('/')) {
-          await router.push(redirectPath)
-        } else {
-          window.location.assign(redirectPath)
-        }
+        await navigateParticipantSession(router, redirectPath)
       }
     } catch (e) {
       console.error(e)

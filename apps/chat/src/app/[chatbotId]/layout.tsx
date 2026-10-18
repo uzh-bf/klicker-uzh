@@ -1,3 +1,4 @@
+import ParticipantSessionBoundary from '@klicker-uzh/shared-components/src/ParticipantSessionBoundary'
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { Assistant } from '../../components/assistant'
@@ -52,7 +53,9 @@ export default async function ChatLayout({
   )
 
   return (
-    <>
+    <ParticipantSessionBoundary
+      expectedRevision={cookieStore.get('participant_session')?.value ?? ''}
+    >
       <Assistant
         chatbot={{
           id: chatbot.id,
@@ -62,6 +65,6 @@ export default async function ChatLayout({
         initialModeOptions={initialModeOptions}
       />
       {children}
-    </>
+    </ParticipantSessionBoundary>
   )
 }

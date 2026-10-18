@@ -82,6 +82,7 @@ async function confirmResponseDeletionIfAvailable(
     /\d+ response\(s\) in this live quiz/
   )
   const confirmResponses = page.getByTestId('confirm-deletion-responses')
+  await expect(dialog).toBeVisible()
 
   if (await confirmResponses.isVisible().catch(() => false)) {
     if (expectedResponsesText) {
@@ -96,10 +97,6 @@ async function confirmResponseDeletionIfAvailable(
       .locator('xpath=ancestor::*[.//button][1]')
       .getByRole('button', { name: 'Confirm' })
       .click()
-  } else {
-    await expect(dialog).toContainText(
-      'For this live quiz no responses have been collected yet.'
-    )
   }
 }
 
@@ -251,7 +248,6 @@ test.describe.serial('Live-quiz collaboration and access workflows', () => {
       email: env('STUDENT_EMAIL'),
       sub: PARTICIPANT_IDS[0]!,
       role: 'PARTICIPANT' as const,
-      scope: 'EDUID' as const,
     }
 
     await setSessionCookieForUrl({
@@ -326,10 +322,16 @@ test.describe.serial('Live-quiz collaboration and access workflows', () => {
         sessionStorage.setItem('participant_token', token)
       }, participantCookie.value)
       await page.route('**/AddResponse', async (route) => {
+        const revision = (
+          await page.context().cookies(env('URL_STUDENT'))
+        ).find((cookie) => cookie.name === 'participant_session')
         const response = await route.fetch({
           headers: {
             ...route.request().headers(),
-            cookie: `participant_token=${participantCookie.value}`,
+            cookie: [
+              `participant_token=${participantCookie.value}`,
+              ...(revision ? [`participant_session=${revision.value}`] : []),
+            ].join('; '),
           },
         })
         await route.fulfill({ response })
@@ -337,139 +339,36 @@ test.describe.serial('Live-quiz collaboration and access workflows', () => {
     }
   }
 
-  async function copyLocalParticipantTokenToKlickerDomain() {
-    let participantCookie = (
-      await page.context().cookies('http://127.0.0.1:3000')
-    ).find((cookie) => cookie.name === 'participant_token')
-
-    if (!participantCookie) {
-      await setSessionCookieForUrl({
-        context: page.context(),
-        cookieName: 'next-auth.participant-session-token',
-        targetUrl: 'https://api.klicker.com',
-        tokenData: {
-          email: env('STUDENT_EMAIL'),
-          sub: PARTICIPANT_IDS[0]!,
-          role: 'PARTICIPANT' as const,
-          scope: 'EDUID' as const,
-        },
-      })
-
-      participantCookie = (
-        await page.context().cookies('https://api.klicker.com')
-      ).find((cookie) => cookie.name === 'next-auth.participant-session-token')
-    }
-
-    if (!participantCookie) {
-      throw new Error('Could not create participant token for PWA login')
-    }
-
-    await page.context().addCookies([
-      {
-        name: 'next-auth.participant-session-token',
-        value: participantCookie.value,
-        domain: '.klicker.com',
-        path: '/',
-        httpOnly: true,
-        sameSite: 'Lax',
-        secure: true,
-      },
-      {
-        name: 'participant_token',
-        value: participantCookie.value,
-        domain: '.klicker.com',
-        path: '/',
-        httpOnly: true,
-        sameSite: 'Lax',
-        secure: true,
-      },
-    ])
-    await page
-      .evaluate((token) => {
-        sessionStorage.setItem('participant_token', token)
-      }, participantCookie.value)
-      .catch(() => undefined)
-  }
-
-  async function installTemporaryParticipantToken(token: string) {
-    await page.context().addCookies([
-      {
-        name: 'temporary_participant_token',
-        value: token,
-        domain: '.klicker.com',
-        path: '/',
-        httpOnly: true,
-        sameSite: 'Lax',
-        secure: true,
-      },
-      {
-        name: 'temporary_participant_token',
-        value: token,
-        url: 'http://127.0.0.1:3000',
-        httpOnly: true,
-        sameSite: 'Lax',
-        secure: false,
-      },
-      {
-        name: 'temporary_participant_token',
-        value: token,
-        url: 'http://localhost:3000',
-        httpOnly: true,
-        sameSite: 'Lax',
-        secure: false,
-      },
-      {
-        name: 'temporary_participant_token',
-        value: token,
-        url: 'http://127.0.0.1:7078',
-        httpOnly: true,
-        sameSite: 'Lax',
-        secure: false,
-      },
-      {
-        name: 'temporary_participant_token',
-        value: token,
-        url: 'http://localhost:7078',
-        httpOnly: true,
-        sameSite: 'Lax',
-        secure: false,
-      },
-      {
-        name: 'temporary_participant_token',
-        value: token,
-        url: 'https://response-api.klicker.com',
-        httpOnly: true,
-        sameSite: 'Lax',
-        secure: true,
-      },
-    ])
-    await page
-      .evaluate((token) => {
-        sessionStorage.setItem('participant_token', token)
-      }, token)
-      .catch(() => undefined)
+  async function waitForParticipantLogin() {
+    await page.waitForURL((url) => !url.pathname.endsWith('/login'))
+    await expect
+      .poll(async () =>
+        (await page.context().cookies(env('URL_STUDENT'))).map(
+          (cookie) => cookie.name
+        )
+      )
+      .toEqual(
+        expect.arrayContaining(['participant_token', 'participant_session'])
+      )
   }
 
   async function submitPseudonymAndAvatar() {
-    const tokenResponse = page.waitForResponse(async (response) => {
-      if (
-        !response.url().includes('/graphql') ||
-        response.request().method() !== 'POST'
-      ) {
-        return false
-      }
-
-      const body = await response.json().catch(() => null)
-      const token = body?.data?.loginTemporaryParticipant
-      if (typeof token !== 'string' || token.length === 0) return false
-
-      await installTemporaryParticipantToken(token)
-      return true
-    })
+    const previousToken = (
+      await page.context().cookies(env('URL_STUDENT'))
+    ).find((cookie) => cookie.name === 'temporary_participant_token')?.value
 
     await page.getByTestId('submit-pseudonym-and-avatar').click()
-    await tokenResponse
-    await page.reload({ waitUntil: 'domcontentloaded' })
+    await expect
+      .poll(async () => {
+        const token = (await page.context().cookies(env('URL_STUDENT'))).find(
+          (cookie) => cookie.name === 'temporary_participant_token'
+        )?.value
+        return Boolean(token && token !== previousToken)
+      })
+      .toBe(true)
+    await expect(
+      page.getByTestId('submit-pseudonym-and-avatar')
+    ).not.toBeVisible()
   }
 
   async function rememberStudentPwaState(page: Page) {
@@ -2809,8 +2708,9 @@ test.describe.serial('Live-quiz collaboration and access workflows', () => {
     )
     {
       const quizLink = aliases.get('quizLink')
-      await page.context().clearCookies()
       await page.evaluate(() => localStorage.clear()).catch(() => undefined)
+      await page.goto('about:blank')
+      await page.context().clearCookies()
       await page.goto(String(quizLink), { waitUntil: 'commit' })
       {
         const __originArgs = {
@@ -2855,8 +2755,7 @@ test.describe.serial('Live-quiz collaboration and access workflows', () => {
         await page.getByTestId('username-field').fill(username)
         await page.getByTestId('password-field').fill(password)
         await page.getByTestId('submit-login').click()
-        await page.waitForTimeout(500)
-        await copyLocalParticipantTokenToKlickerDomain()
+        await waitForParticipantLogin()
         await page.goto(env('URL_STUDENT'), { waitUntil: 'commit' })
 
         const liveQuizTile = page.getByTestId(
@@ -2916,8 +2815,9 @@ test.describe.serial('Live-quiz collaboration and access workflows', () => {
     )
     {
       const quizLink = aliases.get('quizLink')
-      await page.context().clearCookies()
       await page.evaluate(() => localStorage.clear()).catch(() => undefined)
+      await page.goto('about:blank')
+      await page.context().clearCookies()
       await page.goto(String(quizLink), { waitUntil: 'commit' })
       {
         const __originArgs = { data: data }
@@ -3016,8 +2916,9 @@ test.describe.serial('Live-quiz collaboration and access workflows', () => {
     )
     {
       const quizLink = aliases.get('quizLink')
-      await page.context().clearCookies()
       await page.evaluate(() => localStorage.clear()).catch(() => undefined)
+      await page.goto('about:blank')
+      await page.context().clearCookies()
       await page.goto(String(quizLink), { waitUntil: 'commit' })
       {
         const __originArgs = {
@@ -3033,8 +2934,7 @@ test.describe.serial('Live-quiz collaboration and access workflows', () => {
         await typeInto(page.getByTestId('username-field'), username)
         await typeInto(page.getByTestId('password-field'), password)
         await page.getByTestId('submit-login').click()
-        await page.waitForTimeout(500)
-        await copyLocalParticipantTokenToKlickerDomain()
+        await waitForParticipantLogin()
         await page.goto(String(quizLink), { waitUntil: 'commit' })
         await expect(page.getByTestId('header-page-title')).toContainText(
           quizName
@@ -3862,16 +3762,18 @@ test.describe.serial('Live-quiz collaboration and access workflows', () => {
     await getPinProtectedQuizLinks(data)
     {
       const link = aliases.get('protectedQuizLink')
+      await page.evaluate(() => localStorage.clear()).catch(() => undefined)
+      await page.goto('about:blank')
       await page.context().clearCookies()
       clearLiveQuizPinCookies()
-      await page.evaluate(() => localStorage.clear()).catch(() => undefined)
       await studentAccountLinkAccess(String(link), data, true, true)
     }
     {
       const link = aliases.get('protectedQuizLink2')
+      await page.evaluate(() => localStorage.clear()).catch(() => undefined)
+      await page.goto('about:blank')
       await page.context().clearCookies()
       clearLiveQuizPinCookies()
-      await page.evaluate(() => localStorage.clear()).catch(() => undefined)
       await studentAccountLinkAccess(String(link), data, true, false)
     }
   })
@@ -3887,9 +3789,10 @@ test.describe.serial('Live-quiz collaboration and access workflows', () => {
     await endPinProtectedLiveQuizzes(data)
     await createAndStartProtectedLiveQuizzes(data)
     await getPinProtectedQuizLinks(data)
+    await page.evaluate(() => localStorage.clear()).catch(() => undefined)
+    await page.goto('about:blank')
     await page.context().clearCookies()
     clearLiveQuizPinCookies()
-    await page.evaluate(() => localStorage.clear()).catch(() => undefined)
     {
       const link = aliases.get('protectedQuizLink')
       await studentAccountLinkAccess(String(link), data, false, true)

@@ -15,6 +15,8 @@ export default function useParticipantToken({
   const router = useRouter()
 
   useEffect(() => {
+    // Regular clients authenticate through the shared cookie.
+    if (process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true') return
     if (typeof participantToken === 'string') {
       if (!cookiesAvailable) {
         if (!sessionStorage.getItem('participant_token')) {

@@ -1,8 +1,9 @@
 import { prisma as prismaClient } from '@klicker-uzh/prisma'
-import { PrismaClient, UserLoginScope } from '@klicker-uzh/prisma/client'
-import { signJWT } from '@klicker-uzh/util'
+import { type PrismaClient, UserLoginScope } from '@klicker-uzh/prisma/client'
+import { signJWT, verifyJWT } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import { EventEmitter } from 'events'
+import type { CookieOptions } from 'express'
 import {
   afterAll,
   afterEach,
@@ -15,6 +16,7 @@ import {
 import type { Context } from '../src/lib/context.js'
 import {
   activateParticipantAccount,
+  deleteParticipantAccount,
   loginParticipant,
   loginParticipantMagicLink,
 } from '../src/services/accounts.js'
@@ -120,6 +122,15 @@ describe('loginParticipant email/username login', () => {
     )
 
     expect(result).toBe(participant.id)
+    expect(ctx.res.cookie).toHaveBeenCalledWith(
+      'participant_token',
+      expect.any(String),
+      expect.objectContaining({
+        maxAge: 1000 * 60 * 60 * 24 * 13,
+        path: '/',
+        httpOnly: true,
+      })
+    )
     expect(ctx.res.cookie).toHaveBeenCalledWith(
       'lti-token',
       '',
@@ -407,5 +418,161 @@ describe('loginParticipant email/username login', () => {
     )
 
     expect(result).toBe(usernameMatch.id)
+  })
+})
+
+describe('Participant session cookie retention', () => {
+  it('bounds registered cookies by signed expiry and expires legacy state first', async () => {
+    process.env.APP_SECRET = 'synthetic-participant-cookie-secret'
+    const ctx = createCtx()
+    ctx.prisma = {
+      participant: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'synthetic-participant',
+          locale: 'en',
+          password: await bcrypt.hash('synthetic-password', 4),
+        }),
+        update: vi.fn().mockResolvedValue({}),
+      },
+    } as any
+    expect(
+      await loginParticipant(
+        { usernameOrEmail: 'synthetic-user', password: 'synthetic-password' },
+        ctx
+      )
+    ).toBe('synthetic-participant')
+    const calls = vi.mocked(ctx.res.cookie).mock.calls as unknown as [
+      string,
+      unknown,
+      CookieOptions,
+    ][]
+    const issuance = calls.find(
+      ([name, , options]) =>
+        name === 'participant_token' && (options?.maxAge ?? 0) > 0
+    )!
+    const claims = await verifyJWT(
+      issuance[1] as string,
+      process.env.APP_SECRET
+    )
+    const revision = calls.find(([name]) => name === 'participant_session')!
+    expect(revision[1]).toEqual(expect.any(String))
+    expect(revision[2]).toMatchObject({ ...issuance[2], httpOnly: false })
+    await loginParticipant(
+      { usernameOrEmail: 'synthetic-user', password: 'synthetic-password' },
+      ctx
+    )
+    const revisions = vi
+      .mocked(ctx.res.cookie)
+      .mock.calls.filter(([name]) => name === 'participant_session')
+    expect(revisions.at(-1)?.[1]).not.toBe(revision[1])
+    expect(issuance[2]).toMatchObject({
+      maxAge: 1000 * 60 * 60 * 24 * 13,
+      httpOnly: true,
+      path: '/',
+      // A request without a cookie-domain origin never receives SameSite=None.
+      sameSite: 'lax',
+    })
+    expect(issuance[2]!.maxAge! / 1000).toBeLessThanOrEqual(
+      claims.exp! - Date.now() / 1000
+    )
+    expect(
+      calls.findIndex(
+        ([name, , options]) =>
+          name === 'participant_token' &&
+          options?.partitioned === true &&
+          options.maxAge === 0
+      )
+    ).toBeLessThan(calls.indexOf(issuance))
+    expect(ctx.res.cookie).toHaveBeenCalledWith(
+      'lti-token',
+      '',
+      expect.objectContaining({ maxAge: 0 })
+    )
+  })
+
+  it('issues cross-site-capable cookies only to origins inside the cookie domain', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('COOKIE_DOMAIN', '.klicker.test')
+    vi.stubEnv('APP_SECRET', 'synthetic-participant-cookie-secret')
+    vi.resetModules()
+    try {
+      const accounts = await import('../src/services/accounts.js')
+      const sameSiteFor = async (origin: string) => {
+        const ctx = createCtx()
+        ctx.req = { locals: {}, headers: { origin } } as any
+        ctx.prisma = {
+          participant: {
+            findUnique: vi.fn().mockResolvedValue({
+              id: 'synthetic-participant',
+              locale: 'en',
+              password: await bcrypt.hash('synthetic-password', 4),
+            }),
+            update: vi.fn().mockResolvedValue({}),
+          },
+        } as any
+        await accounts.loginParticipant(
+          {
+            usernameOrEmail: 'synthetic-user',
+            password: 'synthetic-password',
+          },
+          ctx
+        )
+        const calls = vi.mocked(ctx.res.cookie).mock.calls as unknown as [
+          string,
+          unknown,
+          CookieOptions,
+        ][]
+        return calls.find(
+          ([name, , options]) =>
+            name === 'participant_token' && (options?.maxAge ?? 0) > 0
+        )?.[2].sameSite
+      }
+      expect(await sameSiteFor('https://pwa.klicker.test')).toBe('none')
+      expect(await sameSiteFor('https://pwa.klicker.test.example')).toBe('lax')
+      expect(await sameSiteFor('https://foreign.example')).toBe('lax')
+    } finally {
+      vi.unstubAllEnvs()
+      vi.resetModules()
+    }
+  })
+})
+
+describe('Participant deletion session cleanup', () => {
+  it('expires all participant credentials after committed deletion and preserves them on rejection', async () => {
+    const ctx = {
+      ...createCtx(),
+      user: { sub: 'synthetic-participant' },
+    } as any
+    ctx.prisma = {
+      participant: {
+        findUnique: vi.fn().mockResolvedValue({ participantGroups: [] }),
+        delete: vi.fn().mockResolvedValue({}),
+      },
+      $transaction: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('synthetic rejection'))
+        .mockResolvedValueOnce([]),
+    }
+    await expect(deleteParticipantAccount(ctx)).rejects.toThrow(
+      'synthetic rejection'
+    )
+    expect(ctx.res.cookie).not.toHaveBeenCalled()
+    expect(await deleteParticipantAccount(ctx)).toBe(true)
+    for (const name of [
+      'participant_token',
+      'temporary_participant_token',
+      'next-auth.participant-session-token',
+    ]) {
+      expect(ctx.res.cookie).toHaveBeenCalledWith(
+        name,
+        expect.any(String),
+        expect.objectContaining({ maxAge: 0 })
+      )
+    }
+    expect(ctx.res.cookie).toHaveBeenCalledWith(
+      'participant_session',
+      expect.any(String),
+      expect.objectContaining({ httpOnly: false })
+    )
   })
 })

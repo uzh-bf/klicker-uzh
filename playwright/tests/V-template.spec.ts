@@ -2514,6 +2514,7 @@ test.describe
         await page.getByTestId('password-field').click()
         await typeInto(page.getByTestId('password-field'), password)
         await page.getByTestId('submit-login').click()
+        await expect(page.getByTestId('homepage')).toBeVisible()
         await page.goto(`${env('URL_STUDENT')}/session/${quizId}`, {
           waitUntil: 'commit',
         })
@@ -2649,6 +2650,7 @@ test.describe
         await page.getByTestId('password-field').click()
         await typeInto(page.getByTestId('password-field'), password)
         await page.getByTestId('submit-login').click()
+        await expect(page.getByTestId('homepage')).toBeVisible()
         await page.goto(`${env('URL_STUDENT')}/session/${quizId}`, {
           waitUntil: 'commit',
         })
@@ -2790,6 +2792,7 @@ test.describe
         await page.getByTestId('password-field').click()
         await typeInto(page.getByTestId('password-field'), password)
         await page.getByTestId('submit-login').click()
+        await expect(page.getByTestId('homepage')).toBeVisible()
         await page.goto(`${env('URL_STUDENT')}/session/${quizId}`, {
           waitUntil: 'commit',
         })

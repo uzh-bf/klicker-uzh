@@ -7,16 +7,22 @@ import {
   Token,
 } from '@capacitor/push-notifications'
 import { config } from '@fortawesome/fontawesome-svg-core'
+import ParticipantSessionBoundary from '@klicker-uzh/shared-components/src/ParticipantSessionBoundary'
 import '@fortawesome/fontawesome-svg-core/styles.css'
 import { getMessageFallback, onError, routing } from '@klicker-uzh/i18n'
 import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
+import {
+  adoptFrameSession,
+  participantReloadUrl,
+} from '@klicker-uzh/shared-components/src/utils/participantSession'
 import { useApollo } from '@lib/apollo'
 import { init } from '@socialgouv/matomo-next'
 import { Toaster } from '@uzh-bf/design-system'
 import { Locale, NextIntlClientProvider } from 'next-intl'
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 
 import 'katex/dist/katex.min.css'
 import '../globals.css'
@@ -27,9 +33,45 @@ const MATOMO_URL = process.env.NEXT_PUBLIC_MATOMO_URL
 const MATOMO_SITE_ID = process.env.NEXT_PUBLIC_MATOMO_SITE_ID
 
 function App({ Component, pageProps }: AppProps) {
-  const { locale } = useRouter()
+  const router = useRouter()
+  const { locale } = router
 
+  // The only navigation after an accepted launch: a page may name where the
+  // participant continues; otherwise the consumed handoff leaves the URL.
+  const sessionDestination: string | undefined = pageProps.sessionDestination
+  const discardAcceptedHandoff = useCallback(() => {
+    if (sessionDestination) {
+      void router.replace(sessionDestination)
+      return
+    }
+    const destination = participantReloadUrl()
+    if (destination !== window.location.href) {
+      void router.replace(destination, undefined, { shallow: true })
+    }
+  }, [router, sessionDestination])
+
+  // Before the client exists: a frame session must authenticate its first
+  // requests and must not hydrate data fetched without its credential.
+  if (
+    typeof window !== 'undefined' &&
+    process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true'
+  )
+    adoptFrameSession(pageProps.frameToken)
   const apolloClient = useApollo(pageProps)
+  const recovering =
+    process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
+    (pageProps.sessionState === 'rejected' ||
+      pageProps.sessionState === 'exchange_unavailable')
+  useEffect(() => {
+    // The rejected-launch navigation must win over the session boundary's
+    // credential-stripped revision reload. A full navigation also rebinds the
+    // page to the cookies the browser actually holds.
+    if (recovering) {
+      const prefix =
+        locale && locale !== routing.defaultLocale ? `/${locale}` : ''
+      window.location.replace(`${prefix}/serverError?freshLaunch=true`)
+    }
+  }, [recovering, locale])
 
   useEffect(() => {
     if (MATOMO_URL && MATOMO_SITE_ID) {
@@ -102,7 +144,19 @@ function App({ Component, pageProps }: AppProps) {
       >
         <ApolloProvider client={apolloClient}>
           <Toaster closeButton position="top-right" />
-          <Component {...pageProps} />
+          {process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true' ? (
+            <Component {...pageProps} />
+          ) : recovering ? (
+            <Loader />
+          ) : (
+            <ParticipantSessionBoundary
+              expectedRevision={pageProps.sessionRevision}
+              requireCookie={pageProps.sessionEstablished}
+              onSessionEstablished={discardAcceptedHandoff}
+            >
+              <Component {...pageProps} />
+            </ParticipantSessionBoundary>
+          )}
         </ApolloProvider>
       </NextIntlClientProvider>
       <style>{`
