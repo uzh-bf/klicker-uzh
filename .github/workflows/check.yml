@@ -150,6 +150,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Test evaluation launcher without private submodule access
+        timeout-minutes: 10
         run: |
           node --test util/read-klicker-eval-config.test.mjs
           bash util/test-klicker-eval-wrapper.sh

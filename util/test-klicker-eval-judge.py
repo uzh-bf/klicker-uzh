@@ -239,13 +239,14 @@ class JudgeTests(unittest.TestCase):
 )
 class GatewayTests(unittest.IsolatedAsyncioTestCase):
     async def test_proxy_preserves_one_send_per_admitted_attempt(self) -> None:
-        os.environ.update(
-            LITELLM_LOCAL_MODEL_COST_MAP="True",
-            LITELLM_LOG="ERROR",
-            AZURE_OPENAI_BASE_URL="https://synthetic.invalid/v1",
-            AZURE_OPENAI_API_KEY="synthetic-upstream-key",
-        )
         with (
+            patch.dict(
+                os.environ,
+                LITELLM_LOCAL_MODEL_COST_MAP="True",
+                LITELLM_LOG="ERROR",
+                AZURE_OPENAI_BASE_URL="https://synthetic.invalid/v1",
+                AZURE_OPENAI_API_KEY="synthetic-upstream-key",
+            ),
             patch.object(socket, "getaddrinfo", side_effect=AssertionError("network")),
             patch.object(
                 socket.socket, "connect", side_effect=AssertionError("network")

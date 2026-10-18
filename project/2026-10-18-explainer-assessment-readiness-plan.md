@@ -50,6 +50,8 @@ disabled to verify the real proxy configuration and HTTP completion entrypoint.
 Require one upstream send on success and server failure, with the model,
 reasoning setting, strict response schema and output bound preserved. The
 unmodified retry defaults must reproduce amplification as a negative control.
+Bound the existing CI launcher step to ten minutes and restore synthetic
+environment settings when the image regression exits, including on failure.
 
 This is one full-path repair slice because retry amplification crosses the
 approved cost boundary. Main owns configuration, synthetic integration and
@@ -338,7 +340,10 @@ nonvisual gateway change. A deliberate `v3` integration at
 the branch before draft verification; unrelated target changes are not part
 of this repair. The approved implementation plan passed one Astra planner
 round. The slice risk review passed with no findings; the dedicated simplifier
-found no justified net reduction. Integrated final review and hosted checks
-continue at the draft boundary, with reports retained privately. The package
-contains 166 substantive added lines including the existing solution update.
+found no justified net reduction. Integrated final review passed. Draft feedback
+subsequently added the bounded CI step and scoped test environment; the same
+ten-test proxy suite and 43 CI-contract tests pass after those corrections.
+Exact-head hosted outcomes are linked from the draft's checks, with detailed
+reports retained privately. Before review corrections, the package contained
+166 substantive added lines including the existing solution update.
 It introduces no new evaluator implementation or source module.
