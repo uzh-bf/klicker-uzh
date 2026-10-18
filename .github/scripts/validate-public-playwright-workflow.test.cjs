@@ -9,6 +9,7 @@ const YAML = require('yaml')
 const {
   EXPECTED_CALL,
   validateCallerLifecycle,
+  validatePublicRunnerRoles,
   validatePublicPlaywrightWorkflow,
 } = require('./validate-public-playwright-workflow.cjs')
 
@@ -63,6 +64,60 @@ test('the current public workflow satisfies the runner trust boundary', () => {
     seedWorkflow,
     /git config --global --add safe\.directory "\$GITHUB_WORKSPACE"/
   )
+})
+
+test('public runner jobs require their exact scheduling role and reject unknown pool jobs', () => {
+  const source = YAML.parse(
+    fs.readFileSync(
+      path.join(__dirname, '../workflows/public-pr-playwright-shards.yml'),
+      'utf8'
+    )
+  )
+  assert.deepEqual(validatePublicRunnerRoles(source), [])
+  const build = 'build-and-compile-public-pr'
+  const shard = 'test-playwright-public-pr'
+  for (const mutate of [
+    (w) => w.jobs[build]['runs-on'].labels.pop(),
+    (w) => w.jobs[shard]['runs-on'].labels.pop(),
+    (w) => {
+      w.jobs[build]['runs-on'] = w.jobs[shard]['runs-on']
+    },
+    (w) => {
+      w.jobs[shard]['runs-on'] = w.jobs[build]['runs-on']
+    },
+    (w) => {
+      w.jobs[build]['runs-on'].labels[0] = 'unknown'
+    },
+    (w) => {
+      w.jobs[shard]['runs-on'].group = 'other'
+    },
+    (w) => {
+      w.jobs[build]['runs-on'].labels.push('playwright-shard')
+    },
+    (w) => {
+      w.jobs.unexpected = { 'runs-on': w.jobs[build]['runs-on'] }
+    },
+    (w) => {
+      w.jobs.unexpected = { 'runs-on': ['self-hosted', 'public-pr-arm64'] }
+    },
+    (w) => {
+      w.jobs.unexpected = { 'runs-on': 'playwright' }
+    },
+    (w) => {
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: GitHub expression syntax is literal test input.
+      w.jobs.unexpected = { 'runs-on': { group: '${{ inputs.group }}' } }
+    },
+    (w) => {
+      delete w.jobs[build]
+    },
+  ]) {
+    const workflow = structuredClone(source)
+    mutate(workflow)
+    assert.ok(validatePublicRunnerRoles(workflow).length > 0)
+  }
+  // Label order has no scheduling meaning.
+  source.jobs[build]['runs-on'].labels.reverse()
+  assert.deepEqual(validatePublicRunnerRoles(source), [])
 })
 
 function runBuildStep(t, route, graph, { filters = true, failure = '' } = {}) {

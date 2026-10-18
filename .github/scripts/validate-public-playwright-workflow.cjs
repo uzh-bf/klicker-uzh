@@ -161,6 +161,45 @@ function namedSteps(text) {
   return text.split(/\n(?=\s+- name: )/)
 }
 
+function validatePublicRunnerRoles(workflow) {
+  const issues = []
+  const roles = {
+    'build-and-compile-public-pr': 'playwright-build',
+    'test-playwright-public-pr': 'playwright-shard',
+  }
+  const jobs = workflow?.jobs ?? {}
+  for (const [name, role] of Object.entries(roles)) {
+    const runner = jobs[name]?.['runs-on']
+    const expected = [
+      'linux',
+      'arm64',
+      'docker',
+      'public-pr-arm64',
+      'playwright',
+      role,
+    ].sort()
+    if (
+      runner?.group !== 'public-pr-arm64' ||
+      !Array.isArray(runner.labels) ||
+      JSON.stringify([...runner.labels].sort()) !== JSON.stringify(expected)
+    ) {
+      issues.push(
+        `${name} must use the exact public pool labels and ${role} role`
+      )
+    }
+  }
+  for (const [name, job] of Object.entries(jobs)) {
+    if (Object.hasOwn(roles, name)) continue
+    const runner = job?.['runs-on']
+    // Dynamic selectors and generic labels can reach the pool without spelling
+    // its name. Every other job stays on a known GitHub-hosted selector.
+    if (!['ubuntu-latest', 'ubuntu-24.04'].includes(runner)) {
+      issues.push(`${name} is an unknown self-hosted pool job`)
+    }
+  }
+  return issues
+}
+
 function validatePublicPlaywrightWorkflow(root) {
   const issues = []
   const caller = readWorkflow(root, 'test-playwright.yml', issues)
@@ -275,17 +314,7 @@ function validatePublicPlaywrightWorkflow(root) {
     )
   }
 
-  const publicRunnerCount = (
-    publicWorkflow.match(/group:\s+public-pr-arm64/g) ?? []
-  ).length
-  const publicLabelCount = (
-    publicWorkflow.match(/public-pr-arm64, playwright/g) ?? []
-  ).length
-  if (publicRunnerCount !== 2 || publicLabelCount !== 2) {
-    issues.push(
-      'both public execution jobs must use the exact public-pr-arm64 labels'
-    )
-  }
+  issues.push(...validatePublicRunnerRoles(publicParsed))
 
   const buildActionCount = (
     publicWorkflow.match(
@@ -469,6 +498,7 @@ if (require.main === module) main()
 
 module.exports = {
   validateCallerLifecycle,
+  validatePublicRunnerRoles,
   EXPECTED_BUILD_ACTION,
   EXPECTED_CALL,
   EXPECTED_SHARD_ACTION,

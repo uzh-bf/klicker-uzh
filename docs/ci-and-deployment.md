@@ -767,6 +767,73 @@ restrictions enabled, and only
 The script fails on inherited or read-only policy, extra repositories or
 workflows, and runner membership other than `public-pr-arm64-01` through `-08`.
 
+### Public build and shard scheduling roles
+
+The public build job additionally requires `playwright-build`; public shards
+require `playwright-shard`. Both retain the same group and generic labels.
+Use one already-active dual-role runner per physical host. Other approved active
+runners receive only the shard role; held runners receive neither role.
+GitHub schedules one job per runner, so this limits builds to one per mapped
+host while keeping dual-role runners available for shards. A build can wait
+behind a shard. This does not reserve build priority, cap memory, qualify another
+active slot, or prove natural failure recovery. Hosted fallback is unchanged.
+
+The same policy CLI has separate role modes. Prepare a complete, task-private
+JSON map with a root `runners` array covering all eight exact identities. Each
+entry has `id` (numeric GitHub runner ID), `name`, `host` (verified physical-host
+alias), `state` (`active` or `held`), `roles`, and `priorCustomLabels`. Use
+`["build", "shard"]` for the one active build runner on each of the two hosts,
+`["shard"]` for other active runners, and `[]` for held runners. Capture every
+prior custom label exactly as returned by the API, including unrelated labels
+and any existing role labels. The desired set preserves unrelated labels and
+replaces only the two role labels. Real maps, receipts and host observations
+belong outside the repository and CI artifacts.
+
+```bash
+util/reconcile-public-pr-arm64-runner-group.sh --check-roles "$PRIVATE_ROLE_MAP"
+util/reconcile-public-pr-arm64-runner-group.sh --apply-roles "$PRIVATE_ROLE_MAP" \
+  --receipt "$NEW_PRIVATE_RECEIPT"
+```
+
+Read permission suffices for role checks; role apply needs Self-hosted runners
+write permission and a separate `APPLY PUBLIC PR RUNNER ROLES` confirmation.
+Neither role mode repairs group access or changes membership, registration or
+services. Both require the exact locked policy, complete API responses and
+ID/name agreement. Checks verify the complete desired custom-label sets.
+Apply also requires every runner idle, active runners online and held runners
+offline. It compares every prior custom-label set before any write, rechecks
+group policy and the target's labels before each write, and verifies all desired
+sets again at completion. An API denial blocks the operation; it never grants
+permission to expand credentials.
+
+The map is an operator assertion about physical hosts and held services. GitHub
+metadata cannot prove that mapping or service enablement. Before a separately
+approved rollout, verify the actual hosts and service states, record the current
+dispatch variable, pause new public dispatch and drain already-planned, queued
+and running generic-lane jobs. A route-variable change cannot reroute those jobs.
+Use one operator for the window: label writes are sequential. This tool has no
+atomic multi-runner transaction or compare-and-swap protection. Install/read back labels before
+the normally approved source merge, verify the merged selectors, then restore
+and read back the exact prior routing value. Preserve all active/held service
+states and existing capacity.
+
+Apply creates a new owner-private JSONL receipt before the first API write. It
+records complete prior/desired sets, attempted writes and verified readbacks.
+Only a terminal `complete` record attests the full batch; an interrupted or
+`stopped` batch is unverified even if some writes succeeded. On failure, stop new
+writes and retain the recorded dispatch pause. Use the receipt for separately
+approved recovery after fresh reads; never overwrite concurrent label changes.
+Before source merge, recovery restores exact prior labels and verifies generic
+routing compatibility before restoring dispatch. After source merge, retain role
+labels for queued role-specific work; rollback needs an approved source revert
+and drain before restoring labels. Removing labels does not stop assigned jobs.
+
+Verify actual build, shard and required aggregate producers after rollout, with
+assignments covering both approved hosts and bounded host health readback. Green
+source CI or a successful label API response does not establish live acceptance.
+
+### Existing host recovery policy
+
 Check both existing hosts from the administrator machine before applying the
 optional optimization. Verify and register both SSH host keys before running
 the controller; unknown or changed keys are rejected. Pause new workflow
