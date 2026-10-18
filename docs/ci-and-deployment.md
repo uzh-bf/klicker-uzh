@@ -742,6 +742,35 @@ Unrelated issue comments are filtered before Final AI review allocates its
 trusted-policy runner. PR lifecycle status handling and exact review commands
 retain their existing authorization and serialized status locks.
 
+## Isolated WarpBuild qualification
+
+`warpbuild-playwright-trial.yml` is a separate experiment, not ordinary PR
+validation. The prepare job's initial `false` condition keeps it disabled. It accepts only
+the `rs/warpbuild-qualification` branch and first run attempts. Workflow-file
+pushes provide a branch-only entry before a new manual workflow is registered on
+the default branch. Enable only through a reviewed configuration commit after
+the private preflight; no inherited repository or organization variable can
+enable the published disabled version.
+
+Before enabling it, verify the actual provider connection, complete runner-group
+policy and billing controls. Keep the submission count, consumed cost and
+in-flight reservations in private operator records. The workflow's wave ordinal
+and timeouts do not enforce an account-wide spending cap. Stop new submissions
+when the approved budget cannot cover the next wave and existing reservations.
+Keep the existing pool and required-check routing unchanged.
+
+Each wave freezes its candidate SHA, provider, runner sizes and cache setting in
+the workflow. It reuses the pinned public build and shard actions and service
+topology. Hetzner controls use their existing allowed workflow; the trial does
+not add a new workflow to that runner group's policy. The selector's
+same-revision plan runs the complete
+ordinary eight-shard suite; separately designated production tests retain their
+existing lane. `public-pr` in shared telemetry describes the trust lane, not the
+provider: use the trial configuration and actual job assignments for comparisons.
+Inspect all producer steps and the separate trial aggregate before accepting a
+wave. Keep actual billing, resource observations and forecasts out of repository
+and CI artifacts. See the [qualification plan](../project/2026-10-18-warpbuild-qualification-plan.md).
+
 ## Public ARM64 runner operations
 
 Run the policy reconciler from a trusted administrator checkout. Both modes

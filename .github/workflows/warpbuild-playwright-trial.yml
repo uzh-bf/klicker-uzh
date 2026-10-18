@@ -1,0 +1,229 @@
+name: Qualify WarpBuild Playwright runners
+
+on:
+  push:
+    branches: [rs/warpbuild-qualification]
+    paths: [.github/workflows/warpbuild-playwright-trial.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# These values form one immutable experiment configuration. Change only one
+# measured factor between paired waves and reserve its cost before pushing.
+env:
+  TRIAL_SOURCE_SHA: f50c46bcb16193876f2ba60da1651d4364947d8d
+  TRIAL_CONTROL_SHA: f50c46bcb16193876f2ba60da1651d4364947d8d
+  TRIAL_WAVE: '1'
+  TRIAL_PROVIDER: warpbuild
+  TRIAL_BUILD_LABEL: warp-ubuntu-2404-arm64-8x
+  TRIAL_SHARD_LABEL: warp-ubuntu-2404-arm64-4x
+  TRIAL_CACHE_ENABLED: 'true'
+
+jobs:
+  prepare:
+    # Keep the first condition false until the operator verifies group policy
+    # and billing. Enabling this requires a reviewed configuration commit.
+    if: >-
+      false &&
+      github.repository == 'uzh-bf/klicker-uzh' &&
+      github.ref == 'refs/heads/rs/warpbuild-qualification' &&
+      github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      source_sha: ${{ steps.plan.outputs.source_sha }}
+      build_runner: ${{ steps.plan.outputs.build_runner }}
+      shard_runner: ${{ steps.plan.outputs.shard_runner }}
+      shard_matrix: ${{ steps.plan.outputs.shard_matrix }}
+    steps:
+      - name: Check out reviewed trial control
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          path: .ci-control
+          persist-credentials: false
+
+      - name: Check out exact public candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ env.TRIAL_SOURCE_SHA }}
+          path: .candidate
+          persist-credentials: false
+
+      - name: Prepare a complete paired validation
+        id: plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C .candidate rev-parse HEAD)" = "$TRIAL_SOURCE_SHA"
+          node .ci-control/.github/scripts/playwright-selector.cjs \
+            --control-root .ci-control --candidate-root .candidate \
+            --base-sha "$TRIAL_SOURCE_SHA" --head-sha "$TRIAL_SOURCE_SHA" \
+            --pr-state ready --output playwright-execution-plan.json
+          node <<'NODE'
+          const fs = require('node:fs')
+          const env = process.env
+          if (!/^[a-f0-9]{40}$/.test(env.TRIAL_SOURCE_SHA) ||
+              !/^(?:[1-9]|1[0-2])$/.test(env.TRIAL_WAVE) ||
+              !['true', 'false'].includes(env.TRIAL_CACHE_ENABLED)) {
+            throw new Error('invalid bounded trial configuration')
+          }
+          if (!/^warp-ubuntu-2404-arm64-(?:8|16)x$/.test(env.TRIAL_BUILD_LABEL) ||
+              !/^warp-ubuntu-2404-arm64-(?:2|4|8)x$/.test(env.TRIAL_SHARD_LABEL)) {
+            throw new Error('runner sizes are outside the trial candidates')
+          }
+          if (env.TRIAL_PROVIDER !== 'warpbuild') {
+            throw new Error('unsupported trial provider')
+          }
+          const buildRunner = { group: 'Default', labels: env.TRIAL_BUILD_LABEL }
+          const shardRunner = { group: 'Default', labels: env.TRIAL_SHARD_LABEL }
+          const plan = JSON.parse(fs.readFileSync('playwright-execution-plan.json'))
+          if (plan.mode !== 'full' || plan.shardCount !== 8 || plan.shards.length !== 8 ||
+              JSON.stringify(plan.selectedSpecs) !== JSON.stringify(plan.candidateSpecs) ||
+              plan.headSha !== env.TRIAL_SOURCE_SHA || plan.baseSha !== env.TRIAL_SOURCE_SHA) {
+            throw new Error('trial requires complete same-source eight-shard coverage')
+          }
+          const matrix = { include: plan.shards.map(({ shardIndex, shardTotal }) => ({ shardIndex, shardTotal })) }
+          fs.appendFileSync(env.GITHUB_OUTPUT, [
+            `source_sha=${env.TRIAL_SOURCE_SHA}`,
+            `build_runner=${JSON.stringify(buildRunner)}`,
+            `shard_runner=${JSON.stringify(shardRunner)}`,
+            `shard_matrix=${JSON.stringify(matrix)}`,
+            '',
+          ].join('\n'))
+          fs.appendFileSync(env.GITHUB_STEP_SUMMARY, [
+            '### Isolated runner qualification', '',
+            `- Wave: ${env.TRIAL_WAVE}`,
+            `- Provider: ${env.TRIAL_PROVIDER}`,
+            `- Candidate: ${env.TRIAL_SOURCE_SHA}`,
+            `- Control: ${env.GITHUB_SHA}`,
+            `- Restore caches: ${env.TRIAL_CACHE_ENABLED}`,
+            '- Shared telemetry route public-pr describes the trust lane; provider comes from this configuration and actual job assignment.',
+            '',
+          ].join('\n'))
+          NODE
+
+      - name: Upload canonical execution plan
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: playwright-execution-plan
+          path: playwright-execution-plan.json
+          if-no-files-found: error
+          retention-days: 7
+
+  build:
+    needs: prepare
+    runs-on: ${{ fromJSON(needs.prepare.outputs.build_runner) }}
+    timeout-minutes: 45
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
+    steps:
+      - name: Check out exact public candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.prepare.outputs.source_sha }}
+          persist-credentials: false
+      - name: Build shared Playwright artifact
+        uses: uzh-bf/klicker-uzh/.github/actions/playwright-build@f50c46bcb16193876f2ba60da1651d4364947d8d
+        with:
+          route: public-pr
+          mode: full
+          cache-enabled: ${{ env.TRIAL_CACHE_ENABLED }}
+
+  shards:
+    needs: [prepare, build]
+    runs-on: ${{ fromJSON(needs.prepare.outputs.shard_runner) }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix: ${{ fromJSON(needs.prepare.outputs.shard_matrix) }}
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
+      volumes:
+        - hatchet_lite_config_${{ github.run_id }}_${{ github.run_attempt }}_${{ matrix.shardIndex }}:/config
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: klicker-prod
+          POSTGRES_PASSWORD: klicker #ggignore: fixed local test-service credential
+          POSTGRES_DB: klicker-prod
+        options: >-
+          --health-cmd "pg_isready -U klicker-prod -d klicker-prod"
+          --health-interval 5s --health-timeout 5s --health-retries 5
+      postgres_hatchet:
+        image: postgres:15
+        env:
+          POSTGRES_USER: hatchet
+          POSTGRES_PASSWORD: hatchet
+          POSTGRES_DB: hatchet
+        options: >-
+          --health-cmd "pg_isready -U hatchet -d hatchet"
+          --health-interval 5s --health-timeout 10s --health-retries 10 --health-start-period 30s
+      redis_cache:
+        image: redis:7
+        options: --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 5s --health-retries 5
+      redis_exec:
+        image: redis:7
+        options: --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 5s --health-retries 5
+      redis_assessment_exec:
+        image: redis:7
+        options: --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 5s --health-retries 5
+      hatchet:
+        image: ghcr.io/hatchet-dev/hatchet/hatchet-lite-dev:v0.101.0
+        env:
+          DATABASE_URL: 'postgresql://hatchet:hatchet@postgres_hatchet:5432/hatchet?sslmode=disable'
+          SERVER_AUTH_COOKIE_DOMAIN: hatchet
+          SERVER_AUTH_COOKIE_INSECURE: 't'
+          SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
+          SERVER_GRPC_INSECURE: 't'
+          SERVER_GRPC_BROADCAST_ADDRESS: hatchet:7077
+          SERVER_INTERNAL_CLIENT_INTERNAL_GRPC_BROADCAST_ADDRESS: hatchet:7077
+          SERVER_GRPC_PORT: '7077'
+          SERVER_URL: http://hatchet:8888
+          SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
+          SERVER_DEFAULT_ENGINE_VERSION: 'V1'
+          SERVER_LOGGER_LEVEL: debug
+          SERVER_LOGGER_FORMAT: console
+        options: >-
+          --health-cmd "curl -f http://localhost:8888/healthz"
+          --health-interval 5s --health-timeout 10s --health-retries 10 --health-start-period 30s
+        volumes:
+          - hatchet_lite_config_${{ github.run_id }}_${{ github.run_attempt }}_${{ matrix.shardIndex }}:/config
+    steps:
+      - name: Check out exact public candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.prepare.outputs.source_sha }}
+          persist-credentials: false
+      - name: Run shared Playwright shard
+        uses: uzh-bf/klicker-uzh/.github/actions/playwright-shard@f50c46bcb16193876f2ba60da1651d4364947d8d
+        with:
+          route: public-pr
+          mode: full
+          shard-index: ${{ matrix.shardIndex }}
+          shard-total: ${{ matrix.shardTotal }}
+          cache-enabled: ${{ env.TRIAL_CACHE_ENABLED }}
+          workers: '1'
+
+  trial-status:
+    needs: [prepare, build, shards]
+    if: always() && needs.prepare.result != 'skipped'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Verify complete trial result
+        shell: bash
+        env:
+          PREPARE: ${{ needs.prepare.result }}
+          BUILD: ${{ needs.build.result }}
+          SHARDS: ${{ needs.shards.result }}
+        run: |
+          set -euo pipefail
+          test "$PREPARE" = success
+          test "$BUILD" = success
+          test "$SHARDS" = success
+          echo 'The isolated full trial passed; this is not a required PR status.'

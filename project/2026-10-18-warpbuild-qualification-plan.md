@@ -13,8 +13,8 @@ matched source revisions before varying runner sizes or cache behavior. Separate
 queue reduction, execution speed and cache reuse; compare total billed work,
 including failures, rather than successful test-command duration alone.
 
-The source package adds an isolated trial workflow and an explicit complete-plan
-option at the existing selector seam. The trial is disabled initially. Only the
+The source package adds an isolated trial workflow that requests the existing
+selector's complete same-revision plan. The trial is disabled initially. Only the
 named task branch can launch it through a workflow-file push; a later registered
 manual dispatch is subject to the same gate. No automatic pull-request, mainline
 or deployment routing changes. No secrets, OIDC, publication or private services
@@ -95,6 +95,12 @@ An explicit full request includes every eligible candidate spec, excludes the
 existing separately owned production lane and always emits all eight shards.
 Ordinary selector callers retain their current classification behavior.
 
+Hetzner controls use existing allowed ordinary workflow executions at matched
+source, not a second entry into the locked physical-runner group. Do not expand
+that group's workflow allowlist for the experiment. If a matched control cannot
+be obtained within the approved submission budget, record that comparison as
+inconclusive while retaining provider compatibility and cost evidence.
+
 The operator privately records each submission's workflow/source SHAs, provider,
 sizes, cache state, billed-cost reservation and consumed wave count. Admit at
 most three concurrent waves. The nominal job timeout bounds are forty-five
@@ -127,23 +133,20 @@ fleet-replacement claim follows from a green trial.
 
 All work is main-owned because of the explicit no-subagent constraint.
 
-1. Add the explicit complete-suite selector option and regression coverage at
-   `.github/scripts/playwright-selector.cjs` and its existing test file. Accept
-   only complete canonical coverage with ordinary classification unchanged.
-2. Add `.github/workflows/warpbuild-playwright-trial.yml`, reusing shared build,
+1. Add `.github/workflows/warpbuild-playwright-trial.yml`, reusing shared build,
    shard and service contracts. Extend the existing workflow contract test file
    for the disabled gate, branch scope, pinned source, read-only permission,
    bounded jobs and failing aggregate. Keep ordinary CI files unchanged.
-3. Document the isolated entry and private operator preflight in the existing
+2. Document the isolated entry and private operator preflight in the existing
    CI guide. Run focused Node 24 contract tests in an isolated container, YAML
    parse, formatting, diff inspection and staged secret/data review. Simplify
    and self-review the integrated package before draft publication.
-4. Independently gather current account and workload evidence. Resolve policy
+3. Independently gather current account and workload evidence. Resolve policy
    and cost prerequisites before an enabling edit. Perform the approved trial
    only when they hold; otherwise name the missing evidence for the operator.
 
-Test portfolio: extend selector behavior tests for full coverage despite bounded
-changes; extend workflow contract tests for isolation and fail-closed execution.
+Test portfolio: reuse the selector's existing empty-diff full-coverage tests;
+extend workflow contract tests for isolation and fail-closed execution.
 Existing tests own ordinary routing, cache ownership and shared build failures.
 No application runtime or browser UI change is introduced; screenshots are not
 source verification. Live provider compatibility still requires an actual job.
@@ -154,7 +157,25 @@ Planning self-review found that a new manual workflow cannot be dispatched befor
 it exists on the default branch. Use a narrowly scoped, initially disabled
 task-branch push entry to avoid a prerequisite source merge. Preserve ordinary
 workflow identity and required checks. No independent planner was used under the
-user's no-subagent instruction.
+user's no-subagent instruction. Inspection also found the existing selector
+already produces a complete plan for an exact same-revision comparison, so no
+selector option, helper or duplicated planner is needed.
 
-Status: source preparation. Account/policy and cost evidence is kept privately.
-No paid trial has been submitted. No source merge or live policy change made.
+Source implementation and focused verification are complete: all 96 Playwright
+CI contracts pass in isolated Node 24.21.0 with the existing Devrouter 0.5.1
+planner. YAML/shell syntax, Biome and Prettier checks pass. The two-file Opengrep
+scan reported five mutable action references, corrected with verified immutable
+pins; its follow-up scan has zero findings. Ordinary CI routing and shared
+actions remain unchanged.
+Substantive package size is about four hundred lines, excluding the plan/docs;
+one cohesive provider experiment does not need a stack.
+
+Main-session simplification reused the existing selector rather than adding an
+option/helper, and retained existing workflow access for Hetzner controls. The
+initial prepare gate is a literal false, so publication cannot inherit an
+unexpected organization-variable opt-in. Integrated review is a self-review,
+covering correctness, scope, security, architecture and maintainability.
+
+Status: source publication pending. Account/policy and cost evidence is kept
+privately. No paid trial has been submitted. No source merge or live policy
+change made. Actual provider compatibility, latency and cost remain unproved.

@@ -897,3 +897,166 @@ test('exact-base workflow fetch preserves a divergent PR merge-base', (t) => {
     ancestor
   )
 })
+
+function readRunnerTrial() {
+  return YAML.parse(
+    fs.readFileSync(
+      path.join(__dirname, '../workflows/warpbuild-playwright-trial.yml'),
+      'utf8'
+    )
+  )
+}
+
+test('runner qualification stays opt-in and preserves the public execution contract', () => {
+  const trial = readRunnerTrial()
+  const ordinary = YAML.parse(
+    fs.readFileSync(
+      path.join(__dirname, '../workflows/public-pr-playwright-shards.yml'),
+      'utf8'
+    )
+  )
+  assert.deepEqual(Object.keys(trial.on).sort(), ['push', 'workflow_dispatch'])
+  assert.deepEqual(trial.on.push, {
+    branches: ['rs/warpbuild-qualification'],
+    paths: ['.github/workflows/warpbuild-playwright-trial.yml'],
+  })
+  assert.equal(
+    trial.jobs.prepare.if.replace(/\s+/g, ' '),
+    "false && github.repository == 'uzh-bf/klicker-uzh' && github.ref == 'refs/heads/rs/warpbuild-qualification' && github.run_attempt == 1"
+  )
+  assert.deepEqual(trial.permissions, { contents: 'read' })
+  assert.deepEqual(trial.jobs['trial-status'].permissions, {})
+  assert.deepEqual(trial.jobs.build.needs, 'prepare')
+  assert.deepEqual(trial.jobs.shards.needs, ['prepare', 'build'])
+  assert.deepEqual(trial.jobs['trial-status'].needs, [
+    'prepare',
+    'build',
+    'shards',
+  ])
+  for (const [role, action] of [
+    ['build', 'playwright-build'],
+    ['shards', 'playwright-shard'],
+  ]) {
+    const job = trial.jobs[role]
+    assert.equal(job['timeout-minutes'], 45)
+    assert.equal(
+      job.container.image,
+      ordinary.jobs['build-and-compile-public-pr'].container.image
+    )
+    assert.equal(
+      job.steps[0].with.ref,
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: GitHub expression is a literal protocol value.
+      '${{ needs.prepare.outputs.source_sha }}'
+    )
+    assert.equal(job.steps[0].with['persist-credentials'], false)
+    assert.equal(
+      job.steps[1].uses,
+      `uzh-bf/klicker-uzh/.github/actions/${action}@${trial.env.TRIAL_CONTROL_SHA}`
+    )
+    assert.equal(job.steps[1].with.mode, 'full')
+    assert.equal(
+      job.steps[1].with['cache-enabled'],
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: GitHub expression is a literal protocol value.
+      '${{ env.TRIAL_CACHE_ENABLED }}'
+    )
+  }
+  assert.deepEqual(
+    trial.jobs.shards.services,
+    ordinary.jobs['test-playwright-public-pr'].services
+  )
+  assert.equal(trial.jobs.shards.strategy['fail-fast'], false)
+  assert.equal(trial.jobs.shards.strategy['max-parallel'], 8)
+  assert.equal(trial.jobs.shards.steps[1].with.workers, '1')
+  assert.equal(
+    trial.jobs['trial-status'].if,
+    "always() && needs.prepare.result != 'skipped'"
+  )
+})
+
+test('runner qualification rejects mismatched plans and unsupported experiment dimensions', (t) => {
+  const trial = readRunnerTrial()
+  const step = trial.jobs.prepare.steps.find((entry) => entry.id === 'plan')
+  const script = step.run.split("node <<'NODE'\n")[1].split('\nNODE')[0]
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'runner-trial-'))
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  const candidateSpecs = Array.from(
+    { length: 8 },
+    (_, i) => `tests/${i}.spec.ts`
+  )
+  const plan = {
+    mode: 'full',
+    headSha: trial.env.TRIAL_SOURCE_SHA,
+    baseSha: trial.env.TRIAL_SOURCE_SHA,
+    shardCount: 8,
+    candidateSpecs,
+    selectedSpecs: candidateSpecs,
+    shards: candidateSpecs.map((file, i) => ({
+      shardIndex: i + 1,
+      shardTotal: 8,
+      files: [file],
+    })),
+  }
+  function run(env = {}, changePlan = (value) => value) {
+    fs.writeFileSync(
+      path.join(root, 'playwright-execution-plan.json'),
+      JSON.stringify(changePlan(structuredClone(plan)))
+    )
+    return spawnSync(process.execPath, ['-e', script], {
+      cwd: root,
+      env: {
+        ...process.env,
+        ...trial.env,
+        GITHUB_SHA: 'a'.repeat(40),
+        GITHUB_OUTPUT: path.join(root, 'output'),
+        GITHUB_STEP_SUMMARY: path.join(root, 'summary'),
+        ...env,
+      },
+      encoding: 'utf8',
+    })
+  }
+  assert.equal(run().status, 0)
+  const outputs = fs.readFileSync(path.join(root, 'output'), 'utf8')
+  assert.deepEqual(JSON.parse(outputs.match(/^build_runner=(.+)$/m)[1]), {
+    group: 'Default',
+    labels: trial.env.TRIAL_BUILD_LABEL,
+  })
+  assert.deepEqual(JSON.parse(outputs.match(/^shard_runner=(.+)$/m)[1]), {
+    group: 'Default',
+    labels: trial.env.TRIAL_SHARD_LABEL,
+  })
+  for (const env of [
+    { TRIAL_PROVIDER: 'unknown' },
+    { TRIAL_PROVIDER: 'hetzner' },
+    { TRIAL_WAVE: '13' },
+    { TRIAL_SOURCE_SHA: 'v3' },
+    { TRIAL_CACHE_ENABLED: 'yes' },
+    { TRIAL_BUILD_LABEL: 'ubuntu-latest' },
+    { TRIAL_SHARD_LABEL: 'self-hosted' },
+  ])
+    assert.notEqual(run(env).status, 0, JSON.stringify(env))
+  for (const changePlan of [
+    (p) => ({ ...p, mode: 'skip' }),
+    (p) => ({ ...p, headSha: 'b'.repeat(40) }),
+    (p) => ({ ...p, selectedSpecs: p.selectedSpecs.slice(1) }),
+    (p) => ({ ...p, shards: p.shards.slice(1) }),
+  ])
+    assert.notEqual(run({}, changePlan).status, 0)
+})
+
+test('runner qualification aggregate rejects failed, cancelled and skipped producers', () => {
+  const script = readRunnerTrial().jobs['trial-status'].steps[0].run
+  const success = { PREPARE: 'success', BUILD: 'success', SHARDS: 'success' }
+  for (const [key, result] of [
+    ['', 'success'],
+    ['PREPARE', 'failure'],
+    ['BUILD', 'failure'],
+    ['SHARDS', 'failure'],
+    ['SHARDS', 'cancelled'],
+    ['SHARDS', 'skipped'],
+  ]) {
+    const output = spawnSync('bash', ['-c', script], {
+      env: { ...process.env, ...success, ...(key ? { [key]: result } : {}) },
+    })
+    assert.equal(output.status === 0, key === '')
+  }
+})
