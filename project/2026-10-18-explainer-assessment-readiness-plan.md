@@ -1,4 +1,123 @@
-# Saved Explainer assessment qualification
+# Explainer quality decision and assessment qualification
+
+## Current quality-decision batch
+
+Approved on 18 October 2026 after the Claude direction review: persist the
+outcome-focused roadmap and execute the zero-spend saved-evidence review.
+This section supersedes the judge-first continuation below. Earlier preparation
+contracts and receipts remain historical evidence, not instructions to replay
+consumed operations.
+
+The product decision is whether the narrow Explainer guidance preserves
+meaning-changing conditions during revision while retaining useful direct
+answers, supported citations and task completion. Judge calibration is paused;
+manual comparison can establish the next bounded decision. Tutor follows the
+Explainer decision rather than expanding this batch.
+
+### Authority and completion
+
+Approval mode: executable batch, light path. This is a documentation and private
+evidence package, with no executable-source or public-contract changes. Reuse
+the existing task worktree and `project/` artifact root. Main owns private
+answers, semantic judgments, disclosure review and integration. A bounded
+read-only planner checks the proposed validation scope using sanitized context;
+it receives no captures or environment observations.
+
+Authority covers local documentation, inspection of already preserved synthetic
+captures, original rubrics and citation evidence, ordinary task-branch commits
+and a draft documentation PR. Complete when the roadmap is persisted, a private
+baseline/candidate decision table names every assessed and missing boundary,
+and the smallest remaining capture proposal is concrete. No application runtime
+or new proof script is needed. Missing captures or passage evidence stay
+unassessed. Paid inference, prompt application, marking ready, merge and
+deployment require separate named authority.
+
+### Execute now
+
+1. Reconcile the saved control, baseline regression and conditional candidate
+   revision with their unchanged criteria and actual visible answers. Preserve
+   original artifacts and record source paths and hashes in the private table.
+   Separate first-answer failures, revision failures and missing fresh candidate
+   trajectories; never manufacture a full trajectory from a sibling revision.
+2. Review each emitted citation against its per-answer registry, persisted
+   passage and actual model-visible passage. Distinguish supplied user material
+   from KB evidence. Missing passages mean unassessed support. Grounding on a
+   deterministic fixture does not establish course-source retrieval or browser
+   citation behavior.
+3. Record the candidate decision and missing evidence privately in
+   `project/_local/explainer-quality-decision.md`. Keep answers, labels, runtime
+   observations and experiment results out of shared artifacts. Update this
+   roadmap with only scope, source milestones, acceptance and execution status.
+
+Verification is exact evidence-to-criterion reconciliation, unchanged input
+hashes, link checks, repository-native Markdown formatting and staged disclosure
+and secret review. Test obligation: none; documentation checks and manual
+evidence review observe the behavior at issue. No runtime, new automated test,
+metric or threshold change is part of this batch.
+
+### Smallest next capture proposal
+
+Propose the existing six-case corpus, baseline and frozen candidate, one repeat
+per arm, two turns per fresh thread: 24 learner turns. Use two serial blocks,
+baseline then candidate, with the same corpus, source fixture, model/effort and
+retrieval policy. Each arm generates its own first answer. Preserve the original
+control and all original rubrics. The four inspected transfer cases are not
+blind holdouts; report this as exploratory regression/transfer validation.
+Do not automatically repeat the former 48-turn protocol. A second repeat must
+resolve a named ambiguity or variability concern from this first comparison.
+
+Use the existing app-native capture and offline importer; assess manually with
+2/1/0/U criteria and actual supporting passages. An essential criterion below
+2 blocks advancement; missing evidence is inconclusive, not a pass. Preserve
+all planned incomplete, invalid and stopped trajectories. Stop on configuration
+drift, uncertain spending, missing required evidence or a clear candidate
+regression; retain the result rather than silently retrying or widening scope.
+Request clarification only for a material change to the approved experiment.
+
+The supported larger ledger option is exactly US$55/48 turns; it is not a
+US$24/24-turn hard cap. Propose that existing ceiling with execution limited to
+the planned 24 learner turns, avoiding another initializer change. At the
+historical reservation bound, 48 provider requests reserve US$23.968848; this is
+conditional admission arithmetic, not a fresh tariff or expected invoice.
+Refresh pricing and exact route admission before any first paid call. Any changed
+bound must fit the approved ceiling or return for a new spending decision.
+Do not initialize a ledger, reuse consumed allowances or spend on judging now.
+
+Before rollout, close two additional acceptance gaps through targeted synthetic
+scenarios and representative course-source checks:
+
+- A multipart summary must cover every requested available item, identify any
+  unavailable item, and deliver the requested work without another permission
+  question or an unsupported completion claim.
+- An available source must support the answer and emitted citation; a genuinely
+  absent source must elicit calibrated uncertainty without invented references.
+  A deterministic always-return-all fixture cannot establish this acceptance.
+
+These checks are outside the six-case compression comparison. Freeze their
+inputs and source evidence before execution and include them in a separately
+named capture/acceptance approval. No broad improvement, live application or
+learning-effectiveness claim follows from the compression comparison alone.
+
+### Progress
+
+Source baseline: `c12d6c93fab59eff700a95afe6b2ac900fc0fd45` on `v3`, containing
+merged [PR 6603](https://github.com/uzh-bf/klicker-uzh/pull/6603). Execution mode:
+standard. Branch `docs/explainer-quality-decision` reuses the existing
+`trees/explainer-assessment-readiness` checkout; the primary is untouched.
+The Claude direction advice remains applicable. The bounded planner recommends
+the 24-turn subset and separate summary/missing-source acceptance rather than
+expanding the first comparison. Private evidence reconciliation is complete in
+`project/_local/explainer-quality-decision.md`; original inputs are unchanged.
+Markdown formatting and all eight local file-link checks pass; input hashes
+remain unchanged. Delivery is a draft documentation PR against `v3`; the next
+execution boundary is separately approved paid capture. No
+executable source, test, corpus, runtime or framework pin changed.
+Substantive source size excluding project artifacts is seven documentation
+lines; this isolated, explicitly requested roadmap/evidence package is
+floor-exempt. Slice review and simplification are not required for these
+documentation-only changes; main owns final diff and disclosure inspection.
+
+## Historical saved-assessment preparation
 
 ## Approval summary
 
