@@ -266,8 +266,13 @@ flags the pre-existing GitHub expression string. Full app checks/build were not
 run because this source package changes no application behavior; Git hooks have
 no full dependency install and CI remains required. No application runtime was
 started. All private environment observations are excluded from the source.
-Source publication and all live mutations are unstarted. No implementation PR
-exists yet. Source baseline and fresh `origin/v3` are aligned at `92fabf9f6226`.
+Source is published as [draft PR #6602](https://github.com/uzh-bf/klicker-uzh/pull/6602).
+All live mutations remain unstarted. Source baseline and fresh `origin/v3` are
+aligned at `92fabf9f6226`. The final committed source review covered
+`92fabf9f6226..bff2319aef6e` and found no remaining source blocker after the
+receipt correction. The two executable files also passed scoped Opengrep
+(`--config auto`), with zero findings. Required hosted CI is now running; no
+complete exact-head source acceptance or ready/merge claim is made yet.
 The rollback merge/source tree is verified; exact-merge push CI and a normal
 post-merge public build remain separate observation obligations.
 
