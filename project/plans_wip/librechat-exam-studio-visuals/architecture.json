@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Exam Studio \u2014 proposed trust boundaries",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1320,
+      760
+    ]
+  },
+  "components": [
+    {
+      "id": "lecturer",
+      "type": "frontend",
+      "label": "Lecturer browser",
+      "sublabel": "Conversation + human actions",
+      "pos": [
+        60,
+        100
+      ],
+      "size": [
+        240,
+        78
+      ],
+      "tag": "PROPOSED STUDIO UI"
+    },
+    {
+      "id": "login",
+      "type": "security",
+      "label": "Existing login + new consent",
+      "sublabel": "Reachable auth / Manage origin",
+      "pos": [
+        470,
+        100
+      ],
+      "size": [
+        240,
+        78
+      ],
+      "tag": "EXISTING LOGIN + NEW CONSENT"
+    },
+    {
+      "id": "host",
+      "type": "backend",
+      "label": "LibreChat \u00b7 proposed link",
+      "sublabel": "Internal Studio connection",
+      "pos": [
+        60,
+        340
+      ],
+      "size": [
+        240,
+        78
+      ],
+      "tag": "PROPOSED INTEGRATION"
+    },
+    {
+      "id": "delegate",
+      "type": "security",
+      "label": "Delegation \u00b7 proposed",
+      "sublabel": "Klicker-issued scoped identity",
+      "pos": [
+        470,
+        340
+      ],
+      "size": [
+        240,
+        78
+      ],
+      "tag": "PROPOSED TRUSTED ADAPTER"
+    },
+    {
+      "id": "mcp",
+      "type": "backend",
+      "label": "Lecturer MCP \u00b7 existing",
+      "sublabel": "Verify actor + scope + objects",
+      "pos": [
+        940,
+        340
+      ],
+      "size": [
+        240,
+        78
+      ],
+      "tag": "EXISTING + NEW EXAM TOOLS"
+    },
+    {
+      "id": "domain",
+      "type": "backend",
+      "label": "Authoring \u00b7 existing",
+      "sublabel": "Generation / review / Keep",
+      "pos": [
+        940,
+        580
+      ],
+      "size": [
+        240,
+        78
+      ],
+      "tag": "EXISTING + EXTENSIONS"
+    },
+    {
+      "id": "bank",
+      "type": "database",
+      "label": "Question bank \u00b7 existing",
+      "sublabel": "Canonical Klicker Elements",
+      "pos": [
+        470,
+        580
+      ],
+      "size": [
+        240,
+        78
+      ],
+      "tag": "EXISTING + ORIGIN / HISTORY"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "Browser-facing login and consent \u2014 separate from MCP data traffic",
+      "wraps": [
+        "lecturer",
+        "login"
+      ],
+      "pad": 26
+    },
+    {
+      "kind": "region",
+      "label": "Internal backend data path \u2014 conceptual boundary, no public MCP route",
+      "wraps": [
+        "host",
+        "delegate",
+        "mcp",
+        "domain",
+        "bank"
+      ],
+      "pad": 26
+    }
+  ],
+  "connections": [
+    {
+      "id": "login-consent",
+      "from": "lecturer",
+      "to": "login",
+      "label": "login / consent",
+      "variant": "security"
+    },
+    {
+      "id": "conversation",
+      "from": "lecturer",
+      "to": "host",
+      "label": "session actions",
+      "variant": "default",
+      "labelDy": 90
+    },
+    {
+      "id": "grant",
+      "from": "login",
+      "to": "delegate",
+      "label": "server-side grant",
+      "variant": "security",
+      "labelDy": 90
+    },
+    {
+      "id": "exchange",
+      "from": "host",
+      "to": "delegate",
+      "label": "bound session",
+      "variant": "security"
+    },
+    {
+      "id": "call",
+      "from": "delegate",
+      "to": "mcp",
+      "label": "short-lived token",
+      "variant": "emphasis"
+    },
+    {
+      "id": "authorize",
+      "from": "mcp",
+      "to": "domain",
+      "label": "authorized calls",
+      "variant": "emphasis",
+      "labelDy": 90
+    },
+    {
+      "id": "save",
+      "from": "domain",
+      "to": "bank",
+      "label": "atomic Keep",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Trust is per user",
+      "items": [
+        "Proposed: linked consent, bounded tokens and revocation.",
+        "Browser and model never receive reusable MCP credentials."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Klicker owns question state",
+      "items": [
+        "Existing: lecturer MCP, generation, review gates and atomic Keep.",
+        "Proposed: Exam tools, origin, revisions and durable receipts."
+      ]
+    }
+  ]
+}

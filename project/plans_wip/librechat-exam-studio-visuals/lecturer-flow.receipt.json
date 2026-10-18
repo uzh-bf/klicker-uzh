@@ -1,0 +1,63 @@
+{
+  "diagram_type": "architecture",
+  "subject": "Lecturer user flow",
+  "specification": {
+    "path": "lecturer-flow.json",
+    "sha256": "8a00fb3b862ff84da31e96e5c48784a3d2a556e3a4373cd12ab016ac168d00cf",
+    "bytes": 4768
+  },
+  "artifact": {
+    "path": "lecturer-flow.html",
+    "sha256": "18dc6addef751e4f77e2efa14c2080eaecc68024ebc70aa86b4de2d1fa0c521c",
+    "bytes": 715056
+  },
+  "validation": {
+    "checksPassed": 9,
+    "checkCount": 9,
+    "compositionProfile": "showcase",
+    "compositionStatus": "pass",
+    "errors": 0,
+    "warnings": 0
+  },
+  "desktop_viewports": [
+    {
+      "width": 1440,
+      "height": 900,
+      "scrollWidth": 1440,
+      "scrollHeight": 900,
+      "overflowX": false,
+      "overflowY": false,
+      "readabilityOk": true
+    },
+    {
+      "width": 1600,
+      "height": 1000,
+      "scrollWidth": 1600,
+      "scrollHeight": 1000,
+      "overflowX": false,
+      "overflowY": false,
+      "readabilityOk": true
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "scrollWidth": 1920,
+      "scrollHeight": 1080,
+      "overflowX": false,
+      "overflowY": false,
+      "readabilityOk": true
+    },
+    {
+      "width": 2048,
+      "height": 1320,
+      "scrollWidth": 2048,
+      "scrollHeight": 1320,
+      "overflowX": false,
+      "overflowY": false,
+      "readabilityOk": true
+    }
+  ],
+  "visual_review": "passed",
+  "visual_review_evidence": "Light 1440\u00d7900 and dark 2048\u00d71320 screenshots inspected locally; no crossings, clipped labels or desktop overflow.",
+  "correction_rounds": 1
+}

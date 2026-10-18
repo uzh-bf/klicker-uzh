@@ -1,0 +1,236 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Exam Studio \u2014 proposed lecturer journey",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1320,
+      800
+    ]
+  },
+  "components": [
+    {
+      "id": "source",
+      "type": "frontend",
+      "label": "Select KB \u00b7 proposed UI",
+      "sublabel": "Pin graph + source version",
+      "tag": "PROPOSED STUDIO VIEW",
+      "pos": [
+        60,
+        100
+      ],
+      "size": [
+        260,
+        80
+      ]
+    },
+    {
+      "id": "cost",
+      "type": "security",
+      "label": "Cost consent \u00b7 proposed",
+      "sublabel": "Count + route + estimate",
+      "tag": "PROPOSED RECEIPT",
+      "pos": [
+        500,
+        100
+      ],
+      "size": [
+        260,
+        80
+      ]
+    },
+    {
+      "id": "generate",
+      "type": "backend",
+      "label": "KG generation \u00b7 existing",
+      "sublabel": "Design + plan review gates",
+      "tag": "REUSE EXISTING JOBS",
+      "pos": [
+        940,
+        100
+      ],
+      "size": [
+        260,
+        80
+      ]
+    },
+    {
+      "id": "inspect",
+      "type": "frontend",
+      "label": "Inspect draft \u00b7 proposed UI",
+      "sublabel": "Key, explanation, evidence",
+      "tag": "PROPOSED FULL VIEW",
+      "pos": [
+        940,
+        350
+      ],
+      "size": [
+        260,
+        80
+      ]
+    },
+    {
+      "id": "edit",
+      "type": "frontend",
+      "label": "Compare / edit \u00b7 proposed",
+      "sublabel": "Full payload + revision diff",
+      "tag": "PROPOSED HISTORY",
+      "pos": [
+        500,
+        350
+      ],
+      "size": [
+        260,
+        80
+      ]
+    },
+    {
+      "id": "keep",
+      "type": "security",
+      "label": "Keep \u00b7 extend existing",
+      "sublabel": "Owner + payload + revision",
+      "tag": "EXISTING + RECEIPT",
+      "pos": [
+        60,
+        350
+      ],
+      "size": [
+        260,
+        80
+      ]
+    },
+    {
+      "id": "bank",
+      "type": "database",
+      "label": "Question bank \u00b7 existing",
+      "sublabel": "AI-generated + review status",
+      "tag": "EXISTING + NEW BADGES",
+      "pos": [
+        60,
+        600
+      ],
+      "size": [
+        260,
+        80
+      ]
+    },
+    {
+      "id": "later",
+      "type": "frontend",
+      "label": "Edit / copy \u00b7 retain origin",
+      "sublabel": "Origin stays AI-generated",
+      "tag": "PROPOSED INHERITANCE",
+      "pos": [
+        500,
+        600
+      ],
+      "size": [
+        260,
+        80
+      ]
+    },
+    {
+      "id": "export",
+      "type": "database",
+      "label": "Export \u00b7 proposed",
+      "sublabel": "Exact accepted revision",
+      "tag": "PROPOSED MANIFEST",
+      "pos": [
+        940,
+        600
+      ],
+      "size": [
+        260,
+        80
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "select",
+      "from": "source",
+      "to": "cost",
+      "label": "estimate",
+      "variant": "emphasis"
+    },
+    {
+      "id": "start",
+      "from": "cost",
+      "to": "generate",
+      "label": "approve spend",
+      "variant": "emphasis"
+    },
+    {
+      "id": "drafts",
+      "from": "generate",
+      "to": "inspect",
+      "label": "drafts ready",
+      "variant": "emphasis",
+      "labelDy": 90
+    },
+    {
+      "id": "compare",
+      "from": "inspect",
+      "to": "edit",
+      "label": "edit if needed",
+      "variant": "emphasis"
+    },
+    {
+      "id": "confirm",
+      "from": "edit",
+      "to": "keep",
+      "label": "confirm revision",
+      "variant": "emphasis"
+    },
+    {
+      "id": "saved",
+      "from": "keep",
+      "to": "bank",
+      "label": "atomic save",
+      "variant": "emphasis",
+      "labelDy": 90
+    },
+    {
+      "id": "inherit",
+      "from": "bank",
+      "to": "later",
+      "label": "optional edits",
+      "variant": "emphasis"
+    },
+    {
+      "id": "release",
+      "from": "later",
+      "to": "export",
+      "label": "review current revision",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Existing capabilities to reuse",
+      "items": [
+        "Persistent builds, cost ledger, design / plan gates.",
+        "Atomic Keep checks owner, revision and full payload."
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Proposed guarantees",
+      "items": [
+        "AI-generated + Accepted r3 \u2192 AI-generated + Needs review r4.",
+        "Origin persists in copies, snapshots and supported exports."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Human decisions stay explicit",
+      "items": [
+        "Durable receipts bind cost, approval and Keep.",
+        "Stale revision: reload / compare, then confirm again."
+      ]
+    }
+  ]
+}

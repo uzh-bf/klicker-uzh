@@ -6,6 +6,17 @@
 **Delivery boundary:** lecturer authoring and review; no implementation,
 deployment, credential, access-policy, or production-data changes in this PR
 
+## Visual walkthrough
+
+[Architecture and lecturer journey](./librechat-exam-studio-visuals/README.md)
+include full-size PNGs, interactive HTML downloads, editable Archify sources and
+validation receipts. Existing capabilities and proposed extensions are labelled
+separately; these visuals do not establish live deployment readiness.
+
+![Proposed browser login boundary and internal per-user MCP path](./librechat-exam-studio-visuals/architecture.png)
+
+![Proposed lecturer flow from authorized KB selection through review and revision-safe Keep to persistent AI origin](./librechat-exam-studio-visuals/lecturer-flow.png)
+
 ## 1. Goal and scope
 
 Extend the existing TypeScript lecturer MCP with a small Exam Studio adapter
@@ -765,5 +776,8 @@ without misrepresenting undecided production facts.
   implementation slices
 - 2026-10-18: restricted public citations to the public Klicker repository;
   private host/producer details belong in access-controlled qualification records
-- This PR changes this plan only. Application tests, browser QA, cluster
+- 2026-10-18: added locally rendered Archify architecture and lecturer-flow
+  visuals, with screenshot review and four-size desktop containment evidence
+- This PR changes this plan and its visual documentation only. Application
+  tests, application browser QA, cluster
   inspection, token exchange and live generation have not been run

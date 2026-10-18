@@ -1,0 +1,63 @@
+{
+  "diagram_type": "architecture",
+  "subject": "Trust boundaries",
+  "specification": {
+    "path": "architecture.json",
+    "sha256": "899b6b93a68e7602249602cc30f8e6ba6d03d26d51683c770d5ed82e46f43f3b",
+    "bytes": 4393
+  },
+  "artifact": {
+    "path": "architecture.html",
+    "sha256": "1a285b8d022327b908c15b6d8ed2f4813ac1452f8caaf7ec949025e53fedf62e",
+    "bytes": 713581
+  },
+  "validation": {
+    "checksPassed": 9,
+    "checkCount": 9,
+    "compositionProfile": "showcase",
+    "compositionStatus": "pass",
+    "errors": 0,
+    "warnings": 0
+  },
+  "desktop_viewports": [
+    {
+      "width": 1440,
+      "height": 900,
+      "scrollWidth": 1440,
+      "scrollHeight": 900,
+      "overflowX": false,
+      "overflowY": false,
+      "readabilityOk": true
+    },
+    {
+      "width": 1600,
+      "height": 1000,
+      "scrollWidth": 1600,
+      "scrollHeight": 1000,
+      "overflowX": false,
+      "overflowY": false,
+      "readabilityOk": true
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "scrollWidth": 1920,
+      "scrollHeight": 1080,
+      "overflowX": false,
+      "overflowY": false,
+      "readabilityOk": true
+    },
+    {
+      "width": 2048,
+      "height": 1320,
+      "scrollWidth": 2048,
+      "scrollHeight": 1320,
+      "overflowX": false,
+      "overflowY": false,
+      "readabilityOk": true
+    }
+  ],
+  "visual_review": "passed",
+  "visual_review_evidence": "Light 1440\u00d7900 and dark 2048\u00d71320 screenshots inspected locally; no crossings, clipped labels or desktop overflow.",
+  "correction_rounds": 1
+}
