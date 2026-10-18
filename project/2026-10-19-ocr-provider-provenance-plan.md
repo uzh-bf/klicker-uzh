@@ -126,17 +126,19 @@ application/browser runtime is justified for these non-rendered CI helpers.
 
 ## Progress
 
-- Status: both fixes implemented and verified; committed reviews and draft delivery next.
+- Status: both fixes verified, pushed and published as
+  [draft PR #6608](https://github.com/uzh-bf/klicker-uzh/pull/6608).
+  Simplifier and slice review passed; integrated final review next.
 - Ownership: main integrated both fixes after the adapter executor was stopped
   for discovery convergence, retaining its small partial patch. Planner APPROVED
   after one correction; reports in `project/_local/reviews/` (local only).
 - Verification: all 239 combined tests pass with no skips on Node 24.21.0,
   including pinned OCR 1.13.0 tool integration. Both URL regressions failed
-  before the fix. Formatter and diff checks pass; staged secret scan follows.
+  before the fix. Formatter, diff and staged secret checks pass.
   Opengrep: 200 rules, four runtime scripts, zero findings; one partial parse
   limitation. Full Biome lint retains two unchanged baseline errors.
 - Authority: source changes, reviews, commits, push and draft PR. No ready, merge,
   secret/account changes, provider substitution or extra live run.
-- Packaging: one OCR workflow repair package, 568 substantive added/deleted
+- Packaging: one OCR workflow repair package, 581 substantive added/deleted
   lines excluding the project plan; most additions exercise failure/provenance
   behavior. One draft PR; no independent deployment or stack layer.
