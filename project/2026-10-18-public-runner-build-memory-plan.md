@@ -38,7 +38,8 @@ point rather than expanding the implementation.
   `trees/rs/runner-capacity-qualification`; artifacts root: `project/`.
 - This is a new package. The [recovery plan](2026-10-17-runner-recovery-telemetry-plan.md)
   and [merged recovery PR](https://github.com/uzh-bf/klicker-uzh/pull/6581)
-  are history, not unfinished source work. No new pull request exists yet.
+  are history, not unfinished source work. Current draft:
+  [public build task concurrency](https://github.com/uzh-bf/klicker-uzh/pull/6592).
 - Boundary owner and execution owner: main session. Execution mode is standard
   because runtime model identity is not supplied. The user requests Astra for
   planning; that bounded read-only exception does not authorize other children.
@@ -252,8 +253,9 @@ remain separate acceptance claims.
 
 ## Progress
 
-- Status: both source slices implemented; final self-review and draft CI remain.
-- Fresh source baseline and task worktree agree; no task PR exists.
+- Status: source package and main-session final self-review complete;
+  [draft PR](https://github.com/uzh-bf/klicker-uzh/pull/6592) CI and feedback remain.
+- The task branch is pushed against the recorded target baseline.
 - Completed: source mapping, private assessment recovery and official Turbo
   documentation lookup. Operational evidence is retained privately.
 - Planning review: Astra medium approved draft 2 after one correction round.
@@ -282,8 +284,16 @@ remain separate acceptance claims.
   The private runtime-qualification protocol is prepared outside the repository;
   it records conditional selection and response requirements without granting
   runtime authority. No live experiment or new CI rerun was performed.
-- Remaining delivery work: commit slice 2, final self-review, draft CI and feedback.
+- Slice 2 is committed as `cca0bf4b25`. Main-session simplification and integrated
+  self-review cover all four paths; no further source change was needed.
+  Correctness, plan compliance, maintainability and focused security pass.
+  Architecture, product, migration and browser lenses do not apply. These are
+  self-review results, not independent or runtime evidence.
+- Remaining delivery work: exact-head draft CI and actionable feedback, followed
+  by a quiet settle. The native source review is preserved across this PR-link
+  metadata update because executable files and verified contracts are unchanged.
   Later merge, experiment and activation remain separately gated.
 - Required delivery layer on approval: verified draft source PR.
-  Achieved layer now: locally verified source package. Next action: commit
-  documentation, complete final self-review and publish the ordinary draft.
+  Achieved layer now: pushed, locally verified draft source package. Next action:
+  continue the main-session `rs-babysit-pr` watch on the published head. Stop at
+  a verified draft; do not mark ready, merge or run the later experiment.
