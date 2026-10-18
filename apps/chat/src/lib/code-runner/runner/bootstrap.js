@@ -60,7 +60,8 @@
         send({ type: 'init-error', error: String(error).slice(0, 2000) })
       )
     } else if (message.type === 'run' && profile) {
-      run(message)
+      // run reports every failure to the host itself.
+      void run(message)
     }
   }
 

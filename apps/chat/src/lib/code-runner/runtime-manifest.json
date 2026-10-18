@@ -1,6 +1,6 @@
 {
-  "version": "573b78008cef856e",
-  "runnerScriptSha256": "OZBDMVTmhv97/JzJmWZivhcM99rX0zgsIIkLOwGg6L0=",
+  "version": "ee7ee239b6a8500e",
+  "runnerScriptSha256": "kz4J0W6zS9zPScitqYXmLkGv0qZDYoDu35ZBhepxieA=",
   "profiles": {
     "python-core": [
       "pyodide/pyodide-lock.json",
@@ -157,8 +157,8 @@
       "type": "application/octet-stream"
     },
     "runner/py-worker.js": {
-      "sha256": "f4421f8674c63a0065591e4992e4abcb39b4cbba10026f05a3d60fbd88dca6be",
-      "size": 1932,
+      "sha256": "9b48d9a3bcced04c9599df7cf66ac1126379485b18c3b59f6f0b80ddb097f93e",
+      "size": 1995,
       "type": "text/javascript"
     },
     "runner/shim.js": {
