@@ -22,13 +22,20 @@ const RUNTIME_FILE_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
 }
 
-export function codeRuntimeProxyResponse(): NextResponse {
+export function codeRuntimeProxyResponse(pathname: string): NextResponse {
   if (!isCodeExecutionEnabled()) {
     return new NextResponse(null, { status: 404 })
   }
   const response = NextResponse.next()
   for (const [name, value] of Object.entries(RUNTIME_FILE_HEADERS)) {
     response.headers.set(name, value)
+  }
+  // Notices are generated independently of the runtime manifest version.
+  if (
+    pathname.endsWith('/NOTICE.md') ||
+    pathname.endsWith('/LICENSE-webR.md')
+  ) {
+    response.headers.set('Cache-Control', 'public, max-age=0, must-revalidate')
   }
   return response
 }
