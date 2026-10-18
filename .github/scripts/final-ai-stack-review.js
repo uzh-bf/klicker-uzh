@@ -1,6 +1,7 @@
 const {
   getPermission,
   isEligibleBaseBranch,
+  isWorkflowCheckUrl,
   listCheckRunsForRef,
   repositoryName,
   safeFence,
@@ -1493,7 +1494,7 @@ async function getVerifiedStackCleanEvidence({
         candidate.status === 'completed' &&
         candidate.conclusion === 'success' &&
         candidate.app?.slug === 'github-actions' &&
-        candidate.details_url === workflowRunUrl(context, workflowRunId) &&
+        isWorkflowCheckUrl(context, candidate, workflowRunId) &&
         String(candidate.external_id ?? '') === String(workflowRunId)
     )
     .sort(

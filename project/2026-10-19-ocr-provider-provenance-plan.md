@@ -126,10 +126,17 @@ application/browser runtime is justified for these non-rendered CI helpers.
 
 ## Progress
 
-- Status: planner approved frozen v2; implementation next. No source edits yet.
-- Ownership: main plus bounded adapter executor. Planner APPROVED after one
-  focused correction; report in `project/_local/reviews/` (local only).
-- Verification: baseline 158 tests pass, zero skipped, Node 24.21.0.
+- Status: both fixes implemented and verified; committed reviews and draft delivery next.
+- Ownership: main integrated both fixes after the adapter executor was stopped
+  for discovery convergence, retaining its small partial patch. Planner APPROVED
+  after one correction; reports in `project/_local/reviews/` (local only).
+- Verification: all 239 combined tests pass with no skips on Node 24.21.0,
+  including pinned OCR 1.13.0 tool integration. Both URL regressions failed
+  before the fix. Formatter and diff checks pass; staged secret scan follows.
+  Opengrep: 200 rules, four runtime scripts, zero findings; one partial parse
+  limitation. Full Biome lint retains two unchanged baseline errors.
 - Authority: source changes, reviews, commits, push and draft PR. No ready, merge,
   secret/account changes, provider substitution or extra live run.
-- Packaging: two related workflow defects; substantive size recorded after diff.
+- Packaging: one OCR workflow repair package, 568 substantive added/deleted
+  lines excluding the project plan; most additions exercise failure/provenance
+  behavior. One draft PR; no independent deployment or stack layer.
