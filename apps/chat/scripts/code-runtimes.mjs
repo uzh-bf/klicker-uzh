@@ -34,7 +34,7 @@ export const OUTPUT_ROOT = join(APP_DIR, 'public/code-runtimes')
 const RUNNER_SOURCES = join(APP_DIR, 'src/lib/code-runner/runner')
 // Both runner documents carry the same inline bootstrap; the proxy gives
 // each its own CSP, because only the R runtime needs 'unsafe-eval'.
-const RUNNER_DOCUMENTS = ['runner-python.html', 'runner-r.html']
+export const RUNNER_DOCUMENTS = ['runner-python.html', 'runner-r.html']
 
 const CONTENT_TYPES = {
   '.js': 'text/javascript',
@@ -104,6 +104,9 @@ export function sha256(buffer, encoding = 'hex') {
 }
 
 export function runnerDocument(runnerScript) {
+  if (/<\/script|<!--/i.test(runnerScript)) {
+    throw new Error('Runner bootstrap contains an HTML-terminating sequence')
+  }
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Code runner</title></head><body><script>${runnerScript}</script></body></html>\n`
 }
 

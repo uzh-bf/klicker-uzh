@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { CODE_RUNTIME_MANIFEST, RUNNER_DOCUMENTS } from './manifest'
 
-export const CODE_RUNTIME_PATH_PREFIX = '/code-runtimes/'
+export { CODE_RUNTIME_PATH_PREFIX } from './manifest'
 
 // Deployment kill switch for browser code execution. Absent or any value other
 // than "true" keeps the capability off, whatever a chatbot's policy says.

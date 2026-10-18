@@ -159,7 +159,11 @@ export function runCode(
     runner.src = `${CODE_RUNTIME_BASE_PATH}${RUNNER_DOCUMENTS[profile]}`
     document.body.appendChild(runner)
     await loaded
-    if (settled || !runner.contentWindow) return
+    if (settled) return
+    if (!runner.contentWindow) {
+      settle('error', { error: 'The runner could not start.' })
+      return
+    }
 
     const channel = new MessageChannel()
     port = channel.port1
