@@ -23,7 +23,15 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs'
-import { dirname, extname, join, relative, resolve, sep } from 'node:path'
+import {
+  dirname,
+  extname,
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+  sep,
+} from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const PACKAGE_DIR = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -221,6 +229,14 @@ export function generate({ outDir, writeManifest = false } = {}) {
   }
   if (!outDir) return actual
 
+  // Regeneration empties outDir first, so refuse any directory that contains
+  // the working directory or this package.
+  for (const kept of [process.cwd(), PACKAGE_DIR]) {
+    const fromOut = relative(resolve(outDir), kept)
+    if (!fromOut.startsWith('..') && !isAbsolute(fromOut)) {
+      throw new Error(`Refusing to replace ${outDir}: it contains ${kept}.`)
+    }
+  }
   rmSync(outDir, { recursive: true, force: true })
   const target = join(outDir, actual.version)
   for (const sources of Object.values(profiles)) {
@@ -242,8 +258,11 @@ export function generate({ outDir, writeManifest = false } = {}) {
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   try {
     const outIndex = process.argv.indexOf('--out')
-    const outDir =
-      outIndex === -1 ? undefined : resolve(process.argv[outIndex + 1] ?? '')
+    const outArg = outIndex === -1 ? undefined : process.argv[outIndex + 1]
+    if (outIndex !== -1 && (!outArg || outArg.startsWith('--'))) {
+      throw new Error('--out needs a directory.')
+    }
+    const outDir = outArg === undefined ? undefined : resolve(outArg)
     const writeManifest = process.argv.includes('--write-manifest')
     if (!outDir && !writeManifest) {
       throw new Error('Pass --out <directory> or --write-manifest.')
