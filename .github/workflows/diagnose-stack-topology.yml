@@ -30,6 +30,7 @@ jobs:
           async function main() {
             if (!process.env.MISTRAL_API_KEY) throw new Error('missing_key')
             const schema = JSON.parse(fs.readFileSync('.github/open-code-review/final-stack-topology-schema.json', 'utf8'))
+            delete schema.properties.comments.items.properties.layer_numbers.uniqueItems
             const body = translateMistralRequest({
               model: MISTRAL_MODEL,
               reasoning_effort: 'max',
