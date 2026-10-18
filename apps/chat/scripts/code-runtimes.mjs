@@ -22,7 +22,7 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs'
-import { dirname, extname, join, relative } from 'node:path'
+import { dirname, extname, join, relative, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -88,7 +88,7 @@ export function collectSources() {
     r[`webr/${name}`] = join(webrDist, name)
   }
   for (const path of walk(join(webrDist, 'vfs'))) {
-    r[`webr/${relative(webrDist, path)}`] = path
+    r[`webr/${relative(webrDist, path).split(sep).join('/')}`] = path
   }
   return {
     runnerScript: readFileSync(join(RUNNER_SOURCES, 'bootstrap.js'), 'utf8'),

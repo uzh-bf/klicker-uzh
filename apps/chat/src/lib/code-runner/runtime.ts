@@ -61,5 +61,12 @@ export function codeRuntimeProxyResponse(pathname: string): NextResponse {
   if (runnerPolicyForPath) {
     response.headers.set('Content-Security-Policy', runnerPolicyForPath)
   }
+  // Notices are generated independently of the runtime manifest version.
+  if (
+    pathname.endsWith('/NOTICE.md') ||
+    pathname.endsWith('/LICENSE-webR.md')
+  ) {
+    response.headers.set('Cache-Control', 'public, max-age=0, must-revalidate')
+  }
   return response
 }

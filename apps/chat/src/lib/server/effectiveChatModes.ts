@@ -367,7 +367,9 @@ export function resolveEffectiveChatModeOptions(
       continue
     }
 
-    const codeProfiles = codeProfilesByMode[mode]
+    const codeProfiles = Object.hasOwn(codeProfilesByMode, mode)
+      ? codeProfilesByMode[mode]
+      : undefined
     modeOptions[mode] = {
       ...(customMode
         ? getCustomModeOption(customMode)
