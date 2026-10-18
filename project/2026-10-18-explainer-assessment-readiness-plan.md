@@ -322,8 +322,10 @@ route, evidence, scope or cost departure returns to the user before dependent
 execution. The compatibility/route follow-up was approved and completed as
 qualification evidence, with the gateway defect explicitly held. Paid work
 remains a separately named approval after its source repair; calibration and
-broad chatbot-quality acceptance are still outstanding. The source repair's
-draft publication, scoped review and hosted CI are the remaining batch work.
+broad chatbot-quality acceptance are still outstanding. The source repair is
+published in draft [PR 6603](https://github.com/uzh-bf/klicker-uzh/pull/6603).
+Its checks and review reports are the exact-head delivery evidence; draft
+publication does not establish CI completion or authorize later gates.
 
 Gateway slice: committed as `7960b6edea`, 157 substantive added lines across
 configuration, the existing test module and its existing CI step. Test delta:
@@ -335,4 +337,8 @@ nonvisual gateway change. A deliberate `v3` integration at
 `00a1906405669a38c9caf683641d0f1e6e392b6c` brings the current CI contracts into
 the branch before draft verification; unrelated target changes are not part
 of this repair. The approved implementation plan passed one Astra planner
-round. Slice and final review results are retained privately when complete.
+round. The slice risk review passed with no findings; the dedicated simplifier
+found no justified net reduction. Integrated final review and hosted checks
+continue at the draft boundary, with reports retained privately. The package
+contains 166 substantive added lines including the existing solution update.
+It introduces no new evaluator implementation or source module.
