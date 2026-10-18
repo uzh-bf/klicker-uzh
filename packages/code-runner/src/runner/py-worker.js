@@ -62,4 +62,5 @@ self.addEventListener('message', async (event) => {
   })
 })
 
-init()
+// init reports its own failure as an init-error message.
+void init()
