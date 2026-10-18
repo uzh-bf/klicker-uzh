@@ -280,12 +280,12 @@ test('pinned OCR registers and invokes reviewer tools with trusted rules and com
   git('config', 'user.name', 'Synthetic fixture')
   git('config', 'user.email', 'fixture@example.invalid')
   git('config', 'core.hooksPath', '/dev/null')
-  fs.mkdirSync(path.join(repo, '.agents/skills/rs-ocr-reviewer'), {
+  fs.mkdirSync(path.join(repo, '.agents/skills/ocr-reviewer'), {
     recursive: true,
   })
   fs.mkdirSync(path.join(repo, 'docs'))
   fs.writeFileSync(
-    path.join(repo, '.agents/skills/rs-ocr-reviewer/SKILL.md'),
+    path.join(repo, '.agents/skills/ocr-reviewer/SKILL.md'),
     'REVIEW_POLICY_SYNTHETIC_MARKER'
   )
   fs.writeFileSync(path.join(repo, 'docs/contract.md'), 'Synthetic contract')

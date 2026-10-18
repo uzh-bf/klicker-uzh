@@ -175,7 +175,7 @@ async function runDraftReview(options) {
         throw new Error('invalid_revision')
       const skill = execFileSync(
         'git',
-        ['show', `${options.policy}:.agents/skills/rs-ocr-reviewer/SKILL.md`],
+        ['show', `${options.policy}:.agents/skills/ocr-reviewer/SKILL.md`],
         {
           cwd: repo,
           encoding: 'utf8',

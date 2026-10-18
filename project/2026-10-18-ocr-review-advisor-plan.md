@@ -5,9 +5,11 @@
 Draft OCR should expose incomplete coverage, preserve native assistant state
 through compressed history, and show useful progress without printing raw model
 output. After those repairs, DeepSeek may consult the existing final-review
-model through a bounded advisor tool. A repository-owned reviewer skill will
-explain Klicker invariants and direct the reviewer to relevant skills and the
-engineering documentation. The user approved this executable batch on
+model through a bounded advisor tool. A portable reviewer skill will discover
+repository invariants through relevant skills and engineering documentation.
+Klicker-specific pointers remain in its CI guide. The skill also applies to
+GitHub pull requests and GitLab merge requests with the same tool contract.
+The user approved this executable batch on
 2026-10-18 and asked to begin with the reliability repairs.
 
 Keep the pinned OCR 1.13.0 executable, current reviewer models and maximum
@@ -125,11 +127,14 @@ policy, source pinning and final-review independence as key obligations.
 7. Keep DeepSeek and advisor receipts separate and price each with its own
    provider profile. A combined estimate requires complete receipts for both;
    unknown usage is never zero. Cached input retains existing accounting rules.
-8. Add `.agents/skills/rs-ocr-reviewer/SKILL.md`. Bootstrap it through trusted
+8. Add `.agents/skills/ocr-reviewer/SKILL.md`. Bootstrap it through trusted
    merged rules and explain on-demand discovery of relevant `.agents/skills/`
    guidance and `docs/`. Treat referenced developer instructions as review
    context; they grant no execution or mutation permissions. Read policy and
    documentation from the trusted revision, never candidate executable policy.
+   Keep the skill repository- and forge-neutral; discover local contracts through
+   the tools. A GitLab adoption supplies its own trusted CI and MR publisher
+   around the same skill and MCP contract; this package implements GitHub wiring.
 9. The final-review workflow stays separate and retains its current eligibility,
    authorization, reasoning, limits, accounting, retries and publication gates.
 
@@ -140,7 +145,7 @@ executor owning only its broker module and tests; slice 3 belongs to main. Slice
 depends on slice 1; slice 3 integrates both. The exact new files are
 `.github/scripts/ocr-draft-review.cjs`, `.github/scripts/ocr-draft-review.test.cjs`,
 `.github/scripts/ocr-review-tools.cjs`, `.github/scripts/ocr-review-tools.test.cjs`,
-and `.agents/skills/rs-ocr-reviewer/SKILL.md`. Extend existing adapter/tests, draft
+and `.agents/skills/ocr-reviewer/SKILL.md`. Extend existing adapter/tests, draft
 workflow, parsed workflow guard, `check.yml` suite list and
 `docs/ci-and-deployment.md`. Qualification uses these suites with the pinned
 local binary and temporary synthetic fixtures, without a second fixture framework.
@@ -274,6 +279,10 @@ runtime owner justify a retained environment rather than a disposable CI run.
   in private local reports. The final documentation update was checked by main.
 - The existing OCR preflight solution now records the compressed-history lesson
   and current provider routes; no separate solution document was needed.
+- User correction: the skill is named `ocr-reviewer` and can transfer unchanged
+  between repositories using these tools, including GitLab MR review. Repository
+  contracts live in local docs, and provider, quota and forge settings remain
+  runner-owned. The bootstrap and synthetic CLI fixture use the renamed path.
 - Delivery: source commits pushed and draft PR opened against `v3`. Hosted checks
   on the final documentation commit remain separate from the passing source
   qualification. The manual final-review status remains pending while draft.

@@ -12,6 +12,38 @@ tags:
 
 **The deploy driver is ArgoCD** (confirmed with maintainers; the ArgoCD `Application`/sync trigger itself lives outside this repo). What IS in-repo: the chart (`deploy/charts/klicker-uzh-v3/` — internally still named `klicker-uzh-v2`, chart version drifted behind the repo version), per-env values (`deploy/env-uzh-stg`, `deploy/env-uzh-prd`), Stakater **Reloader** annotations (`reloader.stakater.com/auto: "true"`) so config/secret changes restart pods, and an ArgoCD **PreSync migration hook** that runs `prisma migrate deploy` before each rollout — enabled on stg and prd (see [Deployment migrations](#deployment-migrations)).
 
+## Automated review context and portability
+
+The [ocr-reviewer skill](../.agents/skills/ocr-reviewer/SKILL.md) is portable
+across repositories and forges. Copy it unchanged when adopting this OCR
+approach; keep repository-specific contracts and skill pointers in local docs.
+It discovers relevant guidance through `read_review_context` and uses
+`ask_review_advisor` under the adopting runner's configured bounds and quota.
+
+An adopting runner must load the skill from trusted policy, fix the reviewed
+revision and comparison range, expose the same authenticated MCP tool schemas,
+and retain isolated credentials, bounded reads, usage receipts and sanitized
+logs. Providers, reasoning, budgets, retries and publication remain runner policy.
+GitHub PR and GitLab MR metadata map to that same review identity. GitLab
+adoption additionally needs a trusted GitLab CI and MR-publication wrapper;
+the workflow implemented and qualified in this repository uses GitHub Actions.
+
+For KlickerUZH, discover contracts and specialized skills from these starting
+points. They describe review evidence and grant no execution permissions.
+
+| Changed area                         | Repository guidance                                                                                                                        | Review focus                                                            |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| GraphQL, permissions, operations     | [GraphQL API](graphql-api-layer.md), [API skill](../.agents/skills/klicker-graphql-api/SKILL.md)                                           | Authenticate, authorize, execute; regenerate changed operations         |
+| Prisma, migrations, data lifecycle   | [Data and migrations](data-and-migrations.md), [data-model skill](../.agents/skills/klicker-data-model/SKILL.md)                           | Minimal migrations, data preservation and guarded disposable databases  |
+| Frontend, interaction, accessibility | [Frontend skill](../.agents/skills/klicker-frontend-ui/SKILL.md), [interface guidelines](../.agents/skills/web-design-guidelines/SKILL.md) | Loading, error, keyboard and responsive states; actual browser evidence |
+| Tests and CI                         | [Testing](testing.md), this guide, [verification skill](../.agents/skills/klicker-testing-verification/SKILL.md)                           | Exact-commit producer evidence, skipped work and partial coverage       |
+| Domain and cross-system changes      | [Domain model](domain-model.md), [architecture](architecture-overview.md), [ADRs](adr/)                                                    | Ownership, lifecycle and domain invariants                              |
+
+`Participation.isActive` controls leaderboard opt-in, independently of enrollment
+and course access. Preserve GraphQL's authenticate → authorize → execute boundary.
+Use the matching contracts for generated outputs, migrations, provider usage
+and cached-token accounting.
+
 ## Draft sync PR maintenance
 
 `maintain-draft-sync-prs.yml` maintains the exact forward pairs `v3` ->
@@ -343,7 +375,7 @@ Shard durations differ by architecture, so `playwright/timings.json` names the a
 
 - **AI review**: While a PR is a draft, OpenCodeReview runs DeepSeek V4.1 Flash 1017 (`deepseek/deepseek-v4.1-flash-1017`) through OpenRouter at max reasoning through a runner-local adapter against the exact PR head and its immediate base. A ready transition cancels an in-flight draft run, and ready PRs do not start new automatic reviews. OpenRouter routes to external model providers, so draft review diffs cross that provider boundary and incur usage cost.
 - **Draft advisor and repository context**: The trusted draft runner bootstraps
-  `.agents/skills/rs-ocr-reviewer/SKILL.md` as merged review rules. Its
+  `.agents/skills/ocr-reviewer/SKILL.md` as merged review rules. Its
   `read_review_context` MCP tool reads bounded Markdown from the trusted policy
   revision under `docs/` and `.agents/skills/`; it never loads candidate policy.
   The reviewer may ask `ask_review_advisor` a focused question with up to three
