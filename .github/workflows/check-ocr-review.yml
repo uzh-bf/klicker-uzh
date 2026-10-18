@@ -87,11 +87,13 @@ jobs:
         run: |
           npm install -g @alibaba-group/open-code-review@1.13.0
           ocr version
+          node .github/scripts/ocr-draft-review.cjs verify-install
 
       - name: Run bounded draft review
         id: review
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           REVIEW_FROM: ${{ steps.range.outputs.from }}
           BACKGROUND: ${{ steps.context.outputs.background }}
@@ -140,6 +142,9 @@ jobs:
           path: |
             ${{ runner.temp }}/draft-ai-review-adapter-diagnostics.jsonl
             ${{ runner.temp }}/draft-ai-review-outcome.json
+            ${{ runner.temp }}/draft-ai-review-tools.json
+            ${{ runner.temp }}/draft-ai-review-advisor-expectations.json
+            ${{ runner.temp }}/draft-ai-review-advisor-diagnostics.jsonl
           if-no-files-found: warn
           retention-days: 7
 

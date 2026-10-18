@@ -342,6 +342,26 @@ see **Bounded codebase check** below. Pushes always run the full suite.
 Shard durations differ by architecture, so `playwright/timings.json` names the architecture its weights were measured on. The timing workflow maps the run's recorded route to `x64` for hosted runs and `arm64` for the public pool, passes it to the updater as `--architecture`, and the updater leaves the table untouched when it is calibrated for a different architecture, reporting why instead of writing. An untagged table is adopted by the producing architecture on its first tagged write. Replacing a calibration with another architecture's measurements is therefore a human decision rather than an automatic side effect of a successful run.
 
 - **AI review**: While a PR is a draft, OpenCodeReview runs DeepSeek V4.1 Flash 1017 (`deepseek/deepseek-v4.1-flash-1017`) through OpenRouter at max reasoning through a runner-local adapter against the exact PR head and its immediate base. A ready transition cancels an in-flight draft run, and ready PRs do not start new automatic reviews. OpenRouter routes to external model providers, so draft review diffs cross that provider boundary and incur usage cost.
+- **Draft advisor and repository context**: The trusted draft runner bootstraps
+  `.agents/skills/rs-ocr-reviewer/SKILL.md` as merged review rules. Its
+  `read_review_context` MCP tool reads bounded Markdown from the trusted policy
+  revision under `docs/` and `.agents/skills/`; it never loads candidate policy.
+  The reviewer may ask `ask_review_advisor` a focused question with up to three
+  source ranges from the immutable PR head. One broker shares two attempted
+  consultations across planning and all four review workers. It consults
+  Mistral `zai-glm-5-3` at max reasoning with a 16 KiB complete request bound,
+  16,384-token output cap, 480-second deadline and no retries. Failures consume
+  a slot; malformed, truncated or unsupported evidence is rejected. The advisor
+  has no execution, browser, write or recursive tools. Its verdict is advisory;
+  the manual final-review gate remains separate. Missing advisor access leaves
+  ordinary source review available with an explicit unavailable status. Provider
+  keys stay in trusted adapter instances; the OCR child receives only local
+  capabilities and no publication token. Sanitized seven-day receipts report
+  registration, actual consultations and provider usage. Draft and advisor costs
+  use separate provider rates; a combined estimate is unavailable when either
+  expected usage receipt is incomplete. Advisor usage has its own quota and does
+  not change OCR's existing token accounting. This adds Mistral provider usage
+  to draft review; source configuration becomes active only after merge.
 - **Manual final review**: After CI and the draft feedback are settled, a collaborator with calculated `write` or `admin` permission posts `/final-review` on an unstacked PR or on one verified native stack layer. The workflow uses `zai-glm-5-3` with max reasoning, applies the repository's diff-led operational lenses, and publishes one consolidated review attached to an immutable head. Before review fan-out, one fixed public-safe request must return the expected function call; failure stops the run with bounded provider diagnostics. The manual jobs pin OpenCodeReview 1.13.0 and use its low review-effort preset for one review round; this does not lower the model's max reasoning setting. Both manual command paths use OCR's 200,000-token prompt ceiling, with estimated compression thresholds at 120,000 and 160,000 tokens. The separate completion cap remains 16,384 tokens. Before paid execution, one offline preview runs at the same prompt limit; malformed selection data or any `too_large` size exclusion stops the review. Other intentional rule and path exclusions remain valid: `final-review-rules.json` excludes unit tests and their support code (`*.test.*`, `__tests__`, `__mocks__`, `test/` directories and `tests/` directories under `apps/` and `packages/`) and documentation, in addition to OCR's default filters. Its `include` entry `playwright/**/*.ts` bypasses OCR's built-in test filter, so Playwright specs, helpers and configuration are reviewed. User excludes take precedence over `include`, so no exclude pattern may match `playwright/`. A successful selection preview does not prove that rendered group prompts fit or that the review completed. Each individual OCR task has a 45-minute deadline, and an individual range has a 10,000,000-token aggregate ceiling on billable tokens (uncached input plus output; see the cache accounting below). When the first attempt returns structurally valid partial coverage for a non-budget failure, the same job may resume that exact session once with only the unused token allowance. Strict lineage and identity checks protect checkpoint reuse, and combined usage cannot exceed the original range ceiling. Budget exhaustion, an invalid session, or a still-partial resume fails immediately. The job has a 90-minute ceiling and reserves time after OCR for cleanup and finalization. No incomplete result reaches publication. The result CLI commands also emit a bounded JSON diagnostic to stderr
   with status, coverage counts, allowlisted failure classifications, resume outcome
   and a fixed rejection code. A still-partial resume has a terminal-status rejection
@@ -516,9 +536,16 @@ through `gh api`. Job-created-to-start time is pending time; the timestamps alon
 do not identify runner availability or concurrency-lock contention. Compare the
 OCR step duration separately before changing job boundaries or timeouts.
 
-Draft reviews enable the pinned action's `stream_progress` option so phase and
-tool progress reaches the Actions log on stderr while stdout remains the final
-JSON result. It changes display only, preserving reasoning and budget settings.
+Draft reviews use the repository-owned runner with the unchanged OCR 1.13.0
+CLI and publisher helper pinned to upstream commit
+`1672852136fc87748249d22bce0819f33419ea79`. The runner emits the same bounded
+progress events described below, including heartbeats and process exits. Raw
+result JSON and stderr remain in private runner scratch and are not uploaded.
+The sanitized outcome artifact and logs distinguish selected, completed, failed,
+reused and waived coverage; a partial result remains advisory and emits a warning.
+Sticky summaries, incremental comment deduplication, low-severity routing and
+existing OCR reasoning, budgets, timeouts and retry behavior are preserved.
+
 Manual individual and stack code reviews use human-audience progress through the
 adapter's `OCR_ADAPTER_PROGRESS_FD=3` opt-in. Their shell functions bind descriptor
 3 to the live log before redirecting raw stderr to its existing private file.

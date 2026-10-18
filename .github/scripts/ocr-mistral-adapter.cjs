@@ -2059,7 +2059,7 @@ function createProgressFilter(write) {
     if (!dropping) {
       let event
       const tool =
-        /^\[ocr\]   ([▶✔✘]) (task_done|code_comment|file_read_diff|file_read|file_find|code_search)(?: |$)/u.exec(
+        /^\[ocr\]   ([▶✔✘]) (task_done|code_comment|file_read_diff|file_read|file_find|code_search|ask_review_advisor|read_review_context)(?: |$)/u.exec(
           line
         )
       const started =

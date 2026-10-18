@@ -77,6 +77,9 @@ test('attempts draft diagnostics upload even after startup failure', () => {
   assert.deepEqual(paths, [
     '${{ runner.temp }}/draft-ai-review-adapter-diagnostics.jsonl',
     '${{ runner.temp }}/draft-ai-review-outcome.json',
+    '${{ runner.temp }}/draft-ai-review-tools.json',
+    '${{ runner.temp }}/draft-ai-review-advisor-expectations.json',
+    '${{ runner.temp }}/draft-ai-review-advisor-diagnostics.jsonl',
   ])
   assert.equal(upload.if, 'always()')
   assert.equal(

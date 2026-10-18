@@ -220,7 +220,7 @@ runtime owner justify a retained environment rather than a disposable CI run.
 
 ## Progress
 
-- Status: reliability source implemented; advisor broker implementation active.
+- Status: integrated source implemented; verification and final reviews active.
 - Reliability verification: 238 focused tests passed. The scoped replay HTTP
   test and runner cleanup checks also pass after their final corrections. Native
   replay preserves existing bounds and rejects missing/cross-task identities.
@@ -235,6 +235,23 @@ runtime owner justify a retained environment rather than a disposable CI run.
   No login, configuration or provider change attempted.
 - Astra planner round 2: APPROVED. Both rounds retained privately under
   `project/_local/reviews/`. No paid OCR run triggered.
-- Required delivery: reviewed source and draft PR against `v3`; achieved: worktree
-  and reviewed plan. Next: commit/review reliability, then integrate advisor and
-  trusted review instructions before final verification and delivery.
+- Reliability committed as `fd66a54bce`. Independent simplification and risk
+  review completed. Added publication validation tests requested by the reviewer;
+  removed an unused export and gave parsed cost reports a concrete combined total
+  caller. Private reports retain findings and disposition.
+- Main took over broker implementation after the executor returned no artifact.
+  The broker and its synthetic HTTP tests cover trusted Git reads, shared quotas,
+  rejected source/advice and cancellation. Existing tests remain intact.
+- Actual checksum-verified OCR 1.13.0 (`ccc1f3c14395313332451cb1c6a7c91616a9f36058412ac502eada7394d3c5ec`,
+  matching the upstream release checksum) registered and invoked both tools with
+  mock providers, loaded trusted rules, completed all selected source, and kept
+  private reasoning out of the logs. A permanent optional native-CLI test accepts
+  `OCR_TEST_BINARY`; ordinary CI runs its remaining synthetic contracts without
+  installing another binary. No live provider request was made.
+- Native qualification caught invalid empty typed config fields; the fresh config
+  now omits those fields, matching the action's reset-to-default behavior.
+- Provider cost tests verify separate rates and unavailable combined totals when
+  advisor usage is incomplete. Focused Opengrep reported zero findings.
+- Required delivery: reviewed source and draft PR against `v3`; achieved: reviewed
+  plan, reliability commit and integrated source. Next: complete review and commit
+  the advisor, push, open the draft PR and inspect CI/feedback.
