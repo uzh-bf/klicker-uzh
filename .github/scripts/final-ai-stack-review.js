@@ -66,7 +66,7 @@ const MAX_MANIFEST_FILES = 2_000
 const MAX_REVIEWED_PATH_ALIASES = MAX_MANIFEST_FILES * 2
 const MAX_PATCH_LENGTH = 200_000
 const MAX_TOPOLOGY_REQUEST_BYTES = 1_000_000
-const MAX_TOPOLOGY_OUTPUT_TOKENS = 4_096
+const MAX_TOPOLOGY_OUTPUT_TOKENS = 65_536
 const FINDING_CATEGORIES = new Set([
   'bug',
   'security',
@@ -2514,6 +2514,7 @@ function validateTopologyResult(
       owners.length === 0 ||
       !Array.isArray(layers) ||
       layers.length === 0 ||
+      // Mistral's structured-output grammar does not support uniqueItems.
       new Set(layers).size !== layers.length ||
       layers.some(
         (layer) =>
@@ -3027,7 +3028,7 @@ async function callTopologyModel({
     body,
     diagnosticsStage: 'topology',
     fetchImpl,
-    timeoutMs: 120_000,
+    timeoutMs: 600_000,
   })
   const choice = payload?.choices?.[0]
   if (
@@ -3035,7 +3036,11 @@ async function callTopologyModel({
     typeof choice.message?.content !== 'string' ||
     payload.model !== FINAL_STACK_REVIEW_MODEL
   ) {
-    throw new Error('Topology model returned an incomplete response')
+    throw new Error(
+      choice?.finish_reason === 'length'
+        ? 'Topology model exhausted its completion token limit'
+        : 'Topology model returned an incomplete response'
+    )
   }
   let parsed
   try {
