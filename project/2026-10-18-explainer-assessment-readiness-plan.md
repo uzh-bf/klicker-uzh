@@ -109,8 +109,9 @@ the 24-turn subset and separate summary/missing-source acceptance rather than
 expanding the first comparison. Private evidence reconciliation is complete in
 `project/_local/explainer-quality-decision.md`; original inputs are unchanged.
 Markdown formatting and all eight local file-link checks pass; input hashes
-remain unchanged. Delivery is a draft documentation PR against `v3`; the next
-execution boundary is separately approved paid capture. No
+remain unchanged. Delivered as draft [PR 6607](https://github.com/uzh-bf/klicker-uzh/pull/6607)
+against `v3`; hosted checks are pending. The approved zero-spend evidence batch
+is complete. The next execution boundary is separately approved paid capture. No
 executable source, test, corpus, runtime or framework pin changed.
 Substantive source size excluding project artifacts is seven documentation
 lines; this isolated, explicitly requested roadmap/evidence package is
