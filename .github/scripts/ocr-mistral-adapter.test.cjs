@@ -103,7 +103,13 @@ test('OpenRouter native reasoning survives prefix and compressed replay with unc
   try {
     const prefix = [{ role: 'user', content: 'synthetic' }]
     const tools = [{ type: 'function', function: { name: 'task_done' } }]
-    const first = await postJson(adapter, { model, messages: prefix, tools })
+    const prompt_cache_key = 'synthetic-main-task'
+    const first = await postJson(adapter, {
+      model,
+      messages: prefix,
+      tools,
+      prompt_cache_key,
+    })
     assert.equal(first.status, 200)
     const normalized = first.json.choices[0].message
     assert.equal(normalized.content, '')
@@ -114,16 +120,21 @@ test('OpenRouter native reasoning survives prefix and compressed replay with unc
       completion_tokens: 8,
       total_tokens: 68,
     })
-    for (const replayPrefix of [
-      prefix,
-      [{ role: 'user', content: 'compressed' }],
+    for (const [replayPrefix, assistant] of [
+      [prefix, normalized],
+      [[{ role: 'user', content: 'compressed' }], normalized],
+      [
+        [{ role: 'user', content: 'compressed without echo' }],
+        { ...normalized, reasoning_content: undefined },
+      ],
     ]) {
       const replay = await postJson(adapter, {
         model,
         tools,
+        prompt_cache_key,
         messages: [
           ...replayPrefix,
-          normalized,
+          assistant,
           {
             role: 'tool',
             tool_call_id: 'call-read',
@@ -140,7 +151,7 @@ test('OpenRouter native reasoning survives prefix and compressed replay with unc
     )
     assert.deepEqual(fetchImpl.calls[0].body.reasoning, { effort: 'max' })
     assert.equal(adapter.diagnostics().history.prefix_hits, 1)
-    assert.equal(adapter.diagnostics().history.compressed_hits, 1)
+    assert.equal(adapter.diagnostics().history.compressed_hits, 2)
     assert.equal(adapter.diagnostics().provider, 'openrouter')
     assert.doesNotMatch(
       JSON.stringify(adapter.diagnostics()),
@@ -2302,6 +2313,55 @@ test('compression restores only exact reasoned turns, retaining native thinking 
   assert.equal(misses.miss_unknown_turn, 4)
   assert.equal(misses.miss_ambiguous_turn, 1)
   assert.equal(misses.misses, 6)
+})
+
+test('compressed tool replay without echoed reasoning requires the same conversation and unique native state', () => {
+  const history = createHistoryStore({ maxEntries: 3 })
+  const prefix = [{ role: 'user', content: 'original' }]
+  const native = {
+    role: 'assistant',
+    content: '  <think></think>visible  ',
+    reasoning_content: 'retained private state',
+    tool_calls: [
+      {
+        id: 'shared-call',
+        type: 'function',
+        function: { name: 'file_read', arguments: '{"file_path":"a.ts"}' },
+      },
+    ],
+  }
+  const scope = 'synthetic-main-task'
+  history.remember(prefix, native, scope)
+  const echo = { ...native, content: 'visible' }
+  delete echo.reasoning_content
+  const compressed = [{ role: 'user', content: 'summary' }]
+  assert.deepEqual(
+    history.restoreMessages([...compressed, echo], scope).at(-1),
+    native
+  )
+  assert.equal(history.diagnostics().compressed_hits, 1)
+  for (const [turn, key] of [
+    [echo, undefined],
+    [echo, 'different-task'],
+    [{ ...echo, content: 'changed' }, scope],
+    [{ ...echo, reasoning_content: 'invented' }, scope],
+    [
+      { ...echo, tool_calls: [{ ...echo.tool_calls[0], id: 'different' }] },
+      scope,
+    ],
+  ])
+    assert.throws(() => history.restoreMessages([...compressed, turn], key), {
+      code: 'history_missing',
+    })
+  history.remember(
+    [{ role: 'user', content: 'another prefix' }],
+    { ...native, reasoning_content: 'different private state' },
+    scope
+  )
+  assert.throws(() => history.restoreMessages([...compressed, echo], scope), {
+    code: 'history_collision',
+  })
+  assert.equal(history.entryCount(), 2)
 })
 
 test('request conversion and native replay work over the loopback listener', async () => {
