@@ -16,21 +16,21 @@ Klicker application stack.
 Experiment orchestration, numeric references and the shared spend guard live in
 `evaluation/`. Chat retains the application transport, authored-corpus validation,
 canonical source mapping and persisted-history verification in
-`apps/chat/scripts/`. Generic import, assessment and reporting belong to the
-private framework; these app checks remain covered by Chat's focused tests.
+`apps/chat/scripts/`. Application receipt translation belongs to
+`evaluation/adapters/`; generic normalized-artifact loading, DeepEval assessment
+and reporting belong to the private framework.
 
-The pinned framework includes the trajectory-capture importer and the synthetic
-[Explainer compression regression and control](framework/examples/klicker/explainer-compression/README.md).
+The app owns the trajectory-capture importer and the synthetic
+[Explainer compression regression and control](data/explainer-compression/README.md).
 These authored development cases do not authorize model calls or judge execution.
 
 ### Offline capture import
 
-With the pinned framework dependencies already installed, import sanitized
-version-2 receipts and their authored corpus without querying a model:
+With Python 3.12, import sanitized version-2 receipts and their authored corpus
+without framework dependencies or querying a model:
 
 ```bash
-uv run --frozen --offline --project evaluation/framework \
-  python evaluation/framework/src/adapters/klicker_trajectories.py \
+python evaluation/adapters/klicker_trajectories.py \
   project/_local/tutor-baseline.jsonl \
   --corpus evaluation/data/trajectories/tutor-attribution-v2.json \
   --group development --output project/_local/tutor-baseline-conversations.json
@@ -43,6 +43,24 @@ remains unsupported and unassessed. Assessment limits select eligible cases
 without shrinking planned coverage. Rubrics supply expected outcomes, while
 hashed source mappings remain diagnostics without retrieval context. The corpus
 hash records import provenance; capture-time corpus identity is caller-attested.
+
+The corpus version-1 contract permits only `version` and `cases` at the root.
+Each case requires `id`, `group`, `language`, `mode`, `support`, `rubric`,
+`assessmentTurns` and `turns`; unknown fields fail validation at every level.
+Assessment turns are a nonempty selection of unique one-based integers within
+the trajectory, normalized to ascending order. Literal turns contain only a
+nonblank `message`. A later repeated turn contains only `repeatPrevious: true`
+and a string `suffix`, which may be empty. Authored text and IDs stay exact.
+
+The app-owned importer rejects malformed inputs and sorts unordered assessment
+selections without changing receipt version 2. Its normalized output remains
+compatible with the currently pinned framework. No pin change or private
+submodule is required for import or its contract suite:
+
+```bash
+uv run --no-project --python 3.12 --with pytest==9.1.1 \
+  python -m pytest -q -p no:cacheprovider evaluation/tests/test_klicker_trajectories.py
+```
 
 Import is offline. Later judge execution requires separate approval and an
 explicit profile. The target spend guard bounds application requests only;
