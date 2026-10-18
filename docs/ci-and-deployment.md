@@ -12,6 +12,38 @@ tags:
 
 **The deploy driver is ArgoCD** (confirmed with maintainers; the ArgoCD `Application`/sync trigger itself lives outside this repo). What IS in-repo: the chart (`deploy/charts/klicker-uzh-v3/` — internally still named `klicker-uzh-v2`, chart version drifted behind the repo version), per-env values (`deploy/env-uzh-stg`, `deploy/env-uzh-prd`), Stakater **Reloader** annotations (`reloader.stakater.com/auto: "true"`) so config/secret changes restart pods, and an ArgoCD **PreSync migration hook** that runs `prisma migrate deploy` before each rollout — enabled on stg and prd (see [Deployment migrations](#deployment-migrations)).
 
+## Automated review context and portability
+
+The [ocr-reviewer skill](../.agents/skills/ocr-reviewer/SKILL.md) is portable
+across repositories and forges. Copy it unchanged when adopting this OCR
+approach; keep repository-specific contracts and skill pointers in local docs.
+It discovers relevant guidance through `read_review_context` and uses
+`ask_review_advisor` under the adopting runner's configured bounds and quota.
+
+An adopting runner must load the skill from trusted policy, fix the reviewed
+revision and comparison range, expose the same authenticated MCP tool schemas,
+and retain isolated credentials, bounded reads, usage receipts and sanitized
+logs. Providers, reasoning, budgets, retries and publication remain runner policy.
+GitHub PR and GitLab MR metadata map to that same review identity. GitLab
+adoption additionally needs a trusted GitLab CI and MR-publication wrapper;
+the workflow implemented and qualified in this repository uses GitHub Actions.
+
+For KlickerUZH, discover contracts and specialized skills from these starting
+points. They describe review evidence and grant no execution permissions.
+
+| Changed area                         | Repository guidance                                                                                                                        | Review focus                                                            |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| GraphQL, permissions, operations     | [GraphQL API](graphql-api-layer.md), [API skill](../.agents/skills/klicker-graphql-api/SKILL.md)                                           | Authenticate, authorize, execute; regenerate changed operations         |
+| Prisma, migrations, data lifecycle   | [Data and migrations](data-and-migrations.md), [data-model skill](../.agents/skills/klicker-data-model/SKILL.md)                           | Minimal migrations, data preservation and guarded disposable databases  |
+| Frontend, interaction, accessibility | [Frontend skill](../.agents/skills/klicker-frontend-ui/SKILL.md), [interface guidelines](../.agents/skills/web-design-guidelines/SKILL.md) | Loading, error, keyboard and responsive states; actual browser evidence |
+| Tests and CI                         | [Testing](testing.md), this guide, [verification skill](../.agents/skills/klicker-testing-verification/SKILL.md)                           | Exact-commit producer evidence, skipped work and partial coverage       |
+| Domain and cross-system changes      | [Domain model](domain-model.md), [architecture](architecture-overview.md), [ADRs](adr/)                                                    | Ownership, lifecycle and domain invariants                              |
+
+`Participation.isActive` controls leaderboard opt-in, independently of enrollment
+and course access. Preserve GraphQL's authenticate → authorize → execute boundary.
+Use the matching contracts for generated outputs, migrations, provider usage
+and cached-token accounting.
+
 ## Draft sync PR maintenance
 
 `maintain-draft-sync-prs.yml` maintains the exact forward pairs `v3` ->
@@ -354,6 +386,26 @@ see **Bounded codebase check** below. Pushes always run the full suite.
 Shard durations differ by architecture, so `playwright/timings.json` names the architecture its weights were measured on. The timing workflow maps the run's recorded route to `x64` for hosted runs and `arm64` for the public pool, passes it to the updater as `--architecture`, and the updater leaves the table untouched when it is calibrated for a different architecture, reporting why instead of writing. An untagged table is adopted by the producing architecture on its first tagged write. Replacing a calibration with another architecture's measurements is therefore a human decision rather than an automatic side effect of a successful run.
 
 - **AI review**: While a PR is a draft, OpenCodeReview runs DeepSeek V4.1 Flash 1017 (`deepseek/deepseek-v4.1-flash-1017`) through OpenRouter at max reasoning through a runner-local adapter against the exact PR head and its immediate base. A ready transition cancels an in-flight draft run, and ready PRs do not start new automatic reviews. OpenRouter routes to external model providers, so draft review diffs cross that provider boundary and incur usage cost.
+- **Draft advisor and repository context**: The trusted draft runner bootstraps
+  `.agents/skills/ocr-reviewer/SKILL.md` as merged review rules. Its
+  `read_review_context` MCP tool reads bounded Markdown from the trusted policy
+  revision under `docs/` and `.agents/skills/`; it never loads candidate policy.
+  The reviewer may ask `ask_review_advisor` a focused question with up to three
+  source ranges from the immutable PR head. One broker shares two attempted
+  consultations across planning and all four review workers. It consults
+  Mistral `zai-glm-5-3` at max reasoning with a 16 KiB complete request bound,
+  16,384-token output cap, 480-second deadline and no retries. Failures consume
+  a slot; malformed, truncated or unsupported evidence is rejected. The advisor
+  has no execution, browser, write or recursive tools. Its verdict is advisory;
+  the manual final-review gate remains separate. Missing advisor access leaves
+  ordinary source review available with an explicit unavailable status. Provider
+  keys stay in trusted adapter instances; the OCR child receives only local
+  capabilities and no publication token. Sanitized seven-day receipts report
+  registration, actual consultations and provider usage. Draft and advisor costs
+  use separate provider rates; a combined estimate is unavailable when either
+  expected usage receipt is incomplete. Advisor usage has its own quota and does
+  not change OCR's existing token accounting. This adds Mistral provider usage
+  to draft review; source configuration becomes active only after merge.
 - **Manual final review**: After CI and the draft feedback are settled, a collaborator with calculated `write` or `admin` permission posts `/final-review` on an unstacked PR or on one verified native stack layer. The workflow uses `zai-glm-5-3` with max reasoning, applies the repository's diff-led operational lenses, and publishes one consolidated review attached to an immutable head. Before review fan-out, one fixed public-safe request must return the expected function call; failure stops the run with bounded provider diagnostics. The manual jobs pin OpenCodeReview 1.13.0 and use its low review-effort preset for one review round; this does not lower the model's max reasoning setting. Both manual command paths use OCR's 200,000-token prompt ceiling, with estimated compression thresholds at 120,000 and 160,000 tokens. The separate completion cap remains 16,384 tokens. Before paid execution, one offline preview runs at the same prompt limit; malformed selection data or any `too_large` size exclusion stops the review. Other intentional rule and path exclusions remain valid: `final-review-rules.json` excludes unit tests and their support code (`*.test.*`, `__tests__`, `__mocks__`, `test/` directories and `tests/` directories under `apps/` and `packages/`) and documentation, in addition to OCR's default filters. Its `include` entry `playwright/**/*.ts` bypasses OCR's built-in test filter, so Playwright specs, helpers and configuration are reviewed. User excludes take precedence over `include`, so no exclude pattern may match `playwright/`. A successful selection preview does not prove that rendered group prompts fit or that the review completed. Each individual OCR task has a 45-minute deadline, and an individual range has a 10,000,000-token aggregate ceiling on billable tokens (uncached input plus output; see the cache accounting below). When the first attempt returns structurally valid partial coverage for a non-budget failure, the same job may resume that exact session once with only the unused token allowance. Strict lineage and identity checks protect checkpoint reuse, and combined usage cannot exceed the original range ceiling. Budget exhaustion, an invalid session, or a still-partial resume fails immediately. The job has a 90-minute ceiling and reserves time after OCR for cleanup and finalization. No incomplete result reaches publication. The result CLI commands also emit a bounded JSON diagnostic to stderr
   with status, coverage counts, allowlisted failure classifications, resume outcome
   and a fixed rejection code. A still-partial resume has a terminal-status rejection
@@ -384,11 +436,14 @@ only final text plus separate reasoning metadata. OpenRouter's native
 nonempty `reasoning` string, then text/summary details, then legacy
 `reasoning_content`, avoiding duplicate reasoning. Complete native turns stay in
 bounded process memory and are restored on conversation replay; missing or
-ambiguous history fails closed. OCR compression rewrites the conversation prefix; a retained turn may then be restored only by its exact assistant identity and reasoning hash when these identify one native payload. Main review requests offering `task_done` force tool use with `tool_choice: any` for Mistral and `required` for OpenRouter; a length-limited response without a tool call may enter OCR's existing continuation loop once per replayed chain, retaining its native history and billable usage. A finished tool-free response or another tool-free turn in that chain still fails closed. Auxiliary grouping, planning, filtering and compression requests remain unchanged. Manual jobs retain seven-day aggregate execution counters for request counts, input/output usage, missing tools, length finishes and history restoration. These receipts contain no prompts, code, reasoning traces, credentials or raw provider errors. Draft startup copies the trusted adapter to
-`runner.temp` before the composite action's checkout and masks its random
-loopback capability. Always-run stop authenticates shutdown and proves listener
-closure before deleting capability state. Neither the upstream key nor native
-history is persisted. Live qualification of a changed draft route requires trusted default-branch
+ambiguous history fails closed. OCR compression rewrites the conversation prefix;
+a retained turn may then match one native payload by exact assistant identity
+and reasoning hash. When the SDK omits reasoning, an exact tool turn may instead
+match within its validated conversation key; cross-task and ambiguous matches
+remain rejected. Main review requests offering `task_done` force tool use with `tool_choice: any` for Mistral and `required` for OpenRouter; a length-limited response without a tool call may enter OCR's existing continuation loop once per replayed chain, retaining its native history and billable usage. A finished tool-free response or another tool-free turn in that chain still fails closed. Auxiliary grouping, planning, filtering and compression requests remain unchanged. Manual jobs retain seven-day aggregate execution counters for request counts, input/output usage, missing tools, length finishes and history restoration. These receipts contain no prompts, code, reasoning traces, credentials or raw provider errors. The trusted draft runner starts its adapters and broker in the parent process,
+gives OCR an isolated temporary home and scoped loopback capabilities, and closes
+those listeners during bounded cleanup. Neither upstream keys nor native
+history are persisted. Live qualification of a changed draft route requires trusted default-branch
 activation; branch CI runs the current default-branch policy.
 
 Manual jobs pass the private configuration to the adapter's
@@ -528,9 +583,16 @@ through `gh api`. Job-created-to-start time is pending time; the timestamps alon
 do not identify runner availability or concurrency-lock contention. Compare the
 OCR step duration separately before changing job boundaries or timeouts.
 
-Draft reviews enable the pinned action's `stream_progress` option so phase and
-tool progress reaches the Actions log on stderr while stdout remains the final
-JSON result. It changes display only, preserving reasoning and budget settings.
+Draft reviews use the repository-owned runner with the unchanged OCR 1.13.0
+CLI and publisher helper pinned to upstream commit
+`1672852136fc87748249d22bce0819f33419ea79`. The runner emits the same bounded
+progress events described below, including heartbeats and process exits. Raw
+result JSON and stderr remain in private runner scratch and are not uploaded.
+The sanitized outcome artifact and logs distinguish selected, completed, failed,
+reused and waived coverage; a partial result remains advisory and emits a warning.
+Sticky summaries, incremental comment deduplication, low-severity routing and
+existing OCR reasoning, budgets, timeouts and retry behavior are preserved.
+
 Manual individual and stack code reviews use human-audience progress through the
 adapter's `OCR_ADAPTER_PROGRESS_FD=3` opt-in. Their shell functions bind descriptor
 3 to the live log before redirecting raw stderr to its existing private file.

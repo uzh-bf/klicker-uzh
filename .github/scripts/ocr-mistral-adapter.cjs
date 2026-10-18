@@ -509,6 +509,7 @@ function createHistoryStore(options = {}) {
   const maxBytes = options.maxBytes ?? DEFAULT_MAX_HISTORY_BYTES
   const native = new Map()
   const reasonedTurns = new Map()
+  const scopedTurns = new Map()
   const diagnostics = {
     prefix_hits: 0,
     compressed_hits: 0,
@@ -534,7 +535,25 @@ function createHistoryStore(options = {}) {
     return hashIdentity({ assistant: messageIdentity(message), reasoning })
   }
 
-  function remember(prefixMessages, nativeMessage) {
+  function scopedKey(message, scope) {
+    if (
+      typeof scope !== 'string' ||
+      !/^[A-Za-z0-9_-]{1,64}$/.test(scope) ||
+      !message.tool_calls?.length
+    )
+      return undefined
+    const assistant = messageIdentity(message)
+    // OCR's VisibleContent removes these tags and trims outer whitespace.
+    // The conversation key supplies provenance when compression replaces the
+    // prefix and the SDK omits reasoning from an otherwise exact tool turn.
+    assistant.content = assistant.content
+      .replaceAll('<think>', '')
+      .replaceAll('</think>', '')
+      .trim()
+    return hashIdentity({ scope, assistant })
+  }
+
+  function remember(prefixMessages, nativeMessage, scope) {
     const normalized = normalizeAssistantMessage(nativeMessage, provider)
     const prefix = prefixMessages.map(messageIdentity)
     const identity = messageIdentity(normalized)
@@ -569,11 +588,17 @@ function createHistoryStore(options = {}) {
       if (!reasonedTurns.has(turnKey)) reasonedTurns.set(turnKey, entry)
       else if (prior?.digest !== entry.digest) reasonedTurns.set(turnKey, null)
     }
+    const scoped = scopedKey(normalized, scope)
+    if (scoped) {
+      const prior = scopedTurns.get(scoped)
+      if (!scopedTurns.has(scoped)) scopedTurns.set(scoped, entry)
+      else if (prior?.digest !== entry.digest) scopedTurns.set(scoped, null)
+    }
     entries += 1
     bytes += size
   }
 
-  function restoreAssistant(prefixMessages, message) {
+  function restoreAssistant(prefixMessages, message, scope) {
     const normalized = normalizeMessage(message)
     const prefix = prefixMessages.map(messageIdentity)
     const identity = messageIdentity(normalized)
@@ -582,7 +607,9 @@ function createHistoryStore(options = {}) {
     if (existing) diagnostics.prefix_hits += 1
     else {
       const turnKey = reasonedKey(normalized)
-      existing = turnKey ? reasonedTurns.get(turnKey) : undefined
+      existing = turnKey
+        ? reasonedTurns.get(turnKey)
+        : scopedTurns.get(scopedKey(normalized, scope))
       if (existing === null) {
         diagnostics.misses += 1
         diagnostics.miss_ambiguous_turn += 1
@@ -612,13 +639,13 @@ function createHistoryStore(options = {}) {
     return nativeMessage
   }
 
-  function restoreMessages(messages) {
+  function restoreMessages(messages, scope) {
     if (!Array.isArray(messages)) {
       throw new AdapterError('invalid_request', 'request must include messages')
     }
     return messages.map((message, index) => {
       if (message?.role === 'assistant') {
-        return restoreAssistant(messages.slice(0, index), message)
+        return restoreAssistant(messages.slice(0, index), message, scope)
       }
       return normalizeMessage(message)
     })
@@ -674,7 +701,7 @@ function translateMistralRequest(
 
   const translated = {
     model: profile.model,
-    messages: history.restoreMessages(body.messages),
+    messages: history.restoreMessages(body.messages, body.prompt_cache_key),
     ...(provider === 'openrouter'
       ? { reasoning: { effort: 'max' } }
       : { reasoning_effort: effort }),
@@ -1249,7 +1276,7 @@ async function startAdapter(options = {}) {
         }
       }
       const message = payload.choices[0].message
-      history.remember(body.messages, message)
+      history.remember(body.messages, message, body.prompt_cache_key)
       if (normalized.usage) normalized.usage = billableUsage(normalized.usage)
       sendJson(res, 200, normalized)
       accepted = true
@@ -2032,7 +2059,7 @@ function createProgressFilter(write) {
     if (!dropping) {
       let event
       const tool =
-        /^\[ocr\]   ([▶✔✘]) (task_done|code_comment|file_read_diff|file_read|file_find|code_search)(?: |$)/u.exec(
+        /^\[ocr\]   ([▶✔✘]) (task_done|code_comment|file_read_diff|file_read|file_find|code_search|ask_review_advisor|read_review_context)(?: |$)/u.exec(
           line
         )
       const started =
