@@ -589,6 +589,15 @@ test('adds bounded description data without hidden comments or image embeds', ()
     false
   )
 
+  for (const prefix of ['<img', '<img src="unfinished"']) {
+    const description = `${prefix}\n${'visible'.repeat(3)}`
+    const parsed = JSON.parse(
+      buildReviewBackground('Synthetic change', description).split('\n').at(-1)
+    )
+    assert.equal(parsed.description, description)
+    assert.equal(parsed.description_status, 'complete')
+  }
+
   for (const empty of [
     undefined,
     null,
@@ -2694,10 +2703,7 @@ test('validates complete OCR results and retains malformed artifacts', () => {
   }
 })
 
-test('emits bounded OCR outcome diagnostics without changing CLI stdout', () => {
-  const directory = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'final-review-ocr-line-')
-  )
+function createOCRResultDiagnosticsHarness() {
   const scriptPath = path.join(__dirname, 'final-ai-review.js')
   const run = (args) =>
     spawnSync(process.execPath, [scriptPath, ...args], { encoding: 'utf8' })
@@ -2707,6 +2713,14 @@ test('emits bounded OCR outcome diagnostics without changing CLI stdout', () => 
         .split('\n')
         .find((line) => line.startsWith('{"schema":"ocr-result-diagnostic'))
     )
+  return { run, diagnostic }
+}
+
+test('emits bounded OCR outcome diagnostics without changing CLI stdout', () => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'final-review-ocr-line-')
+  )
+  const { run, diagnostic } = createOCRResultDiagnosticsHarness()
 
   try {
     const parentPath = path.join(directory, 'parent.json')
@@ -2762,15 +2776,7 @@ test('records still-partial rejections with observed status and a source code', 
   const directory = fs.mkdtempSync(
     path.join(os.tmpdir(), 'final-review-ocr-partial-')
   )
-  const scriptPath = path.join(__dirname, 'final-ai-review.js')
-  const run = (args) =>
-    spawnSync(process.execPath, [scriptPath, ...args], { encoding: 'utf8' })
-  const diagnostic = (result) =>
-    JSON.parse(
-      result.stderr
-        .split('\n')
-        .find((line) => line.startsWith('{"schema":"ocr-result-diagnostic'))
-    )
+  const { run, diagnostic } = createOCRResultDiagnosticsHarness()
 
   try {
     const parent = partialResumeResult()
@@ -2852,15 +2858,7 @@ test('fails unreadable and malformed OCR inputs with fixed safe diagnostics', ()
   const directory = fs.mkdtempSync(
     path.join(os.tmpdir(), 'final-review-ocr-bad-')
   )
-  const scriptPath = path.join(__dirname, 'final-ai-review.js')
-  const run = (args) =>
-    spawnSync(process.execPath, [scriptPath, ...args], { encoding: 'utf8' })
-  const diagnostic = (result) =>
-    JSON.parse(
-      result.stderr
-        .split('\n')
-        .find((line) => line.startsWith('{"schema":"ocr-result-diagnostic'))
-    )
+  const { run, diagnostic } = createOCRResultDiagnosticsHarness()
 
   try {
     const missingPath = path.join(directory, 'missing.json')

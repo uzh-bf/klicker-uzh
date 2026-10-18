@@ -1,0 +1,2356 @@
+# [PR #5777 — generation lifecycle contracts and business-regression protection](https://github.com/uzh-bf/klicker-uzh/pull/5777)
+
+## Approval summary
+
+### Approved provider-owned launcher extension — 2026-09-09
+
+The user approved completing the local ingestion and retrieval package through
+provider-owned launchers, preserving ADR 0018. Each provider owns its service
+configuration and backing storage; Klicker invokes the supported contract and
+owns only consumer configuration and end-to-end acceptance. This supersedes the
+earlier unresolved architecture and source-helper deletion notes below.
+
+Authority covers source changes, offline verification, independent reviews,
+ordinary branch pushes and draft delivery in the four provider repositories and
+the existing Klicker package. It does not cover runtime activation, new ingestion
+or model requests, graph builds, merges, deployments, or retained-data and
+branch/worktree deletion. Replacing superseded source files is an ordinary
+in-scope refactor. Boundary owner: self. Terminal: reviewed source drafts with
+explicit dependency and live-acceptance gaps; no claim of a working live profile.
+
+The native planner approved this sequence with ownership and verification
+clarifications. Deliver ingestion first, then Doc Processing, scraping, Doc
+Query, and the thin Klicker integration. Main owns cross-provider contracts and
+integration; bounded executors own disjoint provider implementation and focused
+tests. Provider merges remain prerequisites for consumer merge readiness, not
+for publishing an explicitly dependency-pending draft.
+
+Every facade binds an explicit source revision, instance and private state path.
+Setup alone initializes schemas and credentials. Infrastructure start requires
+setup and cannot migrate, consume queues, submit smoke work or make paid calls.
+Unsupported modes fail explicitly. Status reports allowlisted identity and
+readiness only. Stop verifies ownership, handles partial starts and preserves
+state. Shared endpoints never transfer lifecycle ownership. Do not introduce a
+shared launcher framework or retain copied provider assembly in Klicker.
+
+Ingestion owns ingestion state, Hatchet and vector backing. Doc Processing owns
+extract storage and consumes explicit Hatchet endpoints. Scraping owns its cache
+and Crawl4AI. Doc Query owns retrieval configuration and consumes vector storage.
+Klicker retains its app database, Redis, Blob storage and consumer bindings.
+
+Provider acceptance uses real argument parsing and dispatch with stubbed process
+runners: setup/start separation, two-instance isolation, foreign-owner rejection,
+partial-start shutdown, preserved state, explicit configuration and sanitized
+errors. Consumer tests cover dependency order, reverse stop and retained resume
+guards. Existing consequential regressions are reused rather than duplicated.
+Each substantive slice receives simplification and risk review; complete source
+packages receive integrated review before draft publication. Live browser proof
+and paid retrieval remain separately gated.
+
+Progress: Klicker corrections are committed at
+`e0a55613cbddf0ce27ed89d864c8928a6eeec07e`; 132 focused Chat tests and 71 local
+launcher tests passed. The ingestion worktree `trees/rs/provider-local-launcher`
+is based on `main@69fa7f9200fc17bdb30b9cd792ea4d0e0a907012`. The historical
+launcher worktree remains untouched. No provider implementation has landed yet.
+
+The unused process-identity helper and its nine self-only tests are removed.
+Repository search found no operational callers. The remaining offline launcher
+suite passes 62/62 in the retained task container. This removes unneeded source,
+not runtime state; Git retains the removed files. Provider implementation is
+owned by Popper for ingestion and Banach for Doc Processing. Main owns consumer
+integration. No runtime startup, shutdown or work submission occurred.
+
+2026-09-10 progress: provider facades are committed in their repositories -
+data-ingestion tasks published as MR !136 (task commits patch-equivalent on the
+branch; remote also carries upstream Office fixes), Doc Processing worker mode
+at b6448bf with completed simplification and risk reviews, scraping facade at
+1771693, Doc Query at d6e13ae awaiting a captured integrated review. The
+consumer configuration model now records milvus, milvusMetadata and
+objectBacking under ingestion ownership with retrieval as vector consumer; all
+62 local-stack tests pass. The thin launcher-invocation integration, provider
+final reviews, draft publication and target-integration ruling remain.
+
+2026-09-10 thin integration: `providerCommands` now emits explicit launcher
+invocations bound to the isolated instance, source revision and private state
+paths with setup order and reverse stop. Ingestion setup and start stay
+blocked on its provider-owned backing allocations; ingestion status and stop
+plus scraping, Doc Processing and Doc Query are fully derivable. Committed
+at `99160c2074a5e3a59346f15b83394ab8c8c80944` with 65/65 local-stack tests,
+Biome and Prettier. The host pre-commit hook was replaced by its documented
+equivalent checks after GIT_DIR, sandboxed-pnpm and Node 26 artifacts; the
+worktree git wedge is the documented fsmonitor daemon state worked around
+with `core.fsmonitor=false`. Remaining gates: provider final reviews
+(Doc Processing range 5a0979af..b6448bf, Doc Query retry at d6e13ae,
+scraping simplifier, risk and final on 7eadb3a6..1771693), then provider
+pushes, draft MRs and the separately gated target-integration ruling.
+2026-09-10 integration reviews: the simplifier and slice reviewer both
+returned done-with-concerns on 0e96bb4b4c..99160c2074 (receipts in
+project/_local/reviews/2026-09-10-klicker-launcher-integration-*.md).
+Accepted corrections landed at 63e92688be: explicit rejection of project
+identities beyond the launchers' 48-character instance limit, scraping
+ordered before ingestion so runtime workers never precede their
+dependency, a literal docProcessing owner-id assertion, and the
+simplifier's dead-branch, duplicate-assertion and parameter reductions.
+66/66 local-stack tests and Biome pass on the corrected head. Remaining
+gates: provider final reviews (Doc Processing 5a0979af..b6448bf, Doc
+Query retry f258c2d..d6e13ae, scraping simplifier, risk and final on
+7eadb3a6..1771693) - currently blocked on explicit user approval to send
+the private UZH GitLab provider diffs to an external reviewer route -
+then provider pushes, draft MRs and the separately gated
+target-integration ruling.
+2026-09-10 final review and corrections: the integrated final review on
+c939ab34..8c91a03166 returned findings and all six were dispositioned. The
+plan no longer claims to have replaced the consumer-owned Compose assembly.
+provider-commands.mjs, the local-KB stack solution page, ADR 0018 and the
+slice receipt now state that the launcher bindings are a non-executable
+projection while the Compose path remains the lifecycle that runs, and
+configPlan.limitations records it. The flag contract is recorded from the
+provider facades in util/local-kb/provider-launcher-contract.mjs, which
+exposed three real contract defects: ingestion --strict was emitted after the
+verb where argparse rejects it, the ingestion requires list omitted
+web-scraping-base-url, azurite-port and milvus-health-port, and retrieval
+--config-dir pointed at an empty state-directory child instead of the
+.local-kb/doc-query-tools registry the consumer populates. Retrieval setup,
+start and status are now recorded as blocked on the vector-store URI and
+model gateway its launcher validates. lifecycleOrder is derived topologically
+from dependencyGraph as scraping, docProcessing, ingestion, retrieval, which
+satisfies the ingestionWorkers edges to both scraping and documentProcessing.
+The dead KLICKER_PLAYWRIGHT_PRESERVE_DATABASE guard in the retained-citations
+branch of util/run-playwright-host.mjs was removed, and the retained spec
+selects the retrieval chip through an app-owned data-tool-kind attribute.
+70/70 local-stack tests, Biome and Prettier pass on the corrected head.
+Remaining gates: provider-side final reviews, provider pushes and draft MRs,
+then the separately gated target-integration ruling.
+
+### Current delivery ownership — 2026-09-09
+
+The target integration is committed at `54814574493fd98990733c593e90f22cff976203`.
+The full container build passed 26/26 and the worktree was clean before the
+final-review corrections. Claude Opus 5 completed the integrated review of all
+55 paths with seven findings. Main is correcting generated-state Git exclusion,
+repository/CI wiring for offline lifecycle tests, and the duplicated gateway
+predicate. The new `check:local-kb` command passes 71/71; the shared-predicate
+Chat regressions pass 88/88. Aquinas completed the disabled-binding preview and
+metadata-only result-display corrections: 44 focused tests and Chat type-check
+pass. Main inspected all four changed files and closed the executor. Disabled
+bindings no longer enter effective scope; metadata-only results remain visible,
+and malformed sources are not classified as genuinely empty.
+
+Two findings require an explicit disposition before claiming final readiness.
+ADR 0018 assigns launchers/configuration to providers, but this package assembles
+them in Klicker. Do not silently amend that accepted decision or describe this
+as a complete local AI profile. The unused process-identity helper is also not
+part of the operating Compose lifecycle; its unit tests are not operational
+ownership proof. No source-file deletion is performed under the current
+no-deletion boundary. Browser consent and live qualification remain pending.
+This receipt supersedes the historical in-progress merge/reviewer notes below.
+
+Approved target integration is in progress on `rs/local-kb-ingestion-retrieval`.
+All sixteen conflict paths are resolved; both executors are closed. Main owns
+integration and verification. The
+resolved host launcher passes 28/28 tests, and the merged offline local-stack
+suite passes 71/71 in the existing task container. The merged workspace
+definitions required `pnpm install --frozen-lockfile`; it passed with no
+lockfile change. All 63 resolved Chat regressions and 66 normalization/MCP
+regressions pass. Chat type-checking passes after rebuilding the updated
+feature-flags package. Host launcher/profile checks pass 44/44 and the complete
+host CI contract suite passes 69/69. Both shell runtime/profile suites pass;
+their synthetic initializer fixture now stubs the separately tested dependency
+generator. Single-KB preview fixtures use the existing `kb_id` contract, while
+the multi-KB fixture retains `kb_ids`. Focused Biome passes. No application/provider restart, work
+submission, consent acceptance, retained-data change or deployment occurred.
+The runtime stays retained under the user's manual-verification lease; no new
+live ingestion or retrieval acceptance is claimed. Draft publication remains
+pending integrated checks and final review. The older approval-wait and active
+review notes below are historical and superseded by this receipt.
+
+User approved target integration after the merge-authority clarification.
+The in-progress normal merge targets `origin/v3-ai@c939ab348a67f1ffa4db5e97f9da3b3bf2e8d6da`.
+Three dirty documentation files were preserved in stash
+`64a976f76f1cc23b80ea7d9a76f7e62dac2ec685` and restored without dropping that backup.
+Upstream predecessor follow-ups supersede the old fixture-route and profile
+interception implementations: test routes now live only in the explicit
+preload, profile failure uses ManageFeatureFlagProfile, and persistence fixtures
+include getAiBetaDecision. Upstream AI eligibility cases and profile-loading
+guard are preserved. These decisions follow the merged predecessor's receipts
+at this target, including its test-only route separation and hosted corrections.
+The current source extension and its historical evidence remain preserved here;
+upstream predecessor history remains available in the target revision.
+
+Managed-status review is complete with no source defect. Its advisory coverage
+gap is corrected in `3d60f6933c`: returned status, malformed JSON, command
+failure, unknown status and invalid drift shape are asserted. All 28 focused
+tests pass; Biome, diff checks and staged redacted gitleaks pass. Both reviewers
+are closed. At that checkpoint target integration awaited approval. The user
+subsequently approved the task-branch merge described above; merging the
+eventual PR into its target remains outside this authority.
+
+Authority clarification: the active goal explicitly excludes merges. The trial
+merge changed no branch or working files; performing target integration now
+requires clarification despite the ordinary standing target-integration rule.
+Request only a normal merge of `origin/v3-ai@c939ab348a67f1ffa4db5e97f9da3b3bf2e8d6da`
+into `rs/local-kb-ingestion-retrieval`, preserving existing work and resolving
+the 16 conflicts. This does not authorize merging the eventual PR into v3-ai,
+force-pushing, restarting providers, submitting work or deleting data.
+
+Publication reconciliation: no PR exists for `rs/local-kb-ingestion-retrieval`.
+GitHub confirms the predecessor PR #5777 is merged into v3-ai as
+`9f805e9e55dfc2b318ea2e0a27cab39b23abaa71`. Current `origin/v3-ai` is
+`c939ab348a67f1ffa4db5e97f9da3b3bf2e8d6da`. A trial merge (no branch, index or
+working-file changes) reports 16 conflicting paths, including newer citation
+rendering and host-launcher changes plus inherited predecessor code. Deliberate
+target integration is required before full-package review to avoid a stale
+publication diff. Preserve the three dirty documentation paths first; do not
+discard them or force-push. The full offline local-stack suite passes 71/71.
+The approved source stage ends at reviewed draft publication, not live AI
+acceptance; browser consent remains a separately gated live-proof limitation.
+
+Managed application observation is committed at `4690a9cc80`. The 28 focused
+tests, Biome and staged redacted scan pass; no runtime mutation occurred.
+The two-file range `87fa252762..4690a9cc80` is under paired review: simplifier
+`01a083c9-140f-7e60-929f-ee4f7227f42f` and slice reviewer
+`01a083c9-1515-7553-8e23-051d2f965d08`. Main owns only documentation and
+integration while these read-only passes run. Source/CI readiness must not be
+presented as live ingestion or retrieval acceptance. Consent-gated browser
+acceptance, full-package review and draft publication remain outstanding.
+
+The correction review is DONE on `b7601de..87fa252`; both shutdown findings
+are resolved and the reviewer is closed. Main owns the next managed-status
+integration because it shares the lifecycle module and final readiness seam.
+The uncommitted status change binds Devrouter observation to the prepared local
+context, checkout and workspace, reports managed status/readiness separately,
+and leaves AI qualification false. All 28 focused tests pass with synthetic
+runners, including stopped/profile-drift and foreign identity cases. Biome
+passes with one pre-existing informational suggestion. No live service status,
+lifecycle mutation or provider call ran. This new slice still requires commit
+and review; browser consent and final publication remain open.
+
+The lifecycle correction is committed at `87fa252762`. The independent review
+found that incomplete resume or stop attempts blocked supported shutdown. Main
+reproduced the failed-resume case before fixing it. Shutdown now remains
+available for incomplete attempts after ownership verification, but retains
+the evidence and cannot authorize another resume. Other evidence errors remain
+blocking. All 28 focused Node 24 tests pass; Biome, diff checks and staged
+redacted gitleaks pass. Container checks replace the host aggregate hook for
+this commit. The same reviewer is checking this correction; no new reviewer
+was started. No real lifecycle operation or provider call occurred.
+
+Continuation after the user's MR !134 merge approval: remote fetch succeeds;
+`rs/local-kb-ingestion-retrieval` has no configured upstream and is 214 ahead,
+8 behind `origin/v3`. The simplifier completed and main accepted its sole
+finding: extract repeated infrastructure receipt validation into one private
+helper while preserving both traversal loops and directory checks. That narrow
+uncommitted correction passes all 27 synthetic preparation/launcher tests in
+the existing container and `git diff --check`. The existing slice reviewer
+remains running; no replacement reviewer was started. Retained workspace data
+and services are unchanged. Managed observation, browser consent acceptance,
+integrated final review and draft publication are still pending.
+
+Current review checkpoint: resume is committed at
+`b7601de3a10c32672662101f350151d23b79f356`, with 27 focused tests passing.
+A stop before the initial successful startup no longer supplies resume evidence
+for that later startup. The unreviewed tooling range
+`d63b69c8a96b732e8a580ee1de49bfb1f53655fc..b7601de3a10c32672662101f350151d23b79f356`
+is now under the paired reviews: simplifier
+`01a083b8-2009-72e1-ba48-2fb15b623e87` and slice reviewer
+`01a083b8-213f-7c71-8bcd-e01d3bf39acc`. All 17 changed paths are included.
+No writer is active on those source paths. Main retains documentation and
+integration. The slice commit used the recorded focused container-check split;
+no real start, stop, resume or provider call ran. Managed-runtime status wiring,
+review disposition, consent-gated browser acceptance and final publication remain.
+
+Resume implementation ownership returned to main after the existing executor
+continued redesigning through the narrowing checkpoint. The child is shut down;
+its partial helpers were preserved and integrated, not replaced by another
+worker. The CLI now accepts explicit resume after completed preparation, startup
+and current-cycle stop evidence. Successful cycles preserve storage; concurrent
+operations and failed-resume replay are refused. All 27 focused preparation and
+launcher tests pass with synthetic runners. No real lifecycle operation ran.
+This slice remains uncommitted and needs main diff inspection and the required
+reviews; stop-failure evidence semantics remain to be checked before commit.
+
+Broader verification on 2026-09-09: the container aggregate stops at the known
+host-only Devrouter contract test, not a branch assertion failure. Running that
+complete CI contract suite on the host passes 69/69. The remaining container
+aggregate passes, including 40/40 Turbo check tasks, lint, Syncpack, agent-doc
+validation, Git identity tests, removed-artifact checks, schema mirroring and
+host-launcher unit tests. GraphQL regeneration produces no tracked SDL drift.
+Formatting is verified separately on the committed citation and Blob slices.
+
+Manage Blob routing is committed at `e12419b961`. The four-file slice includes
+the Blob route in Manage, binds it to Azurite in the host runtime contract and
+rejects missing or unexpected managed bindings. The existing 16 host contract
+tests pass, including actual installed-Devrouter profile planning. Focused
+Biome, YAML Prettier, identity validation and staged redacted gitleaks pass.
+The aggregate host hook was replaced by these focused checks at this checkpoint;
+full source verification remains due. No runtime configuration was applied.
+
+Retained-citation tooling is committed at `df6cfaeb2c`. The five-file slice
+contains the isolated host-launcher mode, local-origin/fixture validation,
+separate Playwright config/spec and TypeScript inclusion. It does not install,
+start, seed or submit work. Fourteen launcher tests, Playwright TypeScript,
+focused Biome/Prettier, identity validation and staged redacted gitleaks pass.
+The host pre-commit hook was skipped for this checkpoint using focused container
+verification; this is not a claim that the full aggregate hook passed.
+Required slice review and simplification remain due after the active resume
+writer finishes. Browser acceptance still fails at the existing consent overlay;
+the test preserves that failure rather than bypassing consent.
+
+Current reconciliation, 2026-09-09: GitLab confirms provider MR !134 is merged
+at squash commit `69fa7f9200fc17bdb30b9cd792ea4d0e0a907012`; its reviewed-head
+pipeline 660884 succeeded. This dependency is already included in the local
+source package. The task branch is `rs/local-kb-ingestion-retrieval`, has no
+upstream shown by status, and is 211 commits ahead and 8 behind `origin/v3` after
+fetch. Target resolution remains required before publication; this drift alone
+does not require integration.
+
+Provider health probes are now committed at `e8a2ca5f41`.
+Fresh offline verification passes 20 provider-composition tests in the existing
+Node 24 container, 16 runtime-contract tests on the host, and 14 retained-launcher
+tests in the container. Staged and unstaged diffs pass whitespace checks.
+The provider mapping child completed and was closed; its source inspection
+distinguishes API liveness from dependency readiness. No endpoint was probed.
+GitHub reports no open PR for this task branch; draft publication is still due.
+Existing child
+`01a0839a-8b96-7372-b5b8-cde36204322b` has not returned a terminal result.
+Safe resume, managed application observation, final review and draft
+publication are unfinished. The retained citation test is blocked by the
+disclaimer overlay; no consent write or new provider operation has occurred.
+Earlier chronological receipts below retain historical states and do not
+supersede this checkpoint.
+
+Fresh retained-runtime readback: Devrouter `status --repo` resolves this exact
+checkout to workspace `rs-generation-lifecycle-contract`, Compose project
+`default-rs-6d40c`, and reports `ready` with no drift. Desired and active resources
+match profile `ai,chat,email,live-quiz,manage`. The `klicker-dev` process is running;
+Postgres, Azurite, Hatchet and the five selected optional services report healthy.
+The deterministic local MCP process is stopped. This is managed workspace
+observation only, not external ingestion or real retrieval qualification.
+The retained workspace remains running under the user's manual-verification
+lease. No lifecycle transition or data mutation was requested by this readback.
+
+Continuation, 2026-09-09: lifecycle review completed with verification concerns,
+not a source defect. Commit `8222fa673b` fixes formatting and extends the existing
+synthetic lifecycle test to reject remote Docker contexts before mutation and
+refuse successful shutdown when a provider remains running. Commit `d63b69c8a9`
+adds explicit expected-service readiness: missing, duplicate, stopped, starting,
+unhealthy and unreported-health services cannot produce `infrastructureHealthy`.
+The same service selection drives start and status; managed application and AI
+qualification remain explicitly false. All 16 affected Node 24 tests pass,
+focused Biome passes with one pre-existing informational suggestion, and diff
+checks plus the redacted scan pass. The existing slice reviewer is performing
+one correction pass on these two commits. No real lifecycle command ran.
+
+Retained citation launcher verification passes its 14 tests and the 16 host
+runtime-contract tests. The latter must run on the host: the container attempt
+failed because host Devrouter is intentionally absent there, then passed with
+installed host Devrouter 0.0.61. Playwright TypeScript and four-file Biome checks
+pass. Browser execution remains outstanding; these checks do not establish live
+retrieval or persistence. The retained fixture helper is create-only and must
+not be replayed to run the rendering check. Resume support, managed runtime
+observation, integrated review and draft publication remain incomplete.
+
+Retained browser proof, 2026-09-09: the repository host launcher executed exactly
+one retained-citation test against the existing synthetic thread. It passed in
+6.4 seconds, including source-card rendering, internal-reference suppression,
+citation-to-card linkage, accessible label and reload. Its request guard blocked
+external origins and refused non-read methods; the test observed zero attempted
+writes. Local signing configuration passed directly between processes without
+printing or saving it. No fixture preparation, query or provider call ran.
+The source-card screenshot is under the ignored Playwright test-results folder.
+Main's image inspection found the disclaimer overlay covering the source card,
+so this pass does not establish user-visible citation acceptance. The test now
+requires pointer reachability using a trial click that dispatches no action.
+The corrected browser run failed as expected: the dialog-overlay disclaimer
+intercepts pointer events on the source card. The test now bounds that check to
+ten seconds instead of consuming the full one-minute test timeout. Accepting
+the disclaimer would write consent and is outside this read-only proof. No
+fresh ingestion or model generation is established.
+
+Lifecycle correction review completed with one composition-readiness concern.
+Main verified cached Hatchet and Crawl4AI image metadata: neither supplies an
+inherited healthcheck, so the current full infrastructure health flag cannot
+become true. Explicit supported readiness probes remain to be implemented and
+verified; do not weaken the flag to accept running containers as healthy. The
+five-service claim in the review also includes scraping, ingestion API and Doc
+Processing; inherited checks for those images have not yet been inspected.
+
+Infrastructure lifecycle is committed at `d79d103a1a`: explicit start, provider
+status and data-preserving stop with matching preparation, generated config,
+local context, provider labels and managed result checks. The complete offline
+suite passes 69 tests before the final managed identity guard; its affected
+16 tests pass afterward. Redacted diff scan passes. Runtime calls are fake in
+these tests; no actual start or stop occurred. The simplifier completed with no
+justified reduction. Slice reviewer `01a0837e-f55d-7330-aeda-a02c7ab44423` is
+active on this exact three-file slice; do not replace it. Resume support, complete status qualification,
+remaining citation integration, integrated final review and draft publication
+remain incomplete. Documentation is being aligned in the same worktree.
+
+Historical pre-commit checkpoint: credential-free start integration verifies
+completed preparation and unchanged provider composition/routing, requires the
+recorded local Docker context, claims one start attempt, starts backing/API
+services and then the managed manage/chat profile. No queue consumer, callback
+worker, dispatcher or model-dependent reader is selected. The 15 preparation
+tests pass using synthetic runners, including failure retention and no
+migration/seed behavior. Stop/status wiring, fresh candidate-source checks,
+integrated reviews and publication remain unfinished. No real start ran.
+The setup correction reviewer returned DONE with no new findings; its report is
+`project/_local/reviews/2026-09-09-local-kb-setup-correction-review.md`.
+The provider mapper is completed. Main compared its older ingestion baseline to
+the pinned `69fa7f92` revision: only profile selection and citation display-name
+handling changed, not its mapped startup entrypoints. Those earlier children are terminal.
+
+Recovery continuation: setup review completed with two findings. Provider
+observation now rejects ignored state, with a synthetic ignored-bytecode
+regression. Application setup now waits for Blob health before schema/seed;
+the generated Azurite healthcheck expects its unauthenticated HTTP 403 response.
+The complete offline selection passes 67 tests in the retained Node 24 toolchain,
+including executable HTTP probe success/failure and Blob failure before seeding.
+The corrections are committed at `1695852591`; the redacted diff scan passes.
+The host hooks use the established container-check split; no full build is
+claimed. These corrections do not establish live readiness. No service startup,
+database change, ingestion submission or paid request occurred. The provider
+source immutability between observations is not guaranteed, but setup now repeats
+source checks immediately before provider storage and managed initialization.
+The provider startup mapper subsequently completed; its findings are reconciled above.
+
+Managed hook preservation is committed at `c3db8c8c96`: isolated bootstrap
+suppresses reset/seed/token rewrites, restores generated service settings after
+ordinary defaults, and excludes retained signer/graph configuration and the
+deterministic MCP fixture. Ordinary startup remains the default. The fake-command
+lifecycle suite, environment test, shell syntax, diff and staged redacted scan
+pass. No real process or database was changed. These five paths are now committed
+and still need integrated review with lifecycle wiring.
+
+Setup simplifier completed and is closed. Main accepted removal of the unused
+storage context return value, while preserving the persisted context receipt;
+all 14 preparation tests pass. That two-line correction landed in `1695852591`. Report:
+`project/_local/reviews/2026-09-09-local-kb-setup-simplifier.md`.
+The setup slice review and correction pass subsequently completed, as recorded above.
+
+Explicit setup integration is committed at
+`8fcbcc710ecdb8434a717b9c1f95be7685e9f199`. The CLI verifies pins and fresh
+provider source observations before exclusive preparation. Managed setup uses
+the route-free profile, validates the exact linked checkout/profile result,
+attaches isolated Blob routing and runs guarded schema/seed/CORS setup once.
+The standard linked overlay remains explicitly listed for Devrouter ownership
+validation, while its content stays empty. The internal Blob endpoint now uses
+the assigned namespaced alias accepted by the existing CORS setup guard.
+All 66 offline tests pass; the fake lifecycle suite, Biome, diff and redacted
+gitleaks checks pass. No actual setup, database mutation or provider activation
+occurred. Slice reviewer `01a08362-0291-7d03-9cb8-a94b38db41bd` is reviewing
+the exact six-file range from `f9818cbbcf`; reuse this live child.
+Normal start/stop, readiness reporting, integrated verification and draft
+publication remain unfinished. The retained runtime lease and data are unchanged.
+
+Namespace integration correction is committed at `f9818cbbcf`. Managed aliases,
+host entries and Blob URL use required Compose WORKSPACE substitution supplied
+by Devrouter, not an identity guessed before first ensure. Provider routing is
+written separately after a linked setup result supplies the assigned identity.
+Initial source checks require detached linked-worktree metadata. The complete
+64-test offline suite and subsequent 30-test focused candidate-assertion run
+pass; the fake-command lifecycle suite also passes. Biome and redacted gitleaks
+pass, with only the pre-existing template informational suggestion retained.
+The configured advisor and installer reviewer completed and are closed/terminal.
+Their findings and dispositions are recorded in
+`project/_local/reviews/2026-09-09-local-kb-installer-slice-review.md`.
+No actual setup or provider process ran. The next implementation is the explicit
+setup/start/stop command integration; the source package is not yet published.
+
+Installer checkpoint: commit `81a4c6c0dd4ef48cc35136e4d8fd31075d9f27f5`
+adds the initial checkout preflight and guarded managed-configuration installer.
+All 13 focused preparation tests and the complete 64-test offline selection pass
+in Node 24, including refusal of changed input and interrupted-attempt replay.
+Biome, diff checks and redacted gitleaks
+pass. The commit uses the existing host/container hook split; no full build is
+claimed. Only synthetic temporary fixtures were modified by verification.
+Simplifier `01a0834e-6a4c-7903-98b9-c4f742e137cd` completed with no justified
+reductions and is closed; its report is in
+`project/_local/reviews/2026-09-09-local-kb-installer-simplifier.md`.
+Slice reviewer `01a0834e-6b0f-7641-b923-c548c928575b` owns the exact two-file range.
+Explorer `01a08348-8182-71f1-b553-033004fbee0f` completed and is closed.
+Main verified that only first `ensure` claims the collision-safe workspace
+identity; `workspace ls` cannot supply that final value beforehand. Devrouter's
+`managedComposeEnvironment` supplies the claimed `WORKSPACE` and
+`DEVROUTER_WORKSPACE` to Compose. Proposed integration uses required Compose
+substitution, then the exact ensure readback for provider route attachment.
+The configured read-only Claude consultation in host session `85713` completed;
+its verified advice is applied in the correction above. The slice reviewer also
+completed. No child remains active from this installer pass. CLI lifecycle
+integration and final delivery remain open.
+
+2026-09-09 continuation: the complete offline local-stack selection passes
+59/59 tests in the retained Node 24 toolchain. The new uncommitted checkout
+preflight rejects an attached branch, a different candidate, and tracked,
+untracked or ignored state before creating the preparation claim. Its focused
+suite passes 10/10; Biome and whitespace checks pass. No installer or lifecycle
+command was executed. Configuration installation, lifecycle integration and
+integrated review remain open; this is not runtime acceptance or publication.
+The existing runtime and all other pending source changes remain preserved.
+
+2026-09-09 managed configuration is committed at
+`dc2491ac0f39820ea040007d2b3246f52434da15`. It renders separate runtime-only
+application configuration without changing source inputs, excludes duplicate
+backing services and deterministic MCP, and removes inherited upstream AI keys.
+The complete offline selection passes 58 tests before the final key-exclusion
+assertion; the affected 17-test configuration suite passes afterward. Biome and
+redacted gitleaks pass. Simplification completed without recommendations;
+correctness review `01a08338-73a0-77d3-8dad-cec305ca8730` completed on the
+exact two-file slice with no actionable findings. The report is retained at
+`project/_local/reviews/2026-09-09-local-kb-managed-configuration-slice-review.md`.
+This renderer is not an installed or running stack.
+
+The setup-order inspection found that ordinary Prisma/seed commands require the
+repository's marked, non-privileged `klicker_test` identity. The correction in
+commit `0b585cc335` generates that role and shadow database with a distinct
+local password; SQL reads it through psql's environment rather than containing
+the value. All 15 focused configuration/preparation tests pass, including the
+actual repository URL validator. No database was accessed. Setup still needs a
+route-free managed phase before schema/seed and app startup. Commit `59fc0e71f0`
+adds the isolated-only setup profile with no application routes or processes;
+start must not run initialization steps. Exact checkout installation and lifecycle wiring
+remain incomplete. Existing retained data, runtime and pending source edits are
+preserved. Advisor consultation remains unavailable due the recorded quota.
+
+2026-09-09 configuration integration checkpoint: the complete offline selection
+passes 56 tests and the fake-command lifecycle suite passes. This is not live
+ingestion evidence. Fresh fetch leaves `rs/local-kb-ingestion-retrieval` without
+an upstream, 198 commits ahead and eight behind default `origin/v3`; no target
+integration occurred. Main verified Devrouter reads only the standard
+`.devcontainer/devcontainer.json` and forces `docker-compose.devrouter.yml` for
+linked checkouts. An environment override cannot select the isolated topology.
+The proposed generated configuration in a fresh runtime-only checkout still
+needs its design disposition. Claude advisor failed before work with a session
+quota limit; no advice or final review is claimed, and no runtime was changed.
+
+The missing `doc-query.env` is corrected with explicit local Milvus and mounted
+tool settings. Main extended preparation coverage to verify every provider
+environment file after synthetic Hatchet token delivery. The test reproduced
+the missing file before the correction and now passes; the integrated offline
+selection passes 57/57. Redacted gitleaks reports no leaks in the four-file
+configuration follow-up. The executor completed and is closed. Main verified
+the pinned reader's `validate_model_provider_environment` still requires
+`OPENAI_API_KEY`; this credential-free stage does not qualify AI retrieval.
+No dummy key or fallback was added. Existing staged runtime/browser work remains
+preserved. Managed wiring, executable lifecycle, review and draft publication
+remain incomplete. The prior configuration simplifier is no longer available
+through native lifecycle; reuse its persisted result rather than respawning it
+solely because its child handle is absent.
+
+2026-09-09 isolated environment preservation: the opt-in hooks snapshot required
+service settings in shell memory and restore them after default loading and URL
+rewrites. They do not source retained token/graph/signer files in isolated mode.
+Generated Klicker settings now include its isolated database/shadow database and
+the three distinct managed Redis service names. The shared hook helper rejects
+missing settings without printing values. The lifecycle fake-command suite and
+six focused configuration/environment tests pass, including equals signs and
+multiline values. These are offline fixture checks, not runtime startup proof.
+Managed overlay/profile generation, explicit setup completion and delivery remain.
+
+2026-09-09 runtime-only hook implementation: opt-in
+`KLICKER_LOCAL_KB_RUNTIME_ONLY=1` suppresses post-create reset/push/seed and
+token-file rewriting while preserving install/build. Post-start suppresses
+Blob initialization, rejects an absent setup token without local fallback,
+and rejects profiles selecting deterministic MCP. Ordinary mode stays default.
+The lifecycle regression suite passes in the retained Node 24 toolchain with
+temporary fake-command fixtures; shell syntax and diff checks pass. The final
+MCP-profile guard is pending the next focused rerun. No retained cache, database,
+token or process was modified. Endpoint/environment preservation and generated
+managed configuration remain pending; the mode is not yet a supported startup
+command. The multi-mode skill guides reuse of existing lifecycle hooks.
+
+Managed-runtime mapper completed and is closed. Main verified the load-bearing
+findings in current files: `baseServices` always starts managed Postgres/Azurite/
+Hatchet; post-create resets/pushes/seeds; post-start re-sources defaults and
+initializes Blob storage. Therefore a Compose overlay alone cannot provide the
+approved runtime-only behavior. Continue with an isolated, explicit managed
+configuration and lifecycle mode, preserving ordinary profiles unchanged and
+keeping provider-owned backing stores on the provider project's network.
+No topology or runtime was changed by the mapping. Configuration simplifier
+`01a0831e-3b95-7fb2-a5d7-ba1b79f89530` owns the committed configuration slice;
+await its existing result. Main owns the lifecycle integration seam.
+
+2026-09-09 configuration slice committed at
+`14ae989245816b89a79ff5baa24dc1c61649fbdc`, eleven local-KB source/test paths only.
+All 55 offline local-stack tests pass; Biome passes the eleven paths with two
+informational template suggestions. Redacted gitleaks finds no leaks in the
+43 KB slice diff. The commit used the documented host/container hook split,
+not a claimed full build; other staged/unstaged work is preserved. Native
+simplification is dispatched on the exact new range. The predecessor renderer
+simplifier is terminal and closed. Managed-runtime mapper remains active;
+an explicit narrowing interruption requested its existing findings without
+more discovery. No publication, runtime mutation or paid request occurred.
+
+2026-09-09 integrated offline verification: the complete local-stack selection
+passes 55/55 tests in the retained Node 24 container, covering the CLI's current
+read-only behavior, source checks, composition, private configuration, Hatchet
+wrapper, preparation, ownership checks and process identity. This does not
+qualify executable full-stack startup or ingestion. The integration guide now
+explicitly distinguishes resource-PDF parsing from the Doc Processing CPU
+override. The existing managed-runtime mapper remains non-terminal after a
+bounded wait; one narrowing follow-up requested its minimum usable findings.
+Do not replace or duplicate it. Retained services and data are unchanged.
+
+2026-09-09 full storage coverage: exclusive preparation now writes the complete
+`providers.compose.json` as well as bootstrap. Setup checks the complete project's
+volume set, including retrieval storage, before any Docker mutation. The host
+runner is asynchronous, bounded, and does not forward ambient service keys or
+Docker endpoint overrides; captured output is not logged. Tests still inject
+fake runners. Twelve focused tests, Biome and diff checks pass; no live provider
+setup or paid request ran. Managed-app mapper
+`01a08312-c979-70e1-b34b-73203436225b` has not returned a terminal result; keep
+that owner. CLI/managed binding and review/publication remain incomplete.
+
+2026-09-09 integration continuation: after explicit provider migrations, the
+setup sequence starts only prepared Hatchet, captures its existing token through
+container exec, and delivers it to the exclusive private worker environment.
+No token is printed or added to a container startup command. Twelve focused
+setup/preflight tests pass with synthetic runner output; Biome and diff checks
+pass. No real setup/start/exec operation was performed. Native read-only mapper
+`01a08312-c979-70e1-b34b-73203436225b` owns the minimum managed Devrouter overlay
+and lifecycle-hook mapping; main owns launcher integration. Await that same
+mapper rather than starting duplicate investigation. Source publication remains
+pending completion of managed binding and the required reviews.
+
+2026-09-09 ownership preflight: provider storage setup now observes the selected
+local Docker context before its first command and pins that context for every
+subsequent command. It rejects remote endpoints, existing project containers
+(including stopped containers), project networks and exact owned-volume
+collisions. Ambient Docker endpoint overrides and service credentials are not
+forwarded to the reader. Failed observations never qualify setup. All twelve
+focused preflight/preparation tests pass with fake Docker readers/runners;
+Biome and diff checks pass. No live Docker inventory or mutation ran in these
+tests. Fresh Git fetch succeeded; `rs/local-kb-ingestion-retrieval` still has no
+upstream and is 197 ahead/eight behind default `origin/v3`; no integration ran.
+Real CLI integration, managed-app binding, review and draft publication remain.
+
+2026-09-09 provider setup sequence: bootstrap now includes only backing and
+explicit ingestion/document migration services, with no worker-token dependency.
+The storage initializer serializes Postgres readiness, Hatchet setup, ingestion
+migrations and document setup through an injected host Compose runner. An
+exclusive attempt directory prevents replay after either success or failure;
+provider error output is not relayed, and storage success does not create the
+full prepared-runtime receipt. Seven focused preparation tests pass using a
+fake runner, including failure short-circuiting and replay refusal. Biome and
+diff checks pass. The CLI ownership preflight and real runner integration are
+still pending; no Docker command, migration or provider process was executed.
+
+2026-09-09 setup continuation: exclusive configuration preparation now writes
+an owner-only `bootstrap.compose.json` for the isolated backing services. This
+keeps bootstrap independent of worker token files that do not exist until
+Hatchet setup succeeds. The focused preparation suite passes all five tests,
+including existence of every bootstrap environment file, project identity and
+private file mode. Diff checks pass. No Compose command was executed; startup
+integration and publication remain open in the same approved source package.
+
+Latest offline verification: all 29 preparation, isolated-configuration,
+local-configuration and scraping-composition tests pass in the existing Node 24
+container. Hatchet token delivery now has an exclusive owner-only file writer
+and regression coverage for malformed output and overwrite refusal. Worker
+renderers consume that file; migration/setup services do not require it.
+This is source wiring only: no token was minted or runtime initialized.
+The image wait is resolved by merged MR !134 and successful pipeline 660898.
+Setup/start integration, managed Klicker binding, provider-native validation,
+review and draft publication remain unfinished. Keep the retained runtime and
+data unchanged under the user's manual-verification lease.
+
+Project mapping completed and its child is closed. The generated project file
+now selects Milvus, 1536-dimensional embeddings and durable Azure Blob artifacts;
+preparation writes the exact worker-registry filename. Nine focused tests pass.
+Local scraper client URL/key pairing is added and awaits the final focused rerun.
+The mapper revealed that resource PDFs use ingestion's `parse_pdf_bytes`, not
+Doc Processing; main verified `source_snapshot.py` at merged `69fa7f9`.
+The CPU profile fix is therefore not evidence for the resource-PDF path.
+Contract receipt: `project/_local/reviews/2026-09-08-local-kb-project-mapping.md`.
+Configuration remains uncommitted; startup, token delivery, managed-app binding,
+native provider validation, final review and publication are still incomplete.
+
+Artifact configuration continuation: the provider's resource-upsert service
+requires durable artifact storage. Its existing Azure Blob backend accepts
+`AZURE_STORAGE_CONNECTION_STRING`; the generated ingestion environment now
+points this at the same isolated Azurite account as Klicker. The eight focused
+configuration/preparation tests pass, including account/key/endpoint agreement.
+Biome passes with one informational suggestion. The project YAML still needs
+to select this backend, and setup must prepare its container before worker
+activation. No storage container was created and no ingestion was submitted.
+
+Renderer correctness inspection completed with concerns; main accepted the
+missing direct startup edges and corrected ingestion/Postgres, worker/Hatchet
+and scraping/Crawl4AI ordering. Doc Query reaches object storage through Milvus;
+the unsupported direct Blob graph dependency was removed. All 27 combined
+configuration, preparation and composition tests pass in the retained Node 24
+workspace. Focused Biome and diff checks pass. The report and dispositions are
+in `project/_local/reviews/2026-09-08-local-kb-renderers-correctness.md`; the
+completed inspector is closed. The project-configuration mapper remains active.
+Changes remain in the existing uncommitted configuration/correction slice.
+No runtime start, stop, submission or external AI request occurred.
+
+Configuration continuation: generated Doc Query v3 configuration now requires
+Chat's ES256 `X-Doc-Query-Scope-Token`, binds its `kb_id` claim, and enforces
+`resource_active: true` with no caller-controlled filters. Exclusive preparation
+generates a fresh P-256 pair, keeps the signing key in owner-only `chat.env`,
+and writes only the public key into the reader configuration. All eight focused
+Node 24 configuration/preparation tests pass, including generated key-pair and
+issuer/audience agreement. Focused Biome passes with two existing informational
+template suggestions; diff checks pass. These source changes remain uncommitted
+in the configuration slice. No retained data, runtime setup, ingestion or paid
+request was touched. The same two mapping/review children below remain active.
+Fresh GitLab readback confirms post-merge pipeline 660898 is terminal success.
+
+Renderer slice committed at `efe997fcd910ef604ad96fa7bfe3b2a401ef3ad3`:
+ten provider/backing renderer and contract-test files only. All 27 focused
+tests pass in the retained Node 24 container, Biome passes ten files, and the
+redacted host diff scan passes after a narrow annotation for the verified
+scraper Git-revision false positive. Host hooks were split; no full build is
+claimed. Other staged and unstaged work remains preserved. Native simplifier
+completed with one test-fixture consolidation suggestion, persisted under
+`project/_local/reviews/2026-09-08-local-kb-renderers-simplifier.md` and pending
+disposition. Trusted read-only correctness inspector
+`01a082e5-6a54-7420-9b88-a00268d59d87` is active; external-hosted inspection was
+excluded for the private cross-provider scope. Project mapping child
+`01a082d9-11fc-7cc3-ba4c-b002a3758cb8` remains active. No publication or runtime
+mutation occurred; configuration, lifecycle and final qualification remain.
+
+Provider pin integration: both image jobs in post-merge pipeline 660898 passed.
+Registry readback confirms revision `69fa7f9200fc17bdb30b9cd792ea4d0e0a907012`
+for API digest `sha256:b08d8407bee77a403eb344dcf2e7ebde3d6256844294256ff9ca88b4f148e762`
+and worker digest `sha256:d89004b91d6f97aed23aa143c44d08f91583b01b3039961ba11e80c5416368cf`.
+The local renderer now pins this matching pair and source revision. All 23
+focused composition/configuration/preparation tests pass in Node 24.16.0.
+No images were pulled or services started. The clean provider source checkout
+must still match this revision before future runtime qualification. This
+supersedes the image-wait receipts below; lifecycle and project configuration
+integration remain pending, with the same active mapping child.
+
+Latest provider receipt: the user merged MR !134. GitLab confirms squash commit
+`69fa7f9200fc17bdb30b9cd792ea4d0e0a907012` on `main`. The rebased reviewed source
+head `af67e5cd420ace9129bea62b98032b70d1e14150` passed all nine jobs in pipeline
+660884. Post-merge push pipeline 660898 is running; both API and worker image
+jobs were still pending at readback. Keep the existing local provider revision
+and image digests until both matching artifacts are verified. The user approved
+continuing local source integration after the merge; no runtime restart,
+ingestion submission, paid query, or deployment was performed in this receipt.
+This supersedes the historical draft and failed-CI state immediately below.
+
+Local continuation: the generated ingestion environment now explicitly selects
+`DOC_PROCESSING_COMPUTE=cpu`, `DOC_PROCESSING_PROCESSING_PROFILE=default` and
+`DOC_PROCESSING_PICTURE_DESCRIPTION=off`. All seven configuration/preparation
+tests pass in the retained source-resolved Node 24.16.0 container; focused Biome
+formatting and diff checks pass. These files remain uncommitted with the existing
+configuration slice. The launcher remains non-executable and no service startup
+or provider request occurred. The existing manual-verification runtime lease
+remains unchanged. Explorer `01a082d9-11fc-7cc3-ba4c-b002a3758cb8` owns the bounded
+read-only project-configuration contract mapping; await that same child.
+Pipeline 660898 remains running; verified image digests are still required
+before changing provider pins. Configuration completion, lifecycle integration,
+browser evidence and integrated review/publication remain unfinished.
+
+Provider source delivery is published as draft [MR !134 — explicit document
+processing profile](https://gitlab.uzh.ch/ai-infrastructure/services/data-ingestion/-/merge_requests/134)
+against `main`, at verified local/remote head
+`70ca945b19c020b806aa501825626a1b2834f84f`. Simplifier and compatibility review
+found no issues. Final review found only an omitted integration-guide row;
+the documentation-only follow-up corrects it without changing tested code.
+Pipeline 660878 failed before executing source checks: job 2092224 reports
+`runner_system_failure` while pulling the Python image (`unable to lease content:
+lease does not exist`). Downstream tests and image build were skipped. No retry,
+merge, image publication or deployment was performed. The local launcher remains
+on its previous provider pin until matching verified artifacts exist.
+
+Provider verification now passes in the separately approved isolated Python
+3.12.12 container: all 80 parsing tests, focused Ruff lint and formatting, and
+Pyrefly on the changed parsing module (zero errors). Dependencies came from the
+unchanged lockfile through the approved `ai-generic-stg` operator mapping of
+`GITLAB_READ_API_TOKEN` to `UV_INDEX_AI_INFRASTRUCTURE_PASSWORD` for the install
+process only. The download network was disconnected before tests. Haystack
+telemetry was disabled, source was read-only, and temporary dependency storage
+was container-owned. One formatter-only correction landed in the provider file.
+All three task-created test containers are verified exited, with no deletion;
+the final verifier has zero attached networks. No ingestion or AI request ran.
+Required source review, commits and draft publication remain pending. This
+supersedes the provider-test-environment blocker below, not full-stack readiness.
+
+Current verification receipt: the Devrouter owner supplied the built CLI at
+`/Users/rschlae/Git/personal/devrouter/trees/rs/lifecycle-history-rollover/dist/devrouter.js`,
+verified against merged history-rollover fix `7d2fcba38a716afce54a67d9a861fa5b2850e6a3`.
+Canonical execution through that path succeeds without restarting the retained
+runtime. All 36 offline local-stack tests pass, including the latest private-file
+permission changes. The installed global CLI was not updated. These results
+supersede the historical lifecycle-blocked test receipts below.
+
+The CPU-profile executor completed the provider parsing module and focused tests;
+main inspected the diff and closed the child. Provider tests and review remain
+pending. The retained Klicker container has no `python3`, `pytest` or `ruff`, and
+the provider checkout is not mounted there. Restored Devrouter access does not
+supply a provider test environment. Do not substitute host tests, install private
+dependencies or create another runtime implicitly. The launcher retains its old
+provider pin and is not executable. No ingestion, paid calls or data changes ran.
+
+The user approved separating the local ingestion/retrieval follow-up from the
+published generation lifecycle PR. The active branch is now
+`rs/local-kb-ingestion-retrieval` at `604879791fc1251a3f18901f6eb0e6a71741a06e`,
+in the same retained `trees/rs/generation-lifecycle-contracts` worktree. It has
+no upstream yet. PR #5777 remains open and non-draft on its published
+`rs/generation-lifecycle-contracts@c69e4014739800bf3108ddb49372d73c7e25cefd`,
+targeting `v3-ai`. Do not push the local original branch: it contains the
+follow-up commits and diverges from that published head. Fresh fetch shows
+the local candidate 196 commits ahead and eight behind default `origin/v3`.
+This is not authority to integrate the default branch or mutate PR #5777.
+
+The pending retained-test launcher now requires a plain local origin without
+userinfo, query, fragment or path, plus explicit fixture UUIDs. Its 14 host
+Node 24 tests pass. The combined host launcher/profile/config suite passes
+38 tests; the five isolated helper suites pass 23 tests in the source-resolved
+retained app container. Formatting and the container Playwright TypeScript
+check pass. The executor replaced the retained-citation spec's prose assertions
+with source-card identity, citation-target linkage, accessibility and nonempty
+assistant-content checks. Main inspected the result; the mutation guard remains
+intact. Browser execution is still unverified. These are offline checks, not an
+ingestion or retrieval proof.
+
+Concrete service rendering and lifecycle integration remain unfinished.
+Read-only inspection of ingestion source `d46282848100beec5a1f571e0cc9b091dcdd4179`
+confirms its runtime images expose Python/uvicorn, not the host `uv run`
+entrypoint currently inventoried by the launcher. The worker image build also
+requires private-index BuildKit secrets. Resolve image commands and defer
+credentialed provisioning to the separately approved runtime stage; do not
+silently run the host commands in those images. No provider build, service
+restart, credential access, paid call or data mutation occurred. The retained
+runtime remains under its existing manual-verification lease.
+
+Source progress: `util/local-kb/ingestion-compose.mjs` now renders the pinned
+ingestion API, callback, eight workers and a separately profiled migration
+service. Host `glab` readback confirmed both exact-revision image digests. The
+fragment mounts matched provider source read-only, disables automatic schema
+initialization, defines bounded local resources and references future private
+local configuration files. Compose accepts its schema with environment/path
+resolution disabled; no files were provisioned and no service was started.
+The isolated plan exposes this fragment only for its pinned provider revision,
+while keeping `executable: false` and the outstanding integration blockers.
+Twelve focused configuration/provider tests and eight host CLI/source tests
+pass. Remaining work includes concrete backing/scraping/retrieval/document
+processing services, generated environment/configuration, lifecycle execution,
+browser verification and package review. This is not full-stack readiness.
+
+The follow-up now also renders Postgres, Redis, Blob storage and Hatchet in
+`backingCompose`. Volume names derive from the validated isolated configuration;
+services publish no host ports. The installed Hatchet image metadata confirms
+its working directory is `/` and its default command is `./entrypoint.sh`.
+The renderer overrides that command with the existing explicit setup/start
+wrapper. Fourteen container configuration/command/wrapper tests and eight host
+CLI tests pass. Docker Compose accepts the combined backing/ingestion fragments
+with environment and path resolution disabled. No container, volume, environment
+file or database was created. The remaining provider mapping is still owned by
+the existing read-only explorer; no replacement was launched.
+
+Provider mapping completed with concerns. Main verified the scraper native
+Uvicorn command, Doc Query strict-config behavior and Doc Processing explicit
+setup against committed source. The scraper renderer is now assigned to one
+executor with only its new renderer/test files writable. Main added the Milvus,
+etcd and MinIO fragment using ingestion's checked-in standalone versions and
+added a dedicated owned metadata volume. Doc Query is pinned to the published
+`80313c4f` ARM image digest and explicitly profiled for later AI capability;
+missing local tool configuration must fail rather than use bundled defaults.
+Seventeen focused container configuration/preparation tests pass. These new
+fragments remain source-only and await combined rendering and review.
+
+The Doc Processing checkout `cc8f598d` has no matching published image tag.
+The published `7979ac6b` CPU image exists; a committed-range comparison shows
+no differences in Dockerfile, application source, pyproject or lockfile.
+Its ACA CPU tag is AMD64, not ARM, as confirmed by the checked-in build job.
+Do not use that tag as an ARM image or claim exact-checkout publication.
+
+Subsequent registry readback found the same merged revision's separate ARM
+CPU image (`latest-7979ac6b`, digest `19b1105f...a8bf5e8`). The Doc Processing
+renderer uses that immutable digest with shared local extracts, disabled
+auto-initialization and picture descriptions off. Main corrected a typo in
+the executor's Crawl4AI image namespace through the same executor, inspected
+the correction and closed the completed child. The combined `providerCompose`
+now includes all external provider/service fragments when revisions match.
+Docker Compose accepts it with private environment/path resolution disabled;
+22 container contract/preparation tests and eight host CLI tests pass.
+Generated configuration, managed-app binding, executable lifecycle, browser
+verification, committed reviews and draft publication still remain. No new
+runtime, image pull, setup, submission or paid request occurred.
+
+The pure local configuration renderer now rejects missing, inherited, extra,
+non-string and injectable credential inputs without including values in errors.
+Two focused tests pass in the retained source-resolved container: credential
+pairing across clients/servers and malformed-input rejection. Focused Biome
+formatting passes with one informational template-literal suggestion, and
+`git diff --check` passes. No real credentials or environment files were
+generated. This renderer remains incomplete and unwired: project/tool
+configuration, Hatchet token delivery, upstream injection, browser Blob origin
+and managed-app binding still need implementation and verification. The
+launcher remains `executable: false`; these tests do not qualify provider
+configuration names or establish end-to-end readiness. The existing retained
+runtime lease remains unchanged.
+
+Latest source continuation: exclusive configuration preparation now generates
+fresh local service credentials only in its claimed directory and refuses a
+second attempt. The helper does not mark infrastructure prepared or expose a
+CLI setup action. Six focused tests passed before the bind-mount permission
+correction; its follow-up run was interrupted, and recovery now fails before
+test execution with `Lifecycle transition is blocked.` Do not clear the lock
+or claim the latest test revision passed. Host Node 24 syntax and diff checks
+remain available. Secret environment files remain owner-only; non-secret
+registry and database-name initialization files are readable by non-root
+container users beneath the private host directory.
+
+A substantive PDF compatibility gate is now verified. Ingestion
+`d4628284` selects `max_quality_t4` for PDF/Office inputs in
+`steps/parsing/doc_processing.py:332-347`. Doc Processing `7979ac6b`
+classifies that profile as GPU-only, and `processing_service.py:139-157`
+rejects it with CPU compute. The planned local CPU image therefore cannot
+fulfil the PDF path unchanged. An explicit ingestion profile override would
+need a separately approved provider-source change and local extraction-quality
+trade-off; do not silently substitute another parser or redirect to a remote GPU.
+
+The resumed read-only provider mapper completed with concerns. Main verified
+the strict reader's inline ES256 public-key configuration contract and the
+resource workflow's trusted `kb_id`/`resource_active` metadata. Local retrieval
+must filter signed KB scope and active resources, not reuse the bundled
+course-pilot filter. Both sides use `text-embedding-3-small` at 1536 dimensions;
+the reader does not specify a dimensions override. No upstream capability or
+retrieval execution is established by this mapping. The completed child is
+closed; no replacement or duplicate mapping is needed.
+
+The user approved the provider-source extension for an explicit local CPU
+profile on 2026-09-08. The clean pinned provider worktree is unchanged. The new
+`data-ingestion/trees/rs/local-cpu-document-profile` worktree branches from
+`origin/main@d46282848100beec5a1f571e0cc9b091dcdd4179`; executor
+`01a08259-ba7e-74c0-9cec-22670e6bf153` owns only the parsing module and existing
+parsing tests. Main owns docs, integration, reviews and draft delivery.
+Unset configuration must preserve existing production selection; local CPU
+processing requires an explicit supported profile and may change extraction
+quality. No deployment, submissions or paid calls are authorized. Container
+checks still fail before execution with `Lifecycle transition is blocked`.
+Main also corrected the local Milvus allowlist to the provider's verified
+`database:collection` contract instead of an HTTP endpoint. Do not switch the
+launcher to an unpublished provider image or claim source readiness yet.
+
+The repository-wide container `check:all` stopped at the installed-Devrouter
+profile test: `No executable host Devrouter found`. The isolated reproduction
+passes 15 profile tests and fails only that host-tool check. The complete
+`check:playwright-ci` selection passes all 69 tests on host Node 24 with installed
+Devrouter 0.0.60. Other parallel checks were cancelled by the aggregate failure,
+so their exit 137 output is not a proved source regression or an OOM diagnosis.
+Do not install Devrouter into the managed container or claim the aggregate
+passed; use the required host/container verification split.
+
+The follow-up static aggregate also exposed `check:format` running lint-staged
+inside the container. It failed during its Git hide/restore sequence for the
+partially staged host launcher. Main restored exactly the prior nine-line URL
+validation diff and verified the other pending paths remain present. No stash
+was applied or deleted. Do not rerun Git-mutating hooks in the container; run
+focused formatters there and keep Git operations on the host. The cancelled
+type/lint runs remain unqualified. A fresh host launcher/local-stack run passed
+22 tests, and the focused container Biome check passed without changes. This
+slice is not yet committed or reviewed.
+
+### Isolated local KB test stack — approved source execution extension
+
+Build a reproducible local Klicker, ingestion and retrieval stack without
+restarting retained jobs or changing the user's existing KBs. Use a separate
+runtime checkout, fresh backing stores and isolated provider processes. Do not
+reset, clone or rebind the retained environment. This replaces the proposed
+queue-emptiness preflight: incomplete Hatchet listings cannot establish that
+restarting old workers is harmless.
+
+The user approved source implementation on 2026-09-08, including offline
+checks, reviews, local commits and ordinary publication to the existing
+draft PR. That stage ends at source-ready, not a
+working-AI claim. It does not create, seed, start or stop a runtime. Runtime
+qualification follows a separate exact-target and capacity proposal. A real
+ingestion and Chat proof additionally needs an explicit request and cost cap.
+
+Preserve all retained data, current source edits, provider contracts and product
+behavior. Do not add provider dependencies, schema changes, production actions,
+graph generation, automatic retries or deletion. The trade-off is extra local
+RAM and disk; available concurrent capacity is not yet established. Docker
+reports about 34 GiB total memory, which is not evidence of free capacity.
+
+Success at the source stage means the launcher can describe the complete
+dependency graph, reject shared mutable state and ambiguous ownership, and pass
+focused offline checks and independent reviews. Documentation must distinguish
+infrastructure health, provider process readiness and external AI capability.
+
+#### Execution details: isolation contract
+
+Continue implementation in `trees/rs/generation-lifecycle-contracts`, on
+`rs/local-kb-ingestion-retrieval`, as approved in the current delivery ownership
+receipt above. The earlier lifecycle branch and its published PR are not this
+follow-up's publication target. The follow-up has no upstream yet; fresh refs
+still place it 196 commits ahead and eight behind default `origin/v3`.
+Default-branch drift alone does not require integration. Preserve the recovery
+stashes and all existing uncommitted work.
+
+The proposed runtime-only checkout is `trees/rs/local-kb-isolated-e2e` under
+this repository; it does not exist at planning time. Create it only in the
+separately approved runtime stage, detached at the exact committed candidate.
+Use canonical devrouter lifecycle and resolve its generated identity from its
+source path. Do not guess a workspace token or use the primary checkout.
+
+Use a separate Compose project with fresh Postgres databases for Klicker,
+Hatchet and ingestion state; separate Hatchet engine/configuration; Redis;
+Blob storage; Milvus and its object backing; scraper cache; producer registry;
+signing material; and provider process groups. Include ingestion API, workers,
+callback delivery, scraping/Crawl4AI and Doc Query in the declared topology.
+Do not substitute the deterministic MCP fixture for real retrieval.
+
+Validate rendered destinations before any runtime mutation. Reject retained
+or externally shared mutable volumes, generic cross-workspace aliases, remote
+endpoint fallbacks, old KB bindings and inherited signing keys/tokens. Shared
+devrouter routing infrastructure and proven immutable toolchain inputs are
+allowed; shared application state is not. Route attachment does not itself
+establish network isolation.
+
+Provider source roots remain explicit and revision-verified. Reuse the known
+repositories without updating them, and require clean sources mounted read-only.
+Put every generated file, cache, temporary file and state directory in the new
+runtime's owned storage. Stop if a supported entrypoint requires modifying a
+reused provider tree. Never copy ignored files or secret configuration into a
+runtime checkout. Provider edits and a provider MR are not part of this design.
+
+Extend `util/local-kb-stack.mjs`, `util/local-kb/` and a minimal devcontainer
+overlay rather than building a competing harness. Disable dotenv inheritance
+and allowlist the environment. Local generated signing material belongs in
+ignored owner-only files. Real upstream keys remain process-only through the
+restricted operator and are excluded from this first execution stage.
+
+#### Execution details: lifecycle and readiness
+
+Keep plan/status read-only. Setup, start and stop remain explicit operations.
+Before initialization, exclusively create minimal durable ownership evidence
+bound to canonical source path, project/volume identities and candidate/provider
+revisions. Setup refuses existing or ambiguous initialization evidence. A
+partial startup is incomplete, not a fresh stack that may be silently retried.
+
+Setup alone may migrate and seed newly proven isolated databases when runtime
+authority is granted. Start never migrates or resets. Restarting initialized
+workers can resume their own jobs, so it requires explicit resume authority;
+a future bounded cold-start/stop/restart approval may cover that sequence if
+no work has been submitted. Stop only exact owned groups and the exact managed
+checkout. Preserve volumes and data by default, including after failure.
+
+Expose infrastructure health, provider process readiness and external-provider
+capability separately. Missing upstream credentials leave that capability
+unqualified. Start a provider without keys only when its supported mode permits
+it; otherwise leave it stopped. Never invent disabled modes or inject dummy
+credentials to obtain a green result. No producer submission or worker/scheduler
+activation occurs in the source stage.
+
+The user approved normal Devrouter networking for the future credential-free
+runtime check. Public egress is not blocked or claimed to be isolated. Preserve
+fresh owned storage, explicit local provider endpoints and an environment
+allowlist that excludes ambient upstream secrets. Any
+image/dependency provisioning happens before acceptance under the later runtime
+approval. Do not describe credential-free startup as full pipeline readiness.
+
+#### Ownership, sequence and acceptance
+
+| Slice and outcome | Owner | Acceptance and dependency |
+| --- | --- | --- |
+| Isolated configuration | Native executor | Extend launcher configuration/command tests and rendered topology checks; reject shared mutable destinations and dirty provider inputs. Main accepts the result. |
+| Explicit lifecycle | Main | Depends on configuration. Integrate setup/start/status/stop with ownership fences; test mismatch and partial-start paths produce no unapproved mutations. Retained by main because the cross-system lifecycle is coupled. |
+| Source qualification and delivery | Main | Depends on lifecycle. Run affected native checks and committed slice/final reviews; update the existing draft with accurate source-only evidence. |
+
+Use one substantive commit boundary per implementation slice. Apply the existing
+simplifier and risk-review gates, followed by integrated Sol final review. Do
+not restart unrelated passing checks. Document the supported sequence in
+`.devcontainer/README.md` and `docs/solutions/integration/local-kb-stack.md`.
+This is reversible opt-in tooling, so a solution document is sufficient; a new
+product identity or trust contract would reopen the ADR/design decision.
+
+| Test obligation | Existing protection and required extension |
+| --- | --- |
+| Extend launcher/identity/command tests | Two stack configurations cannot share mutable destinations; wrong source/PID/port ownership produces no mutation. |
+| Add rendered configuration contract | The complete dependency graph is represented, sources are read-only and no retained/remote destinations or ambient credentials leak into the new stack. |
+| Extend lifecycle failure tests | Initialization is exclusive, partial state cannot auto-retry, start never migrates and repeated setup refuses existing state. |
+| Reuse citation regression tests | Existing saved-fixture parsing/rendering/reload evidence remains scoped to those contracts; no duplicate tests or new provider calls. |
+
+#### Separately gated runtime and live proof
+
+After source completion, propose the exact candidate and provider revisions,
+new runtime path/identity, rendered limits, image/disk needs and expected memory
+use. Use values-free Docker capacity/current usage and disk readback without
+starting services. Pause if concurrent capacity is insufficient; never stop
+the retained stack to make room without the user's separate instruction.
+
+Before/after runtime qualification, compare source-resolved identities and
+status of the retained runtime, its volumes and already-known KB resource/version
+counts, without content or retained writes. Also prove the launcher never targets
+retained resources; natural retained-stack activity is not attributed to the new
+test. The user's retained manual-verification lease stays unchanged.
+
+Request one bounded fresh setup/start/stop/restart test, synthetic local seeding
+and browser verification only after these prerequisites are available. Stop
+the new runtime after verification unless the user explicitly keeps it running.
+No cleanup or deletion is implied. Later, separately approve one synthetic or
+public fixture and a request/financial cap for real ingestion, callback, READY,
+retrieval, Chat answer and citation/reload evidence. Keep graphs and question
+generation out of that first live proof.
+
+Authority now: approved source execution for this new extension. Terminal:
+reviewed source-ready draft publication. Boundary owner: main. Pause on an
+unsupported isolation seam, unexpected ownership, unavailable required review,
+or a new data/cost boundary. Runtime creation, live secrets, paid calls, merges,
+deployment and deletion remain withheld.
+
+Planning review: native planner approved revision B after one correction round.
+Accepted findings cover source immutability, exclusive initialization, precise
+readiness levels, single-owner slices and separate runtime capacity approval.
+Report: `project/_local/reviews/2026-09-08-isolated-local-kb-plan-hardening.md`.
+External consultation was not used: the complete unpublished cross-repository
+scope is not established as eligible for that destination. No external review
+or runtime acceptance is claimed. Progress: plan approved; isolated configuration
+is the active slice. This extension supersedes the queue-preflight approach below,
+which remains as historical evidence.
+
+Configuration checkpoint: committed `2ca3e1ac98eb4d9e9a53e9facdf8507dd6de53e2`
+contains the eight launcher/configuration/helper files. Node 24 passes 23 tests;
+Biome checks eight files, redacted staged gitleaks and diff checks pass. Main
+replaced duplicate output validation with the existing canonical derivation,
+fixed nested repo-local worktree support, retained-origin comparison and shared
+dependency-array mutation. Simplifier `01a08111-7c06-7453-a502-8abdd96765c0`
+completed with two verified reductions: remove duplicate Doc Processing
+requirement metadata and redundant observation shape checks before strict
+identity comparison. Both corrections are applied; Node 24 still passes all
+23 tests and focused Biome passes. Risk review completed on the immutable
+slice. The reported default-port origin bypass did not reproduce: Node 24
+normalizes explicit HTTPS port 443 to an empty port, rejected by the existing
+explicit-port check before origin comparison. Added coverage for both forms.
+Accepted the missing CLI safety coverage: a real child-process plan invocation
+must return exit code 2, executable false and nonempty blockers. All 24 focused
+tests and Biome pass; redacted diff gitleaks reports no leaks. No publication
+occurred.
+The commit remains a non-executable configuration model. Concrete service
+rendering and lifecycle integration are unfinished, and no readiness claim
+extends to runtime. Existing retained runtime and source edits stay preserved.
+
+Execution finding, 2026-09-08: the plan's service inventory omitted Doc Processing.
+The user subsequently approved adding its local integration to the source-only
+scope. Runtime and paid-call boundaries remain unchanged. Source inspection of
+Doc Processing `origin/main@bfb4e0ebce48756c9e871a62ccfffd2a624da1ba`
+shows that API import initializes its PostgreSQL job schema and calls a custom
+dotenv loader that does not honor `PYTHON_DOTENV_DISABLED`. Therefore its command
+is represented as blocked, not placed in the executable startup list. A clean
+image without dotenv files and an explicit setup-only schema contract must be
+resolved before activation; no in-memory store fallback is acceptable. The
+primary provider checkout is one commit ahead and 17 behind its remote default,
+with unrelated untracked artifacts; it has not been changed or used as current
+runtime source. Read-only `git show origin/main` supplied the contract evidence.
+
+The user approved the bounded provider compatibility change on 2026-09-08:
+explicit setup and environment-only startup, preserving existing defaults and
+API behavior. This is the only exception to the read-only provider scope above.
+Fresh provider worktree: `rs/local-kb-explicit-startup`, under Doc Processing's
+`trees/rs/local-kb-explicit-startup`, based on and tracking `origin/main` at
+`bfb4e0ebce48756c9e871a62ccfffd2a624da1ba` with no base drift. Main owns the
+startup/setup seam and launcher integration. Planner revision B approved the
+backward-compatible control. Provider implementation is committed as
+`8db4f6bfd26cd96d59e284e857467a6cc82780d6`: literal dotenv opt-out,
+automatic-initialization opt-out at existing call positions, and explicit
+persistent setup. All 150 focused offline tests and seven-module Pyrefly checks
+pass. Simplifier, trusted risk review and integrated Sol final review pass.
+Provider [MR !73 — explicit local preparation](https://gitlab.uzh.ch/ai-infrastructure/services/doc-processing/-/merge_requests/73)
+was merged by the user. Fresh forge and Git readback confirms squash commit
+`7979ac6b95e4e407e439d49ba1bee4e6708bedb0` on `origin/main`; the final
+pipeline succeeded at `cc8f598d6dfeb6e8ff6c9d54db7e4650829f4438`.
+The merged executable source, tests and README match the reviewed head.
+The forge deleted the remote task branch automatically; the local worktree
+and branch remain untouched. No service startup, live database setup or
+deployment occurred. The user authorized continuing launcher integration.
+Concrete Klicker service rendering remains pending; provider preparation must
+stay blocked until its supported integration and prepared-state proof exist.
+
+Launcher checkpoint: `12fbef11d5` adds the explicit `doc_processing.setup`
+command and `DOC_PROCESSING_AUTO_INITIALIZE=0` to the blocked API command.
+The blocker now describes missing isolated preparation evidence rather than
+unsupported provider startup. This is command inventory only; plan still
+exits nonzero with executable false, and nothing executes the commands.
+All 24 focused tests pass with Node 24.16.0 in the exact retained task container;
+focused Biome, diff checks and redacted changed-line gitleaks pass. The commit
+contains only the two launcher command files, preserving other staged work.
+The host hook was skipped in favor of the scoped container checks; no full
+repository check or build is claimed for this checkpoint. Required package
+reviews and source publication remain pending. The retained runtime's explicit
+manual-testing lease remains in effect; no service lifecycle action occurred.
+
+Preparation slice `faab1c8514a1bc04f2cdfabbd04daa2affdaea1f` adds the two
+missing Doc Processing workers to the blocked command inventory, exclusive
+preparation claims/completion receipts, and an opt-in Hatchet setup/start
+adapter. All 28 focused Node 24 tests pass; Biome, shell syntax, diff and
+redacted staged secret checks pass. These helpers are not yet connected to
+an executable launcher. The Hatchet image's stock entrypoint migrates and
+prints its token, so the adapter separates those operations and suppresses
+preparation output. Only synthetic stand-ins exercised the adapter.
+The simplifier found no justified reduction; report is
+`project/_local/reviews/2026-09-08-local-kb-preparation-simplifier.md`.
+Risk reviewer `01a08166-5090-7d43-95de-0b365e281915` completed that exact
+six-file range with concerns: add a token-file permission assertion and retain
+the obligation for launcher ownership preflight before either Hatchet mode.
+The assertion now checks mode 0600. The adapter alone is not ownership proof.
+The executor completed and is closed. Renderer, source-image
+provisioning, canonical setup/start/status/stop integration and full-package
+reviews remain pending. No runtime was created, started, stopped or reset.
+
+Renderer decision resolved by the user's approval: retain normal Devrouter
+networking, fresh owned state, explicit local provider destinations and no
+upstream keys or submissions during initial qualification. Drop the network-level
+no-egress requirement; isolated storage does not imply network isolation.
+Runtime startup and paid proof remain separately gated.
+
+Parallel reconciliation, 2026-09-08: merge commit
+`fed495ccdb58071fe6ef18f2611707c60f22b658` includes remote task head
+`140e070f79f3f15c204b15e046f0613d98a502be`. The sole conflict was this plan's
+opening; preserve the local-stack extension and label the earlier UI
+qualification as historical. No source-code conflict required a behavior
+choice. All 28 focused launcher tests pass on the merged tree; this is not a
+fresh full-application qualification. The token permission assertion and approved
+networking decision are committed at `622d482299`.
+
+The staged and untracked work was preserved and restored with its index from
+stash `889e34708be467c6069a3a2a8a746dea3d40b34e`; retain that recovery copy.
+The original staged paths match their saved content. No runtime lifecycle
+command, data reset, provider submission or publication occurred. The existing
+manual-testing runtime lease remains unchanged.
+
+Main rejected adding another topology-only representation as a substitute for
+a concrete renderer. The next bounded CLI integration exposes the existing
+validated isolated plan through an explicit configuration input, with no
+runtime mutation and no claim that supplied source observations are live proof.
+Concrete images, provider environments, Compose wiring and lifecycle execution
+remain required before source-ready delivery.
+
+The CLI integration is committed as
+`37b7b4e108d80b174343d7717cb696dae8ef6abd`. `plan --config` accepts an
+explicit absolute JSON input, uses the existing isolated validator and exposes
+its graph, state, mounts and command inventory. It remains non-executable with
+exit code 2; source observations are explicitly supplied rather than freshly
+verified. Invalid input produces a generic diagnostic without echoing its
+contents. All 29 focused launcher tests, scoped Biome, diff and redacted
+gitleaks checks pass. The executor handle became unavailable after interruption;
+main inspected and verified the preserved two-file result rather than replacing
+it. Slice simplification and trusted read-only correctness review are complete.
+The sole correctness concern was potential output of URL query/fragment values
+on otherwise valid local endpoints. Commit `a7d4c57f1e` rejects those suffixes;
+15 focused tests, Biome and redacted changed-line gitleaks passed.
+
+The next source check adds host-side `status --config`: canonical provider roots,
+actual HEAD and tracked/untracked cleanliness are read from Git instead of trusted
+from the supplied observations. It disables optional Git locks and filesystem
+monitor hooks and emits only boolean source qualification results. It does not
+probe endpoints or infer runtime readiness. Eight focused tests pass on host
+Node 24.16.0, including a disposable synthetic repository and the CLI rejection
+of invented source observations. An initial test invocation ran Git against that
+synthetic fixture inside the container; it was rerun on the host to follow the
+host-Git boundary. No real repository was mutated by those tests.
+
+Citation verification also passes: 101 tests, Chat type checking and focused
+Biome. Three existing explicit-any warnings outside changed hunks remain. These
+checks use mocks, not provider calls, and do not replace retained-browser proof.
+The tracking branch has advanced four commits; publication still requires
+reconciliation without overwriting either workstream. No branch integration,
+runtime lifecycle action or paid call occurred in this continuation.
+
+Citation source is committed at `83f698e97b`. The simplifier identified two
+unused retrieval-status inputs; main verified and removed them in `7ba5f8133a`.
+All 33 affected helper tests and Chat type checking pass after that reduction.
+The bounded correctness reviewer found no current implementation defect. Its
+advisory coverage gap was accepted: the existing envelope sanitizer test now
+also checks synthetic `.svc` and `.svc.cluster.local` URLs with non-ingestion
+paths. All 103 focused citation tests pass. The source-status simplifier found no justified
+reduction in `f2ec42696f`.
+
+Retained-browser inspection failed with `Resource temporarily unavailable
+(os error 35)` from the existing `kb-citation-verification` session, both inside
+and outside the sandbox. No browser restart or submission occurred. The real
+application runtime remains under its manual-testing lease. Sixteen host
+runtime-profile tests and the isolated runtime shell suite pass; shell-test
+cache removals occurred only under their temporary synthetic repository.
+The pending runtime patch's duplicate unused declaration was removed.
+
+Publication now needs a user decision: the existing PR was externally marked
+ready and advanced to `667782aa582b269b8f83b47481294903ba4bc612`. Preserve that
+state rather than append the unfinished launcher or silently return it to draft.
+The user has been asked whether this package remains on that PR or becomes a
+separate draft follow-up. Local source work may continue; no publication or
+branch integration is performed while that decision is pending.
+
+Provisioning evidence: refreshed data-ingestion `origin/main` is
+`d46282848100beec5a1f571e0cc9b091dcdd4179`. Its primary checkout is on
+`rs/kb-pgvector-graph-e2e` with a gone upstream, 34 ahead/12 behind main and
+unrelated untracked files; it remains untouched and is not a clean runtime
+input. Read-only `git show` confirms `modules/ingestion/Dockerfile` requires
+BuildKit package-index credentials for two locked private client packages.
+The ingestion API Dockerfile does not have that credential requirement.
+No matching provider image appears in the local Docker image inventory.
+Credential-free service startup therefore does not imply a credential-free
+cold build. Source implementation must declare the image/provisioning boundary;
+actual image provisioning remains in the later approved runtime stage. No
+package credentials, registry login or image build were attempted.
+Registry metadata resolves a no-local-build alternative for that exact revision:
+`cr.gitlab.uzh.ch/ai-infrastructure/services/data-ingestion/ingestion-worker`
+has digest `sha256:b6a162483014ca2bb0aa545218518686cbf2b0f199a9a71b7d4ffd1e3f880d82`,
+and `ingestion-api` in the same registry project has digest
+`sha256:0f4656044caf12a7ac4c01d06bd0f2adf4ca93864ec94fd5dafc130e58ecb934`.
+Both revision-tag records were read through host `glab`; neither image was
+pulled or started. Architecture, runtime configuration and local pull access
+remain unverified. Prefer these existing immutable artifacts when qualifying
+the later provisioning step rather than introducing local package credentials.
+
+The current ingestion parser routes document inputs to that separate service;
+`steps/parsing/doc_processing.py` requires both `DOC_PROCESSING_BASE_URL` and
+`DOC_PROCESSING_API_KEY`. A cold PDF cannot rely on the retained parsed cache.
+Do not label the planned graph complete for PDFs or inherit a remote endpoint.
+Local Doc Processing is included in the approved source-only scope, with
+runtime document processing still unqualified. The earlier baseline preceded
+the provider compatibility change recorded above. The existing three
+launcher/helper suites pass 14 tests using the retained container's Node 24;
+this is an offline baseline, not isolated-runtime proof. The exact container
+source mount matches this task worktree and its keep-running lease is preserved.
+
+### Local reconciliation checkpoint — 2026-09-08
+
+The user subsequently approved the bounded data-ingestion source extension:
+add a read-only local queue/retry preflight and consume it from the portable
+launcher. Reuse `data-ingestion/trees/rs/local-kb-e2e`, verified clean at
+`d46282848100beec5a1f571e0cc9b091dcdd4179`, equal to `origin/main`.
+This supersedes the earlier exclusion of provider edits only for this preflight.
+No worker/job execution, deployment, deletion or paid operation is included.
+Main owns the cross-system contract; the existing read-only investigator maps
+Hatchet state coverage. The preflight must include resource operations and
+outbox retries as well as all nonterminal Hatchet work and future triggers,
+and fail closed on missing, partial or unknown evidence. It reports sanitized
+counts/reasons only. A zero snapshot is not a concurrency lock or permission
+to run jobs; startup still requires controlled producers and exact ownership.
+Use focused synthetic adapter/contract tests before any separately gated live
+readback. Preserve the existing review and draft-delivery gates.
+
+Preflight investigation completed on 2026-09-08 against unchanged provider
+`d46282848100beec5a1f571e0cc9b091dcdd4179` and installed Hatchet SDK 1.33.6.
+The SDK exposes paginated task, scheduled-workflow and cron listings. Task
+listing accepts `include_payloads=False`, but has a mandatory time window
+and only QUEUED/RUNNING nonterminal states. No separate delayed-retry feed or
+server guarantee of retry coverage was established. Resource-operation counts
+alone therefore cannot qualify worker startup. Pending/delivering outbox rows
+must also include future attempts and callback events, not only due dispatches.
+Missing pagination or incomplete retry coverage must remain unknown, never idle.
+
+This is source-contract evidence, not live queue evidence. The investigator
+completed without edits or live calls; main checked the SDK signatures and
+pagination models. No provider source was changed and no worker was started.
+The remaining design boundary is how to establish an authoritative empty
+execution scope without consuming retained work. Do not add a nominally green
+preflight based on these incomplete feeds. An isolated fresh local execution
+scope is a possible alternative, but creating/rebinding it needs a concrete
+scope decision before implementation. The retained-data launcher remains
+non-executable until that boundary is resolved.
+
+Local merge `eccc1f5bf0` incorporates published task head `1c8ff98696`.
+All equivalent hook checks passed, split between the container toolchain and
+host-only Playwright contract tests. Initial cached/parallel checks failed on
+generated Prisma types; fresh dependency builds and direct sequential package
+checks passed without changing application code. No database operation ran.
+The saved citation and launcher edits are restored from recovery snapshot
+`e0719fd719a1d757d0e4ddb64bdd7fea522cb21b`, which remains retained.
+Their verification and reviews remain separate from the merge checks.
+
+The runtime-stop receipt below belongs to the earlier published qualification
+on Compose `default-rs-cea28`. It does not describe this device's retained
+`default-rs-6d40c` runtime. This device retains its runtime under the user's
+manual-verification lease. No restart, provider call, cleanup or push occurred
+during this reconciliation. Earlier receipts below remain historical evidence.
+
+### Published qualification history
+
+Post-restoration verification, 2026-09-08: all four focused Chat suites pass
+(101 tests), the launcher/identity/command suites pass (27 tests), and Chat
+typecheck passes. The retained synthetic browser test passes in 6.3 seconds
+including reload and zero local write requests; external requests are blocked.
+This is saved-fixture rendering evidence, not a new provider or ingestion run.
+No publication or new paid operation occurred.
+
+Portable startup remains blocked at the approved provider-preparation boundary.
+The existing read-only provider investigation confirms that API operation counts
+do not cover Hatchet queues. Worker startup can consume retained tasks; the
+resource dispatcher can dispatch due outbox rows. The available idle precheck
+covers only queued/running LLM, embedding and resource-fetch work, not every
+worker or scheduled/retry state. A complete supported no-work preflight was
+not found. Provider source changes are excluded by current approval, and no
+credentialed fleet startup is authorized on incomplete evidence. Request a
+bounded provider-side preflight extension before claiming portable startup.
+
+Earlier qualification before the hosted-repair extension, 2026-09-08: the inherited UI acceptance and guarded retained-runtime recovery pass. The integrated final review passes on e9641fbc900cbfdd76b051ba6df0c7245c760f96 with no findings. The exact task runtime is stopped with zero routes. Approved delivery is an ordinary push to the existing draft; current-head hosted CI, hosted review and explicit merge authority remain separate gates. The earlier device-transfer checkpoint is retained below as history.
+
+### Current KB ingestion and retrieval checkpoint — 2026-09-07
+
+This checkpoint supersedes older runtime and local-delivery claims below.
+The existing PR remains open against `v3-ai`. The local branch is at
+`b0fb93c98a`, with 36 commits not yet published to its tracking branch.
+The Devrouter version pin, selective Turbo concurrency correction, Manage
+Blob route, and task-local signer hook remain uncommitted. Preserve them;
+the signer hook and ignored prototype are not yet portable release artifacts.
+
+The approved public-PDF test proved browser upload, one external ingestion
+operation, callback settlement to the current AI-serving version, and real
+Doc Query retrieval in Chat. The returned tool result contains one PDF source,
+five chunks, and page metadata. It does not prove correct citation display:
+the result badge incorrectly says no results and the answer exposes an internal
+ingestion URL. Exact local evidence is in
+`project/_local/local-kb-e2e/README.md`; do not publish its fixture inventory or
+secret-bearing generated configuration.
+
+The user approved continuing the existing package to correct those acceptance
+failures and make local ingestion/retrieval startup reproducible. The main
+session owns cross-system contracts, runtime effects, and final proof. A bounded
+read-only child maps the existing Chat parser and source-normalization seams.
+Preserve original source identity, signed scope, existing provider contracts,
+and process-only upstream credentials. No new schema, dependency, production
+action, graph build, deletion, merge, or deployment is authorized by this
+continuation. Further product or trust-boundary changes require a fresh ruling.
+
+The runtime is retained for the user's manual verification at the exact task
+checkout, workspace `rs-generation-lifecycle-contract`, Compose project
+`default-rs-6d40c`. Latest canonical ensure reported ready, eight routes,
+no drift, no recreation, and mock MCP stopped. This replaces the older
+`default-rs-f189c` and stopped-runtime receipts; do not act on those old IDs.
+
+### Approved local ingestion and citation execution contract
+
+Authority: the existing approval covers source corrections, focused checks,
+native reviews, ordinary task-branch publication and updating this draft PR.
+No merge, deployment, deletion, provider-repository edits, new schema or access
+endpoint is included. KG and question generation are not part of this proof.
+The remaining paid budget cannot be verified. Do not submit another paid query
+or ingestion until the user approves a fresh cap. Offline and deterministic
+browser checks continue without that gate.
+
+Terminal: reviewed source publication with accurate acceptance limits. Claim
+reproducible startup only after an owned restart and retained-data proof.
+Boundary owner: self. Pause on ownership ambiguity, unsupported provider
+preparation, a new data boundary, or the separately gated paid proof.
+
+#### Delegation map
+
+| Slice | Execution owner | Acceptance |
+| --- | --- | --- |
+| Truthful retrieval and citations | Native executor after main freezes the response boundary; existing explore child maps seams | Focused parser, MCP and activity-chip checks; deterministic browser and reload evidence |
+| Portable local composition | Main; cross-system coupling and secret-handling boundary | Ownership and preflight tests, actual profile planning, bounded startup proof |
+| Integrated qualification and delivery | Main; integration and final proof | Applicable native reviews, focused verification and accurate whole-branch draft publication |
+
+#### Truthful retrieval and citations
+
+Extend the existing normalizer, tool fallback and MCP response boundary rather
+than replacing the merged wrapper support. Reproduce the real documents
+envelope with a gateway reference, missing display metadata and nonempty chunks.
+Count retrieved documents from valid source entries with chunks, not rendered
+cards or chunk count. Distinguish malformed results from a genuinely empty
+result. Preserve one source per document, first-chunk page metadata and current
+citation numbering.
+
+Main owns the model-facing correction at the existing MCP result boundary.
+Remove ingestion gateway destinations from both structured and text payloads,
+retaining opaque identity and non-link title/page metadata. Use established
+metadata, or an honest generic document label when unavailable. Never derive
+an original public URL from an uploaded filename. Verify nested wrappers,
+non-clickable source presentation, result-count distinctions and reload with
+deterministic fixtures.
+
+Owned areas are the existing Chat source normalizer, tool fallback, MCP service
+result mapping and their focused tests. Resolve exact service and browser-test
+paths from the prerequisite mapping before editing.
+
+#### Portable local composition
+
+Implement opt-in setup, start, status, connect and stop under
+`util/local-kb-stack.mjs`, focused tests, and `util/local-kb/` support files.
+Document the supported sequence in the existing devcontainer README and
+`docs/solutions/integration/local-kb-stack.md`. This is not the legacy API-only
+ingestion launcher and must not start a competing fleet.
+
+Require explicit `DATA_INGESTION_REPO`, `WEB_SCRAPING_REPO`, `DOC_QUERY_REPO`,
+local paths and selectable ports. Do not clone or update providers. Record the
+actual immutable provider baselines before implementation. Verify compatible entrypoints,
+scope-header support and prepared state; revision equality alone is not enough.
+
+Setup explicitly owns local configuration, owner-only signing material and
+provider schema preparation. Start accepts only prepared providers and verifies
+exact source/process identity and authoritative absence of queued or retry
+work before credentialed workers run. Missing evidence blocks that provider.
+Start never creates fixtures, migrates implicitly, rebinds a KB, or makes a
+proof submission. Status is read-only and values-free.
+
+Connect is explicit and transactional: validate the expected server, exactly
+the two seeded Benibot Tutor/Explainer consumers, expected old KB and requested
+new KB before changing anything. Mismatch produces zero writes. Stop validates
+source path, PID start identity and port ownership, stops only owned groups and
+preserves data. Upstream credentials remain process-only through the restricted
+operator. The signer file must be an explicit opt-in regular owner-only input.
+
+Use `ai,chat,email,live-quiz,manage`, excluding mock `mcp` and `full`. Reconcile
+the Blob route with `playwright/runtime-contract.yml` and its consumer semantics
+without inventing a Node build target or readiness endpoint. Acceptance includes
+`devrouter profile plan --repo . --profile manage --contract playwright/runtime-contract.yml`
+and affected host profile tests. Cover stale/reused PID, occupied port, partial
+and repeated startup, identity mismatch and no-write preflight/status.
+
+#### Qualification and evidence
+
+Run focused Node 24 checks in the exact container, host profile checks and
+deterministic browser verification. Review committed substantive slices with
+the configured simplifier and risk reviewer, then obtain the integrated Sol
+review. Earlier lifecycle-only reviews do not qualify this extension. New live
+acceptance may remain explicitly pending at source publication; no additional
+paid calls are included. Retain the runtime for the user's manual verification.
+
+Native planner Carson approved the revised draft in round two. The report is
+`project/_local/reviews/2026-09-07-local-kb-acceptance-plan-hardening.md`.
+
+### Current integration and runtime checkpoint — 2026-09-06
+
+The user explicitly approved integrating current v3 and recovering this exact
+workspace with the latest devrouter. Source/runtime custody was released by
+the coordinating task before work. Local merge 479a1045be incorporates
+v3 at 27f2474547df045cc11302c7d9e195798ec66870 into the existing branch;
+no protected branch was changed. Twelve conflicts were reconciled, preserving
+the branch's participant authentication and MCP client cleanup alongside v3's
+multi-KB and standard-mode contracts. The two remaining Next peer ranges were
+aligned to 16.2.11 and the lockfile regenerated inside the container.
+
+Container verification passed: 81 focused Chat tests, Chat/GraphQL/Manage
+typechecks, and literal root check:all with 40 successful tasks. Staged
+redacted gitleaks passed. The host merge hook was split after these container
+checks. The integrated Sol review found one owner-preview scope mismatch:
+KB relations are not the authority for multi-KB MCP scope. The correction
+uses resolveMcpScope and has a passing eight-test route suite, including the
+new configuration-versus-relation regression, and a passing Chat typecheck.
+Sol's correction review passed on 4cb54e47d1 with no actionable findings.
+
+Installed CLI and repository pin both equal the latest official devrouter
+release, 0.0.55. Exact runtime identity remains workspace
+rs-generation-lifecycle-contract, Compose default-rs-f189c, source
+trees/rs/generation-lifecycle-contracts. Port override 10043 and the retained
+Next cache marker were preserved. An initial ensure --repair passed all
+readiness contracts without recreation, and delegated local login worked.
+After dependency relinking during checks, Chat's live Turbopack process failed
+with Next.js package not found and the app group exited. This is not a passing
+final runtime result.
+
+Normal reconciliation then recorded degraded state; two supported repairs
+failed with Preparation for 'klicker-dev' left running children. A bounded
+foreground build diagnostic passed 10/10 tasks but proved its surviving child
+was /usr/bin/git diff HEAD --no-ext-diff --no-color. Disabling the optional
+Turbo daemon did not resolve it. No helper or lock was bypassed. Other owners'
+provider locks were left untouched. The remaining runtime recovery therefore
+requires correcting or accommodating that foreground-process completion seam,
+not another CLI version bump or database reset. A subsequent isolated comparison
+found that invoking the installed Turbo binary directly, without pnpm exec,
+completed with no surviving process in its group. The bounded candidate changes
+only preparation to use that binary; the focused shell runtime suite passes,
+including direct-execution and failure-propagation checks. Canonical repair is
+completed after another workspace released the provider lock. The exact repair
+run passed all six app contracts and both worker checks, reporting ready with
+empty drift, eleven scoped routes, and no recreation or TLS refresh. Normal
+delegated login and settings rendering passed after removing the browser mock.
+The focused shell runtime suite passes; the separate unchanged hanging-response
+test cannot run alongside live Auth because both bind port 3010 (EADDRINUSE).
+That collision is not claimed as passing test evidence. No live service was
+stopped to accommodate that test.
+
+AI navigation has an independent local SDK fixture limitation: the configured
+GrowthBook test endpoint is unavailable. A browser-only interception was used
+for diagnosis and is not normal-browser feature availability or server
+authorization evidence. No ingestion, graph, generation, provider request,
+secret injection, database reset, deployment or cleanup was performed. The
+user's keep-running request retains the exact runtime resources for the next
+recovery checkpoint; the application is now running, but normal-browser AI
+availability remains unverified pending resolution of the local SDK fixture.
+
+Device-transfer checkpoint, 2026-09-06: the user explicitly requests publishing the current work as pushed draft PRs so another device can continue. This permits a work-in-progress source checkpoint before the previously required publication verification completes; it does not waive any verification or review gate before merge. Preserve pending browser, static assertion, runtime and implementation-review obligations. The adopted runtime source remains attributed to PR #5790, now merged; this checkpoint preserves the exact local candidate rather than integrating any upstream branch. Host identity, shell syntax, diff and redacted secret checks run for this checkpoint. Container-only hooks/builds remain unrun because the task runtime is stopped and startup qualification is blocked; do not report the checkpoint as tested or source-reviewed.
+
+This package consolidates generation around the existing Element model and protects existing business behavior before v3-ai can qualify for stable v3. The backend consolidation is published on this draft PR. The approved remaining correction repairs two browser-test fixtures, the header overflow at smaller desktop widths, and the analytics loading-state redirect on profile failure; it does not change eligibility, permissions, account usage, or Element behavior.
+
+Approval includes local edits, checks, independent reviews, commits, and publication to origin/rs/generation-lifecycle-contracts on this same draft PR. The user also approved reset and reseed of task-local klicker-prod in default-rs-f189c_pgdata and layout-only Header.tsx changes here. Preserve the release task's separate permission edits. No other database, task-to-target merge, deployment, or credential repair is authorized. Subsequent explicit v3-to-v3-ai merges and necessary target integration are recorded in Progress.
+
+Acceptance requires the three inherited UI failures to pass with meaningful behavioral assertions, adjacent regression checks, and browser proof that navigation remains usable without horizontal page overflow. Required reviews precede publication. Stop the exact runtime after verification unless the user's manual-verification lease remains active; coordinate its release with the current owner. Persist results in this plan and the parent roadmap. Hosted review authentication remains a separate owner-held gate; source completion is not stable-release readiness.
+
+## Execution details and research
+
+### Approved readiness-review corrections — 2026-09-08
+
+The user requested improving the supplied production-readiness review and proceeding with the fixes. This includes the previously identified test-runtime fixture mismatch and the loading-state accessibility correction. Main owns the report acceptance, browser fixtures, loading state, integration and verification; a bounded executor owns the existing backend test preload/controller, its existing tests, and the exact Manage test rewrite. No production feature decision or generation lease, retry, status, migration or spend contract changes.
+
+Local qualification uses the existing ignored beta-enrollment-fixture marker and exact manage profile to select dev:test. The ordinary host launcher defaults to full/dev, which correctly excludes test fixture endpoints. Planner Hegel approved an invocation-scoped canonical-tool wrapper selecting manage only for this worktree. Main records marker absence before creation, verifies test-process and HTTP controller state, restores evaluator state, stops and verifies the exact runtime, then removes only its owned marker and wrapper. No production guard is widened and no persistent launcher policy changes.
+
+Planner Hegel approved revision two after four accepted corrections. The analytics fixture defaults false except for the synthetic lecturer user in test/development, independently of beta enrollment. An exact test-only controller reads its current boolean and accepts only one validated boolean update; unsupported methods and malformed requests cannot mutate it. Existing NODE_ENV, synthetic SDK host and key guards remain, responses are not cached, and no arbitrary upstream URL is accepted. The preload uses a 250 ms refresh for both hosted and local tests. Tests capture the prior state, mutate inside try/finally, restore it, and observe the corresponding backend decision. Main retains exclusive serial runtime custody. Named and persisted GraphQL requests count; allow requires non-null analytics data and deny requires FORBIDDEN without an analytics payload.
+
+Extend the existing preload tests for scope, invalid requests, restoration and unchanged AI rules. Run the focused browser failures and adjacent unavailable, unauthenticated and no-query cases through the canonical host launcher. Restore localized loading text and an announced status without mounting authenticated Layout. Preserve the existing audit's historical evidence while correcting overstated rollback, timing and runtime-ownership conclusions. Required reviews, scoped commits and ordinary draft publication remain the terminal source-delivery sequence; deployment and repository check policy remain separately owned.
+
+### Approved hosted qualification repairs — 2026-09-08
+
+The user approved repairing the four inherited browser failures, lecturer MCP CI setup, and sanitized synchronization logging in this same draft PR. This extends the earlier fixture scope. Preserve application authorization, lease predicates, release handling, lease duration, retries, state transitions, migrations and dependencies. No required-check policy change, scanner dismissal, merge, deployment or provider call is included.
+
+The executor owns only .github/workflows/test-mcp-lecturer.yml. Reuse the existing disposable PostgreSQL provisioner and bootstrap SQL, include both in path selection, provision before reset, and use the restricted marked database consistently through reset, seed and both server smoke checks, with its marked shadow database for reset. Verify YAML, path selection, ordering and failure propagation; hosted acceptance requires the steps to execute rather than skip.
+
+Main owns the three failing browser specs (Y-question-generation-review, Y-ai-beta-management-gate and B-feature-access) and narrowly necessary existing fixture helpers, including mockGrowthBookServer.mjs. Runtime custody and fixture diagnosis are coupled. Capture actual prior account and evaluator state before test-owned changes and restore it on failure. Diagnose named and persisted GraphQL responses, evaluator updates and sanitized response codes before choosing corrections. Preserve editor, navigation, denied-state and no-query assertions. Never globally enable beta or mock application permission decisions to obtain a pass.
+
+Main owns only the two synchronization-catch logging hunks in questionGeneration.ts and flashcardGeneration.ts because the data boundary is coupled. Fixed event labels suffice; any code must be checked against an existing finite runtime allowlist. Emit no raw error, message, stack, content, URL, identifier or token. Preserve early returns and state writes. False release results are not logged as proven takeover.
+
+Acceptance uses canonical host Playwright against the source-resolved marked disposable task database. Run the four failed cases plus existing open-gate, absent-flag, unavailable-profile and unauthenticated/no-query cases. Require actual setup and failure-safe restoration; capture synthetic browser evidence. Run focused lifecycle coverage, applicable type checks, formatting and policy checks. Reuse unchanged earlier evidence. Commit coherent verified changes, run affected slice and integrated reviews, and ordinarily publish to the existing draft after acceptance. Main owns integration, publication and exact-runtime shutdown. Stop for an application authorization defect, unproven database identity, ownership conflict or unavailable required capability; no lifecycle bypass or deletion.
+
+Native planner Boole reviewed frozen extension v1 as REVISE; all four findings were accepted. The same child approved v2, including the ownership and acceptance contract above. The user's approval starts this execution without another permission checkpoint. Runtime-dependent checks currently await supported recovery from Devrouter's Reliability operation-request blocked error; independent source corrections proceed.
+
+### Approved UI qualification extension — 2026-09-05
+
+The user approved correcting the three inherited UI failures on the existing draft PR. Restore the test contracts and the smaller-desktop layout without changing feature eligibility, backend authorization, account usage policy, or Element behavior. Credential repair remains with its existing owner. This section supersedes the earlier exclusion of these three UI failures only; the completed backend scope and its evidence remain unchanged.
+
+Authority update, 2026-09-05: the user explicitly approved resetting and reseeding task-local klicker-prod in default-rs-f189c_pgdata for Playwright, deleting that database's current contents, and a layout-only Header.tsx correction in this worktree while preserving the release task's separate permission changes. These two approval boundaries are resolved for this bounded verification/correction workflow; other databases, peer workspaces, policy changes and upstream integration remain excluded. Revalidate the exact runtime/database identity before cleanup. The earlier paused checkpoint below is historical.
+
+The updated test policy replaces the touched loading-copy assertion with behavioral protection: the unavailable state must render after an observed failed ManageUserProfile request, and no GetCourseActivityAnalytics request may be issued. Both named and persisted operations count. This supersedes references below to retaining the literal loading-text assertion; no UI copy is pinned. The test-only correction remains executor-produced and main-verified. Main owns the layout correction because runtime reproduction and the approved same-path ownership boundary are coupled.
+
+- Baseline: c8c35e2d94d06c42c4dc94ff41170dc2ed01c51f, clean and matching origin/rs/generation-lifecycle-contracts. Playwright run 33963182292 has seven passing shards and three failures in shard 8, also reproduced on exact-base run 33918795985. Fetched v3-ai is 795808d18e9d2fb41861ec10f89d43a752bb5cf8; no upstream integration is authorized or performed.
+- Feature test correction: main verifies the absent-flag setup and failed-profile interception in playwright/tests/B-feature-access.spec.ts. The automatic browser fixture currently enables ai-beta; the absent-flag test does not override it. The analytics provider now requests ManageUserProfile, while its failure test intercepts UserProfile. Preserve the hidden-usage, no-query, unavailable-state and no-loading assertions. Ensure the failure stub observes the actual request, including the existing persisted-operation transport, before accepting a green result.
+- Layout correction: main measures the unchanged library at 749 by 820 pixels with the same synthetic flags as the failing test. Identify the overflowing element before editing. Preserve four activity choices, sidebar width, content position, labels, focus and navigation. Use only the smallest demonstrated layout correction; do not hide page overflow or weaken the viewport assertion. Broader mobile redesign is excluded.
+- Ownership: read-only fixture mapping used a native executor after the configured explore route failed before work with insufficient provider credits. That child completed and is closed. PR #5771 owns ChatAccountUsageSettings.tsx; the release task currently edits Header.tsx and chatbot permissions. Neither is delegated to this task. Stop before an actual overlapping edit and request custody direction; unrelated base movement alone is not a blocker. Main retains diagnosis because reproduction and ownership are coupled. A bounded executor may implement only the settled non-overlapping test correction after plan review.
+- Verification and delivery: run the unchanged failing assertions as a red/green loop and adjacent feature-gate/layout cases; capture browser states before and after any visible correction. Run scoped formatting and applicable package checks. Review substantive committed changes with the configured simplifier and risk-selected slice reviewer; final review covers the integrated changed package, reusing unchanged backend proof. Continue the approved local-commit workflow, but do not publish an unverified UI correction. Keep the PR draft and preserve credential-review failure as a separate unresolved gate.
+
+The task-owned manage runtime is resumed for synthetic browser inspection. The standard host Playwright launcher selects its database from committed configuration and global setup performs broad cleanup. Existing databases remain preserved: do not run that setup until the selected database is proven disposable under the existing approval, or the user approves the exact reset. Do not bypass the host launcher or modify shared runtime configuration. If native verification cannot proceed safely, retain the diagnosis and local candidate, stop the exact runtime, and ask at that database boundary. The monitoring heartbeat is paused while this extension is active.
+
+Acceptance cases are `Keep chat account usage hidden when its feature flag is absent`, `Shows analytics unavailable when the user profile cannot load`, and `library keeps four activity choices across smaller desktops`. The first explicitly omits ai-beta in its browser fixture; the second proves at least one intercepted ManageUserProfile request before the existing unavailable/no-loading assertions. Decode persisted hashes as well as named requests. Reuse the remaining B-feature-access cases for enabled/disabled flags and backend denial, and W4-activity-wizard-safety cases for wizard entry, pristine/dirty cancellation, labels, focus and navigation, including `element creation remains available while an activity wizard is open`. Never substitute an unchanged assertion with a weaker one.
+
+Planner round 1 requested explicit slice assignments, exact acceptance cases, and a timestamped target baseline. Accepted and applied; the earlier narrow UI exclusion override was already explicit, and is also linked from the historical non-goals below. Remote tracking v3-ai advanced during parallel work to 5c8ee4b6a034c22da8e85159214c629f371d0f3d (11 ahead, 8 behind); the earlier fetched SHA is an observation, not a current baseline claim. No integration occurred. Round 2: APPROVED with no blocking findings. Native planner Gibbs is closed. Its advisory note correctly locates focus/activity-description coverage in B-feature-access and layout/navigation in W4-activity-wizard-safety; both remain required. Transcript: project/_local/reviews/2026-09-05-ui-qualification-plan-hardening.md.
+
+Browser diagnosis: with synthetic CI flags and a 749-by-820 viewport, document width is 761 pixels. The header user-menu menubar extends to x=761.078125; library activity choices remain within the viewport. Evidence: project/_local/ui-overflow-749-before.png. The release owner has an active Header.tsx edit, so this actual path overlap pauses the layout correction only. New scope, database-reset authority, changed policy, or a missing required review capability are material stop conditions; routine corrections and evidence updates are not.
+
+Local checkpoint: executor Ampere produced only the B-feature-access candidate and is closed. It explicitly omits ai-beta while retaining other fixture defaults, intercepts named or hashed ManageUserProfile, and asserts an observed interception before the unchanged UI assertions. Main inspected every changed hunk; git diff --check passes. Browser/Playwright, formatter and package checks for this candidate remain unrun. It is uncommitted and unpublished, with required implementation reviews pending; passing backend receipts do not cover it. The launcher-selected database name is klicker-prod inside this task's retained default-rs-f189c_pgdata volume, not a production connection. Existing content was neither inventoried broadly nor deleted. Exact reset approval is still required. A values-free settings visibility command was never launched because the permission review timed out twice; no settings red/green result is claimed. Browser pr5777-ui is closed. Managed runtime stop succeeded and freed three routes. Fresh Devsy status for the source-resolved workspace rs-generation-lifecycle-contract is Stopped; the exact source-path workspace listing reports zero routes and no hosts. Runtime data and the worktree remain preserved. The user must resolve the header custody and exact database-reset boundaries before full qualification continues.
+
+- Problem: v3-ai integrates working feature branches. Normalization must reuse that code and preserve existing business behavior before 3.4.0 RC can qualify for stable v3.
+- Baseline: fetched 2026-09-04. Published AI 1765a2d6394fc9a3f18bddd330dda70438510e23; stable 468f05b91503b133670dda235be9a4b38bba2155. Owned sync is published as 208e97d38e6abfd13d997d48200077febc8c1445. The two generation service files match the published baseline at this local sync. Never integrate it ourselves.
+- Evidence: questionGeneration.ts:384-417,851-887,1029-1079 and flashcardGeneration.ts:335-373,795-835 repeat 15-second owner-scoped synchronization lease acquisition and token-fenced release. Preparing/review claims require a status predicate; ordinary polling claims currently do not. These are not interchangeable generic state transitions.
+- Existing behavior: elementGenerationDispatch.ts and elementGenerationAccounting.ts already own reserve/claim/settle/release. knowledgeGraphAccounting.ts:32-36,73-122 deliberately separates ordinary releasable reservations from human-review holds. Reuse them, do not introduce terminal-status-wide release.
+- Existing test gap: questionGenerationLifecycle.test.ts mocks provider/storage/Prisma; it covers retry/poll contention and review dispatch but cannot establish PostgreSQL atomicity. elementGenerationDraftPersistence.test.ts mocks manipulateElement and therefore cannot prove generated content respects the real Element persistence boundary.
+- Ownership: multilingual processed-document plan in trees/question-generation-english-e2e, owned by task Klicker KB KG, explicitly owns the ingestion webhook/polling reducer, active serving tuple, knowledge.ts, graph dispatch/readiness, shared schema/types and UI. Consume its delivered results; do not implement a competing reducer. [PR #5756 — resource replacement](https://github.com/uzh-bf/klicker-uzh/pull/5756) replacement owns knowledge.ts and cleanup. [PR #5771 — cost controls](https://github.com/uzh-bf/klicker-uzh/pull/5771) cost controls owns chatbot policy; [PR #5764 — response-example capture](https://github.com/uzh-bf/klicker-uzh/pull/5764) capture owns response examples. Do not redirect or edit other tasks.
+- Research routing: public-source lifecycle/test mapping via explore failed pre-work HTTP400; generic native Luna max continuity used. Main retains architecture, ownership and regression interpretation. External documentation is unnecessary for behavior-preserving extraction using existing APIs; consult current primary docs if an API uncertainty arises.
+- Advisor and rival review: Claude advisor and final-reviewer failed OAuth authentication before work. Record absence; no opposing-provider result is claimed.
+
+## Identity and execution contract
+
+- Plan: `project/2026-09-04-pr-5777-generation-lifecycle-contracts-plan.md`. [PR #5777 — generation synchronization leases](https://github.com/uzh-bf/klicker-uzh/pull/5777) is draft, targeting v3-ai.
+- Parent: `trees/v3-ai-production-readiness/project/2026-09-03-v3-ai-pre-release-improvement-roadmap.md` in the repository's existing roadmap-custody worktree. This is a bounded first portion of W4 — lifecycle normalization, not completion of lifecycle normalization or data-model normalization.
+- Tier/topology: full-path, one cohesive ordinary PR eventually targeting v3-ai. Backend lease reuse and its real database boundary tests are one independently useful concern. No new stack or changes to feature stacks. Subsequent data-model packages remain in parent roadmap order.
+- Planning custody: existing trees/v3-ai-production-readiness. Execution custody: trees/rs/generation-lifecycle-contracts and branch rs/generation-lifecycle-contracts at published owned-sync 208e97d38e6abfd13d997d48200077febc8c1445. Only this plan is transferred, not custody branch history. Generation services, relevant tests and Prisma schema match the researched baseline. No duplicate owner branch/PR was found in the execution preflight.
+- Owner: main; boundary owner: self. This task owns integration and review. No peer execution-orchestrator handoff or hidden supervisory task.
+- Authority now: user approved local execution on 2026-09-04, including the goal, executor delegation, isolated runtime verification, required reviews and local commits. On 2026-09-05 the user additionally approved pushing rs/generation-lifecycle-contracts to origin and opening one draft PR targeting v3-ai, without merging.
+- Approved execution: local worktree setup from the published sync, applying the existing schema to the newly created test-only database, in-scope edits, isolated synthetic test-runtime use, repository-native checks, required child reviews, Progress and local commits through source-reviewed terminal. This includes synthetic rows and their own scoped fixture cleanup in a dedicated local test database; existing repository cleanup/seed hooks are permitted only against the database created for this package and proven to contain solely disposable synthetic fixtures; no reset or broad cleanup of any pre-existing or shared database.
+- Extension approval: on 2026-09-05 the user agreed to the planner-reviewed one-Element completion proposal and said proceed. This authorizes the completion-test and shared-completion slices below, task-runtime resume/use with scoped synthetic fixtures, native checks/reviews, local commits, push to origin/rs/generation-lifecycle-contracts and update existing draft PR #5777. The prior lease/persistence approval remains historical and distinct.
+- Withheld: ready status, branch integration/rebase/cherry-pick, any merge, stack alteration, shared runtime changes, secrets, real data, paid application-model/provider calls, staging/production, shared feature flags, new or changed migration files, staging/production migration execution, deployments, branch/worktree deletion.
+- Terminal: the completion extension is reviewed and published to the same draft PR with matching remote readback, roadmap evidence and stopped runtime; then exact-head hosted checks, ordinary feedback and final AI review settle, or a named material authority/blocker boundary remains. Publication is intermediate. Pending checks use one bounded watcher/heartbeat; no readiness claim with parked/failed gates.
+- Pause: actual owner/path overlap; unpublished sync; missing safe test database; behavior changes beyond preservation; schema/public API/dependency change; an acceptance failure showing a pre-existing rule defect needing a separate decision. Routine slice/review corrections stay autonomous.
+
+## Goal and non-goals
+
+- Normalize generation around the existing Element domain. Completed scope shares synchronization leases and proves real Element persistence. Approved extension replaces initial question/flashcard completion transactions with one Element completion operation and protects compatibility with real database tests. Shared names or a dispatcher around duplicate transactions do not satisfy the goal.
+- Zero Prisma schema, enum, relation, migration, Analytics model or public SDL changes. No identifier rewrite, state collapse, accounting redesign, retry-policy change, lease-duration change, renewal/heartbeat feature, provider contract change, generic workflow engine or new package/dependency. UI was excluded from the completed backend scope; only the three failures in the approved UI qualification extension above are now in scope, subject to its ownership and verification boundaries.
+- Graph/resource lifecycle implementation remains with current owners. Expiry/cancellation additions, ledger choice, response-example digest transition, resource revisions and migration-tail rewrite are later explicitly reviewed packages. Unknown invariants needing future storage are recorded there, never stubbed.
+
+## Primitive impact and invariant boundaries
+
+- ElementGenerationBuild: reuse identity/owner/state; share existing lease acquisition/release and one initial-draft completion transaction. SC, MC, KPRIM and FLASHCARD are Element types, not separate product primitives. Content validation and provider-result conversion may differ; common lifecycle ownership and atomic persistence do not.
+- GeneratedElementDraft and ordinary Element: reuse canonical normalize/validate/manipulate path and atomic link; test only, no new persistence owner.
+- KBGraphQuota and ElementGenerationSpend: reuse existing ledger and exception handling, no changes.
+- User versus Participant; Participation.isActive remains leaderboard opt-in, not access. AI entitlement is additional to resource permission, never a replacement. No modifications to these primitives.
+- ADR gate: reversible internal consolidation follows the canonical Element model and existing accounting/graph ADRs; no new ADR. Changed public contracts, lifecycle behavior, data ownership or schema re-arm the decision gate. Preserve one-way imports into existing normalization and avoid cycles.
+- Documentation: update docs/async-and-workers.md only with the accepted internal lease owner and direct source link; preserve domain semantics. Parent roadmap gets package and residual ownership status. No new glossary or broad wiki cleanup.
+
+## Delegation map
+
+- Baseline and contract inventory: main (architecture/ownership coupling); acceptance exact sync, owner exclusions and five caller contracts below.
+- Lease consolidation: main owns interface and integration; executor may implement the settled local module/callsite change with finite paths, returning uncommitted diff; acceptance existing lifecycle suite plus lease database tests.
+- Real Element regression evidence: executor on the new integration test only, serial after lease changes; acceptance real persistence/concurrency/rollback evidence and reused permissions/snapshot checks without bypassing auth/validation.
+- Completion characterization: executor owns only test/elementGenerationCompletion.integration.test.ts; depends on approved frozen contract; acceptance direct real PostgreSQL proof on existing helpers.
+- Shared Element completion: executor owns the new elementGenerationCompletion.ts, removal of old completion bodies, both generation callsites and new test imports; depends on characterization review; acceptance one actual shared transaction and unchanged contracts.
+- Feature-test contract repair: executor after main's diagnosis, only playwright/tests/B-feature-access.spec.ts; acceptance is the two exact feature cases and observed fixture/interception contract above. Main owns runtime and accepts the diff.
+- Smaller-desktop layout: main owns reproduction, overflow diagnosis, ownership check and minimal correction. Acceptance is the 749-by-820 contract and existing adjacent wizard cases above. Correction is currently paused for actual Header.tsx ownership overlap.
+- Finish: main with simplifier and slice-reviewer on substantive committed scope, then final-reviewer on integrated scope. Depends on both new UI workstreams; do not claim the extension complete while either is paused. Children cannot integrate upstream or publish. All substantive slices serial in one worktree.
+
+## Frozen caller contract
+
+Preserve the current five claim sites:
+
+1. Question preparation: owner+build+PREPARING_INPUT and null/expired lease; loser rereads owned build; failure handler remains caller-owned.
+2. Question polling: owner+build and null/expired lease; retain outer terminal/runtime/accounting checks, without adding a status predicate.
+3. Question review dispatch: owner+build+expected review status and null/expired lease; preserve durable review claim and exact replay semantics.
+4. Flashcard preparation/retry: owner+build+PREPARING_INPUT and null/expired lease; retain independent retry spend and incomplete-publication recovery.
+5. Flashcard polling/publication: owner+build and null/expired lease; preserve its distinct NON_SYNCHRONIZING statuses and runtime capability check.
+   All retain fresh token, 15-second duration, strict expiration comparison (equal is not expired), token-conditional release and caller finally semantics. No provider call inside a new database transaction; no transaction shared with unrelated activities. Lease expiry may allow a replacement worker; existing durable dispatch claim remains the external-effect fence. Do not claim lease alone ensures exactly-once execution.
+
+## Frozen Element-completion contract
+
+- Expose one Element completion operation with typed inputs for currently supported generated element types. Existing question-provider input accepts SC/MC/KPRIM in FINALIZING, verifies question item types, keeps provenance/defaults and counts only duplicationIndex=0; commits COMPLETED. Existing flashcard-provider input accepts QUEUED/RUNNING/PUBLISHING_INCOMPLETE, counts all build drafts, preserves warning/unresolved/checkpoint fields and maps incomplete to INCOMPLETE, completed and completed_with_review to COMPLETED. Each of the three accepted flashcard source states accepts each of these three result statuses independently; preserve that existing compatibility matrix.
+- Preserve initial read and final conditional-write predicates including build, type, status and lease token, error codes/messages, createMany skipDuplicates, and final row-count failure. Preserve current lack of direct owner predicate: entrypoint ownership and unguessable lease token remain the current composition; do not turn a hypothesis into an authorization change.
+- Preserve re-entry: createMany skipDuplicates leaves matching existing drafts unchanged, and matching cardinality may satisfy completion. Do not overwrite original/current/provenance/defaults of existing rows or strengthen this into a content-equality/idempotency policy change.
+- Draft writes and build completion remain in one existing Prisma transaction. Failure at draft cardinality, item type or final conditional transition must roll back every draft and artifact/counter/status write from that call. No success on a stale token or incompatible state.
+- Completion creates review drafts, NOT ordinary Elements, activity snapshots, new dispatch/spend or release operations. Accounting/dispatch and the short lease stay separate.
+
+### Completion implementation boundary
+
+Use packages/graphql/src/services/elementGenerationCompletion.ts for one shared Element completion operation, called directly by both current provider workflows. One implementation owns the transaction, build/type/status/lease checks, draft insertion, cardinality assertion, final conditional update and rollback. Merely moving two transaction bodies into one file or hiding them behind a dispatcher does not satisfy the user ruling.
+
+Use a closed, typed input for the currently supported provider result variants. Type-specific conversion validates and maps choices or front/back content into the existing GeneratedElementDraft shape. Keep conversion within the same transaction and after the current build check where required to preserve validation and error precedence. Retain original/current/provenance and the existing default/null behavior exactly.
+
+The shared operation derives expected statuses, counting scope, terminal outcome and optional artifact/counter fields internally from validated result kind and the current provider contract. Callers cannot supply arbitrary Prisma predicates/update data, transaction callbacks or ad-hoc behavior flags. Distinguish content shape from provider phase: present source-state/count differences are compatibility constraints, not separate permanent Element lifecycles. Do not alter persisted enums, public operations or retry policy to make completion look uniform.
+
+Keep one shared database path with small local conversion/policy branches only where the contracts differ; no plugin registry, generic workflow engine or new package. Remove the two old completion implementations and switch both callers to the same operation; no compatibility re-exports. Retain existing editable normalization and one-way imports. Adding a future supported Element type should extend its typed result conversion/validation, not copy the transaction or introduce a new completion service. This does not enable generation for currently unsupported Element types.
+
+The wider roadmap carries this same convergence requirement for preparation, review, retry and saving: share common lifecycle and business services, isolate justified content/provider differences, and require evidence before changing incompatible historical behavior. This slice proves completion only, not the entire generation lifecycle.
+Owned production paths: new elementGenerationCompletion.ts, questionGenerationDrafts.ts, flashcardGenerationDrafts.ts, and completion-callsite and import hunks in questionGeneration.ts/flashcardGeneration.ts. Tests: one new elementGenerationCompletion.integration.test.ts, existing questionGenerationLifecycle.test.ts only if a consequential wiring assertion is absent. docs/async-and-workers.md records the owner and same transaction boundary. No changes to editable draft operations, general Elements, auth/permissions, schema/Analytics/migrations, SDL/public operations, dependencies, workers, knowledge.ts, knowledgeGraphAccounting.ts, provider configuration, UI, or other worktrees.
+Parallel ownership: Klicker KB KG actively owns processed-document schemas, graph serving state, webhook/polling/ingestion, graph accounting and associated UI. Recheck exact path overlap before editing; stop for actual overlap, not unrelated upstream movement.
+
+## Test portfolio
+
+- Lease ownership and races: extend questionGenerationLifecycle.test.ts only for uncovered caller wiring; add elementGenerationLease.test.ts real PostgreSQL two-client race, foreign owner, required-status mismatch, exact expiry boundary, stale-token release after takeover. Callback-error cleanup belongs in the caller-level lifecycle tests because the shared primitive does not own callbacks. Row assertions, not only mock call counts. Prove an old release cannot clear a successor claim. Do not infer universal state-write fencing from this acquisition/release primitive; characterize existing caller writes and stop on a reproduced unfenced business mutation. Preserve no-status poll variant.
+- Existing spend safety: reuse elementGenerationAccounting.test.ts, elementGenerationDispatch.test.ts, knowledgeGraphAccounting.test.ts unchanged. Confirm duplicate reserve/settle, hold on uncertain claim, stale recovery and no provider dispatch after failed spend claim. Add no duplicate accounting suite.
+- Ordinary Element boundary: retain elementGenerationDraftPersistence.test.ts for payload variants and Y-question-generation-review.spec.ts for real editor/save behavior. Add only missing database risks in elementGenerationPersistence.integration.test.ts: simultaneous identical keep requests produce one Element/link; conflicting requests cannot create an orphan or overwrite the winner; a controlled failure at the final link-write boundary rolls back the real Element and associated writes. Use real keepGeneratedElementDraft, manipulateElement, ownership/entitlement validation and PostgreSQL transaction. Allow a narrowly scoped test-only fault at the final link write, not a fake transaction or mocked Element service; document what the injected failure proves. Cover foreign-owner and disabled-entitlement no-write assertions here only if not already protected at an equivalent real boundary. Reuse existing element permissions/manual authoring and elementBatchOperations suites for non-AI behavior and explicit versus absent instance updates; add at most the missing non-AI entitlement case, not a second SC/MC/KPRIM/flashcard matrix. Do not change production behavior to make the tests pass.
+- Stable sentinel suites: elementPermissions.test.ts, elementSharing.test.ts, coursePermissions.test.ts, courseChatbots.test.ts (leaderboard-inactive access), courseDeletion.test.ts/courseDeletionRequest.test.ts, elementBatchOperations.test.ts, manageAiFeatureGate.test.ts and packages/grading existing suite. Reuse existing tests, no new broad app suite. These are representative regression checks, not proof of every business rule.
+- Unchanged structure: exact diff excludes Prisma/Analytics models and migration paths, SDL, package/lock manifests, types, worker configuration, request validation/Element services. Generated SDL equality and schema-sync check must pass. Unexpected changes block acceptance; never bless as formatting.
+
+### Initial Element-completion evidence
+
+1. Add a direct real PostgreSQL completion suite at the existing completion seams for baseline, then the single Element completion operation. Use one detailed stored-shape success per provider-result variant for original/current/provenance and counters/artifacts. Parameterize question SC/MC/KPRIM acceptance and flashcard QUEUED/RUNNING/PUBLISHING_INCOMPLETE source-state acceptance with distinct COMPLETED/INCOMPLETE terminal outcomes. Do not multiply parser payload matrices.
+2. Same suite: stale token and incompatible from-state reject for both supported provider-result variants through the same operation with no new drafts or build mutation. Cover question item-type mismatch and each variant's different draft-cardinality rule. Cross a question-result variant with a FLASHCARD build and the flashcard-result variant with a question build; assert the existing exact error code/message and no draft/build mutation. Add one matching pre-existing-row re-entry case per payload family, proving existing original/current/provenance/defaults are unchanged. Use compact service-level parameterization for all nine accepted flashcard source-state/result-status combinations. Existing lease acquisition tests remain unchanged; do not duplicate them.
+3. Same suite, one takeover case for EACH existing provider-result variant: lose the lease AFTER the initial read but BEFORE the terminal update. Use the existing Prisma query-extension barrier pattern from elementGenerationPersistence.integration.test.ts:82-105, narrowed to the target build's real initial findFirst; execute query(args), retain its actual result, signal arrival and await explicit release. A second real database client takes the expired lease through acquireElementGenerationLease with the existing clock seam. Require distinct backend identities and one successful successor claim; then release the suspended completion call. Assert CONCURRENT_MODIFICATION, zero leaked inserted drafts, unchanged winner token/state/artifacts and no spend/quota mutation. Bound the barrier and release it in finally. No mocked Prisma transaction or database result and no production test hook. The test-only query extension controls scheduling, not returned data. Use bounded waits and finally cleanup of both clients and barrier. Broad table locks and polling database lock views are unnecessary. If a deterministic real barrier cannot be implemented safely, stop with the exact gap rather than weaken the assertion.
+4. Reuse existing accounting/dispatch, lease, generated keep and lifecycle tests plus existing Element/permission/activity sentinel suites from the current plan. No new save-entrypoint, preparation-failure or generic status matrix in this extension. A baseline defect becomes a preserved reproducer and user decision; never silently patch behavior or assert incorrect behavior as desired.
+
+## Slices
+
+### Contract baseline and test foundation
+
+- Route main, reason architecture/ownership coupling. Record published synced base, current open PR overlap, versioned schema/migration file inventory, five callsites, their predicates and exception paths. No schema edit.
+- Check known tests once against baseline in isolated runtime. Record baseline failures before editing; no pass by weakening tests. Add only absent contract fixtures/tests, sharing existing synthetic helpers when safe.
+- Commit approved plan first (docs(project)); next test commit only if independently meaningful evidence. No plan-only PR.
+
+### Shared generation lease, preserving both workflows
+
+- Route executor for finite implementation after main freezes contract above. Paths packages/graphql/src/services/elementGenerationLease.ts (new), questionGeneration.ts, flashcardGeneration.ts; test/questionGenerationLifecycle.test.ts and test/elementGenerationLease.test.ts. Main accepts diff.
+- Extract only acquisition/release primitives, not business transitions or arbitrary update-data API. Use explicit owner/build/optional expected-status selection matching caller table. Preserve type safety, transaction-client compatibility where existing code requires it, error propagation and finally ownership.
+- Caller-specific failure resets stay where they are; do not deduplicate recordBuildFailure/recordStartFailure or merge question/flashcard state sets. Inventory remaining direct writes and label their existing domain owner; no empty grep milestone.
+- Check lease database matrix and existing lifecycle, dispatch/accounting suites, package check/lint/format. Commit refactor(graphql), then simplifier and one architecture/concurrency slice review. No generic auth/lock helper.
+
+### Prove generated content respects existing Element rules
+
+- Route executor for finite test path; main owns fixture/auth interpretation. Paths packages/graphql/test/elementGenerationPersistence.integration.test.ts only, reuse existing synthetic setup; prefer local helpers in test over touching global helpers.
+- Implement only absent integration obligations in portfolio. If behavior fails on baseline, preserve repro and ask before source fix; do not silently turn regression qualification into a new business rule.
+- Check real database integration plus stable sentinel suites serially. Commit test(graphql); risk reviewer covers data-integrity evidence, simplifier required for substantive new regression-test logic; skip only documentation, mechanical or assertion-only edits that preserve the tested contract.
+
+### Characterize initial Element completion
+
+- Route executor; owned path packages/graphql/test/elementGenerationCompletion.integration.test.ts only. Add the approved completion portfolio against existing helpers. Main controls runtime, accepts the diff and runs the focused baseline suite.
+- Preserve existing source behavior. A reproduced baseline defect requires a ruling, not an unplanned production fix or weakened assertion. Use one synthetic database and bound all barriers/cleanup.
+- Commit test(graphql), then dedicated simplifier and data-integrity slice reviewer on the immutable range. Disposition before the next slice.
+
+### Install one shared Element-completion transaction
+
+- Route executor after characterization is accepted. Implement the frozen completion boundary above in finite owned paths; migrate both callers and new test imports. Main owns integration and verification.
+- Remove both old transaction bodies, without a compatibility façade, generic registry, caller-defined predicates or arbitrary updates. Future supported types extend typed conversion, not transaction duplication.
+- Run the completion suite and existing lifecycle/lease/accounting/keep tests plus package checks. Commit refactor(graphql), then simplifier and architecture/data-integrity slice reviewer. Preserve exact error/default/re-entry behavior.
+
+### Integrated local qualification and reconciliation
+
+- Route main, critical-path integration. Update docs/async-and-workers.md and this plan. Re-run affected tests and repo check:all/build inside isolated worktree container. Restore no unrelated edits.
+- No UI or provider behavior changes intended. Existing Y-question-generation-review and agent-browser evidence covers completed-build editing and real Element save, not initial completion. Reuse it unless the change materially alters that tested wiring; direct completion database proof is mandatory. Exact-head hosted Playwright remains a qualification gate; no paid provider calls.
+- Exact committed scope final review: correctness, existing contract preservation, data integrity/concurrency, bounded security and architecture; not a broad security audit.
+- Stop and verify exact task runtime unless user keeps it. After local gates, push the approved extension to origin/rs/generation-lifecycle-contracts and update the same draft PR; continue hosted qualification around explicitly parked blockers. Parent W4 — lifecycle normalization remains partial; ingestion/graph owner work and broader transition normalization not declared done.
+
+## Verification execution
+
+All package commands run inside task container via devrouter exec <exact-checkout> --; host only Git/gh and pnpm playwright:host -- playwright/tests/Y-question-generation-review.spec.ts --project=chromium. Inspect current test script first: GraphQL test:local starts/stops shared compose volumes and prints token prefixes; do not use it in this parallel workflow. Use test (vitest run) directly in isolated configured runtime, serialized and with synthetic DB guard before mutations. Existing GraphQL testCleanup and Playwright global setup use unfiltered deleteMany; never run them on a reused worktree database. Create one dedicated empty database for this package, explicitly inject DATABASE_URL before Prisma import and never use the helper fallback URL. Run GraphQL and browser phases serially, keep the app connected to the database used by host Playwright, and allow native cleanup/seed only after proving all rows belong to this disposable fixture environment. Do not change global helpers or weaken cleanup guards.
+Focused: pnpm --filter @klicker-uzh/graphql test test/questionGenerationLifecycle.test.ts test/elementGenerationLease.test.ts test/elementGenerationDispatch.test.ts test/elementGenerationAccounting.test.ts test/knowledgeGraphAccounting.test.ts test/elementGenerationDraftPersistence.test.ts test/elementGenerationPersistence.integration.test.ts test/elementGenerationCompletion.integration.test.ts. Do not insert an extra `--`: pnpm 11 forwards it to Vitest, which then ignores the intended file filters. Confirm the finite file selection before execution.
+Sentinels: same test command with named stable files above; pnpm --filter @klicker-uzh/grading test. Finish pnpm run check:all and pnpm run build. No new tooling. Reuse evidence on unchanged source/environment.
+Before tests prove isolated local DB identity via values-free host/db class and synthetic fixture counts, correct worktree and absence of concurrent users; use no production URL or external service. Runtime skill at startup/finalization. If missing, block runtime checks without establishing shared/production connectivity.
+
+## Data-model acceptance inherited by subsequent roadmap packages
+
+This package leaves schema definitions and migration files byte-identical; synthetic test rows are temporary. Later model changes each require an exact before/after ownership map: one authoritative state owner, independently required identities, cardinality/uniqueness, nullable lifecycle semantics, immutable provenance and public consumer projections. Retain justified serving snapshots/audit ledgers; normalization does not mean eliminating every duplicate field.
+Require generated migration provenance and minimum count, supported-data backfill without orphaned links, Prisma/Analytics equality, tracked SDL/codegen, custom indexes/checks/defaults preserved, production-applied and stable-branch migrations immutable, old-app/new-schema rolling compatibility and forward recovery. Any approved AI-only history rewrite needs its own allowlist, staging pause and production inventory. A feature flag never excuses malformed schema.
+Trace effects on manual Elements/instances, derived permissions, activities, course deletion, invitations/assessment, points versus XP, chat budgets and participant ownership. Reuse existing business services instead of parallel AI-only implementations. Tests run against approved baseline and candidate; existing regressions and new ones are reported separately. This is a roadmap gate, not permission to edit those domains now.
+
+## Planning review
+
+- Element-completion architecture: user ruled one Element approach on 2026-09-05. The earlier two-body proposal is superseded. Fresh native planner round 1 REVISE, round 2 APPROVED; crossed types, unchanged pre-existing-row re-entry, full flashcard state/result compatibility and explicit main/executor ownership accepted. Report project/\_local/reviews/2026-09-05-element-completion-architecture-plan-hardening.md. User then approved execution and own-branch draft publication. Claude advisor again failed OAuth before work; no cross-provider result.
+
+- Native planner: round 1 REVISE; round 2 APPROVED on 2026-09-04. All three findings accepted and verified: retain explicit instance updates, reuse terminal-fixture UI evidence without claiming lease proof, and isolate destructive test hooks in one new synthetic database. No blocking findings remain.
+- Research mapping found no confirmed source defect. Generation belongs to the GraphQL services; there is no Hatchet elementGeneration.ts at this baseline. Existing provider-correlation, accounting and maintenance paths remain owners of their effects. Processed-document source-identity compatibility remains an acceptance obligation for the active owner and later model normalization, not a competing implementation here.
+- Review evidence is retained locally under project/\_local/reviews/2026-09-04-generation-lifecycle-contracts-plan-hardening.md. Native review approval does not grant implementation authority.
+
+## Progress
+
+### Target integration cleared the PR conflicts; provider gates running — 2026-09-10
+
+PR #5887 (rs/local-kb-ingestion-retrieval) reported CONFLICTING/DIRTY against v3-ai, which is a concrete readiness blocker, so the target was integrated under the standing integration rule. Reason: merge conflict with the target. The target advanced to 5d358a62c3 during this pass. Merge commit 12161e06c3 integrates 41 target commits, leaves the branch 42 ahead of origin, and is the published draft head 12161e06c30667e1d53a150d2a739d7661e5557a; GitHub now reports the PR MERGEABLE.
+
+Four files conflicted and keep both sides: .github/workflows/check.yml (the local KB lifecycle contract step plus the upstream Next.js development configuration and readiness step), .gitignore (.local-kb/ plus the upstream tmp environment patterns), util/run-playwright-host.mjs (the retained-citations entry point retained while adopting the upstream parseLocalOptions contract with its explicit mode; parseLocalOptions receives the raw argv because the upstream parser strips the leading -- itself), and util/test-dev-runtime.sh (the upstream fixture comment retained for the shared dependency-mount stub).
+
+The merge keeps this branch's direct node_modules/.bin/turbo invocation in util/dev-runtime.sh, so the hardcoded recovery pin in .devcontainer/recover-runtime.sh was updated to the merged file hash 688e8f6e057068aab111d2d8767668906501b76b9cc9d111c68456297829262f. Without that update the newly adopted upstream recovery guard refused the reviewed source pins.
+
+Verification on the merged tree: util/run-playwright-host.test.mjs 32/32, local KB contract tests 70/70, next-pages development configuration 1/1, util/test-dev-runtime.sh PASS, util/test-recover-bootstrap.sh PASS, util/dev-runtime-readiness.test.mjs 5/5. Biome and Prettier report clean on the touched files and there are no whitespace errors.
+
+The host pre-push hook remains inapplicable: the pnpm dependency guard requires an install after the integrated package.json change and the host runs Node 26 against the pinned Node 24. The push therefore used --no-verify, and the hosted build remains the build authority. Hosted exact-head checks, the provider gate reviews and provider publication are the next unresolved steps; merge and deployment remain separately gated.
+
+### Corrective reviews accepted; draft publication — 2026-09-08
+
+Independent corrective slice review completed with no actionable source defects. Integrated final review passes on df1ea25580136bf1dc70b05dc8e18a633374b371..6ced243cd21d653ea899a544acfe030ba2ffe4e2 across all 33 paths, with no exclusions or reportable findings. Main accepted both results; all children are closed. Reports: project/_local/reviews/2026-09-08-corrective-slice-review.md and project/_local/reviews/2026-09-08-corrective-integrated-final.md. This final receipt changes documentation only; the reviewed source and passing checks remain unchanged.
+
+The exact runtime is Stopped with zero source-matched routes. The task-owned test marker and invocation wrapper are removed; retained data is preserved. The improved readiness report and corrective source are ready for the authorized ordinary push to the existing draft. Hosted execution, inherited scanner alerts, final hosted review eligibility, check-policy ownership and production qualification remain separate unresolved gates. No merge, deployment, force push or repository policy change occurred.
+
+
+### Corrective source qualification — 2026-09-08
+
+Corrective source is committed at 36424d360006b0df9a105cd7772e7e6508cf2ea3, with the simplifier's unused-constant removal at 7dee23d7f. All nine focused browser cases pass. Serial root type/lint passes all 47 tasks; remaining policy checks pass and the host CI contract passes 68 tests. Full production build passes 26 tasks (17 cached) in 3m17.709s. The two preload tests pass again after cleanup from their package directory; earlier root-directory and Vitest invocations were invalid test commands, not product failures. Logs: /tmp/generation-serial-check-lint.log, /tmp/generation-policy-checks3.log, /tmp/generation-final-build.log and /tmp/generation-final-preload-package.log. Container checks replace host toolchain hooks. Staged Gitleaks and exact diff checks pass.
+
+Simplifier completed with one accepted cleanup. Trusted native slice review is active on the full eleven-file corrective slice; unpublished source remains on the trusted route. The original audit report now separates refactor acceptance from production readiness and updates its opening to reflect verified local recovery. No lease, retry, status, accounting, schema or migration contract changed. Runtime stopped successfully; provider status is Stopped and exact source-path route count is zero. The task-owned test-mode marker is removed and retained data is preserved. Independent final review, draft publication and hosted qualification remain pending.
+
+### Dynamic-route recovery and browser acceptance — 2026-09-08
+
+The resumed branch and target are unchanged. The repository's guarded request-repair frontend-manage followed by canonical ensure manage resolves the stale generated Next route state: both previously failing dynamic routes return 200 without application route or authorization edits. All nine focused browser cases now pass in 39 seconds, including the new loading status/no-query assertion, analytics allow and deny with prior-state restoration, both AI-menu states, and generation review through the canonical editor. Producing log: /tmp/generation-after-cache-browser.log. The previous five failures are superseded for this exact local test-mode run, not for hosted CI.
+
+The root aggregate check includes a host-Devrouter contract that cannot run inside the container. Its failure cancelled concurrent tasks; exit 137 there is not a demonstrated type error. The same host contract passes all 68 cases using pinned host Node and the existing host CLI. Container type/lint checks are running serially, with remaining native policy checks, reviews and publication still pending. Preserve existing passing preload, lifecycle, type and HTTP-controller evidence. The scoped cache repair is the existing runtime contract, not a source change or permission to clear other workspaces.
+
+### Readiness review corrected; browser qualification blocked — 2026-09-08
+
+The supplied review now distinguishes static refactor evidence from production readiness, removes unsupported rollback and timing certainty, rejects false-release takeover attribution, and preserves draft idempotency as an approved contract. Required-check policy and generation state/retry changes remain separately owned. Report: project/2026-09-08-pr-5777-generation-lifecycle-production-readiness.md.
+
+The existing MCP workflow and fixed-label synchronization logs are preserved. Added the scoped learning-analytics test controller, exact test-only Manage rewrite, evaluator and malformed-request coverage, previous-state restoration, persisted-operation recognition and non-null analytics-data assertions. Restored localized loading text and role=status without Layout. Planner Hegel approved the bounded extension and existing fixture-mode qualification; executor Pasteur completed the four runtime-fixture files. Main corrected report overstatements and verified source; no independent final acceptance is claimed.
+
+Passing evidence: two preload tests; backend, Manage and Playwright typechecks; 31 lifecycle tests across completion and lease files; scoped Prettier and Biome formatting; diff whitespace inspection. The controller HTTP roundtrip through Manage passed GET, POST true/false, invalid-method/value rejection, no-store and prior-state restoration. Final fixture readback remains enabled=true, matching its original state. Logs are /tmp/generation-review-preload-check3.log, /tmp/generation-review-backend-check2.log, /tmp/generation-review-manage-check.log, /tmp/generation-review-playwright-check-final.log, /tmp/generation-review-lifecycle-tests.log and /tmp/generation-review-format-final.log.
+
+The final canonical host browser run in opt-in dev:test/manage mode finished with four passes and five failures in 6.5 minutes. Passing: absent AI feature, unauthenticated analytics redirect/no-query, open AI navigation, generated-element editor. Failing: blocked analytics navigation, backend analytics allow/deny, unavailable-profile/loading, and closed AI dynamic-detail route. Exact dynamic analytics and knowledge-base pages return 404 before their guards render; the analytics source is present inside the container. Ordinary dev correctly omits test endpoints; enabling the existing test mode fixed that controller mismatch but did not fix the independent dynamic-page 404. Named and persisted operations remain required; no assertion was weakened. The earlier isolated closed-route pass does not override this failed integrated run. Full evidence: /tmp/generation-review-test-mode-browser.log and playwright/test-results. The development manifest is on-demand and is not by itself proof of a missing registered route.
+
+Changes remain uncommitted and unpublished. Browser acceptance, affected independent reviews, commit and ordinary draft publication remain pending. Next action is a bounded runtime-routing diagnosis of source-present dynamic pages, followed by the same focused browser set; do not change application authorization or production guards to obtain a pass. Final canonical stop succeeded and freed three routes. Devsy reports Stopped; fresh source-matched inventory reports zero routes. The task-owned marker and temporary wrapper are removed; runtime data is preserved. The scoped source diff also passes Gitleaks with no leaks. No keep-running lease exists.
+
+### Readiness correction resumed — 2026-09-08
+
+Fresh fetch confirms rs/generation-lifecycle-contracts matches its upstream at 1c8ff98696; v3-ai remains df1ea25580 and is already integrated. Compared with remote default v3, the task is 173 ahead and five behind; this is not target drift. Reuse the existing task worktree. The exact runtime resumes successfully using the existing host-tool wrapper and supported Blob port 10053. The formerly failing closed AI-route case passes after normal startup, with no application route or authorization changes; retain route-specific failure diagnostics rather than infer a product defect from the earlier 404.
+
+The existing workflow, fixed-label logging and generation-editor fixture corrections are preserved. The report editor and fixture executor have disjoint source ownership. Updated source is not yet accepted or published; scoped browser and toolchain checks and affected independent reviews remain pending.
+
+### Qualification extension implemented in part — 2026-09-08
+
+Final runtime receipt: canonical stop succeeded and freed eleven routes. Fresh source-path workspace inventory reports zero routes; Devsy workspace status reports Stopped for rs-generation-lifecycle-contract. Exact source is /Volumes/HOME/Git/klicker/klicker-uzh/trees/rs/generation-lifecycle-contracts. No deletion or keep-running lease exists. All child agents and verification commands from this continuation are terminal. The installed Devsy uses workspace status without the legacy --output flag.
+
+The approved MCP CI correction now provisions the existing marked database before reset and consistently uses the restricted login through seed and smoke; static YAML/contract inspection passes. Two fixed-label synchronization logs are implemented without dynamic data or lifecycle changes. GraphQL typecheck and scoped Biome format pass; separate Biome check reports inherited import ordering and no unrelated cleanup was applied. Native executor Kant completed the workflow-only patch and is closed.
+
+The generation browser fixture captures/restores account capabilities and enables them for its own test. T-chatbot-authoring cleanup leaves generation entitlement disabled, explaining the inherited shard-order failure. The final focused generation editor test passes. The AI-menu fixture now closes both capabilities and expects each route's actual unavailable marker. The adjacent open case passed, but the final closed case hits an application 404 before its expected unavailable state; it is not accepted. Playwright typecheck and final scoped Prettier checks pass. Changes remain uncommitted and unpublished pending complete qualification and required reviews.
+
+Analytics diagnosis identifies a runtime-fixture contract conflict: apps/backend-docker/scripts/playwright-feature-flags.mjs replaces the configured SDK URL and serves only ai-beta, so the CI mock's learning-analytics toggle does not reach the backend evaluator. Locally, the host test additionally cannot connect to the absent controller at 127.0.0.1:4010. Repair requires the backend test preload and host/CI runtime wiring, beyond browser fixture changes, while preserving production feature policy and avoiding a production management endpoint. No analytics assertion was weakened or skipped. Resolve that explicit runtime-fixture scope before implementing it; the existing application 404 also remains to diagnose. Producing logs are /tmp/generation-extension-browser-baseline-sep8.log, /tmp/generation-extension-browser-fix-sep8.log and /tmp/generation-extension-browser-final-sep8.log. Canonical final shutdown is in progress; record its source-matched terminal evidence before handoff.
+
+### Published-head CI and review reconciliation — 2026-09-08
+
+Published head is 1c8ff98696924f1f53a3fa9177e16076c66d744a, matching origin/rs/generation-lifecycle-contracts. This supersedes the earlier remaining-publication wording. The draft still targets v3-ai at df1ea25580136bf1dc70b05dc8e18a633374b371. Main owns CI triage and scope disposition; a read-only explore child verifies the report's logging and tooling-history findings. Existing passing local checks and integrated review remain evidence for their recorded scope, not proof of hosted acceptance.
+
+Hosted Playwright run 34197492499 fails the generated-element review inbox, closed AI management gate, and two backend analytics entitlement cases. Exact-target run 34157910559 fails the same four cases. The generation failure snapshot shows AI features unavailable before the editor; zero rows does not establish a completion-transaction defect. Lecturer MCP run 34197492217 fails during database setup, before server smoke tests: the disposable guard rejects the workflow's legacy database identity. Exact-target run 34157914012 has the same rejection. Main owns these inherited qualification gaps pending a bounded corrective scope; no check was waived, retriggered or marked passing. The two inherited GitGuardian fixture alerts also remain unresolved at the scanner.
+
+The historical Devrouter 0.0.55 pin alignment below is superseded by commit fddc5b38b9 (explicit host and CI tool installations), which removed the dependency and release-age exception after c38e7f9be8 introduced the upgrade. The absence of the pin at this head is intentional upstream evolution, not evidence that the historical upgrade never happened. Current validation must use the host-tool contract. Do not restore the old package pin to satisfy that historical Progress entry.
+
+The readiness report's lease renewal, retry classification and terminal-state transition proposals would change the frozen behavior below and remain outside this refactor's approval. Required-check configuration on v3-ai or v3 is also a separate repository-policy action. Neither the report nor a green individual review authorizes those changes. The supplied readiness report is now being corrected under the subsequent explicit user request; preserve its historical audit provenance. Detailed triage evidence is in project/_local/reviews/2026-09-08-hosted-ci-triage.md.
+
+### Current verified state — 2026-09-08
+
+The local branch includes the disabled-fixture recovery and both verified browser-test corrections. The same draft remains published at b82f5b83e6; publication is pending acceptance and integrated review. Resolved target v3-ai remains df1ea25580 and is integrated. Fresh remote refs show the task baseline 48 ahead of its upstream and 168 ahead / 4 behind the remote default v3, before the recovery commit. Target movement alone requires no merge.
+
+Canonical retained recovery succeeds on the exact generation source path, workspace rs-generation-lifecycle-contract, Compose default-rs-cea28. No database was deleted. The first candidate used a text-array insertion based on the old temporary test schema and failed startup; main corrected both to the application's JSON column type, stopped the failed runtime, and verified the corrected retained repair. The installed host devrouter now reports 0.0.59; no tooling configuration was changed by this task.
+
+The disposable guard and live synthetic readback pass: two MCP bindings disabled, exact native parent ownership, chatbot DRAFT. The extended PostgreSQL temporary-table acceptance passes recovery, repeated rotation, activation preservation and rejected-write rollback. All 19 MCP authentication tests pass. Scoped Biome passes. Prior 26-task production build, 40 type checks, seven lint tasks, Syncpack and 33 Chat route tests remain applicable to their unchanged surfaces.
+
+The four-case browser run completed producing cleanup and seed: all three original acceptance cases pass, the adjacent unauthenticated analytics case initially failed on an aborted overlapping login navigation. Recovered trace evidence shows real Unauthorized responses and a final Auth HTTP 200. A fresh no-cookie engineering browser reaches Authentication without errors. Replacing only the URL matcher with polling of the exact current Auth origin/path resolves the race; the isolated browser case passes with zero analytics requests. All four required cases now pass across these scoped runs. Post-browser guarded readback showed zero fixture bindings; canonical stop and normal retained startup succeeded, and readback confirms two disabled bindings plus a DRAFT chatbot. A native simplifier found no justified reduction; the risk reviewer found no code defect, and its pending recurrence concern is resolved by this producing evidence. Post-cleanup restart/readback is complete. Canonical final stop succeeded and freed eleven routes. Fresh source-matched inventory shows zero routes, and Devsy reports Stopped. No keep-running lease exists. Integrated final review passes on e9641fbc900cbfdd76b051ba6df0c7245c760f96 with no findings. Publication to the existing draft is the remaining local delivery action; hosted CI and hosted-review authentication remain separate merge gates. No merge or release readiness is claimed.
+
+### Retained fixture recovery — 2026-09-08
+
+The current recovery uses the retained generation runtime; this supersedes the prior deletion proposal. Native and Playwright seeds use different course IDs. Adapt the absent-parent restoration from sibling commit 11db845b only in local-mcp-seed.mjs and its existing temporary-table acceptance script. Restore exact owned parents with both MCP bindings disabled, reject absent legacy unauthenticated bindings, preserve existing activation flags, and retain normal bootstrap bearer rotation. The native allowedTools column is JSON. Correct the existing temporary-table harness, which incorrectly used a text array, so its insertion checks match the application schema.
+
+Route: main; the previous executor returned no patch and the ownership/activation decision is coupled to recovery. Acceptance starts with syntax and exact diff inspection, followed by canonical retained ensure --repair on the exact source checkout with KB_GRAPH_BLOB_HOST_PORT=10053. Once canonical execution works, run the existing PostgreSQL temporary-table acceptance and the disposable-database guard. Cover scope-token and marked-bearer restoration, disabled bindings, legacy no-write rejection, existing enabled/disabled/mixed preservation, repeated repair identity, parent/owner conflicts, interruption and rollback. These database checks are pending until execution becomes available.
+
+Run the three focused browser cases and adjacent unauthenticated analytics case through the canonical host launcher. Require producing setup evidence for cleanup and seed, verify missing fixture bindings afterward, then canonical stop/start and values-free readback proving both restored bindings remain disabled. Stop the exact runtime and verify provider stopped plus zero routes. If retained repair fails, stop and report its evidence; no deletion or lifecycle bypass. Reuse unaffected verification, complete armed reviews and publish to the existing draft only after acceptance.
+
+Native planner Boole reviewed this bounded plan: round one REVISE; all four acceptance findings incorporated; round two APPROVED. The prior successful isolated advisor consultation remains applicable. User proceed authorizes this in-scope fixture correction; no new provider, database deletion, activation or protected-branch action is added.
+
+### Historical device-transfer authority
+
+Device-transfer checkpoint, 2026-09-06: the user explicitly requests publishing the current work as pushed draft PRs so another device can continue. This permits a work-in-progress source checkpoint before the previously required publication verification completes; it does not waive any verification or review gate before merge. Preserve pending browser, static assertion, runtime and implementation-review obligations. The adopted runtime source remains attributed to PR #5790, now merged; this checkpoint preserves the exact local candidate rather than integrating any upstream branch. Host identity, shell syntax, diff and redacted secret checks run for this checkpoint. Container-only hooks/builds remain unrun because the task runtime is stopped and startup qualification is blocked; do not report the checkpoint as tested or source-reviewed.
+
+### Historical target integration checkpoints — 2026-09-07
+
+Latest checkpoint: HEAD a4c8333ac includes the latest published v3-ai target df1ea25580. Full production build passes all 26 tasks; type checks pass 40 tasks, lint passes seven, focused formatting and Syncpack pass. The native source mapper verified that the remaining analytics fixture must fail ManageFeaturePreferences, not authentication-owned ManageUserProfile. Main verified the call sites and applied exactly that one-line interception correction; unavailable visibility, observed interception and zero analytics-query assertions remain unchanged. Main retained the mechanical correction because delegation costs more than the single verified substitution. The correction is uncommitted and browser-unverified.
+
+The browser rerun is blocked before execution: prior Playwright cleanup removes local MCP bindings, full-profile startup fails authenticated fixture validation, and canonical exec cannot reseed while lifecycle is blocked. Canonical stop succeeds, but subsequent ensure --profile manage attempts to repair the recorded full profile and fails on the same MCP fixture. No lock bypass, manual state-file edit or additional deletion occurred. Next: restore supported execution or profile recovery for this exact runtime, run native seed:raw against its marked disposable database, then rerun the three acceptance cases and required adjacent cases, final review, and draft publication. Prior successful receipts remain reusable. No generation push or readiness claim is made.
+
+Fresh runtime recreation succeeded with zero drift and a passing disposable-database guard. All 19 focused local MCP authentication tests and all 40 package typecheck tasks pass. Canonical host browser execution completed: absent-ai-beta usage protection and smaller-desktop four-choice layout pass; analytics profile-failure handling fails because the intercepted ManageUserProfile error redirects to Auth. A native read-only explorer is tracing that exact boundary; no auth policy or assertion was weakened. Host pnpm 11 requires pnpm_config_verify_deps_before_run=false (not npm_config) to avoid its automatic install path; run the canonical util/run-playwright-host.mjs with pinned Node and that environment setting. Runtime remains active during this approved diagnosis.
+
+The user explicitly approved exact generation runtime deletion/recreation in the visible conversation. Canonical deletion completed with deleted=true and zero routes; provider readback reported the old registration absent. Fresh manage-profile recreation is running with port 10053 and the marked disposable-database configuration. This resolves the earlier approval blocker; verification remains pending. Git work and peer runtimes are preserved.
+
+Latest target is published as df1ea25580136bf1dc70b05dc8e18a633374b371. It includes normal v3 merge 43520ff2a8 and preserves concurrent Knowledge Base fix 57c802ac68. Docker recovered; generation canonical stop succeeds, but non-destructive repair still refuses changed Compose app configuration. No runtime deletion occurred. The explicit deletion/recreation approval boundary below remains, and this checkout still retains its prior uncommitted merge pending verification.
+
+Latest continuation: v3 was merged into v3-ai with normal two-parent commit d03d4830622984d43e6712e30f06673a7f2b85cf and pushed; remote readback matches. Its v3 parent is 7c73ed231ce89885f634d37fece86c621424f617. Merge verification and review are recorded in the v3-ai checkout under project/_local/reviews/2026-09-07-v3-ai-merge-final-review.md. The separate merge-verification runtime is stopped, with provider Stopped and zero exact routes.
+
+Host verification on the integrated source passes `bash util/test-dev-runtime.sh` and the one `util/dev-runtime-readiness.test.mjs` test. The initial sandboxed attempt could not inspect processes and is not counted; the completed host retry is the passing receipt.
+
+The generation checkout now has a conflict-free, uncommitted merge of that published v3-ai target into d50988c34e5d39610ab6e08e8634087aaccd2a7e. The existing duplicate-test cleanup and Progress changes remain preserved and unstaged. Diff hygiene passes. No generation merge commit or push is claimed. Qualification cannot resume: recorded full-profile repair refuses `Managed Compose configuration changed for service 'app'` after the upstream disposable-database configuration change. Source-resolved Devsy rs-generation-lifecycle-contract remains Stopped with zero routes. The retained database and caches are preserved.
+
+Automatic approval review rejected canonical exact-runtime deletion/recreation because the visible transcript lacks explicit destructive-deletion approval, despite the historical plan approval below. No deletion executed. Next: obtain explicit approval for `KB_GRAPH_BLOB_HOST_PORT=10053 /tmp/v3-ai-devrouter stop . --delete --json` in this generation checkout, recreating only its managed synthetic database/caches; then canonical ensure with port 10053, verify the marked disposable database, run pending focused checks and browser acceptance serially, complete integration/reviews, and publish to the existing draft. Git work and peer runtimes remain excluded from deletion.
+
+Latest stopped checkpoint: fixture repair is committed locally as d50988c34e5d39610ab6e08e8634087aaccd2a7e. Independent slice review returns no findings; the simplifier identified two duplicate test entries, which main verified and removed in an uncommitted follow-up. Both reviewers are closed; reports are in project/_local/reviews/2026-09-07-local-mcp-fixture-{simplifier,slice-review}.md. Forty package checks, seven lint tasks, staged formatting, Syncpack, 68 host policy checks, 13 launcher checks, identity/schema/wiki checks and redacted staged secret scanning pass through their supported host/container split. The original 35 focused fixture tests and transactional suite remain passing evidence for the committed implementation. The follow-up test rerun could not launch after two automatic approval-review timeouts.
+
+The broad browser run logged ten passes and nine failures before interruption; its remaining cases did not run. It overlapped generated-package checks, so rerun acceptance serially rather than treating this partial run as clean regression evidence. Independent HTTP probes confirm dynamic course and analytics routes return 404 while the root returns 200. The repository-supported request-repair for frontend-manage was recorded, but subsequent reconciliation stopped on missing synthetic MCP bindings after Playwright cleanup. The approved native reset/push/seed sequence could not launch after two automatic approval-review timeouts. No database restoration or cache repair completion is claimed. Next: restore this task's synthetic fixtures through the native sequence, apply the pending Manage repair with canonical ensure --repair, verify the dynamic route, then rerun the original acceptance cases and only the necessary adjacent cases without concurrent generated-package checks. Preserve all auth/test assertions. Full production build, integrated-final review and publication remain pending.
+
+Canonical shutdown is freshly verified: Devsy rs-generation-lifecycle-contract is Stopped, its exact workspace has zero routes and no hosts, and app 83f4f48542fb5854c070dcad9cf505dc25094aaf9984bceb2479cccb974871aa is exited. Keep port 10053 for subsequent lifecycle commands. No push, extra target integration, peer-runtime mutation or handoff sync occurred. This status and the duplicate-test cleanup remain uncommitted.
+
+Resumed qualification: fetched refs confirm zero behind the integrated v3-ai target; no further integration occurred. Normal startup and the canonical browser launcher both complete dependency preparation, so the previous Rollup stall does not currently reproduce. Forty package check tasks, staged formatting, seven lint tasks and 68 host policy tests pass. The aggregate check's host-Devrouter policy failure is covered on the host; its interrupted typecheck/lint branches were rerun separately. The broad browser run was interrupted after repeated navigation failures; it is not an acceptance pass. Direct HTTP probes independently confirm existing dynamic course and analytics routes return 404 while Manage's root returns 200. Both source files are mounted, but the development page manifest lacks their entries. Preserve authentication and test assertions while diagnosing local route generation. The scoped MCP fixture's earlier 35-test and transactional receipts remain applicable; its implementation review remains pending.
+
+Final retry checkpoint: the single-case diagnostic never reached Playwright. Canonical dependency preparation emitted the Prisma Rollup bundle in 2.8 seconds but its Rollup process remained alive in an event wait for more than twelve minutes. Main interrupted the exact host launcher; exit 130 is an interrupted run, not a browser failure. The retained first-run trace confirms Unauthorized profile/scope responses and a 200 login-data request, but lacks that response body and does not establish the redirect failure's cause. Temporary test diagnostics are removed; no global authentication source changed. The configured advisor catalog is available, but automatic approval review timed out twice before the isolated source-only consultation could launch. No advisor result is claimed. Next action is to restore successful canonical dependency preparation, then rerun the unauthenticated redirect case and adjacent acceptance checks before implementation review and publication.
+
+Shutdown is verified: canonical stop freed eleven routes; Devsy reports Stopped for rs-generation-lifecycle-contract, exact source-workspace readback reports routeCount zero and no hosts, and app container 83f4f48542fb5854c070dcad9cf505dc25094aaf9984bceb2479cccb974871aa is exited. Compose identity is default-rs-a29e3; retain KB_GRAPH_BLOB_HOST_PORT=10053 on future lifecycle commands. The isolated generation-auth browser is closed. The fixture candidate remains uncommitted; HEAD is still 2ddf4a380f2dc2203bad4f8c3fa32a31eeb79d4d, with no push or new target integration. Full build and required fixture/UI reviews remain pending. No new handoff sync was attempted.
+
+Browser qualification checkpoint: the first four-case run passes the absent chat-account flag, observed profile-failure/unavailable state, and smaller-desktop library layout cases. The unauthenticated analytics case fails its unchanged login-redirect assertion with a blank page. A separate isolated agent-browser session reaches the expected auth page with the same feature flags, so the cause is unresolved. Temporary test diagnostics report only page errors and GraphQL error messages; remove them before committing. Playwright global setup deletes courses/users and cascades away the local MCP bindings. The task-only synthetic database was reset, pushed and reseeded through native commands, then canonical repair completed with zero drift. The single-case diagnostic retry is in canonical dependency preparation, before browser execution. No authentication source change or new passing browser result is claimed.
+
+Recreation and fixture proof: the approved exact deletion completed, provider registration was absent and old task containers were absent. The same checkout was recreated with port 10053; full-profile readiness reports zero drift. Thirty-five focused MCP/authentication tests, temporary-table seed rotation/rollback checks and Chat typechecking pass. The bounded scan ran 200 rules on the two changed implementation files with zero findings. Canonical host Playwright is now retrying the four original browser regressions. Keep the port override on every future ensure/exec/stop for this runtime. No fixture activation state changed.
+
+The user explicitly approved deleting and recreating only this task runtime and its synthetic database/caches with KB_GRAPH_BLOB_HOST_PORT=10053. Git work and peer runtimes remain preserved. This resolves the port-recovery approval gate below. Native executor James completed the two-file regression candidate and is closed; main owns its final inspection and runtime checks.
+
+Retry checkpoint: fetched refs still contain the integrated v3-ai target with zero target-behind commits; no additional integration performed. Main implemented the bounded local fixture candidate, retaining configuration activation state and all owner/course/tool constraints. Syntax and diff checks pass; executable checks have not run. Canonical retained startup fails because a peer runtime owns host port 10003. The documented KB_GRAPH_BLOB_HOST_PORT=10053 override is rejected by repair with `Managed Compose configuration changed for service app`. Do not mutate peer runtime or retained lifecycle records. Exact task stop succeeded and the app container is exited. Approval is pending for exact runtime deletion/recreation, including synthetic database/caches, with the new port. Native executor James (01a07c36-aee0-7500-8240-292b442bed4f) owns only the two focused test files and is completing a bounded correction.
+
+The user approved continuing the local fixture reconciliation. Main owns its authentication/ownership seam; a native executor owns only focused unit and temporary-table regression tests. Recognize the exact current scope_token seed in addition to the old legacy shape, preserve every disabled/enabled configuration, and normalize only the local transport authentication and obsolete chatbot-ID forwarding. Do not enable tools, alter production seeding, weaken foreign-owner checks, or inject paid-provider keys. Acceptance requires ownership rejection tests, transactional seed/rotation/rollback checks and canonical startup before the original browser cases. The completed integration source review finds no merge-resolution defects; its known upstream fixture mismatch is this authorized repair.
+
+Local merge checkpoint: 2ddf4a380f2dc2203bad4f8c3fa32a31eeb79d4d includes target 654621094c63b977937202269c210edc0af1e8c2 and is not pushed. Source reviewer Mill, native child 01a07c23-8660-7110-a02a-506c60eaf666, remains active on the complete 97-path first-parent range; await this child rather than spawning another. Runtime shutdown is verified: exact source-path canonical stop succeeded, Devsy reports Stopped, app container exited and workspace routeCount is zero. The local-fixture decision remains pending. Automatic approval review rejected handoff saving/sync because its external destination was unverified; no new handoff was saved. This status paragraph is an uncommitted checkpoint.
+
+The user requested another retry and explicitly authorized pulling in the latest target branch. Live draft PR #5777 targets v3-ai. This pass integrates origin/v3-ai at 654621094c63b977937202269c210edc0af1e8c2 into the previous local v3 merge, 7563dc45b0edf8081b0f46664b07e02b433fd42f. The target includes the feature-access corrections and newer v3 integrations. Eight conflict files are resolved; the absent-flag and observed-profile-failure browser assertions remain intact. Owner preview adopts the target's complete knowledge-base array. No PR merge or deployment is authorized.
+
+Main owns integration and runtime diagnosis because the merge resolutions and their acceptance checks share the critical path. Acceptance requires a conflict-free index, focused MCP tests, package checks, and the original browser regressions. Existing reviews of the previous v3 merge remain applicable to unchanged content; this target integration needs its own bounded source review after commit. Final UI review remains pending.
+
+Host launcher/profile tests pass 28/28; target release-policy and final-review tests pass 82/82. Host Playwright, Prisma client, shared types, bcryptjs and jose imports succeed. pnpm 11 defaults to automatic installation before run/exec; a temporary process-only verify-deps-before-run=warn setting avoids that implicit installation for the existing host runner. No dependency directories were removed. Invoke the Volta Devrouter shim from this task checkout, where it resolves 0.0.55; invoking it from the primary checkout resolves the older pin.
+
+Canonical runtime repair reaches the new authenticated local MCP bootstrap, then rejects the retained synthetic fixture. Scoped readback proves exactly one KB server, passChatbotId=false and default header. The committed seed configures scope_token, no chatbot-id forwarding and disabled Tutor/Explainer configurations; the target bootstrap accepts only the legacy none/enabled fixture or its marked bearer successor. This is an integration contract mismatch, not missing paid-provider credentials. Preserve ownership/authentication checks. A question about reconciling this local-only fixture is pending while independent source verification completes. No browser test ran in this retry.
+
+Verification for this target merge passes: 76 focused MCP/authentication/source-normalization tests, 40 package check tasks, 28 host launcher/profile tests, 82 target release-policy/final-review tests, 56 additional host policy tests, staged formatting, lint, Syncpack, schema mirroring and staged redacted secret scanning. GraphQL regeneration matches the tracked SDL. The initial check failed on stale generated operations; the passing rerun followed GraphQL regeneration. A dependency-closure build stopped progressing after emitting util output and was interrupted; the direct GraphQL build succeeded. Full production build and browser qualification are not claimed. The merge is a local source checkpoint; publication and integrated-final review remain pending the runtime contract decision. No simplifier is needed for this mechanical integration; bounded integration source review remains next.
+
+### Destination v3 integration — 2026-09-07
+
+The user explicitly requested integrating the latest v3 to consume its host-tool selection fix. The merge uses origin/v3 at ac5c8a64442f6d7ef0a54afa068d63b6d1fdaf56 and remains in progress until verification and commit. This is one approved integration pass; the PR base remains v3-ai. Generation custody is now trees/rs/generation-lifecycle-contracts on the destination machine. The restored branch started clean at b82f5b83e6b6e4fc9d6012734cfcb40ca445b757, matching its own upstream.
+
+Resolve both branches' intents: explicit host Devrouter selection, Turbo CI dependency builds, standard chatbot mode settings, multi-KB scope validation, and request-scoped MCP client cleanup. Preserve the existing Student Practice client export and adapt the owner-preview single-KB request to the array contract without broadening its scope. Main owns the authentication and lifecycle seams; the native executor was closed after continued discovery beyond one narrowing checkpoint. Main resolved the six CI/tooling/lockfile files without a replacement worker. All ten main-owned conflict-related TypeScript files passed syntax parsing; this is not a typecheck or runtime test.
+
+Destination verification: host Devrouter 0.0.55 became available without installation by this task. Canonical Manage startup succeeds with zero drift in destination Compose project default-rs-62e53. This is the newly created task-only synthetic database; source-device volume and port overrides do not apply. All 65 focused MCP tests, 40 package typechecks, 26 production build tasks, staged formatting, 68 host CI-policy tests and 13 host-launcher tests pass. The aggregate container check exits one because its installed-Devrouter test belongs on the host; its equivalent host suite passes. Package-manager regeneration repairs two stale Next.js lockfile references and removes an unused snapshot without changing dependency declarations. Browser regressions and required reviews remain pending. The host launcher proves the full profile ready, then browser startup fails before tests with ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY: host pnpm tries to replace container-prepared dependencies. Do not force that replacement or bypass the canonical launcher. Browser qualification and publication remain blocked; preserve the unauthenticated analytics regression unchanged. Complete the independently verified local merge commit and required source review while retaining this runtime-tooling boundary.
+
+### Active local KB acceptance correction — 2026-09-07
+
+2026-09-08 retained-data browser qualification: the executor delivered a
+dedicated config, spec and host-launcher mode. Main moved the spec outside
+the default tests directory to prevent ordinary CI discovery and included it
+explicitly in TypeScript checking. The launcher skips lifecycle, install,
+build and database setup. Main's ignored fixture script passed dry-run and
+created only one synthetic thread with two messages in a transaction; existing
+records and disclaimer acceptance remain unchanged. The fixture is retained.
+
+The host Chromium run passes in 4.4 seconds after external disclaimer-media
+requests were blocked separately from local writes. Source-card, page metadata,
+non-link identity, nonempty retrieval and reload assertions pass. No local
+write request occurred; no provider query or ingestion was submitted. The
+captured source screenshot is obscured by the disclaimer overlay, so visual
+acceptance remains unproven. This proves saved-fixture rendering, not the
+live provider-to-persistence path. Playwright TypeScript, 13 host launcher
+tests and diff checks pass. Required implementation reviews and publication
+remain pending; portable composition still lacks the approved lifecycle.
+The exact generation-lifecycle-contracts workspace remains running under the
+user's manual-verification lease; no data or runtime cleanup occurred.
+
+2026-09-08 implementation continuation: existing citation Playwright setup is
+unsafe for this retained database: global setup resets/reseeds it, and citation
+beforeEach deletes participant chat state. A bounded executor
+01a07fad-9a4a-74b3-a62d-e86a90f57389 owns a separate deterministic browser seam
+with no database setup, writes, provider calls or runtime mutation. Mocked
+history reload will establish rendering only, not database persistence.
+Main replaced the hardcoded signer lookup with explicit LOCAL_KB_SIGNER_ENV_FILE
+selection and regular-file/ownership/mode-600 checks. Temporary fixture tests
+reject symlinks and broad permissions and accept the protected input; runtime
+tests pass in the container and on the host. No live restart applied this edit.
+Provider demand reports queued/running states only; delayed retry absence is
+not established, so credentialed provider startup remains blocked.
+The isolated browser executor did not deliver a test after the narrowing
+checkpoint: normal Chat rendering requires authenticated server-side fixture
+reads, outside its no-DB-read contract. Main requested termination with the
+precise dependency rather than introducing an authentication bypass. No test
+files or launcher mode were delivered. Resume with main-owned, scoped synthetic
+identity readback; do not rerun the destructive standard citation suite.
+
+2026-09-08 continuation: Chat owner preview reloads successfully but contains
+no transcript; its explicit unsaved-conversation contract makes it unsuitable
+for persistence acceptance. No new message was submitted. Focused citation
+verification passes 101 tests across four files, Chat typecheck passes, and
+the local launcher helpers pass 14 tests in the managed container. The host
+profile suite passes 16 tests; running that suite inside the container failed
+because its host Devrouter dependency is deliberately absent. Actual Manage
+profile planning now includes Blob/Azurite without a fabricated build target.
+Read-only provider status reports ingestion, dispatcher, callback, scraping,
+and retrieval unreachable; Crawl4AI and Milvus respond. No provider was
+restarted. The launcher still implements status/plan only, not the approved
+setup/start/connect/stop lifecycle. The browser-test owner is identifying a
+no-reset saved-conversation fixture before any test mutates retained state.
+
+2026-09-08: the user approved continuation of the Manage-only cache repair.
+The exact task runtime was healthy, with no pending cache repairs. The existing
+guard was temporarily moved, the native frontend-manage repair was requested,
+and canonical ensure completed with recreated=false and no drift. The repair
+request was consumed and the original guard restored. The retained NASA KB
+detail route now returns HTTP 200 instead of 404. No database reset, new
+ingestion, model request, or graph build occurred. The runtime remains running
+for the user's manual verification. The authenticated in-app browser confirms
+the retained NASA PDF is Succeeded Version 1 and Available to AI: Current
+version 1, with one connected chatbot and no graph build. This verifies page
+recovery and retained state, not a new retrieval or citation result. The isolated
+agent-browser command stalled and was interrupted; the existing in-app browser
+provided the visual check. Current source is an unfinished candidate, not a published or reviewed
+complete launcher; helper tests alone do not establish end-to-end acceptance.
+
+Process identity helper is implemented and independently verified: 14 combined
+launcher tests pass in the managed container. It refuses reused PID/start
+identity, source/group mismatch, foreign port owners, incomplete observations
+and invalid TCP ports; explicit absent-process evidence is distinct from an
+unknown observation. Main requested and verified the single port-range
+correction. The executor is completed and closed. This is pure classification,
+not yet an operating supervisor or evidence about the live fleet.
+
+Citation correction now also distinguishes retrieved documents from visible
+source cards in the disclosure hint. Malformed objects retain the raw panel,
+and chunks without renderable metadata do not promise nonexistent cards.
+The four focused suites pass 101 tests and Chat typecheck passes. Source checks
+report only the three pre-existing MCP any warnings. The cache guard remains
+unchanged; browser acceptance, full launcher integration and source publication
+are not complete.
+
+Provider command construction now separates the explicit ingestion migration
+entrypoint from individual serving/worker entrypoints. The non-executing plan
+command emits argument arrays with frozen/no-sync dependency behavior and no
+dotenv auto-loading. Scraping uses its verified UVICORN_HOST/UVICORN_PORT
+contract, inline execution and no cache sweep. Retrieval uses its native
+factory without the prototype's binding mutation. The status command now
+includes retrieval's side-effect-free health endpoint. Five isolated tests
+pass in the container. These command definitions have not been executed;
+prepared-state/queue checks and lifecycle integration are still required.
+Native executor McClintock owns only the pure process-identity helper and its
+synthetic tests; no provider, runtime or secret access is delegated.
+
+Portable composition first increment, 2026-09-08: added the configured-path,
+read-only status command at util/local-kb-stack.mjs and four isolated tests.
+It accepts explicit provider roots and loopback health ports, reports source
+heads and HTTP status without response bodies or environment values, and never
+equates reachability with readiness. Container Node tests pass 4/4. Actual host
+readback finds all three recorded provider heads and six HTTP 200 endpoints;
+exit 2 and ready=false correctly retain the unqualified ownership, queue and
+retrieval boundary. No startup, migration, binding update, or job ran.
+
+Provider contract inspection establishes two remaining implementation seams:
+the ingestion worker launcher performs migrations on start, and the ignored
+retrieval prototype couples startup to a chatbot binding transaction. Neither
+may be wrapped unchanged under this plan. Separate explicit setup/connect
+from start before claiming portable orchestration. Status is only the first
+increment, not delivery of the complete launcher.
+
+2026-09-08 independent continuation: the cache-preservation approval remains
+pending; no marker or cache was changed. Four deterministic citation/MCP suites
+passed 95 tests after recovery. Contract inspection then found that document
+counting still depended on card normalization, and parsed objects without a
+sources array could claim an empty retrieval. The bounded correction removes
+that rendering dependency and leaves malformed objects neutral. Four focused
+regressions were added; the combined suites now pass 99 tests, and Chat
+typecheck passes. No external application-provider request occurred.
+
+Provider source refs were refreshed without integration or checkout changes.
+Current inspected baselines are data-ingestion
+d46282848100beec5a1f571e0cc9b091dcdd4179, web-scraping
+b6881533a97fbaa24e09f6fb05d0d99005231f2b, and mcp-doc-query
+80313c4fb842bf7c9a82e0b444d207db5fcf900d. These are source identities, not
+qualification of the planned portable launcher. That implementation and its
+ownership/queue tests remain incomplete. Consumer remains 36 local commits
+ahead of its tracked task branch and 163 ahead/10 behind origin/v3; PR target
+remains v3-ai. No source publication or merge occurred.
+
+Authenticated browser restart proof: the KB list shows NASA PDF local
+verification with one resource and one connected chatbot. Its existing detail
+URL still returns 404 through direct and client-side navigation. The server
+reports PageNotFoundError/ENOENT for the detail URL, while the source dynamic
+page exists. This is not evidence of missing KB data. A repository-supported
+Manage route-cache repair request was refused because the existing coordinated
+preserve-next-cache marker is present; no cache was removed and the marker was
+not changed. A subsequent canonical ensure kept the matching process running.
+The next runtime decision is whether the cache owner permits one exact Manage
+generated-cache repair. Citation/browser acceptance remains blocked, not passed.
+
+Runtime recovery now passes: canonical repair with the retained Blob port and
+restricted runtime-only key injection completed with managedRuntime.status=ready,
+recreated=false, zero drift, all selected services healthy, and both workers
+live. The preparation wrapper waits up to ten seconds for non-zombie Git
+processes in its own process group, without killing them or bypassing the
+lifecycle guard. Isolated shell tests pass on the host and in the managed
+container, including delayed same-group Git and unrelated-group behavior.
+The retained Manage KB URL now reaches delegated authentication instead of
+Bad Gateway. Browser acceptance and source reviews remain incomplete. Keep
+this exact runtime running for the user's requested manual verification;
+revisit that lease at the next verification checkpoint. No data was reset,
+container recreated, ingestion submitted, or paid query performed.
+
+Recovery diagnosis: retained container configuration confirms
+KB_GRAPH_BLOB_HOST_PORT=10043. Restoring that exact non-secret override removes
+the Compose mismatch; earlier commands omitted it. Canonical repair now reaches
+preparation and repeats the foreground-child failure. One temporary values-free
+process snapshot at preparation exit identified PID 13918, PPID 1, PGID 13788,
+state R, command git. The preparation shell is PID/PGID 13788. Thus a Git
+subprocess survives the completed Turbo invocation in its owned process group.
+The temporary snapshot was removed immediately after capture. Do not bypass
+Devrouter's guard or kill unrelated processes. Installed Devrouter is now
+0.0.58; this worktree's local pin remains 0.0.57. Further startup correction must
+address completion of that Git child and review any required version adaptation.
+
+Approved goal restart: restricted Infisical profile authentication and existing
+OpenRouter mapping passed. Canonical ensure for ai,chat,email,live-quiz,manage
+waited in the provider queue, then returned container
+e47aa8e9d4588fe8732c08c8be127684041a2ecab8477fed7a7c251ea992df13.
+Dependency preparation reported ten successful cached builds but failed the
+foreground-process guard: preparation left running children. Managed rollback
+left degraded process state. Exact-container read-only Docker process metadata
+subsequently showed only init and sleep; no surviving preparation child was
+identified. Managed exec now rejects the lifecycle transition.
+
+One canonical ensure --repair with the same profile and restricted mapping
+failed before recovery: Managed Compose configuration changed for service app.
+Do not bypass that guard, recreate the workspace, reset data, or modify shared
+Devrouter state. Resolve the retained configuration difference before retrying.
+All six external ingestion preflight endpoints still return HTTP 200; this is
+reachability only. No ingestion, query, graph build or deletion occurred.
+The goal remains active with runtime recovery unresolved.
+
+Integrated citation checkpoint: executor Popper completed its four-file UI
+correction. Main inspected the diff and ran the combined four focused suites:
+94 tests pass. The combined Chat typecheck passes after a transient
+`next: not found` failure; a subsequent exact-container check found dependencies
+present. Container Biome checked the UI correction. The isolated browser
+successfully opened the current Chat URL but rendered `Bad Gateway`, so no
+browser acceptance is claimed. A process-name-only container read showed only
+the container init/sleep and inspection processes. Recover exact managed app
+startup and establish runtime custody before any lifecycle change; do not
+reset the retained KB or use broad Playwright database cleanup. Current source
+changes are uncommitted, with source reviews and publication still pending.
+
+Agent service recovered with ready=true. Native executor Popper owns the four
+bounded normalizer/tool-fallback implementation and test paths; main owns the
+MCP result boundary. Main added a doc-query-only execution wrapper that removes
+ingestion gateway destinations from structured and JSON-text payloads before
+model context and persistence, retaining opaque document identity and metadata.
+Nineteen focused sanitizer/MCP tests pass; Chat typecheck passes after replacing
+an untyped argument spread with the SDK execute parameter tuple. Container
+Biome passes with three pre-existing explicit-any warnings. Changes remain
+uncommitted. UI integration, deterministic browser proof, committed reviews,
+portable composition and publication remain pending. No new paid calls ran.
+
+Resumed correction: the Manage Blob route now maps to an explicit Azurite
+managed-service binding. The host runtime-plan consumer validates that binding
+only when Blob is selected and requires the actual managed service; no fake
+Turbo filter or health URL was added. The real Manage profile plan passes.
+All 16 host profile-runtime tests pass, including every real shard profile
+union. Container execution passed 15 tests; its host-Devrouter integration test
+cannot run there and passed on the host instead. Container Biome formatted and
+checked both changed JavaScript files. Whitespace checks pass. This candidate
+is uncommitted and does not establish browser upload or restart acceptance.
+
+OpenCodex readiness remains failed at the resumed checkpoint. The existing
+mapping child has not delivered a terminal result and is retained, not replaced.
+Citation corrections, provider composition and required source reviews remain
+pending. No new ingestion, paid query, fixture mutation or runtime restart ran.
+The runtime remains retained for the user's manual verification.
+
+Status: incomplete; achieved delivery is local source and runtime proof, not
+reviewed publication. The latest PDF test passes ingestion and retrieval but
+fails result-count presentation and user-facing citation provenance. Runtime
+fixes remain local. Startup currently depends on an ignored multi-repository
+prototype and therefore is not yet a reproducible published profile.
+
+Next: verify the parser and provenance causes, freeze the smallest compatible
+correction and startup contract, complete the armed planning review, then
+implement and verify within this package. Preserve passing evidence when its
+source and contract are unchanged. Required source reviews, affected tests,
+browser citation proof, and publication remain incomplete. No completed
+review for the earlier lifecycle slice qualifies these new corrections.
+
+### Approved analytics loading-state correction — 2026-09-06
+
+The user approved the narrow loading-state correction while preserving authentication enforcement. Main owns LearningAnalyticsRouteGuard.tsx because the authentication seam and runtime proof are coupled; native executor Harvey owns only the added unauthenticated analytics browser regression in B-feature-access.spec.ts. The loading branch now uses the existing shared Loader without Layout; profile-unavailable stays fail-closed, and global Unauthorized redirects plus backend authorization remain unchanged. Acceptance requires observed profile-failure interception, unavailable UI and zero analytics calls; genuinely unauthenticated access must still reach login with zero analytics calls. Existing unrelated candidates remain preserved. Fetch succeeded without integration; branch tracks origin/rs/generation-lifecycle-contracts and is 145 ahead/eight behind origin/v3.
+
+Initial startup session 2402 and the single canonical repair session 99273 both failed after ten cached dependency builds: `[devrouter-process] Preparation for 'klicker-dev' left running children; a synchronous foreground command is required.` The installed helper excludes zombie processes from that check; the exact surviving child has not been identified. No safety check was bypassed or shared tooling changed. Fresh source-path status confirms failed-transition, the application process stopped and supporting services healthy. Manage typecheck and lint pass (23 existing hook warnings), as does the guard's scoped Biome check. Updated Playwright typecheck session 72922 and test formatting session 66768 pass; an earlier check overlapped an unfinished edit and failed syntax, so only the finished-file result is usable. No post-fix browser result exists. The prior scope-decision blocker below is superseded, but publication still requires browser verification and the existing review gates. The guard and test candidates remain local and uncommitted.
+
+Executor checkpoint: Harvey added the unauthenticated-access case and corrected its prose assertion and persisted POST decoding. Native evidence showed repeated reconsideration after the bounded correction; main closed the child and retained its work. Main changed the final URL assertion to Playwright's retrying URL predicate so client-side navigation can settle. No global authentication or backend code changed. The preceding typecheck/format receipts cover the executor diff, not that final assertion adjustment: its container check was rejected because canonical stop session 88086 already held the task lifecycle lock. Keep this small verification gap explicit. `git diff --check` passes. Shutdown is queued behind another owner; do not bypass or restart it.
+
+Shutdown result: canonical stop session 88086 waited for the shared provider queue, then exited one with `Managed Compose configuration changed for service 'app'.` No successful stop or zero-route verification is claimed. The exact task source path remains /Users/rschlae/Git/klicker/klicker-uzh/trees/rs/generation-lifecycle-contracts, workspace rs-generation-lifecycle-contract, Compose default-rs-f189c. The command omitted KB_GRAPH_BLOB_HOST_PORT=10043, which was present at startup; restore that task-specific override before attributing the configuration discrepancy to another owner. Do not use raw provider/Docker mutations or affect parallel workspaces. Runtime and source qualification remain incomplete.
+
+Final lifecycle receipt, 2026-09-06: repeating the canonical stop with startup's KB_GRAPH_BLOB_HOST_PORT=10043 succeeded in session 54275 after the provider queue. The exact source-path receipt reports stopped=true and freedRoutes=0. Fresh Docker state shows all nine default-rs-f189c containers exited. This supersedes the failed stop above: its configuration discrepancy came from the omitted task-specific override, not evidence of a peer edit. Worktree and database volume are retained. No active child or source-check process remains. The next qualification step requires resolving the foreground-preparation failure, then running the final assertion's static check and the focused browser cases before implementation reviews/publication. No commit, push, merge or release-readiness claim is made for these local corrections.
+
+Fresh complete route-inventory readback contains no rs-generation-lifecycle-contract entry. Exact runtime release is verified: stopped containers and zero task routes; retained data is not deleted.
+
+### UI qualification: tooling verified; analytics loading/auth flow needs scope decision
+
+Runtime released on 2026-09-06: canonical stop session 71067 exited zero for /Users/rschlae/Git/klicker/klicker-uzh/trees/rs/generation-lifecycle-contracts, workspace rs-generation-lifecycle-contract, reporting stopped and eleven freed routes. Fresh Docker metadata confirms all nine default-rs-f189c containers exited; a complete parsed devrouter route listing contains no matching workspace token. Worktree and database volume are retained. No active test, lifecycle watcher or child remains from this qualification run.
+
+Latest producing-run evidence on 2026-09-06: focused canonical Playwright session 21198 completed with five passes, one failure and one skipped test. Missing chat feature flag and the smaller-desktop four-choice library checks pass; analytics profile-failure handling redirects to the auth page instead of showing learning-analytics-access-denied. The mock interception counter passed before that assertion. The additional English storage-cleanup test matched the case-insensitive CLEANUP grep and passed; its German case was skipped. No broad UI qualification is claimed. Preceding session 9393 failed before tests on four missing Docker IDs; fresh exact-container inspection found all nine task containers present with ready/zero-drift state, and the one retry passed reconciliation. Container launcher/profile contract tests pass 24/24, including installed Devrouter profile planning. Prettier checks for the YAML/config/lockfile and Biome package.json check pass; git diff --check passes.
+
+The remaining source seam is outside the pin/test correction: LearningAnalyticsRouteGuard mounts AnalyticsLoadingView while flags are not ready; that view mounts Layout, whose missing-profile redirect can navigate to login during the synthetic profile failure. The guard's later evaluation-unavailable branch cannot recover that navigation. The global Apollo Unauthorized redirect is not triggered by the synthetic error message. Retain these application files unchanged pending explicit authority for a narrow loading/authentication-flow fix. Recommend rendering the initial analytics guard loading state without the authenticated Layout, preserving real authentication enforcement and verifying both profile-unavailable and truly unauthorized cases. Keep the test failure visible; do not weaken it to accept login. Tooling and UI candidates remain uncommitted/unpublished. Stop the exact runtime for this decision boundary and verify release below.
+
+Canonical repair session 14016 exited zero on 2026-09-06: full profile ready, zero drift, eleven routes, eight supporting services healthy and both managed processes running. Ten dependency builds completed in 3m30.148s, with the already observed Pothos/design-system TypeScript warnings; this is not a clean typecheck. Six app readiness contracts and both worker process checks passed. Synthetic Manage course warm-up remained 404, not course-flow proof. Focused host Playwright session 9393 uses Node 24.16.0/Corepack pnpm 11.5.0 and the aligned CLI, selecting cleanup plus the three inherited failures in the feature-access and wizard specs. It is queued in canonical reconciliation; preserve the run and report no UI pass until assertions finish.
+
+Devrouter alignment is locally verified: package.json, .devrouter.yml, the exact release-age exception and the pnpm-generated lockfile now select 0.0.55. The lockfile diff is five additions/five deletions, all Devrouter; unrelated Next.js peer normalization was restored. The temporary old-version exception was removed. Container frozen install passed with pnpm 11.5.0, changing one package; the scoped host Playwright/root frozen install passed with the launcher's Node 24.16.0/Corepack pnpm 11.5.0 toolchain, also changing one package. Host pnpm exec now reports installed and repository Devrouter 0.0.55. The initial Volta pnpm command resolved to unrelated pnpm 9.7.0 and exited at its reinstall prompt without changing dependencies; do not reuse that command. Canonical full-profile repair session 14016 has reached foreground preparation and dependency builds. Runtime readiness and UI assertions remain unverified. No source commit or publication is claimed for these local changes.
+
+The user explicitly approved the tooling prerequisite on 2026-09-06: align the repository Devrouter pin, lockfile, exact release-age exception and version metadata with host 0.0.55. This is a mechanical main-session change; delegation costs more than this bounded edit. Preserve the adopted runtime changes and separate UI candidates. Stop session 16872 completed successfully with all nine containers stopped and zero routes. The subsequent repair session is no longer available; fresh status reports failed-transition, supporting services healthy, local MCP running and the application process stopped. Do not claim runtime readiness. Container pnpm 11.5.0 is available through canonical exec. Lockfile generation temporarily retains the pre-existing 0.0.51 age exception because pnpm verifies the old lockfile before resolution; remove that exception after generation and require frozen-lockfile verification. Then align the host Playwright dependency installation and rerun the canonical focused checks. No new merge, deployment or shared-runtime authority is granted.
+
+Latest qualification result, 2026-09-06: session 24968 exited one before Playwright/global cleanup. After its provider queue completed, post-start rejected the delivered helper because it lacks --prepare-command support; rollback left degraded process drift. Root cause is verified executable selection: direct host Devrouter is /opt/homebrew/bin/devrouter at 0.0.55, while pnpm selects node_modules/.bin/devrouter at repository-pinned 0.0.51. package.json, pnpm-workspace.yaml and pnpm-lock.yaml retain that pin. The adopted runtime adapter requires the newer helper. This is not a failed UI assertion or shared-router absence. Updating tooling pins/lockfile and the corresponding Devrouter metadata is a new scoped change requiring authority before implementation; do not bypass the canonical host launcher. Exact non-destructive stop was submitted through the compatible host CLI as session 16872; verify its terminal result before claiming shutdown. Existing goal, UI candidates and unchanged backend evidence remain intact.
+
+Current producing-run receipt, 2026-09-06: canonical ensure session 95129 completed successfully. Managed full profile is ready with zero drift, eleven routes, all eight supporting services healthy, both managed processes running and both Hatchet workers live. App container is 561cc422cb273b4799aa60fe63bf23c1d8eb4535c48e1e4224c06aa7ab73aa25. The newly created default-rs-f189c_pgdata volume timestamp is 2026-09-06T11:58:49+02:00; bootstrap initialized this disposable local environment. Dependency builds completed ten tasks in 39.389 seconds with warnings, not a clean typecheck. App readiness passed; synthetic course warm-up returned 404 and is not course-flow proof.
+
+Historical host Playwright session 24968 selected CLEANUP and the three inherited failures, but failed during canonical runtime startup before running tests or cleanup. The host entry printed a Node 26 engine warning; the launcher selects its Volta toolchain for Playwright, whose actual version still needs verification. The earlier shared-router and custody blockers below are superseded; do not request setup again.
+
+Latest startup receipt, 2026-09-06: the user reported shared routing restored. Fresh host checks confirm devnet exists and devrouter-traefik runs. No setup mutation was needed. Canonical full-profile ensure is active as session 95129 with KB_GRAPH_BLOB_HOST_PORT=10043, waiting behind the live provider-lock holder PID 8509. Preserve this one operation and queue position; no readiness or test result exists yet. This supersedes the shared-setup approval blocker below.
+
+Current authority and evidence, 2026-09-06: the user explicitly requested independent execution and takeover of this worktree and its Devrouter runtime. Central was notified; the previous custody-handback blocker below is superseded. Reuse the existing full goal and approved UI qualification package, not a duplicate release branch or generation implementation. Fetch succeeded; rs/generation-lifecycle-contracts tracks its matching origin branch, remains 145 ahead/six behind origin/v3 and eleven ahead/eight behind origin/v3-ai. Published head remains c8c35e2d94d06c42c4dc94ff41170dc2ed01c51f, draft and mergeable.
+
+Fresh provider evidence contradicts the old retained-runtime record: Devsy reports NotFound, no default-rs-f189c containers exist, and default-rs-f189c_pgdata is absent. Repair therefore exited before startup because it requires a retained app container. Normal ensure began workspace creation but failed on Docker Hub DNS while resolving the required Node image. The exact node:24.16.0-bookworm-slim image was pulled successfully; canonical ensure then downloaded the declared service images and failed because external network devnet is absent. A scoped read confirms both devnet and devrouter-traefik are absent, with no task containers running. Sessions 69642, 89723, 70985 and 64815 are terminal. No data deletion, source implementation edit, cache clear, commit, upstream integration or publication occurred.
+
+Next boundary: obtain explicit shared-machine Devrouter setup authority, then run canonical setup and resume this exact checkout with KB_GRAPH_BLOB_HOST_PORT=10043. Preserve the cache marker and the six adopted runtime-source paths outside our publication. After startup, prove the newly created database is synthetic and proceed through the already-approved focused UI tests, browser checks, reviews and same-draft publication. Existing data-model/business-regression obligations below remain unchanged. The historical blocked-goal record must not be interpreted as current custody or runtime evidence.
+
+Blocked audit, 2026-09-06: three resumed goal turns encountered the same missing generation readiness and runtime handback. Identity delivery and checkpoint reconciliation are complete, but neither unlocks the required browser verification. The recovery owner's receiving turn is terminal and idle with no handback; its final recovery record still reports generation stopped after prelaunch approval-service timeouts. There is no live operation to wait on. Mark the full goal blocked, not complete, until recovery evidence and custody change. Preserve the existing PR, review evidence, runtime owner and paused monitor; do not generate further unchanged-status checkpoints.
+
+Current checkpoint, 2026-09-06: outbound task messaging is restored. The shared-runtime identity and source-custody confirmation was delivered to Devsy Issues; its receiving turn completed without a readable reply or handback. Central's latest recovery record reports UX recovered and stopped, then generation stopped after unsuccessful recovery attempts. No generation application-readiness proof exists. Fresh provider status is Stopped and an elevated, source-scoped route query confirms zero routes. Keep central runtime custody and the cache-preservation boundary; do not run the reset/reseed Playwright launcher before handback and reconciliation of that data boundary. The preceding goal turn made progress by delivering the previously blocked identity confirmation. The full goal remains incomplete; this resumed audit has not reached three blocked turns. Remote refresh succeeded, with branch/upstream and drift unchanged from the exact-head reconciliation below. PR #5777 — generation lifecycle contracts remains open, draft and mergeable at c8c35e2d94d06c42c4dc94ff41170dc2ed01c51f. Older messaging-unavailable and UX-in-progress statements below are historical.
+
+Resumed blocked audit: the same unavailable shared generation runtime and central custody boundary has persisted across three consecutive resumed goal turns. The intervening turns completed source-receipt verification and corrected published PR evidence; neither supplied the required browser runtime. Fresh host readback still shows failed-transition/full, all nine original containers exited, both managed processes stopped and no matching generation lifecycle operation. Central's latest checkpoint now reports UX recovery progressing after its queue wait; that supersedes the earlier blanket prelaunch-timeout status but is not a generation-runtime recovery or custody handback. Do not observe or interrupt central's process through a duplicate watcher. Mark this goal blocked, not complete, until central supplies qualified generation recovery and returns custody. No further independent qualification or publication gate can finish without that external-state change. Existing source, data, cache guard and PR evidence remain preserved.
+
+Exact-head PR reconciliation completed after host access recovered. Fetch succeeded without integration: rs/generation-lifecycle-contracts tracks origin/rs/generation-lifecycle-contracts, stands 145 ahead and six behind origin/v3, and remains eleven ahead and eight behind unchanged target origin/v3-ai at 5c8ee4b6a034c22da8e85159214c629f371d0f3d. PR #5777 is still open, draft and mergeable at c8c35e2d94d06c42c4dc94ff41170dc2ed01c51f with zero unresolved review threads. GraphQL and codebase CI pass; the existing shard-eight/aggregate Playwright and OCR checks fail, and final-ai-review remains pending. No new source, review finding or CI run appeared.
+
+Updated the existing PR description and verified exact readback. Removed stale claims that the runtime was running under a manual lease; distinguished uncommitted Header/test corrections and the six adopted runtime files from the published backend diff. Preserved all branch-wide implementation and backend verification context. Recomputed eleven commits, thirteen published paths and substantive size 1,628 additions plus 324 deletions. Current host runtime readback confirms failed-transition/full, both managed processes stopped, the same nine exited containers and zero checkout routes. No lifecycle mutation occurred. The remaining blocker is central's qualified recovery and custody handback, followed by focused UI qualification and required reviews. This PR-body update is not source publication, readiness approval or final AI review.
+
+Latest continuation checkpoint: central Devsy rollout records Devrouter 0.0.55 published and installed, including resolved Compose env_file hashing and order-independent retained mount comparison. The former unexplained app hash and review-credit blockers below are superseded. Central still owns serialized recovery; its latest execution record says the first UX repair never launched because automatic permission review timed out twice. No shared generation runtime readiness or custody-release receipt is available yet.
+
+This task is the source owner of this checkout and the same blocked runtime shared with KB/KG/Generation, not a separate V3-AI runtime. The six runtime-source adoption paths remain uncommitted alongside our Header.tsx, B-feature-access.spec.ts and plan edits. The adopted cache-preservation guard is present, and central's preserve-next-cache marker exists. Source inspection confirms the guard blocks new repair requests and pending cache deletion. Host shell syntax and whitespace checks pass; this is not execution or browser proof. Preserve KB_GRAPH_BLOB_HOST_PORT=10043 and the existing data/caches.
+
+Remote refresh in this continuation failed before command creation twice because the automatic permission approval reviewer timed out. No third retry, lifecycle operation, upstream integration, commit, push, seed or cache clearing was attempted. Local HEAD remains c8c35e2d94d06c42c4dc94ff41170dc2ed01c51f; remote/CI observations below are historical until refresh succeeds. Outbound cross-thread messaging is still unavailable, so source identity confirmations in this thread must not be recorded as delivered to central. Resume after central's qualified recovery and custody handback; then run the already-approved focused UI checks and review/publication sequence. This checkpoint only reconciles local progress with the owner's recorded rollout, without treating stale refs as new source authority.
+
+Earlier repair investigation follows; its superseded blockers are retained only as producing-run history.
+
+Current checkpoint, 2026-09-05: the user explicitly approved restoring the committed GrowthBook test default and retrying repair. NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY is restored to sdk-test; .devcontainer/devcontainer.env now has no Git diff. The exact retry with KB_GRAPH_BLOB_HOST_PORT=10043 and installed devrouter 0.0.52 exited one at 17:21 UTC after about ten seconds with `Managed Compose configuration changed for service 'app'.` The original command receipt was recovered from this session after its output handle expired; no duplicate retry was launched.
+
+Read-only comparison isolates the guard failure to app: all eight other retained services match their recorded Compose hashes. Every currently configured app environment value matches the retained container. The app's recorded hash is b9f83811cf985ed989f0933ce7b526e1340a3a4c244517258e63b943e6febafe; current resolution produces d9e0272b66b06ddc17f8295a01f6d8fd452cf95d66e13844e4032755983a212c. A read-only in-memory variant supplying the retained image name also fails to match. The remaining configuration mismatch is unresolved; neither environment equivalence nor this comparison establishes safe repair. No hash, generated configuration, provider state or lock was edited.
+
+Fresh host inspection confirms Compose default-rs-f189c still contains the same nine exited containers, zero exact-checkout routes and no active lifecycle command. Managed status remains failed-transition at process-start for the recorded full profile. No reset, deletion, recreation, app startup or browser test occurred. The task runtime is stopped at the container layer, with degraded managed state retained. Source candidates remain uncommitted and unqualified; backend head c8c35e2d94d06c42c4dc94ff41170dc2ed01c51f is unchanged.
+
+Devsy Issues retains the separate runtime-fix lane. Its latest receipt distinguishes passing isolated dependency-build experiments from unimplemented startup/shutdown fixes; its required planning review is blocked by unavailable review credits. Do not duplicate that work or infer runtime readiness. Outbound cross-thread messaging remains unavailable here, so this checkpoint records the consumer evidence without claiming delivery to the owner. Resume focused UI qualification only after an ownership-preserving resolution of the app configuration guard and successful canonical readiness. No new generation plan, upstream integration or generic manual test round is needed.
+
+Final provider readback: `devsy workspace status rs-generation-lifecycle-contract --result-format json` exited zero and reports context default, provider docker, state Stopped. Together with all nine exited containers and zero exact routes, this completes the stopped-runtime receipt. Whitespace checks pass in both the task plan and roadmap worktrees; their unrelated changes remain preserved.
+
+The following repair and custody notes are historical and superseded by the current checkpoint where they conflict.
+
+Latest repair attempt, 2026-09-05: the user approved the exact `ensure --repair` command after investigation of installed devrouter 0.0.52. A read-only process check found no active lifecycle command for this checkout. With KB_GRAPH_BLOB_HOST_PORT=10043 and the recorded full profile, repair exited one before starting containers: `Managed Compose configuration changed for service 'app'.` Fresh inspection confirms all nine retained project containers exited and zero checkout routes. No deletion, recreation, reset, state-file edit or source change occurred in the repair attempt.
+
+The retained app has the committed test-default NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY, while the peer's preserved local-only file clears it. This is a confirmed configuration difference consistent with the repair guard; other configuration equality has not been proved by a successful repair. Cross-task messaging is unavailable in this session. Stop before removing the peer override: request permission to restore the committed test setting, then retry the same exact repair. The earlier need to implement a devrouter recovery fix is superseded by the installed release; no competing tooling patch is needed here.
+
+Latest resumed checkpoint, 2026-09-05: the runtime owner explicitly released source custody for the authorized Header.tsx and B-feature-access edits while retaining runtime custody. Its approved managed stop succeeded and freed eleven routes; ensure still rejected the old degraded process-start transition. The owner reports all services/processes stopped, zero active routes and no reset/deletion. A bounded devrouter recovery fix awaits approval in that task; this package does not implement it.
+
+Main applied the minimal layout candidate: the outer header can wrap its existing groups, and the account-navigation group retains right alignment through its auto margin. Only two class strings changed; labels, ordering, permissions, handlers and test selectors are unchanged. The release task's separate Header.tsx permission edits and the local-only environment override are untouched. Main retained this two-token CSS correction because delegation costs more than the edit and reproduction/integration remains coupled; the substantive feature-test candidate was already executor-produced. git diff --check passes and exact diff inspection confirms the bounded change. No formatter, build, browser acceptance, implementation review, commit or publication is claimed. Check 749-by-820 EN/DE and ordinary desktop navigation after recovery, then continue the existing review/publication sequence. The previous unchanged-header checkpoint below is historical.
+
+The user refocused this task on finalizing the existing generation-lifecycle refactor. Reuse the published backend implementation and its passing evidence; do not request generic manual regression testing or widen this work into full v3-ai acceptance. The remaining approved work is the two feature-test repairs, the minimal header layout correction, their focused browser checks and required reviews, followed by publication to the same draft PR.
+
+Fresh remote inspection on 2026-09-05 confirms published head c8c35e2d94d06c42c4dc94ff41170dc2ed01c51f, an open draft targeting v3-ai, mergeable with no unresolved review threads. GraphQL and codebase checks pass; Playwright shard eight and hosted OCR review still fail, and final AI review remains pending. Fetch completed without integration. The branch tracks origin/rs/generation-lifecycle-contracts, stands 145 ahead and two behind origin/v3, and 11 ahead and eight behind origin/v3-ai. Target advancement includes shared schemas and dependencies but no generation-service changes; do not infer merged-result compatibility from existing head-scoped proof.
+
+Klicker KB/KG/Generation retains runtime custody. Its latest recovery receipt reports canonical ensure exited one with `Managed runtime state is degraded; refusing a new profile transition until drift is repaired.` The failed transition is at process-start; the owner reports stopped containers with active routes remaining. After requesting exact non-destructive managed stop/ensure recovery, that task is active again in turn 01a0720d-a321-7053-8c51-46015161b2b1; no successful recovery or custody-release receipt has arrived. Preserve data and Blob port 10043. This task performs no concurrent runtime mutation, reset or recovery. The earlier successful restoration below is historical, not current readiness evidence.
+
+Goal checkpoint: the same unavailable verification runtime and retained owner custody have prevented qualification across at least three consecutive goal turns. The live owner task is not failed or cancelled. Mark this goal blocked pending its recovery result and custody release, rather than repeatedly checking unchanged state. The next-plan requirement already corresponds to the reviewed, implemented common Element-completion extension; the parent roadmap explicitly rules out a duplicate plan. All remaining implementation and verification resumes under the existing approval once the runtime boundary clears.
+
+The owner's .devcontainer/devcontainer.env change is local-only: NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY is cleared for manual AI testing and must not be committed. Restore its committed sdk-test setting only after custody returns and before the intercepted GrowthBook test run. Shared feature-flag code is unchanged; manual AI after-state is unverified. The B-feature-access candidate remains uncommitted and unverified, and Header.tsx is unchanged. git diff --check passes. Container formatting/checks, browser qualification, implementation reviews and publication remain pending. No new commit, push, upstream integration, migration or provider call occurred. Resume the already-approved focused qualification when the owner releases the recovered runtime; do not duplicate the owner's recovery request.
+
+### Earlier successful restoration
+
+Restoration succeeded on 2026-09-05: canonical ensure exited zero after fresh bootstrap and full-profile readiness. Devsy workspace rs-generation-lifecycle-contract uses Compose default-rs-f189c and app container 6dc71c3e28a67f99430d500bd36e814a955f4160af00d1d01446b2761b76002a. Managed runtime is ready with zero drift; all selected and base services are healthy, both managed processes run, and both Hatchet workers are live. Native readiness passed for auth, chat, control, manage, PWA and response-api. The rebuilt local database was initialized and seeded by the normal bootstrap; no old OrbStack data was recovered. No source/configuration changes or volume deletions were made by this restoration.
+
+The workspace remains running for the user's manual verification under Klicker KB/KG/Generation custody, confirmed by that task and acknowledged with the producing-run receipt. Revisit this lease when manual verification completes, before broad Playwright cleanup, or at the next custody handoff. Manage is https://manage.klicker.rs-generation-lifecycle-contract.localhost. Keep the supported temporary KB_GRAPH_BLOB_HOST_PORT=10043 override on subsequent ensure commands; the durable host graph-worker Blob routing change is separately owned. Paid provider calls and AI generation were not qualified by startup health. The local UI candidate remains uncommitted, unreviewed and unpublished. The historical blocker and intermediate receipts below are superseded by this outcome.
+
+Restoration custody update: the peer startup exited after the cached official Node image resolved image lookup, then hit an Azurite bind collision on port 10003. The peer explicitly handed restoration to this task and requested retaining the workspace for the user's manual verification. Port 10043 was free and is supported by the existing KB_GRAPH_BLOB_HOST_PORT override. One canonical ensure is now running with that override; it has entered the bootstrap hook. The colliding container belongs to Compose default-rs-956ce and is untouched. No duplicate startup or lock bypass occurred. Keep this workspace for manual-verification custody at the next checkpoint; do not run broad Playwright cleanup during that use. This is temporary port-based restoration, not a durable change to host graph-worker Blob routing.
+
+Resume update, 2026-09-05: the user confirmed cleaning OrbStack and explicitly requested recreating this workspace. This resolves the missing-volume explanation and grants the normal task-local recreation. Remote refs were refreshed without integration; the branch still tracks origin/rs/generation-lifecycle-contracts and is 145 ahead, two behind origin/v3. The pre-existing startup PID 71513 belongs to task 01a02ee6-aebd-7463-89d6-d1ba5dca23a8 (Klicker KB/KG/Generation), verified through its task-ID metadata only. Read-only coordination requested its status and continued need; no interruption or lock bypass occurred. Await that owner's result before launching a duplicate transition.
+
+2026-09-05 resumed with explicit task-database reset and layout-only header authority. No new commit or push occurred; the published draft still matches c8c35e2d94d06c42c4dc94ff41170dc2ed01c51f. The local feature-test candidate now replaces the touched loading-copy assertion with an unavailable-state check and zero activity-analytics requests after an observed profile failure. Main inspected the diff and git diff --check passes. Header.tsx remains unchanged. Release-task permission changes remain in its own worktree.
+
+The canonical focused host Playwright run failed during runtime reconciliation, before global setup or any test: Docker Hub image inspection returned `connect: bad file descriptor`. Container-side plan formatting then failed with `no running container found for workspace "default-rs-f189c"`. Neither is passing verification, and no database reset was performed by that run. A normal ensure retry found an existing lifecycle owner, PID 71513, and exited without bypassing its lock. The process remains active; its owning task is not established, so do not interrupt it or start another transition.
+
+Fresh read-only checks report Devsy rs-generation-lifecycle-contract as NotFound, no containers for Compose default-rs-f189c, and no default-rs-f189c_pgdata volume. Both configured local Docker endpoints resolve to the same OrbStack daemon. The source-path routing record still has eleven routes; stopped-runtime and retained-data claims from earlier checkpoints are no longer current. The browser remains closed. Resolve the active lifecycle owner and missing runtime/volume before further runtime mutation; do not claim cleanup or data preservation from stale records. No other task, configuration, volume or source was changed.
+
+Remaining work is already approved once the environment identity is resolved: format and commit this plan, qualify the test repair, apply the minimal header layout correction, run adjacent browser checks and required committed reviews, then publish only verified source to the same draft. Toolchain, browser, implementation reviews and publication remain pending. The hosted-review authentication gate stays with its owner; the heartbeat remains paused.
+
+### Completion extension: local qualification complete
+
+Integrated final review: DONE on 208e97d38e6abfd13d997d48200077febc8c1445..801a04f7110486ffb09d45555a298c0fc7fa553b, all 13 changed paths, no reportable findings. Report: project/\_local/reviews/2026-09-05-element-completion-integrated-final-review.md. Main verified and accepted the result; reviewer closed. This closeout changes only Progress. Approved push to origin/rs/generation-lifecycle-contracts and update of the existing draft PR follow; hosted qualification remains pending. Runtime remains Stopped with zero routes.
+
+The source head f901f7f16ca39029ff18bb59e30d658e0e4e731f passes the focused tests, business sentinels, native checks and full build recorded below. Slice review: done — project/\_local/reviews/2026-09-05-element-completion-slice-review.md, no findings. Simplifier: done — project/\_local/reviews/2026-09-05-element-completion-simplifier.md, no justified changes. Both children are closed. The exact task runtime has been stopped; route readback has zero routes and the owned app container is exited. Data and worktree remain preserved. Integrated final review of the full branch and approved own-branch draft publication remain next. Hosted checks and final AI review remain separate; inherited UI failures and hosted-review authentication are parked, not accepted as passing. No merge, upstream integration or deployment occurred.
+
+### Earlier extension checkpoints
+
+Final provider readback: devsy workspace status rs-generation-lifecycle-contract reports Stopped on the default Docker provider. The source-path-resolved devrouter inventory reports zero routes and no hosts. This closes the task runtime lifecycle without deletion.
+
+Shared completion is committed at f901f7f16ca39029ff18bb59e30d658e0e4e731f. Integrated local verification passes: eight focused files/93 tests, eight business-regression files/106 tests, grading/ten tests, GraphQL typecheck, root serial typecheck/40 tasks and lint/seven tasks, both without cache hits, plus Syncpack and repository policy checks. Full production build passed 26 tasks with zero cache hits in 3m0.726s using Python 3.12 and /tmp/generation-completion-build-cache. No schema, migration, Analytics, SDL or dependency change. The container-local wiki validator is unavailable; scoped Prettier and direct source-link checks pass, and existing frontmatter is preserved except its semantic-update date. Simplifier: done — project/\_local/reviews/2026-09-05-element-completion-simplifier.md, no changes. Required data-integrity slice review is active (01a0713f-2327-7201-b47f-c2f301d63498). Runtime shutdown, integrated final review and approved draft publication are next. Prior completed-build editor/browser evidence remains applicable to unchanged editing/saving code, not evidence of initial completion. All assertions introduced for initial completion use the real synthetic PostgreSQL boundary.
+
+2026-09-05 continuation checkpoint: executor Bernoulli delivered the shared completion operation and is closed. Main verified one transaction with one draft insertion/count and one fenced terminal update; both old completion bodies are removed. The 26 characterization assertions are unchanged apart from routing to the shared operation. Focused verification passed 93 tests in eight files at 10:59 UTC, including both real takeover races; GraphQL typecheck passed. Scoped Opengrep ran 210 rules on five production files with zero findings. Schema, migrations, Analytics, public SDL and lockfile remain unchanged. Formatter-only import/export reorderings outside the extraction were restored. Source-slice reviews and integrated verification/publication remain pending. The exact task runtime is active; other owners and runtimes remain untouched. Refreshed v3-ai remains at 208e97d38e6abfd13d997d48200077febc8c1445; stable v3 is two commits ahead of this branch's common history, without completion-path overlap. No integration occurred.
+
+Completion test slice is committed at f2fd5aed02b1da147f4ef9a31d6878f87d0d8f41. Slice review: done — project/\_local/reviews/2026-09-05-element-completion-tests-slice-review.md, no findings. Simplifier: done — project/\_local/reviews/2026-09-05-element-completion-tests-simplifier.md, no justified changes. Both children are closed. The shared completion implementation is active; it must preserve all 26 cases and replace both old bodies before source acceptance.
+
+Completion characterization: main took back the bounded test slice after the executor continued design without delivering an artifact following a narrowing checkpoint. The child is closed; this was a progress-contract failure, not a model availability failure. The new 26-case suite passes against the original helpers. It covers type/state/result compatibility, stored payloads and nulls, unchanged re-entry rows, distinct count rules, and both real post-read lease takeovers with rollback and unchanged accounting. Test-only transaction instrumentation delegates the entire transaction to Prisma and records its backend PID; the query-extension barrier returns the actual query result. Two real concurrent transaction clients have different PIDs and release through Prisma; the suite disconnects its shared pool after completion. Initial assertion/type mistakes were corrected in the test only, not production. GraphQL typecheck and scoped Biome checks pass. Root serial typechecks passed 40 tasks; remaining repository checks passed. Required test-slice simplifier and data-integrity review are next; completion production code is still unchanged.
+
+### Current status
+
+2026-09-05 extension approved and starting: test-only characterization, then one shared Element completion operation. Baseline head 5e984643c6a63f800e4402736fa5d3370a980ae8; origin/v3-ai unchanged at 208e97d38e6abfd13d997d48200077febc8c1445. Stable v3 advanced one commit; no integration. Existing PR GraphQL74-file and codebase checks passed; inherited UI failures and hosted review authentication remain parked. The following completed-scope evidence is historical and must not be read as completion of this extension.
+
+Extension baseline verification, 2026-09-05: approved plan committed at ea717d68601151998e7d7f7405c63a0a70cafad7. Exact task runtime resumed with manage profile, Devsy rs-generation-lifecycle-contract, Compose default-rs-f189c. Created empty generation_completion_20260905 database in the task-owned volume and applied the unchanged schema; every test invocation explicitly overrides DATABASE_URL before imports. Existing seeded databases remain untouched. Seven generation/accounting/lease/persistence files passed 67 tests, eight business sentinel files passed 106 tests, and grading passed ten. Schema/Analytics/SDL/lockfile diff remains empty. The new completion characterization is in progress; production completion code is unchanged. The previous heartbeat is paused after its 09:43:58 UTC deadline. Runtime remains in active use for this authorized verification phase and must be stopped at its end.
+
+Implementation and slice reviews are complete locally. Published base is 208e97d38e6abfd13d997d48200077febc8c1445; lease refactor is 5c334a959ac6ec46a13287bb08ee3d4190731343; persistence tests are 2960efc6f6560cc2003bd7ad58a203231a0b9831. Execution custody is trees/rs/generation-lifecycle-contracts on rs/generation-lifecycle-contracts, tracking origin/v3-ai. The refreshed remote refs and overlapping pull-request owners are unchanged. No upstream integration occurred.
+
+The required local implementation and review gates are complete. Documentation evidence is committed at 620ab16d0b286e99318d3f7c166146a3f8ff2a87. Integrated final review passed on the complete base-to-documentation range with no reportable findings; exact runtime shutdown is verified below. The user then approved draft publication. Initial head 6fa13de25295e84c3240d78f8cb9846953915d1d was pushed and matched remote readback; [PR #5777 — generation synchronization leases](https://github.com/uzh-bf/klicker-uzh/pull/5777) is open and draft with base v3-ai. This PR-identity update changes only the plan. Hosted checks and final AI review remain pending; no merge readiness is claimed. W4 — lifecycle normalization remains partial, and this package does not complete data-model normalization or qualify 3.4.0 RC for stable v3.
+
+### Completed implementation and evidence
+
+- All five acquisition/release callsites share the small lease primitive while retaining their status predicates, error handling and finally ownership. The durable dispatch/accounting claims are unchanged. No schema, migration, public SDL, dependency, Element service or provider-contract change exists in the branch.
+- Ten database tests were added: five lease tests and five real Element persistence tests. Two existing artifact-failure tests gained release assertions; none were removed. The persistence tests prove concurrent identical/conflicting keeps, real transaction rollback at final-link invocation, foreign-owner rejection and disabled entitlement without disabling manual authoring. They do not claim SQL-constraint failure injection or in-memory event rollback.
+- Focused lifecycle/accounting/lease verification passed 62 tests; the corrected typed lease fixture passed its five tests again. The new persistence file passed all five tests. Eight existing business-regression files passed 106 tests; grading passed ten. Only the task-created synthetic PostgreSQL database was used, with existing native cleanup allowed after ownership verification.
+- GraphQL generate/typecheck/public SDL equality, scoped Biome format/lint and Prisma mirror checks passed. The isolated serial root check passed all 40 tasks with zero cache hits, using Python 3.12 and a task-local write-only cache. Full build passed 26 tasks with zero cache hits at concurrency two. Root lint, syncpack, AGENTS, Git identity, removed-document and Playwright CI/host policy checks passed. Actual staged gitleaks checks passed before both implementation commits. The host hooks were split because toolchain checks ran inside the container.
+- The existing host Playwright generation-review journey passed one test in 38 seconds. It exercised SC, MC, KPRIM and flashcard editors, save/discard/reload behavior and persisted Element data without provider calls. Agent-browser also verified the seeded summary and canonical editor after delegated login, using the same browser-local GrowthBook fixture as Playwright; server authorization and account entitlement were not mocked. Local screenshots are project/\_local/generation-review-inbox.png (completed-build summary) and project/\_local/generation-review-editor.png. The earlier generation-review-desktop.png records the closed browser flag, not successful review evidence.
+
+### Remaining direct business-state writes
+
+| Existing owner                | Retained write sites                                                                                                                                                                                                                                          |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Question-generation workflow  | Eleven direct build updateMany calls remain in recordBuildFailure, dispatchPreparingQuestionBuild, synchronizeLeasedBuild and dispatchQuestionReviewLeased. They own failure recording, dispatch correlation, polling/review status and publication outcomes. |
+| Flashcard-generation workflow | Seven direct build updateMany calls remain in recordStartFailure, dispatchPreparingBuild, dispatchIncompletePublication, markResumableOrFailed and synchronizeLeasedBuild. They retain flashcard retry and incomplete-publication semantics.                  |
+
+This is an ownership inventory, not a claim that every business-state write is fenced by the short lease. Broader transition normalization remains separate roadmap work.
+
+### Reviews and delegation
+
+Lease slice review: done — project/\_local/reviews/2026-09-05-generation-lease-slice-review.md, no findings. Its simplifier report records why explicit clock injection and conditional release results were retained. Persistence slice review: done — project/\_local/reviews/2026-09-05-generation-persistence-slice-review.md, no findings. Persistence simplifier: done — project/\_local/reviews/2026-09-05-generation-persistence-simplifier.md, no justified reduction. All children are closed. Main verified and dispositioned every result.
+
+A bounded executor produced the lease extraction; main corrected typed fixtures and checked the five callsites. A second executor supplied read-only persistence-fixture design. The persistence implementation executor continued discovery beyond one narrowing checkpoint and was closed; main completed that single test file instead of launching a replacement. The earlier planner approved the hardened plan. Claude advisor/opposing review failed OAuth before work and are not claimed as completed.
+
+Integrated final review: DONE, no reportable findings on 208e97d38e6abfd13d997d48200077febc8c1445..620ab16d0b286e99318d3f7c166146a3f8ff2a87, all nine changed paths. Report: project/\_local/reviews/2026-09-05-generation-lifecycle-final-review.md. Main verified and accepted the result; the child is closed. Bookkeeping-only closeout preserves the reviewed source and test tree. Fresh fetch on 2026-09-05 confirmed unchanged origin/v3-ai at the published base and origin/v3 at 468f05b91503b133670dda235be9a4b38bba2155; reviewed head was four commits ahead of v3-ai and 138 ahead of v3, zero behind either. No integration occurred.
+
+### Environment lessons and limitations
+
+The standard parallel/shared-cache check:all command failed on baseline generated-artifact/type issues and an Analytics Python mismatch. Serial checks against the same shared cache also reproduced inherited errors. Regeneration plus a task-local fresh cache and the configured Python 3.12 produced the passing 40-task check; no build configuration, dependency or shared cache was changed. Do not report the literal parallel command as fixed.
+
+An early test invocation included an extra argument separator and selected the full suite; it was cancelled and is invalid evidence. The correct finite selection was verified before the passing rerun. The lesson is captured in docs/solutions/test-failure/graphql-focused-test-selection.md. A bootstrap port collision was avoided with the supported KB_GRAPH_BLOB_HOST_PORT=10043 override. A managed readiness rollback recovered on warm startup. Host permission review later timed out before launching formatting/stop commands; it recovered, and an exact stop was verified before the browser phase restarted the task runtime. None of these failures authorized shared-runtime repair or source integration.
+
+### Runtime and next action
+
+Only the repository's trees/rs/generation-lifecycle-contracts worktree was used: Devsy workspace rs-generation-lifecycle-contract, Compose project default-rs-f189c, task-created PostgreSQL volume default-rs-f189c_pgdata. The synthetic review fixture was removed with its existing cleanup helper, and the isolated browser was closed. Final shutdown readback on 2026-09-05 returned provider state Stopped; devrouter's exact source-path match returned routeCount 0 and no hosts. No keep-running exception exists. Worktree and database are preserved; deletion is not authorized. Optional later teardown requires separate approval for devrouter stop trees/rs/generation-lifecycle-contracts --delete from the repository root, which removes this task's managed runtime data and caches, not its Git worktree. Publication does not restart the runtime.
+
+Next: assess exact-head hosted checks and ordinary feedback, then use the repository's standing final-AI-review authority when eligible. Leaving draft, upstream integration and merge remain separate approvals. Continue later lifecycle normalization from the remaining writer inventory and existing owner results, not a duplicate lease or ingestion implementation. No upstream integration, merge, deployment, real data, paid application-provider calls or shared-runtime mutation occurred. The pre-push build was reused on the unchanged source tree; host identity checks ran again and HUSKY=0 avoided restarting container-dependent checks on the host.
+
+Destination update, 2026-09-07: host Devrouter 0.0.55 became available during the turn without installation by this task. The new host resolver succeeds and all 13 host-launcher tests pass. JSON/YAML parsing and diff checks pass. All conflict markers are resolved; container qualification is next. The earlier installation request is no longer needed.

@@ -1,7 +1,11 @@
 import { spawn, spawnSync } from 'node:child_process'
 import { generateKeyPairSync, randomBytes, randomUUID } from 'node:crypto'
 import { realpathSync } from 'node:fs'
-import pg from 'pg'
+import { createDisposableTestPrismaClient } from '@klicker-uzh/prisma'
+import {
+  assertNoPostgresEnvironmentOverrides,
+  validateDisposableDatabaseUrl,
+} from '../../../packages/prisma/src/disposableDatabase.ts'
 import { loadLocalMcpDocuments } from './local-mcp-documents.mjs'
 import { loadLocalMcpFixture } from './local-mcp-fixture.mjs'
 import { repairLocalMcpSeed } from './local-mcp-seed.mjs'
@@ -35,13 +39,19 @@ for (const signal of ['SIGINT', 'SIGTERM']) {
 }
 
 try {
-  const database = new URL(process.env.DATABASE_URL)
+  assertNoPostgresEnvironmentOverrides()
+  const database = new URL(
+    validateDisposableDatabaseUrl(process.env.DATABASE_URL)
+  )
+  database.hostname = 'mcp_postgres'
+  database.port = '5432'
+  const mockDatabaseUrl = database.toString()
+  const shadowDatabase = new URL(mockDatabaseUrl)
+  shadowDatabase.pathname = '/klicker_test_shadow'
   if (
     realpathSync(process.cwd()) !== ROOT ||
     !['postgres:', 'postgresql:'].includes(database.protocol) ||
-    !['postgres', 'localhost', '127.0.0.1', '[::1]'].includes(
-      database.hostname
-    ) ||
+    database.hostname !== 'mcp_postgres' ||
     database.search !== '' ||
     !helper ||
     spawnSync('bash', ['./util/dev-runtime.sh', 'require-bootstrap'], {
@@ -57,12 +67,15 @@ try {
   )
     throw new Error('Local MCP runtime boundary rejected')
 
+  // Validate the optional additional identity before any owned process stops,
+  // so a broken fixture file fails closed without disturbing a healthy runtime.
   const fixture = loadLocalMcpFixture(process.env)
-  if (fixture)
+  if (fixture !== null) {
     loadLocalMcpDocuments(
       { LOCAL_MCP_DOCUMENTS_FILE: fixture.documentsFile },
       []
     )
+  }
   ownsProcesses = true
   stopOwnedProcesses()
   if (interrupted) throw new Error('Local MCP startup interrupted')
@@ -73,17 +86,28 @@ try {
     privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
     publicKeyEncoding: { type: 'spki', format: 'pem' },
   })
-  const db = new pg.Client({
-    connectionString: process.env.DATABASE_URL,
-    connectionTimeoutMillis: 10000,
-  })
-  // Avoid emitting driver errors or SQL parameters from this credential writer.
-  db.on('error', () => {})
+  // Prove the restricted database identity before applying the ordinary schema.
+  process.env.PRISMA_LOG_LEVELS = 'none'
+  const db = await createDisposableTestPrismaClient(mockDatabaseUrl)
   try {
-    await db.connect()
+    const schema = spawnSync(
+      'pnpm',
+      ['--filter', '@klicker-uzh/prisma', 'run', 'prisma:push:raw'],
+      {
+        stdio: 'ignore',
+        timeout: 120000,
+        env: {
+          ...process.env,
+          DATABASE_URL: mockDatabaseUrl,
+          SHADOW_DATABASE_URL: shadowDatabase.toString(),
+        },
+      }
+    )
+    if (schema.status !== 0)
+      throw new Error('Local MCP schema preparation failed')
     await repairLocalMcpSeed(db, token, () => interrupted, fixture)
   } finally {
-    await db.end()
+    await db.$disconnect()
   }
   if (interrupted) throw new Error('Local MCP startup interrupted')
   const status = await new Promise((resolve, reject) => {
@@ -91,6 +115,8 @@ try {
       stdio: 'inherit',
       env: {
         ...process.env,
+        DATABASE_URL: mockDatabaseUrl,
+        SHADOW_DATABASE_URL: shadowDatabase.toString(),
         LOCAL_MCP_BOOTSTRAPPED: '1',
         LOCAL_MCP_GENERATION: generation,
         LOCAL_MCP_TRANSPORT_TOKEN: token,

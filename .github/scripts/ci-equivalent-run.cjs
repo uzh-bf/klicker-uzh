@@ -418,28 +418,31 @@ async function findMergedPullRequestRun({
   // Lifecycle runs that validated nothing (a closed pull request, a deferred
   // draft, an empty plan) are passed over; the newest run that executed the
   // suite must be the one that succeeded.
-  const runs = (
-    await listAll(
-      (paging) =>
-        github.rest.actions.listWorkflowRuns({
-          ...repo,
-          ...paging,
-          workflow_id: WORKFLOWS[kind],
-          event: 'pull_request',
-          branch: pull.head.ref,
-          head_sha: headSha,
-        }),
-      'workflow_runs'
+  const getRuns = async () =>
+    (
+      await listAll(
+        (paging) =>
+          github.rest.actions.listWorkflowRuns({
+            ...repo,
+            ...paging,
+            workflow_id: WORKFLOWS[kind],
+            event: 'pull_request',
+            branch: pull.head.ref,
+            head_sha: headSha,
+          }),
+        'workflow_runs'
+      )
     )
-  )
-    .filter(
-      (run) =>
-        run.event === 'pull_request' &&
-        run.head_sha === headSha &&
-        run.head_branch === pull.head.ref &&
-        run.head_repository?.full_name === repository
-    )
-    .sort((a, b) => b.id - a.id)
+      .filter(
+        (run) =>
+          run.event === 'pull_request' &&
+          run.head_sha === headSha &&
+          run.head_branch === pull.head.ref &&
+          run.head_repository?.full_name === repository
+      )
+      .sort((a, b) => b.id - a.id)
+  const runs = await getRuns()
+  const listedAttempts = runs.map((run) => [run.id, run.run_attempt])
   for (const candidate of runs) {
     const { data: run } = await github.rest.actions.getWorkflowRun({
       ...repo,
@@ -513,6 +516,7 @@ async function findMergedPullRequestRun({
           'playwright-route-metadata',
           'route.json'
         ))
+    if (!['hosted', 'public-pr'].includes(route?.route)) return null
     if (!coverageMatches(kind, jobs, plan, route?.route)) return null
     const previous = await (readPlan
       ? readPlan(run)
@@ -530,11 +534,15 @@ async function findMergedPullRequestRun({
     )
       return null
 
-    const { data: freshRun } = await github.rest.actions.getWorkflowRun({
-      ...repo,
-      run_id: run.id,
-    })
+    const [{ data: freshRun }, latestRuns] = await Promise.all([
+      github.rest.actions.getWorkflowRun({ ...repo, run_id: run.id }),
+      getRuns(),
+    ])
     if (
+      !isDeepStrictEqual(
+        latestRuns.map((run) => [run.id, run.run_attempt]),
+        listedAttempts
+      ) ||
       freshRun.id !== run.id ||
       freshRun.path !== run.path ||
       freshRun.run_attempt !== run.run_attempt ||
