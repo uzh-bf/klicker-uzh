@@ -168,6 +168,7 @@ const STAGING_IMAGE_TARGETS = Object.freeze([
     globs: [
       'apps/chat/**',
       'packages/audit/**',
+      'packages/code-runner/**',
       'packages/doc-query-client/**',
       'packages/feature-flags/**',
       'packages/grading/**',
