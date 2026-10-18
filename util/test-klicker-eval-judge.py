@@ -3,11 +3,13 @@
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import importlib.util
 import io
 import json
 import os
+import socket
 import stat
 import subprocess
 import sys
@@ -229,6 +231,154 @@ class JudgeTests(unittest.TestCase):
             self.assertEqual(result.stdout, b"")
             self.assertEqual(result.stderr, b"")
             self.assertNotIn(b"synthetic-upstream-key", result.stdout + result.stderr)
+
+
+@unittest.skipUnless(
+    os.environ.get("KLICKER_EVAL_GATEWAY_TEST") == "1",
+    "requires the pinned gateway image",
+)
+class GatewayTests(unittest.IsolatedAsyncioTestCase):
+    async def test_proxy_preserves_one_send_per_admitted_attempt(self) -> None:
+        os.environ.update(
+            LITELLM_LOCAL_MODEL_COST_MAP="True",
+            LITELLM_LOG="ERROR",
+            AZURE_OPENAI_BASE_URL="https://synthetic.invalid/v1",
+            AZURE_OPENAI_API_KEY="synthetic-upstream-key",
+        )
+        with (
+            patch.object(socket, "getaddrinfo", side_effect=AssertionError("network")),
+            patch.object(
+                socket.socket, "connect", side_effect=AssertionError("network")
+            ),
+        ):
+            import httpx
+            import yaml
+            from litellm.proxy import proxy_server
+
+            config = yaml.safe_load(JUDGE.CONFIG_PATH.read_text(encoding="utf-8"))
+            schema = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "SyntheticResult",
+                    "strict": True,
+                    "schema": {
+                        "type": "object",
+                        "properties": {"score": {"type": "number"}},
+                        "required": ["score"],
+                        "additionalProperties": False,
+                    },
+                },
+            }
+            payload = {
+                "model": config["model_list"][0]["model_name"],
+                "messages": [{"role": "user", "content": "Synthetic input"}],
+                "max_completion_tokens": 8192,
+                "response_format": schema,
+            }
+            sends = []
+            failure = False
+
+            async def provider_send(client, request, *args, **kwargs):
+                self.assertEqual(request.url.host, "synthetic.invalid")
+                sends.append(json.loads(request.content))
+                self.assertLessEqual(len(sends), 3)
+                if failure:
+                    return httpx.Response(
+                        500,
+                        json={
+                            "error": {
+                                "message": "synthetic failure",
+                                "type": "server_error",
+                            }
+                        },
+                        request=request,
+                    )
+                return httpx.Response(
+                    200,
+                    json={
+                        "id": "synthetic-completion",
+                        "object": "chat.completion",
+                        "created": 0,
+                        "model": "gpt-5.6-luna",
+                        "choices": [
+                            {
+                                "index": 0,
+                                "finish_reason": "stop",
+                                "message": {
+                                    "role": "assistant",
+                                    "content": '{"score":8}',
+                                },
+                            }
+                        ],
+                        "usage": {
+                            "prompt_tokens": 10,
+                            "completion_tokens": 5,
+                            "total_tokens": 15,
+                        },
+                    },
+                    request=request,
+                )
+
+            original_send = httpx.AsyncClient.send
+
+            async def route_send(client, request, *args, **kwargs):
+                if request.url.host == "proxy.test":
+                    return await original_send(client, request, *args, **kwargs)
+                return await provider_send(client, request, *args, **kwargs)
+
+            original_sleep = asyncio.sleep
+
+            async def no_delay(*args, **kwargs):
+                await original_sleep(0)
+
+            with (
+                patch.object(httpx.AsyncClient, "send", route_send),
+                patch.object(asyncio, "sleep", no_delay),
+                patch.object(proxy_server.verbose_proxy_logger, "error"),
+                contextlib.redirect_stdout(io.StringIO()),
+            ):
+                for defaults in (True, False):
+                    variant = dict(config)
+                    if defaults:
+                        variant.pop("router_settings", None)
+                    with tempfile.TemporaryDirectory() as root:
+                        path = Path(root) / "config.yaml"
+                        path.write_text(yaml.safe_dump(variant), encoding="utf-8")
+                        proxy_server.llm_router = None
+                        await proxy_server.initialize(config=str(path))
+                    router = proxy_server.llm_router
+                    if not defaults:
+                        self.assertEqual(router.num_retries, 0)
+                        self.assertEqual(router.max_fallbacks, 0)
+                    async with httpx.AsyncClient(
+                        transport=httpx.ASGITransport(app=proxy_server.app),
+                        base_url="http://proxy.test",
+                        headers={
+                            "Authorization": f"Bearer {config['general_settings']['master_key']}"
+                        },
+                    ) as client:
+                        for failure in (False, True):
+                            with self.subTest(defaults=defaults, failure=failure):
+                                sends.clear()
+                                response = await client.post(
+                                    "/v1/chat/completions", json=payload
+                                )
+                                self.assertEqual(
+                                    response.status_code,
+                                    500 if failure else 200,
+                                    response.text,
+                                )
+                                self.assertEqual(
+                                    len(sends), 3 if defaults and failure else 1
+                                )
+                                for body in sends:
+                                    self.assertEqual(body["model"], "gpt-5.6-luna")
+                                    self.assertEqual(body["reasoning_effort"], "high")
+                                    self.assertEqual(
+                                        body["max_completion_tokens"], 8192
+                                    )
+                                    self.assertEqual(body["response_format"], schema)
+                    router.reset()
 
 
 if __name__ == "__main__":
