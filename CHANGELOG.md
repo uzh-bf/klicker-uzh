@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-## [3.4.0-alpha.88](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.87...v3.4.0-alpha.88) (2026-10-17)
+## [3.4.0-alpha.88](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.87...v3.4.0-alpha.88) (2026-10-18)
 
 
 ### Bug Fixes
@@ -30,15 +30,34 @@ All notable changes to this project will be documented in this file. See [standa
 * **devcontainer:** add a db profile that routes Postgres for host tools ([#6547](https://github.com/uzh-bf/klicker-uzh/issues/6547)) ([eede339](https://github.com/uzh-bf/klicker-uzh/commit/eede33916acd1ae62ab86467fb9c699ee4c8e255))
 * **eval:** match chat citations and cap model spending ([#6489](https://github.com/uzh-bf/klicker-uzh/issues/6489)) ([14d2314](https://github.com/uzh-bf/klicker-uzh/commit/14d231418092b6313ae6b8aca571ac919b45c1bb))
 * **evaluation:** close OpenRouter provider routing in spend guard ([#6542](https://github.com/uzh-bf/klicker-uzh/issues/6542)) ([83dc8a8](https://github.com/uzh-bf/klicker-uzh/commit/83dc8a82cf3c3f7ceb6ef8857b642a58eb2f4912))
+* **evaluation:** keep capture translation application-owned ([#6578](https://github.com/uzh-bf/klicker-uzh/issues/6578)) ([df493c6](https://github.com/uzh-bf/klicker-uzh/commit/df493c6b7ed4d9718ccf5fafde4be9fa70f16c19))
 * **manage:** keep live quiz interaction switches from shrinking ([#6559](https://github.com/uzh-bf/klicker-uzh/issues/6559)) ([cf2a610](https://github.com/uzh-bf/klicker-uzh/commit/cf2a61063ff99d0dd5c3754ebd37f32d094ffcd6))
 * **tooling:** preserve review context and validate guarded requests ([15e5669](https://github.com/uzh-bf/klicker-uzh/commit/15e5669e6d693ec588b348f5a6c39031a89697bf))
 * **tooling:** reject missing worktree namespaces and partial installs ([bf2c7b6](https://github.com/uzh-bf/klicker-uzh/commit/bf2c7b6405351cdc550df000b9a031a208009bf8))
+
+
+### Other
+
+* **ci:** clarify analysis receipt failure coverage ([20d6ae5](https://github.com/uzh-bf/klicker-uzh/commit/20d6ae55ced9d7e5dfc06c1f523faa4f80f50eb4))
+
+
+### Documentation
+
+* align setup and CI plans with current contracts ([a2b3977](https://github.com/uzh-bf/klicker-uzh/commit/a2b3977e805db86b9f91cf84de9114a08453de6e))
+* clarify mode regression coverage and backfill scope ([891daa5](https://github.com/uzh-bf/klicker-uzh/commit/891daa5e9c1cee34e43186349df8442b2e4d2906))
+* **evaluation:** clarify guarded tool schemas and persistence ([d88cda1](https://github.com/uzh-bf/klicker-uzh/commit/d88cda120d7ab462739e53ab1ee1f03deeff3e46))
+* keep release plans independent of environment records ([ef863c1](https://github.com/uzh-bf/klicker-uzh/commit/ef863c10e94f6bf4a1f9e1b867d76d6e73027e0d))
+* point to STG_SOURCE_BRANCH for the staging source ([#6554](https://github.com/uzh-bf/klicker-uzh/issues/6554)) ([f387004](https://github.com/uzh-bf/klicker-uzh/commit/f38700446e361d04ae96af2613c0ac4ecc60253f))
+* **project:** add ethics production rollout plan ([2a80086](https://github.com/uzh-bf/klicker-uzh/commit/2a8008650d5fae30d4d25ba69e3d232665b3ecd9))
+* **release:** align rollout plan with refreshed source ([013e588](https://github.com/uzh-bf/klicker-uzh/commit/013e588ce1da7f1f373fb66b187ac7c94847e73b))
+* **tooling:** retain the container hook contract during sync ([e0bf16f](https://github.com/uzh-bf/klicker-uzh/commit/e0bf16f2f40459ddb5084ea6726ffa2cc4b539ba))
 
 
 ### Build and CI
 
 * **devrouter:** install devrouter 0.4.0 in CI ([#6529](https://github.com/uzh-bf/klicker-uzh/issues/6529)) ([29f7d68](https://github.com/uzh-bf/klicker-uzh/commit/29f7d68e3c56b29bf4d4baeeb1aac3a9c747d843))
 * **devrouter:** install devrouter 0.5.1 in CI ([#6566](https://github.com/uzh-bf/klicker-uzh/issues/6566)) ([2b24fbc](https://github.com/uzh-bf/klicker-uzh/commit/2b24fbca8b45d8c695fbcd8a98dbc75eebcf1917))
+* **playwright:** limit public build task concurrency ([#6592](https://github.com/uzh-bf/klicker-uzh/issues/6592)) ([81ee074](https://github.com/uzh-bf/klicker-uzh/commit/81ee074cfdede873e5d6d573c709df67c715492a))
 * raise the individual final review ceiling to 6M ([#6520](https://github.com/uzh-bf/klicker-uzh/issues/6520)) ([f308246](https://github.com/uzh-bf/klicker-uzh/commit/f308246a3479e8d0abbd571c23620122eda2912f))
 * raise the individual final review token budget ([#6508](https://github.com/uzh-bf/klicker-uzh/issues/6508)) ([fa920c8](https://github.com/uzh-bf/klicker-uzh/commit/fa920c84024cc251fd5f9f99e02982180c50ba77))
 
@@ -47,6 +66,10 @@ All notable changes to this project will be documented in this file. See [standa
 
 * **chat:** customize welcomes and starters for custom modes ([#6534](https://github.com/uzh-bf/klicker-uzh/issues/6534)) ([08598ba](https://github.com/uzh-bf/klicker-uzh/commit/08598ba92ec94dfd4fa2606e7bd4376af4bbb7bb))
 * **chat:** gate advanced models on the AI subscription tier ([#6491](https://github.com/uzh-bf/klicker-uzh/issues/6491)) ([6229c03](https://github.com/uzh-bf/klicker-uzh/commit/6229c0379e1c86128e0a8ce402d67a5ca5d5bda7))
+* **ci:** add bounded runner recovery and memory evidence ([#6581](https://github.com/uzh-bf/klicker-uzh/issues/6581)) ([142cf03](https://github.com/uzh-bf/klicker-uzh/commit/142cf03f074e7152c7a0f6e8d710141c55420671))
+* **ci:** categorize sync changelogs and prevent missed refreshes ([#6590](https://github.com/uzh-bf/klicker-uzh/issues/6590)) ([6c209c1](https://github.com/uzh-bf/klicker-uzh/commit/6c209c140b86075744aab1eec50140be9a9f3f9d))
+* **ci:** generate deterministic sync PR changelogs ([#6584](https://github.com/uzh-bf/klicker-uzh/issues/6584)) ([2742163](https://github.com/uzh-bf/klicker-uzh/commit/27421631db7a7c39d80e494ee1c00489622685fc))
+* **ci:** improve OCR diagnostics and draft model routing ([#6579](https://github.com/uzh-bf/klicker-uzh/issues/6579)) ([405575b](https://github.com/uzh-bf/klicker-uzh/commit/405575b90fd79b178ab6b1380f50b9b8603ec753))
 * **ci:** improve OCR progress and cost reporting ([#6569](https://github.com/uzh-bf/klicker-uzh/issues/6569)) ([34fcadc](https://github.com/uzh-bf/klicker-uzh/commit/34fcadc0328a768f68f14aa9f09842afc06e3dab))
 * **ci:** maintain v3-ai -> v3-adaptive-learning sync PRs ([#6500](https://github.com/uzh-bf/klicker-uzh/issues/6500)) ([992ad53](https://github.com/uzh-bf/klicker-uzh/commit/992ad530d5ef13dfab18a1db19182668a7c24f84))
 * **ci:** opt the Playwright caller into merged pull request push reuse ([#6574](https://github.com/uzh-bf/klicker-uzh/issues/6574)) ([733b6e7](https://github.com/uzh-bf/klicker-uzh/commit/733b6e7c9456fb11cb75001dbe111820d9c3b009))
@@ -58,22 +81,6 @@ All notable changes to this project will be documented in this file. See [standa
 * **ci:** use Mistral GLM 5.3 max for OCR 1.13 ([#6493](https://github.com/uzh-bf/klicker-uzh/issues/6493)) ([34e6e56](https://github.com/uzh-bf/klicker-uzh/commit/34e6e56a8cabfa73e4e609de6c26aaa201fe25f0))
 * **evaluation:** add bounded budget initializer opt-in ([#6576](https://github.com/uzh-bf/klicker-uzh/issues/6576)) ([d2b8d57](https://github.com/uzh-bf/klicker-uzh/commit/d2b8d5797fb54e744a5adc6b4325b2194f4a58c5))
 * **playwright:** keep host launcher runs from breaking Git hooks ([#6521](https://github.com/uzh-bf/klicker-uzh/issues/6521)) ([17ab596](https://github.com/uzh-bf/klicker-uzh/commit/17ab59640b19efd85e8d3a503de4e2ee0a74c5a5))
-
-
-### Documentation
-
-* align setup and CI plans with current contracts ([a2b3977](https://github.com/uzh-bf/klicker-uzh/commit/a2b3977e805db86b9f91cf84de9114a08453de6e))
-* clarify mode regression coverage and backfill scope ([891daa5](https://github.com/uzh-bf/klicker-uzh/commit/891daa5e9c1cee34e43186349df8442b2e4d2906))
-* **evaluation:** clarify guarded tool schemas and persistence ([d88cda1](https://github.com/uzh-bf/klicker-uzh/commit/d88cda120d7ab462739e53ab1ee1f03deeff3e46))
-* keep release plans independent of environment records ([ef863c1](https://github.com/uzh-bf/klicker-uzh/commit/ef863c10e94f6bf4a1f9e1b867d76d6e73027e0d))
-* point to STG_SOURCE_BRANCH for the staging source ([#6554](https://github.com/uzh-bf/klicker-uzh/issues/6554)) ([f387004](https://github.com/uzh-bf/klicker-uzh/commit/f38700446e361d04ae96af2613c0ac4ecc60253f))
-* **project:** add ethics production rollout plan ([2a80086](https://github.com/uzh-bf/klicker-uzh/commit/2a8008650d5fae30d4d25ba69e3d232665b3ecd9))
-* **tooling:** retain the container hook contract during sync ([e0bf16f](https://github.com/uzh-bf/klicker-uzh/commit/e0bf16f2f40459ddb5084ea6726ffa2cc4b539ba))
-
-
-### Other
-
-* **ci:** clarify analysis receipt failure coverage ([20d6ae5](https://github.com/uzh-bf/klicker-uzh/commit/20d6ae55ced9d7e5dfc06c1f523faa4f80f50eb4))
 
 ## [3.4.0-alpha.87](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.86...v3.4.0-alpha.87) (2026-10-13)
 
