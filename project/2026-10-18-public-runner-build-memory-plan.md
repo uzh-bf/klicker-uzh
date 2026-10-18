@@ -16,8 +16,8 @@ package. The main trade-off is longer build time; paired measurements must decid
 whether the reduction earns its cost.
 
 The user approved the Astra-reviewed plan on October 18, 2026 with "agreed,
-lets do that". Approval is an executable source batch: implement the bounded change, verify it,
-review it, push the task branch and deliver one draft pull request targeting
+lets do that". Approval is an executable source batch: implement the bounded
+change, verify it, review it, push the task branch and deliver one draft pull request targeting
 `v3`. It does not authorize readiness, merge, CI reruns of other pull requests,
 live experiments or activation. Those later actions need the exact conditional
 approval described below.
@@ -56,8 +56,8 @@ Therefore adding a generic slot can add a full build, not merely another shard.
 Per-PR execution concurrency and matrix limits cannot enforce a per-host budget
 across independent runs; do not treat either as admission control.
 
-The shared build action currently runs both bounded and full application graphs
-with `--concurrency=4`. Its full path builds Prisma separately. Preserve graph
+At the recorded baseline, the shared build action runs both bounded and full
+application graphs with `--concurrency=4`. Its full path builds Prisma separately. Preserve graph
 selection, dependency ordering, artifact contents, Prisma sequencing, pipeline
 failure propagation and resource sampling. Use the existing trusted `route`
 input to select public two or hosted four; expose no repository variable or
@@ -252,7 +252,7 @@ remain separate acceptance claims.
 
 ## Progress
 
-- Status: source slice 1 implemented; documentation and draft delivery remain.
+- Status: both source slices implemented; final self-review and draft CI remain.
 - Fresh source baseline and task worktree agree; no task PR exists.
 - Completed: source mapping, private assessment recovery and official Turbo
   documentation lookup. Operational evidence is retained privately.
@@ -268,8 +268,22 @@ remain separate acceptance claims.
   The installed Turbo 2.10.11 help confirms task concurrency semantics.
   Three tests were added; no existing test was removed. Changed-file Biome and
   YAML formatting pass. No DevPod, devrouter or application runtime was touched.
-- Remaining source work: slice 2, broader focused checks, self-review and draft CI.
+- Slice 1 is committed as `3dcfe6a332`. Main-session slice inspection found no
+  additional correctness or simplification change. Slice 2 documents the public
+  task limit and qualification boundary in the existing operations guide.
+- The expanded `check:playwright-ci` command passes all 92 tests with the pinned
+  toolchain and CI's Devrouter 0.5.1 installation layout. An initial run passed
+  91 tests but rejected the temporary workspace-style CLI path; correcting the
+  isolated tool prefix made the complete suite pass. All eight sampler tests,
+  changed-file Prettier/Biome and whitespace checks pass. No host configuration
+  was changed. Disposable test containers exited after their checks.
+- The package changes four paths, with 160 added/deleted lines outside this
+  plan. It is one coherent source package with no dependency or ownership change.
+  The private runtime-qualification protocol is prepared outside the repository;
+  it records conditional selection and response requirements without granting
+  runtime authority. No live experiment or new CI rerun was performed.
+- Remaining delivery work: commit slice 2, final self-review, draft CI and feedback.
   Later merge, experiment and activation remain separately gated.
 - Required delivery layer on approval: verified draft source PR.
-  Achieved layer now: locally verified implementation slice. Next action:
-  commit slice 1, inspect its exact diff, then document and finish the package.
+  Achieved layer now: locally verified source package. Next action: commit
+  documentation, complete final self-review and publish the ordinary draft.
