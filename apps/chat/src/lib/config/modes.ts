@@ -1,3 +1,4 @@
+import { type CodeProfile, isCodeProfile } from '@klicker-uzh/code-runner'
 import {
   GraduationCap,
   Lightbulb,
@@ -6,7 +7,6 @@ import {
   Sparkles,
 } from 'lucide-react'
 import type { useTranslations } from 'next-intl'
-import { type CodeProfile, isCodeProfile } from '@/src/lib/code-runner/profiles'
 
 // Presentation metadata for the chatbot mode keys exposed via `systemPrompts`
 // and `customModeConfig`.

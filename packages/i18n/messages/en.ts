@@ -437,33 +437,8 @@ export default {
     },
     codeCard: {
       title: 'Code playground',
-      languages: {
-        python: 'Python',
-        r: 'R',
-      },
       opening: 'Opening code playground...',
       invalid: 'This code playground could not be displayed.',
-      editorLabel: '{language} code',
-      run: 'Run',
-      stop: 'Stop',
-      reset: 'Reset code',
-      starting: 'Starting {language}...',
-      running: 'Running...',
-      status: {
-        ok: 'Finished',
-        error: 'Finished with an error',
-        timeout: 'Stopped: the time limit was reached',
-        stopped: 'Stopped',
-        unavailable: 'The runtime is not available',
-        unknown: 'Finished with an unknown status',
-      },
-      output: 'Output',
-      errorOutput: 'Errors',
-      noOutput: 'No output.',
-      truncated: 'The output was shortened.',
-      blockedAccess: 'Network access is not available in the playground.',
-      unsupportedBrowser:
-        'Running code is not available in this browser. Use a current version of Chrome, Edge or Safari.',
       notAdmitted: 'Running code is not available in this chat mode.',
       localNote:
         'Code runs only in your browser and is not shared with the assistant. Your changes are not saved and are lost when you leave the page.',
@@ -500,6 +475,33 @@ export default {
     },
   },
   shared: {
+    codeRunner: {
+      languages: {
+        python: 'Python',
+        r: 'R',
+      },
+      editorLabel: '{language} code',
+      run: 'Run',
+      stop: 'Stop',
+      reset: 'Reset code',
+      starting: 'Starting {language}...',
+      running: 'Running...',
+      status: {
+        ok: 'Finished',
+        error: 'Finished with an error',
+        timeout: 'Stopped: the time limit was reached',
+        stopped: 'Stopped',
+        unavailable: 'The runtime is not available',
+        unknown: 'Finished with an unknown status',
+      },
+      output: 'Output',
+      errorOutput: 'Errors',
+      noOutput: 'No output.',
+      truncated: 'The output was shortened.',
+      blockedAccess: 'Network access is not available when running code.',
+      unsupportedBrowser:
+        'Running code is not available in this browser. Use a current version of Chrome, Edge or Safari.',
+    },
     table: {
       download: 'Download as CSV',
       noResults: 'No results.',

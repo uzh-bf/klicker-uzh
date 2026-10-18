@@ -1,0 +1,40 @@
+{
+  "private": true,
+  "name": "@klicker-uzh/code-runner",
+  "version": "3.4.0-alpha.87",
+  "license": "AGPL-3.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "devDependencies": {
+    "@types/react": "^19.2.18",
+    "pyodide": "314.0.7",
+    "typescript": "~6.0.3",
+    "vitest": "3.2.4",
+    "webr": "0.6.0"
+  },
+  "peerDependencies": {
+    "lucide-react": "^0.522.0",
+    "next": "^16.3.4",
+    "next-intl": "^4.13.7",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "generate": "node scripts/code-runtimes.mjs",
+    "test": "vitest run",
+    "test:run": "vitest run"
+  },
+  "engines": {
+    "node": "=24"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./react": "./src/react.tsx",
+    "./serving": "./src/serving.ts"
+  },
+  "type": "module"
+}

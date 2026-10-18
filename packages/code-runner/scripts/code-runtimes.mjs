@@ -1,4 +1,5 @@
-// Generates the browser code runtime files that Chat serves under
+#!/usr/bin/env node
+// Generates the browser code runtime files that an app serves under
 // /code-runtimes/<version>/ from the exact-pinned pyodide and webr packages.
 //
 // Every file is verified against the checked-in manifest before it is copied,
@@ -6,8 +7,8 @@
 // instead of publishing unreviewed bytes. The browser host verifies the same
 // hashes again before it hands the bytes to the sandboxed runner.
 //
-//   node scripts/code-runtimes.mjs                  verify and generate
-//   node scripts/code-runtimes.mjs --write-manifest refresh the manifest
+//   klicker-code-runtimes --out public/code-runtimes  verify and generate
+//   klicker-code-runtimes --write-manifest            refresh the manifest
 //
 // The version segment is derived from the manifest content, so browsers can
 // cache the files as immutable and a changed file always gets a new path.
@@ -22,16 +23,12 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs'
-import { dirname, extname, join, relative } from 'node:path'
+import { dirname, extname, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
-const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), '..')
-export const MANIFEST_PATH = join(
-  APP_DIR,
-  'src/lib/code-runner/runtime-manifest.json'
-)
-export const OUTPUT_ROOT = join(APP_DIR, 'public/code-runtimes')
-const RUNNER_SOURCES = join(APP_DIR, 'src/lib/code-runner/runner')
+const PACKAGE_DIR = join(dirname(fileURLToPath(import.meta.url)), '..')
+const MANIFEST_PATH = join(PACKAGE_DIR, 'src/runtime-manifest.json')
+const RUNNER_SOURCES = join(PACKAGE_DIR, 'src/runner')
 // Both runner documents carry the same inline bootstrap; the proxy gives
 // each its own CSP, because only the R runtime needs 'unsafe-eval'.
 const RUNNER_DOCUMENTS = ['runner-python.html', 'runner-r.html']
@@ -44,7 +41,7 @@ const CONTENT_TYPES = {
 }
 
 function packageDir(name) {
-  return realpathSync(join(APP_DIR, 'node_modules', name))
+  return realpathSync(join(PACKAGE_DIR, 'node_modules', name))
 }
 
 function walk(dir) {
@@ -189,7 +186,7 @@ function sourceNotice(manifestVersion) {
   const webr = read('webr')
   return `# Browser code runtimes ${manifestVersion}
 
-These files are unmodified copies from the npm packages below. KlickerUZH Chat
+These files are unmodified copies from the npm packages below. KlickerUZH
 serves them to run learner code locally in the browser.
 
 | Package | Version | Licence | Corresponding source |
@@ -202,7 +199,7 @@ at https://mozilla.org/MPL/2.0/.
 `
 }
 
-export function generate({ writeManifest = false } = {}) {
+export function generate({ outDir, writeManifest = false } = {}) {
   const { profiles, notices, runnerScript } = collectSources()
   const actual = buildManifest(profiles, readFileSync, runnerScript)
   if (writeManifest) {
@@ -212,12 +209,13 @@ export function generate({ writeManifest = false } = {}) {
   const problems = compareManifest(expected, actual)
   if (problems.length > 0) {
     throw new Error(
-      `Browser code runtime files do not match ${relative(APP_DIR, MANIFEST_PATH)}:\n  ${problems.join('\n  ')}\nRun "node scripts/code-runtimes.mjs --write-manifest" only after reviewing the change.`
+      `Browser code runtime files do not match ${relative(PACKAGE_DIR, MANIFEST_PATH)}:\n  ${problems.join('\n  ')}\nRun "klicker-code-runtimes --write-manifest" only after reviewing the change.`
     )
   }
+  if (!outDir) return actual
 
-  rmSync(OUTPUT_ROOT, { recursive: true, force: true })
-  const target = join(OUTPUT_ROOT, actual.version)
+  rmSync(outDir, { recursive: true, force: true })
+  const target = join(outDir, actual.version)
   for (const sources of Object.values(profiles)) {
     for (const [id, path] of Object.entries(sources)) {
       mkdirSync(dirname(join(target, id)), { recursive: true })
@@ -236,11 +234,16 @@ export function generate({ writeManifest = false } = {}) {
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   try {
-    const manifest = generate({
-      writeManifest: process.argv.includes('--write-manifest'),
-    })
+    const outIndex = process.argv.indexOf('--out')
+    const outDir =
+      outIndex === -1 ? undefined : resolve(process.argv[outIndex + 1] ?? '')
+    const writeManifest = process.argv.includes('--write-manifest')
+    if (!outDir && !writeManifest) {
+      throw new Error('Pass --out <directory> or --write-manifest.')
+    }
+    const manifest = generate({ outDir, writeManifest })
     console.log(
-      `[code-runtimes] ${Object.keys(manifest.files).length} files at /code-runtimes/${manifest.version}/`
+      `[code-runtimes] ${Object.keys(manifest.files).length} files, version ${manifest.version}`
     )
   } catch (error) {
     console.error(`[code-runtimes] ${error.message}`)

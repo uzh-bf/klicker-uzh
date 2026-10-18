@@ -73,6 +73,10 @@ and receives every runtime file from the Chat page.
 - Firefox learners cannot run code until Firefox is re-qualified.
 - Only the Pyodide standard library and base R are available. Package
   profiles need their own pinned artifact pipeline.
+- The runner, its manifest and the editor live in `packages/code-runner`.
+  Another app can host them from its own origin under the same contract,
+  behind its own deployment switch. Output that the browser reports can be
+  forged by the learner, so it cannot grade a scored response on its own.
 - Moving runtime hosting to a separate static origin or CDN is a deployment
   decision for execution infrastructure; the broker and runner contract stays
   the same.

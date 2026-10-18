@@ -68,6 +68,7 @@ function getNextBaseConfig({
     reactStrictMode: true,
     transpilePackages: [
       '@klicker-uzh/shared-components',
+      '@klicker-uzh/code-runner',
       '@klicker-uzh/i18n',
       '@klicker-uzh/util',
       '@klicker-uzh/prisma',

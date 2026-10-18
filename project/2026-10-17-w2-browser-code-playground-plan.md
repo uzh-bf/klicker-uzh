@@ -261,3 +261,11 @@ ADR gate: the runner isolation architecture passes. It is durable and cross-cutt
   - Production build: with the switch off, `/code-runtimes/` returns 404. With it on, the runner and file headers match the dev server.
   - `check:all` is green. Its two host-only Playwright tests ran on the host.
   - Browser proof: Chromium and WebKit pass all eleven qualified-engine tests, Firefox passes the notice test, and the loopback sink records no hits.
+- 2026-10-18: User ruling after the two draft PRs opened: move the runner and editor into a shared package now, so a later coding response type reuses them instead of copying them. This adds a third stack layer, `rs/browser-code-runner-package`, on top of `rs/browser-code-playground`. Changes:
+  - `packages/code-runner` holds the bridge, protocol, engine detection, runtime manifest, runner documents, file generator, serving headers and a `CodeRunner` editor component. It is source-only and consumed through `transpilePackages`, like `shared-components`.
+  - Chat keeps its kill switch, per-mode policy, tool, card frame and proxy wiring. The card wraps `CodeRunner` and passes the not-admitted notice.
+  - Generic editor strings move from `chat.codeCard` to `shared.codeRunner`; the status and output test IDs become `code-runner-status` and `code-runner-output`.
+  - Chat's build scripts call the generator by relative path, because the Docker image installs from pruned package manifests where a package `bin` link is unsafe.
+  - React, Next and next-intl are peer dependencies of the package. Declaring `@types/node` there made pnpm bump it across the workspace, so the package omits it; it needs no Node types.
+
+  Verification: package typecheck and 14 unit tests; Chat typecheck and unit suite; container `check:all` steps; Chat production build with runtime generation; Chromium, WebKit and Firefox spec (23 passed). The runner bytes and manifest are unchanged.

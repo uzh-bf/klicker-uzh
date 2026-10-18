@@ -1,9 +1,9 @@
-import { NextRequest } from 'next/server'
-import { afterEach, describe, expect, test, vi } from 'vitest'
 import {
   CODE_RUNTIME_BASE_PATH,
   CODE_RUNTIME_MANIFEST,
-} from '@/src/lib/code-runner/manifest'
+} from '@klicker-uzh/code-runner/serving'
+import { NextRequest } from 'next/server'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import { proxy } from '@/src/proxy'
 
 const RUNTIME_URL =
