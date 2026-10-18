@@ -1,0 +1,52 @@
+name: Diagnose stack topology request
+
+on:
+  push:
+    branches: [rs/final-stack-topology-openrouter]
+    paths: [.github/workflows/diagnose-stack-topology.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    if: github.repository == 'uzh-bf/klicker-uzh'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            .github/scripts
+            .github/open-code-review
+      - name: Probe fixed Mistral request with synthetic evidence
+        env:
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs')
+          const { MISTRAL_URL, MISTRAL_MODEL, translateMistralRequest } = require('./.github/scripts/ocr-mistral-adapter.cjs')
+          async function main() {
+            if (!process.env.MISTRAL_API_KEY) throw new Error('missing_key')
+            const schema = JSON.parse(fs.readFileSync('.github/open-code-review/final-stack-topology-schema.json', 'utf8'))
+            const body = translateMistralRequest({
+              model: MISTRAL_MODEL,
+              reasoning_effort: 'max',
+              max_tokens: 4096,
+              messages: [{ role: 'user', content: 'Synthetic schema diagnostic only. Return summary coverage complete, comments 0, and an empty comments array.' }],
+              response_format: { type: 'json_schema', json_schema: { name: 'final_stack_topology_review', strict: true, schema } },
+            })
+            const response = await fetch(MISTRAL_URL, {
+              method: 'POST', redirect: 'error', signal: AbortSignal.timeout(120000),
+              headers: { 'content-type': 'application/json', authorization: `Bearer ${process.env.MISTRAL_API_KEY}` },
+              body: JSON.stringify(body),
+            })
+            const payload = await response.json()
+            const errorText = response.ok ? '' : JSON.stringify(payload).toLowerCase()
+            const markers = ['uniqueItems', 'maxItems', 'minItems', 'minLength', 'maxLength', 'minimum', 'const', '$schema', 'max_tokens', 'reasoning_effort', 'json_schema', 'response_format', 'strict', 'unsupported', 'invalid', 'context', 'quota', 'credits', 'balance', 'budget', 'tokens', 'schema', 'grammar', 'too large', 'too small'].filter(word => errorText.includes(word.toLowerCase()))
+            const choice = payload?.choices?.[0]
+            console.log(JSON.stringify({ status: response.status, error_markers: markers, model_matches: payload.model === MISTRAL_MODEL, finish_reason: ['stop', 'length'].includes(choice?.finish_reason) ? choice.finish_reason : 'other', completion_tokens: payload.usage?.completion_tokens }))
+          }
+          main().catch(() => { console.error('diagnostic_transport_or_parse_failure'); process.exitCode = 1 })
+          NODE
