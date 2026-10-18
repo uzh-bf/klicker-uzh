@@ -68,8 +68,14 @@ async function findOpenPr({ github, repo, base, matches }) {
 // Moves an open sync pull request's head to the current source tip. A head
 // that maintainers changed (conflict resolution, "Update branch") is never
 // reset; the source is merged into it instead, and a conflict is left to them.
-async function advanceSyncBranch({ github, repo, branch, pr, sourceSha }) {
-  const syncSha = pr.head.sha
+async function advanceSyncBranch({
+  github,
+  repo,
+  branch,
+  syncSha,
+  sourceSha,
+  dryRun,
+}) {
   if (syncSha === sourceSha) return 'existing'
   const { data: comparison } =
     await github.rest.repos.compareCommitsWithBasehead({
@@ -80,6 +86,7 @@ async function advanceSyncBranch({ github, repo, branch, pr, sourceSha }) {
   if (comparison.status === 'identical' || comparison.status === 'behind') {
     return 'existing'
   }
+  if (dryRun) return 'would-advance'
   if (comparison.status === 'ahead') {
     await github.rest.git.updateRef({
       ...repo,
@@ -295,22 +302,24 @@ async function maintainDraftSyncPrs({
       })
       if (existing) {
         const branch = existing.head.ref
+        const syncSha = await branchSha(branch)
+        const action = await advanceSyncBranch({
+          github,
+          repo,
+          branch,
+          syncSha,
+          sourceSha,
+          dryRun,
+        })
         if (dryRun) {
           report(
-            existing.head.sha === sourceSha ? 'existing' : 'would-advance',
+            action,
             existing.number,
             branch,
             await describeExisting(existing, pair, sourceSha)
           )
           continue
         }
-        const action = await advanceSyncBranch({
-          github,
-          repo,
-          branch,
-          pr: existing,
-          sourceSha,
-        })
         await updateConflictNotice({
           github,
           repo,

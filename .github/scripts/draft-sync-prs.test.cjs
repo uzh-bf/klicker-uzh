@@ -78,8 +78,14 @@ function fixture({
             .filter((pr) => pr.base.ref === base && pr.state !== 'closed')
             .map((pr) => ({
               ...pr,
-              head: { ...pr.head, sha: refs.get(pr.head.ref) ?? pr.head.sha },
-              base: { ...pr.base, sha: sources[pr.base.ref] ?? pr.base.sha },
+              head: {
+                ...pr.head,
+                sha: control.prHeadSha ?? refs.get(pr.head.ref) ?? pr.head.sha,
+              },
+              base: {
+                ...pr.base,
+                sha: control.prBaseSha ?? sources[pr.base.ref] ?? pr.base.sha,
+              },
             })),
     rest: {
       git: {
@@ -95,8 +101,15 @@ function fixture({
         },
         async getRef({ ref }) {
           const branch = ref.replace('heads/', '')
+          const sha =
+            refs.get(branch) ??
+            (Object.hasOwn(sources, branch) ? sources[branch] : undefined)
+          if (!sha)
+            throw Object.assign(new Error('Reference not found'), {
+              status: 404,
+            })
           return {
-            data: { object: { sha: refs.get(branch) ?? sources[branch] } },
+            data: { object: { sha } },
           }
         },
         async updateRef({ ref, sha, force }) {
@@ -176,7 +189,13 @@ function fixture({
       repos: {
         async compareCommitsWithBasehead(input) {
           comparisons.push(input)
-          return { data: { ahead_by: ahead, files, status } }
+          return {
+            data: {
+              ahead_by: ahead,
+              files,
+              status: control.compareStatus?.(input) ?? status,
+            },
+          }
         },
         async merge(input) {
           merges.push(input)
@@ -370,6 +389,7 @@ test('uses stable canonical refs when PR revision metadata lags an advanced head
   })
   assert.equal(state.prs[0].draft, false)
   state.updates.length = 0
+  state.refWrites.length = 0
   const bounce = await maintainDraftSyncPrs({
     ...state,
     context,
@@ -377,6 +397,31 @@ test('uses stable canonical refs when PR revision metadata lags an advanced head
   })
   assert.equal(bounce[0].description, 'unchanged')
   assert.equal(state.updates.length, 0)
+  assert.equal(state.refWrites.length, 0)
+  const preview = await maintainDraftSyncPrs({ ...state, context })
+  assert.equal(preview[0].action, 'existing')
+
+  const resolvedTip = 'f'.repeat(40)
+  state.refs.set(state.prs[0].head.ref, resolvedTip)
+  state.control.compareStatus = ({ basehead }) =>
+    basehead === `${resolvedTip}...${nextSource}` ? 'behind' : 'ahead'
+  state.github.rest.git.updateRef = async () => {
+    throw Object.assign(new Error('Not a fast forward'), { status: 422 })
+  }
+  const resolved = await maintainDraftSyncPrs({
+    ...state,
+    context,
+    dryRun: false,
+  })
+  assert.equal(resolved.length, PAIRS.length)
+  assert.equal(resolved[0].action, 'existing')
+  assert.equal(resolved[0].description, 'updated')
+  assert.equal(JSON.parse(state.prs[0].body).headSha, resolvedTip)
+  assert.equal(state.refs.get(state.prs[0].head.ref), resolvedTip)
+  assert.equal(
+    (await maintainDraftSyncPrs({ ...state, context }))[0].action,
+    'existing'
+  )
 })
 
 test('defers body writes when the analyzed PR closes, moves, retargets or changes repository', async () => {
