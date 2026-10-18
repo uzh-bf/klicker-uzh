@@ -629,6 +629,31 @@ dispatch to the pool and let active jobs finish before applying changes.
 makes no persistent remote change. `--apply` is rerunnable, requires both hosts
 to be idle, and asks once before changing either host.
 
+Public-PR runner units use `Restart=on-failure`, `RestartSec=60`,
+`StartLimitIntervalSec=600`, `StartLimitBurst=3` and `OOMPolicy=stop`.
+An intentional service stop remains stopped; repeated failures exhaust the
+start limit instead of restarting indefinitely. An OOM can fail the unit even
+when its wrapper exits successfully. Inspect the unit result and kernel log
+before clearing a start limit or bringing held capacity back online.
+
+The host reconciler owns the complete unit, accepts only the known legacy or
+current template, and rejects unmanaged drop-ins. It preserves active, inactive
+or failed state and enabled or disabled state. A policy-only update reloads
+systemd without starting held services. Hook changes restart only already-active,
+idle services whose own hook settings changed. Use this reconciliation path for
+registered runners; reprovisioning retains its archive-integrity checks and is
+not an update mechanism for runner binaries that have self-updated.
+Both modes print each service's `ActiveState` and `UnitFileState`; matching
+configuration does not imply that every runner is online. Held services load
+updated hook settings when an operator next starts them.
+
+Applying the policy, activating runners and planning a reboot are separate
+operator decisions. Disabled services remain disabled, but enabled services
+can start on reboot even if reconciliation preserved their stopped state.
+Recovery does not establish safe capacity: runner-service memory limits would
+not constrain Docker containers in separate scopes. Qualify cold builds before
+choosing container limits or enabling more slots.
+
 ```bash
 util/reconcile-public-pr-arm64-pool.sh \
   --check \
@@ -667,13 +692,27 @@ Prisma and application builds have separate files; shard samples span service
 readiness and tests. Sampling failures do not change the wrapped command result.
 Artifacts retain the existing seven-day lifetime. No VM update is required.
 
-Samples contain only numeric procfs observations and timestamps. CPU tick order
+Samples contain numeric observations, scope labels and timestamps. CPU tick order
 is user, nice, system, idle, iowait, irq, softirq, steal; guest ticks are already
 included in user/nice. Compute interval shares from successive counter deltas,
 not cumulative totals. Pressure totals are microseconds; divide their deltas by
 elapsed microseconds. Missing metrics are null, not zero. Counters describe the
-system visible from the container, not exclusive usage by its job. They do not
-measure per-process activity or establish a causal performance diagnosis alone.
+system visible from the container, not exclusive usage by its job.
+
+`cgroupMemory` adds cgroup v2 `currentBytes`, `peakBytes`, `anonymousBytes`,
+`fileBytes`, `kernelBytes`, and cumulative `high`, `max`, `oom` and `oomKill`
+event counts. Membership and mount metadata resolve the wrapper's current
+cgroup and descendants; the artifact contains no cgroup path or process data.
+Unsupported, inaccessible or malformed counters are null, never inferred from
+a parent cgroup. The existing procfs fields retain their system-wide scope.
+
+Peak memory is the cgroup's lifetime high-water mark, including file cache,
+not a peak of anonymous memory or necessarily a peak of the wrapped command.
+The sampler never resets counters. Compare event deltas within the same scope;
+separate service containers may sit outside it. Build and shard samples alone
+do not qualify additional capacity or establish the cause of an OOM. See the
+[kernel cgroup v2 interface](https://docs.kernel.org/admin-guide/cgroup-v2.html)
+for memory accounting semantics.
 
 ## Image builds
 
