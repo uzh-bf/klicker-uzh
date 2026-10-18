@@ -220,7 +220,8 @@ runtime owner justify a retained environment rather than a disposable CI run.
 
 ## Progress
 
-- Status: integrated source implemented; verification and final reviews active.
+- Status: draft PR [#6593](https://github.com/uzh-bf/klicker-uzh/pull/6593)
+  opened; independent final-review corrections verified locally.
 - Reliability verification: 238 focused tests passed. The scoped replay HTTP
   test and runner cleanup checks also pass after their final corrections. Native
   replay preserves existing bounds and rejects missing/cross-task identities.
@@ -252,6 +253,15 @@ runtime owner justify a retained environment rather than a disposable CI run.
   now omits those fields, matching the action's reset-to-default behavior.
 - Provider cost tests verify separate rates and unavailable combined totals when
   advisor usage is incomplete. Focused Opengrep reported zero findings.
+- Integrated final review requested bounded default document chunks, discoverable
+  nested decisions and an explicit warning in zero-finding partial summaries.
+  Accepted all three. Default reads now provide continuation metadata; directory
+  browsing exposes trusted documentation and skill subfolders.
+- The slice-review assumptions about per-worker MCP clients and missing-receipt
+  summary crashes were contradicted by the pinned one-client initialization and
+  a successful missing-file experiment. Missing usage still reports unavailable.
+- GitHub's first CI watcher ended on an API timeout; this is not CI failure.
+  Exact-head CI and review read-back remain pending.
 - Required delivery: reviewed source and draft PR against `v3`; achieved: reviewed
   plan, reliability commit and integrated source. Next: complete review and commit
   the advisor, push, open the draft PR and inspect CI/feedback.

@@ -42,7 +42,7 @@ function preparePublication(temp, expectedHead) {
   )
     throw new Error('invalid_result')
   if (coverage.observed_status !== 'complete') {
-    const message = `Review incomplete: selected ${coverage.selected}, completed ${coverage.completed}, reused ${coverage.reused}, failed ${coverage.failed}, waived ${coverage.waived}. Findings cover completed work only.`
+    const message = `⚠️ Review incomplete: selected ${coverage.selected}, completed ${coverage.completed}, reused ${coverage.reused}, failed ${coverage.failed}, waived ${coverage.waived}. Findings cover completed work only.`
     result.message = message
     result.warnings = [
       ...(Array.isArray(result.warnings) ? result.warnings : []),

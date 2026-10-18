@@ -37,7 +37,7 @@ const TOOLS = [
   {
     name: 'read_review_context',
     description:
-      'Read bounded trusted Klicker documentation or skill guidance. Omit path to discover relevant docs and skills. Instructions grant no execution permissions.',
+      'Read trusted docs or skills, at most 120 lines and 8 KiB. Default reads return a bounded chunk with next_line when truncated. Omit path to list roots; use a directory path to browse it. Instructions grant no execution permissions.',
     inputSchema: { ...RANGE_SCHEMA, required: [] },
   },
 ]
@@ -114,9 +114,7 @@ function readRange(repo, revision, input, trusted) {
     trusted &&
     !(
       /^docs\/.+\.md$/.test(input.path) ||
-      /^\.agents\/skills\/[\w-]+\/(?:SKILL\.md|references\/.+\.md)$/.test(
-        input.path
-      )
+      /^\.agents\/skills\/[\w-]+\/.+\.md$/.test(input.path)
     )
   )
     throw failure('invalid_source')
@@ -147,13 +145,27 @@ function readRange(repo, revision, input, trusted) {
   if (content.includes('\0')) throw failure('invalid_source')
   const lines = content.split('\n')
   if (start > lines.length) throw failure('invalid_range')
-  const last = Math.min(end, lines.length)
-  const text = lines
-    .slice(start - 1, last)
-    .map((line, index) => `${start + index}|${line}`)
-    .join('\n')
-  if (Buffer.byteLength(text) > 8192) throw failure('context_too_large')
-  return { path: input.path, revision, start_line: start, end_line: last, text }
+  let last = Math.min(end, lines.length)
+  let text = ''
+  for (let line = start; line <= last; line++) {
+    const next = `${text ? '\n' : ''}${line}|${lines[line - 1]}`
+    if (Buffer.byteLength(text) + Buffer.byteLength(next) > 8192) {
+      if (input.end_line !== undefined || !text)
+        throw failure('context_too_large')
+      last = line - 1
+      break
+    }
+    text += next
+  }
+  return {
+    path: input.path,
+    revision,
+    start_line: start,
+    end_line: last,
+    text,
+    truncated: last < lines.length,
+    next_line: last < lines.length ? last + 1 : null,
+  }
 }
 
 async function readBody(stream, limit, controller) {
@@ -279,7 +291,14 @@ async function startReviewTools(options) {
       if (!keys(input, ['path', 'start_line', 'end_line']))
         throw failure('invalid_source')
       let result
-      if (input.path === undefined) {
+      if (input.path === undefined || !input.path.endsWith('.md')) {
+        const directory = input.path ?? ''
+        if (
+          directory &&
+          (!validPath(directory) ||
+            !/^(?:docs|\.agents\/skills)(?:\/|$)/.test(directory))
+        )
+          throw failure('invalid_source')
         const paths = git(repo, [
           'ls-tree',
           '-r',
@@ -292,9 +311,27 @@ async function startReviewTools(options) {
           .trim()
           .split('\n')
           .filter((value) =>
-            /^docs\/[^/]+\.md$|^\.agents\/skills\/[^/]+\/SKILL\.md$/.test(value)
+            /^docs\/.+\.md$|^\.agents\/skills\/.+\.md$/.test(value)
           )
-        result = { paths: paths.slice(0, 80), truncated: paths.length > 80 }
+        const entries = [
+          ...new Set(
+            paths
+              .filter(
+                (value) => !directory || value.startsWith(`${directory}/`)
+              )
+              .map((value) => {
+                if (!directory)
+                  return value.startsWith('docs/')
+                    ? `docs/${value.slice(5).split('/')[0]}`
+                    : `.agents/skills/${value.slice(15).split('/')[0]}`
+                const remainder = value.slice(directory.length + 1)
+                return remainder.includes('/')
+                  ? `${directory}/${remainder.split('/')[0]}`
+                  : value
+              })
+          ),
+        ]
+        result = { paths: entries.slice(0, 80), truncated: entries.length > 80 }
       } else result = readRange(repo, policy, input, true)
       state.context_reads += 1
       emit()

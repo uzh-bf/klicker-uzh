@@ -20,6 +20,15 @@ function fixture(t) {
   git('config', 'core.hooksPath', '/dev/null')
   fs.mkdirSync(path.join(repo, 'docs'))
   fs.writeFileSync(path.join(repo, 'docs/contract.md'), 'trusted-contract\n')
+  fs.mkdirSync(path.join(repo, 'docs/adr'))
+  fs.writeFileSync(
+    path.join(repo, 'docs/adr/0001-contract.md'),
+    'synthetic decision\n'
+  )
+  fs.writeFileSync(
+    path.join(repo, 'docs/long.md'),
+    Array.from({ length: 120 }, (_, i) => `${i} ${'x'.repeat(100)}`).join('\n')
+  )
   fs.writeFileSync(path.join(repo, 'source.js'), 'export const value = 1\n')
   git('add', '.')
   git('commit', '-m', 'chore: synthetic base')
@@ -104,6 +113,30 @@ test('MCP context reads trusted Git content and rejects traversal, symlinks and 
   const context = JSON.parse(result.result.content[0].text)
   assert.match(context.text, /trusted-contract/)
   assert.doesNotMatch(context.text, /untrusted-candidate/)
+  const listing = JSON.parse(
+    (await tool('read_review_context', { path: 'docs' })).result.content[0].text
+  )
+  assert.ok(listing.paths.includes('docs/adr'))
+  const decisions = JSON.parse(
+    (await tool('read_review_context', { path: 'docs/adr' })).result.content[0]
+      .text
+  )
+  assert.ok(decisions.paths.includes('docs/adr/0001-contract.md'))
+  const chunk = JSON.parse(
+    (await tool('read_review_context', { path: 'docs/long.md' })).result
+      .content[0].text
+  )
+  assert.ok(Buffer.byteLength(chunk.text) <= 8192)
+  assert.ok(chunk.truncated && chunk.next_line === chunk.end_line + 1)
+  const next = JSON.parse(
+    (
+      await tool('read_review_context', {
+        path: 'docs/long.md',
+        start_line: chunk.next_line,
+      })
+    ).result.content[0].text
+  )
+  assert.equal(next.start_line, chunk.next_line)
   assert.equal(broker.diagnostics().status, 'unavailable')
   for (const input of [
     { path: '../.git/config' },

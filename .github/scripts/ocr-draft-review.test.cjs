@@ -102,6 +102,13 @@ test('combined cost estimates use both provider rates and withhold totals for mi
       result.stdout,
       /OCR cost scope=draft_and_advisor status=complete/
     )
+    fs.rmSync(advisorPath)
+    result = run()
+    assert.equal(result.status, 0, result.stderr)
+    assert.match(
+      result.stdout,
+      /^OCR cost scope=draft_and_advisor status=unavailable$/m
+    )
   } finally {
     fs.rmSync(directory, { recursive: true, force: true })
   }
