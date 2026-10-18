@@ -122,6 +122,10 @@ export function describeFiles(profiles, readFile = readFileSync) {
   return files
 }
 
+// Code-unit order, independent of the machine's locale, keeps the manifest
+// byte-stable wherever it is regenerated.
+const byCodeUnit = (a, b) => Number(a > b) - Number(a < b)
+
 export function buildManifest(
   profiles,
   readFile = readFileSync,
@@ -130,13 +134,13 @@ export function buildManifest(
   const files = describeFiles(profiles, readFile)
   const sortedFiles = Object.fromEntries(
     Object.keys(files)
-      .sort()
+      .sort(byCodeUnit)
       .map((id) => [id, files[id]])
   )
   const profileIds = Object.fromEntries(
     Object.entries(profiles).map(([name, sources]) => [
       name,
-      Object.keys(sources).sort(),
+      Object.keys(sources).sort(byCodeUnit),
     ])
   )
   // The proxy pins the inline bootstrap by this hash in the runner CSP.

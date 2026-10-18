@@ -39,10 +39,7 @@ export function withCodeCardTool(
           .max(MAX_STARTER_CODE_LENGTH)
           .describe('Initial code shown in the editor'),
       }),
-      execute: async ({
-        profile,
-        starterCode,
-      }): Promise<CodeCardToolResult> => ({
+      execute: ({ profile, starterCode }): CodeCardToolResult => ({
         kind: 'code-card',
         profile,
         starterCode,
