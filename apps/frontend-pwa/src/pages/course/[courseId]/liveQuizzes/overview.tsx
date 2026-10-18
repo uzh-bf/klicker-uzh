@@ -3,14 +3,15 @@ import { faChalkboardUser } from '@fortawesome/free-solid-svg-icons'
 import { GetCourseRunningLiveQuizzesDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
+import getCourseAssessmentRedirect from '@lib/getCourseAssessmentRedirect'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import { H2, UserNotification } from '@uzh-bf/design-system'
-import { GetServerSidePropsContext } from 'next'
+import type { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
-import Layout from '../../../../components/Layout'
 import LinkButton from '../../../../components/common/LinkButton'
+import Layout from '../../../../components/Layout'
 
 function LiveQuizOverview({
   isInactive,
@@ -102,6 +103,13 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
 
     const apolloClient = initializeApollo()
+    const redirect = await getCourseAssessmentRedirect({
+      apolloClient,
+      courseId: ctx.params.courseId,
+      ctx,
+    })
+    if (redirect) return { redirect }
+
     const result = await apolloClient.query({
       query: GetCourseRunningLiveQuizzesDocument,
       variables: {
