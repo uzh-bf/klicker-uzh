@@ -5,10 +5,7 @@
     "title": "Exam Studio \u2014 proposed trust boundaries",
     "locale": "en",
     "quality_profile": "showcase",
-    "viewBox": [
-      1320,
-      760
-    ]
+    "viewBox": [1320, 760]
   },
   "components": [
     {
@@ -16,14 +13,8 @@
       "type": "frontend",
       "label": "Lecturer browser",
       "sublabel": "Conversation + human actions",
-      "pos": [
-        60,
-        100
-      ],
-      "size": [
-        240,
-        78
-      ],
+      "pos": [60, 100],
+      "size": [240, 78],
       "tag": "PROPOSED STUDIO UI"
     },
     {
@@ -31,14 +22,8 @@
       "type": "security",
       "label": "Existing login + new consent",
       "sublabel": "Reachable auth / Manage origin",
-      "pos": [
-        470,
-        100
-      ],
-      "size": [
-        240,
-        78
-      ],
+      "pos": [470, 100],
+      "size": [240, 78],
       "tag": "EXISTING LOGIN + NEW CONSENT"
     },
     {
@@ -46,14 +31,8 @@
       "type": "backend",
       "label": "LibreChat \u00b7 proposed link",
       "sublabel": "Internal Studio connection",
-      "pos": [
-        60,
-        340
-      ],
-      "size": [
-        240,
-        78
-      ],
+      "pos": [60, 340],
+      "size": [240, 78],
       "tag": "PROPOSED INTEGRATION"
     },
     {
@@ -61,14 +40,8 @@
       "type": "security",
       "label": "Delegation \u00b7 proposed",
       "sublabel": "Klicker-issued scoped identity",
-      "pos": [
-        470,
-        340
-      ],
-      "size": [
-        240,
-        78
-      ],
+      "pos": [470, 340],
+      "size": [240, 78],
       "tag": "PROPOSED TRUSTED ADAPTER"
     },
     {
@@ -76,14 +49,8 @@
       "type": "backend",
       "label": "Lecturer MCP \u00b7 existing",
       "sublabel": "Verify actor + scope + objects",
-      "pos": [
-        940,
-        340
-      ],
-      "size": [
-        240,
-        78
-      ],
+      "pos": [940, 340],
+      "size": [240, 78],
       "tag": "EXISTING + NEW EXAM TOOLS"
     },
     {
@@ -91,14 +58,8 @@
       "type": "backend",
       "label": "Authoring \u00b7 existing",
       "sublabel": "Generation / review / Keep",
-      "pos": [
-        940,
-        580
-      ],
-      "size": [
-        240,
-        78
-      ],
+      "pos": [940, 580],
+      "size": [240, 78],
       "tag": "EXISTING + EXTENSIONS"
     },
     {
@@ -106,14 +67,8 @@
       "type": "database",
       "label": "Question bank \u00b7 existing",
       "sublabel": "Canonical Klicker Elements",
-      "pos": [
-        470,
-        580
-      ],
-      "size": [
-        240,
-        78
-      ],
+      "pos": [470, 580],
+      "size": [240, 78],
       "tag": "EXISTING + ORIGIN / HISTORY"
     }
   ],
@@ -121,22 +76,13 @@
     {
       "kind": "security-group",
       "label": "Browser-facing login and consent \u2014 separate from MCP data traffic",
-      "wraps": [
-        "lecturer",
-        "login"
-      ],
+      "wraps": ["lecturer", "login"],
       "pad": 26
     },
     {
       "kind": "region",
       "label": "Internal backend data path \u2014 conceptual boundary, no public MCP route",
-      "wraps": [
-        "host",
-        "delegate",
-        "mcp",
-        "domain",
-        "bank"
-      ],
+      "wraps": ["host", "delegate", "mcp", "domain", "bank"],
       "pad": 26
     }
   ],

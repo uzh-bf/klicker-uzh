@@ -3,8 +3,8 @@
   "subject": "Trust boundaries",
   "specification": {
     "path": "architecture.json",
-    "sha256": "899b6b93a68e7602249602cc30f8e6ba6d03d26d51683c770d5ed82e46f43f3b",
-    "bytes": 4393
+    "sha256": "cad3c45eda612ef6ce9be595e3e1d56fa3c48b76641a6a3d0338d25db8b6341d",
+    "bytes": 3967
   },
   "artifact": {
     "path": "architecture.html",

@@ -3,8 +3,8 @@
   "subject": "Lecturer user flow",
   "specification": {
     "path": "lecturer-flow.json",
-    "sha256": "8a00fb3b862ff84da31e96e5c48784a3d2a556e3a4373cd12ab016ac168d00cf",
-    "bytes": 4768
+    "sha256": "fe1e07e935474a043c5f3d6d958be24dfd53d2857886c539b86ae30a9da0c68e",
+    "bytes": 4318
   },
   "artifact": {
     "path": "lecturer-flow.html",

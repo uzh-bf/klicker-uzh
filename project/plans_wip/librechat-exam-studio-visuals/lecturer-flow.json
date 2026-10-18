@@ -5,10 +5,7 @@
     "title": "Exam Studio \u2014 proposed lecturer journey",
     "locale": "en",
     "quality_profile": "showcase",
-    "viewBox": [
-      1320,
-      800
-    ]
+    "viewBox": [1320, 800]
   },
   "components": [
     {
@@ -17,14 +14,8 @@
       "label": "Select KB \u00b7 proposed UI",
       "sublabel": "Pin graph + source version",
       "tag": "PROPOSED STUDIO VIEW",
-      "pos": [
-        60,
-        100
-      ],
-      "size": [
-        260,
-        80
-      ]
+      "pos": [60, 100],
+      "size": [260, 80]
     },
     {
       "id": "cost",
@@ -32,14 +23,8 @@
       "label": "Cost consent \u00b7 proposed",
       "sublabel": "Count + route + estimate",
       "tag": "PROPOSED RECEIPT",
-      "pos": [
-        500,
-        100
-      ],
-      "size": [
-        260,
-        80
-      ]
+      "pos": [500, 100],
+      "size": [260, 80]
     },
     {
       "id": "generate",
@@ -47,14 +32,8 @@
       "label": "KG generation \u00b7 existing",
       "sublabel": "Design + plan review gates",
       "tag": "REUSE EXISTING JOBS",
-      "pos": [
-        940,
-        100
-      ],
-      "size": [
-        260,
-        80
-      ]
+      "pos": [940, 100],
+      "size": [260, 80]
     },
     {
       "id": "inspect",
@@ -62,14 +41,8 @@
       "label": "Inspect draft \u00b7 proposed UI",
       "sublabel": "Key, explanation, evidence",
       "tag": "PROPOSED FULL VIEW",
-      "pos": [
-        940,
-        350
-      ],
-      "size": [
-        260,
-        80
-      ]
+      "pos": [940, 350],
+      "size": [260, 80]
     },
     {
       "id": "edit",
@@ -77,14 +50,8 @@
       "label": "Compare / edit \u00b7 proposed",
       "sublabel": "Full payload + revision diff",
       "tag": "PROPOSED HISTORY",
-      "pos": [
-        500,
-        350
-      ],
-      "size": [
-        260,
-        80
-      ]
+      "pos": [500, 350],
+      "size": [260, 80]
     },
     {
       "id": "keep",
@@ -92,14 +59,8 @@
       "label": "Keep \u00b7 extend existing",
       "sublabel": "Owner + payload + revision",
       "tag": "EXISTING + RECEIPT",
-      "pos": [
-        60,
-        350
-      ],
-      "size": [
-        260,
-        80
-      ]
+      "pos": [60, 350],
+      "size": [260, 80]
     },
     {
       "id": "bank",
@@ -107,14 +68,8 @@
       "label": "Question bank \u00b7 existing",
       "sublabel": "AI-generated + review status",
       "tag": "EXISTING + NEW BADGES",
-      "pos": [
-        60,
-        600
-      ],
-      "size": [
-        260,
-        80
-      ]
+      "pos": [60, 600],
+      "size": [260, 80]
     },
     {
       "id": "later",
@@ -122,14 +77,8 @@
       "label": "Edit / copy \u00b7 retain origin",
       "sublabel": "Origin stays AI-generated",
       "tag": "PROPOSED INHERITANCE",
-      "pos": [
-        500,
-        600
-      ],
-      "size": [
-        260,
-        80
-      ]
+      "pos": [500, 600],
+      "size": [260, 80]
     },
     {
       "id": "export",
@@ -137,14 +86,8 @@
       "label": "Export \u00b7 proposed",
       "sublabel": "Exact accepted revision",
       "tag": "PROPOSED MANIFEST",
-      "pos": [
-        940,
-        600
-      ],
-      "size": [
-        260,
-        80
-      ]
+      "pos": [940, 600],
+      "size": [260, 80]
     }
   ],
   "connections": [
