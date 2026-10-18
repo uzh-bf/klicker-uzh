@@ -1,15 +1,23 @@
 # Course-chatbot quality roadmap
 
 Status: outcome-focused continuation approved on 18 October 2026. The private
-zero-spend evidence review is complete; paid validation and rollout remain separate.
+zero-spend review and the approved finite local comparison are complete.
+Detailed judgments remain private. Further iteration and rollout remain separate.
 Historical Tutor experiments remain below for reference.
 
 ## Current evaluation direction
 
 The goal is useful learning support: correct explanations with supported
 citations, honest summary coverage, and completion of the requested task.
-The next milestone is a manually evidenced Explainer candidate decision.
+The next milestone is an Explainer revision that passes the frozen quality
+criteria, informed by the completed private comparison.
 Automated judging is optional support for a demonstrated recurring need.
+
+The completed comparison is indexed privately. Next preparation should target
+the revised answer's preservation check and source attribution, with the
+unchanged control retained. It does not authorize another candidate apply or
+paid run. Multipart summaries and representative course-source acceptance stay
+required before rollout.
 
 The [active quality-decision batch](2026-10-18-explainer-assessment-readiness-plan.md#current-quality-decision-batch)
 owns execution, acceptance and the next spending proposal. It continues the
@@ -40,14 +48,16 @@ framework owns generic assessment and reporting. Framework changes remain
 independent of any particular application.
 
 Reuse the [existing comparison corpus](../evaluation/data/explainer-compression/README.md).
-The next proposed comparison uses one repeat per arm, reducing planned learner
+The approved comparison protocol uses one repeat per arm, reducing planned learner
 turns from 48 to 24. Inspected authored cases are regression/transfer examples,
 not blind holdouts. The existing
 [US$55/48-turn initializer option](https://github.com/uzh-bf/klicker-uzh/pull/6576)
 can support that bounded subset without another source change; its ledger
 ceiling remains 48 turns, so the execution protocol must stop after the planned
-24. The default US$5 cap and earlier ledgers remain unchanged. No paid capture,
-judge call, prompt apply, merge or deployment is authorized by this update.
+24. The default US$5 cap and earlier ledgers remain unchanged. The user has
+approved that comparison and guarded local candidate custody through the
+[execution contract](2026-10-18-explainer-assessment-readiness-plan.md#approved-comparison-execution).
+Judge calls, shared prompt changes, merge and deployment remain separate.
 
 ## Historical Tutor iteration
 

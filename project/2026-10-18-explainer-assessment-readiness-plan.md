@@ -1,5 +1,31 @@
 # Explainer quality decision and assessment qualification
 
+## Approved comparison execution
+
+The user approved the proposed local comparison on 18 October 2026: six frozen
+cases, baseline then the unchanged candidate, one repeat per arm, 24 learner
+turns total under one new US$55/48-turn ledger. This supersedes the paid
+preparation boundary below only for that finite comparison. Refresh pricing,
+verify guarded startup, apply/read back the candidate only in the isolated
+local baseline, manually assess actual answers and citation passages, restore
+and read back the baseline, then stop the exact runtime. Stop on uncertain
+spending, configuration drift or a demonstrated candidate regression; preserve
+incomplete coverage. No judge, shared prompt change, deployment or merge.
+
+Use the existing app-native trajectory runner and importer. Session transport
+and one-shot custody receipts remain private operational artifacts; no new
+maintained runner, scorer or framework capability is part of this execution.
+The shared plan records authority and completion only. Actual answers, scores,
+spending and runtime observations stay in the private comparison assessment.
+
+This finite execution and manual assessment are complete. The private
+`project/_local/explainer-quality-decision.md` index points to the immutable
+capture, passage assessment and lifecycle receipts. Further candidate revision,
+capture and rollout remain separate decisions; unused allowance is not authority
+for another run. Next product preparation is an explicit revision self-check
+and a separately scoped citation-attribution improvement, using the existing
+corpus and application tools. Automated judging remains deferred.
+
 ## Current quality-decision batch
 
 Approved on 18 October 2026 after the Claude direction review: persist the
@@ -91,7 +117,7 @@ scenarios and representative course-source checks:
   question or an unsupported completion claim.
 - An available source must support the answer and emitted citation; a genuinely
   absent source must elicit calibrated uncertainty without invented references.
-  A deterministic always-return-all fixture cannot establish this acceptance.
+  A deterministic synthetic fixture cannot establish this acceptance.
 
 These checks are outside the six-case compression comparison. Freeze their
 inputs and source evidence before execution and include them in a separately
@@ -108,7 +134,7 @@ The Claude direction advice remains applicable. The bounded planner recommends
 the 24-turn subset and separate summary/missing-source acceptance rather than
 expanding the first comparison. Private evidence reconciliation is complete in
 `project/_local/explainer-quality-decision.md`; original inputs are unchanged.
-Markdown formatting and all eight local file-link checks pass; input hashes
+Markdown formatting and local file-link checks pass; input hashes
 remain unchanged. Delivered as draft [PR 6607](https://github.com/uzh-bf/klicker-uzh/pull/6607)
 against `v3`; hosted checks are pending. The approved zero-spend evidence batch
 is complete. The next execution boundary is separately approved paid capture. No
