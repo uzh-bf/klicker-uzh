@@ -131,6 +131,134 @@ test('handles multiple merge bases without dropping either common lineage and ig
   )
 })
 
+test('groups conventional headers by release category without losing unknown commits', async (t) => {
+  const { git, commit, root, generator } = fixture(t)
+  const { types } = require('../../.versionrc.js')
+  const configured = new Map(types.map(({ type, section }) => [type, section]))
+  const expected = new Map()
+  for (const [index, [type, subject]] of [
+    ['fix', 'FIX(cache)!: repair state'],
+    ['feat', 'feat(api): accept input'],
+    ['enhance', 'enhance: improve output'],
+    ['build', 'build: package input'],
+    ['ci', 'ci(check): run checks'],
+    ['test', 'test: cover behavior'],
+    [null, 'unknown: retain this change'],
+    [null, 'fix(): malformed scope'],
+    [null, 'merge a topic'],
+  ].entries()) {
+    expected.set(
+      commit('category.txt', `${index}\n`, subject),
+      configured.get(type) || 'Other'
+    )
+  }
+  const sourceSha = git('rev-parse', 'HEAD')
+  const snapshots = { sourceSha, targetSha: root, headSha: sourceSha }
+  const result = await generator.generate(snapshots)
+  assert.equal(result.body, (await generator.generate(snapshots)).body)
+  assert.deepEqual(
+    new Map(result.imported.map(({ sha, category }) => [sha, category])),
+    expected
+  )
+  const visible = new Map()
+  const headings = []
+  let category
+  for (const line of result.body.split('\n')) {
+    if (line.startsWith('## ')) category = undefined
+    if (line.startsWith('### ')) {
+      category = line.slice(4)
+      headings.push(category)
+    }
+    const match =
+      /^- \[[a-f0-9]{10}\]\(https:\/\/github.com\/[^/]+\/[^/]+\/commit\/([a-f0-9]{40})\)/.exec(
+        line
+      )
+    if (match) visible.set(match[1], category)
+  }
+  assert.deepEqual(visible, expected)
+  assert.deepEqual(
+    headings,
+    [...new Set([...types.map(({ section }) => section), 'Other'])].filter(
+      (section) => [...expected.values()].includes(section)
+    )
+  )
+})
+
+test('loads category config relative to the trusted module and rejects unavailable or invalid config', (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-config-test-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  for (const [index, config] of [
+    undefined,
+    { types: [] },
+    { types: [{ type: 'feat' }] },
+    { types: [{ type: 'feat', section: 'Synthetic' }] },
+  ].entries()) {
+    const root = path.join(directory, String(index))
+    const scripts = path.join(root, '.github/scripts')
+    fs.mkdirSync(scripts, { recursive: true })
+    const modulePath = path.join(scripts, 'sync-pr-changelog.cjs')
+    fs.copyFileSync(path.join(__dirname, 'sync-pr-changelog.cjs'), modulePath)
+    if (config) {
+      fs.writeFileSync(
+        path.join(root, '.versionrc.js'),
+        `module.exports = ${JSON.stringify(config)}`
+      )
+    }
+    const factory = require(modulePath).createChangelog
+    if (index < 3) assert.throws(() => factory({ remote: directory }))
+    else factory({ remote: directory }).close()
+  }
+})
+
+test('accounts for aggregate category overhead while retaining merge and additional evidence first', async (t) => {
+  const { directory, git, commit, root, generator } = fixture(t)
+  git('checkout', '-b', 'target')
+  const targetSha = commit('shared.txt', 'target\n')
+  git('checkout', '-b', 'source', root)
+  commit('shared.txt', 'source\n', 'fix: change shared input')
+  for (let index = 0; index < 40; index++) {
+    const type = ['feat', 'fix', 'ci'][index % 3]
+    commit('bulk.txt', `${index}\n`, `${type}: ${'🙂'.repeat(450)} ${index}`)
+  }
+  const sourceSha = git('rev-parse', 'HEAD')
+  git('checkout', '-b', 'sync')
+  assert.throws(() => git('merge', '--no-ff', 'target', '-m', 'merge target'))
+  fs.writeFileSync(path.join(directory, 'shared.txt'), 'resolution\n')
+  git('add', '--all')
+  git('commit', '-m', `fix(sync): ${'🙂'.repeat(2000)}`)
+  for (let index = 0; index < 2; index++) {
+    commit(
+      `extra-${index}.txt`,
+      'extra\n',
+      `chore: ${'🙂'.repeat(1000)} ${index}`
+    )
+  }
+  const snapshots = { sourceSha, targetSha, headSha: git('rev-parse', 'HEAD') }
+  const result = await generator.generate(snapshots)
+  assert.ok(Buffer.byteLength(result.body) <= 60000)
+  assert.equal(result.body, (await generator.generate(snapshots)).body)
+  const visible = new Set(
+    [
+      ...result.body.matchAll(
+        /^- \[[a-f0-9]{10}\]\(https:\/\/github.com\/[^/]+\/[^/]+\/commit\/([a-f0-9]{40})\)/gm
+      ),
+    ].map((match) => match[1])
+  )
+  for (const key of ['imported', 'mergeEdits', 'additional']) {
+    const excluded = result[key].filter(({ sha }) => !visible.has(sha))
+    assert.deepEqual(result.omitted[key], {
+      commits: excluded.length,
+      paths: excluded.reduce(
+        (count, entry) => count + (entry.paths?.length || 0),
+        0
+      ),
+    })
+  }
+  assert.ok(result.omitted.imported.commits > 0)
+  assert.equal(result.omitted.mergeEdits.commits, 0)
+  assert.equal(result.omitted.additional.commits, 0)
+})
+
 test('reports octopus analysis and omits oversized Unicode entries with exact counts', async (t) => {
   const { git, commit, root, generator } = fixture(t)
   git('checkout', '-b', 'a', root)

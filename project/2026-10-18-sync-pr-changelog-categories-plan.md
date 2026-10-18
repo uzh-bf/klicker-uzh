@@ -61,4 +61,8 @@ Commit the plan, then coherent implementation slices. Push normally to the task 
 
 ## Progress
 
-Planning and source diagnosis. No implementation changes yet. No follow-up PR exists yet. The user has directly authorized the source outcome; separate live actions remain withheld.
+Planner approved the revised contract after two rounds. The plan was committed before implementation. Controller slice4ec31ad3b4 uses canonical ref revisions and preserves metadata identity/lifecycle/ref movement guards; the frozen-metadata regression failed baseline and passes the correction. All44controller/ancestry/event/direct-script checks pass on pinned Node24.21.0. Opengrep reports only the unchanged fixed-pair RegExp finding. The simplifier found no useful reduction; the bounded risk review passes with no findings.
+
+Executor01a14f21-7426-7893-a3a7-e16892f44e89 returned a terminal handback without code after convergence; main then took ownership, implemented the generator and three consequential tests, and verified all51focused cases on pinned Node24.21.0. Category configuration is loaded relative to the trusted module within the factory boundary. Grouping, aggregate UTF-8 accounting, missing/invalid config, original graph/path/isolation behavior and repeated bodies pass. No dependency or application runtime was added.
+
+No follow-up PR exists yet. The user has directly authorized the source outcome; separate live actions remain withheld. Remaining actions are generator simplification, integrated Claude review, read-only previews/sparse-checkout verification, ordinary task-branch push and draft PR/CI. Review receipts remain in the ignored project/_local/reviews directory; later terminal forge evidence may be recorded there and in the PR body without another source-only metadata push.

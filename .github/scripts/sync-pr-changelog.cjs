@@ -16,13 +16,12 @@ function codeSpan(value) {
   return `${delimiter} ${text} ${delimiter}`
 }
 
-function renderChangelog(evidence, repository) {
+function renderChangelog(evidence, repository, categories) {
   const url = `https://github.com/${repository}`
   const commitLink = (sha) => `[${sha.slice(0, 10)}](${url}/commit/${sha})`
   const { sourceSha, targetSha, headSha, sourceIncluded } = evidence
   const comparison = `${url}/compare/${targetSha}...${headSha}`
   const metadata = [
-    '<!-- sync-pr-changelog -->',
     '## Revisions',
     '',
     `| Target | Source | Sync head | Source included |`,
@@ -32,7 +31,7 @@ function renderChangelog(evidence, repository) {
     `[Changes](${comparison}) · [Pending source](${url}/compare/${headSha}...${sourceSha})`,
   ].join('\n')
   const sections = [
-    { key: 'imported', title: 'Imported commits', entries: evidence.imported },
+    { key: 'imported', title: 'Changelog', entries: evidence.imported },
     { key: 'mergeEdits', title: 'Merge edits', entries: evidence.mergeEdits },
     {
       key: 'additional',
@@ -45,7 +44,8 @@ function renderChangelog(evidence, repository) {
   const omission = (commits, paths) =>
     `- Omitted: ${commits} commits, ${paths} paths; [complete comparison](${comparison}).`
   // Reserve every footer at its maximum count before allocating whole entries.
-  let budget = BODY_LIMIT - Buffer.byteLength(metadata)
+  const marker = '<!-- sync-pr-changelog -->'
+  let budget = BODY_LIMIT - Buffer.byteLength(`${marker}\n\n${metadata}\n`)
   for (const section of sections) {
     const paths = section.entries.reduce(
       (count, entry) => count + (entry.paths?.length || 0),
@@ -54,6 +54,13 @@ function renderChangelog(evidence, repository) {
     budget -= Buffer.byteLength(
       `\n\n## ${section.title}\n\n${omission(section.entries.length, paths)}\n`
     )
+    if (section.key === 'imported') {
+      for (const category of categories) {
+        if (section.entries.some((entry) => entry.category === category)) {
+          budget -= Buffer.byteLength(`\n\n### ${category}\n\n`)
+        }
+      }
+    }
     omitted[section.key] = { commits: 0, paths: 0 }
     rendered[section.key] = []
   }
@@ -68,9 +75,9 @@ function renderChangelog(evidence, repository) {
       ]
       for (const file of entry.paths || []) lines.push(`  - ${codeSpan(file)}`)
       const item = lines.join('\n')
-      const bytes = Buffer.byteLength(`${item}\n`)
+      const bytes = Buffer.byteLength(`${item}\n\n`)
       if (bytes <= budget) {
-        rendered[key].push(item)
+        rendered[key].push({ item, category: entry.category })
         budget -= bytes
       } else {
         omitted[key].commits++
@@ -80,15 +87,26 @@ function renderChangelog(evidence, repository) {
   }
   const body =
     [
+      marker,
+      ...sections.flatMap(({ key, title }) => {
+        if (!rendered[key].length && !omitted[key].commits) return []
+        const entries =
+          key === 'imported'
+            ? categories.flatMap((category) => {
+                const items = rendered[key]
+                  .filter((entry) => entry.category === category)
+                  .map(({ item }) => item)
+                return items.length
+                  ? [`### ${category}\n\n${items.join('\n')}`]
+                  : []
+              })
+            : rendered[key].map(({ item }) => item)
+        if (omitted[key].commits) {
+          entries.push(omission(omitted[key].commits, omitted[key].paths))
+        }
+        return [`## ${title}\n\n${entries.join('\n\n')}`]
+      }),
       metadata,
-      ...sections.map(({ key, title }) =>
-        [
-          `## ${title}`,
-          '',
-          ...rendered[key],
-          omission(omitted[key].commits, omitted[key].paths),
-        ].join('\n')
-      ),
     ].join('\n\n') + '\n'
   if (Buffer.byteLength(body) > BODY_LIMIT)
     throw new Error('Changelog body budget exceeded')
@@ -109,6 +127,32 @@ function createChangelog({
     (typeof remote !== 'string' || !path.isAbsolute(remote))
   ) {
     throw new Error('Analysis remote override must be a local absolute path')
+  }
+  const { types } = require(path.join(__dirname, '../../.versionrc.js'))
+  if (
+    !Array.isArray(types) ||
+    !types.length ||
+    types.some(
+      (entry) =>
+        !entry ||
+        typeof entry.type !== 'string' ||
+        !/^[a-z][a-z0-9-]*$/i.test(entry.type) ||
+        typeof entry.section !== 'string' ||
+        !entry.section.trim() ||
+        /[\r\n]/.test(entry.section)
+    )
+  ) {
+    throw new Error('Invalid changelog categories')
+  }
+  const sectionsByType = new Map(
+    types.map(({ type, section }) => [type.toLowerCase(), section])
+  )
+  const categories = [
+    ...new Set([...types.map(({ section }) => section), 'Other']),
+  ]
+  const categoryFor = (subject) => {
+    const match = /^([a-z][a-z0-9-]*)(?:\([^()\r\n]+\))?!?: +\S/i.exec(subject)
+    return sectionsByType.get(match?.[1].toLowerCase()) || 'Other'
   }
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-pr-changelog-'))
   const gitDirectory = path.join(directory, 'history.git')
@@ -227,7 +271,7 @@ function createChangelog({
           ''
         )
         if (source.has(sha)) {
-          imported.push({ sha, subject })
+          imported.push({ sha, subject, category: categoryFor(subject) })
           continue
         }
         const parents =
@@ -287,7 +331,10 @@ function createChangelog({
         mergeEdits,
         additional,
       }
-      return { ...evidence, ...renderChangelog(evidence, repository) }
+      return {
+        ...evidence,
+        ...renderChangelog(evidence, repository, categories),
+      }
     },
   }
 }

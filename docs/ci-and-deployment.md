@@ -45,8 +45,12 @@ On every run, for each pair, the controller:
 
 Draft/ready states are preserved. The controller replaces the complete description
 on creation and reconciliation with a deterministic changelog: exact revision
-links, imported commit subjects, merge-edit paths and additional sync-branch
-commits. It includes source commits only when the actual sync head contains them,
+links, imported commit subjects grouped by conventional commit category,
+merge-edit paths and additional sync-branch commits. Category names and order come
+from `.versionrc.js`; headers support optional scopes and `!`, case-insensitively.
+Unrecognized or malformed subjects remain under Other. Empty sections and
+zero-omission footers are omitted, and revision metadata follows the changelog.
+It includes source commits only when the actual sync head contains them,
 and excludes target history. Subjects and paths use code spans so embedded
 mentions and issue references create no cross-reference notifications. There is
 no model-generated explanation or manually maintained section; agents leave these
@@ -88,8 +92,10 @@ configured source or target branch, or for a same-repository PR on a maintained
 sync branch, regardless of the check result. Completion is a wakeup,
 not a merge-readiness signal. All three pairs are reconciled against current refs on
 every run; delayed or coalesced events do not replay old heads. The workflow
-checks out its own trusted workflow SHA, never the triggering branch or its
-artifacts. History is fetched with the read-only job token into a shared isolated
+checks out its own trusted workflow SHA, including `.versionrc.js` for categories,
+never the triggering branch or its artifacts. Invalid or missing category config
+fails description analysis without publishing a placeholder.
+History is fetched with the read-only job token into a shared isolated
 bare repository, with blob filtering and lazy reads for merge analysis. Fetched
 code is never checked out or executed. A controller source merge can cause one
 additional check completion; unchanged reconciliation performs no writes. Target
