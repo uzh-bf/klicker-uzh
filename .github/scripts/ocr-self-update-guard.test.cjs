@@ -100,6 +100,7 @@ test('routes automatic drafts through the pinned adapter with OpenRouter max rea
   assert.equal(job.env.OCR_ADAPTER_PROVIDER, 'openrouter')
   const run = job.steps.find((step) => step.id === 'review')
   assert.equal(run.env.OPENROUTER_API_KEY, '${{ secrets.OPENROUTER_API_KEY }}')
+  assert.equal(run.env.CONTEXT7_API_KEY, '${{ secrets.CONTEXT7_API_KEY }}')
   const publisher = job.steps.find(
     (step) => step.with?.repository === 'alibaba/open-code-review'
   )

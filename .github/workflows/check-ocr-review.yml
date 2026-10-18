@@ -94,6 +94,7 @@ jobs:
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          CONTEXT7_API_KEY: ${{ secrets.CONTEXT7_API_KEY }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           REVIEW_FROM: ${{ steps.range.outputs.from }}
           BACKGROUND: ${{ steps.context.outputs.background }}

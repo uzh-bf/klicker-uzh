@@ -75,8 +75,45 @@ test('combined cost estimates use both provider rates and withhold totals for mi
       path.join(directory, 'draft-ai-review-advisor-expectations.json'),
       JSON.stringify({ expected_receipts: 1 })
     )
+    const toolsPath = path.join(directory, 'draft-ai-review-tools.json')
+    const docs = {
+      status: 'used',
+      attempted: 4,
+      upstream_attempts: 4,
+      completed: 3,
+      failed: 1,
+      rejected: 1,
+      cache_hits: 2,
+      cancelled: 0,
+      unknown_usage: 1,
+    }
+    fs.writeFileSync(
+      toolsPath,
+      JSON.stringify({ schema: 'ocr-review-tools/v1', docs })
+    )
     let result = run()
     assert.equal(result.status, 0, result.stderr)
+    assert.match(
+      result.stdout,
+      /OCR docs status=used usage_status=partial .*unknown_usage=1 .*pro_overage_reference_usd=0.0200/
+    )
+    for (const broken of [
+      undefined,
+      { ...docs, attempted: -1 },
+      { ...docs, upstream_attempts: 5 },
+    ]) {
+      fs.writeFileSync(
+        toolsPath,
+        JSON.stringify({ schema: 'ocr-review-tools/v1', docs: broken })
+      )
+      const unavailable = run()
+      assert.equal(unavailable.status, 0, unavailable.stderr)
+      assert.match(
+        unavailable.stdout,
+        /OCR docs status=unavailable usage_status=unknown/
+      )
+      assert.doesNotMatch(unavailable.stdout, /pro_overage_reference_usd=/)
+    }
     const totals =
       /OCR cost scope=draft_and_advisor status=complete estimated_with_cache_usd=([0-9.]+) estimated_without_cache_usd=([0-9.]+) estimated_savings_usd=([0-9.]+)/.exec(
         result.stdout
@@ -210,7 +247,9 @@ process.exitCode=7
     { mode: 0o700 }
   )
   const previous = process.env.GITHUB_TOKEN
+  const previousContext7 = process.env.CONTEXT7_API_KEY
   process.env.GITHUB_TOKEN = 'PRIVATE_SENTINEL'
+  process.env.CONTEXT7_API_KEY = 'PRIVATE_SENTINEL'
   const logs = []
   try {
     const outcome = await runDraftReview({
@@ -221,6 +260,7 @@ process.exitCode=7
       background: 'synthetic',
       executable,
       apiKey: 'synthetic-provider',
+      context7ApiKey: 'PRIVATE_SENTINEL',
       write: (line) => logs.push(line),
     })
     assert.equal(outcome.code, 7)
@@ -233,6 +273,7 @@ process.exitCode=7
     assert.equal(child.env.GITHUB_TOKEN, undefined)
     assert.equal(child.env.OPENROUTER_API_KEY, undefined)
     assert.equal(child.env.MISTRAL_API_KEY, undefined)
+    assert.equal(child.env.CONTEXT7_API_KEY, undefined)
     assert.equal(child.env.OCR_NO_UPDATE, '1')
     assert.deepEqual(child.args.slice(0, 9), [
       'review',
@@ -256,6 +297,8 @@ process.exitCode=7
   } finally {
     if (previous === undefined) delete process.env.GITHUB_TOKEN
     else process.env.GITHUB_TOKEN = previous
+    if (previousContext7 === undefined) delete process.env.CONTEXT7_API_KEY
+    else process.env.CONTEXT7_API_KEY = previousContext7
     fs.rmSync(directory, { recursive: true, force: true })
   }
 })
@@ -298,6 +341,7 @@ test('pinned OCR registers and invokes reviewer tools with trusted rules and com
   const head = git('rev-parse', 'HEAD')
   let sequence = 0,
     calls = 0,
+    docsCalls = 0,
     offered = false,
     ruleSeen = false
   const response = (model, message, finish_reason) =>
@@ -324,12 +368,15 @@ test('pinned OCR registers and invokes reviewer tools with trusted rules and com
     executable: process.env.OCR_TEST_BINARY,
     apiKey: 'synthetic-router',
     advisorApiKey: 'synthetic-advisor',
+    context7ApiKey: 'synthetic-docs',
     write: (text) => logs.push(text),
     fetchImpl: async (_url, init) => {
       const body = JSON.parse(init.body)
       assert.equal(body.reasoning.effort, 'max')
       const names = body.tools?.map((tool) => tool.function.name) ?? []
-      offered ||= names.includes('ask_review_advisor')
+      offered ||=
+        names.includes('ask_review_advisor') &&
+        names.includes('lookup_library_docs')
       ruleSeen ||= JSON.stringify(body.messages).includes(
         'REVIEW_POLICY_SYNTHETIC_MARKER'
       )
@@ -350,7 +397,9 @@ test('pinned OCR registers and invokes reviewer tools with trusted rules and com
         ? 'read_review_context'
         : !previous.includes('ask_review_advisor')
           ? 'ask_review_advisor'
-          : 'task_done'
+          : !previous.includes('lookup_library_docs')
+            ? 'lookup_library_docs'
+            : 'task_done'
       const args =
         name === 'read_review_context'
           ? { path: 'docs/contract.md' }
@@ -359,7 +408,14 @@ test('pinned OCR registers and invokes reviewer tools with trusted rules and com
                 question: 'Check this synthetic invariant.',
                 context: [{ path: 'source.js', start_line: 1, end_line: 1 }],
               }
-            : { state: 'DONE' }
+            : name === 'lookup_library_docs'
+              ? {
+                  libraryId: '/vercel/next.js',
+                  query: 'cookies async route handler',
+                  version: '16',
+                  language: 'TypeScript',
+                }
+              : { state: 'DONE' }
       return response(
         'deepseek/deepseek-v4.1-flash-1017',
         {
@@ -412,6 +468,51 @@ test('pinned OCR registers and invokes reviewer tools with trusted rules and com
         'tool_calls'
       )
     },
+    context7FetchImpl: async (value, init) => {
+      docsCalls++
+      const url = new URL(value)
+      assert.equal(
+        url.origin + url.pathname,
+        'https://context7.com/api/v3/search'
+      )
+      assert.equal(url.searchParams.get('library'), '/vercel/next.js')
+      assert.equal(url.searchParams.get('version'), '16')
+      assert.equal(
+        new Headers(init.headers).get('authorization'),
+        'Bearer synthetic-docs'
+      )
+      assert.equal(init.redirect, 'error')
+      return new Response(
+        JSON.stringify({
+          codeSnippets: [
+            {
+              libraryId: '/vercel/next.js/v16.2.9',
+              codeTitle: 'Synthetic documentation',
+              codeId: 'https://example.invalid/docs',
+              codeList: [
+                {
+                  language: 'TypeScript',
+                  code: 'SYNTHETIC_DOCS_PRIVATE_SENTINEL',
+                },
+              ],
+            },
+          ],
+          infoSnippets: [],
+          version: {
+            requested: '16',
+            status: 'verified',
+            libraries: [
+              {
+                libraryId: '/vercel/next.js/v16.2.9',
+                requested: '16',
+                served: 'v16.2.9',
+                status: 'verified',
+              },
+            ],
+          },
+        })
+      )
+    },
   })
   assert.equal(outcome.code, 0)
   assert.equal(outcome.coverage.observed_status, 'complete')
@@ -423,6 +524,12 @@ test('pinned OCR registers and invokes reviewer tools with trusted rules and com
   assert.equal(tools.completed, calls)
   assert.ok(calls > 0 && calls <= 2)
   assert.ok(offered && ruleSeen)
+  assert.equal(tools.docs.completed, docsCalls)
+  assert.ok(docsCalls > 0 && docsCalls <= 4)
+  assert.match(
+    logs.join(''),
+    /OCR docs status=used .*pro_overage_reference_usd=/
+  )
   assert.equal(logs.join('').includes('PRIVATE_SENTINEL'), false)
   const usage = JSON.parse(
     fs.readFileSync(

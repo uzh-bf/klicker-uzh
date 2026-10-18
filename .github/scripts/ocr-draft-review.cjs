@@ -13,11 +13,44 @@ const {
 const { buildOCRResultDiagnostic } = require('./final-ai-review.js')
 
 const DRAFT_MODEL = 'deepseek/deepseek-v4.1-flash-1017'
+const PUBLIC_DOC_LIBRARIES = [
+  '/vercel/next.js',
+  '/reactjs/react.dev',
+  '/prisma/web',
+  '/microsoft/typescript',
+]
 const PUBLISHER_SHA256 =
   '1d5decf90627353f1e7a2cad291d4ee4ec0a661d9724b93b2d7d5246f33462e2'
 
 function summarizeCoverage(result) {
   return buildOCRResultDiagnostic('draft', { result, status: result?.status })
+}
+
+function summarizeDocs(docs) {
+  const counters = [
+    'attempted',
+    'upstream_attempts',
+    'completed',
+    'failed',
+    'rejected',
+    'cache_hits',
+    'cancelled',
+    'unknown_usage',
+  ]
+  if (
+    !docs ||
+    !['unavailable', 'unused', 'used'].includes(docs.status) ||
+    counters.some(
+      (name) => !Number.isSafeInteger(docs[name]) || docs[name] < 0
+    ) ||
+    docs.attempted > 4 ||
+    docs.upstream_attempts > docs.attempted ||
+    docs.completed + docs.failed > docs.attempted ||
+    docs.cancelled > docs.failed ||
+    docs.unknown_usage > docs.upstream_attempts
+  )
+    return 'OCR docs status=unavailable usage_status=unknown actual_billing=unknown'
+  return `OCR docs status=${docs.status} usage_status=${docs.unknown_usage ? 'partial' : 'complete'} ${counters.map((name) => `${name}=${docs[name]}`).join(' ')} pro_overage_reference_usd=${(docs.upstream_attempts * 0.005).toFixed(4)} reference_basis=upstream_attempts pricing_date=2026-10-18 actual_billing=unknown`
 }
 
 function readResult(file) {
@@ -120,6 +153,17 @@ async function runDraftReview(options) {
     rejected: 0,
     cancelled: 0,
     context_reads: 0,
+    docs: {
+      status: 'unavailable',
+      attempted: 0,
+      upstream_attempts: 0,
+      completed: 0,
+      failed: 0,
+      rejected: 0,
+      cache_hits: 0,
+      cancelled: 0,
+      unknown_usage: 0,
+    },
   }
   const initialAdvisor = {
     schema: 'ocr-review-advisor-expectations/v1',
@@ -222,6 +266,11 @@ async function runDraftReview(options) {
             ? `${advisor.url}/v1/chat/completions`
             : undefined,
           advisorToken: advisor?.token,
+          context7ApiKey: options.context7ApiKey,
+          publicLibraries: PUBLIC_DOC_LIBRARIES,
+          ...(options.context7FetchImpl
+            ? { context7FetchImpl: options.context7FetchImpl }
+            : {}),
           onDiagnostic: (record) => {
             toolsState = record
             toolReceipt(record)
@@ -255,8 +304,12 @@ async function runDraftReview(options) {
             !response.ok ||
             registered.error ||
             (method === 'tools/list' &&
-              !registered.result?.tools?.some(
-                (tool) => tool.name === 'ask_review_advisor'
+              ![
+                'ask_review_advisor',
+                'read_review_context',
+                'lookup_library_docs',
+              ].every((name) =>
+                registered.result?.tools?.some((tool) => tool.name === name)
               ))
           )
             throw new Error('tools_unavailable')
@@ -266,7 +319,11 @@ async function runDraftReview(options) {
             type: 'remote',
             url: tools.url,
             headers: { Authorization: 'Bearer ${OCR_REVIEW_TOOLS_TOKEN}' },
-            tools: ['ask_review_advisor', 'read_review_context'],
+            tools: [
+              'ask_review_advisor',
+              'read_review_context',
+              'lookup_library_docs',
+            ],
           },
         }
       } catch {
@@ -402,6 +459,7 @@ async function runDraftReview(options) {
       `OCR advisor status=${toolsState.status} registered=${Boolean(toolsState.registered)} attempted=${toolsState.attempted} completed=${toolsState.completed} failed=${toolsState.failed} rejected=${toolsState.rejected} context_reads=${toolsState.context_reads}`,
       write
     )
+    appendSummary(summarizeDocs(toolsState.docs), write)
     await advisor?.close()
     await adapter?.close()
     if (resultFd !== undefined) fs.closeSync(resultFd)
@@ -478,6 +536,19 @@ function summarizeCosts(temp) {
     `\nCombined DeepSeek draft and ${MISTRAL_MODEL} advisor reference estimate:\n\n${line}\n\nAdvisor provider usage has its own quota and does not change OCR token accounting.`,
     (text) => process.stdout.write(text)
   )
+  let docs
+  try {
+    const tools = JSON.parse(
+      fs.readFileSync(path.join(temp, 'draft-ai-review-tools.json'), 'utf8')
+    )
+    if (tools.schema === 'ocr-review-tools/v1') docs = tools.docs
+  } catch {
+    /* Missing service usage is unknown, not zero. */
+  }
+  appendSummary(
+    `${summarizeDocs(docs)}\nContext7 reference pricing excludes subscriptions, included allowances and model tokens. Actual service billing is unknown; the draft_and_advisor model total excludes this service.`,
+    (text) => process.stdout.write(text)
+  )
 }
 
 async function main() {
@@ -521,6 +592,7 @@ async function main() {
     background: process.env.BACKGROUND,
     apiKey: process.env.OPENROUTER_API_KEY,
     advisorApiKey: process.env.MISTRAL_API_KEY,
+    context7ApiKey: process.env.CONTEXT7_API_KEY,
     policy: execFileSync('git', ['rev-parse', 'HEAD'], {
       encoding: 'utf8',
     }).trim(),

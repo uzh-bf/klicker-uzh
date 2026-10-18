@@ -66,12 +66,16 @@ branch `rs/ocr-context7`. The earlier package is recorded in
   Reserve one of four attempts synchronously before asynchronous work. Invalid
   inputs count as rejected without external requests; valid failed lookups
   consume attempts. Completed cache hits consume no further service attempt.
+  Validate and check the completed cache synchronously first, then reserve a
+  slot only for a valid uncached miss before dispatching upstream I/O.
   Concurrent identical misses may use separate slots; no shared-promise layer.
   Cache identity includes normalized library ID, query, version and language.
 - Use a per-call AbortController under the existing cancellation/close path.
   Apply the 15-second deadline to headers and body; raw responses are bounded
   at 256 KiB. The completed cache holds at most four results. Never cache errors.
   Cancellation must remain cancellation even if it races completion.
+  Distinguish the deadline from caller/disconnect/runner cancellation. Deadline
+  expiry is a failed, unknown-usage docs lookup, not a client cancellation.
 - Validate the JSON envelope and normalize only documented snippets, source
   links and library/version metadata. Filter mismatched library IDs, retain only
   HTTPS source links, and ignore returned rule/instruction fields. Returned
@@ -96,6 +100,10 @@ branch `rs/ocr-context7`. The earlier package is recorded in
   included allowances and model tokens; failed/disconnected requests retain
   unknown actual billing. Do not add docs cost to the existing explicitly scoped
   `draft_and_advisor` total or change its formula and caching savings.
+  The service reference multiplier covers upstream attempts, not confirmed
+  billed calls; print that basis and `actual_billing=unknown`. Unknown usage
+  marks `usage_status=partial`, alongside its counter. This is a reference
+  overage scenario, never an unqualified invoice estimate.
 - Pass `${{ secrets.CONTEXT7_API_KEY }}` only to the trusted runner; it never
   appears in OCR's environment or configuration. Preserve current artifact
   allowlist and seven-day retention. The portable `ocr-reviewer` skill describes
@@ -167,7 +175,17 @@ pass without a skip. A missing binary leaves delivery verification pending.
 
 ## Progress
 
-- Status: approved scope translated into a frozen draft for planner hardening.
+- Status: implementation and integrated verification complete; committed-range
+  simplification, risk review and final review remain before draft delivery.
 - Terminal: reviewed source and draft PR against `v3`; merge/live activation later.
 - Baseline: 101 focused tests passed, including non-skipped pinned-CLI proof.
+- Verification: 251 integrated tests pass with no skips, including all three
+  tools through pinned OCR 1.13.0, concurrent quotas and deadline/cancellation.
+  Formatting, guidance links and agent-document checks pass. Opengrep reports
+  no findings in the two changed runtime scripts.
+- Ownership: main completed the broker after the executor returned no artifact
+  and was explicitly stopped. No replacement executor was launched.
+- Test delta: extended existing broker, runner and workflow seams; no new framework.
+- Next action: review the complete committed implementation, resolve findings,
+  then publish the draft PR. No PR exists yet.
 - Packaging: one extension to the existing draft-review pipeline; no stack.

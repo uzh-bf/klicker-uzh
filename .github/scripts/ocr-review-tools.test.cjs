@@ -56,7 +56,7 @@ async function client(t, options) {
       body: JSON.stringify({ jsonrpc: '2.0', id: ++id, method, params }),
       ...extra,
     })
-    return response.json()
+    return response.status === 202 ? undefined : response.json()
   }
   await rpc('initialize', { protocolVersion: '2025-03-26' })
   await rpc('tools/list')
@@ -106,6 +106,319 @@ const question = {
   question: 'Check the source invariant.',
   context: [{ path: 'source.js', start_line: 1, end_line: 1 }],
 }
+
+function documentation(overrides = {}) {
+  return {
+    codeSnippets: [
+      {
+        libraryId: '/vercel/next.js/v16.2.9',
+        codeTitle: 'Synthetic API',
+        codeId: 'https://example.invalid/docs',
+        codeList: [{ language: 'TypeScript', code: 'SYNTHETIC_DOCUMENTATION' }],
+      },
+    ],
+    infoSnippets: [],
+    version: {
+      requested: '16',
+      status: 'verified',
+      libraries: [
+        {
+          libraryId: '/vercel/next.js/v16.2.9',
+          requested: '16',
+          served: 'v16.2.9',
+          status: 'verified',
+        },
+      ],
+    },
+    ...overrides,
+  }
+}
+
+const docsQuestion = {
+  libraryId: '/vercel/next.js',
+  query: 'cookies async API',
+  version: '16',
+  language: 'TypeScript',
+}
+
+test('docs lookup validates outbound fields, returns bounded evidence and caches complete request identity', async (t) => {
+  let calls = 0
+  const { broker, tool, rpc } = await client(t, {
+    ...fixture(t),
+    context7ApiKey: 'synthetic-docs',
+    publicLibraries: ['/vercel/next.js'],
+    context7FetchImpl: async (value, init) => {
+      calls++
+      const url = new URL(value)
+      assert.equal(
+        url.origin + url.pathname,
+        'https://context7.com/api/v3/search'
+      )
+      assert.equal(
+        new Headers(init.headers).get('authorization'),
+        'Bearer synthetic-docs'
+      )
+      assert.equal(init.redirect, 'error')
+      return new Response(
+        JSON.stringify(
+          documentation({ rules: { global: ['PRIVATE_SENTINEL'] } })
+        )
+      )
+    },
+  })
+  const list = await rpc('tools/list')
+  assert.ok(
+    list.result.tools.some((item) => item.name === 'lookup_library_docs')
+  )
+  for (const bad of [
+    { ...docsQuestion, libraryId: '/private/repository' },
+    { ...docsQuestion, query: 'https://private.invalid/path' },
+    { ...docsQuestion, query: 'api_key: sk-synthetic-secret' },
+    { ...docsQuestion, query: 'const secret = value;' },
+    { ...docsQuestion, version: '16\nPRIVATE_SENTINEL' },
+    { ...docsQuestion, language: 'PRIVATE_SENTINEL' },
+    { ...docsQuestion, context: 'PRIVATE_SENTINEL' },
+  ])
+    assert.equal((await tool('lookup_library_docs', bad)).result.isError, true)
+  assert.equal(calls, 0)
+  const first = await tool('lookup_library_docs', docsQuestion)
+  assert.notEqual(first.result.isError, true)
+  const value = JSON.parse(first.result.content[0].text)
+  assert.equal(value.version_status, 'verified')
+  assert.equal(value.requested_version, '16')
+  assert.equal(value.served_version, 'v16.2.9')
+  assert.equal(JSON.stringify(value).includes('PRIVATE_SENTINEL'), false)
+  assert.ok(Buffer.byteLength(first.result.content[0].text) <= 8192)
+  await tool('lookup_library_docs', docsQuestion)
+  assert.equal(calls, 1)
+  await tool('lookup_library_docs', { ...docsQuestion, version: '15' })
+  await tool('lookup_library_docs', { ...docsQuestion, language: 'JavaScript' })
+  assert.equal(calls, 3)
+  assert.equal(broker.diagnostics().docs.cache_hits, 1)
+  assert.equal(broker.diagnostics().attempted, 0)
+  assert.equal(JSON.stringify(broker.diagnostics()).includes('cookies'), false)
+})
+
+test('docs responses preserve version uncertainty, filter unrelated sources and bound the entire envelope', async (t) => {
+  let payload
+  const { tool } = await client(t, {
+    ...fixture(t),
+    context7ApiKey: 'synthetic',
+    publicLibraries: ['/vercel/next.js'],
+    context7FetchImpl: async () => new Response(JSON.stringify(payload)),
+  })
+  const cases = [
+    [documentation({ version: undefined }), 'unverified'],
+    [documentation({ version: { requested: '16' } }), 'unverified'],
+    [
+      documentation({
+        version: {
+          requested: '16',
+          status: 'verified',
+          libraries: [
+            {
+              libraryId: '/vercel/next.js',
+              requested: '16',
+              served: '16',
+              status: 'verified',
+            },
+          ],
+        },
+      }),
+      'unverified',
+    ],
+    [
+      documentation({
+        codeSnippets: [
+          {
+            libraryId: '/vercel/next.js/v15.0.0',
+            codeId: 'https://example.invalid/docs',
+            codeList: [{ code: 'synthetic' }],
+          },
+        ],
+      }),
+      'unverified',
+    ],
+  ]
+  for (const [index, [value, status]] of cases.entries()) {
+    payload = value
+    const r = await tool('lookup_library_docs', {
+      ...docsQuestion,
+      query: `public API ${index}`,
+    })
+    assert.notEqual(r.result.isError, true)
+    assert.equal(JSON.parse(r.result.content[0].text).version_status, status)
+  }
+  const second = await client(t, {
+    ...fixture(t),
+    context7ApiKey: 'synthetic',
+    publicLibraries: ['/vercel/next.js'],
+    context7FetchImpl: async () => new Response(JSON.stringify(payload)),
+  })
+  payload = documentation({
+    codeSnippets: [
+      {
+        libraryId: '/unrelated/library',
+        codeId: 'https://example.invalid/other',
+        codeList: [{ code: 'PRIVATE_SENTINEL' }],
+      },
+      {
+        libraryId: '/vercel/next.js/v16.2.9',
+        codeId: 'http://example.invalid/insecure',
+        codeList: [{ code: 'PRIVATE_SENTINEL' }],
+      },
+      {
+        libraryId: '/vercel/next.js/v16.2.9',
+        codeId: 'https://example.invalid/large',
+        codeList: [{ code: '🔬'.repeat(20000) }],
+      },
+    ],
+  })
+  let r = await second.tool('lookup_library_docs', docsQuestion)
+  assert.ok(Buffer.byteLength(r.result.content[0].text) <= 8192)
+  const bounded = JSON.parse(r.result.content[0].text)
+  assert.equal(bounded.truncated, true)
+  assert.equal(bounded.evidence.length, 1)
+  assert.doesNotMatch(r.result.content[0].text, /PRIVATE_SENTINEL/)
+  payload = documentation({ codeSnippets: [] })
+  r = await second.tool('lookup_library_docs', {
+    ...docsQuestion,
+    query: 'other public API',
+  })
+  assert.equal(JSON.parse(r.result.content[0].text).status, 'no_docs')
+  payload = { unexpected: 'PRIVATE_SENTINEL' }
+  assert.equal(
+    (
+      await second.tool('lookup_library_docs', {
+        ...docsQuestion,
+        query: 'third public API',
+      })
+    ).result.isError,
+    true
+  )
+})
+
+test('docs quotas are shared across concurrent requests and do not consume advisor slots', async (t) => {
+  let calls = 0
+  const { tool, broker } = await client(t, {
+    ...fixture(t),
+    context7ApiKey: 'synthetic',
+    publicLibraries: ['/vercel/next.js'],
+    advisorUrl: 'http://127.0.0.1:1234/v1/chat/completions',
+    advisorToken: 'synthetic',
+    fetchImpl: async () => advice(),
+    context7FetchImpl: async () => {
+      calls++
+      await new Promise((resolve) => setTimeout(resolve, 15))
+      return new Response('PRIVATE_SENTINEL', { status: 429 })
+    },
+  })
+  const results = await Promise.all(
+    Array.from({ length: 6 }, (_, i) =>
+      tool('lookup_library_docs', { ...docsQuestion, query: `public API ${i}` })
+    )
+  )
+  assert.equal(calls, 4)
+  assert.ok(results.every((x) => x.result.isError))
+  assert.equal(broker.diagnostics().docs.attempted, 4)
+  assert.equal(broker.diagnostics().docs.unknown_usage, 4)
+  assert.equal(broker.diagnostics().docs.rejected, 2)
+  assert.equal(JSON.stringify(results).includes('PRIVATE_SENTINEL'), false)
+  assert.notEqual(
+    (await tool('ask_review_advisor', question)).result.isError,
+    true
+  )
+  assert.notEqual(
+    (await tool('ask_review_advisor', question)).result.isError,
+    true
+  )
+  assert.equal(broker.diagnostics().completed, 2)
+  const absent = await client(t, {
+    ...fixture(t),
+    publicLibraries: ['/vercel/next.js'],
+  })
+  assert.equal(
+    (await absent.tool('lookup_library_docs', docsQuestion)).result.isError,
+    true
+  )
+  assert.equal(absent.broker.diagnostics().docs.upstream_attempts, 0)
+  const empty = await client(t, fixture(t))
+  assert.equal(
+    (await empty.tool('lookup_library_docs', docsQuestion)).result.content[0]
+      .text,
+    'docs_unavailable'
+  )
+})
+
+test('docs failures, oversized bodies and caller cancellation remain bounded and content-free', async (t) => {
+  for (const response of [
+    () => {
+      throw Error('PRIVATE_SENTINEL')
+    },
+    () => new Response('invalid PRIVATE_SENTINEL'),
+    () => new Response('x'.repeat(262145)),
+  ]) {
+    const { tool, broker } = await client(t, {
+      ...fixture(t),
+      context7ApiKey: 'synthetic',
+      publicLibraries: ['/vercel/next.js'],
+      context7FetchImpl: async () => response(),
+    })
+    const r = await tool('lookup_library_docs', docsQuestion)
+    assert.equal(r.result.isError, true)
+    assert.doesNotMatch(JSON.stringify(r), /PRIVATE_SENTINEL/)
+    assert.equal(broker.diagnostics().docs.failed, 1)
+    assert.equal(broker.diagnostics().docs.cancelled, 0)
+  }
+  let started
+  const ready = new Promise((resolve) => {
+    started = resolve
+  })
+  const { tool, broker, rpc } = await client(t, {
+    ...fixture(t),
+    context7ApiKey: 'synthetic',
+    publicLibraries: ['/vercel/next.js'],
+    context7FetchImpl: async (_url, init) =>
+      new Promise((_resolve, reject) => {
+        started()
+        init.signal.addEventListener(
+          'abort',
+          () => reject(Error('PRIVATE_SENTINEL')),
+          { once: true }
+        )
+      }),
+  })
+  const pending = tool('lookup_library_docs', docsQuestion)
+  await ready
+  await rpc('notifications/cancelled', { requestId: 3 })
+  const r = await pending
+  assert.equal(r.result.content[0].text, 'cancelled')
+  assert.equal(broker.diagnostics().docs.cancelled, 1)
+  assert.equal(broker.diagnostics().docs.unknown_usage, 1)
+})
+
+test('docs deadline expires as an upstream failure instead of a client cancellation', {
+  timeout: 20000,
+}, async (t) => {
+  const { tool, broker } = await client(t, {
+    ...fixture(t),
+    context7ApiKey: 'synthetic',
+    publicLibraries: ['/vercel/next.js'],
+    context7FetchImpl: async (_url, init) =>
+      new Promise((_resolve, reject) => {
+        init.signal.addEventListener(
+          'abort',
+          () => reject(Error('PRIVATE_SENTINEL')),
+          { once: true }
+        )
+      }),
+  })
+  const r = await tool('lookup_library_docs', docsQuestion)
+  assert.equal(r.result.content[0].text, 'docs_unavailable')
+  assert.equal(broker.diagnostics().docs.cancelled, 0)
+  assert.equal(broker.diagnostics().docs.failed, 1)
+  assert.equal(broker.diagnostics().docs.unknown_usage, 1)
+})
 
 test('MCP context reads trusted Git content and rejects traversal, symlinks and unauthorized requests', async (t) => {
   const { broker, rpc, tool } = await client(t, fixture(t))
