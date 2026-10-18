@@ -238,7 +238,7 @@ ADR gate: the runner isolation architecture passes. It is durable and cross-cutt
 
   Report: `project/_local/reviews/2026-10-17-browser-code-playground-planner.md`. Next: user approval of execution.
 - 2026-10-18: Execution approved on 2026-10-17. S1 and S2 are on `rs/browser-code-policy`, S3 and S4 on `rs/browser-code-playground`. Mode: solo, with a final simplification pass and a self-review. Deviations from the plan:
-  - The kill switch is set for local runs in the gitignored `apps/chat/.env.local`. Changing `.devcontainer/devcontainer.env` made devrouter report a changed managed Compose configuration.
+  - Initial local runs set the kill switch in the gitignored `apps/chat/.env.local` after devrouter reported changed managed Compose configuration. Review follow-up restores the planned `CHAT_CODE_EXECUTION_ENABLED=true` in `.devcontainer/devcontainer.env`, so clean local test environments inherit it. Per-mode profile admission remains required. Shell loading, Compose rendering and all 45 host-launcher tests passed; existing browser evidence used the same enabled flag. The retained stopped runtime has not been restarted with this configuration change.
   - The policy normalizer lives in the Chat app (`apps/chat/src/lib/code-runner/profiles.ts`), its only consumer, instead of `packages/util`.
   - `manifest.ts` landed in S3 with the bridge that consumes it.
   - The migration was generated with `prisma migrate diff`, because `migrate dev` asked to reset the disposable database.
