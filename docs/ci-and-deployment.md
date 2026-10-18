@@ -429,7 +429,13 @@ Shard durations differ by architecture, so `playwright/timings.json` names the a
   Private repository adopters must authorize an appropriate public-query policy.
   No source excerpts or PR/MR descriptions are automatically attached. The
   existing sanitized tools receipt and `OCR docs` log lines report counters
-  without query or result content. A separate service reference estimate uses
+  without query or result content. Failed lookups also record a fixed failure
+  classification and the HTTP status of the most recent failed attempt, when
+  a response arrived. Transport failures and deadlines remain distinct from
+  HTTP rejection; older receipts without those fields report unknown details.
+  Filtered live progress includes documentation tool start, completion and
+  failure events without arguments or results. A separate service reference
+  estimate uses
   the [2026-10-18 Pro overage rate](https://context7.com/plans) of USD 0.005 per
   upstream request; four requests represent USD 0.02. It excludes subscriptions,
   included allowances and model tokens, and is not an actual bill. Failed or

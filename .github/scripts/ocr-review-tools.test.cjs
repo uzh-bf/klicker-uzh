@@ -323,6 +323,8 @@ test('docs quotas are shared across concurrent requests and do not consume advis
   assert.equal(broker.diagnostics().docs.attempted, 4)
   assert.equal(broker.diagnostics().docs.unknown_usage, 4)
   assert.equal(broker.diagnostics().docs.rejected, 2)
+  assert.equal(broker.diagnostics().docs.last_failure, 'http_error')
+  assert.equal(broker.diagnostics().docs.last_failure_http_status, 429)
   assert.equal(JSON.stringify(results).includes('PRIVATE_SENTINEL'), false)
   assert.notEqual(
     (await tool('ask_review_advisor', question)).result.isError,
@@ -351,12 +353,21 @@ test('docs quotas are shared across concurrent requests and do not consume advis
 })
 
 test('docs failures, oversized bodies and caller cancellation remain bounded and content-free', async (t) => {
-  for (const response of [
-    () => {
-      throw Error('PRIVATE_SENTINEL')
-    },
-    () => new Response('invalid PRIVATE_SENTINEL'),
-    () => new Response('x'.repeat(262145)),
+  for (const [response, kind, status] of [
+    [
+      () => {
+        throw Error('PRIVATE_SENTINEL')
+      },
+      'transport_error',
+      null,
+    ],
+    [
+      () => new Response('PRIVATE_SENTINEL', { status: 401 }),
+      'http_error',
+      401,
+    ],
+    [() => new Response('invalid PRIVATE_SENTINEL'), 'invalid_response', 200],
+    [() => new Response('x'.repeat(262145)), 'response_too_large', 200],
   ]) {
     const { tool, broker } = await client(t, {
       ...fixture(t),
@@ -369,6 +380,12 @@ test('docs failures, oversized bodies and caller cancellation remain bounded and
     assert.doesNotMatch(JSON.stringify(r), /PRIVATE_SENTINEL/)
     assert.equal(broker.diagnostics().docs.failed, 1)
     assert.equal(broker.diagnostics().docs.cancelled, 0)
+    assert.equal(broker.diagnostics().docs.last_failure, kind)
+    assert.equal(broker.diagnostics().docs.last_failure_http_status, status)
+    assert.doesNotMatch(
+      JSON.stringify(broker.diagnostics()),
+      /PRIVATE_SENTINEL/
+    )
   }
   let started
   const ready = new Promise((resolve) => {
@@ -394,6 +411,7 @@ test('docs failures, oversized bodies and caller cancellation remain bounded and
   const r = await pending
   assert.equal(r.result.content[0].text, 'cancelled')
   assert.equal(broker.diagnostics().docs.cancelled, 1)
+  assert.equal(broker.diagnostics().docs.last_failure, 'cancelled')
   assert.equal(broker.diagnostics().docs.unknown_usage, 1)
 })
 
@@ -417,6 +435,7 @@ test('docs deadline expires as an upstream failure instead of a client cancellat
   assert.equal(r.result.content[0].text, 'docs_unavailable')
   assert.equal(broker.diagnostics().docs.cancelled, 0)
   assert.equal(broker.diagnostics().docs.failed, 1)
+  assert.equal(broker.diagnostics().docs.last_failure, 'timeout')
   assert.equal(broker.diagnostics().docs.unknown_usage, 1)
 })
 
