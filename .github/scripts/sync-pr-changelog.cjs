@@ -102,7 +102,9 @@ function renderChangelog(evidence, repository, categories) {
               })
             : rendered[key].map(({ item }) => item)
         if (omitted[key].commits) {
-          entries.push(omission(omitted[key].commits, omitted[key].paths))
+          const footer = omission(omitted[key].commits, omitted[key].paths)
+          if (key === 'imported') entries.unshift(footer)
+          else entries.push(footer)
         }
         return [`## ${title}\n\n${entries.join('\n\n')}`]
       }),

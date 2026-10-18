@@ -255,6 +255,14 @@ test('accounts for aggregate category overhead while retaining merge and additio
     })
   }
   assert.ok(result.omitted.imported.commits > 0)
+  const bodyLines = result.body.split('\n')
+  const notice = bodyLines.findIndex(
+    (line) =>
+      line.startsWith('- ') &&
+      line.includes(`/compare/${targetSha}...${snapshots.headSha}`)
+  )
+  assert.ok(notice >= 0)
+  assert.ok(notice < bodyLines.findIndex((line) => line.startsWith('### ')))
   assert.equal(result.omitted.mergeEdits.commits, 0)
   assert.equal(result.omitted.additional.commits, 0)
 })

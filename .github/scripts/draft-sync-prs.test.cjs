@@ -174,11 +174,6 @@ function fixture({
         },
       },
       repos: {
-        async getBranch({ branch }) {
-          return {
-            data: { commit: { sha: refs.get(branch) ?? sources[branch] } },
-          }
-        },
         async compareCommitsWithBasehead(input) {
           comparisons.push(input)
           return { data: { ahead_by: ahead, files, status } }
