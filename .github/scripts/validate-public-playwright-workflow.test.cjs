@@ -907,6 +907,10 @@ function readRunnerTrial() {
   )
 }
 
+function githubExpression(value) {
+  return `\${{ ${value} }}`
+}
+
 test('runner qualification stays opt-in and preserves the public execution contract', () => {
   const trial = readRunnerTrial()
   const ordinary = YAML.parse(
@@ -921,11 +925,34 @@ test('runner qualification stays opt-in and preserves the public execution contr
     paths: ['.github/workflows/warpbuild-playwright-trial.yml'],
   })
   assert.equal(
-    trial.jobs.prepare.if.replace(/\s+/g, ' '),
+    trial.jobs.prepare.if.replace(/\s+/g, ' ').trim(),
     "false && github.repository == 'uzh-bf/klicker-uzh' && github.ref == 'refs/heads/rs/warpbuild-qualification' && github.run_attempt == 1"
   )
   assert.deepEqual(trial.permissions, { contents: 'read' })
   assert.deepEqual(trial.jobs['trial-status'].permissions, {})
+  for (const role of ['prepare', 'build', 'shards']) {
+    assert.deepEqual(trial.jobs[role].permissions ?? trial.permissions, {
+      contents: 'read',
+    })
+  }
+  assert.deepEqual(trial.jobs.prepare.steps[0].with, {
+    ref: githubExpression('github.sha'),
+    path: '.ci-control',
+    'persist-credentials': false,
+  })
+  assert.deepEqual(trial.jobs.prepare.steps[1].with, {
+    ref: githubExpression('env.TRIAL_SOURCE_SHA'),
+    path: '.candidate',
+    'persist-credentials': false,
+  })
+  assert.deepEqual(
+    trial.jobs.prepare.outputs,
+    Object.fromEntries(
+      ['source_sha', 'build_runner', 'shard_runner', 'shard_matrix'].map(
+        (key) => [key, githubExpression(`steps.plan.outputs.${key}`)]
+      )
+    )
+  )
   assert.deepEqual(trial.jobs.build.needs, 'prepare')
   assert.deepEqual(trial.jobs.shards.needs, ['prepare', 'build'])
   assert.deepEqual(trial.jobs['trial-status'].needs, [
@@ -933,31 +960,38 @@ test('runner qualification stays opt-in and preserves the public execution contr
     'build',
     'shards',
   ])
-  for (const [role, action] of [
-    ['build', 'playwright-build'],
-    ['shards', 'playwright-shard'],
+  const actionRevision = trial.jobs.build.steps[1].uses.split('@')[1]
+  assert.match(actionRevision, /^[a-f0-9]{40}$/)
+  for (const [role, action, ordinaryRole, runnerOutput] of [
+    [
+      'build',
+      'playwright-build',
+      'build-and-compile-public-pr',
+      'build_runner',
+    ],
+    ['shards', 'playwright-shard', 'test-playwright-public-pr', 'shard_runner'],
   ]) {
     const job = trial.jobs[role]
     assert.equal(job['timeout-minutes'], 45)
+    assert.deepEqual(job.container, ordinary.jobs[ordinaryRole].container)
     assert.equal(
-      job.container.image,
-      ordinary.jobs['build-and-compile-public-pr'].container.image
+      job['runs-on'],
+      githubExpression(`fromJSON(needs.prepare.outputs.${runnerOutput})`)
     )
     assert.equal(
       job.steps[0].with.ref,
-      // biome-ignore lint/suspicious/noTemplateCurlyInString: GitHub expression is a literal protocol value.
-      '${{ needs.prepare.outputs.source_sha }}'
+      githubExpression('needs.prepare.outputs.source_sha')
     )
     assert.equal(job.steps[0].with['persist-credentials'], false)
     assert.equal(
       job.steps[1].uses,
-      `uzh-bf/klicker-uzh/.github/actions/${action}@${trial.env.TRIAL_CONTROL_SHA}`
+      `uzh-bf/klicker-uzh/.github/actions/${action}@${actionRevision}`
     )
+    assert.equal(job.steps[1].with.route, 'public-pr')
     assert.equal(job.steps[1].with.mode, 'full')
     assert.equal(
       job.steps[1].with['cache-enabled'],
-      // biome-ignore lint/suspicious/noTemplateCurlyInString: GitHub expression is a literal protocol value.
-      '${{ env.TRIAL_CACHE_ENABLED }}'
+      githubExpression('env.TRIAL_CACHE_ENABLED')
     )
   }
   assert.deepEqual(
@@ -966,6 +1000,10 @@ test('runner qualification stays opt-in and preserves the public execution contr
   )
   assert.equal(trial.jobs.shards.strategy['fail-fast'], false)
   assert.equal(trial.jobs.shards.strategy['max-parallel'], 8)
+  assert.equal(
+    trial.jobs.shards.strategy.matrix,
+    githubExpression('fromJSON(needs.prepare.outputs.shard_matrix)')
+  )
   assert.equal(trial.jobs.shards.steps[1].with.workers, '1')
   assert.equal(
     trial.jobs['trial-status'].if,
@@ -976,7 +1014,10 @@ test('runner qualification stays opt-in and preserves the public execution contr
 test('runner qualification rejects mismatched plans and unsupported experiment dimensions', (t) => {
   const trial = readRunnerTrial()
   const step = trial.jobs.prepare.steps.find((entry) => entry.id === 'plan')
-  const script = step.run.split("node <<'NODE'\n")[1].split('\nNODE')[0]
+  assert.equal(typeof step?.run, 'string')
+  const heredoc = step.run.match(/node <<'NODE'\n([\s\S]+)\nNODE(?:\n|$)/)
+  assert.ok(heredoc, 'prepare step must contain its Node admission script')
+  const script = heredoc[1]
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'runner-trial-'))
   t.after(() => fs.rmSync(root, { recursive: true, force: true }))
   const candidateSpecs = Array.from(
@@ -997,6 +1038,9 @@ test('runner qualification rejects mismatched plans and unsupported experiment d
     })),
   }
   function run(env = {}, changePlan = (value) => value) {
+    for (const file of ['output', 'summary']) {
+      fs.rmSync(path.join(root, file), { force: true })
+    }
     fs.writeFileSync(
       path.join(root, 'playwright-execution-plan.json'),
       JSON.stringify(changePlan(structuredClone(plan)))
@@ -1014,7 +1058,8 @@ test('runner qualification rejects mismatched plans and unsupported experiment d
       encoding: 'utf8',
     })
   }
-  assert.equal(run().status, 0)
+  const result = run()
+  assert.equal(result.status, 0, result.stderr)
   const outputs = fs.readFileSync(path.join(root, 'output'), 'utf8')
   assert.deepEqual(JSON.parse(outputs.match(/^build_runner=(.+)$/m)[1]), {
     group: 'Default',
@@ -1024,6 +1069,22 @@ test('runner qualification rejects mismatched plans and unsupported experiment d
     group: 'Default',
     labels: trial.env.TRIAL_SHARD_LABEL,
   })
+  assert.equal(outputs.match(/^source_sha=(.+)$/m)[1], plan.headSha)
+  assert.deepEqual(JSON.parse(outputs.match(/^shard_matrix=(.+)$/m)[1]), {
+    include: plan.shards.map(({ shardIndex, shardTotal }) => ({
+      shardIndex,
+      shardTotal,
+    })),
+  })
+  function assertRejected(result, context) {
+    assert.equal(
+      result.status,
+      1,
+      `${context}\n${result.error ?? ''}\n${result.stdout}\n${result.stderr}`
+    )
+    assert.equal(fs.existsSync(path.join(root, 'output')), false)
+    assert.equal(fs.existsSync(path.join(root, 'summary')), false)
+  }
   for (const env of [
     { TRIAL_PROVIDER: 'unknown' },
     { TRIAL_PROVIDER: 'hetzner' },
@@ -1032,19 +1093,29 @@ test('runner qualification rejects mismatched plans and unsupported experiment d
     { TRIAL_CACHE_ENABLED: 'yes' },
     { TRIAL_BUILD_LABEL: 'ubuntu-latest' },
     { TRIAL_SHARD_LABEL: 'self-hosted' },
-  ])
-    assert.notEqual(run(env).status, 0, JSON.stringify(env))
+  ]) {
+    assertRejected(run(env), JSON.stringify(env))
+  }
   for (const changePlan of [
     (p) => ({ ...p, mode: 'skip' }),
     (p) => ({ ...p, headSha: 'b'.repeat(40) }),
+    (p) => ({ ...p, baseSha: 'b'.repeat(40) }),
+    (p) => ({ ...p, shardCount: 7 }),
     (p) => ({ ...p, selectedSpecs: p.selectedSpecs.slice(1) }),
     (p) => ({ ...p, shards: p.shards.slice(1) }),
-  ])
-    assert.notEqual(run({}, changePlan).status, 0)
+  ]) {
+    assertRejected(run({}, changePlan), changePlan.toString())
+  }
 })
 
 test('runner qualification aggregate rejects failed, cancelled and skipped producers', () => {
-  const script = readRunnerTrial().jobs['trial-status'].steps[0].run
+  const step = readRunnerTrial().jobs['trial-status'].steps[0]
+  assert.deepEqual(step.env, {
+    PREPARE: githubExpression('needs.prepare.result'),
+    BUILD: githubExpression('needs.build.result'),
+    SHARDS: githubExpression('needs.shards.result'),
+  })
+  const script = step.run
   const success = { PREPARE: 'success', BUILD: 'success', SHARDS: 'success' }
   for (const [key, result] of [
     ['', 'success'],
@@ -1056,7 +1127,12 @@ test('runner qualification aggregate rejects failed, cancelled and skipped produ
   ]) {
     const output = spawnSync('bash', ['-c', script], {
       env: { ...process.env, ...success, ...(key ? { [key]: result } : {}) },
+      encoding: 'utf8',
     })
-    assert.equal(output.status === 0, key === '')
+    assert.equal(
+      output.status,
+      key === '' ? 0 : 1,
+      `${key}=${result}\n${output.error ?? ''}\n${output.stdout}\n${output.stderr}`
+    )
   }
 })

@@ -11,9 +11,10 @@ permissions:
 
 # These values form one immutable experiment configuration. Change only one
 # measured factor between paired waves and reserve its cost before pushing.
+# The operator admits waves and enforces total spend and concurrent-wave limits;
+# workflow-wide serialization would prevent the deliberate burst comparison.
 env:
   TRIAL_SOURCE_SHA: f50c46bcb16193876f2ba60da1651d4364947d8d
-  TRIAL_CONTROL_SHA: f50c46bcb16193876f2ba60da1651d4364947d8d
   TRIAL_WAVE: '1'
   TRIAL_PROVIDER: warpbuild
   TRIAL_BUILD_LABEL: warp-ubuntu-2404-arm64-8x

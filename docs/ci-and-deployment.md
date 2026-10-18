@@ -755,13 +755,16 @@ enable the published disabled version.
 Before enabling it, verify the actual provider connection, complete runner-group
 policy and billing controls. Keep the submission count, consumed cost and
 in-flight reservations in private operator records. The workflow's wave ordinal
-and timeouts do not enforce an account-wide spending cap. Stop new submissions
+and timeouts do not enforce spending or concurrent-wave caps. Operator admission
+owns those limits so deliberate burst comparisons can overlap. Stop new submissions
 when the approved budget cannot cover the next wave and existing reservations.
 Keep the existing pool and required-check routing unchanged.
 
 Each wave freezes its candidate SHA, provider, runner sizes and cache setting in
-the workflow. It reuses the pinned public build and shard actions and service
-topology. Hetzner controls use their existing allowed workflow; the trial does
+the workflow. Its actual workflow revision (`github.sha`) supplies the trusted
+selector; the shared public build and shard actions have separate literal commit
+pins. Record both identities for paired comparisons. It preserves the public
+service topology. Hetzner controls use their existing allowed workflow; the trial does
 not add a new workflow to that runner group's policy. The selector's
 same-revision plan runs the complete
 ordinary eight-shard suite; separately designated production tests retain their

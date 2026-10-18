@@ -57,7 +57,7 @@ submitted jobs and receipts. Do not cancel unrelated work or reset caches.
 Target `v3`; branch `rs/warpbuild-qualification`. Source baseline is
 `f50c46bcb16193876f2ba60da1651d4364947d8d`. Existing operations guidance remains
 [CI & Deployment](../docs/ci-and-deployment.md#public-arm64-runner-operations).
-No PR exists yet.
+Draft [PR #6606](https://github.com/uzh-bf/klicker-uzh/pull/6606) contains this package.
 
 [WarpBuild cloud runners](https://www.warpbuild.com/docs/ci/cloud-runners)
 document ephemeral Linux ARM64 machines. Initial candidates are an eight-vCPU
@@ -176,6 +176,16 @@ initial prepare gate is a literal false, so publication cannot inherit an
 unexpected organization-variable opt-in. Integrated review is a self-review,
 covering correctness, scope, security, architecture and maintainability.
 
-Status: source publication pending. Account/policy and cost evidence is kept
-privately. No paid trial has been submitted. No source merge or live policy
-change made. Actual provider compatibility, latency and cost remain unproved.
+Review corrections strengthen the existing three trial tests: trusted checkout
+and permission boundaries, output/runner/matrix/result wiring, role-specific
+containers, immutable shared action pins, full-source admission and fail-closed
+outputs. The unused control variable is removed; the workflow revision supplies
+trusted selector control and literal commit pins identify shared actions.
+Operator admission retains ownership of concurrent-wave and spending caps.
+Test delta: three changed, none added or removed. Main-session correction review
+is a self-review, not independent proof. The corrected full 96-contract suite
+passes in the same isolated Node 24.21.0 environment.
+
+Status: published draft with source CI and feedback disposition in progress.
+Account/policy and cost evidence is kept privately. No paid trial has been
+submitted. Actual provider compatibility, latency and cost remain unproved.
