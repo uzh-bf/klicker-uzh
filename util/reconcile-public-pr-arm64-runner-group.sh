@@ -371,6 +371,7 @@ apply_role_labels() {
   require_confirmation 'APPLY PUBLIC PR RUNNER ROLES' \
     'This changes only scheduling role labels. Approved dispatch pause, drain, host-state proof and one operator are required.'
   # Never overwrite a prior receipt, including through a symlink.
+  [[ ! -e "$RECEIPT" && ! -L "$RECEIPT" ]] || die 'receipt path already exists'
   set -o noclobber
   exec 3>"$RECEIPT" || die 'receipt must be a new writable private file'
   set +o noclobber

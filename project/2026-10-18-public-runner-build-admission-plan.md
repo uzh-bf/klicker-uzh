@@ -236,8 +236,36 @@ Slice 2 implemented: public role selectors and structural workflow validation.
 All 93 `check:playwright-ci` tests and the workflow validator pass in isolated
 Node 24.21.0 with the existing dependency versions. Test delta: one table-driven
 role-policy test added at the existing validator seam. The shell-policy suite
-also passes after the empty-path regression check. Slice 2 review is pending on
-its committed scope. Next: operations documentation and integrated self-review.
+also passes after the empty-path regression check. Committed-slice review
+confirmed the two role-specific
+selectors and hosted fallback, with no job, dependency, image, permission or
+cache changes. The structural validator replaces the old regex count and rejects
+unknown pool selectors. Slice 3 documentation is complete; publish the draft
+after final committed-state inspection.
+
+Integrated simplification retained the existing CLI and validator seams; no
+new module, service, dependency or runtime is needed. Final correctness review
+found an existing-path receipt edge case: Bash noclobber alone accepts a symlink
+to a device. A synthetic red/green regression now requires explicit rejection
+before any label write. This is an in-scope source correction. The operations
+guide carries the durable complete-map, drain and recovery contract; no separate
+solution document or ADR is warranted.
+Package size: 552 substantive added/deleted lines excluding this project plan;
+one cohesive role-admission capability, using existing seams and one draft PR.
+Final review lenses: correctness, plan compliance, maintainability, executable
+security and the scheduler/API seam. Product/domain and UI lenses do not apply.
+The hardest choice was a dual-role build lane: it preserves shard eligibility
+but can delay builds. Dynamic reservation and dedicated build-only capacity
+were rejected for additional lifecycle ownership or idle capacity cost.
+Least-confident boundary remains the physical-host/held-service assertion: the
+source tool cannot prove it, and the later approved operator packet must.
+Local verification includes shell syntax, ShellCheck, policy fixture failures,
+93 Playwright contract tests, workflow validator, YAML parsing, changed-file
+Biome/Prettier, diff whitespace and staged gitleaks. One unchanged Biome warning
+flags the pre-existing GitHub expression string. Full app checks/build were not
+run because this source package changes no application behavior; Git hooks have
+no full dependency install and CI remains required. No application runtime was
+started. All private environment observations are excluded from the source.
 Source publication and all live mutations are unstarted. No implementation PR
 exists yet. Source baseline and fresh `origin/v3` are aligned at `92fabf9f6226`.
 The rollback merge/source tree is verified; exact-merge push CI and a normal

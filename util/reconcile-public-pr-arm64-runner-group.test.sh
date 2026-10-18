@@ -180,6 +180,15 @@ expect_role_failures() {
       fail 'confirmation or receipt failure caused an API write'
     fi
   done
+  ROLE_STATE="${TEMP_DIR}/roles-special-receipt"
+  ln -s /dev/null "${ROLE_STATE}.receipt"
+  if printf 'APPLY PUBLIC PR RUNNER ROLES\n' |
+    run_policy roles-special-receipt --apply-roles "${TEMP_DIR}/roles.json" --receipt "${ROLE_STATE}.receipt" >"${ROLE_STATE}.out" 2>&1; then
+    fail 'a special-file symlink discarded the required receipt'
+  fi
+  if grep -Eq '^(PUT|PATCH|POST|DELETE) ' "${ROLE_STATE}.calls"; then
+    fail 'a special receipt path allowed label writes'
+  fi
   unset ROLE_STATE
 }
 
