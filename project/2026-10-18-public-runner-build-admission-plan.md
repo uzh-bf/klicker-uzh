@@ -218,7 +218,15 @@ authorized by this plan or by passing this inequality alone.
 
 Current approval mode: executable batch, source-only, approved 2026-10-18.
 Plan preparation and main-session self-review are complete; observation remains
-separate. Active slice: role-policy CLI and synthetic failure fixtures.
+separate. Slice 1 implemented: role-policy CLI and synthetic failure fixtures.
+The CLI checks exact runner identity and complete prior custom labels, preserves
+unrelated labels, writes a private append-only receipt, and stops on drift or
+partial failure. Recovery remains an explicit operator action, never an unsafe
+automatic rollback over concurrent edits. Shell syntax, ShellCheck and the
+extended policy fixture suite pass. Test delta: extended the existing CLI suite;
+no new test file. Main-session slice review and simplification inspect the
+committed slice before workflow selectors are changed.
+Next slice: public role selectors and structural workflow validation.
 Source publication and all live mutations are unstarted. No implementation PR
 exists yet. Source baseline and fresh `origin/v3` are aligned at `92fabf9f6226`.
 The rollback merge/source tree is verified; exact-merge push CI and a normal
