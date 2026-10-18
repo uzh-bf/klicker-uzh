@@ -826,9 +826,9 @@ do not infer one cause from total duration alone.
 
 ### Build task concurrency
 
-The shared Playwright build action uses Turbo task concurrency two for the
-`public-pr` route and four for `hosted`, on both bounded and full application
-build graphs. Unknown routes fail before a build starts. The full graph still
+The shared Playwright build action uses Turbo task concurrency four for both
+`public-pr` and `hosted`, on bounded and full application build graphs.
+Unknown routes fail before a build starts. The full graph still
 builds Prisma separately, and missing bounded filters still select the complete
 graph. This limits overlapping Turbo tasks, not subprocesses or container memory.
 Browser worker counts and runner activation are independent.

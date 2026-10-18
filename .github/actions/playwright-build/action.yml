@@ -149,7 +149,7 @@ runs:
       shell: bash
       run: |
         case "$PLAYWRIGHT_ROUTE" in
-          public-pr) build_concurrency=2 ;;
+          public-pr) build_concurrency=4 ;;
           hosted) build_concurrency=4 ;;
           *) echo '::error::Unsupported Playwright execution route' >&2; exit 1 ;;
         esac

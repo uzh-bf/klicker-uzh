@@ -134,9 +134,9 @@ process.exit(process.env.BUILD_FAILURE === phase ? 7 : 0)
   }
 }
 
-test('build shell limits public tasks while preserving hosted and graph selection', (t) => {
+test('build shell uses four tasks on both routes while preserving graph selection', (t) => {
   for (const [route, concurrency] of [
-    ['public-pr', '2'],
+    ['public-pr', '4'],
     ['hosted', '4'],
   ]) {
     for (const [graph, filters] of [
