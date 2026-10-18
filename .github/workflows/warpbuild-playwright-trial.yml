@@ -15,9 +15,9 @@ permissions:
 # workflow-wide serialization would prevent the deliberate burst comparison.
 env:
   TRIAL_SOURCE_SHA: f50c46bcb16193876f2ba60da1651d4364947d8d
-  TRIAL_WAVE: '3'
+  TRIAL_WAVE: '4'
   TRIAL_PROVIDER: warpbuild
-  TRIAL_BUILD_LABEL: warp-ubuntu-2404-arm64-8x
+  TRIAL_BUILD_LABEL: warp-ubuntu-2404-arm64-16x
   TRIAL_SHARD_LABEL: warp-ubuntu-2404-arm64-4x
   TRIAL_CACHE_ENABLED: 'false'
 
