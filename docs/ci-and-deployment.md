@@ -64,8 +64,11 @@ The generator reserves metadata, then prioritizes merge edits, additional change
 and imported commits. A squashed sync can relist already-present changes until
 its ancestry-restoration PR merges.
 
-The controller rereads the PR and target before writing, deferring a moved,
-closed or retargeted candidate. GitHub provides no atomic body-update lease;
+The controller reads head and target revisions directly from Git refs before
+analysis and rechecks those refs before writing. PR revision metadata can lag a
+branch update, so it is used for identity and lifecycle checks rather than the
+analyzed SHAs. A moved ref, closed PR, changed repository or retargeted candidate
+defers the body update. GitHub provides no atomic body-update lease;
 movement after that read is reconciled on a later run. Analysis failures retain
 an existing body and report failure without blocking branch advancement or the
 conflict notice. A new PR requires successful analysis; other pairs continue.
@@ -73,7 +76,8 @@ Manual previews include generated bodies and write no branches, PRs or comments.
 
 Ready sync PRs
 keep tracking the source; review and merge decisions apply to the latest
-synchronized head. The run summary lists each pair's result. The controller
+synchronized head. The run summary and structured JSON logs list each pair's
+branch action, description status and deferral reason. The controller
 never force-updates a branch, never writes the source or target branches and
 never merges. Maintainers
 choose when to mark ready and merge with a merge commit to preserve ancestry.

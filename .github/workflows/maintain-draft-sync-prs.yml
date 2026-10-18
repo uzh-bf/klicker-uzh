@@ -48,7 +48,10 @@ jobs:
         with:
           ref: ${{ github.workflow_sha }}
           persist-credentials: false
-          sparse-checkout: .github/scripts
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /.github/scripts/
+            /.versionrc.js
 
       # Sync-branch updates use a separate identity so the sync PR's CI starts
       # without manual approval: GITHUB_TOKEN updates start no push workflows,
@@ -71,10 +74,10 @@ jobs:
             const results = await maintainDraftSyncPrs({
               github, context, dryRun, historyToken: process.env.SYNC_HISTORY_TOKEN,
             })
-            const rows = [['Sync branch', 'Target', 'Result', 'Description', 'PR']]
-            for (const { branch, base, action, number, description } of results) {
-              core.info(`${branch} -> ${base}: ${action}${number ? ` #${number}` : ''}`)
-              rows.push([branch, base, action, description || '', number ? `#${number}` : ''])
+            const rows = [['Sync branch', 'Target', 'Result', 'Description', 'Reason', 'PR']]
+            for (const { branch, base, action, number, description, reason } of results) {
+              core.info(JSON.stringify({ branch, base, action, number, description, reason }))
+              rows.push([branch, base, action, description || '', reason || '', number ? `#${number}` : ''])
               if (description === 'error') {
                 core.setFailed(`Changelog analysis failed for ${branch} -> ${base}; no description was written.`)
               }

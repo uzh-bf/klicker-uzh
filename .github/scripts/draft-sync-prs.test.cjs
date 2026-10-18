@@ -63,7 +63,7 @@ function fixture({
       descriptions.push(snapshots)
       await control.onGenerate?.(snapshots)
       if (control.analysisFailure?.(snapshots))
-        throw new Error('analysis failed')
+        throw new Error('synthetic-analysis-diagnostic')
       return { body: JSON.stringify(snapshots) }
     },
     close() {
@@ -94,8 +94,9 @@ function fixture({
           refWrites.push({ op: 'create', name, sha })
         },
         async getRef({ ref }) {
+          const branch = ref.replace('heads/', '')
           return {
-            data: { object: { sha: refs.get(ref.replace('heads/', '')) } },
+            data: { object: { sha: refs.get(branch) ?? sources[branch] } },
           }
         },
         async updateRef({ ref, sha, force }) {
@@ -132,8 +133,14 @@ function fixture({
           return {
             data: structuredClone({
               ...pr,
-              head: { ...pr.head, sha: refs.get(pr.head.ref) ?? pr.head.sha },
-              base: { ...pr.base, sha: sources[pr.base.ref] ?? pr.base.sha },
+              head: {
+                ...pr.head,
+                sha: control.prHeadSha ?? refs.get(pr.head.ref) ?? pr.head.sha,
+              },
+              base: {
+                ...pr.base,
+                sha: control.prBaseSha ?? sources[pr.base.ref] ?? pr.base.sha,
+              },
             }),
           }
         },
@@ -347,30 +354,86 @@ test('regenerates controller-owned bodies and the synchronize bounce makes no fu
   assert.equal(state.creates.length, 3)
 })
 
+test('uses stable canonical refs when PR revision metadata lags an advanced head or target', async () => {
+  const state = fixture()
+  await maintainDraftSyncPrs({ ...state, context, dryRun: false })
+  state.sources.v3 = nextSource
+  state.sources['v3-ai'] = nextIntegration
+  state.control.prHeadSha = sourceTip
+  state.control.prBaseSha = integrationTip
+  state.prs[0].draft = false
+  const results = await maintainDraftSyncPrs({
+    ...state,
+    context,
+    dryRun: false,
+  })
+  assert.equal(results[0].description, 'updated')
+  assert.deepEqual(JSON.parse(state.prs[0].body), {
+    sourceSha: nextSource,
+    headSha: nextSource,
+    targetSha: nextIntegration,
+  })
+  assert.equal(state.prs[0].draft, false)
+  state.updates.length = 0
+  const bounce = await maintainDraftSyncPrs({
+    ...state,
+    context,
+    dryRun: false,
+  })
+  assert.equal(bounce[0].description, 'unchanged')
+  assert.equal(state.updates.length, 0)
+})
+
 test('defers body writes when the analyzed PR closes, moves, retargets or changes repository', async () => {
-  for (const mutate of [
-    (state) => {
-      state.prs[0].state = 'closed'
-    },
-    (state) => {
-      state.prs[0].base.ref = 'v3-audit'
-    },
-    (state) => {
-      state.refs.set(state.prs[0].head.ref, 'moved-head')
-    },
-    (state) => {
-      state.sources['v3-ai'] = 'moved-target'
-    },
-    (state) => {
-      state.prs[0].head.repo.full_name = 'someone/klicker-uzh'
-    },
-    (state) => {
-      state.prs[0].base.repo.full_name = 'someone/klicker-uzh'
-    },
+  for (const [reason, mutate] of [
+    [
+      'pr-identity-changed',
+      (state) => {
+        state.prs[0].state = 'closed'
+      },
+    ],
+    [
+      'pr-identity-changed',
+      (state) => {
+        state.prs[0].base.ref = 'v3-audit'
+      },
+    ],
+    [
+      'pr-identity-changed',
+      (state) => {
+        state.prs[0].head.ref = 'sync/v3-into-v3-ai-ffffffff00'
+      },
+    ],
+    [
+      'head-ref-moved',
+      (state) => {
+        state.refs.set(state.prs[0].head.ref, 'moved-head')
+      },
+    ],
+    [
+      'target-ref-moved',
+      (state) => {
+        state.sources['v3-ai'] = 'moved-target'
+      },
+    ],
+    [
+      'pr-identity-changed',
+      (state) => {
+        state.prs[0].head.repo.full_name = 'someone/klicker-uzh'
+      },
+    ],
+    [
+      'pr-identity-changed',
+      (state) => {
+        state.prs[0].base.repo.full_name = 'someone/klicker-uzh'
+      },
+    ],
   ]) {
     const state = fixture()
     await maintainDraftSyncPrs({ ...state, context, dryRun: false })
     const original = state.prs[0].body
+    state.control.prHeadSha = state.refs.get(state.prs[0].head.ref)
+    state.control.prBaseSha = state.sources['v3-ai']
     state.control.onGenerate = () => {
       state.control.onGenerate = undefined
       mutate(state)
@@ -381,6 +444,7 @@ test('defers body writes when the analyzed PR closes, moves, retargets or change
       dryRun: false,
     })
     assert.equal(results[0].description, 'deferred')
+    assert.equal(results[0].reason, reason)
     assert.equal(state.prs[0].body, original)
     assert.ok(state.updates.every(({ pull_number }) => pull_number !== 1))
   }
@@ -681,6 +745,11 @@ test('workflow keeps write access on trusted controller code with read-only chec
   const checkout = workflow.jobs.maintain.steps[0]
   assert.equal(checkout.with.ref, `\${{ github.workflow_sha }}`)
   assert.equal(checkout.with['persist-credentials'], false)
+  assert.equal(checkout.with['sparse-checkout-cone-mode'], false)
+  assert.deepEqual(checkout.with['sparse-checkout'].trim().split('\n'), [
+    '/.github/scripts/',
+    '/.versionrc.js',
+  ])
 })
 
 test('workflow entrypoint creates drafts on automatic runs and previews manual dispatch by default', async () => {
@@ -706,22 +775,30 @@ test('workflow entrypoint creates drafts on automatic runs and previews manual d
     'inputs',
     `return (${step.env.DRY_RUN.slice(3, -2)})`
   )
-  for (const [eventName, input, expectedCreates, analysisFailure = false] of [
+  for (const [eventName, input, expectedCreates, scenario] of [
     ['workflow_run', undefined, 3],
     ['workflow_dispatch', true, 0],
     ['workflow_dispatch', false, 3],
-    ['workflow_run', undefined, 2, true],
+    ['workflow_run', undefined, 2, 'analysis-failure'],
+    ['workflow_run', undefined, 2, 'target-moved'],
   ]) {
     const state = fixture()
     const failures = []
-    if (analysisFailure) {
+    const logs = []
+    if (scenario === 'analysis-failure') {
       state.control.analysisFailure = ({ sourceSha }) => sourceSha === sourceTip
+    }
+    if (scenario === 'target-moved') {
+      state.control.onGenerate = () => {
+        state.control.onGenerate = undefined
+        state.sources['v3-ai'] = 'moved-target'
+      }
     }
     await entrypoint(
       state.github,
       { ...context, eventName },
       {
-        info() {},
+        info: (message) => logs.push(JSON.parse(message)),
         warning() {},
         setFailed: (message) => failures.push(message),
         summary: {
@@ -758,7 +835,19 @@ test('workflow entrypoint creates drafts on automatic runs and previews manual d
     )
     assert.equal(state.creates.length, expectedCreates)
     assert.ok(state.creates.every(({ draft }) => draft === true))
-    assert.equal(failures.length, analysisFailure ? 1 : 0)
+    assert.equal(failures.length, scenario === 'analysis-failure' ? 1 : 0)
+    assert.equal(logs.length, PAIRS.length)
+    if (scenario === 'analysis-failure') {
+      assert.equal(logs[0].description, 'error')
+      assert.ok(
+        !JSON.stringify({ logs, failures }).includes(
+          'synthetic-analysis-diagnostic'
+        )
+      )
+    } else if (scenario === 'target-moved') {
+      assert.equal(logs[0].description, 'deferred')
+      assert.equal(logs[0].reason, 'target-ref-moved')
+    }
   }
 })
 
