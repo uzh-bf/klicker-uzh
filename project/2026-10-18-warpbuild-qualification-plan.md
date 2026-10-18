@@ -186,6 +186,10 @@ Test delta: three changed, none added or removed. Main-session correction review
 is a self-review, not independent proof. The corrected full 96-contract suite
 passes in the same isolated Node 24.21.0 environment.
 
-Status: published draft with source CI and feedback disposition in progress.
-Account/policy and cost evidence is kept privately. No paid trial has been
-submitted. Actual provider compatibility, latency and cost remain unproved.
+The enabling configuration removes only the initial literal-false barrier and
+updates its matching gate assertion. Exact repository, branch and first-attempt
+guards remain. Every later workflow-file push requires a new private admission;
+restore the false barrier when the finite experiment ends. The source package
+remains draft. Account/policy evidence, reservations and runtime acceptance stay
+in private operator records; source checks alone do not qualify provider speed
+or billing.

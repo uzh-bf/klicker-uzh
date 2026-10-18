@@ -745,12 +745,14 @@ retain their existing authorization and serialized status locks.
 ## Isolated WarpBuild qualification
 
 `warpbuild-playwright-trial.yml` is a separate experiment, not ordinary PR
-validation. The prepare job's initial `false` condition keeps it disabled. It accepts only
+validation. The prepare job accepts only
 the `rs/warpbuild-qualification` branch and first run attempts. Workflow-file
 pushes provide a branch-only entry before a new manual workflow is registered on
-the default branch. Enable only through a reviewed configuration commit after
-the private preflight; no inherited repository or organization variable can
-enable the published disabled version.
+the default branch. Each workflow-file push admits a new wave, so publish only
+reviewed configuration commits after private preflight and cost reservation.
+The initial publication used a literal `false` condition; restore that condition
+when the finite experiment ends. Repository and organization variables cannot
+enable a disabled version.
 
 Before enabling it, verify the actual provider connection, complete runner-group
 policy and billing controls. Keep the submission count, consumed cost and

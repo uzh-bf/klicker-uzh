@@ -23,10 +23,9 @@ env:
 
 jobs:
   prepare:
-    # Keep the first condition false until the operator verifies group policy
-    # and billing. Enabling this requires a reviewed configuration commit.
+    # Every workflow-file push admits a wave. Verify group policy and reserve
+    # its cost before publishing a reviewed configuration change.
     if: >-
-      false &&
       github.repository == 'uzh-bf/klicker-uzh' &&
       github.ref == 'refs/heads/rs/warpbuild-qualification' &&
       github.run_attempt == 1

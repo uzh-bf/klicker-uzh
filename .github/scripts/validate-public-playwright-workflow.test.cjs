@@ -926,7 +926,7 @@ test('runner qualification stays opt-in and preserves the public execution contr
   })
   assert.equal(
     trial.jobs.prepare.if.replace(/\s+/g, ' ').trim(),
-    "false && github.repository == 'uzh-bf/klicker-uzh' && github.ref == 'refs/heads/rs/warpbuild-qualification' && github.run_attempt == 1"
+    "github.repository == 'uzh-bf/klicker-uzh' && github.ref == 'refs/heads/rs/warpbuild-qualification' && github.run_attempt == 1"
   )
   assert.deepEqual(trial.permissions, { contents: 'read' })
   assert.deepEqual(trial.jobs['trial-status'].permissions, {})
