@@ -719,6 +719,22 @@ available memory, Docker-disk pressure, conclusion, and artifact. This separates
 cache misses, host contention, service setup, test structure, and scheduling;
 do not infer one cause from total duration alone.
 
+### Build task concurrency
+
+The shared Playwright build action uses Turbo task concurrency two for the
+`public-pr` route and four for `hosted`, on both bounded and full application
+build graphs. Unknown routes fail before a build starts. The full graph still
+builds Prisma separately, and missing bounded filters still select the complete
+graph. This limits overlapping Turbo tasks, not subprocesses or container memory.
+Browser worker counts and runner activation are independent.
+
+Qualify the memory and duration trade-off before increasing capacity. Record a
+matched concurrency-four control before merging a changed shared action: an old
+candidate head still loads orchestration from trusted `v3`. Count every build's
+automatically scheduled shards and aggregate in a trial budget. Incomplete
+sampling or unmatched source, host, graph and cache conditions cannot establish
+an improvement.
+
 ### In-job resource samples
 
 Build and shard telemetry artifacts also contain `playwright-resources-*.jsonl`.
