@@ -27,25 +27,32 @@ remain required on completion or failure. No shared prompt change, deployment,
 marking ready or merge. Finish with a private evidence-based candidate decision
 and sanitized execution status in this draft.
 
+The finite execution and private manual assessment are complete. The existing
+private `project/_local/explainer-quality-decision.md` index links the candidate
+decision, actual-answer and citation assessment, spending record and lifecycle
+evidence. This execution authority is consumed. Review that decision before
+selecting a further comparison; unused allowance does not authorize another run.
+The separate attribution proposal and transfer acceptance remain pending.
+
 ## Approved prompt preparation
 
 Approved on 19 October 2026: prepare a stronger revision check and tighter
-citation guidance without applying either or making model calls. This section
-is the current continuation; earlier execution authority below is consumed.
+citation guidance without applying either or making model calls. This preparation
+is complete; the separately approved preservation execution above followed it.
 Keep the existing corpus, rubrics, model, fixture, importer and framework stable.
 Main owns this settled, light-path documentation change and private evidence;
 no independent implementation work or new test, runner or scorer is needed.
 Finish with exact candidate text, source-contract inspection and a bounded next
-comparison proposal in the existing draft PR. Runtime and model behavior remain
-unverified for these candidates.
+comparison proposal in the existing draft PR. The separate attribution candidate
+remains an untested authored proposal.
 
 ### Qualification-preservation candidate
 
 Use this as the complete proposed Explainer lecturer-guidance value, replacing
 the earlier experimental guidance rather than appending another instruction.
 Derive any future full configuration from the restored baseline receipt and
-preserve every other mode and protected field. This is an authored proposal,
-not a platform-prompt edit or an applied configuration.
+preserve every other mode and protected field. This text documents the candidate;
+it does not edit the platform prompt or shared configuration.
 
 ```text
 Before returning a shortened or revised explanation, compare the draft with the earlier answer and the supplied material. Keep each condition, exception and assumption needed for a claim to remain accurate, next to the claim it qualifies; check that removing it has not made the claim broader or more absolute. Remove examples and repetition first, then return the requested revision within its requested format without showing this check.
@@ -72,9 +79,10 @@ to explain supplied material. Supported principles may still be cited; separate
 their support from any added application or illustration. Do not combine the
 two candidates before their individual evidence is understood.
 
-### Next comparison proposal
+### Preservation comparison protocol
 
-First propose only the preservation candidate on the existing development group:
+The completed finite execution used only the preservation candidate on the
+existing development group:
 the unchanged concise-notes control and NULL/non-null regression, two arms,
 one repeat per arm and two turns per fresh thread: eight learner turns. The
 existing runner supports `--group development --repeats 1`; both arms generate
@@ -97,11 +105,12 @@ acceptance remain required before rollout.
 The existing US$55 ceiling is cumulative, not a renewed allowance. Any later
 capture must bind the same ledger and identity, refresh pricing, and prove that
 both remaining turn capacity and conservative reservations admit the named
-work. Never reset, split or refund the ledger to make it fit. Startup, guarded
-local apply/readback/rollback, capture and shutdown require a separately named
-execution approval. Custody must reconcile any uncertain apply outcome before
-replay; private captures need restrictive permissions from creation. No runtime,
-database write, ledger mutation or paid request is authorized by this preparation.
+work. Never reset, split or refund the ledger to make it fit. Any further startup,
+guarded local apply/readback/rollback, capture and shutdown require separately
+named execution approval. Custody must reconcile any uncertain apply outcome
+before replay; private captures need restrictive permissions from creation.
+Preparation alone authorizes no runtime, database write, ledger mutation or paid
+request.
 
 ## Approved comparison execution
 

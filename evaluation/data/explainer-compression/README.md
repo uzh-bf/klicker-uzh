@@ -91,12 +91,12 @@ exhausted ledger. Model performance on the new case remains unassessed.
 
 ## Proposed broader comparison
 
-The [current quality-decision plan](../../../project/2026-10-18-explainer-assessment-readiness-plan.md#smallest-next-capture-proposal)
-supersedes the four-block proposal below: start with one baseline and one
-candidate block, one repeat each, for 24 planned learner turns. Manual quality
-assessment precedes any optional automated-judge calibration. Paid execution
-still needs separate approval. The older 48-turn protocol is retained below as
-preparation history, not an instruction to run both repetitions automatically.
+The [current quality-decision plan](../../../project/2026-10-18-explainer-assessment-readiness-plan.md#approved-preservation-execution)
+records completed finite comparisons and points to the private decision index.
+Review that decision before selecting another protocol. Manual quality assessment
+precedes any optional automated-judge calibration; further paid execution needs
+separately named approval. The older 48-turn protocol below is preparation
+history, not an instruction to run both repetitions automatically.
 
 The protocol and budget proposal below are retained from the original preparation.
 The [current migration plan](../../../project/2026-10-17-trajectory-contract-plan.md)

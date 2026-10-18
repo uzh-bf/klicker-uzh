@@ -1,9 +1,8 @@
 # Course-chatbot quality roadmap
 
-Status: outcome-focused continuation approved on 18 October 2026. The private
-review and approved finite local comparison are complete. Zero-spend preparation
-of two separate Explainer guidance candidates was approved on 19 October 2026.
-Detailed judgments remain private; candidate execution and rollout remain separate.
+Status: the private review, initial comparison, separate candidate preparation
+and approved finite preservation comparison are complete. Detailed judgments
+remain private. Further comparisons and rollout require their named decisions.
 Historical Tutor experiments remain below for reference.
 
 ## Current evaluation direction
@@ -14,13 +13,13 @@ The next milestone is an Explainer revision that passes the frozen quality
 criteria, informed by the completed private comparison.
 Automated judging is optional support for a demonstrated recurring need.
 
-The completed comparison is indexed privately. The
-[current preparation](2026-10-18-explainer-assessment-readiness-plan.md#approved-prompt-preparation)
-specifies a revision self-check and separately scoped citation-attribution
-guidance. Its next proposal is an eight-turn preservation comparison on the
-existing development group, retaining the unchanged control and original
-criteria. Candidate apply and paid execution need separate approval. Multipart
-summaries and representative course-source acceptance stay required before rollout.
+The private decision index records the completed
+[preservation comparison](2026-10-18-explainer-assessment-readiness-plan.md#approved-preservation-execution).
+The [candidate preparation](2026-10-18-explainer-assessment-readiness-plan.md#approved-prompt-preparation)
+keeps revision self-check and citation-attribution guidance separate. Review the
+private decision before selecting the next finite comparison. Citation support,
+transfer, multipart summaries and representative course-source acceptance remain
+required before rollout. Unused ledger capacity authorizes no additional capture.
 
 The [active quality-decision batch](2026-10-18-explainer-assessment-readiness-plan.md#current-quality-decision-batch)
 owns execution, acceptance and the next spending proposal. It continues the
@@ -30,7 +29,7 @@ superseding the earlier judge-first sequence in the
 
 | Priority | Outcome | Acceptance and next boundary |
 | --- | --- | --- |
-| 1 | Establish qualification-preserving Explainer revision | Prepare the explicit self-check, then propose eight fresh development-group turns against baseline; transfer acceptance follows only after that decision |
+| 1 | Establish qualification-preserving Explainer revision | Private development comparison and manual assessment complete; review that decision before proposing transfer acceptance |
 | 2 | Establish trustworthy source support and honest task completion | Inspect actual model-visible passages and citation mapping; separately cover multipart summaries, genuinely absent material and representative course-source retrieval before rollout |
 | 3 | Roll out only a supported change and inspect subsequent anonymous use | Preserve the baseline and rollback; obtain named application/deployment authority, verify effective behavior and assess later use before returning to Tutor |
 
@@ -51,16 +50,18 @@ framework owns generic assessment and reporting. Framework changes remain
 independent of any particular application.
 
 Reuse the [existing comparison corpus](../evaluation/data/explainer-compression/README.md).
-The approved comparison protocol uses one repeat per arm, reducing planned learner
+The completed initial comparison protocol used one repeat per arm, reducing planned learner
 turns from 48 to 24. Inspected authored cases are regression/transfer examples,
 not blind holdouts. The existing
 [US$55/48-turn initializer option](https://github.com/uzh-bf/klicker-uzh/pull/6576)
-can support that bounded subset without another source change; its ledger
-ceiling remains 48 turns, so the execution protocol must stop after the planned
-24. The default US$5 cap and earlier ledgers remain unchanged. The user has
-approved that comparison and guarded local candidate custody through the
-[execution contract](2026-10-18-explainer-assessment-readiness-plan.md#approved-comparison-execution).
-Judge calls, shared prompt changes, merge and deployment remain separate.
+supported the bounded subset without another source change. The follow-up
+preservation protocol used the same cumulative ledger, not a renewed allowance.
+Each finite protocol stops at its own planned turn count within the ledger's
+48-turn ceiling. The default US$5 cap and earlier ledgers remain unchanged.
+Both [initial](2026-10-18-explainer-assessment-readiness-plan.md#approved-comparison-execution)
+and [preservation](2026-10-18-explainer-assessment-readiness-plan.md#approved-preservation-execution)
+execution authority is consumed. Judge calls, further captures, shared prompt
+changes, merge and deployment remain separate.
 
 ## Historical Tutor iteration
 
