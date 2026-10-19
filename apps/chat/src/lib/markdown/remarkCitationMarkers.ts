@@ -57,7 +57,7 @@ const PAGE_LABEL = '(?:pages?|seiten?|kapitel|kap\\.|p{1,2}\\.|s\\.|p{1,2}|s)'
 // to a citation chip. `[1]` still matches because the wrapper stays optional.
 // Only page digits are captured so `extractCitedPages` never treats a clock
 // as a page. Clock minutes and seconds stay within their valid range.
-const CLOCK_REFERENCE = '(?:\\d{1,2}:)?[0-5]?\\d:[0-5]\\d'
+const CLOCK_REFERENCE = String.raw`(?:\d{1,2}:)?[0-5]?\d:[0-5]\d`
 const PAGE_REFERENCE = `(?:${PAGE_LABEL}[ \t]*(?:(\\d{1,3})(?:[ \t]*[-–—][ \t]*(\\d{1,3}))?|${CLOCK_REFERENCE}(?:[ \t]*[-–—][ \t]*${CLOCK_REFERENCE})?))`
 
 // Complete numbered marker, e.g. `[1]`, `[12]`, `[2–4]`, or `[2–4, S. 10–12]`.
