@@ -185,4 +185,4 @@ stays out of Git.
   budget tests would break. All three are addressed above. The should-fix
   findings are resolved by keeping the original grouping, adding rank semantics,
   updating the docs contract and naming hook checks.
-- Next action: slice 1 after approval.
+- Next action: open the draft PR into `v3-ai` and watch CI.
