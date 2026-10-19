@@ -70,6 +70,7 @@ function ChatbotSetupSection({
   open,
   onOpenChange,
   headerAction,
+  applyLabel,
   footer,
   children,
 }: {
@@ -81,6 +82,9 @@ function ChatbotSetupSection({
   onOpenChange: (open: boolean) => void
   // A secondary action next to the header, such as a preview link.
   headerAction?: ReactNode
+  // On a live chatbot, whether a saved change reaches students at once or
+  // only after review.
+  applyLabel?: string
   footer?: ChatbotSetupSectionFooter
   children: ReactNode
 }) {
@@ -132,6 +136,14 @@ function ChatbotSetupSection({
               >
                 {statusLabel}
               </span>
+              {applyLabel ? (
+                <span
+                  className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600"
+                  data-cy={`chatbot-section-${id}-applies`}
+                >
+                  {applyLabel}
+                </span>
+              ) : null}
             </span>
             <span
               className="mt-1 block text-sm text-gray-600"

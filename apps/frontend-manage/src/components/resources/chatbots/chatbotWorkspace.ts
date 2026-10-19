@@ -1,9 +1,3 @@
-import { type Chatbot, ChatbotStatus } from '@klicker-uzh/graphql/dist/ops'
-
-// The workspace helpers only read these fields, so a chatbot projection does
-// not have to select the whole entity for them.
-type ChatbotWorkspaceFacts = Pick<Chatbot, 'status'>
-
 type ChatbotWorkspaceView =
   | 'overview'
   | 'knowledge'
@@ -44,15 +38,6 @@ function includesValue<T extends string>(
   return typeof value === 'string' && values.includes(value as T)
 }
 
-// A draft or rejected chatbot is set up on one page of sections, which all
-// start closed.
-function isSectionSetup(chatbot: ChatbotWorkspaceFacts) {
-  return (
-    chatbot.status === ChatbotStatus.Draft ||
-    chatbot.status === ChatbotStatus.Rejected
-  )
-}
-
 const defaultWorkspaceState: ChatbotWorkspaceState = { view: 'overview' }
 
 type ChatbotSetupLinkTarget =
@@ -85,7 +70,6 @@ function getSetupLinkTarget(
 }
 
 function normalizeLegacyWorkspaceState(
-  chatbot: ChatbotWorkspaceFacts,
   requestedView: string,
   requestedStep: string | undefined
 ): ChatbotWorkspaceState {
@@ -105,19 +89,16 @@ function normalizeLegacyWorkspaceState(
     case 'review':
       return { view: 'overview', step: 'review' }
     default:
-      return isSectionSetup(chatbot)
-        ? defaultWorkspaceState
-        : { view: 'overview', step: 'basics' }
+      return defaultWorkspaceState
   }
 }
 
 function normalizeWorkspaceState(
-  chatbot: ChatbotWorkspaceFacts,
   requestedView: string | undefined,
   requestedStep: string | undefined
 ): ChatbotWorkspaceState {
   if (requestedView === 'setup' || requestedView === 'advanced') {
-    return normalizeLegacyWorkspaceState(chatbot, requestedView, requestedStep)
+    return normalizeLegacyWorkspaceState(requestedView, requestedStep)
   }
 
   if (!includesValue(workspaceViews, requestedView)) {
@@ -151,7 +132,6 @@ export type {
 }
 export {
   getSetupLinkTarget,
-  isSectionSetup,
   normalizeWorkspaceState,
   setupSteps,
   workspaceViews,

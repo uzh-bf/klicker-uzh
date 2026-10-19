@@ -68,7 +68,8 @@ function KnowledgeBaseCard({
   chatbotId: string
   knowledgeBase: ConnectedKnowledgeBase
   addFilesRef: RefObject<HTMLDivElement | null>
-  onAddFiles: () => void
+  // Without it the card only shows the knowledge base.
+  onAddFiles?: () => void
 }) {
   const t = useTranslations()
   const format = useFormatter()
@@ -215,13 +216,15 @@ function KnowledgeBaseCard({
           </ul>
         </div>
       ) : null}
-      <div ref={addFilesRef} className="w-max">
-        <Button onClick={onAddFiles} data={{ cy: 'chatbot-kb-add-files' }}>
-          <Button.Label>
-            {t('manage.resources.chatbotKnowledgeBaseAddFiles')}
-          </Button.Label>
-        </Button>
-      </div>
+      {onAddFiles ? (
+        <div ref={addFilesRef} className="w-max">
+          <Button onClick={onAddFiles} data={{ cy: 'chatbot-kb-add-files' }}>
+            <Button.Label>
+              {t('manage.resources.chatbotKnowledgeBaseAddFiles')}
+            </Button.Label>
+          </Button>
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -233,6 +236,7 @@ function ChatbotKnowledgeBaseSetup({
   connectedKnowledgeBase,
   connectOnSelect = false,
   proposedKnowledgeBaseName,
+  readOnly = false,
 }: {
   chatbotId: string
   chatbotStatus: ChatbotStatus
@@ -242,6 +246,8 @@ function ChatbotKnowledgeBaseSetup({
   // keeps creating and adding materials on the chatbot.
   connectOnSelect?: boolean
   proposedKnowledgeBaseName?: string
+  // Shows the connected knowledge base without ways to change it.
+  readOnly?: boolean
 }) {
   const t = useTranslations()
   const router = useRouter()
@@ -432,6 +438,20 @@ function ChatbotKnowledgeBaseSetup({
         GetKbResourcesWithFailureDetailDocument,
       ],
     })
+
+  if (readOnly) {
+    return (
+      <div className="space-y-3" data-cy="chatbot-kb-setup">
+        {connectedKnowledgeBase ? (
+          <KnowledgeBaseCard
+            chatbotId={chatbotId}
+            knowledgeBase={connectedKnowledgeBase}
+            addFilesRef={addFilesRef}
+          />
+        ) : null}
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-3" data-cy="chatbot-kb-setup">

@@ -5121,16 +5121,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       createChatbotDescription:
         'Erstellen Sie einen kursgebundenen Chatbot-Entwurf und konfigurieren Sie ihn, bevor Sie die Veröffentlichung beantragen.',
       chatbotMobileSelector: 'Aktueller Chatbot',
-      chatbotWorkspaceNavigation: 'Chatbot-Arbeitsbereich',
       chatbotWorkspaceOverview: 'Übersicht',
-      chatbotWorkspaceKnowledge: 'Wissensbasis',
       chatbotDraftStepMaterialsDescription:
         'Wählen Sie die Wissensdatenbank, aus der der Chatbot antwortet. Sie wird sofort verbunden, sobald Sie sie auswählen.',
       chatbotDraftStepStudentsDescription:
         'Studierende lesen diesen Text, bevor sie den Chat starten. Wir haben einen Vorschlag für Sie vorbereitet.',
-      chatbotAdvancedSettingsTitle: 'Erweiterte Einstellungen (optional)',
-      chatbotAdvancedSettingsDescription:
-        'Einstellungen für erfahrene Nutzende. Für die meisten Kurse passen die Standardwerte.',
       chatbotSectionStatusDefault: 'Standard',
       chatbotSectionStatusSuggested: 'Vorschlag',
       chatbotSectionStatusSaved: 'Gespeichert',
@@ -5150,6 +5145,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotSectionGroupOptional:
         'Optional. Die Standardwerte passen für die meisten Kurse.',
       chatbotSectionGroupAdvanced: 'Erweitert',
+      chatbotPausedNotice:
+        'Das Team hat diesen Chatbot pausiert. Bis er wieder aktiv ist, lassen sich die Einstellungen nicht ändern.',
+      chatbotSectionAppliesImmediately: 'Gilt sofort',
+      chatbotSectionAppliesAfterReview: 'Gilt nach der Prüfung',
+      chatbotSectionRequestPending: 'Veröffentlichungsanfrage',
+      chatbotSectionSubmitChanges: 'Änderungen zur Prüfung einreichen',
+      chatbotUnsubmittedSections:
+        'Gespeichert, aber noch nicht eingereicht: {sections}.',
+      chatbotUsageNoneYet: 'Noch keine',
+      chatbotUsageCreditsValue: '{current} von {total}',
+      chatbotUsageStudentInformationValue:
+        '{accepted} akzeptiert, {declined} abgelehnt, {pending} noch offen',
+      chatbotLiveCreditPolicy:
+        'Studierende erhalten derzeit Folgendes: {policy}',
       chatbotSectionRequest: 'Veröffentlichung beantragen',
       chatbotSummaryMaterialsNone:
         'Es ist keine Wissensdatenbank verbunden. Antworten nutzen allgemeines Modellwissen.',
@@ -5191,6 +5200,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotChangesRequested: 'Änderungen angefordert',
       chatbotDraftVisibility:
         '{courses}. Studierende sehen diesen Chatbot noch nicht.',
+      chatbotLiveVisibility:
+        '{courses}. Studierende können diesen Chatbot nutzen.',
+      chatbotLiveVisibilityNoCourse:
+        'Studierende können diesen Chatbot nutzen.',
+      chatbotPausedVisibility:
+        '{courses}. Studierende können diesen Chatbot nicht nutzen, solange er pausiert ist.',
+      chatbotPausedVisibilityNoCourse:
+        'Studierende können diesen Chatbot nicht nutzen, solange er pausiert ist.',
+      chatbotOpenForCourse: 'Chatbot in {course} öffnen',
       chatbotDraftVisibilityNoCourse:
         'Studierende sehen diesen Chatbot noch nicht.',
       chatbotPublicationBlockersTitle: 'Bevor Sie den Antrag senden:',
@@ -5199,23 +5217,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotPublicationBlockerInvalid: 'Vervollständigen Sie {section}.',
       chatbotWorkspaceBehavior: 'Verhalten',
       chatbotWorkspaceDisclaimer: 'Disclaimer',
-      chatbotWorkspaceSetup: 'Einrichtung',
-      chatbotWorkspaceAdvanced: 'Erweitert',
-      chatbotWorkspaceUsage: 'Nutzung',
       chatbotWorkspaceOverviewDescription:
         'Prüfen Sie den Chatbot-Status und verwenden Sie die Bereiche, um die Einrichtung zu bearbeiten oder Betriebsinformationen einzusehen.',
       chatbotWorkspaceBehaviorDescription:
         'Wählen Sie die Lernmodi und die Rahmung für diesen Chatbot.',
       chatbotWorkspaceDisclaimerDescription:
         'Bearbeiten Sie die Einleitung für Teilnehmende und prüfen Sie die festen institutionellen Abschnitte.',
-      chatbotWorkspaceKnowledgeDescription:
-        'Prüfen Sie die aktive Wissensbasis und öffnen Sie deren Verwaltung.',
-      chatbotKnowledgeSingleActive:
-        'Hier wird derzeit eine aktive Wissensbasis unterstützt.',
-      chatbotKnowledgeEmptyDescription:
-        'Der Chatbot kann auch ohne Abruf von Kursmaterialien verwendet werden.',
-      chatbotKnowledgeManagementLink:
-        'Verwalten Sie Dokumente, Verarbeitung und Bereitschaft der Wissensbasis unter Wissensbasen.',
       chatbotKnowledgeBaseSelectPlaceholder: 'Wissensdatenbank auswählen',
       chatbotKnowledgeBaseConnect: 'Verknüpfen',
       chatbotKnowledgeBaseReplace: 'Ersetzen',
@@ -5406,8 +5413,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Revision wurde zurückgezogen. Sie können sie weiter bearbeiten.',
       chatbotRevisionWithdrawError:
         'Die Revision konnte nicht zurückgezogen werden. Laden Sie sie neu und versuchen Sie es erneut.',
-      chatbotCreatedAt: 'Erstellt',
-      chatbotUpdatedAt: 'Zuletzt aktualisiert',
       chatbotName: 'Name',
       chatbotDescription: 'Beschreibung',
       chatbotCourse: 'Kurs',
@@ -5519,7 +5524,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotId: 'Chatbot-ID',
       avatarUrl: 'Avatar-URL',
       avatarNone: 'Kein Avatar',
-      linkedCourses: 'Verknüpfte Kurse',
       linkedCoursesList: 'Verknüpft mit: {courses}',
       noLinkedCourses: 'Noch keine Kurse verknüpft.',
       chatbotListKnowledgeBase: 'Materialien: {kbName}',
@@ -5530,8 +5534,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotStatusPaused: 'Pausiert',
       chatbotStatusRejected: 'Abgelehnt',
       chatbotStatusUnknown: 'Unbekannter Status',
-      chatbotNotLive:
-        'Der Teilnehmenden-Zugriff ist in diesem Status nicht verfügbar.',
       credits: 'Credits',
       creditInitialCredits: 'Start-Credits',
       creditResetPeriod: 'Zurücksetzungsintervall',
@@ -5554,13 +5556,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       modelUnavailableSelected:
         'Ihr Konto kann dieses fortgeschrittene Modell nicht nutzen, deshalb können Studierende damit nicht chatten. Wählen Sie ein anderes Modell.',
       allowedModelsAll: 'Alle',
-      chatbotModelSettings: 'Modell- und Reasoning-Einstellungen',
       reasoningEffortsByModel: 'Reasoning-Level pro Modell',
       reasoningEffort: 'Reasoning-Level',
       singleReasoningEffortFixed: 'Vom Modell vorgegeben: {effort}',
-      chatbotModelSettingsSave: 'Modelleinstellungen speichern',
-      chatbotModelSettingsSaving: 'Speichern...',
-      chatbotModelSettingsSaveSuccess: 'Modelleinstellungen gespeichert.',
       chatbotModelSettingsSaveError:
         'Die Chatbot-Modelleinstellungen konnten nicht gespeichert werden. Bitte erneut versuchen.',
       creditResetPeriodDaily: 'Täglich',
@@ -5568,22 +5566,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       creditResetPeriodBiweekly: 'Alle zwei Wochen',
       creditResetPeriodMonthly: 'Monatlich',
       creditResetPeriodNone: 'Keine Zurücksetzung',
-      usageSummary: 'Nutzungsübersicht',
-      usageThreads: 'Threads',
+      usageThreads: 'Unterhaltungen',
       usageMessages: 'Nachrichten',
-      usageParticipants: 'Teilnehmende',
+      usageParticipants: 'Studierende',
       usageLastActivity: 'Letzte Aktivität',
-      usageTotalCredits: 'Gesamt-Credits',
-      usageCurrentCredits: 'Aktuelle Credits',
-      usageTotalResets: 'Anzahl Zurücksetzungen',
+      usageCurrentCredits: 'Verbleibende Credits aller Studierenden',
       usageLastReset: 'Letzte Zurücksetzung',
       disclaimer: 'Disclaimer',
       noDisclaimer: 'Kein Disclaimer zugewiesen.',
       disclaimerName: 'Name',
       disclaimerTitle: 'Titel',
-      disclaimerAccepted: 'Akzeptiert',
       disclaimerDeclined: 'Abgelehnt',
-      disclaimerPending: 'Ausstehend',
       knowledgeBase: 'Wissensdatenbank',
       knowledgeGraphPolicy: 'Wissensgraph',
       knowledgeGraphPolicyDescription:
@@ -5597,11 +5590,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Graphverbindungen für die Dokumentsuche verwenden',
       knowledgeGraphRetrievalDescription:
         'Ein: Die Dokumentsuche kann verwandte Konzepte aus dem veröffentlichten Graphen als zusätzliche Suchhinweise verwenden. Antworten belegen weiterhin ausschliesslich Dokumentstellen.',
-      knowledgeGraphSave: 'Wissensgraph-Einstellungen speichern',
-      knowledgeGraphSaveSuccess: 'Wissensgraph-Einstellungen gespeichert.',
-      noEnabledKnowledgeBase:
-        'Es ist keine Wissensdatenbank verknüpft. Dieser Chatbot kann Kursmaterial nicht durchsuchen.',
-      openChatbot: 'Chatbot öffnen',
       openOwnerPreview: 'Eigentümer-Vorschau öffnen',
       chatbotOwnerPreviewLive: 'Live-Konfiguration',
       chatbotOwnerPreviewLiveDescription:

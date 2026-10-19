@@ -5014,16 +5014,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       createChatbotDescription:
         'Create a course-bound draft chatbot and configure it before requesting publication.',
       chatbotMobileSelector: 'Current chatbot',
-      chatbotWorkspaceNavigation: 'Chatbot workspace',
       chatbotWorkspaceOverview: 'Overview',
-      chatbotWorkspaceKnowledge: 'Knowledge',
       chatbotDraftStepMaterialsDescription:
         'Choose the knowledge base the chatbot answers from. It connects as soon as you select it.',
       chatbotDraftStepStudentsDescription:
         'Students read this text before they start chatting. We prepared a suggestion for you.',
-      chatbotAdvancedSettingsTitle: 'Advanced settings (optional)',
-      chatbotAdvancedSettingsDescription:
-        'Settings for experienced users. Most courses work well with the defaults.',
       chatbotSectionStatusDefault: 'Default',
       chatbotSectionStatusSuggested: 'Suggested',
       chatbotSectionStatusSaved: 'Saved',
@@ -5043,6 +5038,19 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotSectionGroupOptional:
         'Optional. The defaults work for most courses.',
       chatbotSectionGroupAdvanced: 'Advanced',
+      chatbotPausedNotice:
+        'The team paused this chatbot. Settings cannot be changed until it is active again.',
+      chatbotSectionAppliesImmediately: 'Applies immediately',
+      chatbotSectionAppliesAfterReview: 'Applies after review',
+      chatbotSectionRequestPending: 'Publication request',
+      chatbotSectionSubmitChanges: 'Submit changes for review',
+      chatbotUnsubmittedSections:
+        'Saved changes not yet submitted: {sections}.',
+      chatbotUsageNoneYet: 'None yet',
+      chatbotUsageCreditsValue: '{current} of {total}',
+      chatbotUsageStudentInformationValue:
+        '{accepted} accepted, {declined} declined, {pending} not answered yet',
+      chatbotLiveCreditPolicy: 'Students currently get this: {policy}',
       chatbotSectionRequest: 'Request publication',
       chatbotSummaryMaterialsNone:
         'No knowledge base is connected. Answers use general model knowledge.',
@@ -5084,6 +5092,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotChangesRequested: 'Changes requested',
       chatbotDraftVisibility:
         '{courses}. Students cannot see this chatbot yet.',
+      chatbotLiveVisibility: '{courses}. Students can use this chatbot.',
+      chatbotLiveVisibilityNoCourse: 'Students can use this chatbot.',
+      chatbotPausedVisibility:
+        '{courses}. Students cannot use this chatbot while it is paused.',
+      chatbotPausedVisibilityNoCourse:
+        'Students cannot use this chatbot while it is paused.',
+      chatbotOpenForCourse: 'Open the chatbot in {course}',
       chatbotDraftVisibilityNoCourse: 'Students cannot see this chatbot yet.',
       chatbotPublicationBlockersTitle: 'Before you send the request:',
       chatbotPublicationBlockerUnsaved:
@@ -5091,23 +5106,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotPublicationBlockerInvalid: 'Complete {section}.',
       chatbotWorkspaceBehavior: 'Behavior',
       chatbotWorkspaceDisclaimer: 'Disclaimer',
-      chatbotWorkspaceSetup: 'Setup',
-      chatbotWorkspaceAdvanced: 'Advanced',
-      chatbotWorkspaceUsage: 'Usage',
       chatbotWorkspaceOverviewDescription:
         'Review the chatbot status and use the workspace sections to update its setup or inspect operational details.',
       chatbotWorkspaceBehaviorDescription:
         'Choose the learning modes and framing used by this chatbot.',
       chatbotWorkspaceDisclaimerDescription:
         'Edit the participant-facing introduction and review the fixed institutional sections.',
-      chatbotWorkspaceKnowledgeDescription:
-        'Review the active knowledge base and open its management page.',
-      chatbotKnowledgeSingleActive:
-        'One active knowledge base is currently supported here.',
-      chatbotKnowledgeEmptyDescription:
-        'The chatbot can still be used without course-material retrieval.',
-      chatbotKnowledgeManagementLink:
-        'Manage documents, ingestion, and knowledge-base readiness in Knowledge Bases.',
       chatbotKnowledgeBaseSelectPlaceholder: 'Choose a knowledge base',
       chatbotKnowledgeBaseConnect: 'Connect',
       chatbotKnowledgeBaseReplace: 'Replace',
@@ -5289,8 +5293,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Revision withdrawn. You can continue editing it.',
       chatbotRevisionWithdrawError:
         'Could not withdraw the revision. Please reload and try again.',
-      chatbotCreatedAt: 'Created',
-      chatbotUpdatedAt: 'Last updated',
       chatbotName: 'Name',
       chatbotDescription: 'Description',
       chatbotCourse: 'Course',
@@ -5396,7 +5398,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotId: 'Chatbot ID',
       avatarUrl: 'Avatar URL',
       avatarNone: 'No avatar',
-      linkedCourses: 'Linked Courses',
       linkedCoursesList: 'Linked to: {courses}',
       noLinkedCourses: 'No courses linked yet.',
       chatbotListKnowledgeBase: 'Materials: {kbName}',
@@ -5407,7 +5408,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotStatusPaused: 'Paused',
       chatbotStatusRejected: 'Rejected',
       chatbotStatusUnknown: 'Unknown status',
-      chatbotNotLive: 'Participant access is unavailable in this status.',
       credits: 'Credits',
       creditInitialCredits: 'Initial credits',
       creditResetPeriod: 'Reset period',
@@ -5430,13 +5430,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       modelUnavailableSelected:
         'Your account cannot use this advanced model, so students cannot chat with it. Choose another model.',
       allowedModelsAll: 'All',
-      chatbotModelSettings: 'Model & Reasoning Settings',
       reasoningEffortsByModel: 'Reasoning efforts by model',
       reasoningEffort: 'Reasoning effort',
       singleReasoningEffortFixed: 'Fixed by model: {effort}',
-      chatbotModelSettingsSave: 'Save model settings',
-      chatbotModelSettingsSaving: 'Saving...',
-      chatbotModelSettingsSaveSuccess: 'Model settings saved.',
       chatbotModelSettingsSaveError:
         'Could not save chatbot model settings. Please try again.',
       creditResetPeriodDaily: 'Daily',
@@ -5444,22 +5440,17 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       creditResetPeriodBiweekly: 'Biweekly',
       creditResetPeriodMonthly: 'Monthly',
       creditResetPeriodNone: 'No reset',
-      usageSummary: 'Usage Summary',
-      usageThreads: 'Threads',
+      usageThreads: 'Conversations',
       usageMessages: 'Messages',
-      usageParticipants: 'Participants',
+      usageParticipants: 'Students',
       usageLastActivity: 'Last activity',
-      usageTotalCredits: 'Total credits',
-      usageCurrentCredits: 'Current credits',
-      usageTotalResets: 'Total resets',
+      usageCurrentCredits: 'Credits left across students',
       usageLastReset: 'Last reset',
       disclaimer: 'Disclaimer',
       noDisclaimer: 'No disclaimer assigned.',
       disclaimerName: 'Name',
       disclaimerTitle: 'Title',
-      disclaimerAccepted: 'Accepted',
       disclaimerDeclined: 'Declined',
-      disclaimerPending: 'Pending',
       knowledgeBase: 'Knowledge base',
       knowledgeGraphPolicy: 'Knowledge graph',
       knowledgeGraphPolicyDescription:
@@ -5472,11 +5463,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       knowledgeGraphRetrieval: 'Use graph connections for document search',
       knowledgeGraphRetrievalDescription:
         'On: document search may use related concepts from the published graph as additional search hints. Answers still cite document passages only.',
-      knowledgeGraphSave: 'Save knowledge graph settings',
-      knowledgeGraphSaveSuccess: 'Knowledge graph settings saved.',
-      noEnabledKnowledgeBase:
-        'No knowledge base is connected. This chatbot cannot search course material.',
-      openChatbot: 'Open Chatbot',
       openOwnerPreview: 'Open owner preview',
       chatbotOwnerPreviewLive: 'Live configuration',
       chatbotOwnerPreviewLiveDescription:

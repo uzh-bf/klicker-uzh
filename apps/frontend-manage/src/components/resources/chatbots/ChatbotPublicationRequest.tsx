@@ -1,8 +1,8 @@
 import { useMutation } from '@apollo/client'
 import {
+  ChatbotStatus,
   MSubmitChatbotRevisionDocument,
   MWithdrawChatbotRevisionDocument,
-  ChatbotStatus,
   QGetChatbotsInfoWithKnowledgeBasesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -523,7 +523,9 @@ function ChatbotPublicationRequest({
               <Button.Label>
                 {rejected
                   ? t('manage.resources.resubmitChatbotPublication')
-                  : t('manage.resources.requestChatbotPublication')}
+                  : published
+                    ? t('manage.resources.chatbotSectionSubmitChanges')
+                    : t('manage.resources.requestChatbotPublication')}
               </Button.Label>
             </Button>
             {requestSuccess ? (
