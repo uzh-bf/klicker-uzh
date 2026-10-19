@@ -2599,7 +2599,10 @@ type KnowledgeGraphEdge {
   id: ID!
   label: String!
   properties: Json!
+  relationStatus: String!
+  relationType: String!
   source: ID!
+  sourceReferences: [KnowledgeGraphSourceReference!]!
   target: ID!
   type: String!
 }
@@ -2625,6 +2628,7 @@ type KnowledgeGraphResponse {
 }
 
 type KnowledgeGraphSourceReference {
+  pages: [Int!]
   reference: String
   resourceId: ID!
   title: String!

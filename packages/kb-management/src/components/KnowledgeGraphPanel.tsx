@@ -18,7 +18,12 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import type { KnowledgeGraphDataSource } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
 import { KnowledgeGraphUnavailableError } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
-import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
+import type {
+  KnowledgeGraphRelationStatus,
+  KnowledgeGraphRelationType,
+  KnowledgeGraphResponse,
+  KnowledgeGraphSourceReference,
+} from '@klicker-uzh/types'
 import { Badge, Button, SelectField, Switch } from '@uzh-bf/design-system'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
@@ -62,6 +67,17 @@ type GraphResponse =
   | GetKbKnowledgeGraphOverviewQuery['getKbKnowledgeGraphOverview']
   | GetKbKnowledgeGraphNeighborsQuery['getKbKnowledgeGraphNeighbors']
 
+function toSourceReference(
+  source: GraphResponse['nodes'][number]['sourceReferences'][number]
+): KnowledgeGraphSourceReference {
+  return {
+    resourceId: source.resourceId,
+    title: source.title,
+    ...(source.reference == null ? {} : { reference: source.reference }),
+    ...(source.pages == null ? {} : { pages: source.pages }),
+  }
+}
+
 function toKnowledgeGraphResponse(
   response: GraphResponse
 ): KnowledgeGraphResponse {
@@ -78,11 +94,7 @@ function toKnowledgeGraphResponse(
       ...(node.summary == null ? {} : { summary: node.summary }),
       ...(node.content == null ? {} : { content: node.content }),
       degree: node.degree,
-      sourceReferences: node.sourceReferences.map((source) => ({
-        resourceId: source.resourceId,
-        title: source.title,
-        ...(source.reference == null ? {} : { reference: source.reference }),
-      })),
+      sourceReferences: node.sourceReferences.map(toSourceReference),
     })),
     edges: response.edges.map((edge) => ({
       id: edge.id,
@@ -90,6 +102,9 @@ function toKnowledgeGraphResponse(
       target: edge.target,
       type: edge.type,
       label: edge.label,
+      relationType: edge.relationType as KnowledgeGraphRelationType,
+      relationStatus: edge.relationStatus as KnowledgeGraphRelationStatus,
+      sourceReferences: edge.sourceReferences.map(toSourceReference),
       properties: edge.properties as Record<string, string | number | boolean>,
     })),
   }

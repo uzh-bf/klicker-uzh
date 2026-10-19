@@ -15,6 +15,7 @@ query GetKbKnowledgeGraphOverview($kbId: ID!) {
         resourceId
         title
         reference
+        pages
       }
     }
     edges {
@@ -23,6 +24,14 @@ query GetKbKnowledgeGraphOverview($kbId: ID!) {
       target
       type
       label
+      relationType
+      relationStatus
+      sourceReferences {
+        resourceId
+        title
+        reference
+        pages
+      }
       properties
     }
     truncated

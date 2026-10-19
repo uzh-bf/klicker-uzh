@@ -41,6 +41,9 @@ function edge(id: string, source: string, target: string): KnowledgeGraphEdge {
     target,
     type: 'RELATED',
     label: 'RELATED',
+    relationType: 'related',
+    relationStatus: 'extracted',
+    sourceReferences: [],
     properties: {},
   }
 }
@@ -639,6 +642,9 @@ describe('knowledge graph question selection', () => {
       target: 'missing-internal-id',
       type: 'RELATED',
       label: 'y'.repeat(300),
+      relationType: 'related',
+      relationStatus: 'extracted',
+      sourceReferences: [],
       properties: { hidden: 'Do not copy' },
     }
     expect(

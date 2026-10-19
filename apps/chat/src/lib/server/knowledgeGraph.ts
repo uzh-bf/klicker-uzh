@@ -37,6 +37,7 @@ function browserSafeSourceReference(
     resourceId: source.resourceId,
     title: source.title,
     ...(source.reference === undefined ? {} : { reference: source.reference }),
+    ...(source.pages === undefined ? {} : { pages: source.pages }),
   }
 }
 
@@ -60,6 +61,9 @@ function browserSafeEdge(edge: KnowledgeGraphEdge): KnowledgeGraphEdge {
     target: edge.target,
     type: edge.type,
     label: edge.label,
+    relationType: edge.relationType,
+    relationStatus: edge.relationStatus,
+    sourceReferences: edge.sourceReferences.map(browserSafeSourceReference),
     properties: edge.properties,
   }
 }

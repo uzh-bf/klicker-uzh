@@ -15,6 +15,7 @@ query GetKbKnowledgeGraphNeighbors($kbId: ID!, $nodeId: ID!) {
         resourceId
         title
         reference
+        pages
       }
     }
     edges {
@@ -23,6 +24,14 @@ query GetKbKnowledgeGraphNeighbors($kbId: ID!, $nodeId: ID!) {
       target
       type
       label
+      relationType
+      relationStatus
+      sourceReferences {
+        resourceId
+        title
+        reference
+        pages
+      }
       properties
     }
     truncated

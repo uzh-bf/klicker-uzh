@@ -162,7 +162,12 @@ function isSourceReference(value: unknown): boolean {
     isRecord(value) &&
     typeof value.resourceId === 'string' &&
     typeof value.title === 'string' &&
-    isOptionalString(value.reference)
+    isOptionalString(value.reference) &&
+    (value.pages === undefined ||
+      (Array.isArray(value.pages) &&
+        value.pages.every(
+          (page) => Number.isSafeInteger(page) && (page as number) > 0
+        )))
   )
 }
 
@@ -200,6 +205,10 @@ function isKnowledgeGraphEdge(value: unknown): boolean {
     typeof value.target === 'string' &&
     typeof value.type === 'string' &&
     typeof value.label === 'string' &&
+    typeof value.relationType === 'string' &&
+    typeof value.relationStatus === 'string' &&
+    Array.isArray(value.sourceReferences) &&
+    value.sourceReferences.every(isSourceReference) &&
     isRecord(value.properties) &&
     Object.values(value.properties).every(isEdgeProperty)
   )
