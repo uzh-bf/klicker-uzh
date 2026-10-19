@@ -35,10 +35,13 @@ function buildPlanMetadata(plan, routeDecision) {
   if (!['hosted', 'public-pr'].includes(routeDecision?.route)) {
     fail(`unsupported Playwright route ${routeDecision?.route}`)
   }
-  if (!['draft', 'ready'].includes(routeDecision.selectorPrState)) {
+  if (!['draft', 'ready', 'deferred'].includes(routeDecision.selectorPrState)) {
     fail(
       `unsupported selector pull-request state ${routeDecision.selectorPrState}`
     )
+  }
+  if (routeDecision.selectorPrState === 'deferred' && plan.mode !== 'skip') {
+    fail('deferred execution must use the skip Playwright plan')
   }
 
   // Every plan carries the change class the trusted classifier proved for the

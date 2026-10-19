@@ -65,6 +65,140 @@ test('the current public workflow satisfies the runner trust boundary', () => {
   )
 })
 
+function runBuildStep(t, route, graph, { filters = true, failure = '' } = {}) {
+  const step = YAML.parse(
+    fs.readFileSync(
+      path.join(__dirname, '../actions/playwright-build/action.yml'),
+      'utf8'
+    )
+  ).runs.steps.find((entry) => entry.id === 'build')
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'playwright-build-step-'))
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  const bin = path.join(root, 'node_modules/.bin')
+  fs.mkdirSync(bin, { recursive: true })
+  fs.writeFileSync(
+    path.join(bin, 'node'),
+    `#!${process.execPath}
+const fs = require('node:fs')
+const args = process.argv.slice(2)
+fs.appendFileSync(process.env.BUILD_CALLS, JSON.stringify(args) + '\\n')
+const phase = args[1].includes('prisma') ? 'prisma' : 'build'
+process.stdout.write(phase + '\\n')
+process.exit(process.env.BUILD_FAILURE === phase ? 7 : 0)
+`,
+    { mode: 0o755 }
+  )
+  fs.writeFileSync(
+    path.join(bin, 'tee'),
+    '#!/bin/bash\n/bin/cat\n[ "$BUILD_FAILURE" != tee ]\n',
+    { mode: 0o755 }
+  )
+  if (filters) {
+    fs.writeFileSync(
+      path.join(root, 'playwright-build-filters.txt'),
+      '--filter=@klicker-uzh/auth\n--filter=@klicker-uzh/backend-docker\n'
+    )
+  }
+  const callsPath = path.join(root, 'calls.jsonl')
+  const env = {
+    ...process.env,
+    PATH: `${bin}:${process.env.PATH}`,
+    GITHUB_WORKSPACE: root,
+    RUNNER_TEMP: root,
+    GITHUB_ENV: path.join(root, 'environment'),
+    BUILD_CALLS: callsPath,
+    BUILD_FAILURE: failure,
+    PLAYWRIGHT_BUILD_GRAPH: graph,
+    PLAYWRIGHT_ROUTE: step.env.PLAYWRIGHT_ROUTE?.replace(
+      /\$\{\{ inputs\.route \}\}/,
+      () => route
+    ),
+  }
+  const result = spawnSync(
+    'bash',
+    ['--noprofile', '--norc', '-eo', 'pipefail', '-c', step.run],
+    {
+      cwd: root,
+      env,
+      encoding: 'utf8',
+      timeout: 5000,
+    }
+  )
+  assert.equal(result.error, undefined)
+  return {
+    status: result.status,
+    output: result.stdout + result.stderr,
+    calls: fs.existsSync(callsPath)
+      ? fs.readFileSync(callsPath, 'utf8').trim().split('\n').map(JSON.parse)
+      : [],
+  }
+}
+
+test('build shell limits public tasks while preserving hosted and graph selection', (t) => {
+  for (const [route, concurrency] of [
+    ['public-pr', '2'],
+    ['hosted', '4'],
+  ]) {
+    for (const [graph, filters] of [
+      ['full', true],
+      ['bounded', true],
+      ['bounded', false],
+    ]) {
+      const result = runBuildStep(t, route, graph, { filters })
+      assert.equal(result.status, 0, result.output)
+      const bounded = graph === 'bounded' && filters
+      assert.equal(result.calls.length, bounded ? 1 : 2)
+      const build = result.calls.at(-1)
+      assert.ok(build[0].endsWith('/playwright-resource-sampler.cjs'))
+      assert.equal(path.basename(build[1]), 'playwright-resources-build.jsonl')
+      assert.equal(build.at(-1), `--concurrency=${concurrency}`)
+      assert.equal(build.includes('--parallel'), false)
+      if (bounded) {
+        assert.deepEqual(build.slice(2, -1), [
+          'bash',
+          './util/_with_local_test_origins.sh',
+          'cross-env',
+          'NODE_ENV=test',
+          'turbo',
+          'run',
+          'build:test',
+          '--filter=@klicker-uzh/auth',
+          '--filter=@klicker-uzh/backend-docker',
+        ])
+      } else {
+        assert.deepEqual(result.calls[0].slice(2), [
+          'pnpm',
+          'run',
+          '--filter',
+          '@klicker-uzh/prisma',
+          'build:test',
+        ])
+        assert.deepEqual(build.slice(2, -1), ['pnpm', 'run', 'build:test'])
+      }
+    }
+  }
+})
+
+test('build shell rejects unknown routes before starting a command', (t) => {
+  for (const route of ['', 'unknown', 'public-pr; exit 0']) {
+    const result = runBuildStep(t, route, 'full')
+    assert.equal(result.status, 1, result.output)
+    assert.deepEqual(result.calls, [])
+  }
+})
+
+test('build shell preserves build, Prisma and log failures', (t) => {
+  for (const [graph, failures] of [
+    ['bounded', ['build', 'tee']],
+    ['full', ['prisma', 'build', 'tee']],
+  ]) {
+    for (const failure of failures) {
+      const result = runBuildStep(t, 'public-pr', graph, { failure })
+      assert.equal(result.status, 1, `${graph}/${failure}: ${result.output}`)
+    }
+  }
+})
+
 test('the reusable envelope owns lifecycle routing and selector shadow planning', () => {
   const workflow = fs.readFileSync(
     path.join(
@@ -91,6 +225,58 @@ test('the reusable envelope owns lifecycle routing and selector shadow planning'
   )
   assert.doesNotMatch(workflow, /group: public-pr-arm64/)
   assert.match(workflow, /test-playwright-status:/)
+})
+
+test('the selector shadow records the coverage deferred until readiness', (t) => {
+  const workflow = YAML.parse(
+    fs.readFileSync(
+      path.join(__dirname, '../workflows/public-pr-playwright-shards.yml'),
+      'utf8'
+    )
+  )
+  const step = workflow.jobs.prepare.steps.find(
+    (entry) => entry.name === 'Build opposite-state selector shadow plan'
+  )
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'selector-shadow-'))
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  const bin = path.join(root, 'bin')
+  fs.mkdirSync(bin)
+  fs.writeFileSync(
+    path.join(bin, 'node'),
+    `#!${process.execPath}
+const fs = require('node:fs')
+if (process.argv[2] === '-e') {
+  process.stdout.write(JSON.parse(fs.readFileSync('route.json', 'utf8')).selectorPrState)
+} else {
+  fs.writeFileSync('selector-args.json', JSON.stringify(process.argv.slice(2)))
+}
+`,
+    { mode: 0o755 }
+  )
+  for (const [ran, expected] of [
+    ['ready', 'draft'],
+    ['draft', 'ready'],
+    ['deferred', 'ready'],
+  ]) {
+    fs.writeFileSync(
+      path.join(root, 'route.json'),
+      JSON.stringify({ selectorPrState: ran })
+    )
+    const result = spawnSync('bash', ['-euo', 'pipefail', '-c', step.run], {
+      cwd: root,
+      env: {
+        PATH: `${bin}${path.delimiter}${process.env.PATH}`,
+        BASE_SHA: 'base',
+        HEAD_SHA: 'head',
+      },
+      encoding: 'utf8',
+    })
+    assert.equal(result.status, 0, result.stderr)
+    const args = JSON.parse(
+      fs.readFileSync(path.join(root, 'selector-args.json'), 'utf8')
+    )
+    assert.equal(args[args.indexOf('--pr-state') + 1], expected)
+  }
 })
 
 test('lifecycle policy rejects cancellation outside the exact closed-PR boundary and any draft gate', () => {
@@ -530,19 +716,32 @@ test('status reporter accepts the trusted plan for drafts and a full plan for re
 })
 
 test('status reporter reuses only validated pull-request runs', (t) => {
-  // Push validation must always execute: a duplicate offered on a push is
+  // v3 and the staging source must validate their pushes independently: a
+  // duplicate offered there, or while the staging source is unknown, is
   // rejected whatever it contains.
+  const push = {
+    IS_PULL_REQUEST: 'false',
+    ROUTE: 'hosted',
+    DUPLICATE_RUN_ID: '123',
+    STG_SOURCE_BRANCH: 'v3-adaptive-learning',
+  }
   const rejected = {
-    'numeric push run id': {
-      IS_PULL_REQUEST: 'false',
-      ROUTE: 'hosted',
-      DUPLICATE_RUN_ID: '123',
-    },
+    'numeric push run id': { ...push, PUSH_REF: 'refs/heads/v3' },
     'non-numeric push run id': {
-      IS_PULL_REQUEST: 'false',
-      ROUTE: 'hosted',
+      ...push,
+      PUSH_REF: 'refs/heads/v3',
       DUPLICATE_RUN_ID: '123abc',
     },
+    'staging source push': {
+      ...push,
+      PUSH_REF: 'refs/heads/v3-adaptive-learning',
+    },
+    'unknown staging source': {
+      ...push,
+      PUSH_REF: 'refs/heads/v3-ai',
+      STG_SOURCE_BRANCH: '',
+    },
+    'missing push ref': push,
   }
   for (const [name, overrides] of Object.entries(rejected)) {
     const result = runStatusReporter(t, overrides)
@@ -560,6 +759,13 @@ test('status reporter reuses only validated pull-request runs', (t) => {
   assert.equal(reused.status, 0, reused.output)
   assert.equal(reused.metadata.duplicate_run_id, '123')
   assert.match(reused.summary, /Reused validated run: `123`/)
+
+  // Another integration branch accepts the merged pull request's validation.
+  const integration = runStatusReporter(t, {
+    ...push,
+    PUSH_REF: 'refs/heads/v3-ai',
+  })
+  assert.equal(integration.status, 0, integration.output)
 
   // Reuse cannot launder a cancelled or failed execution into a green gate.
   for (const [name, overrides] of [
