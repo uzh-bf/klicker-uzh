@@ -34,11 +34,11 @@ function validateCallerLifecycle(caller) {
   if (
     caller?.name !== 'Klicker automated testing with playwright' ||
     !caller?.on?.pull_request?.types?.includes('closed') ||
-    !caller.on.pull_request.types.includes('converted_to_draft') ||
+    caller.on.pull_request.types.includes('converted_to_draft') ||
     caller.concurrency !== undefined
   ) {
     issues.push(
-      'caller must preserve workflow identity and handle closed and converted-to-draft PRs without workflow concurrency'
+      'caller must preserve workflow identity, handle closed PRs, and omit draft-conversion triggers and workflow concurrency'
     )
   }
   for (const [name, job] of Object.entries(jobs)) {
