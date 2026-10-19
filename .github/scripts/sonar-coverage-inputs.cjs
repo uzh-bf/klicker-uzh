@@ -286,7 +286,7 @@ async function findPublishedAnalysis(deps) {
       continue
     }
     for (const run of runs || []) {
-      if (run && run.id && run.status === 'completed') candidates.push(run)
+      if (run && run.id) candidates.push(run)
     }
   }
   candidates.sort(
@@ -300,6 +300,22 @@ async function findPublishedAnalysis(deps) {
       continue
     }
     if ((artifacts || []).some((artifact) => artifact.name === name)) {
+      if (run.status !== 'completed') {
+        let receipt
+        try {
+          receipt = await transport.readJsonArtifact(artifacts, name)
+        } catch (error) {
+          continue
+        }
+        if (
+          !receipt ||
+          receipt.runId !== run.id ||
+          receipt.runAttempt !== (run.run_attempt || 1) ||
+          receipt.headSha !== headSha ||
+          receipt.baseSha !== baseSha
+        )
+          continue
+      }
       return { runId: run.id, name }
     }
   }
@@ -355,7 +371,30 @@ async function resolveProducers(transport, producers, headSha) {
   const resolved = []
   for (const producer of producers) {
     const runs = await transport.listRuns(workflowFileName(producer), headSha)
-    const run = selectNewestRun(runs)
+    let run = selectNewestRun(runs)
+    if (run && run.status === 'in_progress') {
+      const terminalName = {
+        'test-unit.yml': 'test-unit-status',
+        'test-graphql.yml': 'test-graphql-status',
+      }[workflowFileName(producer)]
+      const jobs = await transport.listJobs(run.id, run.run_attempt || 1)
+      const terminal = jobs.filter((job) => job.name === terminalName)
+      // The analysis belongs to the producer workflow, so waiting for that
+      // workflow to finish would wait on this job itself. Its required-status
+      // job proves the test outcome without admitting unfinished test work.
+      if (
+        terminalName &&
+        terminal.length === 1 &&
+        terminal[0].status === 'completed' &&
+        terminal[0].conclusion
+      ) {
+        run = {
+          ...run,
+          status: 'completed',
+          conclusion: terminal[0].conclusion,
+        }
+      }
+    }
     resolved.push({
       producer,
       run,
