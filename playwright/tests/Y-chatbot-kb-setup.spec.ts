@@ -8,6 +8,7 @@ import { URL_MANAGE, USER_ID_TEST } from '../util/constants.js'
 const PREFIX = 'E2E KB Setup'
 const CHATBOT_NAME = `${PREFIX} Chatbot`
 const KB_NAME = `${PREFIX} Material`
+const NO_KB_OPTION = 'No knowledge base. Answers use general model knowledge.'
 
 async function cleanup() {
   const prisma = await getPrisma()
@@ -62,13 +63,15 @@ test.describe('Chatbot knowledge base setup', () => {
       `${manageUrl}/resources/chatbots?chatbotId=${chatbotId}&view=knowledge`
     )
     await expect(page.getByTestId('chatbot-kb-setup')).toBeVisible()
-    await expect(
-      page.getByTestId('chatbot-no-enabled-knowledge-base')
-    ).toBeVisible()
+    // Without material the section warns instead of showing a notice.
+    await expect(page.getByTestId('chatbot-section-materials')).toHaveAttribute(
+      'data-status',
+      'warning'
+    )
     // A draft change is reviewed with the next publication request.
     await expect(page.getByTestId('chatbot-kb-live-change-note')).toHaveCount(0)
     // The advanced-management flag is on by default in this mock.
-    await expect(page.getByTestId('chatbot-view-usage')).toBeVisible()
+    await expect(page.getByTestId('chatbot-section-usage-toggle')).toBeVisible()
 
     // Creating from the chatbot connects the new knowledge base and opens it
     // with a way back to the chatbot.
@@ -91,15 +94,23 @@ test.describe('Chatbot knowledge base setup', () => {
       KB_NAME
     )
 
-    await page.getByTestId('chatbot-kb-disconnect').click()
     await expect(
-      page.getByTestId('chatbot-no-enabled-knowledge-base')
-    ).toBeVisible()
+      page.getByTestId('chatbot-section-materials')
+    ).not.toHaveAttribute('data-status', 'warning')
+
+    // Choosing the empty option disconnects the material.
+    await selectOption(page, '[data-cy="chatbot-kb-select"]', NO_KB_OPTION)
+    await expect(page.getByTestId('chatbot-section-materials')).toHaveAttribute(
+      'data-status',
+      'warning'
+    )
+    await expect(
+      page.getByTestId('chatbot-enabled-knowledge-base')
+    ).toHaveCount(0)
     await expect(page.getByTestId('chatbot-kb-disconnect')).toHaveCount(0)
 
     // An existing knowledge base is connected by selecting it.
     await selectOption(page, '[data-cy="chatbot-kb-select"]', KB_NAME)
-    await page.getByTestId('chatbot-kb-connect').click()
     await expect(page.getByTestId('chatbot-enabled-knowledge-base')).toHaveText(
       KB_NAME
     )
@@ -210,31 +221,39 @@ test.describe('Chatbot knowledge base setup', () => {
     await expect(page.getByTestId('create-chatbot')).toBeVisible()
 
     const chatbotId = await createDraftChatbot(page)
-    // A draft is prepared on one page in three steps, without tabs.
+    // A draft is prepared on one page of sections, without tabs.
     await expect(page.getByTestId('chatbot-draft-setup')).toBeVisible()
     await expect(page.getByTestId('chatbot-workspace-navigation')).toHaveCount(
       0
     )
     await expect(page.getByTestId('chatbot-technical-details')).toHaveCount(0)
-    await expect(page.getByTestId('chatbot-setup-step-materials')).toBeVisible()
-    await expect(page.getByTestId('chatbot-setup-step-students')).toBeVisible()
     await expect(
-      page.getByTestId('chatbot-setup-step-publication')
+      page.getByTestId('chatbot-section-materials-toggle')
     ).toBeVisible()
+    await expect(
+      page.getByTestId('chatbot-section-students-toggle')
+    ).toBeVisible()
+    await expect(page.getByTestId('chatbot-section-request')).toBeVisible()
 
     // Choosing material connects it without a Connect button.
     await selectOption(page, '[data-cy="chatbot-kb-select"]', KB_NAME)
-    await expect(page.getByTestId('chatbot-kb-disconnect')).toBeVisible()
+    await expect(page.getByTestId('chatbot-enabled-knowledge-base')).toHaveText(
+      KB_NAME
+    )
     await expect(page.getByTestId('chatbot-kb-connect')).toHaveCount(0)
 
-    // Student information stays a summary until the lecturer edits it, and
+    // Student information stays a suggestion until the lecturer edits it, and
     // the optional behavior section stays closed.
+    await expect(page.getByTestId('chatbot-section-students')).toHaveAttribute(
+      'data-status',
+      'suggested'
+    )
     await expect(
-      page.getByTestId('chatbot-setup-students-summary')
-    ).toBeVisible()
+      page.getByTestId('chatbot-section-students-toggle')
+    ).toHaveAttribute('aria-expanded', 'false')
     await expect(page.getByTestId('chatbot-setup-disclaimer')).toHaveCount(0)
     await expect(
-      page.getByTestId('chatbot-setup-behavior-toggle')
+      page.getByTestId('chatbot-section-modes-toggle')
     ).toHaveAttribute('aria-expanded', 'false')
 
     // The publication request is open and prefilled.
