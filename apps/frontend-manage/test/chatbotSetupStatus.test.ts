@@ -62,6 +62,14 @@ const defaultModes = {
 assert.equal(isDefaultModes(defaultModes), true)
 assert.equal(isDefaultModes({ ...defaultModes, quizzerEnabled: false }), false)
 assert.equal(isDefaultModes({ ...defaultModes, customModeCount: 1 }), false)
+assert.equal(
+  isDefaultModes({ ...defaultModes, subjectDomain: 'Corporate finance' }),
+  false
+)
+assert.equal(
+  isDefaultModes({ ...defaultModes, languageOfInstruction: 'de' }),
+  false
+)
 
 assert.equal(
   isDefaultModelPolicy(
@@ -151,3 +159,10 @@ assert.equal(
 
 assert.equal(hasUnsubmittedChanges({ visible: true }, { visible: true }), false)
 assert.equal(hasUnsubmittedChanges({ visible: true }, { visible: false }), true)
+assert.equal(
+  hasUnsubmittedChanges(
+    { modes: { tutor: true, note: undefined }, period: 'DAILY' },
+    { period: 'DAILY', modes: { note: null, tutor: true } }
+  ),
+  false
+)
