@@ -165,6 +165,10 @@ export default {
       loadError: 'Your chats could not be loaded.',
       retry: 'Retry',
       loading: 'Loading conversations...',
+      exportMarkdown: 'Export as Markdown',
+      exportUserLabel: 'You',
+      exportAssistantLabel: 'Assistant',
+      exportSourcesLabel: 'Sources',
     },
     thread: {
       viewportLabel: 'Conversation transcript',

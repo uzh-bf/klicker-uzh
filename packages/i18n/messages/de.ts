@@ -167,6 +167,10 @@ export default {
       loadError: 'Deine Chats konnten nicht geladen werden.',
       retry: 'Erneut versuchen',
       loading: 'Deine Chats werden geladen...',
+      exportMarkdown: 'Als Markdown exportieren',
+      exportUserLabel: 'Du',
+      exportAssistantLabel: 'Assistent',
+      exportSourcesLabel: 'Quellen',
     },
     thread: {
       viewportLabel: 'Gesprächsverlauf',
