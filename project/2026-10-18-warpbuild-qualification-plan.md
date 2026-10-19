@@ -197,3 +197,17 @@ or billing.
 The trial forwards its configured cache setting to both shared-action inputs and
 the telemetry environment. Existing wiring contracts cover both build and shard
 roles so restore behavior and its reported configuration share one source.
+
+The literal-false admission barrier is restored while further admission is
+paused. Build and shard jobs now each enforce the first-attempt guard, including
+failed-job reruns that reuse successful preparation. The existing aggregate
+reports skipped preparation as unadmitted rather than a completed validation.
+The same three tests cover hosted preparation, immutable action pins, producer
+failure propagation, shard wiring, the exact-source shell guard, independent
+source-format rejection, alternate runner outputs and size-policy boundaries.
+Human-readable summary wording is not a test contract. Ordinary workflows and
+shared actions remain unchanged. Correction and simplification reviews remain
+main-session self-reviews under the explicit no-subagent instruction.
+The corrected 96-contract suite, YAML and embedded Bash syntax, Biome, Prettier,
+diff checks and scoped two-file Opengrep scan pass. Exact-head remote checks
+remain a separate publication gate.

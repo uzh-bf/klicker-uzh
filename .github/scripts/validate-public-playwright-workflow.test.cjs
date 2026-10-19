@@ -926,10 +926,25 @@ test('runner qualification stays opt-in and preserves the public execution contr
   })
   assert.equal(
     trial.jobs.prepare.if.replace(/\s+/g, ' ').trim(),
-    "github.repository == 'uzh-bf/klicker-uzh' && github.ref == 'refs/heads/rs/warpbuild-qualification' && github.run_attempt == 1"
+    "false && github.repository == 'uzh-bf/klicker-uzh' && github.ref == 'refs/heads/rs/warpbuild-qualification' && github.run_attempt == 1"
   )
   assert.deepEqual(trial.permissions, { contents: 'read' })
   assert.deepEqual(trial.jobs['trial-status'].permissions, {})
+  for (const role of ['prepare', 'trial-status']) {
+    assert.equal(trial.jobs[role]['runs-on'], 'ubuntu-latest')
+    assert.equal(trial.jobs[role].container, undefined)
+    assert.equal(trial.jobs[role].services, undefined)
+  }
+  for (const job of Object.values(trial.jobs)) {
+    assert.equal(job['continue-on-error'], undefined)
+    for (const step of job.steps ?? []) {
+      assert.equal(step.if, undefined)
+      assert.equal(step['continue-on-error'], undefined)
+      if (step.uses) {
+        assert.match(step.uses.split('@')[1], /^[a-f0-9]{40}$/)
+      }
+    }
+  }
   for (const role of ['prepare', 'build', 'shards']) {
     assert.deepEqual(trial.jobs[role].permissions ?? trial.permissions, {
       contents: 'read',
@@ -961,7 +976,7 @@ test('runner qualification stays opt-in and preserves the public execution contr
     'shards',
   ])
   const actionRevision = trial.jobs.build.steps[1].uses.split('@')[1]
-  assert.match(actionRevision, /^[a-f0-9]{40}$/)
+  assert.equal(actionRevision, trial.env.TRIAL_SOURCE_SHA)
   for (const [role, action, ordinaryRole, runnerOutput] of [
     [
       'build',
@@ -972,6 +987,7 @@ test('runner qualification stays opt-in and preserves the public execution contr
     ['shards', 'playwright-shard', 'test-playwright-public-pr', 'shard_runner'],
   ]) {
     const job = trial.jobs[role]
+    assert.equal(job.if, 'github.run_attempt == 1')
     assert.equal(job['timeout-minutes'], 45)
     assert.deepEqual(job.container, ordinary.jobs[ordinaryRole].container)
     assert.equal(
@@ -1009,9 +1025,14 @@ test('runner qualification stays opt-in and preserves the public execution contr
   )
   assert.equal(trial.jobs.shards.steps[1].with.workers, '1')
   assert.equal(
-    trial.jobs['trial-status'].if,
-    "always() && needs.prepare.result != 'skipped'"
+    trial.jobs.shards.steps[1].with['shard-index'],
+    githubExpression('matrix.shardIndex')
   )
+  assert.equal(
+    trial.jobs.shards.steps[1].with['shard-total'],
+    githubExpression('matrix.shardTotal')
+  )
+  assert.equal(trial.jobs['trial-status'].if, 'always()')
 })
 
 test('runner qualification rejects mismatched plans and unsupported experiment dimensions', (t) => {
@@ -1020,6 +1041,14 @@ test('runner qualification rejects mismatched plans and unsupported experiment d
   assert.equal(typeof step?.run, 'string')
   const heredoc = step.run.match(/node <<'NODE'\n([\s\S]+)\nNODE(?:\n|$)/)
   assert.ok(heredoc, 'prepare step must contain its Node admission script')
+  assert.match(
+    step.run,
+    /test "\$\(git -C \.candidate rev-parse HEAD\)" = "\$TRIAL_SOURCE_SHA"/
+  )
+  assert.match(
+    step.run,
+    /--base-sha "\$TRIAL_SOURCE_SHA" --head-sha "\$TRIAL_SOURCE_SHA"/
+  )
   const script = heredoc[1]
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'runner-trial-'))
   t.after(() => fs.rmSync(root, { recursive: true, force: true }))
@@ -1079,6 +1108,26 @@ test('runner qualification rejects mismatched plans and unsupported experiment d
       shardTotal,
     })),
   })
+  const alternate = {
+    TRIAL_WAVE: '6',
+    TRIAL_BUILD_LABEL: 'warp-ubuntu-2404-arm64-8x',
+    TRIAL_SHARD_LABEL: 'warp-ubuntu-2404-arm64-4x',
+    TRIAL_CACHE_ENABLED: 'true',
+  }
+  const alternateResult = run(alternate)
+  assert.equal(alternateResult.status, 0, alternateResult.stderr)
+  const alternateOutputs = fs.readFileSync(path.join(root, 'output'), 'utf8')
+  for (const [output, label] of [
+    ['build_runner', alternate.TRIAL_BUILD_LABEL],
+    ['shard_runner', alternate.TRIAL_SHARD_LABEL],
+  ]) {
+    assert.deepEqual(
+      JSON.parse(
+        alternateOutputs.match(new RegExp(`^${output}=(.+)$`, 'm'))[1]
+      ),
+      { group: 'Default', labels: label }
+    )
+  }
   function assertRejected(result, context) {
     assert.equal(
       result.status,
@@ -1091,14 +1140,25 @@ test('runner qualification rejects mismatched plans and unsupported experiment d
   for (const env of [
     { TRIAL_PROVIDER: 'unknown' },
     { TRIAL_PROVIDER: 'hetzner' },
+    { TRIAL_WAVE: '0' },
     { TRIAL_WAVE: '13' },
-    { TRIAL_SOURCE_SHA: 'v3' },
     { TRIAL_CACHE_ENABLED: 'yes' },
     { TRIAL_BUILD_LABEL: 'ubuntu-latest' },
+    { TRIAL_BUILD_LABEL: 'warp-ubuntu-2404-arm64-2x' },
+    { TRIAL_BUILD_LABEL: 'warp-ubuntu-2404-arm64-4x' },
     { TRIAL_SHARD_LABEL: 'self-hosted' },
+    { TRIAL_SHARD_LABEL: 'warp-ubuntu-2404-arm64-16x' },
   ]) {
     assertRejected(run(env), JSON.stringify(env))
   }
+  assertRejected(
+    run({ TRIAL_SOURCE_SHA: 'v3' }, (p) => ({
+      ...p,
+      headSha: 'v3',
+      baseSha: 'v3',
+    })),
+    'non-immutable source with a matching plan'
+  )
   for (const changePlan of [
     (p) => ({ ...p, mode: 'skip' }),
     (p) => ({ ...p, headSha: 'b'.repeat(40) }),
@@ -1111,7 +1171,7 @@ test('runner qualification rejects mismatched plans and unsupported experiment d
   }
 })
 
-test('runner qualification aggregate rejects failed, cancelled and skipped producers', () => {
+test('runner qualification aggregate distinguishes unadmitted work and rejects incomplete producers', () => {
   const step = readRunnerTrial().jobs['trial-status'].steps[0]
   assert.deepEqual(step.env, {
     PREPARE: githubExpression('needs.prepare.result'),
@@ -1123,7 +1183,9 @@ test('runner qualification aggregate rejects failed, cancelled and skipped produ
   for (const [key, result] of [
     ['', 'success'],
     ['PREPARE', 'failure'],
+    ['PREPARE', 'skipped'],
     ['BUILD', 'failure'],
+    ['BUILD', 'skipped'],
     ['SHARDS', 'failure'],
     ['SHARDS', 'cancelled'],
     ['SHARDS', 'skipped'],
@@ -1134,7 +1196,7 @@ test('runner qualification aggregate rejects failed, cancelled and skipped produ
     })
     assert.equal(
       output.status,
-      key === '' ? 0 : 1,
+      key === '' || (key === 'PREPARE' && result === 'skipped') ? 0 : 1,
       `${key}=${result}\n${output.error ?? ''}\n${output.stdout}\n${output.stderr}`
     )
   }

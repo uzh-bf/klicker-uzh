@@ -745,13 +745,15 @@ retain their existing authorization and serialized status locks.
 ## Isolated WarpBuild qualification
 
 `warpbuild-playwright-trial.yml` is a separate experiment, not ordinary PR
-validation. The prepare job accepts only
-the `rs/warpbuild-qualification` branch and first run attempts. Workflow-file
-pushes provide a branch-only entry before a new manual workflow is registered on
-the default branch. Each workflow-file push admits a new wave, so publish only
-reviewed configuration commits after private preflight and cost reservation.
-The initial publication used a literal `false` condition; restore that condition
-when the finite experiment ends. Repository and organization variables cannot
+validation. The prepare job is disabled with a literal `false` barrier. When
+enabled, it accepts only the `rs/warpbuild-qualification` branch and first run
+attempts. Both paid jobs independently reject later attempts, including failed-job
+reruns that reuse a successful prepare job. Workflow-file pushes provide a
+branch-only entry before a new manual workflow is registered on the default
+branch. Each enabled workflow-file push admits a new wave, so publish only
+reviewed configurations after private preflight and cost reservation.
+Restore the literal `false` condition when the finite experiment ends or admission
+is paused. Repository and organization variables cannot
 enable a disabled version.
 
 Before enabling it, verify the actual provider connection, complete runner-group
@@ -775,8 +777,11 @@ ordinary eight-shard suite; separately designated production tests retain their
 existing lane. `public-pr` in shared telemetry describes the trust lane, not the
 provider: use the trial configuration and actual job assignments for comparisons.
 Inspect all producer steps and the separate trial aggregate before accepting a
-wave. Keep actual billing, resource observations and forecasts out of repository
-and CI artifacts. See the [qualification plan](../project/2026-10-18-warpbuild-qualification-plan.md).
+wave. When preparation is skipped, the hosted aggregate emits an explicit
+unadmitted notice without allocating a provider build or shard. That result is
+not a completed validation. Keep actual billing, resource observations and
+forecasts out of repository and CI artifacts. See the
+[qualification plan](../project/2026-10-18-warpbuild-qualification-plan.md).
 
 ## Public ARM64 runner operations
 

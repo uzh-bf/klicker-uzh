@@ -23,9 +23,10 @@ env:
 
 jobs:
   prepare:
-    # Every workflow-file push admits a wave. Verify group policy and reserve
-    # its cost before publishing a reviewed configuration change.
+    # Remove the false barrier only after verifying group policy and reserving
+    # the cost of the reviewed configuration.
     if: >-
+      false &&
       github.repository == 'uzh-bf/klicker-uzh' &&
       github.ref == 'refs/heads/rs/warpbuild-qualification' &&
       github.run_attempt == 1
@@ -114,6 +115,7 @@ jobs:
 
   build:
     needs: prepare
+    if: github.run_attempt == 1
     runs-on: ${{ fromJSON(needs.prepare.outputs.build_runner) }}
     timeout-minutes: 45
     container:
@@ -135,6 +137,7 @@ jobs:
 
   shards:
     needs: [prepare, build]
+    if: github.run_attempt == 1
     runs-on: ${{ fromJSON(needs.prepare.outputs.shard_runner) }}
     timeout-minutes: 45
     strategy:
@@ -214,7 +217,7 @@ jobs:
 
   trial-status:
     needs: [prepare, build, shards]
-    if: always() && needs.prepare.result != 'skipped'
+    if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}
@@ -227,6 +230,10 @@ jobs:
           SHARDS: ${{ needs.shards.result }}
         run: |
           set -euo pipefail
+          if [ "$PREPARE" = skipped ]; then
+            echo '::notice::The isolated trial was not admitted; no provider validation ran.'
+            exit 0
+          fi
           test "$PREPARE" = success
           test "$BUILD" = success
           test "$SHARDS" = success
