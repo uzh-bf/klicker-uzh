@@ -860,6 +860,7 @@ const getAttachmentErrorMessage = (
 const useAttachmentErrorHandling = (setError: (msg: string | null) => void) => {
   const t = useTranslations()
   const aui = useAui()
+  const supportsImages = useSupportsImageAttachments()
   const failedIndexes = useAuiState((s) =>
     s.composer.attachments
       .flatMap((attachment, index) =>
@@ -871,7 +872,11 @@ const useAttachmentErrorHandling = (setError: (msg: string | null) => void) => {
   useAuiEvent('composer.attachmentAddError', ({ reason, message }) => {
     setError(
       reason === 'not-accepted' || reason === 'no-adapter'
-        ? t('chat.composer.attachmentTypeError')
+        ? t(
+            supportsImages
+              ? 'chat.composer.attachmentTypeError'
+              : 'chat.composer.documentOnlyTypeError'
+          )
         : getAttachmentErrorMessage(t, message)
     )
   })
@@ -1049,7 +1054,7 @@ const DocumentChip: FC<{
       data-cy="chat-document-attachment"
       className={twMerge(
         'bg-background relative flex max-w-64 min-w-0 items-center gap-2 rounded-lg border py-1.5 pl-2 pr-3 text-left text-xs',
-        removable && 'pr-12 fine-pointer:pr-8',
+        removable && 'pr-14 fine-pointer:pr-9',
         document?.shortened && 'border-amber-500/50 bg-amber-50'
       )}
     >

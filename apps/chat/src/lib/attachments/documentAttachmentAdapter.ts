@@ -9,7 +9,7 @@ import {
   truncateDocumentText,
 } from './documentText'
 import { AttachmentAdapterError } from './imageAttachmentAdapter'
-import { extractPdfPages } from './pdfText'
+import { extractPdfPages, PDF_TEXT_MESSAGE } from './pdfText'
 
 export const DOCUMENT_ERROR_CODE = {
   tooLarge: 'document-too-large',
@@ -65,9 +65,11 @@ async function extractPdfInWorker(data: ArrayBuffer): Promise<string[]> {
     return await new Promise<string[]>((resolve, reject) => {
       worker.onmessage = (
         event: MessageEvent<
-          { ok: true; pages: string[] } | { ok: false; message: string }
+          | { type?: unknown; ok: true; pages: string[] }
+          | { type?: unknown; ok: false; message: string }
         >
       ) => {
+        if (event.data?.type !== PDF_TEXT_MESSAGE) return
         if (event.data.ok) resolve(event.data.pages)
         else reject(new Error(event.data.message))
       }

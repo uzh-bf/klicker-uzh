@@ -238,6 +238,8 @@ export default {
       attachFile: 'Attach an image or document',
       attachmentTypeError:
         'This file type cannot be attached. Use an image, PDF, Word (.docx), text, Markdown or CSV file.',
+      documentOnlyTypeError:
+        'The selected model cannot read images. Use a PDF, Word (.docx), text, Markdown or CSV file.',
       documentLimitError: 'You can only attach up to {max} documents.',
       documentTooLarge: 'Documents must be smaller than {max} MB.',
       documentNoText: 'This file contains no readable text.',

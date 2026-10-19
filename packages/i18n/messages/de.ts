@@ -240,6 +240,8 @@ export default {
       attachFile: 'Bild oder Dokument anhängen',
       attachmentTypeError:
         'Dieser Dateityp kann nicht angehängt werden. Verwende ein Bild, ein PDF, eine Word-Datei (.docx) oder eine Text-, Markdown- oder CSV-Datei.',
+      documentOnlyTypeError:
+        'Das ausgewählte Modell kann keine Bilder lesen. Verwende ein PDF, eine Word-Datei (.docx) oder eine Text-, Markdown- oder CSV-Datei.',
       documentLimitError: 'Du kannst höchstens {max} Dokumente anhängen.',
       documentTooLarge: 'Dokumente müssen kleiner als {max} MB sein.',
       documentNoText: 'Diese Datei enthält keinen lesbaren Text.',
