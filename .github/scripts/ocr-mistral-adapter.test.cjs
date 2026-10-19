@@ -879,7 +879,7 @@ test('manual workflows reconcile shared stage receipts against independent step 
     const block = source.match(
       new RegExp(`\\n  ${job}:\\n([\\s\\S]*?)(?=\\n  [a-z][\\w-]*:\\n|$)`)
     )[1]
-    const steps = block.split(/^ {6}- name: /m).slice(1)
+    const steps = block.split(/^      - name: /m).slice(1)
     const preflight = steps.find((step) => step.includes('id: preflight'))
     const execution = steps.find((step) => step.includes(`id: ${stepId}`))
     const summary = steps.find((step) =>

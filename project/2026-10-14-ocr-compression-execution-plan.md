@@ -178,11 +178,31 @@ UI change or screenshot applies.
 
 ### Progress
 
-- Remote-state gate passed; primary clean, task branch starts at current v3.
-- Main is settling the fixed telemetry protocol and existing receipt seam.
-- Canary triage owner: explore child Archimedes, immutable canary head
-  523e085b61f68fffdee4af22f506435058a2f6c7; no application writes.
-- Next: planner, one telemetry slice, local qualification, reviews and draft PR.
+- Delivery: implemented, qualified and published as
+  [draft PR #6633](https://github.com/uzh-bf/klicker-uzh/pull/6633), targeting v3.
+- Reviews: planner approved; simplifier and focused risk reviewer found no
+  required changes; configured Claude final review passed the complete five-path
+  package. Canonical review JSON was validated before accepting the result.
+- Verification: 209 focused repository checks, six actual-binary runner checks,
+  upstream Go race suites and the five-file keyless stress passed. All 17
+  compression computations matched observed lifecycle records. Hosted codebase
+  and Playwright workflows passed at the implementation head.
+- Canary triage: all three findings on
+  [PR #5709](https://github.com/uzh-bf/klicker-uzh/pull/5709) are valid from public
+  source: interruption recovery needs state reconciliation, nullable JSON needs
+  the database-null sentinel, and selected KB mode validation needs effective
+  inherited configuration. Application fixes remain with that owning PR.
+
+Automatic draft OCR failed after upstream HTTP 403 rejections with zero provider
+responses. It provides no passed review or live telemetry evidence; route and
+credential repair remain outside this package.
+
+Live qualification is pending the next normal substantive review after merge.
+No extra paid replay, merge, readiness change or repository setting mutation was
+performed. Reasoning, budgets, accounting and retry behavior are unchanged.
+
+Terminal: reviewed ordinary push and draft publication complete; merge and
+post-merge live acceptance remain separately gated.
 
 
 ### Telemetry protocol and receipt contract
@@ -236,11 +256,10 @@ ownership and the existing fixture. Installer changes remain unnecessary.
 
 Planner round two: APPROVED. Proceed with the approved telemetry slice.
 
-Telemetry implementation progress: producer/parser/receipt integration is complete.
-209 repository tests passed, one optional native-binary case pending fresh build.
-The first real-binary probe caught a marker emitted before JSON routing; moving
-the marker to main-task startup preserves structured stdout. Fresh installer and
-repeat-compression stress verification are running. No workflow settings changed.
+Telemetry implementation is complete. The first real-binary probe caught a
+marker emitted before JSON routing; moving the marker to main-task startup
+preserves structured stdout. The final installer, actual-binary and repeat
+compression checks below qualify that fix. No workflow settings changed.
 
 Fresh qualification: 209 repository checks passed; all six native runner tests
 passed with the actual patched executable, including the initially skipped
