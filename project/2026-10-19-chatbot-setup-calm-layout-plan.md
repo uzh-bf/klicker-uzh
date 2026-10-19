@@ -305,5 +305,24 @@ No test pins copy, summaries or translations. Playwright runs in CI only.
   deleted the local seed data, including the synthetic TEST draft. The
   baseline seed was restored and a new synthetic TEST draft and knowledge
   base were created through the UI.
-- Next action: push S12, open its draft PR on top of #6618 in stack #6274,
-  then start S13.
+- S12 is draft PR #6621, on top of #6618.
+- S13 is committed: sections for every status, tab removal, usage strip,
+  apply labels and live credit policy as 4a626a05c9, the published request
+  card rule as 93b8603c2c, the Playwright migration as 3b943bee42, and the
+  docs and ADR in the following commit. Browser checks passed for draft,
+  pending (Materials editable, other sections locked, Withdraw restores the
+  draft), published without a revision (no request card), published with a
+  saved usage change (live policy, "Not yet submitted", submit button) and
+  paused (notice, read-only), in English and German and at 390 px. The
+  published and paused states were set on the synthetic TEST chatbot through
+  the local database and restored afterwards.
+- Departure: apply labels are per section, not per field. Every field in a
+  section follows the same rule, so the labels carry the same information.
+- Departure: the model-policy footer is dropped; the Model section summary
+  already states which models students can use.
+- Departure: on a published chatbot, creating a knowledge base now stays on
+  the setup page like on a draft, because the tabbed view that navigated
+  away is gone.
+- Departure: the ADR is numbered 0053, because two open branches already
+  claim 0052.
+- Next action: push S13, open its draft PR on top of #6621 in stack #6274.
