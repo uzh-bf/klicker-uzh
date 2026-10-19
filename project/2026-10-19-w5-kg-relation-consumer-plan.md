@@ -261,26 +261,37 @@ instead of a test.
 
 ## Progress
 
-- Status: S1 and S2 done; final review passed with no findings. Screenshots
-  and the seeder extension are blocked: the devrouter runtime cannot start
-  ("all predefined address pools have been fully subnetted").
+- Status: S1 and S2 done, with screenshots, seeder extension and review
+  fixes. The PR is ready for review (not draft); merging stays withheld.
 - Worktree: `trees/rs/w5-kg-relation-consumer` on `rs/w5-kg-relation-consumer`
   from `origin/v3-ai` `cf240ddb1e`.
 - Deviations: S1 ran in the main session instead of an executor (the design
   context was already loaded). Views show the relation-type label only when
   `edge.label` falls back to `edge.type`, so explicit edge labels keep showing.
-  Checks ran on the host as the brief's fallback, and the worktree had no Git
-  hooks, so they replace the pre-commit run.
-- Evidence: knowledge-graph Vitest 98 passed, 2 skipped; chat graph tests 73
+  The manage panel reads the new fields through newly named
+  `...WithRelations` persisted queries, because the rolling-deployment rule
+  forbids editing existing operation documents. The seeder publishes the
+  fixture with synthetic build sources and can target another chatbot,
+  because the mcp profile's isolated chatbot has no knowledge-base
+  resources. Commit hooks ran on the host, because the container-backed hook
+  stalls on a devrouter stdio issue.
+- Evidence: knowledge-graph Vitest 98 passed, 2 skipped; chat graph tests 74
   passed; `tsc` green for knowledge-graph, graphql, kb-management, chat and
-  shared-components; Biome and Prettier clean on changed files.
+  shared-components; host pre-commit and pre-push hooks passed. Browser
+  checks on the seeded local stack: typed relations, evidence status and
+  pages render in manage and chat; `contrasts_with` has no arrow; "Ask about
+  this" drafts the relation type; the student payload and lecturer cache hold
+  no evidence or relation keys. Eight screenshots are published in the PR.
 - Test delta: added the fixture contract, fail-closed and evidence-bound
-  tests plus an ask-selection assertion; changed edge literals and the route
-  leak assertion.
+  tests, an ask-selection assertion and an unknown-relation-type guard case;
+  changed edge literals and the route leak assertion.
 - Simplifier: accepted dropping the redundant `related` vocabulary entry;
   kept the 20-resource cap the plan names.
-- Next action: screenshots once a runtime is available, then hosted CI and
-  `/final-review`.
+- Reviews: first final review passed. The PR final review raised two LOW
+  findings (nested ternary, repeated symmetric type), both fixed and
+  dispositioned; the inline bot findings (persisted ops, guard membership,
+  label fallback, symmetric accessible name) are fixed.
+- Next action: `/final-review` once hosted CI is green on the head.
 
 ## Planning review
 
