@@ -37,6 +37,7 @@ function evaluateGate(
     'cancelled',
     'vars',
     'steps',
+    'format',
     `return (${normalized})`
   )(
     github,
@@ -44,9 +45,55 @@ function evaluateGate(
     () => true,
     () => cancelled,
     vars,
-    steps
+    steps,
+    (pattern, value) => {
+      assert.equal(pattern, '{0}')
+      return String(value)
+    }
   )
 }
+
+test('paid jobs and legacy required coverage reject stale preparation on rerun', () => {
+  const workflow = readWorkflow('public-pr-playwright-shards.yml')
+  for (const [provider, admitted, current, expected] of [
+    ['warpbuild', '1', 1, true],
+    ['warpbuild', '1', 2, false],
+    ['warpbuild', '2', 2, true],
+    ['warpbuild', '', 1, false],
+    ['public-pool', '', 2, true],
+  ]) {
+    const needs = {
+      prepare: {
+        outputs: {
+          provider,
+          admission_attempt: admitted,
+          duplicate_run_id: '',
+          should_run: 'true',
+          route: 'public-pr',
+        },
+      },
+    }
+    for (const name of [
+      'build-and-compile-public-pr',
+      'test-playwright-public-pr',
+    ]) {
+      assert.equal(
+        evaluateGate(workflow.jobs[name].if, { run_attempt: current }, needs),
+        expected
+      )
+    }
+    const output = workflow.on.workflow_call.outputs.should_run.value
+      .slice(3, -2)
+      .trim()
+    const jobs = { prepare: needs.prepare }
+    const returned = evaluateGate(
+      output.replaceAll('jobs.', 'needs.'),
+      { run_attempt: current },
+      jobs
+    )
+    assert.equal(returned, String(expected))
+  }
+})
 
 test('trusted review policy admits only lifecycle events and exact PR commands', () => {
   const workflow = readWorkflow('check-ocr-final-review.yml')
@@ -229,9 +276,11 @@ test('playwright execution and reporting run only for open pull requests', () =>
 })
 
 // The envelope emits a duplicate run id only for a fully validated equivalent
-// pull-request run; push validation must always execute independently. The
-// reporter therefore has to tie reuse acceptance to the event family instead of
-// rejecting every duplicate.
+// pull-request run. A v3-* integration push other than the staging source may
+// reuse the run that validated the merged pull request; v3 and the staging
+// source must always validate their pushes independently. The reporter
+// therefore has to tie reuse acceptance to the event family and push ref
+// instead of rejecting every duplicate.
 test('the playwright reporter reuses only pull-request validation', () => {
   const playwright = readWorkflow('test-playwright.yml')
   const report = playwright.jobs['test-playwright-status'].steps.find(
@@ -426,7 +475,9 @@ test('the producer-hosted analysis runs for a same-repository pull request only'
     const job = workflow.jobs.sonarcloud
     assert.ok(job, name + ' must analyze the coverage it just produced')
     assert.equal(job.uses, './.github/workflows/sonar-analysis.yml', name)
-    assert.deepEqual(job.needs, ['filter', suite], name)
+    const reporter = suite + '-status'
+    assert.deepEqual(job.needs, ['filter', suite, reporter], name)
+    assert.ok(!workflow.jobs[reporter].needs.includes('sonarcloud'))
 
     // A draft is admitted here and deferred inside the analysis, because the
     // job is evaluated minutes after its event, when the pull request may

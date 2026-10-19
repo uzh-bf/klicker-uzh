@@ -1,6 +1,11 @@
 litellm_settings:
   drop_params: true
 
+router_settings:
+  # Each admitted judge attempt covers exactly one upstream request.
+  num_retries: 0
+  max_fallbacks: 0
+
 general_settings:
   # Development-only key for the loopback evaluation judge. Do not reuse it
   # outside this disposable local service.

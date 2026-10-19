@@ -21,6 +21,89 @@ function pullRequest(overrides = {}) {
   }
 }
 
+function cloudAdmission(overrides = {}) {
+  const ticket = {
+    runId: '100',
+    runAttempt: '1',
+    pullRequestNumber: '1234',
+    headSha: 'a'.repeat(40),
+    baseSha: 'b'.repeat(40),
+    controlSha: 'c'.repeat(40),
+    expiresAt: '2026-10-19T13:00:00Z',
+  }
+  return pullRequest({
+    ...ticket,
+    now: '2026-10-19T12:00:00Z',
+    warpbuildAdmissions: JSON.stringify([ticket]),
+    ...overrides,
+  })
+}
+
+test('paid admission binds the complete execution identity and eligibility', () => {
+  const admitted = choosePlaywrightRoute(cloudAdmission())
+  assert.equal(admitted.route, 'public-pr')
+  assert.equal(admitted.provider, 'warpbuild')
+  assert.equal(admitted.admissionAttempt, '1')
+  for (const overrides of [
+    { runId: '101' },
+    { repository: 'other/repo', headRepository: 'other/repo' },
+    { runAttempt: '2' },
+    { pullRequestNumber: '1235' },
+    { headSha: 'd'.repeat(40) },
+    { baseSha: 'd'.repeat(40) },
+    { controlSha: 'd'.repeat(40) },
+    { prDraft: 'true' },
+    { repositoryPrivate: 'true' },
+    { headRepository: 'external/example' },
+    { prAuthor: 'dependabot[bot]' },
+    { publicRolloutEnabled: '' },
+    { forceHostedCanaryPr: '1234' },
+    { eventName: 'push' },
+  ]) {
+    assert.notEqual(
+      choosePlaywrightRoute(cloudAdmission(overrides)).provider,
+      'warpbuild',
+      JSON.stringify(overrides)
+    )
+  }
+})
+
+test('invalid or stale paid tickets preserve the ordinary backend', () => {
+  const ticket = JSON.parse(cloudAdmission().warpbuildAdmissions)[0]
+  for (const warpbuildAdmissions of [
+    '',
+    '{',
+    '{}',
+    'null',
+    JSON.stringify([]),
+    JSON.stringify([ticket, ticket]),
+    JSON.stringify([ticket, null]),
+    JSON.stringify([{ ...ticket, runAttempt: 1 }]),
+    JSON.stringify([{ ...ticket, headSha: 'bad' }]),
+    JSON.stringify([{ ...ticket, expiresAt: 'not-a-date' }]),
+    JSON.stringify([{ ...ticket, expiresAt: '2026-10-19T12:00:00Z' }]),
+    JSON.stringify([{ ...ticket, expiresAt: '2026-10-19T16:00:01Z' }]),
+    JSON.stringify(
+      Array.from({ length: 4 }, (_, i) => ({
+        ...ticket,
+        runId: String(100 + i),
+      }))
+    ),
+  ]) {
+    assert.notEqual(
+      choosePlaywrightRoute(cloudAdmission({ warpbuildAdmissions })).provider,
+      'warpbuild'
+    )
+  }
+  assert.notEqual(
+    choosePlaywrightRoute(cloudAdmission({ now: 'invalid' })).provider,
+    'warpbuild'
+  )
+  const retry = cloudAdmission({ runAttempt: '2' })
+  retry.warpbuildAdmissions = JSON.stringify([{ ...ticket, runAttempt: '2' }])
+  assert.equal(choosePlaywrightRoute(retry).admissionAttempt, '2')
+})
+
 test('pushes always use a hosted full plan', () => {
   assert.deepEqual(choosePlaywrightRoute({ eventName: 'push' }), {
     schemaVersion: 1,
@@ -199,5 +282,32 @@ test('empty route hints use the automatic route', () => {
   for (const requestedRoute of ['', '   ']) {
     const route = choosePlaywrightRoute(pullRequest({ requestedRoute }))
     assert.equal(route.route, 'public-pr')
+  }
+})
+
+test('draft sync pull requests defer Playwright to the ready transition', () => {
+  const syncDraft = pullRequest({
+    prDraft: 'true',
+    headRef: 'sync/v3-into-v3-ai-0123456789',
+    smartDraftEnabled: 'true',
+  })
+  assert.deepEqual(choosePlaywrightRoute(syncDraft), {
+    schemaVersion: 1,
+    route: 'hosted',
+    selectorPrState: 'deferred',
+    reasonCodes: ['draft-sync-deferred', 'smart-draft-enabled'],
+  })
+
+  // Readiness, a fork head, or a branch outside the maintained sync pairs
+  // keeps the ordinary route decision.
+  for (const overrides of [
+    { prDraft: 'false' },
+    { headRepository: 'someone/klicker-uzh' },
+    { headRef: 'sync/v3-into-feature-0123456789' },
+    { headRef: 'sync/v3-into-v3-ai-manual-fix' },
+  ]) {
+    const route = choosePlaywrightRoute({ ...syncDraft, ...overrides })
+    assert.notEqual(route.selectorPrState, 'deferred')
+    assert.ok(!route.reasonCodes.includes('draft-sync-deferred'))
   }
 })

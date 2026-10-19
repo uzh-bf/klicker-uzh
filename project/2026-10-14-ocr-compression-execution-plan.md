@@ -1,31 +1,110 @@
 # OCR compression execution repair
 
 ## Approval summary
-PR #6414's current full review stopped at 3,210,459 tokens with only 4 of 50 files complete. The earlier adapter repair succeeded: there were no prose retries, provider retries or native-history misses. This package corrects the pinned OCR compressor rather than raising the aggregate budget. A network-disabled synthetic run of released OCR 1.13.0 reproduced 28 compression requests across 18 main turns.
 
-OCR's compression partition does not reserve the fixed system/user prompt. Its rebuild appends each summary into that permanent user prompt, making old summaries impossible to compress. The repair keeps the original two messages unchanged, places one rolling summary in the compressible history, and accounts for fixed messages plus the summary when choosing active rounds. It preserves complete old evidence in the next summarization input and complete recent assistant/tool rounds. Empty or failed compression retains the original history; context overflow remains a failure.
+This package repairs compression churn and oversized rendered review groups in
+OCR 1.13.0. The compressor currently appends summaries to the immutable review
+prompt and retains history without reserving that prompt's context cost. Keep
+original instructions intact, maintain one compressible rolling summary, include
+evicted tool evidence in the next summary and split oversized rendered groups
+without excluding selected files.
 
-The upstream release has no runtime customization seam for this algorithm and current upstream source still matches it. Build a minimal patched OCR executable from immutable upstream commit 1672852136fc87748249d22bce0819f33419ea79 (release 1.13.0) with its existing Go 1.26.9 toolchain and lockfile. Pin and verify the source and exact patch preimages. Retain the upstream license. No provider, model, reasoning effort, output cap, aggregate ceiling, rule, selection, review-round or model execution timeout change is included. Installer operations are bounded separately: 30 seconds each for toolchain/version checks, extraction and patching; two minutes for download; ten minutes each for race tests and build; and 25 minutes for the enclosing installer step. The existing two keyless file-selection previews and complete manifest validator stay enforced.
+Build the patched executable from immutable upstream source with its existing
+Go 1.26.9 toolchain and dependency checksums. Verify the source archive, apply
+only the checked-in patch, run the affected race tests, and record source, patch
+and executable provenance. Fail closed rather than fall back to an unpatched
+binary. Installer and patch changes invalidate earlier review-policy evidence.
 
-Direct human instruction authorizes diagnosis, source correction, ordinary task commits/pushes, draft repair delivery, synthetic verification, corrected paid review after safe activation, findings handling, #6414 description updates and one four-hour monitor. A new trusted-default repair ready/merge requires separately named authority; the earlier six-file #6518 merge authorization is spent. Main merge, release, tags, sync merges, deployment and notifications remain gated.
+The October 19 refresh integrates current `v3` into the existing PR and preserves
+its current models, maximum reasoning, 200,000-token prompt ceiling, 16,384-token
+completion cap, manual concurrency two, billable token accounting, ten-million
+individual range ceiling, stack ceilings, deadlines, retry/resume rules and full
+coverage requirements. Current context, cache, live-progress, cost and advisor
+changes remain intact. Draft reviews retain their existing released executable;
+the patched executable is used only by manual individual and stack jobs.
 
-Completion requires corrected deterministic regressions, one unchanged-workload before/after binary experiment with measured requests and token usage, fresh required repair CI and independent review, approved exact-head activation if needed, then one actual complete #6414 review with all selected files terminal and any valid findings verified/fixed. A new terminal budget/provider failure is checkpointed without blind retries.
+The user authorized refreshing the existing PR: integrate, resolve conflicts,
+correct stale documentation and verified feedback, run offline qualification and
+configured reviews, commit, push and update the PR description. It is already
+ready; retain that state. This refresh grants no merge, deployment, settings,
+review-thread messages, new monitor or paid review replay. Completion is a
+reviewed source refresh published to the same PR with precise verification and
+pending hosted gates. Live complete-review acceptance remains post-merge work
+requiring its own authority and exact-head prerequisites.
 
 ## Execution details
-Execution mode: standard (runtime identity not on the explicit solo allowlist). Full path because the final review's execution and complete-coverage contract change. Artifacts root remains project/. Existing journal is project/_local/reviews/2026-10-13-confirmed-login/coordination-current.md. Global handoff stays untouched.
 
-Ownership: main owns actual failed receipts, upstream provenance, patch semantics and external effects. One completed explore worker mapped public configuration only. A read-only planner challenges this correction before implementation. No independent writer is needed: source patch, provenance and workflow verification are tightly coupled. Delegation Map: slices 1–4 main, dependencies 1 → 2 → 3 → 4; independent reviewers are gates, not implementation owners. Main owns source installer, workflow integration and final producer proof; one writer per path set.
+Approval mode: executable batch. Execution mode: standard (exact runtime model
+identity unavailable). One cohesive existing full-path package in `project/`.
+Worktree `trees/final-review-compression`; branch `rs/final-review-compression`.
+Target `v3`; refresh target `8b37dd56368f0edfd7b1ea06431c3d0816a20c79`.
+Original repair head `102094bda85c0c8820dc3f7cb05cf1ed9e0cdc5b`.
 
-Slice 1: reproduce frozen-context, repeated-summary and rendered-group overflow defects with synthetic fake-client tests; correct compression.go plus the existing agent grouping dispatch seam and consequential regression coverage. Before dispatch, recursively split multi-file groups by deterministic halves when the fully rendered initial prompt plus the existing maximum plan output reservation per insertion, including the rendered plan wrapper exceeds the unchanged80% hard ceiling. Partition before recording execution groups and dispatch, keeping every selected path exactly once. Reserve plan output only when the existing PlanRequired contract applies; singleton still faces actual post-plan hard guard. Single-file overflow still fails. Preserve original first two messages, one standalone compressible summary and intact assistant/tool suffix. Include old summary, structured tool calls/IDs and every evicted message in recompression input. Reserve immutable prefix and current summary tokens, then retain whole rounds within half of the remaining unchanged80% warning budget after frozen/summary reservation to leave growth room; count the full active suffix including user messages; an oversized returned summary fails without dropping unsummarized history. Acceptance: original source fails new invariants, corrected source passes whole llmloop package including concurrency/race cases and no-change model/coverage invariants.
-Slice 2: integrate immutable source-build/patch validation through new .github/scripts/install-patched-ocr.cjs and .github/open-code-review/ocr-compression.patch in both individual and stack installation and the required codebase CI qualification step. Add both to FINAL_REVIEW_POLICY_PATHS. Pin source checksum, patch preimages, Go1.26.9 and existing dependency checksums. Never fall back to the unpatched binary. Acceptance: install fails on source/patch mismatch; actual built executable reports pinned version plus local patch identity; same synthetic full review completes, preview selection matches upstream, request/token counters improve; local native workflow/adapter tests and format pass.
-Slice 3: ordinary commit/push and draft repair PR, independent simplification/risk/final review and fresh required CI. Ask only for concrete ready/merge activation after the repair is reviewable. On activation verify actual delta and trusted default; retain #6414 e3d head unless a concrete freshness/finding blocker.
-Slice 4: post one new exact /final-review for #6414 after activation, verify candidate/model/manifest/full coverage and safe counters, address valid findings, update/read back existing description preserving nine gallery assets, then delete monitor.
+### Binding contracts
 
-Verification uses disposable build/test containers and synthetic temporary Git repositories. No DevPod/devrouter/application runtime, secret, real-person record or production data is needed. Earlier exact-head browser 997 passes/18 skips, 13 builds and nonbrowser suites stay reusable if #6414 source is unchanged. New source or integration needs applicable fresh CI. The open CodeQL 1091 rollout exception ends 2026-10-21 with owner rschlaefli; accepted historical risks and 44 resolved threads are not fixes or acceptance of new findings.
+- Pin upstream `1672852136fc87748249d22bce0819f33419ea79` and the verified
+  archive; preserve the license. Upstream 1.13.1 has identical compression source
+  but other semantic changes, so upgrading it is outside this refresh.
+- Preserve original system/user messages, one rolling summary in compressible
+  history, intact recent assistant/tool rounds, and evicted calls/results in the
+  next summarization input. Empty or failed compression preserves history;
+  oversized summaries fail without discarding unsummarized evidence.
+- Reserve frozen prompt and summary tokens, retaining whole rounds within half
+  the remaining warning budget. Split multi-file groups by deterministic halves
+  before dispatch using rendered rules, plan wrappers and existing maximum plan
+  output reservations. Keep each selected path exactly once; oversized singletons
+  still fail. No change to the reviewed algorithm patch is planned.
+- Bound download to two minutes, individual checks/extraction/patching to thirty
+  seconds, race tests and build to ten minutes each, and installer steps to
+  twenty-five minutes. Run one existing 200,000-token offline preview per manual
+  attempt, as current `v3` requires. Earlier two-preview instructions are retired.
+- Preserve current final-review evidence identity, PR/plan context and diagnostics.
+  Add the installer and patch to policy identity; do not restore older fields or
+  settings when resolving conflicts. Existing advisor tooling is independent.
+
+### Ownership and verification
+
+Main owns integration, conflicts, trust/provenance decisions, tests, documentation
+and Git/PR effects. A read-only explorer verifies the old feedback against source;
+no competing writer owns these paths. The algorithm remains tightly coupled to
+its immutable patch and installer, so implementation stays with main.
+
+Reuse earlier planner and algorithm-review evidence while the patch is unchanged;
+review the refreshed integrated range after verification. The existing source,
+workflow, qualification and mock-provider tests are the acceptance seams. Extend
+only consequential provenance or integration regressions where current tests
+leave a real gap; do not pin documentation or incidental strings.
+
+Run affected upstream `llmloop` and `agent` race suites plus the actual installer
+in a disposable existing build image. Re-run repository review/stack/adapter,
+workflow-gate, updater and direct-invocation checks. Verify current prompt,
+concurrency, budget and accounting settings against target source. Use native
+formatting, syntax, diff and staged secret/data checks. No application runtime,
+UI or screenshot work applies. No DevPod/devrouter runtime is required.
+
+The prior synthetic five-file experiment completed all files with eighteen main
+turns both before and after. Requests fell from 48 to 29, compression requests
+from 29 to 10 and simulated adapter tokens from 950,694 to 614,024. These are
+historical offline measurements with an unchanged engine patch; they do not
+establish current live savings or complete provider review acceptance.
 
 ## Progress
-2026-10-14: Direct authorization and planner challenge approved. Monitor finish-olat-review-execution-efficiency remains active until 2026-10-15T01:38:29Z. Main e3d stays held; repair draft #6531 starts at df02f7ab on target b081.
 
-Final patch digest 0a3c9ef7cd4887574c3e565ae70fbbc27235b257e78ce8ccea9872b0ba60b427 passed the upstream compression and agent race suites and actual installer. Local review/stack/adapter/updater/qualification179, CI gate/classification41 and invocation2 checks pass. Identical synthetic five-file workload completes all five files with18main turns both before and after: requests48→29, responses47→29, auxiliary30→11 and adapter-counted mock tokens950694→614024. The counters include asynchronous draining that OCR's summary can omit; this is offline execution proof, not live model acceptance. Keyless actual6414 previews match every selected path and exclusion.
-
-Simplification recommended no changes. Independent integrated review verified compression/grouping correctness and requested gating the new build qualification to related paths plus correcting superseded measurement figures. Both corrections are included. Direct immutable codeload bytes match the pinned archive checksum, avoiding an unauthenticated API call. Required hosted engine qualification succeeded on the first repair head; full CI remains pending and must match the final correction head. A follow-up independent correction check and actual ready-state review precede any approved activation. Four-hour expiry checkpoints unfinished work and deletes the sole heartbeat without claiming completion.
+- Original implementation: four repair commits, historical exact-head CI passed.
+  Earlier plan and independent algorithm review remain evidence for the unchanged
+  patch. Previous temporary monitor expired; no monitor is claimed active.
+- Refresh: current `v3` integrated in progress; conflicts resolved by retaining
+  both current policy tests and the installer/patch invalidation cases, plus the
+  current CI guide and compression-engine guidance.
+- Initial refreshed integration check: 151 tests passed, zero failures.
+- Fresh verification: 286 host checks passed with one optional binary skip;
+  the actual patched executable then passed all six keyless runner tests in a
+  network-disabled container. Both affected upstream Go race suites and the
+  actual installer/build/provenance check passed. The patch digest is unchanged.
+- Formatting, syntax and diff checks pass. Two pre-existing advisory Biome errors
+  remain in unchanged helper callbacks; scoped Opengrep found no findings but
+  partially analyzed the large existing helper. Staged Gitleaks passed.
+- Refreshed contract: planner approved. Final integrated review and push pending;
+  no new application or paid-provider acceptance claimed.
+- Existing [PR #6531](https://github.com/uzh-bf/klicker-uzh/pull/6531) stays open;
+  merge and live activation remain separately gated.

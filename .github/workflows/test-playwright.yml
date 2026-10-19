@@ -12,8 +12,6 @@ on:
         # The ready boundary runs the envelope so it can validate the draft-era
         # full proof instead of rebuilding and retesting an unchanged head.
         ready_for_review,
-        # Converting back to a draft conservatively re-runs full validation.
-        converted_to_draft,
         # A closed pull request cancels its in-flight execution.
         closed,
       ]
@@ -56,6 +54,7 @@ jobs:
     uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3
     with:
       route_hint: auto
+      allow_push_reuse: true
 
   # Always reports a status even when the canonical plan skips all tests.
   # This job intentionally stays outside the reusable workflow's concurrency
@@ -80,12 +79,17 @@ jobs:
           DUPLICATE_RUN_ID: ${{ needs.test-playwright-execution.outputs.duplicate_run_id }}
           EXECUTION_RESULT: ${{ needs.test-playwright-execution.result }}
           ROUTE: ${{ needs.test-playwright-execution.outputs.route }}
+          PROVIDER: ${{ needs.test-playwright-execution.outputs.provider }}
+          ADMISSION_ATTEMPT: ${{ needs.test-playwright-execution.outputs.admission_attempt }}
+          CURRENT_ATTEMPT: ${{ github.run_attempt }}
           MODE: ${{ needs.test-playwright-execution.outputs.mode }}
           ENVELOPE_CLASS: ${{ needs.test-playwright-execution.outputs.envelope_class }}
           SHOULD_RUN: ${{ needs.test-playwright-execution.outputs.should_run }}
           SHARD_MATRIX: ${{ needs.test-playwright-execution.outputs.shard_matrix }}
           IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
           IS_DRAFT: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft }}
+          PUSH_REF: ${{ github.event_name == 'push' && github.ref || '' }}
+          STG_SOURCE_BRANCH: ${{ vars.STG_SOURCE_BRANCH }}
         run: |
           set -euo pipefail
           {
@@ -127,16 +131,30 @@ jobs:
             echo 'Playwright execution returned an invalid route.'
             exit 1
           fi
-          # Push validation always runs independently. A pull-request lifecycle
-          # event may reuse validation: the trusted envelope emits a duplicate
-          # run id only after binding that run to the same pull request, head,
-          # base, merge tree, control revision, full plan and complete coverage,
-          # and then skips its own build and shards. Older envelopes cannot
-          # offer pull-request duplicates, so this acceptance stays inert until
-          # the reuse contract is live on the pinned control ref.
-          if [ -n "${DUPLICATE_RUN_ID:-}" ] && [ "$IS_PULL_REQUEST" != 'true' ]; then
-            echo 'Push validation cannot be reused; it must run independently.'
+          if [ "${PROVIDER:-}" = 'warpbuild' ] && [ "${ADMISSION_ATTEMPT:-}" != "${CURRENT_ATTEMPT:-}" ]; then
+            echo 'Paid validation was not admitted for this attempt.'
             exit 1
+          fi
+          # A pull-request lifecycle event may reuse validation: the trusted
+          # envelope emits a duplicate run id only after binding that run to the
+          # same pull request, head, base, merge tree, control revision, full
+          # plan and complete coverage, and then skips its own build and shards.
+          # A v3-* integration push may reuse the run that tested the merged
+          # pull request's exact tree. v3 and the staging source branch always
+          # validate their pushes independently, because the staging promoter
+          # admits only their own hosted shards.
+          if [ -n "${DUPLICATE_RUN_ID:-}" ] && [ "$IS_PULL_REQUEST" != 'true' ]; then
+            case "${PUSH_REF:-}" in
+              refs/heads/v3-*) ;;
+              *)
+                echo 'Push validation cannot be reused; it must run independently.'
+                exit 1
+                ;;
+            esac
+            if [ -z "${STG_SOURCE_BRANCH:-}" ] || [ "$PUSH_REF" = "refs/heads/$STG_SOURCE_BRANCH" ]; then
+              echo 'Push validation cannot be reused; it must run independently.'
+              exit 1
+            fi
           fi
 
           # Every push and every ready pull request must attest the complete

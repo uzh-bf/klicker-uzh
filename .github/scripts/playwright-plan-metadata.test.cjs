@@ -28,6 +28,66 @@ function plan(
   }
 }
 
+test('provider metadata selects only fixed runners and binds paid attempts', () => {
+  const route = {
+    route: 'public-pr',
+    selectorPrState: 'ready',
+    provider: 'warpbuild',
+    admissionAttempt: '2',
+  }
+  const cloud = buildPlanMetadata(plan('full', 8), route)
+  assert.deepEqual(cloud.buildRunner, {
+    group: 'Default',
+    labels: 'warp-ubuntu-2404-arm64-8x',
+  })
+  assert.deepEqual(cloud.shardRunner, {
+    group: 'Default',
+    labels: 'warp-ubuntu-2404-arm64-4x',
+  })
+  assert.equal(cloud.admissionAttempt, '2')
+  assert.equal(cloud.jobTimeout, 45)
+  const ordinary = buildPlanMetadata(plan('full', 8), {
+    route: 'public-pr',
+    selectorPrState: 'ready',
+  })
+  assert.equal(ordinary.provider, 'public-pool')
+  assert.deepEqual(ordinary.buildRunner, {
+    group: 'public-pr-arm64',
+    labels: [
+      'linux',
+      'arm64',
+      'docker',
+      'public-pr-arm64',
+      'playwright',
+      'playwright-build',
+    ],
+  })
+  assert.deepEqual(ordinary.shardRunner, {
+    group: 'public-pr-arm64',
+    labels: [
+      'linux',
+      'arm64',
+      'docker',
+      'public-pr-arm64',
+      'playwright',
+      'playwright-shard',
+    ],
+  })
+  assert.equal(ordinary.jobTimeout, 120)
+  for (const overrides of [
+    { provider: 'arbitrary' },
+    { route: 'hosted' },
+    { selectorPrState: 'draft' },
+    { admissionAttempt: '' },
+    { admissionAttempt: '1\ninjected=x' },
+  ]) {
+    assert.throws(
+      () => buildPlanMetadata(plan('full', 8), { ...route, ...overrides }),
+      /provider|admission/
+    )
+  }
+})
+
 test('metadata exposes one matrix for selected plans and no matrix for skips', () => {
   const selected = buildPlanMetadata(plan('selected', 2), {
     route: 'hosted',
@@ -183,5 +243,22 @@ test('duplicate shard indices and unsafe reason codes fail closed', () => {
         selectorPrState: 'draft',
       }),
     /reason codes/
+  )
+})
+
+test('deferred execution attests only the skip plan', () => {
+  const deferred = buildPlanMetadata(plan('skip'), {
+    route: 'hosted',
+    selectorPrState: 'deferred',
+  })
+  assert.equal(deferred.shouldRun, false)
+  assert.equal(deferred.selectorPrState, 'deferred')
+  assert.throws(
+    () =>
+      buildPlanMetadata(plan('selected'), {
+        route: 'hosted',
+        selectorPrState: 'deferred',
+      }),
+    /deferred execution must use the skip/
   )
 })
