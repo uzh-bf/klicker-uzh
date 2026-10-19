@@ -10,12 +10,24 @@ performance or learning acceptance. Assess a source-bound baseline before
 preparing more prompt variants; retain the existing candidates as unvalidated
 development inputs.
 
-This update is documentation-only. The protocols below preserve historical
-and conditional execution contracts; they are not the current technical work
-queue. Further inference still needs named budget/provider/source-use authority
-and applicable cost admission. Prior finite capture authority is consumed.
-No runtime, ledger, prompt, KB, framework or deployment change follows from this
-roadmap refresh.
+The user subsequently approved source implementation through draft PR delivery.
+This branch now adds one revision-preservation instruction to the repository's
+standard Explainer contract. Generated-answer quality remains unassessed for
+that source candidate. No stored lecturer guidance or live configuration is
+changed; the platform instruction would take effect only after deployment.
+
+For a later matched comparison, use pre-change source
+`a7db83b4bf258fc15086c638224816c2d1493ddf` as baseline and source
+`a910c3871fa9a589fbf90ee75e0fe1687deec51b` as candidate. Their executable
+delta is only that Explainer instruction. Later documentation corrections do
+not change those source arms. Do not use the candidate as the untouched baseline
+or substitute older capture receipts for either arm.
+
+The protocols below retain historical and conditional contracts, rather than
+the current technical work queue. Prior finite capture authority is consumed.
+Further inference needs named budget/provider/source-use authority and cost
+admission. Runtime changes, live prompt/KB writes, merge and deployment remain
+separately gated.
 
 ## Zero-spend source and route preflight
 
@@ -579,7 +591,7 @@ inputs and source evidence before execution and include them in a separately
 named capture/acceptance approval. No broad improvement, live application or
 learning-effectiveness claim follows from the compression comparison alone.
 
-### Progress
+### Historical documentation delivery
 
 Source baseline: `c12d6c93fab59eff700a95afe6b2ac900fc0fd45` on `v3`, containing
 merged [PR 6603](https://github.com/uzh-bf/klicker-uzh/pull/6603). Execution mode:

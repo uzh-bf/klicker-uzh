@@ -61,11 +61,14 @@ Tutor/Quizzer work. Revisit only when evidence links a concrete blocker or need
 to the selected learner outcome. A blocked paid route does not authorize an
 upstream infrastructure project. Reuse existing capture/import and assessment.
 
-This refresh authorizes documentation and draft delivery only. Further inference
-needs its named finite budget, provider, source-use and enforceable cost boundary.
-Existing hard-cap requirements remain in force; monitored spending is not a
-substitute. Prior capture authority is consumed. Shared prompt/KB changes,
-promotion, merge and deployment remain separately gated.
+The approved implementation adds one instruction to the source-managed standard
+Explainer contract in this draft; its generated-answer effect is unassessed.
+The [continuation](2026-10-18-explainer-assessment-readiness-plan.md#current-learner-improvement-continuation)
+pins the pre-change baseline and one-instruction candidate for a later matched
+check. Stored lecturer guidance remains unchanged. Further inference needs
+named budget, provider, source-use and enforceable cost authority; prior capture
+authority is consumed. Monitored spending is not a hard-cap substitute. Live
+prompt/KB changes, promotion, merge and deployment remain separately gated.
 
 ## Existing foundations and deferred protocols
 
