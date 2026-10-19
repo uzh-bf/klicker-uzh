@@ -102,6 +102,11 @@ verification and remaining hosted-CI limitations; do not request human reviewers
   pass. Scoped Opengrep: 200 rules, zero findings.
 - Test delta: five broker cases added, existing concurrency/failure/cancellation
   and runner receipt tests extended; no tests removed.
-- Reviews and draft publication: pending on the committed implementation.
-- Packaging: one coherent PR; six total changed paths. Substantive size and
-  immutable review range recorded in private review evidence after commit.
+- Reviews: simplifier and scoped risk review completed without findings;
+  integrated final review passed on implementation commit `d55de89cd0`.
+- Delivery: committed and pushed; [draft PR #6617](https://github.com/uzh-bf/klicker-uzh/pull/6617)
+  targets `v3`. Hosted CI remains pending. Trusted-policy live qualification
+  remains a separate post-merge step; no live replay was triggered.
+- Packaging: one coherent PR; six total changed paths. Substantive size: 555 lines added and
+  25 removed, excluding documentation and plan artifacts. Immutable review range
+  and reports are recorded in private review evidence.
