@@ -236,11 +236,8 @@ test.describe('Chatbot knowledge base setup', () => {
     await expect(page.getByTestId('create-chatbot')).toBeVisible()
 
     const chatbotId = await createDraftChatbot(page)
-    // A draft is prepared on one page of sections, without tabs.
+    // A draft is prepared on one page of sections.
     await expect(page.getByTestId('chatbot-draft-setup')).toBeVisible()
-    await expect(page.getByTestId('chatbot-workspace-navigation')).toHaveCount(
-      0
-    )
     await expect(page.getByTestId('chatbot-technical-details')).toHaveCount(0)
     await expect(
       page.getByTestId('chatbot-section-materials-toggle')
@@ -293,15 +290,16 @@ test.describe('Chatbot knowledge base setup', () => {
       })
       .toBe('PENDING_APPROVAL')
 
-    // A pending chatbot keeps the tabs, without Usage, and an old link to the
-    // Usage view falls back to the overview.
+    // A pending chatbot keeps the same page. An old link to the usage view
+    // opens the usage section, which is locked while the request is pending.
     await page.goto(
       `${manageUrl}/resources/chatbots?chatbotId=${chatbotId}&view=usage`
     )
-    await expect(page.getByTestId('chatbot-overview')).toBeVisible()
-    await expect(page.getByTestId('chatbot-view-overview')).toBeVisible()
-    await expect(page.getByTestId('chatbot-view-knowledge')).toBeVisible()
-    await expect(page.getByTestId('chatbot-view-usage')).toHaveCount(0)
-    await expect(page.getByTestId('chatbot-draft-setup')).toHaveCount(0)
+    await expect(page.getByTestId('chatbot-draft-setup')).toBeVisible()
+    await expect(
+      page.getByTestId('chatbot-section-usage-toggle')
+    ).toHaveAttribute('aria-expanded', 'true')
+    await expect(page.getByTestId('chatbot-credit-initial')).toBeDisabled()
+    await expect(page.getByTestId('chatbot-publication-readonly')).toBeVisible()
   })
 })

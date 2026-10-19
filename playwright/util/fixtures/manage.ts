@@ -174,6 +174,19 @@ export async function mockGrowthBookLearningAnalytics(
   })
 }
 
+// Opens a section of the chatbot setup page unless it is already open.
+export async function openChatbotSection(
+  page: Page,
+  id: 'materials' | 'students' | 'modes' | 'model' | 'usage' | 'graph'
+) {
+  const toggle = page.getByTestId(`chatbot-section-${id}-toggle`)
+  await expect(toggle).toBeVisible()
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true') {
+    await toggle.click()
+  }
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+}
+
 export async function mockBetaEnrollmentGraphQL(
   page: Page,
   {

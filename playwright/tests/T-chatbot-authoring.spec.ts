@@ -153,40 +153,9 @@ async function navigateToSetupStep(
   }
 }
 
-// Opens a view of a chatbot that still has workspace tabs.
-async function navigateToWorkspaceStep(
-  page: Page,
-  step: 'basics' | 'modes' | 'disclaimer' | 'credits' | 'review'
-) {
-  const url = new URL(page.url())
-  if (step === 'modes') {
-    url.searchParams.set('view', 'behavior')
-    url.searchParams.delete('step')
-  } else if (step === 'credits') {
-    url.searchParams.set('view', 'usage')
-    url.searchParams.delete('step')
-  } else if (step === 'disclaimer') {
-    url.searchParams.set('view', 'disclaimer')
-    url.searchParams.delete('step')
-  } else {
-    url.searchParams.set('view', 'overview')
-    url.searchParams.set('step', step)
-  }
-  await page.goto(url.toString())
-  if (step === 'credits') {
-    await expect(page.getByTestId('chatbot-credit-policy-form')).toBeVisible()
-  } else {
-    await expect(
-      page.getByTestId(`chatbot-setup-trigger-${step}`)
-    ).toBeVisible()
-    await expect(page.getByTestId(`chatbot-setup-${step}`)).toBeVisible()
-  }
-}
-
-// A draft is one page of sections without workspace tabs.
+// Every chatbot status is one page of collapsible sections.
 async function expectSetupTriggers(page: Page) {
   await expect(page.getByTestId('chatbot-draft-setup')).toBeVisible()
-  await expect(page.getByTestId('chatbot-workspace-navigation')).toHaveCount(0)
   for (const section of [
     'materials',
     'students',
@@ -1174,10 +1143,10 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await page.goto(
       `${process.env.URL_MANAGE ?? URL_MANAGE}/resources/chatbots?chatbotId=${chatbotId}`
     )
-    await navigateToWorkspaceStep(page, 'review')
-    await expect(
-      page.getByTestId('chatbot-review-custom-mode-0')
-    ).toContainText('Debate coach')
+    await navigateToSetupStep(page, 'modes')
+    await expect(page.getByTestId('chatbot-custom-mode-name-0')).toHaveValue(
+      'Debate coach'
+    )
   })
 
   test('stops adding custom modes at the platform limit', async ({ page }) => {
@@ -1332,17 +1301,17 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(
       page.getByTestId('chatbot-publication-readonly')
     ).toContainText('awaiting publication review')
-    await expect(page.getByTestId('chatbot-view-behavior')).toHaveCount(1)
-    await expect(page.getByTestId('chatbot-view-overview')).toHaveAttribute(
-      'aria-current',
-      'page'
-    )
-    await expect(page.getByTestId('chatbot-disclaimer-preview')).toContainText(
+    await expect(page.getByTestId('chatbot-draft-setup')).toBeVisible()
+    await page.getByTestId('chatbot-section-students-preview').click()
+    const pendingPreview = page.getByTestId('chatbot-disclaimer-preview')
+    await expect(pendingPreview).toContainText(
       'Synthetic publication disclaimer'
     )
-    await expect(page.getByTestId('chatbot-disclaimer-preview')).toContainText(
-      'Student Responsibility'
-    )
+    await expect(pendingPreview).toContainText('Student Responsibility')
+    await page.keyboard.press('Escape')
+    await expect(
+      page.getByTestId('chatbot-students-preview-modal')
+    ).toHaveCount(0)
     await expect(page.getByTestId('chatbot-publication-use-case')).toHaveCount(
       0
     )
@@ -1383,7 +1352,9 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await page.goto(
       `${process.env.URL_MANAGE ?? URL_MANAGE}/resources/chatbots?chatbotId=${chatbot.id}`
     )
-    await expect(page.getByTestId('chatbot-overview')).toBeVisible()
+    await expect(page.getByTestId('chatbot-usage-strip')).toBeVisible()
+    await expect(page.getByTestId('chatbot-participant-link')).toBeVisible()
+    await page.getByTestId('chatbot-section-students-preview').click()
     const publishedPreview = page.getByTestId('chatbot-disclaimer-preview')
     await expect(publishedPreview).toContainText(
       'Synthetic publication disclaimer'
@@ -1393,35 +1364,18 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     )
     await expect(publishedPreview).toContainText('Student Responsibility')
     await expect(publishedPreview).toContainText('Data Protection')
-    // A published chatbot renders the resubmission form instead of the
-    // readonly panel, so the approved publication values appear prefilled.
-    await expect(page.getByTestId('chatbot-publication-use-case')).toHaveValue(
-      'Support students with a synthetic study aid.'
-    )
-    await expect(
-      page.getByTestId('chatbot-publication-expected-student-count')
-    ).toHaveValue('40')
-    await navigateToWorkspaceStep(page, 'review')
-    await expect
-      .poll(() => new URL(page.url()).searchParams.get('step'))
-      .toBe('review')
-    await expect(page.getByTestId('chatbot-setup-review')).toBeVisible()
-    await page.getByTestId('chatbot-setup-edit-basics').click()
-    await expect(page.getByTestId('chatbot-setup-basics')).toBeVisible()
+    await page.keyboard.press('Escape')
+    // Approval clears the revision, so a published chatbot offers no request
+    // until a section saves a new one.
+    await expect(page.getByTestId('chatbot-section-request')).toHaveCount(0)
+    // Details of a published chatbot stay editable.
+    await page.getByTestId('chatbot-edit-details').click()
+    await expect(page.getByTestId('chatbot-edit-details-modal')).toBeVisible()
     await page
       .getByTestId('chatbot-description')
       .fill('Published chatbot metadata remains editable.')
-    await page.getByTestId('save-chatbot-metadata').click()
-    await expect(
-      page.getByRole('status').filter({ hasText: 'Chatbot metadata saved.' })
-    ).toBeVisible()
-    await expect(page.getByTestId('chatbot-setup-basics')).toBeVisible()
-    await page
-      .getByTestId('chatbot-description')
-      .fill('Published chatbot metadata edited again.')
-    await expect(
-      page.getByRole('status').filter({ hasText: 'Chatbot metadata saved.' })
-    ).toHaveCount(0)
+    await page.getByTestId('chatbot-edit-details-save').click()
+    await expect(page.getByTestId('chatbot-edit-details-modal')).toHaveCount(0)
   })
 
   test('revises published credits without changing live policy until approval', async ({
@@ -1436,9 +1390,10 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await page.goto(
       `${process.env.URL_MANAGE ?? URL_MANAGE}/resources/chatbots?chatbotId=${chatbot.id}&view=usage`
     )
+    await openSection(page, 'usage')
     await page.getByTestId('chatbot-credit-initial').fill('25')
     await page.getByTestId('chatbot-credit-reset-amount').fill('15')
-    await page.getByTestId('save-chatbot-credit-policy').click()
+    await saveSection(page, 'usage')
     const prisma = await getPrisma()
     await expect
       .poll(async () => {
@@ -1457,18 +1412,18 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       creditResetAmount: 10,
     })
     await page.reload()
+    await openSection(page, 'usage')
     await expect(page.getByTestId('chatbot-credit-initial')).toHaveValue('25')
-    await navigateToWorkspaceStep(page, 'review')
-    await page.getByTestId('chatbot-setup-edit-credits').click()
-    await expect(page.getByTestId('chatbot-credit-policy-form')).toBeVisible()
-    await navigateToWorkspaceStep(page, 'disclaimer')
+    await expect(page.getByTestId('chatbot-live-credit-policy')).toBeVisible()
+    await expect(page.getByTestId('chatbot-unsubmitted-sections')).toBeVisible()
     const originalDisclaimerId = live.disclaimerId
     for (const title of [
       'First revised disclaimer',
       'Second revised disclaimer',
     ]) {
+      await openSection(page, 'students')
       await page.getByTestId('chatbot-disclaimer-title').fill(title)
-      await page.getByTestId('save-chatbot-disclaimer').click()
+      await saveSection(page, 'students')
       await expect
         .poll(async () => {
           const saved = await prisma.chatbot.findUniqueOrThrow({
@@ -1481,7 +1436,6 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
         })
         .toEqual({ liveDisclaimerId: originalDisclaimerId, draftTitle: title })
     }
-    await navigateToWorkspaceStep(page, 'review')
     await fillPublicationRequest(page, 'Revised synthetic study support.')
     await page.getByTestId('request-chatbot-publication').click()
     await expect
@@ -1492,7 +1446,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
         return pending.revisionStatus
       })
       .toBe('PENDING_APPROVAL')
-    await navigateToWorkspaceStep(page, 'credits')
+    await openSection(page, 'usage')
     await expect(page.getByTestId('chatbot-credit-initial')).toBeDisabled()
     const pending = await prisma.chatbot.findUniqueOrThrow({
       where: { id: chatbot.id },
@@ -1502,7 +1456,6 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       creditInitialCredits: 10,
       creditResetAmount: 10,
     })
-    await navigateToWorkspaceStep(page, 'review')
     // The approved version keeps serving students while the revision waits.
     await expect(
       page.getByTestId('chatbot-publication-visibility-note')
@@ -1516,10 +1469,9 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
         return withdrawn.revisionStatus
       })
       .toBe('DRAFT')
-    await navigateToWorkspaceStep(page, 'credits')
     await expect(page.getByTestId('chatbot-credit-initial')).toHaveValue('25')
     await page.getByTestId('chatbot-credit-initial').fill('30')
-    await page.getByTestId('save-chatbot-credit-policy').click()
+    await saveSection(page, 'usage')
     await expect
       .poll(async () => {
         const saved = await prisma.chatbot.findUniqueOrThrow({
@@ -1528,7 +1480,6 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
         return saved.draftConfig?.creditInitialCredits
       })
       .toBe(30)
-    await navigateToWorkspaceStep(page, 'review')
     await fillPublicationRequest(page, 'Revised synthetic study support.')
     await page.getByTestId('request-chatbot-publication').click()
     await expect
@@ -1556,9 +1507,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     })
     expect(approved.publishedAt).toEqual(chatbot.publishedAt)
     await page.reload()
-    // The credit editor mounts on the usage view, not on the review step
-    // the page was left on after the resubmission.
-    await navigateToWorkspaceStep(page, 'credits')
+    await openSection(page, 'usage')
     await expect(page.getByTestId('chatbot-credit-initial')).toHaveValue('30')
     await expect(page.getByTestId('chatbot-credit-initial')).toBeEnabled()
   })
@@ -1573,7 +1522,9 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     })
     await page.reload()
 
-    await expect(page.getByTestId('chatbot-overview')).toBeVisible()
+    await expect(page.getByTestId('chatbot-paused-notice')).toBeVisible()
+    await expect(page.getByTestId('chatbot-usage-strip')).toBeVisible()
+    await page.getByTestId('chatbot-section-students-preview').click()
     const pausedPreview = page.getByTestId('chatbot-disclaimer-preview')
     await expect(pausedPreview).toContainText('Synthetic chatbot disclaimer')
     await expect(pausedPreview).toContainText(
@@ -1581,14 +1532,11 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     )
     await expect(pausedPreview).toContainText('Student Responsibility')
     await expect(pausedPreview).toContainText('Data Protection')
-    await expect(
-      page.getByTestId('chatbot-publication-readonly')
-    ).toContainText('Initial synthetic use case')
-    await expect(page.getByTestId('chatbot-view-behavior')).toHaveCount(1)
-    await expect(page.getByTestId('chatbot-view-overview')).toHaveAttribute(
-      'aria-current',
-      'page'
-    )
+    await page.keyboard.press('Escape')
+    // Settings stay locked while paused: no request card and no save buttons.
+    await expect(page.getByTestId('chatbot-section-request')).toHaveCount(0)
+    await openSection(page, 'usage')
+    await expect(page.getByTestId('chatbot-section-usage-save')).toHaveCount(0)
   })
 
   test('shows a rejection comment and allows correction and resubmission', async ({

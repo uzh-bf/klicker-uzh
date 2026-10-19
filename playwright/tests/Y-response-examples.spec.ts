@@ -3,6 +3,7 @@ import { URL_MANAGE } from '../util/constants.js'
 import { getPrisma } from '../global-setup.js'
 import { seedResponseExamples } from '../../packages/prisma-data/src/data/seedResponseExamples.js'
 import { ensureChatbotSeeded } from '../util/chat.js'
+import { openChatbotSection } from '../util/fixtures/manage.js'
 import { gotoCommit } from '../util/workflow.js'
 
 const CHATBOT_ID_TEST = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
@@ -25,6 +26,7 @@ test.describe('Chatbot response-example review', () => {
       `${manageUrl}/resources/chatbots?chatbotId=${CHATBOT_ID_TEST}&view=knowledge`
     )
 
+    await openChatbotSection(page, 'graph')
     await page.getByTestId('chatbot-response-examples-trigger').click()
     const review = page.getByTestId('response-examples-review')
     await expect(review).toBeVisible()
