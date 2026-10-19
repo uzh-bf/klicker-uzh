@@ -23,12 +23,12 @@ test.describe('Chatbot response-example review', () => {
     const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
     await ensureChatbotSeeded()
     await seedResponseExamples(await getPrisma())
-    await loginLecturer()
     // The review is hidden unless the response examples flag is on.
     await mockGrowthBookFeatureFlags(page, {
       aiBeta: true,
       responseExamples: true,
     })
+    await loginLecturer()
     await gotoCommit(
       page,
       `${manageUrl}/resources/chatbots?chatbotId=${CHATBOT_ID_TEST}&view=knowledge`

@@ -5264,7 +5264,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotKnowledgeBaseCreateChatbot:
         'Chatbot mit dieser Wissensdatenbank erstellen',
       chatbotKnowledgeBaseChatbotCreatedNotConnected:
-        'Der Chatbot wurde erstellt, die Wissensdatenbank konnte aber nicht verknüpft werden. Verknüpfen Sie sie im Bereich „Wissensbasis“ des Chatbots.',
+        'Der Chatbot wurde erstellt, die Wissensdatenbank konnte aber nicht verknüpft werden. Verknüpfen Sie sie im Bereich „Materialien“ des Chatbots.',
       chatbotTechnicalDetails: 'Technische Details',
       chatbotTechnicalId: 'ID',
       chatbotTechnicalAvatar: 'Avatar',

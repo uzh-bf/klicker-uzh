@@ -76,7 +76,10 @@ function KnowledgeBaseCard({
   const readiness = knowledgeBase.materialsReadiness
   const { data, startPolling, stopPolling } = useQuery(
     GetKbResourcesWithFailureDetailDocument,
-    { variables: { kbId: knowledgeBase.id, first: RECENT_RESOURCE_COUNT } }
+    {
+      variables: { kbId: knowledgeBase.id, first: RECENT_RESOURCE_COUNT },
+      fetchPolicy: 'cache-and-network',
+    }
   )
   const resources = data?.getKbResources.items ?? []
   // Counted over every resource of the knowledge base, not only the listed

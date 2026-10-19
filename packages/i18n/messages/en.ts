@@ -5150,7 +5150,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotKnowledgeBaseCreateChatbot:
         'Create chatbot using this knowledge base',
       chatbotKnowledgeBaseChatbotCreatedNotConnected:
-        'The chatbot was created but the knowledge base could not be connected. Connect it in the chatbot’s Knowledge view.',
+        'The chatbot was created but the knowledge base could not be connected. Connect it in the chatbot’s Materials section.',
       chatbotTechnicalDetails: 'Technical details',
       chatbotTechnicalId: 'ID',
       chatbotTechnicalAvatar: 'Avatar',
