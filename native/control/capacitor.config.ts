@@ -47,10 +47,33 @@ const { hostname } = parsed
 // klicker.ch the derived auth.ch would be a third-party site, and a single-label
 // host (localhost) shares cookies across ports.
 const labels = hostname.split('.')
-const allowNavigation =
-  labels.length > 2
-    ? [hostname, `auth.${labels.slice(1).join('.')}`]
-    : [hostname]
+const baseDomain = labels.length > 2 ? labels.slice(1).join('.') : null
+
+// The lecturer login continues from the auth app to the identity provider
+// (SWITCH edu-ID); it has to stay inside the WebView too, otherwise it opens
+// in Safari, whose cookies the app cannot see. Local development uses the
+// OIDC mock of the devcontainer. CAP_EXTRA_NAVIGATION (comma-separated host
+// names) adds further hosts without code changes.
+const IDENTITY_PROVIDER_HOSTS = ['login.eduid.ch', 'login.test.eduid.ch']
+const extraHosts = (process.env.CAP_EXTRA_NAVIGATION ?? '')
+  .split(',')
+  .map((host) => host.trim())
+  .filter(Boolean)
+for (const host of extraHosts) {
+  if (!/^[a-z0-9.-]+$/i.test(host)) {
+    throw new Error(
+      `Invalid host "${host}" in CAP_EXTRA_NAVIGATION; expected plain host names`
+    )
+  }
+}
+
+const allowNavigation = [
+  hostname,
+  ...(baseDomain ? [`auth.${baseDomain}`] : []),
+  ...IDENTITY_PROVIDER_HOSTS,
+  ...(baseDomain && isLocalDevHost(hostname) ? [`oidc.${baseDomain}`] : []),
+  ...extraHosts,
+]
 
 const config: CapacitorConfig = {
   appId: 'ch.uzh.klicker.control',
