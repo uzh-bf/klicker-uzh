@@ -84,6 +84,7 @@ run_infisical() (
     AZURE_OPENAI_API_KEY AZURE_OPENAI_BASE_URL UPSTREAM_OPENAI_API_KEY \
     UPSTREAM_OPENAI_BASE_URL OPENAI_API_KEY PIPELINES_LITELLM_API_KEY \
     KLICKER_EVAL_PARTICIPANT_USERNAME KLICKER_EVAL_PARTICIPANT_PASSWORD \
+    KLICKER_EVAL_GUARD_KEY KLICKER_EVAL_UPSTREAM_KEY \
     KLICKER_EVAL_TARGET_KEY ${JUDGE_SOURCE_NAMES[@]+"${JUDGE_SOURCE_NAMES[@]}"}; do
     case "$name" in
       INFISICAL_TOKEN|INFISICAL_CLIENT_SECRET|INFISICAL_UNIVERSAL_AUTH_CLIENT_SECRET) ;;
@@ -225,6 +226,11 @@ esac
 if [ "$LOCAL_TARGET" = true ] && [ "$MODE" = 'eval' ]; then
   echo 'Error: --local-target cannot be used with eval mode' >&2
   exit 1
+fi
+
+if [ "$LOCAL_TARGET" = true ]; then
+  # Keep this fallback aligned with DEFAULT_MODEL_ID in the local target adapter.
+  export KLICKER_EVAL_MODEL_ID="${KLICKER_EVAL_MODEL_ID:-gpt-6-luna}"
 fi
 
 set -- ${EVAL_ARGS[@]+"${EVAL_ARGS[@]}"}
@@ -517,11 +523,17 @@ run_offline_check() {
 
   if [ "$NEEDS_TARGET" = true ]; then
     if [ "$LOCAL_TARGET" = true ]; then
-      printf '%s\n' 'Required target variables: KLICKER_EVAL_API_ORIGIN KLICKER_EVAL_CHAT_ORIGIN KLICKER_EVAL_PARTICIPANT_USERNAME KLICKER_EVAL_PARTICIPANT_PASSWORD'
+      printf '%s\n' 'Required target variables: KLICKER_EVAL_API_ORIGIN KLICKER_EVAL_CHAT_ORIGIN KLICKER_EVAL_PARTICIPANT_USERNAME KLICKER_EVAL_PARTICIPANT_PASSWORD KLICKER_EVAL_GUARD_ORIGIN KLICKER_EVAL_GUARD_KEY'
+      printf '%s\n' 'Required target files: KLICKER_EVAL_BUDGET_FILE KLICKER_EVAL_QUALIFICATION_FILE'
       check_environment_variable KLICKER_EVAL_API_ORIGIN
       check_environment_variable KLICKER_EVAL_CHAT_ORIGIN
       check_environment_variable KLICKER_EVAL_PARTICIPANT_USERNAME
       check_environment_variable KLICKER_EVAL_PARTICIPANT_PASSWORD
+      check_environment_variable KLICKER_EVAL_GUARD_ORIGIN
+      check_environment_variable KLICKER_EVAL_GUARD_KEY
+      check_readable_file KLICKER_EVAL_BUDGET_FILE "${KLICKER_EVAL_BUDGET_FILE:-}"
+      check_readable_file KLICKER_EVAL_QUALIFICATION_FILE "${KLICKER_EVAL_QUALIFICATION_FILE:-}"
+      printf '%s\n' 'Guard access and qualification: untested (offline check); a running qualified guard is required'
     else
       printf '%s\n' 'Required target variables: EVAL_ENDPOINT_URL EVAL_API_KEY'
       check_environment_variable EVAL_ENDPOINT_URL
@@ -602,6 +614,10 @@ if [ "$NEEDS_TARGET" = true ]; then
     require_environment_variable KLICKER_EVAL_CHAT_ORIGIN
     require_environment_variable KLICKER_EVAL_PARTICIPANT_USERNAME
     require_environment_variable KLICKER_EVAL_PARTICIPANT_PASSWORD
+    require_environment_variable KLICKER_EVAL_GUARD_ORIGIN
+    require_environment_variable KLICKER_EVAL_GUARD_KEY
+    require_readable_file KLICKER_EVAL_BUDGET_FILE "${KLICKER_EVAL_BUDGET_FILE:-}"
+    require_readable_file KLICKER_EVAL_QUALIFICATION_FILE "${KLICKER_EVAL_QUALIFICATION_FILE:-}"
   else
     require_environment_variable EVAL_ENDPOINT_URL
     require_environment_variable EVAL_API_KEY
@@ -637,6 +653,7 @@ TARGET_HELPER_PREFIX=(
   -u AZURE_OPENAI_BASE_URL
   -u UPSTREAM_OPENAI_API_KEY
   -u UPSTREAM_OPENAI_BASE_URL
+  -u KLICKER_EVAL_UPSTREAM_KEY
   -u OPENAI_API_KEY
   -u LITELLM_API_BASE
   -u LITELLM_API_KEY
@@ -653,6 +670,7 @@ KEYGEN_PREFIX=(
   -u KLICKER_EVAL_PARTICIPANT_USERNAME
   -u KLICKER_EVAL_PARTICIPANT_PASSWORD
   -u KLICKER_EVAL_TARGET_KEY
+  -u KLICKER_EVAL_GUARD_KEY
   -u KLICKER_EVAL_GT_DIR
   -u KLICKER_EVAL_CANARY_FILE
   -u KLICKER_EVAL_ELEARNING_HANDOFF_SECRET
@@ -794,12 +812,14 @@ if [ "$LOCAL_TARGET" = true ]; then
     "EVAL_ENDPOINT_URL=http://127.0.0.1:${LOCAL_TARGET_PORT}/v1/chat/completions"
     "EVAL_MODELS_URL=http://127.0.0.1:${LOCAL_TARGET_PORT}/v1/models"
     "EVAL_STREAM=false"
-    "AGENT_ID=${KLICKER_EVAL_MODEL_ID:-gpt-5.6-luna}"
+    "AGENT_ID=$KLICKER_EVAL_MODEL_ID"
   )
 fi
 
 EVALUATOR_PREFIX=(
   env
+  -u KLICKER_EVAL_GUARD_KEY
+  -u KLICKER_EVAL_UPSTREAM_KEY
   -u AZURE_OPENAI_API_KEY
   -u AZURE_OPENAI_BASE_URL
   -u UPSTREAM_OPENAI_API_KEY

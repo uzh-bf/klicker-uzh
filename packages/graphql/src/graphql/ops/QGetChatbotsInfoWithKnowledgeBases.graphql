@@ -20,6 +20,17 @@ query QGetChatbotsInfoWithKnowledgeBases {
       languageOfInstruction
       scopeNote
     }
+    customModeConfig {
+      modes {
+        key
+        name
+        description
+        personaText
+        welcomeMessage
+        starterPrompts
+        showReasoning
+      }
+    }
     authoringRevision {
       ...ChatbotAuthoringRevisionData
     }
@@ -57,16 +68,6 @@ query QGetChatbotsInfoWithKnowledgeBases {
       acceptedCount
       declinedCount
       pendingCount
-    }
-    mcpConfigurations {
-      serverId
-      serverName
-      serverDescription
-      serverIsActive
-      chatMode
-      isEnabled
-      priority
-      allowedToolsCount
     }
     enabledKnowledgeBases {
       id

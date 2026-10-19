@@ -5,9 +5,10 @@ on:
   push:
     branches: ['v3', 'v3*']
   pull_request:
-    # "edited" re-evaluates the internal selector on a base retarget; the path
-    # filter is a job below so a required status always reports.
-    types: [opened, synchronize, reopened, edited]
+    # No "edited": a title or body edit never changes the tested tree, and a
+    # base retarget is revalidated by the restack push or a close and reopen.
+    # The path filter is a job below so a required status always reports.
+    types: [opened, synchronize, reopened]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -257,7 +258,7 @@ jobs:
   # v3_sonarcloud.yml keeps the named fail-closed result for both.
   sonarcloud:
     name: SonarCloud
-    needs: [filter, test-unit]
+    needs: [filter, test-unit, test-unit-status]
     if: >-
       always() && !cancelled() &&
       github.event_name == 'pull_request' &&

@@ -69,6 +69,7 @@ import {
 } from '@/src/stores/composerStore'
 import { useSettingsStore } from '@/src/stores/settingsStore'
 import {
+  type ChatModeOptions,
   formatModeLabel,
   getComposerSubmitMode,
   getModeDescription,
@@ -128,19 +129,12 @@ type ThreadProps = {
   // assistant's limits). Ignored when `capabilities` is unset/empty.
   limitsNote?: string
   maxImageAttachments?: number
-  initialModeOptions?: Record<string, string>
+  initialModeOptions?: ChatModeOptions
   initialModeOptionsAreFallback?: boolean
 }
 const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []
 const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
 const ChatbotAvatarContext = createContext('')
-
-const formatTitleCase = (value: string) =>
-  value
-    .split(/[\s_-]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ')
 
 type ImageAttachment = {
   id?: string
@@ -196,6 +190,7 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
     createdAt: Date
   }
   const modelOptions = useSettingsStore((state) => state.modelOptions)
+  const modeOptions = useEffectiveModeOptions()
   const t = useTranslations()
   const format = useFormatter()
   // A ticking `now`, not `new Date()`: the caption is rendered once and its
@@ -226,13 +221,9 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
     typeof custom.creditsUsed === 'number' ? custom.creditsUsed : null
 
   // Same label the mode switcher shows, so the caption under an answer does not
-  // read "Explainer" in German while the live pill reads "Erklärer". Unknown
-  // per-chatbot keys have no translation and keep their raw name.
-  const modeLabel = !chatMode
-    ? null
-    : isKnownMode(chatMode)
-      ? t(`chat.modes.${chatMode}`)
-      : formatTitleCase(chatMode)
+  // read "Explainer" in German while the live pill reads "Erklärer", and a
+  // custom mode shows its lecturer-given name rather than its internal key.
+  const modeLabel = chatMode ? formatModeLabel(t, chatMode, modeOptions) : null
   const modelLabel = modelId
     ? modelOptions.find((option) => option.id === modelId)?.name || modelId
     : null
@@ -612,7 +603,7 @@ const ThreadWelcome: FC<{
   welcomeMessage?: string
   capabilities?: ThreadWelcomeCapability[]
   limitsNote?: string
-  initialModeOptions?: Record<string, string>
+  initialModeOptions?: ChatModeOptions
   initialModeOptionsAreFallback?: boolean
 }> = ({
   chatbotAvatar,
@@ -631,10 +622,16 @@ const ThreadWelcome: FC<{
   const selectedMode = useSettingsStore((state) => state.selectedMode)
   const modeOptions = useEffectiveModeOptions()
   const activeMode = resolveSelectedMode(modeOptions, selectedMode)
-  const modeLabel = activeMode ? formatModeLabel(t, activeMode) : null
+  const modeLabel = activeMode
+    ? formatModeLabel(t, activeMode, modeOptions)
+    : null
   const modeDescription = activeMode
     ? getModeDescription(t, activeMode, modeOptions)
     : null
+  const customModeWelcome =
+    !welcomeMessage && !isKnownMode(activeMode)
+      ? modeOptions[activeMode]?.welcomeMessage
+      : undefined
   return (
     <AuiIf condition={(s) => s.thread.isEmpty}>
       <div
@@ -674,7 +671,20 @@ const ThreadWelcome: FC<{
                 {welcomeMessage}
               </div>
             )}
-            {!welcomeMessage && !embedded && (
+            {customModeWelcome && (
+              <>
+                <h2 className="text-2xl font-semibold text-pretty sm:text-3xl">
+                  {chatbotName}
+                </h2>
+                <div
+                  data-cy="chat-custom-mode-welcome"
+                  className="mt-4 max-w-xl whitespace-pre-wrap break-words text-left text-base"
+                >
+                  {customModeWelcome}
+                </div>
+              </>
+            )}
+            {!welcomeMessage && !customModeWelcome && !embedded && (
               <>
                 <h2 className="animate-in fade-in slide-in-from-bottom-2 text-3xl font-semibold text-pretty duration-300 motion-reduce:animate-none sm:text-4xl">
                   {t('chat.thread.welcomeTitle')}
@@ -685,33 +695,35 @@ const ThreadWelcome: FC<{
                 >
                   {t('chat.thread.welcomeTo', { chatbot: chatbotName })}
                 </p>
-                <p className="text-muted-foreground animate-in fade-in slide-in-from-bottom-2 mt-1 text-base text-pretty delay-100 duration-300 motion-reduce:animate-none">
-                  {t('chat.thread.welcomeSubtitle')}
-                </p>
-                {modeLabel && (
-                  <div
-                    data-cy="chat-welcome-mode"
-                    className="border-border bg-muted/60 text-foreground animate-in fade-in slide-in-from-bottom-2 mt-5 max-w-md rounded-xl border px-4 py-3 text-left text-sm shadow-sm delay-150 duration-300 motion-reduce:animate-none"
-                  >
-                    <p className="font-medium">
-                      {t('chat.thread.welcomeMode', { mode: modeLabel })}
-                    </p>
-                    {Object.keys(modeOptions).length > 1 && (
-                      <div className="mt-3 flex justify-center">
-                        <ModeSwitcher
-                          modeOptions={modeOptions}
-                          testIdPrefix="chat-welcome-mode"
-                        />
-                      </div>
-                    )}
-                    {modeDescription ? (
-                      <p className="text-muted-foreground mt-1 text-pretty">
-                        {modeDescription}
-                      </p>
-                    ) : null}
-                  </div>
+                {isKnownMode(activeMode) && (
+                  <p className="text-muted-foreground animate-in fade-in slide-in-from-bottom-2 mt-1 text-base text-pretty delay-100 duration-300 motion-reduce:animate-none">
+                    {t('chat.thread.welcomeSubtitle')}
+                  </p>
                 )}
               </>
+            )}
+            {!welcomeMessage && !embedded && modeLabel && (
+              <div
+                data-cy="chat-welcome-mode"
+                className="border-border bg-muted/60 text-foreground animate-in fade-in slide-in-from-bottom-2 mt-5 max-w-md rounded-xl border px-4 py-3 text-left text-sm shadow-sm delay-150 duration-300 motion-reduce:animate-none"
+              >
+                <p className="font-medium">
+                  {t('chat.thread.welcomeMode', { mode: modeLabel })}
+                </p>
+                {Object.keys(modeOptions).length > 1 && (
+                  <div className="mt-3 flex justify-center">
+                    <ModeSwitcher
+                      modeOptions={modeOptions}
+                      testIdPrefix="chat-welcome-mode"
+                    />
+                  </div>
+                )}
+                {modeDescription ? (
+                  <p className="text-muted-foreground mt-1 text-pretty">
+                    {modeDescription}
+                  </p>
+                ) : null}
+              </div>
             )}
             {contextLabel && (
               <p className="text-muted-foreground mt-1 max-w-xs text-xs">
@@ -740,7 +752,7 @@ const SUGGESTION_DELAY_CLASSNAMES = ['delay-150', 'delay-200']
 
 const ThreadWelcomeSuggestions: FC<{
   suggestions?: ThreadSuggestion[]
-  initialModeOptions: Record<string, string>
+  initialModeOptions: ChatModeOptions
   initialModeOptionsAreFallback?: boolean
 }> = ({ suggestions: customSuggestions }) => {
   const t = useTranslations()
@@ -750,17 +762,24 @@ const ThreadWelcomeSuggestions: FC<{
   if (!customSuggestions && Object.keys(modeOptions).length === 0) return null
 
   const activeMode = resolveSelectedMode(modeOptions, selectedMode)
+  const modeSuggestions = !isKnownMode(activeMode)
+    ? modeOptions[activeMode]?.starterPrompts?.map((prompt, index) => ({
+        id: `${activeMode}-starter-${index}`,
+        text: prompt,
+        prompt,
+      }))
+    : undefined
   const items: ThreadSuggestion[] =
     customSuggestions ??
+    modeSuggestions ??
     getThreadSuggestions(activeMode).map((suggestion) => ({
       id: suggestion.id,
       text: t(`chat.suggestions.${suggestion.id}`),
       prompt: t(`chat.suggestions.${suggestion.id}Prompt`),
     }))
 
-  // Modes without starters (every chatbot-defined mode key) render no
-  // section at all: a heading and editing hint above an empty grid would
-  // promise cards that are not there.
+  // Modes without starters render no section: a heading and editing hint
+  // above an empty grid would promise cards that are not there.
   if (items.length === 0) return null
 
   return (
@@ -781,7 +800,7 @@ const ThreadWelcomeSuggestions: FC<{
             key={suggestion.id}
             data-cy="chat-welcome-suggestion"
             className={twMerge(
-              'border-foreground/15 bg-background hover:border-primary/30 hover:bg-accent animate-in fade-in slide-in-from-bottom-2 min-h-11 rounded-lg border p-3 text-left text-sm shadow-sm transition-colors duration-300 motion-reduce:animate-none',
+              'border-foreground/15 bg-background hover:border-primary/30 hover:bg-accent animate-in fade-in slide-in-from-bottom-2 min-h-11 whitespace-pre-wrap break-words rounded-lg border p-3 text-left text-sm shadow-sm transition-colors duration-300 motion-reduce:animate-none',
               SUGGESTION_DELAY_CLASSNAMES[index] ?? 'delay-200'
             )}
             prompt={suggestion.prompt}

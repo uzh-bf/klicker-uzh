@@ -377,6 +377,33 @@ function topologyResult(comments = []) {
   }
 }
 
+function prepareDiagnosticsReceipt(t) {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'final-stack-diagnostics-')
+  )
+  const diagnosticsPath = path.join(directory, 'diagnostics.jsonl')
+  const previousPath = process.env.OCR_ADAPTER_DIAGNOSTICS_PATH
+  process.env.OCR_ADAPTER_DIAGNOSTICS_PATH = diagnosticsPath
+  t.after(() => {
+    if (previousPath === undefined) {
+      delete process.env.OCR_ADAPTER_DIAGNOSTICS_PATH
+    } else {
+      process.env.OCR_ADAPTER_DIAGNOSTICS_PATH = previousPath
+    }
+    fs.rmSync(directory, { recursive: true, force: true })
+  })
+  return diagnosticsPath
+}
+
+function readDiagnosticsReceipts(diagnosticsPath) {
+  return fs
+    .readFileSync(diagnosticsPath, 'utf8')
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => JSON.parse(line))
+}
+
 test('accepts a trusted clean stack status without requiring a review body', async () => {
   const { github, state } = stackFixture()
   const stackContext = context(14)
@@ -3171,7 +3198,7 @@ test('skips the stack pull-request comment when code and topology have no findin
   assert.equal(createdReviews.length, 0)
 })
 
-test('sends strict high-reasoning topology requests and rejects invalid owners', async () => {
+test('sends strict max-reasoning topology requests and rejects invalid owners', async (t) => {
   const { github } = stackFixture()
   const membership = await resolveStackMembership({
     github,
@@ -3184,7 +3211,9 @@ test('sends strict high-reasoning topology requests and rejects invalid owners',
     membership,
   })
   const codeResult = completeOCRResult([codeFinding()])
+  const diagnosticsPath = prepareDiagnosticsReceipt(t)
   let request
+  let fetchCalls = 0
   const response = await callTopologyModel({
     apiKey: 'dummy-token',
     codeResult,
@@ -3192,11 +3221,10 @@ test('sends strict high-reasoning topology requests and rejects invalid owners',
     rulesText: 'test rules',
     schema: { type: 'object' },
     fetchImpl: async (_url, options) => {
+      fetchCalls += 1
       request = JSON.parse(options.body)
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
+      return new Response(
+        JSON.stringify({
           model: FINAL_STACK_REVIEW_MODEL,
           choices: [
             {
@@ -3210,13 +3238,13 @@ test('sends strict high-reasoning topology requests and rejects invalid owners',
             },
           ],
           usage: { total_tokens: 50, prompt_tokens: 35, completion_tokens: 15 },
-        }),
-      }
+        })
+      )
     },
   })
   assert.equal(response.status, 'complete')
-  assert.equal(request.provider.require_parameters, true)
-  assert.equal(request.reasoning.effort, 'high')
+  assert.equal(Object.hasOwn(request, 'provider'), false)
+  assert.equal(request.reasoning_effort, 'max')
   assert.equal(request.max_tokens, 4096)
   assert.equal(request.response_format.json_schema.strict, true)
   assert.equal(request.messages[0].content.includes('dummy-token'), false)
@@ -3263,6 +3291,152 @@ test('sends strict high-reasoning topology requests and rejects invalid owners',
       ),
     /usage/
   )
+
+  assert.equal(fetchCalls, 1)
+  const receipts = readDiagnosticsReceipts(diagnosticsPath)
+  assert.equal(receipts.length, 1)
+  assert.equal(JSON.stringify(receipts[0]).includes('dummy-token'), false)
+  assert.deepEqual(receipts[0], {
+    schema_version: 1,
+    stage: 'topology',
+    requests: 1,
+    upstream_attempts: 1,
+    responses: 1,
+    missing_usage: 0,
+    prompt_tokens: 35,
+    completion_tokens: 15,
+    cached_prompt_tokens: 0,
+    uncached_prompt_tokens: 0,
+    cache_usage_responses: 0,
+    missing_cache_usage: 1,
+    invalid_cache_usage: 0,
+    unfinished_requests: 0,
+  })
+})
+
+test('retains topology usage when caller validation rejects the answer', async (t) => {
+  const { github } = stackFixture()
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  const manifestBundle = await buildStackSnapshot({
+    github,
+    context: context(),
+    membership,
+  })
+  const codeResult = completeOCRResult([codeFinding()])
+  const diagnosticsPath = prepareDiagnosticsReceipt(t)
+  const cases = [
+    ['{not valid json', /Topology model returned invalid structured output/],
+    [
+      JSON.stringify({
+        summary: { coverage: 'complete', comments: 1 },
+        comments: [
+          {
+            path: 'src/not-in-stack.ts',
+            layer_numbers: [1],
+            start_line: 1,
+            end_line: 1,
+            category: 'bug',
+            severity: 'high',
+            content: 'Invalid owner',
+          },
+        ],
+      }),
+      /Topology finding 1 is invalid/,
+    ],
+  ]
+  let fetchCalls = 0
+  for (const [content, errorPattern] of cases) {
+    await assert.rejects(
+      callTopologyModel({
+        apiKey: 'dummy-token',
+        codeResult,
+        manifestBundle,
+        rulesText: 'test rules',
+        schema: { type: 'object' },
+        fetchImpl: async () => {
+          fetchCalls += 1
+          return new Response(
+            JSON.stringify({
+              model: FINAL_STACK_REVIEW_MODEL,
+              choices: [{ finish_reason: 'stop', message: { content } }],
+              usage: {
+                total_tokens: 50,
+                prompt_tokens: 35,
+                completion_tokens: 15,
+              },
+            })
+          )
+        },
+      }),
+      errorPattern
+    )
+  }
+  assert.equal(fetchCalls, 2)
+  const receipts = readDiagnosticsReceipts(diagnosticsPath)
+  assert.equal(receipts.length, 2)
+  for (const receipt of receipts) {
+    assert.deepEqual(receipt, {
+      schema_version: 1,
+      stage: 'topology',
+      requests: 1,
+      upstream_attempts: 1,
+      responses: 1,
+      missing_usage: 0,
+      prompt_tokens: 35,
+      completion_tokens: 15,
+      cached_prompt_tokens: 0,
+      uncached_prompt_tokens: 0,
+      cache_usage_responses: 0,
+      missing_cache_usage: 1,
+      invalid_cache_usage: 0,
+      unfinished_requests: 0,
+    })
+  }
+})
+
+test('keeps the topology deadline and records the aborted request', async (t) => {
+  const { github } = stackFixture()
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  const manifestBundle = await buildStackSnapshot({
+    github,
+    context: context(),
+    membership,
+  })
+  const codeResult = completeOCRResult([codeFinding()])
+  const diagnosticsPath = prepareDiagnosticsReceipt(t)
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  let fetchCalls = 0
+  const pending = callTopologyModel({
+    apiKey: 'dummy-token',
+    codeResult,
+    manifestBundle,
+    rulesText: 'test rules',
+    schema: { type: 'object' },
+    fetchImpl: (_url, options) => {
+      fetchCalls += 1
+      return new Promise((_resolve, reject) => {
+        options.signal.addEventListener('abort', () =>
+          reject(new Error('synthetic abort'))
+        )
+      })
+    },
+  })
+  assert.equal(fetchCalls, 1)
+  t.mock.timers.tick(120_000)
+  await assert.rejects(pending, /upstream request failed/)
+  const receipts = readDiagnosticsReceipts(diagnosticsPath)
+  assert.equal(receipts.length, 1)
+  assert.equal(receipts[0].stage, 'topology')
+  assert.equal(receipts[0].upstream_attempts, 1)
+  assert.equal(receipts[0].responses, 0)
 })
 
 test('latest stack drift becomes an error even when the top SHA is unchanged', () => {

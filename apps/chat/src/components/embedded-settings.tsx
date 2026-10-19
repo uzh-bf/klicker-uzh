@@ -1,14 +1,14 @@
 'use client'
 
 import { ChevronDown, Plus, X, Zap } from 'lucide-react'
-import { useLocale, useTranslations } from 'next-intl'
 import { useParams } from 'next/navigation'
+import { useLocale, useTranslations } from 'next-intl'
 import { useEffect, useRef, useState } from 'react'
-import { useChatStore } from '../stores/chatStore'
-import { useChatContextStore } from '../stores/chatContextStore'
 import { twMerge } from 'tailwind-merge'
-import { isKnownMode } from '../lib/config/modes'
 import { useEmbedded } from '../hooks/useEmbedded'
+import { type ChatModeOptions, formatModeLabel } from '../lib/config/modes'
+import { useChatContextStore } from '../stores/chatContextStore'
+import { useChatStore } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useChatUi } from './chat-ui-context'
 
@@ -51,7 +51,7 @@ export function resolveHostTargetOrigin(
  */
 export function hasEmbeddedModeSettings(
   showMinimalSettings: boolean,
-  modeOptions: Record<string, string>
+  modeOptions: ChatModeOptions
 ) {
   return showMinimalSettings && Object.keys(modeOptions).length > 1
 }
@@ -75,14 +75,12 @@ export function EmbeddedModeSelect({ className }: { className?: string }) {
         aria-label={t('chat.modes.switcherLabel')}
         className="border-input bg-background text-foreground hover:border-ring focus-visible:ring-ring w-full cursor-pointer appearance-none bg-none truncate rounded-md border py-1 pl-2 pr-6 text-xs outline-none transition-colors focus-visible:ring-1"
       >
-        {/* Same localized-label source as mode-switcher.tsx (`chat.modes.*`
-            + isKnownMode, D3-pattern for unknown modes) — labels here must
-            not fall back to `modeOptions[key]`, which is the English-only
-            registry description, or the DE select leaks raw English. */}
+        {/* Same label source as mode-switcher.tsx: localized labels for
+            standard modes, the authored custom-mode name otherwise. The
+            English registry description stays out of labels so the DE
+            select cannot leak raw English. */}
         {modeKeys.map((key) => {
-          const label = isKnownMode(key)
-            ? t(`chat.modes.${key}`)
-            : key.charAt(0).toUpperCase() + key.slice(1)
+          const label = formatModeLabel(t, key, modeOptions)
           return (
             <option key={key} value={key}>
               {label}

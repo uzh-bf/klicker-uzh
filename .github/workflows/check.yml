@@ -22,10 +22,11 @@ on:
   push:
     branches: ['v3', 'v3*']
   pull_request:
-    # "edited" re-validates the changed package set when a PR is retargeted;
+    # No "edited": a title or body edit never changes the tested tree, and a
+    # base retarget is revalidated by the restack push or a close and reopen.
     # "ready_for_review" recomputes the required context at the ready boundary
     # so a draft-era success cannot stand in for the ready state.
-    types: [opened, synchronize, reopened, edited, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -43,11 +44,10 @@ env:
   TURBO_REMOTE_ONLY: true
 
 jobs:
-  # A metadata-only edited event leaves the merge tree and the commit range
-  # unchanged, so it reuses a completed successful check at the same head
-  # instead of repeating the full validation. Every other event still selects
-  # the suite, and the selector runs the suite when the prior result is missing,
-  # pending, failed, or unavailable.
+  # Every subscribed event selects the suite. The selector's metadata-only
+  # reuse of a completed successful check at the same head only applies to an
+  # edited event, which this workflow no longer receives; it runs the suite when
+  # the prior result is missing, pending, failed, or unavailable.
   select:
     runs-on: ubuntu-latest
     outputs:
@@ -155,6 +155,7 @@ jobs:
           node --test util/read-klicker-eval-config.test.mjs
           bash util/test-klicker-eval-wrapper.sh
           uv run --no-project --python 3.12 python -m unittest util/test-klicker-eval-judge.py
+          uv run --no-project --python 3.12 --with pytest==9.1.1 python -m pytest -q -p no:cacheprovider evaluation/tests/test_klicker_trajectories.py
 
       - name: Install Devrouter profile planner
         run: bash .github/scripts/install-devrouter.sh
@@ -165,7 +166,7 @@ jobs:
       - name: Check staging release contracts
         run: node --test .github/scripts/stg-release-ref-promotion.test.cjs
 
-      - name: Check CI queue policy
+      - name: Check CI and review contracts
         run: |
           node --test \
             .github/scripts/direct-script-invocations.test.cjs \
@@ -176,9 +177,13 @@ jobs:
             .github/scripts/ci-obsolete-runs.test.cjs \
             .github/scripts/ci-event-gates.test.cjs \
             .github/scripts/draft-sync-prs.test.cjs \
+            .github/scripts/sync-pr-changelog.test.cjs \
             .github/scripts/sync-ancestry-guard.test.cjs \
             .github/scripts/required-ci-status.test.cjs \
             .github/scripts/ocr-self-update-guard.test.cjs \
+            .github/scripts/ocr-mistral-adapter.test.cjs \
+            .github/scripts/final-ai-review.test.js \
+            .github/scripts/final-ai-stack-review.test.js \
             .github/scripts/stg-release-promoter.test.js \
             .github/scripts/staging-image-plan.test.cjs \
             .github/scripts/staging-image-status.test.cjs \

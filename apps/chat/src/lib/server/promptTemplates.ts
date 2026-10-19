@@ -9,6 +9,14 @@ type PromptContext = {
   'course-policy': Record<string, never>
   'input-context': Record<string, never>
   'language-style': Record<string, never>
+  'reply-language-reminder': Record<string, never>
+  'numeric-precision': Record<string, never>
+  'feedback-check': Record<string, never>
+  'quiz-feedback-check': Record<string, never>
+  'feedback-evidence': {
+    reusedSharePercent: number
+    reusedNumbers: string
+  }
   'output-format': Record<string, never>
   'mode-tutor': Record<string, never>
   'mode-explainer': Record<string, never>

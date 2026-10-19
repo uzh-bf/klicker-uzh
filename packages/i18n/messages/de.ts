@@ -29,6 +29,7 @@ export default {
       quizzer: 'Quiz',
       quizzerDescription:
         'Übe mit prüfungsnahen Fragen aus den Kursunterlagen, jeweils eine nach der anderen, mit Rückmeldung.',
+      custom: 'Eigener Modus',
     },
     settingsPanel: {
       title: 'Einstellungen',
@@ -49,7 +50,7 @@ export default {
       usingPrimaryModel:
         'Die automatische Auswahl wird verwendet, solange Credits verfügbar sind.',
       usingFallbackModel:
-        'Es sind keine Credits mehr übrig. GPT-5.6 Luna kann als Credit-Fallback verwendet werden.',
+        'Es sind keine Credits mehr übrig. Das Basismodell kann als Credit-Fallback verwendet werden.',
       reasoningEffortLabel: 'Denkaufwand',
       selectReasoningEffort: 'Denkaufwand auswählen',
       reasoningEffortHint:
@@ -1770,7 +1771,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Das Diagramm zeigt die aggregierte Verteilung der Gesamtpunktzahlen aktiver Teilnehmender. Dein Punktebereich ist hervorgehoben.',
       histogramUserRange: 'Dein Punktebereich: {range}.',
       notEnoughDataForComparison:
-        'Es ist kein Peer-Vergleich verfügbar. Er wird nur bei mindestens 10 aktiven Teilnehmenden und einem verfügbaren Punktebereich grösser als null ausgegeben.',
+        'Dieser Bericht enthält keinen Peer-Vergleich. Er ist in Berichten nach Kursende enthalten, bei mindestens 10 aktiven Teilnehmenden und einem verfügbaren Punktebereich grösser als null. Berichte während des Kurses enthalten nur deine Punkte.',
       exportReportButton: 'Performance-Bericht exportieren',
       exportReportExplanation:
         'Stelle einen Bericht aus dem aktuellen Assessment-Datensatz aus. Sobald er bereit ist, kannst du ihn im Browser ansehen oder über den Druckdialog des Browsers als einseitige A4-PDF speichern. Der Bericht enthält einen Link zur Prüfung seines aktuellen Status und seiner Angaben.',
@@ -1796,7 +1797,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       exportReportPrintError:
         'Der Bericht konnte nicht zum Drucken geöffnet werden. Erlaube Pop-ups für diese Seite und versuche es erneut.',
       privacyAndTransparencyNotice:
-        'Ein Peer-Vergleich wird erst ab 10 aktiven Teilnehmenden ausgegeben. Zehn initiale Punktebereiche werden zusammengeführt, bis jeder angezeigte Bereich mindestens 3 Teilnehmende repräsentiert. Der Bericht enthält keine einzelnen Peer-Punktzahlen oder Identifikatoren.',
+        'Ein Peer-Vergleich ist nur in Berichten nach Kursende enthalten, und nur ab 10 aktiven Teilnehmenden. Zehn initiale Punktebereiche werden zusammengeführt, bis jeder angezeigte Bereich mindestens 3 Teilnehmende repräsentiert. Der Bericht enthält keine einzelnen Peer-Punktzahlen oder Identifikatoren.',
       courseNameLabel: 'Kurs',
       studentNameLabel: 'Name der studierenden Person',
       studentEmailAddressLabel: 'E-Mail-Adresse',
@@ -2049,6 +2050,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       'Die hochgeladene Datei stimmt nicht mehr mit ihrer Upload-Reservierung überein. Laden Sie sie erneut hoch.',
     ingestionFailed: 'Der Verarbeitungsvorgang ist fehlgeschlagen.',
     ingestionSuperseded: 'Der Verarbeitungsvorgang wurde ersetzt.',
+    ingestionFailureSourceVersionMismatch:
+      'Die Quelle stimmt nicht mehr mit der Version überein, die beim Hinzufügen gespeichert wurde.',
+    ingestionFailureSourceFetch: 'Die Quelle konnte nicht abgerufen werden.',
+    ingestionFailureSourceProcessing:
+      'Der Inhalt der Quelle konnte nicht verarbeitet werden.',
+    ingestionFailureSourceSizeLimit:
+      'Die Quelle überschreitet die unterstützte Grössenbegrenzung.',
+    ingestionFailureActivation:
+      'Der importierte Inhalt konnte nicht aktiviert werden.',
     inspectResource: 'Details',
     inspectorTitle: 'Ressourcendetails',
     sourceType: 'Quelltyp',
@@ -2697,6 +2707,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatAccountUsageTitle: 'Chatbot-Nutzung',
       chatAccountUsageUnauthorized:
         'Die Chatbot-Nutzung ist für dieses Konto nicht freigeschaltet.',
+      chatAccountUsageSubscriptionLabel: 'Tarif',
+      chatAccountUsageTierBase: 'Basismodelle',
+      chatAccountUsageTierAdvanced: 'Basis- und fortgeschrittene Modelle',
+      chatAccountUsageClassUnavailable:
+        'Diese Nutzungsklasse ist für Ihr Konto nicht freigeschaltet.',
+      chatAccountUsageAdvancedCostCenter:
+        'Fortgeschrittene Modelle erfordern das fortgeschrittene AI-Abonnement und eine Kostenstelle, auf die die AI-Nutzung verrechnet werden kann.',
       chatAccountUsageRefreshing: 'Nutzung wird aktualisiert ...',
       chatAccountUsageStale:
         'Die aktuelle Nutzung konnte nicht geladen werden. Die unten angezeigten Werte sind möglicherweise veraltet.',
@@ -5057,9 +5074,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotTechnicalDetails: 'Technische Details',
       chatbotTechnicalId: 'ID',
       chatbotTechnicalAvatar: 'Avatar',
-      chatbotUsageTechnicalIntegrations: 'Technische Integrationen',
-      chatbotUsageTechnicalIntegrationsDescription:
-        'Prüfen Sie konfigurierte MCP-Integrationen und deren aktuellen Status.',
       chatbotSetupTitle: 'Chatbot einrichten',
       chatbotSetupDescription:
         'Bearbeiten und speichern Sie die folgenden Bereiche, bevor Sie die Veröffentlichung beantragen.',
@@ -5085,6 +5099,49 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Quizzer kann weiterhin ausgeblendet sein, wenn die Fähigkeit für Kursmaterialien nicht verfügbar ist.',
       chatbotModeEnabled: 'Aktiviert',
       chatbotModeDisabled: 'Deaktiviert',
+      chatbotCustomModesTitle: 'Eigene Modi',
+      chatbotCustomModesDescription:
+        'Fügen Sie bis zu {count} eigene Modi mit eigenem Namen, eigener Beschreibung und eigenem Persona-Text hinzu. Eigene Modi werden zusammen mit der Chatbot-Revision geprüft.',
+      chatbotCustomModesEmpty:
+        'Noch keine eigenen Modi. Fügen Sie einen hinzu, um Teilnehmenden einen zusätzlichen Modus anzubieten.',
+      chatbotCustomModesNone: 'Es sind keine eigenen Modi konfiguriert.',
+      chatbotCustomModesCount: '{count} von {max} eigenen Modi verwendet',
+      chatbotCustomMode: 'Eigener Modus {number}',
+      chatbotCustomModeName: 'Name des Modus',
+      chatbotCustomModeNameRequired: 'Jeder eigene Modus benötigt einen Namen.',
+      chatbotCustomModeDescription: 'Kurzbeschreibung',
+      chatbotCustomModePersonaText: 'Persona und Anweisungen',
+      chatbotCustomModePersonaPlaceholder:
+        'Beschreiben Sie, wie dieser Modus auf Teilnehmende antworten soll.',
+      chatbotCustomModeWelcomeMessage: 'Begrüssungstext',
+      chatbotCustomModeWelcomePlaceholder:
+        'Wird in einem leeren Chat für diesen Modus angezeigt. Leer lassen für die Standardbegrüssung.',
+      chatbotCustomModeStarterPrompts: 'Startervorschläge',
+      chatbotCustomModeStarterPromptsDescription:
+        'Wird in einem leeren Chat für diesen Modus als Vorschläge angezeigt. Höchstens {count} Starter; Teilnehmende entscheiden, ob sie sie senden.',
+      chatbotCustomModeStarterPrompt: 'Starter {number}',
+      chatbotCustomModeStarterPromptAdd: 'Starter hinzufügen',
+      chatbotCustomModeShowReasoning:
+        'Denkprozess des Modells für Teilnehmende anzeigen',
+      chatbotCustomModeShowReasoningDescription:
+        'Standardmässig aus. Die Zusammenfassung des Denkprozesses kann Persona und Anweisungen dieses Modus wiedergeben, zum Beispiel die verborgenen Fakten eines Rollenspiels. In der Eigentümer-Vorschau ist sie immer sichtbar.',
+      chatbotCustomModeReasoningShown:
+        'Denkprozess des Modells für Teilnehmende sichtbar',
+      chatbotCustomModeReasoningHidden:
+        'Denkprozess des Modells für Teilnehmende verborgen',
+      chatbotCustomModeAdd: 'Eigenen Modus hinzufügen',
+      chatbotCustomModeRemove: 'Entfernen',
+      chatbotCustomModesLimit:
+        'Es werden höchstens {count} eigene Modi unterstützt.',
+      chatbotCustomModesDuplicate:
+        'Jeder eigene Modus benötigt einen eindeutigen Namen.',
+      chatbotCustomModesReadonly:
+        'Eigene Modi können in diesem Chatbot-Status nicht bearbeitet werden.',
+      chatbotCustomModesSave: 'Eigene Modi speichern',
+      chatbotCustomModesSaving: 'Wird gespeichert…',
+      chatbotCustomModesSaveSuccess: 'Eigene Modi gespeichert.',
+      chatbotCustomModesSaveError:
+        'Die eigenen Modi konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.',
       chatbotFraming: 'Rahmung des Chatbots',
       chatbotFramingDescription:
         'Beschreiben Sie kurz den Kurs, die Zielgruppe oder den gewünschten Schwerpunkt. Dieser Kontext wird in den Standard-Lernmodi verwendet.',
@@ -5307,6 +5364,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Teilnehmende können zwischen diesen Modellen wählen. Wählen Sie mindestens eines.',
       selectedModel: 'Ausgewähltes Modell',
       allowedModels: 'Erlaubte Modelle',
+      modelUnavailableHint:
+        'Fortgeschrittene Modelle erfordern das fortgeschrittene AI-Abonnement mit einer Kostenstelle.',
+      modelUnavailableSelected:
+        'Ihr Konto kann dieses fortgeschrittene Modell nicht verwenden, daher können Teilnehmende damit nicht chatten. Wählen Sie ein anderes Modell.',
       allowedModelsAll: 'Alle',
       chatbotModelSettings: 'Modell- und Reasoning-Einstellungen',
       reasoningEffortsByModel: 'Reasoning-Level pro Modell',
@@ -5338,7 +5399,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       disclaimerAccepted: 'Akzeptiert',
       disclaimerDeclined: 'Abgelehnt',
       disclaimerPending: 'Ausstehend',
-      mcpConfigurations: 'MCP-Konfigurationen',
       knowledgeBase: 'Wissensdatenbank',
       knowledgeGraphPolicy: 'Wissensgraph',
       knowledgeGraphPolicyDescription:
@@ -5356,15 +5416,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       knowledgeGraphSaveSuccess: 'Wissensgraph-Einstellungen gespeichert.',
       noEnabledKnowledgeBase:
         'Es ist keine Wissensdatenbank verknüpft. Dieser Chatbot kann Kursmaterial nicht durchsuchen.',
-      noMcpConfigurations: 'Keine MCP-Konfigurationen.',
-      mcpServerActive: 'Server aktiv',
-      mcpServerInactive: 'Server inaktiv',
-      mcpChatMode: 'Chat-Modus',
-      mcpStatus: 'Status',
-      mcpStatusEnabled: 'Aktiviert',
-      mcpStatusDisabled: 'Deaktiviert',
-      mcpPriority: 'Priorität',
-      mcpAllowedTools: 'Erlaubte Tools',
       openChatbot: 'Chatbot öffnen',
       openOwnerPreview: 'Eigentümer-Vorschau öffnen',
       chatbotOwnerPreviewLive: 'Live-Konfiguration',

@@ -1,6 +1,8 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   ChatbotAuthoringRevisionProjection,
+  ChatbotCustomModeConfigInput as ChatbotCustomModeConfigInputShape,
+  ChatbotCustomModeConfig as ChatbotCustomModeConfigShape,
   ChatbotStandardModeConfigInput as ChatbotStandardModeConfigInputShape,
   ChatbotStandardModeConfig as ChatbotStandardModeConfigShape,
   SharingType as SharingTypeEnum,
@@ -13,7 +15,7 @@ import type {
 import type { ChatbotRevisionSaveInput as ChatbotRevisionSaveInputShape } from '../services/chatbots.js'
 import { CourseListEntryRef, type ICourseListEntry } from './course.js'
 import { PermissionLevel, SharingType } from './sharing.js'
-import { LocaleType } from './user.js'
+import { AiSubscriptionTier, LocaleType } from './user.js'
 
 // ----- ANSWER COLLECTIONS -----
 // #region
@@ -119,6 +121,7 @@ export const ChatAccountUsageLaneRef = builder.objectRef<ChatAccountUsageLane>(
 export const ChatAccountUsageLaneType = ChatAccountUsageLaneRef.implement({
   fields: (t) => ({
     usageClass: t.expose('usageClass', { type: ChatUsageClass }),
+    entitled: t.exposeBoolean('entitled'),
     budgetCredits: t.exposeFloat('budgetCredits'),
     usedCredits: t.exposeFloat('usedCredits'),
     remainingCredits: t.exposeFloat('remainingCredits'),
@@ -132,6 +135,12 @@ export const ChatAccountUsageOverviewType =
   ChatAccountUsageOverviewRef.implement({
     fields: (t) => ({
       authorized: t.exposeBoolean('authorized'),
+      advancedModelConfigurationEntitled: t.exposeBoolean(
+        'advancedModelConfigurationEntitled'
+      ),
+      subscriptionTier: t.expose('subscriptionTier', {
+        type: AiSubscriptionTier,
+      }),
       baseModelUsage: t.expose('baseModelUsage', {
         type: ChatAccountUsageLaneRef,
       }),
@@ -210,6 +219,61 @@ export const ChatbotStandardModeConfig = ChatbotStandardModeConfigRef.implement(
     }),
   }
 )
+
+export const ChatbotCustomModeInputRef = builder.inputRef<
+  ChatbotCustomModeConfigInputShape['modes'][number]
+>('ChatbotCustomModeInput')
+export const ChatbotCustomModeInput = ChatbotCustomModeInputRef.implement({
+  fields: (t) => ({
+    key: t.string({ required: false }),
+    name: t.string({ required: true }),
+    description: t.string({ required: false }),
+    personaText: t.string({ required: false }),
+    welcomeMessage: t.string({ required: false }),
+    starterPrompts: t.stringList({ required: false }),
+    showReasoning: t.boolean({ required: false }),
+  }),
+})
+
+export const ChatbotCustomModeConfigInputRef =
+  builder.inputRef<ChatbotCustomModeConfigInputShape>(
+    'ChatbotCustomModeConfigInput'
+  )
+export const ChatbotCustomModeConfigInput =
+  ChatbotCustomModeConfigInputRef.implement({
+    fields: (t) => ({
+      modes: t.field({ type: [ChatbotCustomModeInputRef], required: true }),
+    }),
+  })
+
+export const ChatbotCustomModeRef =
+  builder.objectRef<ChatbotCustomModeConfigShape['modes'][number]>(
+    'ChatbotCustomMode'
+  )
+export const ChatbotCustomMode = ChatbotCustomModeRef.implement({
+  fields: (t) => ({
+    key: t.exposeString('key'),
+    name: t.exposeString('name'),
+    description: t.exposeString('description', { nullable: true }),
+    personaText: t.exposeString('personaText', { nullable: true }),
+    welcomeMessage: t.exposeString('welcomeMessage', { nullable: true }),
+    starterPrompts: t.exposeStringList('starterPrompts', { nullable: true }),
+    showReasoning: t.boolean({
+      resolve: (mode) => mode.showReasoning === true,
+    }),
+  }),
+})
+
+export const ChatbotCustomModeConfigRef =
+  builder.objectRef<ChatbotCustomModeConfigShape>('ChatbotCustomModeConfig')
+export const ChatbotCustomModeConfig = ChatbotCustomModeConfigRef.implement({
+  fields: (t) => ({
+    modes: t.field({
+      type: [ChatbotCustomModeRef],
+      resolve: (config) => config.modes,
+    }),
+  }),
+})
 
 export const ChatbotRevisionMetadataInputRef = builder.inputRef<
   NonNullable<ChatbotRevisionSaveInputShape['metadata']>
@@ -292,6 +356,10 @@ export const ChatbotRevisionSaveInput = ChatbotRevisionSaveInputRef.implement({
       type: ChatbotStandardModeConfigInputRef,
       required: false,
     }),
+    customModeConfig: t.field({
+      type: ChatbotCustomModeConfigInputRef,
+      required: false,
+    }),
     creditPolicy: t.field({
       type: ChatbotCreditPolicyInputRef,
       required: false,
@@ -323,6 +391,11 @@ export const ChatbotAuthoringRevision = ChatbotAuthoringRevisionRef.implement({
       type: ChatbotStandardModeConfigRef,
       nullable: true,
       resolve: (revision) => revision.standardModeConfig ?? null,
+    }),
+    customModeConfig: t.field({
+      type: ChatbotCustomModeConfigRef,
+      nullable: true,
+      resolve: (revision) => revision.customModeConfig ?? null,
     }),
     modelSelection: t.exposeBoolean('modelSelection'),
     allowedModelIds: t.exposeStringList('allowedModelIds'),
@@ -363,6 +436,7 @@ export interface IChatModelCapability {
   fallback: boolean
   supportsReasoning: boolean
   supportedReasoningEfforts: string[]
+  usageClass: DB.ChatUsageClass
 }
 
 export const ChatModelCapabilityRef = builder.objectRef<IChatModelCapability>(
@@ -376,6 +450,7 @@ export const ChatModelCapability = ChatModelCapabilityRef.implement({
     fallback: t.exposeBoolean('fallback'),
     supportsReasoning: t.exposeBoolean('supportsReasoning'),
     supportedReasoningEfforts: t.exposeStringList('supportedReasoningEfforts'),
+    usageClass: t.expose('usageClass', { type: ChatUsageClass }),
   }),
 })
 
@@ -385,6 +460,7 @@ export interface IChatbot {
   description?: string | null
   avatar?: string | null
   standardModeConfig?: ChatbotStandardModeConfigShape | null
+  customModeConfig?: ChatbotCustomModeConfigShape | null
   modelSelection: boolean
   allowedModelIds: string[]
   allowedReasoningEffortsByModel?: IChatbotReasoningConfig[]
@@ -541,6 +617,11 @@ export const Chatbot = ChatbotRef.implement({
       nullable: true,
       resolve: (chatbot) => chatbot.standardModeConfig ?? null,
     }),
+    customModeConfig: t.field({
+      type: ChatbotCustomModeConfigRef,
+      nullable: true,
+      resolve: (chatbot) => chatbot.customModeConfig ?? null,
+    }),
     modelSelection: t.exposeBoolean('modelSelection'),
     allowedModelIds: t.exposeStringList('allowedModelIds'),
     allowedReasoningEffortsByModel: t.field({
@@ -582,6 +663,8 @@ export const Chatbot = ChatbotRef.implement({
     }),
     mcpConfigurations: t.field({
       type: [ChatbotMcpConfigurationSummaryRef],
+      deprecationReason:
+        'Retrieval bindings are internal plumbing and are no longer projected; this field always resolves to an empty list.',
       resolve: (chatbot) => chatbot.mcpConfigurations ?? [],
     }),
     enabledKnowledgeBase: t.field({

@@ -30,6 +30,39 @@ must use seeded or synthetic content only.
 
 ## Guidance
 
+### Zero-spend evaluator wiring
+
+When qualifying evaluator wiring without paid generation, select `chat,mcp`
+and replace the model upstream with a fake loopback Responses server behind
+the spend guard. Keep this synthetic transport proof separate from provider
+capability and tariff qualification. Do not use Auto for this diagnostic.
+
+Keep the application selection ID and provider deployment ID distinct. An
+evaluation-only registry can map `gpt-6-luna` to `openai/gpt-6-luna`, while the
+guard prices the latter. A registry still needs its required Auto and fallback
+entries even when the diagnostic never selects Auto. A minimal single-model
+registry fails startup before any provider request.
+The SDK also infers reasoning support from the deployment ID. Prefixed aliases
+need its supported `forceReasoning` override to retain the requested effort;
+guarded evaluation takes that capability from the application registry.
+
+The actual application emits a proxy-only exact-response cache bypass and a
+native prompt cache key. Direct provider forwarding must validate and consume
+only the exact bypass shape, preserving the bounded native key. An upstream
+HTTP failure after reservation is still charged conservatively, including each
+automatic SDK retry. Read the producing ledger and upstream arrival counters;
+a failed fixture assertion can otherwise resemble a routing failure.
+
+Managed startup re-sources canonical development settings. Explicit guarded
+settings must survive that sourcing, and configuration changes must replace
+the owned process. Use a nonsecret generation for credential changes rather
+than hashing keys into a process fingerprint. The application must reject
+per-chatbot routing overrides before decryption or provider construction.
+See [evaluation routing setup](../../../evaluation/README.md#trajectories-and-provider-admission)
+and [the evaluator correction PR](https://github.com/uzh-bf/klicker-uzh/pull/6489).
+
+### Paid upstream smoke
+
 1. Run Infisical authentication and injection from a host shell outside the
    Codex sandbox. Do not run Infisical inside `devrouter exec`, the DevPod, or
    a container. Resolve the exact checkout path and use the restricted
@@ -149,6 +182,22 @@ injected `devrouter ensure ... --profile chat,ai,mcp`; the repository confirms
 that signature and performs one bounded repair for the affected `.next` cache.
 If the route remains unhealthy, inspect `/tmp/dev.log` before diagnosing the
 upstream.
+
+When a production build follows live verification in the same checkout, the
+PWA can include both `.next/dev/types/validator.ts` and
+`.next/types/validator.ts`. If TypeScript reports duplicate `PagesPageConfig`
+identifiers in those generated files, stop the exact owned development process
+through the delivered managed process helper before building again. Preserve
+the affected generated dev-type directory outside the application's compiler
+inputs, then rerun the build. The collision does not require changing application
+source or disabling type checking. Finalize the exact runtime through
+`devrouter stop <checkout-path>` after the last check.
+
+Prompt-template comparisons also need a real process restart: the server caches
+loaded template text. Record the request context's compiled prompt fingerprint
+for each arm rather than assuming an edited `.hbs` file is already serving.
+See [the bounded attribution experiment](../../../project/2026-09-28-tutor-attribution-evaluation.md)
+for the observed failure, acceptance limits and verified recovery.
 
 ## Examples
 
