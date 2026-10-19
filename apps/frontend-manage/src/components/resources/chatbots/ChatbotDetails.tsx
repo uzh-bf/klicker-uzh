@@ -124,7 +124,9 @@ function getModelComparison(
 ) {
   return {
     modelSelection: values.modelSelection,
-    allowedModelIds: [...values.allowedModelIds].sort(),
+    allowedModelIds: [...values.allowedModelIds].sort((a, b) =>
+      a.localeCompare(b)
+    ),
     efforts: values.allowedReasoningEffortsByModel
       .map(({ modelId, efforts }) => ({ modelId, efforts: [...efforts] }))
       .sort((a, b) => a.modelId.localeCompare(b.modelId)),
