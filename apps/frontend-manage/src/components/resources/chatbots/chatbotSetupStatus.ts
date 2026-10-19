@@ -2,6 +2,8 @@
 // page, its tests and any later summary share one definition of what each
 // status means.
 
+import { DEFAULT_CHATBOT_CREDIT_POLICY_VALUES } from '@klicker-uzh/util/chatbot-credit-policy-defaults'
+
 export type ChatbotSetupSectionId =
   | 'materials'
   | 'students'
@@ -57,14 +59,8 @@ export type CreditPolicyValues = {
   creditMaxCredits: number
 }
 
-// Mirrors DEFAULT_CHATBOT_CREDIT_POLICY on the server, which every new
-// chatbot receives.
-export const DEFAULT_CREDIT_POLICY: CreditPolicyValues = {
-  creditInitialCredits: 3,
-  creditResetPeriod: 'DAILY',
-  creditResetAmount: 3,
-  creditMaxCredits: 3,
-}
+export const DEFAULT_CREDIT_POLICY: CreditPolicyValues =
+  DEFAULT_CHATBOT_CREDIT_POLICY_VALUES
 
 export function isDefaultCreditPolicy(values: CreditPolicyValues) {
   return (
@@ -80,8 +76,24 @@ export type ModeValues = {
   tutorEnabled: boolean
   explainerEnabled: boolean
   quizzerEnabled: boolean
+  courseName?: string | null
+  subjectDomain?: string | null
+  languageOfInstruction?: string | null
   scopeNote: string
   customModeCount: number
+}
+
+// Framing is any stored context for the standard modes. Manage edits only the
+// scope note, but the other fields can be set elsewhere and are kept on save.
+export function hasModeFraming(
+  values: Omit<ModeValues, 'customModeCount'>
+): boolean {
+  return Boolean(
+    values.courseName?.trim() ||
+      values.subjectDomain?.trim() ||
+      values.languageOfInstruction ||
+      values.scopeNote.trim()
+  )
 }
 
 export function isDefaultModes(values: ModeValues) {
@@ -89,7 +101,7 @@ export function isDefaultModes(values: ModeValues) {
     values.tutorEnabled &&
     values.explainerEnabled &&
     values.quizzerEnabled &&
-    values.scopeNote.trim() === '' &&
+    !hasModeFraming(values) &&
     values.customModeCount === 0
   )
 }
@@ -115,7 +127,11 @@ export function isDefaultModelPolicy(
   if (modelIds.length === 1 && modelIds[0] !== defaultModelId) return false
   return values.reasoningEffortsByModel
     .filter(({ modelId }) => modelId === defaultModelId)
-    .every(({ efforts }) => efforts.length === 0 || efforts[0] === 'medium')
+    .every(
+      ({ efforts }) =>
+        efforts.length === 0 ||
+        (efforts.length === 1 && efforts[0] === 'medium')
+    )
 }
 
 export type GraphPolicyValues = {
@@ -150,6 +166,22 @@ export function isSuggestedStudentInformation(
   )
 }
 
+// Saved and live values come from different projections, so they compare by
+// value: object keys in any order, and a missing key equal to null.
+function normalizeForComparison(value: unknown): unknown {
+  if (value === undefined) return null
+  if (Array.isArray(value)) return value.map(normalizeForComparison)
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([, entry]) => entry !== undefined && entry !== null)
+        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+        .map(([key, entry]) => [key, normalizeForComparison(entry)])
+    )
+  }
+  return value
+}
+
 // A published chatbot keeps its live values until a review approves the saved
 // revision, so a section whose saved values differ from the live ones is saved
 // but not yet submitted.
@@ -157,5 +189,8 @@ export function hasUnsubmittedChanges<Values>(
   saved: Values,
   live: Values
 ): boolean {
-  return JSON.stringify(saved) !== JSON.stringify(live)
+  return (
+    JSON.stringify(normalizeForComparison(saved)) !==
+    JSON.stringify(normalizeForComparison(live))
+  )
 }

@@ -5048,7 +5048,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'No knowledge base is connected. Answers use general model knowledge.',
       chatbotSummaryMaterialsConnected: 'Uses the knowledge base {name}.',
       chatbotSummaryMaterialsReadiness:
-        '{total, plural, =0 {It has no resources yet.} one {{ready} of 1 resource is ready{failed, plural, =0 {} other {, # failed}}.} other {{ready} of # resources are ready{failed, plural, =0 {} other {, # failed}}.}}',
+        '{total, plural, =0 {It has no resources yet.} one {{ready} of 1 resource is ready{failed, plural, =0 {} other {, # failed}}.} other {{ready} of # resources {ready, plural, one {is} other {are}} ready{failed, plural, =0 {} other {, # failed}}.}}',
       chatbotNoKnowledgeBaseOption:
         'No knowledge base. Answers use general model knowledge.',
       chatbotSummaryStudents: 'Students see “{title}” before they start.',
@@ -5070,7 +5070,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotSummaryModelFixedReasoning:
         'Students use {model} with {effort} reasoning effort.',
       chatbotSummaryModelNoChoice: 'They cannot switch models.',
-      chatbotSummaryModelChoice: 'Students can choose between {models}.',
+      chatbotSummaryModelChoice:
+        '{count, plural, one {Students use {models}.} other {Students can choose between {models}.}}',
       chatbotSummaryUsageInitial:
         'Each student starts with {initial, plural, one {1 credit} other {# credits}}.',
       chatbotSummaryUsageRefill:
