@@ -20,6 +20,7 @@ function CreateKnowledgeBaseModal({
   onClose,
   onCreated,
   proposedLanguage,
+  proposedName = '',
 }: {
   onClose: () => void
   onCreated: (kb: { id: string; name: string }) => Promise<unknown>
@@ -27,9 +28,12 @@ function CreateKnowledgeBaseModal({
   // example the language of the course whose chatbot the knowledge base is
   // created for. It applies only where the suggested subject serves it.
   proposedLanguage?: DomainGenerationLanguage
+  // A starting name, for example that of the chatbot the knowledge base is
+  // created for.
+  proposedName?: string
 }) {
   const t = useTranslations()
-  const [name, setName] = useState('')
+  const [name, setName] = useState(proposedName)
   const [description, setDescription] = useState('')
   const [domain, setDomain] = useState<KbDomainFieldsValue | null>(null)
   const [createKb, { loading: creating }] = useMutation(CreateKbDocument)

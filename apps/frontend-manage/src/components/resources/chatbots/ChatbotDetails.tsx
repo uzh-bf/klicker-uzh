@@ -2038,16 +2038,8 @@ function ChatbotDetails({
                 courseIds={chatbot.courses?.map(({ id }) => id) ?? []}
                 connectedKnowledgeBase={connectedKnowledgeBase}
                 connectOnSelect
+                proposedKnowledgeBaseName={chatbot.name}
               />
-              {connectedKnowledgeBase ? (
-                <Link
-                  href={`/resources/knowledgeBases/${encodeURIComponent(connectedKnowledgeBase.id)}?chatbotId=${encodeURIComponent(chatbot.id)}`}
-                  className="text-primary-100 inline-flex items-center gap-2 text-sm hover:underline"
-                  data-cy="chatbot-enabled-knowledge-base"
-                >
-                  {connectedKnowledgeBase.name}
-                </Link>
-              ) : null}
             </ChatbotSetupSection>
 
             <ChatbotSetupSection

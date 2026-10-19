@@ -1942,6 +1942,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     typeFile: 'File',
     typeUrl: 'Link',
     addResource: 'Add resource',
+    addResourceTitleFor: 'Add materials to {kbName}',
     addResourceTitle: 'Add a resource',
     addResourceDescription: 'Choose how you want to add this resource.',
     addWebsite: 'Website',
@@ -5125,12 +5126,26 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The knowledge base could not be disconnected.',
       chatbotKnowledgeBaseCreatedNotConnected:
         'The knowledge base “{kbName}” was created but could not be connected to this chatbot. Retry the connection to use it here.',
+      chatbotKnowledgeBaseCardReusable:
+        'A knowledge base is a reusable collection of materials. Other chatbots can use it too.',
+      chatbotKnowledgeBaseCardOpen: 'Open knowledge base',
+      chatbotKnowledgeBaseCardResources: 'Resources',
+      chatbotKnowledgeBaseCardReady: 'Ready',
+      chatbotKnowledgeBaseCardProcessing: 'Processing',
+      chatbotKnowledgeBaseCardFailed: 'Failed',
+      chatbotKnowledgeBaseCardLastChanged: 'Last changed on {date}.',
+      chatbotKnowledgeBaseCardEmpty:
+        'This knowledge base has no materials yet.',
+      chatbotKnowledgeBaseCardRecent: 'Recently added',
+      chatbotKnowledgeBaseAddFiles: 'Add files',
+      chatbotKnowledgeBaseBanner:
+        'You are preparing materials for the chatbot {name}.',
+      backToChatbotSetup: 'Back to chatbot setup',
       chatbotKnowledgeBaseRetryConnection: 'Retry connection',
       chatbotKnowledgeBaseCreateChatbot:
         'Create chatbot using this knowledge base',
       chatbotKnowledgeBaseChatbotCreatedNotConnected:
         'The chatbot was created but the knowledge base could not be connected. Connect it in the chatbot’s Knowledge view.',
-      backToChatbot: 'Back to chatbot {name}',
       chatbotTechnicalDetails: 'Technical details',
       chatbotTechnicalId: 'ID',
       chatbotTechnicalAvatar: 'Avatar',

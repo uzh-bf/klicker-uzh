@@ -90,7 +90,7 @@ function isActiveResource(resource: KnowledgeBaseResource) {
   )
 }
 
-function RunStatusBadge({
+export function RunStatusBadge({
   status,
   dataCy,
 }: {
@@ -146,7 +146,7 @@ function RunStatusBadge({
   )
 }
 
-function RunStatusMessage({
+export function RunStatusMessage({
   status,
   errorCode,
   statusMessage,

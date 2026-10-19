@@ -73,20 +73,35 @@ test.describe('Chatbot knowledge base setup', () => {
     // The advanced-management flag is on by default in this mock.
     await expect(page.getByTestId('chatbot-section-usage-toggle')).toBeVisible()
 
-    // Creating from the chatbot connects the new knowledge base and opens it
-    // with a way back to the chatbot.
+    // Creating from the chatbot connects the new knowledge base and offers to
+    // add materials without leaving the chatbot.
     await page.getByTestId('chatbot-kb-create').click()
+    await expect(page.getByTestId('knowledge-base-name')).toHaveValue(
+      CHATBOT_NAME
+    )
     await page.getByTestId('knowledge-base-name').fill(KB_NAME)
     await page.getByTestId('submit-create-knowledge-base').click()
 
+    await expect(page.getByTestId('kb-add-resource-modal')).toBeVisible()
+    await expect(page).toHaveURL(
+      new RegExp(`/resources/chatbots\\?chatbotId=${chatbotId}&view=knowledge$`)
+    )
+    await page.getByTestId('close-kb-add-resource-modal').click()
+    await expect(page.getByTestId('kb-add-resource-modal')).toHaveCount(0)
+    await expect(page.getByTestId('chatbot-kb-card')).toBeVisible()
+    await expect(page.getByTestId('chatbot-enabled-knowledge-base')).toHaveText(
+      KB_NAME
+    )
+
+    // The knowledge base page leads back to the chatbot's setup.
+    await page.getByTestId('chatbot-kb-open').click()
     await expect(page).toHaveURL(
       new RegExp(`/resources/knowledgeBases/[^?]+\\?chatbotId=${chatbotId}$`)
     )
-    const backLink = page.getByTestId('kb-back-to-chatbot')
-    await expect(backLink).toBeVisible()
-    await expect(backLink).toContainText(CHATBOT_NAME)
-
-    await backLink.click()
+    await expect(page.getByTestId('kb-chatbot-banner')).toContainText(
+      CHATBOT_NAME
+    )
+    await page.getByTestId('kb-back-to-chatbot').click()
     await expect(page).toHaveURL(
       new RegExp(`/resources/chatbots\\?chatbotId=${chatbotId}&view=knowledge$`)
     )

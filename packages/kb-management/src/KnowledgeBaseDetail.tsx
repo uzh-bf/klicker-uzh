@@ -18,9 +18,9 @@ function KnowledgeBaseDetail({
   backLink,
 }: {
   kbId: string
-  // An additional way back, for example to the chatbot this knowledge base
-  // was just created for. The caller owns and validates the target.
-  backLink?: { href: string; label: string }
+  // A banner leading back, for example to the chatbot whose materials are
+  // being prepared. The caller owns and validates the target.
+  backLink?: { href: string; label: string; message: string }
 }) {
   const t = useTranslations()
   const format = useFormatter()
@@ -108,13 +108,19 @@ function KnowledgeBaseDetail({
         {t('kb.backToList')}
       </Link>
       {backLink ? (
-        <Link
-          href={backLink.href}
-          className="ml-4 text-primary-100 hover:underline"
-          data-cy="kb-back-to-chatbot"
+        <div
+          className="mt-4 flex flex-col gap-3 rounded-md border border-primary-40 bg-primary-20/40 p-4 sm:flex-row sm:items-center sm:justify-between"
+          data-cy="kb-chatbot-banner"
         >
-          {backLink.label}
-        </Link>
+          <p className="text-sm text-slate-800">{backLink.message}</p>
+          <Link
+            href={backLink.href}
+            className="inline-flex shrink-0 items-center justify-center rounded-md bg-primary-100 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-80"
+            data-cy="kb-back-to-chatbot"
+          >
+            {backLink.label}
+          </Link>
+        </div>
       ) : null}
       <H1 className={{ root: 'mt-4 break-words' }}>{data.getKb.name}</H1>
       {data.getKb.description ? (

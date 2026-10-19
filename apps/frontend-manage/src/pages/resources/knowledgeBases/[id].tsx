@@ -28,7 +28,10 @@ function KnowledgeBasePage({ kbId }: { kbId: string }) {
   const backLink = chatbot
     ? {
         href: `/resources/chatbots?chatbotId=${encodeURIComponent(chatbot.id)}&view=knowledge`,
-        label: t('manage.resources.backToChatbot', { name: chatbot.name }),
+        label: t('manage.resources.backToChatbotSetup'),
+        message: t('manage.resources.chatbotKnowledgeBaseBanner', {
+          name: chatbot.name,
+        }),
       }
     : undefined
 

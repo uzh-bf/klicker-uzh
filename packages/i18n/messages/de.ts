@@ -1961,6 +1961,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     typeFile: 'Datei',
     typeUrl: 'Link',
     addResource: 'Ressource hinzufügen',
+    addResourceTitleFor: 'Materialien zu {kbName} hinzufügen',
     addResourceTitle: 'Ressource hinzufügen',
     addResourceDescription:
       'Wählen Sie, wie Sie diese Ressource hinzufügen möchten.',
@@ -5235,12 +5236,26 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Verknüpfung der Wissensdatenbank konnte nicht aufgehoben werden.',
       chatbotKnowledgeBaseCreatedNotConnected:
         'Die Wissensdatenbank „{kbName}“ wurde erstellt, konnte aber nicht mit diesem Chatbot verknüpft werden. Versuchen Sie die Verknüpfung erneut, um sie hier zu verwenden.',
+      chatbotKnowledgeBaseCardReusable:
+        'Eine Wissensdatenbank ist eine wiederverwendbare Sammlung von Materialien. Auch andere Chatbots können sie nutzen.',
+      chatbotKnowledgeBaseCardOpen: 'Wissensdatenbank öffnen',
+      chatbotKnowledgeBaseCardResources: 'Ressourcen',
+      chatbotKnowledgeBaseCardReady: 'Bereit',
+      chatbotKnowledgeBaseCardProcessing: 'In Verarbeitung',
+      chatbotKnowledgeBaseCardFailed: 'Fehlgeschlagen',
+      chatbotKnowledgeBaseCardLastChanged: 'Zuletzt geändert am {date}.',
+      chatbotKnowledgeBaseCardEmpty:
+        'Diese Wissensdatenbank enthält noch keine Materialien.',
+      chatbotKnowledgeBaseCardRecent: 'Zuletzt hinzugefügt',
+      chatbotKnowledgeBaseAddFiles: 'Dateien hinzufügen',
+      chatbotKnowledgeBaseBanner:
+        'Sie bereiten Materialien für den Chatbot {name} vor.',
+      backToChatbotSetup: 'Zurück zur Chatbot-Einrichtung',
       chatbotKnowledgeBaseRetryConnection: 'Verknüpfung erneut versuchen',
       chatbotKnowledgeBaseCreateChatbot:
         'Chatbot mit dieser Wissensdatenbank erstellen',
       chatbotKnowledgeBaseChatbotCreatedNotConnected:
         'Der Chatbot wurde erstellt, die Wissensdatenbank konnte aber nicht verknüpft werden. Verknüpfen Sie sie im Bereich „Wissensbasis“ des Chatbots.',
-      backToChatbot: 'Zurück zum Chatbot {name}',
       chatbotTechnicalDetails: 'Technische Details',
       chatbotTechnicalId: 'ID',
       chatbotTechnicalAvatar: 'Avatar',
