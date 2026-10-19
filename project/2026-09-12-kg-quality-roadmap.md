@@ -28,7 +28,9 @@ document retrieval, the existing graph query expansion and a graph-free second
 search, plus abstention cases. The graph arm gave no meaningful gain over
 ordinary retrieval. The graph-free second search scored best, and every arm
 abstained correctly. The case set is far too small to rank arms, and the control
-relied on a frozen second-clause split that suited these questions. Against the
+relied on a frozen second-clause split that suited these questions. A later
+offline check of the saved captures showed that the harness itself distorted the
+comparison (first bullet below). Against the
 predeclared criteria the comparison is **inconclusive**: ordinary document
 retrieval stays the default, and the graph-retrieval flag decision is unchanged.
 The private [run report](_local/evaluation-holdout-20261017/three-doc-pilot/pilot-report.md)
@@ -36,10 +38,15 @@ holds identifiers, scores and costs.
 
 The diagnosis changes what W9 tests next:
 
-- The decisive miss was cross-document coverage. A multi-part question named a
-  second document, ordinary retrieval stayed in one script, and only the
-  decomposed sub-question reached the other document. Graph hints cannot supply
-  decomposition.
+- The apparent cross-document miss came mainly from passage ordering, not
+  retrieval. The ordinary search already returned the other named documents
+  among its top results. Staging responses carry no per-chunk rank, and both the
+  harness and the native graph fusion flatten passages source by source before
+  the 12-passage cut, so the first document filled every slot. Interleaving
+  sources restores that coverage in the saved captures without question
+  decomposition. Native ordinary chat applies no 12-passage cut, so the pilot's
+  ordinary arm under-represented it, and graph-fused results can carry less
+  cross-document evidence than ordinary chat.
 - Graph linking uses exact concept-label matches in the question, so few seeds
   are found. Hints are appended to the query text; the graph never ranks a
   passage, and retrieval does not use concept-to-chunk provenance.
@@ -52,8 +59,9 @@ The diagnosis changes what W9 tests next:
   identical arm inputs when a case falls back to the baseline, and judging such
   shared answers. Fold them into the W9 harness before the next run.
 
-Three directions follow from this. W9b makes the hybrid retriever handle
-multi-part and cross-document questions and fuses all arms once. W13 uses the
+Three directions follow from this. W9b first makes passage selection keep the
+provider's relevance order across documents and settles the passage budget, then
+decomposes multi-part questions only if a gap remains. W13 uses the
 graph for concept navigation and prerequisite scaffolding, which depends on
 typed, evidence-linked relations (W5). W9c, graph-native passage ranking, is
 conditional on a multi-hop gap that W9b leaves. Sequencing them is a separate
@@ -412,25 +420,34 @@ If failure analysis shows the bottleneck is graph-to-passage selection, trial so
 
 Completion: one frozen comparison yields adoption for specified query classes, retain-disabled, or inconclusive against the predeclared criteria, preserving citations, abstention and scope. No critical scope/citation failure can be offset by an aggregate gain. Keep ordinary document retrieval as the default if no useful improvement is demonstrated; qualify independent map value separately. [ADR 0014](../docs/adr/0014-beta-learns-before-quality-thresholds.md) permits a labeled initial graph beta on existing system/canary evidence, while quality claims and widening need quality evidence. Later retrieval approaches follow observed failure analysis under a separate bounded contract; community summaries, adaptive multi-hop and query routing add indexing, grounding, freshness, scope and cost obligations. No wholesale framework migration or automatic tuning loop is proposed.
 
-**W9b — Hybrid retrieval for multi-part and cross-document questions.** Owner:
-chat/retrieval engineer. Dependency: W9a and the October 19 harness fixes; no
-graph contract change. Size: medium.
+**W9b — Rank-preserving passage selection, then hybrid multi-part retrieval.**
+Owner: chat/retrieval engineer; AI infrastructure for provider rank metadata.
+Dependency: W9a and the October 19 harness fixes; no graph contract change.
+Size: small for the first slice, medium if decomposition follows.
 
-Generalize the second-clause control into bounded question decomposition: split
-a multi-part question into at most a few sub-queries, run them in parallel with
-the original question, and fuse every arm — original, sub-queries and
-graph-hinted query — in one reciprocal-rank fusion under the existing passage
-and character budget. Add per-document diversity so one source cannot fill the
-budget when the question names another. Keep the original-query evidence first,
-as the current fusion does. Published comparisons favor parallel integration of
-graph and document retrieval over routing each query to one retriever.
+First, make passage selection preserve relevance across documents. Use the
+provider's per-chunk `global_rank` where a response carries it, and ask AI
+infrastructure to expose it on staging and production. Without it, interleave
+sources in provider order instead of flattening source by source. Apply the same
+ordering in the native graph fusion and in the W9 harness. Then decide the
+passage budget: native ordinary chat sends every returned chunk, while graph
+fusion and the harness cut to 12 passages and 16,000 characters. Compare arms
+under one budget that matches what chat actually sends. Any per-document limit
+must be soft, so unused budget is still filled.
 
-Before any paid run, inspect the union of the existing captures offline. Then run
-a reviewed case set of at least 20–30 questions, stratified into single-fact,
-multi-part, cross-document, comparison, multi-hop and unanswerable families, with
-repeated judging. Completion: a family-level adopt, retain-disabled or
-inconclusive decision, with abstention and citation scope unchanged and the added
-latency and cost per turn reported.
+Only if a reviewed set still shows multi-part or cross-document misses after that
+fix, add bounded question decomposition: a few sub-queries run in parallel with
+the original question, fused with the original and graph-hinted queries in one
+reciprocal-rank fusion under the same budget, original evidence first.
+Published comparisons favor parallel integration of graph and document retrieval
+over routing each query to one retriever.
+
+The offline check of the saved captures is done and motivated this order. Next,
+run a reviewed case set of at least 20–30 questions, stratified into
+single-fact, multi-part, cross-document, comparison, multi-hop and unanswerable
+families, with repeated judging. Completion: a family-level adopt,
+retain-disabled or inconclusive decision for each step, with abstention and
+citation scope unchanged and the added latency and cost per turn reported.
 
 **W9c — Graph-native passage ranking (conditional).** Owner: generator and
 chat/retrieval engineers. Dependency: W5 passage provenance; start only if W9b
@@ -517,7 +534,7 @@ flowchart TD
   R --> W9[W9 Chat outcomes]
   W4 -. source fidelity .-> W9a[W9a Independent workflows and source guards]
   W9a --> W9
-  W9 --> W9b[W9b Hybrid multi-part retrieval]
+  W9 --> W9b[W9b Rank-preserving and hybrid retrieval]
   W9b -. multi-hop gap .-> W9c[W9c Graph-native passage ranking]
   W5 --> W9c
   W5 --> W13[W13 Concept navigation and scaffolding]
