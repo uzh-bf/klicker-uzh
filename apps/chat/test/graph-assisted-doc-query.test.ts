@@ -444,7 +444,7 @@ describe('graph-assisted document retrieval', () => {
     ])
   })
 
-  it('spreads unranked graph additions across provider sources', () => {
+  it('spreads unranked graph additions across provider sources and groups them per source', () => {
     const source = (reference: string, count: number) => ({
       reference,
       chunks: Array.from({ length: count }, (_, index) => ({
@@ -459,33 +459,48 @@ describe('graph-assisted document retrieval', () => {
     expect(
       result.structuredContent.sources
         .slice(1)
-        .flatMap((group: any) =>
-          group.chunks.map((chunk: any) => chunk.content)
-        )
+        .map((group: any) => group.chunks.map((chunk: any) => chunk.content))
     ).toEqual([
-      'first.pdf 0',
-      'second.pdf 0',
-      'first.pdf 1',
-      'second.pdf 1',
-      'first.pdf 2',
-      'first.pdf 3',
+      ['first.pdf 0', 'first.pdf 1', 'first.pdf 2', 'first.pdf 3'],
+      ['second.pdf 0', 'second.pdf 1'],
     ])
+    expect(
+      normalizeSourcesFromParts([
+        { type: 'tool-call', toolName: 'KB_doc_query', result },
+      ]).filter((card) => card.title !== 'Synthetic course')
+    ).toHaveLength(2)
+    expect(countDocQueryDocuments(result.structuredContent)).toBe(3)
   })
 
-  it('orders graph additions by global rank only when every chunk carries one', () => {
+  it('keeps one long unranked passage from excluding every other source', () => {
+    const result = combineGraphSearchDocuments(documents('Baseline'), {
+      mode: 'documents',
+      sources: [
+        { reference: 'long.pdf', chunks: [{ content: 'a'.repeat(7999) }] },
+        { reference: 'short.pdf', chunks: [{ content: 'b'.repeat(1000) }] },
+      ],
+    }) as any
+    expect(
+      result.structuredContent.sources
+        .slice(1)
+        .map((group: any) => group.reference)
+    ).toEqual(['short.pdf'])
+  })
+
+  it('selects graph additions by global rank only when every chunk carries one', () => {
     const ranked = (ranks: unknown[]) => ({
       mode: 'documents',
       sources: [
         {
           reference: 'first.pdf',
-          chunks: ranks.slice(0, 2).map((global_rank, index) => ({
+          chunks: ranks.slice(0, 4).map((global_rank, index) => ({
             content: `first ${index}`,
             global_rank,
           })),
         },
         {
           reference: 'second.pdf',
-          chunks: ranks.slice(2).map((global_rank, index) => ({
+          chunks: ranks.slice(4).map((global_rank, index) => ({
             content: `second ${index}`,
             global_rank,
           })),
@@ -500,18 +515,22 @@ describe('graph-assisted document retrieval', () => {
         .flatMap((group: any) =>
           group.chunks.map((chunk: any) => chunk.content)
         )
-    expect(added(ranked([1, 4, 2, 3]))).toEqual([
+    expect(added(ranked([1, 2, 3, 4, 5, 6, 7, 8]))).toEqual([
       'first 0',
+      'first 1',
+      'first 2',
+      'first 3',
       'second 0',
       'second 1',
-      'first 1',
     ])
     // A missing rank makes the order unknown, so sources are interleaved.
-    expect(added(ranked([1, 4, null, 3]))).toEqual([
+    expect(added(ranked([1, 2, 3, 4, 5, 6, null, 8]))).toEqual([
       'first 0',
-      'second 0',
       'first 1',
+      'first 2',
+      'second 0',
       'second 1',
+      'second 2',
     ])
   })
 

@@ -168,9 +168,13 @@ const ADDED_CHARACTER_LIMIT = 8000
  * Relevance order of one search. Providers group chunks by source, so the flat
  * order lets the first document crowd out every other one. A complete numeric
  * `global_rank` gives the provider's own order; otherwise sources are visited
- * round-robin in provider order.
+ * round-robin in provider order. `lanes` is the number of provider source
+ * groups when the order is round-robin, and 1 when it is ranked.
  */
-function relevanceOrder(candidates: Passage[]): Passage[] {
+function relevanceOrder(candidates: Passage[]): {
+  ordered: Passage[]
+  lanes: number
+} {
   if (
     candidates.every(
       ({ chunk }) =>
@@ -178,14 +182,17 @@ function relevanceOrder(candidates: Passage[]): Passage[] {
         Number.isFinite(chunk.global_rank)
     )
   )
-    return candidates
-      .map((passage, index) => ({ passage, index }))
-      .sort(
-        (a, b) =>
-          (a.passage.chunk.global_rank as number) -
-            (b.passage.chunk.global_rank as number) || a.index - b.index
-      )
-      .map(({ passage }) => passage)
+    return {
+      ordered: candidates
+        .map((passage, index) => ({ passage, index }))
+        .sort(
+          (a, b) =>
+            (a.passage.chunk.global_rank as number) -
+              (b.passage.chunk.global_rank as number) || a.index - b.index
+        )
+        .map(({ passage }) => passage),
+      lanes: 1,
+    }
   const lanes: Passage[][] = []
   for (const passage of candidates) {
     const lane = lanes[lanes.length - 1]
@@ -196,7 +203,7 @@ function relevanceOrder(candidates: Passage[]): Passage[] {
   for (let depth = 0; ordered.length < candidates.length; depth += 1)
     for (const lane of lanes)
       if (depth < lane.length) ordered.push(lane[depth]!)
-  return ordered
+  return { ordered, lanes: lanes.length }
 }
 
 /** Combine exact passages, never infer identity from a filename or similar text. */
@@ -208,19 +215,43 @@ export function combineGraphSearchDocuments(
   const second = passages(expanded)
   if (!first || !second || second.length === 0) return original
   const seen = new Set(first.map(passageKey))
+  const { ordered, lanes } = relevanceOrder(second)
   const added: Passage[] = []
+  const sourceCharacters = new Map<RecordValue, number>()
   let characters = 0
-  for (const passage of relevanceOrder(second)) {
-    if (added.length === ADDED_PASSAGE_LIMIT) break
-    const key = passageKey(passage)
-    const size = String(passage.chunk.content).length
-    if (seen.has(key) || characters + size > ADDED_CHARACTER_LIMIT) continue
-    seen.add(key)
-    characters += size
-    added.push(passage)
+  function admit(shareLimit: number) {
+    for (const passage of ordered) {
+      if (added.length === ADDED_PASSAGE_LIMIT) return
+      const key = passageKey(passage)
+      const size = String(passage.chunk.content).length
+      const used = sourceCharacters.get(passage.source) ?? 0
+      if (
+        seen.has(key) ||
+        characters + size > ADDED_CHARACTER_LIMIT ||
+        used + size > shareLimit
+      )
+        continue
+      seen.add(key)
+      characters += size
+      sourceCharacters.set(passage.source, used + size)
+      added.push(passage)
+    }
   }
+  // Without a provider rank, each source first gets an equal share of the
+  // character headroom, so one long passage cannot exclude every other
+  // source; the remaining headroom is then filled in the same order.
+  if (lanes > 1) admit(ADDED_CHARACTER_LIMIT / lanes)
+  admit(Infinity)
   if (added.length === 0) return original
-  const selected = [...first, ...added]
+  // Added passages from one provider source form a single group, so the
+  // citation UI shows one card per added document; original groups are kept.
+  const addedBySource = new Map<RecordValue, Passage[]>()
+  for (const passage of added)
+    addedBySource.set(passage.source, [
+      ...(addedBySource.get(passage.source) ?? []),
+      passage,
+    ])
+  const selected = [...first, ...[...addedBySource.values()].flat()]
   // Keep each provider source group: the citation UI displays its first chunk's locator.
   // Coalescing groups from two searches could hide the newly retrieved page.
   const groups: RecordValue[] = []

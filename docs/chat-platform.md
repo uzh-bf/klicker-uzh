@@ -1177,8 +1177,10 @@ The adapter keeps every compatible `mode: documents` baseline passage with its
 provider source groups and locators, so graph mode never sends less evidence
 than the ordinary query. It appends at most six new expanded passages and 8,000
 content characters. Additions follow a complete numeric chunk `global_rank`;
-without one, provider sources are visited round-robin so one document cannot
-take the whole headroom. Contiguous source groups preserve this order.
+without one, provider sources are visited round-robin and each source first
+gets an equal share of the character headroom, so one document cannot take it
+all. Added passages from one provider source form a single trailing group, so
+the citation UI shows one card per added document.
 
 Retrieval seeds require complete normalized display-label phrases in the query;
 substring matches and inferred aliases are excluded. Up to four longest matching
