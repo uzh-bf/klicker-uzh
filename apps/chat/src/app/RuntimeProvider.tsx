@@ -293,6 +293,7 @@ export function RuntimeProvider({
         creditsUsed,
         learningContext,
         imageAttachments,
+        meetingClock,
         metadata,
         ...rest
       } = message
@@ -305,6 +306,7 @@ export function RuntimeProvider({
         creditsUsed: creditsUsed ?? null,
         learningContext: learningContext ?? null,
         imageAttachments: imageAttachments ?? [],
+        meetingClock: meetingClock ?? null,
       }
 
       return {

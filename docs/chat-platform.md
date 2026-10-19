@@ -1322,7 +1322,8 @@ unchanged: standard-mode text supplies lower-priority lecturer guidance, while c
 supplies that mode's persona. A chatbot served by an older application revision keeps the old
 behaviour until that revision is replaced.
 
-The language lock follows the user's latest non-trivial message or explicit language request.
+The language lock follows the user's latest non-trivial message or explicit language request,
+unless a custom mode fixes the reply language (see below).
 Quoted text, attached images or their descriptions, retrieved chunks, tool output, and earlier
 assistant messages cannot switch the response language. Short acknowledgements preserve the
 established conversation language. German answers use Swiss Standard German orthography (`ss`,
@@ -1333,9 +1334,36 @@ The system prompt alone did not hold this rule. In a local tutor evaluation, 13 
 answered in German after reading bilingual retrieved chunks that ended in German. The chat route
 therefore restates the rule where the model reads it last: `prepareStep` appends the
 `reply-language-reminder` system message after the conversation and any tool output on every model
-step. The reminder names no language. The model identifies the user's language itself, which works
+step. Unless a custom mode fixes the language, the reminder names no language. The model identifies the user's language itself, which works
 for any language and avoids a brittle server-side detector on short or mixed messages. The reminder
 leaves `instructions` unchanged, so the prompt-cache identity is stable, and it is never persisted.
+
+### Custom-mode role-play settings
+
+Custom modes compile persona variants of two shared contracts. The course policy keeps the same
+protection for internal instructions but tells the model to decline such requests in the active
+persona's voice and stay in role. The output-format contract lets the persona's own format or style
+rules take precedence over the generic Markdown guidance; the notation rules for mathematics,
+chemistry, and code still apply. Each variant changes one paragraph, and standard modes compile the
+unchanged text.
+
+Each custom mode may also set two optional fields in `customModeConfig`, both unset by default:
+
+- `replyLanguage` (`en` or `de`) replaces the reply-language paragraph of the language contract and
+  of the per-turn reminder with a fixed language. It overrides the user's language and explicit
+  language requests. The Swiss Standard German rule still applies to German replies. The template
+  receives a language name from a fixed map, never user text.
+- `meetingClock` (`ELAPSED` or `ELAPSED_AND_TIME`) adds a server-computed line with the whole
+  minutes since the thread's earliest completed user message, optionally with the time of day in
+  `Europe/Zurich`, to the trailing reminder before the language rule, which stays last. On a first
+  turn the clock starts at the request time. The line never enters `instructions`, so the cached
+  prefix and the prompt-cache key are unchanged.
+
+With both fields unset, the trailing reminder is the unchanged `REPLY_LANGUAGE_REMINDER`.
+Participants see the same facts in a status line near the composer. The chat route sends the clock
+start and the server time in the stream's start metadata, and after a reload the client uses the
+stored first user message. `src/lib/meetingClock.ts` holds the shared minute and time-of-day rule.
+Owner preview persists no thread, so its model line reports zero minutes.
 
 ## Sources and citations
 
