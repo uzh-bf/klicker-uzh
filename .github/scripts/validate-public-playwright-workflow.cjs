@@ -222,9 +222,9 @@ function validatePublicRunnerRoles(workflow) {
     }
   }
   if (
-    Object.keys(workflow?.env ?? {}).some(
-      (key) => key !== 'PLAYWRIGHT_CACHE_ENABLED'
-    ) ||
+    Object.keys(workflow?.env ?? {}).length !== 1 ||
+    workflow?.env?.PLAYWRIGHT_CACHE_ENABLED !==
+      `\${{ github.event_name != 'pull_request' || vars.PUBLIC_PR_PLAYWRIGHT_CACHE_ENABLED == 'true' || vars.PUBLIC_PR_PLAYWRIGHT_CACHE_CANARY_PR == format('{0}', github.event.pull_request.number) }}` ||
     Object.keys(jobs.prepare?.env ?? {}).length > 0 ||
     workflow?.defaults?.run?.['working-directory'] !== undefined ||
     jobs.prepare?.defaults?.run?.['working-directory'] !== undefined ||

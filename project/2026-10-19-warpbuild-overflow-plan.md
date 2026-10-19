@@ -194,3 +194,8 @@ record rather than public source artifacts.
   display edits must pass while inserted expressions fail. Reject inline
   GitHub expressions before comment or display normalization. The existing
   mutation table remains the primary seam. No workflow or runtime change.
+- Require the existing opt-in cache expression as well as its environment key;
+  missing, constant and alternate gates must reject. Summary fixture rewrites
+  assert their targets and prove the display mutation ran. The same mutation
+  table covers each action input and reports the failing mutation's index and
+  source. Fixture handling remains local; no new helper or runtime behavior.

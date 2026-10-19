@@ -75,6 +75,7 @@ test('public runner jobs require their exact scheduling role and reject unknown 
   )
   assert.deepEqual(validatePublicRunnerRoles(source), [])
   const displayOnly = structuredClone(source)
+  let editedDisplaySummary = false
   for (const step of displayOnly.jobs.prepare.steps) {
     step.name = 'Synthetic step display'
     if (typeof step.run !== 'string') continue
@@ -83,19 +84,34 @@ test('public runner jobs require their exact scheduling role and reject unknown 
       const arrayStart = lines.findIndex(
         (line) => line.trim() === 'const summary = ['
       )
+      assert.notEqual(arrayStart, -1, 'summary array not found')
       lines[arrayStart + 1] = "  'Synthetic summary heading',"
-      const field = lines.findIndex((line) => line.trim().startsWith('`'))
+      const field = lines.findIndex(
+        (line, index) => index > arrayStart && line.trim().startsWith('`')
+      )
+      assert.notEqual(field, -1, 'summary display field not found')
+      const expression = lines[field].indexOf('${')
+      assert.notEqual(expression, -1, 'summary display expression not found')
       lines[field] =
-        '  `Synthetic $ field: \\`' +
-        lines[field].slice(lines[field].indexOf('${'))
+        `  \`Synthetic $ field: \\\`${lines[field].slice(expression)}`
       step.run = lines.join('\n')
+      editedDisplaySummary = true
     }
     step.run = `# Synthetic shell comment\n${step.run}`
   }
+  assert.ok(editedDisplaySummary, 'summary display mutation did not run')
   assert.deepEqual(validatePublicRunnerRoles(displayOnly), [])
   const build = 'build-and-compile-public-pr'
   const shard = 'test-playwright-public-pr'
-  for (const mutate of [
+  for (const [index, mutate] of [
+    (w) => {
+      delete w.env.PLAYWRIGHT_CACHE_ENABLED
+    },
+    ...[true, 'true', `\${{ github.event_name == 'pull_request' }}`].map(
+      (value) => (w) => {
+        w.env.PLAYWRIGHT_CACHE_ENABLED = value
+      }
+    ),
     (w) => {
       w.jobs[build]['runs-on'] = 'warp-ubuntu-2404-arm64-32x'
     },
@@ -210,6 +226,18 @@ test('public runner jobs require their exact scheduling role and reject unknown 
             },
           ]
     ),
+    ...source.jobs.prepare.steps.flatMap((step, index) =>
+      !step.uses
+        ? []
+        : Object.entries(step.with ?? {}).map(([key, value]) => (w) => {
+            w.jobs.prepare.steps[index].with[key] =
+              typeof value === 'boolean'
+                ? !value
+                : typeof value === 'number'
+                  ? value + 1
+                  : 'candidate-override'
+          })
+    ),
     (w) => {
       w.jobs.prepare.steps.find((s) => s.id === 'equivalent').with.script +=
         '\nrequire("./.candidate/script.cjs")'
@@ -218,16 +246,23 @@ test('public runner jobs require their exact scheduling role and reject unknown 
       const summary = w.jobs.prepare.steps.find((s) =>
         s.run?.includes('const summary = [')
       )
+      assert.ok(summary, 'summary run block not found')
       const lines = summary.run.split('\n')
       const arrayStart = lines.findIndex(
         (line) => line.trim() === 'const summary = ['
       )
+      assert.notEqual(arrayStart, -1, 'summary array not found')
       lines[arrayStart + 1] = `  '\${{ github.event.pull_request.title }}',`
       summary.run = lines.join('\n')
     },
     (w) => {
       const summary = w.jobs.prepare.steps.find((s) =>
         s.run?.includes('const summary = [')
+      )
+      assert.ok(summary, 'summary run block not found')
+      assert.ok(
+        summary.run.includes(`\${route.route}`),
+        'summary route expression not found'
       )
       summary.run = summary.run.replace(
         `\${route.route}`,
@@ -238,21 +273,27 @@ test('public runner jobs require their exact scheduling role and reject unknown 
       const summary = w.jobs.prepare.steps.find((s) =>
         s.run?.includes('const summary = [')
       )
+      assert.ok(summary, 'summary run block not found')
       const lines = summary.run.split('\n')
       const field = lines.findIndex((line) => line.trim().startsWith('`'))
+      assert.notEqual(field, -1, 'summary display field not found')
+      const expression = lines[field].indexOf('${')
+      assert.notEqual(expression, -1, 'summary display expression not found')
       lines[field] =
         "  `Synthetic\nNODE\nnode .candidate/script.cjs\nnode - <<'NODE'\nfield: \\`" +
-        lines[field].slice(lines[field].indexOf('${'))
+        lines[field].slice(expression)
       summary.run = lines.join('\n')
     },
     (w) => {
       const summary = w.jobs.prepare.steps.find((s) =>
         s.run?.includes('const summary = [')
       )
+      assert.ok(summary, 'summary run block not found')
       const lines = summary.run.split('\n')
       const arrayStart = lines.findIndex(
         (line) => line.trim() === 'const summary = ['
       )
+      assert.notEqual(arrayStart, -1, 'summary array not found')
       lines[arrayStart + 1] =
         "  'display' + require('./.candidate/script.cjs'),"
       summary.run = lines.join('\n')
@@ -315,10 +356,13 @@ test('public runner jobs require their exact scheduling role and reject unknown 
     (w) => {
       delete w.jobs[build]
     },
-  ]) {
+  ].entries()) {
     const workflow = structuredClone(source)
     mutate(workflow)
-    assert.ok(validatePublicRunnerRoles(workflow).length > 0)
+    assert.ok(
+      validatePublicRunnerRoles(workflow).length > 0,
+      `policy mutation ${index + 1} must be rejected: ${mutate}`
+    )
   }
 })
 
