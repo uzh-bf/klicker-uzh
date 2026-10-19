@@ -5,6 +5,7 @@ const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
 
+const { invalidCleanCheckChanges } = require('./final-ai-review-fixtures')
 const {
   FINAL_REVIEW_MODEL,
   mergeOCRResumeResults,
@@ -377,6 +378,33 @@ function topologyResult(comments = []) {
   }
 }
 
+function prepareDiagnosticsReceipt(t) {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'final-stack-diagnostics-')
+  )
+  const diagnosticsPath = path.join(directory, 'diagnostics.jsonl')
+  const previousPath = process.env.OCR_ADAPTER_DIAGNOSTICS_PATH
+  process.env.OCR_ADAPTER_DIAGNOSTICS_PATH = diagnosticsPath
+  t.after(() => {
+    if (previousPath === undefined) {
+      delete process.env.OCR_ADAPTER_DIAGNOSTICS_PATH
+    } else {
+      process.env.OCR_ADAPTER_DIAGNOSTICS_PATH = previousPath
+    }
+    fs.rmSync(directory, { recursive: true, force: true })
+  })
+  return diagnosticsPath
+}
+
+function readDiagnosticsReceipts(diagnosticsPath) {
+  return fs
+    .readFileSync(diagnosticsPath, 'utf8')
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => JSON.parse(line))
+}
+
 test('accepts a trusted clean stack status without requiring a review body', async () => {
   const { github, state } = stackFixture()
   const stackContext = context(14)
@@ -448,6 +476,98 @@ test('accepts a trusted clean stack status without requiring a review body', asy
   github.rest.actions = {
     getWorkflowRun: async () => ({ data: state.workflowRun }),
   }
+
+  const originalCheck = { ...state.checkRuns[0], id: 901 }
+  for (const details_url of [
+    'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
+    'https://github.com/uzh-bf/klicker-uzh/runs/901',
+  ]) {
+    state.checkRuns[0] = { ...originalCheck, details_url }
+    assert.deepEqual(
+      await getVerifiedStackCleanEvidence({
+        github,
+        context: stackContext,
+        headSha: plan.headSha,
+        evidenceDigest,
+      }),
+      cleanEvidence
+    )
+  }
+  const trustedCheck = state.checkRuns[0]
+  for (const change of invalidCleanCheckChanges(901, 700)) {
+    state.checkRuns[0] = { ...trustedCheck, ...change }
+    assert.equal(
+      await getVerifiedStackCleanEvidence({
+        github,
+        context: stackContext,
+        headSha: plan.headSha,
+        evidenceDigest,
+      }),
+      null,
+      JSON.stringify(change)
+    )
+  }
+  state.checkRuns[0] = trustedCheck
+  const trustedWorkflow = state.workflowRun
+  for (const change of [
+    { id: 901 },
+    { event: 'pull_request_target' },
+    { path: '.github/workflows/other.yml' },
+    { head_branch: 'other' },
+    { head_sha: 'e'.repeat(40) },
+    { conclusion: 'failure' },
+    { repository: { full_name: 'other/repo' } },
+  ]) {
+    state.workflowRun = { ...trustedWorkflow, ...change }
+    assert.equal(
+      await getVerifiedStackCleanEvidence({
+        github,
+        context: stackContext,
+        headSha: plan.headSha,
+        evidenceDigest,
+      }),
+      null,
+      JSON.stringify(change)
+    )
+  }
+  state.workflowRun = trustedWorkflow
+  const trustedStatus = state.statuses[0]
+  state.statuses[0] = { ...trustedStatus, target_url: trustedCheck.details_url }
+  assert.equal(
+    await getVerifiedStackCleanEvidence({
+      github,
+      context: stackContext,
+      headSha: plan.headSha,
+      evidenceDigest,
+    }),
+    null
+  )
+  state.statuses[0] = trustedStatus
+  for (const change of [
+    { workflow_url: trustedCheck.details_url },
+    { workflow_run_id: 901 },
+    { evidence_digest: 'e'.repeat(64) },
+    { policy_digest: 'e'.repeat(64) },
+    { background_digest: 'e'.repeat(64) },
+  ]) {
+    state.checkRuns[0] = {
+      ...trustedCheck,
+      output: {
+        text: `<!-- final-ai-stack-clean-evidence/v1 ${encodeMetadata({ ...cleanEvidence, ...change })} -->`,
+      },
+    }
+    assert.equal(
+      await getVerifiedStackCleanEvidence({
+        github,
+        context: stackContext,
+        headSha: plan.headSha,
+        evidenceDigest,
+      }),
+      null,
+      JSON.stringify(change)
+    )
+  }
+  state.checkRuns[0] = trustedCheck
 
   assert.deepEqual(
     await getVerifiedStackCleanEvidence({
@@ -3171,7 +3291,7 @@ test('skips the stack pull-request comment when code and topology have no findin
   assert.equal(createdReviews.length, 0)
 })
 
-test('sends strict high-reasoning topology requests and rejects invalid owners', async () => {
+test('sends strict max-reasoning topology requests and rejects invalid owners', async (t) => {
   const { github } = stackFixture()
   const membership = await resolveStackMembership({
     github,
@@ -3184,19 +3304,21 @@ test('sends strict high-reasoning topology requests and rejects invalid owners',
     membership,
   })
   const codeResult = completeOCRResult([codeFinding()])
+  const diagnosticsPath = prepareDiagnosticsReceipt(t)
   let request
+  let fetchCalls = 0
   const response = await callTopologyModel({
     apiKey: 'dummy-token',
     codeResult,
     manifestBundle,
     rulesText: 'test rules',
-    schema: { type: 'object' },
     fetchImpl: async (_url, options) => {
+      assert.equal(_url, 'https://api.mistral.ai/v1/chat/completions')
+      assert.equal(options.redirect, 'error')
+      fetchCalls += 1
       request = JSON.parse(options.body)
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
+      return new Response(
+        JSON.stringify({
           model: FINAL_STACK_REVIEW_MODEL,
           choices: [
             {
@@ -3210,15 +3332,23 @@ test('sends strict high-reasoning topology requests and rejects invalid owners',
             },
           ],
           usage: { total_tokens: 50, prompt_tokens: 35, completion_tokens: 15 },
-        }),
-      }
+        })
+      )
     },
   })
   assert.equal(response.status, 'complete')
-  assert.equal(request.provider.require_parameters, true)
-  assert.equal(request.reasoning.effort, 'high')
-  assert.equal(request.max_tokens, 4096)
+  assert.equal(Object.hasOwn(request, 'provider'), false)
+  assert.equal(request.reasoning_effort, 'max')
+  assert.equal(request.max_tokens, 65536)
   assert.equal(request.response_format.json_schema.strict, true)
+  assert.equal(
+    Object.hasOwn(
+      request.response_format.json_schema.schema.properties.comments.items
+        .properties.layer_numbers,
+      'uniqueItems'
+    ),
+    false
+  )
   assert.equal(request.messages[0].content.includes('dummy-token'), false)
   assert.doesNotMatch(request.messages[1].content, /patch_hunks|operations/)
   assert.match(
@@ -3226,6 +3356,28 @@ test('sends strict high-reasoning topology requests and rejects invalid owners',
     /The cumulative change can fail after merge\./
   )
   assert.match(request.messages[1].content, /"start_line":4/)
+  const finding = {
+    path: 'src/one.ts',
+    layer_numbers: [1, 3],
+    start_line: 1,
+    end_line: 1,
+    category: 'bug',
+    severity: 'high',
+    content: 'Synthetic cross-layer contract failure.',
+  }
+  assert.equal(
+    validateTopologyResult(topologyResult([finding]), manifestBundle.manifest)
+      .comments.length,
+    1
+  )
+  assert.throws(
+    () =>
+      validateTopologyResult(
+        topologyResult([{ ...finding, layer_numbers: [1, 3, 1] }]),
+        manifestBundle.manifest
+      ),
+    /invalid/
+  )
   assert.throws(
     () =>
       validateTopologyResult(
@@ -3263,6 +3415,160 @@ test('sends strict high-reasoning topology requests and rejects invalid owners',
       ),
     /usage/
   )
+
+  assert.equal(fetchCalls, 1)
+  const receipts = readDiagnosticsReceipts(diagnosticsPath)
+  assert.equal(receipts.length, 1)
+  assert.equal(JSON.stringify(receipts[0]).includes('dummy-token'), false)
+  assert.deepEqual(receipts[0], {
+    schema_version: 1,
+    stage: 'topology',
+    requests: 1,
+    upstream_attempts: 1,
+    responses: 1,
+    missing_usage: 0,
+    prompt_tokens: 35,
+    completion_tokens: 15,
+    cached_prompt_tokens: 0,
+    uncached_prompt_tokens: 0,
+    cache_usage_responses: 0,
+    missing_cache_usage: 1,
+    invalid_cache_usage: 0,
+    unfinished_requests: 0,
+  })
+})
+
+test('retains topology usage when caller validation rejects the answer', async (t) => {
+  const { github } = stackFixture()
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  const manifestBundle = await buildStackSnapshot({
+    github,
+    context: context(),
+    membership,
+  })
+  const codeResult = completeOCRResult([codeFinding()])
+  const diagnosticsPath = prepareDiagnosticsReceipt(t)
+  const cases = [
+    ['{not valid json', /Topology model returned invalid structured output/],
+    [
+      JSON.stringify({
+        summary: { coverage: 'complete', comments: 0 },
+        comments: [],
+      }),
+      /Topology model exhausted its completion token limit/,
+      'length',
+    ],
+    [
+      JSON.stringify({
+        summary: { coverage: 'complete', comments: 1 },
+        comments: [
+          {
+            path: 'src/not-in-stack.ts',
+            layer_numbers: [1],
+            start_line: 1,
+            end_line: 1,
+            category: 'bug',
+            severity: 'high',
+            content: 'Invalid owner',
+          },
+        ],
+      }),
+      /Topology finding 1 is invalid/,
+    ],
+  ]
+  let fetchCalls = 0
+  for (const [content, errorPattern, finishReason = 'stop'] of cases) {
+    await assert.rejects(
+      callTopologyModel({
+        apiKey: 'dummy-token',
+        codeResult,
+        manifestBundle,
+        rulesText: 'test rules',
+        schema: { type: 'object' },
+        fetchImpl: async () => {
+          fetchCalls += 1
+          return new Response(
+            JSON.stringify({
+              model: FINAL_STACK_REVIEW_MODEL,
+              choices: [{ finish_reason: finishReason, message: { content } }],
+              usage: {
+                total_tokens: 50,
+                prompt_tokens: 35,
+                completion_tokens: 15,
+              },
+            })
+          )
+        },
+      }),
+      errorPattern
+    )
+  }
+  assert.equal(fetchCalls, cases.length)
+  const receipts = readDiagnosticsReceipts(diagnosticsPath)
+  assert.equal(receipts.length, cases.length)
+  for (const receipt of receipts) {
+    assert.deepEqual(receipt, {
+      schema_version: 1,
+      stage: 'topology',
+      requests: 1,
+      upstream_attempts: 1,
+      responses: 1,
+      missing_usage: 0,
+      prompt_tokens: 35,
+      completion_tokens: 15,
+      cached_prompt_tokens: 0,
+      uncached_prompt_tokens: 0,
+      cache_usage_responses: 0,
+      missing_cache_usage: 1,
+      invalid_cache_usage: 0,
+      unfinished_requests: 0,
+    })
+  }
+})
+
+test('keeps the topology deadline and records the aborted request', async (t) => {
+  const { github } = stackFixture()
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  const manifestBundle = await buildStackSnapshot({
+    github,
+    context: context(),
+    membership,
+  })
+  const codeResult = completeOCRResult([codeFinding()])
+  const diagnosticsPath = prepareDiagnosticsReceipt(t)
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  let fetchCalls = 0
+  const pending = callTopologyModel({
+    apiKey: 'dummy-token',
+    codeResult,
+    manifestBundle,
+    rulesText: 'test rules',
+    schema: { type: 'object' },
+    fetchImpl: (_url, options) => {
+      fetchCalls += 1
+      return new Promise((_resolve, reject) => {
+        options.signal.addEventListener('abort', () =>
+          reject(new Error('synthetic abort'))
+        )
+      })
+    },
+  })
+  assert.equal(fetchCalls, 1)
+  t.mock.timers.tick(600_000)
+  await assert.rejects(pending, /upstream request failed/)
+  const receipts = readDiagnosticsReceipts(diagnosticsPath)
+  assert.equal(receipts.length, 1)
+  assert.equal(receipts[0].stage, 'topology')
+  assert.equal(receipts[0].upstream_attempts, 1)
+  assert.equal(receipts[0].responses, 0)
 })
 
 test('latest stack drift becomes an error even when the top SHA is unchanged', () => {

@@ -150,10 +150,14 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Test evaluation launcher without private submodule access
+        timeout-minutes: 10
         run: |
           node --test util/read-klicker-eval-config.test.mjs
           bash util/test-klicker-eval-wrapper.sh
           uv run --no-project --python 3.12 python -m unittest util/test-klicker-eval-judge.py
+          judge_image="$(python3 -c "import runpy; print(runpy.run_path('util/klicker-eval-judge.py')['IMAGE'])")"
+          docker run --rm --network none --env KLICKER_EVAL_GATEWAY_TEST=1 --env LITELLM_LOCAL_MODEL_COST_MAP=True --mount "type=bind,source=$GITHUB_WORKSPACE,target=/work,readonly" --workdir /work --entrypoint python3 "$judge_image" -m unittest util/test-klicker-eval-judge.py
+          uv run --no-project --python 3.12 --with pytest==9.1.1 python -m pytest -q -p no:cacheprovider evaluation/tests/test_klicker_trajectories.py
 
       - name: Install Devrouter profile planner
         run: bash .github/scripts/install-devrouter.sh
@@ -161,7 +165,7 @@ jobs:
       - name: Check hosted pnpm cache policy
         run: node --test ./.github/scripts/hosted-pnpm-cache.test.cjs
 
-      - name: Check CI queue policy
+      - name: Check CI and review contracts
         run: |
           node --test \
             .github/scripts/direct-script-invocations.test.cjs \
@@ -172,9 +176,15 @@ jobs:
             .github/scripts/ci-obsolete-runs.test.cjs \
             .github/scripts/ci-event-gates.test.cjs \
             .github/scripts/draft-sync-prs.test.cjs \
+            .github/scripts/sync-pr-changelog.test.cjs \
             .github/scripts/sync-ancestry-guard.test.cjs \
             .github/scripts/required-ci-status.test.cjs \
             .github/scripts/ocr-self-update-guard.test.cjs \
+            .github/scripts/ocr-mistral-adapter.test.cjs \
+            .github/scripts/ocr-draft-review.test.cjs \
+            .github/scripts/ocr-review-tools.test.cjs \
+            .github/scripts/final-ai-review.test.js \
+            .github/scripts/final-ai-stack-review.test.js \
             .github/scripts/stg-release-promoter.test.js \
             .github/scripts/staging-image-plan.test.cjs \
             .github/scripts/staging-image-status.test.cjs \
@@ -226,6 +236,7 @@ jobs:
 
       - name: Check Playwright CI contracts
         run: |
+          bash util/reconcile-public-pr-arm64-runner-group.test.sh
           pnpm run check:playwright-ci
           node --test .github/scripts/playwright-pnpm-seed-fallback.test.cjs
           node --test .github/scripts/pnpm-install-retry.test.cjs

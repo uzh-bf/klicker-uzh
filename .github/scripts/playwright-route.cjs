@@ -1,5 +1,7 @@
 const fs = require('node:fs')
 
+const { isSyncBranch } = require('./draft-sync-prs.cjs')
+
 const ROUTE_SCHEMA_VERSION = 1
 
 function fail(message) {
@@ -22,6 +24,7 @@ function choosePlaywrightRoute(input) {
     headRepository,
     prAuthor,
     prDraft,
+    headRef,
     pullRequestNumber,
     publicRolloutEnabled,
     publicRolloutCanaryPr,
@@ -102,6 +105,23 @@ function choosePlaywrightRoute(input) {
   if (prDraft === 'true') {
     reasons.push(smartDraft ? 'smart-draft-enabled' : 'smart-draft-disabled')
   }
+  // A draft sync pull request defers Playwright to its ready transition. The
+  // controller advances the draft after every source push, so validating each
+  // intermediate head would repeat the suite for heads that are never merged.
+  if (
+    prDraft === 'true' &&
+    validRepository &&
+    headRepository === repository &&
+    isSyncBranch(headRef)
+  ) {
+    reasons.push('draft-sync-deferred')
+    return {
+      schemaVersion: ROUTE_SCHEMA_VERSION,
+      route: 'hosted',
+      selectorPrState: 'deferred',
+      reasonCodes: [...new Set(reasons)].sort(),
+    }
+  }
   const smartDraftApplies =
     prDraft === 'true' && publicEligible && smartDraft && !forceHosted
   const publicReady =
@@ -125,6 +145,7 @@ function envInput(env = process.env) {
     headRepository: env.HEAD_REPOSITORY,
     prAuthor: env.PR_AUTHOR,
     prDraft: env.PR_DRAFT,
+    headRef: env.HEAD_REF ?? '',
     pullRequestNumber: env.PR_NUMBER,
     publicRolloutEnabled: env.PUBLIC_ROLLOUT_ENABLED ?? '',
     publicRolloutCanaryPr: env.PUBLIC_ROLLOUT_CANARY_PR ?? '',

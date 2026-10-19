@@ -283,7 +283,7 @@ the target process. The committed KB_doc_query canary proves synthetic
 transport and persistence only; it must not be reported as FineCo quality or
 replace an authorized EXPERT_df_fineco_expert binding.
 
-For assistance-attribution checks, `apps/chat/scripts/run-tutor-trajectories.mjs`
+For assistance-attribution checks, `evaluation/run-tutor-trajectories.mjs`
 uses the same local target directly, without extending its single-message HTTP
 API. The corpus schema, per-turn verification and trajectory driver live in
 `apps/chat/scripts/tutor-trajectory.mjs`; the target module keeps transport. It follows actual persisted replies and parent IDs across a trajectory,
@@ -301,7 +301,7 @@ obligations to case IDs and one-based assessment turns without changing the
 strict trajectory schema. Pass it with `--numeric` so the runner rejects an
 obligation without a matching assessment turn before login. Annotate claims from visible responses, convert their
 units, then call `compareTutorNumericClaim` from
-`apps/chat/scripts/tutor-numeric-reference.mjs` with the formula, explicit
+`evaluation/tutor-numeric-reference.mjs` with the formula, explicit
 inputs, numeric claim and the sidecar's absolute tolerance. Rates are decimal
 fractions and cash flows use annual periods. Missing claims remain unassessed;
 a numerical match alone does not establish correct assistance attribution.
@@ -319,11 +319,11 @@ Run the script on the host against the exact routed synthetic runtime. Supply
 `KLICKER_EVAL_PARTICIPANT_USERNAME`, and `KLICKER_EVAL_PARTICIPANT_PASSWORD` through
 the existing local evaluation environment. Trust the local CA through
 `NODE_EXTRA_CA_CERTS` when using HTTPS; do not disable certificate verification.
-The default model is the fixed `gpt-5.6-luna` selection. Test `auto` separately
-through `KLICKER_EVAL_MODEL_ID`; it is not a controlled fixed-model comparison.
+The default model is the fixed `gpt-6-luna` selection. Auto routing remains
+unqualified for paid evaluation; an `auto` arm label does not select that route.
 
 ```sh
-node apps/chat/scripts/run-tutor-trajectories.mjs \
+node evaluation/run-tutor-trajectories.mjs \
   --corpus evaluation/data/trajectories/tutor-attribution-v2.json \
   --numeric evaluation/data/trajectories/tutor-attribution-v2-numeric.json \
   --output project/_local/tutor-baseline.jsonl --arm baseline --repeats 2 \
@@ -557,10 +557,14 @@ aborted, and tool-only turns still show valid completed sources instead of
 losing them on reload. The source component suppresses the section when
 normalization produces no sources.
 Within that section, sources with a valid rendered citation appear under
-“Cited in this answer”. Other eligible sources remain available behind a
-collapsed “Other retrieved material” disclosure. With no citations, including
-tool-only turns, all source cards start collapsed. Grouping preserves original
-source indices and does not claim to identify every source the model used.
+“Cited in this answer”, previewed as the first 12 cited cards. The remaining
+cited cards and the uncited sources stay available behind a collapsed “Other
+retrieved material” disclosure, whose count covers everything it holds. With no
+citations, including tool-only turns, all source cards start collapsed.
+Grouping preserves original source indices and does not claim to identify every
+source the model used. Every cited card keeps its DOM target: a citation chip
+whose card sits in the collapsed disclosure opens it before scrolling to and
+focusing the card.
 The runtime render boundary is deliberately narrow: `RuntimeProvider` selects only the active
 thread's messages/running state and the actions it calls, while `Thread` renders its message rows
 through the assistant-ui 0.15 children renderer and passes the chatbot avatar through context. Runtime
@@ -902,7 +906,11 @@ the normalizer unwraps that compatibility layer before applying the same rules. 
 pipeline's literal `"N/A"` as absent; it dedupes by file/page/url and normalized video range
 (`startSec`/`endSec`), so citations for different video ranges remain separate, then numbers what
 survives **1..N in first-appearance order across every doc_query call in one message**, capped at
-`MAX_SOURCES`. Two rules follow from that numbering and are easy to break independently:
+`MAX_SOURCES` (99, the largest two-digit marker the chip parser and `parseCitationHref` accept).
+Sources beyond the cap are not dropped: they stay in the model-facing projection with a null
+`citation_index`, so the model still reads their text but cannot cite them, and the prompt contract
+tells the model not to infer absence from a null index. Two rules follow from that numbering and
+are easy to break independently:
 
 Chatbot MCP configs are optional unless their existing `parameters` JSON contains the reserved
 runtime policy `{ "required": true, "toolAlias": "<name>" }`. A strict config must allow exactly
