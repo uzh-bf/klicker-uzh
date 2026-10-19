@@ -122,6 +122,80 @@ for source delivery or operator-exported billing evidence.
   Full local application checks/build and paid runtime verification have not run.
 - Scoped static scan: unchanged mutable action references were reported;
   embedded Bash analysis is partially unavailable. No new source finding.
-- Status: implementation verification and integrated main-session self-review.
-  Pull request not yet created. Remaining: draft publication, exact-head
-  CI/feedback and operator activation decision.
+- The initial source package was published and merged as
+  [opt-in WarpBuild overflow](https://github.com/uzh-bf/klicker-uzh/pull/6620).
+  The separate [draft-conversion fix](https://github.com/uzh-bf/klicker-uzh/pull/6615)
+  was also merged. These source merges do not establish cloud runtime acceptance.
+
+### Approved regression follow-up
+
+The operator approved a corrective source package and its normal merge to `v3`
+after CI and actual final review. The separately approved finite activation
+sequence begins only after this correction is verified merged. Its access,
+spending, reconciliation and recovery details remain in the private operator
+record rather than public source artifacts.
+
+- Worktree: `trees/rs/warpbuild-overflow-guards`; branch:
+  `rs/warpbuild-overflow-guards`; baseline:
+  `dc47fecf65ed5885cd63dcdb291cc84fdc30a6fe`.
+- Main-session ownership and no subagents remain binding. The planning,
+  simplification and integrated review passes are self-reviews; the normal
+  forge final review remains required before merge.
+- Preserve workflow execution, providers, selectors, tickets, permissions,
+  service topology and coverage. Change only the existing policy validator,
+  its mutation test and the existing equivalent-run wiring assertion.
+- Extend the existing runner-policy seam to reject candidate commands,
+  additional command lines, alternate shells and working-directory overrides
+  on route/metadata preparation. Reject workflow/job directory defaults that
+  could change the trusted command's execution context. Allowlist preparation
+  environment keys at workflow, job and step scope, and require every route
+  identity expression so environment overrides cannot change trusted execution.
+- Require the complete no-cloud-reuse condition, including the existing
+  lifecycle predicate and metadata preceding equivalent reuse. Correct the
+  equivalent-run test's obsolete pre-provider assertion; its expected value
+  remains the complete machine condition.
+- Reproduce the guard failures before correction, then run both existing
+  Playwright and CI/review contract portfolios, event-gate tests, formatting,
+  focused static analysis and staged data hygiene. No application runtime is
+  needed for these pure workflow contracts.
+- Follow-up package is justified by defects introduced in the recently merged
+  source. Terminal source evidence is passing exact-head CI, feedback disposition,
+  actual final review, a guarded normal merge and verified merge contents.
+  A failed source gate blocks only the dependent activation sequence.
+- Planning self-review: the workflow already executes trusted commands; this
+  correction strengthens regression enforcement without changing execution.
+  Existing machine-contract tests are the narrow stable seams. No new helper,
+  executable, workflow, dependency or test file is needed.
+- Verification: the policy mutation test failed before correction. After the
+  correction and target integration, 96 Playwright CI, 56 equivalent-run and
+  20 event-gate contracts
+  pass in network-isolated Node 24.21.0. JavaScript syntax, focused Biome,
+  plan formatting and whitespace checks pass. Scoped Opengrep ran 200 applicable
+  rules on the three executable files with no findings.
+- The broader local CI/review batch encountered unavailable test tooling and
+  linked-checkout metadata. Its passing hosted producer is still required;
+  the focused counts above are not proof that the whole batch passed locally.
+  No full local application build/check or cloud runtime validation ran.
+- Main-session simplification and correctness review found no extra helper,
+  runtime change or unrelated cleanup necessary. Self-review is not independent
+  final-review evidence. Status: source correction verified locally; hosted CI,
+  actual final review, guarded merge and conditional activation remain pending.
+- Draft review follow-up extends the same mutation table for execution-affecting
+  environment keys at four scopes, route identity drift and reordered reuse.
+  Both environment and ordering defects failed before their respective guard
+  corrections and pass afterward. These are regression enforcement gaps; the
+  workflow already uses its trusted environment and current step order.
+- A further verified draft finding extends this same contract to the complete
+  preparation sequence. Require the existing run blocks, action inputs and
+  order, reject extra steps and job containers/services, and allowlist every
+  step environment. This closes alternate paths that could replace the plan
+  or route around the previously checked commands. Step names, comments and
+  summary display text remain outside the executable contract; test-owned
+  display edits must pass while inserted expressions fail. Reject inline
+  GitHub expressions before comment or display normalization. The existing
+  mutation table remains the primary seam. No workflow or runtime change.
+- Require the existing opt-in cache expression as well as its environment key;
+  missing, constant and alternate gates must reject. Summary fixture rewrites
+  assert their targets and prove the display mutation ran. The same mutation
+  table covers each action input and reports the failing mutation's index and
+  source. Fixture handling remains local; no new helper or runtime behavior.
