@@ -170,7 +170,14 @@ stays out of Git.
 
 ## Progress
 
-- Status: approved 2026-10-19 with a 6-passage, 8,000-character headroom; slice 1 in progress.
+- Status: slice 1 committed; final review and draft PR next.
+- Evidence: the focused fusion suite passes (37 tests). Biome reports no errors
+  on the touched files, and Prettier passes on the docs page. The dev container
+  could not start because the host's Docker network address pools are
+  exhausted, so these checks ran on the host with the primary checkout's
+  dependencies. A host-side chat type check showed no errors in the touched
+  files; the full chat type check and build are left to CI.
+- Test delta: 3 added (round-robin, rank order, source cards), 4 rewritten for the new rule, the rest unchanged.
 - Branch: `rs/w9b-rank-preserving-selection` from `origin/v3-ai` at `f45f6ca714`.
 - Planner: pass 2 asked for revisions to two named tests and the outcome docs
   line, both applied. Pass 1 asked for a revision with three blocking findings: the budget
