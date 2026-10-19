@@ -202,11 +202,15 @@ function normalizedNodes(
   return Array.from(nodes.values())
 }
 
-function normalizedEdges(rows: KnowledgeGraphEdgeRow[]): KnowledgeGraphEdge[] {
+function normalizedEdges(
+  rows: KnowledgeGraphEdgeRow[],
+  context: PublishedKnowledgeGraph
+): KnowledgeGraphEdge[] {
   const edges = new Map<string, KnowledgeGraphEdge>()
+  const sources = sourceMap(context)
 
   for (const row of rows) {
-    const edge = normalizeKnowledgeGraphEdge(row)
+    const edge = normalizeKnowledgeGraphEdge(row, sources)
     if (edge !== null && !edges.has(edge.id)) {
       edges.set(edge.id, edge)
     }
@@ -256,7 +260,8 @@ export async function readKnowledgeGraphOverview(
           )
         )
   const edges = normalizedEdges(
-    edgeRows.slice(0, KNOWLEDGE_GRAPH_OVERVIEW_EDGE_LIMIT)
+    edgeRows.slice(0, KNOWLEDGE_GRAPH_OVERVIEW_EDGE_LIMIT),
+    context
   )
 
   return response(
@@ -304,7 +309,8 @@ export async function readKnowledgeGraphNeighbors(
     )
   )
   const edges = normalizedEdges(
-    edgeRows.slice(0, KNOWLEDGE_GRAPH_NEIGHBOR_EDGE_LIMIT)
+    edgeRows.slice(0, KNOWLEDGE_GRAPH_NEIGHBOR_EDGE_LIMIT),
+    context
   )
 
   return response(
