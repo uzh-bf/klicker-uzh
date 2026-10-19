@@ -163,4 +163,16 @@ record rather than public source artifacts.
   correction strengthens regression enforcement without changing execution.
   Existing machine-contract tests are the narrow stable seams. No new helper,
   executable, workflow, dependency or test file is needed.
-- Status: approved; regression reproduction and correction are in progress.
+- Verification: the policy mutation test failed before correction. After the
+  correction, 96 Playwright CI, 56 equivalent-run and 19 event-gate contracts
+  pass in network-isolated Node 24.21.0. JavaScript syntax, focused Biome,
+  plan formatting and whitespace checks pass. Scoped Opengrep ran 200 applicable
+  rules on the three executable files with no findings.
+- The broader local CI/review batch encountered unavailable test tooling and
+  linked-checkout metadata. Its passing hosted producer is still required;
+  the focused counts above are not proof that the whole batch passed locally.
+  No full local application build/check or cloud runtime validation ran.
+- Main-session simplification and correctness review found no extra helper,
+  runtime change or unrelated cleanup necessary. Self-review is not independent
+  final-review evidence. Status: source correction verified locally; hosted CI,
+  actual final review, guarded merge and conditional activation remain pending.

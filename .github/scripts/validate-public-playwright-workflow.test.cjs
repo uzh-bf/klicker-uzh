@@ -106,11 +106,54 @@ test('public runner jobs require their exact scheduling role and reject unknown 
         `\${{ github.sha }}`
     },
     (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'route').run =
+        'node .candidate/.github/scripts/playwright-route.cjs --output route.json'
+    },
+    (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'route').run +=
+        '\nnode .candidate/script.cjs'
+    },
+    (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'route')['working-directory'] =
+        '.candidate'
+    },
+    (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'route').shell = 'python'
+    },
+    (w) => {
       w.jobs.prepare.steps.find((s) => s.id === 'metadata').run =
         'node .candidate/script.cjs'
     },
     (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'metadata').run +=
+        '\nnode .candidate/script.cjs'
+    },
+    (w) => {
+      const metadata = w.jobs.prepare.steps.find((s) => s.id === 'metadata')
+      metadata.run = `node .candidate/script.cjs\n${metadata.run}`
+    },
+    (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'metadata')[
+        'working-directory'
+      ] = '.candidate'
+    },
+    (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'metadata').shell = 'python'
+    },
+    (w) => {
+      w.defaults = { run: { 'working-directory': '.candidate' } }
+    },
+    (w) => {
+      w.jobs.prepare.defaults = {
+        run: { 'working-directory': '.candidate' },
+      }
+    },
+    (w) => {
       w.jobs.prepare.steps.find((s) => s.id === 'equivalent').if = 'true'
+    },
+    (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'equivalent').if +=
+        " || steps.metadata.outputs.provider == 'warpbuild'"
     },
     (w) => {
       w.on.workflow_call.outputs.should_run.value = `\${{ jobs.prepare.outputs.should_run }}`

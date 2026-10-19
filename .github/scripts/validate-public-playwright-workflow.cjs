@@ -221,13 +221,28 @@ function validatePublicRunnerRoles(workflow) {
     }
   }
   if (
-    !metadata?.run?.includes(
-      'node .ci-control/.github/scripts/playwright-plan-metadata.cjs'
-    )
+    workflow?.defaults?.run?.['working-directory'] !== undefined ||
+    jobs.prepare?.defaults?.run?.['working-directory'] !== undefined ||
+    metadata?.['working-directory'] !== undefined ||
+    metadata?.shell !== 'bash' ||
+    typeof metadata?.run !== 'string' ||
+    metadata.run
+      .trim()
+      .replace(/\\\r?\n[ \t]*/g, ' ')
+      .replace(/[ \t]+/g, ' ') !==
+      'node .ci-control/.github/scripts/playwright-plan-metadata.cjs --plan playwright-execution-plan.json --route route.json --output "$GITHUB_OUTPUT"'
   ) {
     issues.push('runner metadata must come from trusted control')
   }
   const route = jobs.prepare?.steps?.find((step) => step.id === 'route')
+  if (
+    route?.run !==
+      'node .ci-control/.github/scripts/playwright-route.cjs --output route.json' ||
+    route?.shell !== 'bash' ||
+    route?.['working-directory'] !== undefined
+  ) {
+    issues.push('cloud admission must execute only the trusted route command')
+  }
   const expectedEnv = {
     WARPBUILD_ADMISSIONS: `\${{ vars.PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSIONS }}`,
     HEAD_SHA: `\${{ github.event.pull_request.head.sha }}`,
@@ -245,9 +260,8 @@ function validatePublicRunnerRoles(workflow) {
     (step) => step.id === 'equivalent'
   )
   if (
-    !equivalent?.if?.startsWith(
-      "steps.metadata.outputs.provider != 'warpbuild' &&"
-    )
+    equivalent?.if !==
+    `steps.metadata.outputs.provider != 'warpbuild' && ((github.event_name == 'push' && github.ref != 'refs/heads/v3') || (github.event_name == 'pull_request' && contains(fromJSON('["ready_for_review","edited","reopened"]'), github.event.action)))`
   ) {
     issues.push(
       'admitted cloud work must execute rather than reuse another backend'
