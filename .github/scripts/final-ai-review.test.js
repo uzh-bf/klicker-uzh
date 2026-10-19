@@ -5,6 +5,7 @@ const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
 
+const { invalidCleanCheckChanges } = require('./final-ai-review-fixtures')
 const {
   isConsolidationBaseBranch,
   isEligibleBaseBranch,
@@ -3241,6 +3242,73 @@ test('accepts a trusted clean status without requiring a review body', async () 
     repository: { full_name: 'uzh-bf/klicker-uzh' },
   }
 
+  const originalCheck = { ...state.checkRuns[0], id: 456 }
+  for (const details_url of [
+    'https://github.com/uzh-bf/klicker-uzh/actions/runs/123',
+    'https://github.com/uzh-bf/klicker-uzh/runs/456',
+  ]) {
+    state.checkRuns[0] = { ...originalCheck, details_url }
+    assert.equal(
+      await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }),
+      true
+    )
+  }
+  const trustedCheck = state.checkRuns[0]
+  for (const change of invalidCleanCheckChanges(456, 123)) {
+    state.checkRuns[0] = { ...trustedCheck, ...change }
+    assert.equal(
+      await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }),
+      false,
+      JSON.stringify(change)
+    )
+  }
+  state.checkRuns[0] = trustedCheck
+  const trustedWorkflow = state.workflowRun
+  for (const change of [
+    { id: 456 },
+    { event: 'pull_request_target' },
+    { path: '.github/workflows/other.yml' },
+    { head_branch: 'other' },
+    { head_sha: 'e'.repeat(40) },
+    { conclusion: 'failure' },
+    { repository: { full_name: 'other/repo' } },
+  ]) {
+    state.workflowRun = { ...trustedWorkflow, ...change }
+    assert.equal(
+      await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }),
+      false,
+      JSON.stringify(change)
+    )
+  }
+  state.workflowRun = trustedWorkflow
+  const trustedStatus = state.statuses[0]
+  state.statuses[0] = { ...trustedStatus, target_url: trustedCheck.details_url }
+  assert.equal(
+    await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }),
+    false
+  )
+  state.statuses[0] = trustedStatus
+  for (const change of [
+    { workflow_url: trustedCheck.details_url },
+    { workflow_run_id: 456 },
+    { evidence_digest: 'e'.repeat(64) },
+    { policy_digest: 'e'.repeat(64) },
+    { background_digest: 'e'.repeat(64) },
+  ]) {
+    state.checkRuns[0] = {
+      ...trustedCheck,
+      output: {
+        text: `<!-- ${FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA} ${encodeMetadata({ ...cleanEvidence, ...change })} -->`,
+      },
+    }
+    assert.equal(
+      await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }),
+      false,
+      JSON.stringify(change)
+    )
+  }
+  state.checkRuns[0] = trustedCheck
+
   assert.equal(
     await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }),
     true
@@ -4323,15 +4391,19 @@ test('selects incremental attestation only for bounded repaired changes', async 
   assert.equal(changedDigest.mode, 'full')
   state.rules = '{"rules":[]}'
 
-  state.policyFiles['.github/workflows/check-ocr-final-review.yml'] =
-    'changed trusted workflow'
-  const changedPolicy = await buildReviewPlan({
-    github,
-    context,
-    pull: state.pull,
-  })
-  assert.equal(changedPolicy.mode, 'full')
-  delete state.policyFiles['.github/workflows/check-ocr-final-review.yml']
+  for (const policyPath of [
+    '.github/workflows/check-ocr-final-review.yml',
+    '.github/scripts/final-ai-review-shared.js',
+  ]) {
+    state.policyFiles[policyPath] = 'changed trusted policy'
+    const changedPolicy = await buildReviewPlan({
+      github,
+      context,
+      pull: state.pull,
+    })
+    assert.equal(changedPolicy.mode, 'full')
+    delete state.policyFiles[policyPath]
+  }
 
   state.pull = {
     ...state.pull,

@@ -334,6 +334,9 @@ test('progress reconstructs known events without reflecting private fields or wo
       '[ocr]   ▶ file_read "OCR_PRIVATE_SENTINEL"',
       '[ocr]   ✔ file_read (3ms)',
       '[ocr]   ✘ code_search failed: OCR_PRIVATE_SENTINEL',
+      '[ocr]   ▶ lookup_library_docs "OCR_PRIVATE_SENTINEL"',
+      '[ocr]   ✔ lookup_library_docs (3ms)',
+      '[ocr]   ✘ lookup_library_docs failed: OCR_PRIVATE_SENTINEL',
       '[ocr] Plan completed for group "OCR_PRIVATE_SENTINEL"',
       '[ocr] Review filter removed 2 comment(s) for group "OCR_PRIVATE_SENTINEL"',
       '[ocr] token budget reached (used 3M + group est 2M) OCR_PRIVATE_SENTINEL',
@@ -357,6 +360,9 @@ test('progress reconstructs known events without reflecting private fields or wo
     'OCR progress event=tool_started tool=file_read\n',
     'OCR progress event=tool_completed tool=file_read\n',
     'OCR progress event=tool_failed tool=code_search\n',
+    'OCR progress event=tool_started tool=lookup_library_docs\n',
+    'OCR progress event=tool_completed tool=lookup_library_docs\n',
+    'OCR progress event=tool_failed tool=lookup_library_docs\n',
     'OCR progress event=phase_completed phase=planning\n',
     'OCR progress event=phase_completed phase=filtering\n',
     'OCR progress event=budget_reached\n',
@@ -856,6 +862,62 @@ test('failure summary emits only complete allowlisted counters without changing 
     }
   } finally {
     await adapter.close()
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('upstream error summaries validate fields and retain the final non-null rejection', async () => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-upstream-summary-')
+  )
+  const file = path.join(directory, 'receipt.jsonl')
+  const row = (last_upstream_error) => ({
+    schema_version: 1,
+    last_upstream_error,
+  })
+  const first = row({ http_status: 401, code: 401 })
+  const last = row({ http_status: 402, code: 402 })
+  const cases = [
+    [[], 'status=unavailable'],
+    [[{ schema_version: 1 }], 'status=unavailable'],
+    [[row(null)], 'status=none'],
+    [
+      [first, last, row(null)],
+      'status=complete stage=adapter http_status=402 code=402',
+    ],
+    [
+      [row({ http_status: 404, code: 'unknown' })],
+      'status=complete stage=adapter http_status=404 code=unknown',
+    ],
+    [
+      [row({ http_status: null, code: 'unknown' })],
+      'status=complete stage=adapter http_status=unknown code=unknown',
+    ],
+    ...[
+      'PRIVATE_PROVIDER_SENTINEL',
+      { http_status: '401', code: 401 },
+      { http_status: 999, code: 401 },
+      { http_status: 401, code: 'PRIVATE_PROVIDER_SENTINEL' },
+      { http_status: 401, code: 418 },
+    ].map((value) => [[first, row(value)], 'status=unknown']),
+  ]
+  try {
+    for (const [rows, expected] of cases) {
+      fs.writeFileSync(file, rows.map(JSON.stringify).join('\n'))
+      const summaryPath = path.join(directory, 'summary.md')
+      fs.writeFileSync(summaryPath, '')
+      const result = await runCli(['summary', file], {
+        GITHUB_STEP_SUMMARY: summaryPath,
+      })
+      assert.equal(result.code, 0)
+      const line = result.stdout
+        .split('\n')
+        .find((line) => line.startsWith('OCR upstream_error '))
+      assert.ok(line.startsWith('OCR upstream_error ' + expected), line)
+      assert.ok(fs.readFileSync(summaryPath, 'utf8').includes(line))
+      assert.doesNotMatch(result.stdout, /PRIVATE_PROVIDER_SENTINEL/)
+    }
+  } finally {
     fs.rmSync(directory, { recursive: true, force: true })
   }
 })
@@ -2814,6 +2876,145 @@ test('upstream failures are redacted to a fixed safe error', async () => {
   }
 })
 
+test('rejection diagnostics keep only HTTP status and allowlisted numeric codes', async () => {
+  const secret = 'PRIVATE_PROVIDER_SENTINEL'
+  const cases = [
+    ...[400, 401, 402, 403, 408, 429, 502, 503].map((code) => [
+      JSON.stringify({ error: { code, message: secret, metadata: secret } }),
+      code,
+    ]),
+    ...['401', 418, null, { code: 401 }, secret].map((code) => [
+      JSON.stringify({ error: { code, message: secret } }),
+      'unknown',
+    ]),
+    [
+      JSON.stringify({ code: 401, metadata: { error: { code: 401 } } }),
+      'unknown',
+    ],
+    [`{"error":${secret}`, 'unknown'],
+    ['', 'unknown'],
+    [
+      JSON.stringify({ error: { code: 401 }, padding: secret.repeat(2000) }),
+      'unknown',
+    ],
+  ]
+  for (const [body, expected] of cases) {
+    const fetchImpl = upstream(() => new Response(body, { status: 401 }))
+    const adapter = await startAdapter({ apiKey: secret, fetchImpl })
+    try {
+      const result = await postJson(adapter, {
+        messages: [{ role: 'user', content: 'synthetic' }],
+      })
+      assert.equal(result.status, 502)
+      assert.equal(result.json.error.code, 'upstream_error')
+      const receipt = adapter.diagnostics()
+      assert.deepEqual(receipt.last_upstream_error, {
+        http_status: 401,
+        code: expected,
+      })
+      assert.equal(receipt.upstream_attempts, 1)
+      assert.equal(receipt.responses, 0)
+      assert.equal(receipt.failures.upstream_rejected, 1)
+      assert.equal(estimateCost(JSON.stringify(receipt)), null)
+      assert.doesNotMatch(
+        JSON.stringify(receipt) + result.text,
+        /PRIVATE_PROVIDER_SENTINEL/
+      )
+    } finally {
+      await adapter.close()
+    }
+  }
+  for (const response of [
+    { status: 401, ok: false, body: null },
+    {
+      status: 401,
+      ok: false,
+      body: {
+        getReader: () => ({
+          read: async () => {
+            throw Error(secret)
+          },
+        }),
+      },
+    },
+    new Response('x'.repeat(65), { status: 401 }),
+  ]) {
+    const adapter = await startAdapter({
+      apiKey: secret,
+      maxResponseBytes: 64,
+      fetchImpl: async () => response,
+    })
+    try {
+      assert.equal(
+        (
+          await postJson(adapter, {
+            messages: [{ role: 'user', content: 'synthetic' }],
+          })
+        ).status,
+        502
+      )
+      assert.deepEqual(adapter.diagnostics().last_upstream_error, {
+        http_status: 401,
+        code: 'unknown',
+      })
+      assert.equal(adapter.diagnostics().failures.upstream_rejected, 1)
+    } finally {
+      await adapter.close()
+    }
+  }
+})
+
+test('late rejection bodies cannot overwrite a newer observed error or an earlier snapshot', async () => {
+  const draining = Promise.withResolvers()
+  const release = Promise.withResolvers()
+  let read = false
+  const fetchImpl = upstream((_request, index) =>
+    index === 1
+      ? {
+          status: 401,
+          ok: false,
+          body: {
+            getReader: () => ({
+              read: async () => {
+                if (read) return { done: true }
+                read = true
+                draining.resolve()
+                return {
+                  done: false,
+                  value: Buffer.from(await release.promise),
+                }
+              },
+            }),
+          },
+        }
+      : jsonResponse(402, { error: { code: 402 } })
+  )
+  const adapter = await startAdapter({ apiKey: 'synthetic', fetchImpl })
+  const body = { messages: [{ role: 'user', content: 'synthetic' }] }
+  const first = postJson(adapter, body)
+  try {
+    await draining.promise
+    const snapshot = adapter.diagnostics()
+    assert.equal((await postJson(adapter, body)).status, 502)
+    release.resolve('{"error":{"code":401}}')
+    assert.equal((await first).status, 502)
+    assert.deepEqual(adapter.diagnostics().last_upstream_error, {
+      http_status: 402,
+      code: 402,
+    })
+    assert.deepEqual(snapshot.last_upstream_error, {
+      http_status: 401,
+      code: 'unknown',
+    })
+    assert.equal(adapter.diagnostics().upstream_attempts, 2)
+    assert.equal(adapter.diagnostics().failures.upstream_rejected, 2)
+  } finally {
+    release.resolve('{}')
+    await first
+    await adapter.close()
+  }
+})
+
 test('adapter classifies failures once without changing responses or accounting', async () => {
   const cases = [
     [
@@ -3230,6 +3431,70 @@ test('default upstream transport cancels an open response when the adapter clien
   assert.equal(receipt.failures.cancelled, 1)
   assert.equal(receipt.accepted_responses, 0)
   assert.equal(receipt.failures.upstream_timeout, 0)
+})
+
+test('rejection status survives stalled bodies and client cancellation under the existing deadline', {
+  timeout: 6000,
+}, async (t) => {
+  for (const cancel of [false, true]) {
+    await t.test(cancel ? 'cancelled' : 'deadline', async (t) => {
+      const arrived = Promise.withResolvers()
+      const disconnected = Promise.withResolvers()
+      const transport = await loadLoopbackTransport(t, (req, res) => {
+        req.resume()
+        res.once('close', disconnected.resolve)
+        res.writeHead(429, { 'content-type': 'application/json' })
+        res.write('{"partial":')
+        arrived.resolve()
+      })
+      const adapter = await transport.startAdapter({
+        apiKey: 'synthetic',
+        timeoutMs: cancel ? 1000 : 100,
+      })
+      t.after(() => adapter.close())
+      const controller = new AbortController()
+      const request = fetch(`${adapter.url}${CHAT_PATH}`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${adapter.token}` },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: 'synthetic' }],
+        }),
+        signal: controller.signal,
+      })
+      await arrived.promise
+      if (cancel) {
+        for (
+          let attempt = 0;
+          attempt < 100 && !adapter.diagnostics().last_upstream_error;
+          attempt++
+        )
+          await delay(1)
+        assert.equal(
+          adapter.diagnostics().last_upstream_error?.http_status,
+          429
+        )
+        controller.abort()
+        await assert.rejects(request, (error) => error.name === 'AbortError')
+      } else {
+        const response = await request
+        assert.equal(response.status, 504)
+        assert.equal((await response.json()).error.code, 'upstream_timeout')
+      }
+      await disconnected.promise
+      await adapter.close()
+      const receipt = adapter.diagnostics()
+      assert.equal(receipt.last_upstream_error.http_status, 429)
+      assert.equal(receipt.last_upstream_error.code, 'unknown')
+      assert.equal(receipt.upstream_attempts, 1)
+      assert.equal(receipt.responses, 0)
+      assert.equal(receipt.failures.upstream_throttled, 1)
+      assert.equal(
+        Object.values(receipt.failures).reduce((a, b) => a + b),
+        1
+      )
+      assert.equal(estimateCost(JSON.stringify(receipt)), null)
+    })
+  }
 })
 
 test('callMistral normalizes a direct canary request', async () => {

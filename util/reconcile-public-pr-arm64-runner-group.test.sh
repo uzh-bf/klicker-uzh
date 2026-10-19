@@ -85,10 +85,15 @@ expect_role_check() {
 }
 
 expect_role_apply() {
-  ROLE_STATE="${TEMP_DIR}/roles-apply"
+  local scenario=${1:-roles-apply}
+  ROLE_STATE="${TEMP_DIR}/${scenario}"
   make_role_map
+  if [[ "$scenario" == 'roles-custom-platform' ]]; then
+    jq '.runners[].priorCustomLabels += ["linux","arm64"]' "${TEMP_DIR}/roles.json" >"${TEMP_DIR}/custom-roles.json"
+    mv "${TEMP_DIR}/custom-roles.json" "${TEMP_DIR}/roles.json"
+  fi
   printf 'APPLY PUBLIC PR RUNNER ROLES\n' |
-    run_policy roles-apply --apply-roles "${TEMP_DIR}/roles.json" --receipt "${TEMP_DIR}/receipt.jsonl" >"${TEMP_DIR}/roles-apply.out"
+    run_policy "$scenario" --apply-roles "${TEMP_DIR}/roles.json" --receipt "${ROLE_STATE}.receipt" >"${ROLE_STATE}.out"
   jq -e 'index("keep-me") != null and index("playwright-build") != null and
     index("playwright-shard") != null and index("Linux") == null' "${ROLE_STATE}.labels-1" >/dev/null ||
     fail 'build runner labels were not replaced with preserved custom labels'
@@ -97,12 +102,19 @@ expect_role_apply() {
     fail 'shard runner received an incorrect role'
   [[ ! -f "${ROLE_STATE}.labels-3" ]] || fail 'unchanged held runner was written'
   jq -se '.[0].phase == "captured" and (.[0].map.runners | length) == 8 and
-    .[-1].phase == "complete"' "${TEMP_DIR}/receipt.jsonl" >/dev/null || fail 'receipt is incomplete'
+    .[-1].phase == "complete"' "${ROLE_STATE}.receipt" >/dev/null || fail 'receipt is incomplete'
+  if [[ "$scenario" == 'roles-custom-platform' ]]; then
+    jq -e 'index("linux") != null and index("arm64") != null' "${ROLE_STATE}.labels-1" >/dev/null ||
+      fail 'custom platform labels were not preserved'
+  fi
   if grep -Ev '^(GET |PUT /orgs/uzh-bf/actions/runners/[1-8]/labels$)' "${ROLE_STATE}.calls"; then
     fail 'role apply mutated group policy or an unrelated target'
   fi
   # The unchanged map checks desired labels after application, without rewriting priors.
-  run_policy roles-apply --check-roles "${TEMP_DIR}/roles.json" >/dev/null
+  run_policy "$scenario" --check-roles "${TEMP_DIR}/roles.json" >/dev/null
+  if [[ "$scenario" == 'roles-staged-busy' ]]; then
+    [[ -f "${ROLE_STATE}.labels-6" ]] || fail 'staged rollout stopped when a verified runner became busy'
+  fi
   unset ROLE_STATE
 }
 
@@ -143,8 +155,8 @@ expect_role_map_rejection() {
 expect_role_failures() {
   local scenario
   make_role_map
-  for scenario in roles-policy-drift roles-denied roles-incomplete-membership roles-incomplete-labels roles-busy roles-stale-prior \
-    roles-concurrent roles-write-failure roles-readback-failure roles-readback-mismatch; do
+  for scenario in roles-policy-drift roles-denied roles-incomplete-membership roles-incomplete-labels roles-missing-platform roles-invalid-label-type roles-busy roles-stale-prior \
+    roles-concurrent roles-write-failure roles-readback-failure roles-readback-mismatch roles-pending-busy; do
     ROLE_STATE="${TEMP_DIR}/${scenario}"
     if printf 'APPLY PUBLIC PR RUNNER ROLES\n' |
       run_policy "$scenario" --apply-roles "${TEMP_DIR}/roles.json" --receipt "${ROLE_STATE}.receipt" >"${ROLE_STATE}.out" 2>&1; then
@@ -156,6 +168,9 @@ expect_role_failures() {
         fail "${scenario} did not record the unverified recovery state"
       [[ -f "${ROLE_STATE}.labels-1" ]] || fail "${scenario} did not exercise a partial batch"
       [[ ! -f "${ROLE_STATE}.labels-5" ]] || fail "${scenario} continued after an unsafe write"
+      if [[ "$scenario" == 'roles-pending-busy' ]]; then
+        [[ ! -f "${ROLE_STATE}.labels-2" ]] || fail 'busy pending runner labels were changed'
+      fi
     elif grep -Eq '^(PUT|PATCH|POST|DELETE) ' "${ROLE_STATE}.calls"; then
       fail "${scenario} wrote labels before prior-state validation"
     fi
@@ -219,6 +234,8 @@ main() {
   done
   expect_role_check
   expect_role_apply
+  expect_role_apply roles-custom-platform
+  expect_role_apply roles-staged-busy
   expect_role_map_rejection
   expect_role_failures
   printf 'PASS: runner-group policy reconciliation\n'

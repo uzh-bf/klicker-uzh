@@ -76,6 +76,8 @@ const COST_USAGE_FIELDS = [
 
 const MAX_REQUEST_BYTES = 2 * 1024 * 1024
 const MAX_RESPONSE_BYTES = 32 * 1024 * 1024
+const MAX_UPSTREAM_ERROR_BODY_BYTES = 16 * 1024
+const UPSTREAM_ERROR_CODES = new Set([400, 401, 402, 403, 408, 429, 502, 503])
 const DEFAULT_TIMEOUT_MS = 45 * 60 * 1000
 const DEFAULT_MAX_LIFETIME_MS = 50 * 60 * 1000
 const DEFAULT_MAX_HISTORY_ENTRIES = 2000
@@ -867,10 +869,29 @@ async function readBoundedBody(response, limit) {
 
 async function drain(response, limit) {
   try {
-    await readBoundedBody(response, limit)
+    return await readBoundedBody(response, limit)
   } catch {
     // The diagnostic body is discarded on purpose.
+    return undefined
   }
+}
+
+// Provider messages and metadata remain private; retain only fixed error codes
+// from a small, already bounded JSON response.
+function upstreamErrorCode(body) {
+  if (
+    typeof body !== 'string' ||
+    Buffer.byteLength(body, 'utf8') > MAX_UPSTREAM_ERROR_BODY_BYTES
+  )
+    return undefined
+  let payload
+  try {
+    payload = JSON.parse(body)
+  } catch {
+    return undefined
+  }
+  const code = payload?.error?.code
+  return UPSTREAM_ERROR_CODES.has(code) ? code : undefined
 }
 
 // Fetch's implicit five-minute header/body deadlines would preempt the
@@ -1030,6 +1051,7 @@ async function startAdapter(options = {}) {
     unattributed_requests: 0,
     omitted_conversation_requests: 0,
     unfinished_requests: 0,
+    last_upstream_error: null,
   }
   const requestTypes = {
     main: createExecutionCounters(),
@@ -1219,7 +1241,19 @@ async function startAdapter(options = {}) {
       }
       if (!upstream.ok) {
         fail(upstreamFailure(upstream.status))
-        await drain(upstream, maxResponseBytes)
+        const rejection = {
+          http_status:
+            Number.isInteger(upstream.status) &&
+            upstream.status >= 100 &&
+            upstream.status <= 599
+              ? upstream.status
+              : null,
+          code: 'unknown',
+        }
+        diagnostics.last_upstream_error = rejection
+        rejection.code =
+          upstreamErrorCode(await drain(upstream, maxResponseBytes)) ??
+          'unknown'
         sendAdapterError(res, new AdapterError('upstream_error', 'status'))
         return
       }
@@ -1374,6 +1408,9 @@ async function startAdapter(options = {}) {
         ? { provider: profile.name, model: profile.model }
         : {}),
       ...diagnostics,
+      last_upstream_error: diagnostics.last_upstream_error
+        ? { ...diagnostics.last_upstream_error }
+        : null,
       failures: { ...diagnostics.failures },
       request_types: {
         main: {
@@ -1869,6 +1906,31 @@ function executionSummary(rows, complete) {
   ]
 }
 
+function upstreamErrorSummary(rows) {
+  let rejection = null
+  for (const row of rows) {
+    if (row?.schema_version !== 1 || !Object.hasOwn(row, 'last_upstream_error'))
+      return 'OCR upstream_error status=unavailable stage=adapter'
+    const value = row.last_upstream_error
+    if (value === null) continue
+    if (
+      !isPlainObject(value) ||
+      !(
+        value.http_status === null ||
+        (Number.isInteger(value.http_status) &&
+          value.http_status >= 100 &&
+          value.http_status <= 599)
+      ) ||
+      !(UPSTREAM_ERROR_CODES.has(value.code) || value.code === 'unknown')
+    )
+      return 'OCR upstream_error status=unknown stage=adapter'
+    rejection = value
+  }
+  if (!rows.length) return 'OCR upstream_error status=unavailable stage=adapter'
+  if (!rejection) return 'OCR upstream_error status=none stage=adapter'
+  return `OCR upstream_error status=complete stage=adapter http_status=${rejection.http_status ?? 'unknown'} code=${rejection.code}`
+}
+
 function commandSummary(args) {
   const profile = providerConfig(process.env.OCR_ADAPTER_PROVIDER)
   let expected = { adapter: 1 }
@@ -2022,6 +2084,8 @@ function commandSummary(args) {
           .join(' ')}`
       : 'OCR failures status=unavailable',
     '',
+    upstreamErrorSummary(adapterRows),
+    '',
     ...executionSummary(adapterRows, failureStatus === 'complete'),
     '',
     'OCR budget counters use uncached input plus output as reported to OCR. Provider usage includes cached input; estimated USD charges it at the pinned cached-input rate. Failed calls can have provider usage without appearing in the OCR result counters.',
@@ -2059,7 +2123,7 @@ function createProgressFilter(write) {
     if (!dropping) {
       let event
       const tool =
-        /^\[ocr\]   ([▶✔✘]) (task_done|code_comment|file_read_diff|file_read|file_find|code_search|ask_review_advisor|read_review_context)(?: |$)/u.exec(
+        /^\[ocr\] {3}([▶✔✘]) (task_done|code_comment|file_read_diff|file_read|file_find|code_search|ask_review_advisor|read_review_context|lookup_library_docs)(?: |$)/u.exec(
           line
         )
       const started =

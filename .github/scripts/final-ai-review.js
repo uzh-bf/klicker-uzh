@@ -1,6 +1,7 @@
 const {
   getPermission,
   isEligibleBaseBranch,
+  isWorkflowCheckUrl,
   listCheckRunsForRef,
   repositoryName,
   safeFence,
@@ -95,6 +96,7 @@ const FINAL_REVIEW_POLICY_PATHS = Object.freeze(
     FINAL_STACK_REVIEW_SCHEMA_PATH,
     FINAL_STACK_REVIEW_WORKFLOW_PATH,
     '.github/scripts/final-ai-review.js',
+    '.github/scripts/final-ai-review-shared.js',
     '.github/scripts/final-ai-stack-review.js',
     '.github/scripts/native-stack.js',
     '.github/scripts/ocr-mistral-adapter.cjs',
@@ -990,7 +992,7 @@ async function getVerifiedCleanFinalReviewEvidence({
         candidate.status === 'completed' &&
         candidate.conclusion === 'success' &&
         candidate.app?.slug === 'github-actions' &&
-        candidate.details_url === workflowRunUrl(context, workflowRunId) &&
+        isWorkflowCheckUrl(context, candidate, workflowRunId) &&
         String(candidate.external_id ?? '') === String(workflowRunId)
     )
     .sort(

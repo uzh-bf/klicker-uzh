@@ -50,7 +50,30 @@ function summarizeDocs(docs) {
     docs.unknown_usage > docs.upstream_attempts
   )
     return 'OCR docs status=unavailable usage_status=unknown actual_billing=unknown'
-  return `OCR docs status=${docs.status} usage_status=${docs.unknown_usage ? 'partial' : 'complete'} ${counters.map((name) => `${name}=${docs[name]}`).join(' ')} pro_overage_reference_usd=${(docs.upstream_attempts * 0.005).toFixed(4)} reference_basis=upstream_attempts pricing_date=2026-10-18 actual_billing=unknown`
+  let failure = 'unknown'
+  if (docs.failed === 0) failure = 'none'
+  else if (
+    [
+      'transport_error',
+      'timeout',
+      'cancelled',
+      'invalid_response',
+      'response_too_large',
+      'unavailable',
+      'http_error',
+    ].includes(docs.last_failure)
+  )
+    failure = docs.last_failure
+  let httpStatus = 'unknown'
+  if (docs.failed === 0 || docs.last_failure_http_status === null)
+    httpStatus = 'none'
+  else if (
+    Number.isInteger(docs.last_failure_http_status) &&
+    docs.last_failure_http_status >= 100 &&
+    docs.last_failure_http_status <= 599
+  )
+    httpStatus = docs.last_failure_http_status
+  return `OCR docs status=${docs.status} usage_status=${docs.unknown_usage ? 'partial' : 'complete'} ${counters.map((name) => `${name}=${docs[name]}`).join(' ')} last_failure=${failure} last_failure_http_status=${httpStatus} pro_overage_reference_usd=${(docs.upstream_attempts * 0.005).toFixed(4)} reference_basis=upstream_attempts pricing_date=2026-10-18 actual_billing=unknown`
 }
 
 function readResult(file) {
@@ -163,6 +186,8 @@ async function runDraftReview(options) {
       cache_hits: 0,
       cancelled: 0,
       unknown_usage: 0,
+      last_failure: null,
+      last_failure_http_status: null,
     },
   }
   const initialAdvisor = {
