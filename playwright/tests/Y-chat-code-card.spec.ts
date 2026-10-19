@@ -214,10 +214,12 @@ test.describe('Chat code card', () => {
         { timeout: 90_000 }
       )
 
-      await card.getByRole('button', { name: cardCopy.openInWorkspace }).click()
+      await card
+        .getByRole('button', { name: enMessages.chat.workspace.open })
+        .click()
       const workspace = page.getByTestId('chat-workspace-panel')
       await expect(workspace.getByTestId('code-card')).toBeVisible()
-      await expect(page.getByTestId('code-card-opened')).toBeVisible()
+      await expect(page.getByTestId('artifact-opened')).toBeVisible()
       await expect(page.getByTestId('code-card')).toHaveCount(1)
       await expect(
         workspace.getByRole('button', { name: copy.run })
@@ -232,7 +234,7 @@ test.describe('Chat code card', () => {
         .or(page.getByTestId('workspace-back-to-chat'))
       await close.click()
       await expect(workspace).toHaveCount(0)
-      await expect(page.getByTestId('code-card-opened')).toHaveCount(0)
+      await expect(page.getByTestId('artifact-opened')).toHaveCount(0)
       const inline = page.getByTestId('code-card')
       await expect(inline.getByRole('textbox')).toHaveValue(
         'print("edited beside chat")'
@@ -241,7 +243,7 @@ test.describe('Chat code card', () => {
         'sum 199999990000000'
       )
       await expect(
-        inline.getByRole('button', { name: cardCopy.openInWorkspace })
+        inline.getByRole('button', { name: enMessages.chat.workspace.open })
       ).toBeFocused()
     })
 
@@ -636,7 +638,7 @@ test.describe('Chat code card', () => {
     await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`)
     const open = page
       .getByTestId('code-card')
-      .getByRole('button', { name: cardCopy.openInWorkspace })
+      .getByRole('button', { name: enMessages.chat.workspace.open })
     await open.click()
     const dialog = page.getByRole('dialog', {
       name: enMessages.chat.workspace.label,
@@ -711,7 +713,7 @@ test.describe('Chat code card', () => {
     await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`)
     await page
       .getByTestId('code-card')
-      .getByRole('button', { name: cardCopy.openInWorkspace })
+      .getByRole('button', { name: enMessages.chat.workspace.open })
       .click()
     const workspace = page.getByTestId('chat-workspace-panel')
     await workspace.getByRole('textbox').fill('print("edited")')
@@ -725,6 +727,232 @@ test.describe('Chat code card', () => {
     const inline = page.getByTestId('code-card')
     await expect(inline.getByRole('textbox')).toHaveValue('print("edited")')
     await expect(workspace).toHaveCount(0)
+  })
+
+  test.describe('practice card in the workspace', () => {
+    // A synthetic answer-safe quiz result, as the chat route stores it.
+    function practiceResult(expiresAt: Date) {
+      return {
+        kind: 'student-practice-quiz',
+        questionRef: 'synthetic-question-ref',
+        expiresAt: expiresAt.toISOString(),
+        stack: {
+          stackId: 1,
+          stackTitle: 'Synthetic practice',
+          elements: [
+            {
+              id: 10,
+              type: 'PRACTICE_QUIZ',
+              elementType: 'SC',
+              elementData: {
+                __typename: 'ChoicesElementData',
+                id: '10',
+                name: 'Choice',
+                type: 'SC',
+                content: 'Pick one option.',
+                basePoints: true,
+                pointsMultiplier: 1,
+                options: {
+                  hasSampleSolution: false,
+                  displayMode: 'LIST',
+                  choices: [
+                    { ix: 0, value: 'Alpha' },
+                    { ix: 1, value: 'Beta' },
+                  ],
+                },
+              },
+            },
+            {
+              id: 20,
+              type: 'PRACTICE_QUIZ',
+              elementType: 'FREE_TEXT',
+              elementData: {
+                __typename: 'FreeTextElementData',
+                id: '20',
+                name: 'Reasoning',
+                type: 'FREE_TEXT',
+                content: 'Explain your choice.',
+                basePoints: true,
+                pointsMultiplier: 1,
+                options: { restrictions: { maxLength: 200 } },
+              },
+            },
+          ],
+        },
+      }
+    }
+
+    async function openPracticeThread(page: Page, expiresAt: Date) {
+      const result = practiceResult(expiresAt)
+      const thread = await seedThread(participantId, {
+        title: 'Practice thread',
+        messages: [
+          {
+            role: 'user',
+            content: [{ type: 'text', text: 'Quiz me' }],
+            chatMode: 'tutor',
+          },
+          {
+            role: 'assistant',
+            chatMode: 'tutor',
+            content: [
+              {
+                type: 'tool-call',
+                toolCallId: 'practice-seeded',
+                toolName: 'start_student_practice_quiz',
+                args: {},
+                result,
+              },
+            ],
+          },
+        ],
+      })
+      await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`)
+      const card = page.getByTestId('practice-card')
+      await expect(card).toBeVisible()
+      return card
+    }
+
+    async function answer(page: Page, text: string) {
+      await page.getByTestId('sc-0-answer-option-0').click()
+      await page.getByRole('button', { name: 'Next' }).click()
+      await page.getByTestId('free-text-input-1').fill(text)
+    }
+
+    const inAnHour = () => new Date(Date.now() + 60 * 60 * 1000)
+
+    test('keeps answers and submits once while the card moves', async ({
+      page,
+    }) => {
+      const bodies: unknown[] = []
+      let release: () => void = () => {}
+      const held = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      await page.route('**/practice/submit', async (route) => {
+        bodies.push(route.request().postDataJSON())
+        await held
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ result: { evaluations: [] } }),
+        })
+      })
+      await openPracticeThread(page, inAnHour())
+      await answer(page, 'Alpha fits best')
+
+      await page
+        .getByTestId('practice-card')
+        .getByRole('button', { name: enMessages.chat.workspace.open })
+        .click()
+      const workspace = page.getByTestId('chat-workspace-panel')
+      await expect(workspace.getByTestId('free-text-input-1')).toHaveValue(
+        'Alpha fits best'
+      )
+      await expect(page.getByTestId('artifact-opened')).toBeVisible()
+
+      // Two activations in one task reach the handler before React re-renders.
+      await workspace
+        .getByRole('button', { name: 'Submit' })
+        .evaluate((button: HTMLButtonElement) => {
+          button.click()
+          button.click()
+        })
+      await expect.poll(() => bodies.length).toBe(1)
+      await page
+        .getByTestId('workspace-close')
+        .or(page.getByTestId('workspace-back-to-chat'))
+        .click()
+      await expect(workspace).toHaveCount(0)
+      release()
+
+      const card = page.getByTestId('practice-card')
+      await expect(card.getByTestId('sc-0-answer-option-0')).toBeDisabled()
+      expect(bodies).toHaveLength(1)
+      expect(bodies[0]).toMatchObject({
+        questionRef: 'synthetic-question-ref',
+        responses: [
+          { instanceId: 10, choicesResponse: [{ ix: 0, selected: true }] },
+          { instanceId: 20, freeTextResponse: 'Alpha fits best' },
+        ],
+      })
+    })
+
+    test('keeps the answer after a failed submission for an explicit retry', async ({
+      page,
+    }) => {
+      let attempts = 0
+      await page.route('**/practice/submit', (route) => {
+        attempts += 1
+        return attempts === 1
+          ? route.fulfill({ status: 503, body: '' })
+          : route.fulfill({
+              status: 200,
+              contentType: 'application/json',
+              body: JSON.stringify({ result: { evaluations: [] } }),
+            })
+      })
+      const card = await openPracticeThread(page, inAnHour())
+      await answer(page, 'Retry me')
+      const submit = card.getByRole('button', { name: 'Submit' })
+      await submit.click()
+      await expect(submit).toBeEnabled()
+      expect(attempts).toBe(1)
+      await expect(card.getByTestId('free-text-input-1')).toHaveValue(
+        'Retry me'
+      )
+      await submit.click()
+      await expect(card.getByTestId('sc-0-answer-option-0')).toBeDisabled()
+      expect(attempts).toBe(2)
+    })
+
+    test('locks the card when the server no longer accepts the question', async ({
+      page,
+    }) => {
+      let attempts = 0
+      await page.route('**/practice/submit', (route) => {
+        attempts += 1
+        return route.fulfill({
+          status: 410,
+          contentType: 'application/json',
+          body: JSON.stringify({ code: 'QUESTION_REF_STALE' }),
+        })
+      })
+      await openPracticeThread(page, inAnHour())
+      await answer(page, 'Stale answer')
+      await page
+        .getByTestId('practice-card')
+        .getByRole('button', { name: enMessages.chat.workspace.open })
+        .click()
+      const workspace = page.getByTestId('chat-workspace-panel')
+      await workspace.getByRole('button', { name: 'Submit' }).click()
+      await expect(
+        workspace.getByRole('button', { name: 'Submit' })
+      ).toHaveCount(0)
+      expect(attempts).toBe(1)
+    })
+
+    test('locks a question that expired while its timer had not fired', async ({
+      page,
+    }) => {
+      const now = new Date()
+      await page.clock.install({ time: now })
+      const requests: string[] = []
+      await page.route('**/practice/submit', (route) => {
+        requests.push(route.request().url())
+        return route.abort()
+      })
+      const card = await openPracticeThread(
+        page,
+        new Date(now.getTime() + 60_000)
+      )
+      await answer(page, 'Too late')
+      // Moves the wall clock past expiry without running the expiry timer.
+      await page.clock.setSystemTime(new Date(now.getTime() + 120_000))
+      await card.getByRole('button', { name: 'Submit' }).click()
+      await expect(card.getByRole('button', { name: 'Submit' })).toHaveCount(0)
+      expect(requests).toEqual([])
+    })
   })
 
   test('shows Firefox an unavailable notice instead of running code', async ({

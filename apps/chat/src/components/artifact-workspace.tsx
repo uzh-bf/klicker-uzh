@@ -1,5 +1,7 @@
 'use client'
 
+import { PanelRightOpenIcon } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import {
   createContext,
   type ReactNode,
@@ -16,6 +18,7 @@ import { createPortal } from 'react-dom'
 import {
   type Artifact,
   type ArtifactWorkspaceState,
+  activeArtifactId,
   artifactWorkspaceReducer,
   type CodeArtifact,
   getTabStorage,
@@ -156,9 +159,10 @@ export function ArtifactWorkspaceProvider({
     // Restoring at registration makes the saved edit the first value the
     // card renders, so the starter never overwrites it.
     const restoreTarget = targetRef.current
-    const restored = restoreTarget
-      ? restoreWorkingCode(getTabStorage(), restoreTarget, artifact)
-      : null
+    const restored =
+      restoreTarget && artifact.kind === 'code'
+        ? restoreWorkingCode(getTabStorage(), restoreTarget, artifact)
+        : null
     if (restored?.failed) dispatch({ type: 'storage-failed' })
     dispatch({ type: 'register', artifact, restoredCode: restored?.code })
   }, [])
@@ -262,4 +266,73 @@ export function focusArtifactLauncher(container: HTMLElement) {
       .querySelector<HTMLElement>('[data-artifact-launcher="true"]')
       ?.focus()
   })
+}
+
+/**
+ * An artifact's place in the conversation. It registers the artifact and shows
+ * the mounted card here, or a short note while the workspace shows it.
+ * Registering never opens the workspace or moves focus. Pass a memoized
+ * artifact so registration runs once per artifact.
+ */
+export function ArtifactAnchor({
+  artifact,
+  openedNote,
+  workspace,
+}: {
+  artifact: Artifact
+  openedNote: string
+  workspace: ArtifactWorkspaceValue
+}) {
+  const t = useTranslations()
+  const { register, anchorMounted } = workspace
+  const { id } = artifact
+
+  // Presence tells the workspace whether this artifact's branch is visible.
+  useLayoutEffect(() => anchorMounted(id), [anchorMounted, id])
+
+  useEffect(() => {
+    register(artifact)
+  }, [register, artifact])
+
+  if (activeArtifactId(workspace.state.view) !== id) {
+    return <ArtifactSlot artifactId={id} />
+  }
+  return (
+    <div
+      className="my-2 flex flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
+      data-cy="artifact-opened"
+    >
+      <PanelRightOpenIcon aria-hidden className="size-4 shrink-0" />
+      <span className="min-w-0 flex-1">{openedNote}</span>
+      <button
+        className="rounded-md border border-slate-200 bg-white px-2 py-1 text-sm font-medium text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+        data-cy="artifact-show-here"
+        onClick={workspace.close}
+        type="button"
+      >
+        {t('chat.workspace.showHere')}
+      </button>
+    </div>
+  )
+}
+
+/**
+ * Opens a mounted card in the workspace. Closing the workspace returns focus
+ * here through `focusArtifactLauncher`.
+ */
+export function ArtifactOpenButton({ artifactId }: { artifactId: string }) {
+  const t = useTranslations()
+  const workspace = useArtifactWorkspace()
+  return (
+    <button
+      className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+      data-artifact-launcher="true"
+      data-cy="artifact-open"
+      onClick={() => workspace?.open(artifactId)}
+      type="button"
+    >
+      <PanelRightOpenIcon aria-hidden className="size-3.5" />
+      {t('chat.workspace.open')}
+    </button>
+  )
 }

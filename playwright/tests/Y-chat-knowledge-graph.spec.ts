@@ -493,7 +493,7 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
       await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`)
       const card = page.getByTestId('code-card')
       await card
-        .getByRole('button', { name: enMessages.chat.codeCard.openInWorkspace })
+        .getByRole('button', { name: enMessages.chat.workspace.open })
         .click()
       const workspace = page.getByTestId('chat-workspace-panel')
       await workspace.getByRole('textbox').fill('print("kept")')

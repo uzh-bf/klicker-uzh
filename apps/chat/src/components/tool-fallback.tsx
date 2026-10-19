@@ -18,10 +18,14 @@ import {
 import type { Translate } from '@/src/lib/sources/sourceDisplay'
 import { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from '@/src/services/studentPracticeMcp'
 import { getManageProposalResult } from '../services/manageProposalResult'
-import { CodeCard } from './code-card'
+import type { Artifact } from './artifact-workspace-state'
+import { CodeArtifactCard, CodeCard } from './code-card'
 import { DocQueryResults } from './doc-query-results'
 import { ManageProposalCard } from './manage-proposal-card'
-import { StudentPracticeQuizCard } from './student-practice-quiz-card'
+import {
+  PracticeArtifactCard,
+  StudentPracticeQuizCard,
+} from './student-practice-quiz-card'
 
 const MAX_PREVIEW_LINES = 10
 
@@ -168,6 +172,15 @@ export function parseDocQueryArgsQuery(argsText: string): string | undefined {
     : undefined
 }
 
+/** Renders a registered artifact for the workspace provider. */
+export function renderChatArtifact(artifact: Artifact) {
+  return artifact.kind === 'code' ? (
+    <CodeArtifactCard artifact={artifact} />
+  ) : (
+    <PracticeArtifactCard artifact={artifact} />
+  )
+}
+
 interface ToolFallbackProps {
   toolName: string
   toolCallId?: string
@@ -196,7 +209,13 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
   }
 
   if (toolName === STUDENT_PRACTICE_QUIZ_TOOL_NAME) {
-    return <StudentPracticeQuizCard result={result} status={status} />
+    return (
+      <StudentPracticeQuizCard
+        result={result}
+        status={status}
+        toolCallId={toolCallId}
+      />
+    )
   }
 
   const manageProposalResult = getManageProposalResult(result)

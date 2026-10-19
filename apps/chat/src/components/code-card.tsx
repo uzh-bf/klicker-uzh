@@ -2,32 +2,19 @@
 
 import type { CodeProfile } from '@klicker-uzh/code-runner'
 import { CodeRunner, useCodeLanguageName } from '@klicker-uzh/code-runner/react'
-import {
-  AlertCircleIcon,
-  LoaderCircleIcon,
-  PanelRightOpenIcon,
-} from 'lucide-react'
+import { AlertCircleIcon, LoaderCircleIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import {
-  type ReactNode,
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useState,
-} from 'react'
+import { type ReactNode, useId, useMemo, useState } from 'react'
 import { parseCodeCardResult } from '@/src/lib/code-runner/cardResult'
 import { resolveSelectedMode } from '@/src/lib/config/modes'
 import { useSettingsStore } from '@/src/stores/settingsStore'
 import {
-  ArtifactSlot,
+  ArtifactAnchor,
+  ArtifactOpenButton,
   type ArtifactWorkspaceValue,
   useArtifactWorkspace,
 } from './artifact-workspace'
-import {
-  type Artifact,
-  activeArtifactId,
-  type CodeArtifact,
-} from './artifact-workspace-state'
+import { activeArtifactId, type CodeArtifact } from './artifact-workspace-state'
 import { useEffectiveModeOptions } from './mode-options-context'
 
 export function CodeCard({
@@ -42,6 +29,15 @@ export function CodeCard({
   const t = useTranslations()
   const workspace = useArtifactWorkspace()
   const card = parseCodeCardResult(result)
+  const profile = card?.profile
+  const starterCode = card?.starterCode
+  const artifact = useMemo<CodeArtifact | null>(
+    () =>
+      toolCallId && profile && starterCode !== undefined
+        ? { id: toolCallId, kind: 'code', profile, starterCode }
+        : null,
+    [toolCallId, profile, starterCode]
+  )
 
   if (status.type === 'running' && !card) {
     return (
@@ -61,7 +57,7 @@ export function CodeCard({
   }
   // Without a workspace or a tool call identity, the card stays inline and
   // owns its own edits.
-  if (!workspace || !toolCallId) {
+  if (!workspace || !artifact) {
     return (
       <StandaloneCodeCard
         key={`${card.profile}:${card.starterCode}`}
@@ -70,24 +66,9 @@ export function CodeCard({
       />
     )
   }
-  return (
-    <CodeCardAnchor
-      workspace={workspace}
-      artifact={{
-        id: toolCallId,
-        kind: 'code',
-        profile: card.profile,
-        starterCode: card.starterCode,
-      }}
-    />
-  )
+  return <CodeCardAnchor artifact={artifact} workspace={workspace} />
 }
 
-/**
- * The card's place in the conversation. It registers the artifact and shows
- * the mounted card here, or a short note while the workspace shows it.
- * Registering never opens the workspace or moves focus.
- */
 function CodeCardAnchor({
   artifact,
   workspace,
@@ -97,43 +78,13 @@ function CodeCardAnchor({
 }) {
   const t = useTranslations()
   const language = useCodeLanguageName(artifact.profile)
-  const { register, anchorMounted } = workspace
-  const { id, profile, starterCode } = artifact
-
-  // Presence tells the workspace whether this card's branch is visible.
-  useLayoutEffect(() => anchorMounted(id), [anchorMounted, id])
-
-  useEffect(() => {
-    register({ id, kind: 'code', profile, starterCode })
-  }, [register, id, profile, starterCode])
-
-  if (activeArtifactId(workspace.state.view) !== id) {
-    return <ArtifactSlot artifactId={id} />
-  }
   return (
-    <div
-      className="my-2 flex flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
-      data-cy="code-card-opened"
-    >
-      <PanelRightOpenIcon aria-hidden className="size-4 shrink-0" />
-      <span className="min-w-0 flex-1">
-        {t('chat.codeCard.openedInWorkspace', { language })}
-      </span>
-      <button
-        className="rounded-md border border-slate-200 bg-white px-2 py-1 text-sm font-medium text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
-        data-cy="code-card-show-here"
-        onClick={workspace.close}
-        type="button"
-      >
-        {t('chat.codeCard.showHere')}
-      </button>
-    </div>
+    <ArtifactAnchor
+      artifact={artifact}
+      openedNote={t('chat.codeCard.openedInWorkspace', { language })}
+      workspace={workspace}
+    />
   )
-}
-
-/** Renders a registered artifact for the workspace provider. */
-export function renderChatArtifact(artifact: Artifact) {
-  return <CodeArtifactCard artifact={artifact} />
 }
 
 /**
@@ -158,18 +109,7 @@ export function CodeArtifactCard({ artifact }: { artifact: CodeArtifact }) {
     <CodeCardFrame
       code={workspace.state.workingCode[artifact.id] ?? artifact.starterCode}
       headerAction={
-        inWorkspace ? null : (
-          <button
-            className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
-            data-artifact-launcher="true"
-            data-cy="code-card-open"
-            onClick={() => workspace.open(artifact.id)}
-            type="button"
-          >
-            <PanelRightOpenIcon aria-hidden className="size-3.5" />
-            {t('chat.codeCard.openInWorkspace')}
-          </button>
-        )
+        inWorkspace ? null : <ArtifactOpenButton artifactId={artifact.id} />
       }
       notice={notice}
       onCodeChange={(code) => workspace.editCode(artifact, code)}

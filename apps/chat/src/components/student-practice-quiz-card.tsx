@@ -6,12 +6,12 @@ import type {
   InstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
+import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
+import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
 import StudentElement, {
   type ChoicesStudentResponseType,
   type StackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
-import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
-import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
 import {
   CheckCircle2Icon,
   ChevronLeftIcon,
@@ -20,21 +20,26 @@ import {
   XCircleIcon,
 } from 'lucide-react'
 import { useParams } from 'next/navigation'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import type {
   GetPracticeStackForQuizOutput,
   StackResponseInput,
 } from '../services/studentPracticeMcp'
+import {
+  ArtifactAnchor,
+  ArtifactOpenButton,
+  useArtifactWorkspace,
+} from './artifact-workspace'
+import {
+  activeArtifactId,
+  type PracticeArtifact,
+} from './artifact-workspace-state'
 
-type PracticeQuizToolResult = GetPracticeStackForQuizOutput & {
+export type PracticeQuizToolResult = GetPracticeStackForQuizOutput & {
   kind: 'student-practice-quiz'
   expiresAt?: string
 }
-
-const EMPTY_STACK = {
-  id: 0,
-  elements: [],
-} as unknown as ElementStack
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== 'object') return null
@@ -196,17 +201,88 @@ function buildResponses({
 export function StudentPracticeQuizCard({
   result,
   status,
+  toolCallId,
 }: {
   result?: unknown
   status: { type: string }
+  toolCallId?: string
+}) {
+  const t = useTranslations()
+  const workspace = useArtifactWorkspace()
+  const quiz = asQuizResult(result)
+  const artifact = useMemo<PracticeArtifact | null>(
+    () =>
+      quiz && toolCallId ? { id: toolCallId, kind: 'practice', quiz } : null,
+    [quiz, toolCallId]
+  )
+
+  if (status.type === 'running' && !quiz) {
+    return (
+      <div className="my-2 inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
+        <LoaderCircleIcon className="size-4 animate-spin" />
+        <span>Loading practice question...</span>
+      </div>
+    )
+  }
+
+  if (!quiz) {
+    return (
+      <div className="my-2 inline-flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <XCircleIcon className="size-4" />
+        <span>Practice question unavailable</span>
+      </div>
+    )
+  }
+
+  // Without a workspace or a tool call identity, the card stays inline and
+  // owns its answers.
+  if (!workspace || !artifact) {
+    return <PracticeQuiz key={quiz.questionRef} quiz={quiz} />
+  }
+  return (
+    <ArtifactAnchor
+      artifact={artifact}
+      openedNote={t('chat.practiceCard.openedInWorkspace')}
+      workspace={workspace}
+    />
+  )
+}
+
+/**
+ * The single mounted practice card of an artifact. The workspace provider
+ * renders it once, so answers, timing and a pending submission survive moving
+ * between the conversation and the workspace.
+ */
+export function PracticeArtifactCard({
+  artifact,
+}: {
+  artifact: PracticeArtifact
+}) {
+  const workspace = useArtifactWorkspace()
+  const inWorkspace =
+    activeArtifactId(workspace?.state.view ?? null) === artifact.id
+  return (
+    <PracticeQuiz
+      headerAction={
+        inWorkspace ? null : <ArtifactOpenButton artifactId={artifact.id} />
+      }
+      quiz={artifact.quiz}
+    />
+  )
+}
+
+function PracticeQuiz({
+  quiz,
+  headerAction,
+}: {
+  quiz: PracticeQuizToolResult
+  headerAction?: ReactNode
 }) {
   const params = useParams<{ chatbotId?: string }>()
-  const quiz = asQuizResult(result)
-  const stack = useMemo(
-    () => (quiz ? toElementStack(quiz) : EMPTY_STACK),
-    [quiz]
-  )
-  const startedAtMs = useRef<number | null>(null)
+  const stack = useMemo(() => toElementStack(quiz), [quiz])
+  const [startedAtMs] = useState(() => Date.now())
+  // Blocks a second submission before the pending state has rendered.
+  const submitting = useRef(false)
   const [activeElementIx, setActiveElementIx] = useState(0)
   const [studentResponse, setStudentResponse] =
     useState<StackStudentResponseType>({})
@@ -226,17 +302,7 @@ export function StudentPracticeQuizCard({
   })
 
   useEffect(() => {
-    startedAtMs.current = Date.now()
-    setActiveElementIx(0)
-    setError(null)
-    setIsArchivedByServer(false)
-    setStackStorage(undefined)
-    setShowArchivedQuestion(false)
-    setNowMs(Date.now())
-  }, [quiz?.questionRef])
-
-  useEffect(() => {
-    if (!quiz?.expiresAt) return
+    if (!quiz.expiresAt) return
 
     const expiresAtMs = Date.parse(quiz.expiresAt)
     if (!Number.isFinite(expiresAtMs)) return
@@ -247,25 +313,7 @@ export function StudentPracticeQuizCard({
     )
 
     return () => window.clearTimeout(timer)
-  }, [quiz?.expiresAt])
-
-  if (status.type === 'running' && !quiz) {
-    return (
-      <div className="my-2 inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
-        <LoaderCircleIcon className="size-4 animate-spin" />
-        <span>Loading practice question...</span>
-      </div>
-    )
-  }
-
-  if (!quiz) {
-    return (
-      <div className="my-2 inline-flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-        <XCircleIcon className="size-4" />
-        <span>Practice question unavailable</span>
-      </div>
-    )
-  }
+  }, [quiz.expiresAt])
 
   const activeQuiz = quiz
   const chatbotId = params.chatbotId
@@ -288,9 +336,15 @@ export function StudentPracticeQuizCard({
     'This practice question is no longer active. Answers from chat history cannot be submitted; ask for a new practice question to continue.'
 
   async function handleSubmit() {
+    if (submitting.current) return
     setError(null)
 
     if (isSubmitted || isArchived) return
+    // A hidden card's expiry timer may not have fired yet.
+    if (isPracticeQuizExpired(activeQuiz, Date.now())) {
+      setNowMs(Date.now())
+      return
+    }
 
     if (!chatbotId) {
       setError('Chatbot route is missing.')
@@ -312,11 +366,10 @@ export function StudentPracticeQuizCard({
     const submittedAtMs = Date.now()
     const stackAnswerTimeSeconds = Math.max(
       0,
-      Math.round(
-        (submittedAtMs - (startedAtMs.current ?? submittedAtMs)) / 1000
-      )
+      Math.round((submittedAtMs - startedAtMs) / 1000)
     )
 
+    submitting.current = true
     setIsSubmitting(true)
     try {
       const response = await fetch(
@@ -352,13 +405,17 @@ export function StudentPracticeQuizCard({
       console.error('Failed to submit practice answer:', submitError)
       setError('Could not submit the practice answer.')
     } finally {
+      submitting.current = false
       setIsSubmitting(false)
     }
   }
 
   if (isArchived && !showArchivedQuestion) {
     return (
-      <div className="my-3 w-full rounded-md border border-slate-200 bg-white p-4 text-slate-950">
+      <div
+        className="my-3 w-full rounded-md border border-slate-200 bg-white p-4 text-slate-950"
+        data-cy="practice-card"
+      >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="text-xs font-medium uppercase text-slate-500">
@@ -371,7 +428,10 @@ export function StudentPracticeQuizCard({
               {archivedMessage}
             </p>
           </div>
-          <XCircleIcon className="mt-1 size-5 shrink-0 text-slate-400" />
+          <div className="flex items-center gap-2">
+            {headerAction}
+            <XCircleIcon className="size-5 shrink-0 text-slate-400" />
+          </div>
         </div>
         <button
           className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
@@ -385,7 +445,10 @@ export function StudentPracticeQuizCard({
   }
 
   return (
-    <div className="my-3 w-full rounded-md border border-slate-200 bg-white p-4 text-slate-950">
+    <div
+      className="my-3 w-full rounded-md border border-slate-200 bg-white p-4 text-slate-950"
+      data-cy="practice-card"
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <div className="flex flex-wrap items-center gap-2 text-xs font-medium uppercase text-slate-500">
@@ -400,13 +463,16 @@ export function StudentPracticeQuizCard({
             {activeQuiz.stack.stackTitle}
           </h3>
         </div>
-        {isSubmitted ? (
-          <CheckCircle2Icon className="size-5 text-emerald-600" />
-        ) : isArchived ? (
-          <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
-            Archived
-          </span>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {headerAction}
+          {isSubmitted ? (
+            <CheckCircle2Icon className="size-5 text-emerald-600" />
+          ) : isArchived ? (
+            <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
+              Archived
+            </span>
+          ) : null}
+        </div>
       </div>
 
       {activeQuiz.stack.description ? (

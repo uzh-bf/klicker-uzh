@@ -26,7 +26,6 @@ import { useChatStore } from '../stores/chatStore'
 import { AppSidebar } from './app-sidebar'
 import { ArtifactWorkspaceProvider } from './artifact-workspace'
 import { ChatUiProvider, useChatUi } from './chat-ui-context'
-import { renderChatArtifact } from './code-card'
 import { MobileCreditsBar } from './credits-footer'
 import { DisclaimerModal } from './disclaimer-modal'
 import { EmbeddedToolbar } from './embedded-settings'
@@ -38,6 +37,7 @@ import {
 } from './knowledge-graph/ChatKnowledgeGraphPanel'
 import { ModeSwitcher } from './mode-switcher'
 import { Thread } from './thread'
+import { renderChatArtifact } from './tool-fallback'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 interface ChatbotDisclaimer {

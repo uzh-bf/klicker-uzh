@@ -368,11 +368,12 @@ Standalone, without participant identity, results, or saved learning state.
 
 ## Chat code practice
 
-**Code workspace**:
+**Workspace**:
 The area beside a chat conversation where a learner works on an opened code
-playground while the conversation stays in view. It shows one opened item at a
-time and can switch to the knowledge graph. Only the learner opens it.
-_Avoid_: canvas, draft.
+playground or practice question while the conversation stays in view. It shows
+one opened item at a time and can switch to the knowledge graph. Only the
+learner opens it.
+_Avoid_: canvas, draft, code workspace.
 
 **Working code**:
 A learner's current edits to one code playground, belonging to one browser tab.
