@@ -170,6 +170,9 @@ test.describe('Chat code card', () => {
   })
 
   test.describe('qualified engines', () => {
+    // Cold Pyodide and webR starts can need most of a run budget, so these
+    // tests get room for their 90-second waits.
+    test.describe.configure({ timeout: 180_000 })
     test.skip(
       ({ browserName }) => browserName === 'firefox',
       'Firefox shows the unavailable notice instead'
