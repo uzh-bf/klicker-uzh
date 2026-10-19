@@ -140,10 +140,12 @@ application/browser runtime is justified for these non-rendered CI helpers.
   Opengrep: 200 rules, four runtime scripts, zero findings; one partial parse
   limitation. Full Biome lint retains two unchanged baseline errors.
   All eight required checks passed, including the selected hosted Playwright
-  shard. Automatic draft OCR
+  shard. Automatic draft OCR for implementation commit `839962d6b0`
   [run 39173879977](https://github.com/uzh-bf/klicker-uzh/actions/runs/39173879977)
   failed with provider rejections and no responses. It used the trusted `v3`
-  adapter, so the new diagnostics still need post-merge live qualification.
+  adapter. The later progress-only head `d673ecd43e` had the same outcome in
+  [run 39174608828](https://github.com/uzh-bf/klicker-uzh/actions/runs/39174608828).
+  The new diagnostics still need post-merge live qualification.
 - Authority: source changes, reviews, commits, push and draft PR. No ready, merge,
   secret/account changes, provider substitution or extra live run.
 - Packaging: one OCR workflow repair package, 581 substantive added/deleted
