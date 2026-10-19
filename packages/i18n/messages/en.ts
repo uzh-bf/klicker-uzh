@@ -1,5 +1,13 @@
 export default {
   chat: {
+    workspace: {
+      label: 'Code workspace',
+      views: 'Workspace views',
+      backToChat: 'Back to chat',
+      close: 'Close code workspace',
+      fullscreen: 'Expand workspace to fullscreen',
+      restore: 'Return workspace to sidebar',
+    },
     graphPanel: {
       missingEndpoint: 'Unknown concept',
       title: 'Knowledge graph',
@@ -442,6 +450,9 @@ export default {
       notAdmitted: 'Running code is not available in this chat mode.',
       localNote:
         'Code runs only in your browser and is not shared with the assistant. Your changes are not saved and are lost when you leave the page.',
+      openInWorkspace: 'Open beside chat',
+      openedInWorkspace: 'The {language} playground is open beside the chat.',
+      showHere: 'Show here',
     },
     sources: {
       title: 'Sources',

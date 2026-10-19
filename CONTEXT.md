@@ -365,3 +365,16 @@ presentation content, not a question, response, or scoring rule.
 **H5P Viewer**:
 The isolated presentation context that renders an H5P Asset with H5P
 Standalone, without participant identity, results, or saved learning state.
+
+## Chat code practice
+
+**Code workspace**:
+The area beside a chat conversation where a learner works on an opened code
+playground while the conversation stays in view. It shows one opened item at a
+time and can switch to the knowledge graph. Only the learner opens it.
+_Avoid_: canvas, draft.
+
+**Working code**:
+A learner's current edits to one code playground, belonging to one browser tab.
+It is never sent to the assistant automatically. _Avoid_: draft, submission,
+solution.

@@ -199,6 +199,52 @@ test.describe('Chat code card', () => {
       await expect(card.getByTestId('code-runner-output')).toHaveCount(0)
     })
 
+    test('keeps edits and a running program when the card moves beside the chat', async ({
+      page,
+    }) => {
+      const card = await openCardFromAssistant(page, 'python-core', 'print(1)')
+      await card
+        .getByRole('textbox')
+        .fill(
+          'total = 0\nfor i in range(20_000_000):\n    total += i\nprint("sum", total)'
+        )
+      await card.getByRole('button', { name: copy.run }).click()
+      await expect(card.getByTestId('code-runner-status')).toHaveText(
+        copy.running,
+        { timeout: 90_000 }
+      )
+
+      await card.getByRole('button', { name: cardCopy.openInWorkspace }).click()
+      const workspace = page.getByTestId('chat-workspace-panel')
+      await expect(workspace.getByTestId('code-card')).toBeVisible()
+      await expect(page.getByTestId('code-card-opened')).toBeVisible()
+      await expect(page.getByTestId('code-card')).toHaveCount(1)
+      await expect(
+        workspace.getByRole('button', { name: copy.run })
+      ).toBeEnabled({ timeout: 90_000 })
+      await expect(workspace.getByTestId('code-runner-output')).toContainText(
+        'sum 199999990000000'
+      )
+
+      await workspace.getByRole('textbox').fill('print("edited beside chat")')
+      const close = page
+        .getByTestId('workspace-close')
+        .or(page.getByTestId('workspace-back-to-chat'))
+      await close.click()
+      await expect(workspace).toHaveCount(0)
+      await expect(page.getByTestId('code-card-opened')).toHaveCount(0)
+      const inline = page.getByTestId('code-card')
+      await expect(inline.getByRole('textbox')).toHaveValue(
+        'print("edited beside chat")'
+      )
+      await expect(inline.getByTestId('code-runner-output')).toContainText(
+        'sum 199999990000000'
+      )
+      await expect(
+        inline.getByRole('button', { name: cardCopy.openInWorkspace })
+      ).toBeFocused()
+    })
+
     test('runs R and reports R errors truthfully', async ({ page }) => {
       const card = await openCardFromAssistant(
         page,

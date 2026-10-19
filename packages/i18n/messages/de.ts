@@ -1,5 +1,13 @@
 export default {
   chat: {
+    workspace: {
+      label: 'Code-Arbeitsbereich',
+      views: 'Ansichten im Arbeitsbereich',
+      backToChat: 'Zurück zum Chat',
+      close: 'Code-Arbeitsbereich schliessen',
+      fullscreen: 'Arbeitsbereich im Vollbild anzeigen',
+      restore: 'Arbeitsbereich in der Seitenleiste anzeigen',
+    },
     graphPanel: {
       missingEndpoint: 'Unbekannter Begriff',
       title: 'Wissensgraph',
@@ -450,6 +458,10 @@ export default {
       notAdmitted: 'Code kann in diesem Chatmodus nicht ausgeführt werden.',
       localNote:
         'Der Code läuft nur in deinem Browser und wird nicht mit dem Assistenten geteilt. Deine Änderungen werden nicht gespeichert und gehen verloren, wenn du die Seite verlässt.',
+      openInWorkspace: 'Neben dem Chat öffnen',
+      openedInWorkspace:
+        'Die {language}-Spielwiese ist neben dem Chat geöffnet.',
+      showHere: 'Hier anzeigen',
     },
     sources: {
       title: 'Quellen',

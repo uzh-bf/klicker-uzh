@@ -170,6 +170,7 @@ export function parseDocQueryArgsQuery(argsText: string): string | undefined {
 
 interface ToolFallbackProps {
   toolName: string
+  toolCallId?: string
   argsText: string
   result?: unknown
   status: { type: string }
@@ -178,6 +179,7 @@ interface ToolFallbackProps {
 
 export const ToolFallback: FC<ToolFallbackProps> = ({
   toolName,
+  toolCallId,
   argsText,
   result,
   status,
@@ -190,7 +192,7 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
   const tool = formatToolName(toolName)
 
   if (toolName === CODE_CARD_TOOL_NAME) {
-    return <CodeCard result={result} status={status} />
+    return <CodeCard result={result} status={status} toolCallId={toolCallId} />
   }
 
   if (toolName === STUDENT_PRACTICE_QUIZ_TOOL_NAME) {

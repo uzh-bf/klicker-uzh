@@ -20,7 +20,10 @@ import {
 } from '@/src/lib/config/reasoning'
 import { getDefaultReasoningEffort } from '@/src/lib/ownerPreviewPolicy'
 import { useSettingsStore } from '@/src/stores/settingsStore'
+import { ArtifactWorkspaceProvider } from './artifact-workspace'
 import { ChatUiProvider } from './chat-ui-context'
+import { renderChatArtifact } from './code-card'
+import { ChatKnowledgeGraphPanel } from './knowledge-graph/ChatKnowledgeGraphPanel'
 import { ModeOptionsProvider } from './mode-options-context'
 import { Thread } from './thread'
 
@@ -399,12 +402,21 @@ function OwnerPreviewConversation({
     >
       <ModeOptionsProvider modeOptions={initialModeOptions}>
         <AssistantRuntimeProvider runtime={runtime}>
-          <Thread
-            chatbotAvatar={chatbot.avatar ?? ''}
-            chatbotName={chatbot.name}
-            initialModeOptions={initialModeOptions}
-            maxImageAttachments={0}
-          />
+          <ArtifactWorkspaceProvider
+            scopeKey={conversation.id}
+            graphAvailable={false}
+            graphSwitchable={false}
+            renderArtifact={renderChatArtifact}
+          >
+            <ChatKnowledgeGraphPanel chatbotId={chatbot.id}>
+              <Thread
+                chatbotAvatar={chatbot.avatar ?? ''}
+                chatbotName={chatbot.name}
+                initialModeOptions={initialModeOptions}
+                maxImageAttachments={0}
+              />
+            </ChatKnowledgeGraphPanel>
+          </ArtifactWorkspaceProvider>
         </AssistantRuntimeProvider>
       </ModeOptionsProvider>
     </div>
