@@ -592,6 +592,80 @@ test.describe('Chat code card', () => {
     })
   })
 
+  test('closes the workspace when its branch is hidden and keeps the edit for the return', async ({
+    page,
+  }) => {
+    const root = randomUUID()
+    const answer = randomUUID()
+    const card = cardOutput('python-core', 'print("starter")')
+    const thread = await seedThread(participantId, {
+      title: 'Branched code card',
+      messages: [
+        {
+          id: root,
+          role: 'user',
+          content: [{ type: 'text', text: 'Explain loops' }],
+          chatMode: 'tutor',
+        },
+        {
+          id: answer,
+          role: 'assistant',
+          content: [{ type: 'text', text: 'Loops repeat work.' }],
+          chatMode: 'tutor',
+        },
+        {
+          parentId: answer,
+          role: 'user',
+          content: [{ type: 'text', text: 'Just the theory, please' }],
+          chatMode: 'tutor',
+          createdAt: new Date(Date.now() - 60_000),
+        },
+        {
+          role: 'assistant',
+          content: [{ type: 'text', text: 'No playground on this branch.' }],
+          chatMode: 'tutor',
+          createdAt: new Date(Date.now() - 59_000),
+        },
+        {
+          parentId: answer,
+          role: 'user',
+          content: [{ type: 'text', text: 'Can I try this myself?' }],
+          chatMode: 'tutor',
+        },
+        {
+          role: 'assistant',
+          chatMode: 'tutor',
+          content: [
+            {
+              type: 'tool-call',
+              toolCallId: 'code-card-branch',
+              toolName: 'open_code_card',
+              args: { profile: card.profile, starterCode: card.starterCode },
+              result: card,
+            },
+          ],
+        },
+      ],
+    })
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`)
+    await page
+      .getByTestId('code-card')
+      .getByRole('button', { name: cardCopy.openInWorkspace })
+      .click()
+    const workspace = page.getByTestId('chat-workspace-panel')
+    await workspace.getByRole('textbox').fill('print("edited")')
+
+    await page.getByTestId('chat-branch-previous').first().click()
+    await expect(page.getByText('No playground on this branch.')).toBeVisible()
+    await expect(workspace).toHaveCount(0)
+    await expect(page.getByTestId('code-card')).toHaveCount(0)
+
+    await page.getByTestId('chat-branch-next').first().click()
+    const inline = page.getByTestId('code-card')
+    await expect(inline.getByRole('textbox')).toHaveValue('print("edited")')
+    await expect(workspace).toHaveCount(0)
+  })
+
   test('shows Firefox an unavailable notice instead of running code', async ({
     page,
     browserName,

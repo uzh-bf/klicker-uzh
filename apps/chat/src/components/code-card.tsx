@@ -146,10 +146,13 @@ export function CodeArtifactCard({ artifact }: { artifact: CodeArtifact }) {
   if (!workspace) return null
   const inWorkspace = activeArtifactId(workspace.state.view) === artifact.id
   let notice: string | undefined
+  let savedNote: string | undefined
   if (workspace.state.storageFallback) {
     notice = t('chat.codeCard.storageFallbackNote')
   } else if (!workspace.savesWorkingCode) {
     notice = t('chat.codeCard.previewNote')
+  } else {
+    savedNote = t('chat.codeCard.tabNote')
   }
   return (
     <CodeCardFrame
@@ -170,6 +173,7 @@ export function CodeArtifactCard({ artifact }: { artifact: CodeArtifact }) {
       }
       notice={notice}
       onCodeChange={(code) => workspace.editCode(artifact, code)}
+      savedNote={savedNote}
       profile={artifact.profile}
       starterCode={artifact.starterCode}
     />
@@ -201,6 +205,7 @@ function CodeCardFrame({
   onCodeChange,
   headerAction,
   notice,
+  savedNote,
 }: {
   profile: CodeProfile
   starterCode: string
@@ -208,6 +213,7 @@ function CodeCardFrame({
   onCodeChange: (code: string) => void
   headerAction?: ReactNode
   notice?: string
+  savedNote?: string
 }) {
   const t = useTranslations()
   const titleId = useId()
@@ -245,7 +251,10 @@ function CodeCardFrame({
         profile={profile}
         starterCode={starterCode}
       />
-      <p className="text-xs text-slate-500">{t('chat.codeCard.localNote')}</p>
+      <p className="text-xs text-slate-500">
+        {t('chat.codeCard.localNote')}
+        {savedNote ? ` ${savedNote}` : null}
+      </p>
       {notice ? (
         <p
           className="text-xs font-medium text-amber-700"

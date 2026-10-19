@@ -457,7 +457,9 @@ export default {
       invalid: 'Diese Code-Spielwiese konnte nicht angezeigt werden.',
       notAdmitted: 'Code kann in diesem Chatmodus nicht ausgeführt werden.',
       localNote:
-        'Der Code läuft nur in deinem Browser und wird nie automatisch mit dem Assistenten geteilt. Deine Änderungen bleiben in diesem Browser-Tab erhalten, bis du ihn schliesst.',
+        'Der Code läuft nur in deinem Browser und wird nie automatisch mit dem Assistenten geteilt.',
+      tabNote:
+        'Deine Änderungen bleiben in diesem Browser-Tab erhalten, bis du ihn schliesst.',
       storageFallbackNote:
         'Dein Browser verhindert das Speichern hier, daher gehen deine Änderungen verloren, wenn du diese Seite verlässt.',
       previewNote:

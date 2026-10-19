@@ -449,7 +449,8 @@ export default {
       invalid: 'This code playground could not be displayed.',
       notAdmitted: 'Running code is not available in this chat mode.',
       localNote:
-        'Code runs only in your browser and is never shared with the assistant automatically. Your changes stay in this browser tab until you close it.',
+        'Code runs only in your browser and is never shared with the assistant automatically.',
+      tabNote: 'Your changes stay in this browser tab until you close it.',
       storageFallbackNote:
         'This browser blocks saving here, so your changes are lost when you leave this page.',
       previewNote:
