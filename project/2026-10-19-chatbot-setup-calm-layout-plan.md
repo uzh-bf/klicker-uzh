@@ -325,4 +325,20 @@ No test pins copy, summaries or translations. Playwright runs in CI only.
   away is gone.
 - Departure: the ADR is numbered 0053, because two open branches already
   claim 0052.
-- Next action: push S13, open its draft PR on top of #6621 in stack #6274.
+- S13 was published as draft PR #6623 on top of #6621.
+- Consolidation, at the user's request: the seven draft layers
+  (#6456, #6457, #6458, #6577, #6618, #6621 and #6623) were folded into one
+  PR, #6625, and closed. The remaining layers were re-linked as stack #6627,
+  from #6254 on `v3-ai` to #6625 on top.
+- Review fixes on #6625: the Materials card revalidates its resources when
+  the page opens, the message for a chatbot created without its knowledge
+  base names the Materials section, the response-example spec installs its
+  flag mock before login, and the compared model ids sort with an explicit
+  comparison.
+- The bottom layer is behind `v3-ai`, so the final AI review checks report
+  the stack as unverified. They are not required checks. Syncing `v3-ai`
+  would restart Playwright on every layer, so the sync is deferred.
+- Open decision: several GraphQL operations are edited in place, which
+  changes their persisted-query hashes.
+- Next action: once every layer's required checks pass and landing is
+  approved, land the stack with one merge of #6625.
