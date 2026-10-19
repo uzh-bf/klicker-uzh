@@ -5,6 +5,7 @@ const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
 
+const { invalidCleanCheckChanges } = require('./final-ai-review-fixtures')
 const {
   isConsolidationBaseBranch,
   isEligibleBaseBranch,
@@ -3253,23 +3254,7 @@ test('accepts a trusted clean status without requiring a review body', async () 
     )
   }
   const trustedCheck = state.checkRuns[0]
-  for (const change of [
-    { id: 0 },
-    { id: -1 },
-    { id: '456' },
-    { id: Number.MAX_SAFE_INTEGER + 1 },
-    { details_url: 'https://github.com/uzh-bf/klicker-uzh/runs/123' },
-    { details_url: 'https://example.invalid/uzh-bf/klicker-uzh/runs/456' },
-    { details_url: 'https://github.com/other/repo/runs/456' },
-    { details_url: 'https://github.com/uzh-bf/klicker-uzh/runs/456?x=1' },
-    { details_url: 'https://github.com/uzh-bf/klicker-uzh/runs/456/' },
-    { details_url: 'https://github.com/uzh-bf/klicker-uzh/runs/456#x' },
-    { external_id: '456' },
-    { app: { slug: 'other' } },
-    { head_sha: 'e'.repeat(40) },
-    { status: 'in_progress' },
-    { conclusion: 'failure' },
-  ]) {
+  for (const change of invalidCleanCheckChanges(456, 123)) {
     state.checkRuns[0] = { ...trustedCheck, ...change }
     assert.equal(
       await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }),

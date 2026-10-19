@@ -146,8 +146,12 @@ application/browser runtime is justified for these non-rendered CI helpers.
   adapter. The later progress-only head `d673ecd43e` had the same outcome in
   [run 39174608828](https://github.com/uzh-bf/klicker-uzh/actions/runs/39174608828).
   The new diagnostics still need post-merge live qualification.
+- CI correction: Sonar identified duplicated negative check cases in the two
+  verifier suites. Share those cases in `final-ai-review-fixtures.js`, with both
+  suites retaining their separate verifier calls. All 15 cases match the earlier
+  fixtures exactly; all 127 verifier tests pass. Runtime source is unchanged.
 - Authority: source changes, reviews, commits, push and draft PR. No ready, merge,
   secret/account changes, provider substitution or extra live run.
-- Packaging: one OCR workflow repair package, 581 substantive added/deleted
+- Packaging: one OCR workflow repair package, 576 substantive added/deleted
   lines excluding the project plan; most additions exercise failure/provenance
   behavior. One draft PR; no independent deployment or stack layer.

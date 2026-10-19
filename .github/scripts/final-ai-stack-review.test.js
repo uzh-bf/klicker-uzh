@@ -5,6 +5,7 @@ const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
 
+const { invalidCleanCheckChanges } = require('./final-ai-review-fixtures')
 const {
   FINAL_REVIEW_MODEL,
   mergeOCRResumeResults,
@@ -493,23 +494,7 @@ test('accepts a trusted clean stack status without requiring a review body', asy
     )
   }
   const trustedCheck = state.checkRuns[0]
-  for (const change of [
-    { id: 0 },
-    { id: -1 },
-    { id: '901' },
-    { id: Number.MAX_SAFE_INTEGER + 1 },
-    { details_url: 'https://github.com/uzh-bf/klicker-uzh/runs/700' },
-    { details_url: 'https://example.invalid/uzh-bf/klicker-uzh/runs/901' },
-    { details_url: 'https://github.com/other/repo/runs/901' },
-    { details_url: 'https://github.com/uzh-bf/klicker-uzh/runs/901?x=1' },
-    { details_url: 'https://github.com/uzh-bf/klicker-uzh/runs/901/' },
-    { details_url: 'https://github.com/uzh-bf/klicker-uzh/runs/901#x' },
-    { external_id: '901' },
-    { app: { slug: 'other' } },
-    { head_sha: 'e'.repeat(40) },
-    { status: 'in_progress' },
-    { conclusion: 'failure' },
-  ]) {
+  for (const change of invalidCleanCheckChanges(901, 700)) {
     state.checkRuns[0] = { ...trustedCheck, ...change }
     assert.equal(
       await getVerifiedStackCleanEvidence({
