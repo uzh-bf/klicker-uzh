@@ -53,16 +53,15 @@ session implements it in two slices.
    are set through the GraphQL mutation, so this server rule covers every
    path.
 4. Backfill as a data-only Prisma migration (no schema change): set tier
-   `ADVANCED` for every user whose cost center is non-blank, so existing
-   accounts with a cost center retain advanced access without a manual step.
-   Deployment impact was checked privately. Create it with
-   `prisma migrate dev --create-only` in the container; it holds one `UPDATE`.
+   `ADVANCED` for every `BASE`-tier user whose cost center is non-blank. This
+   preserves advanced access for existing accounts with a cost center when the tier
+   check is introduced. Create it with `prisma migrate dev --create-only` in
+   the container; it holds one `UPDATE`.
 5. Saving a chatbot revision rejects a newly added `ADVANCED` model when the
    bot's owner is not entitled to it (`normalizeRevisionModelPolicy` /
    `saveChatbotRevision` in `packages/graphql/src/services/chatbots.ts`).
    Models the current configuration already allows stay saveable, so an owner
    whose entitlement was withdrawn can still edit the bot and remove them.
-   Production has no such bot today.
 
 ### Slice 2: lecturer model picker
 
@@ -126,6 +125,7 @@ with a cost center, and retaining a saved model after the cost center is removed
 The [production promotion plan](2026-10-15-kb-binding-production-promotion-plan.md)
 keeps merge, tag publication and deployment gated. Earlier entries below are
 historical; their old pending-check statements are not current release evidence.
+
 
 - 2026-10-13: plan drafted. Revised the same day: the picker and the
   cost-center implication were added at the user's request, and a migration

@@ -5,6 +5,10 @@ import { dirname, resolve } from 'node:path'
 
 export const MAX_SUBMITTED_TURNS = 120
 export const MAX_PROVIDER_MICRO_USD = 5_000_000
+export const EXTENDED_BUDGET_LIMITS = Object.freeze({
+  maxProviderMicroUsd: 55_000_000,
+  maxSubmittedTurns: 48,
+})
 
 export function budgetError(code) {
   return Object.assign(new Error(code), { code })
@@ -61,7 +65,12 @@ export function validateBudgetLedger(value) {
     !value.experimentId ||
     !/^[a-f0-9]{64}$/.test(value.policyHash) ||
     !integer(value.maxSubmittedTurns, 1, MAX_SUBMITTED_TURNS) ||
-    !integer(value.maxProviderMicroUsd, 1, MAX_PROVIDER_MICRO_USD) ||
+    (!integer(value.maxProviderMicroUsd, 1, MAX_PROVIDER_MICRO_USD) &&
+      !(
+        value.maxProviderMicroUsd ===
+          EXTENDED_BUDGET_LIMITS.maxProviderMicroUsd &&
+        value.maxSubmittedTurns === EXTENDED_BUDGET_LIMITS.maxSubmittedTurns
+      )) ||
     !integer(value.submittedTurns, 0, value.maxSubmittedTurns) ||
     !integer(value.reservedProviderMicroUsd, 0, value.maxProviderMicroUsd) ||
     !Number.isFinite(value.creditsUsed) ||
