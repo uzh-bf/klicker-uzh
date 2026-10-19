@@ -138,6 +138,12 @@ and integrated source review are main-session self-reviews. Terminal delivery
 is a locally verified draft with current-head CI and feedback disposition;
 readiness, merge, deployment alignment and live activation remain separate.
 
+The transient API regression failed before correction. After correction, 72
+image-status, selection, required-status, deployment-parity and event-gate
+contracts pass in network-isolated Node 24.21.0. Syntax and focused formatting
+checks pass. No dependency, workflow, deployment or application-runtime change
+is included. Hosted exact-head CI and ordinary feedback remain pending.
+
 ### Earlier source delivery
 
 - Planning challenge: main-session self-review accepted exact run/attempt tickets
