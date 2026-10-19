@@ -39,6 +39,7 @@ import {
 import { buildChatTurnRequest } from '@/src/lib/server/chatTurnRequest'
 import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
 import {
+  getCustomModeTurnSettings,
   isParticipantReasoningVisible,
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
@@ -54,6 +55,10 @@ import {
   LANGFUSE_CHAT_TRACE_NAME,
   registerLangfuseTelemetry,
 } from '@/src/lib/server/langfuseTracing'
+import {
+  formatMeetingClock,
+  replyLanguageReminder,
+} from '@/src/lib/server/languageInstructions'
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
@@ -1494,7 +1499,43 @@ export async function POST(
       role: msg.role,
       content: msg.content,
     }))
-    const stepReminder = trailingStepMessage(selectedMode, messages)
+    // A custom mode's locked language and meeting clock join the trailing
+    // reminder, which is rebuilt for every request and never persisted, so
+    // the instructions prefix stays stable while the clock advances. The
+    // current user message is persisted later, so a first turn starts the
+    // clock now. The participant indicator receives the same start and
+    // server time through the message metadata and reloads the start from
+    // the same completed user messages.
+    const turnSettings = getCustomModeTurnSettings(
+      chatbot.customModeConfig,
+      selectedMode
+    )
+    const turnStartedAt = new Date()
+    const meetingClockStartedAt = turnSettings.meetingClock
+      ? ((
+          await prisma.chatMessage.findFirst({
+            where: {
+              threadId: owningThread.id,
+              role: 'user',
+              lifecycleStatus: 'COMPLETED',
+            },
+            orderBy: { createdAt: 'asc' },
+            select: { createdAt: true },
+          })
+        )?.createdAt ?? turnStartedAt)
+      : null
+    const stepReminder = trailingStepMessage(
+      selectedMode,
+      messages,
+      replyLanguageReminder(
+        turnSettings.replyLanguage ?? null,
+        formatMeetingClock(
+          turnSettings.meetingClock ?? null,
+          meetingClockStartedAt,
+          turnStartedAt
+        )
+      )
+    )
 
     const maxOutputTokens = selectedModelConfig.maxOutputTokens
 
@@ -2406,6 +2447,12 @@ export async function POST(
         return 'An error occurred while processing the request.'
       },
       messageMetadata: ({ part }) => {
+        if (part.type === 'start' && meetingClockStartedAt) {
+          return {
+            meetingClockStartedAt: meetingClockStartedAt.toISOString(),
+            serverNow: new Date().toISOString(),
+          }
+        }
         if (part.type !== 'finish') {
           return undefined
         }
