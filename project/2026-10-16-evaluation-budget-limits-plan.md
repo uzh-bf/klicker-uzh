@@ -1,5 +1,12 @@
 # Bounded evaluation budget initialization
 
+Current status — 2026-10-17: [PR 6576](https://github.com/uzh-bf/klicker-uzh/pull/6576)
+is merged into `v3` at `d2b8d5797fb54e744a5adc6b4325b2194f4a58c5`.
+The original draft-delivery approval below is historical. Source support does
+not establish runtime readback or authorize ledger initialization, paid capture,
+judge calls or deployment. Continue through the
+[evaluation consolidation plan](2026-10-12-chatbot-evaluator-plan.md#evaluation-consolidation--2026-10-17).
+
 ## Approval summary
 
 Extend the existing evaluation budget initializer with an explicit US$55,
@@ -27,7 +34,7 @@ that boundary separately from command-line parsing.
 Owner and boundary owner: main session, execution mode `standard`.
 Branch: `enhance/evaluation-budget-limits`; target: `v3`.
 Baseline: `733b6e7c9456fb11cb75001dbe111820d9c3b009`.
-Pull request: [draft PR 6576](https://github.com/uzh-bf/klicker-uzh/pull/6576).
+Pull request: [merged PR 6576](https://github.com/uzh-bf/klicker-uzh/pull/6576).
 Ceremony: full path because this changes spend policy and ledger validation.
 Pause only for a material authority, policy or data-boundary change, or an
 unavailable required verification capability.
@@ -102,8 +109,8 @@ then requested one source of truth for the fixed limit pair; the existing
 modules now share a frozen constant. All 53 focused tests and affected static
 checks passed again after that behavior-preserving correction.
 
-Source preparation and review are complete in
-[draft PR 6576](https://github.com/uzh-bf/klicker-uzh/pull/6576), targeting `v3`.
+Source preparation and review completed in
+[PR 6576](https://github.com/uzh-bf/klicker-uzh/pull/6576), subsequently merged into `v3`.
 At code-bearing head `c7adb85db000528838d29b5c95c4809f34850f51`, all automatic
 CI checks passed, including codebase, unit, browser and draft-review workflows.
 Both published findings are fixed and resolved. The automated review's producing
@@ -112,8 +119,8 @@ and require no further changes. The source and tests stay unchanged by this
 progress-only update, so the existing verification and independent reviews apply.
 
 Package size is 377 substantive changed lines across four existing files,
-excluding this plan. Current branch checks are recorded on the linked pull
-request. It remains draft, with the separate ready-only final AI gate pending.
-No code work remains in this batch. Readiness, merge, deployment, real-ledger
-initialization and paid evaluation require their separate authority; none was
-performed here. No new executable script or dependency was added.
+excluding this plan. All applicable draft checks also passed at final head
+`aa7c46b434`; the user subsequently merged it. This closes source delivery, not
+live or paid acceptance. No code work remains in this batch. Deployment,
+real-ledger initialization and paid evaluation require separate authority.
+No new executable script or dependency was added.

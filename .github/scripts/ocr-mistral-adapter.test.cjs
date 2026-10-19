@@ -28,6 +28,292 @@ const ADAPTER = path.join(__dirname, 'ocr-mistral-adapter.cjs')
 const CHAT_PATH = '/v1/chat/completions'
 const SHUTDOWN_PATH = '/shutdown'
 
+test('draft routing uses the exact OpenRouter snapshot and max reasoning without accepting route overrides', () => {
+  const body = {
+    model: 'deepseek/deepseek-v4.1-flash-1017',
+    messages: [{ role: 'user', content: 'synthetic' }],
+    reasoning_effort: 'max',
+    reasoning: { effort: 'none' },
+    provider: { only: ['untrusted'] },
+    prompt_cache_key: 'synthetic-session',
+    max_completion_tokens: 16384,
+    tools: [{ type: 'function', function: { name: 'task_done' } }],
+  }
+  const translated = translateMistralRequest(body, undefined, 'openrouter')
+  assert.equal(translated.model, body.model)
+  assert.deepEqual(translated.reasoning, { effort: 'max' })
+  assert.equal(translated.reasoning_effort, undefined)
+  assert.equal(translated.provider, undefined)
+  assert.equal(translated.max_tokens, 16384)
+  assert.equal(translated.prompt_cache_key, body.prompt_cache_key)
+  assert.equal(translated.tool_choice, 'required')
+  for (const [change, code] of [
+    [{ reasoning_effort: 'high' }, 'invalid_request'],
+    [{ model: MISTRAL_MODEL }, 'model_mismatch'],
+    [{ stream: true }, 'stream_unsupported'],
+  ])
+    assert.throws(
+      () =>
+        translateMistralRequest(
+          { ...body, ...change },
+          undefined,
+          'openrouter'
+        ),
+      { code }
+    )
+  assert.throws(() => translateMistralRequest(body, undefined, 'unknown'), {
+    code: 'invalid_provider',
+  })
+})
+
+test('OpenRouter native reasoning survives prefix and compressed replay with unchanged OCR token accounting', async () => {
+  const model = 'deepseek/deepseek-v4.1-flash-1017'
+  const native = {
+    role: 'assistant',
+    content: null,
+    reasoning: 'private-reasoning',
+    reasoning_details: [
+      { type: 'reasoning.text', text: 'private-reasoning', index: 0 },
+      { type: 'reasoning.encrypted', data: 'private-signature', index: 1 },
+    ],
+    tool_calls: [
+      {
+        id: 'call-read',
+        type: 'function',
+        function: { name: 'file_read', arguments: '{"path":"synthetic.cjs"}' },
+      },
+    ],
+  }
+  const payload = {
+    ...completion(native, 'tool_calls'),
+    model: 'deepseek/deepseek-v4.1-flash-20261017',
+    usage: {
+      prompt_tokens: 100,
+      completion_tokens: 8,
+      total_tokens: 108,
+      prompt_tokens_details: { cached_tokens: 40 },
+    },
+  }
+  const fetchImpl = upstream(() => jsonResponse(200, payload))
+  const adapter = await startAdapter({
+    provider: 'openrouter',
+    apiKey: 'synthetic-router-key',
+    fetchImpl,
+  })
+  try {
+    const prefix = [{ role: 'user', content: 'synthetic' }]
+    const tools = [{ type: 'function', function: { name: 'task_done' } }]
+    const first = await postJson(adapter, { model, messages: prefix, tools })
+    assert.equal(first.status, 200)
+    const normalized = first.json.choices[0].message
+    assert.equal(normalized.content, '')
+    assert.equal(normalized.reasoning_content, native.reasoning)
+    assert.equal(normalized.reasoning_details, undefined)
+    assert.deepEqual(first.json.usage, {
+      prompt_tokens: 60,
+      completion_tokens: 8,
+      total_tokens: 68,
+    })
+    for (const replayPrefix of [
+      prefix,
+      [{ role: 'user', content: 'compressed' }],
+    ]) {
+      const replay = await postJson(adapter, {
+        model,
+        tools,
+        messages: [
+          ...replayPrefix,
+          normalized,
+          {
+            role: 'tool',
+            tool_call_id: 'call-read',
+            content: 'synthetic result',
+          },
+        ],
+      })
+      assert.equal(replay.status, 200)
+      assert.deepEqual(fetchImpl.calls.at(-1).body.messages[1], native)
+    }
+    assert.equal(
+      fetchImpl.calls[0].url,
+      'https://openrouter.ai/api/v1/chat/completions'
+    )
+    assert.deepEqual(fetchImpl.calls[0].body.reasoning, { effort: 'max' })
+    assert.equal(adapter.diagnostics().history.prefix_hits, 1)
+    assert.equal(adapter.diagnostics().history.compressed_hits, 1)
+    assert.equal(adapter.diagnostics().provider, 'openrouter')
+    assert.doesNotMatch(
+      JSON.stringify(adapter.diagnostics()),
+      /private-|synthetic-router-key/
+    )
+    const detailsOnly = { ...native, reasoning: null }
+    assert.equal(
+      normalizeMistralResponse(
+        {
+          ...payload,
+          choices: [{ ...payload.choices[0], message: detailsOnly }],
+        },
+        'openrouter'
+      ).choices[0].message.reasoning_content,
+      native.reasoning
+    )
+    const history = createHistoryStore({ provider: 'openrouter' })
+    history.remember(prefix, detailsOnly)
+    assert.deepEqual(
+      history.restoreMessages([
+        { role: 'user', content: 'compressed' },
+        normalized,
+      ])[1],
+      detailsOnly
+    )
+    history.remember([{ role: 'user', content: 'other' }], {
+      ...detailsOnly,
+      reasoning_details: [
+        detailsOnly.reasoning_details[0],
+        { type: 'reasoning.encrypted', data: 'other-signature', index: 1 },
+      ],
+    })
+    assert.throws(
+      () =>
+        history.restoreMessages([
+          { role: 'user', content: 'compressed' },
+          normalized,
+        ]),
+      { code: 'history_collision' }
+    )
+    assert.deepEqual(
+      history.restoreMessages([...prefix, normalized])[1],
+      detailsOnly
+    )
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('OpenRouter retains truncated task completion rejection and refuses another snapshot', async () => {
+  const payload = {
+    ...completion(
+      {
+        role: 'assistant',
+        content: null,
+        tool_calls: [
+          {
+            id: 'done',
+            type: 'function',
+            function: { name: 'task_done', arguments: '{}' },
+          },
+        ],
+      },
+      'length'
+    ),
+    model: 'deepseek/deepseek-v4.1-flash-1017',
+  }
+  const adapter = await startAdapter({
+    provider: 'openrouter',
+    apiKey: 'synthetic',
+    fetchImpl: upstream(() => jsonResponse(200, payload)),
+  })
+  try {
+    const response = await postJson(adapter, {
+      model: payload.model,
+      messages: [{ role: 'user', content: 'synthetic' }],
+      tools: [{ type: 'function', function: { name: 'task_done' } }],
+    })
+    assert.equal(response.json.error.code, 'truncated_completion')
+    assert.equal(adapter.diagnostics().history.prefix_hits, 0)
+    assert.equal(adapter.diagnostics().truncated_completions, 1)
+    assert.equal(adapter.diagnostics().accepted_responses, 0)
+    assert.throws(
+      () =>
+        normalizeMistralResponse(
+          { ...payload, model: 'deepseek/deepseek-v4.1-flash' },
+          'openrouter'
+        ),
+      { code: 'response_model_mismatch' }
+    )
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('OpenRouter cost receipts use matching reference prices and preserve incomplete-attempt eligibility', async () => {
+  const row = costReceipt({
+    provider: 'openrouter',
+    model: 'deepseek/deepseek-v4.1-flash-1017',
+    prompt_tokens: 1000000,
+    cached_prompt_tokens: 750000,
+    uncached_prompt_tokens: 250000,
+    completion_tokens: 100000,
+  })
+  const estimate = estimateCost(JSON.stringify(row), 'openrouter')
+  assert.ok(Math.abs(estimate.withCache - 0.09975) < 1e-12)
+  assert.ok(Math.abs(estimate.withoutCache - 0.21) < 1e-12)
+  assert.ok(Math.abs(estimate.savings - 0.11025) < 1e-12)
+  const partial = buildCostReport(
+    JSON.stringify({ ...row, upstream_attempts: row.responses + 1 }),
+    { adapter: 1 },
+    'openrouter'
+  )
+  assert.equal(partial.estimate, null)
+  assert.equal(partial.reportedResponseEstimate.unpriced_attempts, 1)
+  assert.equal(partial.reportedResponseEstimate.withCache, estimate.withCache)
+  for (const [receipt, provider] of [
+    [row, 'mistral'],
+    [costReceipt(), 'openrouter'],
+  ]) {
+    const report = buildCostReport(
+      JSON.stringify(receipt),
+      { adapter: 1 },
+      provider
+    )
+    assert.equal(report.estimate, null)
+    assert.equal(report.reportedResponseEstimate, null)
+    assert.ok(report.reasons.includes('provider_mismatch'))
+  }
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-router-cost-'))
+  try {
+    const receipt = path.join(directory, 'receipt.jsonl')
+    const summary = path.join(directory, 'summary.md')
+    fs.writeFileSync(receipt, JSON.stringify(row))
+    const result = await runCli(['summary', receipt], {
+      OCR_ADAPTER_PROVIDER: 'openrouter',
+      GITHUB_STEP_SUMMARY: summary,
+    })
+    assert.equal(result.code, 0)
+    assert.equal(result.stdout, fs.readFileSync(summary, 'utf8'))
+    assert.match(result.stdout, /\$0\.003\b/)
+    assert.match(result.stdout, /OCR cost status=complete reasons=none/)
+    assert.ok(result.stdout.includes(`$${estimate.withCache.toFixed(4)}`))
+    assert.doesNotMatch(result.stdout, /zai-glm|\$1\.40/)
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('draft startup fails closed on an unknown profile or missing selected credential', async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-router-start-'))
+  try {
+    const state = path.join(directory, 'adapter.json')
+    for (const [provider, code] of [
+      ['unknown', 'invalid_provider'],
+      ['openrouter', 'missing_env'],
+    ]) {
+      const result = await runCli(['start', state], {
+        RUNNER_TEMP: directory,
+        OCR_ADAPTER_PROVIDER: provider,
+        OPENROUTER_API_KEY: '',
+        MISTRAL_API_KEY: 'synthetic-unselected-key',
+      })
+      assert.notEqual(result.code, 0)
+      assert.match(result.stderr, new RegExp(code))
+      assert.equal(fs.existsSync(state), false)
+      assert.doesNotMatch(result.stderr, /synthetic-unselected-key/)
+    }
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('progress reconstructs known events without reflecting private fields or workflow commands', () => {
   const records = []
   const progress = createProgressFilter((line) => records.push(line))
@@ -370,6 +656,119 @@ test('cost reporting names incomplete coverage and distinguishes skipped stages 
   ])
 })
 
+test('reported-response cost preserves strict totals and refuses every other coverage gap', async () => {
+  const row = costReceipt({
+    upstream_attempts: 2,
+    accepted_responses: 0,
+    request_types: { main: costReceipt() },
+    conversations: [costReceipt()],
+  })
+  const expected = { adapter: 2, preflight: 1 }
+  const rows = [row, row, costReceipt({ stage: 'preflight' })]
+  const text = rows.map(JSON.stringify).join('\n')
+  const report = buildCostReport(text, expected)
+  assert.equal(report.estimate, null)
+  assert.equal(estimateCost(text), null)
+  assert.deepEqual(report.reasons, ['unaccounted_attempts'])
+  const partial = report.reportedResponseEstimate
+  assert.equal(partial.responses, 3)
+  assert.equal(partial.unpriced_attempts, 2)
+  assert.equal(partial.prompt_tokens, 3000000)
+  assert.ok(Math.abs(partial.withCache - 2.685) < 1e-12)
+  assert.ok(Math.abs(partial.withoutCache - 5.52) < 1e-12)
+  assert.ok(Math.abs(partial.savings - 2.835) < 1e-12)
+  assert.equal(report.stages[0].estimate, null)
+  assert.ok(report.stages[1].estimate)
+  const unpriced = buildCostReport(
+    JSON.stringify(
+      costReceipt({
+        upstream_attempts: 1,
+        responses: 0,
+        cache_usage_responses: 0,
+        prompt_tokens: 0,
+        completion_tokens: 0,
+        cached_prompt_tokens: 0,
+        uncached_prompt_tokens: 0,
+      })
+    )
+  )
+  assert.equal(unpriced.estimate, null)
+  assert.equal(unpriced.reportedResponseEstimate.responses, 0)
+  assert.equal(unpriced.reportedResponseEstimate.unpriced_attempts, 1)
+  assert.equal(unpriced.reportedResponseEstimate.withCache, 0)
+  assert.equal(
+    buildCostReport(JSON.stringify(costReceipt())).reportedResponseEstimate,
+    null
+  )
+  for (const change of [
+    { schema_version: 2 },
+    { missing_usage: 1 },
+    { missing_cache_usage: 1 },
+    { invalid_cache_usage: 1 },
+    { unfinished_requests: 1 },
+    { cache_usage_responses: 0 },
+    { completion_tokens: -1 },
+    { prompt_tokens: Number.MAX_SAFE_INTEGER + 1 },
+    { cached_prompt_tokens: 1000001 },
+    { upstream_attempts: 0 },
+  ]) {
+    assert.equal(
+      buildCostReport(JSON.stringify({ ...row, ...change }))
+        .reportedResponseEstimate,
+      null
+    )
+  }
+  for (const [input, counts] of [
+    [text, { ...expected, adapter: 3 }],
+    [`${text}\nnull`, expected],
+    [`${text}\n{PRIVATE_SENTINEL`, expected],
+    [
+      `${text}\n${JSON.stringify(costReceipt({ stage: 'PRIVATE_SENTINEL' }))}`,
+      expected,
+    ],
+    [JSON.stringify(row), { adapter: -1 }],
+    [
+      [row, costReceipt({ upstream_attempts: 0 })]
+        .map(JSON.stringify)
+        .join('\n'),
+      { adapter: 2 },
+    ],
+    [
+      [{ ...row, upstream_attempts: Number.MAX_SAFE_INTEGER }, row]
+        .map(JSON.stringify)
+        .join('\n'),
+      { adapter: 2 },
+    ],
+  ]) {
+    const invalid = buildCostReport(input, counts)
+    assert.equal(invalid.estimate, null)
+    assert.equal(invalid.reportedResponseEstimate, null)
+    assert.doesNotMatch(JSON.stringify(invalid), /PRIVATE_SENTINEL/)
+  }
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-partial-cost-'))
+  try {
+    const receiptPath = path.join(directory, 'receipts.jsonl')
+    const summaryPath = path.join(directory, 'summary.md')
+    fs.writeFileSync(receiptPath, text)
+    const result = await runCli(
+      ['summary', receiptPath, 'adapter=2', 'preflight=1'],
+      { GITHUB_STEP_SUMMARY: summaryPath }
+    )
+    assert.equal(result.code, 0)
+    assert.equal(result.stdout, fs.readFileSync(summaryPath, 'utf8'))
+    assert.match(
+      result.stdout,
+      /^OCR cost status=unavailable reasons=unaccounted_attempts$/m
+    )
+    assert.match(
+      result.stdout,
+      /^OCR cost scope=reported_responses status=partial responses=3 unpriced_attempts=2 estimated_with_cache_usd=2\.6850 estimated_without_cache_usd=5\.5200 estimated_savings_usd=2\.8350 savings_percent=51\.4$/m
+    )
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('manual workflows reconcile shared stage receipts against independent step outputs', () => {
   const source = fs.readFileSync(
     path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
@@ -450,6 +849,93 @@ test('failure summary emits only complete allowlisted counters without changing 
   }
 })
 
+test('execution summary validates new timing and history independently of legacy cost coverage', async () => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-execution-summary-')
+  )
+  const adapter = await startAdapter({
+    apiKey: 'synthetic',
+    fetchImpl: upstream(() => {
+      const payload = completion({ role: 'assistant', content: 'synthetic' })
+      payload.usage.prompt_tokens_details = { cached_tokens: 1 }
+      return jsonResponse(200, payload)
+    }),
+  })
+  try {
+    assert.equal(
+      (
+        await postJson(adapter, {
+          messages: [{ role: 'user', content: 'synthetic' }],
+        })
+      ).status,
+      200
+    )
+    await adapter.close()
+    const receipt = adapter.diagnostics()
+    Object.assign(receipt, {
+      request_duration_ms: 300001,
+      max_request_duration_ms: 300001,
+      max_accepted_response_duration_ms: 300001,
+      accepted_responses_over_300s: 1,
+      private_field: '::error::PRIVATE_SENTINEL',
+    })
+    Object.assign(receipt.history, {
+      misses: 3,
+      miss_no_reasoning: 1,
+      miss_unknown_turn: 1,
+      miss_ambiguous_turn: 1,
+    })
+    const receiptPath = path.join(directory, 'receipt.jsonl')
+    const summaryPath = path.join(directory, 'summary.md')
+    fs.writeFileSync(
+      receiptPath,
+      [receipt, receipt].map(JSON.stringify).join('\n')
+    )
+    let result = await runCli(['summary', receiptPath, 'adapter=2'], {
+      GITHUB_STEP_SUMMARY: summaryPath,
+    })
+    assert.equal(result.code, 0)
+    assert.equal(result.stdout, fs.readFileSync(summaryPath, 'utf8'))
+    assert.match(
+      result.stdout,
+      /^OCR timing status=complete stage=adapter request_duration_ms=600002 max_request_duration_ms=300001 accepted_responses=2 max_accepted_response_duration_ms=300001 accepted_responses_over_300s=2$/m
+    )
+    assert.match(
+      result.stdout,
+      /^OCR history status=complete stage=adapter misses=6 miss_no_reasoning=2 miss_unknown_turn=2 miss_ambiguous_turn=2$/m
+    )
+    assert.doesNotMatch(result.stdout, /PRIVATE_SENTINEL/)
+    for (const variant of ['legacy', 'invalid', 'unfinished', 'usage']) {
+      const row = structuredClone(receipt)
+      if (variant === 'legacy') {
+        delete row.max_request_duration_ms
+        delete row.history.miss_no_reasoning
+      } else if (variant === 'invalid') {
+        row.accepted_responses_over_300s = 2
+        row.history.miss_no_reasoning = '::error::PRIVATE_SENTINEL'
+      } else if (variant === 'usage') row.missing_usage = 1
+      else row.unfinished_requests = 1
+      fs.writeFileSync(receiptPath, JSON.stringify(row))
+      result = await runCli(['summary', receiptPath], {
+        GITHUB_STEP_SUMMARY: summaryPath,
+      })
+      assert.equal(result.code, 0)
+      if (variant === 'usage') {
+        assert.match(result.stdout, /^OCR timing status=complete /m)
+        assert.match(result.stdout, /^OCR cost status=unavailable /m)
+      } else assert.match(result.stdout, /^OCR timing status=unavailable$/m)
+      if (variant === 'legacy' || variant === 'invalid') {
+        assert.match(result.stdout, /^OCR history status=unavailable$/m)
+        assert.match(result.stdout, /^OCR cost status=complete reasons=none$/m)
+      }
+      assert.doesNotMatch(result.stdout, /PRIVATE_SENTINEL/)
+    }
+  } finally {
+    await adapter.close()
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('cost summary CLI logs and appends the same report, preserving success when either sink fails', async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-cost-summary-'))
   try {
@@ -472,6 +958,7 @@ test('cost summary CLI logs and appends the same report, preserving success when
     assert.doesNotMatch(summary, /private-source-marker/)
     for (const contents of [
       '',
+      'null',
       '{private-source-marker',
       JSON.stringify(costReceipt({ missing_usage: 1 })),
     ]) {
@@ -921,6 +1408,10 @@ test('an unmapped assistant replay fails closed with or without reasoning', asyn
       assert.equal(result.json.error.code, 'history_missing')
       assert.equal(fetchImpl.calls.length, 0)
     }
+    assert.equal(adapter.diagnostics().history.misses, 2)
+    assert.equal(adapter.diagnostics().history.miss_no_reasoning, 1)
+    assert.equal(adapter.diagnostics().history.miss_unknown_turn, 1)
+    assert.equal(adapter.diagnostics().history.miss_ambiguous_turn, 0)
   } finally {
     await adapter.close()
   }
@@ -1382,6 +1873,7 @@ test('one length-limited tool-free turn can continue natively; a repeated failur
       assert.ok(fetchImpl.calls.every((call) => call.body.max_tokens === 55))
       const receipt = adapter.diagnostics()
       assert.equal(receipt.completion_tokens, 8)
+      assert.equal(receipt.accepted_responses, recover ? 2 : 1)
       assert.equal(receipt.history.misses, 0)
       assert.equal(receipt.failures.length_no_tool, recover ? 0 : 1)
       assert.equal(receipt.failures.required_tool_call_missing, 0)
@@ -1532,6 +2024,94 @@ test('diagnostics reconcile request types and opaque conversation counters', asy
     assert.ok(receipt.response_bytes > 0)
     assert.ok(receipt.request_duration_ms >= 0)
     assert.doesNotMatch(JSON.stringify(receipt), /private-/)
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('timing separates concurrent maxima, accepted continuations and rejected usage', async () => {
+  let clock = 0
+  let ready
+  const entered = new Promise((resolve) => {
+    ready = resolve
+  })
+  const releases = []
+  const fetchImpl = upstream((_request, index) => {
+    if (index <= 3) {
+      return new Promise((resolve) => {
+        releases.push(() =>
+          resolve(
+            jsonResponse(
+              200,
+              completion({ role: 'assistant', content: 'synthetic' })
+            )
+          )
+        )
+        if (releases.length === 3) ready()
+      })
+    }
+    clock += 300002
+    return jsonResponse(
+      200,
+      completion(
+        {
+          role: 'assistant',
+          content: '',
+          tool_calls: [
+            {
+              id: 'done',
+              type: 'function',
+              function: { name: 'task_done', arguments: '{"state":"DONE"}' },
+            },
+          ],
+        },
+        'length'
+      )
+    )
+  })
+  const adapter = await startAdapter({
+    apiKey: 'synthetic',
+    fetchImpl,
+    now: () => clock,
+  })
+  try {
+    const request = {
+      messages: [{ role: 'user', content: 'synthetic' }],
+      prompt_cache_key: 'synthetic-affinity',
+    }
+    const pending = [
+      postJson(adapter, request),
+      postJson(adapter, request),
+      postJson(adapter, request),
+    ]
+    await entered
+    for (let index = 0; index < 3; index += 1) {
+      clock = 299999 + index
+      releases[index]()
+      assert.equal((await pending[index]).status, 200)
+    }
+    const rejected = await postJson(adapter, {
+      ...request,
+      tools: [{ type: 'function', function: { name: 'task_done' } }],
+    })
+    assert.equal(rejected.status, 422)
+    const receipt = adapter.diagnostics()
+    assert.equal(receipt.responses, 4)
+    assert.equal(receipt.request_duration_ms, 1200002)
+    assert.equal(receipt.max_request_duration_ms, 300002)
+    assert.equal(receipt.accepted_responses, 3)
+    assert.equal(receipt.max_accepted_response_duration_ms, 300001)
+    assert.equal(receipt.accepted_responses_over_300s, 1)
+    assert.equal(receipt.request_types.main.accepted_responses, 0)
+    assert.equal(receipt.request_types.auxiliary.accepted_responses, 3)
+    for (const row of receipt.conversations) {
+      assert.equal(row.accepted_responses, row.kind === 'main' ? 0 : 3)
+      assert.equal(
+        row.max_request_duration_ms,
+        row.kind === 'main' ? 300002 : 300001
+      )
+    }
+    assert.doesNotMatch(JSON.stringify(receipt), /synthetic-affinity/)
   } finally {
     await adapter.close()
   }
@@ -1732,6 +2312,11 @@ test('compression restores only exact reasoned turns, retaining native thinking 
     () => history.remember([{ role: 'user', content: 'fourth group' }], native),
     /bound/
   )
+  const misses = history.diagnostics()
+  assert.equal(misses.miss_no_reasoning, 1)
+  assert.equal(misses.miss_unknown_turn, 4)
+  assert.equal(misses.miss_ambiguous_turn, 1)
+  assert.equal(misses.misses, 6)
 })
 
 test('request conversion and native replay work over the loopback listener', async () => {
@@ -2259,6 +2844,7 @@ test('adapter classifies failures once without changing responses or accounting'
       assert.equal(receipt.requests, 1)
       assert.equal(receipt.upstream_attempts, 1)
       assert.equal(receipt.responses, 0)
+      assert.equal(receipt.accepted_responses, 0)
       assert.equal(receipt.request_types.auxiliary.failures[category], 1)
       assert.equal(estimateCost(JSON.stringify(receipt)), null)
       assert.doesNotMatch(JSON.stringify(receipt), /private-/)
@@ -2603,6 +3189,7 @@ test('default upstream transport cancels an open response when the adapter clien
   assert.equal(receipt.upstream_attempts, 1)
   assert.equal(receipt.responses, 0)
   assert.equal(receipt.failures.cancelled, 1)
+  assert.equal(receipt.accepted_responses, 0)
   assert.equal(receipt.failures.upstream_timeout, 0)
 })
 
@@ -2680,6 +3267,7 @@ test('callMistral wraps raw fetch failures instead of leaking them', async () =>
 const RUN_SCRIPT =
   'process.stdout.write(JSON.stringify({' +
   ' key: process.env.MISTRAL_API_KEY ?? null,' +
+  ' routerKey: process.env.OPENROUTER_API_KEY ?? null,' +
   ' url: process.env.OCR_LLM_URL ?? null,' +
   ' token: process.env.OCR_LLM_TOKEN != null,' +
   ' model: process.env.OCR_LLM_MODEL ?? null,' +
@@ -2897,20 +3485,30 @@ test('run binds config validation to the opened file across pathname replacement
   }
 })
 
-test('run strips the upstream key and injects the OCR environment', async () => {
-  const result = await runCli(
-    ['run', '--', process.execPath, '-e', RUN_SCRIPT],
-    { MISTRAL_API_KEY: 'sk-dummy-synthetic-run' }
-  )
-  assert.equal(result.code, 0)
-  const seen = JSON.parse(result.stdout)
-  assert.equal(seen.key, null)
-  assert.match(seen.url, /^http:\/\/127\.0\.0\.1:\d+\/v1\/chat\/completions$/)
-  assert.equal(seen.token, true)
-  assert.equal(seen.model, 'zai-glm-5-3')
-  assert.equal(seen.protocol, 'openai')
-  assert.equal(seen.anthropic, 'false')
-  assert.equal(seen.home, process.env.HOME)
+test('run strips both upstream keys and injects only the selected loopback model', async () => {
+  for (const [provider, model] of [
+    [undefined, MISTRAL_MODEL],
+    ['openrouter', 'deepseek/deepseek-v4.1-flash-1017'],
+  ]) {
+    const result = await runCli(
+      ['run', '--', process.execPath, '-e', RUN_SCRIPT],
+      {
+        MISTRAL_API_KEY: 'sk-synthetic-run',
+        OPENROUTER_API_KEY: 'sk-synthetic-router',
+        OCR_ADAPTER_PROVIDER: provider,
+      }
+    )
+    assert.equal(result.code, 0)
+    const seen = JSON.parse(result.stdout)
+    assert.equal(seen.key, null)
+    assert.equal(seen.routerKey, null)
+    assert.match(seen.url, /^http:\/\/127\.0\.0\.1:\d+\/v1\/chat\/completions$/)
+    assert.equal(seen.token, true)
+    assert.equal(seen.model, model)
+    assert.equal(seen.protocol, 'openai')
+    assert.equal(seen.anthropic, 'false')
+    assert.equal(seen.home, process.env.HOME)
+  }
 })
 
 test('run streams filtered progress before completion while preserving raw stderr, JSON and exit status', async (t) => {
