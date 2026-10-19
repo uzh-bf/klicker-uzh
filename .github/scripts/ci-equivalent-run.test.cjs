@@ -635,3 +635,188 @@ for (const field of [
     assert.equal(await findEquivalentRun(options), null)
   })
 }
+
+// An integration push that merged a pull request reuses the run that tested
+// the exact pushed tree. The fixture models a merged sync pull request whose
+// newest run is the closed event and whose ready run validated on the public
+// route.
+function mergedFixture() {
+  const repo = { id: 1, full_name: 'uzh-bf/klicker-uzh' }
+  const success = { status: 'completed', conclusion: 'success' }
+  const head = 'sync/v3-into-v3-ai-0123456789'
+  const pull = {
+    number: 7,
+    merged_at: '2026-10-16T12:00:00Z',
+    merge_commit_sha: 'merge',
+    base: { ref: 'v3-ai', sha: 'base', repo },
+    head: { ref: head, sha: 'head', repo },
+  }
+  const runFor = (id, extra = {}) => ({
+    id,
+    run_attempt: 1,
+    workflow_id: 3,
+    path: '.github/workflows/test-playwright.yml',
+    event: 'pull_request',
+    head_branch: head,
+    head_sha: 'head',
+    head_repository: repo,
+    referenced_workflows: [
+      {
+        path: 'uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3',
+        sha: 'control',
+      },
+    ],
+    html_url: `https://github.com/uzh-bf/klicker-uzh/actions/runs/${id}`,
+    ...success,
+    ...extra,
+  })
+  const state = {
+    commit: {
+      sha: 'merge',
+      parents: [{ sha: 'base' }, { sha: 'head' }],
+      commit: { tree: { sha: 'tree' } },
+    },
+    pulls: [pull],
+    runs: { 20: runFor(20), 12: runFor(12) },
+    jobs: {
+      20: [
+        { name: 'cancel-closed-pr', ...success },
+        { name: 'test-playwright-execution', conclusion: 'skipped' },
+      ],
+      12: [
+        { name: 'cancel-closed-pr', conclusion: 'skipped' },
+        { name: 'execution / build-and-compile-hosted', conclusion: 'skipped' },
+        { name: 'execution / build-and-compile-public-pr', ...success },
+        ...Array.from({ length: 8 }, (_, i) => ({
+          name: `execution / test-playwright-public-pr (${i + 1}, 8)`,
+          ...success,
+        })),
+      ],
+    },
+    receipt: {
+      schemaVersion: 1,
+      event: 'pull_request',
+      runId: 12,
+      runAttempt: 1,
+      headSha: 'head',
+      baseSha: 'base',
+      treeSha: 'tree',
+      controlSha: 'control',
+    },
+  }
+  const list = (data, key) =>
+    key ? { data: { [key]: data, total_count: data.length } } : { data }
+  const github = {
+    rest: {
+      repos: {
+        getCommit: async () => ({ data: state.commit }),
+        listPullRequestsAssociatedWithCommit: async () => list(state.pulls),
+      },
+      actions: {
+        listWorkflowRuns: async () =>
+          list(Object.values(state.runs), 'workflow_runs'),
+        getWorkflowRun: async ({ run_id }) => ({ data: state.runs[run_id] }),
+        listJobsForWorkflowRunAttempt: async ({ run_id }) =>
+          list(state.jobs[run_id], 'jobs'),
+      },
+    },
+  }
+  return {
+    state,
+    options: {
+      github,
+      context: {
+        repo: { owner: 'uzh-bf', repo: 'klicker-uzh' },
+        eventName: 'push',
+        ref: 'refs/heads/v3-ai',
+        sha: 'merge',
+      },
+      kind: 'playwright',
+      controlSha: 'control',
+      plan: fullPlan(),
+      allowPushReuse: true,
+      stagingSourceBranch: 'v3-adaptive-learning',
+      readReceipt: async () => state.receipt,
+      readRoute: async () => ({ route: 'public-pr' }),
+      readPlan: async () => ({
+        ...fullPlan(),
+        headSha: 'head',
+        baseSha: 'base',
+      }),
+    },
+  }
+}
+
+test('an integration push reuses the merged pull request run that tested its tree', async () => {
+  const { options } = mergedFixture()
+  assert.equal((await findEquivalentRun(options)).id, 12)
+})
+
+test('an integration push requires explicit route evidence', async () => {
+  for (const route of [null, {}, { route: 'unknown' }]) {
+    const { state, options } = mergedFixture()
+    state.jobs[12] = state.jobs[12]
+      .filter((job) => !job.name.includes('build-and-compile-hosted'))
+      .map((job) => ({ ...job, name: job.name.replace('public-pr', 'hosted') }))
+    options.readRoute = async () => route
+    assert.equal(await findEquivalentRun(options), null)
+  }
+})
+
+test('an integration push rejects a newer run appearing during proof', async () => {
+  const { state, options } = mergedFixture()
+  const readPlan = options.readPlan
+  options.readPlan = async (...args) => {
+    state.runs[30] = { ...state.runs[12], id: 30, status: 'in_progress' }
+    return readPlan(...args)
+  }
+  assert.equal(await findEquivalentRun(options), null)
+})
+
+test('an integration push validates independently without a complete merge proof', async () => {
+  const rejections = {
+    'caller does not accept push reuse': ({ options }) => {
+      options.allowPushReuse = false
+    },
+    'staging source branch': ({ state, options }) => {
+      options.context.ref = 'refs/heads/v3-adaptive-learning'
+      state.pulls[0].base.ref = 'v3-adaptive-learning'
+    },
+    'unknown staging source': ({ options }) => {
+      options.stagingSourceBranch = ''
+    },
+    'v3 push': ({ options }) => {
+      options.context.ref = 'refs/heads/v3'
+    },
+    'not a merge commit': ({ state }) => {
+      state.commit.parents = [{ sha: 'base' }]
+    },
+    'merged elsewhere': ({ state }) => {
+      state.pulls[0].merge_commit_sha = 'other'
+    },
+    'tested another tree': ({ state }) => {
+      state.receipt.treeSha = 'other-tree'
+    },
+    'tested another base': ({ state }) => {
+      state.receipt.baseSha = 'old-base'
+    },
+    'older control revision': ({ state }) => {
+      state.receipt.controlSha = 'older-control'
+    },
+    'newest validation failed': ({ state }) => {
+      state.runs[12].conclusion = 'failure'
+    },
+    'newer validation still running': ({ state }) => {
+      state.runs[30] = { ...state.runs[12], id: 30, status: 'in_progress' }
+      state.jobs[30] = [{ name: 'cancel-closed-pr', conclusion: 'skipped' }]
+    },
+    'incomplete public coverage': ({ state }) => {
+      state.jobs[12].pop()
+    },
+  }
+  for (const [name, mutate] of Object.entries(rejections)) {
+    const fixture = mergedFixture()
+    mutate(fixture)
+    assert.equal(await findEquivalentRun(fixture.options), null, name)
+  }
+})
