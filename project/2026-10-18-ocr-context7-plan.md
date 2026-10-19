@@ -175,10 +175,11 @@ pass without a skip. A missing binary leaves delivery verification pending.
 
 ## Progress
 
-- Status: source implementation, verification and independent reviews complete;
-  published as [draft PR #6596](https://github.com/uzh-bf/klicker-uzh/pull/6596)
-  against `v3`. The PR carries current hosted-CI evidence.
-- Terminal: reviewed source and draft PR against `v3`; merge/live activation later.
+- Status: source implementation and independent reviews completed in
+  [PR #6596](https://github.com/uzh-bf/klicker-uzh/pull/6596), subsequently merged
+  into `v3`. The October 19 live canary completed the Context7 lookup/cache acceptance.
+- Terminal: the original source delivery and later authorized Context7 live
+  qualification are complete; advisor qualification is a separate follow-up below.
 - Baseline: 101 focused tests passed, including non-skipped pinned-CLI proof.
 - Verification: 251 integrated tests pass with no skips, including all three
   tools through pinned OCR 1.13.0, concurrent quotas and deadline/cancellation.
@@ -191,6 +192,35 @@ pass without a skip. A missing binary leaves delivery verification pending.
   final review passed across correctness, plan compliance, maintainability,
   security and architecture on `25482cffa5c49add66e090f849d6110dbda52749`.
   This final progress-only update preserves the verified implementation.
-- Remaining gate: merge and a live Context7 acceptance run require separate
-  authority. No live-key lookup or merged-workflow acceptance is claimed.
+- Earlier live attempts: [attempt 2](https://github.com/uzh-bf/klicker-uzh/actions/runs/39156599358/attempts/2)
+  received no model responses, so it could not qualify Context7.
+  [Attempt 3](https://github.com/uzh-bf/klicker-uzh/actions/runs/39156599358/attempts/3)
+  completed its source review but both documentation requests returned HTTP 401.
+  These failures remain historical evidence, separate from the passing run.
 - Packaging: one extension to the existing draft-review pipeline; no stack.
+
+### Live qualification and approved follow-up
+
+[Attempt 4](https://github.com/uzh-bf/klicker-uzh/actions/runs/39156599358/attempts/4)
+used trusted `v3` revision `e46665b01aba5da50292eaf4c8e971d39f458993` and
+completed the one selected synthetic source file with no failures. Context7
+recorded one completed upstream lookup, one cache hit and zero failures or
+unresolved usage. All 15 draft-model requests returned responses; provider
+errors and native-history misses were zero. Four trusted context reads completed;
+the advisor was unused.
+
+Filtered documentation-tool events, process exit zero and complete model-cost
+output are readable through `gh`. Estimated model cost was USD 0.0119 with
+cache versus USD 0.0507 without, saving USD 0.0388 (76.5%). The separate Context7
+Pro-overage reference was USD 0.0050 for one upstream request; actual service
+billing remains unknown. Five sanitized diagnostic files have seven-day retention.
+
+The user approved a follow-up on October 19: preserve this evidence, run one
+focused advisor canary under the existing policy, then observe a substantive
+draft review before adding capabilities. Reuse draft PR #6598 and its unchanged
+synthetic helper. Supply a source-grounded question in the PR description,
+request exactly one advisor consultation, and verify schema-valid completion,
+separate usage/cost receipts, selected-file coverage and final-review independence.
+The canary stays draft and unmerged. Existing models, reasoning, budgets,
+accounting and retries remain unchanged. Application testing and preview
+environments remain the planning-only options in the advisor plan.
