@@ -289,5 +289,21 @@ No test pins copy, summaries or translations. Playwright runs in CI only.
   incomplete with a blocker and can save the suggestion unedited, because
   the request requires stored student information.
 - S11 is draft PR #6618, on top of #6577 in stack #6274.
-- Next action: start S12 on `enhance/iteration1-materials-in-place`, branched
-  from S11.
+- S12 is committed: `lastChangedAt` as 90327d6a69, the knowledge base card,
+  creating and adding materials in place and the knowledge base page banner
+  as c1cf8e357a, and one German term for the knowledge base as c4515ac112.
+  Browser checks passed: creating proposes the chatbot name, connects, and
+  opens the add-materials dialog without navigation; adding a link refreshes
+  the card counts and the Materials status; the banner leads back to the open
+  Materials section; the card fits 390 px.
+- Departure: the card lists the five most recently added resources, because
+  the resource query orders by creation time. `lastChangedAt` still reports
+  the latest change.
+- Departure: S12 is built in the S11 worktree on its own branch, so the
+  running test runtime serves the top layer without a second stack.
+- Incident: running the GraphQL knowledge integration test in this runtime
+  deleted the local seed data, including the synthetic TEST draft. The
+  baseline seed was restored and a new synthetic TEST draft and knowledge
+  base were created through the UI.
+- Next action: push S12, open its draft PR on top of #6618 in stack #6274,
+  then start S13.
