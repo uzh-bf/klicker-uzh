@@ -5052,6 +5052,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'No knowledge base. Answers use general model knowledge.',
       chatbotSummaryStudents: 'Students see “{title}” before they start.',
       chatbotSummaryStudentsSuggested: 'This is the suggested text.',
+      chatbotSummaryStudentsNotSaved:
+        'The suggested text is ready but not saved yet.',
       chatbotSummaryStudentsInvalid:
         'The title or the introduction is missing.',
       chatbotStudentsPreview: 'Preview',

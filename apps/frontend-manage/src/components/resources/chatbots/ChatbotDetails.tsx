@@ -1634,7 +1634,8 @@ function ChatbotDetails({
     : t('manage.resources.chatbotSummaryMaterialsNone')
 
   // A chatbot created before the suggestion existed has no stored student
-  // information; its editor then starts from the suggested text.
+  // information; its editor then starts from the suggested text, which still
+  // has to be saved before the chatbot can be requested.
   const studentInformationStored =
     savedValues.disclaimerTitle != null ||
     Boolean(chatbot.disclaimerSummary?.id)
@@ -1643,9 +1644,9 @@ function ChatbotDetails({
     introText: savedValues.disclaimerIntroText,
   }
   const studentInformationInvalid =
-    studentInformationStored && isStudentInformationInvalid(studentInformation)
+    isStudentInformationInvalid(studentInformation)
   const studentInformationSuggested =
-    !studentInformationStored ||
+    studentInformationStored &&
     isSuggestedStudentInformation(
       studentInformation,
       suggestedStudentInformation
@@ -1655,20 +1656,20 @@ function ChatbotDetails({
     invalid: studentInformationInvalid,
     suggested: studentInformationSuggested,
   })
-  const studentsSummary = studentInformationInvalid
-    ? t('manage.resources.chatbotSummaryStudentsInvalid')
-    : [
-        t('manage.resources.chatbotSummaryStudents', {
-          title:
-            (studentInformationStored ? savedValues.disclaimerTitle : null) ??
-            t('manage.resources.chatbotDisclaimerSuggestedTitle'),
-        }),
-        studentInformationSuggested
-          ? t('manage.resources.chatbotSummaryStudentsSuggested')
-          : null,
-      ]
-        .filter(Boolean)
-        .join(' ')
+  const studentsSummary = !studentInformationStored
+    ? t('manage.resources.chatbotSummaryStudentsNotSaved')
+    : studentInformationInvalid
+      ? t('manage.resources.chatbotSummaryStudentsInvalid')
+      : [
+          t('manage.resources.chatbotSummaryStudents', {
+            title: savedValues.disclaimerTitle ?? '',
+          }),
+          studentInformationSuggested
+            ? t('manage.resources.chatbotSummaryStudentsSuggested')
+            : null,
+        ]
+          .filter(Boolean)
+          .join(' ')
   const openStudentsPreview = () => {
     const formValues = disclaimerFormRef.current?.values
     setStudentsPreview({
@@ -2071,8 +2072,10 @@ function ChatbotDetails({
                   ? {
                       onSave: () =>
                         void disclaimerFormRef.current?.submitForm(),
+                      // Unstored suggested text can be saved as it is.
                       saveDisabled:
-                        !disclaimerNavigationState.dirty ||
+                        (studentInformationStored &&
+                          !disclaimerNavigationState.dirty) ||
                         disclaimerNavigationState.pending,
                       saving: disclaimerNavigationState.pending,
                       dirty: disclaimerNavigationState.dirty,

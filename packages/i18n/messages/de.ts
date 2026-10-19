@@ -5160,6 +5160,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotSummaryStudents:
         'Studierende sehen „{title}“, bevor sie beginnen.',
       chatbotSummaryStudentsSuggested: 'Das ist der vorgeschlagene Text.',
+      chatbotSummaryStudentsNotSaved:
+        'Der vorgeschlagene Text ist bereit, aber noch nicht gespeichert.',
       chatbotSummaryStudentsInvalid: 'Der Titel oder die Einleitung fehlt.',
       chatbotStudentsPreview: 'Vorschau',
       chatbotStudentsPreviewTitle: 'Was Studierende sehen',
