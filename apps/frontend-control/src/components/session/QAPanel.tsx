@@ -457,7 +457,7 @@ function QAPanel({ quizId, data }: QAPanelProps) {
                 if (!value && counts.pending > 0) {
                   setConfirmModerationOff(true)
                 } else {
-                  setModeration(value)
+                  void setModeration(value)
                 }
               }}
               id="qa-moderation-switch"
