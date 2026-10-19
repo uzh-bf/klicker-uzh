@@ -28,6 +28,10 @@ guidance; development-control and combined-guidance acceptance remain separate.
 Prioritize the representative course-source acceptance decision next: accurate
 retrieval, honest topic coverage, useful explanations and usable citations.
 Keep synthetic prompt comparisons distinct from that user-facing evidence.
+The [real-course protocol](2026-10-18-explainer-assessment-readiness-plan.md#real-course-acceptance-preparation)
+defines five baseline trajectories and manual source checks. Source-bound inputs,
+the permitted provider route and all-in cost admission need qualification before
+any separate execution decision; this preparation grants no additional spending.
 
 The [active quality-decision batch](2026-10-18-explainer-assessment-readiness-plan.md#current-quality-decision-batch)
 owns execution, acceptance and the next spending proposal. It continues the
@@ -38,7 +42,7 @@ superseding the earlier judge-first sequence in the
 | Priority | Outcome | Acceptance and next boundary |
 | --- | --- | --- |
 | 1 | Establish qualification-preserving Explainer revision | Private development comparison and manual assessment complete; review that decision before proposing transfer acceptance |
-| 2 | Establish trustworthy source support and honest task completion | Review the completed attribution decision; prepare representative course-source acceptance, then cover development controls, multipart summaries and genuinely absent material before rollout |
+| 2 | Establish trustworthy source support and honest task completion | Bind the real-course protocol's private sources and approved route, including multipart and absent-material checks; qualify total cost before any paid baseline diagnostic |
 | 3 | Roll out only a supported change and inspect subsequent anonymous use | Preserve the baseline and rollback; obtain named application/deployment authority, verify effective behavior and assess later use before returning to Tutor |
 
 Keep existing capture, import, citation mapping and spending admission stable.

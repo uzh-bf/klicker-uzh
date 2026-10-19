@@ -99,6 +99,9 @@ manual checks of actual answers and passages. Its finite execution and private
 assessment are complete; that authority is consumed. Development controls and
 combined guidance remain outside that comparison. Further capture requires a
 named decision, not replay of a completed operation or historical command.
+The [real-course acceptance preparation](../../../project/2026-10-18-explainer-assessment-readiness-plan.md#real-course-acceptance-preparation)
+is a separate baseline diagnostic; this synthetic corpus is not real-course
+retrieval evidence and is not replaced or expanded by that protocol.
 The older 48-turn protocol below is preparation history, not an instruction to
 run both repetitions automatically.
 

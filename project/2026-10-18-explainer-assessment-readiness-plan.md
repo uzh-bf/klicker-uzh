@@ -1,5 +1,167 @@
 # Explainer quality decision and assessment qualification
 
+## Real-course acceptance preparation
+
+Approval covers zero-spend planning and sanitized draft delivery only. This
+section defines a baseline diagnostic, not a prompt comparison or rollout.
+Use operator-authored German questions and the existing Explainer contract:
+useful direct explanations, preserved qualifications, honest coverage and
+passage-supported citations. No student conversation becomes a case or judge input.
+
+Main owns source selection, private evidence, data/provider decisions and final
+assessment. A read-only planner challenges this protocol without course content
+or runtime records. This is a light-path documentation continuation in the
+existing worktree and artifact root. Keep the corpus, prompts, application,
+framework, metrics and operational helpers unchanged during preparation.
+No runtime startup, remote inventory/search, pricing call, database/KB write,
+ledger initialization, inference, merge, ready transition or deployment.
+
+### Freeze sources before execution
+
+Privately bind the named course/bot/KB, permitted source collection and snapshot,
+application revision, effective Explainer prompt, model/effort, tool endpoint and
+provider route. Existing synthetic-fixture results do not supply these bindings.
+Do not infer current production behavior from the frozen local application.
+
+Select at least three distinct course units from the permitted collection.
+For each question, record the source title/locator, exact page or video range,
+minimal authoritative passages, expected concepts and essential qualifications.
+For summaries, enumerate requested available and unavailable items independently
+of retrieval results. A search miss cannot prove absence: bind the negative
+control to a complete inventory of the named collection, or leave absence
+unassessed. Partial inventory cannot support a course-wide absence claim.
+Incomplete inventory blocks freezing the multipart/negative cases and readiness
+for the complete diagnostic. A narrower collection boundary needs an explicit
+scope decision and identical wording in the questions and absence assessment.
+
+Keep exact questions, passages, locators, mappings and later answers in the
+approved private custody location, with restrictive permissions and retention.
+Shared artifacts contain protocol and status only. Use only course-owner-approved
+teaching material without student contributions, profiles or personal examples.
+A synthetic operator identity does not make course passages synthetic or public.
+
+Prefer the institution-approved model/retrieval data boundary. The earlier
+synthetic OpenRouter route grants no permission to transmit private course
+excerpts there. Approve the exact provider and source use before any send.
+The existing capture target accepts local origins only; keep that policy.
+Any isolated local application connection to the real KB, private source copy or
+new KB requires its named access/write authority and source-version binding.
+Do not bypass hostname checks, alter the live bot or create an unapproved mirror.
+If the existing guard cannot qualify the approved route, record that app-specific
+blocker rather than adding an evaluator or silently substituting a provider.
+
+### Five baseline trajectories
+
+Propose one fresh two-turn thread per row, one baseline arm, one repetition:
+ten learner turns. The source-bound questions are not yet frozen; the forms below
+are authored task templates, not claims that a particular source exists.
+Replace slots privately after source verification; do not supply the expected
+facts in the learner prompt. Keep the three-unit spread and every required
+task type. These inspected cases are diagnostics, not blind holdouts.
+
+| Task | First turn | Follow-up and essential acceptance |
+| --- | --- | --- |
+| Locate a course unit | Request an explanation from a verified numbered unit using its number | Clarify with its exact title; retrieve the intended unit, answer usefully and distinguish ambiguity from missing material |
+| Explain across sources | Ask how two verified concepts relate, each in a different unit | Ask for a concrete example; preserve both concepts, distinguish supplied evidence from illustration and cite only supported claims |
+| Revise without losing meaning | Ask for notes on a source containing an important condition or exception | Request at most three short bullets; immediately revise and retain each meaning-changing qualification |
+| Complete a multipart summary | Request three verified available items and one independently verified absent item | Ask what remains uncovered; deliver available work immediately, identify each missing/partial item and never claim complete coverage |
+| Respect an evidence boundary | Ask what a verified source says about an independently checked unsupported detail | Ask whether an illustrative extension follows; distinguish what is stated, inferred or unknown without inventing course policy or refusing useful supported explanation |
+
+Freeze per-turn criteria and source expectations before seeing answers.
+Assess both turns for factual accuracy, usefulness, scope, citations and honest
+support; apply revision formatting only to its requested follow-up. Use manual
+2/1/0/U criteria, accepting correct paraphrases: 2 satisfies the criterion,
+1 partly satisfies it, 0 violates it, U lacks adequate assessment evidence.
+Every frozen criterion is essential; 0 or 1 fails behavioral acceptance and U
+leaves it unassessed unless another criterion already establishes failure.
+Unsupported attribution, invented content, lost qualifications and false
+completion are critical failures. Report each case and axis separately.
+A completed diagnosis may establish failed behavior; it is not a passing bot.
+Do not average labels into population accuracy or learning-effectiveness claims.
+
+### Capture and assessment contract
+
+Reuse the existing application-native trajectory format, capture and offline
+importer. Keep source-bound corpus data private and separate from the unchanged
+synthetic compression corpus. Retain case/turn/branch identity and planned
+incomplete or invalid trajectories. No new runner, scorer, proof script, judge,
+framework pin or application-specific framework code is proposed.
+Generic automated assessment stays in the Python framework if a recurring need
+later warrants it; manual assessment is sufficient for this diagnostic.
+
+Before paid readiness, verify that the existing capture and authorized evidence
+access can expose the required layers. The normalized importer alone does not
+guarantee outgoing passages or rendered citation targets. Bind a concrete source
+for each layer; unavailable critical evidence blocks dependent acceptance and
+paid readiness, with the missing capability recorded. Preparation has not
+qualified these paths for the real-course target and proposes no new collector.
+
+Inspect intent, tool arguments, retrieval, selected sources, actual outgoing
+passages, answer and persisted/rendered citations as separate evidence.
+Check every emitted marker at its stated level of detail, including added
+examples. A correct index does not establish support; zero markers do not
+establish success when retrieved evidence was used. Distinguish unavailable
+content, query/ranking failure, projection loss, generation and rendering.
+
+Later execution must include signed-in browser acceptance with a synthetic
+operator on the isolated target: open the cited page/video range and reload the
+existing thread without another model send. Count any additional sent message
+inside the ten-turn limit. Do not claim OLAT launch, live course access or
+production acceptance from this local browser check. Keep screenshots and actual
+source content private.
+
+### Conditional budget and terminal
+
+Propose a new experiment only after source/route binding: the initializer's
+existing US$55/48-turn ceiling, execution restricted to these ten learner turns.
+This is an additional allowance proposal, not renewal/reset of any old ledger.
+The US$5 default remains unchanged. No ledger is created by preparation and no
+remaining capacity in the proposed ceiling authorizes a second arm or repeat.
+
+Allow at most six answer-provider requests and five retrieval calls per learner
+turn: sixty model requests and fifty retrieval calls total, with no paid retries.
+These are ceilings, not an assumption that every turn needs those calls.
+Before execution, qualify the exact route, current all-in prices, input/output/
+reasoning limits, fees and retry/fallback behavior. Bound every billable component,
+including retrieval embeddings/reranking and any billable qualification.
+Require enforceable aggregate admission before sends, with
+`60 * model_request_bound + 50 * retrieval_call_bound + other_bound <= US$55`.
+A zero-cost retrieval bound requires evidence; the model guard alone does not
+bound a remote tool's charges. If the total cannot be enforced or does not fit,
+stop paid readiness and propose a smaller complete scope or separate bounded
+qualification. Do not reduce safety bounds or add code to make the proposal fit.
+
+The next executable proposal must name the source/data authority, exact target
+and provider, qualified cost bindings, new ledger identity, private custody,
+local setup effects and recovery. Stop on drift, uncertain cost, missing critical
+evidence or admission failure; retain attempted and unstarted coverage. Assess
+each completed trajectory before starting the next. Finish with the baseline
+diagnosis and smallest responsible improvement; restore/read back any changed
+local configuration and stop the exact touched runtime. No shared prompt edit,
+candidate apply, live KB write, rollout or learner-benefit claim follows.
+
+Preparation ends with this reviewed protocol and a private readiness checklist.
+Source selection, current route compatibility, complete absence evidence and
+cost qualification remain explicit prerequisites, not silently assumed proof.
+Preparation produces the next bounded zero-spend source/route-binding preflight
+proposal. That later proposal must name authority for scoped source inspection,
+complete collection inventory and route/pricing metadata access. Private source
+access, isolated-app connectivity and route qualification are not performed or
+authorized by this planning batch. The ten-turn paid diagnostic remains separate.
+
+Proposed preflight scope: use existing authenticated read paths for the named
+course/bot configuration, its KB inventory and permitted source passages; freeze
+the five private question/source cards; inspect evidence access and exact
+provider/pricing metadata without inference. No new cluster connection, app/KB
+write, source transmission to an answer/judge model or synthetic retrieval
+substitution. Finish with a source-bound readiness packet or an explicit list of
+unavailable bindings. This is the next authority decision, not work performed here.
+
+The protocol passed read-only planning review after corrections to absence
+proof, criterion meanings, evidence feasibility and the preflight boundary.
+Zero-spend protocol preparation is complete; source-bound execution readiness
+is not claimed.
+
 ## Approved attribution execution
 
 Approved on 19 October 2026: adapt and qualify the existing local session wiring,
