@@ -146,9 +146,10 @@ production configuration change.
 - The client and the server share one whole-minute rule (rounded down), so
   the minute the student sees matches the line the model received for that
   turn.
-- Owner preview shows the same line. Preview persists no thread, so its clock
-  anchors to the preview's first turn and stays approximate; this matches the
-  zero-minute model line in preview.
+- Owner preview shows the same line. Preview persists no thread, so its
+  indicator counts from the preview's first message on the client, while the
+  model line in preview always reports zero minutes. Lecturers can check the
+  wording there; participant threads carry the real elapsed time.
 
 ### Caching and persistence
 
@@ -249,7 +250,13 @@ TLS inside it.
 
 ## Progress
 
-- Plan approved, then revised to add student chat indicators (slice 5);
-  awaiting re-approval.
-- Slices 1-4 are implemented in the working tree, not yet verified or
-  committed: the dev container is still starting.
+- Slices 1-5 implemented and committed on `rs/persona-voice-language-lock`.
+- Verification: util tests (162) and the full chat suite (1578) pass; chat,
+  manage, util and types type checks, ESLint, Biome format and GraphQL codegen
+  are clean. The pre-commit and pre-push hooks need a host install that this
+  linked worktree must not have, so the same checks ran in the container.
+- Browser evidence captured from this worktree's stack with synthetic modes;
+  live model replies were not available locally (no model key or local MCP
+  tool), so reply-language compliance needs a separate live evaluation.
+- Final review: no correctness findings; the branch-anchor, prose-test,
+  wiki and preview-wording follow-ups are applied.
