@@ -271,7 +271,19 @@ No test pins copy, summaries or translations. Playwright runs in CI only.
 
 ## Progress
 
-- Status: approved on 2026-10-19. F1 is on #6577 (67547123e1). Executing S11.1.
-- Next action on approval: commit the response examples flag fix on #6577.
-  Then create the S11 worktree from the #6577 head, commit this plan, and
-  start S11.1.
+- Status: approved on 2026-10-19. F1 is on #6577 (67547123e1).
+- S11.1 to S11.3 are committed as 3bcdb98fce, S11.4 as 99260f7ff9 and the
+  draft spec migration as b7a6828e8a.
+  Browser checks passed: saving closes a section and updates its status,
+  "Discard changes" restores saved values, the preview dialog shows unsaved
+  edits, a blocked request names its sections, and the page content fits
+  390 px. The sideways scroll at 390 px comes from the app's top navigation,
+  which this plan does not change.
+- Departure: drafts lose their tabs in S11, so the draft parts of the
+  Playwright specs move to S11 to keep CI green. S13.3 keeps the published,
+  pending and paused parts.
+- Departure: "Default" for the model mirrors the server rule for new
+  chatbots (GPT-6 Luna when it is a base model, otherwise Auto). Materials
+  also show a warning when a resource failed.
+- Next action: push S11 and open its
+  draft PR in stack #6274.
