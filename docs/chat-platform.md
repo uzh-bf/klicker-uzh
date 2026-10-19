@@ -1051,6 +1051,14 @@ streaming regression in `playwright/tests/Y-chat.spec.ts` pauses before a closin
 observes the DOM for raw delimiters, partial formulas, and KaTeX errors, then asserts the final
 formula, surrounding Markdown, and assistant-row identity.
 
+## Voice input (on-device dictation)
+
+Dictation uses assistant-ui's composer dictation: `ComposerPrimitive.Dictate` and `StopDictation` in `src/components/dictation-controls.tsx`, backed by `OnDeviceDictationAdapter` in `src/lib/speech/onDeviceDictation.ts`. The composer runtime merges the transcript into the existing draft, shows interim text in the input, and cancels the session on send; the adapter only translates recognizer events.
+
+The privacy contract is on-device only. The availability probe passes `{ langs, processLocally: true, quality: 'dictation' }`, every recognition session sets `processLocally = true`, and there is no cloud fallback. No audio or transcript provenance is stored. `useOnDeviceDictation` (`src/components/dictation-context.tsx`) passes the adapter to the runtime only once the probe reports a local language pack; a downloadable pack opens an explicit install sheet first. Mobile browsers and embedded chats never probe or show the control. German chats dictate in `de-DE` (Standard German), all others in `en-US`.
+
+Headless Chromium terminates the renderer when the availability probe runs without the media service, so under `navigator.webdriver` the probe runs only when a test polyfill sets `window.__dictationFake`. Positive support on a real browser remains a manual check.
+
 ## Localization
 
 Chat has no locale switcher: the locale comes from the `NEXT_LOCALE` cookie and falls back to `en` ([ADR 0001](./adr/0001-chat-locale-from-cookie.md)). It is resolved **directly in the chat-local `getRequestConfig`** (`src/types/i18n.ts`). Relying on `setRequestLocale`/`requestLocale` alone produces a split brain — `<html lang>` follows the cookie while server-side `getTranslations()` stays on the default locale. Messages come from the static `messagesByLocale` map exported there, which the root layout reuses: Turbopack cannot build a dynamic-import context for a bare package subpath (`import('@klicker-uzh/i18n/messages/' + locale)`), so the dynamic form silently resolves nothing in this app. Strings live in `packages/i18n/messages/{en,de}.ts`; `apps/chat/src/types/app.d.ts` enforces en/de key parity through a `DeepIntersection`, so a missing key fails `pnpm --filter @klicker-uzh/chat check` rather than at runtime. German addressed to students is informal (`Du`/`Dein`/`Dir`), instructors are "Dozierende", and Swiss `ss` is used instead of `ß`.

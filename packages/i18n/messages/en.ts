@@ -236,6 +236,37 @@ export default {
       attachmentPreviewAlt: 'Attachment preview',
       removeAttachment: 'Remove attachment',
       attachImage: 'Attach image',
+      dictation: 'Dictate message',
+      dictationSetup: 'Set up dictation',
+      dictationStop: 'Stop dictation',
+      dictationListening: 'Listening...',
+      dictationLanguageHint: 'German dictation uses Standard German.',
+      dictationSheetTitle: 'Enable on-device dictation',
+      dictationSheetBody:
+        'Recognition runs on this device, and no audio is sent to the chat service. Your browser will ask for microphone access when you start dictation.',
+      dictationSheetDownload: 'Download',
+      dictationSheetNotNow: 'Not now',
+      dictationSheetInstalling: 'Downloading the language pack...',
+      dictationSheetFailed:
+        'The language pack could not be installed. Try again or continue typing.',
+      dictationSheetRetry: 'Try download again',
+      dictationSheetCheckAgain: 'Check availability again',
+      dictationSheetReady: 'The language pack is ready on this device.',
+      dictationSheetStart: 'Start dictation',
+      dictationErrorAborted: 'Dictation was cancelled.',
+      dictationErrorAudioCapture:
+        'The microphone could not be opened. Check your browser permissions.',
+      dictationErrorInstall: 'The local language pack could not be installed.',
+      dictationErrorLanguageNotSupported:
+        'This language is not supported for on-device dictation.',
+      dictationErrorNetwork:
+        'The browser reported a network error for dictation.',
+      dictationErrorNoSpeech: 'No speech was detected. Try again.',
+      dictationErrorNotAllowed:
+        'Microphone access was denied. Allow it in your browser settings.',
+      dictationErrorServiceNotAllowed:
+        'The browser did not allow the dictation service.',
+      dictationErrorUnknown: 'Dictation could not be started. Try again.',
       attachmentFallbackLabel: 'Attachment',
       editCancel: 'Cancel',
       editSend: 'Send',
