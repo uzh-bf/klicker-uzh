@@ -11,6 +11,7 @@ import { useChatContextStore } from '../stores/chatContextStore'
 import {
   useChatStore,
   type ExtendedThreadMessageLike,
+  type MeetingClockAnchor,
   type ThreadRunOutcome,
 } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
@@ -321,6 +322,7 @@ export function useChatResponse(
         } | null = null
         let hasFinishEvent = false
         let hasStreamError = false
+        let meetingClock: MeetingClockAnchor | null = null
 
         const buildAssistantMessage = (): ExtendedThreadMessageLike => ({
           id: assistantMessageId,
@@ -335,6 +337,7 @@ export function useChatResponse(
             (messageMetadata?.reasoningContent ?? currentReasoningContent) ||
             null,
           creditsUsed: messageMetadata?.creditsUsed ?? null,
+          meetingClock,
         })
 
         if (reader) {
@@ -591,6 +594,18 @@ export function useChatResponse(
                   hasFinishEvent = true
                 } else if (jsonData.type === 'message-metadata') {
                   // No UI update needed
+                } else if (
+                  jsonData.type === 'start' &&
+                  typeof jsonData.messageMetadata?.meetingClockStartedAt ===
+                    'string' &&
+                  typeof jsonData.messageMetadata?.serverNow === 'string'
+                ) {
+                  meetingClock = {
+                    startedAt: jsonData.messageMetadata.meetingClockStartedAt,
+                    skewMs:
+                      Date.parse(jsonData.messageMetadata.serverNow) -
+                      Date.now(),
+                  }
                 } else if (
                   [
                     'start', // stream started
