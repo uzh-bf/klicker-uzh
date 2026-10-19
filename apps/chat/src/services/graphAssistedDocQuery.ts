@@ -195,12 +195,13 @@ function relevanceOrder(candidates: Passage[]): {
     }
   const lanes: Passage[][] = []
   for (const passage of candidates) {
-    const lane = lanes[lanes.length - 1]
-    if (lane && lane[0]!.source === passage.source) lane.push(passage)
+    const lane = lanes.at(-1)
+    if (lane && lane[0]?.source === passage.source) lane.push(passage)
     else lanes.push([passage])
   }
   const ordered: Passage[] = []
-  for (let depth = 0; ordered.length < candidates.length; depth += 1)
+  const deepest = Math.max(...lanes.map((lane) => lane.length))
+  for (let depth = 0; depth < deepest; depth += 1)
     for (const lane of lanes)
       if (depth < lane.length) ordered.push(lane[depth]!)
   return { ordered, lanes: lanes.length }
