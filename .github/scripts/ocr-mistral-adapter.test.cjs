@@ -504,6 +504,87 @@ test('progress heartbeats reflect quiet time and finish clears the timer exactly
   assert.doesNotMatch(records.join(''), /SENTINEL|::/)
 })
 
+test('compression telemetry records bounded snapshots and rejects incomplete or untrusted records', () => {
+  const marker = '[ocr] compression_telemetry version=1\n'
+  const start = '[ocr] compression_started before_estimated_tokens=200\n'
+  const end =
+    '[ocr] compression_finished outcome=rebuilt before_estimated_tokens=200 after_estimated_tokens=50\n'
+  const records = []
+  let time = 0
+  let tick
+  const progress = createProgressReporter((line) => records.push(line), {
+    now: () => time,
+    setInterval(callback) {
+      tick = callback
+      return { unref() {} }
+    },
+    clearInterval() {},
+  })
+  progress.write(marker + start + start)
+  assert.equal(progress.compression().complete, false)
+  time = 60000
+  tick()
+  assert.match(records.at(-1), /event=heartbeat elapsed_ms=60000 idle_ms=60000/)
+  progress.write(end.slice(0, 45))
+  progress.write(end.slice(45))
+  progress.write(
+    '[ocr] compression_finished outcome=cancelled before_estimated_tokens=200 after_estimated_tokens=200\n'
+  )
+  progress.finish({ code: 7 })
+  assert.deepEqual(progress.compression(), {
+    schema_version: 1,
+    complete: true,
+    started: 2,
+    rebuilt: 1,
+    unchanged: 0,
+    failed: 0,
+    cancelled: 1,
+    rebuilt_before_estimated_tokens: 200,
+    rebuilt_after_estimated_tokens: 50,
+  })
+  assert.match(records.join(''), /event=compression_finished outcome=rebuilt/)
+  const snapshot = progress.compression()
+  snapshot.started = 999
+  assert.equal(progress.compression().started, 2)
+  for (const [text, drained] of [
+    ['', true],
+    [marker + start, true],
+    [marker + end, true],
+    [start + end, true],
+    [marker + start + end.trimEnd(), true],
+    [marker + start + end, false],
+    [
+      marker +
+        '[ocr] compression_started before_estimated_tokens=1000000000000\n',
+      true,
+    ],
+    [marker + '[ocr] compression_finished outcome=PRIVATE_SENTINEL\n', true],
+    [
+      marker + '[ocr] compression_' + 'PRIVATE_SENTINEL'.repeat(400) + '\n',
+      true,
+    ],
+    [
+      marker +
+        '[ocr] compression_finished outcome=failed before_estimated_tokens=2 after_estimated_tokens=1\n',
+      true,
+    ],
+  ]) {
+    const live = []
+    const reporter = createProgressReporter((line) => live.push(line))
+    reporter.write(text)
+    reporter.finish({ code: 0, stderrComplete: drained })
+    assert.equal(reporter.compression().complete, false)
+    assert.doesNotMatch(live.join(''), /PRIVATE_SENTINEL|::/)
+  }
+  const zero = createProgressReporter(() => {
+    throw new Error('synthetic sink failure')
+  })
+  zero.write(marker)
+  zero.finish({ code: 0 })
+  assert.equal(zero.compression().complete, true)
+  assert.equal(zero.compression().started, 0)
+})
+
 test('heartbeat and terminal sink failures preserve lifecycle cleanup', () => {
   let time = 0
   let tick
@@ -798,7 +879,7 @@ test('manual workflows reconcile shared stage receipts against independent step 
     const block = source.match(
       new RegExp(`\\n  ${job}:\\n([\\s\\S]*?)(?=\\n  [a-z][\\w-]*:\\n|$)`)
     )[1]
-    const steps = block.split(/^      - name: /m).slice(1)
+    const steps = block.split(/^ {6}- name: /m).slice(1)
     const preflight = steps.find((step) => step.includes('id: preflight'))
     const execution = steps.find((step) => step.includes(`id: ${stepId}`))
     const summary = steps.find((step) =>
@@ -958,6 +1039,17 @@ test('execution summary validates new timing and history independently of legacy
       miss_unknown_turn: 1,
       miss_ambiguous_turn: 1,
     })
+    receipt.compression = {
+      schema_version: 1,
+      complete: true,
+      started: 2,
+      rebuilt: 1,
+      unchanged: 1,
+      failed: 0,
+      cancelled: 0,
+      rebuilt_before_estimated_tokens: 200,
+      rebuilt_after_estimated_tokens: 50,
+    }
     const receiptPath = path.join(directory, 'receipt.jsonl')
     const summaryPath = path.join(directory, 'summary.md')
     fs.writeFileSync(
@@ -978,6 +1070,36 @@ test('execution summary validates new timing and history independently of legacy
       /^OCR history status=complete stage=adapter misses=6 miss_no_reasoning=2 miss_unknown_turn=2 miss_ambiguous_turn=2$/m
     )
     assert.doesNotMatch(result.stdout, /PRIVATE_SENTINEL/)
+    assert.match(
+      result.stdout,
+      /^OCR compression status=complete stage=adapter started=4 rebuilt=2 unchanged=2 failed=0 cancelled=0 rebuilt_before_estimated_tokens=400 rebuilt_after_estimated_tokens=100$/m
+    )
+    for (const compression of [
+      undefined,
+      { ...receipt.compression, complete: false },
+      { ...receipt.compression, started: 1 },
+      {
+        ...receipt.compression,
+        rebuilt_before_estimated_tokens: 'PRIVATE_SENTINEL',
+      },
+      {
+        ...receipt.compression,
+        rebuilt_before_estimated_tokens: Number.MAX_SAFE_INTEGER,
+      },
+    ]) {
+      const row = { ...receipt, compression }
+      fs.writeFileSync(
+        receiptPath,
+        [receipt, row, row].map(JSON.stringify).join('\n')
+      )
+      result = await runCli(['summary', receiptPath, 'adapter=3'], {
+        GITHUB_STEP_SUMMARY: summaryPath,
+      })
+      assert.equal(result.code, 0)
+      assert.match(result.stdout, /^OCR compression status=unavailable$/m)
+      assert.match(result.stdout, /^OCR cost status=complete reasons=none$/m)
+      assert.doesNotMatch(result.stdout, /PRIVATE_SENTINEL/)
+    }
     for (const variant of ['legacy', 'invalid', 'unfinished', 'usage']) {
       const row = structuredClone(receipt)
       if (variant === 'legacy') {
@@ -3877,9 +3999,12 @@ test('a missing live-log descriptor never falls back into result or private stde
 })
 
 test('live progress cleanup is bounded when a descendant keeps stderr open', async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-drain-'))
+  const diagnosticsPath = path.join(directory, 'diagnostics.jsonl')
   const script = `
     const { spawn } = require('node:child_process')
     const fs = require('node:fs')
+    fs.writeSync(2, '[ocr] compression_telemetry version=1\\n')
     const descendant = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], {
       detached: true, stdio: ['ignore', 'ignore', 'inherit']
     })
@@ -3895,6 +4020,7 @@ test('live progress cleanup is bounded when a descendant keeps stderr open', asy
         ...process.env,
         MISTRAL_API_KEY: 'synthetic-upstream-key',
         OCR_ADAPTER_PROGRESS_FD: '3',
+        OCR_ADAPTER_DIAGNOSTICS_PATH: diagnosticsPath,
       },
       stdio: ['ignore', 'pipe', 'pipe', 'pipe'],
     }
@@ -3915,6 +4041,7 @@ test('live progress cleanup is bounded when a descendant keeps stderr open', asy
       } catch {}
     }
     if (child.exitCode === null) child.kill('SIGKILL')
+    fs.rmSync(directory, { recursive: true, force: true })
   })
   await waitFor(() => {
     try {
@@ -3935,8 +4062,49 @@ test('live progress cleanup is bounded when a descendant keeps stderr open', asy
     const receipt = JSON.parse(stdout)
     assert.doesNotThrow(() => process.kill(receipt.pid, 0))
     await assert.rejects(fetch(receipt.url, { method: 'POST', body: '{}' }))
+    const diagnostics = JSON.parse(fs.readFileSync(diagnosticsPath, 'utf8'))
+    assert.equal(diagnostics.compression.complete, false)
+    assert.equal(diagnostics.compression.started, 0)
   } finally {
     clearTimeout(timer)
+  }
+})
+
+test('run retains compression telemetry arriving after direct-child exit before persisting one receipt', async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-late-stderr-'))
+  const diagnosticsPath = path.join(directory, 'diagnostics.jsonl')
+  const script = `
+    const { spawn } = require('node:child_process')
+    process.stderr.write('[ocr] compression_telemetry version=1\\n[ocr] compression_started before_estimated_tokens=200\\n')
+    const descendant = spawn(process.execPath, ['-e',
+      "setTimeout(() => process.stderr.write('[ocr] compression_finished outcome=rebuilt before_estimated_tokens=200 after_estimated_tokens=50\\\\n'), 100)"
+    ], { detached: true, stdio: ['ignore', 'ignore', 'inherit'] })
+    descendant.unref()
+    process.exitCode = 7
+  `
+  try {
+    const result = await runCli(
+      ['run', '--', process.execPath, '-e', script],
+      {
+        MISTRAL_API_KEY: 'synthetic-upstream-key',
+        OCR_ADAPTER_PROGRESS_FD: '3',
+        OCR_ADAPTER_DIAGNOSTICS_PATH: diagnosticsPath,
+      },
+      { liveProgress: true }
+    )
+    assert.equal(result.code, 7)
+    const rows = fs.readFileSync(diagnosticsPath, 'utf8').trim().split('\n')
+    assert.equal(rows.length, 1)
+    const receipt = JSON.parse(rows[0])
+    assert.equal(receipt.compression.complete, true)
+    assert.equal(receipt.compression.started, 1)
+    assert.equal(receipt.compression.rebuilt, 1)
+    assert.equal(receipt.compression.rebuilt_after_estimated_tokens, 50)
+    assert.equal(receipt.requests, 0)
+    assert.match(result.live, /event=compression_finished outcome=rebuilt/)
+    assert.match(result.live, /event=process_exited exit_code=7/)
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
   }
 })
 

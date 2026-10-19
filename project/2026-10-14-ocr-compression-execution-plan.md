@@ -108,8 +108,8 @@ establish current live savings or complete provider review acceptance.
   passed on refresh commit `10295e6830`; no qualifying findings. Source and
   verification remain unchanged by this progress update. Hosted CI is pending;
   no new application or paid-provider acceptance claimed.
-- Existing [PR #6531](https://github.com/uzh-bf/klicker-uzh/pull/6531) stays open;
-  merge and live activation remain separately gated.
+- Previous [PR #6531](https://github.com/uzh-bf/klicker-uzh/pull/6531) merged.
+  Its live canary completed; the follow-up below adds direct compression telemetry.
 
 
 ## Compression telemetry follow-up
@@ -187,7 +187,7 @@ UI change or screenshot applies.
 
 ### Telemetry protocol and receipt contract
 
-Fixed producer records: a version-one marker when the runner is constructed;
+Fixed producer records: a version-one marker when a main task starts;
 started plus the input context estimate immediately before each eligible
 compression request; finished with outcome rebuilt, unchanged, failed or
 cancelled and the input/returned-snapshot estimates. Disabled/no-work paths do
@@ -235,3 +235,18 @@ defines snapshot outcomes, explicit receipt ordering, incomplete-telemetry cases
 ownership and the existing fixture. Installer changes remain unnecessary.
 
 Planner round two: APPROVED. Proceed with the approved telemetry slice.
+
+Telemetry implementation progress: producer/parser/receipt integration is complete.
+209 repository tests passed, one optional native-binary case pending fresh build.
+The first real-binary probe caught a marker emitted before JSON routing; moving
+the marker to main-task startup preserves structured stdout. Fresh installer and
+repeat-compression stress verification are running. No workflow settings changed.
+
+Fresh qualification: 209 repository checks passed; all six native runner tests
+passed with the actual patched executable, including the initially skipped
+binary case. Both upstream Go race suites passed. The network-disabled synthetic
+stress completed all five selected files and matched 17 compression lifecycle
+records to 17 mock summarization requests. These are synthetic counts, not live
+performance or savings measurements. Format/syntax and diff hygiene passed;
+unified-patch context whitespace is checked separately from ordinary source.
+No workflow, model, reasoning, accounting or retry settings changed.
