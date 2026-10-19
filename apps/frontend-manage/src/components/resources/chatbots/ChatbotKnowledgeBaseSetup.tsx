@@ -9,7 +9,6 @@ import {
   GetUserCoursesDocument,
   GetUserKbsDocument,
   KbIngestionStatus,
-  KbResourceStatus,
   KbResourceType,
   QGetChatbotsInfoWithKnowledgeBasesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -80,15 +79,11 @@ function KnowledgeBaseCard({
     { variables: { kbId: knowledgeBase.id, first: RECENT_RESOURCE_COUNT } }
   )
   const resources = data?.getKbResources.items ?? []
-  const activeCount = resources.filter(
-    ({ status, latestIngestionRun }) =>
-      status === KbResourceStatus.Queued ||
-      status === KbResourceStatus.Processing ||
-      latestIngestionRun?.status === KbIngestionStatus.Queued ||
-      latestIngestionRun?.status === KbIngestionStatus.Processing
-  ).length
-  // The counts come from the chatbot list, so they are refreshed once the
-  // listed resources have finished processing.
+  // Counted over every resource of the knowledge base, not only the listed
+  // ones, so a large upload keeps polling until all of it has settled.
+  const activeCount = data?.getKbResources.inProgressCount ?? 0
+  // The counts come from the chatbot list, so they are refreshed once every
+  // resource has finished processing.
   const previousActiveCount = useRef(activeCount)
   useEffect(() => {
     if (activeCount > 0) startPolling(ACTIVE_RESOURCE_POLL_MS)
@@ -571,7 +566,6 @@ function ChatbotKnowledgeBaseSetup({
           triggerRef={addResourceTriggerRef}
           onClose={() => {
             setAddResourceKb(undefined)
-            void refreshMaterials()
             if (!addResourceTriggerRef.current) {
               window.requestAnimationFrame(() =>
                 addFilesRef.current?.querySelector('button')?.focus()
