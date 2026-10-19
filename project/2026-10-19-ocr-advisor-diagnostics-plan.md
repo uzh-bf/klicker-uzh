@@ -94,4 +94,14 @@ verification and remaining hosted-CI limitations; do not request human reviewers
 - Approval: granted for the three-change package and standing draft delivery.
 - Planning: planner Epicurus approved the frozen implementation contract.
 - Baseline verification: 14 passed, zero failed; optional pinned-CLI test skipped.
-- Implementation, reviews and draft publication: pending.
+- Implementation: integrated broker/runner/guide changes complete. Executor Aquinas
+  owns the accepted broker patch; main owns runner integration and delivery.
+- Verification: 19 broker/runner tests and 224 adapter/policy tests passed;
+  optional pinned-CLI case skipped because OCR 1.13.0 is unavailable locally.
+  Biome has zero errors and existing warnings; Prettier, syntax and diff checks
+  pass. Scoped Opengrep: 200 rules, zero findings.
+- Test delta: five broker cases added, existing concurrency/failure/cancellation
+  and runner receipt tests extended; no tests removed.
+- Reviews and draft publication: pending on the committed implementation.
+- Packaging: one coherent PR; six total changed paths. Substantive size and
+  immutable review range recorded in private review evidence after commit.

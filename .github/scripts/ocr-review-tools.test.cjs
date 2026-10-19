@@ -30,6 +30,11 @@ function fixture(t) {
     Array.from({ length: 120 }, (_, i) => `${i} ${'x'.repeat(100)}`).join('\n')
   )
   fs.writeFileSync(path.join(repo, 'source.js'), 'export const value = 1\n')
+  fs.mkdirSync(path.join(repo, 'app/[id]'), { recursive: true })
+  fs.writeFileSync(
+    path.join(repo, 'app/[id]/page.js'),
+    'export default function Page() {\n  return null\n}\n'
+  )
   git('add', '.')
   git('commit', '-m', 'chore: synthetic base')
   const policy = git('rev-parse', 'HEAD')
@@ -498,8 +503,20 @@ test('MCP context reads trusted Git content and rejects traversal, symlinks and 
   assert.equal(browser.status, 403)
 })
 
-test('all concurrent review workers share two attempted consultations and receive no private reasoning', async (t) => {
+test('concurrent consultations keep reserved ordinals when completion order reverses', async (t) => {
   const requests = []
+  let releaseFirst
+  let startedFirst
+  let startedSecond
+  const firstStarted = new Promise((resolve) => {
+    startedFirst = resolve
+  })
+  const secondStarted = new Promise((resolve) => {
+    startedSecond = resolve
+  })
+  const firstRelease = new Promise((resolve) => {
+    releaseFirst = resolve
+  })
   const { broker, tool } = await client(t, {
     ...fixture(t),
     advisorUrl: 'http://127.0.0.1:12345/v1/chat/completions',
@@ -508,17 +525,28 @@ test('all concurrent review workers share two attempted consultations and receiv
       requests.push(JSON.parse(init.body))
       assert.ok(Buffer.byteLength(init.body) <= 16384)
       assert.equal(new URL(url).hostname, '127.0.0.1')
-      await new Promise((resolve) => setTimeout(resolve, 20))
+      if (requests.length === 1) {
+        startedFirst()
+        await firstRelease
+        throw new Error('PRIVATE_SENTINEL')
+      }
+      startedSecond()
       return advice()
     },
   })
-  const results = await Promise.all([
-    tool('ask_review_advisor', question),
-    tool('ask_review_advisor', question),
-    tool('ask_review_advisor', question),
-  ])
+  const firstCall = tool('ask_review_advisor', question)
+  await firstStarted
+  const secondCall = tool('ask_review_advisor', question)
+  await secondStarted
+  const thirdCall = tool('ask_review_advisor', question)
+  const third = await thirdCall
+  const second = await secondCall
+  releaseFirst()
+  const first = await firstCall
   assert.equal(requests.length, 2)
-  assert.equal(results.filter((result) => result.result.isError).length, 1)
+  assert.equal(first.result.isError, true)
+  assert.notEqual(second.result.isError, true)
+  assert.equal(third.result.isError, true)
   for (const body of requests) {
     assert.equal(body.reasoning_effort, 'max')
     assert.equal(body.model, 'zai-glm-5-3')
@@ -526,16 +554,45 @@ test('all concurrent review workers share two attempted consultations and receiv
     assert.equal(body.tools.length, 1)
     assert.equal(body.tool_choice.function.name, 'review_advice')
   }
-  assert.equal(JSON.stringify(results).includes('PRIVATE_SENTINEL'), false)
+  assert.equal(
+    JSON.stringify([first, second, third]).includes('PRIVATE_SENTINEL'),
+    false
+  )
   assert.deepEqual(
     [
       broker.diagnostics().attempted,
       broker.diagnostics().completed,
+      broker.diagnostics().failed,
       broker.diagnostics().rejected,
     ],
-    [2, 2, 1]
+    [2, 1, 1, 1]
   )
+  assert.equal(broker.diagnostics().dispatched, 2)
+  assert.deepEqual(broker.diagnostics().attempt_outcomes, [
+    {
+      attempt: 1,
+      stage: 'dispatch',
+      outcome: 'failed',
+      reason: 'transport_error',
+      dispatched: true,
+    },
+    {
+      attempt: 2,
+      stage: 'advice',
+      outcome: 'completed',
+      reason: null,
+      dispatched: true,
+    },
+  ])
   assert.equal(broker.diagnostics().status, 'consulted')
+  const snapshot = broker.diagnostics()
+  const expectedOutcomes = broker.diagnostics().attempt_outcomes
+  snapshot.dispatched = 99
+  snapshot.attempt_outcomes[0].reason = 'PRIVATE_SENTINEL'
+  snapshot.attempt_outcomes.push({ attempt: 3 })
+  assert.equal(broker.diagnostics().dispatched, 2)
+  assert.deepEqual(broker.diagnostics().attempt_outcomes, expectedOutcomes)
+  assert.doesNotMatch(JSON.stringify(broker.diagnostics()), /PRIVATE_SENTINEL/)
 })
 
 test('invalid source and truncated advice consume attempts without retries or accepted output', async (t) => {
@@ -560,6 +617,177 @@ test('invalid source and truncated advice consume attempts without retries or ac
   assert.equal(calls, 1)
   assert.equal(broker.diagnostics().completed, 0)
   assert.equal(broker.diagnostics().failed, 2)
+  assert.equal(broker.diagnostics().dispatched, 1)
+  assert.deepEqual(broker.diagnostics().attempt_outcomes, [
+    {
+      attempt: 1,
+      stage: 'source',
+      outcome: 'failed',
+      reason: 'invalid_source',
+      dispatched: false,
+    },
+    {
+      attempt: 2,
+      stage: 'advice',
+      outcome: 'failed',
+      reason: 'length',
+      dispatched: true,
+    },
+  ])
+})
+
+test('advisor validation diagnostics distinguish malformed, schema and evidence failures', async (t) => {
+  const base = fixture(t)
+  const cases = [
+    [
+      'invalid_response',
+      async () => {
+        const payload = await advice().json()
+        payload.choices[0].message.tool_calls[0].function.arguments = '{'
+        return new Response(JSON.stringify(payload))
+      },
+    ],
+    [
+      'invalid_advice',
+      async () => {
+        const payload = await advice().json()
+        payload.choices[0].message.tool_calls[0].function.arguments = '{}'
+        return new Response(JSON.stringify(payload))
+      },
+    ],
+    [
+      'invalid_evidence',
+      async () => {
+        const payload = await advice().json()
+        const call = payload.choices[0].message.tool_calls[0]
+        const value = JSON.parse(call.function.arguments)
+        value.evidence[0].line = 2
+        call.function.arguments = JSON.stringify(value)
+        return new Response(JSON.stringify(payload))
+      },
+    ],
+  ]
+  for (const [reason, response] of cases) {
+    const { broker, tool } = await client(t, {
+      ...base,
+      advisorUrl: 'http://127.0.0.1:12345/v1/chat/completions',
+      advisorToken: 'local',
+      fetchImpl: response,
+    })
+    const result = await tool('ask_review_advisor', question)
+    assert.equal(result.result.content[0].text, 'invalid_advice')
+    assert.equal(broker.diagnostics().dispatched, 1)
+    assert.deepEqual(broker.diagnostics().attempt_outcomes, [
+      {
+        attempt: 1,
+        stage: 'advice',
+        outcome: 'failed',
+        reason,
+        dispatched: true,
+      },
+    ])
+    assert.doesNotMatch(
+      JSON.stringify(broker.diagnostics()),
+      /PRIVATE_SENTINEL/
+    )
+  }
+})
+
+test('unavailable advisors consume one attempt without dispatch', async (t) => {
+  const { broker, tool } = await client(t, fixture(t))
+  const result = await tool('ask_review_advisor', question)
+  assert.equal(result.result.content[0].text, 'advisor_unavailable')
+  assert.equal(broker.diagnostics().dispatched, 0)
+  assert.deepEqual(broker.diagnostics().attempt_outcomes, [
+    {
+      attempt: 1,
+      stage: 'availability',
+      outcome: 'failed',
+      reason: 'advisor_unavailable',
+      dispatched: false,
+    },
+  ])
+})
+
+test('advisor source paths accept literal brackets and reject unsafe or absent paths', async (t) => {
+  const base = fixture(t)
+  const bracketPath = 'app/[id]/page.js'
+  const valid = await client(t, {
+    ...base,
+    advisorUrl: 'http://127.0.0.1:12345/v1/chat/completions',
+    advisorToken: 'local',
+    fetchImpl: async () => {
+      const payload = await advice().json()
+      const call = payload.choices[0].message.tool_calls[0]
+      const value = JSON.parse(call.function.arguments)
+      value.evidence[0].path = bracketPath
+      call.function.arguments = JSON.stringify(value)
+      return new Response(JSON.stringify(payload))
+    },
+  })
+  const accepted = await valid.tool('ask_review_advisor', {
+    question: question.question,
+    context: [{ path: bracketPath, start_line: 1, end_line: 1 }],
+  })
+  assert.notEqual(accepted.result.isError, true)
+  for (const path of [
+    '../.git/config',
+    '.env',
+    'private.key',
+    'escape.js',
+    'absent.js',
+  ]) {
+    const rejected = await client(t, {
+      ...base,
+      advisorUrl: 'http://127.0.0.1:12345/v1/chat/completions',
+      advisorToken: 'local',
+      fetchImpl: async () => advice(),
+    })
+    const result = await rejected.tool('ask_review_advisor', {
+      question: question.question,
+      context: [{ path, start_line: 1, end_line: 1 }],
+    })
+    assert.equal(result.result.content[0].text, 'invalid_source')
+    assert.equal(rejected.broker.diagnostics().dispatched, 0)
+  }
+})
+
+test('individually valid ranges can exceed the aggregate request bound without dispatch', async (t) => {
+  let calls = 0
+  const { broker, tool } = await client(t, {
+    ...fixture(t),
+    advisorUrl: 'http://127.0.0.1:12345/v1/chat/completions',
+    advisorToken: 'local',
+    fetchImpl: async () => {
+      calls += 1
+      return advice()
+    },
+  })
+  const context = [
+    { path: 'docs/long.md', start_line: 1, end_line: 70 },
+    { path: 'docs/long.md', start_line: 31, end_line: 100 },
+    { path: 'docs/long.md', start_line: 51, end_line: 120 },
+  ]
+  for (const range of context) {
+    const read = await tool('read_review_context', range)
+    assert.notEqual(read.result.isError, true)
+  }
+  const result = await tool('ask_review_advisor', {
+    question: question.question,
+    context,
+  })
+  assert.equal(result.result.content[0].text, 'context_too_large')
+  assert.equal(calls, 0)
+  assert.equal(broker.diagnostics().dispatched, 0)
+  assert.deepEqual(broker.diagnostics().attempt_outcomes, [
+    {
+      attempt: 1,
+      stage: 'request',
+      outcome: 'failed',
+      reason: 'context_too_large',
+      dispatched: false,
+    },
+  ])
 })
 
 test('disconnect and close cancel the advisor request with bounded cleanup', async (t) => {
@@ -591,4 +819,73 @@ test('disconnect and close cancel the advisor request with bounded cleanup', asy
   await broker.close()
   assert.equal(broker.diagnostics().completed, 0)
   assert.equal(broker.diagnostics().cancelled, 1)
+  assert.deepEqual(broker.diagnostics().attempt_outcomes, [
+    {
+      attempt: 1,
+      stage: 'dispatch',
+      outcome: 'failed',
+      reason: 'cancelled',
+      dispatched: true,
+    },
+  ])
+})
+
+test('advisor deadline is diagnosed as timeout without changing cancellation behavior', async (t) => {
+  const originalSetTimeout = global.setTimeout
+  const originalClearTimeout = global.clearTimeout
+  let deadline
+  let started
+  const entered = new Promise((resolve) => {
+    started = resolve
+  })
+  const dormantTimer = originalSetTimeout(() => {}, 0)
+  originalClearTimeout(dormantTimer)
+  global.setTimeout = (callback, delay, ...args) => {
+    if (delay === 480000) {
+      deadline = () => callback(...args)
+      return dormantTimer
+    }
+    return originalSetTimeout(callback, delay, ...args)
+  }
+  try {
+    const { broker, tool } = await client(t, {
+      ...fixture(t),
+      advisorUrl: 'http://127.0.0.1:12345/v1/chat/completions',
+      advisorToken: 'local',
+      fetchImpl: async (_url, init) => {
+        started()
+        return new Promise((_resolve, reject) =>
+          init.signal.addEventListener(
+            'abort',
+            () => reject(new Error('PRIVATE_SENTINEL')),
+            { once: true }
+          )
+        )
+      },
+    })
+    const pending = tool('ask_review_advisor', question)
+    await entered
+    assert.equal(typeof deadline, 'function')
+    deadline()
+    const result = await pending
+    assert.equal(result.result.content[0].text, 'cancelled')
+    assert.equal(broker.diagnostics().cancelled, 1)
+    assert.equal(broker.diagnostics().failed, 1)
+    assert.deepEqual(broker.diagnostics().attempt_outcomes, [
+      {
+        attempt: 1,
+        stage: 'dispatch',
+        outcome: 'failed',
+        reason: 'timeout',
+        dispatched: true,
+      },
+    ])
+    assert.doesNotMatch(
+      JSON.stringify(broker.diagnostics()),
+      /PRIVATE_SENTINEL/
+    )
+  } finally {
+    global.setTimeout = originalSetTimeout
+    global.clearTimeout = originalClearTimeout
+  }
 })

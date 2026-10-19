@@ -50,7 +50,7 @@ const TOOLS = [
   {
     name: 'ask_review_advisor',
     description:
-      'Ask the final-review model one consequential source-grounded question. Two attempted consultations shared by the entire run; advice is not final approval.',
+      'Ask the final-review model one consequential source-grounded question. Two attempted consultations are shared by the entire run; failures consume an attempt. The complete serialized request is limited to 16 KiB including its envelope. Source files are limited to 256 KiB; each range is limited to 120 lines and 8 KiB. Prefer the smallest sufficient ranges. Advice is not final approval.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -115,7 +115,7 @@ function validPath(value) {
   return (
     typeof value === 'string' &&
     value.length <= 300 &&
-    /^[\w.@()/-]+$/.test(value) &&
+    /^[\w.@()\[\]/-]+$/.test(value) &&
     !value.startsWith('/') &&
     !value
       .split('/')
@@ -217,17 +217,23 @@ async function readBody(stream, limit, controller) {
 function validateAdvice(payload, context) {
   const choice = payload?.choices?.[0]
   const calls = choice?.message?.tool_calls
+  function invalid(reason) {
+    return Object.assign(failure('invalid_advice'), {
+      diagnosticReason: reason,
+    })
+  }
+  if (choice?.finish_reason === 'length') throw invalid('length')
   if (
     choice?.finish_reason !== 'tool_calls' ||
     calls?.length !== 1 ||
     calls[0].function?.name !== 'review_advice'
   )
-    throw failure('invalid_advice')
+    throw invalid('invalid_advice')
   let advice
   try {
     advice = JSON.parse(calls[0].function.arguments)
   } catch {
-    throw failure('invalid_advice')
+    throw invalid('invalid_response')
   }
   if (
     !keys(advice, ['assessment', 'answer', 'evidence']) ||
@@ -238,7 +244,7 @@ function validateAdvice(payload, context) {
     !Array.isArray(advice.evidence) ||
     advice.evidence.length > 4
   )
-    throw failure('invalid_advice')
+    throw invalid('invalid_advice')
   for (const item of advice.evidence) {
     if (
       !keys(item, ['path', 'line', 'detail']) ||
@@ -252,7 +258,7 @@ function validateAdvice(payload, context) {
           item.line <= range.end_line
       )
     )
-      throw failure('invalid_advice')
+      throw invalid('invalid_evidence')
   }
   return advice
 }
@@ -452,6 +458,8 @@ async function startReviewTools(options) {
     schema: 'ocr-review-tools/v1',
     registered: false,
     attempted: 0,
+    dispatched: 0,
+    attempt_outcomes: [],
     completed: 0,
     failed: 0,
     rejected: 0,
@@ -477,6 +485,9 @@ async function startReviewTools(options) {
   function diagnostics() {
     return {
       ...state,
+      attempt_outcomes: state.attempt_outcomes.map((attempt) => ({
+        ...attempt,
+      })),
       docs: {
         ...state.docs,
         status:
@@ -676,16 +687,32 @@ async function startReviewTools(options) {
       throw failure('advisor_quota_exhausted')
     }
     state.attempted += 1
+    const attemptOrdinal = state.attempted
+    const attemptOutcome = {
+      attempt: attemptOrdinal,
+      stage: 'availability',
+      outcome: 'running',
+      reason: null,
+      dispatched: false,
+    }
+    state.attempt_outcomes.push(attemptOutcome)
     emit()
     const controller = new AbortController()
     active.set(id, controller)
-    const timer = setTimeout(() => controller.abort(), 480000)
+    let deadline = false
+    const timer = setTimeout(() => {
+      if (!controller.signal.aborted) {
+        deadline = true
+        controller.abort()
+      }
+    }, 480000)
     const disconnect = () => {
       if (!response.writableEnded) controller.abort()
     }
     response.once('close', disconnect)
     try {
       if (!advisorAvailable) throw failure('advisor_unavailable')
+      attemptOutcome.stage = 'question'
       if (
         !keys(input, ['question', 'context']) ||
         typeof input.question !== 'string' ||
@@ -696,9 +723,11 @@ async function startReviewTools(options) {
         input.context.length > 3
       )
         throw failure('invalid_question')
+      attemptOutcome.stage = 'source'
       const context = input.context.map((range) =>
         readRange(repo, head, range, false)
       )
+      attemptOutcome.stage = 'request'
       const body = {
         model: 'zai-glm-5-3',
         reasoning_effort: 'max',
@@ -729,6 +758,9 @@ async function startReviewTools(options) {
       const raw = JSON.stringify(body)
       if (Buffer.byteLength(raw) > 16384) throw failure('context_too_large')
       if (controller.signal.aborted || closing) throw failure('cancelled')
+      attemptOutcome.stage = 'dispatch'
+      attemptOutcome.dispatched = true
+      state.dispatched += 1
       const upstream = await (options.fetchImpl ?? fetch)(advisorUrl, {
         method: 'POST',
         headers: {
@@ -739,15 +771,57 @@ async function startReviewTools(options) {
         signal: controller.signal,
         redirect: 'error',
       })
+      attemptOutcome.stage = 'response'
       if (!upstream.ok || !upstream.body) throw failure('advisor_unavailable')
       const payload = JSON.parse(
         await readBody(upstream.body, 262144, controller)
       )
+      attemptOutcome.stage = 'advice'
       const advice = validateAdvice(payload, context)
       state.completed += 1
+      attemptOutcome.outcome = 'completed'
       return advice
     } catch (error) {
       state.failed += 1
+      let reason = 'tool_failed'
+      if (deadline) reason = 'timeout'
+      else if (error?.code === 'response_too_large') reason = error.code
+      else if (controller.signal.aborted || error?.code === 'cancelled')
+        reason = 'cancelled'
+      else if (attemptOutcome.stage === 'availability')
+        reason = 'advisor_unavailable'
+      else if (attemptOutcome.stage === 'question') reason = 'invalid_question'
+      else if (attemptOutcome.stage === 'source') {
+        if (
+          [
+            'invalid_source',
+            'invalid_range',
+            'source_unavailable',
+            'context_too_large',
+          ].includes(error?.code)
+        )
+          reason = error.code
+      } else if (attemptOutcome.stage === 'request') {
+        if (error?.code === 'context_too_large') reason = error.code
+      } else if (attemptOutcome.stage === 'dispatch') {
+        reason = 'transport_error'
+      } else if (attemptOutcome.stage === 'response') {
+        if (error?.code === 'advisor_unavailable') reason = error.code
+        else if (error?.code === 'response_too_large') reason = error.code
+        else reason = 'invalid_response'
+      } else if (attemptOutcome.stage === 'advice') {
+        if (
+          [
+            'length',
+            'invalid_response',
+            'invalid_advice',
+            'invalid_evidence',
+          ].includes(error?.diagnosticReason)
+        )
+          reason = error.diagnosticReason
+      }
+      attemptOutcome.outcome = 'failed'
+      attemptOutcome.reason = reason
       if (controller.signal.aborted) {
         state.cancelled += 1
         throw failure('cancelled')
