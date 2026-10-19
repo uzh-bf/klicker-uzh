@@ -290,6 +290,8 @@ Three properties matter when debugging it:
 - A failed lookup degrades silently: the route logs `Student practice lookup failed; continuing without quiz candidates` and answers without the tool. A missing practice quiz is therefore an infrastructure symptom, not necessarily a model one.
 - `getStudentPracticeMcpUrl` falls back to `http://localhost:7080` **only** when `NODE_ENV=development`; in production an unset `MCP_STUDENT_URL`/`MCP_STUDENT_HOST` yields `null` and the feature is simply off. The devcontainer starts both `mcp-student` and `mcp-lecturer` through `package.json:dev:container`, so tutor-mode practice tools and lecturer tools are available without a separate MCP process.
 
+A practice card can open beside the chat in the same workspace as code cards (see [Working code in code cards](#working-code-in-code-cards)). Its answers, timing and any pending submission belong to the one mounted card and stay in page memory; nothing is written to storage. A synchronous guard allows one submission request at a time, and the card checks the question's expiry again at submit time, because a hidden card's expiry timer may not have fired. A failed request keeps the answer for an explicit retry; the card never retries on its own.
+
 ## Browser code playground
 
 Learners can run short Python and R programs from a code card in the thread. The code runs only in the learner's browser, in a sandboxed runner with no network access; [ADR 0052](adr/0052-browser-code-execution-isolation.md) records the isolation design.

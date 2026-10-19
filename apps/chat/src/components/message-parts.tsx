@@ -29,6 +29,7 @@ import {
 } from '@/src/components/markdown-text'
 import { CODE_CARD_TOOL_NAME } from '@/src/lib/code-runner/profiles'
 import { formatReasoningEffort } from '@/src/lib/config/reasoning'
+import { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from '@/src/services/studentPracticeMcp'
 import { resolveDisclosureOpen } from './message-parts-state'
 import { useHasAvailableChatMode } from './mode-options-context'
 import { ToolFallback } from './tool-fallback'
@@ -248,7 +249,9 @@ export const AssistantMessageParts: FC = () => {
     <MessagePrimitive.GroupedParts
       indicator="never"
       groupBy={(part, context) =>
-        part.type === 'tool-call' && part.toolName === CODE_CARD_TOOL_NAME
+        part.type === 'tool-call' &&
+        (part.toolName === CODE_CARD_TOOL_NAME ||
+          part.toolName === STUDENT_PRACTICE_QUIZ_TOOL_NAME)
           ? []
           : groupByType(part, context)
       }

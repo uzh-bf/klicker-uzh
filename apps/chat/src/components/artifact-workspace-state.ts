@@ -1,4 +1,5 @@
 import type { CodeProfile } from '@klicker-uzh/code-runner'
+import type { PracticeQuizToolResult } from './student-practice-quiz-card'
 
 /**
  * A completed tool result that can move between its inline place in the
@@ -11,7 +12,14 @@ export interface CodeArtifact {
   starterCode: string
 }
 
-export type Artifact = CodeArtifact
+/** A practice question from a completed tool result; answers stay in memory. */
+export interface PracticeArtifact {
+  id: string
+  kind: 'practice'
+  quiz: PracticeQuizToolResult
+}
+
+export type Artifact = CodeArtifact | PracticeArtifact
 
 /** What the workspace shows: nothing, the knowledge graph, or one artifact. */
 export type WorkspaceView = null | 'graph' | { artifactId: string }

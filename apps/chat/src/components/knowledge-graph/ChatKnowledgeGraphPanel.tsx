@@ -1,6 +1,7 @@
 'use client'
 
 import { useAui } from '@assistant-ui/react'
+import type { CodeProfile } from '@klicker-uzh/code-runner'
 import { useCodeLanguageName } from '@klicker-uzh/code-runner/react'
 import type { KnowledgeGraphAskSelection } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphView'
 import { ArrowLeft, Maximize2, Minimize2, X } from 'lucide-react'
@@ -334,7 +335,11 @@ export function ChatKnowledgeGraphPanel({
                   key={artifact.id}
                   artifact={artifact}
                   current={artifact.id === artifactId}
-                  number={index + 1}
+                  number={
+                    switcherArtifacts
+                      .slice(0, index)
+                      .filter(({ kind }) => kind === artifact.kind).length + 1
+                  }
                   onClick={() => workspace.open(artifact.id)}
                 />
               ))}
@@ -394,10 +399,25 @@ function ArtifactSwitcherButton({
   number: number
   onClick: () => void
 }) {
-  const language = useCodeLanguageName(artifact.profile)
+  const t = useTranslations('chat.practiceCard')
   return (
     <SwitcherButton current={current} onClick={onClick}>
-      {`${language} ${number}`}
+      {artifact.kind === 'code' ? (
+        <CodeSwitcherLabel number={number} profile={artifact.profile} />
+      ) : (
+        t('switcher', { number })
+      )}
     </SwitcherButton>
   )
+}
+
+function CodeSwitcherLabel({
+  profile,
+  number,
+}: {
+  profile: CodeProfile
+  number: number
+}) {
+  const language = useCodeLanguageName(profile)
+  return `${language} ${number}`
 }

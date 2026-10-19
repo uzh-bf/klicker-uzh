@@ -1,12 +1,14 @@
 export default {
   chat: {
     workspace: {
-      label: 'Code workspace',
+      label: 'Workspace',
       views: 'Workspace views',
       backToChat: 'Back to chat',
-      close: 'Close code workspace',
+      close: 'Close workspace',
       fullscreen: 'Expand workspace to fullscreen',
       restore: 'Return workspace to sidebar',
+      open: 'Open beside chat',
+      showHere: 'Show here',
     },
     graphPanel: {
       missingEndpoint: 'Unknown concept',
@@ -455,9 +457,11 @@ export default {
         'This browser blocks saving here, so your changes are lost when you leave this page.',
       previewNote:
         'In the preview, your changes are lost when you reload the page.',
-      openInWorkspace: 'Open beside chat',
       openedInWorkspace: 'The {language} playground is open beside the chat.',
-      showHere: 'Show here',
+    },
+    practiceCard: {
+      openedInWorkspace: 'The practice question is open beside the chat.',
+      switcher: 'Practice {number}',
     },
     sources: {
       title: 'Sources',

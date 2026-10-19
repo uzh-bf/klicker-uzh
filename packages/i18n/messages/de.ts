@@ -1,12 +1,14 @@
 export default {
   chat: {
     workspace: {
-      label: 'Code-Arbeitsbereich',
+      label: 'Arbeitsbereich',
       views: 'Ansichten im Arbeitsbereich',
       backToChat: 'Zurück zum Chat',
-      close: 'Code-Arbeitsbereich schliessen',
+      close: 'Arbeitsbereich schliessen',
       fullscreen: 'Arbeitsbereich im Vollbild anzeigen',
       restore: 'Arbeitsbereich in der Seitenleiste anzeigen',
+      open: 'Neben dem Chat öffnen',
+      showHere: 'Hier anzeigen',
     },
     graphPanel: {
       missingEndpoint: 'Unbekannter Begriff',
@@ -464,10 +466,12 @@ export default {
         'Dein Browser verhindert das Speichern hier, daher gehen deine Änderungen verloren, wenn du diese Seite verlässt.',
       previewNote:
         'In der Vorschau gehen deine Änderungen beim Neuladen der Seite verloren.',
-      openInWorkspace: 'Neben dem Chat öffnen',
       openedInWorkspace:
         'Die {language}-Spielwiese ist neben dem Chat geöffnet.',
-      showHere: 'Hier anzeigen',
+    },
+    practiceCard: {
+      openedInWorkspace: 'Die Übungsfrage ist neben dem Chat geöffnet.',
+      switcher: 'Übung {number}',
     },
     sources: {
       title: 'Quellen',

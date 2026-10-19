@@ -25,10 +25,10 @@ import {
   useArtifactWorkspace,
 } from './artifact-workspace'
 import { ChatUiProvider } from './chat-ui-context'
-import { renderChatArtifact } from './code-card'
 import { ChatKnowledgeGraphPanel } from './knowledge-graph/ChatKnowledgeGraphPanel'
 import { ModeOptionsProvider } from './mode-options-context'
 import { Thread } from './thread'
+import { renderChatArtifact } from './tool-fallback'
 
 type OwnerPreviewAssistantProps = {
   chatbot: {
