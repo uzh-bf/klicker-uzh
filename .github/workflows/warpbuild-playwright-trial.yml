@@ -81,6 +81,12 @@ jobs:
           const shardRunner = { group: 'Default', labels: env.TRIAL_SHARD_LABEL }
           const plan = JSON.parse(fs.readFileSync('playwright-execution-plan.json'))
           if (plan.mode !== 'full' || plan.shardCount !== 8 || plan.shards.length !== 8 ||
+              plan.shards.some(({ shardIndex, shardTotal, files }) =>
+                !Number.isInteger(shardIndex) || shardIndex < 1 || shardIndex > 8 ||
+                shardTotal !== 8 || !Array.isArray(files)) ||
+              new Set(plan.shards.map(({ shardIndex }) => shardIndex)).size !== 8 ||
+              JSON.stringify(plan.shards.flatMap(({ files }) => files).sort()) !==
+                JSON.stringify(plan.candidateSpecs.slice().sort()) ||
               JSON.stringify(plan.selectedSpecs) !== JSON.stringify(plan.candidateSpecs) ||
               plan.headSha !== env.TRIAL_SOURCE_SHA || plan.baseSha !== env.TRIAL_SOURCE_SHA) {
             throw new Error('trial requires complete same-source eight-shard coverage')

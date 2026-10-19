@@ -1169,6 +1169,25 @@ test('runner qualification rejects mismatched plans and unsupported experiment d
   ]) {
     assertRejected(run({}, changePlan), changePlan.toString())
   }
+  for (const [index, change] of [
+    [1, { shardIndex: 1 }],
+    [0, { shardIndex: 9 }],
+    [0, { shardTotal: 7 }],
+    [0, { files: [] }],
+    [0, { files: plan.shards[1].files }],
+    [0, { files: [...plan.shards[0].files, 'tests/extra.spec.ts'] }],
+    [0, { files: plan.shards[0].files[0] }],
+  ]) {
+    assertRejected(
+      run({}, (p) => ({
+        ...p,
+        shards: p.shards.map((shard, i) =>
+          i === index ? { ...shard, ...change } : shard
+        ),
+      })),
+      JSON.stringify({ index, change })
+    )
+  }
 })
 
 test('runner qualification aggregate distinguishes unadmitted work and rejects incomplete producers', () => {

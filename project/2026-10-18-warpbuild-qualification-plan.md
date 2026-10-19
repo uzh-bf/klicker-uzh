@@ -211,3 +211,9 @@ main-session self-reviews under the explicit no-subagent instruction.
 The corrected 96-contract suite, YAML and embedded Bash syntax, Biome, Prettier,
 diff checks and scoped two-file Opengrep scan pass. Exact-head remote checks
 remain a separate publication gate.
+
+The admission script also verifies that shard indices form the unique range
+one through eight, every leg declares the same total, and shard files partition
+the candidate specs exactly. Synthetic negative plans cover duplicate or invalid
+indices, wrong totals, missing/duplicate/extra files and malformed file lists.
+The disabled barrier and frozen workload remain unchanged.
