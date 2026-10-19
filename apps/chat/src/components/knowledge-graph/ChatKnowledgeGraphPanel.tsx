@@ -174,7 +174,9 @@ export function ChatKnowledgeGraphPanel({
 
   // Opened artifacts in the order they appeared in the conversation.
   const switcherArtifacts = (workspace?.state.artifacts ?? []).filter(
-    (artifact) => workspace?.state.opened.includes(artifact.id)
+    (artifact) =>
+      workspace?.state.opened.includes(artifact.id) &&
+      (workspace.state.present[artifact.id] ?? 0) > 0
   )
   const showSwitcher =
     switcherArtifacts.length + (workspace?.graphSwitchable ? 1 : 0) > 1

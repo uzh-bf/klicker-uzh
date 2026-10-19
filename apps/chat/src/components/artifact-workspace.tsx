@@ -10,13 +10,18 @@ import {
   useMemo,
   useReducer,
   useRef,
+  useState,
 } from 'react'
 import { createPortal } from 'react-dom'
 import {
   type Artifact,
   type ArtifactWorkspaceState,
   artifactWorkspaceReducer,
+  type CodeArtifact,
+  getTabStorage,
   initialArtifactWorkspaceState,
+  restoreWorkingCode,
+  saveWorkingCode,
 } from './artifact-workspace-state'
 
 export interface ArtifactWorkspaceValue {
@@ -25,11 +30,15 @@ export interface ArtifactWorkspaceValue {
   graphSwitchable: boolean
   /** Artifacts always open as a fullscreen dialog, as in an embedded frame. */
   alwaysFullscreen: boolean
+  /** Working code is saved in this tab; false for memory-only owner preview. */
+  savesWorkingCode: boolean
   register: (artifact: Artifact) => void
+  /** Counts a mounted conversation anchor; returns the matching release. */
+  anchorMounted: (artifactId: string) => () => void
   open: (artifactId: string) => void
   showGraph: () => void
   close: () => void
-  editCode: (artifactId: string, code: string) => void
+  editCode: (artifact: CodeArtifact, code: string) => void
   containerFor: (artifactId: string) => HTMLDivElement
 }
 
@@ -48,10 +57,12 @@ export function useArtifactWorkspace(): ArtifactWorkspaceValue | null {
  * in the conversation and in the workspace adopt. Moving the container keeps
  * the mounted card, so edits, a running attempt and its output survive
  * opening, switching and closing. A changed scope key drops all artifacts.
+ * With `storage`, working code is saved per tab under that owner scope.
  */
 export function ArtifactWorkspaceProvider({
   children,
   scopeKey,
+  storage,
   graphAvailable,
   graphSwitchable,
   graphInitiallyOpen = false,
@@ -60,6 +71,8 @@ export function ArtifactWorkspaceProvider({
 }: {
   children: ReactNode
   scopeKey: string | null
+  /** Opaque server-derived owner scope and chatbot; absent keeps edits in memory. */
+  storage?: { scope: string; chatbotId: string }
   graphAvailable: boolean
   graphSwitchable: boolean
   graphInitiallyOpen?: boolean
@@ -74,57 +87,99 @@ export function ArtifactWorkspaceProvider({
       view: graphOpen ? 'graph' : null,
     })
   )
-  const containers = useRef(new Map<string, HTMLDivElement>())
-  const previousScope = useRef(scopeKey)
-
-  useEffect(() => {
+  // Containers belong to one scope. A scope change swaps them during render,
+  // in the same pass that clears the state, so cards of the new scope can
+  // never be wiped by a later effect.
+  const [scopeStore, setScopeStore] = useState(() => ({
+    scope: scopeKey,
+    containers: new Map<string, HTMLDivElement>(),
+  }))
+  if (scopeStore.scope !== scopeKey) {
     // A thread created for the first message must not drop its own cards.
-    if (previousScope.current !== null && previousScope.current !== scopeKey) {
+    if (scopeStore.scope === null) {
+      setScopeStore({ ...scopeStore, scope: scopeKey })
+    } else {
+      setScopeStore({ scope: scopeKey, containers: new Map() })
       dispatch({ type: 'clear' })
-      containers.current.clear()
     }
-    previousScope.current = scopeKey
-  }, [scopeKey])
+  }
+  const { containers } = scopeStore
 
   useEffect(() => {
     if (!graphAvailable && state.view === 'graph') dispatch({ type: 'close' })
   }, [graphAvailable, state.view])
 
-  const containerFor = useCallback((artifactId: string) => {
-    let container = containers.current.get(artifactId)
-    if (!container) {
-      container = document.createElement('div')
-      containers.current.set(artifactId, container)
-    }
-    return container
-  }, [])
+  const containerFor = useCallback(
+    (artifactId: string) => {
+      let container = containers.get(artifactId)
+      if (!container) {
+        container = document.createElement('div')
+        containers.set(artifactId, container)
+      }
+      return container
+    },
+    [containers]
+  )
+
+  const storageScope = storage?.scope
+  const storageChatbotId = storage?.chatbotId
+  const target = useMemo(
+    () =>
+      storageScope && storageChatbotId && scopeKey
+        ? {
+            scope: storageScope,
+            chatbotId: storageChatbotId,
+            threadId: scopeKey,
+          }
+        : null,
+    [storageScope, storageChatbotId, scopeKey]
+  )
 
   // Stable actions let consumers register from effects without re-running
   // them on every workspace change.
   const actions = useMemo(
     () => ({
-      register: (artifact: Artifact) =>
-        dispatch({ type: 'register', artifact }),
+      register: (artifact: Artifact) => {
+        // Restoring at registration makes the saved edit the first value the
+        // card renders, so the starter never overwrites it.
+        const restored = target
+          ? restoreWorkingCode(getTabStorage(), target, artifact)
+          : null
+        if (restored?.failed) dispatch({ type: 'storage-failed' })
+        dispatch({ type: 'register', artifact, restoredCode: restored?.code })
+      },
+      anchorMounted: (artifactId: string) => {
+        dispatch({ type: 'anchor-mounted', artifactId })
+        return () => dispatch({ type: 'anchor-unmounted', artifactId })
+      },
       open: (artifactId: string) => dispatch({ type: 'open', artifactId }),
       showGraph: () => {
         if (graphAvailable) dispatch({ type: 'show-graph' })
       },
       close: () => dispatch({ type: 'close' }),
-      editCode: (artifactId: string, code: string) =>
-        dispatch({ type: 'edit-code', artifactId, code }),
+      editCode: (artifact: CodeArtifact, code: string) => {
+        dispatch({ type: 'edit-code', artifactId: artifact.id, code })
+        if (
+          target &&
+          !saveWorkingCode(getTabStorage(), target, artifact, code)
+        ) {
+          dispatch({ type: 'storage-failed' })
+        }
+      },
       containerFor,
     }),
-    [graphAvailable, containerFor]
+    [graphAvailable, containerFor, target]
   )
 
   const value = useMemo<ArtifactWorkspaceValue>(
     () => ({
       ...actions,
       state,
+      savesWorkingCode: storage !== undefined,
       graphSwitchable: graphAvailable && graphSwitchable,
       alwaysFullscreen,
     }),
-    [actions, state, graphAvailable, graphSwitchable, alwaysFullscreen]
+    [actions, state, storage, graphAvailable, graphSwitchable, alwaysFullscreen]
   )
 
   return (

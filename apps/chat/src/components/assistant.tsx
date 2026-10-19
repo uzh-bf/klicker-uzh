@@ -62,6 +62,8 @@ interface AssistantProps {
   readonly initialModeOptions: ChatModeOptions
   readonly initialModeOptionsAreFallback?: boolean
   readonly knowledgeGraphVisible: boolean
+  /** Opaque server-derived owner key that scopes saved working code. */
+  readonly storageScope: string
 }
 
 interface ParticipationRequiredProps {
@@ -84,6 +86,7 @@ export function Assistant({
   initialModeOptions,
   initialModeOptionsAreFallback = false,
   knowledgeGraphVisible,
+  storageScope,
 }: AssistantProps) {
   // Stuff `?_t=<token>` (CHIPS-unsupported-browser fallback) into
   // sessionStorage and strip it from the URL on first render.
@@ -154,6 +157,7 @@ export function Assistant({
             initialModeOptions={initialModeOptions}
             initialModeOptionsAreFallback={initialModeOptionsAreFallback}
             knowledgeGraphVisible={knowledgeGraphVisible}
+            storageScope={storageScope}
           />
         </RuntimeProvider>
       </ChatUiProvider>
@@ -619,7 +623,7 @@ function SidebarMain({
 }
 
 function AssistantLayout(props: AssistantLayoutProps) {
-  const { chatbot, knowledgeGraphVisible } = props
+  const { chatbot, knowledgeGraphVisible, storageScope } = props
   const { showSidebar } = useChatUi()
   const pathname = usePathname()
   const activeThreadId = useChatStore((state) => state.activeThreadId)
@@ -629,6 +633,7 @@ function AssistantLayout(props: AssistantLayoutProps) {
   return (
     <ArtifactWorkspaceProvider
       scopeKey={activeThreadId}
+      storage={{ scope: storageScope, chatbotId: chatbot.id }}
       graphAvailable={knowledgeGraphVisible}
       graphSwitchable={showSidebar}
       graphInitiallyOpen={pathname === `/${chatbot.id}/graph`}
@@ -645,6 +650,7 @@ interface AssistantLayoutProps {
   initialModeOptions: ChatModeOptions
   initialModeOptionsAreFallback: boolean
   knowledgeGraphVisible: boolean
+  storageScope: string
 }
 
 function AssistantLayoutBody({

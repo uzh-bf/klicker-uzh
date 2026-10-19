@@ -8,7 +8,13 @@ import {
   PanelRightOpenIcon,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { type ReactNode, useEffect, useId, useState } from 'react'
+import {
+  type ReactNode,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useState,
+} from 'react'
 import { parseCodeCardResult } from '@/src/lib/code-runner/cardResult'
 import { resolveSelectedMode } from '@/src/lib/config/modes'
 import { useSettingsStore } from '@/src/stores/settingsStore'
@@ -91,8 +97,11 @@ function CodeCardAnchor({
 }) {
   const t = useTranslations()
   const language = useCodeLanguageName(artifact.profile)
-  const { register } = workspace
+  const { register, anchorMounted } = workspace
   const { id, profile, starterCode } = artifact
+
+  // Presence tells the workspace whether this card's branch is visible.
+  useLayoutEffect(() => anchorMounted(id), [anchorMounted, id])
 
   useEffect(() => {
     register({ id, kind: 'code', profile, starterCode })
@@ -153,7 +162,14 @@ export function CodeArtifactCard({ artifact }: { artifact: CodeArtifact }) {
           </button>
         )
       }
-      onCodeChange={(code) => workspace.editCode(artifact.id, code)}
+      notice={
+        workspace.state.storageFallback
+          ? t('chat.codeCard.storageFallbackNote')
+          : workspace.savesWorkingCode
+            ? undefined
+            : t('chat.codeCard.previewNote')
+      }
+      onCodeChange={(code) => workspace.editCode(artifact, code)}
       profile={artifact.profile}
       starterCode={artifact.starterCode}
     />
@@ -184,12 +200,14 @@ function CodeCardFrame({
   code,
   onCodeChange,
   headerAction,
+  notice,
 }: {
   profile: CodeProfile
   starterCode: string
   code: string
   onCodeChange: (code: string) => void
   headerAction?: ReactNode
+  notice?: string
 }) {
   const t = useTranslations()
   const titleId = useId()
@@ -228,6 +246,15 @@ function CodeCardFrame({
         starterCode={starterCode}
       />
       <p className="text-xs text-slate-500">{t('chat.codeCard.localNote')}</p>
+      {notice ? (
+        <p
+          className="text-xs font-medium text-amber-700"
+          data-cy="code-card-storage-notice"
+          role="status"
+        >
+          {notice}
+        </p>
+      ) : null}
     </section>
   )
 }

@@ -457,7 +457,11 @@ export default {
       invalid: 'Diese Code-Spielwiese konnte nicht angezeigt werden.',
       notAdmitted: 'Code kann in diesem Chatmodus nicht ausgeführt werden.',
       localNote:
-        'Der Code läuft nur in deinem Browser und wird nicht mit dem Assistenten geteilt. Deine Änderungen werden nicht gespeichert und gehen verloren, wenn du die Seite verlässt.',
+        'Der Code läuft nur in deinem Browser und wird nie automatisch mit dem Assistenten geteilt. Deine Änderungen bleiben in diesem Browser-Tab erhalten, bis du ihn schliesst.',
+      storageFallbackNote:
+        'Dein Browser verhindert das Speichern hier, daher gehen deine Änderungen verloren, wenn du diese Seite verlässt.',
+      previewNote:
+        'In der Vorschau gehen deine Änderungen beim Neuladen der Seite verloren.',
       openInWorkspace: 'Neben dem Chat öffnen',
       openedInWorkspace:
         'Die {language}-Spielwiese ist neben dem Chat geöffnet.',

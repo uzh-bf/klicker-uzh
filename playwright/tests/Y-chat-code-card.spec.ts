@@ -485,7 +485,7 @@ test.describe('Chat code card', () => {
       await expect(card.getByTestId('code-runner-output')).toContainText('42')
     })
 
-    test('keeps the starter code after a reload but not the edits', async ({
+    test('restores edits after a reload with the workspace closed', async ({
       page,
     }) => {
       const thread = await seedCardThread(
@@ -494,12 +494,59 @@ test.describe('Chat code card', () => {
         'print("starter")'
       )
       await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`)
-      const editor = page.getByTestId('code-card').getByRole('textbox')
-      await editor.fill('print("edited")')
+      await page
+        .getByTestId('code-card')
+        .getByRole('textbox')
+        .fill('print("edited")')
       await page.reload()
+      const card = page.getByTestId('code-card')
+      await expect(card.getByRole('textbox')).toHaveValue('print("edited")')
+      await expect(page.getByTestId('chat-workspace-panel')).toHaveCount(0)
+      await expect(card.getByTestId('code-runner-output')).toHaveCount(0)
+    })
+
+    test('a new independent page starts from the starter code', async ({
+      page,
+    }) => {
+      const thread = await seedCardThread(
+        participantId,
+        'python-core',
+        'print("starter")'
+      )
+      const url = `${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`
+      await page.goto(url)
+      await page
+        .getByTestId('code-card')
+        .getByRole('textbox')
+        .fill('print("edited")')
+      const other = await page.context().newPage()
+      await other.goto(url)
       await expect(
-        page.getByTestId('code-card').getByRole('textbox')
+        other.getByTestId('code-card').getByRole('textbox')
       ).toHaveValue('print("starter")')
+      await other.close()
+    })
+
+    test('keeps editing and warns when tab storage refuses writes', async ({
+      page,
+    }) => {
+      await page.addInitScript(() => {
+        const original = Storage.prototype.setItem
+        Storage.prototype.setItem = function (key: string, value: string) {
+          if (this === window.sessionStorage) throw new Error('blocked')
+          return original.call(this, key, value)
+        }
+      })
+      const thread = await seedCardThread(
+        participantId,
+        'python-core',
+        'print("starter")'
+      )
+      await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`)
+      const card = page.getByTestId('code-card')
+      await card.getByRole('textbox').fill('print("edited")')
+      await expect(card.getByRole('textbox')).toHaveValue('print("edited")')
+      await expect(card.getByTestId('code-card-storage-notice')).toBeVisible()
     })
 
     test('shows the card as unavailable when the mode no longer admits it', async ({
