@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { cookies, headers } from 'next/headers'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -119,6 +120,13 @@ export default async function ChatLayout({
     }
   )
 
+  // Opaque, credential-free key that keeps saved working code apart per owner.
+  // It grants no authority and is never read back to identify anyone.
+  const storageScope = createHash('sha256')
+    .update(`${identityResult.authMode}:${identityResult.participantId}`)
+    .digest('base64url')
+    .slice(0, 22)
+
   return (
     <>
       <Assistant
@@ -129,6 +137,7 @@ export default async function ChatLayout({
         }}
         initialModeOptions={initialModeOptions}
         knowledgeGraphVisible={chatbot.knowledgeGraphVisible}
+        storageScope={storageScope}
       />
       {children}
     </>

@@ -199,6 +199,52 @@ test.describe('Chat code card', () => {
       await expect(card.getByTestId('code-runner-output')).toHaveCount(0)
     })
 
+    test('keeps edits and a running program when the card moves beside the chat', async ({
+      page,
+    }) => {
+      const card = await openCardFromAssistant(page, 'python-core', 'print(1)')
+      await card
+        .getByRole('textbox')
+        .fill(
+          'total = 0\nfor i in range(20_000_000):\n    total += i\nprint("sum", total)'
+        )
+      await card.getByRole('button', { name: copy.run }).click()
+      await expect(card.getByTestId('code-runner-status')).toHaveText(
+        copy.running,
+        { timeout: 90_000 }
+      )
+
+      await card.getByRole('button', { name: cardCopy.openInWorkspace }).click()
+      const workspace = page.getByTestId('chat-workspace-panel')
+      await expect(workspace.getByTestId('code-card')).toBeVisible()
+      await expect(page.getByTestId('code-card-opened')).toBeVisible()
+      await expect(page.getByTestId('code-card')).toHaveCount(1)
+      await expect(
+        workspace.getByRole('button', { name: copy.run })
+      ).toBeEnabled({ timeout: 90_000 })
+      await expect(workspace.getByTestId('code-runner-output')).toContainText(
+        'sum 199999990000000'
+      )
+
+      await workspace.getByRole('textbox').fill('print("edited beside chat")')
+      const close = page
+        .getByTestId('workspace-close')
+        .or(page.getByTestId('workspace-back-to-chat'))
+      await close.click()
+      await expect(workspace).toHaveCount(0)
+      await expect(page.getByTestId('code-card-opened')).toHaveCount(0)
+      const inline = page.getByTestId('code-card')
+      await expect(inline.getByRole('textbox')).toHaveValue(
+        'print("edited beside chat")'
+      )
+      await expect(inline.getByTestId('code-runner-output')).toContainText(
+        'sum 199999990000000'
+      )
+      await expect(
+        inline.getByRole('button', { name: cardCopy.openInWorkspace })
+      ).toBeFocused()
+    })
+
     test('runs R and reports R errors truthfully', async ({ page }) => {
       const card = await openCardFromAssistant(
         page,
@@ -439,7 +485,7 @@ test.describe('Chat code card', () => {
       await expect(card.getByTestId('code-runner-output')).toContainText('42')
     })
 
-    test('keeps the starter code after a reload but not the edits', async ({
+    test('restores edits after a reload with the workspace closed', async ({
       page,
     }) => {
       const thread = await seedCardThread(
@@ -448,12 +494,59 @@ test.describe('Chat code card', () => {
         'print("starter")'
       )
       await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`)
-      const editor = page.getByTestId('code-card').getByRole('textbox')
-      await editor.fill('print("edited")')
+      await page
+        .getByTestId('code-card')
+        .getByRole('textbox')
+        .fill('print("edited")')
       await page.reload()
+      const card = page.getByTestId('code-card')
+      await expect(card.getByRole('textbox')).toHaveValue('print("edited")')
+      await expect(page.getByTestId('chat-workspace-panel')).toHaveCount(0)
+      await expect(card.getByTestId('code-runner-output')).toHaveCount(0)
+    })
+
+    test('a new independent page starts from the starter code', async ({
+      page,
+    }) => {
+      const thread = await seedCardThread(
+        participantId,
+        'python-core',
+        'print("starter")'
+      )
+      const url = `${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`
+      await page.goto(url)
+      await page
+        .getByTestId('code-card')
+        .getByRole('textbox')
+        .fill('print("edited")')
+      const other = await page.context().newPage()
+      await other.goto(url)
       await expect(
-        page.getByTestId('code-card').getByRole('textbox')
+        other.getByTestId('code-card').getByRole('textbox')
       ).toHaveValue('print("starter")')
+      await other.close()
+    })
+
+    test('keeps editing and warns when tab storage refuses writes', async ({
+      page,
+    }) => {
+      await page.addInitScript(() => {
+        const original = Storage.prototype.setItem
+        Storage.prototype.setItem = function (key: string, value: string) {
+          if (this === window.sessionStorage) throw new Error('blocked')
+          return original.call(this, key, value)
+        }
+      })
+      const thread = await seedCardThread(
+        participantId,
+        'python-core',
+        'print("starter")'
+      )
+      await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`)
+      const card = page.getByTestId('code-card')
+      await card.getByRole('textbox').fill('print("edited")')
+      await expect(card.getByRole('textbox')).toHaveValue('print("edited")')
+      await expect(card.getByTestId('code-card-storage-notice')).toBeVisible()
     })
 
     test('shows the card as unavailable when the mode no longer admits it', async ({
@@ -497,6 +590,141 @@ test.describe('Chat code card', () => {
       expect(csp).toContain('connect-src blob:')
       expect(csp).not.toContain("'unsafe-eval'")
     })
+  })
+
+  test('never sends edited code with the next chat message', async ({
+    page,
+  }) => {
+    const marker = `edited-marker-${randomUUID()}`
+    const thread = await seedCardThread(
+      participantId,
+      'python-core',
+      'print("starter")'
+    )
+    await mockChatStream(page, { text: 'Noted.' })
+    const bodies: string[] = []
+    page.on('request', (request) => {
+      if (
+        request.method() === 'POST' &&
+        /\/(chat|threads)(?:\?|$)/.test(request.url())
+      )
+        bodies.push(request.postData() ?? '')
+    })
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`)
+    await page
+      .getByTestId('code-card')
+      .getByRole('textbox')
+      .fill(`print("${marker}")`)
+    const input = page.getByTestId('chat-composer-input')
+    await input.click()
+    await input.pressSequentially('What does my code print?')
+    await page.getByTestId('chat-send-button').click()
+    await expect(page.getByText('Noted.')).toBeVisible()
+    expect(bodies.length).toBeGreaterThan(0)
+    for (const body of bodies) expect(body).not.toContain(marker)
+  })
+
+  test('opens a fullscreen dialog on a narrow screen and returns focus on close', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    const thread = await seedCardThread(
+      participantId,
+      'python-core',
+      'print("starter")'
+    )
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`)
+    const open = page
+      .getByTestId('code-card')
+      .getByRole('button', { name: cardCopy.openInWorkspace })
+    await open.click()
+    const dialog = page.getByRole('dialog', {
+      name: enMessages.chat.workspace.label,
+    })
+    await expect(dialog).toHaveAttribute('aria-modal', 'true')
+    await expect(dialog.getByTestId('code-card')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(dialog).toHaveCount(0)
+    await expect(open).toBeFocused()
+
+    await open.click()
+    await dialog.getByTestId('workspace-back-to-chat').click()
+    await expect(dialog).toHaveCount(0)
+    await expect(open).toBeFocused()
+  })
+
+  test('closes the workspace when its branch is hidden and keeps the edit for the return', async ({
+    page,
+  }) => {
+    const root = randomUUID()
+    const answer = randomUUID()
+    const card = cardOutput('python-core', 'print("starter")')
+    const thread = await seedThread(participantId, {
+      title: 'Branched code card',
+      messages: [
+        {
+          id: root,
+          role: 'user',
+          content: [{ type: 'text', text: 'Explain loops' }],
+          chatMode: 'tutor',
+        },
+        {
+          id: answer,
+          role: 'assistant',
+          content: [{ type: 'text', text: 'Loops repeat work.' }],
+          chatMode: 'tutor',
+        },
+        {
+          parentId: answer,
+          role: 'user',
+          content: [{ type: 'text', text: 'Just the theory, please' }],
+          chatMode: 'tutor',
+          createdAt: new Date(Date.now() - 60_000),
+        },
+        {
+          role: 'assistant',
+          content: [{ type: 'text', text: 'No playground on this branch.' }],
+          chatMode: 'tutor',
+          createdAt: new Date(Date.now() - 59_000),
+        },
+        {
+          parentId: answer,
+          role: 'user',
+          content: [{ type: 'text', text: 'Can I try this myself?' }],
+          chatMode: 'tutor',
+        },
+        {
+          role: 'assistant',
+          chatMode: 'tutor',
+          content: [
+            {
+              type: 'tool-call',
+              toolCallId: 'code-card-branch',
+              toolName: 'open_code_card',
+              args: { profile: card.profile, starterCode: card.starterCode },
+              result: card,
+            },
+          ],
+        },
+      ],
+    })
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`)
+    await page
+      .getByTestId('code-card')
+      .getByRole('button', { name: cardCopy.openInWorkspace })
+      .click()
+    const workspace = page.getByTestId('chat-workspace-panel')
+    await workspace.getByRole('textbox').fill('print("edited")')
+
+    await page.getByTestId('chat-branch-previous').first().click()
+    await expect(page.getByText('No playground on this branch.')).toBeVisible()
+    await expect(workspace).toHaveCount(0)
+    await expect(page.getByTestId('code-card')).toHaveCount(0)
+
+    await page.getByTestId('chat-branch-next').first().click()
+    const inline = page.getByTestId('code-card')
+    await expect(inline.getByRole('textbox')).toHaveValue('print("edited")')
+    await expect(workspace).toHaveCount(0)
   })
 
   test('shows Firefox an unavailable notice instead of running code', async ({

@@ -41,8 +41,10 @@ export function useCodeLanguageName(profile: CodeProfile): string {
 
 /**
  * Editor with Run, Stop and Reset for one runtime profile. Code runs only in
- * this browser, in a fresh sandboxed runner per run. Edits and output live in
- * component state and are lost on unmount. The host decides whether the
+ * this browser, in a fresh sandboxed runner per run. The host owns the edited
+ * source through `code` and `onCodeChange`; Reset asks the host to restore
+ * `starterCode`. Run state and output live in this component and end when it
+ * unmounts, which also stops a running attempt. The host decides whether the
  * profile is admitted: `blockedNotice` explains why running is unavailable
  * and disables Run. Browsers outside the qualified engines get their own
  * notice.
@@ -50,10 +52,14 @@ export function useCodeLanguageName(profile: CodeProfile): string {
 export function CodeRunner({
   profile,
   starterCode,
+  code,
+  onCodeChange,
   blockedNotice,
 }: {
   profile: CodeProfile
   starterCode: string
+  code: string
+  onCodeChange: (code: string) => void
   blockedNotice?: string
 }) {
   const t = useTranslations()
@@ -61,7 +67,6 @@ export function CodeRunner({
   const editorId = useId()
   // Engine support is decided in the browser after hydration.
   const [supported, setSupported] = useState<boolean | null>(null)
-  const [code, setCode] = useState(starterCode)
   const [phase, setPhase] = useState<CodeRunPhase | null>(null)
   const [runResult, setRunResult] = useState<CodeRunResult | null>(null)
   const handleRef = useRef<CodeRunHandle | null>(null)
@@ -98,7 +103,7 @@ export function CodeRunner({
     handleRef.current = null
     running?.stop()
     setPhase(null)
-    setCode(starterCode)
+    onCodeChange(starterCode)
     setRunResult(null)
   }
 
@@ -127,7 +132,7 @@ export function CodeRunner({
         className="block min-h-32 w-full resize-y rounded-md border border-slate-300 bg-slate-50 p-3 font-mono text-sm leading-relaxed text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-300"
         id={editorId}
         maxLength={MAX_CODE_LENGTH}
-        onChange={(event) => setCode(event.target.value)}
+        onChange={(event) => onCodeChange(event.target.value)}
         rows={Math.min(Math.max(code.split('\n').length + 1, 5), 20)}
         spellCheck={false}
         value={code}

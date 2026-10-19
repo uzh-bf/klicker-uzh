@@ -3,6 +3,10 @@ import { ThreadMessageLike } from '@assistant-ui/react'
 import type { ChatMessageRating } from '@klicker-uzh/prisma/client'
 import { create } from 'zustand'
 import {
+  clearThreadWorkingCode,
+  getTabStorage,
+} from '../components/artifact-workspace-state'
+import {
   apiCall,
   convertApiMessageToMessage,
   convertApiThreadToThread,
@@ -526,6 +530,8 @@ export const useChatStore = create<ChatState>((set, get) => {
         await apiCall<void>(`/chatbots/${chatbotId}/threads/${threadId}`, {
           method: 'DELETE',
         })
+
+        clearThreadWorkingCode(getTabStorage(), chatbotId, threadId)
 
         set((state) => {
           const filteredThreads = state.threads.filter((t) => t.id !== threadId)

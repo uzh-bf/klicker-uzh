@@ -21,7 +21,7 @@ export function ChatGraphModeSwitch({
           type="button"
           aria-label={label}
           aria-expanded={open}
-          aria-controls="chat-knowledge-graph-panel"
+          aria-controls={open ? 'chat-knowledge-graph-panel' : undefined}
           onClick={onToggle}
           data-cy="knowledge-graph-mode-link"
           className={twMerge(

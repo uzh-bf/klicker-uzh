@@ -7,10 +7,12 @@ import {
   ensureChatbotSeeded,
   getEnrolledParticipantId,
   seedThread,
+  setCodeExecutionPolicy,
   setDisclaimerState,
   setParticipantToken,
   testImageUpload,
 } from '../util/chat.js'
+import { enMessages } from '../util/messages.js'
 
 // Opt in after publishing the synthetic native graph with seed-graph-e2e.mjs.
 // The host launcher must preserve that disposable database between setup and test.
@@ -447,6 +449,80 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
     await toggle.click()
     expect(page.url()).toBe(url)
     expect(sent).toEqual([])
+  })
+
+  test('switching between an opened code card and the graph keeps both states', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(browserName === 'firefox', 'Firefox has no qualified runner')
+    const graph = createKnowledgeGraphRoute(overviewLabels)
+    await page.route('**/api/chatbots/*/knowledge-graph**', (route) =>
+      graph.handle(route)
+    )
+    await setCodeExecutionPolicy({ modes: { tutor: ['python-core'] } })
+    try {
+      await page.setViewportSize({ width: 1440, height: 1000 })
+      const thread = await seedThread(await getEnrolledParticipantId(), {
+        title: 'Graph and code',
+        messages: [
+          {
+            role: 'user',
+            content: [{ type: 'text', text: 'Can I try this myself?' }],
+            chatMode: 'tutor',
+          },
+          {
+            role: 'assistant',
+            chatMode: 'tutor',
+            content: [
+              {
+                type: 'tool-call',
+                toolCallId: 'code-card-graph',
+                toolName: 'open_code_card',
+                args: { profile: 'python-core', starterCode: 'print(1)' },
+                result: {
+                  kind: 'code-card',
+                  profile: 'python-core',
+                  starterCode: 'print(1)',
+                },
+              },
+            ],
+          },
+        ],
+      })
+      await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`)
+      const card = page.getByTestId('code-card')
+      await card
+        .getByRole('button', { name: enMessages.chat.codeCard.openInWorkspace })
+        .click()
+      const workspace = page.getByTestId('chat-workspace-panel')
+      await workspace.getByRole('textbox').fill('print("kept")')
+
+      const switcher = page.getByTestId('workspace-switcher')
+      await switcher
+        .getByRole('button', { name: enMessages.chat.graphPanel.title })
+        .click()
+      const graphPanel = page.getByTestId('chat-knowledge-graph-panel')
+      await expect(graphPanel).toBeVisible()
+      // The graph replaces the card in the workspace; the card returns inline.
+      await expect(workspace).toHaveCount(0)
+      await expect(card.getByRole('textbox')).toHaveValue('print("kept")')
+      await page.getByTestId('knowledge-graph-loaded-node').first().click()
+      await expect(page.getByTestId('knowledge-graph-details')).toBeVisible()
+
+      await switcher.getByRole('button', { name: 'Python 1' }).click()
+      await expect(workspace.getByRole('textbox')).toHaveValue('print("kept")')
+      await switcher
+        .getByRole('button', { name: enMessages.chat.graphPanel.title })
+        .click()
+      await expect(page.getByTestId('knowledge-graph-details')).toBeVisible()
+
+      await page.getByTestId('knowledge-graph-panel-close').click()
+      await expect(page.getByTestId('knowledge-graph-mode-link')).toBeFocused()
+      await expect(card.getByRole('textbox')).toHaveValue('print("kept")')
+    } finally {
+      await setCodeExecutionPolicy(null)
+    }
   })
 
   test('relation prompts include both labels and mobile asking returns to the composer', async ({

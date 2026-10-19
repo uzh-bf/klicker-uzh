@@ -9,7 +9,7 @@ import {
 import { Plus } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, usePathname, useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -24,16 +24,18 @@ import { getKlickerChatContextLabel } from '../services/chatContext'
 import { useChatContextStore } from '../stores/chatContextStore'
 import { useChatStore } from '../stores/chatStore'
 import { AppSidebar } from './app-sidebar'
+import { ArtifactWorkspaceProvider } from './artifact-workspace'
 import { ChatUiProvider, useChatUi } from './chat-ui-context'
+import { renderChatArtifact } from './code-card'
 import { MobileCreditsBar } from './credits-footer'
 import { DisclaimerModal } from './disclaimer-modal'
 import { EmbeddedToolbar } from './embedded-settings'
+import { HandoffPrefill } from './handoff-prefill'
 import { ChatGraphModeSwitch } from './knowledge-graph/ChatGraphModeSwitch'
 import {
   ChatKnowledgeGraphPanel,
   useChatGraphPanel,
 } from './knowledge-graph/ChatKnowledgeGraphPanel'
-import { HandoffPrefill } from './handoff-prefill'
 import { ModeSwitcher } from './mode-switcher'
 import { Thread } from './thread'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
@@ -60,6 +62,8 @@ interface AssistantProps {
   readonly initialModeOptions: ChatModeOptions
   readonly initialModeOptionsAreFallback?: boolean
   readonly knowledgeGraphVisible: boolean
+  /** Opaque server-derived owner key that scopes saved working code. */
+  readonly storageScope: string
 }
 
 interface ParticipationRequiredProps {
@@ -82,6 +86,7 @@ export function Assistant({
   initialModeOptions,
   initialModeOptionsAreFallback = false,
   knowledgeGraphVisible,
+  storageScope,
 }: AssistantProps) {
   // Stuff `?_t=<token>` (CHIPS-unsupported-browser fallback) into
   // sessionStorage and strip it from the URL on first render.
@@ -152,6 +157,7 @@ export function Assistant({
             initialModeOptions={initialModeOptions}
             initialModeOptionsAreFallback={initialModeOptionsAreFallback}
             knowledgeGraphVisible={knowledgeGraphVisible}
+            storageScope={storageScope}
           />
         </RuntimeProvider>
       </ChatUiProvider>
@@ -501,13 +507,11 @@ function ThreadSkeleton() {
 
 function SidebarMain({
   chatbot,
-  graphPanel,
   knowledgeGraphVisible,
   initialModeOptions,
   initialModeOptionsAreFallback,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
-  graphPanel: ReturnType<typeof useChatGraphPanel>
   knowledgeGraphVisible: boolean
   initialModeOptions: ChatModeOptions
   initialModeOptionsAreFallback: boolean
@@ -521,6 +525,7 @@ function SidebarMain({
     (state) => state.participationRequired
   )
   const isLoading = useChatStore((state) => state.isLoading)
+  const graphPanel = useChatGraphPanel()
 
   const handleNewThread = async () => {
     if (participationRequired) return
@@ -603,11 +608,7 @@ function SidebarMain({
               <ThreadSkeleton />
             </div>
           )}
-          <ChatKnowledgeGraphPanel
-            chatbotId={chatbot.id}
-            open={graphPanel.open}
-            onClose={graphPanel.close}
-          >
+          <ChatKnowledgeGraphPanel chatbotId={chatbot.id}>
             <Thread
               chatbotAvatar={chatbot.avatar ?? ''}
               chatbotName={chatbot.name}
@@ -621,21 +622,46 @@ function SidebarMain({
   )
 }
 
-function AssistantLayout({
-  chatbot,
-  initialModeOptions,
-  initialModeOptionsAreFallback,
-  knowledgeGraphVisible,
-}: {
+function AssistantLayout(props: AssistantLayoutProps) {
+  const { chatbot, knowledgeGraphVisible, storageScope } = props
+  const { showSidebar } = useChatUi()
+  const pathname = usePathname()
+  const activeThreadId = useChatStore((state) => state.activeThreadId)
+
+  // One workspace serves the sidebar and the embedded layout. Embedded Chat
+  // opens artifacts fullscreen and offers no graph in the switcher.
+  return (
+    <ArtifactWorkspaceProvider
+      scopeKey={activeThreadId}
+      storage={{ scope: storageScope, chatbotId: chatbot.id }}
+      graphAvailable={knowledgeGraphVisible}
+      graphSwitchable={showSidebar}
+      graphInitiallyOpen={pathname === `/${chatbot.id}/graph`}
+      alwaysFullscreen={!showSidebar}
+      renderArtifact={renderChatArtifact}
+    >
+      <AssistantLayoutBody {...props} />
+    </ArtifactWorkspaceProvider>
+  )
+}
+
+interface AssistantLayoutProps {
   chatbot: { id: string; name: string; avatar?: string }
   initialModeOptions: ChatModeOptions
   initialModeOptionsAreFallback: boolean
   knowledgeGraphVisible: boolean
-}) {
+  storageScope: string
+}
+
+function AssistantLayoutBody({
+  chatbot,
+  initialModeOptions,
+  initialModeOptionsAreFallback,
+  knowledgeGraphVisible,
+}: AssistantLayoutProps) {
   const t = useTranslations('chat.thread.learningContext')
   const { showSidebar } = useChatUi()
   const isLoading = useChatStore((state) => state.isLoading)
-  const graphPanel = useChatGraphPanel(chatbot.id, knowledgeGraphVisible)
   useEmbeddedChatContext()
   const context = useChatContextStore((state) => state.context)
   const contextUnavailable = useChatContextStore(
@@ -651,7 +677,6 @@ function AssistantLayout({
         <AppSidebar />
         <SidebarMain
           chatbot={chatbot}
-          graphPanel={graphPanel}
           knowledgeGraphVisible={knowledgeGraphVisible}
           initialModeOptions={initialModeOptions}
           initialModeOptionsAreFallback={initialModeOptionsAreFallback}
@@ -686,11 +711,7 @@ function AssistantLayout({
           )}
           {/* Embedded mode shows no graph toggle, but the /graph deep link
               stays reachable for direct embedding of the graph pane. */}
-          <ChatKnowledgeGraphPanel
-            chatbotId={chatbot.id}
-            open={graphPanel.open}
-            onClose={graphPanel.close}
-          >
+          <ChatKnowledgeGraphPanel chatbotId={chatbot.id}>
             <Thread
               chatbotAvatar={chatbot.avatar ?? ''}
               chatbotName={chatbot.name}
