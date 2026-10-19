@@ -93,7 +93,7 @@ establish current live savings or complete provider review acceptance.
 - Original implementation: four repair commits, historical exact-head CI passed.
   Earlier plan and independent algorithm review remain evidence for the unchanged
   patch. Previous temporary monitor expired; no monitor is claimed active.
-- Refresh: current `v3` integrated in progress; conflicts resolved by retaining
+- Refresh: current `v3` integrated and pushed; conflicts resolved by retaining
   both current policy tests and the installer/patch invalidation cases, plus the
   current CI guide and compression-engine guidance.
 - Initial refreshed integration check: 151 tests passed, zero failures.
@@ -104,7 +104,9 @@ establish current live savings or complete provider review acceptance.
 - Formatting, syntax and diff checks pass. Two pre-existing advisory Biome errors
   remain in unchanged helper callbacks; scoped Opengrep found no findings but
   partially analyzed the large existing helper. Staged Gitleaks passed.
-- Refreshed contract: planner approved. Final integrated review and push pending;
+- Refreshed contract: planner approved. Independent integrated final review
+  passed on refresh commit `10295e6830`; no qualifying findings. Source and
+  verification remain unchanged by this progress update. Hosted CI is pending;
   no new application or paid-provider acceptance claimed.
 - Existing [PR #6531](https://github.com/uzh-bf/klicker-uzh/pull/6531) stays open;
   merge and live activation remain separately gated.
