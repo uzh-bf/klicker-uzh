@@ -5,6 +5,7 @@ const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
 
+const { invalidCleanCheckChanges } = require('./final-ai-review-fixtures')
 const {
   FINAL_REVIEW_MODEL,
   mergeOCRResumeResults,
@@ -475,6 +476,98 @@ test('accepts a trusted clean stack status without requiring a review body', asy
   github.rest.actions = {
     getWorkflowRun: async () => ({ data: state.workflowRun }),
   }
+
+  const originalCheck = { ...state.checkRuns[0], id: 901 }
+  for (const details_url of [
+    'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
+    'https://github.com/uzh-bf/klicker-uzh/runs/901',
+  ]) {
+    state.checkRuns[0] = { ...originalCheck, details_url }
+    assert.deepEqual(
+      await getVerifiedStackCleanEvidence({
+        github,
+        context: stackContext,
+        headSha: plan.headSha,
+        evidenceDigest,
+      }),
+      cleanEvidence
+    )
+  }
+  const trustedCheck = state.checkRuns[0]
+  for (const change of invalidCleanCheckChanges(901, 700)) {
+    state.checkRuns[0] = { ...trustedCheck, ...change }
+    assert.equal(
+      await getVerifiedStackCleanEvidence({
+        github,
+        context: stackContext,
+        headSha: plan.headSha,
+        evidenceDigest,
+      }),
+      null,
+      JSON.stringify(change)
+    )
+  }
+  state.checkRuns[0] = trustedCheck
+  const trustedWorkflow = state.workflowRun
+  for (const change of [
+    { id: 901 },
+    { event: 'pull_request_target' },
+    { path: '.github/workflows/other.yml' },
+    { head_branch: 'other' },
+    { head_sha: 'e'.repeat(40) },
+    { conclusion: 'failure' },
+    { repository: { full_name: 'other/repo' } },
+  ]) {
+    state.workflowRun = { ...trustedWorkflow, ...change }
+    assert.equal(
+      await getVerifiedStackCleanEvidence({
+        github,
+        context: stackContext,
+        headSha: plan.headSha,
+        evidenceDigest,
+      }),
+      null,
+      JSON.stringify(change)
+    )
+  }
+  state.workflowRun = trustedWorkflow
+  const trustedStatus = state.statuses[0]
+  state.statuses[0] = { ...trustedStatus, target_url: trustedCheck.details_url }
+  assert.equal(
+    await getVerifiedStackCleanEvidence({
+      github,
+      context: stackContext,
+      headSha: plan.headSha,
+      evidenceDigest,
+    }),
+    null
+  )
+  state.statuses[0] = trustedStatus
+  for (const change of [
+    { workflow_url: trustedCheck.details_url },
+    { workflow_run_id: 901 },
+    { evidence_digest: 'e'.repeat(64) },
+    { policy_digest: 'e'.repeat(64) },
+    { background_digest: 'e'.repeat(64) },
+  ]) {
+    state.checkRuns[0] = {
+      ...trustedCheck,
+      output: {
+        text: `<!-- final-ai-stack-clean-evidence/v1 ${encodeMetadata({ ...cleanEvidence, ...change })} -->`,
+      },
+    }
+    assert.equal(
+      await getVerifiedStackCleanEvidence({
+        github,
+        context: stackContext,
+        headSha: plan.headSha,
+        evidenceDigest,
+      }),
+      null,
+      JSON.stringify(change)
+    )
+  }
+  state.checkRuns[0] = trustedCheck
 
   assert.deepEqual(
     await getVerifiedStackCleanEvidence({
