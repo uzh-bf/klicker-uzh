@@ -40,7 +40,10 @@ export function toSpeakableText(
     text = text.replace(re, () => ` ${formulaLabel} `)
   }
   for (const re of INLINE_MATH_RES) {
-    text = text.replace(re, (_, content: string) => content.trim())
+    // `\rho` is read as "rho" rather than "backslash rho".
+    text = text.replace(re, (_, content: string) =>
+      content.trim().replace(/\\([a-zA-Z]+)/g, '$1')
+    )
   }
   return text
     .replace(INLINE_CODE_RE, '$1')

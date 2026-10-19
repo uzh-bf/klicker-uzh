@@ -28,7 +28,7 @@ describe('toSpeakableText', () => {
 
   test('keeps inline code and inline math content without delimiters', () => {
     expect(speak('Use `mean()` for $\\mu$ and \\(x\\).')).toBe(
-      'Use mean() for \\mu and x.'
+      'Use mean() for mu and x.'
     )
   })
 
