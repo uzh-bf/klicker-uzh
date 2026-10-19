@@ -106,6 +106,9 @@ test('public runner jobs require their exact scheduling role and reject unknown 
         `\${{ github.sha }}`
     },
     (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'route').env.PR_DRAFT = 'false'
+    },
+    (w) => {
       w.jobs.prepare.steps.find((s) => s.id === 'route').run =
         'node .candidate/.github/scripts/playwright-route.cjs --output route.json'
     },
@@ -148,12 +151,44 @@ test('public runner jobs require their exact scheduling role and reject unknown 
         run: { 'working-directory': '.candidate' },
       }
     },
+    ...Object.entries({
+      PATH: '.candidate/bin',
+      BASH_ENV: '.candidate/bootstrap.sh',
+      NODE_OPTIONS: '--require ./.candidate/bootstrap.cjs',
+    }).flatMap(([key, value]) => [
+      (w) => {
+        w.env[key] = value
+      },
+      (w) => {
+        w.jobs.prepare.env = { [key]: value }
+      },
+      (w) => {
+        w.jobs.prepare.steps.find((s) => s.id === 'route').env[key] = value
+      },
+      (w) => {
+        w.jobs.prepare.steps.find((s) => s.id === 'metadata').env = {
+          [key]: value,
+        }
+      },
+    ]),
     (w) => {
       w.jobs.prepare.steps.find((s) => s.id === 'equivalent').if = 'true'
     },
     (w) => {
       w.jobs.prepare.steps.find((s) => s.id === 'equivalent').if +=
         " || steps.metadata.outputs.provider == 'warpbuild'"
+    },
+    (w) => {
+      const steps = w.jobs.prepare.steps
+      const [equivalent] = steps.splice(
+        steps.findIndex((s) => s.id === 'equivalent'),
+        1
+      )
+      steps.splice(
+        steps.findIndex((s) => s.id === 'metadata'),
+        0,
+        equivalent
+      )
     },
     (w) => {
       w.on.workflow_call.outputs.should_run.value = `\${{ jobs.prepare.outputs.should_run }}`

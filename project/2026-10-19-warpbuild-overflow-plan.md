@@ -147,10 +147,13 @@ record rather than public source artifacts.
 - Extend the existing runner-policy seam to reject candidate commands,
   additional command lines, alternate shells and working-directory overrides
   on route/metadata preparation. Reject workflow/job directory defaults that
-  could change the trusted command's execution context.
+  could change the trusted command's execution context. Allowlist preparation
+  environment keys at workflow, job and step scope, and require every route
+  identity expression so environment overrides cannot change trusted execution.
 - Require the complete no-cloud-reuse condition, including the existing
-  lifecycle predicate. Correct the equivalent-run test's obsolete pre-provider
-  assertion; its expected value remains the complete machine condition.
+  lifecycle predicate and metadata preceding equivalent reuse. Correct the
+  equivalent-run test's obsolete pre-provider assertion; its expected value
+  remains the complete machine condition.
 - Reproduce the guard failures before correction, then run both existing
   Playwright and CI/review contract portfolios, event-gate tests, formatting,
   focused static analysis and staged data hygiene. No application runtime is
@@ -176,3 +179,8 @@ record rather than public source artifacts.
   runtime change or unrelated cleanup necessary. Self-review is not independent
   final-review evidence. Status: source correction verified locally; hosted CI,
   actual final review, guarded merge and conditional activation remain pending.
+- Draft review follow-up extends the same mutation table for execution-affecting
+  environment keys at four scopes, route identity drift and reordered reuse.
+  Both environment and ordering defects failed before their respective guard
+  corrections and pass afterward. These are regression enforcement gaps; the
+  workflow already uses its trusted environment and current step order.

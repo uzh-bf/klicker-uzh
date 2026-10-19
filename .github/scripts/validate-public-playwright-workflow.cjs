@@ -197,7 +197,8 @@ function validatePublicRunnerRoles(workflow) {
       )
     }
   }
-  const metadata = jobs.prepare?.steps?.find((step) => step.id === 'metadata')
+  const prepareSteps = jobs.prepare?.steps ?? []
+  const metadata = prepareSteps.find((step) => step.id === 'metadata')
   for (const output of [
     'provider',
     'admission_attempt',
@@ -221,6 +222,11 @@ function validatePublicRunnerRoles(workflow) {
     }
   }
   if (
+    Object.keys(workflow?.env ?? {}).some(
+      (key) => key !== 'PLAYWRIGHT_CACHE_ENABLED'
+    ) ||
+    Object.keys(jobs.prepare?.env ?? {}).length > 0 ||
+    Object.keys(metadata?.env ?? {}).length > 0 ||
     workflow?.defaults?.run?.['working-directory'] !== undefined ||
     jobs.prepare?.defaults?.run?.['working-directory'] !== undefined ||
     metadata?.['working-directory'] !== undefined ||
@@ -234,7 +240,7 @@ function validatePublicRunnerRoles(workflow) {
   ) {
     issues.push('runner metadata must come from trusted control')
   }
-  const route = jobs.prepare?.steps?.find((step) => step.id === 'route')
+  const route = prepareSteps.find((step) => step.id === 'route')
   if (
     route?.run !==
       'node .ci-control/.github/scripts/playwright-route.cjs --output route.json' ||
@@ -244,24 +250,38 @@ function validatePublicRunnerRoles(workflow) {
     issues.push('cloud admission must execute only the trusted route command')
   }
   const expectedEnv = {
+    EVENT_NAME: `\${{ github.event_name }}`,
+    REPOSITORY: `\${{ github.repository }}`,
+    REPOSITORY_PRIVATE: `\${{ github.event.repository.private }}`,
+    HEAD_REPOSITORY: `\${{ github.event.pull_request.head.repo.full_name }}`,
+    PR_AUTHOR: `\${{ github.event.pull_request.user.login }}`,
+    PR_DRAFT: `\${{ github.event.pull_request.draft }}`,
+    HEAD_REF: `\${{ github.event.pull_request.head.ref }}`,
+    PR_NUMBER: `\${{ github.event.pull_request.number }}`,
+    PUBLIC_ROLLOUT_ENABLED: `\${{ vars.PUBLIC_PR_ARM64_PLAYWRIGHT_ENABLED }}`,
+    PUBLIC_ROLLOUT_CANARY_PR: `\${{ vars.PUBLIC_PR_ARM64_PLAYWRIGHT_CANARY_PR }}`,
+    SMART_DRAFT_ENABLED: `\${{ vars.PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_ENABLED }}`,
+    SMART_DRAFT_CANARY_PR: `\${{ vars.PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_CANARY_PR }}`,
+    FORCE_HOSTED_CANARY_PR: `\${{ vars.PUBLIC_PR_ARM64_PLAYWRIGHT_FORCE_HOSTED_CANARY_PR }}`,
+    ROUTE_HINT: `\${{ inputs.route_hint }}`,
     WARPBUILD_ADMISSIONS: `\${{ vars.PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSIONS }}`,
     HEAD_SHA: `\${{ github.event.pull_request.head.sha }}`,
     BASE_SHA: `\${{ github.event.pull_request.base.sha }}`,
     CONTROL_SHA: `\${{ job.workflow_sha }}`,
   }
   if (
+    Object.keys(route?.env ?? {}).length !== Object.keys(expectedEnv).length ||
     Object.entries(expectedEnv).some(
       ([key, value]) => route?.env?.[key] !== value
     )
   ) {
     issues.push('cloud admission must use exact trusted execution identity')
   }
-  const equivalent = jobs.prepare?.steps?.find(
-    (step) => step.id === 'equivalent'
-  )
+  const equivalent = prepareSteps.find((step) => step.id === 'equivalent')
   if (
     equivalent?.if !==
-    `steps.metadata.outputs.provider != 'warpbuild' && ((github.event_name == 'push' && github.ref != 'refs/heads/v3') || (github.event_name == 'pull_request' && contains(fromJSON('["ready_for_review","edited","reopened"]'), github.event.action)))`
+      `steps.metadata.outputs.provider != 'warpbuild' && ((github.event_name == 'push' && github.ref != 'refs/heads/v3') || (github.event_name == 'pull_request' && contains(fromJSON('["ready_for_review","edited","reopened"]'), github.event.action)))` ||
+    prepareSteps.indexOf(metadata) >= prepareSteps.indexOf(equivalent)
   ) {
     issues.push(
       'admitted cloud work must execute rather than reuse another backend'
