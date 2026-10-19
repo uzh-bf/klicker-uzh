@@ -1,5 +1,30 @@
 # Explainer quality decision and assessment qualification
 
+## Zero-spend source and route preflight
+
+Approved on 19 October 2026: inspect the named course/bot configuration,
+KB inventory, permitted passages and provider/pricing metadata through existing
+authenticated read paths. Main owns private content, bindings, cost admission
+and publication; a read-only source worker checks capture and guard contracts.
+Finish with private question/source cards and a readiness packet, or explicit
+unavailable bindings. No new connection, runtime startup, app/KB write, ledger,
+inference, merge, ready transition or deployment is authorized.
+
+The private checkpoint `project/_local/explainer-quality-decision.md` indexes
+the preflight evidence and unresolved prerequisites. This public protocol
+contains no course inventory, content or runtime findings. Paid readiness
+requires complete source cards, usable evidence access and enforceable all-in
+admission; this preflight grants no spending or implementation authority.
+
+Respect the existing fixed-model guard: it rejects `auto` qualification and
+stored Responses requests. Resolve any mismatch with the intended target
+explicitly; a substituted route cannot prove the original route's behavior.
+The application step limit does not limit parallel function-tool calls.
+The desired retrieval-call ceiling below therefore needs separate enforcement.
+Admission must include retries/fallbacks inside a gateway and all tool-internal
+embedding, reranking or other billable processing. Price metadata alone cannot
+establish that those sends are admitted before spending.
+
 ## Real-course acceptance preparation
 
 Approval covers zero-spend planning and sanitized draft delivery only. This
@@ -118,9 +143,11 @@ This is an additional allowance proposal, not renewal/reset of any old ledger.
 The US$5 default remains unchanged. No ledger is created by preparation and no
 remaining capacity in the proposed ceiling authorizes a second arm or repeat.
 
-Allow at most six answer-provider requests and five retrieval calls per learner
+Require at most six answer-provider requests and five retrieval calls per learner
 turn: sixty model requests and fifty retrieval calls total, with no paid retries.
-These are ceilings, not an assumption that every turn needs those calls.
+These are proposed execution ceilings, not source-enforced limits. A generation
+step may contain several function calls; qualify admission of the actual calls
+and internal provider attempts before treating either ceiling as a cost bound.
 Before execution, qualify the exact route, current all-in prices, input/output/
 reasoning limits, fees and retry/fallback behavior. Bound every billable component,
 including retrieval embeddings/reranking and any billable qualification.

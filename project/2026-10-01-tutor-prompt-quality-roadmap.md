@@ -32,6 +32,12 @@ The [real-course protocol](2026-10-18-explainer-assessment-readiness-plan.md#rea
 defines five baseline trajectories and manual source checks. Source-bound inputs,
 the permitted provider route and all-in cost admission need qualification before
 any separate execution decision; this preparation grants no additional spending.
+The [approved zero-spend preflight](2026-10-18-explainer-assessment-readiness-plan.md#zero-spend-source-and-route-preflight)
+keeps bindings and readiness evidence in the private checkpoint. Complete its
+source-content, evidence-access and cost prerequisites before proposing a paid
+run. Preserve the intended route explicitly: fixed-model guard qualification
+does not establish routed-model acceptance, and generation-step counts do not
+bound parallel retrieval calls or gateway-internal provider attempts.
 
 The [active quality-decision batch](2026-10-18-explainer-assessment-readiness-plan.md#current-quality-decision-batch)
 owns execution, acceptance and the next spending proposal. It continues the
