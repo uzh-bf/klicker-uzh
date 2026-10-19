@@ -6,6 +6,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import type { useTranslations } from 'next-intl'
+import { type CodeProfile, isCodeProfile } from '@/src/lib/code-runner/profiles'
 
 // Presentation metadata for the chatbot mode keys exposed via `systemPrompts`
 // and `customModeConfig`.
@@ -29,6 +30,8 @@ export interface ChatModeOption {
   name?: string
   welcomeMessage?: string
   starterPrompts?: string[]
+  /** Browser code profiles this mode may open, derived on the server. */
+  codeProfiles?: CodeProfile[]
 }
 
 export type ChatModeOptions = Record<string, ChatModeOption>
@@ -67,6 +70,9 @@ export function parseModeOptions(value: unknown): ChatModeOptions | null {
             typeof prompt === 'string' && prompt.trim().length > 0
         )
       : []
+    const codeProfiles = Array.isArray(option.codeProfiles)
+      ? option.codeProfiles.filter(isCodeProfile)
+      : []
     entries.push([
       mode,
       {
@@ -77,6 +83,7 @@ export function parseModeOptions(value: unknown): ChatModeOptions | null {
           ? { welcomeMessage: option.welcomeMessage }
           : {}),
         ...(starterPrompts.length > 0 ? { starterPrompts } : {}),
+        ...(codeProfiles.length > 0 ? { codeProfiles } : {}),
       },
     ])
   }

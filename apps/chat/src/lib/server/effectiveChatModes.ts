@@ -5,6 +5,8 @@ import {
   normalizeChatbotCustomModeConfig,
   normalizeChatbotStandardModeConfig,
 } from '@klicker-uzh/util'
+import { normalizeCodeExecutionConfig } from '@/src/lib/code-runner/profiles'
+import { isCodeExecutionEnabled } from '@/src/lib/code-runner/runtime'
 import { DEFAULT_MODE_DESCRIPTIONS } from '@/src/lib/config/mode-descriptions'
 import type { ChatModeOption, ChatModeOptions } from '@/src/lib/config/modes'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
@@ -21,6 +23,11 @@ export interface EffectiveChatModeOptions {
    * chatbot carries as approved configuration.
    */
   allowUnapprovedModes?: boolean
+  /**
+   * The chatbot's platform-owned `codeExecutionConfig` column. A mode carries
+   * browser code profiles only while the deployment kill switch is on.
+   */
+  codeExecutionConfig?: unknown
 }
 
 export interface ChatModeMCPConfiguration {
@@ -337,6 +344,9 @@ export function resolveEffectiveChatModeOptions(
   const candidates = Array.from(
     new Set([...standardModes, ...customModesByKey.keys(), ...storedModes])
   )
+  const codeProfilesByMode = isCodeExecutionEnabled()
+    ? normalizeCodeExecutionConfig(options.codeExecutionConfig)
+    : {}
   const modeOptions: ChatModeOptions = {}
 
   for (const mode of candidates) {
@@ -357,9 +367,15 @@ export function resolveEffectiveChatModeOptions(
       continue
     }
 
-    modeOptions[mode] = customMode
-      ? getCustomModeOption(customMode)
-      : { description: getModeDescription(systemPrompts, mode) }
+    const codeProfiles = Object.hasOwn(codeProfilesByMode, mode)
+      ? codeProfilesByMode[mode]
+      : undefined
+    modeOptions[mode] = {
+      ...(customMode
+        ? getCustomModeOption(customMode)
+        : { description: getModeDescription(systemPrompts, mode) }),
+      ...(codeProfiles ? { codeProfiles } : {}),
+    }
   }
 
   return modeOptions

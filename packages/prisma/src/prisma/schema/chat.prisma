@@ -195,6 +195,12 @@ model Chatbot {
   /// [PrismaChatbotCustomModeConfig]
   customModeConfig Json?
 
+  // Platform-owned browser code execution policy, for example
+  // { "modes": { "tutor": ["python-core", "r-base"] } }. Lecturer authoring
+  // never writes it; Chat reads it tolerantly and only while the deployment
+  // kill switch CHAT_CODE_EXECUTION_ENABLED is on.
+  codeExecutionConfig Json?
+
   /// [PrismaChatbotAuthoringRevision]
   draftConfig Json?
 

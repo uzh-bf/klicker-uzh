@@ -1,0 +1,731 @@
+{
+  "version": "d4d2fd1e7856188a",
+  "profiles": {
+    "python-core": [
+      "pyodide/pyodide-lock.json",
+      "pyodide/pyodide.asm.mjs",
+      "pyodide/pyodide.asm.wasm",
+      "pyodide/pyodide.js",
+      "pyodide/python_stdlib.zip"
+    ],
+    "r-base": [
+      "webr/R.js",
+      "webr/R.wasm",
+      "webr/libRblas.so",
+      "webr/libRlapack.so",
+      "webr/vfs/etc/fonts/fonts.conf",
+      "webr/vfs/etc/ssl/cert.pem",
+      "webr/vfs/usr/lib/R/doc.data.gz",
+      "webr/vfs/usr/lib/R/doc.js.metadata",
+      "webr/vfs/usr/lib/R/library/base/demo.data.gz",
+      "webr/vfs/usr/lib/R/library/base/demo.js.metadata",
+      "webr/vfs/usr/lib/R/library/base/help.data.gz",
+      "webr/vfs/usr/lib/R/library/base/help.js.metadata",
+      "webr/vfs/usr/lib/R/library/base/html.data.gz",
+      "webr/vfs/usr/lib/R/library/base/html.js.metadata",
+      "webr/vfs/usr/lib/R/library/compiler/help.data.gz",
+      "webr/vfs/usr/lib/R/library/compiler/help.js.metadata",
+      "webr/vfs/usr/lib/R/library/compiler/html.data.gz",
+      "webr/vfs/usr/lib/R/library/compiler/html.js.metadata",
+      "webr/vfs/usr/lib/R/library/datasets/help.data.gz",
+      "webr/vfs/usr/lib/R/library/datasets/help.js.metadata",
+      "webr/vfs/usr/lib/R/library/datasets/html.data.gz",
+      "webr/vfs/usr/lib/R/library/datasets/html.js.metadata",
+      "webr/vfs/usr/lib/R/library/grDevices/afm.data.gz",
+      "webr/vfs/usr/lib/R/library/grDevices/afm.js.metadata",
+      "webr/vfs/usr/lib/R/library/grDevices/demo.data.gz",
+      "webr/vfs/usr/lib/R/library/grDevices/demo.js.metadata",
+      "webr/vfs/usr/lib/R/library/grDevices/enc.data.gz",
+      "webr/vfs/usr/lib/R/library/grDevices/enc.js.metadata",
+      "webr/vfs/usr/lib/R/library/grDevices/fonts.data.gz",
+      "webr/vfs/usr/lib/R/library/grDevices/fonts.js.metadata",
+      "webr/vfs/usr/lib/R/library/grDevices/help.data.gz",
+      "webr/vfs/usr/lib/R/library/grDevices/help.js.metadata",
+      "webr/vfs/usr/lib/R/library/grDevices/html.data.gz",
+      "webr/vfs/usr/lib/R/library/grDevices/html.js.metadata",
+      "webr/vfs/usr/lib/R/library/grDevices/libs.data.gz",
+      "webr/vfs/usr/lib/R/library/grDevices/libs.js.metadata",
+      "webr/vfs/usr/lib/R/library/graphics/demo.data.gz",
+      "webr/vfs/usr/lib/R/library/graphics/demo.js.metadata",
+      "webr/vfs/usr/lib/R/library/graphics/help.data.gz",
+      "webr/vfs/usr/lib/R/library/graphics/help.js.metadata",
+      "webr/vfs/usr/lib/R/library/graphics/html.data.gz",
+      "webr/vfs/usr/lib/R/library/graphics/html.js.metadata",
+      "webr/vfs/usr/lib/R/library/grid/doc.data.gz",
+      "webr/vfs/usr/lib/R/library/grid/doc.js.metadata",
+      "webr/vfs/usr/lib/R/library/grid/help.data.gz",
+      "webr/vfs/usr/lib/R/library/grid/help.js.metadata",
+      "webr/vfs/usr/lib/R/library/grid/html.data.gz",
+      "webr/vfs/usr/lib/R/library/grid/html.js.metadata",
+      "webr/vfs/usr/lib/R/library/methods/help.data.gz",
+      "webr/vfs/usr/lib/R/library/methods/help.js.metadata",
+      "webr/vfs/usr/lib/R/library/methods/html.data.gz",
+      "webr/vfs/usr/lib/R/library/methods/html.js.metadata",
+      "webr/vfs/usr/lib/R/library/parallel.data.gz",
+      "webr/vfs/usr/lib/R/library/parallel.js.metadata",
+      "webr/vfs/usr/lib/R/library/splines/help.data.gz",
+      "webr/vfs/usr/lib/R/library/splines/help.js.metadata",
+      "webr/vfs/usr/lib/R/library/splines/html.data.gz",
+      "webr/vfs/usr/lib/R/library/splines/html.js.metadata",
+      "webr/vfs/usr/lib/R/library/stats/demo.data.gz",
+      "webr/vfs/usr/lib/R/library/stats/demo.js.metadata",
+      "webr/vfs/usr/lib/R/library/stats/doc.data.gz",
+      "webr/vfs/usr/lib/R/library/stats/doc.js.metadata",
+      "webr/vfs/usr/lib/R/library/stats/help.data.gz",
+      "webr/vfs/usr/lib/R/library/stats/help.js.metadata",
+      "webr/vfs/usr/lib/R/library/stats/html.data.gz",
+      "webr/vfs/usr/lib/R/library/stats/html.js.metadata",
+      "webr/vfs/usr/lib/R/library/stats4/help.data.gz",
+      "webr/vfs/usr/lib/R/library/stats4/help.js.metadata",
+      "webr/vfs/usr/lib/R/library/stats4/html.data.gz",
+      "webr/vfs/usr/lib/R/library/stats4/html.js.metadata",
+      "webr/vfs/usr/lib/R/library/tcltk.data.gz",
+      "webr/vfs/usr/lib/R/library/tcltk.js.metadata",
+      "webr/vfs/usr/lib/R/library/tools/help.data.gz",
+      "webr/vfs/usr/lib/R/library/tools/help.js.metadata",
+      "webr/vfs/usr/lib/R/library/tools/html.data.gz",
+      "webr/vfs/usr/lib/R/library/tools/html.js.metadata",
+      "webr/vfs/usr/lib/R/library/tools/misc.data.gz",
+      "webr/vfs/usr/lib/R/library/tools/misc.js.metadata",
+      "webr/vfs/usr/lib/R/library/translations.data.gz",
+      "webr/vfs/usr/lib/R/library/translations.js.metadata",
+      "webr/vfs/usr/lib/R/library/translations/DESCRIPTION",
+      "webr/vfs/usr/lib/R/library/utils/doc.data.gz",
+      "webr/vfs/usr/lib/R/library/utils/doc.js.metadata",
+      "webr/vfs/usr/lib/R/library/utils/help.data.gz",
+      "webr/vfs/usr/lib/R/library/utils/help.js.metadata",
+      "webr/vfs/usr/lib/R/library/utils/html.data.gz",
+      "webr/vfs/usr/lib/R/library/utils/html.js.metadata",
+      "webr/vfs/usr/lib/R/library/utils/misc.data.gz",
+      "webr/vfs/usr/lib/R/library/utils/misc.js.metadata",
+      "webr/vfs/usr/lib/R/library/webr/help.data.gz",
+      "webr/vfs/usr/lib/R/library/webr/help.js.metadata",
+      "webr/vfs/usr/lib/R/library/webr/html.data.gz",
+      "webr/vfs/usr/lib/R/library/webr/html.js.metadata",
+      "webr/vfs/usr/lib/R/share.data.gz",
+      "webr/vfs/usr/lib/R/share.js.metadata",
+      "webr/vfs/usr/share/fonts/NotoSans-Bold.ttf",
+      "webr/vfs/usr/share/fonts/NotoSans-BoldItalic.ttf",
+      "webr/vfs/usr/share/fonts/NotoSans-Italic.ttf",
+      "webr/vfs/usr/share/fonts/NotoSans-Regular.ttf",
+      "webr/vfs/usr/share/fonts/NotoSansMono-Bold.ttf",
+      "webr/vfs/usr/share/fonts/NotoSansMono-Regular.ttf",
+      "webr/vfs/usr/share/fonts/NotoSerif-Bold.ttf",
+      "webr/vfs/usr/share/fonts/NotoSerif-BoldItalic.ttf",
+      "webr/vfs/usr/share/fonts/NotoSerif-Italic.ttf",
+      "webr/vfs/usr/share/fonts/NotoSerif-Regular.ttf",
+      "webr/vfs/usr/share/gdal.data.gz",
+      "webr/vfs/usr/share/gdal.js.metadata",
+      "webr/vfs/usr/share/proj.data.gz",
+      "webr/vfs/usr/share/proj.js.metadata",
+      "webr/vfs/usr/share/udunits.data.gz",
+      "webr/vfs/usr/share/udunits.js.metadata",
+      "webr/vfs/var/cache/fontconfig/3830d5c3ddfd5cd38a049b759396e72e-le32d8.cache-9",
+      "webr/vfs/var/cache/fontconfig/CACHEDIR.TAG",
+      "webr/webr-worker.js",
+      "webr/webr.js"
+    ]
+  },
+  "files": {
+    "pyodide/pyodide-lock.json": {
+      "sha256": "5dc2fc119108bc148c7457dc86e7675b5c87e1cafd420b9c34c1eaef7b36c010",
+      "size": 119077,
+      "type": "application/json"
+    },
+    "pyodide/pyodide.asm.mjs": {
+      "sha256": "f7cdc8ece80678ceb712f8e65ebe6d3a83203a180c399865f49612a051693635",
+      "size": 1250344,
+      "type": "text/javascript"
+    },
+    "pyodide/pyodide.asm.wasm": {
+      "sha256": "cc36e3cab04fdfc9a63ff13eb52eae2b911bf46c025cc7b281f394bd3de1d5e6",
+      "size": 9598218,
+      "type": "application/wasm"
+    },
+    "pyodide/pyodide.js": {
+      "sha256": "3141b814715a72e59b51b1b18b9ceae5bf19f7c852417e431bb0a34feadf825c",
+      "size": 18912,
+      "type": "text/javascript"
+    },
+    "pyodide/python_stdlib.zip": {
+      "sha256": "fa1957e5777068fc4f7437f96d860ae2fbe9c19732ba06c84e004ec16dd7dd7a",
+      "size": 2545637,
+      "type": "application/octet-stream"
+    },
+    "webr/R.js": {
+      "sha256": "162adb529111d739b37ef1b9f889eb7afbe4fb3288f8a58166cd6d0b04fd7376",
+      "size": 785875,
+      "type": "text/javascript"
+    },
+    "webr/R.wasm": {
+      "sha256": "5df459fb222d332e358cf08e4019c0e114398579ed8c62242bfcceeda81222ba",
+      "size": 18062845,
+      "type": "application/wasm"
+    },
+    "webr/libRblas.so": {
+      "sha256": "d831496cc1d1e2748519439a0ea509ba966b56db10d13132db52331a270aac74",
+      "size": 198205,
+      "type": "application/octet-stream"
+    },
+    "webr/libRlapack.so": {
+      "sha256": "df8ca333754f0dd95715df437f6e6d633e4ffbff0176bcb11c15fe3e5dd4e387",
+      "size": 1769888,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/etc/fonts/fonts.conf": {
+      "sha256": "a93efbf9eec83d72a463f1d52f54043a8afa6ae7cc05609deda73232525e7bc0",
+      "size": 1089,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/etc/ssl/cert.pem": {
+      "sha256": "86a1f3366afac7c6f8ae9f3c779ac221129328c43f0ab2b8817eb2f362a5025c",
+      "size": 189462,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/doc.data.gz": {
+      "sha256": "03ad1b51acd51665a5ad8e4b1a3ffa570434ca0f2a51d432b294e4b5500ea90f",
+      "size": 4000106,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/doc.js.metadata": {
+      "sha256": "fa7537b51ccab64e17407933e926211d706f7e87ecc7db018e44e663c07d93a2",
+      "size": 8701,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/base/demo.data.gz": {
+      "sha256": "5dc1fc84cb1d61e4d5311b8e01458014dab1c434c2b6d93deca3eaa9b50752e2",
+      "size": 4460,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/base/demo.js.metadata": {
+      "sha256": "bfc597e88f9b97b8eec9fd36227ef0d079fdf1c32e8bea84c3b1e77fb7a6b05c",
+      "size": 263,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/base/help.data.gz": {
+      "sha256": "7c5dec2357f9e36fa4d348a8fef8477994cd56089009247e5908d918a6fb1a09",
+      "size": 2633853,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/base/help.js.metadata": {
+      "sha256": "a4cc3075fc1bd2bdd4826ee04efa616d569cd7e07886b8c98531a23406fc0a25",
+      "size": 318,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/base/html.data.gz": {
+      "sha256": "1f4e82a2633bf1cc134d3dbc6222003492de2fe207ddecccd6e3ab5d4f46f30c",
+      "size": 20906,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/base/html.js.metadata": {
+      "sha256": "4826bdd7ba15568d7ab5226c92b1d742bcd3f4ce853300f55bf205a5f8e22d02",
+      "size": 155,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/compiler/help.data.gz": {
+      "sha256": "c8e850b5b5e1a04aaf29ef42d50f805473f56c988abcf60ffcb375195f7bcddc",
+      "size": 10128,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/compiler/help.js.metadata": {
+      "sha256": "1afd086c4166f184ec0db0943352c4c5885a33e1b8fb70e537241da712288534",
+      "size": 304,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/compiler/html.data.gz": {
+      "sha256": "6d157ac6c76a2f2b15a989ffdbc8c1a465b91811a654aa6fb1573d783109e30c",
+      "size": 1227,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/compiler/html.js.metadata": {
+      "sha256": "98d18997c393881d285172dcb2414da928192520af6aba215667f0a93b0da54d",
+      "size": 147,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/datasets/help.data.gz": {
+      "sha256": "de58c6303b01b5fe83fca73a5d205e7448ffa16a56cf0a1086d776fdc60bb4dd",
+      "size": 277806,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/datasets/help.js.metadata": {
+      "sha256": "a5cb9f65838dad1ad72e662675d28dafb75b8769c02d9537fac7569a295b7c16",
+      "size": 316,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/datasets/html.data.gz": {
+      "sha256": "6f1eb6811cd3432e9764e75b0d418e3ed2455835a58f725ba18d0b2b8e1ed94d",
+      "size": 4458,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/datasets/html.js.metadata": {
+      "sha256": "c9c5e5bafee1c03be04d2867f44923e0fa74791bbc51ccbb8d3ff5579bb5e211",
+      "size": 151,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/grDevices/afm.data.gz": {
+      "sha256": "bb0d88c8492ba397470152d6d90d82e055092dad73e1e864fe6b2ebf0b2bd52a",
+      "size": 953823,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/grDevices/afm.js.metadata": {
+      "sha256": "3e88061dfecc14c6cd1386be85d4fef59fe1f964312db41903e471ed74e7cf02",
+      "size": 6816,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/grDevices/demo.data.gz": {
+      "sha256": "89433796693b081e65e8ae3214f4b8823c564a2fe8bf0f900956adf55fb16f2c",
+      "size": 2513,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/grDevices/demo.js.metadata": {
+      "sha256": "2a51924eaee18cbe41bfe8f11ae70f083748d97ef5cbbb77bd3c3a133eaad471",
+      "size": 149,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/grDevices/enc.data.gz": {
+      "sha256": "73fcd21310a54e033f151f6c887001c55d348ff26e2e4d32a0be0ad48c3a4fd7",
+      "size": 4263,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/grDevices/enc.js.metadata": {
+      "sha256": "fd6fb479b499da19fe442318ac147bdda2557a087ff19acda5a220fbe6686617",
+      "size": 960,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/grDevices/fonts.data.gz": {
+      "sha256": "4dca57d1a4a8b8ab530fa67b019193e6b3457d4066506a67284179f58bb50a72",
+      "size": 273155,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/grDevices/fonts.js.metadata": {
+      "sha256": "a59f1e81fa5a21f6b6fb91b6a51ad9944cff3283d5891c9427a3702573b6d65c",
+      "size": 352,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/grDevices/help.data.gz": {
+      "sha256": "cd5bb1d9e3da614ecfd34d493b5370c98e3e3e93dd625fac1f753c6c6a67d3a0",
+      "size": 447385,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/grDevices/help.js.metadata": {
+      "sha256": "c639cb7c72cac13497dc29f0147f311a5206c9dc249885b0e2d11daa44e00106",
+      "size": 318,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/grDevices/html.data.gz": {
+      "sha256": "de1205804774e7d7db07966467a2d0ea66734550583ad4549935d4356cffd9bb",
+      "size": 4188,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/grDevices/html.js.metadata": {
+      "sha256": "3a2b36bad1509df1912e194322e133c7f362ae7cade8c178e9fbfe88da0a0c83",
+      "size": 151,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/grDevices/libs.data.gz": {
+      "sha256": "558a09f14c830848510b6279c1141802d392fe2d0aaf66eca174faa03dc7bb1d",
+      "size": 1643930,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/grDevices/libs.js.metadata": {
+      "sha256": "f4b2da4dd2f93011eaa259f8dddc23c63dd144fecc8322fab7885341952e2b7b",
+      "size": 103,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/graphics/demo.data.gz": {
+      "sha256": "3e60f0210cb48d0c40a8c56436af980e2a71f0016ea66b7d95f1932ffea24762",
+      "size": 13086,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/graphics/demo.js.metadata": {
+      "sha256": "1128fef779f40452d0dd2b27b3974175fb4a341c3418d953d8b33540575117fd",
+      "size": 359,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/graphics/help.data.gz": {
+      "sha256": "8522582e2b3a3577c24f174bcccc7d75bebb9128131157d7b3712d28255baf71",
+      "size": 562908,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/graphics/help.js.metadata": {
+      "sha256": "f389834ad81b4db9bb4e8e89c254bb8c886da36b5c458cd661a1a4d5710809f1",
+      "size": 720,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/graphics/html.data.gz": {
+      "sha256": "99d1c6a3224b704237d427057549a1a9b863033bbf2e8c086fc6e200553621bb",
+      "size": 2982,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/graphics/html.js.metadata": {
+      "sha256": "bb82dd2024e800abf3d390c3f21f44e189ebe3df567a0de974e95206f7edef7d",
+      "size": 151,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/grid/doc.data.gz": {
+      "sha256": "c40b85e70ad49170e7aca3041bd518a1f7ce5c5510f5f46b49807a4c4715d869",
+      "size": 584214,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/grid/doc.js.metadata": {
+      "sha256": "14924ac9389ed973b16d0f3e5cb30e49b6629db3f2f4c8e0ab36908bec1bac0b",
+      "size": 896,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/grid/help.data.gz": {
+      "sha256": "3d8a87877c069f47a6ffc590043975e26d26b112addd7bcabdcab576f7a9c74e",
+      "size": 341560,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/grid/help.js.metadata": {
+      "sha256": "66a56f27efa45f11c3fe20b63215761527a18014531159bc7d1af159d9bf0a87",
+      "size": 308,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/grid/html.data.gz": {
+      "sha256": "8ab236a697ca624dd74b1fce1eab0852e8d6fcab4e441ec09fe57e56849b77d1",
+      "size": 4928,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/grid/html.js.metadata": {
+      "sha256": "3d28487a22ea049d3c6329a9cebb0d310e3d4206647a517cb40ab21bc5662e1d",
+      "size": 151,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/methods/help.data.gz": {
+      "sha256": "d727dc6b7422dedf18caf153144c78b6e2966d7a5a42c4c9f6f6cf16a8a0683e",
+      "size": 559755,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/methods/help.js.metadata": {
+      "sha256": "f8803bd5a9ceffbdf2857cba27d965f380a97801f97b51d300ac39ee239c5056",
+      "size": 318,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/methods/html.data.gz": {
+      "sha256": "12cbbb4eb9d878d130a0713e1ad24a4a5a1dbe5b623347a838c4d9d7f334b0bd",
+      "size": 5267,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/methods/html.js.metadata": {
+      "sha256": "a63e96038c66042226f488d3ac8f54cbea74bda22febf593965e2bede552c73a",
+      "size": 151,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/parallel.data.gz": {
+      "sha256": "25256757440bb6dd77b2cbdd5668b85aed5d2b8ebae58d039408f1d8b4fe5b95",
+      "size": 349042,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/parallel.js.metadata": {
+      "sha256": "82f79a072159d48f4c9d2b984ee7660c7c15327d14534d9e89b3271268b0a768",
+      "size": 1238,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/splines/help.data.gz": {
+      "sha256": "019301cba92c42cb85448f37a081e09f13684a2d62bc28122b6d2832a8666da5",
+      "size": 44264,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/splines/help.js.metadata": {
+      "sha256": "6c6e828305347cb9bc7c1cba42a2d4a60509f95f4375919b8d7143b602b4e862",
+      "size": 302,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/splines/html.data.gz": {
+      "sha256": "1f35815050129826f06bb9c71377ef98745648e028702ed326d56dee2288c2df",
+      "size": 1550,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/splines/html.js.metadata": {
+      "sha256": "55921a910bdb3d7cb2d2db24dff9e57ddbe4d5670fc54c3ce0c70da6112d6cef",
+      "size": 147,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/stats/demo.data.gz": {
+      "sha256": "761adcd4b49ca859057e1a96774308a5fd3b6f35e00d2dac6d17731ee91f5050",
+      "size": 4061,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/stats/demo.js.metadata": {
+      "sha256": "7e537450a6855a02f5491cf22f48abed526bb1d4d2fd15d3e34725ab3667db5f",
+      "size": 241,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/stats/doc.data.gz": {
+      "sha256": "d24e1da1a4da7cf531f9d963a5fbfb42fab39270ef182283c23d88d666a607cf",
+      "size": 50057,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/stats/doc.js.metadata": {
+      "sha256": "671b514c960e5f91023a8003a690918ae84ac97a4c3bc123f391e51b582c0c66",
+      "size": 102,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/stats/help.data.gz": {
+      "sha256": "8fa48d1e3803dd508e24bde959313a24fa91ebe73f779272c6aca31ed6134a33",
+      "size": 1843548,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/stats/help.js.metadata": {
+      "sha256": "84619108c7ab023343c1e5e95d5979fccf426e43080c7fd90672f44ab3653ea0",
+      "size": 316,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/stats/html.data.gz": {
+      "sha256": "4e14ef0067001e22cb25167c7f51cf665ce89f16fe6d80c1c4121075bff5520a",
+      "size": 11358,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/stats/html.js.metadata": {
+      "sha256": "9ea60d805483f4ebfb197957da1c7c360a00c92d4b33fcc7fda42f9ee626cd7d",
+      "size": 151,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/stats4/help.data.gz": {
+      "sha256": "8a18b51cbfe3991f3f33be831bc7a7b2676f62c4a012bff73450afde182b159f",
+      "size": 37560,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/stats4/help.js.metadata": {
+      "sha256": "a03f6116d3f6703f88f9209864709946362e51cbf328c14d3c9c7e3d39a40d4e",
+      "size": 304,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/stats4/html.data.gz": {
+      "sha256": "eab7a939a8d57c5792e98a13b94222d29b43f2fbc4e0b4d449e6fad96f401da5",
+      "size": 1522,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/stats4/html.js.metadata": {
+      "sha256": "c34ccf9f0de1ad19d6aea15b3f56e6f65c8967bd8c9a9e39461788daa5c1d15e",
+      "size": 147,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/tcltk.data.gz": {
+      "sha256": "fd62d4cf44534ca784cbc0ab26e65eb1c6f882269709fced5a1ac459f8550026",
+      "size": 132160,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/tcltk.js.metadata": {
+      "sha256": "785dc003a43233094a6845f5804fa097fb680ccae0c0aad6fd0784e9582f0ab9",
+      "size": 2019,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/tools/help.data.gz": {
+      "sha256": "4ad0e607507c22a91860857865192a7b560270168f3be8c75d9394c5689364d8",
+      "size": 324132,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/tools/help.js.metadata": {
+      "sha256": "761f3e2cd8ecc194410a039da7fa7565a68b17c8b271306e927c0f8b4d0eef27",
+      "size": 306,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/tools/html.data.gz": {
+      "sha256": "13242d7e18ab7412609925428c651e07615146a78137e1bc7f117d1add62e47f",
+      "size": 4307,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/tools/html.js.metadata": {
+      "sha256": "d93471df33f8c83582f3c217fdaad9c0947996bc87c19e2261828e01bcb668c3",
+      "size": 151,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/tools/misc.data.gz": {
+      "sha256": "7042f04844026fbc281f4789abf8ac5bf0751d1ce70bb602a8db8d60f2ac68cf",
+      "size": 3724,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/tools/misc.js.metadata": {
+      "sha256": "5c6bd36201d2f620052f3ba437224496ea98919a8a05dcee6b44aa99547eb5a6",
+      "size": 142,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/translations.data.gz": {
+      "sha256": "c8cac5071b8691cb1c960389b370b5007c5b8df752d98a5860bce505c234b9c2",
+      "size": 3061528,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/translations.js.metadata": {
+      "sha256": "f62b1fa37f7cdff9aa0c9b7046366254411b7df6bb35d2017cbb531fd6ee3d4a",
+      "size": 35184,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/translations/DESCRIPTION": {
+      "sha256": "ba7da3ac60466f5f466c4f706f50bcafbb924f94b0888d333bb410451b41afd2",
+      "size": 238,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/utils/doc.data.gz": {
+      "sha256": "4018e722537fa83c70d5f031d4aa391ed68dc00b63a9888aef565899c789caf9",
+      "size": 216941,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/utils/doc.js.metadata": {
+      "sha256": "189fd98b3cda5d4a11c7da6780649ddecce9a5fd5b9d472a075f49909a6956c3",
+      "size": 103,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/utils/help.data.gz": {
+      "sha256": "be06c8a1d69d4b0b82b09afc24ade14fe0afd68053c19f87af1f6d17d9842cbf",
+      "size": 894372,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/utils/help.js.metadata": {
+      "sha256": "7bbdaa8dd24135fa73ec05ef1120e94f50bca25fcef31244a3ba3d51dd0c4478",
+      "size": 310,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/utils/html.data.gz": {
+      "sha256": "33f6fe57dad92319af190f3ea06ee79104e850c86043cc45c11c7513de9cc066",
+      "size": 7240,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/utils/html.js.metadata": {
+      "sha256": "9237b38d0bb9cd04c6f305f9b69b7d06b2dcaf982050e3d3e374e6cdfe0706a1",
+      "size": 151,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/utils/misc.data.gz": {
+      "sha256": "33ddc6d1a7b594c7d0824dc12aa15cfce859b66b9d7134c228ee349b48027b56",
+      "size": 161,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/utils/misc.js.metadata": {
+      "sha256": "7e248a6c0ce276772fe22eb83d49128393be9e674e322ab0ce57905e83e6709b",
+      "size": 142,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/webr/help.data.gz": {
+      "sha256": "13f814b4ca4b8ad4ae07f43a5e09ed90274233d8758a3c5ec0e6dac3ba56799c",
+      "size": 57381,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/webr/help.js.metadata": {
+      "sha256": "bbec147dbb13908d360940507e158e7507cda52f169f365821dcdc3414513794",
+      "size": 357,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/webr/html.data.gz": {
+      "sha256": "e16b557a8417ec2bfb11c3a03ab8b28638464217877ad6bdd26f45263a14cb79",
+      "size": 1696,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/library/webr/html.js.metadata": {
+      "sha256": "820fc44428d2f719881725341ba13650436e989c53191e2d6da1f2493f7ea131",
+      "size": 147,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/share.data.gz": {
+      "sha256": "79258e504395be06aefa3d9ed482bcd9c26efb27791a243f851ead183ac28d41",
+      "size": 380353,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/lib/R/share.js.metadata": {
+      "sha256": "3ccaab3b787ae8e377bb56fad19764772e6f1ddf90d47f10fbaef58921c7e9e2",
+      "size": 46073,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/share/fonts/NotoSans-Bold.ttf": {
+      "sha256": "87cb2d84472a7d66da659ee47b6cdb9552326e8c128245231f191b6ac72529d9",
+      "size": 432376,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/share/fonts/NotoSans-BoldItalic.ttf": {
+      "sha256": "3d367743f371f28671d2764e911a53d7c20ec9b6aa8791d059e7090389fc52a5",
+      "size": 441936,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/share/fonts/NotoSans-Italic.ttf": {
+      "sha256": "678288f868807d4d64a6f3b51466871d117d915780381ce9d0ed4b3bcbd06d37",
+      "size": 446880,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/share/fonts/NotoSans-Regular.ttf": {
+      "sha256": "f3961a9cde016d41a4879aecda1474d3a36d6bf54fa0e4643de029cc2248b0e8",
+      "size": 431364,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/share/fonts/NotoSansMono-Bold.ttf": {
+      "sha256": "1100772b2f79c102402a1011df5e2226517d0f40ac553a25fb12fdbad8c11b85",
+      "size": 387484,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/share/fonts/NotoSansMono-Regular.ttf": {
+      "sha256": "87f8ce0522a6c99b743ee5fc75b4073cfdd575639119672828b7b9944b65b4f4",
+      "size": 388660,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/share/fonts/NotoSerif-Bold.ttf": {
+      "sha256": "24ad531e6b05ddad8c3d89572d2c93eb86a6b74e652ce7ee3c3e171de68e84c3",
+      "size": 481892,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/share/fonts/NotoSerif-BoldItalic.ttf": {
+      "sha256": "1bc4f86502eaa368718f6192bee022ea9a703d5af1c18b7d291212657b63074a",
+      "size": 513280,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/share/fonts/NotoSerif-Italic.ttf": {
+      "sha256": "c4b3c971741ecdb40f5a443bce754e8fe91efe761b6ea10c92be7c3597cdadc4",
+      "size": 513428,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/share/fonts/NotoSerif-Regular.ttf": {
+      "sha256": "a15cfbbc1539d707115111d672d590a3d70d4f74b4c0a315956da20ae19a14e1",
+      "size": 482540,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/share/gdal.data.gz": {
+      "sha256": "8adcaf12f15dabb964cb3363defa02bdc9e730a17b10460946944885bcf699af",
+      "size": 348461,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/share/gdal.js.metadata": {
+      "sha256": "de403ded38013ab57931a862d14bcdc33b09997c70de1587ec6719f94360ab25",
+      "size": 10206,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/share/proj.data.gz": {
+      "sha256": "14e3893991c408324d43605abbe6c4cae18607fe27655e78654bec4565799e13",
+      "size": 1705325,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/share/proj.js.metadata": {
+      "sha256": "adc4c33a8c963b5059402a2132c59811016cc9c48286b6bd43e68b347a5f4c0c",
+      "size": 857,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/share/udunits.data.gz": {
+      "sha256": "fc1de0c9cb5c827fef22ed148ffc28eab70a99d3cc9aa9990e37aaf38e5c1757",
+      "size": 16775,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/usr/share/udunits.js.metadata": {
+      "sha256": "9f8ac349f1d68c23e4d2a4790e328ab3ecc38cd84ef993592170b7d19ef1b6a6",
+      "size": 424,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/var/cache/fontconfig/3830d5c3ddfd5cd38a049b759396e72e-le32d8.cache-9": {
+      "sha256": "48cd35d8c3d7a4456f05bbf3c10bac83de082d354b2ec02c8a80e325ac3f0839",
+      "size": 16008,
+      "type": "application/octet-stream"
+    },
+    "webr/vfs/var/cache/fontconfig/CACHEDIR.TAG": {
+      "sha256": "05e7633fb31bf1f6f8d89020c16b9f24587fdf7638e951c9745b192f5fc3b682",
+      "size": 200,
+      "type": "application/octet-stream"
+    },
+    "webr/webr-worker.js": {
+      "sha256": "c64282f5e15b51ef473e26548203313f868208c8988b2c7bdfc22c5730de418b",
+      "size": 134029,
+      "type": "text/javascript"
+    },
+    "webr/webr.js": {
+      "sha256": "4c04d3240de6cd3e7f59e081756168faa8566f8a8b97251400770939815c344a",
+      "size": 66672,
+      "type": "text/javascript"
+    }
+  }
+}

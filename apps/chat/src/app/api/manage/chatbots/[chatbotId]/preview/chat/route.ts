@@ -17,6 +17,7 @@ import {
   getModelsForChatbot,
 } from '@/src/lib/server/chatModelRegistry'
 import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
+import { withCodeCardTool } from '@/src/lib/server/codeCardTool'
 import {
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
@@ -174,6 +175,7 @@ export async function POST(
     chatbot.standardModeConfig,
     {
       allowUnapprovedModes: true,
+      codeExecutionConfig: chatbot.codeExecutionConfig,
       customModeConfig: resolveOwnerPreviewModeConfiguration(chatbot),
     }
   )
@@ -318,6 +320,11 @@ export async function POST(
 
   try {
     const toolNames = Object.keys(tools)
+    // Added after the prompt inputs are fixed, as in the participant route.
+    const modelTools = withCodeCardTool(
+      tools,
+      modeOptions[selectedMode]?.codeProfiles
+    )
     const docQueryToolName = toolNames.find(isDocQueryToolName)
     const quizzerDocQueryToolName =
       selectedMode === 'quizzer' ? docQueryToolName : undefined
@@ -361,7 +368,7 @@ export async function POST(
               mode: selectedMode,
               threadId: 'owner-preview',
             },
-            tools,
+            tools: modelTools,
           })
         : null
 
@@ -423,7 +430,7 @@ export async function POST(
           REPLY_LANGUAGE_REMINDER,
         ],
       }),
-      tools: promptCacheRequest?.tools ?? tools,
+      tools: promptCacheRequest?.tools ?? modelTools,
       toolOrder: promptCacheRequest?.toolOrder,
       onEnd: closeMcpTools,
       onAbort: closeMcpTools,

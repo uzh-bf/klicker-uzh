@@ -103,6 +103,9 @@ export function startRuntime(appDir, port) {
         ...process.env,
         NODE_ENV: 'production',
         KLICKER_PLAYWRIGHT_FIXTURES: '1',
+        // Browser code execution stays default off in deployments; the test
+        // runtime turns the kill switch on so specs can admit it per chatbot.
+        CHAT_CODE_EXECUTION_ENABLED: 'true',
         PORT: port,
         HOSTNAME: '0.0.0.0',
       },

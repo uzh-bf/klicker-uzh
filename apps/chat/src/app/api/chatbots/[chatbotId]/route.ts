@@ -22,6 +22,7 @@ export async function GET(
       systemPrompts: true,
       standardModeConfig: true,
       customModeConfig: true,
+      codeExecutionConfig: true,
       mcpConfigurations: {
         select: {
           allowedTools: true,
@@ -45,7 +46,10 @@ export async function GET(
         chatbot.systemPrompts,
         mcpConfigurations,
         chatbot.standardModeConfig,
-        { customModeConfig: chatbot.customModeConfig }
+        {
+          codeExecutionConfig: chatbot.codeExecutionConfig,
+          customModeConfig: chatbot.customModeConfig,
+        }
       ),
     })
   } catch (error) {

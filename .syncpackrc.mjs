@@ -83,6 +83,15 @@ export default {
       packages: ['**'],
     },
     {
+      // Chat copies these packages' files into its browser code runtimes and
+      // verifies them against a checked-in hash manifest, so the manifest and
+      // the installed release must name exactly the same version.
+      range: '',
+      dependencyTypes: ['dev'],
+      dependencies: ['pyodide', 'webr'],
+      packages: ['@klicker-uzh/chat'],
+    },
+    {
       range: '~',
       dependencyTypes: ['dev'],
       dependencies: ['!@types/**'],

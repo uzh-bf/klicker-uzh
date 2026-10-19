@@ -189,6 +189,7 @@
     "CHAT_PRIMARY_MODEL_ID",
     "CHAT_FALLBACK_MODEL_ID",
     "CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED",
+    "CHAT_CODE_EXECUTION_ENABLED",
     "GROWTHBOOK_REFRESH_INTERVAL_MS",
     "CHAT_TURN_LIFECYCLE_WRITES_ENABLED",
     "CHAT_MODEL_REGISTRY_JSON",
@@ -239,6 +240,15 @@
     "@klicker-uzh/prisma#build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", "src/prisma/client/**"]
+    },
+    "@klicker-uzh/chat#build": {
+      "dependsOn": ["^build"],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        "!.next/dev/**",
+        "public/code-runtimes/**"
+      ]
     },
     "@klicker-uzh/prisma#check": {
       "cache": false,

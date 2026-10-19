@@ -93,6 +93,7 @@ export default async function ChatLayout({
     systemPrompts: true,
     standardModeConfig: true,
     customModeConfig: true,
+    codeExecutionConfig: true,
     knowledgeGraphVisible: true,
     mcpConfigurations: {
       select: {
@@ -112,7 +113,10 @@ export default async function ChatLayout({
     chatbot.systemPrompts,
     chatbot.mcpConfigurations,
     chatbot.standardModeConfig,
-    { customModeConfig: chatbot.customModeConfig }
+    {
+      codeExecutionConfig: chatbot.codeExecutionConfig,
+      customModeConfig: chatbot.customModeConfig,
+    }
   )
 
   return (
