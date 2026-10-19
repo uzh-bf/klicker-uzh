@@ -14,7 +14,7 @@ import { resolveSelectedMode } from '@/src/lib/config/modes'
 import { useSettingsStore } from '@/src/stores/settingsStore'
 import {
   ArtifactSlot,
-  focusArtifactLauncher,
+  type ArtifactWorkspaceValue,
   useArtifactWorkspace,
 } from './artifact-workspace'
 import {
@@ -66,6 +66,7 @@ export function CodeCard({
   }
   return (
     <CodeCardAnchor
+      workspace={workspace}
       artifact={{
         id: toolCallId,
         kind: 'code',
@@ -81,18 +82,22 @@ export function CodeCard({
  * the mounted card here, or a short note while the workspace shows it.
  * Registering never opens the workspace or moves focus.
  */
-function CodeCardAnchor({ artifact }: { artifact: CodeArtifact }) {
+function CodeCardAnchor({
+  artifact,
+  workspace,
+}: {
+  artifact: CodeArtifact
+  workspace: ArtifactWorkspaceValue
+}) {
   const t = useTranslations()
-  const workspace = useArtifactWorkspace()
   const language = useCodeLanguageName(artifact.profile)
-  const register = workspace?.register
+  const { register } = workspace
   const { id, profile, starterCode } = artifact
 
   useEffect(() => {
-    register?.({ id, kind: 'code', profile, starterCode })
+    register({ id, kind: 'code', profile, starterCode })
   }, [register, id, profile, starterCode])
 
-  if (!workspace) return null
   if (activeArtifactId(workspace.state.view) !== id) {
     return <ArtifactSlot artifactId={id} />
   }
@@ -108,10 +113,7 @@ function CodeCardAnchor({ artifact }: { artifact: CodeArtifact }) {
       <button
         className="rounded-md border border-slate-200 bg-white px-2 py-1 text-sm font-medium text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
         data-cy="code-card-show-here"
-        onClick={() => {
-          workspace.close()
-          focusArtifactLauncher(workspace.containerFor(id))
-        }}
+        onClick={workspace.close}
         type="button"
       >
         {t('chat.codeCard.showHere')}

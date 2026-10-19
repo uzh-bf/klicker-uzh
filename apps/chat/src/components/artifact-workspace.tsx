@@ -19,10 +19,8 @@ import {
   initialArtifactWorkspaceState,
 } from './artifact-workspace-state'
 
-interface ArtifactWorkspaceValue {
+export interface ArtifactWorkspaceValue {
   state: ArtifactWorkspaceState
-  /** The knowledge graph can be shown in this workspace. */
-  graphAvailable: boolean
   /** The switcher offers the knowledge graph; embedded Chat leaves it out. */
   graphSwitchable: boolean
   /** Artifacts always open as a fullscreen dialog, as in an embedded frame. */
@@ -123,7 +121,6 @@ export function ArtifactWorkspaceProvider({
     () => ({
       ...actions,
       state,
-      graphAvailable,
       graphSwitchable: graphAvailable && graphSwitchable,
       alwaysFullscreen,
     }),

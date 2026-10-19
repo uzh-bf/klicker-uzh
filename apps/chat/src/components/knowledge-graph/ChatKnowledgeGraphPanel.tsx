@@ -49,7 +49,6 @@ export function useChatGraphPanel() {
   return {
     open,
     toggle: () => (open ? workspace?.close() : workspace?.showGraph()),
-    close: () => workspace?.close(),
   }
 }
 
@@ -173,9 +172,9 @@ export function ChatKnowledgeGraphPanel({
     }
   }
 
-  const switcherArtifacts = (workspace?.state.opened ?? []).flatMap(
-    (id) =>
-      workspace?.state.artifacts.find((artifact) => artifact.id === id) ?? []
+  // Opened artifacts in the order they appeared in the conversation.
+  const switcherArtifacts = (workspace?.state.artifacts ?? []).filter(
+    (artifact) => workspace?.state.opened.includes(artifact.id)
   )
   const showSwitcher =
     switcherArtifacts.length + (workspace?.graphSwitchable ? 1 : 0) > 1

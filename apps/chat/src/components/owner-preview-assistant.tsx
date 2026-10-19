@@ -20,7 +20,10 @@ import {
 } from '@/src/lib/config/reasoning'
 import { getDefaultReasoningEffort } from '@/src/lib/ownerPreviewPolicy'
 import { useSettingsStore } from '@/src/stores/settingsStore'
-import { ArtifactWorkspaceProvider } from './artifact-workspace'
+import {
+  ArtifactWorkspaceProvider,
+  useArtifactWorkspace,
+} from './artifact-workspace'
 import { ChatUiProvider } from './chat-ui-context'
 import { renderChatArtifact } from './code-card'
 import { ChatKnowledgeGraphPanel } from './knowledge-graph/ChatKnowledgeGraphPanel'
@@ -408,6 +411,7 @@ function OwnerPreviewConversation({
             graphSwitchable={false}
             renderArtifact={renderChatArtifact}
           >
+            <CloseWorkspaceWhenHidden active={active} />
             <ChatKnowledgeGraphPanel chatbotId={chatbot.id}>
               <Thread
                 chatbotAvatar={chatbot.avatar ?? ''}
@@ -421,4 +425,16 @@ function OwnerPreviewConversation({
       </ModeOptionsProvider>
     </div>
   )
+}
+
+/**
+ * Hidden preview conversations stay mounted. Closing their workspace keeps a
+ * fullscreen dialog nobody can see from making the visible page inert.
+ */
+function CloseWorkspaceWhenHidden({ active }: { active: boolean }) {
+  const close = useArtifactWorkspace()?.close
+  useEffect(() => {
+    if (!active) close?.()
+  }, [active, close])
+  return null
 }
