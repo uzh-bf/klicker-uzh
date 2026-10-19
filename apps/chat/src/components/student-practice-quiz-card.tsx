@@ -280,7 +280,7 @@ function PracticeQuiz({
 }) {
   const params = useParams<{ chatbotId?: string }>()
   const stack = useMemo(() => toElementStack(quiz), [quiz])
-  const startedAtMs = useRef(Date.now())
+  const [startedAtMs] = useState(() => Date.now())
   // Blocks a second submission before the pending state has rendered.
   const submitting = useRef(false)
   const [activeElementIx, setActiveElementIx] = useState(0)
@@ -366,7 +366,7 @@ function PracticeQuiz({
     const submittedAtMs = Date.now()
     const stackAnswerTimeSeconds = Math.max(
       0,
-      Math.round((submittedAtMs - startedAtMs.current) / 1000)
+      Math.round((submittedAtMs - startedAtMs) / 1000)
     )
 
     submitting.current = true
