@@ -1,5 +1,6 @@
 const fs = require('node:fs')
 const path = require('node:path')
+const { isDeepStrictEqual } = require('node:util')
 const YAML = require('yaml')
 
 const EXECUTION_GROUP =
@@ -198,7 +199,6 @@ function validatePublicRunnerRoles(workflow) {
     }
   }
   const prepareSteps = jobs.prepare?.steps ?? []
-  const metadata = prepareSteps.find((step) => step.id === 'metadata')
   for (const output of [
     'provider',
     'admission_attempt',
@@ -226,28 +226,12 @@ function validatePublicRunnerRoles(workflow) {
       (key) => key !== 'PLAYWRIGHT_CACHE_ENABLED'
     ) ||
     Object.keys(jobs.prepare?.env ?? {}).length > 0 ||
-    Object.keys(metadata?.env ?? {}).length > 0 ||
     workflow?.defaults?.run?.['working-directory'] !== undefined ||
     jobs.prepare?.defaults?.run?.['working-directory'] !== undefined ||
-    metadata?.['working-directory'] !== undefined ||
-    metadata?.shell !== 'bash' ||
-    typeof metadata?.run !== 'string' ||
-    metadata.run
-      .trim()
-      .replace(/\\\r?\n[ \t]*/g, ' ')
-      .replace(/[ \t]+/g, ' ') !==
-      'node .ci-control/.github/scripts/playwright-plan-metadata.cjs --plan playwright-execution-plan.json --route route.json --output "$GITHUB_OUTPUT"'
+    jobs.prepare?.container !== undefined ||
+    jobs.prepare?.services !== undefined
   ) {
-    issues.push('runner metadata must come from trusted control')
-  }
-  const route = prepareSteps.find((step) => step.id === 'route')
-  if (
-    route?.run !==
-      'node .ci-control/.github/scripts/playwright-route.cjs --output route.json' ||
-    route?.shell !== 'bash' ||
-    route?.['working-directory'] !== undefined
-  ) {
-    issues.push('cloud admission must execute only the trusted route command')
+    issues.push('preparation must retain its hosted execution environment')
   }
   const expectedEnv = {
     EVENT_NAME: `\${{ github.event_name }}`,
@@ -269,23 +253,184 @@ function validatePublicRunnerRoles(workflow) {
     BASE_SHA: `\${{ github.event.pull_request.base.sha }}`,
     CONTROL_SHA: `\${{ job.workflow_sha }}`,
   }
+  const baseSha = `\${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.sha }}`
+  const headSha = `\${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}`
+  // Step names and summary display text are not execution policy. Commands,
+  // expressions, action inputs and step order are part of the trusted boundary.
+  const expectedSteps = [
+    {
+      uses: 'actions/checkout@v4',
+      with: {
+        repository: `\${{ job.workflow_repository }}`,
+        ref: `\${{ job.workflow_sha }}`,
+        path: '.ci-control',
+        'persist-credentials': false,
+      },
+    },
+    {
+      uses: 'actions/checkout@v4',
+      with: {
+        repository: `\${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}`,
+        ref: headSha,
+        path: '.candidate',
+        'fetch-depth': 0,
+        'persist-credentials': false,
+      },
+    },
+    {
+      id: 'route',
+      shell: 'bash',
+      env: expectedEnv,
+      run: 'node .ci-control/.github/scripts/playwright-route.cjs --output route.json',
+    },
+    {
+      shell: 'bash',
+      env: {
+        EVENT_NAME: `\${{ github.event_name }}`,
+        BASE_REPOSITORY: `\${{ github.repository }}`,
+        BASE_SHA: baseSha,
+        HEAD_SHA: headSha,
+      },
+      run: [
+        'set -euo pipefail',
+        'if [ "$EVENT_NAME" = \'pull_request\' ]; then',
+        '  git -C .candidate remote add base "https://github.com/$BASE_REPOSITORY.git"',
+        '  git -C .candidate fetch --no-tags base "$BASE_SHA"',
+        'fi',
+        'test "$(git -C .candidate rev-parse HEAD)" = "$HEAD_SHA"',
+      ].join('\n'),
+    },
+    {
+      shell: 'bash',
+      env: { BASE_SHA: baseSha, HEAD_SHA: headSha },
+      run: [
+        'set -euo pipefail',
+        'PR_STATE=$(node -e \'process.stdout.write(JSON.parse(require("fs").readFileSync("route.json", "utf8")).selectorPrState)\')',
+        'node .ci-control/.github/scripts/playwright-selector.cjs --control-root .ci-control --candidate-root .candidate --base-sha "$BASE_SHA" --head-sha "$HEAD_SHA" --pr-state "$PR_STATE" --output playwright-execution-plan.json',
+      ].join('\n'),
+    },
+    {
+      if: "github.event_name == 'pull_request' && github.event.pull_request.draft == true",
+      shell: 'bash',
+      env: {
+        BASE_SHA: `\${{ github.event.pull_request.base.sha }}`,
+        HEAD_SHA: `\${{ github.event.pull_request.head.sha }}`,
+      },
+      run: [
+        'set -euo pipefail',
+        'RAN_STATE=$(node -e \'process.stdout.write(JSON.parse(require("node:fs").readFileSync("route.json", "utf8")).selectorPrState)\')',
+        'if [ "$RAN_STATE" = \'draft\' ]; then SHADOW_STATE=ready; else SHADOW_STATE=draft; fi',
+        'node .ci-control/.github/scripts/playwright-selector.cjs --control-root .ci-control --candidate-root .candidate --base-sha "$BASE_SHA" --head-sha "$HEAD_SHA" --pr-state "$SHADOW_STATE" --output playwright-selector-shadow.json',
+      ].join('\n'),
+    },
+    {
+      id: 'metadata',
+      shell: 'bash',
+      run: 'node .ci-control/.github/scripts/playwright-plan-metadata.cjs --plan playwright-execution-plan.json --route route.json --output "$GITHUB_OUTPUT"',
+    },
+    {
+      id: 'equivalent',
+      if: `steps.metadata.outputs.provider != 'warpbuild' && ((github.event_name == 'push' && github.ref != 'refs/heads/v3') || (github.event_name == 'pull_request' && contains(fromJSON('["ready_for_review","edited","reopened"]'), github.event.action)))`,
+      'continue-on-error': true,
+      uses: 'actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3',
+      env: {
+        CONTROL_SHA: `\${{ job.workflow_sha }}`,
+        ALLOW_PUSH_REUSE: `\${{ inputs.allow_push_reuse }}`,
+        STG_SOURCE_BRANCH: `\${{ vars.STG_SOURCE_BRANCH }}`,
+      },
+      with: {
+        script: [
+          "const fs = require('node:fs')",
+          "await require('./.ci-control/.github/scripts/ci-equivalent-run.cjs').reportEquivalentRun({",
+          "  github, context, core, kind: 'playwright',",
+          '  controlSha: process.env.CONTROL_SHA,',
+          "  allowPushReuse: process.env.ALLOW_PUSH_REUSE === 'true',",
+          '  stagingSourceBranch: process.env.STG_SOURCE_BRANCH,',
+          "  plan: JSON.parse(fs.readFileSync('playwright-execution-plan.json', 'utf8')),",
+          "  route: JSON.parse(fs.readFileSync('route.json', 'utf8')).route,",
+          '})',
+        ].join('\n'),
+      },
+    },
+    {
+      shell: 'bash',
+      run: [
+        "node - <<'NODE'",
+        "const fs = require('node:fs')",
+        "const route = JSON.parse(fs.readFileSync('route.json', 'utf8'))",
+        "const plan = JSON.parse(fs.readFileSync('playwright-execution-plan.json', 'utf8'))",
+        'const summary = [',
+        "'<display>',",
+        "'<display>',",
+        ...[
+          'route.route',
+          "route.provider || (route.route === 'hosted' ? 'github' : 'public-pool')",
+          'route.selectorPrState',
+          'plan.mode',
+          'plan.envelopeClass',
+          "plan.reasonCodes.join(',')",
+          'plan.candidateSpecs.length',
+          'plan.selectedSpecs.length',
+          'plan.shardCount',
+        ].map((expression) => `  \`<display>\\\`\${${expression}}\\\`\`,`),
+        "'<display>',",
+        "'<display>',",
+        ']',
+        `fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, \`\${summary.join('\\n')}\\n\`)`,
+        'NODE',
+      ].join('\n'),
+    },
+    ...[
+      ['playwright-execution-plan', 'playwright-execution-plan.json'],
+      ['playwright-route-metadata', 'route.json'],
+      ['playwright-selector-shadow', 'playwright-selector-shadow.json'],
+    ].map(([name, artifactPath]) => ({
+      ...(name === 'playwright-selector-shadow'
+        ? {
+            if: "github.event_name == 'pull_request' && github.event.pull_request.draft == true",
+          }
+        : {}),
+      uses: 'actions/upload-artifact@v4',
+      with: {
+        name,
+        path: artifactPath,
+        'if-no-files-found': 'error',
+        'retention-days': 7,
+      },
+    })),
+  ]
   if (
-    Object.keys(route?.env ?? {}).length !== Object.keys(expectedEnv).length ||
-    Object.entries(expectedEnv).some(
-      ([key, value]) => route?.env?.[key] !== value
+    prepareSteps.some(
+      (step) => typeof step.run === 'string' && step.run.includes(`\${{`)
     )
   ) {
-    issues.push('cloud admission must use exact trusted execution identity')
+    issues.push('preparation commands must receive expressions through env')
   }
-  const equivalent = prepareSteps.find((step) => step.id === 'equivalent')
-  if (
-    equivalent?.if !==
-      `steps.metadata.outputs.provider != 'warpbuild' && ((github.event_name == 'push' && github.ref != 'refs/heads/v3') || (github.event_name == 'pull_request' && contains(fromJSON('["ready_for_review","edited","reopened"]'), github.event.action)))` ||
-    prepareSteps.indexOf(metadata) >= prepareSteps.indexOf(equivalent)
-  ) {
-    issues.push(
-      'admitted cloud work must execute rather than reuse another backend'
-    )
+  const actualSteps = prepareSteps.map(({ name, ...step }) => ({
+    ...step,
+    ...(step.with ? { with: { ...step.with } } : {}),
+  }))
+  for (const steps of [actualSteps, expectedSteps]) {
+    for (const step of steps) {
+      if (typeof step.run === 'string') {
+        step.run = step.run
+          .replace(/^[ \t]*#.*\r?\n/gm, '')
+          .replace(/\\\r?\n[ \t]*/g, ' ')
+          .replace(/^[ \t]*'(?:[^'\\\r\n]|\\[^\r\n])*',$/gm, "'<display>',")
+          .replace(
+            /^([ \t]*`)(?:[^`$\\\r\n]|\$(?!\{)|\\[^\r\n])*(?=\\`\$\{)/gm,
+            '$1<display>'
+          )
+          .replace(/[ \t]+/g, ' ')
+          .trim()
+      }
+      if (typeof step.with?.script === 'string') {
+        step.with.script = step.with.script.trim()
+      }
+    }
+  }
+  if (!isDeepStrictEqual(actualSteps, expectedSteps)) {
+    issues.push('every preparation step must preserve trusted execution')
   }
   if (
     workflow?.on?.workflow_call?.outputs?.should_run?.value !==

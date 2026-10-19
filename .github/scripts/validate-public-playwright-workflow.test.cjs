@@ -74,6 +74,25 @@ test('public runner jobs require their exact scheduling role and reject unknown 
     )
   )
   assert.deepEqual(validatePublicRunnerRoles(source), [])
+  const displayOnly = structuredClone(source)
+  for (const step of displayOnly.jobs.prepare.steps) {
+    step.name = 'Synthetic step display'
+    if (typeof step.run !== 'string') continue
+    if (step.run.includes('const summary = [')) {
+      const lines = step.run.split('\n')
+      const arrayStart = lines.findIndex(
+        (line) => line.trim() === 'const summary = ['
+      )
+      lines[arrayStart + 1] = "  'Synthetic summary heading',"
+      const field = lines.findIndex((line) => line.trim().startsWith('`'))
+      lines[field] =
+        '  `Synthetic $ field: \\`' +
+        lines[field].slice(lines[field].indexOf('${'))
+      step.run = lines.join('\n')
+    }
+    step.run = `# Synthetic shell comment\n${step.run}`
+  }
+  assert.deepEqual(validatePublicRunnerRoles(displayOnly), [])
   const build = 'build-and-compile-public-pr'
   const shard = 'test-playwright-public-pr'
   for (const mutate of [
@@ -150,6 +169,93 @@ test('public runner jobs require their exact scheduling role and reject unknown 
       w.jobs.prepare.defaults = {
         run: { 'working-directory': '.candidate' },
       }
+    },
+    (w) => {
+      w.jobs.prepare.container = { image: 'candidate/image:latest' }
+    },
+    (w) => {
+      w.jobs.prepare.services = {
+        candidate: { image: 'candidate/image:latest' },
+      }
+    },
+    (w) => {
+      w.jobs.prepare.steps.push({ run: 'node .candidate/script.cjs' })
+    },
+    ...source.jobs.prepare.steps.flatMap((step, index) =>
+      typeof step.run === 'string'
+        ? [
+            (w) => {
+              w.jobs.prepare.steps[index].run += '\nnode .candidate/script.cjs'
+            },
+            (w) => {
+              w.jobs.prepare.steps[index].run =
+                `# \${{ github.event.pull_request.title }}\n${step.run}`
+            },
+            (w) => {
+              w.jobs.prepare.steps[index].shell = 'python'
+            },
+            (w) => {
+              w.jobs.prepare.steps[index]['working-directory'] = '.candidate'
+            },
+            (w) => {
+              w.jobs.prepare.steps[index].env = {
+                ...w.jobs.prepare.steps[index].env,
+                NODE_OPTIONS: '--require ./.candidate/bootstrap.cjs',
+              }
+            },
+          ]
+        : [
+            (w) => {
+              w.jobs.prepare.steps[index].uses = './.candidate/action'
+            },
+          ]
+    ),
+    (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'equivalent').with.script +=
+        '\nrequire("./.candidate/script.cjs")'
+    },
+    (w) => {
+      const summary = w.jobs.prepare.steps.find((s) =>
+        s.run?.includes('const summary = [')
+      )
+      const lines = summary.run.split('\n')
+      const arrayStart = lines.findIndex(
+        (line) => line.trim() === 'const summary = ['
+      )
+      lines[arrayStart + 1] = `  '\${{ github.event.pull_request.title }}',`
+      summary.run = lines.join('\n')
+    },
+    (w) => {
+      const summary = w.jobs.prepare.steps.find((s) =>
+        s.run?.includes('const summary = [')
+      )
+      summary.run = summary.run.replace(
+        `\${route.route}`,
+        `\${require("./.candidate/script.cjs")}`
+      )
+    },
+    (w) => {
+      const summary = w.jobs.prepare.steps.find((s) =>
+        s.run?.includes('const summary = [')
+      )
+      const lines = summary.run.split('\n')
+      const field = lines.findIndex((line) => line.trim().startsWith('`'))
+      lines[field] =
+        "  `Synthetic\nNODE\nnode .candidate/script.cjs\nnode - <<'NODE'\nfield: \\`" +
+        lines[field].slice(lines[field].indexOf('${'))
+      summary.run = lines.join('\n')
+    },
+    (w) => {
+      const summary = w.jobs.prepare.steps.find((s) =>
+        s.run?.includes('const summary = [')
+      )
+      const lines = summary.run.split('\n')
+      const arrayStart = lines.findIndex(
+        (line) => line.trim() === 'const summary = ['
+      )
+      lines[arrayStart + 1] =
+        "  'display' + require('./.candidate/script.cjs'),"
+      summary.run = lines.join('\n')
     },
     ...Object.entries({
       PATH: '.candidate/bin',

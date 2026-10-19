@@ -167,7 +167,8 @@ record rather than public source artifacts.
   Existing machine-contract tests are the narrow stable seams. No new helper,
   executable, workflow, dependency or test file is needed.
 - Verification: the policy mutation test failed before correction. After the
-  correction, 96 Playwright CI, 56 equivalent-run and 19 event-gate contracts
+  correction and target integration, 96 Playwright CI, 56 equivalent-run and
+  20 event-gate contracts
   pass in network-isolated Node 24.21.0. JavaScript syntax, focused Biome,
   plan formatting and whitespace checks pass. Scoped Opengrep ran 200 applicable
   rules on the three executable files with no findings.
@@ -184,3 +185,12 @@ record rather than public source artifacts.
   Both environment and ordering defects failed before their respective guard
   corrections and pass afterward. These are regression enforcement gaps; the
   workflow already uses its trusted environment and current step order.
+- A further verified draft finding extends this same contract to the complete
+  preparation sequence. Require the existing run blocks, action inputs and
+  order, reject extra steps and job containers/services, and allowlist every
+  step environment. This closes alternate paths that could replace the plan
+  or route around the previously checked commands. Step names, comments and
+  summary display text remain outside the executable contract; test-owned
+  display edits must pass while inserted expressions fail. Reject inline
+  GitHub expressions before comment or display normalization. The existing
+  mutation table remains the primary seam. No workflow or runtime change.
