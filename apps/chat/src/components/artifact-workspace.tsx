@@ -146,20 +146,28 @@ export function ArtifactWorkspaceProvider({
     return () => dispatch({ type: 'anchor-unmounted', artifactId })
   }, [])
 
+  // Registration must not change identity with the scope either: anchors of
+  // the previous thread stay mounted for one commit after the scope changes
+  // and would register their artifacts into the new scope.
+  const targetRef = useRef(target)
+  targetRef.current = target
+  const register = useCallback((artifact: Artifact) => {
+    // Restoring at registration makes the saved edit the first value the
+    // card renders, so the starter never overwrites it.
+    const restoreTarget = targetRef.current
+    const restored =
+      restoreTarget && artifact.kind === 'code'
+        ? restoreWorkingCode(getTabStorage(), restoreTarget, artifact)
+        : null
+    if (restored?.failed) dispatch({ type: 'storage-failed' })
+    dispatch({ type: 'register', artifact, restoredCode: restored?.code })
+  }, [])
+
   // Stable actions let consumers register from effects without re-running
   // them on every workspace change.
   const actions = useMemo(
     () => ({
-      register: (artifact: Artifact) => {
-        // Restoring at registration makes the saved edit the first value the
-        // card renders, so the starter never overwrites it.
-        const restored =
-          target && artifact.kind === 'code'
-            ? restoreWorkingCode(getTabStorage(), target, artifact)
-            : null
-        if (restored?.failed) dispatch({ type: 'storage-failed' })
-        dispatch({ type: 'register', artifact, restoredCode: restored?.code })
-      },
+      register,
       anchorMounted,
       open: (artifactId: string) => dispatch({ type: 'open', artifactId }),
       showGraph: () => {
@@ -177,7 +185,7 @@ export function ArtifactWorkspaceProvider({
       },
       containerFor,
     }),
-    [graphAvailable, containerFor, target, anchorMounted]
+    [graphAvailable, containerFor, target, anchorMounted, register]
   )
 
   const savesWorkingCode = storage !== undefined

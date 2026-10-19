@@ -594,6 +594,67 @@ test.describe('Chat code card', () => {
     })
   })
 
+  test('never sends edited code with the next chat message', async ({
+    page,
+  }) => {
+    const marker = `edited-marker-${randomUUID()}`
+    const thread = await seedCardThread(
+      participantId,
+      'python-core',
+      'print("starter")'
+    )
+    await mockChatStream(page, { text: 'Noted.' })
+    const bodies: string[] = []
+    page.on('request', (request) => {
+      if (
+        request.method() === 'POST' &&
+        /\/(chat|threads)(?:\?|$)/.test(request.url())
+      )
+        bodies.push(request.postData() ?? '')
+    })
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`)
+    await page
+      .getByTestId('code-card')
+      .getByRole('textbox')
+      .fill(`print("${marker}")`)
+    const input = page.getByTestId('chat-composer-input')
+    await input.click()
+    await input.pressSequentially('What does my code print?')
+    await page.getByTestId('chat-send-button').click()
+    await expect(page.getByText('Noted.')).toBeVisible()
+    expect(bodies.length).toBeGreaterThan(0)
+    for (const body of bodies) expect(body).not.toContain(marker)
+  })
+
+  test('opens a fullscreen dialog on a narrow screen and returns focus on close', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    const thread = await seedCardThread(
+      participantId,
+      'python-core',
+      'print("starter")'
+    )
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`)
+    const open = page
+      .getByTestId('code-card')
+      .getByRole('button', { name: enMessages.chat.workspace.open })
+    await open.click()
+    const dialog = page.getByRole('dialog', {
+      name: enMessages.chat.workspace.label,
+    })
+    await expect(dialog).toHaveAttribute('aria-modal', 'true')
+    await expect(dialog.getByTestId('code-card')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(dialog).toHaveCount(0)
+    await expect(open).toBeFocused()
+
+    await open.click()
+    await dialog.getByTestId('workspace-back-to-chat').click()
+    await expect(dialog).toHaveCount(0)
+    await expect(open).toBeFocused()
+  })
+
   test('closes the workspace when its branch is hidden and keeps the edit for the return', async ({
     page,
   }) => {

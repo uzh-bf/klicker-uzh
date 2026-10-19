@@ -1624,7 +1624,7 @@ The page owns working code, not the card. `ArtifactWorkspaceProvider` keeps edit
 
 The `<scope>` is computed on the server in `app/[chatbotId]/layout.tsx` as the first 22 base64url characters of `sha256(authMode:participantId)` and passed down as a prop. It holds no credential, grants no authority, and the client never derives identity from cookies or stored tokens. Participant, guest and other owners therefore never share keys. Deleting a thread removes only that thread's keys after the delete request succeeds; a failed delete keeps them.
 
-Session storage is per tab. Independent tabs and app-owned `noopener` openings start from the starter code. Browser Duplicate Tab or a page opened by an external opener can copy drafts, and browser session restore can recover them. Removing entries is not secure erasure. When storage is unavailable or refuses a write, edits stay in page memory and the card shows a notice that they are lost when the learner leaves the page.
+Session storage is per tab. Independent tabs and app-owned `noopener` openings start from the starter code. Browser Duplicate Tab or a page opened by an external opener can copy working code, and browser session restore can recover it. Removing entries is not secure erasure. When storage is unavailable or refuses a write, edits stay in page memory and the card shows a notice that they are lost when the learner leaves the page.
 
 Owner preview keeps edits in memory only, and its code cards say that edits are lost on reload.
 
