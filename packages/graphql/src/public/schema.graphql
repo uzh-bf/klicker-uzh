@@ -2555,6 +2555,7 @@ type KBKnowledgeGraphDomainOption {
 
 type KBMaterialsReadiness {
   failedResourceCount: Int!
+  lastChangedAt: Date
   processingResourceCount: Int!
   servingResourceCount: Int!
   visibleResourceCount: Int!

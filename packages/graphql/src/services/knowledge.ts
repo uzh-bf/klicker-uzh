@@ -125,6 +125,7 @@ export interface KBMetrics {
   servingResourceCount: number
   processingResourceCount: number
   failedResourceCount: number
+  lastChangedAt: Date | null
 }
 
 export interface KBWithMetrics extends DB.KB {
@@ -654,6 +655,7 @@ function createKbMetrics({
   servingResourceCount = 0,
   processingResourceCount = 0,
   failedResourceCount = 0,
+  lastChangedAt = null,
 }: Partial<{
   storageLimitBytes: number
   visibleResourceCount: number
@@ -668,6 +670,7 @@ function createKbMetrics({
   servingResourceCount: number
   processingResourceCount: number
   failedResourceCount: number
+  lastChangedAt: Date | null
 }> = {}): KBMetrics {
   const quotaRetainedSizeBytes =
     retainedSizeBytes + retainedUnknownSizeCount * MAX_KB_FILE_SIZE_BYTES
@@ -690,6 +693,7 @@ function createKbMetrics({
     servingResourceCount,
     processingResourceCount,
     failedResourceCount,
+    lastChangedAt,
   }
 }
 
@@ -715,6 +719,7 @@ export async function getKbMetricsMap(
       where: { kbId: { in: kbIds }, deletedAt: null },
       _count: { _all: true },
       _sum: { sizeBytes: true },
+      _max: { updatedAt: true },
     }),
     prisma.kBResource.groupBy({
       by: ['kbId'],
@@ -830,6 +835,7 @@ export async function getKbMetricsMap(
           servingResourceCount: readiness?.serving,
           processingResourceCount: readiness?.processing,
           failedResourceCount: readiness?.failed,
+          lastChangedAt: visible?._max.updatedAt ?? null,
         }),
       ]
     })

@@ -78,6 +78,7 @@ query QGetChatbotsInfoWithKnowledgeBases {
         servingResourceCount
         processingResourceCount
         failedResourceCount
+        lastChangedAt
       }
     }
     createdAt

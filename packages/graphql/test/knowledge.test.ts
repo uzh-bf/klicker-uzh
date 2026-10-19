@@ -3647,6 +3647,7 @@ describe('Integration tests for knowledge base CRUD', () => {
       servingResourceCount: 1,
       processingResourceCount: 1,
       failedResourceCount: 1,
+      lastChangedAt: expect.any(Date),
     })
   })
 
@@ -3657,6 +3658,7 @@ describe('Integration tests for knowledge base CRUD', () => {
     const kbA = await createKb({ name: 'Alpha KB' }, userOneCtx)
     const kbB = await createKb({ name: 'Beta KB' }, userOneCtx)
     const kbC = await createKb({ name: 'Gamma KB' }, userOneCtx)
+    const alphaLastChangedAt = new Date('2026-02-01T00:00:00Z')
 
     await prisma.kBResource.createMany({
       data: [
@@ -3666,12 +3668,16 @@ describe('Integration tests for knowledge base CRUD', () => {
           type: KBResourceType.BLOB,
           title: 'Alpha visible blob',
           sizeBytes: 100,
+          updatedAt: new Date('2026-01-01T00:00:00Z'),
         },
         {
           kbId: kbA.id,
           type: KBResourceType.URL,
           title: 'Alpha visible url (unknown size)',
+          updatedAt: alphaLastChangedAt,
         },
+        // The tombstone changed last, but a deleted resource is not a change
+        // the lecturer can see.
         {
           kbId: kbA.id,
           type: KBResourceType.BLOB,
@@ -3679,6 +3685,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           sizeBytes: 30,
           deletedAt: new Date(),
           deletedById: userOneCtx.user.sub,
+          updatedAt: new Date('2026-03-01T00:00:00Z'),
         },
         // Beta: 1 visible resource, 2 unknown-size tombstones, no reservation, no consumer
         {
@@ -3756,6 +3763,7 @@ describe('Integration tests for knowledge base CRUD', () => {
       servingResourceCount: 0,
       processingResourceCount: 0,
       failedResourceCount: 0,
+      lastChangedAt: alphaLastChangedAt,
     })
     expect(byId.get(kbB.id)?.metrics).toEqual({
       visibleResourceCount: 1,
@@ -3773,6 +3781,7 @@ describe('Integration tests for knowledge base CRUD', () => {
       servingResourceCount: 0,
       processingResourceCount: 0,
       failedResourceCount: 0,
+      lastChangedAt: expect.any(Date),
     })
     expect(byId.get(kbC.id)?.metrics).toEqual({
       visibleResourceCount: 0,
@@ -3790,6 +3799,7 @@ describe('Integration tests for knowledge base CRUD', () => {
       servingResourceCount: 0,
       processingResourceCount: 0,
       failedResourceCount: 0,
+      lastChangedAt: null,
     })
 
     // cross-check the single-KB detail path against the multi-KB catalog
