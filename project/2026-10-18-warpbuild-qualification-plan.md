@@ -61,8 +61,8 @@ Draft [PR #6606](https://github.com/uzh-bf/klicker-uzh/pull/6606) contains this 
 
 [WarpBuild cloud runners](https://www.warpbuild.com/docs/ci/cloud-runners)
 document ephemeral Linux ARM64 machines. Initial candidates are an eight-vCPU
-build and four-vCPU shards, subject to memory headroom. Larger builds and smaller
-shards are separate measured alternatives, not automatic capacity claims.
+build and four-vCPU shards, subject to memory headroom. Larger builds and larger
+or smaller shards are separate measured alternatives, not automatic capacity claims.
 [Public repository setup](https://www.warpbuild.com/docs/ci/public-repos)
 documents the organization's Default runner group: prove complete repository,
 workflow and membership policy before enabling execution. An API denial never

@@ -929,6 +929,38 @@ test('runner qualification stays opt-in and preserves the public execution contr
     "false && github.repository == 'uzh-bf/klicker-uzh' && github.ref == 'refs/heads/rs/warpbuild-qualification' && github.run_attempt == 1"
   )
   assert.deepEqual(trial.permissions, { contents: 'read' })
+  assert.deepEqual(Object.keys(trial.jobs).sort(), [
+    'build',
+    'prepare',
+    'shards',
+    'trial-status',
+  ])
+  const checkout = 'actions/checkout@11d5960a326750d5838078e36cf38b85af677262'
+  const upload =
+    'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02'
+  for (const [role, actions] of Object.entries({
+    prepare: [checkout, checkout, null, upload],
+    build: [
+      checkout,
+      `uzh-bf/klicker-uzh/.github/actions/playwright-build@${trial.env.TRIAL_SOURCE_SHA}`,
+    ],
+    shards: [
+      checkout,
+      `uzh-bf/klicker-uzh/.github/actions/playwright-shard@${trial.env.TRIAL_SOURCE_SHA}`,
+    ],
+    'trial-status': [null],
+  })) {
+    assert.deepEqual(
+      trial.jobs[role].steps.map((step) => step.uses ?? null),
+      actions
+    )
+  }
+  assert.deepEqual(trial.jobs.prepare.steps[3].with, {
+    name: 'playwright-execution-plan',
+    path: 'playwright-execution-plan.json',
+    'if-no-files-found': 'error',
+    'retention-days': 7,
+  })
   assert.deepEqual(trial.jobs['trial-status'].permissions, {})
   for (const role of ['prepare', 'trial-status']) {
     assert.equal(trial.jobs[role]['runs-on'], 'ubuntu-latest')
@@ -1039,15 +1071,15 @@ test('runner qualification rejects mismatched plans and unsupported experiment d
   const trial = readRunnerTrial()
   const step = trial.jobs.prepare.steps.find((entry) => entry.id === 'plan')
   assert.equal(typeof step?.run, 'string')
-  const heredoc = step.run.match(/node <<'NODE'\n([\s\S]+)\nNODE(?:\n|$)/)
+  const heredoc = step.run.match(/^node <<'NODE'\n([\s\S]+)\nNODE(?:\n|$)/m)
   assert.ok(heredoc, 'prepare step must contain its Node admission script')
   assert.match(
     step.run,
-    /test "\$\(git -C \.candidate rev-parse HEAD\)" = "\$TRIAL_SOURCE_SHA"/
+    /^test "\$\(git -C \.candidate rev-parse HEAD\)" = "\$TRIAL_SOURCE_SHA"$/m
   )
   assert.match(
     step.run,
-    /--base-sha "\$TRIAL_SOURCE_SHA" --head-sha "\$TRIAL_SOURCE_SHA"/
+    /^node \.ci-control\/\.github\/scripts\/playwright-selector\.cjs \\\n {2}--control-root \.ci-control --candidate-root \.candidate \\\n {2}--base-sha "\$TRIAL_SOURCE_SHA" --head-sha "\$TRIAL_SOURCE_SHA" \\\n {2}--pr-state ready --output playwright-execution-plan\.json$/m
   )
   const script = heredoc[1]
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'runner-trial-'))
@@ -1080,7 +1112,7 @@ test('runner qualification rejects mismatched plans and unsupported experiment d
     return spawnSync(process.execPath, ['-e', script], {
       cwd: root,
       env: {
-        ...process.env,
+        PATH: process.env.PATH,
         ...trial.env,
         GITHUB_SHA: 'a'.repeat(40),
         GITHUB_OUTPUT: path.join(root, 'output'),
@@ -1088,6 +1120,7 @@ test('runner qualification rejects mismatched plans and unsupported experiment d
         ...env,
       },
       encoding: 'utf8',
+      timeout: 5000,
     })
   }
   const result = run()
@@ -1190,7 +1223,7 @@ test('runner qualification rejects mismatched plans and unsupported experiment d
   }
 })
 
-test('runner qualification aggregate distinguishes unadmitted work and rejects incomplete producers', () => {
+test('runner qualification aggregate distinguishes unadmitted work and rejects incomplete producers', (t) => {
   const step = readRunnerTrial().jobs['trial-status'].steps[0]
   assert.deepEqual(step.env, {
     PREPARE: githubExpression('needs.prepare.result'),
@@ -1198,6 +1231,8 @@ test('runner qualification aggregate distinguishes unadmitted work and rejects i
     SHARDS: githubExpression('needs.shards.result'),
   })
   const script = step.run
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'runner-trial-status-'))
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
   const success = { PREPARE: 'success', BUILD: 'success', SHARDS: 'success' }
   for (const [key, result] of [
     ['', 'success'],
@@ -1209,9 +1244,16 @@ test('runner qualification aggregate distinguishes unadmitted work and rejects i
     ['SHARDS', 'cancelled'],
     ['SHARDS', 'skipped'],
   ]) {
-    const output = spawnSync('bash', ['-c', script], {
-      env: { ...process.env, ...success, ...(key ? { [key]: result } : {}) },
+    const output = spawnSync('bash', ['-euo', 'pipefail', '-c', script], {
+      cwd: root,
+      env: {
+        PATH: process.env.PATH,
+        GITHUB_STEP_SUMMARY: path.join(root, 'summary'),
+        ...success,
+        ...(key ? { [key]: result } : {}),
+      },
       encoding: 'utf8',
+      timeout: 5000,
     })
     assert.equal(
       output.status,
