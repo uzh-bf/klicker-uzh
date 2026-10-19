@@ -285,5 +285,9 @@ No test pins copy, summaries or translations. Playwright runs in CI only.
 - Departure: "Default" for the model mirrors the server rule for new
   chatbots (GPT-6 Luna when it is a base model, otherwise Auto). Materials
   also show a warning when a resource failed.
-- Next action: push S11 and open its
-  draft PR in stack #6274.
+- a434a17752 fixes drafts without stored student information: they show as
+  incomplete with a blocker and can save the suggestion unedited, because
+  the request requires stored student information.
+- S11 is draft PR #6618, on top of #6577 in stack #6274.
+- Next action: start S12 on `enhance/iteration1-materials-in-place`, branched
+  from S11.
