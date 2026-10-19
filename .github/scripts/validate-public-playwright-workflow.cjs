@@ -57,6 +57,18 @@ function validateCallerLifecycle(caller) {
     issues.push('execution must run only for open pull requests or pushes')
   }
   const status = jobs['test-playwright-status']
+  const statusEnv = status?.steps?.find(
+    (step) => step.name === 'Check result'
+  )?.env
+  if (
+    statusEnv?.PROVIDER !==
+      `\${{ needs.test-playwright-execution.outputs.provider }}` ||
+    statusEnv?.ADMISSION_ATTEMPT !==
+      `\${{ needs.test-playwright-execution.outputs.admission_attempt }}` ||
+    statusEnv?.CURRENT_ATTEMPT !== `\${{ github.run_attempt }}`
+  ) {
+    issues.push('cloud-capable caller must report the exact admitted attempt')
+  }
   // Unconditional for open events: a skipped required context can count as
   // acceptable, so the reporter must run and fail on cancellation itself.
   const expectedStatusIf = `always() && (${OPEN_EVENT})`
@@ -164,29 +176,98 @@ function namedSteps(text) {
 function validatePublicRunnerRoles(workflow) {
   const issues = []
   const roles = {
-    'build-and-compile-public-pr': 'playwright-build',
-    'test-playwright-public-pr': 'playwright-shard',
+    'build-and-compile-public-pr': 'build_runner',
+    'test-playwright-public-pr': 'shard_runner',
   }
   const jobs = workflow?.jobs ?? {}
-  for (const [name, role] of Object.entries(roles)) {
+  for (const [name, output] of Object.entries(roles)) {
     const runner = jobs[name]?.['runs-on']
-    const expected = [
-      'linux',
-      'arm64',
-      'docker',
-      'public-pr-arm64',
-      'playwright',
-      role,
-    ].sort()
     if (
-      runner?.group !== 'public-pr-arm64' ||
-      !Array.isArray(runner.labels) ||
-      JSON.stringify([...runner.labels].sort()) !== JSON.stringify(expected)
+      runner?.group !==
+        `\${{ fromJSON(needs.prepare.outputs.${output}).group }}` ||
+      runner?.labels !==
+        `\${{ fromJSON(needs.prepare.outputs.${output}).labels }}` ||
+      jobs[name]?.['timeout-minutes'] !==
+        `\${{ fromJSON(needs.prepare.outputs.job_timeout) }}` ||
+      jobs[name]?.if !==
+        "needs.prepare.outputs.duplicate_run_id == '' && needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'public-pr' && (needs.prepare.outputs.provider != 'warpbuild' || needs.prepare.outputs.admission_attempt == format('{0}', github.run_attempt))"
     ) {
       issues.push(
-        `${name} must use the exact public pool labels and ${role} role`
+        `${name} must use trusted role outputs and guard the admitted attempt`
       )
     }
+  }
+  const metadata = jobs.prepare?.steps?.find((step) => step.id === 'metadata')
+  for (const output of [
+    'provider',
+    'admission_attempt',
+    'build_runner',
+    'shard_runner',
+    'job_timeout',
+  ]) {
+    if (
+      jobs.prepare?.outputs?.[output] !==
+      `\${{ steps.metadata.outputs.${output} }}`
+    ) {
+      issues.push(`prepare must expose trusted ${output} metadata`)
+    }
+  }
+  for (const output of ['provider', 'admission_attempt']) {
+    if (
+      workflow?.on?.workflow_call?.outputs?.[output]?.value !==
+      `\${{ jobs.prepare.outputs.${output} }}`
+    ) {
+      issues.push(`reusable workflow must expose ${output} to its reporter`)
+    }
+  }
+  if (
+    !metadata?.run?.includes(
+      'node .ci-control/.github/scripts/playwright-plan-metadata.cjs'
+    )
+  ) {
+    issues.push('runner metadata must come from trusted control')
+  }
+  const route = jobs.prepare?.steps?.find((step) => step.id === 'route')
+  const expectedEnv = {
+    WARPBUILD_ADMISSIONS: `\${{ vars.PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSIONS }}`,
+    HEAD_SHA: `\${{ github.event.pull_request.head.sha }}`,
+    BASE_SHA: `\${{ github.event.pull_request.base.sha }}`,
+    CONTROL_SHA: `\${{ job.workflow_sha }}`,
+  }
+  if (
+    Object.entries(expectedEnv).some(
+      ([key, value]) => route?.env?.[key] !== value
+    )
+  ) {
+    issues.push('cloud admission must use exact trusted execution identity')
+  }
+  const equivalent = jobs.prepare?.steps?.find(
+    (step) => step.id === 'equivalent'
+  )
+  if (
+    !equivalent?.if?.startsWith(
+      "steps.metadata.outputs.provider != 'warpbuild' &&"
+    )
+  ) {
+    issues.push(
+      'admitted cloud work must execute rather than reuse another backend'
+    )
+  }
+  if (
+    workflow?.on?.workflow_call?.outputs?.should_run?.value !==
+    `\${{ (jobs.prepare.outputs.provider != 'warpbuild' || jobs.prepare.outputs.admission_attempt == format('{0}', github.run_attempt)) && jobs.prepare.outputs.should_run || 'false' }}`
+  ) {
+    issues.push(
+      'stale paid attempts must invalidate required coverage for older callers'
+    )
+  }
+  if (
+    jobs['test-playwright-public-pr']?.steps?.find(
+      (step) => step.name === 'Run shared Playwright shard'
+    )?.with?.workers !==
+    `\${{ needs.prepare.outputs.provider == 'warpbuild' && '1' || vars.PUBLIC_PR_PLAYWRIGHT_WORKERS || '1' }}`
+  ) {
+    issues.push('cloud shards must retain one worker')
   }
   for (const [name, job] of Object.entries(jobs)) {
     if (Object.hasOwn(roles, name)) continue
@@ -411,7 +492,7 @@ function validatePublicPlaywrightWorkflow(root) {
   }
 
   if (
-    publicWorkflow.includes('group: public-pr-arm64') &&
+    publicParsed?.jobs?.['test-playwright-public-pr'] &&
     publicWorkflow.includes('Build opposite-state selector shadow plan') &&
     !publicWorkflow.includes(
       "if: github.event_name == 'pull_request' && github.event.pull_request.draft == true"

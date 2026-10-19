@@ -779,6 +779,62 @@ retain their existing authorization and serialized status locks.
 
 ## Public ARM64 runner operations
 
+### Opt-in WarpBuild overflow
+
+The trusted execution envelope can place an explicitly admitted ready public
+pull request on WarpBuild instead of the persistent public pool. It keeps the
+`public-pr` trust lane, canonical plan, shared artifacts, service topology and
+restore-only caches. The provider is a separate field in route metadata.
+Routine checks, preparation and required status reporting remain GitHub-hosted.
+Drafts, forks, bots, pushes and the force-hosted override retain their existing
+behavior. This is operator-selected overflow, not automatic queue migration.
+
+`PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSIONS` is a JSON array of at most three
+tickets. Each ticket has exactly these string fields:
+
+- `runId`, `runAttempt`, `pullRequestNumber`: positive decimal identities.
+- `headSha`, `baseSha`, `controlSha`: full lowercase commit revisions from the
+  candidate event and the actual resolved reusable workflow.
+- `expiresAt`: an absolute timestamp after preparation and at most four hours
+  ahead. Expiry bounds selection, not the lifetime of already submitted jobs.
+
+Unset, empty, malformed, duplicate, expired or mismatched tickets allocate no
+cloud work; the normal backend remains available. A new head, base, control,
+run or attempt needs a new ticket. Existing callers need no new input.
+The normal caller accepts the provider and attempt outputs and
+rejects stale paid attempts in its required reporter. Both paid jobs also check
+the attempt independently, including a failed-job rerun that reused preparation.
+The existing `should_run` output becomes false on a stale paid attempt, so older
+required reporters also reject missing coverage rather than accepting skipped jobs.
+Admitted waves bypass equivalent-result reuse so they produce actual evidence.
+
+Cloud execution uses Ubuntu 24.04 ARM8 for the build and ARM4 for each shard,
+with one test worker and a 45-minute execution timeout per job. Runner selectors
+are fixed by trusted metadata: the cloud group is `Default`; unadmitted public
+jobs keep their exact `public-pr-arm64` group and build/shard role labels.
+This retains ARM's existing email-test exclusion; hosted coverage remains
+necessary. Provider selection does not change full-plan coverage requirements.
+
+Before installing tickets, an operator must approve the finite submission and
+spending envelope, reserve whole-wave exposure including unresolved prior and
+in-flight costs, and read back narrowly scoped runner-group access to this
+repository and this reusable workflow at `refs/heads/v3`. Keep live access and
+billing receipts private. No new API key is required when billing is reconciled
+from operator exports. Ticket count and expiry are not an atomic monthly cost
+limit. Reporting lag and cancelled/failed setup can still incur costs.
+
+A queued job keeps its original runner assignment. Moving an existing run needs
+a separately approved full workflow rerun after the previous attempt is
+terminal, with a ticket for the next attempt and actual resolved control.
+Never silently retry paid work. Removing tickets prevents new admission; it
+does not cancel submitted work. Stop admission on correctness failure,
+unexplained billing or insufficient reservation. Accept a wave only after its
+actual build, consuming shards and aggregate pass, and reconcile job-linked
+charges before expanding. Keep fixed capacity available during qualification.
+
+Source publication alone changes no group policy or admission variable. The
+historical trial workflow remains separate and disabled.
+
 Run the policy reconciler from a trusted administrator checkout. Both modes
 accept `GH_TOKEN` or a hidden prompt for a short-lived fine-grained token;
 `--check` needs organization
