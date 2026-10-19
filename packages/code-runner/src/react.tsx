@@ -102,13 +102,15 @@ export function CodeRunner({
     setRunResult(null)
   }
 
-  const statusText = busy
-    ? phase === 'loading'
-      ? t('shared.codeRunner.starting', { language })
-      : t('shared.codeRunner.running')
-    : runResult
-      ? t(`shared.codeRunner.status.${runResult.status}`)
-      : ''
+  let statusText = ''
+  if (busy) {
+    statusText =
+      phase === 'loading'
+        ? t('shared.codeRunner.starting', { language })
+        : t('shared.codeRunner.running')
+  } else if (runResult) {
+    statusText = t(`shared.codeRunner.status.${runResult.status}`)
+  }
 
   return (
     <div className="space-y-3">
