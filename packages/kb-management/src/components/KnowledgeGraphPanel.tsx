@@ -2,18 +2,18 @@
 
 import { useApolloClient, useMutation, useQuery } from '@apollo/client'
 import type {
-  GetKbKnowledgeGraphNeighborsQuery,
-  GetKbKnowledgeGraphOverviewQuery,
+  GetKbKnowledgeGraphNeighborsWithRelationsQuery,
+  GetKbKnowledgeGraphOverviewWithRelationsQuery,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   GetKbKnowledgeGraphDomainConfigDocument,
-  GetKbKnowledgeGraphNeighborsDocument,
-  GetKbKnowledgeGraphOverviewDocument,
+  GetKbKnowledgeGraphNeighborsWithRelationsDocument,
+  GetKbKnowledgeGraphOverviewWithRelationsDocument,
   KbGraphBuildStatus,
   KbGraphCostStatus,
   KbGraphQualityTier,
   RebuildKbKnowledgeGraphWithDomainDocument,
-  SearchKbKnowledgeGraphDocument,
+  SearchKbKnowledgeGraphWithRelationsDocument,
   SetKbKnowledgeGraphEnabledDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import type { KnowledgeGraphDataSource } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
@@ -64,8 +64,8 @@ function isDomainGenerationLanguage(
 }
 
 type GraphResponse =
-  | GetKbKnowledgeGraphOverviewQuery['getKbKnowledgeGraphOverview']
-  | GetKbKnowledgeGraphNeighborsQuery['getKbKnowledgeGraphNeighbors']
+  | GetKbKnowledgeGraphOverviewWithRelationsQuery['getKbKnowledgeGraphOverview']
+  | GetKbKnowledgeGraphNeighborsWithRelationsQuery['getKbKnowledgeGraphNeighbors']
 
 function toSourceReference(
   source: GraphResponse['nodes'][number]['sourceReferences'][number]
@@ -230,7 +230,7 @@ function KnowledgeGraphPreview({
       overview: async () => {
         try {
           const { data } = await apolloClient.query({
-            query: GetKbKnowledgeGraphOverviewDocument,
+            query: GetKbKnowledgeGraphOverviewWithRelationsDocument,
             variables: { kbId },
             fetchPolicy: 'network-only',
           })
@@ -242,7 +242,7 @@ function KnowledgeGraphPreview({
       search: async (query) => {
         try {
           const { data } = await apolloClient.query({
-            query: SearchKbKnowledgeGraphDocument,
+            query: SearchKbKnowledgeGraphWithRelationsDocument,
             variables: { kbId, query },
             fetchPolicy: 'network-only',
           })
@@ -254,7 +254,7 @@ function KnowledgeGraphPreview({
       neighbors: async (nodeId) => {
         try {
           const { data } = await apolloClient.query({
-            query: GetKbKnowledgeGraphNeighborsDocument,
+            query: GetKbKnowledgeGraphNeighborsWithRelationsDocument,
             variables: { kbId, nodeId },
             fetchPolicy: 'network-only',
           })

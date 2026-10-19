@@ -1428,7 +1428,8 @@ export function KnowledgeGraphViewer({
                         aria-label={labels.selectRelationshipAriaLabel(
                           source,
                           target,
-                          relationshipLabel
+                          relationshipLabel,
+                          edge.relationType === SYMMETRIC_RELATION_TYPE
                         )}
                         aria-pressed={state.selectedEdgeId === edge.id}
                         onClick={() =>

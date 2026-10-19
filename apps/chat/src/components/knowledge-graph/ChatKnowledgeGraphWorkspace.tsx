@@ -6,7 +6,11 @@ import {
   KnowledgeGraphUnavailableError,
 } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
 import type { KnowledgeGraphAskSelection } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphView'
-import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
+import type {
+  KnowledgeGraphRelationStatus,
+  KnowledgeGraphRelationType,
+  KnowledgeGraphResponse,
+} from '@klicker-uzh/types'
 import { SelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
@@ -26,6 +30,21 @@ const PUBLICATION_STATUSES = new Set<PublicationStatus>([
   'QUEUED',
   'PROCESSING',
   'FAILED',
+])
+
+const RELATION_TYPES = new Set<KnowledgeGraphRelationType>([
+  'prerequisite_of',
+  'part_of',
+  'example_of',
+  'applies_to',
+  'contrasts_with',
+  'related',
+])
+
+const RELATION_STATUSES = new Set<KnowledgeGraphRelationStatus>([
+  'source',
+  'inferred',
+  'extracted',
 ])
 
 type UnknownRecord = Record<string, unknown>
@@ -205,8 +224,10 @@ function isKnowledgeGraphEdge(value: unknown): boolean {
     typeof value.target === 'string' &&
     typeof value.type === 'string' &&
     typeof value.label === 'string' &&
-    typeof value.relationType === 'string' &&
-    typeof value.relationStatus === 'string' &&
+    RELATION_TYPES.has(value.relationType as KnowledgeGraphRelationType) &&
+    RELATION_STATUSES.has(
+      value.relationStatus as KnowledgeGraphRelationStatus
+    ) &&
     Array.isArray(value.sourceReferences) &&
     value.sourceReferences.every(isSourceReference) &&
     isRecord(value.properties) &&

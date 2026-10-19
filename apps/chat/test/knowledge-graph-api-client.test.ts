@@ -298,6 +298,25 @@ describe('chat knowledge graph API client', () => {
         ],
       },
     },
+    {
+      name: 'unknown edge relation type',
+      value: {
+        ...graphResponse,
+        edges: [
+          {
+            id: '41',
+            source: '12',
+            target: '13',
+            type: 'RELATED_TO',
+            label: 'RELATED_TO',
+            relationType: 'causes',
+            relationStatus: 'extracted',
+            sourceReferences: [],
+            properties: {},
+          },
+        ],
+      },
+    },
   ])('rejects a malformed 2xx DTO safely: $name', async ({ value }) => {
     const fetcher = vi.fn().mockResolvedValue(jsonResponse(value))
     const dataSource = createChatKnowledgeGraphDataSource(chatbotId, fetcher)

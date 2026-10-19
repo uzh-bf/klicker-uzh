@@ -39,7 +39,7 @@ export function relationshipDisplayLabel(
   relationTypeLabels: Record<KnowledgeGraphRelationType, string>
 ): string {
   return edge.label === edge.type
-    ? relationTypeLabels[edge.relationType]
+    ? (relationTypeLabels[edge.relationType] ?? edge.label)
     : edge.label
 }
 

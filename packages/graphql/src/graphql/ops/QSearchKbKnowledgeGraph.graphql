@@ -15,7 +15,6 @@ query SearchKbKnowledgeGraph($kbId: ID!, $query: String!) {
         resourceId
         title
         reference
-        pages
       }
     }
     edges {
@@ -24,14 +23,6 @@ query SearchKbKnowledgeGraph($kbId: ID!, $query: String!) {
       target
       type
       label
-      relationType
-      relationStatus
-      sourceReferences {
-        resourceId
-        title
-        reference
-        pages
-      }
       properties
     }
     truncated

@@ -68,7 +68,8 @@ export type KnowledgeGraphViewerLabels = {
   selectRelationshipAriaLabel: (
     source: string,
     target: string,
-    label: string
+    label: string,
+    symmetric: boolean
   ) => string
   searchUnavailable: string
   connectionsUnavailable: string
@@ -128,8 +129,10 @@ export const DEFAULT_KNOWLEDGE_GRAPH_LABELS: KnowledgeGraphViewerLabels = {
   noConceptsLoaded: 'No concepts loaded.',
   loadedRelationships: (count) => `Loaded relationships (${count})`,
   noRelationshipsLoaded: 'No relationships loaded.',
-  selectRelationshipAriaLabel: (source, target, label) =>
-    `Select relationship ${source} to ${target}: ${label}`,
+  selectRelationshipAriaLabel: (source, target, label, symmetric) =>
+    symmetric
+      ? `Select relationship between ${source} and ${target}: ${label}`
+      : `Select relationship ${source} to ${target}: ${label}`,
   searchUnavailable: 'Search is temporarily unavailable. Try again.',
   connectionsUnavailable: 'Connections are temporarily unavailable. Try again.',
   graphUnavailable: 'The knowledge graph is temporarily unavailable.',
