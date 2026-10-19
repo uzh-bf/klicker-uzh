@@ -362,7 +362,7 @@ see **Bounded codebase check** below. Pushes always run the full suite.
 - **Playwright cache contract**: The pnpm store uses a stable dependency fingerprint containing Node/pnpm compatibility, the lockfile, workspace configuration, package manifests, `.npmrc`, `.pnpmfile.cjs`, and tracked patches. It does not create a duplicate store for each source commit or invalidate dependencies for a telemetry-only workflow edit. The separate `.turbo` fingerprint retains the conservative build configuration, synthetic environment schema, and immutable build-image contract, with source-specific snapshots. Both cache families include OS and architecture in their keys. The trusted `v3` cache-seed matrix builds on hosted ARM64 and x64 runners and is the only writer; public PR jobs remain restore-only readers. Restore stays disabled for PRs until a global or exact canary control enables it. Cache-service errors fall back to an ordinary install/build, while actual build failures remain failures. Compact build, shard, route, selector, and queue telemetry is retained for seven days; large build outputs and diagnostics keep their existing short retention. Seed telemetry artifacts include the architecture in their names. The hosted, checkout-free Playwright status job collects queue telemetry with only `actions: read` permission; telemetry errors do not alter the test result. Configuration and successful seeding are not performance proof: verify compatible matched keys, Turbo task hits, output equivalence, and a normalized comparison cohort before claiming a speedup.
 - **Profile-aware Playwright runtime**: `playwright/profiles.json` assigns every active spec exactly once and the timing-aware sharder emits the canonical profile union for each shard. Exact `@devrouter/cli` `0.5.1` resolves that union and validates it against the repository-owned `playwright/runtime-contract.yml` without runtime access. When the trusted planner assigns a candidate-only spec to `full`, the adapter resolves that trusted union through the explicit `playwright` Devrouter profile, which covers every CI-supported application without selecting local-only MCP, LiteLLM, or MailHog resources. Activity-lifecycle specs that publish, schedule, start, or end activities select `live-quiz` because it owns both Hatchet workers. Both hosted and public-PR workflows fail closed when planning is unavailable or unexpected, then start only the selected app processes without exposing the host Docker socket. A caller checkout created before profile runtimes existed may use the explicit legacy full-stack startup only when all three profile-runtime files are absent; partial migrations fail closed. The job-level Postgres, Redis, and Hatchet containers remain fixed. The corrected manifest selects 57 app and worker process instances across eight shards instead of the previous fixed 72, a configuration-derived 20.8% reduction; this is not yet measured end-to-end speedup evidence.
 - **Stacked pull requests**: The consolidated `check` workflow runs for every opened, synchronized, or reopened pull request target, including feature-branch targets used by stacked PRs. Its push trigger remains limited to `v3` and `v3*`.
-- **Status reporting and cancellation**: GraphQL and Playwright status jobs report real failures and successful path skips. Draft and ready PRs run the same Playwright execution envelope. Every push and every ready PR must show successful execution in full mode with the complete eight-shard matrix; a draft may attest the narrower plan the trusted envelope selected for it, which is a partial shard set or a skip, while any other mode, a partial matrix on a full plan, unexpected skips, missing outputs, failures, and cancellations without proven supersession fail. Smart-draft selection stays off until the `PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_ENABLED` repository variable, or its exact-canary PR variable, enables it for an eligible same-repository draft; forks, bots, private repositories, and the force-hosted canary keep the full plan. PR closure cancels running execution through the same checkout-free no-op job; a conversion to draft no longer cancels, because the running plan stays valid evidence. They exclude workflow cancellation and canceled execution dependencies, so obsolete reporters do not keep waiting for a runner. Playwright retains one route-neutral concurrency group on its reusable-workflow caller; the called workflow has no concurrency and its sibling jobs cannot cancel each other. The status job stays outside this group. Queue telemetry and metadata uploads run in that same hosted reporter, including after test failures, and stop on cancellation.
+- **Status reporting and cancellation**: GraphQL and Playwright status jobs report real failures and successful path skips. Draft and ready PRs run the same Playwright execution envelope. Every push and every ready PR must show successful execution in full mode with the complete eight-shard matrix; a draft may attest the narrower plan the trusted envelope selected for it, which is a partial shard set or a skip, while any other mode, a partial matrix on a full plan, unexpected skips, missing outputs, failures, and cancellations without proven supersession fail. Smart-draft selection stays off until the `PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_ENABLED` repository variable, or its exact-canary PR variable, enables it for an eligible same-repository draft; forks, bots, private repositories, and the force-hosted canary keep the full plan. PR closure cancels running execution through the same checkout-free no-op job; conversion to draft has no Playwright trigger, so it preserves the running plan without starting a replacement. Ready transitions still run the existing validation and reuse gates. They exclude workflow cancellation and canceled execution dependencies, so obsolete reporters do not keep waiting for a runner. Playwright retains one route-neutral concurrency group on its reusable-workflow caller; the called workflow has no concurrency and its sibling jobs cannot cancel each other. The status job stays outside this group. Queue telemetry and metadata uploads run in that same hosted reporter, including after test failures, and stop on cancellation.
 - **Equivalent push validation**: Non-`v3` pushes may reuse completed successful hosted Playwright PR validation. Unit reuse applies to push reruns only, so initial unit validation does not acquire an extra runner or scheduling wait. The read-only gate requires one open, ready, same-repository PR with the exact head and base, an equivalent merge tree, the latest workflow run and attempt, and actual successful test coverage. A run- and attempt-bound artifact records the actual checkout tree; older runs without it cannot be reused. Playwright also requires the same trusted control revision and a matching full eight-shard plan. The summary links the reused run. Missing, stale, failed, skipped, partial, or ambiguous evidence runs normal validation. Default-branch pushes and manual runs remain independent; other workflows retain their different path/build semantics. Translation validation is already PR-only. Playwright performs its lookup inside the existing preparation job, so it can check first attempts without adding another runner allocation. Preparation inherits caller permissions: older contents-only callers continue normal validation when API access is insufficient, while updated callers forward read access to Actions and pull requests. Execution jobs retain explicit contents-only tokens.
 - **Equivalent pull-request lifecycle validation**: A `ready_for_review` or `reopened` event on an unchanged head may validate the PR's own completed full run instead of repeating it. The same read-only gate binds the prior run to the same pull request, head, base, merge tree, trusted control revision, full eight-shard plan, latest attempt, and complete coverage of exactly the route the current event selected (hosted or public ARM64, never mixed). The validating event's own run is excluded from the candidate set, because it is always the newest run for that head and is still executing; without that exclusion the lookup could only ever reach a run that has not finished. A base retarget changes the bound base, so it always runs normal validation. The prior run's tested-source receipt must exist on the route that produced it, so both hosted and public builds record one. Push validation is never reused by a lifecycle event, and any failed or ambiguous proof runs the full suite; the reporter fails if a duplicate is offered on a push other than the merged pull-request reuse below.
 - **Merged pull-request push validation**: A push to a `v3-*` integration branch may reuse the Playwright run that already tested the pull request it merged. The pushed commit must be that pull request's two-parent merge commit, and the pull request's newest validating run must have succeeded on its latest attempt with a receipt binding the second parent as head, the first parent as base, the pushed commit's tree, and the current trusted control revision, plus complete coverage on the route it used and a matching full eight-shard plan. Accepting a public ARM64 run for a hosted push relies on that identical plan and tree. `v3` and the branch named by `STG_SOURCE_BRANCH` always validate their pushes independently, because the staging promoter admits only their own hosted shards; an unset variable disables the reuse. The envelope offers it only to callers that pass `allow_push_reuse`, so an older caller still on an integration branch keeps rejecting push duplicates until a sync brings the updated caller. `test-playwright.yml` passes that input only after the envelope that declares it is live on `v3`, because a caller passing an undeclared input fails at startup.
@@ -403,9 +403,17 @@ Shard durations differ by architecture, so `playwright/timings.json` names the a
   ordinary source review available with an explicit unavailable status. Provider
   keys stay in trusted adapter instances; the OCR child receives only local
   capabilities and no publication token. Sanitized seven-day receipts report
-  registration, actual consultations and provider usage. Draft and advisor costs
-  use separate provider rates; a combined estimate is unavailable when either
-  expected usage receipt is incomplete. Advisor usage has its own quota and does
+  registration, actual consultations and provider usage. Advisor receipts and
+  job summaries also retain local dispatch counts and up to two attempt outcomes
+  with fixed stages and sanitized reasons. A local dispatch is not evidence of a
+  provider request. Deadline labels distinguish timer expiry from client
+  cancellation while preserving existing client errors and counters. Older
+  receipts report unknown outcome details. Tool discovery describes the complete
+  16 KiB serialized request bound, including overhead, the 256 KiB source-file
+  bound and each range's 120-line/8 KiB bound; prefer minimal sufficient ranges.
+  Bracket paths such as Next.js dynamic routes retain the same immutable-source
+  and traversal checks. Draft and advisor costs use separate provider rates; a
+  combined estimate is unavailable when either expected usage receipt is incomplete. Advisor usage has its own quota and does
   not change OCR's existing token accounting. This adds Mistral provider usage
   to draft review; source configuration becomes active only after merge.
 - **Public library documentation**: `lookup_library_docs` uses Context7's
@@ -461,6 +469,7 @@ Shard durations differ by architecture, so `playwright/timings.json` names the a
   workflow can otherwise appear stale when its returned URL is compared only
   with the requested workflow URL.
 - **Publisher rejection diagnostics**: A failed validation or publisher step keeps its exact rejected JSON input as a one-day workflow artifact. The individual job retains its initial, resumed, or final result JSON as applicable. An allowed resume that remains partial is reported as an incomplete review instead of an identity mismatch. The stack job normally retains the combined code result and optional topology result. An incremental validation or resume failure may instead retain the exact affected range result JSONs, while a combine failure retains every range result passed to the failed combine step. The workflow never adds stderr, Mistral configuration, stack manifests, review-range directories as directories, unrelated wildcard inputs, or runner workspaces to these artifacts. Treat the payloads as public because this repository is public: use them only for offline parser diagnosis, never as authorization to replay or publish a review. The upload runs only after the corresponding validation or publisher step fails and does not change the failed job or final status. Live artifact proof remains a post-merge check because `pull_request_target` uses workflow code from the default branch. See [OpenCodeReview publisher rejection payloads](./solutions/integration/opencodereview-publisher-rejection-payloads.md) for the failure pattern and safe diagnostic boundary.
+- **Final-review compression engine**: The manual individual and stack jobs build OCR 1.13.0 from immutable upstream commit `1672852136fc87748249d22bce0819f33419ea79` using Go 1.26.9, a verified source archive and the repository's compression patch. Installation runs the affected upstream race tests and fails closed; it never falls back to an unpatched executable. The installer and patch participate in review policy identity, and every attempt checks the executable's source/patch version marker. The compressor preserves the original review instructions, reserves their context cost, keeps one rolling summary in compressible history and includes evicted tool calls and results in the next summary. Group dispatch reserves rendered rules and maximum plan output before splitting oversized groups without excluding any selected path; oversized singletons still fail. Prompt, completion and aggregate ceilings, model, reasoning effort and complete-coverage validation remain unchanged. Synthetic request/token improvements establish an execution regression fix; complete live review remains a separate activation check.
 - **Offline qualification**: Public-safe synthetic receipts and a dependency-free evaluator live under `.github/open-code-review/qualification/`. The evaluator's strict synthetic contract covers explicit blocker and false-blocker dispositions, prompt-injection text treated as untrusted data, valid and invalid stack topology, exact path ownership, incomplete coverage, and token-counter consistency. It is intentionally separate from the runtime OCR parser and does not claim to validate live provider receipts. Run `node --test .github/open-code-review/qualification/final-review-qualification.test.js` and `node .github/open-code-review/qualification/final-review-qualification.js`; this checks deterministic local contracts and reports offline-only metrics. OCR 1.13.0 synthetic qualification exercises the released binary against the same adapter without a live key. Source tests cover token translation, native thinking-history restoration, bounded requests and cache, capability authentication, child isolation, and shutdown. The adapter digest participates in final-review policy identity, so earlier route evidence cannot silently qualify the new route. Neither offline path qualifies live model behavior, proves first-trigger success, or makes a merge-readiness decision. Real `/final-review` and `/final-review-stack` proof remains a post-merge gate because `pull_request_target` executes trusted default-branch workflow code.
 
 Manual workflows run `final-ai-review.test.js` and
@@ -770,6 +779,62 @@ trusted-policy runner. PR lifecycle status handling and exact review commands
 retain their existing authorization and serialized status locks.
 
 ## Public ARM64 runner operations
+
+### Opt-in WarpBuild overflow
+
+The trusted execution envelope can place an explicitly admitted ready public
+pull request on WarpBuild instead of the persistent public pool. It keeps the
+`public-pr` trust lane, canonical plan, shared artifacts, service topology and
+restore-only caches. The provider is a separate field in route metadata.
+Routine checks, preparation and required status reporting remain GitHub-hosted.
+Drafts, forks, bots, pushes and the force-hosted override retain their existing
+behavior. This is operator-selected overflow, not automatic queue migration.
+
+`PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSIONS` is a JSON array of at most three
+tickets. Each ticket has exactly these string fields:
+
+- `runId`, `runAttempt`, `pullRequestNumber`: positive decimal identities.
+- `headSha`, `baseSha`, `controlSha`: full lowercase commit revisions from the
+  candidate event and the actual resolved reusable workflow.
+- `expiresAt`: an absolute timestamp after preparation and at most four hours
+  ahead. Expiry bounds selection, not the lifetime of already submitted jobs.
+
+Unset, empty, malformed, duplicate, expired or mismatched tickets allocate no
+cloud work; the normal backend remains available. A new head, base, control,
+run or attempt needs a new ticket. Existing callers need no new input.
+The normal caller accepts the provider and attempt outputs and
+rejects stale paid attempts in its required reporter. Both paid jobs also check
+the attempt independently, including a failed-job rerun that reused preparation.
+The existing `should_run` output becomes false on a stale paid attempt, so older
+required reporters also reject missing coverage rather than accepting skipped jobs.
+Admitted waves bypass equivalent-result reuse so they produce actual evidence.
+
+Cloud execution uses Ubuntu 24.04 ARM8 for the build and ARM4 for each shard,
+with one test worker and a 45-minute execution timeout per job. Runner selectors
+are fixed by trusted metadata: the cloud group is `Default`; unadmitted public
+jobs keep their exact `public-pr-arm64` group and build/shard role labels.
+This retains ARM's existing email-test exclusion; hosted coverage remains
+necessary. Provider selection does not change full-plan coverage requirements.
+
+Before installing tickets, an operator must approve the finite submission and
+spending envelope, reserve whole-wave exposure including unresolved prior and
+in-flight costs, and read back narrowly scoped runner-group access to this
+repository and this reusable workflow at `refs/heads/v3`. Keep live access and
+billing receipts private. No new API key is required when billing is reconciled
+from operator exports. Ticket count and expiry are not an atomic monthly cost
+limit. Reporting lag and cancelled/failed setup can still incur costs.
+
+A queued job keeps its original runner assignment. Moving an existing run needs
+a separately approved full workflow rerun after the previous attempt is
+terminal, with a ticket for the next attempt and actual resolved control.
+Never silently retry paid work. Removing tickets prevents new admission; it
+does not cancel submitted work. Stop admission on correctness failure,
+unexplained billing or insufficient reservation. Accept a wave only after its
+actual build, consuming shards and aggregate pass, and reconcile job-linked
+charges before expanding. Keep fixed capacity available during qualification.
+
+Source publication alone changes no group policy or admission variable. The
+historical trial workflow remains separate and disabled.
 
 Run the policy reconciler from a trusted administrator checkout. Both modes
 accept `GH_TOKEN` or a hidden prompt for a short-lived fine-grained token;

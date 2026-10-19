@@ -74,11 +74,50 @@ test('public runner jobs require their exact scheduling role and reject unknown 
     )
   )
   assert.deepEqual(validatePublicRunnerRoles(source), [])
+  const displayOnly = structuredClone(source)
+  let editedDisplaySummary = false
+  for (const step of displayOnly.jobs.prepare.steps) {
+    step.name = 'Synthetic step display'
+    if (typeof step.run !== 'string') continue
+    if (step.run.includes('const summary = [')) {
+      const lines = step.run.split('\n')
+      const arrayStart = lines.findIndex(
+        (line) => line.trim() === 'const summary = ['
+      )
+      assert.notEqual(arrayStart, -1, 'summary array not found')
+      lines[arrayStart + 1] = "  'Synthetic summary heading',"
+      const field = lines.findIndex(
+        (line, index) => index > arrayStart && line.trim().startsWith('`')
+      )
+      assert.notEqual(field, -1, 'summary display field not found')
+      const expression = lines[field].indexOf('${')
+      assert.notEqual(expression, -1, 'summary display expression not found')
+      lines[field] =
+        `  \`Synthetic $ field: \\\`${lines[field].slice(expression)}`
+      step.run = lines.join('\n')
+      editedDisplaySummary = true
+    }
+    step.run = `# Synthetic shell comment\n${step.run}`
+  }
+  assert.ok(editedDisplaySummary, 'summary display mutation did not run')
+  assert.deepEqual(validatePublicRunnerRoles(displayOnly), [])
   const build = 'build-and-compile-public-pr'
   const shard = 'test-playwright-public-pr'
-  for (const mutate of [
-    (w) => w.jobs[build]['runs-on'].labels.pop(),
-    (w) => w.jobs[shard]['runs-on'].labels.pop(),
+  for (const [index, mutate] of [
+    (w) => {
+      delete w.env.PLAYWRIGHT_CACHE_ENABLED
+    },
+    ...[true, 'true', `\${{ github.event_name == 'pull_request' }}`].map(
+      (value) => (w) => {
+        w.env.PLAYWRIGHT_CACHE_ENABLED = value
+      }
+    ),
+    (w) => {
+      w.jobs[build]['runs-on'] = 'warp-ubuntu-2404-arm64-32x'
+    },
+    (w) => {
+      w.jobs[shard]['runs-on'] = ['self-hosted']
+    },
     (w) => {
       w.jobs[build]['runs-on'] = w.jobs[shard]['runs-on']
     },
@@ -86,13 +125,220 @@ test('public runner jobs require their exact scheduling role and reject unknown 
       w.jobs[shard]['runs-on'] = w.jobs[build]['runs-on']
     },
     (w) => {
-      w.jobs[build]['runs-on'].labels[0] = 'unknown'
+      w.jobs[build].if = 'true'
     },
     (w) => {
-      w.jobs[shard]['runs-on'].group = 'other'
+      w.jobs[shard].if = 'true'
     },
     (w) => {
-      w.jobs[build]['runs-on'].labels.push('playwright-shard')
+      w.jobs[build]['timeout-minutes'] = 120
+    },
+    (w) => {
+      w.jobs.prepare.outputs.build_runner = `\${{ inputs.runner }}`
+    },
+    (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'route').env.CONTROL_SHA =
+        `\${{ github.sha }}`
+    },
+    (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'route').env.PR_DRAFT = 'false'
+    },
+    (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'route').run =
+        'node .candidate/.github/scripts/playwright-route.cjs --output route.json'
+    },
+    (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'route').run +=
+        '\nnode .candidate/script.cjs'
+    },
+    (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'route')['working-directory'] =
+        '.candidate'
+    },
+    (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'route').shell = 'python'
+    },
+    (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'metadata').run =
+        'node .candidate/script.cjs'
+    },
+    (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'metadata').run +=
+        '\nnode .candidate/script.cjs'
+    },
+    (w) => {
+      const metadata = w.jobs.prepare.steps.find((s) => s.id === 'metadata')
+      metadata.run = `node .candidate/script.cjs\n${metadata.run}`
+    },
+    (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'metadata')[
+        'working-directory'
+      ] = '.candidate'
+    },
+    (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'metadata').shell = 'python'
+    },
+    (w) => {
+      w.defaults = { run: { 'working-directory': '.candidate' } }
+    },
+    (w) => {
+      w.jobs.prepare.defaults = {
+        run: { 'working-directory': '.candidate' },
+      }
+    },
+    (w) => {
+      w.jobs.prepare.container = { image: 'candidate/image:latest' }
+    },
+    (w) => {
+      w.jobs.prepare.services = {
+        candidate: { image: 'candidate/image:latest' },
+      }
+    },
+    (w) => {
+      w.jobs.prepare.steps.push({ run: 'node .candidate/script.cjs' })
+    },
+    ...source.jobs.prepare.steps.flatMap((step, index) =>
+      typeof step.run === 'string'
+        ? [
+            (w) => {
+              w.jobs.prepare.steps[index].run += '\nnode .candidate/script.cjs'
+            },
+            (w) => {
+              w.jobs.prepare.steps[index].run =
+                `# \${{ github.event.pull_request.title }}\n${step.run}`
+            },
+            (w) => {
+              w.jobs.prepare.steps[index].shell = 'python'
+            },
+            (w) => {
+              w.jobs.prepare.steps[index]['working-directory'] = '.candidate'
+            },
+            (w) => {
+              w.jobs.prepare.steps[index].env = {
+                ...w.jobs.prepare.steps[index].env,
+                NODE_OPTIONS: '--require ./.candidate/bootstrap.cjs',
+              }
+            },
+          ]
+        : [
+            (w) => {
+              w.jobs.prepare.steps[index].uses = './.candidate/action'
+            },
+          ]
+    ),
+    ...source.jobs.prepare.steps.flatMap((step, index) =>
+      !step.uses
+        ? []
+        : Object.entries(step.with ?? {}).map(([key, value]) => (w) => {
+            w.jobs.prepare.steps[index].with[key] =
+              typeof value === 'boolean'
+                ? !value
+                : typeof value === 'number'
+                  ? value + 1
+                  : 'candidate-override'
+          })
+    ),
+    (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'equivalent').with.script +=
+        '\nrequire("./.candidate/script.cjs")'
+    },
+    (w) => {
+      const summary = w.jobs.prepare.steps.find((s) =>
+        s.run?.includes('const summary = [')
+      )
+      assert.ok(summary, 'summary run block not found')
+      const lines = summary.run.split('\n')
+      const arrayStart = lines.findIndex(
+        (line) => line.trim() === 'const summary = ['
+      )
+      assert.notEqual(arrayStart, -1, 'summary array not found')
+      lines[arrayStart + 1] = `  '\${{ github.event.pull_request.title }}',`
+      summary.run = lines.join('\n')
+    },
+    (w) => {
+      const summary = w.jobs.prepare.steps.find((s) =>
+        s.run?.includes('const summary = [')
+      )
+      assert.ok(summary, 'summary run block not found')
+      assert.ok(
+        summary.run.includes(`\${route.route}`),
+        'summary route expression not found'
+      )
+      summary.run = summary.run.replace(
+        `\${route.route}`,
+        `\${require("./.candidate/script.cjs")}`
+      )
+    },
+    (w) => {
+      const summary = w.jobs.prepare.steps.find((s) =>
+        s.run?.includes('const summary = [')
+      )
+      assert.ok(summary, 'summary run block not found')
+      const lines = summary.run.split('\n')
+      const field = lines.findIndex((line) => line.trim().startsWith('`'))
+      assert.notEqual(field, -1, 'summary display field not found')
+      const expression = lines[field].indexOf('${')
+      assert.notEqual(expression, -1, 'summary display expression not found')
+      lines[field] =
+        "  `Synthetic\nNODE\nnode .candidate/script.cjs\nnode - <<'NODE'\nfield: \\`" +
+        lines[field].slice(expression)
+      summary.run = lines.join('\n')
+    },
+    (w) => {
+      const summary = w.jobs.prepare.steps.find((s) =>
+        s.run?.includes('const summary = [')
+      )
+      assert.ok(summary, 'summary run block not found')
+      const lines = summary.run.split('\n')
+      const arrayStart = lines.findIndex(
+        (line) => line.trim() === 'const summary = ['
+      )
+      assert.notEqual(arrayStart, -1, 'summary array not found')
+      lines[arrayStart + 1] =
+        "  'display' + require('./.candidate/script.cjs'),"
+      summary.run = lines.join('\n')
+    },
+    ...Object.entries({
+      PATH: '.candidate/bin',
+      BASH_ENV: '.candidate/bootstrap.sh',
+      NODE_OPTIONS: '--require ./.candidate/bootstrap.cjs',
+    }).flatMap(([key, value]) => [
+      (w) => {
+        w.env[key] = value
+      },
+      (w) => {
+        w.jobs.prepare.env = { [key]: value }
+      },
+      (w) => {
+        w.jobs.prepare.steps.find((s) => s.id === 'route').env[key] = value
+      },
+      (w) => {
+        w.jobs.prepare.steps.find((s) => s.id === 'metadata').env = {
+          [key]: value,
+        }
+      },
+    ]),
+    (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'equivalent').if = 'true'
+    },
+    (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'equivalent').if +=
+        " || steps.metadata.outputs.provider == 'warpbuild'"
+    },
+    (w) => {
+      const steps = w.jobs.prepare.steps
+      const [equivalent] = steps.splice(
+        steps.findIndex((s) => s.id === 'equivalent'),
+        1
+      )
+      steps.splice(
+        steps.findIndex((s) => s.id === 'metadata'),
+        0,
+        equivalent
+      )
+    },
+    (w) => {
+      w.on.workflow_call.outputs.should_run.value = `\${{ jobs.prepare.outputs.should_run }}`
     },
     (w) => {
       w.jobs.unexpected = { 'runs-on': w.jobs[build]['runs-on'] }
@@ -110,14 +356,14 @@ test('public runner jobs require their exact scheduling role and reject unknown 
     (w) => {
       delete w.jobs[build]
     },
-  ]) {
+  ].entries()) {
     const workflow = structuredClone(source)
     mutate(workflow)
-    assert.ok(validatePublicRunnerRoles(workflow).length > 0)
+    assert.ok(
+      validatePublicRunnerRoles(workflow).length > 0,
+      `policy mutation ${index + 1} must be rejected: ${mutate}`
+    )
   }
-  // Label order has no scheduling meaning.
-  source.jobs[build]['runs-on'].labels.reverse()
-  assert.deepEqual(validatePublicRunnerRoles(source), [])
 })
 
 function runBuildStep(t, route, graph, { filters = true, failure = '' } = {}) {
@@ -270,7 +516,6 @@ test('the reusable envelope owns lifecycle routing and selector shadow planning'
     'synchronize',
     'reopened',
     'ready_for_review',
-    'converted_to_draft',
     'closed',
   ])
   assert.match(workflow, /test-playwright-execution:/)
@@ -351,10 +596,8 @@ test('lifecycle policy rejects cancellation outside the exact closed-PR boundary
         if: 'always()',
       }
     },
-    'missing converted_to_draft trigger': (w) => {
-      w.on.pull_request.types = w.on.pull_request.types.filter(
-        (type) => type !== 'converted_to_draft'
-      )
+    'draft conversion starts replacement execution': (w) => {
+      w.on.pull_request.types.push('converted_to_draft')
     },
     'elevated token': (w) => {
       w.jobs['cancel-closed-pr'].permissions = { actions: 'write' }
@@ -449,6 +692,12 @@ function runStatusReporter(t, overrides = {}) {
 }
 
 test('status reporter accepts the trusted plan for drafts and a full plan for ready', (t) => {
+  const cloud = runStatusReporter(t, {
+    PROVIDER: 'warpbuild',
+    ADMISSION_ATTEMPT: '2',
+    CURRENT_ATTEMPT: '2',
+  })
+  assert.equal(cloud.status, 0, cloud.output)
   // A draft may attest the plan the trusted envelope selected for it.
   const draft = runStatusReporter(t, { IS_DRAFT: 'true' })
   assert.equal(draft.status, 0, draft.output)
@@ -529,6 +778,14 @@ test('status reporter accepts the trusted plan for drafts and a full plan for re
   }
 
   const rejected = [
+    {
+      name: 'unadmitted paid rerun',
+      overrides: {
+        PROVIDER: 'warpbuild',
+        ADMISSION_ATTEMPT: '1',
+        CURRENT_ATTEMPT: '2',
+      },
+    },
     {
       name: 'skipped ready execution',
       overrides: { EXECUTION_RESULT: 'skipped' },
