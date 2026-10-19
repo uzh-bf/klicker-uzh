@@ -5125,7 +5125,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotWorkspaceOverview: 'Übersicht',
       chatbotWorkspaceKnowledge: 'Wissensbasis',
       chatbotDraftStepMaterialsDescription:
-        'Wählen Sie die Wissensbasis, aus der der Chatbot antwortet. Sie wird sofort verbunden, sobald Sie sie auswählen.',
+        'Wählen Sie die Wissensdatenbank, aus der der Chatbot antwortet. Sie wird sofort verbunden, sobald Sie sie auswählen.',
       chatbotDraftStepStudentsDescription:
         'Studierende lesen diesen Text, bevor sie den Chat starten. Wir haben einen Vorschlag für Sie vorbereitet.',
       chatbotAdvancedSettingsTitle: 'Erweiterte Einstellungen (optional)',
@@ -5152,12 +5152,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotSectionGroupAdvanced: 'Erweitert',
       chatbotSectionRequest: 'Veröffentlichung beantragen',
       chatbotSummaryMaterialsNone:
-        'Es ist keine Wissensbasis verbunden. Antworten nutzen allgemeines Modellwissen.',
-      chatbotSummaryMaterialsConnected: 'Nutzt die Wissensbasis {name}.',
+        'Es ist keine Wissensdatenbank verbunden. Antworten nutzen allgemeines Modellwissen.',
+      chatbotSummaryMaterialsConnected: 'Nutzt die Wissensdatenbank {name}.',
       chatbotSummaryMaterialsReadiness:
         '{total, plural, =0 {Sie enthält noch keine Ressourcen.} one {{ready} von 1 Ressource ist bereit{failed, plural, =0 {} other {, # fehlgeschlagen}}.} other {{ready} von # Ressourcen sind bereit{failed, plural, =0 {} other {, # fehlgeschlagen}}.}}',
       chatbotNoKnowledgeBaseOption:
-        'Keine Wissensbasis. Antworten nutzen allgemeines Modellwissen.',
+        'Keine Wissensdatenbank. Antworten nutzen allgemeines Modellwissen.',
       chatbotSummaryStudents:
         'Studierende sehen „{title}“, bevor sie beginnen.',
       chatbotSummaryStudentsSuggested: 'Das ist der vorgeschlagene Text.',
@@ -5172,7 +5172,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotSummaryModesExtras:
         '{framing, select, set {Es gibt eine Rahmung} other {Es gibt keine Rahmung}} und {custom, plural, =0 {keine eigenen Modi} one {einen eigenen Modus} other {# eigene Modi}}.',
       chatbotSummaryModesQuizzerNeedsKb:
-        'Quizzer braucht eine Wissensbasis, deshalb sehen Studierende ihn noch nicht.',
+        'Quizzer braucht eine Wissensdatenbank, deshalb sehen Studierende ihn noch nicht.',
       chatbotSummaryModelFixed: 'Studierende nutzen {model}.',
       chatbotSummaryModelFixedReasoning:
         'Studierende nutzen {model} mit dem Reasoning-Level {effort}.',
