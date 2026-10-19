@@ -1502,16 +1502,23 @@ function ChatbotDetails({
   const unsubmittedSections = sectionStatuses
     .filter(([, status]) => status === 'notSubmitted')
     .map(([id]) => sectionTitles[id])
-  // Knowledge base bindings reach students at once; every other section of a
-  // live chatbot waits for review.
+  // Knowledge base changes take effect without review, also while a request
+  // is pending; every other section of a live chatbot waits for review.
   const materialsApplyLabel =
-    chatbot.status === ChatbotStatus.Published
+    chatbot.status === ChatbotStatus.Published || revisionPending
       ? t('manage.resources.chatbotSectionAppliesImmediately')
       : undefined
   const revisionApplyLabel =
     chatbot.status === ChatbotStatus.Published && !revisionPending
       ? t('manage.resources.chatbotSectionAppliesAfterReview')
       : undefined
+  // A published chatbot has nothing to submit until a section saves a
+  // revision, and a paused one cannot change.
+  const showRequestCard =
+    !paused &&
+    (chatbot.status !== ChatbotStatus.Published ||
+      revisionPending ||
+      comparesLiveValues)
   const finalCardTitle = revisionPending
     ? t('manage.resources.chatbotSectionRequestPending')
     : chatbot.status === ChatbotStatus.Published
@@ -2006,7 +2013,7 @@ function ChatbotDetails({
             {knowledgeAdvancedSettings}
           </ChatbotSetupSection>
 
-          {paused ? null : (
+          {showRequestCard ? (
             <section
               id="chatbot-section-request"
               className="mt-6 scroll-mt-4 space-y-4 rounded-lg border border-gray-200 bg-white p-4"
@@ -2053,7 +2060,7 @@ function ChatbotDetails({
                 onNavigationStateChange={setAuthoringNavigationState}
               />
             </section>
-          )}
+          ) : null}
 
           {advancedManagement ? technicalDetails : null}
 
