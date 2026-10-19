@@ -1,5 +1,106 @@
 # Explainer quality decision and assessment qualification
 
+## Citation-attribution comparison preparation
+
+Approved on 19 October 2026: prepare the independent attribution comparison
+without spending. This light-path documentation batch ends with a frozen
+protocol, private input/budget binding and updated draft PR. Main owns source
+inspection, private evidence, arithmetic and disclosure review; a read-only
+planner checks the proposed protocol using public authored material only.
+Keep application code, operational helpers, corpus, original rubrics, model,
+fixture, importer and framework unchanged. No runtime startup, database write,
+prompt apply, pricing request, ledger mutation or paid call is part of preparation.
+
+### Candidate and matched comparison
+
+Use exactly the [separate citation-attribution guidance](#separate-citation-attribution-candidate)
+as the complete Explainer lecturer-guidance value, independently from the
+restored baseline. Do not include the preservation guidance. Preserve other
+modes, protected configuration and every platform contract, including fresh
+retrieval on both turns, supported inline citations and disclosure of missing
+support. Bind any later apply to a fresh readback matching the saved restoration;
+saved-byte reconciliation during preparation is not live qualification.
+
+Select the existing `reserved` group, one repeat per arm, baseline then candidate.
+Each arm generates its own first answer in a fresh two-turn thread. Four cases
+times two arms times two learner turns gives sixteen learner turns and eight
+trajectories. The existing runner supports `--group reserved --repeats 1`;
+import each receipt block separately with the same corpus and group. No new
+subset, runner, scorer, reference answer or automatic judge is needed.
+
+| Existing case | Attribution boundary to assess in both actual answers |
+| --- | --- |
+| `composite-primary-key-compression` | Cite retrieved key principles when used; distinguish supplied combination details and any added declaration syntax from what the actual passage supports |
+| `binary-search-preconditions` | Explain supplied assumptions accurately; disclose missing fresh support instead of attaching an unrelated passage |
+| `lossless-size-qualification` | Retain reconstruction scope and size limits; attach no compression claim to a passage that does not support it |
+| `workflow-hold-exception` | Preserve the stipulated rule and fictional scope; distinguish supplied rules from retrieved evidence |
+
+These authored examples have been inspected and used; the `reserved` label is
+capture identity, not a blind-holdout claim. The development control and NULL
+regression are outside this finite proposal. Their earlier preservation result
+does not establish this different candidate's behavior. Development controls,
+preservation transfer and any combined-guidance comparison remain acceptance
+gaps even if this attribution comparison passes.
+
+### Manual acceptance and decision
+
+Retain every original rubric and its `assessmentTurns: [2]`: score revision
+criteria only on turn two using 2 satisfied, 1 partial, 0 violated and U missing
+evidence. Assess first answers separately for factual accuracy, completion of
+the initial task and citation support; the revision's bullet limit is not an
+initial-answer requirement. Keep initial errors distinct from shortening
+failures. Inspect each emitted marker in both answers against
+its current-turn registry, completed persisted passage and actual model-visible
+passage; an intact mapping alone does not establish claim support.
+
+Every assessed candidate rubric criterion must be satisfied, every emitted
+marker must support its attached claim at the stated detail, and candidate
+answers must remain useful and directly complete the requested task. Check
+that retrieved principles actually used still receive supported citations.
+Zero markers alone are not success: omitting attribution for used evidence,
+refusing supplied material or replacing the task with a disclaimer fails the
+applicable contract. Missing retrieved support requires honest disclosure,
+not refusal to explain the supplied material or invented evidence.
+
+Report baseline/candidate criterion changes, exact unsupported claims and any
+new regression separately. A baseline unsupported citation becoming an uncited
+supplied fact can be a correction; disappearance of a useful supported claim
+is not automatically an improvement. No aggregate accuracy or causal effect
+claim follows from one repeat. Incomplete or invalid coverage is inconclusive.
+A passing result supports only the next development decision, not rollout.
+
+### Conditional execution boundary
+
+This is a proposal, not execution approval. Before a later run, bind the same
+cumulative US$55/48-turn ledger and identity, verify old-ledger custody, refresh
+provider pricing and prove admission for sixteen turns and at most thirty-two
+provider requests. Do not reset, split or refund the ledger, reduce bounds or
+increase a cap to make the run fit. The private decision index records the
+current arithmetic; refreshed prices can block execution without invalidating
+this preparation.
+
+Separately approved execution would qualify guarded startup and local
+apply/readback/rollback on the exact isolated baseline, then capture only these
+two blocks. First qualify the finite scope and an operator-controlled block
+boundary in the existing local session wiring; never replay a consumed operation
+or add a maintained runner. Stop on uncertain spending, drift or guard failure;
+preserve failed and unstarted coverage. The existing runner has no semantic assessment checkpoint:
+manually assess each completed block before any subsequent block or experiment.
+A demonstrated regression blocks subsequent work, without pretending that the
+runner stopped mid-block automatically. No retry or extra turn is admitted.
+Restore/read back the baseline and stop the exact runtime on completion or
+failure. Keep actual answers, labels, costs and runtime receipts
+private. Shared prompt changes, merge, marking ready and deployment remain
+outside that finite comparison.
+
+Preparation is complete. Source and offline corpus checks establish the selected
+scope; a read-only planner accepted the corrected turn-specific assessment and
+block-boundary decision. The private decision index holds exact candidate/input
+hashes, saved-baseline reconciliation, provisional admission arithmetic and
+remaining qualification prerequisites. No live or model-quality acceptance is
+claimed for the attribution candidate. The existing draft records this proposal;
+only separately approved execution can proceed beyond preparation.
+
 ## Approved preservation execution
 
 Approved on 19 October 2026: correct the existing local custody guard's

@@ -15,8 +15,8 @@ there is no new scorer, judge configuration or target-runtime dependency.
 
 Both existing cases retain `group: development`. The control role does not change the
 existing case's capture identity. These inspected examples are not holdouts.
-The four additional cases use `group: reserved`: authored and unrun validation
-examples, not blind holdouts. Their first prompts supply the relevant material.
+The four additional cases use `group: reserved`: authored validation examples,
+not blind holdouts. Their first prompts supply the relevant material.
 No case includes a reference model answer, and both development case objects
 and the original control rubric remain unchanged.
 Each case requires a fresh thread; its two turns share their parent chain.
@@ -87,16 +87,19 @@ the application-owned offline importer for its strict version-2 receipts.
 Keep additional private tool excerpts outside the importer receipt contract.
 Capture authorization, model configuration and budget remain separate from
 this corpus. Adding the cases does not authorize running them or reusing an
-exhausted ledger. Model performance on the new case remains unassessed.
+exhausted ledger. Execution status and private assessment custody are recorded
+in the current plan; corpus validity alone is not model-quality evidence.
 
 ## Proposed broader comparison
 
-The [current quality-decision plan](../../../project/2026-10-18-explainer-assessment-readiness-plan.md#approved-preservation-execution)
-records completed finite comparisons and points to the private decision index.
-Review that decision before selecting another protocol. Manual quality assessment
-precedes any optional automated-judge calibration; further paid execution needs
-separately named approval. The older 48-turn protocol below is preparation
-history, not an instruction to run both repetitions automatically.
+The [current attribution protocol](../../../project/2026-10-18-explainer-assessment-readiness-plan.md#citation-attribution-comparison-preparation)
+proposes the existing reserved group, two arms and one repeat: sixteen learner
+turns. It uses the exact separate attribution guidance, the original rubrics and
+manual checks of actual answers and passages. Execution needs separately named
+approval and the same cumulative ledger; preparation starts no runtime or paid
+call. Development controls and combined guidance remain outside that comparison.
+The older 48-turn protocol below is preparation history, not an instruction to
+run both repetitions automatically.
 
 The protocol and budget proposal below are retained from the original preparation.
 The [current migration plan](../../../project/2026-10-17-trajectory-contract-plan.md)

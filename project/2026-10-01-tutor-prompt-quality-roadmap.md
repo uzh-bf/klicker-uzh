@@ -3,6 +3,7 @@
 Status: the private review, initial comparison, separate candidate preparation
 and approved finite preservation comparison are complete. Detailed judgments
 remain private. Further comparisons and rollout require their named decisions.
+Zero-spend preparation now specifies the independent attribution comparison.
 Historical Tutor experiments remain below for reference.
 
 ## Current evaluation direction
@@ -20,6 +21,10 @@ keeps revision self-check and citation-attribution guidance separate. Review the
 private decision before selecting the next finite comparison. Citation support,
 transfer, multipart summaries and representative course-source acceptance remain
 required before rollout. Unused ledger capacity authorizes no additional capture.
+The [attribution protocol](2026-10-18-explainer-assessment-readiness-plan.md#citation-attribution-comparison-preparation)
+proposes sixteen fresh learner turns on the existing reserved group, with
+manual passage checks and useful-answer safeguards. It excludes the preservation
+guidance; development-control and combined-guidance acceptance remain separate.
 
 The [active quality-decision batch](2026-10-18-explainer-assessment-readiness-plan.md#current-quality-decision-batch)
 owns execution, acceptance and the next spending proposal. It continues the
@@ -30,7 +35,7 @@ superseding the earlier judge-first sequence in the
 | Priority | Outcome | Acceptance and next boundary |
 | --- | --- | --- |
 | 1 | Establish qualification-preserving Explainer revision | Private development comparison and manual assessment complete; review that decision before proposing transfer acceptance |
-| 2 | Establish trustworthy source support and honest task completion | Inspect actual model-visible passages and citation mapping; separately cover multipart summaries, genuinely absent material and representative course-source retrieval before rollout |
+| 2 | Establish trustworthy source support and honest task completion | Prepare the independent sixteen-turn attribution protocol; separately cover development controls, multipart summaries, genuinely absent material and representative course-source retrieval before rollout |
 | 3 | Roll out only a supported change and inspect subsequent anonymous use | Preserve the baseline and rollback; obtain named application/deployment authority, verify effective behavior and assess later use before returning to Tutor |
 
 Keep existing capture, import, citation mapping and spending admission stable.
