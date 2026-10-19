@@ -18,7 +18,51 @@ Automatic parser-only freshness remains deferred. Earlier canonical checks do
 not qualify the revised source. Merge, deployment, live refresh/build, activation
 and paid evaluation remain separate gates; OpenRouter review remains waived.
 
-## Current planning checkpoint — 2026-10-11
+## Current planning checkpoint — 2026-10-19
+
+The first matched W9 comparison ran under the
+[adoption plan](2026-10-07-graphrag-adoption-plan.md) protocol on a private
+three-document course corpus in staging, through the controlled retrieval and
+generation harness rather than persisted chat turns. It compared ordinary
+document retrieval, the existing graph query expansion and a graph-free second
+search, plus abstention cases. The graph arm gave no meaningful gain over
+ordinary retrieval. The graph-free second search scored best, and every arm
+abstained correctly. The case set is far too small to rank arms, and the control
+relied on a frozen second-clause split that suited these questions. Against the
+predeclared criteria the comparison is **inconclusive**: ordinary document
+retrieval stays the default, and the graph-retrieval flag decision is unchanged.
+The private [run report](_local/evaluation-holdout-20261017/three-doc-pilot/pilot-report.md)
+holds identifiers, scores and costs.
+
+The diagnosis changes what W9 tests next:
+
+- The decisive miss was cross-document coverage. A multi-part question named a
+  second document, ordinary retrieval stayed in one script, and only the
+  decomposed sub-question reached the other document. Graph hints cannot supply
+  decomposition.
+- Graph linking uses exact concept-label matches in the question, so few seeds
+  are found. Hints are appended to the query text; the graph never ranks a
+  passage, and retrieval does not use concept-to-chunk provenance.
+- Every edge in the sampled partial overview of the published graph was an
+  untyped `RELATED` edge. There is no direction or relation type to follow for
+  prerequisites or related-concept guidance.
+- Extraction lost a constants table's exponents and signs and dropped single
+  pages, which confounds formula questions (W4).
+- The harness needed three recorded workarounds: the live document-tool envelope,
+  identical arm inputs when a case falls back to the baseline, and judging such
+  shared answers. Fold them into the W9 harness before the next run.
+
+Three directions follow from this. W9b makes the hybrid retriever handle
+multi-part and cross-document questions and fuses all arms once. W13 uses the
+graph for concept navigation and prerequisite scaffolding, which depends on
+typed, evidence-linked relations (W5). W9c, graph-native passage ranking, is
+conditional on a multi-hop gap that W9b leaves. Sequencing them is a separate
+decision. Under [ADR 0011](../docs/adr/0011-catalyst-owns-knowledge-graph-runtime.md),
+the Catalyst knowledge-graph roadmap plans the engine side of W5, W9c and W13
+and holds the detailed pilot evidence; this roadmap keeps W9b and the Klicker
+side.
+
+### Previous planning checkpoint — 2026-10-11
 
 W9a now qualifies independent workflows and source/publication guards, including
 KB-before-quota ordering across settlement and all dispatch-failure paths. A mutable
@@ -261,7 +305,7 @@ The [existing production roadmap](2026-08-10-kb-graph-production-roadmap.md) own
 
 ## Sequenced work packages
 
-Owners below are accountable roles to assign when authorizing execution, not claims of staffing. Main-session integration owns cross-system contracts. Each package needs its own bounded source plan; this roadmap does not prescribe a branch stack for all twelve items.
+Owners below are accountable roles to assign when authorizing execution, not claims of staffing. Main-session integration owns cross-system contracts. Each package needs its own bounded source plan; this roadmap does not prescribe a branch stack for all items.
 
 ### Horizon 1 — make improvements measurable and stop known damage
 
@@ -289,11 +333,15 @@ Make retention aware of source support and corpus/chunk structure. Do not remove
 
 Add representative long chapters, slide decks, tables, mathematical derivations, code, and cross-document terminology. Diagnose conversion before blaming extraction. Compare fixed-token chunks against section-aware boundaries and bounded parent/neighbor context. Preserve page and chunk identity through table/formula handling. Trial OCR or figure interpretation only on cases where text conversion loses necessary evidence, with an approved source/provider boundary.
 
+The October 19 pilot adds two concrete cases: a formula sheet's constants table lost exponent signs and multiplication operators, and single slide pages produced no chunk. Diagnose both at the converter before measuring formula or constant questions again.
+
 Completion: important passages and relationships crossing chunk boundaries remain recoverable; citations resolve to the correct source location; fewer conversion omissions appear in blinded review. Record token/cost growth and duplicate extraction. Keep the original converter/chunker available by version for rollback; never reuse vectors from incompatible source or embedding versions.
 
 **W5 — Evidence-linked entities and relations.** Owner: generator engineer; Klicker/content/chat owners approve the consumer contract. Dependency: W1 and W4 identity requirements. Size: large, contract decision required.
 
 Strengthen the existing entity/relation-to-chunk bridge with stable identity and evidence spans or anchors where the source format permits. Represent useful relation semantics—direction, conditions, polarity, units, and scope—before adding more node categories. Keep source facts, instructor assertions, and inferred teaching dependencies distinguishable. A model-suggested prerequisite needs review or clear inference status; a graph path is not proof of causality or prerequisite order.
+
+The sampled partial overview of the October 19 staging graph showed only untyped `RELATED` edges; W9c and W13 depend on closing this gap. The Catalyst knowledge-graph roadmap plans the typed, evidence-linked relation vocabulary.
 
 Completion: consumers can resolve a selected claim to authorized matching source evidence, trace a merge or correction, and refuse stale or missing support. Include conflicting-source, multilingual alias, formula, and deletion cases. Use versioned additive bundles and existing hydration/consistency tests. Decide the smallest schema extension and compatibility approach before implementation; do not impose an elaborate ontology on every domain.
 
@@ -360,15 +408,57 @@ Preserve original-query evidence so graph hints cannot crowd it out.
 
 Freeze development/holdout by concept, document and evidence family before tuning, with paraphrases/translations together. Measure factual lookup, terminology/bilingual variants, bridges, comparison, multi-hop evidence needs, whole-topic synthesis, irrelevant hubs and unanswerable/conflicting questions separately. The existing one-hop mechanism does not itself establish multi-hop or whole-topic capability. Use the existing evaluation framework; text-only captures require separate persisted-source/browser checks for locators. Report family-level paired uncertainty, all-attempt coverage, fallback, errors/skips, actual requests/context, latency and total spend. Predeclare useful gain, tolerated regressions and operational limits; existing metric thresholds are diagnostic configuration, not a rollout decision.
 
-If failure analysis shows the bottleneck is graph-to-passage selection, trial source-chunk lookup from selected entities/relations plus evidence reranking using W5. Keep authorization and source resolution server-side; the model cannot widen KB scope. Current basic graph retrieval does not establish multi-KB graph support even though document scoping supports multiple KBs. Treat that as a separate contract and permission test frontier.
+If failure analysis shows the bottleneck is graph-to-passage selection, trial source-chunk lookup from selected entities/relations plus evidence reranking using W5 (now W9c). Keep authorization and source resolution server-side; the model cannot widen KB scope. Current basic graph retrieval does not establish multi-KB graph support even though document scoping supports multiple KBs. Treat that as a separate contract and permission test frontier.
 
 Completion: one frozen comparison yields adoption for specified query classes, retain-disabled, or inconclusive against the predeclared criteria, preserving citations, abstention and scope. No critical scope/citation failure can be offset by an aggregate gain. Keep ordinary document retrieval as the default if no useful improvement is demonstrated; qualify independent map value separately. [ADR 0014](../docs/adr/0014-beta-learns-before-quality-thresholds.md) permits a labeled initial graph beta on existing system/canary evidence, while quality claims and widening need quality evidence. Later retrieval approaches follow observed failure analysis under a separate bounded contract; community summaries, adaptive multi-hop and query routing add indexing, grounding, freshness, scope and cost obligations. No wholesale framework migration or automatic tuning loop is proposed.
+
+**W9b — Hybrid retrieval for multi-part and cross-document questions.** Owner:
+chat/retrieval engineer. Dependency: W9a and the October 19 harness fixes; no
+graph contract change. Size: medium.
+
+Generalize the second-clause control into bounded question decomposition: split
+a multi-part question into at most a few sub-queries, run them in parallel with
+the original question, and fuse every arm — original, sub-queries and
+graph-hinted query — in one reciprocal-rank fusion under the existing passage
+and character budget. Add per-document diversity so one source cannot fill the
+budget when the question names another. Keep the original-query evidence first,
+as the current fusion does. Published comparisons favor parallel integration of
+graph and document retrieval over routing each query to one retriever.
+
+Before any paid run, inspect the union of the existing captures offline. Then run
+a reviewed case set of at least 20–30 questions, stratified into single-fact,
+multi-part, cross-document, comparison, multi-hop and unanswerable families, with
+repeated judging. Completion: a family-level adopt, retain-disabled or
+inconclusive decision, with abstention and citation scope unchanged and the added
+latency and cost per turn reported.
+
+**W9c — Graph-native passage ranking (conditional).** Owner: generator and
+chat/retrieval engineers. Dependency: W5 passage provenance; start only if W9b
+leaves a measured multi-hop or bridging gap. Size: large.
+
+The Catalyst knowledge-graph roadmap plans the graph-side ranking. Klicker keeps
+the document-tool integration, authorization and source resolution. Completion:
+a paired W9-style comparison against W9b on the same holdout, including
+abstention.
 
 **W10 — Lecturer review and correction loop.** Owner: Klicker product engineer; generator owns correction materialization. Dependency: W1 diagnostics and existing correction-contract readiness; W5 for richer evidence. Size: medium–large.
 
 Show build status, selected/published domain, source coverage limitations, and actionable warnings separately. Present missing evidence, questionable merges, and excluded concepts with source access and a reversible preview. Compose existing correction sets and instructor assertions, preserving review across rebuilds through explicit rebase/conflict handling. Prioritize uncertain, high-impact items; do not require educators to inspect every node.
 
 Completion: a lecturer can correct a known fixture defect, preview affected concepts and evidence, materialize a versioned result, and observe the intended consumer change. Rebuilding cannot silently overwrite the decision or apply it to a different concept. Route feedback by cause—source, graph, retrieval, generation, pedagogy—before revising a policy. Avoid a single opaque “graph quality score” and automatic retraining from thumbs-up/down. UI interactions, permissions, and browser captures are required during execution.
+
+**W13 — Concept navigation and prerequisite scaffolding in student chat.** Owner:
+chat product engineer with educators; generator owns relation extraction.
+Dependency: W5 typed, evidence-linked relations; W10 for lecturer review of
+inferred prerequisites. Size: medium–large.
+
+The Catalyst knowledge-graph roadmap plans the suggestion and scaffolding policy.
+Klicker owns the chat entry points: suggested concepts through the existing "Ask
+about this" prefill, never as an automatic model turn, each with its source pages
+(ADR 0032), and lecturer confirmation of inferred prerequisites. The participant
+concept map, concept search and prefill already work on staging. Completion:
+students reach suggested concepts without leaving chat, and click-through and
+follow-up rates are measured without making learning-outcome claims.
 
 ### Horizon 4 — sustain quality and widen safely
 
@@ -427,13 +517,18 @@ flowchart TD
   R --> W9[W9 Chat outcomes]
   W4 -. source fidelity .-> W9a[W9a Independent workflows and source guards]
   W9a --> W9
+  W9 --> W9b[W9b Hybrid multi-part retrieval]
+  W9b -. multi-hop gap .-> W9c[W9c Graph-native passage ranking]
+  W5 --> W9c
+  W5 --> W13[W13 Concept navigation and scaffolding]
+  W10 -. reviewed prerequisites .-> W13
   W5 -. richer evidence .-> W8
-  W5 -. passage retrieval .-> W9
   W1 --> W10[W10 Lecturer corrections]
   W5 --> W11[W11 Freshness and reuse]
   W10 --> W11
   W8 --> W12[W12 Measured widening]
   W9 --> W12
+  W13 --> W12
 ```
 
 The diagram shows quality dependencies, not authorization. W6/W7 variants feed consumer experiments without requiring every combination. W10 can start with current correction primitives; richer evidence is incremental. W11 and advanced chat retrieval must not delay a simpler useful result.
@@ -442,7 +537,7 @@ The diagram shows quality dependencies, not authorization. W6/W7 variants feed c
 | ------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | A — trustworthy baseline  | W1–W3 diagnostics, regressions, repaired comparison, actual dispatch-path evidence | Confirm engineering reliability before claiming that domain selection improves quality      |
 | B — better representation | W4–W7 paired results and the smallest justified contract/policy changes            | Keep changes that preserve meaning and improve downstream evidence; stop ineffective tuning |
-| C — useful consumers      | W8/W9 independent scorecards; W10 targeted lecturer workflow                       | Enable consumer-specific improvements based on their own evidence, not graph aesthetics     |
+| C — useful consumers      | W8/W9/W13 independent scorecards; W10 targeted lecturer workflow                   | Enable consumer-specific improvements based on their own evidence, not graph aesthetics     |
 | D — sustainable widening  | W11 where cost warrants it; W12 canary and operational ownership                   | Widen only the validated capability; use existing release/deployment gates                  |
 
 For capacity planning, A is roughly 1–2 engineering weeks, B another 2–4, C another 2–4 with some parallel work, and D 2–4 where incremental processing is needed. These are provisional elapsed ranges assuming one generator engineer, one part-time product/retrieval engineer, timely educator review, and working infrastructure. Re-estimate after A; source conversion, schema decisions, and reviewer availability can dominate. No calendar commitment or speculative long-term infrastructure investment is implied.
@@ -509,6 +604,8 @@ The focus-topic seams in the last two rows were inspected on 2026-09-13 at Klick
 The [official Microsoft GraphRAG query overview](https://microsoft.github.io/graphrag/query/overview/) distinguishes local graph-plus-chunk retrieval, global community-report synthesis, and DRIFT. These are candidate experiment patterns for W9, not evidence they outperform current Klicker retrieval. Global synthesis carries additional indexing and answer-generation costs.
 
 The [LightRAG paper](https://arxiv.org/abs/2410.05779) motivates graph-enhanced retrieval; the [official core API documentation](https://github.com/HKUDS/LightRAG/blob/main/docs/ProgramingWithCore.md) exposes retrieval modes, candidate/token budgets, and optional reranking. Verify the pinned installed version before adopting any setting. LightRAG's `global` mode and Microsoft's community-report global search are different mechanisms.
+
+Research added on 2026-10-19 informs W9b; none of it is evidence for this product. [RAG vs. GraphRAG: a systematic evaluation](https://arxiv.org/abs/2502.11371) finds document retrieval stronger on single-hop detail questions and graph retrieval stronger on multi-hop, comparison and temporal questions. Parallel integration of both outperformed routing, and community-level global search handled unanswerable questions poorly. The Catalyst knowledge-graph roadmap lists the sources behind W9c and W13.
 
 [RAGChecker](https://arxiv.org/abs/2408.08067) supports diagnosing retrieval and answer generation separately and calibrating automated evaluation against human judgments. That principle informs the portfolio above; no dependency adoption or paper-level performance claim is assumed for this project.
 
