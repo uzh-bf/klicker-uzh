@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import { normalizeSourcesFromParts } from '../src/lib/sources/normalizeSources'
+import {
+  countDocQueryDocuments,
+  normalizeSourcesFromParts,
+} from '../src/lib/sources/normalizeSources'
 import {
   combineGraphSearchDocuments,
   graphAssistedDocumentQuery,
@@ -357,7 +360,7 @@ describe('graph-assisted document retrieval', () => {
     ).toEqual(['First support', 'Another passage', 'Different support'])
   })
 
-  it('protects the baseline prefix, fuses repeated evidence once, and preserves emitted order', () => {
+  it('keeps every original passage and appends new graph evidence after it', () => {
     const make = (ids: number[]) => ({
       mode: 'documents',
       sources: ids.map((id) => ({
@@ -365,20 +368,26 @@ describe('graph-assisted document retrieval', () => {
         chunks: [{ id, content: `Evidence ${id}`, page_number: id }],
       })),
     })
+    const original = make(Array.from({ length: 20 }, (_, index) => index + 1))
     const result = combineGraphSearchDocuments(
-      make([1, 2, 3, 4, 5, 6, 7, 8]),
-      make([8, 9, 10, 11, 12, 13, 14, 8])
+      original,
+      make([8, 21, 22, 21])
     ) as any
     const ids = result.structuredContent.sources.flatMap((source: any) =>
       source.chunks.map((chunk: any) => chunk.id)
     )
-    expect(ids.slice(0, 4)).toEqual([1, 2, 3, 8])
-    expect(new Set(ids).size).toBe(ids.length)
-    expect(ids).toHaveLength(12)
+    expect(ids).toEqual([
+      ...original.sources.map((_, index) => index + 1),
+      21,
+      22,
+    ])
+    expect(result.structuredContent.sources.slice(0, 20)).toEqual(
+      original.sources
+    )
     expect(JSON.parse(result.content[0].text)).toEqual(result.structuredContent)
   })
 
-  it('keeps global rank order when a provider group resumes after another source', () => {
+  it('keeps the original grouping when graph evidence repeats an original passage', () => {
     const chunks = Array.from({ length: 6 }, (_, index) => ({
       id: index + 1,
       content: `Evidence ${index + 1}`,
@@ -396,36 +405,172 @@ describe('graph-assisted document retrieval', () => {
     }
     const result = combineGraphSearchDocuments(original, expanded) as any
     expect(
-      result.structuredContent.sources.flatMap((source: any) =>
-        source.chunks.map((chunk: any) => chunk.id)
-      )
-    ).toEqual([1, 2, 3, 6, 7, 4, 5])
-    expect(
-      result.structuredContent.sources.map((source: any) => source.reference)
-    ).toEqual(['a.pdf', 'b.pdf', 'a.pdf'])
+      result.structuredContent.sources.map((source: any) => [
+        source.reference,
+        source.chunks.map((chunk: any) => chunk.id),
+      ])
+    ).toEqual([
+      ['a.pdf', [1, 2, 3, 4, 5, 6]],
+      ['b.pdf', [7]],
+    ])
   })
 
-  it('skips oversized passages and reserves original character budget before expansion', () => {
+  it('limits graph additions to six passages and 8,000 characters while keeping oversized originals', () => {
     const original = documents('x'.repeat(16001))
-    original.sources[0]!.chunks.push({
-      content: 'y'.repeat(8000),
-      page_number: 2,
-    })
-    original.sources[0]!.chunks.push({
-      content: 'z'.repeat(8000),
-      page_number: 3,
-    })
-    const result = combineGraphSearchDocuments(
-      original,
-      documents('New evidence')
-    ) as any
-    const chunks = result.structuredContent.sources.flatMap(
+    const expanded = {
+      mode: 'documents',
+      sources: [
+        {
+          reference: 'graph.pdf',
+          chunks: [
+            { content: 'a'.repeat(7000), page_number: 1 },
+            { content: 'b'.repeat(2000), page_number: 2 },
+            ...Array.from({ length: 8 }, (_, index) => ({
+              content: `Short ${index}`,
+              page_number: index + 3,
+            })),
+          ],
+        },
+      ],
+    }
+    const result = combineGraphSearchDocuments(original, expanded) as any
+    const [kept, ...added] = result.structuredContent.sources.flatMap(
       (source: any) => source.chunks
     )
-    expect(chunks.map((chunk: any) => chunk.page_number)).toEqual([2, 3])
+    expect(kept.content).toHaveLength(16001)
+    // The 2,000-character passage would exceed the headroom and is skipped.
+    expect(added.map((chunk: any) => chunk.page_number)).toEqual([
+      1, 3, 4, 5, 6, 7,
+    ])
+  })
+
+  it('spreads unranked graph additions across provider sources and groups them per source', () => {
+    const source = (reference: string, count: number) => ({
+      reference,
+      chunks: Array.from({ length: count }, (_, index) => ({
+        content: `${reference} ${index}`,
+        page_number: index + 1,
+      })),
+    })
+    const result = combineGraphSearchDocuments(documents('Baseline'), {
+      mode: 'documents',
+      sources: [source('first.pdf', 8), source('second.pdf', 2)],
+    }) as any
     expect(
-      chunks.reduce((sum: number, chunk: any) => sum + chunk.content.length, 0)
-    ).toBe(16000)
+      result.structuredContent.sources
+        .slice(1)
+        .map((group: any) => group.chunks.map((chunk: any) => chunk.content))
+    ).toEqual([
+      ['first.pdf 0', 'first.pdf 1', 'first.pdf 2', 'first.pdf 3'],
+      ['second.pdf 0', 'second.pdf 1'],
+    ])
+    expect(
+      normalizeSourcesFromParts([
+        { type: 'tool-call', toolName: 'KB_doc_query', result },
+      ]).filter((card) => card.title !== 'Synthetic course')
+    ).toHaveLength(2)
+    expect(countDocQueryDocuments(result.structuredContent)).toBe(3)
+  })
+
+  it('keeps one long unranked passage from excluding every other source', () => {
+    const result = combineGraphSearchDocuments(documents('Baseline'), {
+      mode: 'documents',
+      sources: [
+        { reference: 'long.pdf', chunks: [{ content: 'a'.repeat(7999) }] },
+        { reference: 'short.pdf', chunks: [{ content: 'b'.repeat(1000) }] },
+      ],
+    }) as any
+    expect(
+      result.structuredContent.sources
+        .slice(1)
+        .map((group: any) => group.reference)
+    ).toEqual(['short.pdf'])
+  })
+
+  it('selects graph additions by global rank only when every chunk carries one', () => {
+    const ranked = (ranks: unknown[]) => ({
+      mode: 'documents',
+      sources: [
+        {
+          reference: 'first.pdf',
+          chunks: ranks.slice(0, 4).map((global_rank, index) => ({
+            content: `first ${index}`,
+            global_rank,
+          })),
+        },
+        {
+          reference: 'second.pdf',
+          chunks: ranks.slice(4).map((global_rank, index) => ({
+            content: `second ${index}`,
+            global_rank,
+          })),
+        },
+      ],
+    })
+    const added = (expanded: unknown) =>
+      (
+        combineGraphSearchDocuments(documents('Baseline'), expanded) as any
+      ).structuredContent.sources
+        .slice(1)
+        .flatMap((group: any) =>
+          group.chunks.map((chunk: any) => chunk.content)
+        )
+    expect(added(ranked([1, 2, 3, 4, 5, 6, 7, 8]))).toEqual([
+      'first 0',
+      'first 1',
+      'first 2',
+      'first 3',
+      'second 0',
+      'second 1',
+    ])
+    // A missing rank makes the order unknown, so sources are interleaved.
+    expect(added(ranked([1, 2, 3, 4, 5, 6, null, 8]))).toEqual([
+      'first 0',
+      'first 1',
+      'first 2',
+      'second 0',
+      'second 1',
+      'second 2',
+    ])
+  })
+
+  it('shows the original source cards unchanged next to graph additions', () => {
+    const original = {
+      mode: 'documents',
+      sources: [
+        {
+          reference: 'a.pdf',
+          title: 'A',
+          chunks: [
+            { content: 'A one', page_number: 1 },
+            { content: 'A two', page_number: 2 },
+          ],
+        },
+        {
+          reference: 'b.pdf',
+          title: 'B',
+          chunks: [{ content: 'B one', page_number: 1 }],
+        },
+      ],
+    }
+    const cards = (result: unknown) =>
+      normalizeSourcesFromParts([
+        { type: 'tool-call', toolName: 'KB_doc_query', result },
+      ]).map((source) => [source.title, source.page])
+    const fused = combineGraphSearchDocuments(original, {
+      mode: 'documents',
+      sources: [
+        {
+          reference: 'c.pdf',
+          title: 'C',
+          chunks: [{ content: 'C one', page_number: 4 }],
+        },
+      ],
+    })
+    expect(cards(fused)).toEqual([...cards(original), ['C', 4]])
+    expect(countDocQueryDocuments((fused as any).structuredContent)).toBe(
+      countDocQueryDocuments(original) + 1
+    )
   })
 
   it('handles JSON MCP envelopes and never retains obsolete generated answers', () => {
@@ -444,7 +589,7 @@ describe('graph-assisted document retrieval', () => {
     expect(result.structuredContent.sources).toHaveLength(2)
   })
 
-  it('deduplicates a repeated passage that only differs in per-query score metadata', () => {
+  it('returns the original unchanged when graph evidence only repeats it with other score metadata', () => {
     const passage = (
       score: number,
       globalRank: number,
@@ -459,21 +604,10 @@ describe('graph-assisted document retrieval', () => {
         },
         { content: 'Evidence', page_number: 1, score, global_rank: globalRank }
       )
-    const result = combineGraphSearchDocuments(
-      passage(0.91, 1, 1),
-      passage(0.32, 7, 3)
-    ) as any
-    expect(result.structuredContent.sources).toHaveLength(1)
-    expect(result.structuredContent.summary).toEqual({
-      count: 1,
-      sources_returned: 1,
-      chunks_returned: 1,
-    })
-    // The baseline occurrence is retained with its own score metadata.
-    expect(result.structuredContent.sources[0]).toMatchObject({
-      aggregate_rank: 1,
-      chunks: [{ content: 'Evidence', score: 0.91, global_rank: 1 }],
-    })
+    const original = passage(0.91, 1, 1)
+    expect(combineGraphSearchDocuments(original, passage(0.32, 7, 3))).toBe(
+      original
+    )
   })
 
   it('keeps passages whose content conflicts under a shared resource identity', () => {
