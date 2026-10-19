@@ -6123,7 +6123,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Exam mode: no points, no leaderboard, nothing is projected on the screen.',
       tabControl: 'Control',
       tabQA: 'Q&A',
-      qaPendingCount: '{count} questions to review',
+      qaPendingCount:
+        '{count, plural, one {# question to review} other {# questions to review}}',
       qaEnabled: 'Live Q&A',
       qaEnabledHint: 'Participants can ask questions.',
       qaDisabledHint: 'Q&A is turned off for this quiz.',
@@ -6138,7 +6139,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       qaFilterOpen: 'Open',
       qaFilterAnswered: 'Answered',
       qaEmpty: 'No questions in this list.',
-      qaVotes: '{count} votes',
+      qaVotes: '{count, plural, one {# vote} other {# votes}}',
       qaJustNow: 'just now',
       qaMinutesAgo: '{minutes} min ago',
       qaHoursAgo: '{hours} h ago',

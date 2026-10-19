@@ -6261,7 +6261,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Prüfungsmodus: keine Punkte, keine Rangliste, nichts wird auf die Leinwand projiziert.',
       tabControl: 'Steuerung',
       tabQA: 'Q&A',
-      qaPendingCount: '{count} Fragen zu prüfen',
+      qaPendingCount:
+        '{count, plural, one {# Frage zu prüfen} other {# Fragen zu prüfen}}',
       qaEnabled: 'Live Q&A',
       qaEnabledHint: 'Teilnehmende können Fragen stellen.',
       qaDisabledHint: 'Q&A ist für dieses Quiz ausgeschaltet.',
@@ -6276,7 +6277,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       qaFilterOpen: 'Offen',
       qaFilterAnswered: 'Beantwortet',
       qaEmpty: 'Keine Fragen in dieser Liste.',
-      qaVotes: '{count} Stimmen',
+      qaVotes: '{count, plural, one {# Stimme} other {# Stimmen}}',
       qaJustNow: 'gerade eben',
       qaMinutesAgo: 'vor {minutes} Min',
       qaHoursAgo: 'vor {hours} Std',
