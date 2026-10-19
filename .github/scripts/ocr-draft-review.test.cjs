@@ -76,6 +76,33 @@ test('combined cost estimates use both provider rates and withhold totals for mi
       JSON.stringify({ expected_receipts: 1 })
     )
     const toolsPath = path.join(directory, 'draft-ai-review-tools.json')
+    const advisor = {
+      status: 'unavailable',
+      registered: true,
+      attempted: 2,
+      dispatched: 1,
+      completed: 0,
+      failed: 2,
+      rejected: 0,
+      cancelled: 0,
+      context_reads: 1,
+      attempt_outcomes: [
+        {
+          attempt: 1,
+          stage: 'source',
+          outcome: 'failed',
+          reason: 'invalid_source',
+          dispatched: false,
+        },
+        {
+          attempt: 2,
+          stage: 'advice',
+          outcome: 'failed',
+          reason: 'length',
+          dispatched: true,
+        },
+      ],
+    }
     const docs = {
       status: 'used',
       attempted: 4,
@@ -91,10 +118,23 @@ test('combined cost estimates use both provider rates and withhold totals for mi
     }
     fs.writeFileSync(
       toolsPath,
-      JSON.stringify({ schema: 'ocr-review-tools/v1', docs })
+      JSON.stringify({ schema: 'ocr-review-tools/v1', ...advisor, docs })
     )
     let result = run()
     assert.equal(result.status, 0, result.stderr)
+    const advisorLine = result.stdout
+      .split('\n')
+      .find((line) => line.startsWith('OCR advisor '))
+    assert.match(advisorLine, /attempted=2 dispatched=1 completed=0 failed=2/)
+    assert.deepEqual(
+      JSON.parse(advisorLine.split('attempt_outcomes=')[1]),
+      advisor.attempt_outcomes
+    )
+    assert.ok(
+      fs
+        .readFileSync(path.join(directory, 'summary.md'), 'utf8')
+        .includes(advisorLine)
+    )
     assert.match(
       result.stdout,
       /OCR docs status=used usage_status=partial .*unknown_usage=1 .*pro_overage_reference_usd=0.0200/
@@ -103,6 +143,36 @@ test('combined cost estimates use both provider rates and withhold totals for mi
       result.stdout,
       /last_failure=http_error last_failure_http_status=401/
     )
+    fs.writeFileSync(
+      toolsPath,
+      JSON.stringify({
+        schema: 'ocr-review-tools/v1',
+        ...advisor,
+        attempt_outcomes: advisor.attempt_outcomes.map((item) => ({
+          ...item,
+          source: 'PRIVATE_SENTINEL',
+        })),
+        docs,
+      })
+    )
+    const extra = run()
+    assert.equal(extra.status, 0, extra.stderr)
+    assert.doesNotMatch(extra.stdout, /PRIVATE_SENTINEL/)
+    fs.writeFileSync(
+      toolsPath,
+      JSON.stringify({
+        schema: 'ocr-review-tools/v1',
+        ...advisor,
+        attempt_outcomes: [
+          { ...advisor.attempt_outcomes[0], reason: 'PRIVATE_SENTINEL' },
+        ],
+        docs,
+      })
+    )
+    const malformed = run()
+    assert.equal(malformed.status, 0, malformed.stderr)
+    assert.match(malformed.stdout, /attempt_outcomes=unknown/)
+    assert.doesNotMatch(malformed.stdout, /PRIVATE_SENTINEL/)
     for (const failure of [
       {
         last_failure: 'PRIVATE_SENTINEL',
@@ -122,6 +192,10 @@ test('combined cost estimates use both provider rates and withhold totals for mi
       assert.match(
         unknown.stdout,
         /last_failure=unknown last_failure_http_status=unknown/
+      )
+      assert.match(
+        unknown.stdout,
+        /dispatched=unknown .*attempt_outcomes=unknown/
       )
       assert.doesNotMatch(unknown.stdout, /PRIVATE_SENTINEL/)
     }
@@ -322,6 +396,18 @@ process.exitCode=7
       'PRIVATE_SENTINEL'
     )
     assert.equal(outcome.coverage.observed_status, 'partial')
+    const tools = JSON.parse(
+      fs.readFileSync(
+        path.join(directory, 'draft-ai-review-tools.json'),
+        'utf8'
+      )
+    )
+    const advisorLine = logs.find((line) => line.startsWith('OCR advisor '))
+    assert.match(advisorLine, new RegExp(`dispatched=${tools.dispatched} `))
+    assert.deepEqual(
+      JSON.parse(advisorLine.split('attempt_outcomes=')[1]),
+      tools.attempt_outcomes
+    )
   } finally {
     if (previous === undefined) delete process.env.GITHUB_TOKEN
     else process.env.GITHUB_TOKEN = previous

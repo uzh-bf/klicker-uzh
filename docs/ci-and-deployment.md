@@ -403,9 +403,17 @@ Shard durations differ by architecture, so `playwright/timings.json` names the a
   ordinary source review available with an explicit unavailable status. Provider
   keys stay in trusted adapter instances; the OCR child receives only local
   capabilities and no publication token. Sanitized seven-day receipts report
-  registration, actual consultations and provider usage. Draft and advisor costs
-  use separate provider rates; a combined estimate is unavailable when either
-  expected usage receipt is incomplete. Advisor usage has its own quota and does
+  registration, actual consultations and provider usage. Advisor receipts and
+  job summaries also retain local dispatch counts and up to two attempt outcomes
+  with fixed stages and sanitized reasons. A local dispatch is not evidence of a
+  provider request. Deadline labels distinguish timer expiry from client
+  cancellation while preserving existing client errors and counters. Older
+  receipts report unknown outcome details. Tool discovery describes the complete
+  16 KiB serialized request bound, including overhead, the 256 KiB source-file
+  bound and each range's 120-line/8 KiB bound; prefer minimal sufficient ranges.
+  Bracket paths such as Next.js dynamic routes retain the same immutable-source
+  and traversal checks. Draft and advisor costs use separate provider rates; a
+  combined estimate is unavailable when either expected usage receipt is incomplete. Advisor usage has its own quota and does
   not change OCR's existing token accounting. This adds Mistral provider usage
   to draft review; source configuration becomes active only after merge.
 - **Public library documentation**: `lookup_library_docs` uses Context7's

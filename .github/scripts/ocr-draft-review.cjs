@@ -26,6 +26,76 @@ function summarizeCoverage(result) {
   return buildOCRResultDiagnostic('draft', { result, status: result?.status })
 }
 
+function summarizeAdvisor(tools) {
+  const counters = [
+    'attempted',
+    'dispatched',
+    'completed',
+    'failed',
+    'rejected',
+    'cancelled',
+    'context_reads',
+  ]
+    .map(
+      (name) =>
+        `${name}=${Number.isSafeInteger(tools?.[name]) && tools[name] >= 0 ? tools[name] : 'unknown'}`
+    )
+    .join(' ')
+  const stages = [
+    'availability',
+    'question',
+    'source',
+    'request',
+    'dispatch',
+    'response',
+    'advice',
+  ]
+  const reasons = [
+    'invalid_source',
+    'invalid_range',
+    'source_unavailable',
+    'context_too_large',
+    'invalid_question',
+    'advisor_unavailable',
+    'invalid_advice',
+    'invalid_evidence',
+    'transport_error',
+    'invalid_response',
+    'response_too_large',
+    'length',
+    'timeout',
+    'cancelled',
+    'tool_failed',
+  ]
+  const outcomes = tools?.attempt_outcomes
+  const valid =
+    Array.isArray(outcomes) &&
+    outcomes.length <= 2 &&
+    outcomes.every(
+      (item, index) =>
+        item?.attempt === index + 1 &&
+        stages.includes(item.stage) &&
+        ['running', 'completed', 'failed'].includes(item.outcome) &&
+        (item.reason === null || reasons.includes(item.reason)) &&
+        typeof item.dispatched === 'boolean'
+    )
+  const attempts = valid
+    ? JSON.stringify(
+        outcomes.map(({ attempt, stage, outcome, reason, dispatched }) => ({
+          attempt,
+          stage,
+          outcome,
+          reason,
+          dispatched,
+        }))
+      )
+    : 'unknown'
+  const status = ['unavailable', 'unused', 'consulted'].includes(tools?.status)
+    ? tools.status
+    : 'unavailable'
+  return `OCR advisor status=${status} registered=${tools?.registered === true} ${counters} attempt_outcomes=${attempts}`
+}
+
 function summarizeDocs(docs) {
   const counters = [
     'attempted',
@@ -171,6 +241,8 @@ async function runDraftReview(options) {
     status: 'unavailable',
     registered: false,
     attempted: 0,
+    dispatched: 0,
+    attempt_outcomes: [],
     completed: 0,
     failed: 0,
     rejected: 0,
@@ -480,10 +552,7 @@ async function runDraftReview(options) {
       toolsState = tools.diagnostics()
       toolReceipt(toolsState)
     }
-    appendSummary(
-      `OCR advisor status=${toolsState.status} registered=${Boolean(toolsState.registered)} attempted=${toolsState.attempted} completed=${toolsState.completed} failed=${toolsState.failed} rejected=${toolsState.rejected} context_reads=${toolsState.context_reads}`,
-      write
-    )
+    appendSummary(summarizeAdvisor(toolsState), write)
     appendSummary(summarizeDocs(toolsState.docs), write)
     await advisor?.close()
     await adapter?.close()
@@ -561,15 +630,19 @@ function summarizeCosts(temp) {
     `\nCombined DeepSeek draft and ${MISTRAL_MODEL} advisor reference estimate:\n\n${line}\n\nAdvisor provider usage has its own quota and does not change OCR token accounting.`,
     (text) => process.stdout.write(text)
   )
-  let docs
+  let docs, tools
   try {
-    const tools = JSON.parse(
+    const receipt = JSON.parse(
       fs.readFileSync(path.join(temp, 'draft-ai-review-tools.json'), 'utf8')
     )
-    if (tools.schema === 'ocr-review-tools/v1') docs = tools.docs
+    if (receipt.schema === 'ocr-review-tools/v1') {
+      tools = receipt
+      docs = receipt.docs
+    }
   } catch {
     /* Missing service usage is unknown, not zero. */
   }
+  appendSummary(summarizeAdvisor(tools), (text) => process.stdout.write(text))
   appendSummary(
     `${summarizeDocs(docs)}\nContext7 reference pricing excludes subscriptions, included allowances and model tokens. Actual service billing is unknown; the draft_and_advisor model total excludes this service.`,
     (text) => process.stdout.write(text)
