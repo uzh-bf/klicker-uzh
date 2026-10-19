@@ -821,10 +821,13 @@ write permission and a separate `APPLY PUBLIC PR RUNNER ROLES` confirmation.
 Neither role mode repairs group access or changes membership, registration or
 services. Both require the exact locked policy, complete API responses and
 ID/name agreement. Checks verify the complete desired custom-label sets.
-Apply also requires every runner idle, active runners online and held runners
-offline. It compares every prior custom-label set before any write, rechecks
+Apply initially requires every runner idle, active runners online and held
+runners offline. It compares every prior custom-label set before any write, rechecks
 group policy and the target's labels before each write, and verifies all desired
-sets again at completion. An API denial blocks the operation; it never grants
+sets again at completion. During the batch, every runner whose labels have not
+yet been verified must remain idle. Already-verified runners may start queued
+role-specific jobs while the remaining idle runners receive their labels. A busy
+unverified runner stops further writes. An API denial blocks the operation; it never grants
 permission to expand credentials.
 
 The map is an operator assertion about physical hosts and held services. GitHub

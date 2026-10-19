@@ -178,6 +178,12 @@ case "$endpoint" in
       fi
       busy=false
       [[ "$FAKE_SCENARIO" != 'roles-busy' || "$index" != 1 ]] || busy=true
+      if [[ -f "${FAKE_STATE}.labels-1" ]]; then
+        if [[ "$FAKE_SCENARIO" == 'roles-staged-busy' && "$index" == 1 ]] ||
+          [[ "$FAKE_SCENARIO" == 'roles-pending-busy' && "$index" == 2 ]]; then
+          busy=true
+        fi
+      fi
       printf '{"id":%s,"name":"public-pr-arm64-%02d","status":"%s","busy":%s}' "$index" "$index" "$status" "$busy"
     done
     printf ']}\n'

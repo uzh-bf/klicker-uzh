@@ -355,12 +355,15 @@ check_role_labels() {
 }
 
 require_idle_roles() {
-  jq -e 'all(.runners[]; .busy == false)' <<<"$RUNNERS_JSON" >/dev/null ||
-    die 'every pool runner must be idle; do not interrupt assigned jobs'
+  jq -e --argjson verified "${1:-[]}" '
+    all(.runners[]; . as $runner |
+      .busy == false or ($verified | index($runner.id)) != null)
+  ' <<<"$RUNNERS_JSON" >/dev/null ||
+    die 'every unverified pool runner must be idle; do not interrupt assigned jobs'
 }
 
 apply_role_labels() {
-  local id prior desired actual group_id=$GROUP_ID repository_id=$REPOSITORY_ID
+  local id prior desired actual verified='[]' group_id=$GROUP_ID repository_id=$REPOSITORY_ID
   require_idle_roles
   # Capture every complete prior set before the first API write.
   for id in $(jq -r '.runners[].id' <<<"$ROLE_MAP"); do
@@ -382,25 +385,26 @@ apply_role_labels() {
     load_live_state
     validate_runner_membership
     validate_role_targets
-    require_idle_roles
+    require_idle_roles "$verified"
     [[ "$GROUP_ID" == "$group_id" && "$REPOSITORY_ID" == "$repository_id" ]] || die 'policy target changed during role apply'
     prior=$(jq -c --argjson id "$id" '.runners[] | select(.id == $id) | .priorCustomLabels | sort' <<<"$ROLE_MAP")
     desired=$(jq -c --argjson id "$id" '.runners[] | select(.id == $id) | .desiredCustomLabels' <<<"$ROLE_MAP")
     actual=$(read_runner_labels "$id") || die 'pre-write label read failed'
     [[ "$actual" == "$prior" ]] || die 'concurrent label change detected; no further writes attempted'
-    [[ "$prior" != "$desired" ]] || continue
-    jq -nc --argjson runnerId "$id" '{phase:"write-started",runnerId:$runnerId}' >&3 || die 'receipt write failed'
-    github_api PUT "/orgs/${ORGANIZATION}/actions/runners/${id}/labels" \
-      --input - <<<"$(jq -nc --argjson labels "$desired" '{labels:$labels}')" >/dev/null ||
-      die 'label write failed or outcome unknown; no further writes attempted'
-    actual=$(read_runner_labels "$id") || die 'post-write label read failed'
-    [[ "$actual" == "$desired" ]] || die 'post-write labels differ; no further writes attempted'
-    jq -nc --argjson runnerId "$id" '{phase:"verified",runnerId:$runnerId}' >&3 || die 'receipt write failed'
+    if [[ "$prior" != "$desired" ]]; then
+      jq -nc --argjson runnerId "$id" '{phase:"write-started",runnerId:$runnerId}' >&3 || die 'receipt write failed'
+      github_api PUT "/orgs/${ORGANIZATION}/actions/runners/${id}/labels" \
+        --input - <<<"$(jq -nc --argjson labels "$desired" '{labels:$labels}')" >/dev/null ||
+        die 'label write failed or outcome unknown; no further writes attempted'
+      actual=$(read_runner_labels "$id") || die 'post-write label read failed'
+      [[ "$actual" == "$desired" ]] || die 'post-write labels differ; no further writes attempted'
+      jq -nc --argjson runnerId "$id" '{phase:"verified",runnerId:$runnerId}' >&3 || die 'receipt write failed'
+    fi
+    verified=$(jq -c --argjson id "$id" '. + [$id]' <<<"$verified")
   done
   load_live_state
   validate_runner_membership
   validate_role_targets
-  require_idle_roles
   [[ "$GROUP_ID" == "$group_id" && "$REPOSITORY_ID" == "$repository_id" ]] || die 'policy target changed during final readback'
   check_role_labels
   printf '{"phase":"complete","verified":true}\n' >&3 || die 'receipt completion failed'

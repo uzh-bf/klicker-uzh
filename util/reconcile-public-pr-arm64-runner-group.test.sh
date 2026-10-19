@@ -112,6 +112,9 @@ expect_role_apply() {
   fi
   # The unchanged map checks desired labels after application, without rewriting priors.
   run_policy "$scenario" --check-roles "${TEMP_DIR}/roles.json" >/dev/null
+  if [[ "$scenario" == 'roles-staged-busy' ]]; then
+    [[ -f "${ROLE_STATE}.labels-6" ]] || fail 'staged rollout stopped when a verified runner became busy'
+  fi
   unset ROLE_STATE
 }
 
@@ -153,7 +156,7 @@ expect_role_failures() {
   local scenario
   make_role_map
   for scenario in roles-policy-drift roles-denied roles-incomplete-membership roles-incomplete-labels roles-missing-platform roles-invalid-label-type roles-busy roles-stale-prior \
-    roles-concurrent roles-write-failure roles-readback-failure roles-readback-mismatch; do
+    roles-concurrent roles-write-failure roles-readback-failure roles-readback-mismatch roles-pending-busy; do
     ROLE_STATE="${TEMP_DIR}/${scenario}"
     if printf 'APPLY PUBLIC PR RUNNER ROLES\n' |
       run_policy "$scenario" --apply-roles "${TEMP_DIR}/roles.json" --receipt "${ROLE_STATE}.receipt" >"${ROLE_STATE}.out" 2>&1; then
@@ -165,6 +168,9 @@ expect_role_failures() {
         fail "${scenario} did not record the unverified recovery state"
       [[ -f "${ROLE_STATE}.labels-1" ]] || fail "${scenario} did not exercise a partial batch"
       [[ ! -f "${ROLE_STATE}.labels-5" ]] || fail "${scenario} continued after an unsafe write"
+      if [[ "$scenario" == 'roles-pending-busy' ]]; then
+        [[ ! -f "${ROLE_STATE}.labels-2" ]] || fail 'busy pending runner labels were changed'
+      fi
     elif grep -Eq '^(PUT|PATCH|POST|DELETE) ' "${ROLE_STATE}.calls"; then
       fail "${scenario} wrote labels before prior-state validation"
     fi
@@ -229,6 +235,7 @@ main() {
   expect_role_check
   expect_role_apply
   expect_role_apply roles-custom-platform
+  expect_role_apply roles-staged-busy
   expect_role_map_rejection
   expect_role_failures
   printf 'PASS: runner-group policy reconciliation\n'
