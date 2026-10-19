@@ -14,15 +14,12 @@ function Course() {
   const t = useTranslations()
   const router = useRouter()
 
-  const { loading, error, data } = useQuery(
-    GetControlCourseLiveQuizzesDocument,
-    {
-      variables: { courseId: router.query.id as string },
-      // quizzes are started and ended on other screens; revalidate on visit
-      fetchPolicy: 'cache-and-network',
-      skip: !router.query.id,
-    }
-  )
+  const { loading, data } = useQuery(GetControlCourseLiveQuizzesDocument, {
+    variables: { courseId: router.query.id as string },
+    // quizzes are started and ended on other screens; revalidate on visit
+    fetchPolicy: 'cache-and-network',
+    skip: !router.query.id,
+  })
 
   useEffect(() => {
     if (data && !data.controlCourse) {
@@ -43,7 +40,8 @@ function Course() {
     )
   }
 
-  if (!data?.controlCourse || error) {
+  // a failed background refetch keeps the cached course visible
+  if (!data?.controlCourse) {
     return (
       <Layout
         title={fallbackTitle}

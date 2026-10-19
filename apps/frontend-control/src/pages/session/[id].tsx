@@ -15,15 +15,17 @@ import {
   GetControlLiveQuizEvaluationDocument,
   GetControlLiveQuizFeedbacksDocument,
   GetControlLiveQuizSessionDocument,
+  GetControlLiveQuizStatusDocument,
   GetUnassignedControlLiveQuizzesDocument,
   GetUserRunningLiveQuizzesDocument,
+  PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, toast, UserNotification } from '@uzh-bf/design-system'
 import type { GetStaticPropsContext } from 'next'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { sort } from 'remeda'
 import ResponsiveSheet from '../../components/common/ResponsiveSheet'
 import {
@@ -73,13 +75,38 @@ function RunningLiveQuiz() {
     skip: !quizId || !!ended,
   })
 
+  // the session query only returns running quizzes; when it comes back empty
+  // (e.g. after a reload once the quiz was ended), look up whether it ended
+  const sessionMissing =
+    !!quizId && !ended && !loading && !data?.controlLiveQuiz
+  const { data: statusData } = useQuery(GetControlLiveQuizStatusDocument, {
+    variables: { id: quizId },
+    skip: !sessionMissing,
+  })
+  const endedQuiz =
+    statusData?.liveQuiz?.status === PublicationStatus.Ended
+      ? statusData.liveQuiz
+      : null
+
   // polled on both tabs so the Q&A tab can show the pending counter
-  const { data: qaData } = useQuery(GetControlLiveQuizFeedbacksDocument, {
+  const {
+    data: qaData,
+    startPolling: startQaPolling,
+    stopPolling: stopQaPolling,
+  } = useQuery(GetControlLiveQuizFeedbacksDocument, {
     variables: { id: quizId },
     pollInterval: 3000,
     skip: !quizId || !!ended,
   })
   const qa = qaData?.controlLiveQuizFeedbacks
+  // no need to poll while Q&A is off and has no questions; enabling Q&A in
+  // the panel refetches this query, which resumes polling
+  const qaPaused =
+    !!qa && !qa.isLiveQAEnabled && (qa.feedbacks?.length ?? 0) === 0
+  useEffect(() => {
+    if (qaPaused) stopQaPolling()
+    else startQaPolling(3000)
+  }, [qaPaused, startQaPolling, stopQaPolling])
   const pendingQuestions = qa?.isModerationEnabled
     ? (qa.feedbacks ?? []).filter(
         (feedback) => !feedback.isPublished && !feedback.isResolved
@@ -124,13 +151,26 @@ function RunningLiveQuiz() {
     }
   }
 
-  if (ended) {
+  const endedState =
+    ended ??
+    (endedQuiz
+      ? {
+          name: endedQuiz.name,
+          numOfBlocks: endedQuiz.blocks?.length ?? 0,
+          backHref: endedQuiz.course
+            ? `/course/${endedQuiz.course.id}`
+            : '/course/unassigned',
+        }
+      : null)
+  if (endedState) {
     return (
       <Layout
         title={t('control.liveQuiz.ended')}
-        header={<AppBar title={ended.name} backHref={ended.backHref} />}
+        header={
+          <AppBar title={endedState.name} backHref={endedState.backHref} />
+        }
       >
-        <QuizEnded {...ended} />
+        <QuizEnded {...endedState} />
       </Layout>
     )
   }
@@ -311,7 +351,7 @@ function RunningLiveQuiz() {
           {/* bottom padding keeps content clear of the fixed action bar on phones */}
           {/* one grid item per card (no duplicated test hooks): phones stack them,
           from 720px status + evaluation sit left, action + Leinwand right */}
-          <div className="mt-4 grid grid-cols-[minmax(0,1fr)] items-start gap-4 pb-20 min-[720px]:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] min-[720px]:pb-0">
+          <div className="mt-4 grid grid-cols-[minmax(0,1fr)] items-start gap-4 pb-[calc(5rem_+_env(safe-area-inset-bottom))] min-[720px]:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] min-[720px]:pb-0">
             <div className="flex min-w-0 flex-col gap-3 min-[720px]:row-span-2">
               <BlockStatusCard
                 quizId={id}
@@ -333,7 +373,7 @@ function RunningLiveQuiz() {
               )}
             </div>
             {/* fixed bottom bar on phones, sticky right column from 720px */}
-            <div className="border-ctrl-border fixed inset-x-0 bottom-0 z-10 border-t bg-white p-4 min-[720px]:sticky min-[720px]:top-[72px] min-[720px]:z-auto min-[720px]:col-start-2 min-[720px]:row-start-1 min-[720px]:border-0 min-[720px]:bg-transparent min-[720px]:p-0">
+            <div className="border-ctrl-border fixed inset-x-0 bottom-0 z-10 border-t bg-white p-4 pb-[calc(1rem_+_env(safe-area-inset-bottom))] min-[720px]:sticky min-[720px]:top-[72px] min-[720px]:z-auto min-[720px]:col-start-2 min-[720px]:row-start-1 min-[720px]:border-0 min-[720px]:bg-transparent min-[720px]:p-0">
               {mainAction}
             </div>
             {evaluationBlock && (

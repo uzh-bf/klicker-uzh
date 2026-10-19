@@ -11,10 +11,9 @@ import LiveQuizList from '../../components/liveQuizzes/LiveQuizList'
 function UnassignedLiveQuizzes() {
   const t = useTranslations()
   // quizzes are started and ended on other screens; revalidate on every visit
-  const { data, loading, error } = useQuery(
-    GetUnassignedControlLiveQuizzesDocument,
-    { fetchPolicy: 'cache-and-network' }
-  )
+  const { data, loading } = useQuery(GetUnassignedControlLiveQuizzesDocument, {
+    fetchPolicy: 'cache-and-network',
+  })
 
   const title = t('control.home.noCourse')
   const header = <AppBar title={title} backHref="/" />
@@ -27,7 +26,8 @@ function UnassignedLiveQuizzes() {
     )
   }
 
-  if (error || !data) {
+  // a failed background refetch keeps the cached list visible
+  if (!data) {
     return (
       <Layout title={title} header={header}>
         <UserNotification
