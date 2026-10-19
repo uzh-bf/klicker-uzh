@@ -63,6 +63,9 @@ function fakeTransport(script) {
       if (script.onListRuns) return script.onListRuns(workflowFile, headSha)
       return (script.runs ? script.runs(workflowFile) : []) || []
     },
+    async listJobs(runId, attempt) {
+      return script.jobs ? script.jobs(runId, attempt) : []
+    },
     async listArtifacts(runId) {
       const artifacts =
         typeof script.artifacts === 'function'
@@ -442,6 +445,99 @@ describe('resolveProducers', () => {
     )
   })
 
+  it('imports completed producer jobs while both analysis hosts are still running', async () => {
+    const transport = fakeTransport({
+      onListRuns: (file) => [
+        completedRun({
+          id: file === 'test-unit.yml' ? 11 : 12,
+          status: 'in_progress',
+          conclusion: null,
+          run_attempt: 2,
+        }),
+      ],
+      jobs: (id, attempt) => {
+        assert.equal(attempt, 2)
+        return [
+          {
+            name: id === 11 ? 'test-unit-status' : 'test-graphql-status',
+            status: 'completed',
+            conclusion: 'success',
+          },
+        ]
+      },
+      artifacts: [COVERAGE_ARTIFACT],
+      evidence: EVIDENCE_RUN,
+      receipt: RECEIPT,
+    })
+    const resolved = await resolveProducers(
+      transport,
+      [UNIT_WORKFLOW, GRAPHQL_WORKFLOW],
+      EXPECTED_TREE.headSha
+    )
+    assert.deepEqual(
+      resolved.map((entry) => entry.pending),
+      [false, false]
+    )
+    const result = await importCoverage(coverageInputs({ transport, resolved }))
+    assert.equal(result.lcovPaths.length, 2)
+    assert.deepEqual(summarizeFailures(result.results), [])
+  })
+
+  it('keeps unfinished, missing and ambiguous producer jobs pending', async () => {
+    for (const jobs of [
+      [],
+      [{ name: 'test-unit-status', status: 'in_progress' }],
+      [{ name: 'test-unit-status', status: 'completed', conclusion: null }],
+      Array(2).fill({
+        name: 'test-unit-status',
+        status: 'completed',
+        conclusion: 'success',
+      }),
+    ]) {
+      const transport = fakeTransport({
+        runs: () => [completedRun({ status: 'in_progress', conclusion: null })],
+        jobs: () => jobs,
+      })
+      const resolved = await resolveProducers(
+        transport,
+        [UNIT_WORKFLOW],
+        EXPECTED_TREE.headSha
+      )
+      assert.equal(resolved[0].pending, true)
+    }
+  })
+
+  it('does not import a failed terminal producer job or a foreign tested tree', async () => {
+    for (const [conclusion, receipt, expected] of [
+      ['failure', RECEIPT, REASON.producerFailed],
+      [
+        'success',
+        { ...RECEIPT, headSha: 'other-head' },
+        REASON.receiptMismatch,
+      ],
+    ]) {
+      const transport = fakeTransport({
+        runs: () => [completedRun({ status: 'in_progress', conclusion: null })],
+        jobs: () => [
+          { name: 'test-unit-status', status: 'completed', conclusion },
+        ],
+        artifacts: [COVERAGE_ARTIFACT],
+        evidence: EVIDENCE_RUN,
+        receipt,
+      })
+      const resolved = await resolveProducers(
+        transport,
+        [UNIT_WORKFLOW],
+        EXPECTED_TREE.headSha
+      )
+      const result = await importCoverage(
+        coverageInputs({ transport, resolved })
+      )
+      assert.equal(result.results[0].state, expected)
+      assert.deepEqual(result.lcovPaths, [])
+    }
+  })
+
   it('treats a producer without a run as pending', async () => {
     const transport = fakeTransport({ runs: () => [] })
     const resolved = await resolveProducers(
@@ -616,7 +712,7 @@ describe('findPublishedAnalysis', () => {
     assert.equal(await findPublishedAnalysis(lookup(transport)), null)
   })
 
-  it('ignores a run that has not completed', async () => {
+  it('falls back to analysis when an unfinished run receipt is unreadable', async () => {
     const transport = {
       async listRuns() {
         return [{ id: 31, run_number: 2, status: 'in_progress' }]
@@ -624,7 +720,42 @@ describe('findPublishedAnalysis', () => {
       async listArtifacts() {
         return [{ name: receiptName }]
       },
+      async readJsonArtifact() {
+        throw new Error('unreadable synthetic receipt')
+      },
     }
+    assert.equal(await findPublishedAnalysis(lookup(transport)), null)
+  })
+
+  it('recognizes a successful scan receipt before its host workflow finishes', async () => {
+    const transport = {
+      async listRuns() {
+        return [
+          { id: 31, run_number: 2, run_attempt: 2, status: 'in_progress' },
+        ]
+      },
+      async listArtifacts() {
+        return [{ name: receiptName }]
+      },
+      async readJsonArtifact() {
+        return {
+          headSha: EXPECTED_TREE.headSha,
+          baseSha: EXPECTED_TREE.baseSha,
+          runId: 31,
+          runAttempt: 2,
+        }
+      },
+    }
+    assert.deepEqual(await findPublishedAnalysis(lookup(transport)), {
+      runId: 31,
+      name: receiptName,
+    })
+    transport.readJsonArtifact = async () => ({
+      headSha: EXPECTED_TREE.headSha,
+      baseSha: EXPECTED_TREE.baseSha,
+      runId: 31,
+      runAttempt: 1,
+    })
     assert.equal(await findPublishedAnalysis(lookup(transport)), null)
   })
 
