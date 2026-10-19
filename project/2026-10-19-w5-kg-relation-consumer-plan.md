@@ -261,10 +261,26 @@ instead of a test.
 
 ## Progress
 
-- Status: plan drafted; awaiting approval.
+- Status: S1 and S2 done; final review passed with no findings. Screenshots
+  and the seeder extension are blocked: the devrouter runtime cannot start
+  ("all predefined address pools have been fully subnetted").
 - Worktree: `trees/rs/w5-kg-relation-consumer` on `rs/w5-kg-relation-consumer`
   from `origin/v3-ai` `cf240ddb1e`.
-- Next action: on approval, commit this plan, then S1.
+- Deviations: S1 ran in the main session instead of an executor (the design
+  context was already loaded). Views show the relation-type label only when
+  `edge.label` falls back to `edge.type`, so explicit edge labels keep showing.
+  Checks ran on the host as the brief's fallback, and the worktree had no Git
+  hooks, so they replace the pre-commit run.
+- Evidence: knowledge-graph Vitest 98 passed, 2 skipped; chat graph tests 73
+  passed; `tsc` green for knowledge-graph, graphql, kb-management, chat and
+  shared-components; Biome and Prettier clean on changed files.
+- Test delta: added the fixture contract, fail-closed and evidence-bound
+  tests plus an ask-selection assertion; changed edge literals and the route
+  leak assertion.
+- Simplifier: accepted dropping the redundant `related` vocabulary entry;
+  kept the 20-resource cap the plan names.
+- Next action: screenshots once a runtime is available, then hosted CI and
+  `/final-review`.
 
 ## Planning review
 

@@ -16,18 +16,17 @@ const KNOWLEDGE_GRAPH_EDGE_PROPERTY_MAX_LENGTH = 500
 const EVIDENCE_RESOURCE_LIMIT = 20
 const EVIDENCE_PAGE_LIMIT = 50
 
-// Relation vocabulary of the kg-relations/v1 contract (Catalyst ADR
-// knowledge-graph/0001). Anything outside it reads as an untyped relation.
-const RELATION_TYPES: ReadonlySet<string> = new Set<KnowledgeGraphRelationType>(
-  [
+// Typed relations of the kg-relations/v1 contract (Catalyst ADR
+// knowledge-graph/0001). Anything else, including `related`, reads as an
+// untyped relation.
+const TYPED_RELATION_TYPES: ReadonlySet<string> =
+  new Set<KnowledgeGraphRelationType>([
     'prerequisite_of',
     'part_of',
     'example_of',
     'applies_to',
     'contrasts_with',
-    'related',
-  ]
-)
+  ])
 // `extracted` belongs to untyped relations only, and `instructor` stays
 // unknown until lecturer-confirmed types exist.
 const TYPED_RELATION_STATUSES: ReadonlySet<string> =
@@ -256,9 +255,8 @@ function relation(properties: Properties): {
   if (
     typeof type !== 'string' ||
     typeof status !== 'string' ||
-    !RELATION_TYPES.has(type) ||
+    !TYPED_RELATION_TYPES.has(type) ||
     !TYPED_RELATION_STATUSES.has(status) ||
-    type === 'related' ||
     // A prerequisite is a pedagogical judgement and is never `source`; a
     // build that claims otherwise breaks the contract.
     (type === 'prerequisite_of' && status === 'source')
