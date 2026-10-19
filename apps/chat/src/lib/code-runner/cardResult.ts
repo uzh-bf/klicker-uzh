@@ -1,8 +1,5 @@
-import {
-  type CodeProfile,
-  isCodeProfile,
-  MAX_STARTER_CODE_LENGTH,
-} from './profiles'
+import { type CodeProfile, isCodeProfile } from '@klicker-uzh/code-runner'
+import { MAX_STARTER_CODE_LENGTH } from './profiles'
 
 export interface CodeCardResult {
   profile: CodeProfile

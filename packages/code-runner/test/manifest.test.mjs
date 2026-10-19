@@ -6,7 +6,7 @@ import {
   runnerDocument,
   sha256,
 } from '../scripts/code-runtimes.mjs'
-import { RUNNER_DOCUMENTS as DOCUMENTS_BY_PROFILE } from '../src/lib/code-runner/manifest'
+import { RUNNER_DOCUMENTS as DOCUMENTS_BY_PROFILE } from '../src/manifest'
 
 // Synthetic two-profile source set; the reader maps fake paths to bytes.
 const bytes = {

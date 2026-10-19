@@ -1,8 +1,8 @@
+import type { CodeProfile } from '@klicker-uzh/code-runner'
 import { type ToolSet, tool } from 'ai'
 import { z } from 'zod'
 import {
   CODE_CARD_TOOL_NAME,
-  type CodeProfile,
   MAX_STARTER_CODE_LENGTH,
 } from '@/src/lib/code-runner/profiles'
 

@@ -1,9 +1,7 @@
+import { CODE_PROFILES } from '@klicker-uzh/code-runner'
+import { CODE_RUNTIME_MANIFEST as runtimeManifest } from '@klicker-uzh/code-runner/serving'
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import {
-  CODE_PROFILES,
-  normalizeCodeExecutionConfig,
-} from '@/src/lib/code-runner/profiles'
-import runtimeManifest from '@/src/lib/code-runner/runtime-manifest.json'
+import { normalizeCodeExecutionConfig } from '@/src/lib/code-runner/profiles'
 import { parseModeOptions } from '@/src/lib/config/modes'
 import { withCodeCardTool } from '@/src/lib/server/codeCardTool'
 import { resolveEffectiveChatModeOptions } from '@/src/lib/server/effectiveChatModes'

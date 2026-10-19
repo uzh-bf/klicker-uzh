@@ -1,14 +1,11 @@
 import { describe, expect, test } from 'vitest'
-import {
-  detectBrowserEngine,
-  isCodeExecutionSupported,
-} from '@/src/lib/code-runner/engine'
+import { detectBrowserEngine, isCodeExecutionSupported } from '../src/engine'
 import {
   hostResult,
   MAX_RUNNER_MESSAGE_CHARS,
   parseRunnerMessage,
   RUNNER_OUTPUT_CAP,
-} from '@/src/lib/code-runner/protocol'
+} from '../src/protocol'
 
 const expected = { generation: 3, attemptId: 'attempt-3' }
 const result = {

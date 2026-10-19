@@ -7,6 +7,7 @@
 @source "../../node_modules/@uzh-bf/design-system/src";
 @source "../../../../packages/shared-components/src";
 @source "../../../../packages/markdown/src";
+@source "../../../../packages/code-runner/src";
 
 @theme inline {
   /* UZH fonts */

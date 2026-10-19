@@ -28,7 +28,8 @@ import { enMessages } from '../util/messages.js'
  * kill switch on, and each test admits profiles through the chatbot policy.
  */
 
-const copy = enMessages.chat.codeCard
+const copy = enMessages.shared.codeRunner
+const cardCopy = enMessages.chat.codeCard
 const BOTH_PROFILES = { modes: { tutor: ['python-core', 'r-base'] } }
 
 type Profile = 'python-core' | 'r-base'
@@ -188,14 +189,14 @@ test.describe('Chat code card', () => {
 
       await editor.fill('print(6 * 7)')
       await runAndWait(page)
-      await expect(card.getByTestId('code-card-status')).toHaveText(
+      await expect(card.getByTestId('code-runner-status')).toHaveText(
         copy.status.ok
       )
-      await expect(card.getByTestId('code-card-output')).toContainText('42')
+      await expect(card.getByTestId('code-runner-output')).toContainText('42')
 
       await card.getByRole('button', { name: copy.reset }).click()
       await expect(editor).toHaveValue('print("starter")')
-      await expect(card.getByTestId('code-card-output')).toHaveCount(0)
+      await expect(card.getByTestId('code-runner-output')).toHaveCount(0)
     })
 
     test('runs R and reports R errors truthfully', async ({ page }) => {
@@ -205,19 +206,19 @@ test.describe('Chat code card', () => {
         'cat(mean(c(1, 2, 3)))'
       )
       await runAndWait(page)
-      await expect(card.getByTestId('code-card-status')).toHaveText(
+      await expect(card.getByTestId('code-runner-status')).toHaveText(
         copy.status.ok
       )
-      await expect(card.getByTestId('code-card-output')).toContainText('2')
+      await expect(card.getByTestId('code-runner-output')).toContainText('2')
 
       await card
         .getByRole('textbox')
         .fill('cat("before failure\\n")\nstop("synthetic failure")')
       await runAndWait(page)
-      await expect(card.getByTestId('code-card-status')).toHaveText(
+      await expect(card.getByTestId('code-runner-status')).toHaveText(
         copy.status.error
       )
-      const output = card.getByTestId('code-card-output')
+      const output = card.getByTestId('code-runner-output')
       await expect(output).toContainText('before failure')
       await expect(output).toContainText('synthetic failure')
     })
@@ -232,12 +233,12 @@ test.describe('Chat code card', () => {
       )
       const runners = page.locator('iframe[title="Code runner"]')
       await card.getByRole('button', { name: copy.run }).click()
-      await expect(card.getByTestId('code-card-status')).toHaveText(
+      await expect(card.getByTestId('code-runner-status')).toHaveText(
         copy.running,
         { timeout: 90_000 }
       )
       await card.getByRole('button', { name: copy.stop }).click()
-      await expect(card.getByTestId('code-card-status')).toHaveText(
+      await expect(card.getByTestId('code-runner-status')).toHaveText(
         copy.status.stopped
       )
       await expect(runners).toHaveCount(0)
@@ -246,7 +247,7 @@ test.describe('Chat code card', () => {
         .getByRole('textbox')
         .fill('print("state:", globals().get("counter"))')
       await runAndWait(page)
-      await expect(card.getByTestId('code-card-output')).toContainText(
+      await expect(card.getByTestId('code-runner-output')).toContainText(
         'state: None'
       )
       await expect(runners).toHaveCount(0)
@@ -260,7 +261,7 @@ test.describe('Chat code card', () => {
         'while True:\n    pass'
       )
       await runAndWait(page, 120_000)
-      await expect(card.getByTestId('code-card-status')).toHaveText(
+      await expect(card.getByTestId('code-runner-status')).toHaveText(
         copy.status.timeout
       )
     })
@@ -274,7 +275,7 @@ test.describe('Chat code card', () => {
         'import sys\nfor i in range(200000):\n    print("line", i, "\\x01\\"")\n    print("\\x02", file=sys.stderr)'
       )
       await runAndWait(page)
-      await expect(card.getByTestId('code-card-status')).toHaveText(
+      await expect(card.getByTestId('code-runner-status')).toHaveText(
         copy.status.ok
       )
       await expect(card.getByText(copy.truncated)).toBeVisible()
@@ -325,7 +326,7 @@ test.describe('Chat code card', () => {
         ].join('\n')
         const card = await openCardFromAssistant(page, 'python-core', probe)
         await runAndWait(page)
-        await expect(card.getByTestId('code-card-output')).toContainText(
+        await expect(card.getByTestId('code-runner-output')).toContainText(
           'probe finished'
         )
         // Chromium reports blocked worker requests as policy violations.
@@ -375,7 +376,7 @@ test.describe('Chat code card', () => {
       const card = frame.getByTestId('code-card')
       await expect(card).toBeVisible()
       await card.getByRole('button', { name: copy.run }).click()
-      await expect(card.getByTestId('code-card-output')).toContainText(
+      await expect(card.getByTestId('code-runner-output')).toContainText(
         'from the frame',
         { timeout: 90_000 }
       )
@@ -435,7 +436,7 @@ test.describe('Chat code card', () => {
       const card = page.getByTestId('code-card')
       await expect(card.getByRole('button', { name: copy.run })).toBeEnabled()
       await runAndWait(page)
-      await expect(card.getByTestId('code-card-output')).toContainText('42')
+      await expect(card.getByTestId('code-runner-output')).toContainText('42')
     })
 
     test('keeps the starter code after a reload but not the edits', async ({
@@ -466,7 +467,7 @@ test.describe('Chat code card', () => {
       await setCodeExecutionPolicy({ modes: { tutor: ['python-core'] } })
       await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`)
       const card = page.getByTestId('code-card')
-      await expect(card.getByText(copy.notAdmitted)).toBeVisible()
+      await expect(card.getByText(cardCopy.notAdmitted)).toBeVisible()
       await expect(card.getByRole('button', { name: copy.run })).toBeDisabled()
     })
 

@@ -1,19 +1,10 @@
-// Browser code runtime profiles. Shared by the server policy, the card tool
-// contract and the client card, so it must stay free of server-only imports.
+// Chat's browser code execution policy and card tool contract. Shared by the
+// server and the client card, so it must stay free of server-only imports.
+import { CODE_PROFILES, type CodeProfile } from '@klicker-uzh/code-runner'
+
 export const CODE_CARD_TOOL_NAME = 'open_code_card'
 
-export const CODE_PROFILES = ['python-core', 'r-base'] as const
-
-export type CodeProfile = (typeof CODE_PROFILES)[number]
-
 export const MAX_STARTER_CODE_LENGTH = 8000
-
-/** Upper bound for what a learner can type into the editor. */
-export const MAX_CODE_LENGTH = 50_000
-
-export function isCodeProfile(value: unknown): value is CodeProfile {
-  return (CODE_PROFILES as readonly unknown[]).includes(value)
-}
 
 /**
  * Reads the platform-owned `Chatbot.codeExecutionConfig` column. Anything

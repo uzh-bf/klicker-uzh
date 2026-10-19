@@ -445,33 +445,8 @@ export default {
     },
     codeCard: {
       title: 'Code-Spielwiese',
-      languages: {
-        python: 'Python',
-        r: 'R',
-      },
       opening: 'Code-Spielwiese wird geöffnet...',
       invalid: 'Diese Code-Spielwiese konnte nicht angezeigt werden.',
-      editorLabel: '{language}-Code',
-      run: 'Ausführen',
-      stop: 'Stoppen',
-      reset: 'Code zurücksetzen',
-      starting: '{language} wird gestartet...',
-      running: 'Wird ausgeführt...',
-      status: {
-        ok: 'Beendet',
-        error: 'Mit einem Fehler beendet',
-        timeout: 'Gestoppt: Das Zeitlimit wurde erreicht',
-        stopped: 'Gestoppt',
-        unavailable: 'Die Laufzeitumgebung ist nicht verfügbar',
-        unknown: 'Mit unbekanntem Status beendet',
-      },
-      output: 'Ausgabe',
-      errorOutput: 'Fehler',
-      noOutput: 'Keine Ausgabe.',
-      truncated: 'Die Ausgabe wurde gekürzt.',
-      blockedAccess: 'Netzwerkzugriff ist in der Spielwiese nicht verfügbar.',
-      unsupportedBrowser:
-        'Code kann in diesem Browser nicht ausgeführt werden. Verwende eine aktuelle Version von Chrome, Edge oder Safari.',
       notAdmitted: 'Code kann in diesem Chatmodus nicht ausgeführt werden.',
       localNote:
         'Der Code läuft nur in deinem Browser und wird nicht mit dem Assistenten geteilt. Deine Änderungen werden nicht gespeichert und gehen verloren, wenn du die Seite verlässt.',
@@ -508,6 +483,34 @@ export default {
     },
   },
   shared: {
+    codeRunner: {
+      languages: {
+        python: 'Python',
+        r: 'R',
+      },
+      editorLabel: '{language}-Code',
+      run: 'Ausführen',
+      stop: 'Stoppen',
+      reset: 'Code zurücksetzen',
+      starting: '{language} wird gestartet...',
+      running: 'Wird ausgeführt...',
+      status: {
+        ok: 'Beendet',
+        error: 'Mit einem Fehler beendet',
+        timeout: 'Gestoppt: Das Zeitlimit wurde erreicht',
+        stopped: 'Gestoppt',
+        unavailable: 'Die Laufzeitumgebung ist nicht verfügbar',
+        unknown: 'Mit unbekanntem Status beendet',
+      },
+      output: 'Ausgabe',
+      errorOutput: 'Fehler',
+      noOutput: 'Keine Ausgabe.',
+      truncated: 'Die Ausgabe wurde gekürzt.',
+      blockedAccess:
+        'Netzwerkzugriff ist beim Ausführen von Code nicht verfügbar.',
+      unsupportedBrowser:
+        'Code kann in diesem Browser nicht ausgeführt werden. Verwende eine aktuelle Version von Chrome, Edge oder Safari.',
+    },
     table: {
       download: 'Als CSV herunterladen',
       noResults: 'Keine Ergebnisse.',
