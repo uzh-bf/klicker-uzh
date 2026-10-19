@@ -52,6 +52,7 @@ import {
   nodeAskSelection,
   relationshipDisplayLabel,
   relationshipLabels,
+  SYMMETRIC_RELATION_TYPE,
 } from './knowledgeGraphView'
 
 type KnowledgeGraphViewerProps = {
@@ -1442,7 +1443,9 @@ export function KnowledgeGraphViewer({
                       >
                         <span className="block font-semibold">
                           {source}{' '}
-                          {edge.relationType === 'contrasts_with' ? '–' : '→'}{' '}
+                          {edge.relationType === SYMMETRIC_RELATION_TYPE
+                            ? '–'
+                            : '→'}{' '}
                           {target}
                         </span>
                         <span className="block text-[#4C4C4C]">

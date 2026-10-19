@@ -1,5 +1,6 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from '@klicker-uzh/types'
 import type cytoscape from 'cytoscape'
+import { SYMMETRIC_RELATION_TYPE } from './knowledgeGraphView'
 
 const UZH_KIND_STYLES = [
   {
@@ -79,7 +80,7 @@ export const CYTOSCAPE_STYLE: cytoscape.StylesheetJson = [
   },
   {
     // Symmetric relations have no direction to show.
-    selector: 'edge[relationType = "contrasts_with"]',
+    selector: `edge[relationType = "${SYMMETRIC_RELATION_TYPE}"]`,
     style: {
       'target-arrow-shape': 'none',
     },

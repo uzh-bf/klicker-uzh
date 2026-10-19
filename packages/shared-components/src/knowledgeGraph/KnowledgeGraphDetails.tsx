@@ -10,6 +10,7 @@ import type { KnowledgeGraphDetailsLabels } from './knowledgeGraphLabels'
 import {
   type KnowledgeGraphAskSelection,
   relationshipDisplayLabel,
+  SYMMETRIC_RELATION_TYPE,
 } from './knowledgeGraphView'
 
 const SIDEBAR_LAYOUT_CLASSES =
@@ -110,6 +111,44 @@ function SourceList({
         })}
       </ul>
     </section>
+  )
+}
+
+function EdgeEndpoints({
+  edge,
+  endpoints,
+  labels,
+}: {
+  edge: KnowledgeGraphEdge
+  endpoints: { source: string; target: string }
+  labels: KnowledgeGraphDetailsLabels
+}) {
+  if (edge.relationType === SYMMETRIC_RELATION_TYPE) {
+    return (
+      <div>
+        <dt className="font-semibold text-[#4C4C4C]">{labels.concepts}</dt>
+        <dd className="mt-0.5 break-words text-[#121212]">
+          {endpoints.source}, {endpoints.target}
+        </dd>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <div>
+        <dt className="font-semibold text-[#4C4C4C]">{labels.from}</dt>
+        <dd className="mt-0.5 break-words text-[#121212]">
+          {endpoints.source}
+        </dd>
+      </div>
+      <div>
+        <dt className="font-semibold text-[#4C4C4C]">{labels.to}</dt>
+        <dd className="mt-0.5 break-words text-[#121212]">
+          {endpoints.target}
+        </dd>
+      </div>
+    </>
   )
 }
 
@@ -247,35 +286,12 @@ export function KnowledgeGraphDetails({
         {edge === undefined ? null : (
           <div className="space-y-5">
             <dl className="grid grid-cols-1 gap-3 text-sm">
-              {edgeEndpoints === undefined ? null : edge.relationType ===
-                'contrasts_with' ? (
-                <div>
-                  <dt className="font-semibold text-[#4C4C4C]">
-                    {labels.concepts}
-                  </dt>
-                  <dd className="mt-0.5 break-words text-[#121212]">
-                    {edgeEndpoints.source}, {edgeEndpoints.target}
-                  </dd>
-                </div>
-              ) : (
-                <>
-                  <div>
-                    <dt className="font-semibold text-[#4C4C4C]">
-                      {labels.from}
-                    </dt>
-                    <dd className="mt-0.5 break-words text-[#121212]">
-                      {edgeEndpoints.source}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="font-semibold text-[#4C4C4C]">
-                      {labels.to}
-                    </dt>
-                    <dd className="mt-0.5 break-words text-[#121212]">
-                      {edgeEndpoints.target}
-                    </dd>
-                  </div>
-                </>
+              {edgeEndpoints === undefined ? null : (
+                <EdgeEndpoints
+                  edge={edge}
+                  endpoints={edgeEndpoints}
+                  labels={labels}
+                />
               )}
               <div>
                 <dt className="font-semibold text-[#4C4C4C]">{labels.type}</dt>
