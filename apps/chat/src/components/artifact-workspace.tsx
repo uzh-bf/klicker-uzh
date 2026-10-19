@@ -147,7 +147,11 @@ export function ArtifactWorkspaceProvider({
   // the previous thread stay mounted for one commit after the scope changes
   // and would register their artifacts into the new scope.
   const targetRef = useRef(target)
-  targetRef.current = target
+  // Layout effects run before the anchors' passive registration effects, so
+  // a new anchor always restores against the current target.
+  useLayoutEffect(() => {
+    targetRef.current = target
+  }, [target])
   const register = useCallback((artifact: Artifact) => {
     // Restoring at registration makes the saved edit the first value the
     // card renders, so the starter never overwrites it.
