@@ -21,10 +21,16 @@ on:
         value: ${{ jobs.prepare.outputs.duplicate_run_id }}
       should_run:
         description: Whether the canonical Playwright plan contains tests
-        value: ${{ jobs.prepare.outputs.should_run }}
+        value: ${{ (jobs.prepare.outputs.provider != 'warpbuild' || jobs.prepare.outputs.admission_attempt == format('{0}', github.run_attempt)) && jobs.prepare.outputs.should_run || 'false' }}
       route:
         description: Selected backend route
         value: ${{ jobs.prepare.outputs.route }}
+      provider:
+        description: Execution provider selected by trusted preparation
+        value: ${{ jobs.prepare.outputs.provider }}
+      admission_attempt:
+        description: Exact run attempt admitted for paid execution
+        value: ${{ jobs.prepare.outputs.admission_attempt }}
       mode:
         description: Canonical selector mode
         value: ${{ jobs.prepare.outputs.mode }}
@@ -50,6 +56,11 @@ jobs:
       duplicate_run_id: ${{ steps.equivalent.outputs.duplicate_run_id }}
       should_run: ${{ steps.metadata.outputs.should_run }}
       route: ${{ steps.metadata.outputs.route }}
+      provider: ${{ steps.metadata.outputs.provider }}
+      admission_attempt: ${{ steps.metadata.outputs.admission_attempt }}
+      build_runner: ${{ steps.metadata.outputs.build_runner }}
+      shard_runner: ${{ steps.metadata.outputs.shard_runner }}
+      job_timeout: ${{ steps.metadata.outputs.job_timeout }}
       mode: ${{ steps.metadata.outputs.mode }}
       envelope_class: ${{ steps.metadata.outputs.envelope_class }}
       selector_pr_state: ${{ steps.metadata.outputs.selector_pr_state }}
@@ -91,6 +102,10 @@ jobs:
           SMART_DRAFT_CANARY_PR: ${{ vars.PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_CANARY_PR }}
           FORCE_HOSTED_CANARY_PR: ${{ vars.PUBLIC_PR_ARM64_PLAYWRIGHT_FORCE_HOSTED_CANARY_PR }}
           ROUTE_HINT: ${{ inputs.route_hint }}
+          WARPBUILD_ADMISSIONS: ${{ vars.PUBLIC_PR_PLAYWRIGHT_WARPBUILD_ADMISSIONS }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CONTROL_SHA: ${{ job.workflow_sha }}
         run: node .ci-control/.github/scripts/playwright-route.cjs --output route.json
 
       - name: Fetch the exact base object
@@ -165,8 +180,9 @@ jobs:
         # merge input unchanged may reuse the same head's completed full run.
         # Every other event runs normal validation.
         if: >-
-          (github.event_name == 'push' && github.ref != 'refs/heads/v3') ||
-          (github.event_name == 'pull_request' && contains(fromJSON('["ready_for_review","edited","reopened"]'), github.event.action))
+          steps.metadata.outputs.provider != 'warpbuild' &&
+          ((github.event_name == 'push' && github.ref != 'refs/heads/v3') ||
+          (github.event_name == 'pull_request' && contains(fromJSON('["ready_for_review","edited","reopened"]'), github.event.action)))
         continue-on-error: true
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
@@ -196,6 +212,7 @@ jobs:
             '### Playwright execution envelope',
             '',
             `- Route: \`${route.route}\``,
+            `- Provider: \`${route.provider || (route.route === 'hosted' ? 'github' : 'public-pool')}\``,
             `- Selector state: \`${route.selectorPrState}\``,
             `- Mode: \`${plan.mode}\``,
             `- Change class: \`${plan.envelopeClass}\``,
@@ -293,12 +310,11 @@ jobs:
     permissions:
       contents: read
     needs: prepare
-    if: needs.prepare.outputs.duplicate_run_id == '' && needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'public-pr'
+    if: needs.prepare.outputs.duplicate_run_id == '' && needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'public-pr' && (needs.prepare.outputs.provider != 'warpbuild' || needs.prepare.outputs.admission_attempt == format('{0}', github.run_attempt))
     runs-on:
-      group: public-pr-arm64
-      labels:
-        [linux, arm64, docker, public-pr-arm64, playwright, playwright-build]
-    timeout-minutes: 120
+      group: ${{ fromJSON(needs.prepare.outputs.build_runner).group }}
+      labels: ${{ fromJSON(needs.prepare.outputs.build_runner).labels }}
+    timeout-minutes: ${{ fromJSON(needs.prepare.outputs.job_timeout) }}
     container:
       image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
     steps:
@@ -453,16 +469,15 @@ jobs:
     permissions:
       contents: read
     needs: [prepare, build-and-compile-public-pr]
-    if: needs.prepare.outputs.duplicate_run_id == '' && needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'public-pr'
+    if: needs.prepare.outputs.duplicate_run_id == '' && needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'public-pr' && (needs.prepare.outputs.provider != 'warpbuild' || needs.prepare.outputs.admission_attempt == format('{0}', github.run_attempt))
     runs-on:
-      group: public-pr-arm64
-      labels:
-        [linux, arm64, docker, public-pr-arm64, playwright, playwright-shard]
+      group: ${{ fromJSON(needs.prepare.outputs.shard_runner).group }}
+      labels: ${{ fromJSON(needs.prepare.outputs.shard_runner).labels }}
     container:
       image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
       volumes:
         - hatchet_lite_config_${{ github.run_id }}_${{ github.run_attempt }}_${{ matrix.shardIndex }}:/config
-    timeout-minutes: 120
+    timeout-minutes: ${{ fromJSON(needs.prepare.outputs.job_timeout) }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.prepare.outputs.shard_matrix) }}
@@ -549,4 +564,4 @@ jobs:
           shard-index: ${{ matrix.shardIndex }}
           shard-total: ${{ matrix.shardTotal }}
           cache-enabled: ${{ env.PLAYWRIGHT_CACHE_ENABLED }}
-          workers: ${{ vars.PUBLIC_PR_PLAYWRIGHT_WORKERS || '1' }}
+          workers: ${{ needs.prepare.outputs.provider == 'warpbuild' && '1' || vars.PUBLIC_PR_PLAYWRIGHT_WORKERS || '1' }}

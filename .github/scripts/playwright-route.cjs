@@ -16,6 +16,66 @@ function exactCanaryMatch(value, pullRequestNumber) {
   )
 }
 
+function admittedWarpbuildAttempt(input) {
+  const raw = input.warpbuildAdmissions
+  if (
+    input.repository !== 'uzh-bf/klicker-uzh' ||
+    typeof raw !== 'string' ||
+    raw.length > 4096 ||
+    !raw
+  )
+    return ''
+  const now = Date.parse(input.now ?? new Date().toISOString())
+  if (!Number.isFinite(now)) return ''
+  const identity = [
+    'runId',
+    'runAttempt',
+    'pullRequestNumber',
+    'headSha',
+    'baseSha',
+    'controlSha',
+  ]
+  try {
+    const tickets = JSON.parse(raw)
+    if (!Array.isArray(tickets) || tickets.length > 3) return ''
+    const seen = new Set()
+    for (const ticket of tickets) {
+      if (!ticket || typeof ticket !== 'object' || Array.isArray(ticket))
+        return ''
+      if (
+        Object.keys(ticket).sort().join(',') !==
+        [...identity, 'expiresAt'].sort().join(',')
+      )
+        return ''
+      for (const key of identity) {
+        const pattern = key.endsWith('Sha') ? /^[a-f0-9]{40}$/ : /^[1-9]\d*$/
+        if (typeof ticket[key] !== 'string' || !pattern.test(ticket[key]))
+          return ''
+      }
+      const expiry =
+        typeof ticket.expiresAt === 'string'
+          ? Date.parse(ticket.expiresAt)
+          : NaN
+      if (
+        !Number.isFinite(expiry) ||
+        expiry <= now ||
+        expiry > now + 4 * 60 * 60 * 1000
+      )
+        return ''
+      const key = `${ticket.runId}:${ticket.runAttempt}`
+      if (seen.has(key)) return ''
+      seen.add(key)
+    }
+    const match = tickets.find((ticket) =>
+      identity.every((key) => ticket[key] === input[key])
+    )
+    return match?.runAttempt ?? ''
+  } catch {
+    // Invalid operator configuration retains the existing execution backend.
+    return ''
+  }
+}
+
 function choosePlaywrightRoute(input) {
   const {
     eventName,
@@ -129,9 +189,12 @@ function choosePlaywrightRoute(input) {
   if (publicReady) reasons.push('public-pr-rollout')
   else reasons.push('hosted-fallback')
 
+  const admissionAttempt = publicReady ? admittedWarpbuildAttempt(input) : ''
+
   return {
     schemaVersion: ROUTE_SCHEMA_VERSION,
     route: publicReady ? 'public-pr' : 'hosted',
+    ...(admissionAttempt ? { provider: 'warpbuild', admissionAttempt } : {}),
     selectorPrState: smartDraftApplies ? 'draft' : 'ready',
     reasonCodes: [...new Set(reasons)].sort(),
   }
@@ -153,6 +216,12 @@ function envInput(env = process.env) {
     smartDraftCanaryPr: env.SMART_DRAFT_CANARY_PR ?? '',
     forceHostedCanaryPr: env.FORCE_HOSTED_CANARY_PR ?? '',
     requestedRoute: env.ROUTE_HINT ?? 'auto',
+    warpbuildAdmissions: env.WARPBUILD_ADMISSIONS ?? '',
+    runId: env.GITHUB_RUN_ID,
+    runAttempt: env.GITHUB_RUN_ATTEMPT,
+    headSha: env.HEAD_SHA,
+    baseSha: env.BASE_SHA,
+    controlSha: env.CONTROL_SHA,
   }
 }
 

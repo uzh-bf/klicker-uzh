@@ -77,8 +77,12 @@ test('public runner jobs require their exact scheduling role and reject unknown 
   const build = 'build-and-compile-public-pr'
   const shard = 'test-playwright-public-pr'
   for (const mutate of [
-    (w) => w.jobs[build]['runs-on'].labels.pop(),
-    (w) => w.jobs[shard]['runs-on'].labels.pop(),
+    (w) => {
+      w.jobs[build]['runs-on'] = 'warp-ubuntu-2404-arm64-32x'
+    },
+    (w) => {
+      w.jobs[shard]['runs-on'] = ['self-hosted']
+    },
     (w) => {
       w.jobs[build]['runs-on'] = w.jobs[shard]['runs-on']
     },
@@ -86,13 +90,30 @@ test('public runner jobs require their exact scheduling role and reject unknown 
       w.jobs[shard]['runs-on'] = w.jobs[build]['runs-on']
     },
     (w) => {
-      w.jobs[build]['runs-on'].labels[0] = 'unknown'
+      w.jobs[build].if = 'true'
     },
     (w) => {
-      w.jobs[shard]['runs-on'].group = 'other'
+      w.jobs[shard].if = 'true'
     },
     (w) => {
-      w.jobs[build]['runs-on'].labels.push('playwright-shard')
+      w.jobs[build]['timeout-minutes'] = 120
+    },
+    (w) => {
+      w.jobs.prepare.outputs.build_runner = `\${{ inputs.runner }}`
+    },
+    (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'route').env.CONTROL_SHA =
+        `\${{ github.sha }}`
+    },
+    (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'metadata').run =
+        'node .candidate/script.cjs'
+    },
+    (w) => {
+      w.jobs.prepare.steps.find((s) => s.id === 'equivalent').if = 'true'
+    },
+    (w) => {
+      w.on.workflow_call.outputs.should_run.value = `\${{ jobs.prepare.outputs.should_run }}`
     },
     (w) => {
       w.jobs.unexpected = { 'runs-on': w.jobs[build]['runs-on'] }
@@ -115,9 +136,6 @@ test('public runner jobs require their exact scheduling role and reject unknown 
     mutate(workflow)
     assert.ok(validatePublicRunnerRoles(workflow).length > 0)
   }
-  // Label order has no scheduling meaning.
-  source.jobs[build]['runs-on'].labels.reverse()
-  assert.deepEqual(validatePublicRunnerRoles(source), [])
 })
 
 function runBuildStep(t, route, graph, { filters = true, failure = '' } = {}) {
@@ -449,6 +467,12 @@ function runStatusReporter(t, overrides = {}) {
 }
 
 test('status reporter accepts the trusted plan for drafts and a full plan for ready', (t) => {
+  const cloud = runStatusReporter(t, {
+    PROVIDER: 'warpbuild',
+    ADMISSION_ATTEMPT: '2',
+    CURRENT_ATTEMPT: '2',
+  })
+  assert.equal(cloud.status, 0, cloud.output)
   // A draft may attest the plan the trusted envelope selected for it.
   const draft = runStatusReporter(t, { IS_DRAFT: 'true' })
   assert.equal(draft.status, 0, draft.output)
@@ -529,6 +553,14 @@ test('status reporter accepts the trusted plan for drafts and a full plan for re
   }
 
   const rejected = [
+    {
+      name: 'unadmitted paid rerun',
+      overrides: {
+        PROVIDER: 'warpbuild',
+        ADMISSION_ATTEMPT: '1',
+        CURRENT_ATTEMPT: '2',
+      },
+    },
     {
       name: 'skipped ready execution',
       overrides: { EXECUTION_RESULT: 'skipped' },

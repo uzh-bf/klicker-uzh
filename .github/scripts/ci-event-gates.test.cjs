@@ -37,6 +37,7 @@ function evaluateGate(
     'cancelled',
     'vars',
     'steps',
+    'format',
     `return (${normalized})`
   )(
     github,
@@ -44,9 +45,55 @@ function evaluateGate(
     () => true,
     () => cancelled,
     vars,
-    steps
+    steps,
+    (pattern, value) => {
+      assert.equal(pattern, '{0}')
+      return String(value)
+    }
   )
 }
+
+test('paid jobs and legacy required coverage reject stale preparation on rerun', () => {
+  const workflow = readWorkflow('public-pr-playwright-shards.yml')
+  for (const [provider, admitted, current, expected] of [
+    ['warpbuild', '1', 1, true],
+    ['warpbuild', '1', 2, false],
+    ['warpbuild', '2', 2, true],
+    ['warpbuild', '', 1, false],
+    ['public-pool', '', 2, true],
+  ]) {
+    const needs = {
+      prepare: {
+        outputs: {
+          provider,
+          admission_attempt: admitted,
+          duplicate_run_id: '',
+          should_run: 'true',
+          route: 'public-pr',
+        },
+      },
+    }
+    for (const name of [
+      'build-and-compile-public-pr',
+      'test-playwright-public-pr',
+    ]) {
+      assert.equal(
+        evaluateGate(workflow.jobs[name].if, { run_attempt: current }, needs),
+        expected
+      )
+    }
+    const output = workflow.on.workflow_call.outputs.should_run.value
+      .slice(3, -2)
+      .trim()
+    const jobs = { prepare: needs.prepare }
+    const returned = evaluateGate(
+      output.replaceAll('jobs.', 'needs.'),
+      { run_attempt: current },
+      jobs
+    )
+    assert.equal(returned, String(expected))
+  }
+})
 
 test('trusted review policy admits only lifecycle events and exact PR commands', () => {
   const workflow = readWorkflow('check-ocr-final-review.yml')

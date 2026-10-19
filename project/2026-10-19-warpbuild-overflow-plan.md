@@ -84,7 +84,7 @@ for source delivery or operator-exported billing evidence.
 | Consequential risk | Obligation and primary seam | Existing protection and distinct failure |
 | --- | --- | --- |
 | Unapproved paid allocation | Extend route tests through the execution selector | Existing trust eligibility; add exact ticket, malformed/expired/duplicate and mismatched identity rejection |
-| Runner or attempt drift | Extend metadata and workflow policy tests | Existing role/permission contracts; add closed selectors, independent attempt guards and output wiring |
+| Runner or attempt drift | Extend metadata, workflow policy and event-gate tests | Existing role/permission contracts; add closed selectors, independent attempt guards, legacy required-coverage refusal and output wiring |
 | Reuse hides cloud validation | Extend workflow policy mutation coverage | Existing equivalent-result proof; ensure admitted cloud work bypasses optional reuse |
 | Coverage or artifact regression | Reuse full CI contract suite | Existing canonical plan, build graph, services, caches, shard and required-status contracts |
 
@@ -110,6 +110,18 @@ for source delivery or operator-exported billing evidence.
 - Planning challenge: main-session self-review accepted exact run/attempt tickets
   instead of an open-ended PR toggle. Added stale-prepare attempt protection and
   provider-independent trust routing. No independent review is claimed.
-- Status: source preparation. Pull request not yet created.
-- Remaining: implementation, focused verification, integrated self-review,
-  draft publication, exact-head CI/feedback and operator activation decision.
+- Implementation uses existing public jobs, route/metadata scripts, policy
+  validator, event-gate tests and the CI guide. No new executable file,
+  dependency, workflow, service or application runtime was added.
+- Compatibility review removed a proposed new caller input: a draft caller
+  referencing the old `v3` reusable workflow would otherwise fail before merge.
+  Existing callers now retain their input contract; a stale paid attempt
+  invalidates the existing coverage output as well as the new reporter guard.
+- Focused verification: 96 Playwright CI contracts and 19 event-gate contracts
+  pass in network-isolated Node 24.21.0 with the existing Devrouter 0.5.1 planner.
+  Full local application checks/build and paid runtime verification have not run.
+- Scoped static scan: unchanged mutable action references were reported;
+  embedded Bash analysis is partially unavailable. No new source finding.
+- Status: implementation verification and integrated main-session self-review.
+  Pull request not yet created. Remaining: draft publication, exact-head
+  CI/feedback and operator activation decision.
