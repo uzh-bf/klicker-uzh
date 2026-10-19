@@ -788,6 +788,7 @@ function CustomModesEditor({
                           <div>
                             <FormikSelectField
                               name={`modes[${index}].replyLanguage`}
+                              className={{ select: { trigger: 'w-full' } }}
                               label={t(
                                 'manage.resources.chatbotCustomModeReplyLanguage'
                               )}
@@ -817,6 +818,7 @@ function CustomModesEditor({
                           <div>
                             <FormikSelectField
                               name={`modes[${index}].meetingClock`}
+                              className={{ select: { trigger: 'w-full' } }}
                               label={t(
                                 'manage.resources.chatbotCustomModeMeetingClock'
                               )}
