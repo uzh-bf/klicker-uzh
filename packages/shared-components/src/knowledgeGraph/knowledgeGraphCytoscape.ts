@@ -78,6 +78,13 @@ export const CYTOSCAPE_STYLE: cytoscape.StylesheetJson = [
     },
   },
   {
+    // Symmetric relations have no direction to show.
+    selector: 'edge[relationType = "contrasts_with"]',
+    style: {
+      'target-arrow-shape': 'none',
+    },
+  },
+  {
     selector: 'edge:selected',
     style: {
       width: 3,
@@ -133,6 +140,7 @@ export function edgeDefinition(
       target: cytoscapeNodeId(edge.target),
       label: edge.label,
       type: edge.type,
+      relationType: edge.relationType,
     },
   }
 }

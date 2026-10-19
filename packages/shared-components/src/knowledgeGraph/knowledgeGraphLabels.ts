@@ -1,3 +1,8 @@
+import type {
+  KnowledgeGraphRelationStatus,
+  KnowledgeGraphRelationType,
+} from '@klicker-uzh/types'
+
 export type KnowledgeGraphDetailsLabels = {
   detailsFallback: string
   ariaLabel: string
@@ -13,6 +18,11 @@ export type KnowledgeGraphDetailsLabels = {
   expandConnections: string
   from: string
   to: string
+  concepts: string
+  evidence: string
+  relationTypes: Record<KnowledgeGraphRelationType, string>
+  relationStatuses: Record<KnowledgeGraphRelationStatus, string>
+  pages: (pages: number[]) => string
   properties: string
   ask: string
   missingEndpoint: string
@@ -145,6 +155,23 @@ export const DEFAULT_KNOWLEDGE_GRAPH_LABELS: KnowledgeGraphViewerLabels = {
     expandConnections: 'Expand connections',
     from: 'From',
     to: 'To',
+    concepts: 'Concepts',
+    evidence: 'Evidence',
+    relationTypes: {
+      prerequisite_of: 'Prerequisite of',
+      part_of: 'Part of',
+      example_of: 'Example of',
+      applies_to: 'Applies to',
+      contrasts_with: 'Contrasts with',
+      related: 'Related',
+    },
+    relationStatuses: {
+      source: 'Stated in the source',
+      inferred: 'Inferred',
+      extracted: 'Co-occurs in the source',
+    },
+    pages: (pages) =>
+      `${pages.length === 1 ? 'Page' : 'Pages'} ${pages.join(', ')}`,
     properties: 'Properties',
     ask: 'Ask about this',
     missingEndpoint: 'Unknown concept',

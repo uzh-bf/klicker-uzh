@@ -1,4 +1,8 @@
-import type { KnowledgeGraphEdge, KnowledgeGraphNode } from '@klicker-uzh/types'
+import type {
+  KnowledgeGraphEdge,
+  KnowledgeGraphNode,
+  KnowledgeGraphRelationType,
+} from '@klicker-uzh/types'
 
 export const KNOWLEDGE_GRAPH_MIN_ZOOM = 0.15
 export const KNOWLEDGE_GRAPH_MAX_ZOOM = 3
@@ -20,6 +24,19 @@ export function relationshipLabels(
     source: nodes.get(edge.source)?.displayLabel ?? edge.source,
     target: nodes.get(edge.target)?.displayLabel ?? edge.target,
   }
+}
+
+/**
+ * Generated edges carry no label of their own, so their label falls back to
+ * the relationship type (`RELATED`). Such edges show their relation type.
+ */
+export function relationshipDisplayLabel(
+  edge: KnowledgeGraphEdge,
+  relationTypeLabels: Record<KnowledgeGraphRelationType, string>
+): string {
+  return edge.label === edge.type
+    ? relationTypeLabels[edge.relationType]
+    : edge.label
 }
 
 /**
@@ -54,12 +71,15 @@ export function nodeAskSelection(
 export function edgeAskSelection(
   edge: KnowledgeGraphEdge,
   nodes: Map<string, KnowledgeGraphNode>,
-  missingEndpointLabel: string
+  missingEndpointLabel: string,
+  relationTypeLabels: Record<KnowledgeGraphRelationType, string>
 ): KnowledgeGraphAskSelection {
   const fallback = boundKnowledgeGraphAskLabel(missingEndpointLabel)
   return {
     kind: 'edge',
-    label: boundKnowledgeGraphAskLabel(edge.label),
+    label: boundKnowledgeGraphAskLabel(
+      relationshipDisplayLabel(edge, relationTypeLabels)
+    ),
     // An endpoint outside the loaded view falls back to a generic label; a raw
     // concept id must never reach the chat prompt.
     source: boundKnowledgeGraphAskLabel(
