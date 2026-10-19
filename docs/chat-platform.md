@@ -1171,13 +1171,14 @@ single published graph supplies at most six neighboring concept names from
 fixed, parameterized, one-hop queries. The original document query remains
 intact; at most one additional document query runs per tool instance. Raw executions of each discovered document tool are serialized within the request-local client, including expanded queries. A slot is released only when the underlying provider operation settles; an outer expansion timeout does not release it. Queued cancelled calls are rejected before dispatch. Calls retain separate executions and results, without caching or retries. Top-level null/undefined results become a content-free execution error; valid empty results and nested nulls are preserved. An absent optional expansion retains authorized baseline evidence.
 
-The wrapper emits `[chat.graph_retrieval]` diagnostics with an allowlisted outcome, whether expansion was attempted, hint count, passage counts, output character count and total wrapper duration. Counts describe passage occurrences; unrecognized/unmeasured results use null rather than zero. Events contain no queries, labels, passages, identifiers or raw errors. Diagnostic failure cannot change retrieval or authorization. A `fused` outcome confirms compatible fusion, not improved source support or answer quality.
+The wrapper emits `[chat.graph_retrieval]` diagnostics with an allowlisted outcome, whether expansion was attempted, hint count, passage counts, output character count and total wrapper duration. Counts describe passage occurrences; unrecognized/unmeasured results use null rather than zero. Events contain no queries, labels, passages, identifiers or raw errors. Diagnostic failure cannot change retrieval or authorization. A `fused` outcome confirms that compatible fusion added at least one new passage, not improved source support or answer quality; an expansion that adds nothing new reports `expansion_unusable` and returns the original result.
 
-The adapter combines compatible `mode: documents` passages within 12 passages and
-16,000 content characters, retaining provider source groups and locators. It
-protects the first three admitted baseline passages, then uses equal-weight
-reciprocal rank fusion with constant 60 for the remaining candidates. Contiguous
-source groups preserve the chosen passage order.
+The adapter keeps every compatible `mode: documents` baseline passage with its
+provider source groups and locators, so graph mode never sends less evidence
+than the ordinary query. It appends at most six new expanded passages and 8,000
+content characters. Additions follow a complete numeric chunk `global_rank`;
+without one, provider sources are visited round-robin so one document cannot
+take the whole headroom. Contiguous source groups preserve this order.
 
 Retrieval seeds require complete normalized display-label phrases in the query;
 substring matches and inferred aliases are excluded. Up to four longest matching

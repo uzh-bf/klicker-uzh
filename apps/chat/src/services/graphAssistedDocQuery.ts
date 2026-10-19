@@ -159,6 +159,46 @@ function passageKey(passage: Passage): string {
   })
 }
 
+// Graph discoveries are appended to the full original result within this
+// headroom, so graph mode never sends less evidence than ordinary chat.
+const ADDED_PASSAGE_LIMIT = 6
+const ADDED_CHARACTER_LIMIT = 8000
+
+/**
+ * Relevance order of one search. Providers group chunks by source, so the flat
+ * order lets the first document crowd out every other one. A complete numeric
+ * `global_rank` gives the provider's own order; otherwise sources are visited
+ * round-robin in provider order.
+ */
+function relevanceOrder(candidates: Passage[]): Passage[] {
+  if (
+    candidates.every(
+      ({ chunk }) =>
+        typeof chunk.global_rank === 'number' &&
+        Number.isFinite(chunk.global_rank)
+    )
+  )
+    return candidates
+      .map((passage, index) => ({ passage, index }))
+      .sort(
+        (a, b) =>
+          (a.passage.chunk.global_rank as number) -
+            (b.passage.chunk.global_rank as number) || a.index - b.index
+      )
+      .map(({ passage }) => passage)
+  const lanes: Passage[][] = []
+  for (const passage of candidates) {
+    const lane = lanes[lanes.length - 1]
+    if (lane && lane[0]!.source === passage.source) lane.push(passage)
+    else lanes.push([passage])
+  }
+  const ordered: Passage[] = []
+  for (let depth = 0; ordered.length < candidates.length; depth += 1)
+    for (const lane of lanes)
+      if (depth < lane.length) ordered.push(lane[depth]!)
+  return ordered
+}
+
 /** Combine exact passages, never infer identity from a filename or similar text. */
 export function combineGraphSearchDocuments(
   original: unknown,
@@ -167,49 +207,20 @@ export function combineGraphSearchDocuments(
   const first = passages(original)
   const second = passages(expanded)
   if (!first || !second || second.length === 0) return original
-  const ranked = new Map<
-    string,
-    { passage: Passage; score: number; ranks: number[] }
-  >()
-  for (const [search, candidates] of [first, second].entries()) {
-    candidates.forEach((passage, index) => {
-      const key = passageKey(passage)
-      const candidate = ranked.get(key) ?? {
-        passage,
-        score: 0,
-        ranks: [Infinity, Infinity],
-      }
-      if (candidate.ranks[search] !== Infinity) return
-      candidate.score += 1 / (60 + index + 1)
-      candidate.ranks[search] = index
-      ranked.set(key, candidate)
-    })
-  }
-  const selected: Passage[] = []
-  const seen = new Set<string>()
+  const seen = new Set(first.map(passageKey))
+  const added: Passage[] = []
   let characters = 0
-  function admit(passage: Passage) {
+  for (const passage of relevanceOrder(second)) {
+    if (added.length === ADDED_PASSAGE_LIMIT) break
     const key = passageKey(passage)
     const size = String(passage.chunk.content).length
-    if (seen.has(key) || selected.length >= 12 || characters + size > 16000)
-      return
+    if (seen.has(key) || characters + size > ADDED_CHARACTER_LIMIT) continue
     seen.add(key)
     characters += size
-    selected.push(passage)
+    added.push(passage)
   }
-  // Reserve the strongest original evidence before admitting graph discoveries.
-  for (const passage of first) {
-    if (selected.length === 3) break
-    admit(passage)
-  }
-  for (const { passage } of [...ranked.values()].sort(
-    (a, b) =>
-      b.score - a.score ||
-      a.ranks[0]! - b.ranks[0]! ||
-      a.ranks[1]! - b.ranks[1]!
-  ))
-    admit(passage)
-  if (selected.length === 0) return original
+  if (added.length === 0) return original
+  const selected = [...first, ...added]
   // Keep each provider source group: the citation UI displays its first chunk's locator.
   // Coalescing groups from two searches could hide the newly retrieved page.
   const groups: RecordValue[] = []
