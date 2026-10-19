@@ -65,7 +65,7 @@ The approved implementation adds one instruction to the source-managed standard
 Explainer contract in this draft; its generated-answer effect is unassessed.
 The [continuation](2026-10-18-explainer-assessment-readiness-plan.md#current-learner-improvement-continuation)
 pins the pre-change baseline and one-instruction candidate for a later matched
-check. Stored lecturer guidance remains unchanged. Further inference needs
+check. Stored lecturer guidance remains unchanged. Further inference needs a
 named budget, provider, source-use and enforceable cost authority; prior capture
 authority is consumed. Monitored spending is not a hard-cap substitute. Live
 prompt/KB changes, promotion, merge and deployment remain separately gated.
