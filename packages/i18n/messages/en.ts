@@ -5016,21 +5016,76 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotWorkspaceNavigation: 'Chatbot workspace',
       chatbotWorkspaceOverview: 'Overview',
       chatbotWorkspaceKnowledge: 'Knowledge',
-      chatbotDraftStepMaterials: 'Materials',
       chatbotDraftStepMaterialsDescription:
         'Choose the knowledge base the chatbot answers from. It connects as soon as you select it.',
-      chatbotDraftStepStudents: 'Student information',
       chatbotDraftStepStudentsDescription:
         'Students read this text before they start chatting. We prepared a suggestion for you.',
-      chatbotDraftStepPublication: 'Request publication',
-      chatbotDraftStepPublicationDescription:
-        'Check the prefilled details and send the request for review.',
-      chatbotDraftBehaviorTitle: 'Teaching modes and framing (optional)',
-      chatbotDraftBehaviorDescription:
-        'The defaults suit most courses. Adjust them only if you need to.',
       chatbotAdvancedSettingsTitle: 'Advanced settings (optional)',
       chatbotAdvancedSettingsDescription:
         'Settings for experienced users. Most courses work well with the defaults.',
+      chatbotSectionStatusDefault: 'Default',
+      chatbotSectionStatusSuggested: 'Suggested',
+      chatbotSectionStatusSaved: 'Saved',
+      chatbotSectionStatusWarning: 'Needs attention',
+      chatbotSectionStatusInvalid: 'Incomplete',
+      chatbotSectionStatusUnsaved: 'Unsaved changes',
+      chatbotSectionStatusNotSubmitted: 'Not yet submitted',
+      chatbotSectionSave: 'Save',
+      chatbotSectionSaving: 'Saving…',
+      chatbotSectionDiscard: 'Discard changes',
+      chatbotSectionMaterials: 'Materials',
+      chatbotSectionStudents: 'Student information',
+      chatbotSectionModes: 'Learning modes and framing',
+      chatbotSectionModel: 'Model',
+      chatbotSectionUsage: 'Usage limits',
+      chatbotSectionGraph: 'Knowledge graph',
+      chatbotSectionGroupOptional:
+        'Optional. The defaults work for most courses.',
+      chatbotSectionGroupAdvanced: 'Advanced',
+      chatbotSectionRequest: 'Request publication',
+      chatbotSummaryMaterialsNone:
+        'No knowledge base is connected. Answers use general model knowledge.',
+      chatbotSummaryMaterialsConnected: 'Uses the knowledge base {name}.',
+      chatbotSummaryMaterialsReadiness:
+        '{total, plural, =0 {It has no resources yet.} one {{ready} of 1 resource is ready{failed, plural, =0 {} other {, # failed}}.} other {{ready} of # resources are ready{failed, plural, =0 {} other {, # failed}}.}}',
+      chatbotNoKnowledgeBaseOption:
+        'No knowledge base. Answers use general model knowledge.',
+      chatbotSummaryStudents: 'Students see “{title}” before they start.',
+      chatbotSummaryStudentsSuggested: 'This is the suggested text.',
+      chatbotSummaryStudentsInvalid:
+        'The title or the introduction is missing.',
+      chatbotStudentsPreview: 'Preview',
+      chatbotStudentsPreviewTitle: 'What students see',
+      chatbotSummaryModesOn:
+        '{modes} {count, plural, one {is} other {are}} on.',
+      chatbotSummaryModesNone: 'No learning mode is on.',
+      chatbotSummaryModesExtras:
+        '{framing, select, set {There is a framing} other {There is no framing}} and {custom, plural, =0 {no custom modes} one {one custom mode} other {# custom modes}}.',
+      chatbotSummaryModesQuizzerNeedsKb:
+        'Quizzer needs a knowledge base, so students do not see it yet.',
+      chatbotSummaryModelFixed: 'Students use {model}.',
+      chatbotSummaryModelFixedReasoning:
+        'Students use {model} with {effort} reasoning effort.',
+      chatbotSummaryModelNoChoice: 'They cannot switch models.',
+      chatbotSummaryModelChoice: 'Students can choose between {models}.',
+      chatbotSummaryUsageInitial:
+        'Each student starts with {initial, plural, one {1 credit} other {# credits}}.',
+      chatbotSummaryUsageRefill:
+        '{period, select, NONE {Credits are not refilled.} DAILY {Every day, {amount, plural, one {1 credit is} other {# credits are}} added, up to {max}.} WEEKLY {Every week, {amount, plural, one {1 credit is} other {# credits are}} added, up to {max}.} BIWEEKLY {Every two weeks, {amount, plural, one {1 credit is} other {# credits are}} added, up to {max}.} MONTHLY {Every month, {amount, plural, one {1 credit is} other {# credits are}} added, up to {max}.} other {Credits are refilled, up to {max}.}}',
+      chatbotSummaryGraph:
+        'The concept map is {visible, select, yes {shown to} other {hidden from}} students.',
+      chatbotSummaryGraphRetrieval:
+        'Graph search is {enabled, select, yes {on} other {off}}.',
+      chatbotEditDetails: 'Edit details',
+      chatbotEditDetailsTitle: 'Chatbot details',
+      chatbotChangesRequested: 'Changes requested',
+      chatbotDraftVisibility:
+        '{courses}. Students cannot see this chatbot yet.',
+      chatbotDraftVisibilityNoCourse: 'Students cannot see this chatbot yet.',
+      chatbotPublicationBlockersTitle: 'Before you send the request:',
+      chatbotPublicationBlockerUnsaved:
+        'Save or discard the changes in {section}.',
+      chatbotPublicationBlockerInvalid: 'Complete {section}.',
       chatbotWorkspaceBehavior: 'Behavior',
       chatbotWorkspaceDisclaimer: 'Disclaimer',
       chatbotWorkspaceSetup: 'Setup',
@@ -5048,9 +5103,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'One active knowledge base is currently supported here.',
       chatbotKnowledgeEmptyDescription:
         'The chatbot can still be used without course-material retrieval.',
-      chatbotKnowledgeNextDisclaimer:
-        'Next, review and save the student information under Disclaimer. It is required before you can request publication.',
-      chatbotKnowledgeOpenDisclaimer: 'Open Disclaimer',
       chatbotKnowledgeManagementLink:
         'Manage documents, ingestion, and knowledge-base readiness in Knowledge Bases.',
       chatbotKnowledgeBaseSelectPlaceholder: 'Choose a knowledge base',

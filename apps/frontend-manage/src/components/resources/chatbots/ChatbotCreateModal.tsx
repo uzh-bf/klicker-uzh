@@ -184,4 +184,5 @@ function ChatbotCreateModal({
   )
 }
 
+export { getSuggestedDisclaimer }
 export default ChatbotCreateModal

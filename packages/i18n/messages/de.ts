@@ -5123,21 +5123,77 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotWorkspaceNavigation: 'Chatbot-Arbeitsbereich',
       chatbotWorkspaceOverview: 'Übersicht',
       chatbotWorkspaceKnowledge: 'Wissensbasis',
-      chatbotDraftStepMaterials: 'Materialien',
       chatbotDraftStepMaterialsDescription:
         'Wählen Sie die Wissensbasis, aus der der Chatbot antwortet. Sie wird sofort verbunden, sobald Sie sie auswählen.',
-      chatbotDraftStepStudents: 'Information für Studierende',
       chatbotDraftStepStudentsDescription:
         'Studierende lesen diesen Text, bevor sie den Chat starten. Wir haben einen Vorschlag für Sie vorbereitet.',
-      chatbotDraftStepPublication: 'Veröffentlichung beantragen',
-      chatbotDraftStepPublicationDescription:
-        'Prüfen Sie die vorausgefüllten Angaben und senden Sie die Anfrage zur Prüfung.',
-      chatbotDraftBehaviorTitle: 'Lernmodi und Rahmung (optional)',
-      chatbotDraftBehaviorDescription:
-        'Die Standardwerte passen für die meisten Kurse. Passen Sie sie nur bei Bedarf an.',
       chatbotAdvancedSettingsTitle: 'Erweiterte Einstellungen (optional)',
       chatbotAdvancedSettingsDescription:
         'Einstellungen für erfahrene Nutzende. Für die meisten Kurse passen die Standardwerte.',
+      chatbotSectionStatusDefault: 'Standard',
+      chatbotSectionStatusSuggested: 'Vorschlag',
+      chatbotSectionStatusSaved: 'Gespeichert',
+      chatbotSectionStatusWarning: 'Bitte prüfen',
+      chatbotSectionStatusInvalid: 'Unvollständig',
+      chatbotSectionStatusUnsaved: 'Nicht gespeichert',
+      chatbotSectionStatusNotSubmitted: 'Noch nicht eingereicht',
+      chatbotSectionSave: 'Speichern',
+      chatbotSectionSaving: 'Wird gespeichert …',
+      chatbotSectionDiscard: 'Änderungen verwerfen',
+      chatbotSectionMaterials: 'Materialien',
+      chatbotSectionStudents: 'Information für Studierende',
+      chatbotSectionModes: 'Lernmodi und Rahmung',
+      chatbotSectionModel: 'Modell',
+      chatbotSectionUsage: 'Nutzungslimits',
+      chatbotSectionGraph: 'Wissensgraph',
+      chatbotSectionGroupOptional:
+        'Optional. Die Standardwerte passen für die meisten Kurse.',
+      chatbotSectionGroupAdvanced: 'Erweitert',
+      chatbotSectionRequest: 'Veröffentlichung beantragen',
+      chatbotSummaryMaterialsNone:
+        'Es ist keine Wissensbasis verbunden. Antworten nutzen allgemeines Modellwissen.',
+      chatbotSummaryMaterialsConnected: 'Nutzt die Wissensbasis {name}.',
+      chatbotSummaryMaterialsReadiness:
+        '{total, plural, =0 {Sie enthält noch keine Ressourcen.} one {{ready} von 1 Ressource ist bereit{failed, plural, =0 {} other {, # fehlgeschlagen}}.} other {{ready} von # Ressourcen sind bereit{failed, plural, =0 {} other {, # fehlgeschlagen}}.}}',
+      chatbotNoKnowledgeBaseOption:
+        'Keine Wissensbasis. Antworten nutzen allgemeines Modellwissen.',
+      chatbotSummaryStudents:
+        'Studierende sehen „{title}“, bevor sie beginnen.',
+      chatbotSummaryStudentsSuggested: 'Das ist der vorgeschlagene Text.',
+      chatbotSummaryStudentsInvalid: 'Der Titel oder die Einleitung fehlt.',
+      chatbotStudentsPreview: 'Vorschau',
+      chatbotStudentsPreviewTitle: 'Was Studierende sehen',
+      chatbotSummaryModesOn:
+        '{modes} {count, plural, one {ist} other {sind}} aktiv.',
+      chatbotSummaryModesNone: 'Kein Lernmodus ist aktiv.',
+      chatbotSummaryModesExtras:
+        '{framing, select, set {Es gibt eine Rahmung} other {Es gibt keine Rahmung}} und {custom, plural, =0 {keine eigenen Modi} one {einen eigenen Modus} other {# eigene Modi}}.',
+      chatbotSummaryModesQuizzerNeedsKb:
+        'Quizzer braucht eine Wissensbasis, deshalb sehen Studierende ihn noch nicht.',
+      chatbotSummaryModelFixed: 'Studierende nutzen {model}.',
+      chatbotSummaryModelFixedReasoning:
+        'Studierende nutzen {model} mit dem Reasoning-Level {effort}.',
+      chatbotSummaryModelNoChoice: 'Sie können das Modell nicht wechseln.',
+      chatbotSummaryModelChoice: 'Studierende wählen zwischen {models}.',
+      chatbotSummaryUsageInitial:
+        'Alle Studierenden starten mit {initial, plural, one {1 Credit} other {# Credits}}.',
+      chatbotSummaryUsageRefill:
+        '{period, select, NONE {Credits werden nicht aufgefüllt.} DAILY {Jeden Tag kommen {amount, plural, one {1 Credit} other {# Credits}} dazu, bis höchstens {max}.} WEEKLY {Jede Woche kommen {amount, plural, one {1 Credit} other {# Credits}} dazu, bis höchstens {max}.} BIWEEKLY {Alle zwei Wochen kommen {amount, plural, one {1 Credit} other {# Credits}} dazu, bis höchstens {max}.} MONTHLY {Jeden Monat kommen {amount, plural, one {1 Credit} other {# Credits}} dazu, bis höchstens {max}.} other {Credits werden bis höchstens {max} aufgefüllt.}}',
+      chatbotSummaryGraph:
+        'Die Konzeptkarte ist für Studierende {visible, select, yes {sichtbar} other {ausgeblendet}}.',
+      chatbotSummaryGraphRetrieval:
+        'Die Graphsuche ist {enabled, select, yes {aktiv} other {aus}}.',
+      chatbotEditDetails: 'Details bearbeiten',
+      chatbotEditDetailsTitle: 'Chatbot-Details',
+      chatbotChangesRequested: 'Änderungen angefordert',
+      chatbotDraftVisibility:
+        '{courses}. Studierende sehen diesen Chatbot noch nicht.',
+      chatbotDraftVisibilityNoCourse:
+        'Studierende sehen diesen Chatbot noch nicht.',
+      chatbotPublicationBlockersTitle: 'Bevor Sie den Antrag senden:',
+      chatbotPublicationBlockerUnsaved:
+        'Speichern oder verwerfen Sie die Änderungen in {section}.',
+      chatbotPublicationBlockerInvalid: 'Vervollständigen Sie {section}.',
       chatbotWorkspaceBehavior: 'Verhalten',
       chatbotWorkspaceDisclaimer: 'Disclaimer',
       chatbotWorkspaceSetup: 'Einrichtung',
@@ -5155,9 +5211,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Hier wird derzeit eine aktive Wissensbasis unterstützt.',
       chatbotKnowledgeEmptyDescription:
         'Der Chatbot kann auch ohne Abruf von Kursmaterialien verwendet werden.',
-      chatbotKnowledgeNextDisclaimer:
-        'Prüfen und speichern Sie als Nächstes die Informationen für Studierende unter Disclaimer. Sie sind für eine Veröffentlichungsanfrage erforderlich.',
-      chatbotKnowledgeOpenDisclaimer: 'Disclaimer öffnen',
       chatbotKnowledgeManagementLink:
         'Verwalten Sie Dokumente, Verarbeitung und Bereitschaft der Wissensbasis unter Wissensbasen.',
       chatbotKnowledgeBaseSelectPlaceholder: 'Wissensdatenbank auswählen',

@@ -12,7 +12,6 @@ import {
   QGetCatalystRequestAccessDocument,
   QGetChatbotsInfoWithKnowledgeBasesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Accordion,
@@ -24,28 +23,36 @@ import {
   Checkbox,
   H3,
   H4,
+  Modal,
   Select,
   Switch,
   UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
+import type { FormikProps, FormikValues } from 'formik'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import {
   type MouseEvent,
   type ReactNode,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
-import ChatbotAuthoring from './ChatbotAuthoring'
+import ChatbotAuthoring, {
+  getCustomModeFormValues,
+  getStandardModeFormValues,
+} from './ChatbotAuthoring'
+import { getSuggestedDisclaimer } from './ChatbotCreateModal'
 import ChatbotCreditPolicy from './ChatbotCreditPolicy'
 import ChatbotDisclaimerPreview from './ChatbotDisclaimerPreview'
 import ChatbotKnowledgeBaseSetup from './ChatbotKnowledgeBaseSetup'
 import ChatbotResponseExampleReview from './ChatbotResponseExampleReview'
+import ChatbotSetupSection from './ChatbotSetupSection'
 import ChatbotWorkspaceNavigation from './ChatbotWorkspaceNavigation'
 import {
   getChatbotMutationErrorKey,
@@ -64,12 +71,26 @@ import {
   type RevisionChatbot,
   useChatbotRevisionReload,
 } from './chatbotRevision'
+import {
+  type ChatbotSetupSectionId,
+  type ChatbotSetupSectionStatus,
+  isDefaultCreditPolicy,
+  isDefaultGraphPolicy,
+  isDefaultModelPolicy,
+  isDefaultModes,
+  isStudentInformationInvalid,
+  isSuggestedStudentInformation,
+  resolveSectionStatus,
+  type StudentInformationValues,
+  sectionBlocksRequest,
+} from './chatbotSetupStatus'
 import { getChatbotStatusTranslationKey } from './chatbotStatus'
 import {
   type ChatbotNavigationState,
   type ChatbotSetupStep,
   type ChatbotWorkspaceView,
-  hasCompleteDisclaimer,
+  getSetupLinkTarget,
+  isSectionSetup,
 } from './chatbotWorkspace'
 
 type ChatbotModelPolicy = Pick<
@@ -247,12 +268,9 @@ function ChatbotDetails({
   const t = useTranslations()
   // Usage holds operational quota settings that only advanced management
   // exposes; older links to it fall back to the overview.
-  // A draft or rejected chatbot is set up on one page without tabs, so it has
-  // no workspace view.
-  const singlePageSetup =
-    !advancedManagement &&
-    (chatbot?.status === ChatbotStatus.Draft ||
-      chatbot?.status === ChatbotStatus.Rejected)
+  // A draft or rejected chatbot is set up on one page of sections without
+  // tabs, so it has no workspace view.
+  const singlePageSetup = chatbot ? isSectionSetup(chatbot) : false
   const view: ChatbotWorkspaceView | undefined = singlePageSetup
     ? undefined
     : !advancedManagement && requestedView === 'usage'
@@ -303,9 +321,23 @@ function ChatbotDetails({
   )
   const [authoringNavigationState, setAuthoringNavigationState] =
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
-  const [editingBasics, setEditingBasics] = useState(false)
-  const [editingDisclaimer, setEditingDisclaimer] = useState(false)
-  const [behaviorOpen, setBehaviorOpen] = useState(false)
+  const [openSections, setOpenSections] = useState<ChatbotSetupSectionId[]>([])
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  // The student information shown in the preview dialog, captured when it
+  // opens so it includes unsaved edits.
+  const [studentsPreview, setStudentsPreview] =
+    useState<StudentInformationValues | null>(null)
+  // The suggested student information in every interface language, so a
+  // chatbot created in another course language still shows "Suggested".
+  const [suggestedStudentInformation, setSuggestedStudentInformation] =
+    useState<StudentInformationValues[]>([])
+  // The section footers save and discard the embedded editors through their
+  // forms.
+  const basicsFormRef = useRef<FormikProps<FormikValues> | null>(null)
+  const disclaimerFormRef = useRef<FormikProps<FormikValues> | null>(null)
+  const modesFormRef = useRef<FormikProps<FormikValues> | null>(null)
+  const customModesFormRef = useRef<FormikProps<FormikValues> | null>(null)
+  const creditFormRef = useRef<FormikProps<FormikValues> | null>(null)
   const [basicsNavigationState, setBasicsNavigationState] =
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
   const [disclaimerNavigationState, setDisclaimerNavigationState] =
@@ -388,18 +420,8 @@ function ChatbotDetails({
     [modelRegistry]
   )
 
-  useEffect(() => {
+  const resetModelSettings = useCallback(() => {
     if (!chatbot) return
-
-    const chatbotChanged = modelSettingsChatbotIdRef.current !== chatbot.id
-    if (chatbotChanged) {
-      modelSettingsChatbotIdRef.current = chatbot.id
-      modelSettingsDirtyRef.current = false
-      revisionConflictRef.current = false
-      setRevisionConflict(false)
-    }
-
-    if (revisionConflictRef.current || modelSettingsDirtyRef.current) return
 
     const revisionValues = getChatbotRevisionValues(chatbot)
     setModelSelectionEnabled(revisionValues.modelSelection)
@@ -417,6 +439,95 @@ function ChatbotDetails({
     setSaveError(null)
     setSaveSuccess(false)
   }, [chatbot, modelRegistry])
+
+  useEffect(() => {
+    if (!chatbot) return
+
+    const chatbotChanged = modelSettingsChatbotIdRef.current !== chatbot.id
+    if (chatbotChanged) {
+      modelSettingsChatbotIdRef.current = chatbot.id
+      modelSettingsDirtyRef.current = false
+      revisionConflictRef.current = false
+      setRevisionConflict(false)
+    }
+
+    if (revisionConflictRef.current || modelSettingsDirtyRef.current) return
+
+    resetModelSettings()
+  }, [chatbot, resetModelSettings])
+
+  useEffect(() => {
+    if (!singlePageSetup) return
+    let active = true
+    void Promise.all(['en', 'de'].map(getSuggestedDisclaimer)).then(
+      (suggestions) => {
+        if (!active) return
+        setSuggestedStudentInformation(
+          suggestions.map(({ disclaimerTitle, disclaimerIntroText }) => ({
+            title: disclaimerTitle,
+            introText: disclaimerIntroText,
+          }))
+        )
+      }
+    )
+    return () => {
+      active = false
+    }
+  }, [singlePageSetup])
+
+  const scrollToSetupElement = useCallback((elementId: string) => {
+    window.requestAnimationFrame(() => {
+      document
+        .getElementById(elementId)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }, [])
+
+  const openSetupSection = useCallback(
+    (section: ChatbotSetupSectionId) => {
+      setOpenSections((current) =>
+        current.includes(section) ? current : [...current, section]
+      )
+      scrollToSetupElement(`chatbot-section-${section}`)
+    },
+    [scrollToSetupElement]
+  )
+
+  const setSetupSectionOpen = (
+    section: ChatbotSetupSectionId,
+    open: boolean
+  ) => {
+    setOpenSections((current) =>
+      open
+        ? current.includes(section)
+          ? current
+          : [...current, section]
+        : current.filter((id) => id !== section)
+    )
+  }
+
+  // A link into a former workspace view opens its section once per chatbot
+  // and link; every other section starts closed.
+  const setupLinkTarget = singlePageSetup
+    ? getSetupLinkTarget({ view: requestedView, step })
+    : undefined
+  const setupLinkKey = singlePageSetup
+    ? `${chatbot?.id}:${setupLinkTarget ?? ''}`
+    : undefined
+  useEffect(() => {
+    if (!setupLinkKey) return
+    setDetailsOpen(setupLinkTarget === 'details')
+    setStudentsPreview(null)
+    if (setupLinkTarget === 'request') {
+      setOpenSections([])
+      scrollToSetupElement('chatbot-section-request')
+    } else if (setupLinkTarget && setupLinkTarget !== 'details') {
+      setOpenSections([setupLinkTarget])
+      scrollToSetupElement(`chatbot-section-${setupLinkTarget}`)
+    } else {
+      setOpenSections([])
+    }
+  }, [scrollToSetupElement, setupLinkKey, setupLinkTarget])
 
   const modelSettingsDirty = useMemo(() => {
     if (!chatbot) return false
@@ -755,9 +866,11 @@ function ChatbotDetails({
       })
 
       setSaveSuccess(true)
+      return true
     } catch (error) {
       if (isChatbotRevisionConflict(error)) markRevisionConflict()
       setSaveError(t(getChatbotMutationErrorKey(error, 'metadata')))
+      return false
     }
   }
 
@@ -783,12 +896,24 @@ function ChatbotDetails({
       })
 
       setKnowledgeGraphSaveSuccess(true)
+      return true
     } catch (error) {
       if (isChatbotRevisionConflict(error)) markRevisionConflict()
       setKnowledgeGraphSaveError(
         t(getChatbotMutationErrorKey(error, 'metadata'))
       )
+      return false
     }
+  }
+
+  const resetKnowledgeGraphPolicy = () => {
+    const revisionValues = getChatbotRevisionValues(chatbot)
+    setKnowledgeGraphPolicy({
+      visible: revisionValues.knowledgeGraphVisible,
+      retrievalEnabled: revisionValues.knowledgeGraphRetrievalEnabled,
+    })
+    setKnowledgeGraphSaveSuccess(false)
+    setKnowledgeGraphSaveError(null)
   }
 
   // These settings are shown in place when advanced management is enabled.
@@ -796,12 +921,21 @@ function ChatbotDetails({
   // Model routing and reasoning-effort tuning require
   // understanding provider capabilities and cost tradeoffs
   // that fall outside ordinary lecturing.
+  // On the setup page the section supplies the title, the frame and Save.
   const modelSettings = (
     <div>
-      <div className="mb-2 text-sm font-medium text-gray-700">
-        {t('manage.resources.chatbotModelSettings')}
-      </div>
-      <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+      {singlePageSetup ? null : (
+        <div className="mb-2 text-sm font-medium text-gray-700">
+          {t('manage.resources.chatbotModelSettings')}
+        </div>
+      )}
+      <div
+        className={
+          singlePageSetup
+            ? 'space-y-4'
+            : 'space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm'
+        }
+      >
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-3">
             <label
@@ -1037,7 +1171,10 @@ function ChatbotDetails({
           </div>
         )}
 
-        <div className="flex items-center gap-3 border-t pt-4">
+        <div
+          hidden={singlePageSetup}
+          className="flex items-center gap-3 border-t pt-4"
+        >
           <Button
             onClick={handleSaveModelSettings}
             disabled={isSaving || !modelSettingsEditable || revisionPending}
@@ -1081,7 +1218,10 @@ function ChatbotDetails({
   )
   const knowledgeAdvancedSettings = (
     <>
-      <div className="flex flex-wrap items-center gap-3 border-t border-gray-200 pt-4">
+      <div
+        hidden={singlePageSetup}
+        className="flex flex-wrap items-center gap-3 border-t border-gray-200 pt-4"
+      >
         <p className="text-sm text-gray-600">
           {t('manage.resources.chatbotKnowledgeManagementLink')}
         </p>
@@ -1095,13 +1235,19 @@ function ChatbotDetails({
       </div>
       {/* Concept-map visibility and graph-retrieval tuning assume the reader understands how the knowledge graph is built and queried, which an ordinary lecturer does not need to reason about to run a chatbot. */}
       <div
-        className="space-y-4 border-t border-gray-200 pt-4"
+        className={
+          singlePageSetup
+            ? 'space-y-4'
+            : 'space-y-4 border-t border-gray-200 pt-4'
+        }
         data-cy="chatbot-knowledge-graph-policy"
       >
         <div>
-          <div className="text-sm font-medium text-gray-700">
-            {t('manage.resources.knowledgeGraphPolicy')}
-          </div>
+          {singlePageSetup ? null : (
+            <div className="text-sm font-medium text-gray-700">
+              {t('manage.resources.knowledgeGraphPolicy')}
+            </div>
+          )}
           <p className="text-xs text-gray-500">
             {t('manage.resources.knowledgeGraphPolicyDescription')}
           </p>
@@ -1171,7 +1317,10 @@ function ChatbotDetails({
           </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div
+          hidden={singlePageSetup}
+          className="flex flex-wrap items-center gap-3"
+        >
           <Button
             onClick={handleSaveKnowledgeGraphPolicy}
             disabled={
@@ -1448,6 +1597,270 @@ function ChatbotDetails({
     </div>
   )
 
+  // Each setup section reports a status and a short summary of its saved
+  // values, so a closed section shows what is done and what needs work.
+  const savedValues = getChatbotRevisionValues(chatbot)
+  const connectedKnowledgeBase = enabledKnowledgeBases[0]
+  const formatList = (items: string[]) =>
+    new Intl.ListFormat(locale ?? 'en', {
+      style: 'long',
+      type: 'conjunction',
+    }).format(items)
+  const getModelName = (modelId: string) =>
+    modelRegistry.find((model) => model.id === modelId)?.name ?? modelId
+
+  const materialsReadiness = connectedKnowledgeBase?.materialsReadiness
+  // Failed resources never block a request, but the lecturer should notice.
+  const materialsStatus = resolveSectionStatus({
+    warning:
+      !connectedKnowledgeBase ||
+      (materialsReadiness?.failedResourceCount ?? 0) > 0,
+  })
+  const materialsSummary = connectedKnowledgeBase
+    ? [
+        t('manage.resources.chatbotSummaryMaterialsConnected', {
+          name: connectedKnowledgeBase.name,
+        }),
+        materialsReadiness
+          ? t('manage.resources.chatbotSummaryMaterialsReadiness', {
+              total: materialsReadiness.visibleResourceCount,
+              ready: materialsReadiness.servingResourceCount,
+              failed: materialsReadiness.failedResourceCount,
+            })
+          : null,
+      ]
+        .filter(Boolean)
+        .join(' ')
+    : t('manage.resources.chatbotSummaryMaterialsNone')
+
+  // A chatbot created before the suggestion existed has no stored student
+  // information; its editor then starts from the suggested text.
+  const studentInformationStored =
+    savedValues.disclaimerTitle != null ||
+    Boolean(chatbot.disclaimerSummary?.id)
+  const studentInformation = {
+    title: savedValues.disclaimerTitle,
+    introText: savedValues.disclaimerIntroText,
+  }
+  const studentInformationInvalid =
+    studentInformationStored && isStudentInformationInvalid(studentInformation)
+  const studentInformationSuggested =
+    !studentInformationStored ||
+    isSuggestedStudentInformation(
+      studentInformation,
+      suggestedStudentInformation
+    )
+  const studentsStatus = resolveSectionStatus({
+    unsaved: disclaimerNavigationState.dirty,
+    invalid: studentInformationInvalid,
+    suggested: studentInformationSuggested,
+  })
+  const studentsSummary = studentInformationInvalid
+    ? t('manage.resources.chatbotSummaryStudentsInvalid')
+    : [
+        t('manage.resources.chatbotSummaryStudents', {
+          title:
+            (studentInformationStored ? savedValues.disclaimerTitle : null) ??
+            t('manage.resources.chatbotDisclaimerSuggestedTitle'),
+        }),
+        studentInformationSuggested
+          ? t('manage.resources.chatbotSummaryStudentsSuggested')
+          : null,
+      ]
+        .filter(Boolean)
+        .join(' ')
+  const openStudentsPreview = () => {
+    const formValues = disclaimerFormRef.current?.values
+    setStudentsPreview({
+      title:
+        (formValues?.title as string | undefined) ??
+        (studentInformationStored
+          ? (savedValues.disclaimerTitle ?? '')
+          : t('manage.resources.chatbotDisclaimerSuggestedTitle')),
+      introText:
+        (formValues?.introText as string | undefined) ??
+        (studentInformationStored
+          ? (savedValues.disclaimerIntroText ?? '')
+          : t('manage.resources.chatbotDisclaimerSuggestedIntro')),
+    })
+  }
+
+  const savedModes = getStandardModeFormValues(chatbot)
+  const savedCustomModeCount = getCustomModeFormValues(chatbot).modes.length
+  const modesStatus = resolveSectionStatus({
+    unsaved: behaviorNavigationState.dirty,
+    isDefault: isDefaultModes({
+      ...savedModes,
+      customModeCount: savedCustomModeCount,
+    }),
+  })
+  const enabledModeNames = [
+    savedModes.tutorEnabled ? t('manage.resources.chatbotModeTutor') : null,
+    savedModes.explainerEnabled
+      ? t('manage.resources.chatbotModeExplainer')
+      : null,
+    savedModes.quizzerEnabled ? t('manage.resources.chatbotModeQuizzer') : null,
+  ].filter((name): name is string => name !== null)
+  const modesSummary = [
+    enabledModeNames.length > 0
+      ? t('manage.resources.chatbotSummaryModesOn', {
+          modes: formatList(enabledModeNames),
+          count: enabledModeNames.length,
+        })
+      : t('manage.resources.chatbotSummaryModesNone'),
+    // Quizzer only appears to students once a knowledge base is connected.
+    savedModes.quizzerEnabled && !connectedKnowledgeBase
+      ? t('manage.resources.chatbotSummaryModesQuizzerNeedsKb')
+      : t('manage.resources.chatbotSummaryModesExtras', {
+          framing: savedModes.scopeNote.trim() ? 'set' : 'none',
+          custom: savedCustomModeCount,
+        }),
+  ].join(' ')
+
+  // Mirrors getNewChatbotModelId on the server: a new chatbot uses GPT-6 Luna
+  // when it is a base model, and Auto otherwise.
+  const defaultModelId =
+    modelRegistry.find(
+      (model) =>
+        model.id === 'gpt-6-luna' && model.usageClass === ChatUsageClass.Base
+    )?.id ?? 'auto'
+  const modelStatus = resolveSectionStatus({
+    unsaved: modelSettingsDirty,
+    isDefault: isDefaultModelPolicy(
+      {
+        modelSelection: savedValues.modelSelection,
+        allowedModelIds: savedValues.allowedModelIds,
+        reasoningEffortsByModel: savedValues.allowedReasoningEffortsByModel,
+      },
+      defaultModelId
+    ),
+  })
+  const savedFixedModelId = getDefaultFixedModelId(savedValues, modelRegistry)
+  const savedFixedEffort = buildReasoningConfigState(
+    savedValues,
+    modelRegistry,
+    savedFixedModelId
+  )[savedFixedModelId]?.[0]
+  const modelSummary = savedValues.modelSelection
+    ? t('manage.resources.chatbotSummaryModelChoice', {
+        models: formatList(
+          getInitialSelectedModelIds(savedValues, modelRegistry).map(
+            getModelName
+          )
+        ),
+      })
+    : [
+        savedFixedEffort
+          ? t('manage.resources.chatbotSummaryModelFixedReasoning', {
+              model: getModelName(savedFixedModelId),
+              effort: savedFixedEffort,
+            })
+          : t('manage.resources.chatbotSummaryModelFixed', {
+              model: getModelName(savedFixedModelId),
+            }),
+        t('manage.resources.chatbotSummaryModelNoChoice'),
+      ].join(' ')
+
+  const usageStatus = resolveSectionStatus({
+    unsaved: creditNavigationState.dirty,
+    isDefault: isDefaultCreditPolicy(savedValues),
+  })
+  const usageLimitsSummary = [
+    t('manage.resources.chatbotSummaryUsageInitial', {
+      initial: savedValues.creditInitialCredits,
+    }),
+    t('manage.resources.chatbotSummaryUsageRefill', {
+      period: savedValues.creditResetPeriod,
+      amount: savedValues.creditResetAmount,
+      max: savedValues.creditMaxCredits,
+    }),
+  ].join(' ')
+
+  const graphStatus = resolveSectionStatus({
+    unsaved: knowledgeGraphDirty,
+    isDefault: isDefaultGraphPolicy(savedValues),
+  })
+  const graphSummary = [
+    t('manage.resources.chatbotSummaryGraph', {
+      visible: savedValues.knowledgeGraphVisible ? 'yes' : 'no',
+    }),
+    graphRetrievalAvailable
+      ? t('manage.resources.chatbotSummaryGraphRetrieval', {
+          enabled: savedValues.knowledgeGraphRetrievalEnabled ? 'yes' : 'no',
+        })
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+  const sectionTitles: Record<ChatbotSetupSectionId, string> = {
+    materials: t('manage.resources.chatbotSectionMaterials'),
+    students: t('manage.resources.chatbotSectionStudents'),
+    modes: t('manage.resources.chatbotSectionModes'),
+    model: t('manage.resources.chatbotSectionModel'),
+    usage: t('manage.resources.chatbotSectionUsage'),
+    graph: t('manage.resources.chatbotSectionGraph'),
+  }
+  const sectionStatuses: [ChatbotSetupSectionId, ChatbotSetupSectionStatus][] =
+    [
+      ['materials', materialsStatus],
+      ['students', studentsStatus],
+      ['modes', modesStatus],
+      ['model', modelStatus],
+      ['usage', usageStatus],
+      ['graph', graphStatus],
+    ]
+  const requestBlockers = sectionStatuses
+    .filter(([, status]) => sectionBlocksRequest(status))
+    .map(([id, status]) => ({
+      id,
+      label:
+        status === 'unsaved'
+          ? t('manage.resources.chatbotPublicationBlockerUnsaved', {
+              section: sectionTitles[id],
+            })
+          : t('manage.resources.chatbotPublicationBlockerInvalid', {
+              section: sectionTitles[id],
+            }),
+    }))
+  const setupEditable = modelSettingsEditable && !revisionPending
+  const closeSetupSection = (section: ChatbotSetupSectionId) =>
+    setSetupSectionOpen(section, false)
+  const courseNames = (chatbot.courses ?? []).map(({ name }) => name)
+
+  // The setup page lists these identifiers last, as a closed section.
+  const technicalDetails = (
+    <details
+      className={
+        singlePageSetup
+          ? 'rounded-lg border border-gray-200 bg-white p-4 text-xs text-gray-500'
+          : 'mt-2 text-xs text-gray-500'
+      }
+      data-cy="chatbot-technical-details"
+    >
+      <summary
+        className="cursor-pointer select-none font-medium text-gray-600"
+        data-cy="chatbot-technical-details-trigger"
+      >
+        {t('manage.resources.chatbotTechnicalDetails')}
+      </summary>
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono">
+        <div>
+          {t('manage.resources.chatbotTechnicalId')}:{' '}
+          <span className="select-all">{chatbot.id}</span>
+        </div>
+        {chatbot.avatar && (
+          <div className="flex max-w-full items-center gap-1">
+            <span>{t('manage.resources.chatbotTechnicalAvatar')}:</span>
+            <span className="max-w-[200px] truncate" title={chatbot.avatar}>
+              {chatbot.avatar}
+            </span>
+          </div>
+        )}
+      </div>
+    </details>
+  )
+
   return (
     <div data-cy="chatbot-details">
       <div className="space-y-6">
@@ -1463,6 +1876,24 @@ function ChatbotDetails({
               >
                 {chatbotStatusLabel}
               </Badge>
+              {chatbot.status === ChatbotStatus.Rejected ? (
+                <Badge
+                  className="bg-amber-100 text-amber-900 hover:bg-amber-200"
+                  data-cy="chatbot-changes-requested"
+                >
+                  {t('manage.resources.chatbotChangesRequested')}
+                </Badge>
+              ) : null}
+              {singlePageSetup && setupEditable ? (
+                <button
+                  type="button"
+                  className="text-primary-100 text-sm font-medium hover:underline"
+                  onClick={() => setDetailsOpen(true)}
+                  data-cy="chatbot-edit-details"
+                >
+                  {t('manage.resources.chatbotEditDetails')}
+                </button>
+              ) : null}
             </div>
             {canUseChatbotOwnerPreview(scopeData?.userScope) &&
               ownerPreviewUrl &&
@@ -1488,59 +1919,47 @@ function ChatbotDetails({
                       aria-hidden="true"
                     />
                   </a>
-                  <span
-                    className="max-w-full break-words text-center text-xs text-gray-500 sm:max-w-xs sm:text-right"
-                    data-cy="chatbot-owner-preview-live-label"
-                  >
-                    <span className="font-medium text-gray-700">
-                      {t('manage.resources.chatbotOwnerPreviewLive')}
+                  {/* Only a published chatbot has a live configuration that can
+                      differ from the saved one. */}
+                  {chatbot.status === ChatbotStatus.Published ? (
+                    <span
+                      className="max-w-full break-words text-center text-xs text-gray-500 sm:max-w-xs sm:text-right"
+                      data-cy="chatbot-owner-preview-live-label"
+                    >
+                      <span className="font-medium text-gray-700">
+                        {t('manage.resources.chatbotOwnerPreviewLive')}
+                      </span>
+                      {advancedManagement
+                        ? ` ${t('manage.resources.chatbotOwnerPreviewLiveDescription')}`
+                        : null}
                     </span>
-                    {advancedManagement
-                      ? ` ${t('manage.resources.chatbotOwnerPreviewLiveDescription')}`
-                      : null}
-                  </span>
+                  ) : null}
                 </div>
               )}
           </div>
-          <ChatbotRevisionStatusNotice chatbot={chatbot} />
+          {singlePageSetup ? (
+            <p
+              className="mt-1 text-sm text-gray-500"
+              data-cy="chatbot-draft-visibility"
+            >
+              {courseNames.length > 0
+                ? t('manage.resources.chatbotDraftVisibility', {
+                    courses: formatList(courseNames),
+                  })
+                : t('manage.resources.chatbotDraftVisibilityNoCourse')}
+            </p>
+          ) : (
+            <ChatbotRevisionStatusNotice chatbot={chatbot} />
+          )}
           {chatbot.description && (
             <div className="mt-1 text-sm text-gray-600">
               {chatbot.description}
             </div>
           )}
-          {advancedManagement && (
-            <details
-              className="mt-2 text-xs text-gray-500"
-              data-cy="chatbot-technical-details"
-            >
-              <summary
-                className="cursor-pointer select-none font-medium text-gray-600"
-                data-cy="chatbot-technical-details-trigger"
-              >
-                {t('manage.resources.chatbotTechnicalDetails')}
-              </summary>
-              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono">
-                <div>
-                  {t('manage.resources.chatbotTechnicalId')}:{' '}
-                  <span className="select-all">{chatbot.id}</span>
-                </div>
-                {chatbot.avatar && (
-                  <div className="flex max-w-full items-center gap-1">
-                    <span>{t('manage.resources.chatbotTechnicalAvatar')}:</span>
-                    <span
-                      className="max-w-[200px] truncate"
-                      title={chatbot.avatar}
-                    >
-                      {chatbot.avatar}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </details>
-          )}
+          {advancedManagement && !singlePageSetup ? technicalDetails : null}
         </div>
 
-        {chatbot.courses && chatbot.courses.length > 0 && (
+        {!singlePageSetup && chatbot.courses && chatbot.courses.length > 0 && (
           <div>
             <div className="mb-1 text-sm font-medium text-gray-700">
               {t('manage.resources.linkedCourses')}
@@ -1595,120 +2014,249 @@ function ChatbotDetails({
         ) : null}
 
         {singlePageSetup ? (
-          <div className="space-y-6" data-cy="chatbot-draft-setup">
-            <section
-              className="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
-              data-cy="chatbot-setup-step-materials"
+          <div
+            key={chatbot.id}
+            className="space-y-3"
+            data-cy="chatbot-draft-setup"
+          >
+            <ChatbotSetupSection
+              id="materials"
+              title={sectionTitles.materials}
+              status={materialsStatus}
+              summary={materialsSummary}
+              open={openSections.includes('materials')}
+              onOpenChange={(open) => setSetupSectionOpen('materials', open)}
             >
-              <div>
-                <H4>
-                  {`1. ${t('manage.resources.chatbotDraftStepMaterials')}`}
-                </H4>
-                <p className="text-sm text-gray-600">
-                  {t('manage.resources.chatbotDraftStepMaterialsDescription')}
-                </p>
-              </div>
+              <p className="text-sm text-gray-600">
+                {t('manage.resources.chatbotDraftStepMaterialsDescription')}
+              </p>
               <ChatbotKnowledgeBaseSetup
                 key={chatbot.id}
                 chatbotId={chatbot.id}
                 chatbotStatus={chatbot.status}
                 courseIds={chatbot.courses?.map(({ id }) => id) ?? []}
-                connectedKnowledgeBase={enabledKnowledgeBases[0]}
+                connectedKnowledgeBase={connectedKnowledgeBase}
                 connectOnSelect
               />
-              {editingBasics ? (
-                <ChatbotAuthoring
-                  key={`${chatbot.id}:basics`}
-                  chatbot={chatbot}
-                  advancedManagement={advancedManagement}
-                  step="basics"
-                  sections={['basics']}
-                  embedded
-                  publishingAuthorized={publishingAuthorized}
-                  publishingAuthorizationLoading={
-                    publishingAuthorizationLoading
-                  }
-                  publishingAuthorizationError={publishingAuthorizationError}
-                  onNavigationStateChange={setBasicsNavigationState}
+              {connectedKnowledgeBase ? (
+                <Link
+                  href={`/resources/knowledgeBases/${encodeURIComponent(connectedKnowledgeBase.id)}?chatbotId=${encodeURIComponent(chatbot.id)}`}
+                  className="text-primary-100 inline-flex items-center gap-2 text-sm hover:underline"
+                  data-cy="chatbot-enabled-knowledge-base"
+                >
+                  {connectedKnowledgeBase.name}
+                </Link>
+              ) : null}
+            </ChatbotSetupSection>
+
+            <ChatbotSetupSection
+              id="students"
+              title={sectionTitles.students}
+              status={studentsStatus}
+              summary={studentsSummary}
+              open={openSections.includes('students')}
+              onOpenChange={(open) => setSetupSectionOpen('students', open)}
+              headerAction={
+                <button
+                  type="button"
+                  className="text-primary-100 shrink-0 text-sm font-medium hover:underline"
+                  onClick={openStudentsPreview}
+                  data-cy="chatbot-section-students-preview"
+                >
+                  {t('manage.resources.chatbotStudentsPreview')}
+                </button>
+              }
+              footer={
+                setupEditable
+                  ? {
+                      onSave: () =>
+                        void disclaimerFormRef.current?.submitForm(),
+                      saveDisabled:
+                        !disclaimerNavigationState.dirty ||
+                        disclaimerNavigationState.pending,
+                      saving: disclaimerNavigationState.pending,
+                      dirty: disclaimerNavigationState.dirty,
+                      onDiscard: () => disclaimerFormRef.current?.resetForm(),
+                    }
+                  : undefined
+              }
+            >
+              <p className="text-sm text-gray-600">
+                {t('manage.resources.chatbotDraftStepStudentsDescription')}
+              </p>
+              <ChatbotAuthoring
+                key={`${chatbot.id}:disclaimer`}
+                chatbot={chatbot}
+                advancedManagement={advancedManagement}
+                step="disclaimer"
+                sections={['disclaimer']}
+                embedded
+                formRef={disclaimerFormRef}
+                onSaved={() => closeSetupSection('students')}
+                publishingAuthorized={publishingAuthorized}
+                publishingAuthorizationLoading={publishingAuthorizationLoading}
+                publishingAuthorizationError={publishingAuthorizationError}
+                onNavigationStateChange={setDisclaimerNavigationState}
+              />
+            </ChatbotSetupSection>
+
+            <p className="px-1 pt-5 text-sm text-gray-500">
+              {t('manage.resources.chatbotSectionGroupOptional')}
+            </p>
+
+            <ChatbotSetupSection
+              id="modes"
+              title={sectionTitles.modes}
+              status={modesStatus}
+              summary={modesSummary}
+              open={openSections.includes('modes')}
+              onOpenChange={(open) => setSetupSectionOpen('modes', open)}
+              footer={
+                setupEditable
+                  ? {
+                      onSave: () => void modesFormRef.current?.submitForm(),
+                      saveDisabled:
+                        !behaviorNavigationState.dirty ||
+                        behaviorNavigationState.pending,
+                      saving: behaviorNavigationState.pending,
+                      dirty: behaviorNavigationState.dirty,
+                      onDiscard: () => {
+                        modesFormRef.current?.resetForm()
+                        customModesFormRef.current?.resetForm()
+                      },
+                    }
+                  : undefined
+              }
+            >
+              <ChatbotAuthoring
+                key={`${chatbot.id}:behavior`}
+                chatbot={chatbot}
+                advancedManagement={advancedManagement}
+                step="modes"
+                sections={['modes']}
+                embedded
+                formRef={modesFormRef}
+                customModesFormRef={customModesFormRef}
+                onSaved={() => closeSetupSection('modes')}
+                publishingAuthorized={publishingAuthorized}
+                publishingAuthorizationLoading={publishingAuthorizationLoading}
+                publishingAuthorizationError={publishingAuthorizationError}
+                onNavigationStateChange={setBehaviorNavigationState}
+              />
+            </ChatbotSetupSection>
+
+            <ChatbotSetupSection
+              id="model"
+              title={sectionTitles.model}
+              status={modelStatus}
+              summary={modelSummary}
+              open={openSections.includes('model')}
+              onOpenChange={(open) => setSetupSectionOpen('model', open)}
+              footer={
+                setupEditable
+                  ? {
+                      onSave: () =>
+                        void handleSaveModelSettings().then((saved) => {
+                          if (saved) closeSetupSection('model')
+                        }),
+                      saveDisabled: !modelSettingsDirty || isSaving,
+                      saving: isSaving && modelSettingsDirty,
+                      dirty: modelSettingsDirty,
+                      onDiscard: () => {
+                        clearRevisionConflict()
+                        resetModelSettings()
+                      },
+                    }
+                  : undefined
+              }
+            >
+              {modelSettings}
+            </ChatbotSetupSection>
+
+            <ChatbotSetupSection
+              id="usage"
+              title={sectionTitles.usage}
+              status={usageStatus}
+              summary={usageLimitsSummary}
+              open={openSections.includes('usage')}
+              onOpenChange={(open) => setSetupSectionOpen('usage', open)}
+              footer={
+                setupEditable
+                  ? {
+                      onSave: () => void creditFormRef.current?.submitForm(),
+                      saveDisabled:
+                        !creditNavigationState.dirty ||
+                        creditNavigationState.pending,
+                      saving: creditNavigationState.pending,
+                      dirty: creditNavigationState.dirty,
+                      onDiscard: () => creditFormRef.current?.resetForm(),
+                    }
+                  : undefined
+              }
+            >
+              <p className="text-sm text-gray-600">
+                {t('manage.resources.chatbotCreditPolicyDescription')}
+              </p>
+              <ChatbotCreditPolicy
+                key={chatbot.id}
+                chatbot={chatbot}
+                publicationPending={false}
+                embedded
+                formRef={creditFormRef}
+                onSaved={() => closeSetupSection('usage')}
+                onNavigationStateChange={setCreditNavigationState}
+                onRevisionConflict={markRevisionConflict}
+              />
+              {revisionConflict ? (
+                <ChatbotRevisionConflictNotice
+                  message={t('manage.resources.chatbotRevisionConflict')}
+                  onReload={() => void reloadAfterConflict()}
+                  reloading={revisionReloading}
+                  testId="chatbot-revision-reload-credits"
                 />
               ) : null}
-            </section>
+            </ChatbotSetupSection>
+
+            <p className="px-1 pt-5 text-sm text-gray-500">
+              {t('manage.resources.chatbotSectionGroupAdvanced')}
+            </p>
+
+            <ChatbotSetupSection
+              id="graph"
+              title={sectionTitles.graph}
+              status={graphStatus}
+              summary={graphSummary}
+              open={openSections.includes('graph')}
+              onOpenChange={(open) => setSetupSectionOpen('graph', open)}
+              footer={
+                setupEditable
+                  ? {
+                      onSave: () =>
+                        void handleSaveKnowledgeGraphPolicy().then((saved) => {
+                          if (saved) closeSetupSection('graph')
+                        }),
+                      saveDisabled: !knowledgeGraphDirty || isSaving,
+                      saving: isSaving && knowledgeGraphDirty,
+                      dirty: knowledgeGraphDirty,
+                      onDiscard: () => {
+                        clearRevisionConflict()
+                        resetKnowledgeGraphPolicy()
+                      },
+                    }
+                  : undefined
+              }
+            >
+              {knowledgeAdvancedSettings}
+            </ChatbotSetupSection>
 
             <section
-              className="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
-              data-cy="chatbot-setup-step-students"
+              id="chatbot-section-request"
+              className="mt-6 scroll-mt-4 space-y-4 rounded-lg border border-gray-200 bg-white p-4"
+              data-cy="chatbot-section-request"
             >
-              <div>
-                <H4>
-                  {`2. ${t('manage.resources.chatbotDraftStepStudents')}`}
-                </H4>
-                <p className="text-sm text-gray-600">
-                  {t('manage.resources.chatbotDraftStepStudentsDescription')}
-                </p>
-              </div>
-              {editingDisclaimer ? (
-                <ChatbotAuthoring
-                  key={`${chatbot.id}:disclaimer`}
-                  chatbot={chatbot}
-                  advancedManagement={advancedManagement}
-                  step="disclaimer"
-                  sections={['disclaimer']}
-                  embedded
-                  publishingAuthorized={publishingAuthorized}
-                  publishingAuthorizationLoading={
-                    publishingAuthorizationLoading
-                  }
-                  publishingAuthorizationError={publishingAuthorizationError}
-                  onNavigationStateChange={setDisclaimerNavigationState}
-                />
-              ) : (
-                <div
-                  className="space-y-3 rounded-md border border-gray-200 bg-gray-50 p-4"
-                  data-cy="chatbot-setup-students-summary"
-                >
-                  <h6 className="font-medium text-gray-900">
-                    {getChatbotRevisionValues(chatbot).disclaimerTitle ||
-                      t('manage.resources.chatbotDisclaimerTitlePlaceholder')}
-                  </h6>
-                  <div className="text-sm text-gray-700">
-                    {getChatbotRevisionValues(chatbot).disclaimerIntroText ? (
-                      <Markdown
-                        content={
-                          getChatbotRevisionValues(chatbot)
-                            .disclaimerIntroText ?? ''
-                        }
-                        withProse
-                        className={{ root: 'prose prose-sm max-w-none' }}
-                      />
-                    ) : (
-                      t('manage.resources.chatbotDisclaimerIntroPlaceholder')
-                    )}
-                  </div>
-                  <Button
-                    type="button"
-                    onClick={() => setEditingDisclaimer(true)}
-                    data={{ cy: 'chatbot-setup-students-edit' }}
-                  >
-                    <Button.Label>
-                      {t('manage.resources.chatbotSetupEdit')}
-                    </Button.Label>
-                  </Button>
-                </div>
-              )}
-            </section>
-
-            <section
-              className="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
-              data-cy="chatbot-setup-step-publication"
-            >
-              <div>
-                <H4>
-                  {`3. ${t('manage.resources.chatbotDraftStepPublication')}`}
-                </H4>
-                <p className="text-sm text-gray-600">
-                  {t('manage.resources.chatbotDraftStepPublicationDescription')}
-                </p>
-              </div>
+              <h3 className="font-semibold text-gray-900">
+                {t('manage.resources.chatbotSectionRequest')}
+              </h3>
               <ChatbotAuthoring
                 key={`${chatbot.id}:publication`}
                 chatbot={chatbot}
@@ -1716,13 +2264,9 @@ function ChatbotDetails({
                 step="review"
                 sections={['review']}
                 embedded
-                siblingDirty={
-                  basicsNavigationState.dirty ||
-                  disclaimerNavigationState.dirty ||
-                  behaviorNavigationState.dirty ||
-                  creditNavigationState.dirty ||
-                  modelSettingsDirty ||
-                  knowledgeGraphDirty
+                blockers={requestBlockers}
+                onBlockerClick={(id) =>
+                  openSetupSection(id as ChatbotSetupSectionId)
                 }
                 siblingPending={
                   basicsNavigationState.pending ||
@@ -1735,57 +2279,65 @@ function ChatbotDetails({
                 publishingAuthorizationLoading={publishingAuthorizationLoading}
                 publishingAuthorizationError={publishingAuthorizationError}
                 onNavigateSection={(section) => {
-                  if (section === 'basics') setEditingBasics(true)
-                  if (section === 'disclaimer') setEditingDisclaimer(true)
-                  if (section === 'modes') setBehaviorOpen(true)
+                  if (section === 'basics') setDetailsOpen(true)
+                  if (section === 'disclaimer') openSetupSection('students')
+                  if (section === 'modes') openSetupSection('modes')
+                  if (section === 'credits') openSetupSection('usage')
                 }}
                 onNavigationStateChange={setAuthoringNavigationState}
               />
             </section>
 
-            <section
-              className="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
-              data-cy="chatbot-setup-behavior"
+            {advancedManagement ? technicalDetails : null}
+
+            <Modal
+              open={detailsOpen}
+              title={t('manage.resources.chatbotEditDetailsTitle')}
+              onClose={() => {
+                basicsFormRef.current?.resetForm()
+                setDetailsOpen(false)
+              }}
+              primaryButtonStyle="primary"
+              primaryLabel={t('manage.resources.chatbotSectionSave')}
+              onPrimaryAction={() => void basicsFormRef.current?.submitForm()}
+              dataPrimaryAction={{ cy: 'chatbot-edit-details-save' }}
+              secondaryLabel={t('shared.generic.cancel')}
+              onSecondaryAction={() => {
+                basicsFormRef.current?.resetForm()
+                setDetailsOpen(false)
+              }}
+              dataSecondaryAction={{ cy: 'chatbot-edit-details-cancel' }}
+              className={{ content: 'max-w-2xl' }}
+              data={{ cy: 'chatbot-edit-details-modal' }}
             >
-              <button
-                type="button"
-                aria-expanded={behaviorOpen}
-                className="flex w-full flex-col items-start gap-1 text-left"
-                data-cy="chatbot-setup-behavior-toggle"
-                onClick={() => setBehaviorOpen((open) => !open)}
-              >
-                <span className="font-medium text-gray-900">
-                  {t('manage.resources.chatbotDraftBehaviorTitle')}
-                </span>
-                <span className="text-sm text-gray-600">
-                  {t('manage.resources.chatbotDraftBehaviorDescription')}
-                </span>
-              </button>
-              <div hidden={!behaviorOpen}>
-                <ChatbotAuthoring
-                  key={`${chatbot.id}:behavior`}
-                  chatbot={chatbot}
-                  advancedManagement={advancedManagement}
-                  step="modes"
-                  sections={['modes']}
-                  embedded
-                  publishingAuthorized={publishingAuthorized}
-                  publishingAuthorizationLoading={
-                    publishingAuthorizationLoading
-                  }
-                  publishingAuthorizationError={publishingAuthorizationError}
-                  onNavigationStateChange={setBehaviorNavigationState}
-                />
-              </div>
-            </section>
-            <ChatbotAdvancedSettings
-              advancedManagement={advancedManagement}
-              cy="chatbot-setup-advanced"
+              <ChatbotAuthoring
+                key={`${chatbot.id}:basics`}
+                chatbot={chatbot}
+                advancedManagement={advancedManagement}
+                step="basics"
+                sections={['basics']}
+                embedded
+                formRef={basicsFormRef}
+                onSaved={() => setDetailsOpen(false)}
+                publishingAuthorized={publishingAuthorized}
+                publishingAuthorizationLoading={publishingAuthorizationLoading}
+                publishingAuthorizationError={publishingAuthorizationError}
+                onNavigationStateChange={setBasicsNavigationState}
+              />
+            </Modal>
+
+            <Modal
+              open={studentsPreview !== null}
+              title={t('manage.resources.chatbotStudentsPreviewTitle')}
+              onClose={() => setStudentsPreview(null)}
+              className={{ content: 'max-w-2xl' }}
+              data={{ cy: 'chatbot-students-preview-modal' }}
             >
-              {modelSettings}
-              <div className="space-y-5">{knowledgeAdvancedSettings}</div>
-              {usageSettings}
-            </ChatbotAdvancedSettings>
+              <ChatbotDisclaimerPreview
+                title={studentsPreview?.title ?? ''}
+                introText={studentsPreview?.introText ?? ''}
+              />
+            </Modal>
           </div>
         ) : null}
 
@@ -1920,28 +2472,6 @@ function ChatbotDetails({
                 </div>
               )}
             </div>
-            {(chatbot.status === ChatbotStatus.Draft ||
-              chatbot.status === ChatbotStatus.Rejected) &&
-            !hasCompleteDisclaimer(chatbot) ? (
-              // Student information is required for publication, and a new
-              // chatbot opens here first.
-              <div
-                className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-blue-100 bg-blue-50 p-3"
-                data-cy="chatbot-knowledge-next-disclaimer"
-              >
-                <p className="text-sm text-blue-900">
-                  {t('manage.resources.chatbotKnowledgeNextDisclaimer')}
-                </p>
-                <Button
-                  onClick={() => onNavigate('disclaimer')}
-                  data={{ cy: 'chatbot-knowledge-open-disclaimer' }}
-                >
-                  <Button.Label>
-                    {t('manage.resources.chatbotKnowledgeOpenDisclaimer')}
-                  </Button.Label>
-                </Button>
-              </div>
-            ) : null}
             <ChatbotKnowledgeBaseSetup
               key={chatbot.id}
               chatbotId={chatbot.id}

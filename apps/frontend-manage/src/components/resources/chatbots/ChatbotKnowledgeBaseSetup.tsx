@@ -26,6 +26,9 @@ const KB_LIST_PAGE_SIZE = 50
 
 const refetchQueries = [{ query: QGetChatbotsInfoWithKnowledgeBasesDocument }]
 
+// The select value that stands for answering without a knowledge base.
+const NO_KNOWLEDGE_BASE = 'no-knowledge-base'
+
 function ChatbotKnowledgeBaseSetup({
   chatbotId,
   chatbotStatus,
@@ -44,6 +47,12 @@ function ChatbotKnowledgeBaseSetup({
   const apolloClient = useApolloClient()
   const [selectedKbId, setSelectedKbId] = useState<string | undefined>()
   const [createOpen, setCreateOpen] = useState(false)
+  // Bindings sit outside the chatbot revision, so a choice only has a live
+  // effect on a published chatbot. Elsewhere the host may connect on select,
+  // and choosing no knowledge base is then one of the options instead of a
+  // separate Disconnect button.
+  const connectsOnSelect =
+    connectOnSelect && chatbotStatus !== ChatbotStatus.Published
   // A knowledge base created here whose connection failed. It stays listed and
   // selected so the lecturer can retry the connection instead of creating a
   // second knowledge base.
@@ -88,7 +97,16 @@ function ChatbotKnowledgeBaseSetup({
     value: knowledgeBase.id,
     label: knowledgeBase.name,
   }))
-  const selectedValue = selectedKbId ?? connectedKnowledgeBase?.id
+  if (connectsOnSelect) {
+    selectItems.unshift({
+      value: NO_KNOWLEDGE_BASE,
+      label: t('manage.resources.chatbotNoKnowledgeBaseOption'),
+    })
+  }
+  const selectedValue =
+    selectedKbId ??
+    connectedKnowledgeBase?.id ??
+    (connectsOnSelect ? NO_KNOWLEDGE_BASE : undefined)
   const replacing =
     connectedKnowledgeBase != null &&
     selectedValue != null &&
@@ -99,12 +117,9 @@ function ChatbotKnowledgeBaseSetup({
     selectedValue !== connectedKnowledgeBase?.id
   const canConnect =
     selectedValue != null &&
+    selectedValue !== NO_KNOWLEDGE_BASE &&
     selectedValue !== connectedKnowledgeBase?.id &&
     !mutating
-  // Bindings sit outside the chatbot revision, so a choice only has a live
-  // effect on a published chatbot. Elsewhere the host may connect on select.
-  const connectsOnSelect =
-    connectOnSelect && chatbotStatus !== ChatbotStatus.Published
 
   const attach = async (kbId: string) => {
     try {
@@ -139,6 +154,11 @@ function ChatbotKnowledgeBaseSetup({
   }
 
   const handleSelect = (kbId: string) => {
+    if (kbId === NO_KNOWLEDGE_BASE) {
+      setSelectedKbId(undefined)
+      void handleDisconnect()
+      return
+    }
     setSelectedKbId(kbId)
     if (connectsOnSelect && kbId !== connectedKnowledgeBase?.id && !mutating) {
       void connect(kbId)
@@ -238,7 +258,7 @@ function ChatbotKnowledgeBaseSetup({
             </Button.Label>
           </Button>
         ) : null}
-        {connectedKnowledgeBase ? (
+        {connectedKnowledgeBase && !connectsOnSelect ? (
           <Button
             disabled={mutating}
             onClick={handleDisconnect}

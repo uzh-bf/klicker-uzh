@@ -41,6 +41,12 @@ type ChatbotPublicationRequestProps = {
   publishingAuthorizationError: boolean
   setupDirty?: boolean
   setupPending?: boolean
+  // Sections of the setup page that keep the request from being sent. When
+  // given, they replace the generic unsaved and incomplete notices.
+  blockers?: { id: string; label: string }[]
+  onBlockerClick?: (id: string) => void
+  // The setup page titles the card itself.
+  hideHeading?: boolean
   onNavigationStateChange?: (state: ChatbotNavigationState) => void
   onRevisionConflict?: () => void
 }
@@ -203,6 +209,9 @@ function ChatbotPublicationRequest({
   publishingAuthorizationError,
   setupDirty = false,
   setupPending = false,
+  blockers,
+  onBlockerClick,
+  hideHeading = false,
   onNavigationStateChange,
   onRevisionConflict,
 }: ChatbotPublicationRequestProps) {
@@ -239,7 +248,8 @@ function ChatbotPublicationRequest({
     !publishingAuthorizationLoading &&
     !publishingAuthorizationError &&
     !setupDirty &&
-    !setupPending
+    !setupPending &&
+    (blockers?.length ?? 0) === 0
 
   // A first request starts from the chatbot description and the enrolled
   // participant count; the lecturer still confirms both before submitting.
@@ -408,12 +418,14 @@ function ChatbotPublicationRequest({
               onChange={onNavigationStateChange}
             />
           ) : null}
-          <div>
-            <H4>{t('manage.resources.chatbotPublication')}</H4>
-            <p className="mt-1 text-sm text-gray-600">
-              {t('manage.resources.chatbotPublicationDescription')}
-            </p>
-          </div>
+          {hideHeading ? null : (
+            <div>
+              <H4>{t('manage.resources.chatbotPublication')}</H4>
+              <p className="mt-1 text-sm text-gray-600">
+                {t('manage.resources.chatbotPublicationDescription')}
+              </p>
+            </div>
+          )}
 
           <ChatbotPublicationVisibilityNote published={published} />
 
@@ -432,13 +444,38 @@ function ChatbotPublicationRequest({
             error={publishingAuthorizationError}
           />
 
-          {!hasDisclaimer ? (
+          {blockers ? (
+            blockers.length > 0 ? (
+              <div
+                className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
+                data-cy="chatbot-publication-blockers"
+              >
+                <p className="font-medium">
+                  {t('manage.resources.chatbotPublicationBlockersTitle')}
+                </p>
+                <ul className="mt-1 space-y-1">
+                  {blockers.map((blocker) => (
+                    <li key={blocker.id}>
+                      <button
+                        type="button"
+                        className="text-left underline underline-offset-2"
+                        onClick={() => onBlockerClick?.(blocker.id)}
+                        data-cy={`chatbot-publication-blocker-${blocker.id}`}
+                      >
+                        {blocker.label}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null
+          ) : !hasDisclaimer ? (
             <UserNotification type="warning">
               {t('manage.resources.chatbotPublicationDisclaimerRequired')}
             </UserNotification>
           ) : null}
 
-          {setupDirty || setupPending ? (
+          {!blockers && (setupDirty || setupPending) ? (
             <UserNotification
               type="warning"
               data={{ cy: 'chatbot-publication-unsaved-setup' }}
