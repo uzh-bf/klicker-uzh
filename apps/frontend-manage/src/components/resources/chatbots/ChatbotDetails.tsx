@@ -259,6 +259,7 @@ function ChatbotDetails({
       ? 'overview'
       : requestedView
   const graphRetrievalAvailable = useFeatureFlag('chatbot-graphrag')
+  const responseExamplesEnabled = useFeatureFlag('chatbot-response-examples')
   const { locale } = useRouter()
   const { data: scopeData } = useQuery(QGetCatalystRequestAccessDocument)
   // Only the owner edits a chatbot, so the viewer's own entitlement decides
@@ -1210,36 +1211,38 @@ function ChatbotDetails({
         )}
       </div>
       {/* Curated response examples train reviewers to judge answer quality against the chatbot's own knowledge base, a task an ordinary lecturer does not perform. */}
-      <Accordion
-        type="single"
-        collapsible
-        className="border-t border-gray-200 pt-4"
-        data-cy="chatbot-knowledge-secondary"
-      >
-        <AccordionItem
-          value="response-examples"
-          className="rounded-lg border border-gray-200 px-4"
-          data-cy="chatbot-response-examples-item"
+      {responseExamplesEnabled ? (
+        <Accordion
+          type="single"
+          collapsible
+          className="border-t border-gray-200 pt-4"
+          data-cy="chatbot-knowledge-secondary"
         >
-          <AccordionTrigger
-            className="py-3 hover:no-underline"
-            data-cy="chatbot-response-examples-trigger"
+          <AccordionItem
+            value="response-examples"
+            className="rounded-lg border border-gray-200 px-4"
+            data-cy="chatbot-response-examples-item"
           >
-            <span className="flex flex-col gap-1 text-left">
-              <span>{t('manage.resources.responseExamples')}</span>
-              <span className="text-sm font-normal text-gray-600">
-                {t('manage.resources.responseExamplesDescription')}
+            <AccordionTrigger
+              className="py-3 hover:no-underline"
+              data-cy="chatbot-response-examples-trigger"
+            >
+              <span className="flex flex-col gap-1 text-left">
+                <span>{t('manage.resources.responseExamples')}</span>
+                <span className="text-sm font-normal text-gray-600">
+                  {t('manage.resources.responseExamplesDescription')}
+                </span>
               </span>
-            </span>
-          </AccordionTrigger>
-          <AccordionContent forceMount>
-            <ChatbotResponseExampleReview
-              key={chatbot.id}
-              chatbotId={chatbot.id}
-            />
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+            </AccordionTrigger>
+            <AccordionContent forceMount>
+              <ChatbotResponseExampleReview
+                key={chatbot.id}
+                chatbotId={chatbot.id}
+              />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      ) : null}
     </>
   )
   const usageSettings = (

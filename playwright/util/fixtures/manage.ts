@@ -131,11 +131,13 @@ export async function mockGrowthBookFeatureFlags(
   {
     aiBeta = false,
     aiAdvancedManagement = true,
+    responseExamples = false,
     failRefresh = false,
     learningAnalytics = true,
   }: {
     aiBeta?: boolean
     aiAdvancedManagement?: boolean
+    responseExamples?: boolean
     failRefresh?: boolean
     learningAnalytics?: boolean
   } = {}
@@ -154,6 +156,7 @@ export async function mockGrowthBookFeatureFlags(
         features: {
           'ai-beta': { defaultValue: aiBeta },
           'ai-advanced-management': { defaultValue: aiAdvancedManagement },
+          'chatbot-response-examples': { defaultValue: responseExamples },
           'learning-analytics': { defaultValue: learningAnalytics },
         },
       }),

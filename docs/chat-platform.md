@@ -91,6 +91,8 @@ the owner can inspect the set, approve, edit and approve, or reject an entry.
 Non-owners receive `null`, and no production GraphQL or chat runtime path
 creates candidates or marks evidence eligible. Local/test fixtures may seed
 synthetic candidates and evidence solely to exercise the review lifecycle.
+Manage mounts the review only while the `chatbot-response-examples` flag is on;
+the flag does not change how the chat runtime uses approved examples.
 
 The chat route returns an AI SDK UI message stream and passes
 `consumeSseStream: consumeStream` to `toUIMessageStreamResponse`. Keep this

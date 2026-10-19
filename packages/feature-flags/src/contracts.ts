@@ -14,10 +14,14 @@ export const FEATURE_FLAG_DEFAULTS = {
   'chatbot-graphrag': false,
   // Reveals the advanced chatbot-management controls in Manage: model
   // selection, reasoning effort, credit editing, usage summary, MCP
-  // configuration, knowledge-graph controls and response examples. Off is
-  // the ordinary lecturer surface, not a degraded one — it shows the
-  // simplified chatbot surface that every lecturer sees by default.
+  // configuration and knowledge-graph controls. Off is the ordinary lecturer
+  // surface, not a degraded one — it shows the simplified chatbot surface that
+  // every lecturer sees by default.
   'ai-advanced-management': false,
+  // Shows the owner review of curated response examples in Manage. It is
+  // separate from advanced management so the review stays hidden for every
+  // lecturer until it is rolled out. The chat runtime does not read it.
+  'chatbot-response-examples': false,
   // Knowledge-base admission controls. Each one answers whether an actor may
   // start new work; the provider contract still decides what a worker can
   // execute, and an accepted build keeps the inputs it was accepted with.
