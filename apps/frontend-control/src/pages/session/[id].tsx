@@ -26,7 +26,7 @@ import type { GetStaticPropsContext } from 'next'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
-import { sort } from 'remeda'
+import { findLast, sort } from 'remeda'
 import ResponsiveSheet from '../../components/common/ResponsiveSheet'
 import {
   dangerButtonClass,
@@ -79,14 +79,30 @@ function RunningLiveQuiz() {
   // (e.g. after a reload once the quiz was ended), look up whether it ended
   const sessionMissing =
     !!quizId && !ended && !loading && !data?.controlLiveQuiz
-  const { data: statusData } = useQuery(GetControlLiveQuizStatusDocument, {
-    variables: { id: quizId },
-    skip: !sessionMissing,
-  })
+  const { data: statusData, error: statusError } = useQuery(
+    GetControlLiveQuizStatusDocument,
+    {
+      variables: { id: quizId },
+      skip: !sessionMissing,
+    }
+  )
   const endedQuiz =
     statusData?.liveQuiz?.status === PublicationStatus.Ended
       ? statusData.liveQuiz
       : null
+  const derivedEnded = endedQuiz
+    ? {
+        name: endedQuiz.name,
+        numOfBlocks: endedQuiz.blocks?.length ?? 0,
+        backHref: endedQuiz.course
+          ? `/course/${endedQuiz.course.id}`
+          : '/course/unassigned',
+      }
+    : null
+  // keep the looked-up ended state so the session and Q&A polls stop
+  useEffect(() => {
+    if (derivedEnded && !ended) setEnded(derivedEnded)
+  }, [derivedEnded, ended])
 
   // polled on both tabs so the Q&A tab can show the pending counter
   const {
@@ -151,17 +167,7 @@ function RunningLiveQuiz() {
     }
   }
 
-  const endedState =
-    ended ??
-    (endedQuiz
-      ? {
-          name: endedQuiz.name,
-          numOfBlocks: endedQuiz.blocks?.length ?? 0,
-          backHref: endedQuiz.course
-            ? `/course/${endedQuiz.course.id}`
-            : '/course/unassigned',
-        }
-      : null)
+  const endedState = ended ?? derivedEnded
   if (endedState) {
     return (
       <Layout
@@ -175,7 +181,8 @@ function RunningLiveQuiz() {
     )
   }
 
-  if (loading && !data) {
+  // keep the loader while checking whether a missing quiz has ended
+  if ((loading && !data) || (sessionMissing && !statusData && !statusError)) {
     return (
       <Layout
         title={t('control.liveQuiz.liveQuizControl')}
@@ -253,7 +260,7 @@ function RunningLiveQuiz() {
   // evaluation: the running block, otherwise the most recently closed one
   const evaluationBlock =
     activeBlock ??
-    blocks.findLast((block) => block.status === ElementBlockStatus.Executed)
+    findLast(blocks, (block) => block.status === ElementBlockStatus.Executed)
   // a new evaluated block starts at its first question
   const selectedIndex =
     selectedQuestion.blockId === evaluationBlock?.id
