@@ -1505,7 +1505,11 @@ async function removeCacheEntriesBlock({
 }) {
   if (isLastBlock) {
     // if the last block was closed, clean up the entire cache for this live quiz
-    const keys = await redis.keys(`lq:${liveQuizId}:*`)
+    // the projected-evaluation display settings keep their own (longer)
+    // retention, so the embed still looks the same days after the session
+    const keys = (await redis.keys(`lq:${liveQuizId}:*`)).filter(
+      (key) => key !== `lq:${liveQuizId}:display`
+    )
     if (keys.length > 0) {
       const pipe = redis.pipeline()
       for (const key of keys) {
