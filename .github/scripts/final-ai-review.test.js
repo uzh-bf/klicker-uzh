@@ -4,6 +4,11 @@ const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
+const {
+  expectedVersion,
+  verifyVersion,
+  verifyArchive,
+} = require('./install-patched-ocr.cjs')
 
 const { invalidCleanCheckChanges } = require('./final-ai-review-fixtures')
 const {
@@ -304,7 +309,7 @@ function executeExtractedOCRAttempt({
     OCR_VERSION_OUTPUT:
       versionMode === 'drift'
         ? `open-code-review v1.10.0 ${versionSentinel}`
-        : 'open-code-review v1.13.0 synthetic',
+        : `${expectedVersion()}linux/arm64`,
     OCR_VERSION_STATUS: String(versionStatus),
     OCR_VERSION_STDERR: 'OCR_VERSION_STDERR_SENTINEL',
     OUTPUT_PATH: outputPath,
@@ -329,6 +334,7 @@ function executeExtractedOCRAttempt({
     '  "$@"',
     '}',
     'node() {',
+    '  if [[ "$1" == .github/scripts/install-patched-ocr.cjs && "$2" == verify-version ]]; then command node "$@"; return; fi',
     '  if [[ "$1" == .github/scripts/final-ai-review.js && "$2" == validate-ocr-preview ]]; then',
     '    command node "$@" || return',
     '    printf "coverage checked\\n" >>"${OCR_CALLS_PATH}"',
@@ -1451,7 +1457,8 @@ test('uses one qualified canary and OCR release in both manual jobs', () => {
     )?.[1] ?? ''
 
   assert.equal(
-    source.match(/@alibaba-group\/open-code-review@1\.13\.0/g)?.length,
+    source.match(/install-patched-ocr\.cjs "\$\{RUNNER_TEMP\}\/patched-ocr"/g)
+      ?.length,
     2
   )
   assert.equal(source.match(/verify-mistral-tools/g)?.length, 2)
@@ -4394,6 +4401,8 @@ test('selects incremental attestation only for bounded repaired changes', async 
   for (const policyPath of [
     '.github/workflows/check-ocr-final-review.yml',
     '.github/scripts/final-ai-review-shared.js',
+    '.github/scripts/install-patched-ocr.cjs',
+    '.github/open-code-review/ocr-compression.patch',
   ]) {
     state.policyFiles[policyPath] = 'changed trusted policy'
     const changedPolicy = await buildReviewPlan({
@@ -4986,5 +4995,23 @@ test('treats chore/promote-stg-* as ordinary final-review policy', async () => {
   assert.doesNotMatch(
     source,
     /Generated staging promotion|isPromotionCandidate|validatePromotionContract/
+  )
+})
+
+test('patched executable provenance refuses an upstream binary or a changed patch', () => {
+  const patch = Buffer.from('synthetic compression patch')
+  const version = expectedVersion(patch) + 'linux/arm64'
+  verifyVersion(version, patch)
+  assert.throws(
+    () => verifyVersion('open-code-review v1.13.0 upstream', patch),
+    /does not match/
+  )
+  assert.throws(
+    () => verifyVersion(version, Buffer.from('different synthetic patch')),
+    /does not match/
+  )
+  assert.throws(
+    () => verifyArchive(Buffer.from('unexpected upstream archive')),
+    /checksum mismatch/
   )
 })
