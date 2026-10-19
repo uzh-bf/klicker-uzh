@@ -430,7 +430,7 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
         : null,
     ]
       .filter((value): value is string => Boolean(value))
-      .join(' · ')
+      .join(', ')
   }
 
   const handleRebuild = async () => {

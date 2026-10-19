@@ -209,6 +209,13 @@ provider work, and a mode whose declared required binding is unavailable fails
 closed at request time.
 _Avoid_: client mode list, available modes (when referring to server policy)
 
+**Knowledge base**:
+A user's reusable collection of course materials that chatbots answer from.
+One knowledge base can serve several chatbots, and a chatbot does not require
+one: without it, Tutor and Explainer answer from general model knowledge and
+Quizzer is not offered.
+_Avoid_: materials (for the collection itself), KB (in user-facing copy)
+
 ### Model classes and budgets
 
 **Usage class**:

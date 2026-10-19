@@ -2552,7 +2552,6 @@ function ChatbotDetails({
                       ? t('manage.resources.modelSelectionEnabled')
                       : t('manage.resources.modelSelectionDisabled')}
                   </div>
-                  <div>•</div>
                   <div>
                     {t('manage.resources.allowedModels')}:{' '}
                     {modelSelectionEnabled
@@ -2568,7 +2567,6 @@ function ChatbotDetails({
                           (model) => model.id === fixedModelId
                         )?.name ?? fixedModelId)}
                   </div>
-                  <div>•</div>
                 </>
               )}
               <div>
@@ -2576,7 +2574,6 @@ function ChatbotDetails({
                   date: createdAtLabel,
                 })}
               </div>
-              <div>•</div>
               <div>
                 {t('shared.generic.updatedAt', {
                   date: updatedAtLabel,

@@ -410,8 +410,8 @@ function ResourceTableRow({
               <span className="sm:hidden">
                 {resource.type === KbResourceType.Blob
                   ? t('kb.typeFile')
-                  : t('kb.typeUrl')}{' '}
-                ·{' '}
+                  : t('kb.typeUrl')}
+                ,{' '}
               </span>
               {resource.type === KbResourceType.Blob
                 ? formatFileSize(resource.sizeBytes)

@@ -1870,8 +1870,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     searchResultCount:
       '{count, plural, =0 {Keine Wissensdatenbanken} one {# Wissensdatenbank} other {# Wissensdatenbanken}}',
     catalogMetrics:
-      '{resources, plural, one {# Ressource} other {# Ressourcen}} · {chatbots, plural, one {# verknüpfter Chatbot} other {# verknüpfte Chatbots}}',
-    catalogDomain: 'Fachgebiet: {domain} · Sprache: {language}',
+      '{resources, plural, one {# Ressource} other {# Ressourcen}} und {chatbots, plural, one {# verknüpfter Chatbot} other {# verknüpfte Chatbots}}',
+    catalogDomain: 'Fachgebiet: {domain}. Sprache: {language}.',
     materialsReadinessNone: 'Chatbot-Materialien: noch keine hinzugefügt',
     materialsReadinessAvailable:
       'Chatbot-Materialien: {available} von {total} verfügbar',
@@ -1903,7 +1903,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       '{count, plural, =0 {Keine Upload-Reservierungen} one {# Upload-Reservierung} other {# Upload-Reservierungen}}',
     metricStorage: 'Speicherlimit',
     metricStorageBreakdown:
-      '{visible} sichtbar · {reserved} für Uploads reserviert',
+      '{visible} sichtbar und {reserved} für Uploads reserviert',
     unknownSizesReserved:
       '{count, plural, one {# ältere Ressource reserviert bis zu 25 MiB} other {# ältere Ressourcen reservieren je bis zu 25 MiB}}',
     metricPendingCleanup: 'Ausstehende Bereinigung',
@@ -1916,7 +1916,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     fileUploadDescription: 'Fügen Sie Kursmaterial von Ihrem Computer hinzu.',
     fileDropPrompt: 'Datei hier ablegen oder zum Auswählen klicken',
     filesDropPrompt: 'Dateien hier ablegen oder zum Auswählen klicken',
-    fileUploadFormats: 'PDF, TXT oder MD · maximal 25 MB',
+    fileUploadFormats: 'PDF, TXT oder MD, bis 25 MB',
     uploading: 'Wird hochgeladen…',
     uploadingProgress: 'Datei {current} von {total} wird hochgeladen…',
     fileUploadSuccess: 'Datei wurde zur Wissensdatenbank hinzugefügt.',
@@ -2042,7 +2042,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     ingestAllFailed: 'Fehlgeschlagene Versuche',
     ingestAllInProgress: 'In Verarbeitung',
     ingestAllSummary:
-      '{needs} benötigen Verarbeitung · {failed} fehlgeschlagene Versuche · {inProgress} bereits in Verarbeitung',
+      '{needs} benötigen Verarbeitung, {failed} fehlgeschlagene Versuche und {inProgress} bereits in Verarbeitung',
     ingestAllSuccess:
       '{queued} Ressourcen eingeplant. {retried} fehlgeschlagene Ressourcen erneut versucht. {current} waren bereits aktuell und {inProgress} bereits in Verarbeitung. {failed} konnten nicht eingeplant werden.',
     ingestAllError:
@@ -5255,7 +5255,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wählen Sie die Standardmodi, die Teilnehmenden zur Verfügung stehen sollen. Tutor und Erklärer sind ohne Abruf von Kursmaterialien verfügbar; der Quizzer wird nur angezeigt, wenn seine erforderliche Fähigkeit verfügbar ist.',
       chatbotModeTutor: 'Tutor',
       chatbotModeTutorDescription:
-        'Führt Teilnehmende mit Fragen, Hinweisen und formativen Rückmeldungen.',
+        'Führt Studierende mit Fragen, Hinweisen und Rückmeldungen.',
       chatbotModeExplainer: 'Erklärer',
       chatbotModeExplainerDescription:
         'Erklärt Kurskonzepte direkt mit Definitionen und passenden Beispielen.',
@@ -5271,7 +5271,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotCustomModesDescription:
         'Fügen Sie bis zu {count} eigene Modi mit eigenem Namen, eigener Beschreibung und eigenem Persona-Text hinzu. Eigene Modi werden zusammen mit der Chatbot-Revision geprüft.',
       chatbotCustomModesEmpty:
-        'Noch keine eigenen Modi. Fügen Sie einen hinzu, um Teilnehmenden einen zusätzlichen Modus anzubieten.',
+        'Es gibt noch keine eigenen Modi. Fügen Sie einen hinzu, um Studierenden einen weiteren Modus anzubieten.',
       chatbotCustomModesNone: 'Es sind keine eigenen Modi konfiguriert.',
       chatbotCustomModesCount: '{count} von {max} eigenen Modi verwendet',
       chatbotCustomMode: 'Eigener Modus {number}',
@@ -5290,7 +5290,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotCustomModeStarterPrompt: 'Starter {number}',
       chatbotCustomModeStarterPromptAdd: 'Starter hinzufügen',
       chatbotCustomModeShowReasoning:
-        'Denkprozess des Modells für Teilnehmende anzeigen',
+        'Denkprozess des Modells für Studierende anzeigen',
       chatbotCustomModeShowReasoningDescription:
         'Standardmässig aus. Die Zusammenfassung des Denkprozesses kann Persona und Anweisungen dieses Modus wiedergeben, zum Beispiel die verborgenen Fakten eines Rollenspiels. In der Eigentümer-Vorschau ist sie immer sichtbar.',
       chatbotCustomModeReasoningShown:
@@ -5468,18 +5468,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotDisclaimerAuthoring: 'Disclaimer bearbeiten',
       chatbotDisclaimerReadonly:
         'Der Disclaimer kann während der Prüfung oder im pausierten Zustand nicht bearbeitet werden.',
-      chatbotDisclaimerTitle: 'Disclaimer-Titel',
-      chatbotDisclaimerTitleRequired:
-        'Bitte geben Sie einen Disclaimer-Titel ein.',
+      chatbotDisclaimerTitle: 'Titel',
+      chatbotDisclaimerTitleRequired: 'Geben Sie einen Titel ein.',
       chatbotDisclaimerTitleTooLong:
         'Der Disclaimer-Titel darf höchstens 160 Zeichen enthalten.',
-      chatbotDisclaimerIntro: 'Disclaimer-Einleitung',
-      chatbotDisclaimerIntroRequired:
-        'Bitte geben Sie eine Disclaimer-Einleitung ein.',
+      chatbotDisclaimerIntro: 'Einleitung',
+      chatbotDisclaimerIntroRequired: 'Geben Sie eine Einleitung ein.',
       chatbotDisclaimerIntroTooLong:
         'Die Disclaimer-Einleitung darf höchstens 10 000 Zeichen enthalten.',
       chatbotDisclaimerIntroEditorPlaceholder:
-        'Erklären Sie, was Teilnehmende vor der Nutzung dieses Chatbots wissen sollten.',
+        'Erklären Sie, was Studierende wissen sollten, bevor sie diesen Chatbot nutzen.',
       chatbotDisclaimerSuggestedTitle: 'Über diesen Chatbot',
       chatbotDisclaimerSuggestedIntro:
         'Dieser Chatbot dient als Lernhilfe für den verknüpften Kurs. Nutzen Sie seine Antworten zur Unterstützung Ihres Lernens und prüfen Sie wichtige Informationen anhand Ihrer Kursmaterialien.',
@@ -5487,7 +5485,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Das aktuelle Feld ist leer. Sie können eine allgemeine vorgeschlagene Einleitung einfügen und vor dem Speichern bearbeiten.',
       chatbotDisclaimerUseSuggestedText: 'Vorgeschlagenen Text verwenden',
       chatbotDisclaimerSuggestedUnsaved:
-        'Dieser vorgeschlagene Text ist noch nicht gespeichert. Speichern Sie Ihre Änderungen, damit Teilnehmende ihn verwenden können.',
+        'Dieser vorgeschlagene Text ist noch nicht gespeichert. Speichern Sie ihn, damit Studierende ihn sehen.',
       saveChatbotDisclaimer: 'Disclaimer speichern',
       chatbotDisclaimerSaveSuccess: 'Chatbot-Disclaimer gespeichert.',
       chatbotDisclaimerSaveError:
@@ -5522,23 +5520,22 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       creditResetPeriod: 'Zurücksetzungsintervall',
       creditResetAmount: 'Zurücksetzungsmenge',
       creditMaxCredits: 'Maximale Credits',
-      modelSelection: 'Modellauswahl durch Teilnehmende',
+      modelSelection: 'Studierende wählen das Modell',
       modelSelectionEnabled: 'Aktiviert',
       modelSelectionDisabled: 'Deaktiviert',
       modelSelectionEnabledDescription:
-        'Aktiv: Teilnehmende können eines der explizit ausgewählten Modelle wählen.',
+        'Ein: Studierende wählen eines der Modelle, die Sie auswählen.',
       modelSelectionDisabledDescription:
-        'Inaktiv: Der Chatbot verwendet genau ein von der Lehrperson ausgewähltes Modell.',
-      modelSelectionFixedDescription:
-        'Teilnehmende verwenden dieses Modell. Neue Chatbots starten mit Auto.',
+        'Aus: Der Chatbot nutzt immer das Modell, das Sie wählen.',
+      modelSelectionFixedDescription: 'Studierende nutzen dieses Modell.',
       modelSelectionParticipantDescription:
-        'Teilnehmende können zwischen diesen Modellen wählen. Wählen Sie mindestens eines.',
+        'Studierende können zwischen diesen Modellen wählen. Wählen Sie mindestens eines.',
       selectedModel: 'Ausgewähltes Modell',
       allowedModels: 'Erlaubte Modelle',
       modelUnavailableHint:
         'Fortgeschrittene Modelle erfordern das fortgeschrittene AI-Abonnement mit einer Kostenstelle.',
       modelUnavailableSelected:
-        'Ihr Konto kann dieses fortgeschrittene Modell nicht verwenden, daher können Teilnehmende damit nicht chatten. Wählen Sie ein anderes Modell.',
+        'Ihr Konto kann dieses fortgeschrittene Modell nicht nutzen, deshalb können Studierende damit nicht chatten. Wählen Sie ein anderes Modell.',
       allowedModelsAll: 'Alle',
       chatbotModelSettings: 'Modell- und Reasoning-Einstellungen',
       reasoningEffortsByModel: 'Reasoning-Level pro Modell',
@@ -5573,12 +5570,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       knowledgeBase: 'Wissensdatenbank',
       knowledgeGraphPolicy: 'Wissensgraph',
       knowledgeGraphPolicyDescription:
-        'Steuern Sie die Konzeptkarte für Teilnehmende und die graphgestützte Dokumentsuche unabhängig voneinander. Beide Einstellungen werden in der Chatbot-Revision gespeichert und nach der Freigabe wirksam.',
-      knowledgeGraphVisible: 'Konzeptkarte für Teilnehmende anzeigen',
+        'Legen Sie fest, ob Studierende die Konzeptkarte sehen und ob die Dokumentsuche den Graphen nutzt. Beides gilt nach der Prüfung.',
+      knowledgeGraphVisible: 'Konzeptkarte für Studierende anzeigen',
       knowledgeGraphVisibleEnabledDescription:
-        'Ein: Teilnehmende können die Konzeptkarte für diesen Chatbot öffnen.',
+        'Ein: Studierende können die Konzeptkarte für diesen Chatbot öffnen.',
       knowledgeGraphVisibleDisabledDescription:
-        'Aus: Die Konzeptkarte bleibt für Teilnehmende verborgen.',
+        'Aus: Die Konzeptkarte bleibt für Studierende verborgen.',
       knowledgeGraphRetrieval:
         'Graphverbindungen für die Dokumentsuche verwenden',
       knowledgeGraphRetrievalDescription:

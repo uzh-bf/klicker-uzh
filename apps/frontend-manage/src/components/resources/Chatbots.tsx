@@ -336,7 +336,7 @@ function Chatbots() {
                 id="chatbot-mobile-selector"
                 items={chatbots.map((chatbot) => ({
                   value: chatbot.id,
-                  label: `${chatbot.name} · ${t(getChatbotStatusTranslationKey(chatbot.status))}`,
+                  label: `${chatbot.name} (${t(getChatbotStatusTranslationKey(chatbot.status))})`,
                   data: { cy: `chatbot-mobile-selector-option-${chatbot.id}` },
                 }))}
                 value={selectedChatbot?.id ?? ''}

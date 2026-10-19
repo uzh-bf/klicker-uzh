@@ -1855,8 +1855,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     searchResultCount:
       '{count, plural, =0 {No knowledge bases} one {# knowledge base} other {# knowledge bases}}',
     catalogMetrics:
-      '{resources, plural, one {# resource} other {# resources}} · {chatbots, plural, one {# connected chatbot} other {# connected chatbots}}',
-    catalogDomain: 'Subject area: {domain} · Language: {language}',
+      '{resources, plural, one {# resource} other {# resources}} and {chatbots, plural, one {# connected chatbot} other {# connected chatbots}}',
+    catalogDomain: 'Subject area: {domain}. Language: {language}.',
     materialsReadinessNone: 'Chatbot materials: none added yet',
     materialsReadinessAvailable:
       'Chatbot materials: {available} of {total} available',
@@ -1887,7 +1887,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       '{count, plural, =0 {No upload reservations} one {# upload reservation} other {# upload reservations}}',
     metricStorage: 'Storage quota',
     metricStorageBreakdown:
-      '{visible} visible · {reserved} reserved for uploads',
+      '{visible} visible and {reserved} reserved for uploads',
     unknownSizesReserved:
       '{count, plural, one {# legacy resource reserves up to 25 MiB} other {# legacy resources reserve up to 25 MiB each}}',
     metricPendingCleanup: 'Pending cleanup',
@@ -1900,7 +1900,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     fileUploadDescription: 'Add course material from your computer.',
     fileDropPrompt: 'Drop a file here or click to choose one',
     filesDropPrompt: 'Drop files here or click to choose them',
-    fileUploadFormats: 'PDF, TXT or MD · maximum 25 MB',
+    fileUploadFormats: 'PDF, TXT or MD, up to 25 MB',
     uploading: 'Uploading…',
     uploadingProgress: 'Uploading file {current} of {total}…',
     fileUploadSuccess: 'File added to the knowledge base.',
@@ -2018,7 +2018,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     ingestAllFailed: 'Failed attempts',
     ingestAllInProgress: 'In progress',
     ingestAllSummary:
-      '{needs} need ingestion · {failed} failed attempts · {inProgress} already in progress',
+      '{needs} need ingestion, {failed} failed attempts and {inProgress} already in progress',
     ingestAllSuccess:
       'Queued {queued} resources. Retried {retried} failed resources. {current} were already current and {inProgress} already in progress. {failed} could not be queued.',
     ingestAllError: 'The resources could not be queued for ingestion.',
@@ -5145,7 +5145,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Choose the standard modes that should be available to participants. Tutor and Explainer are available without course-material retrieval; Quizzer is shown only when its required capability is available.',
       chatbotModeTutor: 'Tutor',
       chatbotModeTutorDescription:
-        'Guides participants with questions, hints, and formative feedback.',
+        'Guides students with questions, hints and feedback.',
       chatbotModeExplainer: 'Explainer',
       chatbotModeExplainerDescription:
         'Explains course concepts directly with definitions and grounded examples.',
@@ -5161,7 +5161,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotCustomModesDescription:
         'Add up to {count} custom modes with their own name, description, and persona text. Custom modes are reviewed together with the chatbot revision.',
       chatbotCustomModesEmpty:
-        'No custom modes yet. Add one to offer participants an additional mode.',
+        'There are no custom modes yet. Add one to offer students another mode.',
       chatbotCustomModesNone: 'No custom modes are configured.',
       chatbotCustomModesCount: '{count} of {max} custom modes used',
       chatbotCustomMode: 'Custom mode {number}',
@@ -5179,7 +5179,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Shown as suggestions in an empty chat for this mode. At most {count} starters; learners decide whether to send them.',
       chatbotCustomModeStarterPrompt: 'Starter prompt {number}',
       chatbotCustomModeStarterPromptAdd: 'Add starter prompt',
-      chatbotCustomModeShowReasoning: 'Show model reasoning to participants',
+      chatbotCustomModeShowReasoning: 'Show model reasoning to students',
       chatbotCustomModeShowReasoningDescription:
         'Off by default. The reasoning summary can paraphrase the persona and instructions of this mode, for example the hidden facts of a role-play. Owner preview always shows it.',
       chatbotCustomModeReasoningShown:
@@ -5345,16 +5345,16 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotDisclaimerAuthoring: 'Disclaimer Authoring',
       chatbotDisclaimerReadonly:
         'The disclaimer cannot be edited while the chatbot is awaiting review or paused.',
-      chatbotDisclaimerTitle: 'Disclaimer title',
-      chatbotDisclaimerTitleRequired: 'Enter a disclaimer title.',
+      chatbotDisclaimerTitle: 'Title',
+      chatbotDisclaimerTitleRequired: 'Enter a title.',
       chatbotDisclaimerTitleTooLong:
         'The disclaimer title must be 160 characters or fewer.',
-      chatbotDisclaimerIntro: 'Disclaimer introduction',
-      chatbotDisclaimerIntroRequired: 'Enter a disclaimer introduction.',
+      chatbotDisclaimerIntro: 'Introduction',
+      chatbotDisclaimerIntroRequired: 'Enter an introduction.',
       chatbotDisclaimerIntroTooLong:
         'The disclaimer introduction must be 10,000 characters or fewer.',
       chatbotDisclaimerIntroEditorPlaceholder:
-        'Explain what participants should know before using this chatbot.',
+        'Explain what students should know before they use this chatbot.',
       chatbotDisclaimerSuggestedTitle: 'About this chatbot',
       chatbotDisclaimerSuggestedIntro:
         'This chatbot is provided as a learning aid for the linked course. Use its responses to support your learning and check important information against your course materials.',
@@ -5362,7 +5362,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The current field is empty. You can add a suggested generic introduction and edit it before saving.',
       chatbotDisclaimerUseSuggestedText: 'Use suggested text',
       chatbotDisclaimerSuggestedUnsaved:
-        'This suggested text is not saved yet. Save your changes to use it for participants.',
+        'This suggested text is not saved yet. Save it so students see it.',
       saveChatbotDisclaimer: 'Save disclaimer',
       chatbotDisclaimerSaveSuccess: 'Chatbot disclaimer saved.',
       chatbotDisclaimerSaveError:
@@ -5396,23 +5396,22 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       creditResetPeriod: 'Reset period',
       creditResetAmount: 'Reset amount',
       creditMaxCredits: 'Max credits',
-      modelSelection: 'Let participants choose the model',
+      modelSelection: 'Let students choose the model',
       modelSelectionEnabled: 'Enabled',
       modelSelectionDisabled: 'Disabled',
       modelSelectionEnabledDescription:
-        'On: participants can choose one of the explicitly selected models.',
+        'On: students choose one of the models you select.',
       modelSelectionDisabledDescription:
-        'Off: the chatbot uses exactly one model selected by the lecturer.',
-      modelSelectionFixedDescription:
-        'Participants use this model. New chatbots start with Auto.',
+        'Off: the chatbot always uses the model you choose.',
+      modelSelectionFixedDescription: 'Students use this model.',
       modelSelectionParticipantDescription:
-        'Participants can choose among these models. Select at least one.',
+        'Students can choose between these models. Select at least one.',
       selectedModel: 'Selected model',
       allowedModels: 'Allowed models',
       modelUnavailableHint:
         'Advanced models need the advanced AI subscription with a cost center.',
       modelUnavailableSelected:
-        'Your account cannot use this advanced model, so participants cannot chat with it. Choose another model.',
+        'Your account cannot use this advanced model, so students cannot chat with it. Choose another model.',
       allowedModelsAll: 'All',
       chatbotModelSettings: 'Model & Reasoning Settings',
       reasoningEffortsByModel: 'Reasoning efforts by model',
@@ -5447,12 +5446,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       knowledgeBase: 'Knowledge base',
       knowledgeGraphPolicy: 'Knowledge graph',
       knowledgeGraphPolicyDescription:
-        'Control the participant concept map and graph-assisted document search independently. Both are staged in the chatbot revision and apply after approval.',
-      knowledgeGraphVisible: 'Show the participant concept map',
+        'Choose whether students see the concept map and whether document search uses the graph. Both apply after the review.',
+      knowledgeGraphVisible: 'Show the concept map to students',
       knowledgeGraphVisibleEnabledDescription:
-        'On: participants can open the concept map for this chatbot.',
+        'On: students can open the concept map for this chatbot.',
       knowledgeGraphVisibleDisabledDescription:
-        'Off: the concept map stays hidden from participants.',
+        'Off: the concept map stays hidden from students.',
       knowledgeGraphRetrieval: 'Use graph connections for document search',
       knowledgeGraphRetrievalDescription:
         'On: document search may use related concepts from the published graph as additional search hints. Answers still cite document passages only.',
