@@ -122,6 +122,45 @@ for source delivery or operator-exported billing evidence.
   Full local application checks/build and paid runtime verification have not run.
 - Scoped static scan: unchanged mutable action references were reported;
   embedded Bash analysis is partially unavailable. No new source finding.
-- Status: implementation verification and integrated main-session self-review.
-  Pull request not yet created. Remaining: draft publication, exact-head
-  CI/feedback and operator activation decision.
+- The initial source package was published and merged as
+  [opt-in WarpBuild overflow](https://github.com/uzh-bf/klicker-uzh/pull/6620).
+  The separate [draft-conversion fix](https://github.com/uzh-bf/klicker-uzh/pull/6615)
+  was also merged. These source merges do not establish cloud runtime acceptance.
+
+### Approved regression follow-up
+
+The operator approved a corrective source package and its normal merge to `v3`
+after CI and actual final review. The separately approved finite activation
+sequence begins only after this correction is verified merged. Its access,
+spending, reconciliation and recovery details remain in the private operator
+record rather than public source artifacts.
+
+- Worktree: `trees/rs/warpbuild-overflow-guards`; branch:
+  `rs/warpbuild-overflow-guards`; baseline:
+  `dc47fecf65ed5885cd63dcdb291cc84fdc30a6fe`.
+- Main-session ownership and no subagents remain binding. The planning,
+  simplification and integrated review passes are self-reviews; the normal
+  forge final review remains required before merge.
+- Preserve workflow execution, providers, selectors, tickets, permissions,
+  service topology and coverage. Change only the existing policy validator,
+  its mutation test and the existing equivalent-run wiring assertion.
+- Extend the existing runner-policy seam to reject candidate commands,
+  additional command lines, alternate shells and working-directory overrides
+  on route/metadata preparation. Reject workflow/job directory defaults that
+  could change the trusted command's execution context.
+- Require the complete no-cloud-reuse condition, including the existing
+  lifecycle predicate. Correct the equivalent-run test's obsolete pre-provider
+  assertion; its expected value remains the complete machine condition.
+- Reproduce the guard failures before correction, then run both existing
+  Playwright and CI/review contract portfolios, event-gate tests, formatting,
+  focused static analysis and staged data hygiene. No application runtime is
+  needed for these pure workflow contracts.
+- Follow-up package is justified by defects introduced in the recently merged
+  source. Terminal source evidence is passing exact-head CI, feedback disposition,
+  actual final review, a guarded normal merge and verified merge contents.
+  A failed source gate blocks only the dependent activation sequence.
+- Planning self-review: the workflow already executes trusted commands; this
+  correction strengthens regression enforcement without changing execution.
+  Existing machine-contract tests are the narrow stable seams. No new helper,
+  executable, workflow, dependency or test file is needed.
+- Status: approved; regression reproduction and correction are in progress.
