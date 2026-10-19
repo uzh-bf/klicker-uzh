@@ -337,7 +337,7 @@ read_runner_labels() {
     all(.labels[]; (.name | type == "string" and length > 0) and
       (.type == "custom" or .type == "read-only")) and
     ([.labels[].name | ascii_downcase] | length == (unique | length)) and
-    ([.labels[] | select(.type == "read-only") | .name | ascii_downcase] |
+    ([.labels[].name | ascii_downcase] |
       index("linux") != null and index("arm64") != null) and
     ([.labels[] | select(.type == "custom") | .name | ascii_downcase] |
       index("docker") != null and index("public-pr-arm64") != null and index("playwright") != null)

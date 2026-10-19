@@ -46,6 +46,9 @@ if [[ "$FAKE_SCENARIO" == roles-* ]]; then
     labels_file="${FAKE_STATE}.labels-${runner_id}"
     [[ "$FAKE_SCENARIO" != 'roles-denied' ]] || exit 1
     labels='["docker","public-pr-arm64","playwright","keep-me"]'
+    if [[ "$FAKE_SCENARIO" == 'roles-custom-platform' ]]; then
+      labels=$(jq -c '. + ["linux","arm64"]' <<<"$labels")
+    fi
     [[ ! -f "$labels_file" ]] || labels=$(cat "$labels_file")
     if [[ "$FAKE_SCENARIO" == 'roles-exact' && ! -f "$labels_file" ]]; then
       case "$runner_id" in
@@ -78,6 +81,13 @@ if [[ "$FAKE_SCENARIO" == roles-* ]]; then
     document=$(jq -nc --argjson custom "$labels" '{labels: (
       (["self-hosted","Linux","ARM64"] | map({name:.,type:"read-only"})) +
       ($custom | map({name:.,type:"custom"})))} | .total_count = (.labels|length)')
+    if [[ "$FAKE_SCENARIO" == 'roles-custom-platform' ]]; then
+      document=$(jq -c '.labels |= map(select(.type == "custom")) | .total_count = (.labels|length)' <<<"$document")
+    elif [[ "$FAKE_SCENARIO" == 'roles-missing-platform' ]]; then
+      document=$(jq -c '.labels |= map(select(.name != "ARM64")) | .total_count = (.labels|length)' <<<"$document")
+    elif [[ "$FAKE_SCENARIO" == 'roles-invalid-label-type' ]]; then
+      document=$(jq -c '.labels[0].type = "unknown"' <<<"$document")
+    fi
     if [[ "$FAKE_SCENARIO" == 'roles-incomplete-labels' ]]; then
       document=$(jq -c '.total_count += 1' <<<"$document")
     fi
