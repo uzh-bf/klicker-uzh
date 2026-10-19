@@ -1004,6 +1004,8 @@ test('trajectory corpus validation rejects invalid shapes', () => {
   assert.deepEqual(normalized.cases[0].assessmentTurns, [1])
 
   for (const [corpus, code] of [
+    [{ ...valid, notes: 'unexpected' }, 'corpus_unknown_field'],
+    [{ ...valid, version: true }, 'corpus_version_unsupported'],
     [{ version: 2, cases: [trajectoryCase()] }, 'corpus_version_unsupported'],
     [{ version: 1, cases: [] }, 'corpus_cases_invalid'],
     [
@@ -1033,6 +1035,24 @@ test('trajectory corpus validation rejects invalid shapes', () => {
       { version: 1, cases: [trajectoryCase({ assessmentTurns: [2] })] },
       'trajectory_case_assessment_turns_invalid',
     ],
+    ...[[], [1, 1], [0], [true], [1.5], ['1']].map((assessmentTurns) => [
+      { version: 1, cases: [trajectoryCase({ assessmentTurns })] },
+      'trajectory_case_assessment_turns_invalid',
+    ]),
+    ...[null, false, 7].map((message) => [
+      {
+        version: 1,
+        cases: [
+          trajectoryCase({
+            turns: [
+              { message: 'Synthetic question one' },
+              { message, repeatPrevious: true, suffix: '' },
+            ],
+          }),
+        ],
+      },
+      'trajectory_turn_invalid',
+    ]),
     [
       {
         version: 1,
@@ -1049,6 +1069,28 @@ test('trajectory corpus validation rejects invalid shapes', () => {
   ]) {
     assert.throws(() => validateTrajectoryCorpus(corpus), { code })
   }
+})
+
+test('corpus normalization preserves authored text without mutating input', () => {
+  const corpus = {
+    version: 1,
+    cases: [
+      trajectoryCase({
+        id: ' exact-id ',
+        assessmentTurns: [2, 1],
+        turns: [
+          { message: ' Exact question.\n' },
+          { repeatPrevious: true, suffix: '' },
+        ],
+      }),
+    ],
+  }
+  const original = structuredClone(corpus)
+  const [normalized] = validateTrajectoryCorpus(corpus).cases
+  assert.deepEqual(normalized.assessmentTurns, [1, 2])
+  assert.equal(normalized.id, original.cases[0].id)
+  assert.deepEqual(normalized.turns, original.cases[0].turns)
+  assert.deepEqual(corpus, original)
 })
 
 test('runner argument validation fails closed before any file or network use', () => {
