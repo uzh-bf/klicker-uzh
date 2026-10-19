@@ -1,79 +1,101 @@
-# Course-chatbot quality roadmap
+# Course-chatbot learning roadmap
 
-Status: the private review, initial comparison, separate candidate preparation
-and approved finite preservation and attribution comparisons are complete.
-Detailed judgments remain private. Further comparisons and rollout require
-their named decisions.
-Historical Tutor experiments remain below for reference.
+Updated 19 October 2026. The immediate focus is learner support in Explainer.
+Existing private reviews and finite comparisons are complete for selecting the
+first improvement hypothesis. Current course performance and learning gains
+remain unverified. Historical Tutor experiments remain below for reference.
 
 ## Current evaluation direction
 
-The goal is useful learning support: correct explanations with supported
-citations, honest summary coverage, and completion of the requested task.
-The next milestone is an Explainer revision that passes the frozen quality
-criteria, informed by the completed private comparison.
-Automated judging is optional support for a demonstrated recurring need.
+Help learners understand concepts, resolve misconceptions and apply concepts
+independently. The first bounded outcome is faithful explanation and revision:
+preserve meaning, state when a rule applies and make evidence limits clear.
+Revision notes are the first task form; direct explanations and worked examples
+remain appropriate in Explainer.
 
-The private decision index records the completed
-[preservation comparison](2026-10-18-explainer-assessment-readiness-plan.md#approved-preservation-execution)
-and [independent attribution comparison](2026-10-18-explainer-assessment-readiness-plan.md#approved-attribution-execution).
-The [candidate preparation](2026-10-18-explainer-assessment-readiness-plan.md#approved-prompt-preparation)
-keeps revision self-check and citation-attribution guidance separate. Review the
-private decision before selecting the next finite comparison. Citation support,
-transfer, multipart summaries and representative course-source acceptance remain
-required before rollout. Unused ledger capacity authorizes no additional capture.
-The attribution protocol uses fresh trajectories on the existing reserved group,
-manual passage checks and useful-answer safeguards. It excludes the preservation
-guidance; development-control and combined-guidance acceptance remain separate.
-Prioritize the representative course-source acceptance decision next: accurate
-retrieval, honest topic coverage, useful explanations and usable citations.
-Keep synthetic prompt comparisons distinct from that user-facing evidence.
-The [real-course protocol](2026-10-18-explainer-assessment-readiness-plan.md#real-course-acceptance-preparation)
-defines five baseline trajectories and manual source checks. Source-bound inputs,
-the permitted provider route and all-in cost admission need qualification before
-any separate execution decision; this preparation grants no additional spending.
-The [approved zero-spend preflight](2026-10-18-explainer-assessment-readiness-plan.md#zero-spend-source-and-route-preflight)
-keeps bindings and readiness evidence in the private checkpoint. Complete its
-source-content, evidence-access and cost prerequisites before proposing a paid
-run. Preserve the intended route explicitly: fixed-model guard qualification
-does not establish routed-model acceptance, and generation-step counts do not
-bound parallel retrieval calls or gateway-internal provider attempts.
+Historical review supplies hypotheses; synthetic comparisons supply regression
+evidence. Neither establishes current course performance or learning. Keep
+judgments and real-environment evidence in approved private custody.
 
-The [active quality-decision batch](2026-10-18-explainer-assessment-readiness-plan.md#current-quality-decision-batch)
-owns execution, acceptance and the next spending proposal. It continues the
-[course-quality plan](2026-10-12-chatbot-learning-quality-plan.md) while
-superseding the earlier judge-first sequence in the
-[evaluation consolidation plan](2026-10-12-chatbot-evaluator-plan.md#evaluation-consolidation--2026-10-17).
+### Manual acceptance checklist v1
 
-| Priority | Outcome | Acceptance and next boundary |
+Assess actual answers and supporting passages, accepting correct paraphrases:
+
+- Complete the requested learning task directly at the requested depth.
+- Explain the essential concepts correctly, preserving meaning when shortening.
+- Retain the conditions and exceptions that determine when a rule applies.
+- Attach citations only to claims the cited passage supports, including examples.
+- Identify missing or partial coverage and distinguish source facts from inference
+  or illustration, while still providing useful supported help.
+
+Record meets, concern, fails or not assessed with a reason; required items must
+meet for acceptance. This supplements existing criteria without rescoring past
+runs. Answer checks do not establish understanding or transfer.
+
+### Outcome milestones
+
+| Priority | Outcome | Completion and next boundary |
 | --- | --- | --- |
-| 1 | Establish qualification-preserving Explainer revision | Private development comparison and manual assessment complete; review that decision before proposing transfer acceptance |
-| 2 | Establish trustworthy source support and honest task completion | Bind the real-course protocol's private sources and approved route, including multipart and absent-material checks; qualify total cost before any paid baseline diagnostic |
-| 3 | Roll out only a supported change and inspect subsequent anonymous use | Preserve the baseline and rollback; obtain named application/deployment authority, verify effective behavior and assess later use before returning to Tutor |
+| 1 | Select one obstacle to useful understanding | Evidence synthesis and checklist preparation complete for this purpose; current performance and learning remain unassessed |
+| 2 | Establish faithful, course-grounded explanation and revision | Pending a separately authorized finite diagnostic: assess the baseline first, then at most one justified candidate; manually check answers, passage support and the unchanged control |
+| 3 | Make an evidence-backed improvement decision and inspect learner benefit | Propose rollout only after representative task and course-owner consumer acceptance; application and deployment need named authority; independent understanding and transfer need learner evidence |
 
-Keep existing capture, import, citation mapping and spending admission stable.
-Pause judge calibration, framework-pin advancement and unattended orchestration.
-Resume infrastructure work only when a concrete blocker prevents the named
-quality comparison or a recurring assessment task justifies automation. Use the
-existing framework metrics if that need arises; add no scorer or runner now.
+Next action: use the existing private source cards to prepare the smallest
+baseline decision under the
+[real-course protocol](2026-10-18-explainer-assessment-readiness-plan.md#real-course-acceptance-preparation).
+Prioritize meaning-preserving revision, multipart coverage and evidence limits.
+Unrun unit-lookup and cross-source tasks remain unassessed for broader acceptance.
 
-Source foundations are merged: [citation correction PR 6483](https://github.com/uzh-bf/klicker-uzh/pull/6483),
+Reuse prepared guidance only if the baseline demonstrates its targeted obstacle;
+stop tuning if the baseline passes. Reject critical candidate/control regressions
+and redirect demonstrated content or retrieval failures to their owner. Synthetic
+success cannot authorize promotion. Later authorized learner feedback,
+explain-back or independent application may inform learning assessment; usage
+and assisted performance do not establish learning gains.
+
+### Parked work and authority
+
+Park gateway reservation repair, further route/pricing qualification, startup
+repairs, evaluator/framework expansion, automated judging, ranking changes and
+Tutor/Quizzer work. Revisit only when evidence links a concrete blocker or need
+to the selected learner outcome. A blocked paid route does not authorize an
+upstream infrastructure project. Reuse existing capture/import and assessment.
+
+This refresh authorizes documentation and draft delivery only. Further inference
+needs its named finite budget, provider, source-use and enforceable cost boundary.
+Existing hard-cap requirements remain in force; monitored spending is not a
+substitute. Prior capture authority is consumed. Shared prompt/KB changes,
+promotion, merge and deployment remain separately gated.
+
+## Existing foundations and deferred protocols
+
+Recorded source foundations: [citation correction PR 6483](https://github.com/uzh-bf/klicker-uzh/pull/6483),
 [app importer PR 6578](https://github.com/uzh-bf/klicker-uzh/pull/6578),
 [generic contract MR 57](https://gitlab.uzh.ch/ai-infrastructure/evaluation/-/merge_requests/57),
 [judge admission MR 61](https://gitlab.uzh.ch/ai-infrastructure/evaluation/-/merge_requests/61)
 and [gateway retry correction PR 6603](https://github.com/uzh-bf/klicker-uzh/pull/6603).
 Source delivery does not establish deployment, judge accuracy or student benefit.
 The app owns capture, experiment data and receipt translation; the Python
-framework owns generic assessment and reporting. Framework changes remain
-independent of any particular application.
+framework owns generic assessment and reporting, independent of any application.
+
+The private decision index retains the completed
+[preservation](2026-10-18-explainer-assessment-readiness-plan.md#approved-preservation-execution)
+and [attribution](2026-10-18-explainer-assessment-readiness-plan.md#approved-attribution-execution)
+comparisons and [separate guidance preparation](2026-10-18-explainer-assessment-readiness-plan.md#approved-prompt-preparation).
+The [preflight](2026-10-18-explainer-assessment-readiness-plan.md#zero-spend-source-and-route-preflight)
+and [quality-decision batch](2026-10-18-explainer-assessment-readiness-plan.md#current-quality-decision-batch)
+remain conditional reference protocols, not an instruction to resume technical
+work. This direction continues the
+[course-quality plan](2026-10-12-chatbot-learning-quality-plan.md) and supersedes
+the earlier judge-first sequence in the
+[evaluation consolidation plan](2026-10-12-chatbot-evaluator-plan.md#evaluation-consolidation--2026-10-17).
 
 Reuse the [existing comparison corpus](../evaluation/data/explainer-compression/README.md).
-The completed initial comparison protocol used one repeat per arm, reducing planned learner
-turns from 48 to 24. Inspected authored cases are regression/transfer examples,
-not blind holdouts. The existing
+Inspected authored cases are regression/transfer examples, not blind holdouts.
+The existing
 [US$55/48-turn initializer option](https://github.com/uzh-bf/klicker-uzh/pull/6576)
-supported the bounded subset without another source change. The follow-up
-preservation protocol used the same cumulative ledger, not a renewed allowance.
+supported the finite protocols without another source change. The follow-up
+protocols used the same cumulative ledger, not a renewed allowance.
 Each finite protocol stops at its own planned turn count within the ledger's
 48-turn ceiling. The default US$5 cap and earlier ledgers remain unchanged.
 The [initial](2026-10-18-explainer-assessment-readiness-plan.md#approved-comparison-execution),

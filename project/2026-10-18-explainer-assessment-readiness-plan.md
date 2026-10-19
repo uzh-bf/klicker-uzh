@@ -1,5 +1,22 @@
 # Explainer quality decision and assessment qualification
 
+## Current learner-improvement continuation
+
+The user redirected this work to learner improvement on 19 October 2026.
+The [current roadmap](2026-10-01-tutor-prompt-quality-roadmap.md#current-evaluation-direction)
+owns the selected outcome, manual checklist, milestones and next action.
+Existing evidence is sufficient for hypothesis selection, not current course
+performance or learning acceptance. Assess a source-bound baseline before
+preparing more prompt variants; retain the existing candidates as unvalidated
+development inputs.
+
+This update is documentation-only. The protocols below preserve historical
+and conditional execution contracts; they are not the current technical work
+queue. Further inference still needs named budget/provider/source-use authority
+and applicable cost admission. Prior finite capture authority is consumed.
+No runtime, ledger, prompt, KB, framework or deployment change follows from this
+roadmap refresh.
+
 ## Zero-spend source and route preflight
 
 Approved on 19 October 2026: inspect the named course/bot configuration,
