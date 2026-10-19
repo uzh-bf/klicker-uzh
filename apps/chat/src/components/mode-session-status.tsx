@@ -6,7 +6,11 @@ import { useNow, useTranslations } from 'next-intl'
 import type { FC } from 'react'
 import { resolveSelectedMode } from '@/src/lib/config/modes'
 import { readMeetingClock } from '@/src/lib/meetingClock'
-import type { MeetingClockAnchor } from '@/src/stores/chatStore'
+import {
+  type ExtendedThreadMessageLike,
+  type MeetingClockAnchor,
+  useChatStore,
+} from '@/src/stores/chatStore'
 import { useSettingsStore } from '@/src/stores/settingsStore'
 import { useEffectiveModeOptions } from './mode-options-context'
 
@@ -16,24 +20,30 @@ type ThreadMessageView = {
   metadata?: { custom?: { meetingClock?: MeetingClockAnchor | null } }
 }
 
+const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
+
 /**
- * The clock start for the visible branch. A streamed answer carries the
- * server's start and clock offset; a reloaded thread falls back to its first
- * user message, whose timestamp the server stored and also counts from.
+ * The clock start of the thread. A streamed answer carries the server's start
+ * and clock offset. Otherwise, as after a reload, the clock starts at the
+ * earliest user message across all branches, the same stored timestamp the
+ * server counts from.
  */
 function findMeetingClockStart(
-  messages: readonly ThreadMessageView[]
+  visibleMessages: readonly ThreadMessageView[],
+  threadMessages: readonly ThreadMessageView[]
 ): { startedAt: Date; skewMs: number } | null {
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
-    const anchor = messages[index]?.metadata?.custom?.meetingClock
+  for (let index = visibleMessages.length - 1; index >= 0; index -= 1) {
+    const anchor = visibleMessages[index]?.metadata?.custom?.meetingClock
     if (anchor) {
       return { startedAt: new Date(anchor.startedAt), skewMs: anchor.skewMs }
     }
   }
 
-  const firstUserMessage = messages.find((message) => message.role === 'user')
-  return firstUserMessage?.createdAt
-    ? { startedAt: new Date(firstUserMessage.createdAt), skewMs: 0 }
+  const userMessageTimes = [...threadMessages, ...visibleMessages]
+    .filter((message) => message.role === 'user' && message.createdAt)
+    .map((message) => new Date(message.createdAt as Date).getTime())
+  return userMessageTimes.length > 0
+    ? { startedAt: new Date(Math.min(...userMessageTimes)), skewMs: 0 }
     : null
 }
 
@@ -49,13 +59,20 @@ export const ModeSessionStatus: FC = () => {
   const messages = useAuiState(
     (s) => s.thread.messages
   ) as readonly ThreadMessageView[]
+  // Every branch of the active thread, so an edited first message does not
+  // move the clock start.
+  const threadMessages = useChatStore(
+    (state) =>
+      state.threads.find((thread) => thread.id === state.activeThreadId)
+        ?.allMessages ?? EMPTY_MESSAGES
+  ) as readonly ThreadMessageView[]
   const now = useNow({ updateInterval: 30_000 })
 
   const option = modeOptions[resolveSelectedMode(modeOptions, selectedMode)]
   if (!option?.replyLanguage && !option?.meetingClock) return null
 
   const clockStart = option.meetingClock
-    ? findMeetingClockStart(messages)
+    ? findMeetingClockStart(messages, threadMessages)
     : null
   const reading = clockStart
     ? readMeetingClock(clockStart.startedAt, clockStart.skewMs, now)
