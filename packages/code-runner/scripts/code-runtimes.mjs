@@ -7,8 +7,9 @@
 // instead of publishing unreviewed bytes. The browser host verifies the same
 // hashes again before it hands the bytes to the sandboxed runner.
 //
-//   klicker-code-runtimes --out public/code-runtimes  verify and generate
-//   klicker-code-runtimes --write-manifest            refresh the manifest
+// From the repository root:
+//   node packages/code-runner/scripts/code-runtimes.mjs --out <dir>         verify and generate
+//   pnpm --filter @klicker-uzh/code-runner generate --write-manifest     refresh the manifest
 //
 // The version segment is derived from the manifest content, so browsers can
 // cache the files as immutable and a changed file always gets a new path.
@@ -224,7 +225,7 @@ export function generate({ outDir, writeManifest = false } = {}) {
   const problems = compareManifest(expected, actual)
   if (problems.length > 0) {
     throw new Error(
-      `Browser code runtime files do not match ${relative(PACKAGE_DIR, MANIFEST_PATH)}:\n  ${problems.join('\n  ')}\nRun "klicker-code-runtimes --write-manifest" only after reviewing the change.`
+      `Browser code runtime files do not match ${relative(PACKAGE_DIR, MANIFEST_PATH)}:\n  ${problems.join('\n  ')}\nRun "pnpm --filter @klicker-uzh/code-runner generate --write-manifest" only after reviewing the change.`
     )
   }
   if (!outDir) return actual
