@@ -140,17 +140,19 @@ const MEETING_CLOCK_LABELS = {
 } as const satisfies Record<MeetingClockOption, string>
 
 /**
- * Message keys describing a custom mode's reply language and meeting clock,
- * for the authoring and publication review summaries.
+ * One-line summary of a custom mode's reply language and meeting clock, for
+ * the authoring and publication review summaries.
  */
-export function getCustomModeSettingLabelKeys(mode: {
-  replyLanguage?: LocaleType | null
-  meetingClock?: ChatbotCustomModeMeetingClock | null
-}) {
-  return {
-    replyLanguage: REPLY_LANGUAGE_LABELS[mode.replyLanguage ?? 'FOLLOW'],
-    meetingClock: MEETING_CLOCK_LABELS[mode.meetingClock ?? 'OFF'],
+export function formatCustomModeSettings(
+  t: ReturnType<typeof useTranslations<never>>,
+  mode: {
+    replyLanguage?: ReplyLanguageOption | null
+    meetingClock?: MeetingClockOption | null
   }
+): string {
+  const replyLanguage = t(REPLY_LANGUAGE_LABELS[mode.replyLanguage ?? 'FOLLOW'])
+  const meetingClock = t(MEETING_CLOCK_LABELS[mode.meetingClock ?? 'OFF'])
+  return `${t('manage.resources.chatbotCustomModeReplyLanguage')}: ${replyLanguage} · ${t('manage.resources.chatbotCustomModeMeetingClock')}: ${meetingClock}`
 }
 
 function getCustomModeFormValues(
@@ -2080,7 +2082,7 @@ function ChatbotAuthoring({
                             className="mt-1 text-gray-700"
                             data-cy={`chatbot-review-custom-mode-settings-${index}`}
                           >
-                            {`${t('manage.resources.chatbotCustomModeReplyLanguage')}: ${t(REPLY_LANGUAGE_LABELS[mode.replyLanguage])} · ${t('manage.resources.chatbotCustomModeMeetingClock')}: ${t(MEETING_CLOCK_LABELS[mode.meetingClock])}`}
+                            {formatCustomModeSettings(t, mode)}
                           </div>
                         </li>
                       ))}
