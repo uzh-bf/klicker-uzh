@@ -12,8 +12,6 @@ on:
         # The ready boundary runs the envelope so it can validate the draft-era
         # full proof instead of rebuilding and retesting an unchanged head.
         ready_for_review,
-        # Converting back to a draft conservatively re-runs full validation.
-        converted_to_draft,
         # A closed pull request cancels its in-flight execution.
         closed,
       ]

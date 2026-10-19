@@ -270,7 +270,6 @@ test('the reusable envelope owns lifecycle routing and selector shadow planning'
     'synchronize',
     'reopened',
     'ready_for_review',
-    'converted_to_draft',
     'closed',
   ])
   assert.match(workflow, /test-playwright-execution:/)
@@ -351,10 +350,8 @@ test('lifecycle policy rejects cancellation outside the exact closed-PR boundary
         if: 'always()',
       }
     },
-    'missing converted_to_draft trigger': (w) => {
-      w.on.pull_request.types = w.on.pull_request.types.filter(
-        (type) => type !== 'converted_to_draft'
-      )
+    'draft conversion starts replacement execution': (w) => {
+      w.on.pull_request.types.push('converted_to_draft')
     },
     'elevated token': (w) => {
       w.jobs['cancel-closed-pr'].permissions = { actions: 'write' }
