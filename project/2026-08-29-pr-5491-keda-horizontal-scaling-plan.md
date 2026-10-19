@@ -25,7 +25,7 @@ regular nodes (W4).
 | W4 — Assessment staging pilot and later packages | Not activated | Close the named evidence and authority gates before staging, spot, or production claims |
 | W10 — Chat and MCP multi-replica readiness | Source scan only; no implementation | Prove or replace the stateful MCP transport, add a chat drain contract, then feed W9 |
 | W11 — Production capacity baseline | Request corrections ([#6283](https://github.com/uzh-bf/klicker-uzh/pull/6283), [#6284](https://github.com/uzh-bf/klicker-uzh/pull/6284)), replica restore ([#6278](https://github.com/uzh-bf/klicker-uzh/pull/6278), [#6279](https://github.com/uzh-bf/klicker-uzh/pull/6279)) and chat at 3 ([#6291](https://github.com/uzh-bf/klicker-uzh/pull/6291), [#6292](https://github.com/uzh-bf/klicker-uzh/pull/6292)) merged 2026-09-23 and live; the 2026-10-06 read-only read found every Deployment at its desired count with no restarts or Pending Pods | General-worker restore after queue evidence; explain why the `apps` pool still runs 4 nodes |
-| W12 — HTTP spot burst tier | Chart pair ready: [#6294](https://github.com/uzh-bf/klicker-uzh/pull/6294) (`v3-ai`, final AI review clean) and [#6295](https://github.com/uzh-bf/klicker-uzh/pull/6295) (`v3`); platform half drafted as df-cloud !644 with staging previews | Merge order under the deploy-parity gate, apply !644 to staging and read the live Argo rule back, then the staging-enable values pair and the self-heal drill |
+| W12 — HTTP spot burst tier | Chart pair ready: [#6294](https://github.com/uzh-bf/klicker-uzh/pull/6294) (`v3-ai`, final AI review pending on the integrated head) and [#6295](https://github.com/uzh-bf/klicker-uzh/pull/6295) (`v3`); platform half drafted as df-cloud !644 with staging previews | Merge #6294, then #6295 after a `v3` merge, apply !644 to staging and read the live Argo rule back, then the staging-enable values pair and the self-heal drill |
 | W13 — Staging capacity on spot | Added 2026-09-23; !644 keeps the staging `asyncspot` maximum at 7 | Move staging Klicker workloads onto `asyncspot` under A6 |
 
 Merge, new upstream integration, deployment, cluster connectivity or changes,
@@ -1704,6 +1704,9 @@ a values edit.
   The parity failure on #6295 is therefore expected, and a plain rerun will
   not clear it: after the gap closes and #6294 merges, `v3` must be merged
   into `rs/http-spot-burst-tier-v3` before its `check` runs again.
+  Resolved 2026-10-19: #6403 carried the whole `v3-ai` chat and quota values
+  to `v3` and superseded #6332, so `v3` and `v3-ai` now hold the same
+  `deploy/` tree apart from image tags. #6365 closed as redundant.
 - **Platform half (A6):** df-cloud !644 (`rs/klicker-pwa-burst-argo`,
   `6219317e`, draft against `stg`) hands `/spec/replicas` of
   `app-klicker-klicker-uzh-v2-frontend-pwa-burst` in `<env>-klicker` to its
@@ -1729,13 +1732,10 @@ a values edit.
   staging drill, not merge blockers. (4) #6293 is docs-only, so the final AI
   review fails on it with an empty OCR selection; that is a workflow limit,
   not a finding.
-- **Next action:** The user merges in this order. First a `v3` PR that
-  closes the whole current `deploy/` parity gap (a #6332 refreshed to
-  today's `origin/v3-ai` tree already includes the #6308 hunk and makes
-  #6365 redundant); only then #6294 into `v3-ai`, because once the burst
-  chart is on `v3-ai` no other `v3` companion can pass the gate; then `v3`
-  merged into #6295 and its `check` rerun; then #6295. !644 is independent:
-  merge it to `stg` and apply it at any point. After the live Argo rule
+- **Next action:** The parity gap is closed, so the user merges #6294 into
+  `v3-ai` next. Then `v3` is merged into #6295 and its `check` rerun, and
+  #6295 merges; no unrelated `deploy/` change may land on `v3-ai` in between.
+  !644 is independent: merge it to `stg` and apply it at any point. After the live Argo rule
   reads back, open the staging-enable values pair,
   then run the self-heal and eviction drills under A2-style approval.
 
