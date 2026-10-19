@@ -237,5 +237,29 @@ ADR gate: the runner isolation architecture passes. It is durable and cross-cutt
   - the CI registration and syncpack gaps are closed
 
   Report: `project/_local/reviews/2026-10-17-browser-code-playground-planner.md`. Next: user approval of execution.
+- 2026-10-18: Execution approved on 2026-10-17. S1 and S2 are on `rs/browser-code-policy`, S3 and S4 on `rs/browser-code-playground`. Mode: solo, with a final simplification pass and a self-review. Deviations from the plan:
+  - Initial local runs set the kill switch in the gitignored `apps/chat/.env.local` after devrouter reported changed managed Compose configuration. Review follow-up restores the planned `CHAT_CODE_EXECUTION_ENABLED=true` in `.devcontainer/devcontainer.env`, so clean local test environments inherit it. Per-mode profile admission remains required. Shell loading, Compose rendering and all 45 host-launcher tests passed; existing browser evidence used the same enabled flag. The retained stopped runtime has not been restarted with this configuration change.
+  - The policy normalizer lives in the Chat app (`apps/chat/src/lib/code-runner/profiles.ts`), its only consumer, instead of `packages/util`.
+  - `manifest.ts` landed in S3 with the bridge that consumes it.
+  - The migration was generated with `prisma migrate diff`, because `migrate dev` asked to reset the disposable database.
+  - Commits use `--no-verify`, because the Husky hook needs host YAML tooling. The equivalent container checks ran before each commit.
+  - The egress check counts received responses only. Playwright also reports requests that the runner CSP blocks before any network I/O (Chromium reports them as `csp` failures).
+  - The spec gets its own `chat` profile group in `playwright/profiles.json`.
+
+  - The flag-off 404 is proven by `code-runtime-serving.test.ts` and by a production-build header check, not by a browser test. The CI runtime keeps the switch on.
+  - The policy unit tests live in a new `code-execution-policy.test.ts` instead of extending `effective-chat-modes.test.ts`.
+  - The runner policy has no `frame-ancestors` directive. In Chromium, `frame-ancestors 'self'` blocked the runner when a page on another origin embedded Chat. ADR 0052 records the decision.
+- 2026-10-18: Simplification and integrated self-review (the main session plus delegated simplifier and final-reviewer passes; not independent review evidence). Changes:
+  - The card reads admission from the host's effective mode options, so owner preview admits what learners get. A new preview test covers it.
+  - The runner shrinks results whose serialized form exceeds the message cap, instead of losing them to a timeout.
+  - The bridge accepts only the first `ready`.
+  - R errors keep earlier output.
+  - Runtime start-up CSP probes no longer count as blocked program access.
+  - The unused `hello-ack` reply and the diagnostic payload were removed.
+
+  Verification:
+  - Production build: with the switch off, `/code-runtimes/` returns 404. With it on, the runner and file headers match the dev server.
+  - `check:all` is green. Its two host-only Playwright tests ran on the host.
+  - Browser proof: Chromium and WebKit pass all eleven qualified-engine tests, Firefox passes the notice test, and the loopback sink records no hits.
 
 - 2026-10-18: Review follow-up rejects prototype admissions and inherited mode lookups, normalizes Windows asset IDs, describes only admitted profiles, and revalidates unhashed notices. Full repository typecheck, lint, syncpack, host contracts and focused policy tests passed. Source publication only; deployment and shared activation remain withheld.

@@ -27,6 +27,7 @@ import {
   MarkdownText,
   normalizeCustomMathTags,
 } from '@/src/components/markdown-text'
+import { CODE_CARD_TOOL_NAME } from '@/src/lib/code-runner/profiles'
 import { formatReasoningEffort } from '@/src/lib/config/reasoning'
 import { resolveDisclosureOpen } from './message-parts-state'
 import { useHasAvailableChatMode } from './mode-options-context'
@@ -239,13 +240,18 @@ const ChatStoppedPart: FC = () => {
 }
 
 export const AssistantMessageParts: FC = () => {
+  const groupByType = groupPartByType({
+    reasoning: ['group-reasoning'],
+    'tool-call': ['group-tool'],
+  })
   return (
     <MessagePrimitive.GroupedParts
       indicator="never"
-      groupBy={groupPartByType({
-        reasoning: ['group-reasoning'],
-        'tool-call': ['group-tool'],
-      })}
+      groupBy={(part, context) =>
+        part.type === 'tool-call' && part.toolName === CODE_CARD_TOOL_NAME
+          ? []
+          : groupByType(part, context)
+      }
     >
       {({ part, children }) => {
         switch (part.type) {

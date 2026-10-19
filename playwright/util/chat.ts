@@ -1,4 +1,5 @@
 import { type Page } from '@playwright/test'
+import { Prisma } from '@klicker-uzh/prisma/client'
 import * as jose from 'jose'
 import { randomUUID } from 'node:crypto'
 import { getPrisma } from '../global-setup.js'
@@ -298,7 +299,23 @@ export async function resetChatState(participantId: string) {
       modelSelection: true,
       // Restore PUBLISHED in case a test flipped it (participant access gate).
       status: 'PUBLISHED',
+      codeExecutionConfig: Prisma.DbNull,
     },
+  })
+}
+
+/**
+ * Set the platform-owned browser code execution policy of the E2E chatbot,
+ * for example `{ modes: { tutor: ['python-core'] } }`; `null` removes it.
+ * The test runtime turns the deployment kill switch on.
+ */
+export async function setCodeExecutionPolicy(
+  policy: { modes: Record<string, string[]> } | null
+) {
+  const prisma = await getPrisma()
+  await prisma.chatbot.update({
+    where: { id: CHATBOT_ID },
+    data: { codeExecutionConfig: policy ?? Prisma.DbNull },
   })
 }
 
@@ -398,10 +415,12 @@ export type SeedMessage = {
         toolCallId: string
         toolName: string
         args?: Record<string, unknown>
-        result?: {
-          content?: Array<{ type: string; text: string }>
-          isError?: boolean
-        }
+        result?:
+          | {
+              content?: Array<{ type: string; text: string }>
+              isError?: boolean
+            }
+          | Record<string, unknown>
       }
   >
   parentId?: string | null

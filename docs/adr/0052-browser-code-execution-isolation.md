@@ -40,9 +40,17 @@ and receives every runtime file from the Chat page.
   and fails on any mismatch with the manifest. The manifest content determines
   the version path segment, so the files can be cached as immutable.
 - **Bridge.** The host hands the runner a private `MessageChannel` port once,
-  and ignores `window` messages. It validates every port message by version,
-  shape, size, attempt and generation. It caps output and message counts, and
-  it assigns the provenance of every result itself.
+  in a versioned `hello`, and ignores `window` messages. It validates every
+  port message by shape and size, and every result by attempt and generation.
+  It accepts only the first `ready`, caps output and message counts, and
+  assigns the provenance of every result itself. The runner shrinks a result
+  until its serialized form fits the size limit.
+- **Framing.** The runner policy has no `frame-ancestors` directive. The
+  directive checks every ancestor, so `frame-ancestors 'self'` blocked the
+  runner in Chromium whenever a page on another origin embedded Chat, as an
+  LMS does. The runner is opaque, has no network access and holds no
+  privileges, so framing it elsewhere exposes nothing. Other runtime files
+  keep `frame-ancestors 'none'`.
 - **Lifecycle.** Each run builds a fresh runner, so interpreter state never
   leaks between runs. Stop, timeout and reset remove the frame.
 - **Gating.** A deployment kill switch, `CHAT_CODE_EXECUTION_ENABLED`, and a

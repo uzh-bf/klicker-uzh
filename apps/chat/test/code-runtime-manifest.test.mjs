@@ -1,5 +1,12 @@
 import { describe, expect, test } from 'vitest'
-import { buildManifest, compareManifest } from '../scripts/code-runtimes.mjs'
+import {
+  buildManifest,
+  compareManifest,
+  RUNNER_DOCUMENTS,
+  runnerDocument,
+  sha256,
+} from '../scripts/code-runtimes.mjs'
+import { RUNNER_DOCUMENTS as DOCUMENTS_BY_PROFILE } from '../src/lib/code-runner/manifest'
 
 // Synthetic two-profile source set; the reader maps fake paths to bytes.
 const bytes = {
@@ -13,6 +20,20 @@ const profiles = {
 }
 
 describe('browser code runtime manifest', () => {
+  test('generates every document requested by the bridge and serving policy', () => {
+    expect([...RUNNER_DOCUMENTS].sort()).toEqual(
+      Object.values(DOCUMENTS_BY_PROFILE).sort()
+    )
+  })
+
+  test.each([
+    '</script>',
+    '</SCRIPT >',
+    '<!--',
+  ])('rejects bootstrap bytes that the HTML parser would reinterpret: %s', (sequence) => {
+    expect(() => runnerDocument(`const marker = '${sequence}'`)).toThrow()
+  })
+
   test('accepts sources that match the reviewed manifest', () => {
     const manifest = buildManifest(profiles, read)
 
@@ -40,5 +61,17 @@ describe('browser code runtime manifest', () => {
     )
 
     expect(compareManifest(reviewed, extra)).toContain('unexpected webr/c.js')
+  })
+
+  test('pins the runner bootstrap and rejects a stale hash', () => {
+    const script = 'console.log("runner")'
+    const reviewed = buildManifest(profiles, read, script)
+    const changed = buildManifest(profiles, read, 'console.log("changed")')
+
+    expect(reviewed.runnerScriptSha256).toBe(sha256(script, 'base64'))
+    expect(runnerDocument(script)).toContain(`<script>${script}</script>`)
+    expect(compareManifest(reviewed, changed)).toContain(
+      'runner bootstrap hash mismatch'
+    )
   })
 })

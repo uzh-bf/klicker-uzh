@@ -134,6 +134,7 @@
         "A-login.spec.ts",
         "Y-chat-lti-access.spec.ts",
         "Y-chat-knowledge-graph.spec.ts",
+        "Y-chat-code-card.spec.ts",
         "Y-chat.spec.ts"
       ]
     },
@@ -166,6 +167,7 @@
         "U-catalog.spec.ts",
         "W-activity-log.spec.ts",
         "X-review.spec.ts",
+        "Y-chat-code-card.spec.ts",
         "Y-chat.spec.ts",
         "Y-kb-domain-selection.spec.ts",
         "Z-credential-verification.spec.ts"
