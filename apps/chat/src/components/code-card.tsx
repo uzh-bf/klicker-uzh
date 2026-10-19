@@ -36,8 +36,14 @@ export function CodeCard({
       </div>
     )
   }
+  // A changed card remounts the runner, which stops any run and resets the
+  // editor to the new starter code.
   return (
-    <ParsedCodeCard profile={card.profile} starterCode={card.starterCode} />
+    <ParsedCodeCard
+      key={`${card.profile}:${card.starterCode}`}
+      profile={card.profile}
+      starterCode={card.starterCode}
+    />
   )
 }
 
