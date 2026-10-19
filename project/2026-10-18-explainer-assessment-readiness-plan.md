@@ -1,5 +1,41 @@
 # Explainer quality decision and assessment qualification
 
+## Approved attribution execution
+
+Approved on 19 October 2026: adapt and qualify the existing local session wiring,
+refresh pricing and guarded startup, then run the sixteen-turn attribution
+comparison below under the same cumulative US$55/48-turn ledger and identity.
+This supersedes preparation-only authority solely for that finite sequence.
+Retain the exact attribution-only candidate, original corpus and criteria,
+fresh two-turn threads, one trajectory per case and arm, and thirty-two-request
+ceiling. There is no repeated baseline or statistical noise estimate.
+
+Main owns private inputs, secrets, effects, spending and semantic assessment.
+Qualify the new operation's receipt bindings and operator-controlled block
+boundary before paid egress; never replay a completed operation. A trusted
+read-only source review covers changed custody/session logic without private
+answers or runtime data. Assess the completed baseline before admitting the
+candidate block. Check initial usefulness and unnecessary hedging separately
+from the frozen revision rubric. A clean baseline alone does not establish
+that the candidate is harmless or beneficial.
+
+Stop dependent work on failed qualification, uncertain spending, configuration
+drift or guard failure. Preserve failed and unstarted coverage. Restore/read
+back the baseline and stop the exact runtime on completion or failure. Finish
+with the private actual-answer/passage assessment and a sanitized draft update.
+The next outcome decision concerns evidence for representative course sources
+and any combined-guidance proposal; neither is authorized by this comparison.
+No additional budget, extra run, shared prompt change, merge, ready transition
+or deployment.
+
+The finite execution and private manual assessment are complete. The existing
+private `project/_local/explainer-quality-decision.md` index links the candidate
+decision, actual-answer and citation assessment, spending and final restoration/
+shutdown evidence. This execution authority is consumed. Review that decision
+before preparing representative course-source acceptance or a combined-guidance
+proposal; neither a completed capture nor unused monetary allowance authorizes
+another run. The preparation section below is retained as protocol history.
+
 ## Citation-attribution comparison preparation
 
 Approved on 19 October 2026: prepare the independent attribution comparison

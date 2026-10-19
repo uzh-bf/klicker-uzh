@@ -90,14 +90,15 @@ this corpus. Adding the cases does not authorize running them or reusing an
 exhausted ledger. Execution status and private assessment custody are recorded
 in the current plan; corpus validity alone is not model-quality evidence.
 
-## Proposed broader comparison
+## Current comparison status
 
-The [current attribution protocol](../../../project/2026-10-18-explainer-assessment-readiness-plan.md#citation-attribution-comparison-preparation)
-proposes the existing reserved group, two arms and one repeat: sixteen learner
+The [approved attribution protocol](../../../project/2026-10-18-explainer-assessment-readiness-plan.md#approved-attribution-execution)
+uses the existing reserved group, two arms and one repeat: sixteen learner
 turns. It uses the exact separate attribution guidance, the original rubrics and
-manual checks of actual answers and passages. Execution needs separately named
-approval and the same cumulative ledger; preparation starts no runtime or paid
-call. Development controls and combined guidance remain outside that comparison.
+manual checks of actual answers and passages. Its finite execution and private
+assessment are complete; that authority is consumed. Development controls and
+combined guidance remain outside that comparison. Further capture requires a
+named decision, not replay of a completed operation or historical command.
 The older 48-turn protocol below is preparation history, not an instruction to
 run both repetitions automatically.
 

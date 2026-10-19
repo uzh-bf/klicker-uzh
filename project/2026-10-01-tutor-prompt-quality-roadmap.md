@@ -1,9 +1,9 @@
 # Course-chatbot quality roadmap
 
 Status: the private review, initial comparison, separate candidate preparation
-and approved finite preservation comparison are complete. Detailed judgments
-remain private. Further comparisons and rollout require their named decisions.
-Zero-spend preparation now specifies the independent attribution comparison.
+and approved finite preservation and attribution comparisons are complete.
+Detailed judgments remain private. Further comparisons and rollout require
+their named decisions.
 Historical Tutor experiments remain below for reference.
 
 ## Current evaluation direction
@@ -15,16 +15,19 @@ criteria, informed by the completed private comparison.
 Automated judging is optional support for a demonstrated recurring need.
 
 The private decision index records the completed
-[preservation comparison](2026-10-18-explainer-assessment-readiness-plan.md#approved-preservation-execution).
+[preservation comparison](2026-10-18-explainer-assessment-readiness-plan.md#approved-preservation-execution)
+and [independent attribution comparison](2026-10-18-explainer-assessment-readiness-plan.md#approved-attribution-execution).
 The [candidate preparation](2026-10-18-explainer-assessment-readiness-plan.md#approved-prompt-preparation)
 keeps revision self-check and citation-attribution guidance separate. Review the
 private decision before selecting the next finite comparison. Citation support,
 transfer, multipart summaries and representative course-source acceptance remain
 required before rollout. Unused ledger capacity authorizes no additional capture.
-The [attribution protocol](2026-10-18-explainer-assessment-readiness-plan.md#citation-attribution-comparison-preparation)
-proposes sixteen fresh learner turns on the existing reserved group, with
+The attribution protocol uses fresh trajectories on the existing reserved group,
 manual passage checks and useful-answer safeguards. It excludes the preservation
 guidance; development-control and combined-guidance acceptance remain separate.
+Prioritize the representative course-source acceptance decision next: accurate
+retrieval, honest topic coverage, useful explanations and usable citations.
+Keep synthetic prompt comparisons distinct from that user-facing evidence.
 
 The [active quality-decision batch](2026-10-18-explainer-assessment-readiness-plan.md#current-quality-decision-batch)
 owns execution, acceptance and the next spending proposal. It continues the
@@ -35,7 +38,7 @@ superseding the earlier judge-first sequence in the
 | Priority | Outcome | Acceptance and next boundary |
 | --- | --- | --- |
 | 1 | Establish qualification-preserving Explainer revision | Private development comparison and manual assessment complete; review that decision before proposing transfer acceptance |
-| 2 | Establish trustworthy source support and honest task completion | Prepare the independent sixteen-turn attribution protocol; separately cover development controls, multipart summaries, genuinely absent material and representative course-source retrieval before rollout |
+| 2 | Establish trustworthy source support and honest task completion | Review the completed attribution decision; prepare representative course-source acceptance, then cover development controls, multipart summaries and genuinely absent material before rollout |
 | 3 | Roll out only a supported change and inspect subsequent anonymous use | Preserve the baseline and rollback; obtain named application/deployment authority, verify effective behavior and assess later use before returning to Tutor |
 
 Keep existing capture, import, citation mapping and spending admission stable.
@@ -63,8 +66,9 @@ supported the bounded subset without another source change. The follow-up
 preservation protocol used the same cumulative ledger, not a renewed allowance.
 Each finite protocol stops at its own planned turn count within the ledger's
 48-turn ceiling. The default US$5 cap and earlier ledgers remain unchanged.
-Both [initial](2026-10-18-explainer-assessment-readiness-plan.md#approved-comparison-execution)
-and [preservation](2026-10-18-explainer-assessment-readiness-plan.md#approved-preservation-execution)
+The [initial](2026-10-18-explainer-assessment-readiness-plan.md#approved-comparison-execution),
+[preservation](2026-10-18-explainer-assessment-readiness-plan.md#approved-preservation-execution)
+and [attribution](2026-10-18-explainer-assessment-readiness-plan.md#approved-attribution-execution)
 execution authority is consumed. Judge calls, further captures, shared prompt
 changes, merge and deployment remain separate.
 
