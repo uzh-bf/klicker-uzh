@@ -1,8 +1,15 @@
 import {
+  extractDocumentBlocks,
   extractLocalImageAttachments,
+  getDocumentAttachmentKey,
   getEditedMessageSource,
   getImageAttachmentKey,
 } from '@/src/lib/attachments/attachmentState'
+import {
+  composeMessageText,
+  getDocumentBlocks,
+  MAX_DOCUMENT_ATTACHMENTS,
+} from '@/src/lib/attachments/documentText'
 import { generateId } from '@/src/lib/utils/chatUtils'
 import {
   type ExtendedThreadMessageLike,
@@ -14,9 +21,15 @@ import {
 } from '@/src/stores/composerStore'
 import { useSettingsStore } from '@/src/stores/settingsStore'
 import { type AppendMessage } from '@assistant-ui/react'
+import { useTranslations } from 'next-intl'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
 import { truncateMessagesForReload } from '../components/message-parts-state'
+
+const getTypedText = (message: AppendMessage): string =>
+  message.content
+    .map((part) => (part.type === 'text' ? part.text : ''))
+    .join('')
 
 /**
  * Hook for managing chat thread operations.
@@ -40,6 +53,7 @@ export function useThreadManagement(
   abortControllerRef: React.MutableRefObject<AbortController | null>,
   selectedModeOverride?: string
 ) {
+  const t = useTranslations()
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -51,6 +65,29 @@ export function useThreadManagement(
   const selectedModel = useSettingsStore((state) => state.selectedModel)
   const selectedReasoningEffort = useSettingsStore(
     (state) => state.selectedReasoningEffort
+  )
+
+  // Document text follows the typed question in a single text part, so it is
+  // sent, stored and reloaded like typed text. A message with only files
+  // gets a default question so the thread title and history stay readable.
+  const buildContent = useCallback(
+    (
+      message: AppendMessage,
+      documentBlocks: string[]
+    ): ExtendedThreadMessageLike['content'] => {
+      if (documentBlocks.length === 0) return message.content
+      const typedText = getTypedText(message).trim()
+      return [
+        {
+          type: 'text',
+          text: composeMessageText(
+            typedText || t('chat.composer.documentDefaultQuestion'),
+            documentBlocks.slice(0, MAX_DOCUMENT_ATTACHMENTS)
+          ),
+        },
+      ]
+    },
+    [t]
   )
 
   /**
@@ -88,7 +125,10 @@ export function useThreadManagement(
       const userMessage: ExtendedThreadMessageLike = {
         id: generateId(),
         role: 'user',
-        content: message.content,
+        content: buildContent(
+          message,
+          extractDocumentBlocks(message.attachments)
+        ),
         createdAt: new Date(),
         parentId: message.parentId || null,
         chatMode: selectedMode,
@@ -117,6 +157,7 @@ export function useThreadManagement(
       await generateChatResponse(currentMessages, threadId)
     },
     [
+      buildContent,
       createThread,
       addMessage,
       generateChatResponse,
@@ -164,7 +205,7 @@ export function useThreadManagement(
       const sourceMessageId = sourceId ?? editedMessageId
 
       // create edited message with new ID
-      const editedMessage: ExtendedThreadMessageLike = {
+      let editedMessage: ExtendedThreadMessageLike = {
         role: 'user',
         content: message.content,
         id: generateId(),
@@ -220,6 +261,26 @@ export function useThreadManagement(
       if (mergedAttachments.length > 0) {
         editedMessage.imageAttachments = mergedAttachments
       }
+
+      const keptDocumentBlocks = originalMessage
+        ? getDocumentBlocks(
+            typeof originalMessage.content === 'string'
+              ? originalMessage.content
+              : originalMessage.content
+                  .map((part) => (part.type === 'text' ? part.text : ''))
+                  .join('')
+          ).filter(
+            (_block, index) =>
+              !removedAttachmentKeys.has(getDocumentAttachmentKey(index))
+          )
+        : []
+      editedMessage = {
+        ...editedMessage,
+        content: buildContent(message, [
+          ...keptDocumentBlocks,
+          ...extractDocumentBlocks(message.attachments),
+        ]),
+      }
       editedMessage.attachmentSourceMessageId =
         originalMessage?.attachmentSourceMessageId ??
         originalMessage?.id ??
@@ -258,7 +319,13 @@ export function useThreadManagement(
       // generate new response from the edited conversation state
       await generateChatResponse(newCurrentPath, threadId)
     },
-    [generateChatResponse, selectedMode, selectedModel, selectedReasoningEffort]
+    [
+      buildContent,
+      generateChatResponse,
+      selectedMode,
+      selectedModel,
+      selectedReasoningEffort,
+    ]
   )
 
   /**

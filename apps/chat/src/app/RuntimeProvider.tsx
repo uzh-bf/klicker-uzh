@@ -9,17 +9,36 @@ import {
 import { useSettingsStore } from '@/src/stores/settingsStore'
 import {
   AssistantRuntimeProvider,
+  CompositeAttachmentAdapter,
   useExternalStoreRuntime,
   type ThreadMessageLike,
 } from '@assistant-ui/react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react'
 import { useChatUi } from '../components/chat-ui-context'
 import { ModeOptionsProvider } from '../components/mode-options-context'
+import {
+  documentAttachmentAdapter,
+  isReadingDocument,
+  subscribeDocumentReading,
+} from '../lib/attachments/documentAttachmentAdapter'
+import { parseMessageDocuments } from '../lib/attachments/documentText'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
 import { resolveSelectedMode } from '../lib/config/modes'
 
 const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
+
+const getPlainText = (content: ThreadMessageLike['content']): string =>
+  typeof content === 'string'
+    ? content
+    : content.map((part) => (part.type === 'text' ? part.text : '')).join('')
 
 export function RuntimeProvider({
   chatbotId,
@@ -274,6 +293,13 @@ export function RuntimeProvider({
         ...rest
       } = message
       delete rest.rating
+      // A user message stores attached documents as text after the question.
+      // The runtime only sees the question, so the bubble, copy and the edit
+      // composer work on what the student typed; the documents become chips.
+      const { question, documents } =
+        rest.role === 'user'
+          ? parseMessageDocuments(getPlainText(rest.content))
+          : { question: '', documents: [] }
       const custom = {
         ...(metadata?.custom ?? {}),
         chatMode: chatMode ?? null,
@@ -281,10 +307,16 @@ export function RuntimeProvider({
         reasoningEffort: reasoningEffort ?? null,
         creditsUsed: creditsUsed ?? null,
         imageAttachments: imageAttachments ?? [],
+        documentAttachments: documents.map(
+          ({ text: _text, ...document }) => document
+        ),
       }
 
       return {
         ...rest,
+        ...(documents.length > 0
+          ? { content: [{ type: 'text' as const, text: question }] }
+          : {}),
         metadata: {
           ...metadata,
           custom,
@@ -302,16 +334,31 @@ export function RuntimeProvider({
     [setMessagesInternal]
   )
 
+  // Documents are read as text in the browser, so they work with every model;
+  // images only join when the selected model accepts them.
   const adapters = useMemo(
-    () =>
-      supportsImageAttachments ? { attachments: imageAttachmentAdapter } : {},
+    () => ({
+      attachments: supportsImageAttachments
+        ? new CompositeAttachmentAdapter([
+            imageAttachmentAdapter,
+            documentAttachmentAdapter,
+          ])
+        : documentAttachmentAdapter,
+    }),
     [supportsImageAttachments]
+  )
+
+  const readingDocument = useSyncExternalStore(
+    subscribeDocumentReading,
+    isReadingDocument,
+    () => false
   )
 
   // runtime config for assistant UI
   const runtime = useExternalStoreRuntime({
     messages,
     isRunning,
+    isSendDisabled: readingDocument,
     setMessages,
     onNew,
     onEdit,

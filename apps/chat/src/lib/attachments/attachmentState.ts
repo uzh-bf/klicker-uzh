@@ -144,6 +144,35 @@ export function extractLocalImageAttachments(
     }))
 }
 
+type ComposerDocumentAttachmentInput = {
+  type?: string
+  content?: readonly unknown[]
+}
+
+/** Text blocks of the document attachments, in the order they were added. */
+export function extractDocumentBlocks(
+  attachments?: readonly ComposerDocumentAttachmentInput[]
+): string[] {
+  return (attachments ?? [])
+    .filter((attachment) => attachment.type === 'document')
+    .flatMap((attachment) => attachment.content ?? [])
+    .filter(
+      (part): part is { type: 'text'; text: string } =>
+        typeof part === 'object' &&
+        part !== null &&
+        'type' in part &&
+        part.type === 'text' &&
+        'text' in part &&
+        typeof part.text === 'string'
+    )
+    .map((part) => part.text)
+}
+
+// Kept documents of an edited message are removed by key, like its images.
+export function getDocumentAttachmentKey(index: number): string {
+  return `doc:${index}`
+}
+
 export function mergeHydratedAttachments(
   attachments: AttachmentRecord[],
   hydratedAttachments: AttachmentRecord[]
@@ -180,13 +209,13 @@ export function mergeHydratedAttachments(
   )
 }
 
-export function getEditedMessageSource({
+export function getEditedMessageSource<T extends EditableMessage>({
   editedMessageId,
   messages,
 }: {
   editedMessageId?: string | null
-  messages: EditableMessage[]
-}): EditableMessage | undefined {
+  messages: T[]
+}): T | undefined {
   if (!editedMessageId) {
     return undefined
   }
