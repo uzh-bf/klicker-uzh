@@ -211,6 +211,9 @@ export default {
       editDisabledTooltip:
         'Cannot edit: selected model does not support images',
       copy: 'Copy',
+      readAloud: 'Read aloud',
+      stopReadAloud: 'Stop reading aloud',
+      readAloudFormula: 'formula',
       refresh: 'Refresh',
       retry: 'Try again',
       rateUp: 'Helpful answer',
