@@ -845,6 +845,32 @@ test.describe('Chat code card', () => {
       expect(attempts).toBe(2)
     })
 
+    test('locks the card when the server no longer accepts the question', async ({
+      page,
+    }) => {
+      let attempts = 0
+      await page.route('**/practice/submit', (route) => {
+        attempts += 1
+        return route.fulfill({
+          status: 410,
+          contentType: 'application/json',
+          body: JSON.stringify({ code: 'QUESTION_REF_STALE' }),
+        })
+      })
+      await openPracticeThread(page, inAnHour())
+      await answer(page, 'Stale answer')
+      await page
+        .getByTestId('practice-card')
+        .getByRole('button', { name: enMessages.chat.workspace.open })
+        .click()
+      const workspace = page.getByTestId('chat-workspace-panel')
+      await workspace.getByRole('button', { name: 'Submit' }).click()
+      await expect(
+        workspace.getByRole('button', { name: 'Submit' })
+      ).toHaveCount(0)
+      expect(attempts).toBe(1)
+    })
+
     test('locks a question that expired while its timer had not fired', async ({
       page,
     }) => {
