@@ -1,11 +1,9 @@
 import { useQuery } from '@apollo/client'
-import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import { GetKbDocument } from '@klicker-uzh/graphql/dist/ops'
 import { H1, Skeleton, UserNotification } from '@uzh-bf/design-system'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
 import { useFormatter, useTranslations } from 'next-intl'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useRef, useState } from 'react'
 import KnowledgeBaseAddResourceModal from './components/KnowledgeBaseAddResourceModal'
 import KnowledgeBaseChatbotBindings from './components/KnowledgeBaseChatbotBindings'
 import KnowledgeBaseDomainSettings from './components/KnowledgeBaseDomainSettings'
@@ -26,38 +24,8 @@ function KnowledgeBaseDetail({
 }) {
   const t = useTranslations()
   const format = useFormatter()
-  const advancedManagementEnabled = useFeatureFlag('ai-advanced-management')
   const [resourceRefreshKey, setResourceRefreshKey] = useState(0)
   const [addResourceOpen, setAddResourceOpen] = useState(false)
-  const [graphOpen, setGraphOpen] = useState(false)
-  const [graphMounted, setGraphMounted] = useState(false)
-  const router = useRouter()
-
-  const toggleGraph = (open: boolean) => {
-    setGraphOpen(open)
-    if (open) setGraphMounted(true)
-  }
-
-  // Links such as the graph generation status point at #knowledge-graph, so
-  // they open the collapsed section and let the panel take over from there.
-  // Router navigation updates asPath; a plain anchor on this page only fires
-  // hashchange.
-  useEffect(() => {
-    if (router.asPath.endsWith('#knowledge-graph')) {
-      setGraphOpen(true)
-      setGraphMounted(true)
-    }
-  }, [router.asPath])
-  useEffect(() => {
-    const openFromHash = () => {
-      if (window.location.hash === '#knowledge-graph') {
-        setGraphOpen(true)
-        setGraphMounted(true)
-      }
-    }
-    window.addEventListener('hashchange', openFromHash)
-    return () => window.removeEventListener('hashchange', openFromHash)
-  }, [])
   const addResourceTriggerRef = useRef<HTMLElement | null>(null)
   const { data, loading, error, refetch } = useQuery(GetKbDocument, {
     variables: { id: kbId },
@@ -264,32 +232,7 @@ function KnowledgeBaseDetail({
       />
       <KnowledgeBaseImportedSourceList kbId={kbId} />
       <KnowledgeBaseChatbotBindings kbId={kbId} onChanged={refreshMetrics} />
-      {advancedManagementEnabled ? (
-        <KnowledgeGraphPanel kbId={kbId} />
-      ) : (
-        // Graph builds are optional for ordinary lecturers, so the panel and
-        // its queries load only once the section is opened. It stays mounted
-        // afterwards so closing the section keeps in-progress settings.
-        <details
-          className="mt-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
-          data-cy="knowledge-graph-advanced"
-          open={graphOpen}
-          onToggle={(event) => toggleGraph(event.currentTarget.open)}
-        >
-          <summary
-            className="cursor-pointer select-none"
-            data-cy="knowledge-graph-advanced-trigger"
-          >
-            <span className="font-medium text-gray-900">
-              {t('kb.graphAdvancedTitle')}
-            </span>
-            <span className="block text-sm text-gray-600">
-              {t('kb.graphAdvancedDescription')}
-            </span>
-          </summary>
-          {graphMounted ? <KnowledgeGraphPanel kbId={kbId} /> : null}
-        </details>
-      )}
+      <KnowledgeGraphPanel kbId={kbId} />
       {addResourceOpen ? (
         <KnowledgeBaseAddResourceModal
           kbId={kbId}

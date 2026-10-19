@@ -1300,6 +1300,7 @@ function ChatbotDetails({
       {/* The credit editor changes the live participant-facing quota, an operational lever an ordinary lecturer should not tune. */}
       <>
         <ChatbotCreditPolicy
+          key={chatbot.id}
           chatbot={chatbot}
           publicationPending={false}
           onNavigationStateChange={setCreditNavigationState}

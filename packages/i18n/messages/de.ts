@@ -2124,9 +2124,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     previewAccessError:
       'Der Wissensdatenbank-Arbeitsbereich ist für Ihr Konto noch nicht verfügbar.',
     graphTitle: 'Wissensgraph',
-    graphAdvancedTitle: 'Wissensgraph (erweitert)',
-    graphAdvancedDescription:
-      'Erstellen und prüfen Sie den Wissensgraphen selbst. Die meisten Kurse benötigen dies nicht.',
     graphDescription:
       'Erstellen Sie aus den Ressourcen der Wissensdatenbank einen Graphen und prüfen Sie das veröffentlichte Ergebnis.',
     graphQualityTierLabel: 'Qualität des Aufbaus',
@@ -5388,7 +5385,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotPublicationDisclaimerRequired:
         'Speichern Sie vor dem Veröffentlichungsantrag einen vollständigen Disclaimer.',
       chatbotPublicationUnsavedSetup:
-        'Speichern Sie Änderungen in den Grundangaben, Lernmodi, im Disclaimer und bei den Credits oder warten Sie, bis sie gespeichert sind, bevor Sie die Veröffentlichung beantragen.',
+        'Speichern oder verwerfen Sie die ungespeicherten Änderungen auf dieser Seite, auch in geöffneten erweiterten Einstellungen, oder warten Sie, bis sie gespeichert sind, bevor Sie die Veröffentlichung beantragen.',
       chatbotPublicationAuthorizationChecking:
         'Es wird geprüft, ob dieses Konto eine Veröffentlichung beantragen kann ...',
       chatbotPublicationAuthorizationUnavailable:

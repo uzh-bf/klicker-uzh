@@ -2094,9 +2094,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     previewAccessError:
       'The knowledge base workspace is not available for your account yet.',
     graphTitle: 'Knowledge graph',
-    graphAdvancedTitle: 'Knowledge graph (advanced)',
-    graphAdvancedDescription:
-      'Build and inspect the knowledge graph yourself. Most courses do not need this.',
     graphDescription:
       'Build a graph from the knowledge base resources and inspect the published result.',
     graphQualityTierLabel: 'Build quality',
@@ -5267,7 +5264,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotPublicationDisclaimerRequired:
         'Save a complete disclaimer before requesting publication.',
       chatbotPublicationUnsavedSetup:
-        'Save or wait for changes in Basics, Learning modes, Disclaimer, and Credits before requesting publication.',
+        'Save or discard the unsaved changes on this page, including any open advanced settings, or wait for them to finish saving before requesting publication.',
       chatbotPublicationAuthorizationChecking:
         'Checking whether this account can request publication...',
       chatbotPublicationAuthorizationUnavailable:
