@@ -77,10 +77,17 @@ describe('locked reply language', () => {
     const contract = withLanguageStyleContract('Base prompt.', locale)
     const reminder = replyLanguageReminder(locale)
 
-    expect(contract).not.toBe(withLanguageStyleContract('Base prompt.'))
-    expect(contract).toContain(name)
-    // Swiss orthography still applies whenever the reply is German.
-    expect(contract).toContain('Swiss Standard German')
+    // Only the reply-language paragraph changes, so the Swiss orthography
+    // rule and the source-language rules still apply.
+    const lockedParagraphs = contract.split('\n\n')
+    const unlockedParagraphs =
+      withLanguageStyleContract('Base prompt.').split('\n\n')
+    expect(lockedParagraphs).toHaveLength(unlockedParagraphs.length)
+    expect(
+      lockedParagraphs.filter(
+        (paragraph, index) => paragraph !== unlockedParagraphs[index]
+      )
+    ).toEqual([expect.stringContaining(name)])
     expect(reminder.role).toBe('system')
     expect(reminder.content).not.toBe(REPLY_LANGUAGE_REMINDER.content)
     expect(reminder.content).toContain(name)
