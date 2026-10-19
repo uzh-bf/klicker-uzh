@@ -70,6 +70,7 @@ import {
   type ChatbotSetupSectionId,
   type ChatbotSetupSectionStatus,
   type CreditPolicyValues,
+  hasModeFraming,
   hasUnsubmittedChanges,
   isDefaultCreditPolicy,
   isDefaultGraphPolicy,
@@ -440,7 +441,10 @@ function ChatbotDetails({
             introText: disclaimerIntroText,
           }))
         )
-      }
+      },
+      // Without the suggestions the section shows Saved instead of
+      // Suggested, which is still correct.
+      () => undefined
     )
     return () => {
       active = false
@@ -1257,7 +1261,8 @@ function ChatbotDetails({
   // information; its editor then starts from the suggested text, which still
   // has to be saved before the chatbot can be requested.
   const studentInformationStored =
-    savedValues.disclaimerTitle != null ||
+    (savedValues.disclaimerTitle !== null &&
+      savedValues.disclaimerTitle !== undefined) ||
     Boolean(chatbot.disclaimerSummary?.id)
   const studentInformation = {
     title: savedValues.disclaimerTitle,
@@ -1353,7 +1358,7 @@ function ChatbotDetails({
     savedModes.quizzerEnabled && !connectedKnowledgeBase
       ? t('manage.resources.chatbotSummaryModesQuizzerNeedsKb')
       : t('manage.resources.chatbotSummaryModesExtras', {
-          framing: savedModes.scopeNote.trim() ? 'set' : 'none',
+          framing: hasModeFraming(savedModes) ? 'set' : 'none',
           custom: savedCustomModeCount,
         }),
   ].join(' ')
@@ -1391,13 +1396,14 @@ function ChatbotDetails({
     modelRegistry,
     savedFixedModelId
   )[savedFixedModelId]?.[0]
+  const savedChoiceModelIds = getInitialSelectedModelIds(
+    savedValues,
+    modelRegistry
+  )
   const modelSummary = savedValues.modelSelection
     ? t('manage.resources.chatbotSummaryModelChoice', {
-        models: formatList(
-          getInitialSelectedModelIds(savedValues, modelRegistry).map(
-            getModelName
-          )
-        ),
+        models: formatList(savedChoiceModelIds.map(getModelName)),
+        count: savedChoiceModelIds.length,
       })
     : [
         savedFixedEffort

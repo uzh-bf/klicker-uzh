@@ -88,6 +88,10 @@
     "./chatbot-custom-mode-limits": {
       "types": "./dist/chatbotCustomModeLimits.d.ts",
       "default": "./dist/chatbotCustomModeLimits.js"
+    },
+    "./chatbot-credit-policy-defaults": {
+      "types": "./dist/chatbotCreditPolicyDefaults.d.ts",
+      "default": "./dist/chatbotCreditPolicyDefaults.js"
     }
   },
   "type": "module"

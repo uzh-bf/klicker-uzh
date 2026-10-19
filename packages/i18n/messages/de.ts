@@ -5164,7 +5164,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Es ist keine Wissensdatenbank verbunden. Antworten nutzen allgemeines Modellwissen.',
       chatbotSummaryMaterialsConnected: 'Nutzt die Wissensdatenbank {name}.',
       chatbotSummaryMaterialsReadiness:
-        '{total, plural, =0 {Sie enthält noch keine Ressourcen.} one {{ready} von 1 Ressource ist bereit{failed, plural, =0 {} other {, # fehlgeschlagen}}.} other {{ready} von # Ressourcen sind bereit{failed, plural, =0 {} other {, # fehlgeschlagen}}.}}',
+        '{total, plural, =0 {Sie enthält noch keine Ressourcen.} one {{ready} von 1 Ressource ist bereit{failed, plural, =0 {} other {, # fehlgeschlagen}}.} other {{ready} von # Ressourcen {ready, plural, one {ist} other {sind}} bereit{failed, plural, =0 {} other {, # fehlgeschlagen}}.}}',
       chatbotNoKnowledgeBaseOption:
         'Keine Wissensdatenbank. Antworten nutzen allgemeines Modellwissen.',
       chatbotSummaryStudents:
@@ -5186,11 +5186,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotSummaryModelFixedReasoning:
         'Studierende nutzen {model} mit dem Reasoning-Level {effort}.',
       chatbotSummaryModelNoChoice: 'Sie können das Modell nicht wechseln.',
-      chatbotSummaryModelChoice: 'Studierende wählen zwischen {models}.',
+      chatbotSummaryModelChoice:
+        '{count, plural, one {Studierende nutzen {models}.} other {Studierende wählen zwischen {models}.}}',
       chatbotSummaryUsageInitial:
         'Alle Studierenden starten mit {initial, plural, one {1 Credit} other {# Credits}}.',
       chatbotSummaryUsageRefill:
-        '{period, select, NONE {Credits werden nicht aufgefüllt.} DAILY {Jeden Tag kommen {amount, plural, one {1 Credit} other {# Credits}} dazu, bis höchstens {max}.} WEEKLY {Jede Woche kommen {amount, plural, one {1 Credit} other {# Credits}} dazu, bis höchstens {max}.} BIWEEKLY {Alle zwei Wochen kommen {amount, plural, one {1 Credit} other {# Credits}} dazu, bis höchstens {max}.} MONTHLY {Jeden Monat kommen {amount, plural, one {1 Credit} other {# Credits}} dazu, bis höchstens {max}.} other {Credits werden bis höchstens {max} aufgefüllt.}}',
+        '{period, select, NONE {Credits werden nicht aufgefüllt.} DAILY {Jeden Tag {amount, plural, one {kommt 1 Credit} other {kommen # Credits}} dazu, bis höchstens {max}.} WEEKLY {Jede Woche {amount, plural, one {kommt 1 Credit} other {kommen # Credits}} dazu, bis höchstens {max}.} BIWEEKLY {Alle zwei Wochen {amount, plural, one {kommt 1 Credit} other {kommen # Credits}} dazu, bis höchstens {max}.} MONTHLY {Jeden Monat {amount, plural, one {kommt 1 Credit} other {kommen # Credits}} dazu, bis höchstens {max}.} other {Credits werden bis höchstens {max} aufgefüllt.}}',
       chatbotSummaryGraph:
         'Die Konzeptkarte ist für Studierende {visible, select, yes {sichtbar} other {ausgeblendet}}.',
       chatbotSummaryGraphRetrieval:
@@ -5213,8 +5214,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Studierende sehen diesen Chatbot noch nicht.',
       chatbotPublicationBlockersTitle: 'Bevor Sie den Antrag senden:',
       chatbotPublicationBlockerUnsaved:
-        'Speichern oder verwerfen Sie die Änderungen in {section}.',
-      chatbotPublicationBlockerInvalid: 'Vervollständigen Sie {section}.',
+        'Speichern oder verwerfen Sie die Änderungen im Bereich {section}.',
+      chatbotPublicationBlockerInvalid:
+        'Vervollständigen Sie den Bereich {section}.',
       chatbotWorkspaceBehavior: 'Verhalten',
       chatbotWorkspaceDisclaimer: 'Disclaimer',
       chatbotWorkspaceOverviewDescription:
