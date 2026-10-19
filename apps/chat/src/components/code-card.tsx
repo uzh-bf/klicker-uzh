@@ -145,6 +145,12 @@ export function CodeArtifactCard({ artifact }: { artifact: CodeArtifact }) {
   const workspace = useArtifactWorkspace()
   if (!workspace) return null
   const inWorkspace = activeArtifactId(workspace.state.view) === artifact.id
+  let notice: string | undefined
+  if (workspace.state.storageFallback) {
+    notice = t('chat.codeCard.storageFallbackNote')
+  } else if (!workspace.savesWorkingCode) {
+    notice = t('chat.codeCard.previewNote')
+  }
   return (
     <CodeCardFrame
       code={workspace.state.workingCode[artifact.id] ?? artifact.starterCode}
@@ -162,13 +168,7 @@ export function CodeArtifactCard({ artifact }: { artifact: CodeArtifact }) {
           </button>
         )
       }
-      notice={
-        workspace.state.storageFallback
-          ? t('chat.codeCard.storageFallbackNote')
-          : workspace.savesWorkingCode
-            ? undefined
-            : t('chat.codeCard.previewNote')
-      }
+      notice={notice}
       onCodeChange={(code) => workspace.editCode(artifact, code)}
       profile={artifact.profile}
       starterCode={artifact.starterCode}

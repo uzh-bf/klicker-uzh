@@ -135,6 +135,14 @@ export function ArtifactWorkspaceProvider({
     [storageScope, storageChatbotId, scopeKey]
   )
 
+  // Presence must not change identity when the thread or storage target
+  // does: a re-run effect would briefly count the anchor as gone and close
+  // the workspace view.
+  const anchorMounted = useCallback((artifactId: string) => {
+    dispatch({ type: 'anchor-mounted', artifactId })
+    return () => dispatch({ type: 'anchor-unmounted', artifactId })
+  }, [])
+
   // Stable actions let consumers register from effects without re-running
   // them on every workspace change.
   const actions = useMemo(
@@ -148,10 +156,7 @@ export function ArtifactWorkspaceProvider({
         if (restored?.failed) dispatch({ type: 'storage-failed' })
         dispatch({ type: 'register', artifact, restoredCode: restored?.code })
       },
-      anchorMounted: (artifactId: string) => {
-        dispatch({ type: 'anchor-mounted', artifactId })
-        return () => dispatch({ type: 'anchor-unmounted', artifactId })
-      },
+      anchorMounted,
       open: (artifactId: string) => dispatch({ type: 'open', artifactId }),
       showGraph: () => {
         if (graphAvailable) dispatch({ type: 'show-graph' })
@@ -168,18 +173,26 @@ export function ArtifactWorkspaceProvider({
       },
       containerFor,
     }),
-    [graphAvailable, containerFor, target]
+    [graphAvailable, containerFor, target, anchorMounted]
   )
 
+  const savesWorkingCode = storage !== undefined
   const value = useMemo<ArtifactWorkspaceValue>(
     () => ({
       ...actions,
       state,
-      savesWorkingCode: storage !== undefined,
+      savesWorkingCode,
       graphSwitchable: graphAvailable && graphSwitchable,
       alwaysFullscreen,
     }),
-    [actions, state, storage, graphAvailable, graphSwitchable, alwaysFullscreen]
+    [
+      actions,
+      state,
+      savesWorkingCode,
+      graphAvailable,
+      graphSwitchable,
+      alwaysFullscreen,
+    ]
   )
 
   return (
