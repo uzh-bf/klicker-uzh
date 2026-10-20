@@ -3,6 +3,7 @@ import {
   ConcurrencyLimitStrategy,
   type Context,
   type HatchetClient,
+  type JsonObject,
   Priority,
 } from '@hatchet-dev/typescript-sdk'
 import { prisma } from '@klicker-uzh/prisma'
@@ -67,6 +68,7 @@ export function prepareHatchetTasks({
   kbIngestionDispatchEnabled = true,
   kbGraphDispatchEnabled = true,
   settleKBGraphTerminalResult,
+  runKBGraphPreparationSweep,
 }: {
   hatchet: HatchetClient
   pubSub: PubSub<any>
@@ -84,6 +86,12 @@ export function prepareHatchetTasks({
     finishedAt: Date
     allowLateSuccess?: boolean
   }) => Promise<'SETTLED' | 'RELEASED' | 'NEEDS_HUMAN_REVIEW' | 'DUPLICATE'>
+  // Scheduled graph preparation lives in the GraphQL services, which own
+  // build admission; the worker injects it like the settlement callback.
+  runKBGraphPreparationSweep?: (input: {
+    tasks: PreparedHatchetTasks
+    logger: Context<unknown>['logger']
+  }) => Promise<JsonObject>
 }) {
   let preparedTasks: PreparedHatchetTasks | undefined
   const globalContext = {
@@ -453,6 +461,30 @@ export function prepareHatchetTasks({
       }),
   })
 
+  // One sweep at a time across all workers; each admission additionally
+  // passes the KB lock and single-slot claim of the system build trigger.
+  const prepareKBGraphs = hatchet.task({
+    name: 'prepare-kb-graphs',
+    onCrons: ['*/15 * * * *'],
+    defaultPriority: Priority.LOW,
+    executionTimeout: '10m',
+    concurrency: {
+      expression: '"prepare-kb-graphs"',
+      maxRuns: 1,
+      limitStrategy: ConcurrencyLimitStrategy.CANCEL_NEWEST,
+    },
+    fn: async (_, ctx) => {
+      if (!runKBGraphPreparationSweep) {
+        await ctx.logger.warn('KB graph preparation sweep is not configured')
+        return { status: 'NOT_CONFIGURED' }
+      }
+      return runKBGraphPreparationSweep({
+        tasks: globalContext.tasks,
+        logger: ctx.logger,
+      })
+    },
+  })
+
   const maintainKBResourcesTask = hatchet.task({
     name: 'maintain-kb-resources',
     onCrons: ['*/15 * * * *'],
@@ -571,6 +603,7 @@ export function prepareHatchetTasks({
     buildKBGraph,
     monitorKBIngestions,
     monitorKBGraphBuilds,
+    prepareKBGraphs,
     maintainKBResources: maintainKBResourcesTask,
     createAuditLogEntry,
     processCourseDuplication,
