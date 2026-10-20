@@ -398,8 +398,13 @@ Shard durations differ by architecture, so `playwright/timings.json` names the a
   Mistral `zai-glm-5-3` at max reasoning with a 16 KiB complete request bound,
   16,384-token output cap, 480-second deadline and no retries. Failures consume
   a slot; malformed, truncated or unsupported evidence is rejected. The advisor
-  has no execution, browser, write or recursive tools. Its verdict is advisory;
-  the manual final-review gate remains separate. Missing advisor access leaves
+  prompt asks for one direct answer in two to four short sentences with decisive
+  line evidence, or an `uncertain` assessment naming the missing evidence. This
+  is answer-format guidance within the existing schema and token limits; it
+  does not guarantee that a max-reasoning response will avoid the completion cap.
+  The advisor has no execution, browser, write or recursive tools. Its verdict
+  is advisory; the manual final-review gate remains separate. Missing advisor
+  access leaves
   ordinary source review available with an explicit unavailable status. Provider
   keys stay in trusted adapter instances; the OCR child receives only local
   capabilities and no publication token. Sanitized seven-day receipts report
