@@ -811,10 +811,12 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       'unsaved'
     )
     const advancedUrl = page.url()
+    // Going back leaves the document loaded by the last page.goto, so the
+    // browser's leave-page prompt guards the unsaved changes.
     const historyDiscardDialogPromise = page
       .waitForEvent('dialog')
       .then((dialog) => {
-        expect(dialog.message()).toBe('Discard your unsaved chatbot changes?')
+        expect(dialog.type()).toBe('beforeunload')
         return dialog.dismiss()
       })
     await page.evaluate(() => window.history.back())
