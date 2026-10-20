@@ -35,10 +35,16 @@ export function useChatGraphPanel(chatbotId: string, enabled: boolean) {
     },
     []
   )
+  // Closing drops the request, so reopening the panel shows the overview
+  // instead of replaying the last clicked concept in a fresh viewer.
+  const close = () => {
+    setFocusRequest(undefined)
+    setOpen(false)
+  }
   return {
     open: enabled && open,
-    toggle: () => setOpen((value) => !value),
-    close: () => setOpen(false),
+    toggle: () => (open ? close() : setOpen(true)),
+    close,
     focusRequest,
     focusConcept: enabled ? focusConcept : undefined,
   }

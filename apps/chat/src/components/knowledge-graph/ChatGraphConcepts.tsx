@@ -27,6 +27,15 @@ type Fetcher = (
 
 const MENTION_TEXT_LIMIT = 8000
 const MENTION_CACHE_LIMIT = 50
+const MENTION_BUSY_RETRIES = 2
+const MENTION_BUSY_MAX_WAIT_MS = 5000
+
+/** The route admits one graph read per participant; wait and ask again. */
+class ConceptMentionsBusyError extends Error {
+  constructor(readonly retryAfterMs: number) {
+    super('Concept mentions lookup is busy')
+  }
+}
 // Finished answers do not change, so a remount or thread reload reuses the
 // lookup instead of asking the graph again.
 const mentionCache = new Map<string, Promise<ConceptMentions | null>>()
@@ -56,6 +65,15 @@ export async function readConceptMentions(
       body: JSON.stringify({ text: text.slice(0, MENTION_TEXT_LIMIT) }),
     }
   )
+  if (response.status === 429) {
+    const seconds = Number(response.headers.get('Retry-After'))
+    throw new ConceptMentionsBusyError(
+      Math.min(
+        MENTION_BUSY_MAX_WAIT_MS,
+        Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : 1000
+      )
+    )
+  }
   if (!response.ok) return null
   const body: unknown = await response.json().catch(() => null)
   if (!isKnowledgeGraphResponse(body)) return null
@@ -68,16 +86,32 @@ export async function readConceptMentions(
   }
 }
 
+async function readWhenAdmitted(chatbotId: string, text: string) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await readConceptMentions(chatbotId, text)
+    } catch (error) {
+      if (
+        !(error instanceof ConceptMentionsBusyError) ||
+        attempt >= MENTION_BUSY_RETRIES
+      )
+        return null
+      await new Promise((resolve) => setTimeout(resolve, error.retryAfterMs))
+    }
+  }
+}
+
 function cachedConceptMentions(chatbotId: string, text: string) {
   const key = `${chatbotId}\u0000${text}`
   const cached = mentionCache.get(key)
   if (cached) return cached
   const loaded = mentionQueue
-    .then(() => readConceptMentions(chatbotId, text))
+    .then(() => readWhenAdmitted(chatbotId, text))
     .catch(() => null)
   mentionQueue = loaded
   mentionCache.set(key, loaded)
-  // A failed or busy lookup is retried on the next render of the answer.
+  // A busy route is retried above; a failed lookup is evicted so the answer
+  // asks again the next time it mounts.
   void loaded.then((value) => {
     if (value === null) mentionCache.delete(key)
   })
