@@ -118,6 +118,16 @@ def test_each_finished_turn_requires_its_own_reservation(ledger):
     assert state["reservedProviderMicroUsd"] == 100
 
 
+def test_admission_rejection_retains_a_second_cleanup_failure(ledger):
+    with pytest.raises(BaseExceptionGroup) as raised:
+        with admission(ledger) as admit:
+            with admit(turn_index=1, model=MODEL, max_output_tokens=64):
+                Path(str(ledger) + ".run").unlink()
+    messages = {str(error) for error in raised.value.exceptions}
+    assert messages == {"budget_run_inactive", "budget_admission_shutdown"}
+    assert read_ledger(ledger)["uncertain"]
+
+
 def test_competing_run_and_wrong_policy_are_refused(ledger):
     with admission(ledger):
         with pytest.raises(BudgetAdmissionError):

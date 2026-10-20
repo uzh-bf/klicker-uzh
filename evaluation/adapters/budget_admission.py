@@ -132,7 +132,9 @@ class BudgetAdmission:
                     process.kill()
                     process.wait(timeout=5)
                 self._fail("budget_admission_shutdown")
-            if process.returncode != 0 and self._failure is None:
+            if process.returncode not in (0, 1) or (
+                process.returncode == 1 and self._failure is None
+            ):
                 self._fail("budget_admission_shutdown")
         finally:
             if process.stdout:
