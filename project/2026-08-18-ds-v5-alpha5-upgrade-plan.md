@@ -6,15 +6,16 @@
 
 **Approval mode:** executable batch, approved by the user on 2026-10-20.
 
-**Current status:** the approved parser repair passes local and hosted quality
-checks. [Draft PR #6652](https://github.com/uzh-bf/klicker-uzh/pull/6652) targets
-`v3` and contains 49 verified native screenshot attachments. Hosted browser CI
-has exposed further compatibility failures. Their bounded source and existing
-test corrections are in progress, with affected checks, screenshots and reviews
-to follow. Earlier integrated review coverage remains valid for unchanged
-paths. The repository final AI workflow requires a ready PR; the approved
-terminal keeps it draft. The user runtime remains retained and pinned for
-manual Browser use.
+**Current status:** implementation and scoped local qualification are complete.
+[Draft PR #6652](https://github.com/uzh-bf/klicker-uzh/pull/6652) targets `v3` and
+contains 59 verified native screenshot attachments. The approved parser repair
+passes local and hosted quality checks. The subsequent compatibility slice
+passes simplification and risk review; earlier review coverage applies to
+unchanged source. The PR's Readiness section records the producing final-review
+and hosted-CI status, including any outstanding findings. The repository final
+AI workflow requires a ready PR; the approved terminal keeps it draft. Retain
+the exact user runtime, pinned for manual Browser use, and record final health
+in the PR and local lifecycle receipt.
 
 The historical pilot at commit `1de7ad9` has not accepted the final candidate
 tarball because its canonical Auth development server returns 404 for the
@@ -1211,6 +1212,7 @@ resolved task target is `v3`. Plan commit: `17cc9da64aa336a797b650d89f6ec3ee3c1c
   Diagnose that harness boundary separately while hosted CI verifies the
   existing workflows on the repaired assertions. No database reset or runtime
   replacement is inferred from this test correction.
+
 ### Hosted compatibility corrections — 2026-10-21
 
 - The registry quality suite at 649433ea6a45 passes, including Office lint with
@@ -1267,3 +1269,47 @@ resolved task target is `v3`. Plan commit: `17cc9da64aa336a797b650d89f6ec3ee3c1c
 - The exact task runtime remains retained/pinned under the user's manual-use
   ruling. No replacement, reset, cleanup, readiness change, merge, release,
   deployment or human-review notification is performed by this correction.
+
+
+### Local qualification completion — 2026-10-21
+
+- The corrective source is committed in bf536385b479. Its native simplifier and
+  risk reviewer each cover all eleven changed paths and return no findings.
+  Source, documentation and the incident lesson remain one consumer migration
+  package in [draft PR #6652](https://github.com/uzh-bf/klicker-uzh/pull/6652).
+  The final follow-up review includes the complete corrective range and reuses
+  prior package coverage for unchanged source. Live review and CI outcomes are
+  maintained in that PR rather than cached as an exact-head success here.
+- Fresh candidate checks pass 35/35 type tasks, 7/7 lint tasks and 23/23 forced
+  production build tasks, followed by the Docs rebuild. Unaffected type/lint
+  task caches are reused. The corrected build wrapper copies development types
+  outside Next output before holding them and restores them successfully.
+  Earlier wrapper and warm-start failures retain their separate receipts.
+- All nine complete candidate installations match every archive file before
+  checks, after the build, after warm startup and after browser acceptance.
+  The browser receives the candidate-only primary-hover token. Docs fits both
+  widths and its compact menu navigates/closes. Modal headings align left on
+  desktop and center on compact. The first sample-solution click after editing
+  a new answer succeeds and disables invalid Save. Batch mouse/Space opt-ins,
+  initial off states and template disabling pass; no batch update is applied.
+- The agent-owned unsaved editor probe is discarded through its normal recovery
+  flow; the saved synthetic record remains. All eleven public dependency inputs
+  are restored byte-for-byte, and all nine registry installations match the
+  lock-pinned archive after frozen reinstall. The source tree is clean before
+  this documentation-only completion record. Candidate and registry evidence
+  stay distinct; neither is package GA acceptance.
+- All 59 native public PR attachments have decoded image pixels, and the new
+  Docs comparison table was visually inspected. Historical provenance remains
+  visible. The ten new captures show registry Docs/modal surfaces; current
+  candidate browser receipts are separate. Earlier compact overflow, compact
+  editor clipping and untested browser/assistive-device coverage stay explicit.
+
+The exact retained runtime recovered through canonical repair after an exact
+hash comparison proved the OIDC network-namespace spelling equivalent. No
+container was recreated and the source declaration was restored. Manage and
+Auth return HTTP 200. After registry restoration, perform the final warm health
+check on the held head and keep the runtime pinned under the user's manual-use
+ruling. Final lifecycle and review receipts live in the ignored evidence root;
+current draft readiness, hosted checks and review disposition live in the linked
+PR. Marking ready, merging, release, deployment, further destructive recovery
+and human-review notifications remain outside this package's authority.
