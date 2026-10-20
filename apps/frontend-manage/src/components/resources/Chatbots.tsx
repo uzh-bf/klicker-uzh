@@ -23,9 +23,7 @@ import ChatbotList from './chatbots/ChatbotList'
 import { getChatbotStatusTranslationKey } from './chatbots/chatbotStatus'
 import {
   type ChatbotNavigationState,
-  type ChatbotSetupStep,
   type ChatbotWorkspaceState,
-  type ChatbotWorkspaceView,
   normalizeWorkspaceState,
 } from './chatbots/chatbotWorkspace'
 import useChatbotNavigationGuard from './chatbots/useChatbotNavigationGuard'
@@ -62,7 +60,6 @@ function Chatbots() {
     GetChatModelRegistryDocument,
     {
       fetchPolicy: 'cache-first',
-      skip: !advancedManagement,
     }
   )
   const { data: courseData } = useQuery(GetUserCoursesDocument, {
@@ -117,7 +114,7 @@ function Chatbots() {
   const workspaceState = useMemo<ChatbotWorkspaceState>(
     () =>
       selectedChatbot
-        ? normalizeWorkspaceState(selectedChatbot, requestedView, requestedStep)
+        ? normalizeWorkspaceState(requestedView, requestedStep)
         : { view: 'overview' },
     [requestedStep, requestedView, selectedChatbot]
   )
@@ -195,44 +192,13 @@ function Chatbots() {
     if (chatbotId === selectedChatbot?.id) return
     const chatbot = chatbots.find((item) => item.id === chatbotId)
     if (!chatbot) return
-    const nextState = normalizeWorkspaceState(chatbot, undefined, undefined)
+    const nextState = normalizeWorkspaceState(undefined, undefined)
     const navigate = () => {
       setNavigationState(cleanNavigationState)
       return router.push(
         {
           pathname: router.pathname,
           query: buildWorkspaceQuery(chatbotId, nextState),
-        },
-        undefined,
-        { shallow: true }
-      )
-    }
-    if (internal) {
-      runInternalNavigation(navigate)
-    } else {
-      runNavigation(navigate)
-    }
-  }
-
-  const navigateWorkspace = (
-    view: ChatbotWorkspaceView,
-    step?: ChatbotSetupStep,
-    internal = false
-  ) => {
-    if (!selectedChatbot) return
-    if (
-      view === workspaceState.view &&
-      (view !== 'overview' || step === workspaceState.step)
-    ) {
-      return
-    }
-    const nextState = normalizeWorkspaceState(selectedChatbot, view, step)
-    const navigate = () => {
-      setNavigationState(cleanNavigationState)
-      return router.push(
-        {
-          pathname: router.pathname,
-          query: buildWorkspaceQuery(selectedChatbot.id, nextState),
         },
         undefined,
         { shallow: true }
@@ -337,7 +303,7 @@ function Chatbots() {
                 id="chatbot-mobile-selector"
                 items={chatbots.map((chatbot) => ({
                   value: chatbot.id,
-                  label: `${chatbot.name} · ${t(getChatbotStatusTranslationKey(chatbot.status))}`,
+                  label: `${chatbot.name} (${t(getChatbotStatusTranslationKey(chatbot.status))})`,
                   data: { cy: `chatbot-mobile-selector-option-${chatbot.id}` },
                 }))}
                 value={selectedChatbot?.id ?? ''}
@@ -377,7 +343,6 @@ function Chatbots() {
             advancedManagement={advancedManagement}
             view={workspaceState.view}
             step={workspaceState.step}
-            onNavigate={navigateWorkspace}
             onNavigationStateChange={setNavigationState}
             publishingAuthorized={
               publishingCapabilityData?.getChatbotPublishingCapability ?? false

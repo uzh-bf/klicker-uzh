@@ -51,6 +51,7 @@ query QGetChatbotsInfoWithKnowledgeBases {
     courses {
       id
       name
+      numOfParticipants
     }
     usageSummary {
       threadCount
@@ -79,6 +80,7 @@ query QGetChatbotsInfoWithKnowledgeBases {
         servingResourceCount
         processingResourceCount
         failedResourceCount
+        lastChangedAt
       }
     }
     createdAt

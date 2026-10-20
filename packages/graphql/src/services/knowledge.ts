@@ -125,6 +125,7 @@ export interface KBMetrics {
   servingResourceCount: number
   processingResourceCount: number
   failedResourceCount: number
+  lastChangedAt: Date | null
 }
 
 export interface KBWithMetrics extends DB.KB {
@@ -654,6 +655,7 @@ function createKbMetrics({
   servingResourceCount = 0,
   processingResourceCount = 0,
   failedResourceCount = 0,
+  lastChangedAt = null,
 }: Partial<{
   storageLimitBytes: number
   visibleResourceCount: number
@@ -668,6 +670,7 @@ function createKbMetrics({
   servingResourceCount: number
   processingResourceCount: number
   failedResourceCount: number
+  lastChangedAt: Date | null
 }> = {}): KBMetrics {
   const quotaRetainedSizeBytes =
     retainedSizeBytes + retainedUnknownSizeCount * MAX_KB_FILE_SIZE_BYTES
@@ -690,6 +693,7 @@ function createKbMetrics({
     servingResourceCount,
     processingResourceCount,
     failedResourceCount,
+    lastChangedAt,
   }
 }
 
@@ -715,6 +719,7 @@ export async function getKbMetricsMap(
       where: { kbId: { in: kbIds }, deletedAt: null },
       _count: { _all: true },
       _sum: { sizeBytes: true },
+      _max: { updatedAt: true },
     }),
     prisma.kBResource.groupBy({
       by: ['kbId'],
@@ -830,6 +835,7 @@ export async function getKbMetricsMap(
           servingResourceCount: readiness?.serving,
           processingResourceCount: readiness?.processing,
           failedResourceCount: readiness?.failed,
+          lastChangedAt: visible?._max.updatedAt ?? null,
         }),
       ]
     })
@@ -1445,6 +1451,13 @@ export async function createKb(
     ctx
   )
 
+  // Scheduled preparation needs the per-KB opt-in, so an owner admitted to it
+  // starts enabled instead of having to switch the graph on.
+  const knowledgeGraphEnabled = await isFeatureFlagEnabled(
+    ctx,
+    'kb-auto-graph-preparation'
+  )
+
   return ctx.prisma.kB.create({
     data: {
       name: normalizedName,
@@ -1453,6 +1466,7 @@ export async function createKb(
       domainPolicyId: domain?.domainPolicyId ?? null,
       domainPolicyVersion: domain?.domainPolicyVersion ?? null,
       domainPolicyLanguage: domain?.language ?? null,
+      knowledgeGraphEnabled,
     },
   })
 }
@@ -3719,10 +3733,11 @@ export interface KBQuestionPreparationInput {
 }
 
 /**
- * Lecturers are told to check back within 24 hours; a preparation pending
- * longer reports delayed instead of queued or processing.
+ * Lecturers are told preparation runs overnight and is usually ready the next
+ * morning; a preparation pending longer reports delayed instead of queued or
+ * processing.
  */
-export const KB_QUESTION_PREPARATION_DELAYED_AFTER_MS = 24 * 60 * 60_000
+export const KB_QUESTION_PREPARATION_DELAYED_AFTER_MS = 36 * 60 * 60_000
 
 export interface KBQuestionPreparation {
   state: KBQuestionPreparationState

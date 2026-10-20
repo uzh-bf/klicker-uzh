@@ -38,6 +38,7 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 - [0049](./0049-url-content-identity-is-the-accepted-snapshot.md) — URL sources are identified by the accepted snapshot, not a re-fetch
 - [0050](./0050-per-mode-retrieval-scope-and-kb-attachment.md) — Retrieval availability is per mode, and attaching a knowledge base reconciles approved mode bindings
 - [0051](./0051-ai-releases-tag-v3-ai-with-deploy-parity.md) — AI releases are tagged on `v3-ai` and rendered from `v3` under deploy parity
+- [0053](./0053-one-status-driven-chatbot-setup-page.md) — One status-driven setup page replaces the tabbed chatbot workspace
 
 `0001`, `0003`, and `0008` are each used twice — their lines were numbered
 independently before this index existed. Numbers are not reassigned, because

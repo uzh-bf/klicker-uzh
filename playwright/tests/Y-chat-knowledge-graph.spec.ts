@@ -1,5 +1,6 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
 import { getPrisma } from '../global-setup.js'
+import { openChatbotSection } from '../util/fixtures/manage.js'
 import { loginLecturer } from '../util/workflow.js'
 import {
   CHATBOT_ID,
@@ -789,6 +790,7 @@ test('GraphRAG rollout controls retrieval independently of the student map', asy
   await loginLecturer(page)
   const url = `${process.env.URL_MANAGE}/resources/chatbots?chatbotId=${CHATBOT_ID}&view=knowledge`
   await page.goto(url)
+  await openChatbotSection(page, 'graph')
   const map = page.getByTestId('chatbot-knowledge-graph-visible-switch')
   const retrieval = page.getByTestId('chatbot-knowledge-graph-retrieval-switch')
   await expect(map).toBeVisible()
@@ -797,6 +799,7 @@ test('GraphRAG rollout controls retrieval independently of the student map', asy
   enabled = true
   await page.evaluate(() => localStorage.clear())
   await page.reload()
+  await openChatbotSection(page, 'graph')
   await expect(map).toBeVisible()
   await expect(retrieval).toBeVisible()
   const initial = await retrieval.isChecked()

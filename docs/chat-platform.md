@@ -91,6 +91,8 @@ the owner can inspect the set, approve, edit and approve, or reject an entry.
 Non-owners receive `null`, and no production GraphQL or chat runtime path
 creates candidates or marks evidence eligible. Local/test fixtures may seed
 synthetic candidates and evidence solely to exercise the review lifecycle.
+Manage mounts the review only while the `chatbot-response-examples` flag is on;
+the flag does not change how the chat runtime uses approved examples.
 
 The chat route returns an AI SDK UI message stream and passes
 `consumeSseStream: consumeStream` to `toUIMessageStreamResponse`. Keep this
@@ -1020,10 +1022,13 @@ reads observe a consistent transaction and never write credit state.
 Manage exposes creation through
 `apps/frontend-manage/src/components/resources/Chatbots.tsx`, limited to owned,
 non-archived courses, and immediately selects a newly created chatbot. The
-workspace retains a persistent desktop rail and compact mobile selector.
-Invalid deep links fall back to a valid view. Each accordion section keeps its
-form mounted while collapsed so unsaved Formik and Slate input remains intact.
-Review edit actions open the relevant section through the navigation guard.
+chatbot list is a persistent desktop rail and a compact mobile selector.
+Every status renders the same setup sections in `ChatbotDetails.tsx`
+([ADR 0053](./adr/0053-one-status-driven-chatbot-setup-page.md)). Former
+`view` and `step` deep links open the matching section, and invalid ones fall
+back to the closed page. Each section keeps its form mounted while collapsed
+so unsaved Formik and Slate input remains intact. Request blockers open the
+relevant section through the navigation guard.
 
 `ContentInput` retains its full toolbar by default and uses the `basic` preset
 for disclaimer introductions, with simple formatting but no media, video,
@@ -1035,9 +1040,14 @@ The acceptance condition remains `acceptedDisclaimerId` equal to the live
 chatbot disclaimer ID. See
 [ADR 0042](./adr/0042-version-chatbot-disclaimers-by-replacement.md).
 
-Manage uses the existing chatbot workspace and forms. It distinguishes live
-configuration from the saved revision, disables pending forms, and protects
-unsaved changes during navigation and chatbot switching. Revision conflicts
+Manage edits revisions in the same setup sections as drafts. On a published
+chatbot each section says whether a saved change applies immediately
+(Materials, because knowledge base bindings are outside the revision) or after
+review, and a section whose saved values differ from the live ones reports
+"Not yet submitted". The final card appears only while a saved revision
+exists. A pending request locks every section except Materials, and a paused
+chatbot is read-only. Manage protects unsaved changes during navigation and
+chatbot switching. Revision conflicts
 require refreshed version information without silently discarding input.
 Review and submit summarizes the saved configuration; submission also requires
 clean, settled sibling forms and live account authorization. Owner preview

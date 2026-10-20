@@ -90,7 +90,7 @@ function isActiveResource(resource: KnowledgeBaseResource) {
   )
 }
 
-function RunStatusBadge({
+export function RunStatusBadge({
   status,
   dataCy,
 }: {
@@ -146,7 +146,7 @@ function RunStatusBadge({
   )
 }
 
-function RunStatusMessage({
+export function RunStatusMessage({
   status,
   errorCode,
   statusMessage,
@@ -410,8 +410,8 @@ function ResourceTableRow({
               <span className="sm:hidden">
                 {resource.type === KbResourceType.Blob
                   ? t('kb.typeFile')
-                  : t('kb.typeUrl')}{' '}
-                ·{' '}
+                  : t('kb.typeUrl')}
+                ,{' '}
               </span>
               {resource.type === KbResourceType.Blob
                 ? formatFileSize(resource.sizeBytes)
