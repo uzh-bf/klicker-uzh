@@ -134,7 +134,7 @@ packageExtensions:
   'eslint-plugin-office-addins@4.0.10':
     dependencies:
       '@typescript-eslint/parser': 8.63.0
-  # The published stylesheet imports this plugin, but 4.1.8 lists it only as a devDependency.
+  # Retain the legacy aspect-ratio plugin until consumer verification supports removing it.
   '@uzh-bf/design-system@5.0.0-alpha.5':
     dependencies:
       '@tailwindcss/aspect-ratio': 0.4.2

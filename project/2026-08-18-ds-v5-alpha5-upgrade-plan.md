@@ -6,13 +6,14 @@
 
 **Approval mode:** executable batch, approved by the user on 2026-10-20.
 
-**Current status:** startup works and the user confirmed Manage in Browser.
-The compact wizard action overlap and details-modal focus return now have
-focused source corrections and browser proof. The resolved v3 merge remains
-ready to commit after the integrated checks passed. The user approved the narrow
-Office plugin parser metadata repair; frozen installation and Office lint pass.
-The existing approved delivery sequence remains active. See the latest Progress
-entry for current evidence.
+**Current status:** the approved parser repair and integration checks pass.
+[Draft PR #6652](https://github.com/uzh-bf/klicker-uzh/pull/6652) targets `v3` and
+contains all 37 native screenshot attachments, verified in the rendered PR. The
+slice review approved after a frontend documentation correction; simplification
+found no justified changes. Integrated final review found no source correctness issue. Its stale dependency
+comment is corrected, and a separate registry browser pass now closes its
+artifact-behavior concern. Hosted checks and focused final-review disposition
+remain pending. The user runtime remains ready and pinned for manual Browser use.
 
 The historical pilot at commit `1de7ad9` has not accepted the final candidate
 tarball because its canonical Auth development server returns 404 for the
@@ -1107,3 +1108,58 @@ resolved task target is `v3`. Plan commit: `17cc9da64aa336a797b650d89f6ec3ee3c1c
 - Proceed with the resolved integration commit, its simplifier and slice review,
   then the integrated final review and approved draft delivery. The runtime
   remains retained and pinned for the user's manual Browser session.
+
+### Draft delivery and review progress — 2026-10-20
+
+- Committed the resolved v3 integration as 2c18ba6f97. The clean net package
+  against held target c58e111ea3d6 is 823 added / 1439 deleted substantive lines,
+  excluding lockfile and project artifacts. It remains the approved single
+  consumer migration package; shared styles, API imports and acceptance fixes
+  qualify one dependency transition. No stack topology change is introduced.
+- The integrated simplifier inspected all 73 net paths and found no justified
+  behavior-preserving reduction. The slice reviewer found stale frontend font
+  and stylesheet guidance. Main verified it, corrected that guidance in
+  40c4b857bc and passed formatting and staged gitleaks. The same reviewer approved
+  the focused correction, reusing the full path coverage.
+- Opened draft PR #6652 against v3 with pending review/check evidence visible.
+  Uploaded all 37 inspected synthetic screenshots through the authenticated
+  project CLI. Readback maps every attachment to its local hash and provenance;
+  all 37 render in the public PR, including the before/after comparison table.
+- Integrated final review covers c58e111ea3d6..40c4b857bc. Hosted workflow jobs
+  are queued; exact-head registry qualification and the repository final AI
+  review remain outstanding. No completed readiness claim is made.
+- Restored the committed registry dependency graph with frozen installation.
+  Canonical full-profile ensure succeeds with the same retained container, no
+  recreation and empty drift; Manage returns HTTP 200. The exact checkout is
+  retained and pinned for the user's explicit manual Browser session, with its
+  next lifecycle/manual-use checkpoint as the review point. Browser automation
+  sessions used for verification are closed. No data reset or deletion occurred
+  during this completion sequence.
+
+### Final review corrections and registry acceptance — 2026-10-20
+
+- The trusted integrated final review covered all 73 paths and found no source
+  correctness, security, authorization, Formik or data-behavior defect. Its
+  schema-valid report identified registry-browser acceptance as a readiness
+  advisory and an outdated aspect-ratio extension comment as a source finding.
+- Confirmed the registry compiled stylesheet contains no plugin directive or
+  aspect-ratio plugin import. The compatibility extension remains; its comment
+  now accurately states that removal needs consumer verification. Dependency
+  definitions and lock bytes are unchanged by this comment correction.
+- Fetched the registry archive and verified its SHA-512 against the committed
+  lock integrity. All nine complete 248-file consumer installations match this
+  archive before and after the new browser pass. This evidence remains separate
+  from acceptance of the unpublished candidate.
+- Registry delegated login passes from English and German entry pages. Wizard
+  action rectangles do not overlap at 1440x900 or 390x844 in either locale.
+  Keyboard-opened quiz details return focus to the persistent menu button after
+  Tab and Escape in all four variants. Compact English and German tables scroll
+  within their 306-pixel container to the rightmost columns. No activity was
+  created, saved, published or reset during this bounded pass.
+- Twelve newly inspected registry captures extend the same gallery to 49. The
+  public gallery labels artifact identity separately; no registry image is
+  presented as candidate evidence. Existing page/navigation overflow remains.
+- The hosted registry browser build at 40c4b857bc passes. Remaining hosted jobs
+  and the repository final AI review are outstanding. The comment/progress
+  correction changes no application input, so passing application checks and
+  browser evidence are reused.
