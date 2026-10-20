@@ -130,5 +130,11 @@ PR-body update. Preserve applicable verification when source is unchanged.
   the unchanged test passes on the subsequent complete run. Test delta: one
   behavioral matrix added, existing summary/concurrency/stalled-body cases
   extended, no tests removed. Formatter and data/secret checks pass.
-- Public outcome evidence confirms the category-log omission. Next: review
-  slice one and add category counts to the draft log. PR not yet created.
+- Slice-one simplifier found no justified reduction; privacy/correctness review
+  is running. Category counts now reach the draft log through the existing
+  sanitized builder. The draft suite passes five tests with one optional binary
+  test skipped; its existing fake-child test covers all fixed categories and
+  arbitrary-field exclusion. Test delta: one existing test extended, none added
+  or removed. Focused Opengrep reports no findings or errors.
+- Next: complete slice reviews and integrated verification, then publish the
+  reviewed draft. PR not yet created.

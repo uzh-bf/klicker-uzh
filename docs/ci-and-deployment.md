@@ -580,6 +580,13 @@ accounting. Older receipts with status/code but no reason report `reason=unknown
 receipts without status/code report this diagnostic as unavailable. Preflight and
 stack topology `callMistral` receipts retain their existing behavior.
 
+Draft `OCR coverage` log and summary lines also include the existing sanitized
+`failure_classes` counts (`budget`, `provider`, `timeout`, or `other`) from the
+outcome diagnostic. These are OCR coverage-item classifications, independent of
+the adapter's provider-budget reasons. They do not identify an individual
+request or establish an account-spending cause. Missing coverage evidence is
+`unknown`; raw failed-item reasons, paths and arbitrary classifications stay private.
+
 History diagnostics retain the existing total misses and add one reason for
 each miss: the fallback lacked usable reasoning, no exact reasoned turn matched,
 or the reasoned turn was ambiguous. A valid exact-prefix hit remains preferred.
