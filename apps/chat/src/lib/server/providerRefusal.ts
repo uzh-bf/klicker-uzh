@@ -40,7 +40,10 @@ export function isUnbilledProviderReply(usage: LanguageModelUsage): boolean {
  */
 export function providerRefusalTransform<TOOLS extends ToolSet>(
   deflection: string,
-  onSubstitute?: () => void
+  onSubstitute?: (finish: {
+    finishReason: string
+    rawFinishReason: string | undefined
+  }) => void
 ): StreamTextTransform<TOOLS> {
   return () => {
     let held: TextStreamPart<TOOLS>[] | null = null
@@ -66,7 +69,10 @@ export function providerRefusalTransform<TOOLS extends ToolSet>(
             (p) => p.type === 'text-delta' && p.text.length > 0
           )
           if (hasText && isUnbilledProviderReply(part.usage)) {
-            onSubstitute?.()
+            onSubstitute?.({
+              finishReason: part.finishReason,
+              rawFinishReason: part.rawFinishReason,
+            })
             let replaced = false
             for (const p of parts) {
               if (p.type !== 'text-delta') {

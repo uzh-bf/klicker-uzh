@@ -60,7 +60,10 @@ describe('providerRefusalTransform', () => {
       'text-end',
       'finish-step',
     ])
-    expect(onSubstitute).toHaveBeenCalledOnce()
+    expect(onSubstitute).toHaveBeenCalledExactlyOnceWith({
+      finishReason: 'stop',
+      rawFinishReason: undefined,
+    })
   })
 
   test('keeps a short answer the model was billed for', async () => {

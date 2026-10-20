@@ -2113,7 +2113,8 @@ export async function POST(
           : {
               experimental_transform: providerRefusalTransform(
                 PROVIDER_REFUSAL_DEFLECTION[turnSettings.replyLanguage ?? 'en'],
-                () => logEvent('stream.provider_refusal.substituted', {})
+                (finish) =>
+                  logEvent('stream.provider_refusal.substituted', finish)
               ),
             }),
         instructions: turnRequest.instructions,
