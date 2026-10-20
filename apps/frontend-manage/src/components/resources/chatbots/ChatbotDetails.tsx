@@ -1030,7 +1030,13 @@ function ChatbotDetails({
                     />
                   </div>
                   <div className="text-xs text-gray-500">
-                    {t('manage.resources.knowledgeGraphRetrievalDescription')}
+                    {knowledgeGraphPolicy.retrievalEnabled
+                      ? t(
+                          'manage.resources.knowledgeGraphRetrievalEnabledDescription'
+                        )
+                      : t(
+                          'manage.resources.knowledgeGraphRetrievalDisabledDescription'
+                        )}
                   </div>
                 </div>
               )}

@@ -308,8 +308,10 @@ export async function POST(
     mcpToolsHandle = await getAggregatedMCPTools(kbConfigurations, {
       chatbotId,
       authMode: 'account',
+      ownerPreviewUserId: auth.userId,
       kbIds,
       sessionId: randomUUID(),
+      knowledgeGraphRetrievalEnabled: chatbot.knowledgeGraphRetrievalEnabled,
     })
     tools = mcpToolsHandle.tools
   } catch (error) {
