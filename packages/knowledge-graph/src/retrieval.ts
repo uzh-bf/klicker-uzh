@@ -131,7 +131,15 @@ export function graphSearchNeighborsQuery(seedIds: string[], terms: string[]) {
 export const GRAPH_MENTION_LIMIT = 12
 const GRAPH_MENTION_TEXT_LIMIT = 8000
 const GRAPH_MENTION_PHRASE_TOKENS = 6
-const TRAILING_PARENTHETICAL = /^(.+?)\s*\([^()]*\)$/u
+
+/** "Head (Alias)" -> "Head"; undefined without one trailing parenthetical. */
+function labelHead(label: string): string | undefined {
+  if (!label.endsWith(')')) return undefined
+  const open = label.lastIndexOf('(')
+  if (open <= 0 || label.slice(open + 1, -1).includes(')')) return undefined
+  const head = label.slice(0, open).trimEnd()
+  return head.length > 0 ? head : undefined
+}
 
 export type KnowledgeGraphMention = {
   node: KnowledgeGraphNode
@@ -169,18 +177,16 @@ function mentionIndex(
     const label = node.displayLabel.trim()
     if (label.length > 100 || /^Concept \d+$/.test(label)) continue
     add(mentionKey(label), node, true)
-    const head = TRAILING_PARENTHETICAL.exec(label)?.[1]
+    const head = labelHead(label)
     if (head) add(mentionKey(head), node, false)
   }
   const index = new Map<string, KnowledgeGraphNode>()
   for (const [key, { full, head }] of candidates) {
-    const resolved =
-      full.length === 1
-        ? full[0]
-        : full.length === 0 && head.length === 1
-          ? head[0]
-          : undefined
-    if (resolved) index.set(key, resolved)
+    // Full-label matches take precedence over label heads, and the key links
+    // only when exactly one concept remains.
+    const matches = full.length > 0 ? full : head
+    const [only] = matches
+    if (matches.length === 1 && only) index.set(key, only)
   }
   return index
 }

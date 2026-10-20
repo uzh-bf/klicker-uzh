@@ -82,7 +82,7 @@ export async function GET(
   { params }: { params: Promise<{ chatbotId: string }> }
 ) {
   const { chatbotId } = await params
-  return serveKnowledgeGraphRead(req, chatbotId, async () => {
+  return serveKnowledgeGraphRead(req, chatbotId, () => {
     const readRequest = parseReadRequest(req)
     if (readRequest === null) return null
     const kbId = z
@@ -119,7 +119,10 @@ export async function POST(
 async function serveKnowledgeGraphRead(
   req: NextRequest,
   chatbotId: string,
-  parse: () => Promise<ChatbotKnowledgeGraphReadRequest | null>
+  parse: () =>
+    | ChatbotKnowledgeGraphReadRequest
+    | null
+    | Promise<ChatbotKnowledgeGraphReadRequest | null>
 ) {
   const authResult = await withChatbotAuth(req, chatbotId)
   if ('response' in authResult) {
