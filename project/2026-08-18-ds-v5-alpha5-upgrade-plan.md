@@ -20,14 +20,25 @@ consumer override only when the candidate and a real interaction prove the
 override redundant. Formik support and application-specific layout remain
 part of acceptance.
 
-The prior design-system roadmap ruling approved direction and plan construction
-only. The user approved the named source work, checks, reviews, commits, normal
-push to the existing task branch, and a draft PR targeting `v3`. Merge,
-readiness, release, deployment, human-review notifications, and container
-replacement remain outside this approval. The 2026-10-20 stop returned
-`stopped: true` and routes remain at zero, but Devsy still reports `Busy` and
-the `devpod` executable is unavailable. If acceptance requires replacing the
-runtime, request that exact effect after completing independent source work.
+The user approved the source work, exact-candidate acceptance, checks, reviews,
+commits, ordinary task-branch push, and a draft PR targeting `v3`. After the
+bounded provider recovery attempts failed, the user explicitly approved
+removing the eight verified inactive containers while preserving named volumes,
+then one canonical ensure. That recovery succeeded. The existing post-create
+hook completed its approved reset, schema push and synthetic seed. The runtime
+is active for acceptance and will be stopped and verified after its final check.
+
+All nine installed candidate resolutions matched the complete 248-file archive.
+Auth providers/CSRF and fresh delegated login pass. Synthetic cancel/reopen,
+invalid interval protection, create/reset and edit/save/reload pass. Stale Next
+development CSS was found after package replacement; isolated fresh output
+confirmed candidate styles and supplied current English/German desktop/compact
+captures. Temporary source configuration was restored. A check invocation then
+revealed pnpm 11 ignores the old `npm_config_` prefix and auto-reinstalled the
+registry package. That run was stopped; reinstall and byte verification use
+`pnpm_config_verify_deps_before_run=false` before candidate checks resume.
+Merge, readiness, release, deployment and human-review notifications remain
+outside the existing approval.
 
 ## Execution details — 2026-10-19 pilot resumption
 
@@ -39,18 +50,22 @@ runtime, request that exact effect after completing independent source work.
   `origin/v3-ai`; the separate task worktree tracks `origin/v3`. For this
   worktree, `v3` is the resolved target: repository guidance says feature
   branches start from `v3`, `origin/HEAD` is `origin/v3`, and the existing plan
-  agrees. Keep the primary checkout's 85-commit upstream drift separate from
-  this worktree's 15-ahead/454-behind relationship to `origin/v3`. The refs were
-  refreshed by the host shortly before this plan update; a sandboxed fetch
-  could not write the linked worktree's `FETCH_HEAD`.
+  agrees. At the latest host fetch, the task branch is 16 ahead / 457 behind
+  `origin/v3` (`3b19ca4226473af4899e5896932c306637f1a412`). The primary checkout
+  is on `v3-ai`, 0 ahead / 89 behind `origin/v3-ai`; keep that relationship
+  separate from this task worktree's resolved `v3` target. The refreshed target
+  contains the `waitFor` fix from `c942cd246d`.
 - Current `origin/v3` differs in `apps/auth/package.json`, the Group Activity
-  wizard, frontend conventions, the root manifest, and the lockfile. Preserve
-  the historical baseline through exact-candidate acceptance as the approved
-  pilot-first direction requires. Near readiness, make one deliberate merge of
-  the refreshed `origin/v3` into this task branch if the overlapping changes
-  still materially affect delivery; record the target SHA and re-run affected
-  checks and browser acceptance. Preserve the branch history and user changes.
-  If a conflict requires a product or behavior choice, pause for that decision.
+  wizard, frontend conventions, `.devcontainer/devcontainer.json`, the root
+  manifest, and the lockfile. The target already has
+  `"waitFor": "postCreateCommand"`, added by `c942cd246d` on 2026-08-29. This
+  task's historical baseline predates that commit. Preserve the historical
+  baseline through exact-candidate acceptance as the approved pilot-first
+  direction requires. Near readiness, make one deliberate merge of refreshed
+  `origin/v3` into this task branch if the overlapping changes still materially
+  affect delivery; record the target SHA and re-run affected checks and browser
+  acceptance. Preserve the branch history and user changes. If a conflict
+  requires a product or behavior choice, pause for that decision.
 - The exact candidate is
   `project/_local/ga-qualification-candidate/uzh-bf-design-system-5.0.0-alpha.5.tgz`
   under the design-system repository’s `trees/rs-v5-uzh-alignment` worktree.
@@ -92,10 +107,26 @@ runtime, request that exact effect after completing independent source work.
   legacy configuration. Normal `ensure` may trigger provider recreation, so it
   is not treated as a non-destructive repair. Do not delete or replace its
   containers, network, volumes, or workspace without separate approval.
-- Context7’s devrouter resolver still returns an unrelated library after the
-  user added devrouter. Planning used the official versioned CLI source and
-  current lifecycle guide directly; this lookup limitation does not change the
-  runtime authority boundary.
+- The 2026-10-19 Context7 lookup returned an unrelated library. On 2026-10-20,
+  Context7 resolved `/rschlaefli/devrouter`; its catalog exposes no version IDs.
+  Current docs say a missing retained network needs reconciliation and managed
+  ensure will not silently rebind or recreate that network. Those pages do not
+  pin the installed 0.5.2 legacy-workspace behavior, so the tagged source and
+  exact local runtime evidence remain the basis for the separate authority
+  gate.
+- The task baseline's missing `waitFor` is stale configuration, not a current
+  `v3` defect. Commit `c942cd246d` added the exact setting on 2026-08-29. The
+  user authorized carrying that one line into this historical worktree and one
+  exact runtime retry. The retry passed config validation, then failed before
+  readiness because retained containers reference a missing Compose network.
+  The post-create reset hook did not run. After the failed attempt, canonical
+  stop returned `stopped: true` and zero routes, while fresh Devsy status still
+  reported `Busy`; provider shutdown is therefore unverified. A subsequently
+  authorized Devsy recreation also failed on the missing network. Container
+  timestamps prove that only the app was replaced; dependencies retained their
+  old identities and network attachment. Its conditional ensure did not run.
+  All named volumes remain present, no project container is running, and exact
+  routes remain zero. Further container replacement requires new authority.
 
 ### Research
 
@@ -103,12 +134,14 @@ runtime, request that exact effect after completing independent source work.
   changing production behavior? The Next.js 16.2.9 guide documents
   `next dev --webpack`; the app is pinned to 16.2.10. The same-source browser
   differential is the exact consumer evidence. Research owner: main session.
-- Question: does current repair safely restore this runtime? Context7 still
-  resolves an unrelated library. The official Devrouter 0.5.2 source and
-  lifecycle guide show `ensure --repair` is for retained managed runtime state;
-  this checkout reports legacy mode and no managed state. Research owner: main
-  session. No provider mutation or container recreation is inferred from this
-  documentation lookup.
+- Question: does current repair safely restore this runtime? The installed
+  Devrouter 0.5.2 source limits `ensure --repair` to retained managed runtime
+  state; this checkout reports legacy mode and no managed state. Context7 now
+  resolves current documentation but exposes no version-specific release, and
+  its managed-network guidance does not establish the legacy effect. Ordinary
+  `ensure` may invoke provider startup or exact-runtime recreation. Research
+  owner: main session. No provider mutation or container recreation is inferred
+  from this documentation lookup.
 - Question: how can the repository checks bypass Turbo's cache? The pinned root
   build script invokes `turbo run build`; the official [Turborepo run
   reference](https://turborepo.dev/docs/reference/run) documents `--force` and
@@ -127,8 +160,9 @@ runtime, request that exact effect after completing independent source work.
   configuration, cookie names, middleware, and all authorization behavior.
   Do not add an auth bypass, dependency, migration, major upgrade, or route
   handler workaround.
-- Use only the local seeded lecturer and synthetic course/activity data. Do
-  not reset the database or inspect real application content.
+- Use only the local seeded lecturer and synthetic course/activity data.
+  Database reset authority was limited to the explicitly approved recovery
+  attempts and is now consumed. Do not inspect real application content.
 - Keep Formik wrappers and application-specific layout. Inspect the existing
   tooltip `z-20` overrides in
   `apps/frontend-manage/src/components/activities/creation/groupActivity/GroupActivitySettingsStep.tsx`;
@@ -157,8 +191,9 @@ runtime, request that exact effect after completing independent source work.
 #### Commit boundaries
 
 - `fix(auth): restore local catch-all route` contains the three Auth development
-  script changes, the frontend conventions update, and the approved resumption
-  plan section. It does not change the NextAuth handler or policy.
+  script changes, the exact `waitFor: postCreateCommand` carry-forward from
+  current `v3`, the frontend conventions update, and the slice progress update.
+  It does not change the NextAuth handler or policy.
 - If the candidate and the delivered registry dependency both prove specific
   overrides redundant, `enhance(design-system): remove proven redundant
   overrides` contains only those override removals and their progress update.
@@ -176,15 +211,22 @@ sequence is:
    or another source file. That would change the approved seam.
 2. Once the exact devcontainer is available, copy the supplied tarball into the
    ignored consumer path under `project/_local/ga-qualification-candidate/`.
-   Temporarily change the nine existing design-system dependency entries to
-   the relative
+   Temporarily change the seven dependency/devDependency entries to the relative
    `file:../../project/_local/ga-qualification-candidate/uzh-bf-design-system-5.0.0-alpha.5.tgz`
-   reference. Generate a temporary lock resolution with pnpm 11.5.0, then run
+   reference. The other two entries are semver peer contracts; preserve them
+   and add temporary development entries for that same archive in Markdown and
+   Shared Components. pnpm 11.5.0 rejects `file:` peer specifiers. Reuse only the
+   44 exact Radix age exceptions already approved for the pilot; restore the
+   saved policy bytes after acceptance. Generate a temporary lock resolution
+   with pnpm 11.5.0, then run
    `pnpm install --frozen-lockfile`. Verify each of the nine workspace links
    resolves to the archive-backed package, then compare the complete installed
    file set and hashes with the archive. Restart only the Auth and Manage app
-   processes through the supported runtime helper, then confirm their resolved
-   package entries point to the candidate-backed install. Keep the temporary
+   processes through their existing Next config watchers, then confirm their
+   resolved ESM package entries point to the candidate-backed install. Also
+   inspect served CSS: installed bytes alone do not invalidate retained Next
+   output. If stale, temporarily isolate output with `distDir`, preserve the
+   original config bytes and output, and repeat affected visual checks. Keep the temporary
    references and exact candidate installed through browser acceptance. Record local
    candidate evidence separately from registry-package CI evidence.
 3. Use the required `agent-browser` against the exact routed checkout with
@@ -210,16 +252,22 @@ sequence is:
    `project/_local/ds-v5-alpha5-pilot-gallery/manifest.json`. Record source
    revision, runtime, viewport, locale, synthetic-data status, interaction
    results, and any coverage gap. Keep screenshots out of Git.
-5. After browser acceptance and gallery capture, restore only the nine
-   temporary dependency specifiers to their post-source baseline and restore
-   `pnpm-lock.yaml` from that baseline; preserve Auth script changes. Do not
+5. After browser acceptance and gallery capture, restore all nine saved
+   manifests, the lockfile, exact age-policy bytes and any temporary Next config
+   to their post-source baseline; preserve Auth script changes. Do not
    reinstall, because that would replace the exact candidate in `node_modules`.
    Verify the installed links still resolve to the candidate, the package
    specifiers and lock match their baseline, no tracked local `file:` reference
    remains, and all three Auth scripts still use Webpack. Run
-   `TURBO_FORCE=true pnpm run check:all` and a fresh
-   `pnpm run build --force` in the exact devcontainer while the candidate
-   remains installed. These checks prove the source tree against the local
+   `pnpm_config_verify_deps_before_run=false TURBO_ENV_MODE=loose TURBO_FORCE=true pnpm run check:all`
+   and a fresh `pnpm_config_verify_deps_before_run=false TURBO_ENV_MODE=loose pnpm run build --force`
+   in the exact devcontainer while the candidate
+   remains installed. In pnpm 11, the old `npm_config_` prefix is ignored;
+   use the documented `pnpm_config_` prefix. Turbo must forward it into nested
+   pnpm commands; `TURBO_ENV_MODE=loose` supplies that forwarding while force
+   keeps caches bypassed. Reverify installed bytes after checks so no automatic
+   registry reinstall can masquerade as candidate proof.
+   These checks prove the source tree against the local
    candidate; they do not prove what the registry will serve. Stage explicit
    source paths and run gitleaks on staged content on the host. The host hooks
    invoke those same pnpm commands, but container-dependent checks must stay in
@@ -262,7 +310,9 @@ sequence is:
    complete. The runtime stays active through integration, correction, build,
    and browser checks. Then stop the exact owned runtime with canonical
    `devrouter stop` and verify provider state `stopped` and exact route count
-   zero. No container replacement is authorized here.
+   zero. No additional container replacement is authorized by this integration
+   step; the single recovery attempt recorded under Authority is separate and
+   already consumed.
 8. Inspect the full branch delta against the resolved `v3` target. Push normally
    to the existing task branch and create/update one draft PR using
    `rs-mr-description-writer`. State that the candidate tarball SHA was tested
@@ -299,31 +349,36 @@ build alone cannot satisfy acceptance.
 
 **Boundary owner:** main session.
 
-**Authority:** the user approved on 2026-10-20 the named Auth development fix,
-exact-artifact qualification, evidence-supported override removals, one
-readiness integration of refreshed `origin/v3` into the task branch, the listed
-reviews, commits, normal push to the existing task branch, and a draft PR
-against `v3`. This is one executable batch.
+**Authority:** the user approved the Auth development fix, exact-artifact
+qualification, evidence-supported override removals, one readiness integration
+of refreshed `origin/v3`, reviews, commits, normal task-branch push and a draft
+PR against `v3`. The user separately approved the exact `waitFor` carry-forward,
+bounded ensure/provider attempts, possible local post-create reset, then removal
+of the eight verified inactive containers and one canonical ensure. The final
+recovery succeeded while preserving named volumes. Its post-create hook reset,
+pushed and reseeded the local DB. The runtime is active for approved acceptance;
+stop and verify it after the final dependent check. Extra container replacement,
+volume removal or another database reset is not authorized.
 
-**Withheld:** container/workspace deletion or replacement, force/protected or
-default-branch pushes, merging the task branch into its target, ready state,
-release, deployment, production access, real-environment content, and human
-reviewer notifications. The one readiness integration of refreshed `origin/v3`
-into the task branch is part of this plan; it does not authorize merging the
-task branch into `v3`. If the only runtime recovery requires replacing existing
-containers, ask separately after the independent source work is complete.
+**Withheld:** another runtime recovery attempt or any unapproved database reset,
+container/workspace deletion, force/protected or default-branch pushes, merging
+the task branch into its target, ready state, release, deployment, production
+access, real-environment content, and human reviewer notifications. The one
+readiness integration of refreshed `origin/v3` into the task branch is part of
+this plan; it does not authorize merging the task branch into `v3`.
 
 **Terminal:** a reviewed consumer draft with exact-artifact installation
 evidence, Auth route/login proof, build/check results, synthetic browser
 acceptance and inspected screenshot evidence, restored temporary configuration,
 and a stopped/verified owned runtime; or one concrete runtime-capability or
-authority blocker after all independent source work is complete. Stop only
-after Devsy reports `stopped` for this exact source checkout and devrouter
-reports zero routes; the current `Busy` result fails this lifecycle condition.
+authority blocker after all independent source work is complete. Runtime release
+requires Devsy `stopped` for this exact source checkout and zero devrouter routes.
+The current runtime is active for the approved acceptance sequence.
 
-**Pause:** if the pilot cannot resume without replacing its exact containers,
-finish independent source work and request that exact target/effect before
-runtime-dependent checks.
+**Pause:** stop at a concrete unmet acceptance, capability or new authority
+boundary after independent work is complete. The missing-network blocker is
+resolved. Keep exact-candidate checks distinct from registry-package checks;
+stop and reverify if pnpm replaces the candidate.
 
 **Decisions:** [ADR 0011](../docs/adr/0011-uzh-theme-selected-by-root-data-attribute.md),
 [ADR 0012](../docs/adr/0012-klicker-declares-token-names-not-values.md)
@@ -750,29 +805,52 @@ which is the maintenance burden this upgrade exists to shed.
   (`localhost:1417` never becomes healthy). Unrelated to this upgrade on the evidence so
   far, but confirm it reproduces on `v3` before slice 7 depends on the runtime.
 
-### Planning review and progress — 2026-10-20
+### Planning review — 2026-10-20
 
-- Plan reviewer: rounds 1–3 returned `REVISE`; round 4 approved after all
-  findings were addressed on 2026-10-19. Review and arbitration evidence is in
-  the ignored local record. The approved target remains `v3`.
-- Current code commit: `1de7ad918145cf659e547057d04c448fb9a255fd`; source edits: none.
-- Host refs were refreshed on 2026-10-20: `origin/v3` is
-  `d6eac932f336407de4b77d6ec31ae0e0d7c38219`; this branch is 15 ahead and 455
-  behind it. No live PR exists.
-- Candidate SHA rechecked on 2026-10-19 and matched the supplied digest.
-- The user approved the executable batch on 2026-10-20. Execution mode is
-  `standard`; the first action is to commit this plan, then implement the Auth
-  development routing and documentation slice.
-- Completed: branch/PR target resolution, routing differential review, exact
-  runtime diagnosis, target-drift review, plan construction, planner approval,
-  plan approval, and all plan-review corrections.
-- Runtime after the exact stop: `devrouter stop` returned `stopped: true` and
-  zero routes; fresh source-path metadata confirms `routeCount: 0` and no
-  hosts. Devsy still reports `Busy`, and `devpod` is unavailable, so provider
-  shutdown is unverified. Container replacement remains separately gated.
-- Remaining: plan commit, Auth source/doc change, exact-artifact install/builds,
-  browser acceptance and screenshots, required implementation reviews, target
-  integration near readiness, and draft delivery.
-- Next: commit the approved plan as the first new branch commit, then delegate
-  the Auth source/doc slice. If runtime-dependent acceptance needs replacement,
-  finish independent source work first and request that exact effect.
+Plan reviewer rounds 1–3 returned `REVISE`; round 4 approved after all findings
+were addressed on 2026-10-19. The user approved the executable batch on October
+20. Evidence is in the ignored review record. Execution mode remains `standard`;
+resolved task target is `v3`. Plan commit: `17cc9da64aa336a797b650d89f6ec3ee3c1cc281`.
+
+### Exact recovery and acceptance progress — 2026-10-20
+
+- Exact inactive-container removal and the single canonical ensure succeeded;
+  all named volumes were retained. Post-create completed its approved synthetic
+  reset/push/seed. The runtime remains active only for this acceptance sequence.
+- Exact archive SHA-256 matched; all nine consumer resolutions matched all 248
+  archive files. Two peer declarations required temporary development entries
+  with unchanged semver peer ranges. The same previously approved 44 exact Radix
+  age exceptions were used and original policy bytes preserved.
+- Auth provider/CSRF JSON returns 200; fresh synthetic delegated login succeeds.
+  Synthetic cancel/reopen reset, invalid interval prevention, one creation,
+  Create another reset, and edit/save/reload succeed. Gamification arrows move
+  selection and focus. Modal keyboard entry/Escape returns focus to actions.
+- Captures 01–08 are diagnostic: retained development CSS was stale despite
+  exact installed package bytes. Temporary isolated Next output supplied current
+  candidate CSS; captures 09 onward cover English/German and desktop/compact
+  modal, tooltip and picker states. Existing compact navigation overflow remains.
+  No consumer override has been removed.
+- The first forced check invocation auto-reinstalled registry dependencies
+  because pnpm 11 ignores `npm_config_verify_deps_before_run`. That run was
+  stopped and is not candidate evidence. Reinstallation uses the documented
+  `pnpm_config_verify_deps_before_run=false`; reverify bytes before and after
+  the forced checks. Turbo strict mode also filtered the corrected pnpm setting
+  from nested scripts, leaving interrupted install links; that check was stopped.
+  Frozen reinstall restored the exact preserved candidate lock. All nine complete
+  file sets pass again before the corrected forced run with `TURBO_ENV_MODE=loose`.
+  Force/cache bypass stays enabled. Saved manifests, lock, policy and config are
+  restored; no temporary archive reference remains in tracked configuration.
+- One read-only explorer mapped current journey controls and identified a stale
+  unrelated test helper; no maintained test was changed. One artifact executor
+  owns the planned screenshot manifest. Main owns runtime, source, acceptance,
+  integration and delivery because those seams share the exact candidate.
+- Refreshed `origin/v3`: `e48fc5c29f71613bbc7278f2292f08fb94d1a2ef`;
+  task branch is 16 ahead / 460 behind. Target remains `v3`.
+
+- Corrected historical-baseline check result: `check:all` passed with 24/24
+  typecheck tasks, 7/7 lint tasks and zero Turbo cache hits. Formatter check of
+  touched Markdown passed. After-run byte verification again passed all nine
+  complete 248-file candidate resolutions. The fresh production build passed
+  all 22 tasks with zero cache hits in 1m43s; existing translation/page-size
+  warnings remain. After-build byte verification is recorded separately.
+  Host gitleaks found no staged leak. No new maintained test was added.
