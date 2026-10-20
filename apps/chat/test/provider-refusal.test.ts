@@ -1,7 +1,11 @@
 import type { TextStreamPart, ToolSet } from 'ai'
 import { describe, expect, test, vi } from 'vitest'
 
-import { providerRefusalTransform } from '../src/lib/server/providerRefusal'
+import {
+  PROVIDER_REFUSAL_DEFLECTION,
+  providerRefusalDeflection,
+  providerRefusalTransform,
+} from '../src/lib/server/providerRefusal'
 
 type Part = TextStreamPart<ToolSet>
 
@@ -78,7 +82,7 @@ describe('providerRefusalTransform', () => {
   })
 
   test('releases a long answer before the step finishes', async () => {
-    const parts = step(['x'.repeat(150), 'y'.repeat(150), 'z'], {
+    const parts = step(['x'.repeat(100), 'y'.repeat(100), 'z'], {
       inputTokens: 0,
       outputTokens: 0,
     })
@@ -86,5 +90,19 @@ describe('providerRefusalTransform', () => {
     // Once the held text proves a genuine answer, the step is no longer
     // inspected, even if the provider later reports no usage.
     expect(text(await run(parts))).toBe(text(parts))
+  })
+})
+
+describe('providerRefusalDeflection', () => {
+  test('prefers the locked language, then the interface locale', () => {
+    expect(providerRefusalDeflection('en', 'de')).toBe(
+      PROVIDER_REFUSAL_DEFLECTION.en
+    )
+    expect(providerRefusalDeflection(null, 'de')).toBe(
+      PROVIDER_REFUSAL_DEFLECTION.de
+    )
+    expect(providerRefusalDeflection(null, 'fr')).toBe(
+      PROVIDER_REFUSAL_DEFLECTION.en
+    )
   })
 })

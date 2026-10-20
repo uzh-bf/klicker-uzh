@@ -6,8 +6,8 @@ import type {
   ToolSet,
 } from 'ai'
 
-// Platform-owned replacement for a canned provider refusal in a custom mode.
-// It neither confirms nor describes the protected instructions.
+// Platform-owned replacement for a canned provider refusal. It neither
+// confirms nor describes the protected instructions.
 export const PROVIDER_REFUSAL_DEFLECTION: Record<Locale, string> = {
   en: "Let's stay with the current activity. How would you like to continue?",
   de: 'Bleiben wir bei der aktuellen Aufgabe. Wie möchtest du weitermachen?',
@@ -15,13 +15,27 @@ export const PROVIDER_REFUSAL_DEFLECTION: Record<Locale, string> = {
 
 // A canned refusal is one short sentence. Text beyond this length is released
 // so a genuine answer only waits for its first few words.
-const MAX_HELD_TEXT_LENGTH = 200
+const MAX_HELD_TEXT_LENGTH = 120
+
+/**
+ * The deflection in the mode's locked reply language, otherwise in the
+ * participant's interface language, otherwise in English.
+ */
+export function providerRefusalDeflection(
+  lockedLanguage: Locale | null,
+  interfaceLocale: string | undefined
+): string {
+  if (lockedLanguage) return PROVIDER_REFUSAL_DEFLECTION[lockedLanguage]
+  return interfaceLocale === 'de'
+    ? PROVIDER_REFUSAL_DEFLECTION.de
+    : PROVIDER_REFUSAL_DEFLECTION.en
+}
 
 /**
  * A step that returned text while reporting no input and no output tokens
  * never reached the model: inference always reads the prompt. A provider or
  * gateway safety layer answers some requests this way, with a generic
- * refusal sentence, before the persona instructions apply.
+ * refusal sentence, before the mode instructions apply.
  */
 export function isUnbilledProviderReply(usage: LanguageModelUsage): boolean {
   return (
@@ -32,8 +46,8 @@ export function isUnbilledProviderReply(usage: LanguageModelUsage): boolean {
 
 /**
  * Replaces a step's text with `deflection` when the step turns out to be an
- * unbilled provider reply, so a custom persona never shows the provider's
- * generic refusal. Each step's parts are held until the step finishes, until
+ * unbilled provider reply, so a chat mode never shows the provider's generic
+ * refusal and a persona never breaks role. Each step's parts are held until the step finishes, until
  * the model streams reasoning or calls a tool, or until the held text exceeds
  * a canned sentence; each of those proves a genuine answer and releases the
  * step unchanged.
