@@ -107,6 +107,45 @@ for source delivery or operator-exported billing evidence.
 
 ## Progress
 
+### Approved required-status recovery
+
+The operator approved a source-only follow-up for the failed CI gates and one
+read-only Claude CLI review of the immutable merged correction. That review is
+a replacement evidence route, not a hosted final-review workflow result. Main
+session ownership remains binding for implementation and other review passes.
+
+This follow-up uses `rs/ci-status-resilience`, targeting `v3`. Extend only the
+existing staging image status evaluator and its tests. Retry transient job-list
+server errors within the existing observation loop, with at most three failed
+API observations. Authorization errors, malformed responses and failed producers
+still block immediately. Exhausted or permanent observation failures publish a
+source-bound failure receipt; partial or missing job evidence never passes.
+Keep the current job, timeout, permissions, dependency set and successful-build
+requirements unchanged. Do not rerun the historical image workflow.
+
+The deployment parity gate remains strict. Its cross-branch alignment is a
+separate decision; this source package changes no deployment values, comments,
+branch promotion or guard behavior. Live configuration and ownership evidence
+stay private, and no activation or cleanup follows from source checks.
+
+Verification extends the existing evaluator seam: transient recovery requires
+complete successful producer evidence; exhausted and permanent API failures
+must leave a failing receipt, including a failed later pagination page. Reuse
+the existing producer-failure and pending-job cases. Run these dependency-free
+Node contracts, syntax, formatting, focused static checks and data hygiene.
+No application runtime or full local application build is needed. Simplification
+and integrated source review are main-session self-reviews. Terminal delivery
+is a locally verified draft with current-head CI and feedback disposition;
+readiness, merge, deployment alignment and live activation remain separate.
+
+The transient API regression failed before correction. After correction, 72
+image-status, selection, required-status, deployment-parity and event-gate
+contracts pass in network-isolated Node 24.21.0. Syntax and focused formatting
+checks pass. No dependency, workflow, deployment or application-runtime change
+is included. Hosted exact-head CI and ordinary feedback remain pending.
+
+### Earlier source delivery
+
 - Planning challenge: main-session self-review accepted exact run/attempt tickets
   instead of an open-ended PR toggle. Added stale-prepare attempt protection and
   provider-independent trust routing. No independent review is claimed.

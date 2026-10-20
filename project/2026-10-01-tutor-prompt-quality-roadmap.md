@@ -1,50 +1,111 @@
-# Tutor prompt quality roadmap
+# Course-chatbot learning roadmap
 
-Status: historical Tutor candidate results retained; source consolidation and
-generic judge admission are merged. A conditional readiness proposal is prepared under the
-[saved Explainer assessment plan](2026-10-18-explainer-assessment-readiness-plan.md).
+Updated 19 October 2026. The immediate focus is learner support in Explainer.
+Existing private reviews and finite comparisons are complete for selecting the
+first improvement hypothesis. Current course performance and learning gains
+remain unverified. Historical Tutor experiments remain below for reference.
 
 ## Current evaluation direction
 
-The next work follows the
-[evaluator consolidation plan](2026-10-12-chatbot-evaluator-plan.md#evaluation-consolidation--2026-10-17)
-and the [course-quality plan](2026-10-12-chatbot-learning-quality-plan.md).
-Keep Klicker's native capture, persisted-history checks, citation mapper and
-provider guard stable. The app owns domain experiment definitions, corpus and
-receipt translation. The separate Python framework owns normalized-artifact
-loading, configurable metrics and reusable assessment/reporting.
-Moving JavaScript into this repository's `evaluation/` folder did not transfer
-those responsibilities to the framework.
+Help learners understand concepts, resolve misconceptions and apply concepts
+independently. The first bounded outcome is faithful explanation and revision:
+preserve meaning, state when a rule applies and make evidence limits clear.
+Revision notes are the first task form; direct explanations and worked examples
+remain appropriate in Explainer.
 
-| Next outcome                             | Acceptance and gate                                                                                       | State                                                                                              |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Caller-owned corpus and receipt contract | App-owned importer preserves complete/incomplete coverage; framework accepts generic normalized artifacts | Merged in app PR 6578 and framework MR 57                                                          |
-| Generic judge admission                  | Shared durable reservations precede every bounded judge request                                           | Merged in framework MR 61; post-merge CI passed                                                    |
-| Calibration readiness                    | Existing private references, merged-framework offline replay and separately costed judge proposal         | Gateway repair implemented; synthetic proxy replay passes; draft CI/review pending; paid readiness held |
-| Calibrated DeepEval assessment           | Existing conversational metric decisions are compared with frozen manual judgments                        | Held for route qualification and named judge-budget approval                                       |
-| Framework-driven unattended capture      | A demonstrated need justifies a stateful adapter without copying application semantics                    | Deferred                                                                                           |
+Historical review supplies hypotheses; synthetic comparisons supply regression
+evidence. Neither establishes current course performance or learning. Keep
+judgments and real-environment evidence in approved private custody.
 
-Recent Explainer preparation uses authored trajectories, app-owned offline import
-and manual criterion review. It is calibration, not executed DeepEval regression
-coverage. Numerical claim comparison is also a manually invoked utility, not an
-automatic verdict from successful capture. The earlier Tutor rounds below are
-historical evidence and do not qualify a new judge or capture route.
+### Manual acceptance checklist v1
 
-Source milestones: [app PR 6578](https://github.com/uzh-bf/klicker-uzh/pull/6578),
-[framework MR 57](https://gitlab.uzh.ch/ai-infrastructure/evaluation/-/merge_requests/57)
-and [framework MR 61](https://gitlab.uzh.ch/ai-infrastructure/evaluation/-/merge_requests/61).
-The merged judge-admission revision passed 469 tests, lint and formatting in
-[post-merge CI](https://gitlab.uzh.ch/ai-infrastructure/evaluation/-/pipelines/687299).
-This establishes source behavior, not judge accuracy or broad Explainer quality.
-Standalone qualification uses the merged framework first; the application pin
-update is a later integration task. No new capture or framework implementation
-is planned before checking existing evidence sufficiency.
+Assess actual answers and supporting passages, accepting correct paraphrases:
 
-[PR 6576](https://github.com/uzh-bf/klicker-uzh/pull/6576) merged the exact
-US$55/48-turn initializer option while preserving the US$5/120-turn default.
-Source availability does not authorize spending or establish local runtime
-readback. The subsequent roadmap execution approval covers the linked source
-package; capture, judge calls, merge and deployment retain their separate gates.
+- Complete the requested learning task directly at the requested depth.
+- Explain the essential concepts correctly, preserving meaning when shortening.
+- Retain the conditions and exceptions that determine when a rule applies.
+- Attach citations only to claims the cited passage supports, including examples.
+- Identify missing or partial coverage and distinguish source facts from inference
+  or illustration, while still providing useful supported help.
+
+Record meets, concern, fails or not assessed with a reason; required items must
+meet for acceptance. This supplements existing criteria without rescoring past
+runs. Answer checks do not establish understanding or transfer.
+
+### Outcome milestones
+
+| Priority | Outcome | Completion and next boundary |
+| --- | --- | --- |
+| 1 | Select one obstacle to useful understanding | Evidence synthesis and checklist preparation complete for this purpose; current performance and learning remain unassessed |
+| 2 | Establish faithful, course-grounded explanation and revision | Pending a separately authorized finite diagnostic: assess the baseline first, then at most one justified candidate; manually check answers, passage support and the unchanged control |
+| 3 | Make an evidence-backed improvement decision and inspect learner benefit | Propose rollout only after representative task and course-owner consumer acceptance; application and deployment need named authority; independent understanding and transfer need learner evidence |
+
+Next action: use the existing private source cards to prepare the smallest
+baseline decision under the
+[real-course protocol](2026-10-18-explainer-assessment-readiness-plan.md#real-course-acceptance-preparation).
+Prioritize meaning-preserving revision, multipart coverage and evidence limits.
+Unrun unit-lookup and cross-source tasks remain unassessed for broader acceptance.
+
+Reuse prepared guidance only if the baseline demonstrates its targeted obstacle;
+stop tuning if the baseline passes. Reject critical candidate/control regressions
+and redirect demonstrated content or retrieval failures to their owner. Synthetic
+success cannot authorize promotion. Later authorized learner feedback,
+explain-back or independent application may inform learning assessment; usage
+and assisted performance do not establish learning gains.
+
+### Parked work and authority
+
+Park gateway reservation repair, further route/pricing qualification, startup
+repairs, evaluator/framework expansion, automated judging, ranking changes and
+Tutor/Quizzer work. Revisit only when evidence links a concrete blocker or need
+to the selected learner outcome. A blocked paid route does not authorize an
+upstream infrastructure project. Reuse existing capture/import and assessment.
+
+The approved implementation adds one instruction to the source-managed standard
+Explainer contract in this draft; its generated-answer effect is unassessed.
+The [continuation](2026-10-18-explainer-assessment-readiness-plan.md#current-learner-improvement-continuation)
+pins the pre-change baseline and one-instruction candidate for a later matched
+check. Stored lecturer guidance remains unchanged. Further inference needs a
+named budget, provider, source-use and enforceable cost authority; prior capture
+authority is consumed. Monitored spending is not a hard-cap substitute. Live
+prompt/KB changes, promotion, merge and deployment remain separately gated.
+
+## Existing foundations and deferred protocols
+
+Recorded source foundations: [citation correction PR 6483](https://github.com/uzh-bf/klicker-uzh/pull/6483),
+[app importer PR 6578](https://github.com/uzh-bf/klicker-uzh/pull/6578),
+[generic contract MR 57](https://gitlab.uzh.ch/ai-infrastructure/evaluation/-/merge_requests/57),
+[judge admission MR 61](https://gitlab.uzh.ch/ai-infrastructure/evaluation/-/merge_requests/61)
+and [gateway retry correction PR 6603](https://github.com/uzh-bf/klicker-uzh/pull/6603).
+Source delivery does not establish deployment, judge accuracy or student benefit.
+The app owns capture, experiment data and receipt translation; the Python
+framework owns generic assessment and reporting, independent of any application.
+
+The private decision index retains the completed
+[preservation](2026-10-18-explainer-assessment-readiness-plan.md#approved-preservation-execution)
+and [attribution](2026-10-18-explainer-assessment-readiness-plan.md#approved-attribution-execution)
+comparisons and [separate guidance preparation](2026-10-18-explainer-assessment-readiness-plan.md#approved-prompt-preparation).
+The [preflight](2026-10-18-explainer-assessment-readiness-plan.md#zero-spend-source-and-route-preflight)
+and [quality-decision batch](2026-10-18-explainer-assessment-readiness-plan.md#current-quality-decision-batch)
+remain conditional reference protocols, not an instruction to resume technical
+work. This direction continues the
+[course-quality plan](2026-10-12-chatbot-learning-quality-plan.md) and supersedes
+the earlier judge-first sequence in the
+[evaluation consolidation plan](2026-10-12-chatbot-evaluator-plan.md#evaluation-consolidation--2026-10-17).
+
+Reuse the [existing comparison corpus](../evaluation/data/explainer-compression/README.md).
+Inspected authored cases are regression/transfer examples, not blind holdouts.
+The existing
+[US$55/48-turn initializer option](https://github.com/uzh-bf/klicker-uzh/pull/6576)
+supported the finite protocols without another source change. The follow-up
+protocols used the same cumulative ledger, not a renewed allowance.
+Each finite protocol stops at its own planned turn count within the ledger's
+48-turn ceiling. The default US$5 cap and earlier ledgers remain unchanged.
+The [initial](2026-10-18-explainer-assessment-readiness-plan.md#approved-comparison-execution),
+[preservation](2026-10-18-explainer-assessment-readiness-plan.md#approved-preservation-execution)
+and [attribution](2026-10-18-explainer-assessment-readiness-plan.md#approved-attribution-execution)
+execution authority is consumed. Judge calls, further captures, shared prompt
+changes, merge and deployment remain separate.
 
 ## Historical Tutor iteration
 

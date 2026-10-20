@@ -13,6 +13,7 @@ import {
   type ThreadMessageLike,
 } from '@assistant-ui/react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import { useLocale, useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useChatUi } from '../components/chat-ui-context'
 import {
@@ -22,6 +23,7 @@ import {
 import { ModeOptionsProvider } from '../components/mode-options-context'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
 import { resolveSelectedMode } from '../lib/config/modes'
+import { useLocalSpeechSynthesis } from '../lib/speech/localSpeechSynthesis'
 
 const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
 
@@ -307,14 +309,22 @@ export function RuntimeProvider({
   )
 
   const dictation = useOnDeviceDictation({ disabled: embedded })
+  const t = useTranslations()
+  const locale = useLocale()
+  const speechAdapter = useLocalSpeechSynthesis({
+    locale,
+    formulaLabel: t('chat.message.readAloudFormula'),
+    disabled: embedded,
+  })
   const adapters = useMemo(
     () => ({
       ...(supportsImageAttachments
         ? { attachments: imageAttachmentAdapter }
         : {}),
       ...(dictation.adapter ? { dictation: dictation.adapter } : {}),
+      ...(speechAdapter ? { speech: speechAdapter } : {}),
     }),
-    [supportsImageAttachments, dictation.adapter]
+    [supportsImageAttachments, dictation.adapter, speechAdapter]
   )
 
   // runtime config for assistant UI
@@ -329,6 +339,16 @@ export function RuntimeProvider({
     convertMessage,
     adapters,
   })
+
+  // A new answer, a thread switch, or leaving the chat stops read-aloud;
+  // otherwise the voice keeps talking with no stop button in view.
+  useEffect(() => {
+    const stopSpeaking = () => {
+      if (runtime.thread.getState().speech) runtime.thread.stopSpeaking()
+    }
+    if (isRunning) stopSpeaking()
+    return stopSpeaking
+  }, [runtime, isRunning, activeThreadId])
 
   return (
     <ModeOptionsProvider modeOptions={activeModeOptions}>

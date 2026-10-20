@@ -1051,6 +1051,12 @@ streaming regression in `playwright/tests/Y-chat.spec.ts` pauses before a closin
 observes the DOM for raw delimiters, partial formulas, and KaTeX errors, then asserts the final
 formula, surrounding Markdown, and assistant-row identity.
 
+## Read-aloud
+
+Assistant answers can be read aloud with assistant-ui's `ActionBarPrimitive.Speak` and `StopSpeaking` next to Copy in `src/components/thread.tsx`. The runtime's speech adapter is `LocalSpeechSynthesisAdapter` in `src/lib/speech/localSpeechSynthesis.ts`. It mirrors assistant-ui's `WebSpeechSynthesisAdapter` because that class queues its utterance before a voice can be set. Before speaking, `toSpeakableText` (`src/lib/speech/readAloudText.ts`) skips fenced code, replaces display math with a localized word, strips citation markers, and keeps inline code and inline math without their delimiters.
+
+The privacy contract is on-device voices only. Chrome also lists network voices that send the text to Google, so `useLocalSpeechSynthesis` picks a `localService` voice for the chat locale and passes no adapter when none exists; the button is then hidden. Embedded chats never show it. Starting a new answer, switching threads, or leaving the chat stops playback.
+
 ## Voice input (on-device dictation)
 
 Dictation uses assistant-ui's composer dictation: `ComposerPrimitive.Dictate` and `StopDictation` in `src/components/dictation-controls.tsx`, backed by `OnDeviceDictationAdapter` in `src/lib/speech/onDeviceDictation.ts`. The composer runtime merges the transcript into the existing draft, shows interim text in the input, and cancels the session on send; the adapter only translates recognizer events.

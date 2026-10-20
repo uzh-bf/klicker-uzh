@@ -343,7 +343,7 @@ const fs=require('node:fs')
 fs.writeFileSync(${JSON.stringify(record)},JSON.stringify({args:process.argv.slice(2),env:process.env}))
 console.error('[ocr]   ▶ file_read PRIVATE_SENTINEL')
 console.error('::error::PRIVATE_SENTINEL')
-process.stdout.write(JSON.stringify({status:'partial',manifest:{coverage:{selected:['x'],completed:[],failed:[{classification:'provider'}],waived:[],reused:[]}},thinking:'PRIVATE_SENTINEL'}))
+process.stdout.write(JSON.stringify({status:'partial',manifest:{coverage:{selected:['a','b','c','d','e'],completed:[],failed:[{classification:'provider'},{classification:'budget'},{classification:'budget'},{classification:'timeout'},{classification:'PRIVATE_SENTINEL',reason:'PRIVATE_SENTINEL'}],waived:[],reused:[]}},thinking:'PRIVATE_SENTINEL'}))
 process.exitCode=7
 `,
     { mode: 0o700 }
@@ -396,6 +396,13 @@ process.exitCode=7
       'PRIVATE_SENTINEL'
     )
     assert.equal(outcome.coverage.observed_status, 'partial')
+    const coverageLine = logs.find((line) => line.startsWith('OCR coverage '))
+    assert.deepEqual(JSON.parse(coverageLine.split('failure_classes=')[1]), {
+      provider: 1,
+      budget: 2,
+      timeout: 1,
+      other: 1,
+    })
     const tools = JSON.parse(
       fs.readFileSync(
         path.join(directory, 'draft-ai-review-tools.json'),
