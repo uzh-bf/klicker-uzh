@@ -1185,3 +1185,28 @@ resolved task target is `v3`. Plan commit: `17cc9da64aa336a797b650d89f6ec3ee3c1c
   and browser proof for this documentation-only checkpoint. The exact checkout
   remains retained/pinned for the user's explicit manual Browser session; both
   isolated registry browser sessions and the PR-rendering session are closed.
+
+### Hosted date-picker assertion repair — 2026-10-20
+
+- The final-head hosted quality suite passes, including frozen installation,
+  lint, formatting, policy checks, dependency consistency and TypeScript.
+  Browser shards reached real test execution, then exposed the same shared
+  assertion failure: the helper expects display punctuation between date and
+  time, while v5 renders those values in separate spans. The numeric date/time
+  in the failure receipt agrees with the requested values.
+- Replace those presentation assertions with selected calendar-day state and
+  hour/minute input values. Reopen the picker after closing to verify retained
+  state, then close it again. The same assertion replaces four microlearning
+  edit/duplicate checks found by a bounded read-only explorer. Existing test
+  counts and workflow intent remain; no maintained spec is added or skipped.
+  Test obligation: replace/consolidate. Primary seam: existing real-browser
+  fixture and persistence journeys. Distinct failure: lost selected date/time.
+- Formatting and Playwright TypeScript checks pass. The local one-off probe is
+  ignored and stops at unsaved form state with database preservation enabled.
+  Its first launch refused a stale host dependency install; the pinned frozen
+  filtered install now passes. A second launch stopped in managed host
+  preparation, before browser execution. Standalone repository preparation
+  succeeds; the retained app still returns HTTP 200 with healthy services.
+  Diagnose that harness boundary separately while hosted CI verifies the
+  existing workflows on the repaired assertions. No database reset or runtime
+  replacement is inferred from this test correction.
