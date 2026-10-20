@@ -666,13 +666,15 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(
       page.getByTestId('chatbot-students-preview-modal')
     ).toBeVisible()
-    const preview = page.getByTestId('chatbot-disclaimer-preview')
+    const preview = page
+      .getByTestId('chatbot-students-preview-modal')
+      .getByTestId('chatbot-disclaimer-preview')
     await expect(preview).toContainText('Course chatbot conditions')
     await expect(preview).toContainText('Use this chatbot as a learning aid.')
     await expect(preview).toContainText('Student Responsibility')
     await expect(preview).toContainText('Data Protection')
     await expect(
-      page.getByTestId('chatbot-disclaimer-consequences')
+      preview.getByTestId('chatbot-disclaimer-consequences')
     ).toContainText('Accept: You can use the chatbot')
     await page.keyboard.press('Escape')
     await expect(
@@ -1303,7 +1305,9 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     ).toContainText('awaiting publication review')
     await expect(page.getByTestId('chatbot-draft-setup')).toBeVisible()
     await page.getByTestId('chatbot-section-students-preview').click()
-    const pendingPreview = page.getByTestId('chatbot-disclaimer-preview')
+    const pendingPreview = page
+      .getByTestId('chatbot-students-preview-modal')
+      .getByTestId('chatbot-disclaimer-preview')
     await expect(pendingPreview).toContainText(
       'Synthetic publication disclaimer'
     )
@@ -1355,7 +1359,9 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(page.getByTestId('chatbot-usage-strip')).toBeVisible()
     await expect(page.getByTestId('chatbot-participant-link')).toBeVisible()
     await page.getByTestId('chatbot-section-students-preview').click()
-    const publishedPreview = page.getByTestId('chatbot-disclaimer-preview')
+    const publishedPreview = page
+      .getByTestId('chatbot-students-preview-modal')
+      .getByTestId('chatbot-disclaimer-preview')
     await expect(publishedPreview).toContainText(
       'Synthetic publication disclaimer'
     )
@@ -1525,7 +1531,9 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(page.getByTestId('chatbot-paused-notice')).toBeVisible()
     await expect(page.getByTestId('chatbot-usage-strip')).toBeVisible()
     await page.getByTestId('chatbot-section-students-preview').click()
-    const pausedPreview = page.getByTestId('chatbot-disclaimer-preview')
+    const pausedPreview = page
+      .getByTestId('chatbot-students-preview-modal')
+      .getByTestId('chatbot-disclaimer-preview')
     await expect(pausedPreview).toContainText('Synthetic chatbot disclaimer')
     await expect(pausedPreview).toContainText(
       'Synthetic disclaimer text for this test chatbot.'
