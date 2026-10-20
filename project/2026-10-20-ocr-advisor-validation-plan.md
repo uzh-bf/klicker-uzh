@@ -98,7 +98,12 @@ and publish one draft against `v3`; no human review requests or extra paid runs.
   dependency install exists, so the native hook wrapper leaves full monorepo
   checks/build to required CI. No runtime was started.
 - Test delta: two existing cases expanded; no new test module or test case.
-- Packaging: one package; 337 substantive added/deleted lines before review,
-  excluding this plan. Simplification and bounded review pending.
+- Packaging: one package; 396 substantive added/deleted lines before review,
+  excluding this plan. Simplifier found no justified reductions; bounded
+  correctness/privacy review found no actionable issues.
+- Draft delivery: [PR #6650](https://github.com/uzh-bf/klicker-uzh/pull/6650)
+  is open; final review and hosted CI remain pending.
+- Knowledge capture: the existing CI guide owns the diagnostic distinction and
+  legacy-receipt caveat; no duplicate solution document or ADR is needed.
 - Live cause: remains unknown until a natural advisor consultation uses the
   merged diagnostics. This delivery does not claim a functional advisor fix.
