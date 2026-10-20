@@ -148,7 +148,16 @@ an explicit live qualification gate rather than synthetic-test acceptance.
 Delivery remains one cohesive draft: the ledger, authenticated handler and
 preparation client implement one admission contract, and an isolated layer
 would not provide usable overload admission. No native stack topology is
-created. The active work is final committed-range review and draft publication.
+created. Main-session simplification and final review covered the complete
+committed range through `c888e7d3ac` across correctness, plan compliance,
+maintainability, trust and persistence. No additional abstraction or dependency
+was needed. The architecture decision remains ADR 0052; no application-domain
+primitive changes. Focused static analysis of the corrected coordinator also
+passed. Local verification replaces the application-wide hooks for this
+CI-only package; no full application build/check is claimed.
+The active work is draft publication and hosted feedback.
+The package has 1,487 substantive added/deleted lines outside documentation,
+including the synthetic persistence, authentication and workflow contracts.
 The native goal owns continuation; a checkpoint is not source-package completion.
 
 ## Historical source package
