@@ -957,22 +957,26 @@ test('upstream error summaries validate fields and retain the final non-null rej
     last_upstream_error,
   })
   const first = row({ http_status: 401, code: 401 })
-  const last = row({ http_status: 402, code: 402 })
+  const last = row({
+    http_status: 402,
+    code: 402,
+    reason: 'key_budget_exhausted',
+  })
   const cases = [
     [[], 'status=unavailable'],
     [[{ schema_version: 1 }], 'status=unavailable'],
     [[row(null)], 'status=none'],
     [
       [first, last, row(null)],
-      'status=complete stage=adapter http_status=402 code=402',
+      'status=complete stage=adapter http_status=402 code=402 reason=key_budget_exhausted',
     ],
     [
       [row({ http_status: 404, code: 'unknown' })],
-      'status=complete stage=adapter http_status=404 code=unknown',
+      'status=complete stage=adapter http_status=404 code=unknown reason=unknown',
     ],
     [
       [row({ http_status: null, code: 'unknown' })],
-      'status=complete stage=adapter http_status=unknown code=unknown',
+      'status=complete stage=adapter http_status=unknown code=unknown reason=unknown',
     ],
     ...[
       'PRIVATE_PROVIDER_SENTINEL',
@@ -980,6 +984,8 @@ test('upstream error summaries validate fields and retain the final non-null rej
       { http_status: 999, code: 401 },
       { http_status: 401, code: 'PRIVATE_PROVIDER_SENTINEL' },
       { http_status: 401, code: 418 },
+      { http_status: 403, code: 403, reason: 'PRIVATE_PROVIDER_SENTINEL' },
+      { http_status: 403, code: 403, reason: null },
     ].map((value) => [[first, row(value)], 'status=unknown']),
   ]
   try {
@@ -3033,6 +3039,7 @@ test('rejection diagnostics keep only HTTP status and allowlisted numeric codes'
       assert.deepEqual(receipt.last_upstream_error, {
         http_status: 401,
         code: expected,
+        reason: 'unknown',
       })
       assert.equal(receipt.upstream_attempts, 1)
       assert.equal(receipt.responses, 0)
@@ -3078,10 +3085,102 @@ test('rejection diagnostics keep only HTTP status and allowlisted numeric codes'
       assert.deepEqual(adapter.diagnostics().last_upstream_error, {
         http_status: 401,
         code: 'unknown',
+        reason: 'unknown',
       })
       assert.equal(adapter.diagnostics().failures.upstream_rejected, 1)
     } finally {
       await adapter.close()
+    }
+  }
+})
+
+test('OpenRouter budget reasons are content-free, bounded and provider-scoped', async () => {
+  const secret = 'PRIVATE_PROVIDER_SENTINEL'
+  const legacy = `Key limit exceeded (daily limit). ${secret}`
+  const metadata = (limit_source) => ({ limit_source, details: secret })
+  const cases = [
+    ...[
+      ['openrouter_key_limit', 'key_budget_exhausted'],
+      ['openrouter_guardrail_budget', 'guardrail_budget_exhausted'],
+      ['openrouter_in_flight_budget', 'in_flight_budget_exhausted'],
+      ['openrouter_credits', 'credits_insufficient'],
+    ].flatMap(([source, reason]) =>
+      [402, 403].map((status) => [
+        status,
+        { metadata: metadata(source) },
+        reason,
+      ])
+    ),
+    [403, { message: legacy }, 'key_budget_exhausted'],
+    [
+      403,
+      { message: 'Key limit exceeded', metadata: {} },
+      'key_budget_exhausted',
+    ],
+    [402, { message: legacy }, 'unknown'],
+    [401, { metadata: metadata('openrouter_key_limit') }, 'unknown'],
+    [
+      403,
+      { message: legacy, metadata: metadata('openrouter_credits') },
+      'credits_insufficient',
+    ],
+    ...[
+      null,
+      [],
+      metadata(null),
+      metadata({}),
+      metadata(secret),
+      metadata('__proto__'),
+    ].map((value) => [403, { message: legacy, metadata: value }, 'unknown']),
+    ...[
+      secret,
+      `Not ${legacy}`,
+      `${secret} ${legacy}`,
+      'Key limit exceededly',
+    ].map((message) => [403, { message }, 'unknown']),
+    [403, {}, 'unknown'],
+    [
+      403,
+      {
+        metadata: metadata('openrouter_key_limit'),
+        padding: secret.repeat(2000),
+      },
+      'unknown',
+      'unknown',
+    ],
+  ]
+  for (const provider of ['openrouter', 'mistral']) {
+    for (const [status, error, reason, expectedCode = status] of cases) {
+      const adapter = await startAdapter({
+        provider,
+        apiKey: secret,
+        fetchImpl: upstream(() =>
+          jsonResponse(status, { error: { code: status, ...error } })
+        ),
+      })
+      try {
+        const response = await postJson(adapter, {
+          messages: [{ role: 'user', content: 'synthetic' }],
+        })
+        assert.equal(response.status, 502)
+        assert.equal(response.json.error.code, 'upstream_error')
+        const receipt = adapter.diagnostics()
+        assert.deepEqual(receipt.last_upstream_error, {
+          http_status: status,
+          code: expectedCode,
+          reason: provider === 'openrouter' ? reason : 'unknown',
+        })
+        assert.equal(receipt.upstream_attempts, 1)
+        assert.equal(receipt.responses, 0)
+        assert.equal(receipt.failures.upstream_rejected, 1)
+        assert.equal(estimateCost(JSON.stringify(receipt)), null)
+        assert.doesNotMatch(
+          JSON.stringify(receipt) + response.text,
+          /PRIVATE_PROVIDER_SENTINEL/
+        )
+      } finally {
+        await adapter.close()
+      }
     }
   }
 })
@@ -3093,7 +3192,7 @@ test('late rejection bodies cannot overwrite a newer observed error or an earlie
   const fetchImpl = upstream((_request, index) =>
     index === 1
       ? {
-          status: 401,
+          status: 403,
           ok: false,
           body: {
             getReader: () => ({
@@ -3109,24 +3208,35 @@ test('late rejection bodies cannot overwrite a newer observed error or an earlie
             }),
           },
         }
-      : jsonResponse(402, { error: { code: 402 } })
+      : jsonResponse(402, {
+          error: {
+            code: 402,
+            metadata: { limit_source: 'openrouter_credits' },
+          },
+        })
   )
-  const adapter = await startAdapter({ apiKey: 'synthetic', fetchImpl })
+  const adapter = await startAdapter({
+    provider: 'openrouter',
+    apiKey: 'synthetic',
+    fetchImpl,
+  })
   const body = { messages: [{ role: 'user', content: 'synthetic' }] }
   const first = postJson(adapter, body)
   try {
     await draining.promise
     const snapshot = adapter.diagnostics()
     assert.equal((await postJson(adapter, body)).status, 502)
-    release.resolve('{"error":{"code":401}}')
+    release.resolve('{"error":{"code":403,"message":"Key limit exceeded"}}')
     assert.equal((await first).status, 502)
     assert.deepEqual(adapter.diagnostics().last_upstream_error, {
       http_status: 402,
       code: 402,
+      reason: 'credits_insufficient',
     })
     assert.deepEqual(snapshot.last_upstream_error, {
-      http_status: 401,
+      http_status: 403,
       code: 'unknown',
+      reason: 'unknown',
     })
     assert.equal(adapter.diagnostics().upstream_attempts, 2)
     assert.equal(adapter.diagnostics().failures.upstream_rejected, 2)
@@ -3607,6 +3717,7 @@ test('rejection status survives stalled bodies and client cancellation under the
       const receipt = adapter.diagnostics()
       assert.equal(receipt.last_upstream_error.http_status, 429)
       assert.equal(receipt.last_upstream_error.code, 'unknown')
+      assert.equal(receipt.last_upstream_error.reason, 'unknown')
       assert.equal(receipt.upstream_attempts, 1)
       assert.equal(receipt.responses, 0)
       assert.equal(receipt.failures.upstream_throttled, 1)
