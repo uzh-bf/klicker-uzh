@@ -74,7 +74,7 @@ async function extractPdfInWorker(data: ArrayBuffer): Promise<string[]> {
         else reject(new Error(event.data.message))
       }
       worker.onerror = (event) => reject(new Error(event.message))
-      worker.postMessage(data, [data])
+      worker.postMessage({ type: PDF_TEXT_MESSAGE, data }, [data])
     })
   } finally {
     worker.terminate()
