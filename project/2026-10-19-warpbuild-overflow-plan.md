@@ -29,10 +29,12 @@ independent evidence. Target `v3`, baseline
 `trees/rs/warpbuild-burst-admission`. Published as
 [draft PR #6651](https://github.com/uzh-bf/klicker-uzh/pull/6651).
 
-The approved terminal is a verified, self-reviewed source package published as
-a draft PR. Ordinary task commits and pushes are included. Deployment of a
+The source terminal was a verified, self-reviewed draft. The operator subsequently
+approved readiness, actual final review and normal squash merge after required
+CI and applicable platform gates. Ordinary task commits and pushes are included.
+Deployment of a
 coordinator, its hosting and network exposure, credentials, live workflow
-permissions/settings, paid qualification, readiness and merge retain their
+permissions/settings and paid qualification retain their
 separate approval gates. Earlier finite pilot limits and cleanup obligations
 are not reset by this source goal. No existing run is cancelled or retried.
 
@@ -110,6 +112,14 @@ fixtures use invented identities and amounts. Private pilot facts are excluded
 from every source change and public description.
 
 ### Current progress
+
+Readiness follow-up: the client now gives admission its own bounded deadline,
+with room for signing-key retrieval, both forge batches and ledger contention.
+The regression failed before correction; all 30 focused admission tests pass
+afterward. Existing route tests additionally protect manual-ticket precedence,
+URL restrictions and the POST contract. The route uses one identity-field list.
+Strict target freshness requires integration of `eccb64b4cb` before final gates.
+Main-session review covers these corrections; hosted final review remains pending.
 
 Roadmap review and source inspection are complete. The task worktree is based on
 current `v3`; no live setting or paid execution has changed. Planning and trust

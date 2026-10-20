@@ -3,6 +3,14 @@ const fs = require('node:fs')
 const { isSyncBranch } = require('./draft-sync-prs.cjs')
 
 const ROUTE_SCHEMA_VERSION = 1
+const IDENTITY_FIELDS = [
+  'runId',
+  'runAttempt',
+  'pullRequestNumber',
+  'headSha',
+  'baseSha',
+  'controlSha',
+]
 
 function fail(message) {
   throw new Error(message)
@@ -27,14 +35,6 @@ function admittedWarpbuildAttempt(input) {
     return ''
   const now = Date.parse(input.now ?? new Date().toISOString())
   if (!Number.isFinite(now)) return ''
-  const identity = [
-    'runId',
-    'runAttempt',
-    'pullRequestNumber',
-    'headSha',
-    'baseSha',
-    'controlSha',
-  ]
   try {
     const tickets = JSON.parse(raw)
     if (!Array.isArray(tickets) || tickets.length > 3) return ''
@@ -44,10 +44,10 @@ function admittedWarpbuildAttempt(input) {
         return ''
       if (
         Object.keys(ticket).sort().join(',') !==
-        [...identity, 'expiresAt'].sort().join(',')
+        [...IDENTITY_FIELDS, 'expiresAt'].sort().join(',')
       )
         return ''
-      for (const key of identity) {
+      for (const key of IDENTITY_FIELDS) {
         const pattern = key.endsWith('Sha') ? /^[a-f0-9]{40}$/ : /^[1-9]\d*$/
         if (typeof ticket[key] !== 'string' || !pattern.test(ticket[key]))
           return ''
@@ -67,7 +67,7 @@ function admittedWarpbuildAttempt(input) {
       seen.add(key)
     }
     const match = tickets.find((ticket) =>
-      identity.every((key) => ticket[key] === input[key])
+      IDENTITY_FIELDS.every((key) => ticket[key] === input[key])
     )
     return match?.runAttempt ?? ''
   } catch {
@@ -277,9 +277,8 @@ async function chooseRouteWithAdmission(
     )
       return ordinary
     tokenUrl.searchParams.set('audience', 'klicker-playwright-admission')
-    const signal = AbortSignal.timeout(12000)
     const tokenResponse = await network(tokenUrl, {
-      signal,
+      signal: AbortSignal.timeout(12000),
       redirect: 'error',
       headers: {
         authorization: `Bearer ${env.ACTIONS_ID_TOKEN_REQUEST_TOKEN}`,
@@ -289,18 +288,13 @@ async function chooseRouteWithAdmission(
     if (typeof value !== 'string' || !value || value.length > 16384)
       return ordinary
     const identity = Object.fromEntries(
-      [
-        'runId',
-        'runAttempt',
-        'pullRequestNumber',
-        'headSha',
-        'baseSha',
-        'controlSha',
-      ].map((key) => [key, input[key]])
+      IDENTITY_FIELDS.map((key) => [key, input[key]])
     )
     const response = await network(endpoint, {
       method: 'POST',
-      signal,
+      // Leave room for signing keys, both forge batches and SQLite contention,
+      // independently of time already spent obtaining the identity token.
+      signal: AbortSignal.timeout(20000),
       redirect: 'error',
       headers: {
         authorization: `Bearer ${value}`,

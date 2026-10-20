@@ -42,7 +42,12 @@ function cloudAdmission(overrides = {}) {
   })
 }
 
-test('preparation obtains an exact ticket before selecting the paid backend', async () => {
+test('preparation obtains an exact ticket before selecting the paid backend', async (t) => {
+  const deadlines = []
+  t.mock.method(AbortSignal, 'timeout', (milliseconds) => {
+    deadlines.push(milliseconds)
+    return new AbortController().signal
+  })
   const input = cloudAdmission({ warpbuildAdmissions: '' })
   const ticket = { ...JSON.parse(cloudAdmission().warpbuildAdmissions)[0] }
   const env = {
@@ -62,6 +67,10 @@ test('preparation obtains an exact ticket before selecting the paid backend', as
   assert.equal(result.provider, 'warpbuild')
   assert.equal(result.admissionAttempt, '1')
   assert.equal(calls.length, 2)
+  assert.equal(calls[1].url, env.WARPBUILD_ADMISSION_URL)
+  assert.equal(calls[1].options.method, 'POST')
+  assert.notEqual(calls[0].options.signal, calls[1].options.signal)
+  assert.ok(deadlines[1] >= 20000)
   assert.equal(
     new URL(calls[0].url).searchParams.get('audience'),
     'klicker-playwright-admission'
@@ -91,8 +100,30 @@ test('disabled, legacy and ineligible preparations never request coordinator cre
     [{ prDraft: 'true' }, {}],
     [{ headRepository: 'external/fork' }, {}],
     [{ runAttempt: '2' }, {}],
+    [{ warpbuildAdmissions: cloudAdmission().warpbuildAdmissions }, {}],
     [{}, { WARPBUILD_ADMISSION_URL: 'http://example.invalid/admit' }],
+    [{}, { WARPBUILD_ADMISSION_URL: 'https://example.invalid/other' }],
+    [{}, { WARPBUILD_ADMISSION_URL: 'https://example.invalid/admit?q=1' }],
+    [
+      {},
+      { WARPBUILD_ADMISSION_URL: 'https://user:pass@example.invalid/admit' },
+    ],
+    [{}, { WARPBUILD_ADMISSION_URL: 'https://example.invalid/admit#fragment' }],
     [{}, { ACTIONS_ID_TOKEN_REQUEST_URL: 'https://example.invalid/token' }],
+    [
+      {},
+      {
+        ACTIONS_ID_TOKEN_REQUEST_URL:
+          'https://user:pass@pipelines.actions.githubusercontent.com/token',
+      },
+    ],
+    [
+      {},
+      {
+        ACTIONS_ID_TOKEN_REQUEST_URL:
+          'https://pipelines.actions.githubusercontent.com/token#fragment',
+      },
+    ],
   ]) {
     let called = false
     const candidate = { ...input, ...changes }
