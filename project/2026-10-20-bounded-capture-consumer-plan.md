@@ -150,20 +150,36 @@ The framework prerequisite is merged and exact post-merge CI passed. The existin
 69 importer tests pass offline. Initial attempts to invoke Vitest files through
 Node's test runner and pytest tests through bare unittest used the wrong test
 tools; neither is source failure. Their installed runners remain required.
-Implementation is complete pending source reviews and draft delivery. The bounded
+Source is delivered in draft [PR 6641](https://github.com/uzh-bf/klicker-uzh/pull/6641).
+The bounded
 executor added the budget-session interface; main integrated the Python context,
 the merged framework pin, existing integration pin assertion, docs and CI.
 The closed protocol was reduced from an initial queue-based draft to raw serial
 stdin iteration. Main reproduced and fixed acceptance of an unterminated frame.
 
-All 20 consumer tests pass with the real pinned framework explicitly enabled,
+All 21 consumer tests pass with the real pinned framework explicitly enabled,
 including both native API paths, replay, first-failure stopping and lost-finish
 acknowledgement. The 69 existing importer tests pass. Ordinary public mode
 passes its consumer contracts and explicitly skips four private-framework cases.
-The existing wrapper suite passes. Ruff, formatting, focused Biome and Opengrep
+The 43 existing budget/trajectory tests and wrapper suite pass. Ruff, formatting,
+focused Biome and Opengrep
 checks pass; only existing nonblocking Biome advice remains. All verification
 uses synthetic temporary state in one-shot containers with external networking
 disabled. No application runtime, paid call or real ledger mutation occurred.
 
-Test delta: one new synthetic consumer test module; no existing test removed or
-weakened. Required simplification, risk review and integrated final review remain.
+Test delta: one new synthetic consumer module with 21 tests, including four
+private-framework integration cases; no existing test removed or weakened.
+The simplifier found no justified reduction. Risk review identified a hidden
+cleanup failure after rejection; main reproduced it, gave failed cleanup a
+distinct child exit status and retained both exceptions. Focused verification
+closed that finding. Integrated final review of the complete range through
+`a3d690b9041a9027dd7520f6acb8c6001b8981ee` passed with no remaining finding.
+This later progress update changes no executable source or verification boundary.
+
+Substantive package size excluding project artifacts: 875 added, 7 removed lines.
+The single package is independently functional, reviewable and testable; it adds
+no default live effect. Hosted CI is still running at this save; the draft PR
+description and exact-head checks hold its authoritative final disposition.
+The manual repository final-review gate requires a ready PR and remains a later
+authority boundary. No ready transition, merge, deployment or paid execution is
+included in this source delivery.
