@@ -139,6 +139,22 @@ export function DictationSheet() {
 
   const close = () => setInstallSheetOpen(false)
   const installing = availability === 'installing'
+  const needsInstall = availability === 'needs-install'
+
+  let primaryActionLabel = t('chat.composer.dictationSheetCheckAgain')
+  if (error === 'install-failed') {
+    primaryActionLabel = t('chat.composer.dictationSheetRetry')
+  } else if (needsInstall) {
+    primaryActionLabel = t('chat.composer.dictationSheetDownload')
+  }
+
+  const handlePrimaryAction = async () => {
+    if (needsInstall) {
+      await install()
+    } else {
+      await refresh()
+    }
+  }
 
   return (
     <Modal
@@ -198,15 +214,9 @@ export function DictationSheet() {
               ref={primaryActionRef}
               data-cy="chat-dictation-download"
               disabled={installing}
-              onClick={() =>
-                void (availability === 'needs-install' ? install() : refresh())
-              }
+              onClick={handlePrimaryAction}
             >
-              {error === 'install-failed'
-                ? t('chat.composer.dictationSheetRetry')
-                : availability === 'needs-install'
-                  ? t('chat.composer.dictationSheetDownload')
-                  : t('chat.composer.dictationSheetCheckAgain')}
+              {primaryActionLabel}
             </Button>
             <Button data-cy="chat-dictation-not-now" onClick={close}>
               {t('chat.composer.dictationSheetNotNow')}
